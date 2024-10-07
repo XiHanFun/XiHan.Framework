@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Core</Title>
+		<AssemblyName>XiHan.Framework.Core</AssemblyName>
+		<PackageId>XiHan.Framework.Core</PackageId>
+		<Description>曦寒框架核心库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
+	</ItemGroup>
+
+</Project>
