@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.AspNetCore.Authentication.JwtBearer</Title>
+		<AssemblyName>XiHan.Framework.AspNetCore.Authentication.JwtBearer</AssemblyName>
+		<PackageId>XiHan.Framework.AspNetCore.Authentication.JwtBearer</PackageId>
+		<Description>曦寒框架Web核心Jwt鉴权库</Description>
+		<IsPackable>true</IsPackable>
+		<OutputType>Library</OutputType>
+		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+	</PropertyGroup>
+
+</Project>

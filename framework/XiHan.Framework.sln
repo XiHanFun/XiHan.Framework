@@ -37,9 +37,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Serilog", "src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj", "{7C5BDA24-DFF3-4807-BF01-4890B4BBDCC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.SearchEngines", "src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj", "{DD914906-5344-4EF2-A744-9C55945DCF87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.SearchEngines", "src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj", "{DD914906-5344-4EF2-A744-9C55945DCF87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Localization", "src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj", "{F1B94619-9D1A-46DC-BE22-E110C8F82525}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Localization", "src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj", "{F1B94619-9D1A-46DC-BE22-E110C8F82525}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.JwtBearer", "src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj", "{F895D87C-72CC-4400-9490-76449B126294}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.OAuth", "src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj", "{FD657323-6443-415A-85DF-F2E94BD1C785}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.OpenIdConnect", "src\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj", "{A7CB454C-FA7E-417D-924C-4F43A4D336AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -99,6 +105,18 @@ Global
 		{F1B94619-9D1A-46DC-BE22-E110C8F82525}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1B94619-9D1A-46DC-BE22-E110C8F82525}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F1B94619-9D1A-46DC-BE22-E110C8F82525}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F895D87C-72CC-4400-9490-76449B126294}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F895D87C-72CC-4400-9490-76449B126294}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F895D87C-72CC-4400-9490-76449B126294}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F895D87C-72CC-4400-9490-76449B126294}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD657323-6443-415A-85DF-F2E94BD1C785}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD657323-6443-415A-85DF-F2E94BD1C785}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD657323-6443-415A-85DF-F2E94BD1C785}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD657323-6443-415A-85DF-F2E94BD1C785}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7CB454C-FA7E-417D-924C-4F43A4D336AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7CB454C-FA7E-417D-924C-4F43A4D336AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7CB454C-FA7E-417D-924C-4F43A4D336AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7CB454C-FA7E-417D-924C-4F43A4D336AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -122,6 +140,9 @@ Global
 		{7C5BDA24-DFF3-4807-BF01-4890B4BBDCC0} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 		{DD914906-5344-4EF2-A744-9C55945DCF87} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{F1B94619-9D1A-46DC-BE22-E110C8F82525} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
+		{F895D87C-72CC-4400-9490-76449B126294} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
+		{FD657323-6443-415A-85DF-F2E94BD1C785} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
+		{A7CB454C-FA7E-417D-924C-4F43A4D336AD} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
