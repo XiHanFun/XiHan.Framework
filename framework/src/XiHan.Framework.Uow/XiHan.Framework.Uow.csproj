@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Uow</Title>
+		<AssemblyName>XiHan.Framework.Uow</AssemblyName>
+		<PackageId>XiHan.Framework.Uow</PackageId>
+		<Description>曦寒框架工作单元库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>
