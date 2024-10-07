@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Ddd.Domain</Title>
+		<AssemblyName>XiHan.Framework.Ddd.Domain</AssemblyName>
+		<PackageId>XiHan.Framework.Ddd.Domain</PackageId>
+		<Description>曦寒框架领域驱动设计领域库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>
