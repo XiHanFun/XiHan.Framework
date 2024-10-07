@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Localization</Title>
+		<AssemblyName>XiHan.Framework.Localization</AssemblyName>
+		<PackageId>XiHan.Framework.Localization</PackageId>
+		<Description>曦寒框架本地化库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>

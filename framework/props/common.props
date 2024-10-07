@@ -25,6 +25,14 @@
 		<Copyright>Copyright ©2021-2024 ZhaiFanhua All Rights Reserved.</Copyright>
 		<!-- 构建时生成NuGet包 -->
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<!-- NuGet包图标 -->
+		<PackageIcon>readme.png</PackageIcon>
+		<!-- NuGet包附带的README文件 -->
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
+		<!-- 要求用户在接受许可证协议后才能安装包 -->
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<!-- NuGet包附带的许可证文件 -->
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<!-- 项目网址 -->
 		<PackageProjectUrl>https://docs.xihanfun.com</PackageProjectUrl>
 		<!-- 定义NuGet包的标签 -->
@@ -36,4 +44,23 @@
 		<!-- 指定用于签名的密钥文件 -->
 		<AssemblyOriginatorKeyFile>..\..\snks\XiHan.Framework.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
+
+	<!-- 其他文件包含 -->
+	<ItemGroup>
+		<!-- 将readme.png作为NuGet包图标 -->
+		<None Include="..\..\nuget\readme.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<!-- 将readme.md作为None类型文件包含在NuGet包中 -->
+		<None Include="..\..\nuget\readme.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<!-- 将LICENSE文件包含在NuGet包中 -->
+		<None Include="..\..\nuget\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 </Project>
