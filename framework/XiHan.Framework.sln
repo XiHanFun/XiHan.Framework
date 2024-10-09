@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Serializati
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -173,6 +175,10 @@ Global
 		{B98B1D96-284C-488E-8015-AEAE68D5B694}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B98B1D96-284C-488E-8015-AEAE68D5B694}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B98B1D96-284C-488E-8015-AEAE68D5B694}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -208,6 +214,7 @@ Global
 		{D1DD1559-0882-4505-98AD-200462D1FF27} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{2E0BA23F-69B0-443F-A5A3-B3DB7710B399} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{B98B1D96-284C-488E-8015-AEAE68D5B694} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
+		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
