@@ -3,10 +3,10 @@
 	<Import Project="..\..\props\common.props" />
 
 	<PropertyGroup>
-		<Title>XiHan.Framework.AspNetCore.Serilog</Title>
-		<AssemblyName>XiHan.Framework.AspNetCore.Serilog</AssemblyName>
-		<PackageId>XiHan.Framework.AspNetCore.Serilog</PackageId>
-		<Description>曦寒框架Web核心日志库</Description>
+		<Title>XiHan.Framework.AspNetCore.ApiDoc.Swagger</Title>
+		<AssemblyName>XiHan.Framework.AspNetCore.ApiDoc.Swagger</AssemblyName>
+		<PackageId>XiHan.Framework.AspNetCore.ApiDoc.Swagger</PackageId>
+		<Description>曦寒框架Web核心API文档Swagger库</Description>
 		<IsPackable>true</IsPackable>
 		<OutputType>Library</OutputType>
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

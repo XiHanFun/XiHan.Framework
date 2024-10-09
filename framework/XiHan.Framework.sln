@@ -17,11 +17,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5.AspNetCore Libraries", "5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework", "src\XiHan.Framework\XiHan.Framework.csproj", "{D7EEF707-13D1-45BA-8A6A-5C5865667A14}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Utils", "src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj", "{B77091EE-6CF4-428E-A70B-4D6BD38B61DD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Core", "src\XiHan.Framework.Core\XiHan.Framework.Core.csproj", "{DF92C723-DD3A-4795-9F39-170C34190869}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Bot", "src\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj", "{DD903512-8EDC-4FFC-A225-22479359D626}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Http", "src\XiHan.Framework.Http\XiHan.Framework.Http.csproj", "{9B7C406E-B120-4EDC-B347-A07FC7B8AB7C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Core", "src\XiHan.Framework.Core\XiHan.Framework.Core.csproj", "{DF92C723-DD3A-4795-9F39-170C34190869}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AI", "src\XiHan.Framework.AI\XiHan.Framework.AI.csproj", "{EEDFBCC6-3EF8-422F-A48D-EFB173DA65AB}"
 EndProject
@@ -29,48 +31,47 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.EventBus", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.BlobStoring", "src\XiHan.Framework.BlobStoring\XiHan.Framework.BlobStoring.csproj", "{43FAFB81-D9AF-4DC6-9D79-1267FFEC9DC4}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Caching", "src\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj", "{48F8F2FE-B0A3-443A-8708-14E9BD29E601}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Ddd.Application", "src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj", "{870621D0-AAB3-4DCB-8348-0D602D6E1580}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Ddd.Application.Contracts", "src\XiHan.Framework.Ddd.Application.Contracts\XiHan.Framework.Ddd.Application.Contracts.csproj", "{059302FB-38ED-45E1-8182-4ED133F04163}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Ddd.Domain", "src\XiHan.Framework.Ddd.Domain\XiHan.Framework.Ddd.Domain.csproj", "{06D9D05A-25DF-468E-9AEF-C4E905BD5D93}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Ddd.Domain.Shared", "src\XiHan.Framework.Ddd.Domain.Shared\XiHan.Framework.Ddd.Domain.Shared.csproj", "{067437E4-9DD8-499A-88BD-7467A1B21133}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.BackgroundJobs", "src\XiHan.Framework.BackgroundJobs\XiHan.Framework.BackgroundJobs.csproj", "{60B98879-E35F-4BB2-BF56-16DC9A50C994}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.BackgroundWorkers", "src\XiHan.Framework.BackgroundWorkers\XiHan.Framework.BackgroundWorkers.csproj", "{D1DD1559-0882-4505-98AD-200462D1FF27}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Uow", "src\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj", "{2E0BA23F-69B0-443F-A5A3-B3DB7710B399}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Serialization", "src\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj", "{B98B1D96-284C-488E-8015-AEAE68D5B694}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore", "src\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj", "{FC3DAEFA-FC39-4649-9A76-4FAB1CBB0202}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Utils", "src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj", "{B77091EE-6CF4-428E-A70B-4D6BD38B61DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.RealTime.SignalR", "src\XiHan.Framework.AspNetCore.RealTime.SignalR\XiHan.Framework.AspNetCore.RealTime.SignalR.csproj", "{036FE54B-33C9-466C-8088-4540F205EF82}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.SignalR", "src\XiHan.Framework.AspNetCore.SignalR\XiHan.Framework.AspNetCore.SignalR.csproj", "{036FE54B-33C9-466C-8088-4540F205EF82}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Serilog", "src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj", "{7C5BDA24-DFF3-4807-BF01-4890B4BBDCC0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Logging.Serilog", "src\XiHan.Framework.AspNetCore.Logging.Serilog\XiHan.Framework.AspNetCore.Logging.Serilog.csproj", "{7C5BDA24-DFF3-4807-BF01-4890B4BBDCC0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.SearchEngines", "src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj", "{DD914906-5344-4EF2-A744-9C55945DCF87}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Localization", "src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj", "{F1B94619-9D1A-46DC-BE22-E110C8F82525}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.JwtBearer", "src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj", "{F895D87C-72CC-4400-9490-76449B126294}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Authentication.JwtBearer", "src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj", "{F895D87C-72CC-4400-9490-76449B126294}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.OAuth", "src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj", "{FD657323-6443-415A-85DF-F2E94BD1C785}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Authentication.OAuth", "src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj", "{FD657323-6443-415A-85DF-F2E94BD1C785}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Authentication.OpenIdConnect", "src\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj", "{A7CB454C-FA7E-417D-924C-4F43A4D336AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Authentication.OpenIdConnect", "src\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj", "{A7CB454C-FA7E-417D-924C-4F43A4D336AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Caching", "src\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj", "{48F8F2FE-B0A3-443A-8708-14E9BD29E601}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Application", "src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj", "{870621D0-AAB3-4DCB-8348-0D602D6E1580}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Application.Contracts", "src\XiHan.Framework.Ddd.Application.Contracts\XiHan.Framework.Ddd.Application.Contracts.csproj", "{059302FB-38ED-45E1-8182-4ED133F04163}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Domain", "src\XiHan.Framework.Ddd.Domain\XiHan.Framework.Ddd.Domain.csproj", "{06D9D05A-25DF-468E-9AEF-C4E905BD5D93}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Domain.Shared", "src\XiHan.Framework.Ddd.Domain.Shared\XiHan.Framework.Ddd.Domain.Shared.csproj", "{067437E4-9DD8-499A-88BD-7467A1B21133}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.BackgroundJobs", "src\XiHan.Framework.BackgroundJobs\XiHan.Framework.BackgroundJobs.csproj", "{60B98879-E35F-4BB2-BF56-16DC9A50C994}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.BackgroundWorkers", "src\XiHan.Framework.BackgroundWorkers\XiHan.Framework.BackgroundWorkers.csproj", "{D1DD1559-0882-4505-98AD-200462D1FF27}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Uow", "src\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj", "{2E0BA23F-69B0-443F-A5A3-B3DB7710B399}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Serialization", "src\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj", "{B98B1D96-284C-488E-8015-AEAE68D5B694}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.ApiDoc.Swagger", "src\XiHan.Framework.AspNetCore.ApiDoc.Swagger\XiHan.Framework.AspNetCore.ApiDoc.Swagger.csproj", "{DF651542-8FA5-4EBE-A382-997A62953A40}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Swagger", "src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj", "{DF651542-8FA5-4EBE-A382-997A62953A40}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
