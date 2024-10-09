@@ -55,7 +55,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Applica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Domain", "src\XiHan.Framework.Ddd.Domain\XiHan.Framework.Ddd.Domain.csproj", "{06D9D05A-25DF-468E-9AEF-C4E905BD5D93}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Domain.Shared", "src\XiHan.Framework.Domain.Shared\XiHan.Framework.Domain.Shared.csproj", "{067437E4-9DD8-499A-88BD-7467A1B21133}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Domain.Shared", "src\XiHan.Framework.Ddd.Domain.Shared\XiHan.Framework.Ddd.Domain.Shared.csproj", "{067437E4-9DD8-499A-88BD-7467A1B21133}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.BackgroundJobs", "src\XiHan.Framework.BackgroundJobs\XiHan.Framework.BackgroundJobs.csproj", "{60B98879-E35F-4BB2-BF56-16DC9A50C994}"
 EndProject
