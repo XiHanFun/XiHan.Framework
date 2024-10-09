@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.CodeGeneration</Title>
+		<AssemblyName>XiHan.Framework.CodeGeneration</AssemblyName>
+		<PackageId>XiHan.Framework.CodeGeneration</PackageId>
+		<Description>曦寒框架代码生成库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>
