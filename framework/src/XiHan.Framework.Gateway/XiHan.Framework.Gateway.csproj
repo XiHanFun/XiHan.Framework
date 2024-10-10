@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Gateway</Title>
+		<AssemblyName>XiHan.Framework.Gateway</AssemblyName>
+		<PackageId>XiHan.Framework.Gateway</PackageId>
+		<Description>曦寒框架网关库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>

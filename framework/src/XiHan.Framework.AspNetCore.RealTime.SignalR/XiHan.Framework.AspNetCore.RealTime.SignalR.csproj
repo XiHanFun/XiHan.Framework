@@ -6,7 +6,7 @@
 		<Title>XiHan.Framework.AspNetCore.RealTime.SignalR</Title>
 		<AssemblyName>XiHan.Framework.AspNetCore.RealTime.SignalR</AssemblyName>
 		<PackageId>XiHan.Framework.AspNetCore.RealTime.SignalR</PackageId>
-		<Description>曦寒框架Web核心即时SignalR库</Description>
+		<Description>曦寒框架Web核心即时通信SignalR库</Description>
 		<IsPackable>true</IsPackable>
 		<OutputType>Library</OutputType>
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

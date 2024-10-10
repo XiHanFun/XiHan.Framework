@@ -6,7 +6,7 @@
 		<Title>XiHan.Framework.EntityFrameworkCore</Title>
 		<AssemblyName>XiHan.Framework.EntityFrameworkCore</AssemblyName>
 		<PackageId>XiHan.Framework.EntityFrameworkCore</PackageId>
-		<Description>曦寒框架对象关系映射（ORM）和数据库访问库</Description>
+		<Description>曦寒框架实体框架核心库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 

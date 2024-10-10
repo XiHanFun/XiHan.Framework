@@ -71,9 +71,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.EntityFrameworkCore", "src\XiHan.Framework.EntityFrameworkCore\XiHan.Framework.EntityFrameworkCore.csproj", "{72D92811-E41F-43C1-8272-0F12ADCE4A25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.EntityFrameworkCore", "src\XiHan.Framework.EntityFrameworkCore\XiHan.Framework.EntityFrameworkCore.csproj", "{72D92811-E41F-43C1-8272-0F12ADCE4A25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Refit", "src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj", "{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Refit", "src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj", "{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Gateway", "src\XiHan.Framework.Gateway\XiHan.Framework.Gateway.csproj", "{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Plugin", "src\XiHan.Framework.Plugin\XiHan.Framework.Plugin.csproj", "{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -197,6 +201,14 @@ Global
 		{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -236,6 +248,8 @@ Global
 		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{72D92811-E41F-43C1-8272-0F12ADCE4A25} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{75AF9C8C-C70F-4EB3-9509-C7F882F7F965} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
+		{DF6E550A-DDBE-4781-93C8-4EFFD918B37D} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
+		{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
