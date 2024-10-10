@@ -6,7 +6,7 @@
 		<Title>XiHan.Framework.AspNetCore.ApiDoc.Swagger</Title>
 		<AssemblyName>XiHan.Framework.AspNetCore.ApiDoc.Swagger</AssemblyName>
 		<PackageId>XiHan.Framework.AspNetCore.ApiDoc.Swagger</PackageId>
-		<Description>曦寒框架Web核心API文档Swagger库</Description>
+		<Description>曦寒框架Web核心Api文档Swagger库</Description>
 		<IsPackable>true</IsPackable>
 		<OutputType>Library</OutputType>
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
