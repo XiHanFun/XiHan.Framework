@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Plugin</Title>
+		<AssemblyName>XiHan.Framework.Plugin</AssemblyName>
+		<PackageId>XiHan.Framework.Plugin</PackageId>
+		<Description>曦寒框架插件库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+</Project>
