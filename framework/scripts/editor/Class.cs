@@ -2,7 +2,7 @@
 
 // ----------------------------------------------------------------
 // Copyright ©$year$ ZhaiFanhua All Rights Reserved.
-// Licensed under the MulanPSL2 License. See LICENSE in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:$safeitemname$
 // Guid:$guid1$
 // Author:$username$
