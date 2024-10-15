@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AesEncryptionHelper
+// FileName:AesHelper
 // Guid:2494125d-816b-41f8-ba8e-7eadfa890095
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -20,8 +20,10 @@ namespace XiHan.Framework.Utils.Encryptions;
 /// <summary>
 /// Aes 加密解密
 /// </summary>
-/// <remarks>比 Des 加密更加安全</remarks>
-public static class AesEncryptionHelper
+/// <remarks>
+/// 是一种对称密钥加密算法，广泛用于数据加密和保护。
+/// </remarks>
+public static class AesHelper
 {
     // AES KEY 的位数
     private const int KeySize = 256;
