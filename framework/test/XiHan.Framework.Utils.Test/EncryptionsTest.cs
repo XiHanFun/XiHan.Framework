@@ -36,6 +36,31 @@ internal static class EncryptionsTest
     }
 
     /// <summary>
+    /// RsaHelper Test
+    /// </summary>
+    public static void RsaHelperTest()
+    {
+        Console.WriteLine("RsaHelper Test");
+
+        var data = "RsaHelperTest";
+        var (publicKey, privateKey) = RsaHelper.GenerateKeys();
+        Console.WriteLine($"publicKey:{publicKey}");
+        Console.WriteLine($"privateKey:{privateKey}");
+
+        var encryptData = RsaHelper.Encrypt(data, publicKey);
+        Console.WriteLine($"encryptData:{encryptData}");
+
+        var decryptData = RsaHelper.Decrypt(encryptData, privateKey);
+        Console.WriteLine($"decryptData:{decryptData}");
+
+        var signData = RsaHelper.SignData(data, privateKey);
+        Console.WriteLine($"signData:{signData}");
+
+        var verify = RsaHelper.VerifyData(data, signData, publicKey);
+        Console.WriteLine($"verify:{verify}");
+    }
+
+    /// <summary>
     /// EcdsaHelper Test
     /// </summary>
     public static void EcdsaHelperTest()
@@ -47,10 +72,10 @@ internal static class EncryptionsTest
         Console.WriteLine($"publicKey:{publicKey}");
         Console.WriteLine($"privateKey:{privateKey}");
 
-        var signature = EcdsaHelper.SignData(data, privateKey);
-        Console.WriteLine($"signature:{signature}");
+        var signData = EcdsaHelper.SignData(data, privateKey);
+        Console.WriteLine($"signData:{signData}");
 
-        var verify = EcdsaHelper.VerifyData(data, signature, publicKey);
+        var verify = EcdsaHelper.VerifyData(data, signData, publicKey);
         Console.WriteLine($"verify:{verify}");
     }
 }

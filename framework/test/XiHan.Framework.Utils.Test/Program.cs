@@ -2,6 +2,9 @@
 
 Console.WriteLine("Hello, Test!");
 
-EncryptionsTest.EcdsaHelperTest();
+//EncryptionsTest.AesHelperTest();
+//EncryptionsTest.DesHelperTest();
+//EncryptionsTest.RsaHelperTest();
+//EncryptionsTest.EcdsaHelperTest();
 
 Console.ReadKey();
