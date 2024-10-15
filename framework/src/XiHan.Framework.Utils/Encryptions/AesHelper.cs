@@ -52,25 +52,20 @@ public static class AesHelper
             rng.GetBytes(salt);
         }
 
-        // 扩展密码为 IV 和 KEY
-        var key = DeriveKey(password, salt, KeySize / 8);
-        var iv = DeriveKey(password, salt, BlockSize / 8);
-
         using var aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
+        // 扩展密码为 IV 和 KEY
+        aes.Key = DeriveKey(password, salt, KeySize / 8);
+        aes.IV = DeriveKey(password, salt, BlockSize / 8);
 
         // 加密算法
         string cipherText;
-        using (MemoryStream cipherStream = new())
-        {
-            using CryptoStream cryptoStream = new(cipherStream, aes.CreateEncryptor(), CryptoStreamMode.Write);
-            var plainBytes = Encoding.UTF8.GetBytes(plainText);
-            cryptoStream.Write(plainBytes, 0, plainBytes.Length);
-            cryptoStream.FlushFinalBlock();
-            var cipherBytes = cipherStream.ToArray();
-            cipherText = Convert.ToBase64String(cipherBytes);
-        }
+        using var ms = new MemoryStream();
+        using var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        cs.Write(plainBytes, 0, plainBytes.Length);
+        cs.FlushFinalBlock();
+        var cipherBytes = ms.ToArray();
+        cipherText = Convert.ToBase64String(cipherBytes);
 
         // 返回加密结果
         return $"{Convert.ToBase64String(salt)}{Separator}{cipherText}";
@@ -97,20 +92,17 @@ public static class AesHelper
         var salt = Convert.FromBase64String(parts[0]);
         var cipherBytes = Convert.FromBase64String(parts[1]);
 
-        // 扩展密码为 IV 和 KEY
-        var key = DeriveKey(password, salt, KeySize / 8);
-        var iv = DeriveKey(password, salt, BlockSize / 8);
-
         using var aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
+        // 扩展密码为 IV 和 KEY
+        aes.Key = DeriveKey(password, salt, KeySize / 8);
+        aes.IV = DeriveKey(password, salt, BlockSize / 8);
 
         // 解密算法
-        using MemoryStream plainStream = new();
-        using CryptoStream cryptoStream = new(plainStream, aes.CreateDecryptor(), CryptoStreamMode.Write);
-        cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
-        cryptoStream.FlushFinalBlock();
-        var plainBytes = plainStream.ToArray();
+        using var ms = new MemoryStream();
+        using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
+        cs.Write(cipherBytes, 0, cipherBytes.Length);
+        cs.FlushFinalBlock();
+        var plainBytes = ms.ToArray();
         var plainText = Encoding.UTF8.GetString(plainBytes);
 
         // 返回解密结果
@@ -126,7 +118,7 @@ public static class AesHelper
     /// <returns></returns>
     private static byte[] DeriveKey(string password, byte[] salt, int bytes)
     {
-        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, Iterations, HashAlgorithmName.SHA256);
+        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
         return pbkdf2.GetBytes(bytes);
     }
 }
