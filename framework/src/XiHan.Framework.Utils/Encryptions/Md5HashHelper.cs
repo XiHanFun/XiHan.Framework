@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:Md5HashEncryptionHelper
+// FileName:Md5HashHelper
 // Guid:bae8de8e-d5f1-4bad-b023-a1ec75174113
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,12 @@ using System.Text;
 namespace XiHan.Framework.Utils.Encryptions;
 
 /// <summary>
-/// Md5 生成哈希类
+/// Md5 生成哈希
 /// </summary>
-public static class Md5HashEncryptionHelper
+/// <remarks>
+/// 是一种哈希函数，它基于Merkle-Damgård结构，通过一系列的位运算、非线性函数、模加运算等步骤，将任意长度的输入消息压缩为一个固定长度的输出（128位的哈希值，也称为消息摘要）。
+/// </remarks>
+public static class Md5HashHelper
 {
     /// <summary>
     /// 对字符串进行 MD5 生成哈希
