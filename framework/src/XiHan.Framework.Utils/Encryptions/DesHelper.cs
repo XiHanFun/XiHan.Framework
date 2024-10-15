@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DesEncryptionHelper
+// FileName:DesHelper
 // Guid:0be48243-b820-4de9-a46f-77f7e808dd6f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,7 +19,10 @@ namespace XiHan.Framework.Utils.Encryptions;
 /// <summary>
 /// Des 加密解密
 /// </summary>
-public static class DesEncryptionHelper
+/// <remarks>
+/// 是一种对称密钥加密算法，广泛用于数据加密。
+/// </remarks>
+public static class DesHelper
 {
     // 默认密码
     private static readonly string DefaultPassword = "ZhaiFanhua";
@@ -36,7 +39,7 @@ public static class DesEncryptionHelper
     /// <summary>
     /// 构造函数
     /// </summary>
-    static DesEncryptionHelper()
+    static DesHelper()
     {
         using var rdb = new Rfc2898DeriveBytes(DefaultPassword, new byte[8], Iterations, HashAlgorithmName.SHA256);
         KeyBytes = rdb.GetBytes(8);
