@@ -69,33 +69,23 @@ public static partial class EncodeExtensions
     }
 
     /// <summary>
-    /// 将字符串转化为二进制
+    /// 对字符串进行 URL 编码
     /// </summary>
-    /// <param name="data">待转换的字符串</param>
-    /// <returns>转换后的二进制数组</returns>
-    public static byte[] ToBinary(this string data)
+    /// <param name="data">待编码的字符串</param>
+    /// <returns>编码后的字符串</returns>
+    public static string UrlEncode(this string data)
     {
-        return Encoding.UTF8.GetBytes(data);
+        return WebUtility.UrlEncode(data);
     }
 
     /// <summary>
-    /// 将字符串转化为文件流
+    /// 对 URL 编码的字符串进行解码
     /// </summary>
-    /// <param name="data">待转换的字符串</param>
-    /// <returns>转换后的二进制数组</returns>
-    public static Stream ToStream(this string data)
+    /// <param name="data">待解码的字符串</param>
+    /// <returns>解码后的字符串</returns>
+    public static string UrlDecode(this string data)
     {
-        return new MemoryStream(Encoding.UTF8.GetBytes(data));
-    }
-
-    /// <summary>
-    /// 将二进制数据转化为字符串
-    /// </summary>
-    /// <param name="data">待转换的二进制数组</param>
-    /// <returns>转换后的字符串</returns>
-    public static string FromBinary(this byte[] data)
-    {
-        return Encoding.UTF8.GetString(data);
+        return WebUtility.UrlDecode(data);
     }
 
     /// <summary>
@@ -116,6 +106,69 @@ public static partial class EncodeExtensions
     public static string HtmlDecode(this string data)
     {
         return HttpUtility.HtmlDecode(data);
+    }
+
+    /// <summary>
+    /// 将字符串转化为二进制
+    /// </summary>
+    /// <param name="data">待转换的字符串</param>
+    /// <returns>转换后的二进制数组</returns>
+    public static byte[] ToBinary(this string data)
+    {
+        return Encoding.UTF8.GetBytes(data);
+    }
+
+    /// <summary>
+    /// 将二进制数据转化为字符串
+    /// </summary>
+    /// <param name="data">待转换的二进制数组</param>
+    /// <returns>转换后的字符串</returns>
+    public static string FromBinary(this byte[] data)
+    {
+        return Encoding.UTF8.GetString(data);
+    }
+
+    /// <summary>
+    /// 将二进制数组转化为文件流
+    /// </summary>
+    /// <param name="data">待转换的二进制数组</param>
+    /// <returns>转换后的文件流</returns>
+    public static Stream ToStream(this byte[] data)
+    {
+        return new MemoryStream(data);
+    }
+
+    /// <summary>
+    /// 将字符串转化为文件流
+    /// </summary>
+    /// <param name="data">待转换的字符串</param>
+    /// <returns>转换后的文件流</returns>
+    public static Stream ToStream(this string data)
+    {
+        return new MemoryStream(Encoding.UTF8.GetBytes(data));
+    }
+
+    /// <summary>
+    /// 将流转为字符串
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <returns></returns>
+    public static string ToString(this Stream stream)
+    {
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
+    /// <summary>
+    /// 将流转为字节数组
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <returns></returns>
+    public static byte[] ToBytes(this Stream stream)
+    {
+        using var ms = new MemoryStream();
+        stream.CopyTo(ms);
+        return ms.ToArray();
     }
 
     /// <summary>
@@ -140,26 +193,6 @@ public static partial class EncodeExtensions
     public static string FromUnicode(this string data)
     {
         return UnicodeRegex().Replace(data, match => ((char)int.Parse(match.Groups[1].Value, System.Globalization.NumberStyles.HexNumber)).ToString());
-    }
-
-    /// <summary>
-    /// 对字符串进行 URL 编码
-    /// </summary>
-    /// <param name="data">待编码的字符串</param>
-    /// <returns>编码后的字符串</returns>
-    public static string UrlEncode(this string data)
-    {
-        return WebUtility.UrlEncode(data);
-    }
-
-    /// <summary>
-    /// 对 URL 编码的字符串进行解码
-    /// </summary>
-    /// <param name="data">待解码的字符串</param>
-    /// <returns>解码后的字符串</returns>
-    public static string UrlDecode(this string data)
-    {
-        return WebUtility.UrlDecode(data);
     }
 
     [GeneratedRegex(@"\\u([0-9A-Za-z]{4})")]

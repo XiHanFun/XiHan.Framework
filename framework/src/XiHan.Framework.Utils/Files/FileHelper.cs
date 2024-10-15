@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
-using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Files;
 
@@ -420,19 +419,7 @@ public static class FileHelper
     /// <exception cref="Exception"></exception>
     public static bool IsContainsFiles(string directoryPath, string searchPattern)
     {
-        try
-        {
-            // 获取指定的文件列表
-            var fileNames = GetFiles(directoryPath, searchPattern, false);
-            // 判断指定文件是否存在
-            return fileNames.Length != 0;
-        }
-        catch (Exception ex)
-        {
-            ex.ThrowAndConsoleError("获取文件信息出错!");
-        }
-
-        return false;
+        return IsContainsFiles(directoryPath, searchPattern, false);
     }
 
     /// <summary>
@@ -445,19 +432,10 @@ public static class FileHelper
     /// <exception cref="Exception"></exception>
     public static bool IsContainsFiles(string directoryPath, string searchPattern, bool isSearchChild)
     {
-        try
-        {
-            // 获取指定的文件列表
-            var fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
-            // 判断指定文件是否存在
-            return fileNames.Length != 0;
-        }
-        catch (Exception ex)
-        {
-            ex.ThrowAndConsoleError("获取文件信息出错!");
-        }
-
-        return false;
+        // 获取指定的文件列表
+        var fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
+        // 判断指定文件是否存在
+        return fileNames.Length != 0;
     }
 
     /// <summary>

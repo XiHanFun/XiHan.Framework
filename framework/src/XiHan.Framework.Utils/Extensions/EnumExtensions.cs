@@ -27,10 +27,9 @@ public static class EnumExtensions
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public static TEnum GetEnumByName<TEnum>(this string name) where TEnum : struct
+    public static TEnum ToEnum<TEnum>(this string name) where TEnum : struct
     {
-        var tEnum = Enum.Parse<TEnum>(name, true);
-        return tEnum;
+        return Enum.TryParse<TEnum>(name, out var result) ? result : throw new ArgumentException("无效的枚举值！", nameof(name));
     }
 
     /// <summary>
@@ -38,11 +37,11 @@ public static class EnumExtensions
     /// </summary>
     /// <param name="keyEnum"></param>
     /// <returns></returns>
-    public static int GetEnumValueByKey(this Enum keyEnum)
+    public static int GetValue(this Enum keyEnum)
     {
         var enumName = keyEnum.ToString();
         var field = keyEnum.GetType().GetField(enumName);
-        return field == null ? throw new ArgumentException(null, nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
+        return field == null ? throw new ArgumentException("无效的枚举！", nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
     }
 
     /// <summary>
@@ -50,36 +49,11 @@ public static class EnumExtensions
     /// </summary>
     /// <param name="keyEnum"></param>
     /// <returns></returns>
-    public static string GetEnumDescriptionByKey(this Enum keyEnum)
+    public static string GetDescription(this Enum keyEnum)
     {
-        var enumName = keyEnum.ToString();
-        var field = keyEnum.GetType().GetField(enumName);
-        return field == null
-            ? string.Empty
-            : field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description
-                ? description.Description
-                : string.Empty;
-    }
-
-    /// <summary>
-    /// 根据值获取单个枚举的描述信息
-    /// </summary>
-    /// <param name="enumValue"></param>
-    /// <returns></returns>
-    public static string GetEnumDescriptionByValue<TEnum>(this object enumValue)
-    {
-        var description = string.Empty;
-        try
-        {
-            var tEnum = Enum.Parse(typeof(TEnum), enumValue.ParseToString()) as Enum;
-            description = tEnum!.GetEnumDescriptionByKey();
-        }
-        catch (Exception ex)
-        {
-            ("获取单个枚举的描述信息出错，" + ex.Message).WriteLineError();
-        }
-
-        return description;
+        var field = keyEnum.GetType().GetField(keyEnum.ToString());
+        var attribute = field?.GetCustomAttribute<DescriptionAttribute>();
+        return attribute?.Description ?? throw new ArgumentException("枚举无描述信息！", nameof(keyEnum));
     }
 
     /// <summary>
@@ -89,12 +63,12 @@ public static class EnumExtensions
     /// <returns></returns>
     public static IEnumerable<EnumDescInfo> GetEnumInfos(this Type enumType)
     {
-        List<EnumDescInfo> result = [];
-        var fields = enumType.GetFields().Skip(1).ToList();
-        fields.ForEach(field =>
+        var result = new List<EnumDescInfo>();
+        var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
+        foreach (var field in fields)
         {
-            // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum) return;
+            if (!field.FieldType.IsEnum)
+                continue;
 
             var desc = string.Empty;
             if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
@@ -102,11 +76,11 @@ public static class EnumExtensions
 
             result.Add(new EnumDescInfo
             {
-                Key = field.Name.ToString(),
+                Key = field.Name,
                 Value = (int)field.GetRawConstantValue()!,
                 Label = desc
             });
-        });
+        }
         return result;
     }
 
@@ -115,22 +89,21 @@ public static class EnumExtensions
     /// </summary>
     /// <param name="enumType"></param>
     /// <returns></returns>
-    public static Dictionary<int, string> GetEnumValueDescriptionToDictionary(this Type enumType)
+    public static IDictionary<int, string> GetEnumInfoDictionary(this Type enumType)
     {
-        Dictionary<int, string> result = [];
-        var fields = enumType.GetFields().ToList();
-        if (fields.Count != 0) return result;
-
-        fields.ForEach(field =>
+        var result = new Dictionary<int, string>();
+        var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
+        foreach (var field in fields)
         {
-            // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum) return;
+            if (!field.FieldType.IsEnum)
+                continue;
+
             var desc = string.Empty;
             if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
                 desc = description.Description;
 
             result.Add((int)field.GetRawConstantValue()!, desc);
-        });
+        }
         return result;
     }
 }
@@ -143,7 +116,7 @@ public record EnumDescInfo
     /// <summary>
     /// 键
     /// </summary>
-    public string Key { get; set; } = string.Empty;
+    public string Key { get; init; } = string.Empty;
 
     /// <summary>
     /// 值
