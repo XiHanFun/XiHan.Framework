@@ -1,8 +1,22 @@
-﻿using XiHan.Framework.Utils.Encryptions;
+﻿#region <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Test;
+// ----------------------------------------------------------------
+// Copyright ©2024 ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:EncryptionsTest
+// Guid:ca687409-18d9-4f92-96f5-2583e34603d7
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2024/10/16 4:38:52
+// ----------------------------------------------------------------
 
-internal static class EncryptionsTest
+#endregion <<版权版本注释>>
+
+using XiHan.Framework.Utils.Encryptions;
+
+namespace XiHan.Framework.Utils.Test.Encryptions;
+
+public class EncryptionsTest
 {
     /// <summary>
     /// AesHelper Test

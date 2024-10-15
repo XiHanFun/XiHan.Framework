@@ -19,42 +19,61 @@ namespace XiHan.Framework.Utils.Exceptions;
 /// <summary>
 /// 自定义异常
 /// </summary>
+/// <remarks>
+/// 优先级低于 <see cref="XiHanException"></see>
+/// </remarks>
 public class CustomException : Exception
 {
-    /// <summary>
-    /// 提示信息
-    /// </summary>
-    public new string? Message { get; set; }
-
-    /// <summary>
-    /// 异常详情
-    /// </summary>
-    public new Exception? InnerException { get; set; }
+    private const string DefaultMessage = "服务器端程序自定义异常。";
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public CustomException() : base("服务器端程序错误")
+    public CustomException() : base(DefaultMessage)
     {
+        DefaultMessage.WriteLineError();
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="message"></param>
-    public CustomException(string? message) : base(message)
+    public CustomException(string? message) : base(DefaultMessage + message)
     {
-        message?.WriteLineError();
+        (DefaultMessage + message).WriteLineError();
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="message"></param>
-    /// <param name="innerException"></param>
-    public CustomException(string? message, Exception? innerException) : base(message, innerException)
+    /// <param name="exception"></param>
+    public CustomException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
     {
-        message?.WriteLineError();
-        throw innerException!;
+        (DefaultMessage + message).WriteLineError();
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw()
+    {
+        throw new CustomException();
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw(string? message)
+    {
+        throw new CustomException(message);
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw(string? message, Exception? exception)
+    {
+        throw new CustomException(message, exception);
     }
 }

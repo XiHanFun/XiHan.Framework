@@ -82,7 +82,17 @@ public static class ConsoleExtensions
     /// </summary>
     /// <param name="inputStr"></param>
     /// <param name="frontColor"></param>
-    public static void WriteLineError(this string? inputStr, ConsoleColor frontColor = ConsoleColor.Red)
+    public static void WriteLineError(this string? inputStr, ConsoleColor frontColor = ConsoleColor.Magenta)
+    {
+        WriteColorLine(inputStr, frontColor);
+    }
+
+    /// <summary>
+    /// 危险、异常信息
+    /// </summary>
+    /// <param name="inputStr"></param>
+    /// <param name="frontColor"></param>
+    public static void WriteLineDanger(this string? inputStr, ConsoleColor frontColor = ConsoleColor.Red)
     {
         WriteColorLine(inputStr, frontColor);
     }

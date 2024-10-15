@@ -12,21 +12,26 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Extensions;
+
 namespace XiHan.Framework.Utils.Exceptions;
 
 /// <summary>
-/// 曦寒特定异常
-/// 为特定异常抛出的基本异常类型
+/// 曦寒框架异常，为特定异常抛出的基本异常类型
 /// </summary>
+/// <remarks>
+/// 优先级最高，高于 <see cref="CustomException"></see> 和其他异常
+/// </remarks>
 public class XiHanException : Exception
 {
-    private const string DefaultMessage = "曦寒特定异常。";
+    private const string DefaultMessage = "曦寒框架异常。";
 
     /// <summary>
     /// 构造函数
     /// </summary>
     public XiHanException() : base(DefaultMessage)
     {
+        DefaultMessage.WriteLineDanger();
     }
 
     /// <summary>
@@ -35,14 +40,40 @@ public class XiHanException : Exception
     /// <param name="message"></param>
     public XiHanException(string? message) : base(DefaultMessage + message)
     {
+        (DefaultMessage + message).WriteLineDanger();
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="message"></param>
-    /// <param name="innerException"></param>
-    public XiHanException(string? message, Exception? innerException) : base(DefaultMessage + message, innerException)
+    /// <param name="exception"></param>
+    public XiHanException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
     {
+        (DefaultMessage + message).WriteLineDanger();
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw()
+    {
+        throw new XiHanException();
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw(string? message)
+    {
+        throw new XiHanException(message);
+    }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw(string? message, Exception? exception)
+    {
+        throw new XiHanException(message, exception);
     }
 }
