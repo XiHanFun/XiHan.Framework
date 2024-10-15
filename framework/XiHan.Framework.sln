@@ -67,8 +67,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.ApiDoc.Swagger", "src\XiHan.Framework.AspNetCore.ApiDoc.Swagger\XiHan.Framework.AspNetCore.ApiDoc.Swagger.csproj", "{DF651542-8FA5-4EBE-A382-997A62953A40}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.EntityFrameworkCore", "src\XiHan.Framework.EntityFrameworkCore\XiHan.Framework.EntityFrameworkCore.csproj", "{72D92811-E41F-43C1-8272-0F12ADCE4A25}"
@@ -79,7 +77,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Gateway", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Plugin", "src\XiHan.Framework.Plugin\XiHan.Framework.Plugin.csproj", "{72998B1D-ED71-4FAA-A26A-34FA1A61DC9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Utils.Test", "test\XiHan.Framework.Utils.Test\XiHan.Framework.Utils.Test.csproj", "{CC2163DA-1C03-4423-B9B1-4AF7FBE60E19}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Utils.Test", "test\XiHan.Framework.Utils.Test\XiHan.Framework.Utils.Test.csproj", "{CC2163DA-1C03-4423-B9B1-4AF7FBE60E19}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
