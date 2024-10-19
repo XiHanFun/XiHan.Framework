@@ -13,8 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
-using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Shells;
+using XiHan.Framework.Utils.Diagnostics;
+using XiHan.Framework.Utils.Extensions.System;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
@@ -75,7 +76,7 @@ public static class DiskHelper
         }
         catch (Exception ex)
         {
-            ("获取处理器信息出错，" + ex.Message).WriteLineError();
+            ConsoleHelper.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return diskInfos;
