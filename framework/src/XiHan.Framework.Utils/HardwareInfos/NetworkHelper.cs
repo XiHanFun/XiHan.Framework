@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Net.NetworkInformation;
-using XiHan.Framework.Utils.Extensions;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
@@ -58,7 +58,7 @@ public static class NetworkHelper
         }
         catch (Exception ex)
         {
-            ("获取网卡信息出错，" + ex.Message).WriteLineError();
+            ConsoleHelper.Error("获取网卡信息出错，" + ex.Message);
         }
 
         return networkInfos;

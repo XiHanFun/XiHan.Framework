@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
-using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Shells;
+using XiHan.Framework.Utils.Diagnostics;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
@@ -77,7 +77,7 @@ public static class BoardHelper
         }
         catch (Exception ex)
         {
-            ("获取主板信息出错，" + ex.Message).WriteLineError();
+            ConsoleHelper.Error("获取主板信息出错，" + ex.Message);
         }
 
         return boardInfo;
