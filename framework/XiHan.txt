@@ -1,6 +1,5 @@
 // 1.Base
 XiHan.Framework  // 曦寒框架库
-XiHan.Framework.Utils  // 曦寒框架工具库
 
 // 2.Core
 XiHan.Framework.Core  // 曦寒框架核心库
@@ -26,6 +25,7 @@ XiHan.Framework.Plugin  // 曦寒框架插件库
 XiHan.Framework.SearchEngines  // 曦寒框架搜索引擎库
 XiHan.Framework.Serialization  // 曦寒框架序列化库
 XiHan.Framework.Uow  // 曦寒框架单元工作库
+XiHan.Framework.Utils  // 曦寒框架工具库
 
 // 4.AspNetCore
 XiHan.Framework.AspNetCore  // 曦寒框架Web核心库
