@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Extensions.Collections.Generic;
+using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 
 namespace XiHan.Framework.Core.Logging;
 

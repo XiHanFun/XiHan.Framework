@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Extensions.Collections.Generic;
+namespace XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 
 /// <summary>
 /// 可列举扩展方法
