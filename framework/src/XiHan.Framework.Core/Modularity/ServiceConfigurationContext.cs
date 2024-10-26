@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
-using XiHan.Framework.Utils.Extensions.Collections.Generic;
+using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.Modularity;
