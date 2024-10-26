@@ -126,7 +126,7 @@ public static class DirectoryHelper
     /// 获取目录中所有文件的路径
     /// </summary>
     /// <param name="directoryPath">目录的路径 </param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例："Log*.xml"表示搜索所有以Log开头的Xml文件</param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml文件</param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns>包含目录中所有文件路径的数组</returns>
     public static string[] GetFiles(string directoryPath, string searchPattern, bool isSearchChild)
@@ -149,7 +149,7 @@ public static class DirectoryHelper
     /// 获取指定目录及子目录中所有子目录列表
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例："Log*.xml"表示搜索所有以Log开头的Xml目录</param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml目录</param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns>包含目录中所有文件路径的数组</returns>
     public static string[] GetDirectories(string directoryPath, string searchPattern, bool isSearchChild)
@@ -196,7 +196,7 @@ public static class DirectoryHelper
     /// 检测指定目录中是否存在指定的文件(搜索子目录)
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例："Log*.xml"表示搜索所有以Log开头的Xml文件 </param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml文件 </param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>

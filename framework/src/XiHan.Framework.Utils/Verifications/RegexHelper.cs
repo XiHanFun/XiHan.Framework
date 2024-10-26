@@ -53,7 +53,7 @@ public static partial class RegexHelper
     #region 是否中国电话
 
     /// <summary>
-    /// 电话号码(正确格式为：xxxxxxxxxx或xxxxxxxxxxxx)
+    /// 电话号码(正确格式为:xxxxxxxxxx或xxxxxxxxxxxx)
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -358,7 +358,7 @@ public static partial class RegexHelper
     #region 是否特殊字符
 
     /// <summary>
-    /// 是否含有=，。：等特殊字符
+    /// 是否含有=，。:等特殊字符
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -427,7 +427,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// 一年的12个月(正确格式为："01"～"09"和"1"～"12")
+    /// 一年的12个月(正确格式为:"01"～"09"和"1"～"12")
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -437,7 +437,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// 一月的31天(正确格式为："01"～"09"和"1"～"31")
+    /// 一月的31天(正确格式为:"01"～"09"和"1"～"31")
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>

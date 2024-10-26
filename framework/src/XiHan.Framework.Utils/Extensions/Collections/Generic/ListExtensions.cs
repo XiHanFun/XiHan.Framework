@@ -343,7 +343,7 @@ public static class ListExtensions
         {
             if (inProcess)
             {
-                throw new ArgumentException("发现循环依赖！项：" + item);
+                throw new ArgumentException("发现循环依赖！项:" + item);
             }
         }
         else
