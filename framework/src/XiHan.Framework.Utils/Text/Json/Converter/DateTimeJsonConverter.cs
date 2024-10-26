@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.System.Text.Json.Converter;
 
 /// <summary>
 /// DateTimeJsonConverter
-/// 参考定义：
+/// 参考定义:
 /// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class DateTimeJsonConverter : JsonConverter<DateTime>
@@ -70,7 +70,7 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
 
 /// <summary>
 /// DateTimeNullableConverter
-/// 参考定义：
+/// 参考定义:
 /// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class DateTimeNullableConverter : JsonConverter<DateTime?>

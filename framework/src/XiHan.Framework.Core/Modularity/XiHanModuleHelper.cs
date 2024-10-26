@@ -32,7 +32,7 @@ public static class XiHanModuleHelper
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
         var moduleTypes = new List<Type>();
-        logger?.Log(LogLevel.Information, "加载曦寒模块：");
+        logger?.Log(LogLevel.Information, "加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         return moduleTypes;
     }
@@ -133,7 +133,7 @@ public static class XiHanModuleHelper
     {
         if (!IsXiHanModule(moduleType))
         {
-            throw new ArgumentException("给定的类型不是曦寒模块：" + moduleType.AssemblyQualifiedName);
+            throw new ArgumentException("给定的类型不是曦寒模块:" + moduleType.AssemblyQualifiedName);
         }
     }
 }

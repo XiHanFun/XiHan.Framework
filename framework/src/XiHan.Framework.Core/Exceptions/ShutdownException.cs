@@ -3,33 +3,30 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanException
-// Guid:c3257c2c-f925-47b1-9cac-d0814fb4293c
+// FileName:ShutdownException
+// Guid:bacd3ec2-7edc-4e4c-a9ef-4960dd18508e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/10/11 6:58:37
+// CreateTime:2024/10/26 21:20:20
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Exceptions;
+namespace XiHan.Framework.Core.Exceptions;
 
 /// <summary>
-/// 曦寒框架异常，为特定异常抛出的基本异常类型
+/// 关闭过程异常
 /// </summary>
-/// <remarks>
-/// 优先级最高，高于 <see cref="CustomException"></see> 和其他异常
-/// </remarks>
-public class XiHanException : Exception
+public class ShutdownException : Exception
 {
-    private const string DefaultMessage = "曦寒框架异常。";
+    private const string DefaultMessage = "程序关闭过程异常。";
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public XiHanException() : base(DefaultMessage)
+    public ShutdownException() : base(DefaultMessage)
     {
         ConsoleHelper.Danger(DefaultMessage);
     }
@@ -38,7 +35,7 @@ public class XiHanException : Exception
     /// 构造函数
     /// </summary>
     /// <param name="message"></param>
-    public XiHanException(string? message) : base(DefaultMessage + message)
+    public ShutdownException(string? message) : base(DefaultMessage + message)
     {
         ConsoleHelper.Danger(DefaultMessage + message);
     }
@@ -47,8 +44,8 @@ public class XiHanException : Exception
     /// 构造函数
     /// </summary>
     /// <param name="message"></param>
-    /// <param name="exception"></param>
-    public XiHanException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
+    /// <param name="innerException"></param>
+    public ShutdownException(string? message, Exception? innerException) : base(DefaultMessage + message, innerException)
     {
         ConsoleHelper.Danger(DefaultMessage + message);
     }
@@ -58,7 +55,7 @@ public class XiHanException : Exception
     /// </summary>
     public static void Throw()
     {
-        throw new XiHanException();
+        throw new ShutdownException();
     }
 
     /// <summary>
@@ -66,7 +63,7 @@ public class XiHanException : Exception
     /// </summary>
     public static void Throw(string? message)
     {
-        throw new XiHanException(message);
+        throw new ShutdownException(message);
     }
 
     /// <summary>
@@ -74,6 +71,6 @@ public class XiHanException : Exception
     /// </summary>
     public static void Throw(string? message, Exception? exception)
     {
-        throw new XiHanException(message, exception);
+        throw new ShutdownException(message, exception);
     }
 }

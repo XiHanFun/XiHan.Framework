@@ -25,16 +25,6 @@ namespace XiHan.Framework.Core.Modularity;
 public class ServiceConfigurationContext
 {
     /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="services"></param>
-    public ServiceConfigurationContext([NotNull] IServiceCollection services)
-    {
-        Services = CheckHelper.NotNull(services, nameof(services));
-        Items = new Dictionary<string, object?>();
-    }
-
-    /// <summary>
     /// 服务存储器
     /// </summary>
     public IDictionary<string, object?> Items { get; }
@@ -55,5 +45,15 @@ public class ServiceConfigurationContext
     {
         get => Items.GetOrDefault(key);
         set => Items[key] = value;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="services"></param>
+    public ServiceConfigurationContext([NotNull] IServiceCollection services)
+    {
+        Services = CheckHelper.NotNull(services, nameof(services));
+        Items = new Dictionary<string, object?>();
     }
 }
