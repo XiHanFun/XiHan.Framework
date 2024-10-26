@@ -17,7 +17,7 @@ using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity.PlugIns;
-using XiHan.Framework.Utils.Extensions.Collections.Generic;
+using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.Modularity;

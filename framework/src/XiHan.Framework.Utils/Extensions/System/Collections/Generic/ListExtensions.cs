@@ -15,7 +15,7 @@
 using XiHan.Framework.Utils.Extensions.System;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Extensions.Collections.Generic;
+namespace XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 
 /// <summary>
 /// 列表扩展方法

@@ -15,9 +15,8 @@
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Extensions.System;
-using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.HardwareInfos;
+namespace XiHan.Framework.Utils.System.Runtime;
 
 /// <summary>
 /// 操作系统帮助类
