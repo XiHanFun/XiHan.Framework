@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Core.Application;
 
 /// <summary>
@@ -26,11 +24,11 @@ public interface IOnApplicationShutdown
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    Task OnApplicationShutdownAsync([NotNull] ApplicationShutdownContext context);
+    Task OnApplicationShutdownAsync(ApplicationShutdownContext context);
 
     /// <summary>
     /// 程序关闭时
     /// </summary>
     /// <param name="context"></param>
-    void OnApplicationShutdown([NotNull] ApplicationShutdownContext context);
+    void OnApplicationShutdown(ApplicationShutdownContext context);
 }
