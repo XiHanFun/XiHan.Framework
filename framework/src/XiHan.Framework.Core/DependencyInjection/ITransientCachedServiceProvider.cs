@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.SimpleStateChecking;
-
 namespace XiHan.Framework.Core.DependencyInjection;
 
 /// <summary>
