@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanHostEnvironmentExtensions
+// FileName:HostEnvironmentExtensions
 // Guid:099e1481-cd66-4c3b-8daa-992c25892bbf
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -13,14 +13,15 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Hosting;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Core.Application;
+namespace XiHan.Framework.Core.Extensions.Hosting;
 
 /// <summary>
 /// 曦寒宿主环境扩展方法
 /// </summary>
-public static class XiHanHostEnvironmentExtensions
+public static class HostEnvironmentExtensions
 {
     /// <summary>
     /// 是否为开发环境
