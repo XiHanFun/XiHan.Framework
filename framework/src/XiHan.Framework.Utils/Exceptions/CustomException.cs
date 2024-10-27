@@ -19,12 +19,9 @@ namespace XiHan.Framework.Utils.Exceptions;
 /// <summary>
 /// 自定义异常
 /// </summary>
-/// <remarks>
-/// 优先级低于 <see cref="XiHanException"></see>
-/// </remarks>
 public class CustomException : Exception
 {
-    private const string DefaultMessage = "服务器端程序自定义异常。";
+    private const string DefaultMessage = "自定义异常。";
 
     /// <summary>
     /// 构造函数

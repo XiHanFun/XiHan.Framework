@@ -320,7 +320,7 @@ public static partial class StringExtensions
 
     /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）。
-    /// 示例：“ThisIsSampleSentence”被转换为“ This is a sample sentence”。
+    /// 示例:“ThisIsSampleSentence”被转换为“ This is a sample sentence”。
     /// </summary>
     /// <param name="str">要转换的字符串。</param>
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
@@ -357,7 +357,7 @@ public static partial class StringExtensions
 
     /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为蛇形格式。
-    /// 例如：“ThisIsSampleSentence”被转换为“this_is_a_sample_sentence”。
+    /// 例如:“ThisIsSampleSentence”被转换为“this_is_a_sample_sentence”。
     /// https://github.com/npgsql/npgsql/blob/dev/src/Npgsql/NameTranslation/NpgsqlSnakeCaseNameTranslator.cs#L51
     /// </summary>
     /// <param name="str">要转换的字符串。</param>

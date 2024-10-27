@@ -12,4 +12,8 @@
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
+	</ItemGroup>
+
 </Project>
