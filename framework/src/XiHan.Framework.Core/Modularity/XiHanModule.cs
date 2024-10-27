@@ -14,7 +14,6 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -119,7 +118,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual Task OnPreApplicationInitializationAsync([NotNull] ApplicationInitializationContext context)
+    public virtual Task OnPreApplicationInitializationAsync(ApplicationInitializationContext context)
     {
         OnPreApplicationInitialization(context);
         return Task.CompletedTask;
@@ -130,7 +129,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     /// <param name="context"></param>
     /// <exception cref="NotImplementedException"></exception>
-    public virtual void OnPreApplicationInitialization([NotNull] ApplicationInitializationContext context)
+    public virtual void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
     }
 
@@ -141,7 +140,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// <param name="context"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public virtual Task OnApplicationInitializationAsync([NotNull] ApplicationInitializationContext context)
+    public virtual Task OnApplicationInitializationAsync(ApplicationInitializationContext context)
     {
         OnApplicationInitialization(context);
         return Task.CompletedTask;
@@ -153,7 +152,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     /// <param name="context"></param>
     /// <exception cref="NotImplementedException"></exception>
-    public virtual void OnApplicationInitialization([NotNull] ApplicationInitializationContext context)
+    public virtual void OnApplicationInitialization(ApplicationInitializationContext context)
     {
     }
 
@@ -162,7 +161,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual Task OnPostApplicationInitializationAsync([NotNull] ApplicationInitializationContext context)
+    public virtual Task OnPostApplicationInitializationAsync(ApplicationInitializationContext context)
     {
         OnPostApplicationInitialization(context);
         return Task.CompletedTask;
@@ -172,7 +171,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// 程序初始化后
     /// </summary>
     /// <param name="context"></param>
-    public virtual void OnPostApplicationInitialization([NotNull] ApplicationInitializationContext context)
+    public virtual void OnPostApplicationInitialization(ApplicationInitializationContext context)
     {
     }
 
@@ -181,7 +180,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual Task OnApplicationShutdownAsync([NotNull] ApplicationShutdownContext context)
+    public virtual Task OnApplicationShutdownAsync(ApplicationShutdownContext context)
     {
         OnApplicationShutdown(context);
         return Task.CompletedTask;
@@ -191,7 +190,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// 程序关闭时
     /// </summary>
     /// <param name="context"></param>
-    public virtual void OnApplicationShutdown([NotNull] ApplicationShutdownContext context)
+    public virtual void OnApplicationShutdown(ApplicationShutdownContext context)
     {
     }
 
