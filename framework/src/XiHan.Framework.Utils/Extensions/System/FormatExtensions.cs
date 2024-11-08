@@ -45,7 +45,7 @@ public static class FormatExtensions
         return bytes.ToString();
     }
 
-    #endregion
+    #endregion 文件大小
 
     #region 网络地址
 
@@ -129,7 +129,7 @@ public static class FormatExtensions
         return IPAddress.Parse(str);
     }
 
-    #endregion
+    #endregion 网络地址
 
     #region 金额
 
@@ -173,7 +173,7 @@ public static class FormatExtensions
             : numNoFormat + "," + numFormat;
     }
 
-    #endregion
+    #endregion 金额
 
     #region 时间
 
@@ -384,7 +384,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// 时间转换简单字符串
+    /// 时间转换简易字符串
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
@@ -396,37 +396,21 @@ public static class FormatExtensions
 
         var dep = now - value;
 
-        switch (dep.TotalMinutes)
-        {
-            case < 1:
-                return "刚刚";
-
-            case >= 1 and < 60:
-                return dep.TotalMinutes.ParseToInt() + "分钟前";
-
-            default:
-                {
-                    if (dep.TotalHours < 24)
-                        return dep.TotalHours.ParseToInt() + "小时前";
-                    switch (dep.TotalDays)
-                    {
-                        case < 7:
-                            return dep.TotalDays.ParseToInt() + "天前";
-
-                        case >= 7 and < 30:
-                            {
-                                var defaultWeek = dep.TotalDays.ParseToInt() / 7;
-                                return defaultWeek + "周前";
-                            }
-                        default:
-                            {
-                                return dep.TotalDays.ParseToInt() is >= 30 and < 365
-                                    ? value.Month.ParseToInt() + "个月前"
-                                    : now.Year - value.Year + "年前";
-                            }
-                    }
-                }
-        }
+        if (dep.TotalSeconds < 10)
+            return "刚刚";
+        if (dep.TotalSeconds >= 10 && dep.TotalSeconds < 60)
+            return (int)dep.TotalSeconds + "秒前";
+        if (dep.TotalMinutes >= 1 && dep.TotalMinutes < 60)
+            return (int)dep.TotalMinutes + "分钟前";
+        if (dep.TotalHours < 24)
+            return (int)dep.TotalHours + "小时前";
+        if (dep.TotalDays < 7)
+            return (int)dep.TotalDays + "天前";
+        if (dep.TotalDays >= 7 && dep.TotalDays < 30)
+            return (int)dep.TotalDays / 7 + "周前";
+        if (dep.TotalDays >= 30 && dep.TotalDays < 365)
+            return (int)dep.TotalDays / 30 + "个月前";
+        return now.Year - value.Year + "年前";
     }
 
     /// <summary>
@@ -463,5 +447,5 @@ public static class FormatExtensions
         }
     }
 
-    #endregion
+    #endregion 时间
 }
