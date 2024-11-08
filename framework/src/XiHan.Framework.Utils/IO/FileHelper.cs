@@ -14,6 +14,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Utils.IO;
@@ -183,7 +184,7 @@ public static class FileHelper
         File.Create(filePath);
     }
 
-    #endregion
+    #endregion 文件操作
 
     #region 文件信息
 
@@ -191,18 +192,11 @@ public static class FileHelper
     /// 获取文件的哈希值
     /// </summary>
     /// <param name="filePath">要计算哈希值的文件路径</param>
-    /// <param name="hashAlgorithm">使用的哈希算法</param>
     /// <returns>文件的哈希值</returns>
-    public static string GetFileHash(string filePath, HashAlgorithm hashAlgorithm)
+    public static string GetFileHash(string filePath)
     {
         using var stream = File.OpenRead(filePath);
-        byte[] hash = hashAlgorithm.ComputeHash(stream);
-        StringBuilder sb = new();
-        foreach (byte b in hash)
-        {
-            sb.Append(b.ToString("X2"));
-        }
-        return sb.ToString();
+        return HashHelper.StreamMd5(stream);
     }
 
     /// <summary>
@@ -291,7 +285,7 @@ public static class FileHelper
         return rows.Length;
     }
 
-    #endregion
+    #endregion 文件信息
 
     #region 文件检查
 
@@ -325,5 +319,5 @@ public static class FileHelper
         }
     }
 
-    #endregion
+    #endregion 文件检查
 }

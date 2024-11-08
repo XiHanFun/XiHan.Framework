@@ -108,7 +108,7 @@ public static class DirectoryHelper
         }
     }
 
-    #endregion
+    #endregion 目录操作
 
     #region 目录信息
 
@@ -178,7 +178,26 @@ public static class DirectoryHelper
         return len;
     }
 
-    #endregion
+    /// <summary>
+    /// 获取随机文件名
+    /// </summary>
+    /// <returns></returns>
+    public static string GetRandomDirName()
+    {
+        return Path.GetRandomFileName();
+    }
+
+    /// <summary>
+    /// 根据时间得到文件名
+    /// yyyyMMddHHmmssfff
+    /// </summary>
+    /// <returns></returns>
+    public static string GetDateDirName()
+    {
+        return DateTime.Now.ToString("yyyyMMddHHmmssfff");
+    }
+
+    #endregion 目录信息
 
     #region 目录检查
 
@@ -224,5 +243,5 @@ public static class DirectoryHelper
         return directoryNames.Length == 0;
     }
 
-    #endregion
+    #endregion 目录检查
 }
