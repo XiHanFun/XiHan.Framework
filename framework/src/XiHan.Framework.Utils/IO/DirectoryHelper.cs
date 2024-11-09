@@ -164,7 +164,7 @@ public static class DirectoryHelper
     /// <param name="dirPath"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public static long GetDirectorySize(string dirPath)
+    public static long GetSize(string dirPath)
     {
         // 定义一个DirectoryInfo对象
         DirectoryInfo di = new(dirPath);
@@ -174,7 +174,7 @@ public static class DirectoryHelper
         var dis = di.GetDirectories();
         if (dis.Length <= 0) return len;
 
-        len += dis.Sum(t => GetDirectorySize(t.FullName));
+        len += dis.Sum(t => GetSize(t.FullName));
         return len;
     }
 
@@ -182,7 +182,7 @@ public static class DirectoryHelper
     /// 获取随机文件名
     /// </summary>
     /// <returns></returns>
-    public static string GetRandomDirName()
+    public static string GetRandomName()
     {
         return Path.GetRandomFileName();
     }
@@ -192,7 +192,7 @@ public static class DirectoryHelper
     /// yyyyMMddHHmmssfff
     /// </summary>
     /// <returns></returns>
-    public static string GetDateDirName()
+    public static string GetDateName()
     {
         return DateTime.Now.ToString("yyyyMMddHHmmssfff");
     }
@@ -206,7 +206,7 @@ public static class DirectoryHelper
     /// </summary>
     /// <param name="path">要检查的路径</param>
     /// <returns>true如果路径是一个目录，否则false </returns>
-    public static bool IsDirectory(string path)
+    public static bool Exists(string path)
     {
         return Directory.Exists(path);
     }
@@ -232,7 +232,7 @@ public static class DirectoryHelper
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
     /// <returns></returns>
-    public static bool IsEmptyDirectory(string directoryPath)
+    public static bool IsEmpty(string directoryPath)
     {
         // 判断是否存在文件
         var fileNames = GetFiles(directoryPath);

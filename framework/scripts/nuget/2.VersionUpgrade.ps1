@@ -63,10 +63,4 @@ if ($confirm -ne "1") {
     exit
 }
 Write-Output "正在构建项目……"
-$buildResult = dotnet build $projectPath -c Release
-if ($buildResult -eq 0) {
-    Write-Output "项目构建成功"
-}
-else {
-    Write-Output "项目构建失败"
-}
+dotnet build $projectPath -c Release
