@@ -6,9 +6,9 @@
     <!-- 指定目标框架 -->
     <TargetFramework>net8.0</TargetFramework>
     <!-- 设置程序集的版本信息 -->
-    <AssemblyVersion>0.6.1</AssemblyVersion>
-    <FileVersion>0.6.1</FileVersion>
-    <Version>0.6.1</Version>
+    <AssemblyVersion>0.6.2</AssemblyVersion>
+    <FileVersion>0.6.2</FileVersion>
+    <Version>0.6.2</Version>
     <!-- 启用隐式全局usings -->
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- 设置可空引用类型 -->
