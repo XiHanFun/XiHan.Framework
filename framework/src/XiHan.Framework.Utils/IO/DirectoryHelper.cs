@@ -108,7 +108,7 @@ public static class DirectoryHelper
         }
     }
 
-    #endregion
+    #endregion 目录操作
 
     #region 目录信息
 
@@ -164,7 +164,7 @@ public static class DirectoryHelper
     /// <param name="dirPath"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public static long GetDirectorySize(string dirPath)
+    public static long GetSize(string dirPath)
     {
         // 定义一个DirectoryInfo对象
         DirectoryInfo di = new(dirPath);
@@ -174,11 +174,30 @@ public static class DirectoryHelper
         var dis = di.GetDirectories();
         if (dis.Length <= 0) return len;
 
-        len += dis.Sum(t => GetDirectorySize(t.FullName));
+        len += dis.Sum(t => GetSize(t.FullName));
         return len;
     }
 
-    #endregion
+    /// <summary>
+    /// 获取随机文件名
+    /// </summary>
+    /// <returns></returns>
+    public static string GetRandomName()
+    {
+        return Path.GetRandomFileName();
+    }
+
+    /// <summary>
+    /// 根据时间得到文件名
+    /// yyyyMMddHHmmssfff
+    /// </summary>
+    /// <returns></returns>
+    public static string GetDateName()
+    {
+        return DateTime.Now.ToString("yyyyMMddHHmmssfff");
+    }
+
+    #endregion 目录信息
 
     #region 目录检查
 
@@ -187,7 +206,7 @@ public static class DirectoryHelper
     /// </summary>
     /// <param name="path">要检查的路径</param>
     /// <returns>true如果路径是一个目录，否则false </returns>
-    public static bool IsDirectory(string path)
+    public static bool Exists(string path)
     {
         return Directory.Exists(path);
     }
@@ -213,7 +232,7 @@ public static class DirectoryHelper
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
     /// <returns></returns>
-    public static bool IsEmptyDirectory(string directoryPath)
+    public static bool IsEmpty(string directoryPath)
     {
         // 判断是否存在文件
         var fileNames = GetFiles(directoryPath);
@@ -224,5 +243,5 @@ public static class DirectoryHelper
         return directoryNames.Length == 0;
     }
 
-    #endregion
+    #endregion 目录检查
 }

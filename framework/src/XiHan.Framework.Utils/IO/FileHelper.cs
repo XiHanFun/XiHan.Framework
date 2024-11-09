@@ -14,6 +14,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Utils.IO;
@@ -98,7 +99,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="path">要打开以进行读取的文件</param>
     /// <returns>包含文件所有行的字符串</returns>
-    public static async Task<string> ReadFileWithoutBomAsync(string path)
+    public static async Task<string> ReadWithoutBomAsync(string path)
     {
         var content = await ReadAllBytesAsync(path);
         return StringHelper.ConvertFromBytesWithoutBom(content)!;
@@ -173,7 +174,7 @@ public static class FileHelper
     /// 清空文件内容
     /// </summary>
     /// <param name="filePath">文件的绝对路径</param>
-    public static void CleanFile(string filePath)
+    public static void Clean(string filePath)
     {
         if (!File.Exists(filePath))
             return;
@@ -183,7 +184,7 @@ public static class FileHelper
         File.Create(filePath);
     }
 
-    #endregion
+    #endregion 文件操作
 
     #region 文件信息
 
@@ -191,18 +192,11 @@ public static class FileHelper
     /// 获取文件的哈希值
     /// </summary>
     /// <param name="filePath">要计算哈希值的文件路径</param>
-    /// <param name="hashAlgorithm">使用的哈希算法</param>
     /// <returns>文件的哈希值</returns>
-    public static string GetFileHash(string filePath, HashAlgorithm hashAlgorithm)
+    public static string GetHash(string filePath)
     {
         using var stream = File.OpenRead(filePath);
-        byte[] hash = hashAlgorithm.ComputeHash(stream);
-        StringBuilder sb = new();
-        foreach (byte b in hash)
-        {
-            sb.Append(b.ToString("X2"));
-        }
-        return sb.ToString();
+        return HashHelper.StreamMd5(stream);
     }
 
     /// <summary>
@@ -210,7 +204,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    public static long GetFileSize(string filePath)
+    public static long GetSize(string filePath)
     {
         return new FileInfo(filePath).Length;
     }
@@ -220,7 +214,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    public static string GetFileName(string filePath)
+    public static string GetName(string filePath)
     {
         return Path.GetFileName(filePath);
     }
@@ -229,7 +223,7 @@ public static class FileHelper
     /// 获取随机文件名
     /// </summary>
     /// <returns></returns>
-    public static string GetRandomFileName()
+    public static string GetRandomName()
     {
         return Path.GetRandomFileName();
     }
@@ -239,7 +233,7 @@ public static class FileHelper
     /// yyyyMMddHHmmssfff
     /// </summary>
     /// <returns></returns>
-    public static string GetDateFileName()
+    public static string GetDateName()
     {
         return DateTime.Now.ToString("yyyyMMddHHmmssfff");
     }
@@ -250,7 +244,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    public static string GetFileExtension(string filePath)
+    public static string GetExtension(string filePath)
     {
         return Path.GetExtension(filePath);
     }
@@ -260,7 +254,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    public static string GetFileNameWithoutExtension(string filePath)
+    public static string GetNameWithoutExtension(string filePath)
     {
         return Path.GetFileNameWithoutExtension(filePath);
     }
@@ -270,11 +264,11 @@ public static class FileHelper
     /// </summary>
     /// <param name="fileName">包含扩展方法名的源文件名</param>
     /// <returns></returns>
-    public static string GetUniqueFileName(string fileName)
+    public static string GetUniqueName(string fileName)
     {
-        var fileNameWithoutExtension = GetFileNameWithoutExtension(fileName);
-        var fileExtension = GetFileExtension(fileName);
-        var uniqueFileName = $"{GetDateFileName()}_{GetRandomFileName()}_{fileNameWithoutExtension}";
+        var fileNameWithoutExtension = GetNameWithoutExtension(fileName);
+        var fileExtension = GetExtension(fileName);
+        var uniqueFileName = $"{fileNameWithoutExtension}_{GetDateName()}_{GetRandomName()}";
         return uniqueFileName + fileExtension;
     }
 
@@ -283,7 +277,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath">文件的绝对路径</param>
     /// <returns></returns>
-    public static int GetTextFileLineCount(string filePath)
+    public static int GetTextLineCount(string filePath)
     {
         // 将文本文件的各行读到一个字符串数组中
         var rows = File.ReadAllLines(filePath);
@@ -291,7 +285,7 @@ public static class FileHelper
         return rows.Length;
     }
 
-    #endregion
+    #endregion 文件信息
 
     #region 文件检查
 
@@ -300,7 +294,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath">要检查的文件路径</param>
     /// <returns>如果文件存在返回true，否则返回false</returns>
-    public static bool IsFile(string filePath)
+    public static bool Exists(string filePath)
     {
         return File.Exists(filePath);
     }
@@ -310,7 +304,7 @@ public static class FileHelper
     /// </summary>
     /// <param name="filePath">要检查的文件路径</param>
     /// <returns>true如果文件没有被锁定，可以进行读写操作，否则false</returns>
-    public static bool IsFileUnlocked(string filePath)
+    public static bool IsUnlocked(string filePath)
     {
         try
         {
@@ -325,5 +319,5 @@ public static class FileHelper
         }
     }
 
-    #endregion
+    #endregion 文件检查
 }
