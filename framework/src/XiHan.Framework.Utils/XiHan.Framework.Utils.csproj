@@ -8,6 +8,7 @@
 		<PackageId>XiHan.Framework.Utils</PackageId>
 		<Description>曦寒框架工具库</Description>
 		<OutputType>Library</OutputType>
+		<PackageReleaseNotes>修复：时间转换简易字符串出错的问题；</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
