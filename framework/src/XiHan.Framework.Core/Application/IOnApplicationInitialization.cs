@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Core.Application;
 
 /// <summary>
@@ -26,11 +24,11 @@ public interface IOnApplicationInitialization
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    Task OnApplicationInitializationAsync([NotNull] ApplicationInitializationContext context);
+    Task OnApplicationInitializationAsync(ApplicationInitializationContext context);
 
     /// <summary>
     /// 程序初始化
     /// </summary>
     /// <param name="context"></param>
-    void OnApplicationInitialization([NotNull] ApplicationInitializationContext context);
+    void OnApplicationInitialization(ApplicationInitializationContext context);
 }
