@@ -41,7 +41,7 @@ public abstract class CachedServiceProviderBase : ICachedServiceProviderBase
     {
         ServiceProvider = serviceProvider;
         CachedServices = new ConcurrentDictionary<ServiceIdentifier, Lazy<object?>>();
-        CachedServices.TryAdd(new ServiceIdentifier(typeof(IServiceProvider)), new Lazy<object?>(() => ServiceProvider));
+        _ = CachedServices.TryAdd(new ServiceIdentifier(typeof(IServiceProvider)), new Lazy<object?>(() => ServiceProvider));
     }
 
     /// <summary>

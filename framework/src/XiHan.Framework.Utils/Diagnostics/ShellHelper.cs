@@ -44,7 +44,10 @@ public static class ShellHelper
         };
 
         using Process? process = Process.Start(info);
-        if (process == null) return output;
+        if (process == null)
+        {
+            return output;
+        }
 
         output = process.StandardOutput.ReadToEnd();
         return output;
@@ -72,7 +75,10 @@ public static class ShellHelper
         };
 
         using Process? process = Process.Start(info);
-        if (process == null) return output;
+        if (process == null)
+        {
+            return output;
+        }
 
         output = process.StandardOutput.ReadToEnd();
         return output;

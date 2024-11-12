@@ -29,7 +29,7 @@ public static class DirectoryHelper
     {
         if (!Directory.Exists(directoryPath))
         {
-            Directory.CreateDirectory(directoryPath);
+            _ = Directory.CreateDirectory(directoryPath);
         }
     }
 
@@ -91,13 +91,13 @@ public static class DirectoryHelper
         DirectoryInfo sourceDir = new(sourcePath);
         if (!Directory.Exists(destinationPath))
         {
-            Directory.CreateDirectory(destinationPath);
+            _ = Directory.CreateDirectory(destinationPath);
         }
 
         FileInfo[] files = sourceDir.GetFiles();
         foreach (FileInfo file in files)
         {
-            file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
+            _ = file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
         }
 
         DirectoryInfo[] dirs = sourceDir.GetDirectories();
@@ -172,7 +172,10 @@ public static class DirectoryHelper
         long len = di.GetFiles().Sum(fi => fi.Length);
         // 获取di中所有的文件夹,并存到一个新的对象数组中,以进行递归
         DirectoryInfo[]? dis = di.GetDirectories();
-        if (dis.Length <= 0) return len;
+        if (dis.Length <= 0)
+        {
+            return len;
+        }
 
         len += dis.Sum(t => GetSize(t.FullName));
         return len;
@@ -237,7 +240,9 @@ public static class DirectoryHelper
         // 判断是否存在文件
         string[]? fileNames = GetFiles(directoryPath);
         if (fileNames.Length != 0)
+        {
             return false;
+        }
         // 判断是否存在文件夹
         string[]? directoryNames = GetDirectories(directoryPath);
         return directoryNames.Length == 0;

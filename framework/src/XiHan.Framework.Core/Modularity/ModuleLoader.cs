@@ -37,9 +37,9 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     public IModuleDescriptor[] LoadModules([NotNull] IServiceCollection services, [NotNull] Type startupModuleType, [NotNull] PlugInSourceList plugInSources)
     {
-        CheckHelper.NotNull(services, nameof(services));
-        CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
-        CheckHelper.NotNull(plugInSources, nameof(plugInSources));
+        _ = CheckHelper.NotNull(services, nameof(services));
+        _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
+        _ = CheckHelper.NotNull(plugInSources, nameof(plugInSources));
 
         List<IModuleDescriptor>? modules = GetDescriptors(services, startupModuleType, plugInSources);
 
@@ -57,7 +57,7 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     private List<IModuleDescriptor> GetDescriptors(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
-        List<XiHanModuleDescriptor>? modules = new();
+        List<XiHanModuleDescriptor>? modules = [];
 
         FillModules(modules, services, startupModuleType, plugInSources);
         SetDependencies(modules);
@@ -72,7 +72,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="services"></param>
     /// <param name="startupModuleType"></param>
     /// <param name="plugInSources"></param>
-    virtual protected void FillModules(List<XiHanModuleDescriptor> modules, IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
+    protected virtual void FillModules(List<XiHanModuleDescriptor> modules, IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
         ILogger<XiHanApplicationBase>? logger = services.GetInitLogger<XiHanApplicationBase>();
 
@@ -98,7 +98,7 @@ public class ModuleLoader : IModuleLoader
     /// 设置依赖项
     /// </summary>
     /// <param name="modules"></param>
-    virtual protected void SetDependencies(List<XiHanModuleDescriptor> modules)
+    protected virtual void SetDependencies(List<XiHanModuleDescriptor> modules)
     {
         foreach (XiHanModuleDescriptor? module in modules)
         {
@@ -112,7 +112,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="modules"></param>
     /// <param name="startupModuleType"></param>
     /// <returns></returns>
-    virtual protected List<IModuleDescriptor> SortByDependency(List<IModuleDescriptor> modules, Type startupModuleType)
+    protected virtual List<IModuleDescriptor> SortByDependency(List<IModuleDescriptor> modules, Type startupModuleType)
     {
         List<IModuleDescriptor>? sortedModules = modules.SortByDependencies(m => m.Dependencies);
         sortedModules.MoveItem(m => m.Type == startupModuleType, modules.Count - 1);
@@ -126,7 +126,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="moduleType"></param>
     /// <param name="isLoadedAsPlugIn"></param>
     /// <returns></returns>
-    virtual protected XiHanModuleDescriptor CreateModuleDescriptor(IServiceCollection services, Type moduleType, bool isLoadedAsPlugIn = false)
+    protected virtual XiHanModuleDescriptor CreateModuleDescriptor(IServiceCollection services, Type moduleType, bool isLoadedAsPlugIn = false)
     {
         return new XiHanModuleDescriptor(moduleType, CreateAndRegisterModule(services, moduleType), isLoadedAsPlugIn);
     }
@@ -137,10 +137,10 @@ public class ModuleLoader : IModuleLoader
     /// <param name="services"></param>
     /// <param name="moduleType"></param>
     /// <returns></returns>
-    virtual protected IXiHanModule CreateAndRegisterModule(IServiceCollection services, Type moduleType)
+    protected virtual IXiHanModule CreateAndRegisterModule(IServiceCollection services, Type moduleType)
     {
         IXiHanModule? module = (IXiHanModule)Activator.CreateInstance(moduleType)!;
-        services.AddSingleton(moduleType, module);
+        _ = services.AddSingleton(moduleType, module);
         return module;
     }
 
@@ -150,7 +150,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="modules"></param>
     /// <param name="module"></param>
     /// <exception cref="Exception"></exception>
-    virtual protected void SetDependencies(List<XiHanModuleDescriptor> modules, XiHanModuleDescriptor module)
+    protected virtual void SetDependencies(List<XiHanModuleDescriptor> modules, XiHanModuleDescriptor module)
     {
         foreach (Type? dependedModuleType in XiHanModuleHelper.FindDependedModuleTypes(module.Type))
         {

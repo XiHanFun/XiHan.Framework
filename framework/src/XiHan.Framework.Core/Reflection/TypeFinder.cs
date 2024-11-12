@@ -46,7 +46,7 @@ public class TypeFinder : ITypeFinder
     /// <returns></returns>
     private List<Type> FindAll()
     {
-        List<Type>? allTypes = new();
+        List<Type>? allTypes = [];
 
         foreach (Assembly? assembly in _assemblyFinder.Assemblies)
         {

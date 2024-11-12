@@ -67,8 +67,8 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// <exception cref="ArgumentException"></exception>
     public XiHanModuleDescriptor([NotNull] Type type, [NotNull] IXiHanModule instance, bool isLoadedAsPlugIn)
     {
-        CheckHelper.NotNull(type, nameof(type));
-        CheckHelper.NotNull(instance, nameof(instance));
+        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = CheckHelper.NotNull(instance, nameof(instance));
         XiHanModuleHelper.CheckXiHanModuleType(type);
 
         if (!type.GetTypeInfo().IsAssignableFrom(instance.GetType()))
@@ -91,7 +91,7 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// <param name="descriptor"></param>
     public void AddDependency(IModuleDescriptor descriptor)
     {
-        _dependencies.AddIfNotContains(descriptor);
+        _ = _dependencies.AddIfNotContains(descriptor);
     }
 
     /// <summary>

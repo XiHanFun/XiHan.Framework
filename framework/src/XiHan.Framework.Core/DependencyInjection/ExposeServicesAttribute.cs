@@ -63,17 +63,17 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
         {
             foreach (Type? type in GetDefaultServices(targetType))
             {
-                serviceList.AddIfNotContains(type);
+                _ = serviceList.AddIfNotContains(type);
             }
 
             if (IncludeSelf)
             {
-                serviceList.AddIfNotContains(targetType);
+                _ = serviceList.AddIfNotContains(targetType);
             }
         }
         else if (IncludeSelf)
         {
-            serviceList.AddIfNotContains(targetType);
+            _ = serviceList.AddIfNotContains(targetType);
         }
 
         return [.. serviceList];
@@ -86,7 +86,7 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <returns></returns>
     private static List<Type> GetDefaultServices(Type type)
     {
-        List<Type>? serviceTypes = new();
+        List<Type>? serviceTypes = [];
 
         foreach (Type? interfaceType in type.GetTypeInfo().GetInterfaces())
         {

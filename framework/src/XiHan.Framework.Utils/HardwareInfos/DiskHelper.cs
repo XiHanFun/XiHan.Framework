@@ -45,6 +45,7 @@ public static class DiskHelper
                 string? output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
                 List<string>? lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (lines.Count != 0)
+                {
                     diskInfos.AddRange(from line in lines
                                        select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
                         into rootDisk
@@ -60,6 +61,7 @@ public static class DiskHelper
                                                ? "0%"
                                                : Math.Round((decimal)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3) + "%"
                                        });
+                }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

@@ -13,8 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
+using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.System.Threading;
+namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
 /// 与异步方法协作的辅助方法
@@ -27,7 +28,7 @@ public static class AsyncHelper
     /// <param name="method">要检查的方法</param>
     public static bool IsAsync(this MethodInfo method)
     {
-        CheckHelper.NotNull(method, nameof(method));
+        _ = CheckHelper.NotNull(method, nameof(method));
 
         return method.ReturnType.IsTaskOrTaskOfT();
     }
@@ -39,7 +40,7 @@ public static class AsyncHelper
     /// <returns></returns>
     public static bool IsTaskOrTaskOfT(this Type type)
     {
-        return type == typeof(Task) || type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>);
+        return type == typeof(Task) || (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>));
     }
 
     /// <summary>
@@ -57,19 +58,9 @@ public static class AsyncHelper
     /// </summary>
     public static Type UnwrapTask(Type type)
     {
-        CheckHelper.NotNull(type, nameof(type));
+        _ = CheckHelper.NotNull(type, nameof(type));
 
-        if (type == typeof(Task))
-        {
-            return typeof(void);
-        }
-
-        if (type.IsTaskOfT())
-        {
-            return type.GenericTypeArguments[0];
-        }
-
-        return type;
+        return type == typeof(Task) ? typeof(void) : type.IsTaskOfT() ? type.GenericTypeArguments[0] : type;
     }
 
     /// <summary>

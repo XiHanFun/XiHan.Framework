@@ -95,7 +95,7 @@ public static class RandomHelper
     public static string GetRandom(int length, string source)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
-        CheckHelper.NotNullOrEmpty(source, nameof(source));
+        _ = CheckHelper.NotNullOrEmpty(source, nameof(source));
 
         StringBuilder result = new();
 
@@ -160,7 +160,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static T GetRandomOf<T>(params T[] objs)
     {
-        CheckHelper.NotNullOrEmpty(objs, nameof(objs));
+        _ = CheckHelper.NotNullOrEmpty(objs, nameof(objs));
 
         return objs[GetRandom(0, objs.Length)];
     }
@@ -173,7 +173,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static T GetRandomOfList<T>(IList<T> list)
     {
-        CheckHelper.NotNullOrEmpty(list, nameof(list));
+        _ = CheckHelper.NotNullOrEmpty(list, nameof(list));
 
         return list[GetRandom(0, list.Count)];
     }
@@ -186,10 +186,10 @@ public static class RandomHelper
     /// <returns></returns>
     public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)
     {
-        CheckHelper.NotNull(items, nameof(items));
+        _ = CheckHelper.NotNull(items, nameof(items));
 
         List<T>? currentList = new(items);
-        List<T>? randomList = new();
+        List<T>? randomList = [];
 
         while (currentList.Count != 0)
         {

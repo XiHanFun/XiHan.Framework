@@ -14,7 +14,6 @@
 
 using System.Linq.Expressions;
 using System.Reflection;
-using XiHan.Framework.Utils.System.Text.Json.Serialization;
 
 namespace XiHan.Framework.Utils.Extensions.System;
 
@@ -70,7 +69,9 @@ public static class GenericExtensions
         {
             TEntity? value = entity.GetPropertyValue<TEntity, TEntity>(propertyName);
             if (value == null)
+            {
                 return entity;
+            }
         }
     }
 
@@ -87,7 +88,9 @@ public static class GenericExtensions
         Type? objectType = typeof(TEntity);
         PropertyInfo? propertyInfo = objectType.GetProperty(propertyName);
         if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
+        {
             throw new ArgumentException($"""属性"{propertyName}"不存在，或者不是类型"{objectType.Name}"中的泛型类型。""");
+        }
 
         ParameterExpression? paramObj = Expression.Parameter(typeof(TEntity));
 
@@ -112,7 +115,9 @@ public static class GenericExtensions
         Type? objectType = typeof(TEntity);
         PropertyInfo? propertyInfo = objectType.GetProperty(propertyName);
         if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
+        {
             throw new ArgumentException($"""属性"{propertyName}"不存在，或者不是类型"{objectType.Name}"中的泛型类型。""");
+        }
 
         ParameterExpression? paramObj = Expression.Parameter(objectType);
         ParameterExpression? paramVal = Expression.Parameter(typeof(TValue));
@@ -123,7 +128,9 @@ public static class GenericExtensions
 
         // 如果只是只读,则 setMethod==null
         if (setMethod == null)
+        {
             return false;
+        }
 
         MethodCallExpression? body = Expression.Call(paramObj, setMethod, bodyVal);
         Action<TEntity, TValue>? setValue = Expression.Lambda<Action<TEntity, TValue>>(body, paramObj, paramVal).Compile();
@@ -160,7 +167,7 @@ public static class GenericExtensions
         TEntity entity2) where TEntity : class
     {
         PropertyInfo[]? propertyInfo = typeof(TEntity).GetProperties();
-        List<CustomPropertyVariance>? result = new();
+        List<CustomPropertyVariance>? result = [];
 
         foreach (PropertyInfo? variance in propertyInfo)
         {
@@ -240,12 +247,21 @@ public static class GenericExtensions
     public static bool IsNullOrEmpty<T>(this T? data)
     {
         // 如果为null
-        if (data == null) return true;
+        if (data == null)
+        {
+            return true;
+        }
 
         // 如果为""
-        if (data is not string) return data is DBNull;
+        if (data is not string)
+        {
+            return data is DBNull;
+        }
 
-        if (string.IsNullOrEmpty(data.ToString()?.Trim())) return true;
+        if (string.IsNullOrEmpty(data.ToString()?.Trim()))
+        {
+            return true;
+        }
 
         // 如果为DBNull
         return data is DBNull;

@@ -32,12 +32,7 @@ public static class CheckHelper
     /// <exception cref="ArgumentNullException"></exception>
     public static T NotNull<T>(T? value, string parameterName)
     {
-        if (value == null)
-        {
-            throw new ArgumentNullException(parameterName);
-        }
-
-        return value;
+        return value == null ? throw new ArgumentNullException(parameterName) : value;
     }
 
     /// <summary>
@@ -51,12 +46,7 @@ public static class CheckHelper
     /// <exception cref="ArgumentNullException"></exception>
     public static T NotNull<T>(T? value, string parameterName, string message)
     {
-        if (value == null)
-        {
-            throw new ArgumentNullException(parameterName, message);
-        }
-
-        return value;
+        return value == null ? throw new ArgumentNullException(parameterName, message) : value;
     }
 
     /// <summary>
@@ -70,22 +60,13 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string NotNull(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
-        if (value == null)
-        {
-            throw new ArgumentException($"{parameterName}不能为空!", parameterName);
-        }
-
-        if (value.Length > maxLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName);
-        }
-
-        if (minLength > 0 && value.Length < minLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
-        }
-
-        return value;
+        return value == null
+            ? throw new ArgumentException($"{parameterName}不能为空!", parameterName)
+            : value.Length > maxLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+            : minLength > 0 && value.Length < minLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+            : value;
     }
 
     /// <summary>
@@ -99,22 +80,13 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string NotNullOrWhiteSpace(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException($"{parameterName}不能为无效、空值或空白!", parameterName);
-        }
-
-        if (value.Length > maxLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName);
-        }
-
-        if (minLength > 0 && value.Length < minLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
-        }
-
-        return value;
+        return string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException($"{parameterName}不能为无效、空值或空白!", parameterName)
+            : value.Length > maxLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+            : minLength > 0 && value.Length < minLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+            : value;
     }
 
     /// <summary>
@@ -128,22 +100,13 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string NotNullOrEmpty(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
-        if (string.IsNullOrEmpty(value))
-        {
-            throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName);
-        }
-
-        if (value.Length > maxLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName);
-        }
-
-        if (minLength > 0 && value.Length < minLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
-        }
-
-        return value;
+        return string.IsNullOrEmpty(value)
+            ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName)
+            : value.Length > maxLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+            : minLength > 0 && value.Length < minLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+            : value;
     }
 
     /// <summary>
@@ -170,12 +133,9 @@ public static class CheckHelper
             }
         }
 
-        if (value != null && value.Length > maxLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName);
-        }
-
-        return value;
+        return value != null && value.Length > maxLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+            : value;
     }
 
     /// <summary>
@@ -188,11 +148,6 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static ICollection<T> NotNullOrEmpty<T>(ICollection<T>? value, string parameterName)
     {
-        if (value == null || value.Count <= 0)
-        {
-            throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName);
-        }
-
-        return value;
+        return value == null || value.Count <= 0 ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName) : value;
     }
 }

@@ -82,10 +82,7 @@ public static class BoardHelper
 
         return boardInfo;
 
-        string GetParmValue(string[] lines, string parm, char separator)
-        {
-            return lines.First(s => s.StartsWith(parm)).Split(separator)[1].Trim();
-        }
+        string GetParmValue(string[] lines, string parm, char separator) => lines.First(s => s.StartsWith(parm)).Split(separator)[1].Trim();
     }
 }
 

@@ -31,12 +31,9 @@ public static class ServiceCollectionObjectAccessorExtensions
     public static ObjectAccessor<T> TryAddObjectAccessor<T>(this IServiceCollection services)
     {
         // 若已存在，则直接返回单例实例
-        if (services.Any(s => s.ServiceType == typeof(ObjectAccessor<T>)))
-        {
-            return services.GetSingletonInstance<ObjectAccessor<T>>();
-        }
-
-        return services.AddObjectAccessor<T>();
+        return services.Any(s => s.ServiceType == typeof(ObjectAccessor<T>))
+            ? services.GetSingletonInstance<ObjectAccessor<T>>()
+            : services.AddObjectAccessor<T>();
     }
 
     /// <summary>

@@ -33,7 +33,7 @@ public class ApplicationShutdownContext
     /// <param name="serviceProvider"></param>
     public ApplicationShutdownContext([NotNull] IServiceProvider serviceProvider)
     {
-        CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
         ServiceProvider = serviceProvider;
     }

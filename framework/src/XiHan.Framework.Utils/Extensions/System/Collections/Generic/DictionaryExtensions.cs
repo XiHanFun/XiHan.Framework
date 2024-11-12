@@ -105,12 +105,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，使用工厂方法创建并返回默认值</returns>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> factory)
     {
-        if (dictionary.TryGetValue(key, out TValue? obj))
-        {
-            return obj;
-        }
-
-        return dictionary[key] = factory(key);
+        return dictionary.TryGetValue(key, out TValue? obj) ? obj : (dictionary[key] = factory(key));
     }
 
     /// <summary>
@@ -149,7 +144,7 @@ public static class DictionaryExtensions
     public static dynamic ConvertToDynamicObject(this Dictionary<string, object> dictionary)
     {
         ExpandoObject? expandoObject = new();
-        ICollection<KeyValuePair<string, object>>? expendObjectCollection = (ICollection<KeyValuePair<string, object>>)expandoObject!;
+        ICollection<KeyValuePair<string, object>>? expendObjectCollection = expandoObject!;
 
         foreach (KeyValuePair<string, object> keyValuePair in dictionary)
         {

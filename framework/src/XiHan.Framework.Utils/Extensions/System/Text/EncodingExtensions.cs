@@ -117,7 +117,10 @@ public static partial class EncodingExtensions
     public static string UnicodeEncode(this string data)
     {
         StringBuilder sb = new();
-        foreach (char t in data) _ = sb.Append($@"\u{(int)t:x4}");
+        foreach (char t in data)
+        {
+            _ = sb.Append($@"\u{(int)t:x4}");
+        }
 
         return sb.ToString();
     }
@@ -183,9 +186,12 @@ public static class Base32
     {
         ArgumentNullException.ThrowIfNull(bytes);
 
-        if (bytes.Length == 0) return string.Empty;
+        if (bytes.Length == 0)
+        {
+            return string.Empty;
+        }
 
-        StringBuilder sb = new((bytes.Length * 8 + 4) / 5);
+        StringBuilder sb = new(((bytes.Length * 8) + 4) / 5);
 
         int bitCount = 0;
         int accumulatedBits = 0;
@@ -204,7 +210,11 @@ public static class Base32
             }
         }
 
-        if (bitCount <= 0) return sb.ToString();
+        if (bitCount <= 0)
+        {
+            return sb.ToString();
+        }
+
         {
             const int mask = 0x1f;
             int currentBase32Value = accumulatedBits & mask;
@@ -225,7 +235,10 @@ public static class Base32
     {
         ArgumentNullException.ThrowIfNull(base32String);
 
-        if (base32String.Length == 0) return [];
+        if (base32String.Length == 0)
+        {
+            return [];
+        }
 
         base32String = base32String.TrimEnd('=');
 
@@ -237,12 +250,18 @@ public static class Base32
         int bufferIndex = 0;
         foreach (int currentCharValue in base32String.Select(currentChar => Base32Alphabet.IndexOf(currentChar)))
         {
-            if (currentCharValue is < 0 or > 31) throw new ArgumentException("Invalid character in Base32 string.");
+            if (currentCharValue is < 0 or > 31)
+            {
+                throw new ArgumentException("Invalid character in Base32 string.");
+            }
 
             accumulatedBits |= currentCharValue << bitCount;
             bitCount += 5;
 
-            if (bitCount < 8) continue;
+            if (bitCount < 8)
+            {
+                continue;
+            }
 
             const int mask = 0xff;
             int currentByteValue = accumulatedBits & mask;

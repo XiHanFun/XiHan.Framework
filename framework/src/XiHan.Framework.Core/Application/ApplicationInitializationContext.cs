@@ -34,7 +34,7 @@ public class ApplicationInitializationContext : IServiceProviderAccessor
     /// <param name="serviceProvider"></param>
     public ApplicationInitializationContext([NotNull] IServiceProvider serviceProvider)
     {
-        CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
         ServiceProvider = serviceProvider;
     }

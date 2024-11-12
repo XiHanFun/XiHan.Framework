@@ -38,7 +38,7 @@ public static class CollectionExtensions
     /// <returns>如果添加了项，则返回真(True)；如果没有添加（即项已存在）则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, T item)
     {
-        CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(source, nameof(source));
 
         if (source.Contains(item))
         {
@@ -58,9 +58,9 @@ public static class CollectionExtensions
     /// <returns>返回添加的项的集合</returns>
     public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
     {
-        CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(source, nameof(source));
 
-        List<T>? addedItems = new();
+        List<T>? addedItems = [];
 
         foreach (T? item in items)
         {
@@ -86,9 +86,9 @@ public static class CollectionExtensions
     /// <returns>如果添加了项，则返回真(True)；如果没有添加（即项已存在）则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
     {
-        CheckHelper.NotNull(source, nameof(source));
-        CheckHelper.NotNull(predicate, nameof(predicate));
-        CheckHelper.NotNull(itemFactory, nameof(itemFactory));
+        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(predicate, nameof(predicate));
+        _ = CheckHelper.NotNull(itemFactory, nameof(itemFactory));
 
         if (source.Any(predicate))
         {
@@ -112,7 +112,7 @@ public static class CollectionExtensions
 
         foreach (T? item in items)
         {
-            source.Remove(item);
+            _ = source.Remove(item);
         }
 
         return items;
@@ -128,7 +128,7 @@ public static class CollectionExtensions
     {
         foreach (T? item in items)
         {
-            source.Remove(item);
+            _ = source.Remove(item);
         }
     }
 }

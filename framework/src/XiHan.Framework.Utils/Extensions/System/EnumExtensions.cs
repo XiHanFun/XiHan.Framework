@@ -95,11 +95,16 @@ public static class EnumExtensions
         fields.ForEach(field =>
         {
             // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum) return;
+            if (!field.FieldType.IsEnum)
+            {
+                return;
+            }
 
             string? desc = string.Empty;
             if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
+            {
                 desc = description.Description;
+            }
 
             result.Add(new EnumInfo
             {
@@ -120,15 +125,24 @@ public static class EnumExtensions
     {
         Dictionary<int, string> result = [];
         List<FieldInfo>? fields = enumType.GetFields().ToList();
-        if (fields.Count != 0) return result;
+        if (fields.Count != 0)
+        {
+            return result;
+        }
 
         fields.ForEach(field =>
         {
             // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum) return;
+            if (!field.FieldType.IsEnum)
+            {
+                return;
+            }
+
             string? desc = string.Empty;
             if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
+            {
                 desc = description.Description;
+            }
 
             result.Add((int)field.GetRawConstantValue()!, desc);
         });

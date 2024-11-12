@@ -73,7 +73,7 @@ public static class ServiceCollectionPreConfigureExtensions
         if (actionList == null)
         {
             actionList = [];
-            services.AddObjectAccessor(actionList);
+            _ = services.AddObjectAccessor(actionList);
         }
 
         return actionList;

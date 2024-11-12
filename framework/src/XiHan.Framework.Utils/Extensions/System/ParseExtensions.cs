@@ -335,7 +335,9 @@ public static class ParseExtensions
     {
         DateTime reveal = DateTime.MinValue;
         if (thisValue != null && thisValue != DBNull.Value && DateTime.TryParse(thisValue.ToString(), out reveal))
+        {
             reveal = Convert.ToDateTime(thisValue);
+        }
 
         return reveal;
     }
@@ -386,7 +388,10 @@ public static class ParseExtensions
     /// <returns></returns>
     public static IEnumerable<Dictionary<string, dynamic>> ParseToDictionary(this object? obj)
     {
-        if (obj is not IEnumerable<dynamic> objDynamics) yield break;
+        if (obj is not IEnumerable<dynamic> objDynamics)
+        {
+            yield break;
+        }
 
         foreach (dynamic? objDynamic in objDynamics)
         {
@@ -407,15 +412,18 @@ public static class ParseExtensions
     public static IEnumerable<Dictionary<string, dynamic>>
         ParseToDictionaryFilterAttribute<TAttribute>(this object? obj) where TAttribute : Attribute
     {
-        if (obj is not IEnumerable<dynamic> objDynamics) yield break;
+        if (obj is not IEnumerable<dynamic> objDynamics)
+        {
+            yield break;
+        }
 
         foreach (dynamic? objDynamic in objDynamics)
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
             Dictionary<string, dynamic>? item = (objDynamic as object).GetType().GetProperties()
-                .Where(prop => !prop.HasAttribute<TAttribute>() || prop.HasAttribute<TAttribute>() &&
+                .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
-                        .GetPropertyValue<TAttribute, bool>("IsIgnore"))
+                        .GetPropertyValue<TAttribute, bool>("IsIgnore")))
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;
@@ -453,9 +461,15 @@ public static class ParseExtensions
     /// <returns> 转化后的指定类型的对象，转化失败引发异常。</returns>
     public static T? CastTo<T>(this object? value)
     {
-        if (value == null && default(T) == null) return default;
+        if (value == null && default(T) == null)
+        {
+            return default;
+        }
 
-        if (value?.GetType() == typeof(T)) return (T)value;
+        if (value?.GetType() == typeof(T))
+        {
+            return (T)value;
+        }
 
         object? result = value.CastTo(typeof(T));
         return (T?)result;
@@ -469,7 +483,10 @@ public static class ParseExtensions
     /// <returns></returns>
     public static object? CastTo(this object? value, Type conversionType)
     {
-        if (conversionType.IsNullableType() || value == null || value.ToString().IsNullOrEmpty()) return null;
+        if (conversionType.IsNullableType() || value == null || value.ToString().IsNullOrEmpty())
+        {
+            return null;
+        }
 
         // 常规类型
         return conversionType switch

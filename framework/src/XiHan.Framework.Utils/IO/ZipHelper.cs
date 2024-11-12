@@ -30,10 +30,14 @@ public static class ZipHelper
     public static void Extract(string archivePath, string extractPath)
     {
         if (!File.Exists(archivePath))
+        {
             throw new FileNotFoundException("没有找到文件。", archivePath);
+        }
 
         if (!Directory.Exists(extractPath))
-            Directory.CreateDirectory(extractPath);
+        {
+            _ = Directory.CreateDirectory(extractPath);
+        }
 
         ZipFile.ExtractToDirectory(archivePath, extractPath);
     }
@@ -47,7 +51,9 @@ public static class ZipHelper
     public static void Compress(string sourceDirectory, string archivePath)
     {
         if (!Directory.Exists(sourceDirectory))
+        {
             throw new DirectoryNotFoundException("找不到源目录。");
+        }
 
         ZipFile.CreateFromDirectory(sourceDirectory, archivePath, CompressionLevel.Optimal, false);
     }

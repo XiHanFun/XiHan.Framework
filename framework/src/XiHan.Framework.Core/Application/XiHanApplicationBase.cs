@@ -75,15 +75,15 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="optionsAction"></param>
     internal XiHanApplicationBase([NotNull] Type startupModuleType, [NotNull] IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
     {
-        CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
-        CheckHelper.NotNull(services, nameof(services));
+        _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
+        _ = CheckHelper.NotNull(services, nameof(services));
 
         // 设置启动模块
         StartupModuleType = startupModuleType;
         Services = services;
 
         // 添加一个空的对象访问器，该访问器的值会在初始化的时候被赋值
-        services.TryAddObjectAccessor<IServiceProvider>();
+        _ = services.TryAddObjectAccessor<IServiceProvider>();
 
         // 调用用户传入的配置委托
         XiHanApplicationCreationOptions? options = new(services);
@@ -92,10 +92,10 @@ public class XiHanApplicationBase : IXiHanApplication
         ApplicationName = GetApplicationName(options);
 
         // 注册自己
-        services.AddSingleton<IXiHanApplication>(this);
-        services.AddSingleton<IApplicationInfoAccessor>(this);
-        services.AddSingleton<IModuleContainer>(this);
-        services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment()
+        _ = services.AddSingleton<IXiHanApplication>(this);
+        _ = services.AddSingleton<IApplicationInfoAccessor>(this);
+        _ = services.AddSingleton<IModuleContainer>(this);
+        _ = services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment()
         {
             EnvironmentName = options.Environment
         });
@@ -120,7 +120,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 记录初始化日志
     /// </summary>
     /// <param name="serviceProvider"></param>
-    virtual protected void WriteInitLogs(IServiceProvider serviceProvider)
+    protected virtual void WriteInitLogs(IServiceProvider serviceProvider)
     {
         ILogger<XiHanApplicationBase>? logger = serviceProvider.GetService<ILogger<XiHanApplicationBase>>();
         if (logger == null)
@@ -144,7 +144,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="services"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    virtual protected IReadOnlyList<IModuleDescriptor> LoadModules(IServiceCollection services, XiHanApplicationCreationOptions options)
+    protected virtual IReadOnlyList<IModuleDescriptor> LoadModules(IServiceCollection services, XiHanApplicationCreationOptions options)
     {
         return services.GetSingletonInstance<IModuleLoader>().LoadModules(services, StartupModuleType, options.PlugInSources);
     }
@@ -172,12 +172,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         Assembly? entryAssembly = Assembly.GetEntryAssembly();
-        if (entryAssembly != null)
-        {
-            return entryAssembly.GetName().Name;
-        }
-
-        return null;
+        return entryAssembly?.GetName().Name;
     }
 
     /// <summary>
@@ -197,7 +192,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 设置服务提供器
     /// </summary>
     /// <param name="serviceProvider"></param>
-    virtual protected void SetServiceProvider(IServiceProvider serviceProvider)
+    protected virtual void SetServiceProvider(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         ServiceProvider.GetRequiredService<ObjectAccessor<IServiceProvider>>().Value = ServiceProvider;
@@ -207,7 +202,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 初始化模块，异步
     /// </summary>
     /// <returns></returns>
-    virtual protected async Task InitializeModulesAsync()
+    protected virtual async Task InitializeModulesAsync()
     {
         using IServiceScope? scope = ServiceProvider.CreateScope();
         WriteInitLogs(scope.ServiceProvider);
@@ -217,7 +212,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <summary>
     /// 初始化模块
     /// </summary>
-    virtual protected void InitializeModules()
+    protected virtual void InitializeModules()
     {
         using IServiceScope? scope = ServiceProvider.CreateScope();
         WriteInitLogs(scope.ServiceProvider);
@@ -236,7 +231,7 @@ public class XiHanApplicationBase : IXiHanApplication
         CheckMultipleConfigureServices();
 
         ServiceConfigurationContext? context = new(Services);
-        Services.AddSingleton(context);
+        _ = Services.AddSingleton(context);
 
         foreach (IModuleDescriptor? module in Modules)
         {
@@ -259,7 +254,7 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        HashSet<Assembly>? assemblies = new();
+        HashSet<Assembly>? assemblies = [];
 
         // ConfigureServices
         foreach (IModuleDescriptor? module in Modules)
@@ -272,8 +267,8 @@ public class XiHanApplicationBase : IXiHanApplication
                     {
                         if (!assemblies.Contains(assembly))
                         {
-                            Services.AddAssembly(assembly);
-                            assemblies.Add(assembly);
+                            _ = Services.AddAssembly(assembly);
+                            _ = assemblies.Add(assembly);
                         }
                     }
                 }
@@ -324,7 +319,7 @@ public class XiHanApplicationBase : IXiHanApplication
         CheckMultipleConfigureServices();
 
         ServiceConfigurationContext? context = new(Services);
-        Services.AddSingleton(context);
+        _ = Services.AddSingleton(context);
 
         foreach (IModuleDescriptor? module in Modules)
         {
@@ -347,7 +342,7 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        HashSet<Assembly>? assemblies = new();
+        HashSet<Assembly>? assemblies = [];
 
         // ConfigureServices
         foreach (IModuleDescriptor? module in Modules)
@@ -360,8 +355,8 @@ public class XiHanApplicationBase : IXiHanApplication
                     {
                         if (!assemblies.Contains(assembly))
                         {
-                            Services.AddAssembly(assembly);
-                            assemblies.Add(assembly);
+                            _ = Services.AddAssembly(assembly);
+                            _ = assemblies.Add(assembly);
                         }
                     }
                 }

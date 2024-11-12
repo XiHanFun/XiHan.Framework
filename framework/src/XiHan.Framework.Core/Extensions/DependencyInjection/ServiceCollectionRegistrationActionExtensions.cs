@@ -55,7 +55,7 @@ public static class ServiceCollectionRegistrationActionExtensions
         if (actionList == null)
         {
             actionList = [];
-            services.AddObjectAccessor(actionList);
+            _ = services.AddObjectAccessor(actionList);
         }
 
         return actionList;
@@ -115,7 +115,7 @@ public static class ServiceCollectionRegistrationActionExtensions
         if (actionList == null)
         {
             actionList = [];
-            services.AddObjectAccessor(actionList);
+            _ = services.AddObjectAccessor(actionList);
         }
 
         return actionList;

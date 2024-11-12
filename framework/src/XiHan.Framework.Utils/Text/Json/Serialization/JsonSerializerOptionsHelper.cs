@@ -16,9 +16,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
-using XiHan.Framework.Utils.System.Text.Json.Converter;
 
-namespace XiHan.Framework.Utils.System.Text.Json.Serialization;
+namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
 /// <summary>
 /// 序列化参数帮助类
@@ -88,8 +87,8 @@ public static class JsonSerializerOptionsHelper
     public static JsonSerializerOptions Create(JsonSerializerOptions baseOptions, Func<JsonConverter, bool> removeConverterPredicate, params JsonConverter[] addConverters)
     {
         JsonSerializerOptions? options = new(baseOptions);
-        options.Converters.RemoveAll(removeConverterPredicate);
-        options.Converters.AddIfNotContains(addConverters);
+        _ = options.Converters.RemoveAll(removeConverterPredicate);
+        _ = options.Converters.AddIfNotContains(addConverters);
         return options;
     }
 }
