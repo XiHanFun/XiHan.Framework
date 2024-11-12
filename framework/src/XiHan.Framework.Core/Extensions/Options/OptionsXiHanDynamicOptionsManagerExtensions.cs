@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Options;
 
-namespace XiHan.Framework.Core.Microsoft.Extensions.Options;
+namespace XiHan.Framework.Core.Extensions.Options;
 
 /// <summary>
 /// 配置曦寒动态选项管理器扩展方法
@@ -58,11 +58,8 @@ public static class OptionsXiHanDynamicOptionsManagerExtensions
     private static XiHanDynamicOptionsManager<T> ToDynamicOptions<T>(this IOptions<T> options)
         where T : class
     {
-        if (options is XiHanDynamicOptionsManager<T> dynamicOptionsManager)
-        {
-            return dynamicOptionsManager;
-        }
-
-        throw new XiHanException($"选项必须派生自 {typeof(XiHanDynamicOptionsManager<>).FullName}！");
+        return options is XiHanDynamicOptionsManager<T> dynamicOptionsManager
+            ? dynamicOptionsManager
+            : throw new XiHanException($"选项必须派生自 {typeof(XiHanDynamicOptionsManager<>).FullName}！");
     }
 }

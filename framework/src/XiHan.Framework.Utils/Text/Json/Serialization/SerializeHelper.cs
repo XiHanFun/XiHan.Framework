@@ -16,7 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Utils.Extensions.System.Text;
 
-namespace XiHan.Framework.Utils.System.Text.Json.Serialization;
+namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
 /// <summary>
 /// 序列化帮助类

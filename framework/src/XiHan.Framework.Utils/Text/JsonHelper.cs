@@ -14,9 +14,8 @@
 
 using System.Text;
 using System.Text.Json;
-using XiHan.Framework.Utils.System.Text.Json.Serialization;
 
-namespace XiHan.Framework.Utils.System.Text;
+namespace XiHan.Framework.Utils.Text;
 
 /// <summary>
 /// JsonHelper
@@ -42,7 +41,9 @@ public class JsonHelper
     public T? Get<T>()
     {
         if (!File.Exists(_jsonFilePath))
+        {
             return default;
+        }
 
         string? jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
         T? result = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
@@ -58,7 +59,9 @@ public class JsonHelper
     public T? Get<T>(string keyLink)
     {
         if (!File.Exists(_jsonFilePath))
+        {
             return default;
+        }
 
         using StreamReader streamReader = new(_jsonFilePath);
         string? jsonStr = streamReader.ReadToEnd();
@@ -70,7 +73,9 @@ public class JsonHelper
         {
             currentObject = currentObject[key];
             if (currentObject == null)
+            {
                 return default;
+            }
         }
 
         dynamic? result = JsonSerializer.Deserialize<T>(currentObject.ToString(), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
@@ -105,7 +110,9 @@ public class JsonHelper
             {
                 //如果不存在，新建
                 if (currentObject != null)
+                {
                     continue;
+                }
 
                 JsonDocument? obj = JsonDocument.Parse(JsonSerializer.Serialize(new object()));
                 oldObject[keys[i]] = obj;

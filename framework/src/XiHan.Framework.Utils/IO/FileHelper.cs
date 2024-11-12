@@ -55,7 +55,7 @@ public static class FileHelper
     {
         using FileStream? stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         byte[]? result = new byte[stream.Length];
-        await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
+        _ = await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
         return result;
     }
 
@@ -79,7 +79,7 @@ public static class FileHelper
         FileOptions fileOptions = FileOptions.Asynchronous | FileOptions.SequentialScan)
     {
         encoding ??= Encoding.UTF8;
-        List<string>? lines = new();
+        List<string>? lines = [];
         using (FileStream? stream = new(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions))
         {
             using StreamReader? reader = new(stream, encoding);
@@ -133,7 +133,7 @@ public static class FileHelper
     {
         if (!File.Exists(filePath))
         {
-            File.Create(filePath);
+            _ = File.Create(filePath);
         }
     }
 
@@ -177,11 +177,13 @@ public static class FileHelper
     public static void Clean(string filePath)
     {
         if (!File.Exists(filePath))
+        {
             return;
+        }
         // 删除文件
         File.Delete(filePath);
         // 重新创建该文件
-        File.Create(filePath);
+        _ = File.Create(filePath);
     }
 
     #endregion 文件操作

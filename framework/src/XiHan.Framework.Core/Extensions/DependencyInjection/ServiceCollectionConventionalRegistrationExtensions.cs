@@ -56,7 +56,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
         if (conventionalRegistrars == null)
         {
             conventionalRegistrars = [new DefaultConventionalRegistrar()];
-            services.AddObjectAccessor(conventionalRegistrars);
+            _ = services.AddObjectAccessor(conventionalRegistrars);
         }
 
         return conventionalRegistrars;

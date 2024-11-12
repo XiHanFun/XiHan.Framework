@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Core.Application;
-using XiHan.Framework.Utils.System.Threading;
 
 namespace XiHan.Framework.Core.Extensions.Hosting;
 
@@ -34,8 +33,8 @@ public static class HostExtensions
         IXiHanApplicationWithExternalServiceProvider? application = host.Services.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
         IHostApplicationLifetime? applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
-        applicationLifetime.ApplicationStopping.Register(() => AsyncHelper.RunSync(() => application.ShutdownAsync()));
-        applicationLifetime.ApplicationStopped.Register(() => application.Dispose());
+        _ = applicationLifetime.ApplicationStopping.Register(() => AsyncHelper.RunSync(() => application.ShutdownAsync()));
+        _ = applicationLifetime.ApplicationStopped.Register(application.Dispose);
 
         await application.InitializeAsync(host.Services);
     }

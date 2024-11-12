@@ -31,7 +31,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
-        List<Type>? moduleTypes = new();
+        List<Type>? moduleTypes = [];
         logger?.Log(LogLevel.Information, "加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         return moduleTypes;
@@ -46,7 +46,7 @@ public static class XiHanModuleHelper
     {
         CheckXiHanModuleType(moduleType);
 
-        List<Type>? dependencies = new();
+        List<Type>? dependencies = [];
 
         IEnumerable<IDependedTypesProvider>? dependencyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IDependedTypesProvider>();
@@ -55,7 +55,7 @@ public static class XiHanModuleHelper
         {
             foreach (Type? dependedModuleType in descriptor.GetDependedTypes())
             {
-                dependencies.AddIfNotContains(dependedModuleType);
+                _ = dependencies.AddIfNotContains(dependedModuleType);
             }
         }
 
@@ -69,7 +69,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static Assembly[] GetAllAssemblies(Type moduleType)
     {
-        List<Assembly>? assemblies = new();
+        List<Assembly>? assemblies = [];
 
         IEnumerable<IAdditionalModuleAssemblyProvider>? additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IAdditionalModuleAssemblyProvider>();
@@ -78,7 +78,7 @@ public static class XiHanModuleHelper
         {
             foreach (Assembly? assembly in descriptor.GetAssemblies())
             {
-                assemblies.AddIfNotContains(assembly);
+                _ = assemblies.AddIfNotContains(assembly);
             }
         }
 

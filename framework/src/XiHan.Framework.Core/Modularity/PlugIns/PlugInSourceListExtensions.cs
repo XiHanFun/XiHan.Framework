@@ -30,7 +30,7 @@ public static class PlugInSourceListExtensions
     /// <param name="searchOption"></param>
     public static void AddFolder([NotNull] this PlugInSourceList list, [NotNull] string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
     {
-        CheckHelper.NotNull(list, nameof(list));
+        _ = CheckHelper.NotNull(list, nameof(list));
 
         list.Add(new FolderPlugInSource(folder, searchOption));
     }
@@ -42,7 +42,7 @@ public static class PlugInSourceListExtensions
     /// <param name="moduleTypes"></param>
     public static void AddTypes([NotNull] this PlugInSourceList list, params Type[] moduleTypes)
     {
-        CheckHelper.NotNull(list, nameof(list));
+        _ = CheckHelper.NotNull(list, nameof(list));
 
         list.Add(new TypePlugInSource(moduleTypes));
     }
@@ -54,7 +54,7 @@ public static class PlugInSourceListExtensions
     /// <param name="filePaths"></param>
     public static void AddFiles([NotNull] this PlugInSourceList list, params string[] filePaths)
     {
-        CheckHelper.NotNull(list, nameof(list));
+        _ = CheckHelper.NotNull(list, nameof(list));
 
         list.Add(new FilePlugInSource(filePaths));
     }

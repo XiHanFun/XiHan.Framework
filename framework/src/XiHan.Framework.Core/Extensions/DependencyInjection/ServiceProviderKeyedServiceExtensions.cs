@@ -32,13 +32,10 @@ public static class ServiceProviderKeyedServiceExtensions
     /// <exception cref="InvalidOperationException"></exception>
     public static object? GetKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)
     {
-        CheckHelper.NotNull(provider, nameof(provider));
+        _ = CheckHelper.NotNull(provider, nameof(provider));
 
-        if (provider is IKeyedServiceProvider keyedServiceProvider)
-        {
-            return keyedServiceProvider.GetKeyedService(serviceType, serviceKey);
-        }
-
-        throw new InvalidOperationException("这个服务提供者不支持键控服务。 ");
+        return provider is IKeyedServiceProvider keyedServiceProvider
+            ? keyedServiceProvider.GetKeyedService(serviceType, serviceKey)
+            : throw new InvalidOperationException("这个服务提供者不支持键控服务。 ");
     }
 }

@@ -37,7 +37,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<string> GetAssemblyFiles(string folderPath, SearchOption searchOption)
     {
-        CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
+        _ = CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
 
         return Directory
             .EnumerateFiles(folderPath, "*.*", searchOption)
@@ -52,7 +52,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static List<Assembly> LoadAssemblies(string folderPath, SearchOption searchOption)
     {
-        CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
+        _ = CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
 
         return GetAssemblyFiles(folderPath, searchOption)
             .Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)
@@ -79,7 +79,7 @@ public static class AssemblyHelper
         rootAssembly ??= Assembly.GetCallingAssembly();
 
         HashSet<Assembly>? returnAssemblies = new(new AssemblyEquality());
-        HashSet<string>? loadedAssemblies = new();
+        HashSet<string>? loadedAssemblies = [];
         Queue<Assembly>? assembliesToCheck = new();
         assembliesToCheck.Enqueue(rootAssembly);
 
@@ -87,7 +87,7 @@ public static class AssemblyHelper
         {
             if (IsValid(rootAssembly))
             {
-                returnAssemblies.Add(rootAssembly);
+                _ = returnAssemblies.Add(rootAssembly);
             }
         }
 
@@ -105,10 +105,10 @@ public static class AssemblyHelper
                     }
 
                     assembliesToCheck.Enqueue(assembly);
-                    loadedAssemblies.Add(reference.FullName);
+                    _ = loadedAssemblies.Add(reference.FullName);
                     if (IsValid(assembly))
                     {
-                        returnAssemblies.Add(assembly);
+                        _ = returnAssemblies.Add(assembly);
                     }
                 }
             }
@@ -154,7 +154,7 @@ public static class AssemblyHelper
                 continue;
             }
 
-            returnAssemblies.Add(asm);
+            _ = returnAssemblies.Add(asm);
         }
 
         return [.. returnAssemblies];
@@ -169,9 +169,9 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectiveAssemblies(string prefix, string suffix, string contain)
     {
-        CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
-        CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
-        CheckHelper.NotNullOrEmpty(contain, nameof(contain));
+        _ = CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
+        _ = CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
+        _ = CheckHelper.NotNullOrEmpty(contain, nameof(contain));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.EndsWith(suffix, StringComparison.InvariantCultureIgnoreCase))
@@ -188,8 +188,8 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectivePatchAssemblies(string prefix, string suffix)
     {
-        CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
-        CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
+        _ = CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
+        _ = CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.EndsWith(suffix, StringComparison.InvariantCultureIgnoreCase))
@@ -204,7 +204,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectiveCenterAssemblies(string contain)
     {
-        CheckHelper.NotNullOrEmpty(contain, nameof(contain));
+        _ = CheckHelper.NotNullOrEmpty(contain, nameof(contain));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.Contains(contain, StringComparison.InvariantCultureIgnoreCase))
@@ -490,6 +490,7 @@ public static class AssemblyHelper
                 .Where(s => !s.FullName.StartsWith("Microsoft") && !s.FullName.StartsWith("System"))
                 .Where(s => !s.FullName.StartsWith("XiHan"));
             foreach (AssemblyName? referencedAssembly in referencedAssemblies)
+            {
                 // 检查引用的程序集是否来自 NuGet
                 if (referencedAssembly.FullName.Contains("Version="))
                 {
@@ -502,8 +503,11 @@ public static class AssemblyHelper
 
                     // 避免重复添加相同的 NuGet 包标识
                     if (!nugetPackages.Contains(nuGetPackage))
+                    {
                         nugetPackages.Add(nuGetPackage);
+                    }
                 }
+            }
         }
 
         return nugetPackages;
@@ -552,7 +556,7 @@ public static class AssemblyHelper
     {
         try
         {
-            assembly.GetTypes();
+            _ = assembly.GetTypes();
             _ = assembly.DefinedTypes.ToList();
             return true;
         }
@@ -625,9 +629,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        if (x == null && y == null) return true;
-        if (x == null || y == null) return false;
-        return AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
+        return (x == null && y == null) || (x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
     }
 
     public override int GetHashCode([DisallowNull] Assembly obj)
