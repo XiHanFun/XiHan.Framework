@@ -61,8 +61,8 @@ $xml.Save($writer)
 $writer.Close()
 
 # 执行项目构建
-$confirm = Read-Host "是否确认构建项目？(1: 确认, 2: 取消)"
-if ($confirm -ne "1") {
+$confirm = Read-Host "是否确认构建项目？(Y/N)"
+if ($confirm -ne "Y") {
     Write-Output "取消构建项目"
     exit
 }
