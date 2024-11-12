@@ -15,4 +15,20 @@ if (-not $apiKey) {
 }
 else {
     Write-Output "已检测到环境变量中的 NuGet API 密钥。"
+    # 是否确认覆盖
+    $confirmOverwrite = Read-Host "是否确认覆盖？(Y/N)"
+    if ($confirmOverwrite -eq "Y") {
+        # 提示用户输入 NuGet API 密钥
+        $apiKeySecure = Read-Host -AsSecureString "请输入 NuGet API 密钥"
+        # 将 SecureString 转为纯文本
+        $apiKeyPlainText = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($apiKeySecure))
+        # 设置环境变量
+        [System.Environment]::SetEnvironmentVariable("NUGET_API_KEY", $apiKeyPlainText, "User")
+        # 从环境变量读取 API 密钥，以便后续使用
+        $apiKey = $apiKeyPlainText
+        Write-Output "NuGet API 密钥已成功覆盖。"
+    }
+    else {
+        Write-Output "已取消覆盖。"
+    }
 }
