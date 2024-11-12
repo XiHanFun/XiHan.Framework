@@ -15,6 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Core.Application;
+using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Core.Extensions.Hosting;
 

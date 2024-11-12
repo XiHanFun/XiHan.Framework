@@ -1,9 +1,4 @@
-﻿# 设置 PowerShell 控制台编码为 UTF-8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::InputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-# NuGet 包路径
+﻿# NuGet 包路径
 $nupkgsPath = "..\..\nupkgs"
 # 从环境变量读取 API 密钥
 $apiKey = [System.Environment]::GetEnvironmentVariable("NUGET_API_KEY", "User")
@@ -38,7 +33,7 @@ foreach ($file in $nupkgFiles) {
     if ($file.Name -match "^(.*?)\.(\d+)\.(\d+)\.(\d+)\.nupkg$") {
         $packageName = $matches[1]
         $version = [Version]::Parse("$($matches[2]).$($matches[3]).$($matches[4])")
-        
+
         if ($latestFiles[$packageName].File.Name -ne $file.Name) {
             Write-Output "删除旧版本文件：$($file.Name)"
             Remove-Item $file.FullName -Force
