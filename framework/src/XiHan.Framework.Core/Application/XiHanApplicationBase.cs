@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -85,7 +86,7 @@ public class XiHanApplicationBase : IXiHanApplication
         services.TryAddObjectAccessor<IServiceProvider>();
 
         // 调用用户传入的配置委托
-        var options = new XiHanApplicationCreationOptions(services);
+        XiHanApplicationCreationOptions? options = new(services);
         optionsAction?.Invoke(options);
 
         ApplicationName = GetApplicationName(options);
@@ -119,17 +120,17 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 记录初始化日志
     /// </summary>
     /// <param name="serviceProvider"></param>
-    protected virtual void WriteInitLogs(IServiceProvider serviceProvider)
+    virtual protected void WriteInitLogs(IServiceProvider serviceProvider)
     {
-        var logger = serviceProvider.GetService<ILogger<XiHanApplicationBase>>();
+        ILogger<XiHanApplicationBase>? logger = serviceProvider.GetService<ILogger<XiHanApplicationBase>>();
         if (logger == null)
         {
             return;
         }
 
-        var initLogger = serviceProvider.GetRequiredService<IInitLoggerFactory>().Create<XiHanApplicationBase>();
+        IInitLogger<XiHanApplicationBase>? initLogger = serviceProvider.GetRequiredService<IInitLoggerFactory>().Create<XiHanApplicationBase>();
 
-        foreach (var entry in initLogger.Entries)
+        foreach (XiHanInitLogEntry? entry in initLogger.Entries)
         {
             logger.Log(entry.LogLevel, entry.EventId, entry.State, entry.Exception, entry.Formatter);
         }
@@ -143,7 +144,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="services"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    protected virtual IReadOnlyList<IModuleDescriptor> LoadModules(IServiceCollection services, XiHanApplicationCreationOptions options)
+    virtual protected IReadOnlyList<IModuleDescriptor> LoadModules(IServiceCollection services, XiHanApplicationCreationOptions options)
     {
         return services.GetSingletonInstance<IModuleLoader>().LoadModules(services, StartupModuleType, options.PlugInSources);
     }
@@ -160,17 +161,17 @@ public class XiHanApplicationBase : IXiHanApplication
             return options.ApplicationName!;
         }
 
-        var configuration = options.Services.GetConfigurationOrNull();
+        IConfiguration? configuration = options.Services.GetConfigurationOrNull();
         if (configuration != null)
         {
-            var appNameConfig = configuration["ApplicationName"];
+            string? appNameConfig = configuration["ApplicationName"];
             if (!string.IsNullOrWhiteSpace(appNameConfig))
             {
                 return appNameConfig!;
             }
         }
 
-        var entryAssembly = Assembly.GetEntryAssembly();
+        Assembly? entryAssembly = Assembly.GetEntryAssembly();
         if (entryAssembly != null)
         {
             return entryAssembly.GetName().Name;
@@ -185,7 +186,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="services"></param>
     private static void TryToSetEnvironment(IServiceCollection services)
     {
-        var HostEnvironment = services.GetSingletonInstance<IXiHanHostEnvironment>();
+        IXiHanHostEnvironment? HostEnvironment = services.GetSingletonInstance<IXiHanHostEnvironment>();
         if (HostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
         {
             HostEnvironment.EnvironmentName = Environments.Production;
@@ -196,7 +197,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 设置服务提供器
     /// </summary>
     /// <param name="serviceProvider"></param>
-    protected virtual void SetServiceProvider(IServiceProvider serviceProvider)
+    virtual protected void SetServiceProvider(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         ServiceProvider.GetRequiredService<ObjectAccessor<IServiceProvider>>().Value = ServiceProvider;
@@ -206,9 +207,9 @@ public class XiHanApplicationBase : IXiHanApplication
     /// 初始化模块，异步
     /// </summary>
     /// <returns></returns>
-    protected virtual async Task InitializeModulesAsync()
+    virtual protected async Task InitializeModulesAsync()
     {
-        using var scope = ServiceProvider.CreateScope();
+        using IServiceScope? scope = ServiceProvider.CreateScope();
         WriteInitLogs(scope.ServiceProvider);
         await scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModulesAsync(new ApplicationInitializationContext(scope.ServiceProvider));
     }
@@ -216,9 +217,9 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <summary>
     /// 初始化模块
     /// </summary>
-    protected virtual void InitializeModules()
+    virtual protected void InitializeModules()
     {
-        using var scope = ServiceProvider.CreateScope();
+        using IServiceScope? scope = ServiceProvider.CreateScope();
         WriteInitLogs(scope.ServiceProvider);
         scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModules(new ApplicationInitializationContext(scope.ServiceProvider));
     }
@@ -234,10 +235,10 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         CheckMultipleConfigureServices();
 
-        var context = new ServiceConfigurationContext(Services);
+        ServiceConfigurationContext? context = new(Services);
         Services.AddSingleton(context);
 
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
@@ -246,7 +247,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         // PreConfigureServices
-        foreach (var module in Modules.Where(m => m.Instance is IPreConfigureServices))
+        foreach (IModuleDescriptor? module in Modules.Where(m => m.Instance is IPreConfigureServices))
         {
             try
             {
@@ -258,16 +259,16 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        var assemblies = new HashSet<Assembly>();
+        HashSet<Assembly>? assemblies = new();
 
         // ConfigureServices
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
                 if (!Module.SkipAutoServiceRegistration)
                 {
-                    foreach (var assembly in module.AllAssemblies)
+                    foreach (Assembly? assembly in module.AllAssemblies)
                     {
                         if (!assemblies.Contains(assembly))
                         {
@@ -289,7 +290,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         // PostConfigureServices
-        foreach (var module in Modules.Where(m => m.Instance is IPostConfigureServices))
+        foreach (IModuleDescriptor? module in Modules.Where(m => m.Instance is IPostConfigureServices))
         {
             try
             {
@@ -301,7 +302,7 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
@@ -322,10 +323,10 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         CheckMultipleConfigureServices();
 
-        var context = new ServiceConfigurationContext(Services);
+        ServiceConfigurationContext? context = new(Services);
         Services.AddSingleton(context);
 
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
@@ -334,7 +335,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         // PreConfigureServices
-        foreach (var module in Modules.Where(m => m.Instance is IPreConfigureServices))
+        foreach (IModuleDescriptor? module in Modules.Where(m => m.Instance is IPreConfigureServices))
         {
             try
             {
@@ -346,16 +347,16 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        var assemblies = new HashSet<Assembly>();
+        HashSet<Assembly>? assemblies = new();
 
         // ConfigureServices
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
                 if (!Module.SkipAutoServiceRegistration)
                 {
-                    foreach (var assembly in module.AllAssemblies)
+                    foreach (Assembly? assembly in module.AllAssemblies)
                     {
                         if (!assemblies.Contains(assembly))
                         {
@@ -377,7 +378,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         // PostConfigureServices
-        foreach (var module in Modules.Where(m => m.Instance is IPostConfigureServices))
+        foreach (IModuleDescriptor? module in Modules.Where(m => m.Instance is IPostConfigureServices))
         {
             try
             {
@@ -389,7 +390,7 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        foreach (var module in Modules)
+        foreach (IModuleDescriptor? module in Modules)
         {
             if (module.Instance is XiHanModule Module)
             {
@@ -423,7 +424,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// </summary>
     public virtual async Task ShutdownAsync()
     {
-        using var scope = ServiceProvider.CreateScope();
+        using IServiceScope? scope = ServiceProvider.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IModuleManager>().ShutdownModulesAsync(new ApplicationShutdownContext(scope.ServiceProvider));
     }
 
@@ -432,7 +433,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// </summary>
     public virtual void Shutdown()
     {
-        using var scope = ServiceProvider.CreateScope();
+        using IServiceScope? scope = ServiceProvider.CreateScope();
         scope.ServiceProvider.GetRequiredService<IModuleManager>().ShutdownModules(new ApplicationShutdownContext(scope.ServiceProvider));
     }
 

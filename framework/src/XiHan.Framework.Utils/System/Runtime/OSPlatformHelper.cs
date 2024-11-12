@@ -32,7 +32,7 @@ public static class OsPlatformHelper
     /// 是否 Unix 系统
     /// </summary>
     public static bool OsIsUnix => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-                                   RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
     /// <summary>
     /// 系统描述
@@ -90,34 +90,34 @@ public static class OsPlatformHelper
     /// </summary>
     public static string GetRunningTime()
     {
-        var runTime = string.Empty;
+        string? runTime = string.Empty;
 
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var output = ShellHelper.Bash("uptime -s").Trim();
-                var timeSpan = DateTime.Now - output.Trim().ParseToDateTime();
+                string? output = ShellHelper.Bash("uptime -s").Trim();
+                TimeSpan timeSpan = DateTime.Now - output.Trim().ParseToDateTime();
                 runTime = timeSpan.FormatTimeSpanToString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                var output = ShellHelper.Bash("uptime | tail -n -1").Trim();
+                string? output = ShellHelper.Bash("uptime | tail -n -1").Trim();
                 // 提取运行时间部分
-                var startIndex = output.IndexOf("up ", StringComparison.Ordinal) + 3;
-                var endIndex = output.IndexOf(" user", StringComparison.Ordinal);
-                var uptime = output[startIndex..endIndex].Trim();
+                int startIndex = output.IndexOf("up ", StringComparison.Ordinal) + 3;
+                int endIndex = output.IndexOf(" user", StringComparison.Ordinal);
+                string? uptime = output[startIndex..endIndex].Trim();
                 // 解析运行时间并转换为标准格式
-                var uptimeSpan = ParseUptime(uptime);
+                TimeSpan uptimeSpan = ParseUptime(uptime);
                 runTime = uptimeSpan.FormatTimeSpanToString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("wmic", "OS get LastBootUpTime /Value").Trim();
-                var outputArr = output.Split('=');
+                string? output = ShellHelper.Cmd("wmic", "OS get LastBootUpTime /Value").Trim();
+                string[]? outputArr = output.Split('=');
                 if (outputArr.Length != 0)
                 {
-                    var timeSpan = DateTime.Now - outputArr[1].Split('.')[0].FormatStringToDate();
+                    TimeSpan timeSpan = DateTime.Now - outputArr[1].Split('.')[0].FormatStringToDate();
                     runTime = timeSpan.FormatTimeSpanToString();
                 }
             }
@@ -137,12 +137,12 @@ public static class OsPlatformHelper
     /// <returns></returns>
     private static TimeSpan ParseUptime(string uptime)
     {
-        var parts = uptime.Split(',');
+        string[]? parts = uptime.Split(',');
         int days = 0, hours = 0, minutes = 0;
 
-        foreach (var part in parts)
+        foreach (string? part in parts)
         {
-            var trimmedPart = part.Trim();
+            string? trimmedPart = part.Trim();
 
             if (trimmedPart.Contains("day"))
             {
@@ -150,7 +150,7 @@ public static class OsPlatformHelper
             }
             else if (trimmedPart.Contains(':'))
             {
-                var timeParts = trimmedPart.Split(':');
+                string[]? timeParts = trimmedPart.Split(':');
                 hours = int.Parse(timeParts[0]);
                 minutes = int.Parse(timeParts[1]);
             }

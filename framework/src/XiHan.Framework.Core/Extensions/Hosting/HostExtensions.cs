@@ -31,8 +31,8 @@ public static class HostExtensions
     /// <returns></returns>
     public static async Task InitializeAsync(this IHost host)
     {
-        var application = host.Services.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
-        var applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+        IXiHanApplicationWithExternalServiceProvider? application = host.Services.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
+        IHostApplicationLifetime? applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
         applicationLifetime.ApplicationStopping.Register(() => AsyncHelper.RunSync(() => application.ShutdownAsync()));
         applicationLifetime.ApplicationStopped.Register(() => application.Dispose());

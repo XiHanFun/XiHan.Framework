@@ -22,7 +22,7 @@ public sealed class NullAsyncDisposable : IAsyncDisposable
     /// <summary>
     /// 实例
     /// </summary>
-    public static NullAsyncDisposable Instance { get; } = new NullAsyncDisposable();
+    public static NullAsyncDisposable Instance { get; } = new();
 
     /// <summary>
     /// 构造函数

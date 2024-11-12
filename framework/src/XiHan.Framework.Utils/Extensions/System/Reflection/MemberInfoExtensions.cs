@@ -33,17 +33,18 @@ public static class MemberInfoExtensions
     /// <returns>返回 Description 特性描述信息，如不存在则返回成员的名称</returns>
     public static string GetDescription(this MemberInfo member, bool inherit = true)
     {
-        var desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
+        DescriptionAttribute? desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
         if (desc != null)
             return desc.Description;
 
-        var displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
+        DisplayNameAttribute? displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
         if (displayName != null)
             return displayName.DisplayName;
 
-        var display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
+        DisplayAttribute? display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
         return display != null
-            ? display.Name ?? string.Empty : member.Name;
+            ? display.Name ?? string.Empty
+            : member.Name;
     }
 
     #endregion
@@ -74,7 +75,7 @@ public static class MemberInfoExtensions
     {
         ArgumentNullException.ThrowIfNull(memberInfo);
 
-        var attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
+        object[]? attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
         if (attrs.Length > 0)
         {
             return (TAttribute)attrs[0];
@@ -93,7 +94,7 @@ public static class MemberInfoExtensions
     public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type type, bool inherit = true)
         where TAttribute : Attribute
     {
-        var attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
+        TAttribute? attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
         if (attr != null)
         {
             return attr;

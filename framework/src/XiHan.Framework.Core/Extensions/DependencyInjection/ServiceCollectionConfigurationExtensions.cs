@@ -45,7 +45,7 @@ public static class ServiceCollectionConfigurationExtensions
     public static IConfiguration GetConfiguration(this IServiceCollection services)
     {
         return services.GetConfigurationOrNull() ??
-               throw new XiHanException($"在服务集合中找不到{typeof(IConfiguration).AssemblyQualifiedName}的实现。");
+            throw new XiHanException($"在服务集合中找不到{typeof(IConfiguration).AssemblyQualifiedName}的实现。");
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public static class ServiceCollectionConfigurationExtensions
     /// <returns></returns>
     public static IConfiguration? GetConfigurationOrNull(this IServiceCollection services)
     {
-        var hostBuilderContext = services.GetSingletonInstanceOrNull<HostBuilderContext>();
+        HostBuilderContext? hostBuilderContext = services.GetSingletonInstanceOrNull<HostBuilderContext>();
         if (hostBuilderContext?.Configuration != null)
         {
             return hostBuilderContext.Configuration as IConfigurationRoot;

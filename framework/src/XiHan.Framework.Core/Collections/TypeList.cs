@@ -48,7 +48,7 @@ public class TypeList<TBaseType> : ITypeList<TBaseType>
     /// <param name="index">索引</param>
     public Type this[int index]
     {
-        get { return _typeList[index]; }
+        get => _typeList[index];
         set
         {
             CheckType(value);

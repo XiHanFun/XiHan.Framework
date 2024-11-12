@@ -40,8 +40,8 @@ public static class BoardHelper
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var output = ShellHelper.Bash("dmidecode -t baseboard").Trim();
-                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+                string? output = ShellHelper.Bash("dmidecode -t baseboard").Trim();
+                string[]? lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
                 if (lines.Length != 0)
                 {
                     boardInfo.Product = GetParmValue(lines, "Product Name", ':');
@@ -52,8 +52,8 @@ public static class BoardHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                var output = ShellHelper.Bash("system_profiler SPHardwareDataType").Trim();
-                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+                string? output = ShellHelper.Bash("system_profiler SPHardwareDataType").Trim();
+                string[]? lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
                 if (lines.Length != 0)
                 {
                     boardInfo.Product = GetParmValue(lines, "Model Identifier", ':');
@@ -64,8 +64,8 @@ public static class BoardHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("wmic", "baseboard get Product,Manufacturer,SerialNumber,Version /Value").Trim();
-                var lines = output.Split(Environment.NewLine);
+                string? output = ShellHelper.Cmd("wmic", "baseboard get Product,Manufacturer,SerialNumber,Version /Value").Trim();
+                string[]? lines = output.Split(Environment.NewLine);
                 if (lines.Length != 0)
                 {
                     boardInfo.Product = GetParmValue(lines, "Product", '=');

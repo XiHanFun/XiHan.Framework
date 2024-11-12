@@ -50,9 +50,9 @@ internal static class InternalServiceCollectionExtensions
     /// <param name="applicationCreationOptions"></param>
     internal static void AddCoreServices(this IServiceCollection services, IXiHanApplication application, XiHanApplicationCreationOptions applicationCreationOptions)
     {
-        var moduleLoader = new ModuleLoader();
-        var assemblyFinder = new AssemblyFinder(application);
-        var typeFinder = new TypeFinder(assemblyFinder);
+        ModuleLoader? moduleLoader = new();
+        AssemblyFinder? assemblyFinder = new(application);
+        TypeFinder? typeFinder = new(assemblyFinder);
 
         if (!services.IsAdded<IConfiguration>())
         {

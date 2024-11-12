@@ -44,8 +44,8 @@ public class JsonHelper
         if (!File.Exists(_jsonFilePath))
             return default;
 
-        var jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
-        var result = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        string? jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
+        T? result = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         return result;
     }
 
@@ -61,19 +61,19 @@ public class JsonHelper
             return default;
 
         using StreamReader streamReader = new(_jsonFilePath);
-        var jsonStr = streamReader.ReadToEnd();
+        string? jsonStr = streamReader.ReadToEnd();
         dynamic? obj = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         obj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
-        var keys = keyLink.Split(':');
-        var currentObject = obj;
-        foreach (var key in keys)
+        string[]? keys = keyLink.Split(':');
+        dynamic? currentObject = obj;
+        foreach (string? key in keys)
         {
             currentObject = currentObject[key];
             if (currentObject == null)
                 return default;
         }
 
-        var result = JsonSerializer.Deserialize<T>(currentObject.ToString(), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        dynamic? result = JsonSerializer.Deserialize<T>(currentObject.ToString(), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         return result;
     }
 
@@ -86,17 +86,17 @@ public class JsonHelper
     /// <param name="value"></param>
     public void Set<T, TValue>(string keyLink, TValue value)
     {
-        var jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
+        string? jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
         dynamic? jsoObj = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         jsoObj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
 
-        var keys = keyLink.Split(':');
-        var currentObject = jsoObj;
-        for (var i = 0; i < keys.Length; i++)
+        string[]? keys = keyLink.Split(':');
+        dynamic? currentObject = jsoObj;
+        for (int i = 0; i < keys.Length; i++)
         {
-            var oldObject = currentObject;
+            dynamic? oldObject = currentObject;
             currentObject = currentObject[keys[i]];
-            var isValueType = value!.GetType().IsValueType;
+            bool isValueType = value!.GetType().IsValueType;
             if (i == keys.Length - 1)
             {
                 oldObject[keys[i]] = isValueType || value is string ? (dynamic)JsonSerializer.Serialize(value) : value;
@@ -107,7 +107,7 @@ public class JsonHelper
                 if (currentObject != null)
                     continue;
 
-                var obj = JsonDocument.Parse(JsonSerializer.Serialize(new object()));
+                JsonDocument? obj = JsonDocument.Parse(JsonSerializer.Serialize(new object()));
                 oldObject[keys[i]] = obj;
                 currentObject = oldObject[keys[i]];
             }
@@ -123,7 +123,7 @@ public class JsonHelper
     /// <param name="jsoObj"></param>
     private void Save<T>(T jsoObj)
     {
-        var jsonStr = JsonSerializer.Serialize(jsoObj, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        string? jsonStr = JsonSerializer.Serialize(jsoObj, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         File.WriteAllText(_jsonFilePath, jsonStr, Encoding.UTF8);
     }
 }

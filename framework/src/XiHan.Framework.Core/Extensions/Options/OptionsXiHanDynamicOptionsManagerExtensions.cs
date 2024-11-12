@@ -30,7 +30,7 @@ public static class OptionsXiHanDynamicOptionsManagerExtensions
     /// <param name="options"></param>
     /// <returns></returns>
     public static Task SetAsync<T>(this IOptions<T> options)
-       where T : class
+        where T : class
     {
         return options.ToDynamicOptions().SetAsync();
     }

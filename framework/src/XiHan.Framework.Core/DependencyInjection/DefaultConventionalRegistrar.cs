@@ -34,25 +34,25 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
             return;
         }
 
-        var dependencyAttribute = GetDependencyAttributeOrNull(type);
-        var lifeTime = GetLifeTimeOrNull(type, dependencyAttribute);
+        DependencyAttribute? dependencyAttribute = GetDependencyAttributeOrNull(type);
+        ServiceLifetime? lifeTime = GetLifeTimeOrNull(type, dependencyAttribute);
 
         if (lifeTime == null)
         {
             return;
         }
 
-        var exposedServiceAndKeyedServiceTypes = GetExposedKeyedServiceTypes(type).Concat(GetExposedServiceTypes(type).Select(t => new ServiceIdentifier(t))).ToList();
+        List<ServiceIdentifier>? exposedServiceAndKeyedServiceTypes = GetExposedKeyedServiceTypes(type).Concat(GetExposedServiceTypes(type).Select(t => new ServiceIdentifier(t))).ToList();
 
         TriggerServiceExposing(services, type, exposedServiceAndKeyedServiceTypes);
 
-        foreach (var exposedServiceType in exposedServiceAndKeyedServiceTypes)
+        foreach (ServiceIdentifier exposedServiceType in exposedServiceAndKeyedServiceTypes)
         {
-            var allExposingServiceTypes = exposedServiceType.ServiceKey == null
+            List<ServiceIdentifier>? allExposingServiceTypes = exposedServiceType.ServiceKey == null
                 ? exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey == null).ToList()
                 : exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey?.ToString() == exposedServiceType.ServiceKey?.ToString()).ToList();
 
-            var serviceDescriptor = CreateServiceDescriptor(type, exposedServiceType.ServiceKey, exposedServiceType.ServiceType, allExposingServiceTypes, lifeTime.Value);
+            ServiceDescriptor? serviceDescriptor = CreateServiceDescriptor(type, exposedServiceType.ServiceKey, exposedServiceType.ServiceType, allExposingServiceTypes, lifeTime.Value);
 
             if (dependencyAttribute?.ReplaceServices == true)
             {

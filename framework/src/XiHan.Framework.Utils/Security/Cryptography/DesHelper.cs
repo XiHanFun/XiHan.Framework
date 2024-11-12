@@ -47,8 +47,8 @@ public static class DesHelper
 
         ICryptoTransform encryptor = des.CreateEncryptor();
 
-        using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
+        using MemoryStream? ms = new();
+        using CryptoStream? cs = new(ms, encryptor, CryptoStreamMode.Write);
         byte[] inputBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(inputBytes, 0, inputBytes.Length);
         cs.FlushFinalBlock();
@@ -73,9 +73,9 @@ public static class DesHelper
 
         ICryptoTransform decryptor = des.CreateDecryptor();
 
-        using var ms = new MemoryStream(encryptedBytes);
-        using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-        using var sr = new StreamReader(cs);
+        using MemoryStream? ms = new(encryptedBytes);
+        using CryptoStream? cs = new(ms, decryptor, CryptoStreamMode.Read);
+        using StreamReader? sr = new(cs);
         return sr.ReadToEnd();
     }
 }

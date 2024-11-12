@@ -35,7 +35,7 @@ public static class XiHanApplicationFactory
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
-        var app = Create(typeof(TStartupModule), options =>
+        IXiHanApplicationWithInternalServiceProvider? app = Create(typeof(TStartupModule), options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -54,7 +54,7 @@ public static class XiHanApplicationFactory
         [NotNull] Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        var app = new XiHanApplicationWithInternalServiceProvider(startupModuleType, options =>
+        XiHanApplicationWithInternalServiceProvider? app = new(startupModuleType, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -105,7 +105,7 @@ public static class XiHanApplicationFactory
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
-        var app = Create(typeof(TStartupModule), services, options =>
+        IXiHanApplicationWithExternalServiceProvider? app = Create(typeof(TStartupModule), services, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -126,7 +126,7 @@ public static class XiHanApplicationFactory
         [NotNull] IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        var app = new XiHanApplicationWithExternalServiceProvider(startupModuleType, services, options =>
+        XiHanApplicationWithExternalServiceProvider? app = new(startupModuleType, services, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);

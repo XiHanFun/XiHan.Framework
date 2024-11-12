@@ -60,9 +60,9 @@ public static class CollectionExtensions
     {
         CheckHelper.NotNull(source, nameof(source));
 
-        var addedItems = new List<T>();
+        List<T>? addedItems = new();
 
-        foreach (var item in items)
+        foreach (T? item in items)
         {
             if (source.Contains(item))
             {
@@ -108,9 +108,9 @@ public static class CollectionExtensions
     /// <returns>被移除项的列表</returns>
     public static IList<T> RemoveAll<T>(this ICollection<T> source, Func<T, bool> predicate)
     {
-        var items = source.Where(predicate).ToList();
+        List<T>? items = source.Where(predicate).ToList();
 
-        foreach (var item in items)
+        foreach (T? item in items)
         {
             source.Remove(item);
         }
@@ -126,7 +126,7 @@ public static class CollectionExtensions
     /// <param name="items">要移除的项的集合</param>
     public static void RemoveAll<T>(this ICollection<T> source, IEnumerable<T> items)
     {
-        foreach (var item in items)
+        foreach (T? item in items)
         {
             source.Remove(item);
         }

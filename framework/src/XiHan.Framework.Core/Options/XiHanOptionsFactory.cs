@@ -34,7 +34,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     public XiHanOptionsFactory(
         IEnumerable<IConfigureOptions<TOptions>> setups,
         IEnumerable<IPostConfigureOptions<TOptions>> postConfigures)
-        : this(setups, postConfigures, validations: Array.Empty<IValidateOptions<TOptions>>())
+        : this(setups, postConfigures, Array.Empty<IValidateOptions<TOptions>>())
     {
     }
 
@@ -61,7 +61,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     /// <returns></returns>
     public virtual TOptions Create(string name)
     {
-        var options = CreateInstance(name);
+        TOptions? options = CreateInstance(name);
 
         ConfigureOptions(name, options);
         PostConfigureOptions(name, options);
@@ -75,9 +75,9 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     /// </summary>
     /// <param name="name"></param>
     /// <param name="options"></param>
-    protected virtual void ConfigureOptions(string name, TOptions options)
+    virtual protected void ConfigureOptions(string name, TOptions options)
     {
-        foreach (var setup in _setups)
+        foreach (IConfigureOptions<TOptions>? setup in _setups)
         {
             if (setup is IConfigureNamedOptions<TOptions> namedSetup)
             {
@@ -95,9 +95,9 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     /// </summary>
     /// <param name="name"></param>
     /// <param name="options"></param>
-    protected virtual void PostConfigureOptions(string name, TOptions options)
+    virtual protected void PostConfigureOptions(string name, TOptions options)
     {
-        foreach (var post in _postConfigures)
+        foreach (IPostConfigureOptions<TOptions>? post in _postConfigures)
         {
             post.PostConfigure(name, options);
         }
@@ -109,22 +109,23 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     /// <param name="name"></param>
     /// <param name="options"></param>
     /// <exception cref="OptionsValidationException"></exception>
-    protected virtual void ValidateOptions(string name, TOptions options)
+    virtual protected void ValidateOptions(string name, TOptions options)
     {
         if (_validations.Length <= 0)
         {
             return;
         }
 
-        var failures = new List<string>();
-        foreach (var validate in _validations)
+        List<string>? failures = new();
+        foreach (IValidateOptions<TOptions>? validate in _validations)
         {
-            var result = validate.Validate(name, options);
+            ValidateOptionsResult? result = validate.Validate(name, options);
             if (result.Failed)
             {
                 failures.AddRange(result.Failures);
             }
         }
+
         if (failures.Count > 0)
         {
             throw new OptionsValidationException(name, typeof(TOptions), failures);
@@ -136,7 +137,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    protected virtual TOptions CreateInstance(string name)
+    virtual protected TOptions CreateInstance(string name)
     {
         return Activator.CreateInstance<TOptions>();
     }

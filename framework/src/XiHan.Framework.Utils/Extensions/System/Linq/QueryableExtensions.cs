@@ -125,20 +125,23 @@ public static class QueryableExtensions
     /// <param name="sorting"></param>
     /// <returns></returns>
     public static TQueryable OrderByIf<T, TQueryable>(this TQueryable query, bool condition, string sorting)
-       where TQueryable : IQueryable<T>
+        where TQueryable : IQueryable<T>
     {
         if (!condition || string.IsNullOrEmpty(sorting))
         {
             return query;
         }
 
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var property = Expression.Property(parameter, sorting);
-        var lambda = Expression.Lambda(property, parameter);
+        ParameterExpression? parameter = Expression.Parameter(typeof(T), "x");
+        MemberExpression? property = Expression.Property(parameter, sorting);
+        LambdaExpression? lambda = Expression.Lambda(property, parameter);
 
-        var methodName = "OrderBy";
-        var types = new Type[] { query.ElementType, property.Type };
-        var resultExpression = Expression.Call(typeof(Queryable), methodName, types, query.Expression, Expression.Quote(lambda));
+        string? methodName = "OrderBy";
+        Type[]? types = new Type[]
+        {
+            query.ElementType, property.Type
+        };
+        MethodCallExpression? resultExpression = Expression.Call(typeof(Queryable), methodName, types, query.Expression, Expression.Quote(lambda));
 
         return (TQueryable)query.Provider.CreateQuery<T>(resultExpression);
     }

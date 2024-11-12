@@ -31,7 +31,10 @@ public static class ServiceDescriptorExtensions
     /// <returns>
     /// 来自服务描述器的适当实现类型
     /// </returns>
-    public static object? NormalizedImplementationInstance(this ServiceDescriptor descriptor) => descriptor.IsKeyedService ? descriptor.KeyedImplementationInstance : descriptor.ImplementationInstance;
+    public static object? NormalizedImplementationInstance(this ServiceDescriptor descriptor)
+    {
+        return descriptor.IsKeyedService ? descriptor.KeyedImplementationInstance : descriptor.ImplementationInstance;
+    }
 
     /// <summary>
     /// 规范化键控和非键控服务之间的实现类型数据
@@ -42,5 +45,8 @@ public static class ServiceDescriptorExtensions
     /// <returns>
     /// 来自服务描述器的适当实现类型
     /// </returns>
-    public static Type? NormalizedImplementationType(this ServiceDescriptor descriptor) => descriptor.IsKeyedService ? descriptor.KeyedImplementationType : descriptor.ImplementationType;
+    public static Type? NormalizedImplementationType(this ServiceDescriptor descriptor)
+    {
+        return descriptor.IsKeyedService ? descriptor.KeyedImplementationType : descriptor.ImplementationType;
+    }
 }
