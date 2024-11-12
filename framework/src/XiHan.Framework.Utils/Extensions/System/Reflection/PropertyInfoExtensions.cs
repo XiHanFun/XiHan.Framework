@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Extensions.System.Reflection;
 public static class PropertyInfoExtensions
 {
     /// <summary>
-    /// 返回当前属性信息是否为virtual
+    /// 返回当前属性信息是否为 virtual
     /// </summary>
     /// <param name="property"></param>
     /// <returns></returns>

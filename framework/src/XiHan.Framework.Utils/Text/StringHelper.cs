@@ -243,10 +243,10 @@ public static class StringHelper
 
     #endregion
 
-    #region 是否SQL安全字符串
+    #region 是否 SQL 安全字符串
 
     /// <summary>
-    /// 转换为SQL安全字符串
+    /// 转换为 SQL 安全字符串
     /// </summary>
     /// <param name="sourceStr"></param>
     /// <param name="isDel"></param>
@@ -273,7 +273,7 @@ public static class StringHelper
     /// 检查一个字符串是否是纯数字构成的，一般用于查询字符串参数的有效性验证(0除外)
     /// </summary>
     /// <param name="value">需验证的字符串</param>
-    /// <returns>是否合法的bool值。</returns>
+    /// <returns>是否合法的 bool 值。</returns>
     public static bool IsNumberId(string? value)
     {
         return IsValidateStr("^[1-9]*[0-9]*$", value);
@@ -385,10 +385,10 @@ public static class StringHelper
 
     #endregion
 
-    #region HTML转行成TEXT
+    #region HTML 转行成 TEXT
 
     /// <summary>
-    /// HTML转行成TEXT
+    /// HTML 转行成 TEXT
     /// </summary>
     /// <param name="strHtml"></param>
     /// <returns></returns>
@@ -489,10 +489,10 @@ public static class StringHelper
     #region 字节数组转换字符串
 
     /// <summary>
-    /// 将字节数组byte[]转换为不包含字节顺序标记（BOM）的字符串
+    /// 将字节数组 byte[]转换为不包含字节顺序标记（BOM）的字符串
     /// </summary>
-    /// <param name="bytes">要转换为字符串的byte[]数组</param>
-    /// <param name="encoding">获取字符串的编码默认为UTF8</param>
+    /// <param name="bytes">要转换为字符串的 byte[]数组</param>
+    /// <param name="encoding">获取字符串的编码默认为 UTF8</param>
     /// <returns>转换得到的字符串</returns>
     public static string? ConvertFromBytesWithoutBom(byte[]? bytes, Encoding? encoding = null)
     {

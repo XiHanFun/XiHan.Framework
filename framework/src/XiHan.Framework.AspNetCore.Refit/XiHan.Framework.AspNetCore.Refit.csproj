@@ -6,7 +6,7 @@
         <Title>XiHan.Framework.AspNetCore.Refit</Title>
         <AssemblyName>XiHan.Framework.AspNetCore.Refit</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Refit</PackageId>
-        <Description>曦寒框架Web核心客户端库</Description>
+        <Description>曦寒框架 Web 核心客户端库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

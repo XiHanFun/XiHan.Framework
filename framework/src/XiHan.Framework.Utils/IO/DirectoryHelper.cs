@@ -81,10 +81,10 @@ public static class DirectoryHelper
     /// <param name="overwrite">如果目标位置已经存在同名目录，是否覆盖</param>
     public static void Copy(string sourcePath, string destinationPath, bool overwrite = false)
     {
-        // 检查目标目录是否存在，如果存在且overwrite为false，则不执行复制
+        // 检查目标目录是否存在，如果存在且 overwrite 为 false，则不执行复制
         if (Directory.Exists(destinationPath) && !overwrite)
         {
-            throw new IOException("目标目录已存在且overwrite参数为false ");
+            throw new IOException("目标目录已存在且 overwrite 参数为 false ");
         }
 
         // 复制目录
@@ -126,7 +126,7 @@ public static class DirectoryHelper
     /// 获取目录中所有文件的路径
     /// </summary>
     /// <param name="directoryPath">目录的路径 </param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml文件</param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或 N 个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以 Log 开头的 Xml 文件</param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns>包含目录中所有文件路径的数组</returns>
     public static string[] GetFiles(string directoryPath, string searchPattern, bool isSearchChild)
@@ -149,7 +149,7 @@ public static class DirectoryHelper
     /// 获取指定目录及子目录中所有子目录列表
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml目录</param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或 N 个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以 Log 开头的 Xml 目录</param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns>包含目录中所有文件路径的数组</returns>
     public static string[] GetDirectories(string directoryPath, string searchPattern, bool isSearchChild)
@@ -166,11 +166,11 @@ public static class DirectoryHelper
     /// <exception cref="Exception"></exception>
     public static long GetSize(string dirPath)
     {
-        // 定义一个DirectoryInfo对象
+        // 定义一个 DirectoryInfo 对象
         DirectoryInfo di = new(dirPath);
-        // 通过GetFiles方法,获取di目录中的所有文件的大小
+        // 通过 GetFiles 方法,获取 di 目录中的所有文件的大小
         long len = di.GetFiles().Sum(fi => fi.Length);
-        // 获取di中所有的文件夹,并存到一个新的对象数组中,以进行递归
+        // 获取 di 中所有的文件夹,并存到一个新的对象数组中,以进行递归
         DirectoryInfo[]? dis = di.GetDirectories();
         if (dis.Length <= 0)
         {
@@ -208,7 +208,7 @@ public static class DirectoryHelper
     /// 检查给定路径是否为目录
     /// </summary>
     /// <param name="path">要检查的路径</param>
-    /// <returns>true如果路径是一个目录，否则false </returns>
+    /// <returns>true 如果路径是一个目录，否则 false </returns>
     public static bool Exists(string path)
     {
         return Directory.Exists(path);
@@ -218,7 +218,7 @@ public static class DirectoryHelper
     /// 检测指定目录中是否存在指定的文件(搜索子目录)
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
-    /// <param name="searchPattern">模式字符串，"*"代表0或N个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以Log开头的Xml文件 </param>
+    /// <param name="searchPattern">模式字符串，"*"代表0或 N 个字符，"?"代表1个字符 范例:"Log*.xml"表示搜索所有以 Log 开头的 Xml 文件 </param>
     /// <param name="isSearchChild">是否搜索子目录</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>

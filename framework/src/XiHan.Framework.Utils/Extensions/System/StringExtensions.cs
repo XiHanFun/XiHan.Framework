@@ -371,7 +371,7 @@ public static partial class StringExtensions
     }
 
     /// <summary>
-    /// 将字符串转换为MD5
+    /// 将字符串转换为 MD5
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>

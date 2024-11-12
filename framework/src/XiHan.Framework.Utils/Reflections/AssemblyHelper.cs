@@ -639,7 +639,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 }
 
 /// <summary>
-/// NuGet程序集
+/// NuGet 程序集
 /// </summary>
 public record NuGetPackage
 {

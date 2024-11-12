@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Text.Json.Serialization;
 public static class SerializeHelper
 {
     /// <summary>
-    /// 序列化为Json
+    /// 序列化为 Json
     /// </summary>
     /// <param name="item"></param>
     /// <returns></returns>

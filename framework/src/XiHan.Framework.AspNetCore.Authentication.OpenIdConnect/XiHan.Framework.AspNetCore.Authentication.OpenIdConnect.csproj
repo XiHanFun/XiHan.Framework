@@ -6,7 +6,7 @@
         <Title>XiHan.Framework.AspNetCore.Authentication.OpenIdConnect</Title>
         <AssemblyName>XiHan.Framework.AspNetCore.Authentication.OpenIdConnect</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Authentication.OpenIdConnect</PackageId>
-        <Description>曦寒框架Web核心鉴权OpenIdConnect库</Description>
+        <Description>曦寒框架 Web 核心鉴权 OpenIdConnect 库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

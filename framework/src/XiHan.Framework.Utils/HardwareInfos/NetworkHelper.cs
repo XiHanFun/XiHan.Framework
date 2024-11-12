@@ -91,17 +91,17 @@ public record NetworkInfo
     public string Speed { get; set; } = string.Empty;
 
     /// <summary>
-    /// 物理地址(mac地址)
+    /// 物理地址(mac 地址)
     /// </summary>
     public string PhysicalAddress { get; set; } = string.Empty;
 
     /// <summary>
-    /// DNS地址
+    /// DNS 地址
     /// </summary>
     public List<string> DnsAddresses { get; set; } = [];
 
     /// <summary>
-    /// IP地址
+    /// IP 地址
     /// </summary>
     public List<string> IpAddresses { get; set; } = [];
 }

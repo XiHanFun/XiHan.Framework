@@ -48,20 +48,20 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// 判断类型是否为Nullable类型
+    /// 判断类型是否为 Nullable 类型
     /// </summary>
     /// <param name="type"> 要处理的类型 </param>
-    /// <returns> 是返回True，不是返回False </returns>
+    /// <returns> 是返回 True，不是返回 False </returns>
     public static bool IsNullableType(this Type type)
     {
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
 
     /// <summary>
-    /// 判断类型是否不为Nullable类型
+    /// 判断类型是否不为 Nullable 类型
     /// </summary>
     /// <param name="type"> 要处理的类型 </param>
-    /// <returns> 是返回True，不是返回False </returns>
+    /// <returns> 是返回 True，不是返回 False </returns>
     public static bool IsNotNullableType(this Type type)
     {
         return !type.IsNullableType();
@@ -71,7 +71,7 @@ public static class TypeExtensions
     /// 判断类型是否为集合类型
     /// </summary>
     /// <param name="type">要处理的类型</param>
-    /// <returns>是返回True，不是返回False</returns>
+    /// <returns>是返回 True，不是返回 False</returns>
     public static bool IsEnumerable(this Type type)
     {
         _ = CheckHelper.NotNull(type, nameof(type));
@@ -159,7 +159,7 @@ public static class TypeExtensions
     #region 空类型
 
     /// <summary>
-    /// 由类型的Nullable类型返回实际类型
+    /// 由类型的 Nullable 类型返回实际类型
     /// </summary>
     /// <param name="type"> 要处理的类型对象 </param>
     /// <returns> </returns>
@@ -169,7 +169,7 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// 通过类型转换器获取Nullable类型的基础类型
+    /// 通过类型转换器获取 Nullable 类型的基础类型
     /// </summary>
     /// <param name="type"> 要处理的类型对象 </param>
     /// <returns> </returns>

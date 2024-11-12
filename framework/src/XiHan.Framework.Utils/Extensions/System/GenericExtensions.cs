@@ -95,7 +95,7 @@ public static class GenericExtensions
 
         ParameterExpression? paramObj = Expression.Parameter(typeof(TEntity));
 
-        // 转成真实类型，防止Dynamic类型转换成object
+        // 转成真实类型，防止 Dynamic 类型转换成 object
         UnaryExpression? bodyObj = Expression.Convert(paramObj, objectType);
         MemberExpression? body = Expression.Property(bodyObj, propertyInfo);
         Func<TEntity, TValue>? getValue = Expression.Lambda<Func<TEntity, TValue>>(body, paramObj).Compile();
@@ -241,13 +241,13 @@ public static class GenericExtensions
     #region 判断为空
 
     /// <summary>
-    /// 判断对象是否为空，为空返回true
+    /// 判断对象是否为空，为空返回 true
     /// </summary>
     /// <typeparam name="T">要验证的对象的类型</typeparam>
     /// <param name="data">要验证的对象</param>
     public static bool IsNullOrEmpty<T>(this T? data)
     {
-        // 如果为null
+        // 如果为 null
         if (data == null)
         {
             return true;
@@ -264,7 +264,7 @@ public static class GenericExtensions
             return true;
         }
 
-        // 如果为DBNull
+        // 如果为 DBNull
         return data is DBNull;
     }
 

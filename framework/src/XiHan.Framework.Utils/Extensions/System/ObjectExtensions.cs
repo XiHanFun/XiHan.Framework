@@ -244,12 +244,12 @@ public static class ObjectExtensions
     #region 判断为空
 
     /// <summary>
-    /// 判断对象是否为空，为空返回true
+    /// 判断对象是否为空，为空返回 true
     /// </summary>
     /// <param name="data">要验证的对象</param>
     public static bool IsNullOrEmpty(this object? data)
     {
-        // 如果为null
+        // 如果为 null
         if (data == null)
         {
             return true;
@@ -266,7 +266,7 @@ public static class ObjectExtensions
             return true;
         }
 
-        // 如果为DBNull
+        // 如果为 DBNull
         return data is DBNull;
     }
 

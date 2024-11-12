@@ -20,7 +20,7 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
 {
     /// <summary>
-    /// 服务Key
+    /// 服务 Key
     /// </summary>
     public object? ServiceKey { get; }
 
@@ -79,7 +79,7 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
     }
 
     /// <summary>
-    /// 获取HashCode
+    /// 获取 HashCode
     /// </summary>
     /// <returns></returns>
     public override int GetHashCode()

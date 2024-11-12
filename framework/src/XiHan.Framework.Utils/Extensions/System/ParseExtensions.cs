@@ -360,8 +360,8 @@ public static class ParseExtensions
     #region Guid
 
     /// <summary>
-    /// 将string转换为Guid
-    /// 若转换失败，则返回Guid.Empty，不抛出异常。
+    /// 将 string 转换为 Guid
+    /// 若转换失败，则返回 Guid.Empty，不抛出异常。
     /// </summary>
     /// <param name="thisValue"></param>
     /// <returns></returns>
