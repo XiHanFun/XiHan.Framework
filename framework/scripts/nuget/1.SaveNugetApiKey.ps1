@@ -1,9 +1,4 @@
-﻿# 设置 PowerShell 控制台编码为 UTF-8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::InputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-# 检查环境变量是否已存在
+﻿# 检查环境变量是否已存在
 $apiKey = [System.Environment]::GetEnvironmentVariable("NUGET_API_KEY", "User")
 
 # 如果环境变量不存在，提示用户输入并保存
