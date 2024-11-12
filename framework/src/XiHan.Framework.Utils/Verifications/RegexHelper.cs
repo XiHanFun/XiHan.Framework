@@ -53,7 +53,7 @@ public static partial class RegexHelper
     #region 是否中国电话
 
     /// <summary>
-    /// 电话号码(正确格式为:xxxxxxxxxx或xxxxxxxxxxxx)
+    /// 电话号码(正确格式为:xxxxxxxxxx 或 xxxxxxxxxxxx)
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -127,7 +127,7 @@ public static partial class RegexHelper
 
         _ = Math.DivRem(sum, 11, out int y);
         return arrVerifyCode[y].Equals(checkValue.Substring(17, 1), StringComparison.InvariantCultureIgnoreCase);
-        // 符合GB11643-1999标准
+        // 符合 GB11643-1999标准
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public static partial class RegexHelper
     #region 是否邮箱
 
     /// <summary>
-    /// Email地址
+    /// Email 地址
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -182,7 +182,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// 是不是Int型
+    /// 是不是 Int 型
     /// </summary>
     /// <param name="source"></param>
     /// <returns></returns>
@@ -202,7 +202,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// N位的数字
+    /// N 位的数字
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -212,7 +212,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// 至少N位的数字
+    /// 至少 N 位的数字
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
@@ -222,7 +222,7 @@ public static partial class RegexHelper
     }
 
     /// <summary>
-    /// M至N位的数字
+    /// M 至 N 位的数字
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>

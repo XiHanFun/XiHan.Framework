@@ -52,11 +52,11 @@ public class JsonHelper
     }
 
     /// <summary>
-    /// 从Json文件中读取对象
+    /// 从 Json 文件中读取对象
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="keyLink">对象的键名链，例如 Order.User</param>
-    /// <returns>类型为T的对象</returns>
+    /// <returns>类型为 T 的对象</returns>
     public T? Get<T>(string keyLink)
     {
         if (!File.Exists(_jsonFilePath))
@@ -125,7 +125,7 @@ public class JsonHelper
     }
 
     /// <summary>
-    /// 保存Json文件
+    /// 保存 Json 文件
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="jsoObj"></param>

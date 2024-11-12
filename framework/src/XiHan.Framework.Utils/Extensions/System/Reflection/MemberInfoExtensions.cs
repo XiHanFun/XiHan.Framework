@@ -56,9 +56,9 @@ public static class MemberInfoExtensions
     #region 特性信息
 
     /// <summary>
-    /// 检查指定指定类型成员中是否存在指定的Attribute特性
+    /// 检查指定指定类型成员中是否存在指定的 Attribute 特性
     /// </summary>
-    /// <typeparam name="TAttribute">要检查的Attribute特性类型</typeparam>
+    /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="memberInfo">要检查的成员</param>
     /// <param name="inherit">是否从继承中查找</param>
     /// <returns>是否存在</returns>
@@ -70,7 +70,7 @@ public static class MemberInfoExtensions
     /// <summary>
     /// 获取成员的单个特性
     /// </summary>
-    /// <typeparam name="TAttribute">要检查的Attribute特性类型</typeparam>
+    /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="memberInfo">要检查的成员</param>
     /// <param name="inherit">是否从继承中查找</param>
     /// <returns>Returns the attribute object if found. Returns null if not found.</returns>
@@ -86,7 +86,7 @@ public static class MemberInfoExtensions
     /// <summary>
     /// 获取特定类型或基类型的单个属性（或为 null）
     /// </summary>
-    /// <typeparam name="TAttribute">要检查的Attribute特性类型</typeparam>
+    /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="type">要检查的类型成员</param>
     /// <param name="inherit">是否从继承中查找</param>
     /// <returns></returns>

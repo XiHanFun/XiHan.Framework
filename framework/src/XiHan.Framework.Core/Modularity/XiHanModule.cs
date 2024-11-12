@@ -127,7 +127,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
 
     /// <summary>
     /// 程序初始化，异步
-    /// 通常由启动模块用于构建ASP.NET Core应用程序的中间件管道
+    /// 通常由启动模块用于构建 ASP.NET Core 应用程序的中间件管道
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
@@ -140,7 +140,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
 
     /// <summary>
     /// 程序初始化
-    /// 通常由启动模块用于构建ASP.NET Core应用程序的中间件管道
+    /// 通常由启动模块用于构建 ASP.NET Core 应用程序的中间件管道
     /// </summary>
     /// <param name="context"></param>
     /// <exception cref="NotImplementedException"></exception>

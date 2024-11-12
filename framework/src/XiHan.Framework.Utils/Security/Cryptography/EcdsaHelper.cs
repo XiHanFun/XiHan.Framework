@@ -26,7 +26,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class EcdsaHelper
 {
     /// <summary>
-    /// 生成ECDSA密钥对
+    /// 生成 ECDSA 密钥对
     /// </summary>
     /// <returns>返回公钥和私钥对</returns>
     public static (string publicKey, string privateKey) GenerateKeys()

@@ -22,13 +22,13 @@ namespace XiHan.Framework.Core.Extensions.Configuration;
 public class XiHanConfigurationBuilderOptions
 {
     /// <summary>
-    /// 用于设置获取应用程序用户密钥ID的程序集
+    /// 用于设置获取应用程序用户密钥 ID 的程序集
     /// 可以使用此属性或 <see cref="UserSecretsId"/>（优先级更高）
     /// </summary>
     public Assembly? UserSecretsAssembly { get; set; }
 
     /// <summary>
-    /// 用于设置应用程序的用户密钥ID
+    /// 用于设置应用程序的用户密钥 ID
     /// 可以使用此属性或<see cref="UserSecretsAssembly"/>（优先级更高）
     /// </summary>
     public string? UserSecretsId { get; set; }
@@ -39,12 +39,12 @@ public class XiHanConfigurationBuilderOptions
     public string FileName { get; set; } = "appsettings";
 
     /// <summary>
-    /// 配置文件是否可配置，默认值为true
+    /// 配置文件是否可配置，默认值为 true
     /// </summary>
     public bool Optional { get; set; } = true;
 
     /// <summary>
-    /// 当文件发生更改时，是否应重新加载配置，默认值为true
+    /// 当文件发生更改时，是否应重新加载配置，默认值为 true
     /// </summary>
     public bool ReloadOnChange { get; set; } = true;
 

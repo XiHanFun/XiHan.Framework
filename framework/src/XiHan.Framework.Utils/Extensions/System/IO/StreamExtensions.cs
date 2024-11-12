@@ -66,7 +66,7 @@ public static class StreamExtensions
             stream.Position = 0;
         }
 
-        // 81920 已经是默认值，但是需要设置才能传递cancellationToken
+        // 81920 已经是默认值，但是需要设置才能传递 cancellationToken
         return stream.CopyToAsync(destination, 81920, cancellationToken);
     }
 

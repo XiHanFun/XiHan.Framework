@@ -71,7 +71,7 @@ public static class ServiceCollectionObjectAccessorExtensions
     {
         if (services.Any(s => s.ServiceType == typeof(ObjectAccessor<T>)))
         {
-            throw new Exception($"对象访问器是在type之前注册的:{typeof(T).AssemblyQualifiedName}");
+            throw new Exception($"对象访问器是在 type 之前注册的:{typeof(T).AssemblyQualifiedName}");
         }
 
         // 添加到开头，以便快速检索

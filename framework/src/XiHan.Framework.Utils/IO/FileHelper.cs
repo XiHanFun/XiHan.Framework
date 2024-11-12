@@ -295,7 +295,7 @@ public static class FileHelper
     /// 检查文件是否存在
     /// </summary>
     /// <param name="filePath">要检查的文件路径</param>
-    /// <returns>如果文件存在返回true，否则返回false</returns>
+    /// <returns>如果文件存在返回 true，否则返回 false</returns>
     public static bool Exists(string filePath)
     {
         return File.Exists(filePath);
@@ -305,7 +305,7 @@ public static class FileHelper
     /// 检查文件是否被锁定
     /// </summary>
     /// <param name="filePath">要检查的文件路径</param>
-    /// <returns>true如果文件没有被锁定，可以进行读写操作，否则false</returns>
+    /// <returns>true 如果文件没有被锁定，可以进行读写操作，否则 false</returns>
     public static bool IsUnlocked(string filePath)
     {
         try

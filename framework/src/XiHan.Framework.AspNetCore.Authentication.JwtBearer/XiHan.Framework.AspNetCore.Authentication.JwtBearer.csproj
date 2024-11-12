@@ -6,7 +6,7 @@
         <Title>XiHan.Framework.AspNetCore.Authentication.JwtBearer</Title>
         <AssemblyName>XiHan.Framework.AspNetCore.Authentication.JwtBearer</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Authentication.JwtBearer</PackageId>
-        <Description>曦寒框架Web核心鉴权Jwt库</Description>
+        <Description>曦寒框架 Web 核心鉴权 Jwt 库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
