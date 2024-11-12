@@ -64,7 +64,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected bool IsConventionalRegistrationDisabled(Type type)
+    protected virtual bool IsConventionalRegistrationDisabled(Type type)
     {
         return type.IsDefined(typeof(DisableConventionalRegistrationAttribute), true);
     }
@@ -75,7 +75,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="services"></param>
     /// <param name="implementationType"></param>
     /// <param name="serviceTypes"></param>
-    virtual protected void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<Type> serviceTypes)
+    protected virtual void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<Type> serviceTypes)
     {
         TriggerServiceExposing(services, implementationType, serviceTypes.ConvertAll(t => new ServiceIdentifier(t)));
     }
@@ -86,7 +86,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="services"></param>
     /// <param name="implementationType"></param>
     /// <param name="serviceTypes"></param>
-    virtual protected void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<ServiceIdentifier> serviceTypes)
+    protected virtual void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<ServiceIdentifier> serviceTypes)
     {
         ServiceExposingActionList? exposeActions = services.GetExposingActionList();
         if (exposeActions.Any())
@@ -104,7 +104,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected DependencyAttribute? GetDependencyAttributeOrNull(Type type)
+    protected virtual DependencyAttribute? GetDependencyAttributeOrNull(Type type)
     {
         return type.GetCustomAttribute<DependencyAttribute>(true);
     }
@@ -115,7 +115,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="type"></param>
     /// <param name="dependencyAttribute"></param>
     /// <returns></returns>
-    virtual protected ServiceLifetime? GetLifeTimeOrNull(Type type, DependencyAttribute? dependencyAttribute)
+    protected virtual ServiceLifetime? GetLifeTimeOrNull(Type type, DependencyAttribute? dependencyAttribute)
     {
         return dependencyAttribute?.Lifetime ?? GetServiceLifetimeFromClassHierarchy(type) ?? GetDefaultLifeTimeOrNull(type);
     }
@@ -125,24 +125,13 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected ServiceLifetime? GetServiceLifetimeFromClassHierarchy(Type type)
+    protected virtual ServiceLifetime? GetServiceLifetimeFromClassHierarchy(Type type)
     {
-        if (typeof(ITransientDependency).GetTypeInfo().IsAssignableFrom(type))
-        {
-            return ServiceLifetime.Transient;
-        }
-
-        if (typeof(ISingletonDependency).GetTypeInfo().IsAssignableFrom(type))
-        {
-            return ServiceLifetime.Singleton;
-        }
-
-        if (typeof(IScopedDependency).GetTypeInfo().IsAssignableFrom(type))
-        {
-            return ServiceLifetime.Scoped;
-        }
-
-        return null;
+        return typeof(ITransientDependency).GetTypeInfo().IsAssignableFrom(type)
+            ? ServiceLifetime.Transient
+            : typeof(ISingletonDependency).GetTypeInfo().IsAssignableFrom(type)
+            ? ServiceLifetime.Singleton
+            : typeof(IScopedDependency).GetTypeInfo().IsAssignableFrom(type) ? ServiceLifetime.Scoped : null;
     }
 
     /// <summary>
@@ -150,7 +139,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected ServiceLifetime? GetDefaultLifeTimeOrNull(Type type)
+    protected virtual ServiceLifetime? GetDefaultLifeTimeOrNull(Type type)
     {
         return null;
     }
@@ -160,7 +149,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected List<Type> GetExposedServiceTypes(Type type)
+    protected virtual List<Type> GetExposedServiceTypes(Type type)
     {
         return ExposedServiceExplorer.GetExposedServices(type);
     }
@@ -170,7 +159,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    virtual protected List<ServiceIdentifier> GetExposedKeyedServiceTypes(Type type)
+    protected virtual List<ServiceIdentifier> GetExposedKeyedServiceTypes(Type type)
     {
         return ExposedServiceExplorer.GetExposedKeyedServices(type);
     }
@@ -184,7 +173,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="allExposingServiceTypes"></param>
     /// <param name="lifeTime"></param>
     /// <returns></returns>
-    virtual protected ServiceDescriptor CreateServiceDescriptor(Type implementationType, object? serviceKey,
+    protected virtual ServiceDescriptor CreateServiceDescriptor(Type implementationType, object? serviceKey,
         Type exposingServiceType, List<ServiceIdentifier> allExposingServiceTypes, ServiceLifetime lifeTime)
     {
         if (lifeTime.IsIn(ServiceLifetime.Singleton, ServiceLifetime.Scoped))
@@ -211,24 +200,15 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="exposingServiceType"></param>
     /// <param name="allExposingKeyedServiceTypes"></param>
     /// <returns></returns>
-    virtual protected Type? GetRedirectedTypeOrNull(Type implementationType, Type exposingServiceType, List<ServiceIdentifier> allExposingKeyedServiceTypes)
+    protected virtual Type? GetRedirectedTypeOrNull(Type implementationType, Type exposingServiceType, List<ServiceIdentifier> allExposingKeyedServiceTypes)
     {
-        if (allExposingKeyedServiceTypes.Count < 2)
-        {
-            return null;
-        }
-
-        if (exposingServiceType == implementationType)
-        {
-            return null;
-        }
-
-        if (allExposingKeyedServiceTypes.Any(t => t.ServiceType == implementationType))
-        {
-            return implementationType;
-        }
-
-        return allExposingKeyedServiceTypes.FirstOrDefault(
+        return allExposingKeyedServiceTypes.Count < 2
+            ? null
+            : exposingServiceType == implementationType
+            ? null
+            : allExposingKeyedServiceTypes.Any(t => t.ServiceType == implementationType)
+            ? implementationType
+            : allExposingKeyedServiceTypes.FirstOrDefault(
             t => t.ServiceType != exposingServiceType && exposingServiceType.IsAssignableFrom(t.ServiceType)
         ).ServiceType;
     }

@@ -48,12 +48,9 @@ public static class ObjectExtensions
     public static T To<T>(this object obj)
         where T : struct
     {
-        if (typeof(T) == typeof(Guid))
-        {
-            return (T)TypeDescriptor.GetConverter(typeof(T)).ConvertFromInvariantString(obj.ToString()!)!;
-        }
-
-        return (T)Convert.ChangeType(obj, typeof(T), CultureInfo.InvariantCulture);
+        return typeof(T) == typeof(Guid)
+            ? (T)TypeDescriptor.GetConverter(typeof(T)).ConvertFromInvariantString(obj.ToString()!)!
+            : (T)Convert.ChangeType(obj, typeof(T), CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -92,12 +89,7 @@ public static class ObjectExtensions
     /// </returns>
     public static T If<T>(this T obj, bool condition, Func<T, T> func)
     {
-        if (condition)
-        {
-            return func(obj);
-        }
-
-        return obj;
+        return condition ? func(obj) : obj;
     }
 
     /// <summary>
@@ -152,7 +144,9 @@ public static class ObjectExtensions
     public static bool IsObjectContainField(this object? instance, string fieldName)
     {
         if (instance == null || string.IsNullOrEmpty(fieldName))
+        {
             return false;
+        }
 
         FieldInfo? foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfo != null;
@@ -167,7 +161,9 @@ public static class ObjectExtensions
     public static FieldInfo GetObjectField(this object? instance, string fieldName)
     {
         if (instance == null || string.IsNullOrEmpty(fieldName))
+        {
             throw new NotImplementedException(nameof(fieldName));
+        }
 
         FieldInfo? foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfo ?? throw new NotImplementedException(nameof(fieldName));
@@ -181,7 +177,9 @@ public static class ObjectExtensions
     public static FieldInfo[] GetObjectFields(this object? instance)
     {
         if (instance == null)
+        {
             throw new NotImplementedException(nameof(instance));
+        }
 
         FieldInfo[]? foundFieldInfos = instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfos ?? throw new NotImplementedException(nameof(foundFieldInfos));
@@ -200,7 +198,9 @@ public static class ObjectExtensions
     public static bool IsContainObjectProperty(this object? instance, string propertyName)
     {
         if (instance == null || string.IsNullOrEmpty(propertyName))
+        {
             return false;
+        }
 
         PropertyInfo? foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfo != null;
@@ -215,7 +215,9 @@ public static class ObjectExtensions
     public static PropertyInfo GetObjectProperty(this object? instance, string propertyName)
     {
         if (instance == null || string.IsNullOrEmpty(propertyName))
+        {
             throw new NotImplementedException(nameof(propertyName));
+        }
 
         PropertyInfo? foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfo ?? throw new NotImplementedException(nameof(foundPropertyInfo));
@@ -229,7 +231,9 @@ public static class ObjectExtensions
     public static PropertyInfo[] GetObjectProperties(this object? instance)
     {
         if (instance == null)
+        {
             throw new NotImplementedException(nameof(instance));
+        }
 
         PropertyInfo[]? foundPropertyInfos = instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfos ?? throw new NotImplementedException(nameof(foundPropertyInfos));
@@ -247,14 +251,20 @@ public static class ObjectExtensions
     {
         // 如果为null
         if (data == null)
+        {
             return true;
+        }
 
         // 如果为""
         if (data is not string)
+        {
             return data is DBNull;
+        }
 
         if (string.IsNullOrEmpty(data.ToString()?.Trim()))
+        {
             return true;
+        }
 
         // 如果为DBNull
         return data is DBNull;

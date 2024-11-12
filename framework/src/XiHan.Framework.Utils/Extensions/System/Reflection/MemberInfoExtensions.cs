@@ -35,11 +35,15 @@ public static class MemberInfoExtensions
     {
         DescriptionAttribute? desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
         if (desc != null)
+        {
             return desc.Description;
+        }
 
         DisplayNameAttribute? displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
         if (displayName != null)
+        {
             return displayName.DisplayName;
+        }
 
         DisplayAttribute? display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
         return display != null
@@ -76,12 +80,7 @@ public static class MemberInfoExtensions
         ArgumentNullException.ThrowIfNull(memberInfo);
 
         object[]? attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
-        if (attrs.Length > 0)
-        {
-            return (TAttribute)attrs[0];
-        }
-
-        return default;
+        return attrs.Length > 0 ? (TAttribute)attrs[0] : default;
     }
 
     /// <summary>
@@ -95,17 +94,9 @@ public static class MemberInfoExtensions
         where TAttribute : Attribute
     {
         TAttribute? attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
-        if (attr != null)
-        {
-            return attr;
-        }
-
-        if (type.GetTypeInfo().BaseType == null)
-        {
-            return null;
-        }
-
-        return type.GetTypeInfo().BaseType?.GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(inherit);
+        return attr ?? (type.GetTypeInfo().BaseType == null
+            ? null
+            : (type.GetTypeInfo().BaseType?.GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(inherit)));
     }
 
     #endregion

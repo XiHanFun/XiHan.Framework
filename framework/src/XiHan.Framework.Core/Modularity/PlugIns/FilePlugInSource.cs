@@ -45,7 +45,7 @@ public class FilePlugInSource : IPlugInSource
     /// <exception cref="XiHanException"></exception>
     public Type[] GetModules()
     {
-        List<Type>? modules = new();
+        List<Type>? modules = [];
 
         foreach (string? filePath in FilePaths)
         {
@@ -57,7 +57,7 @@ public class FilePlugInSource : IPlugInSource
                 {
                     if (XiHanModuleHelper.IsXiHanModule(type))
                     {
-                        modules.AddIfNotContains(type);
+                        _ = modules.AddIfNotContains(type);
                     }
                 }
             }

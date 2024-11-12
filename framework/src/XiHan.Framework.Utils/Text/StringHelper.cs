@@ -114,19 +114,23 @@ public static class StringHelper
         StringBuilder sb = new();
 
         if (!isAllowsDuplicates)
+        {
             sourceEnumerable = sourceEnumerable.Distinct();
+        }
 
         List<string>? enumerable = sourceEnumerable.ToList();
         foreach (string? item in enumerable)
+        {
             if (item == enumerable.LastOrDefault())
             {
-                sb.Append(item);
+                _ = sb.Append(item);
             }
             else
             {
-                sb.Append(item);
-                sb.Append(sepeater);
+                _ = sb.Append(item);
+                _ = sb.Append(sepeater);
             }
+        }
 
         return sb.ToString();
     }
@@ -210,9 +214,15 @@ public static class StringHelper
                 // 检查新样式中分隔符的位置
                 StringBuilder newStr = new();
                 if (newStyle != null)
+                {
                     for (int i = 0; i < newStyle.Length; i++)
+                    {
                         if (newStyle.Substring(i, 1) == splitString)
-                            newStr.Append(i + ",");
+                        {
+                            _ = newStr.Append(i + ",");
+                        }
+                    }
+                }
 
                 if (!string.IsNullOrWhiteSpace(newStr.ToString()))
                 {
@@ -277,7 +287,10 @@ public static class StringHelper
     /// <returns></returns>
     public static bool IsValidateStr(string express, string? value)
     {
-        if (value == null) return false;
+        if (value == null)
+        {
+            return false;
+        }
 
         Regex myRegex = new(express);
         return value.Length != 0 && myRegex.IsMatch(value);
@@ -298,10 +311,16 @@ public static class StringHelper
         int tempLen = 0;
         byte[]? s = ascii.GetBytes(inputString);
         foreach (byte t in s)
+        {
             if (t == 63)
+            {
                 tempLen += 2;
+            }
             else
+            {
                 tempLen += 1;
+            }
+        }
 
         return tempLen;
     }
@@ -332,24 +351,34 @@ public static class StringHelper
         for (int i = 0; i < s.Length; i++)
         {
             if (s[i] == 63)
+            {
                 tempLen += 2;
+            }
             else
+            {
                 tempLen += 1;
+            }
 
             try
             {
-                sb.Append(inputString.AsSpan(i, 1));
+                _ = sb.Append(inputString.AsSpan(i, 1));
             }
             catch
             {
                 break;
             }
 
-            if (tempLen > len) break;
+            if (tempLen > len)
+            {
+                break;
+            }
         }
 
         byte[]? myByte = Encoding.Default.GetBytes(inputString);
-        if (isShowFix && myByte.Length > len) sb.Append('…');
+        if (isShowFix && myByte.Length > len)
+        {
+            _ = sb.Append('…');
+        }
 
         return sb.ToString();
     }
@@ -427,7 +456,10 @@ public static class StringHelper
     public static string FormatReplaceStr(string content, string oldStr, string newStr)
     {
         // 没有替换字符串直接返回源字符串
-        if (!content.Contains(oldStr, StringComparison.CurrentCulture)) return content;
+        if (!content.Contains(oldStr, StringComparison.CurrentCulture))
+        {
+            return content;
+        }
         // 有替换字符串开始替换
         StringBuilder strBuffer = new();
         int start = 0;
@@ -436,16 +468,19 @@ public static class StringHelper
         while (true)
         {
             start = content.IndexOf(oldStr, start, StringComparison.Ordinal);
-            if (start == -1) break;
+            if (start == -1)
+            {
+                break;
+            }
 
-            strBuffer.Append(content[end..start]);
-            strBuffer.Append(newStr);
+            _ = strBuffer.Append(content[end..start]);
+            _ = strBuffer.Append(newStr);
             start += oldStr.Length;
             end = start;
         }
 
         // 查找到最后一个位置之后，把剩下的字符串拼接进去
-        strBuffer.Append(content[end..]);
+        _ = strBuffer.Append(content[end..]);
         return strBuffer.ToString();
     }
 
@@ -470,14 +505,7 @@ public static class StringHelper
 
         bool hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
 
-        if (hasBom)
-        {
-            return encoding.GetString(bytes, 3, bytes.Length - 3);
-        }
-        else
-        {
-            return encoding.GetString(bytes);
-        }
+        return hasBom ? encoding.GetString(bytes, 3, bytes.Length - 3) : encoding.GetString(bytes);
     }
 
     #endregion

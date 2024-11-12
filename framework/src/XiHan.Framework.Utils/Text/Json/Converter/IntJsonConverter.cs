@@ -16,7 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.Extensions.System;
 
-namespace XiHan.Framework.Utils.System.Text.Json.Converter;
+namespace XiHan.Framework.Utils.Text.Json.Converter;
 
 /// <summary>
 /// IntJsonConverter

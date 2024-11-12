@@ -82,12 +82,16 @@ public static class AesHelper
     {
         // 检查密文的有效性
         if (string.IsNullOrEmpty(cipherText))
+        {
             throw new ArgumentException("密码文本无效", nameof(cipherText));
+        }
 
         // 解析盐和密文
         string[]? parts = cipherText.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 2)
+        {
             throw new ArgumentException("密码文本无效", nameof(cipherText));
+        }
 
         byte[]? salt = Convert.FromBase64String(parts[0]);
         byte[]? cipherBytes = Convert.FromBase64String(parts[1]);

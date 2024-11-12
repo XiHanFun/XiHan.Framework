@@ -287,7 +287,7 @@ public static class ListExtensions
     /// <returns>返回找到的项或新添加的项</returns>
     public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory)
     {
-        CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(source, nameof(source));
 
         T? item = source.FirstOrDefault(selector);
 
@@ -312,7 +312,7 @@ public static class ListExtensions
         where T : notnull
     {
         // 初始化排序列表、访问标记字典
-        List<T>? sorted = new();
+        List<T>? sorted = [];
         Dictionary<T, bool>? visited = new(comparer);
 
         // 遍历源列表中的每个项并进行拓扑排序

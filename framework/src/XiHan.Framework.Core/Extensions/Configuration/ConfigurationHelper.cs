@@ -55,11 +55,11 @@ public static class ConfigurationHelper
         {
             if (options.UserSecretsId != null)
             {
-                builder.AddUserSecrets(options.UserSecretsId);
+                _ = builder.AddUserSecrets(options.UserSecretsId);
             }
             else if (options.UserSecretsAssembly != null)
             {
-                builder.AddUserSecrets(options.UserSecretsAssembly, true);
+                _ = builder.AddUserSecrets(options.UserSecretsAssembly, true);
             }
         }
 

@@ -35,8 +35,8 @@ public static class ServiceCollectionDynamicOptionsManagerExtensions
         where TOptions : class
         where TManager : XiHanDynamicOptionsManager<TOptions>
     {
-        services.Replace(ServiceDescriptor.Scoped(typeof(IOptions<TOptions>), typeof(TManager)));
-        services.Replace(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<TOptions>), typeof(TManager)));
+        _ = services.Replace(ServiceDescriptor.Scoped(typeof(IOptions<TOptions>), typeof(TManager)));
+        _ = services.Replace(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<TOptions>), typeof(TManager)));
 
         return services;
     }

@@ -34,7 +34,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
         [NotNull] IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction) : base(startupModuleType, services, optionsAction)
     {
-        services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
+        _ = services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     void IXiHanApplicationWithExternalServiceProvider.SetServiceProvider([NotNull] IServiceProvider serviceProvider)
     {
-        CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
         if (ServiceProvider != null)
         {
@@ -63,7 +63,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     public async Task InitializeAsync([NotNull] IServiceProvider serviceProvider)
     {
-        CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
         SetServiceProvider(serviceProvider);
 
@@ -76,7 +76,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     public void Initialize([NotNull] IServiceProvider serviceProvider)
     {
-        CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
         SetServiceProvider(serviceProvider);
 

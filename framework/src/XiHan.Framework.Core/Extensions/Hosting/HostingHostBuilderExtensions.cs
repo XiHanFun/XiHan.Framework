@@ -43,7 +43,7 @@ public static class HostingHostBuilderExtensions
     {
         return hostBuilder.ConfigureAppConfiguration((_, builder) =>
         {
-            builder.AddJsonFile(path, optional, reloadOnChange);
+            _ = (HostBuilderContext)builder.AddJsonFile(path, optional, reloadOnChange);
         });
     }
 }

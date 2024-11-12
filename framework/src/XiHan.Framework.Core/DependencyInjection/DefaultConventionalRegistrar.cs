@@ -56,7 +56,7 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
 
             if (dependencyAttribute?.ReplaceServices == true)
             {
-                services.Replace(serviceDescriptor);
+                _ = services.Replace(serviceDescriptor);
             }
             else if (dependencyAttribute?.TryRegister == true)
             {

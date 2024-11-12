@@ -91,7 +91,7 @@ public static class ServiceCollectionCommonExtensions
     /// <returns></returns>
     public static IServiceProvider BuildServiceProviderFromFactory([NotNull] this IServiceCollection services)
     {
-        CheckHelper.NotNull(services, nameof(services));
+        _ = CheckHelper.NotNull(services, nameof(services));
 
         foreach (ServiceDescriptor? service in services)
         {
@@ -124,7 +124,7 @@ public static class ServiceCollectionCommonExtensions
     /// <exception cref="XiHanException"></exception>
     public static IServiceProvider BuildServiceProviderFromFactory<TContainerBuilder>([NotNull] this IServiceCollection services, Action<TContainerBuilder>? builderAction = null) where TContainerBuilder : notnull
     {
-        CheckHelper.NotNull(services, nameof(services));
+        _ = CheckHelper.NotNull(services, nameof(services));
 
         IServiceProviderFactory<TContainerBuilder>? serviceProviderFactory = services.GetSingletonInstanceOrNull<IServiceProviderFactory<TContainerBuilder>>() ??
             throw new XiHanException($"在 {services} 中未发现服务提供器 {typeof(IServiceProviderFactory<TContainerBuilder>).FullName}");

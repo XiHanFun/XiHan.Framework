@@ -30,7 +30,7 @@ public class AsyncDisposeFunc : IAsyncDisposable
     /// <param name="func">此对象在执行 DisposeAsync 时要执行的函数</param>
     public AsyncDisposeFunc([NotNull] Func<Task> func)
     {
-        CheckHelper.NotNull(func, nameof(func));
+        _ = CheckHelper.NotNull(func, nameof(func));
 
         _func = func;
     }

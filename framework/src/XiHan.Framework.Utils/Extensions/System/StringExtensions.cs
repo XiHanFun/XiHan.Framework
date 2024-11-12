@@ -31,14 +31,9 @@ public static partial class StringExtensions
     /// </summary>
     public static string EnsureEndsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
-        if (str.EndsWith(c.ToString(), comparisonType))
-        {
-            return str;
-        }
-
-        return str + c;
+        return str.EndsWith(c.ToString(), comparisonType) ? str : str + c;
     }
 
     /// <summary>
@@ -46,14 +41,9 @@ public static partial class StringExtensions
     /// </summary>
     public static string EnsureStartsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
-        if (str.StartsWith(c.ToString(), comparisonType))
-        {
-            return str;
-        }
-
-        return c + str;
+        return str.StartsWith(c.ToString(), comparisonType) ? str : c + str;
     }
 
     /// <summary>
@@ -79,14 +69,9 @@ public static partial class StringExtensions
     /// <exception cref="ArgumentException">如果 <paramref name="len"/> 大于字符串的长度，则抛出</exception>
     public static string Left(this string str, int len)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
-        if (str.Length < len)
-        {
-            throw new ArgumentException("len 参数不能大于给定字符串的长度！");
-        }
-
-        return str[..len];
+        return str.Length < len ? throw new ArgumentException("len 参数不能大于给定字符串的长度！") : str[..len];
     }
 
     /// <summary>
@@ -105,7 +90,7 @@ public static partial class StringExtensions
     /// <param name="n">出现次数</param>
     public static int NthIndexOf(this string str, char c, int n)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
         int count = 0;
         for (int i = 0; i < str.Length; i++)
@@ -216,7 +201,7 @@ public static partial class StringExtensions
     /// <returns></returns>
     public static string ReplaceFirst(this string str, string search, string replace, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
         int pos = str.IndexOf(search, comparisonType);
         if (pos < 0)
@@ -249,14 +234,11 @@ public static partial class StringExtensions
     /// <exception cref="ArgumentException">如果 <paramref name="len"/> 大于字符串的长度，则抛出</exception>
     public static string Right(this string str, int len)
     {
-        CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(str, nameof(str));
 
-        if (str.Length < len)
-        {
-            throw new ArgumentException("len argument can not be bigger than given string's length!");
-        }
-
-        return str.Substring(str.Length - len, len);
+        return str.Length < len
+            ? throw new ArgumentException("len argument can not be bigger than given string's length!")
+            : str.Substring(str.Length - len, len);
     }
 
     /// <summary>
@@ -306,22 +288,13 @@ public static partial class StringExtensions
     /// <returns>该字符串的驼峰格式</returns>
     public static string ToCamelCase(this string str, bool useCurrentCulture = false, bool handleAbbreviations = false)
     {
-        if (string.IsNullOrWhiteSpace(str))
-        {
-            return str;
-        }
-
-        if (str.Length == 1)
-        {
-            return useCurrentCulture ? str.ToLower() : str.ToLowerInvariant();
-        }
-
-        if (handleAbbreviations && IsAllUpperCase(str))
-        {
-            return useCurrentCulture ? str.ToLower() : str.ToLowerInvariant();
-        }
-
-        return (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str[1..];
+        return string.IsNullOrWhiteSpace(str)
+            ? str
+            : str.Length == 1
+            ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
+            : handleAbbreviations && IsAllUpperCase(str)
+            ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
+            : (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str[1..];
     }
 
     /// <summary>
@@ -332,12 +305,9 @@ public static partial class StringExtensions
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
     public static string ToSentenceCase(this string str, bool useCurrentCulture = false)
     {
-        if (string.IsNullOrWhiteSpace(str))
-        {
-            return str;
-        }
-
-        return useCurrentCulture
+        return string.IsNullOrWhiteSpace(str)
+            ? str
+            : useCurrentCulture
             ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
             : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
     }
@@ -382,7 +352,7 @@ public static partial class StringExtensions
     public static T ToEnum<T>(this string value)
         where T : struct
     {
-        CheckHelper.NotNull(value, nameof(value));
+        _ = CheckHelper.NotNull(value, nameof(value));
         return (T)Enum.Parse(typeof(T), value);
     }
 
@@ -396,7 +366,7 @@ public static partial class StringExtensions
     public static T ToEnum<T>(this string value, bool ignoreCase)
         where T : struct
     {
-        CheckHelper.NotNull(value, nameof(value));
+        _ = CheckHelper.NotNull(value, nameof(value));
         return (T)Enum.Parse(typeof(T), value, ignoreCase);
     }
 
@@ -413,7 +383,7 @@ public static partial class StringExtensions
         StringBuilder? sb = new();
         foreach (byte hashByte in hashBytes)
         {
-            sb.Append(hashByte.ToString("X2"));
+            _ = sb.Append(hashByte.ToString("X2"));
         }
 
         return sb.ToString();
@@ -427,17 +397,11 @@ public static partial class StringExtensions
     /// <returns>该字符串的帕斯卡式</returns>
     public static string ToPascalCase(this string str, bool useCurrentCulture = false)
     {
-        if (string.IsNullOrWhiteSpace(str))
-        {
-            return str;
-        }
-
-        if (str.Length == 1)
-        {
-            return useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant();
-        }
-
-        return (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
+        return string.IsNullOrWhiteSpace(str)
+            ? str
+            : str.Length == 1
+            ? useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant()
+            : (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
     }
 
     /// <summary>
@@ -445,17 +409,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string? Truncate(this string? str, int maxLength)
     {
-        if (str == null)
-        {
-            return null;
-        }
-
-        if (str.Length <= maxLength)
-        {
-            return str;
-        }
-
-        return str.Left(maxLength);
+        return str == null ? null : str.Length <= maxLength ? str : str.Left(maxLength);
     }
 
     /// <summary>
@@ -463,17 +417,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string? TruncateFromBeginning(this string? str, int maxLength)
     {
-        if (str == null)
-        {
-            return null;
-        }
-
-        if (str.Length <= maxLength)
-        {
-            return str;
-        }
-
-        return str.Right(maxLength);
+        return str == null ? null : str.Length <= maxLength ? str : str.Right(maxLength);
     }
 
     /// <summary>
@@ -493,27 +437,13 @@ public static partial class StringExtensions
     /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
     public static string? TruncateWithPostfix(this string? str, int maxLength, string postfix)
     {
-        if (str == null)
-        {
-            return null;
-        }
-
-        if (str == string.Empty || maxLength == 0)
-        {
-            return string.Empty;
-        }
-
-        if (str.Length <= maxLength)
-        {
-            return str;
-        }
-
-        if (maxLength <= postfix.Length)
-        {
-            return postfix.Left(maxLength);
-        }
-
-        return str.Left(maxLength - postfix.Length) + postfix;
+        return str == null
+            ? null
+            : str == string.Empty || maxLength == 0
+            ? string.Empty
+            : str.Length <= maxLength
+            ? str
+            : maxLength <= postfix.Length ? postfix.Left(maxLength) : str.Left(maxLength - postfix.Length) + postfix;
     }
 
     /// <summary>
@@ -529,8 +459,8 @@ public static partial class StringExtensions
     /// </summary>
     public static byte[] GetBytes(this string str, Encoding encoding)
     {
-        CheckHelper.NotNull(str, nameof(str));
-        CheckHelper.NotNull(encoding, nameof(encoding));
+        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(encoding, nameof(encoding));
 
         return encoding.GetBytes(str);
     }

@@ -38,7 +38,11 @@ public static class FormatExtensions
         {
             double current = Math.Pow(1024, i + 1);
             double temp = bytes / current;
-            if (temp < 1) return (bytes / last).ToString("f3") + _suffixes[i];
+            if (temp < 1)
+            {
+                return (bytes / last).ToString("f3") + _suffixes[i];
+            }
+
             last = current;
         }
 
@@ -164,7 +168,10 @@ public static class FormatExtensions
     /// <returns></returns>
     private static string FormatMoneyStringComma(string numInt)
     {
-        if (numInt.Length <= 4) return numInt;
+        if (numInt.Length <= 4)
+        {
+            return numInt;
+        }
 
         string? numNoFormat = numInt[..^4];
         string? numFormat = numInt.Substring(numInt.Length - 4, 4);
@@ -272,7 +279,7 @@ public static class FormatExtensions
         int diffDay = dayInMonth - firstWeekEndDay;
         diffDay = diffDay > 0 ? diffDay : 1;
         // 当前是第几周，若整除7就减一天
-        return (diffDay % 7 == 0 ? diffDay / 7 - 1 : diffDay / 7) + 1 + (dayInMonth > firstWeekEndDay ? 1 : 0);
+        return (diffDay % 7 == 0 ? (diffDay / 7) - 1 : diffDay / 7) + 1 + (dayInMonth > firstWeekEndDay ? 1 : 0);
     }
 
     /// <summary>
@@ -294,7 +301,9 @@ public static class FormatExtensions
     public static string FormatDateTimeToString(this DateTime dateTimeBefore, DateTime dateTimeAfter)
     {
         if (dateTimeBefore >= dateTimeAfter)
+        {
             throw new Exception("开始日期必须小于结束日期");
+        }
 
         TimeSpan timeSpan = dateTimeAfter - dateTimeBefore;
         return timeSpan.FormatTimeSpanToString();
@@ -335,10 +344,10 @@ public static class FormatExtensions
         const int dd = hh * 24;
 
         long day = ms / dd;
-        long hour = (ms - day * dd) / hh;
-        long minute = (ms - day * dd - hour * hh) / mi;
-        long second = (ms - day * dd - hour * hh - minute * mi) / ss;
-        long milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;
+        long hour = (ms - (day * dd)) / hh;
+        long minute = (ms - (day * dd) - (hour * hh)) / mi;
+        long second = (ms - (day * dd) - (hour * hh) - (minute * mi)) / ss;
+        long milliSecond = ms - (day * dd) - (hour * hh) - (minute * mi) - (second * ss);
 
         // 天
         string? sDay = day < 10 ? "0" + day : string.Empty + day;
@@ -392,25 +401,26 @@ public static class FormatExtensions
     {
         DateTime now = DateTime.Now;
         string? strDate = value.ToString("yyyy-MM-dd");
-        if (now < value) return strDate;
+        if (now < value)
+        {
+            return strDate;
+        }
 
         TimeSpan dep = now - value;
 
-        if (dep.TotalSeconds < 10)
-            return "刚刚";
-        if (dep.TotalSeconds >= 10 && dep.TotalSeconds < 60)
-            return (int)dep.TotalSeconds + "秒前";
-        if (dep.TotalMinutes >= 1 && dep.TotalMinutes < 60)
-            return (int)dep.TotalMinutes + "分钟前";
-        if (dep.TotalHours < 24)
-            return (int)dep.TotalHours + "小时前";
-        if (dep.TotalDays < 7)
-            return (int)dep.TotalDays + "天前";
-        if (dep.TotalDays >= 7 && dep.TotalDays < 30)
-            return (int)dep.TotalDays / 7 + "周前";
-        if (dep.TotalDays >= 30 && dep.TotalDays < 365)
-            return (int)dep.TotalDays / 30 + "个月前";
-        return now.Year - value.Year + "年前";
+        return dep.TotalSeconds < 10
+            ? "刚刚"
+            : dep.TotalSeconds is >= 10 and < 60
+            ? (int)dep.TotalSeconds + "秒前"
+            : dep.TotalMinutes is >= 1 and < 60
+            ? (int)dep.TotalMinutes + "分钟前"
+            : dep.TotalHours < 24
+            ? (int)dep.TotalHours + "小时前"
+            : dep.TotalDays < 7
+            ? (int)dep.TotalDays + "天前"
+            : dep.TotalDays is >= 7 and < 30
+            ? ((int)dep.TotalDays / 7) + "周前"
+            : dep.TotalDays is >= 30 and < 365 ? ((int)dep.TotalDays / 30) + "个月前" : now.Year - value.Year + "年前";
     }
 
     /// <summary>
@@ -422,7 +432,10 @@ public static class FormatExtensions
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(thisValue)) return DateTime.MinValue;
+            if (string.IsNullOrWhiteSpace(thisValue))
+            {
+                return DateTime.MinValue;
+            }
 
             if (thisValue.Contains('-') || thisValue.Contains('/'))
             {

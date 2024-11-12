@@ -30,7 +30,7 @@ public class DisposeAction : IDisposable
     /// <param name="action">此对象被处理时所执行的动作</param>
     public DisposeAction([NotNull] Action action)
     {
-        CheckHelper.NotNull(action, nameof(action));
+        _ = CheckHelper.NotNull(action, nameof(action));
 
         _action = action;
     }
@@ -61,7 +61,7 @@ public class DisposeAction<T> : IDisposable
     /// <param name="parameter">动作的参数</param>
     public DisposeAction(Action<T> action, T parameter)
     {
-        CheckHelper.NotNull(action, nameof(action));
+        _ = CheckHelper.NotNull(action, nameof(action));
 
         _action = action;
         _parameter = parameter;
