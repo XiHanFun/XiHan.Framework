@@ -22,7 +22,7 @@ public sealed class NullDisposable : IDisposable
     /// <summary>
     /// 实例
     /// </summary>
-    public static NullDisposable Instance { get; } = new NullDisposable();
+    public static NullDisposable Instance { get; } = new();
 
     /// <summary>
     /// 构造函数

@@ -28,8 +28,8 @@ public static class ShellHelper
     /// <returns></returns>
     public static string Bash(string command)
     {
-        var output = string.Empty;
-        var escapedArgs = command.Replace(@"""", @"\""");
+        string? output = string.Empty;
+        string? escapedArgs = command.Replace(@"""", @"\""");
 
         ProcessStartInfo info = new()
         {
@@ -43,7 +43,7 @@ public static class ShellHelper
             CreateNoWindow = true
         };
 
-        using var process = Process.Start(info);
+        using Process? process = Process.Start(info);
         if (process == null) return output;
 
         output = process.StandardOutput.ReadToEnd();
@@ -58,7 +58,7 @@ public static class ShellHelper
     /// <returns></returns>
     public static string Cmd(string fileName, string args)
     {
-        var output = string.Empty;
+        string? output = string.Empty;
 
         ProcessStartInfo info = new()
         {
@@ -71,7 +71,7 @@ public static class ShellHelper
             CreateNoWindow = true
         };
 
-        using var process = Process.Start(info);
+        using Process? process = Process.Start(info);
         if (process == null) return output;
 
         output = process.StandardOutput.ReadToEnd();

@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.Utils</Title>
-		<AssemblyName>XiHan.Framework.Utils</AssemblyName>
-		<PackageId>XiHan.Framework.Utils</PackageId>
-		<Description>曦寒框架工具库</Description>
-		<OutputType>Library</OutputType>
-		<PackageReleaseNotes>修复：时间转换简易字符串出错的问题；</PackageReleaseNotes>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.Utils</Title>
+        <AssemblyName>XiHan.Framework.Utils</AssemblyName>
+        <PackageId>XiHan.Framework.Utils</PackageId>
+        <Description>曦寒框架工具库</Description>
+        <OutputType>Library</OutputType>
+        <PackageReleaseNotes>修复：时间转换简易字符串出错的问题；</PackageReleaseNotes>
+    </PropertyGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj"/>
+    </ItemGroup>
 
 </Project>

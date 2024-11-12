@@ -69,7 +69,7 @@ public static class ServiceCollectionPreConfigureExtensions
     /// <returns></returns>
     public static PreConfigureActionList<TOptions> GetPreConfigureActions<TOptions>(this IServiceCollection services)
     {
-        var actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<PreConfigureActionList<TOptions>>>()?.Value;
+        PreConfigureActionList<TOptions>? actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<PreConfigureActionList<TOptions>>>()?.Value;
         if (actionList == null)
         {
             actionList = [];

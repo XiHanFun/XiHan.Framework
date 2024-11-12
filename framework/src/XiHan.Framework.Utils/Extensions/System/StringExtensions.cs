@@ -94,7 +94,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string NormalizeLineEndings(this string str)
     {
-        return str.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
+        return str.Replace("\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
     }
 
     /// <summary>
@@ -107,15 +107,15 @@ public static partial class StringExtensions
     {
         CheckHelper.NotNull(str, nameof(str));
 
-        var count = 0;
-        for (var i = 0; i < str.Length; i++)
+        int count = 0;
+        for (int i = 0; i < str.Length; i++)
         {
             if (str[i] != c)
             {
                 continue;
             }
 
-            if ((++count) == n)
+            if (++count == n)
             {
                 return i;
             }
@@ -154,7 +154,7 @@ public static partial class StringExtensions
             return str;
         }
 
-        foreach (var postFix in postFixes)
+        foreach (string? postFix in postFixes)
         {
             if (str.EndsWith(postFix, comparisonType))
             {
@@ -195,7 +195,7 @@ public static partial class StringExtensions
             return str;
         }
 
-        foreach (var preFix in preFixes)
+        foreach (string? preFix in preFixes)
         {
             if (str.StartsWith(preFix, comparisonType))
             {
@@ -218,15 +218,15 @@ public static partial class StringExtensions
     {
         CheckHelper.NotNull(str, nameof(str));
 
-        var pos = str.IndexOf(search, comparisonType);
+        int pos = str.IndexOf(search, comparisonType);
         if (pos < 0)
         {
             return str;
         }
 
-        var searchLength = search.Length;
-        var replaceLength = replace.Length;
-        var newLength = str.Length - searchLength + replaceLength;
+        int searchLength = search.Length;
+        int replaceLength = replace.Length;
+        int newLength = str.Length - searchLength + replaceLength;
 
         Span<char> buffer = newLength <= 1024 ? stackalloc char[newLength] : new char[newLength];
 
@@ -264,7 +264,10 @@ public static partial class StringExtensions
     /// </summary>
     public static string[] Split(this string str, string separator)
     {
-        return str.Split(new[] { separator }, StringSplitOptions.None);
+        return str.Split(new[]
+        {
+            separator
+        }, StringSplitOptions.None);
     }
 
     /// <summary>
@@ -272,7 +275,10 @@ public static partial class StringExtensions
     /// </summary>
     public static string[] Split(this string str, string separator, StringSplitOptions options)
     {
-        return str.Split(new[] { separator }, options);
+        return str.Split(new[]
+        {
+            separator
+        }, options);
     }
 
     /// <summary>
@@ -401,11 +407,11 @@ public static partial class StringExtensions
     /// <returns></returns>
     public static string ToMd5(this string str)
     {
-        var inputBytes = Encoding.UTF8.GetBytes(str);
-        var hashBytes = MD5.HashData(inputBytes);
+        byte[]? inputBytes = Encoding.UTF8.GetBytes(str);
+        byte[]? hashBytes = MD5.HashData(inputBytes);
 
-        var sb = new StringBuilder();
-        foreach (var hashByte in hashBytes)
+        StringBuilder? sb = new();
+        foreach (byte hashByte in hashBytes)
         {
             sb.Append(hashByte.ToString("X2"));
         }
@@ -538,7 +544,7 @@ public static partial class StringExtensions
     {
         for (int i = 0; i < input.Length; i++)
         {
-            if (Char.IsLetter(input[i]) && !Char.IsUpper(input[i]))
+            if (char.IsLetter(input[i]) && !char.IsUpper(input[i]))
             {
                 return false;
             }

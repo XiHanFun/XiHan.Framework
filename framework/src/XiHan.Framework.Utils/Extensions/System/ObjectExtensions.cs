@@ -154,7 +154,7 @@ public static class ObjectExtensions
         if (instance == null || string.IsNullOrEmpty(fieldName))
             return false;
 
-        var foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo? foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfo != null;
     }
 
@@ -169,7 +169,7 @@ public static class ObjectExtensions
         if (instance == null || string.IsNullOrEmpty(fieldName))
             throw new NotImplementedException(nameof(fieldName));
 
-        var foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo? foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfo ?? throw new NotImplementedException(nameof(fieldName));
     }
 
@@ -183,7 +183,7 @@ public static class ObjectExtensions
         if (instance == null)
             throw new NotImplementedException(nameof(instance));
 
-        var foundFieldInfos = instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo[]? foundFieldInfos = instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundFieldInfos ?? throw new NotImplementedException(nameof(foundFieldInfos));
     }
 
@@ -202,7 +202,7 @@ public static class ObjectExtensions
         if (instance == null || string.IsNullOrEmpty(propertyName))
             return false;
 
-        var foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        PropertyInfo? foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfo != null;
     }
 
@@ -217,7 +217,7 @@ public static class ObjectExtensions
         if (instance == null || string.IsNullOrEmpty(propertyName))
             throw new NotImplementedException(nameof(propertyName));
 
-        var foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        PropertyInfo? foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfo ?? throw new NotImplementedException(nameof(foundPropertyInfo));
     }
 
@@ -231,7 +231,7 @@ public static class ObjectExtensions
         if (instance == null)
             throw new NotImplementedException(nameof(instance));
 
-        var foundPropertyInfos = instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        PropertyInfo[]? foundPropertyInfos = instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         return foundPropertyInfos ?? throw new NotImplementedException(nameof(foundPropertyInfos));
     }
 

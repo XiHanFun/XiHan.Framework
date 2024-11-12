@@ -227,7 +227,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// <typeparam name="TOptions"></typeparam>
     /// <param name="configuration"></param>
     protected void Configure<TOptions>(IConfiguration configuration)
-       where TOptions : class
+        where TOptions : class
     {
         ServiceConfigurationContext.Services.Configure<TOptions>(configuration);
     }
@@ -251,7 +251,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// <param name="name"></param>
     /// <param name="configuration"></param>
     protected void Configure<TOptions>(string name, IConfiguration configuration)
-       where TOptions : class
+        where TOptions : class
     {
         ServiceConfigurationContext.Services.Configure<TOptions>(name, configuration);
     }
@@ -262,7 +262,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// <typeparam name="TOptions"></typeparam>
     /// <param name="configureOptions"></param>
     protected void PreConfigure<TOptions>(Action<TOptions> configureOptions)
-       where TOptions : class
+        where TOptions : class
     {
         ServiceConfigurationContext.Services.PreConfigure(configureOptions);
     }

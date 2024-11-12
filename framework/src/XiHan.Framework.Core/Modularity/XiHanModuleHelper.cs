@@ -31,7 +31,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
-        var moduleTypes = new List<Type>();
+        List<Type>? moduleTypes = new();
         logger?.Log(LogLevel.Information, "加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         return moduleTypes;
@@ -46,14 +46,14 @@ public static class XiHanModuleHelper
     {
         CheckXiHanModuleType(moduleType);
 
-        var dependencies = new List<Type>();
+        List<Type>? dependencies = new();
 
-        var dependencyDescriptors = moduleType.GetCustomAttributes()
+        IEnumerable<IDependedTypesProvider>? dependencyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IDependedTypesProvider>();
 
-        foreach (var descriptor in dependencyDescriptors)
+        foreach (IDependedTypesProvider? descriptor in dependencyDescriptors)
         {
-            foreach (var dependedModuleType in descriptor.GetDependedTypes())
+            foreach (Type? dependedModuleType in descriptor.GetDependedTypes())
             {
                 dependencies.AddIfNotContains(dependedModuleType);
             }
@@ -69,14 +69,14 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static Assembly[] GetAllAssemblies(Type moduleType)
     {
-        var assemblies = new List<Assembly>();
+        List<Assembly>? assemblies = new();
 
-        var additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
+        IEnumerable<IAdditionalModuleAssemblyProvider>? additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IAdditionalModuleAssemblyProvider>();
 
-        foreach (var descriptor in additionalAssemblyDescriptors)
+        foreach (IAdditionalModuleAssemblyProvider? descriptor in additionalAssemblyDescriptors)
         {
-            foreach (var assembly in descriptor.GetAssemblies())
+            foreach (Assembly? assembly in descriptor.GetAssemblies())
             {
                 assemblies.AddIfNotContains(assembly);
             }
@@ -106,7 +106,7 @@ public static class XiHanModuleHelper
         moduleTypes.Add(moduleType);
         logger?.Log(LogLevel.Information, $"{new string(' ', depth * 2)}-{moduleType.FullName}");
 
-        foreach (var dependedModuleType in FindDependedModuleTypes(moduleType))
+        foreach (Type? dependedModuleType in FindDependedModuleTypes(moduleType))
         {
             AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleType, logger, depth + 1);
         }
@@ -119,7 +119,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static bool IsXiHanModule(Type type)
     {
-        var typeInfo = type.GetTypeInfo();
+        TypeInfo? typeInfo = type.GetTypeInfo();
 
         return typeInfo.IsClass && !typeInfo.IsAbstract && !typeInfo.IsGenericType && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
     }

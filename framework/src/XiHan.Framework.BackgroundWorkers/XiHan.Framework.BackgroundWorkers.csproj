@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.BackgroundWorkers</Title>
-		<AssemblyName>XiHan.Framework.BackgroundWorkers</AssemblyName>
-		<PackageId>XiHan.Framework.BackgroundWorkers</PackageId>
-		<Description>曦寒框架后台工作库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.BackgroundWorkers</Title>
+        <AssemblyName>XiHan.Framework.BackgroundWorkers</AssemblyName>
+        <PackageId>XiHan.Framework.BackgroundWorkers</PackageId>
+        <Description>曦寒框架后台工作库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+    </ItemGroup>
 
 </Project>
