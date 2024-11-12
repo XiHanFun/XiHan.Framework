@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Extensions.System.Linq;
 public static class QueryableExtensions
 {
     /// <summary>
-    /// 用于分页，可以作为Skip(…).Take(…)链的替代方法
+    /// 用于分页，可以作为 Skip(…).Take(…)链的替代方法
     /// </summary>
     public static IQueryable<T> PageBy<T>(this IQueryable<T> query, int skipCount, int maxResultCount)
     {
@@ -33,7 +33,7 @@ public static class QueryableExtensions
     }
 
     /// <summary>
-    /// 用于分页，可以作为Skip(…).Take(…)链的替代方法
+    /// 用于分页，可以作为 Skip(…).Take(…)链的替代方法
     /// </summary>
     public static TQueryable PageBy<T, TQueryable>(this TQueryable query, int skipCount, int maxResultCount)
         where TQueryable : IQueryable<T>

@@ -6,7 +6,7 @@
         <Title>XiHan.Framework.AspNetCore</Title>
         <AssemblyName>XiHan.Framework.AspNetCore</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore</PackageId>
-        <Description>曦寒框架Web核心库</Description>
+        <Description>曦寒框架 Web 核心库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

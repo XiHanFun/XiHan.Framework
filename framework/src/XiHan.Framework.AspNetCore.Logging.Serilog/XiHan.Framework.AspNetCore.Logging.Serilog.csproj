@@ -6,7 +6,7 @@
         <Title>XiHan.Framework.AspNetCore.Logging.Serilog</Title>
         <AssemblyName>XiHan.Framework.AspNetCore.Logging.Serilog</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Logging.Serilog</PackageId>
-        <Description>曦寒框架Web核心日志Serilog库</Description>
+        <Description>曦寒框架 Web 核心日志 Serilog 库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

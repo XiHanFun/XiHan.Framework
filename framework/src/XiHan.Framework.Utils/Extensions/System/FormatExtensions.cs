@@ -54,7 +54,7 @@ public static class FormatExtensions
     #region 网络地址
 
     /// <summary>
-    /// IPAddress转String
+    /// IPAddress 转 String
     /// </summary>
     /// <param name="address"></param>
     /// <returns></returns>
@@ -64,7 +64,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// byte[]转String
+    /// byte[]转 String
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>
@@ -74,7 +74,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// ip转ipV4
+    /// ip 转 ipV4
     /// </summary>
     /// <param name="address"></param>
     /// <returns></returns>
@@ -84,7 +84,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// ip转ipV4
+    /// ip 转 ipV4
     /// </summary>
     /// <param name="ipStr"></param>
     /// <returns></returns>
@@ -94,7 +94,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// ip转ipV6
+    /// ip 转 ipV6
     /// </summary>
     /// <param name="address"></param>
     /// <returns></returns>
@@ -104,7 +104,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// IPAddress转byte[]
+    /// IPAddress 转 byte[]
     /// </summary>
     /// <param name="address"></param>
     /// <returns></returns>
@@ -114,7 +114,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// byte[]转IPAddress
+    /// byte[]转 IPAddress
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>
@@ -124,7 +124,7 @@ public static class FormatExtensions
     }
 
     /// <summary>
-    /// String转IPAddress
+    /// String 转 IPAddress
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>

@@ -37,7 +37,7 @@ public class ServiceConfigurationContext
     /// <summary>
     /// 过程中可以存储的任意命名对象，服务注册阶段并在模块之间共享
     /// 这是<see cref="Items"/> 字典的一种快捷用法
-    /// 如果给定的键在<see cref="Items"/> 字典中没有找到，则返回null
+    /// 如果给定的键在<see cref="Items"/> 字典中没有找到，则返回 null
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>

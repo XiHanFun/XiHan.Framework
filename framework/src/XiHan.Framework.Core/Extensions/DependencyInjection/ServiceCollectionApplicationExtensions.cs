@@ -95,7 +95,7 @@ public static class ServiceCollectionApplicationExtensions
     }
 
     /// <summary>
-    /// 获取应用程序实例Id
+    /// 获取应用程序实例 Id
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>

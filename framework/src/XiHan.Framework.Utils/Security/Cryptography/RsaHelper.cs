@@ -26,7 +26,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class RsaHelper
 {
     /// <summary>
-    /// 生成RSA密钥对
+    /// 生成 RSA 密钥对
     /// </summary>
     /// <param name="keySize">密钥大小，通常为2048或4096</param>
     /// <returns>返回公钥和私钥对</returns>

@@ -50,7 +50,7 @@ public static class JsonSerializerOptionsHelper
             ReadCommentHandling = JsonCommentHandling.Skip,
             // 属性名称不使用不区分大小写的比较
             PropertyNameCaseInsensitive = false,
-            // 数据格式首字母小写 JsonNamingPolicy.CamelCase驼峰样式，null则为不改变大小写
+            // 数据格式首字母小写 JsonNamingPolicy.CamelCase 驼峰样式，null 则为不改变大小写
             PropertyNamingPolicy = null,
             // 获取或设置要在转义字符串时使用的编码器，不转义字符
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
