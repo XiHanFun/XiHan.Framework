@@ -95,9 +95,9 @@ public static class TypeExtensions
         List<Type> allOthers = [type];
         if (genericType.IsInterface) allOthers.AddRange(type.GetInterfaces());
 
-        foreach (var other in allOthers)
+        foreach (Type? other in allOthers)
         {
-            var cur = other;
+            Type? cur = other;
             while (cur != null)
             {
                 if (cur.IsGenericType) cur = cur.GetGenericTypeDefinition();
@@ -136,7 +136,7 @@ public static class TypeExtensions
     {
         CheckHelper.NotNull(type, nameof(type));
 
-        var baseType = typeof(TBaseType);
+        Type? baseType = typeof(TBaseType);
         return type.IsBaseOn(baseType);
     }
 
@@ -180,15 +180,15 @@ public static class TypeExtensions
     {
         CheckHelper.NotNull(type, nameof(type));
 
-        var result = string.Empty;
-        var fullName = type.FullName ?? result;
+        string? result = string.Empty;
+        string? fullName = type.FullName ?? result;
 
-        var desc = type.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
+        DescriptionAttribute? desc = type.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
 
         if (desc == null)
             return result;
 
-        var description = desc.Description;
+        string? description = desc.Description;
         result = fullName + "(" + description + ")";
 
         return result;
@@ -251,22 +251,54 @@ public static class TypeExtensions
     /// </summary>
     private static readonly Dictionary<Type, string> BuiltInTypeNames = new()
     {
-        { typeof(bool), "bool" },
-        { typeof(byte), "byte" },
-        { typeof(char), "char" },
-        { typeof(decimal), "decimal" },
-        { typeof(double), "double" },
-        { typeof(float), "float" },
-        { typeof(int), "int" },
-        { typeof(long), "long" },
-        { typeof(object), "object" },
-        { typeof(sbyte), "sbyte" },
-        { typeof(short), "short" },
-        { typeof(string), "string" },
-        { typeof(uint), "uint" },
-        { typeof(ulong), "ulong" },
-        { typeof(ushort), "ushort" },
-        { typeof(void), "void" }
+        {
+            typeof(bool), "bool"
+        },
+        {
+            typeof(byte), "byte"
+        },
+        {
+            typeof(char), "char"
+        },
+        {
+            typeof(decimal), "decimal"
+        },
+        {
+            typeof(double), "double"
+        },
+        {
+            typeof(float), "float"
+        },
+        {
+            typeof(int), "int"
+        },
+        {
+            typeof(long), "long"
+        },
+        {
+            typeof(object), "object"
+        },
+        {
+            typeof(sbyte), "sbyte"
+        },
+        {
+            typeof(short), "short"
+        },
+        {
+            typeof(string), "string"
+        },
+        {
+            typeof(uint), "uint"
+        },
+        {
+            typeof(ulong), "ulong"
+        },
+        {
+            typeof(ushort), "ushort"
+        },
+        {
+            typeof(void), "void"
+        }
     };
 
     /// <summary>
@@ -279,14 +311,14 @@ public static class TypeExtensions
     {
         if (type.IsGenericType)
         {
-            var genericArguments = type.GetGenericArguments();
+            Type[]? genericArguments = type.GetGenericArguments();
             ProcessGenericType(builder, type, genericArguments, genericArguments.Length, fullName);
         }
         else if (type.IsArray)
         {
             ProcessArrayType(builder, type, fullName);
         }
-        else if (BuiltInTypeNames.TryGetValue(type, out var builtInName))
+        else if (BuiltInTypeNames.TryGetValue(type, out string? builtInName))
         {
             builder.Append(builtInName);
         }
@@ -304,7 +336,7 @@ public static class TypeExtensions
     /// <param name="fullName"></param>
     private static void ProcessArrayType(StringBuilder builder, Type type, bool fullName)
     {
-        var innerType = type;
+        Type? innerType = type;
         while (innerType!.IsArray) innerType = innerType.GetElementType();
 
         ProcessType(builder, innerType, fullName);
@@ -329,7 +361,7 @@ public static class TypeExtensions
     private static void ProcessGenericType(StringBuilder builder, Type type, IReadOnlyList<Type> genericArguments, int length,
         bool fullName)
     {
-        var offset = type.IsNested ? type.DeclaringType!.GetGenericArguments().Length : 0;
+        int offset = type.IsNested ? type.DeclaringType!.GetGenericArguments().Length : 0;
 
         if (fullName)
         {
@@ -345,7 +377,7 @@ public static class TypeExtensions
             }
         }
 
-        var genericPartIndex = type.Name.IndexOf('`');
+        int genericPartIndex = type.Name.IndexOf('`');
         if (genericPartIndex <= 0)
         {
             builder.Append(type.Name);
@@ -355,7 +387,7 @@ public static class TypeExtensions
         builder.Append(type.Name, 0, genericPartIndex);
         builder.Append('<');
 
-        for (var i = offset; i < length; i++)
+        for (int i = offset; i < length; i++)
         {
             ProcessType(builder, genericArguments[i], fullName);
             if (i + 1 == length) continue;

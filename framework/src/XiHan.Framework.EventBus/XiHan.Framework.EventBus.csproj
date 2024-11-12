@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.EventBus</Title>
-		<AssemblyName>XiHan.Framework.EventBus</AssemblyName>
-		<PackageId>XiHan.Framework.EventBus</PackageId>
-		<Description>曦寒框架事件总线库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.EventBus</Title>
+        <AssemblyName>XiHan.Framework.EventBus</AssemblyName>
+        <PackageId>XiHan.Framework.EventBus</PackageId>
+        <Description>曦寒框架事件总线库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+    </ItemGroup>
 
 </Project>

@@ -47,9 +47,9 @@ public class AssemblyFinder : IAssemblyFinder
     /// <returns></returns>
     public IReadOnlyList<Assembly> FindAll()
     {
-        var assemblies = new List<Assembly>();
+        List<Assembly>? assemblies = new();
 
-        foreach (var module in _moduleContainer.Modules)
+        foreach (IModuleDescriptor? module in _moduleContainer.Modules)
         {
             assemblies.AddRange(module.AllAssemblies);
         }

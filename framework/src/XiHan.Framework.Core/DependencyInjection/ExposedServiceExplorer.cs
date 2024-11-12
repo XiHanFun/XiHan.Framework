@@ -38,7 +38,7 @@ public class ExposedServiceExplorer
     /// <returns></returns>
     public static List<Type> GetExposedServices(Type type)
     {
-        var exposedServiceTypesProviders = type.GetCustomAttributes(true).OfType<IExposedServiceTypesProvider>().ToList();
+        List<IExposedServiceTypesProvider>? exposedServiceTypesProviders = type.GetCustomAttributes(true).OfType<IExposedServiceTypesProvider>().ToList();
 
         if (exposedServiceTypesProviders.IsNullOrEmpty() && type.GetCustomAttributes(true).OfType<IExposedKeyedServiceTypesProvider>().Any())
         {

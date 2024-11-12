@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.Ddd.Application</Title>
-		<AssemblyName>XiHan.Framework.Ddd.Application</AssemblyName>
-		<PackageId>XiHan.Framework.Ddd.Application</PackageId>
-		<Description>曦寒框架领域驱动设计应用库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.Ddd.Application</Title>
+        <AssemblyName>XiHan.Framework.Ddd.Application</AssemblyName>
+        <PackageId>XiHan.Framework.Ddd.Application</PackageId>
+        <Description>曦寒框架领域驱动设计应用库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+    </ItemGroup>
 
 </Project>

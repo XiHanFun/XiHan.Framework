@@ -34,10 +34,10 @@ public static class FormatExtensions
     public static string FormatFileSizeToString(this long bytes)
     {
         double last = 1;
-        for (var i = 0; i < _suffixes.Length; i++)
+        for (int i = 0; i < _suffixes.Length; i++)
         {
-            var current = Math.Pow(1024, i + 1);
-            var temp = bytes / current;
+            double current = Math.Pow(1024, i + 1);
+            double temp = bytes / current;
             if (temp < 1) return (bytes / last).ToString("f3") + _suffixes[i];
             last = current;
         }
@@ -140,12 +140,12 @@ public static class FormatExtensions
     /// <returns></returns>
     public static string FormatMoneyToString(this decimal num)
     {
-        var numStr = num.ToString(CultureInfo.InvariantCulture).ToLowerInvariant();
+        string? numStr = num.ToString(CultureInfo.InvariantCulture).ToLowerInvariant();
         string numRes;
-        var numDecimal = string.Empty;
+        string? numDecimal = string.Empty;
         if (numStr.Contains('.'))
         {
-            var numInt = numStr.Split('.')[0];
+            string? numInt = numStr.Split('.')[0];
             numDecimal = "." + numStr.Split('.')[1];
             numRes = FormatMoneyStringComma(numInt);
         }
@@ -166,8 +166,8 @@ public static class FormatExtensions
     {
         if (numInt.Length <= 4) return numInt;
 
-        var numNoFormat = numInt[..^4];
-        var numFormat = numInt.Substring(numInt.Length - 4, 4);
+        string? numNoFormat = numInt[..^4];
+        string? numFormat = numInt.Substring(numInt.Length - 4, 4);
         return numNoFormat.Length > 4
             ? FormatMoneyStringComma(numNoFormat) + "," + numFormat
             : numNoFormat + "," + numFormat;
@@ -194,7 +194,7 @@ public static class FormatExtensions
     /// <returns></returns>
     public static long GetDateToTimeStamp(this DateTime dateTime)
     {
-        var ts = dateTime - new DateTime(1970, 1, 1, 0, 0, 0, 0);
+        TimeSpan ts = dateTime - new DateTime(1970, 1, 1, 0, 0, 0, 0);
         return Convert.ToInt64(ts.TotalSeconds);
     }
 
@@ -261,15 +261,15 @@ public static class FormatExtensions
     /// <returns></returns>
     public static int GetWeekNumInMonth(this DateTime daytime)
     {
-        var dayInMonth = daytime.Day;
+        int dayInMonth = daytime.Day;
         // 本月第一天
-        var firstDay = daytime.AddDays(1 - daytime.Day);
+        DateTime firstDay = daytime.AddDays(1 - daytime.Day);
         // 本月第一天是周几
-        var weekday = firstDay.DayOfWeek == 0 ? 7 : (int)firstDay.DayOfWeek;
+        int weekday = firstDay.DayOfWeek == 0 ? 7 : (int)firstDay.DayOfWeek;
         // 本月第一周有几天
-        var firstWeekEndDay = 7 - (weekday - 1);
+        int firstWeekEndDay = 7 - (weekday - 1);
         // 当前日期和第一周之差
-        var diffDay = dayInMonth - firstWeekEndDay;
+        int diffDay = dayInMonth - firstWeekEndDay;
         diffDay = diffDay > 0 ? diffDay : 1;
         // 当前是第几周，若整除7就减一天
         return (diffDay % 7 == 0 ? diffDay / 7 - 1 : diffDay / 7) + 1 + (dayInMonth > firstWeekEndDay ? 1 : 0);
@@ -296,7 +296,7 @@ public static class FormatExtensions
         if (dateTimeBefore >= dateTimeAfter)
             throw new Exception("开始日期必须小于结束日期");
 
-        var timeSpan = dateTimeAfter - dateTimeBefore;
+        TimeSpan timeSpan = dateTimeAfter - dateTimeBefore;
         return timeSpan.FormatTimeSpanToString();
     }
 
@@ -307,7 +307,7 @@ public static class FormatExtensions
     /// <returns></returns>
     public static string FormatMilliSecondsToString(this long milliseconds)
     {
-        var timeSpan = TimeSpan.FromMilliseconds(milliseconds);
+        TimeSpan timeSpan = TimeSpan.FromMilliseconds(milliseconds);
         return timeSpan.FormatTimeSpanToString();
     }
 
@@ -318,7 +318,7 @@ public static class FormatExtensions
     /// <returns></returns>
     public static string FormatTimeTicksToString(this long ticks)
     {
-        var timeSpan = TimeSpan.FromTicks(ticks);
+        TimeSpan timeSpan = TimeSpan.FromTicks(ticks);
         return timeSpan.FormatTimeSpanToString();
     }
 
@@ -334,22 +334,22 @@ public static class FormatExtensions
         const int hh = mi * 60;
         const int dd = hh * 24;
 
-        var day = ms / dd;
-        var hour = (ms - day * dd) / hh;
-        var minute = (ms - day * dd - hour * hh) / mi;
-        var second = (ms - day * dd - hour * hh - minute * mi) / ss;
-        var milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;
+        long day = ms / dd;
+        long hour = (ms - day * dd) / hh;
+        long minute = (ms - day * dd - hour * hh) / mi;
+        long second = (ms - day * dd - hour * hh - minute * mi) / ss;
+        long milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;
 
         // 天
-        var sDay = day < 10 ? "0" + day : string.Empty + day;
+        string? sDay = day < 10 ? "0" + day : string.Empty + day;
         // 小时
-        var sHour = hour < 10 ? "0" + hour : string.Empty + hour;
+        string? sHour = hour < 10 ? "0" + hour : string.Empty + hour;
         // 分钟
-        var sMinute = minute < 10 ? "0" + minute : string.Empty + minute;
+        string? sMinute = minute < 10 ? "0" + minute : string.Empty + minute;
         // 秒
-        var sSecond = second < 10 ? "0" + second : string.Empty + second;
+        string? sSecond = second < 10 ? "0" + second : string.Empty + second;
         // 毫秒
-        var sMilliSecond = milliSecond < 10 ? "0" + milliSecond : string.Empty + milliSecond;
+        string? sMilliSecond = milliSecond < 10 ? "0" + milliSecond : string.Empty + milliSecond;
         sMilliSecond = milliSecond < 100 ? "0" + sMilliSecond : string.Empty + sMilliSecond;
 
         return $"{sDay} 天 {sHour} 小时 {sMinute} 分 {sSecond} 秒 {sMilliSecond} 毫秒";
@@ -362,22 +362,22 @@ public static class FormatExtensions
     /// <returns></returns>
     public static string FormatTimeSpanToString(this TimeSpan timeSpan)
     {
-        var day = timeSpan.Days;
-        var hour = timeSpan.Hours;
-        var minute = timeSpan.Minutes;
-        var second = timeSpan.Seconds;
-        var milliSecond = timeSpan.Milliseconds;
+        int day = timeSpan.Days;
+        int hour = timeSpan.Hours;
+        int minute = timeSpan.Minutes;
+        int second = timeSpan.Seconds;
+        int milliSecond = timeSpan.Milliseconds;
 
         // 天
-        var sDay = day < 10 ? "0" + day : string.Empty + day;
+        string? sDay = day < 10 ? "0" + day : string.Empty + day;
         // 小时
-        var sHour = hour < 10 ? "0" + hour : string.Empty + hour;
+        string? sHour = hour < 10 ? "0" + hour : string.Empty + hour;
         // 分钟
-        var sMinute = minute < 10 ? "0" + minute : string.Empty + minute;
+        string? sMinute = minute < 10 ? "0" + minute : string.Empty + minute;
         // 秒
-        var sSecond = second < 10 ? "0" + second : string.Empty + second;
+        string? sSecond = second < 10 ? "0" + second : string.Empty + second;
         // 毫秒
-        var sMilliSecond = milliSecond < 10 ? "0" + milliSecond : string.Empty + milliSecond;
+        string? sMilliSecond = milliSecond < 10 ? "0" + milliSecond : string.Empty + milliSecond;
         sMilliSecond = milliSecond < 100 ? "0" + sMilliSecond : string.Empty + sMilliSecond;
 
         return $"{sDay} 天 {sHour} 小时 {sMinute} 分 {sSecond} 秒 {sMilliSecond} 毫秒";
@@ -390,11 +390,11 @@ public static class FormatExtensions
     /// <returns></returns>
     public static string FormatDateTimeToEasyString(this DateTime value)
     {
-        var now = DateTime.Now;
-        var strDate = value.ToString("yyyy-MM-dd");
+        DateTime now = DateTime.Now;
+        string? strDate = value.ToString("yyyy-MM-dd");
         if (now < value) return strDate;
 
-        var dep = now - value;
+        TimeSpan dep = now - value;
 
         if (dep.TotalSeconds < 10)
             return "刚刚";
@@ -429,7 +429,7 @@ public static class FormatExtensions
                 return DateTime.Parse(thisValue);
             }
 
-            var length = thisValue.Length;
+            int length = thisValue.Length;
             return length switch
             {
                 4 => DateTime.ParseExact(thisValue, "yyyy", CultureInfo.CurrentCulture),

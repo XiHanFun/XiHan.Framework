@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Reflection;
 using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Core.Reflection;
@@ -45,13 +46,13 @@ public class TypeFinder : ITypeFinder
     /// <returns></returns>
     private List<Type> FindAll()
     {
-        var allTypes = new List<Type>();
+        List<Type>? allTypes = new();
 
-        foreach (var assembly in _assemblyFinder.Assemblies)
+        foreach (Assembly? assembly in _assemblyFinder.Assemblies)
         {
             try
             {
-                var typesInThisAssembly = AssemblyHelper.GetAllTypes(assembly);
+                IEnumerable<Type>? typesInThisAssembly = AssemblyHelper.GetAllTypes(assembly);
 
                 if (!typesInThisAssembly.Any())
                 {

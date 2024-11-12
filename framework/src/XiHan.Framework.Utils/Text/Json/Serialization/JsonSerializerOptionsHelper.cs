@@ -28,7 +28,7 @@ public static class JsonSerializerOptionsHelper
     /// <summary>
     /// 公共参数
     /// </summary>
-    public static JsonSerializerOptions DefaultJsonSerializerOptions { get => GetDefaultJsonSerializerOptions(); }
+    public static JsonSerializerOptions DefaultJsonSerializerOptions => GetDefaultJsonSerializerOptions();
 
     /// <summary>
     /// 获取默认序列化参数
@@ -87,7 +87,7 @@ public static class JsonSerializerOptionsHelper
     /// <returns></returns>
     public static JsonSerializerOptions Create(JsonSerializerOptions baseOptions, Func<JsonConverter, bool> removeConverterPredicate, params JsonConverter[] addConverters)
     {
-        var options = new JsonSerializerOptions(baseOptions);
+        JsonSerializerOptions? options = new(baseOptions);
         options.Converters.RemoveAll(removeConverterPredicate);
         options.Converters.AddIfNotContains(addConverters);
         return options;

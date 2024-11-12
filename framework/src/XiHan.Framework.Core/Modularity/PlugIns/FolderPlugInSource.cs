@@ -62,13 +62,13 @@ public class FolderPlugInSource : IPlugInSource
     /// <exception cref="XiHanException"></exception>
     public Type[] GetModules()
     {
-        var modules = new List<Type>();
+        List<Type>? modules = new();
 
-        foreach (var assembly in GetAssemblies())
+        foreach (Assembly? assembly in GetAssemblies())
         {
             try
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (Type? type in assembly.GetTypes())
                 {
                     if (XiHanModuleHelper.IsXiHanModule(type))
                     {
@@ -91,7 +91,7 @@ public class FolderPlugInSource : IPlugInSource
     /// <returns></returns>
     private List<Assembly> GetAssemblies()
     {
-        var assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
+        IEnumerable<string>? assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
 
         if (Filter != null)
         {

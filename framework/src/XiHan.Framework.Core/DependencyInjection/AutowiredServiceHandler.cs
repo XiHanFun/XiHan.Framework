@@ -51,7 +51,7 @@ public class AutowiredServiceHandler
     /// <param name="serviceProvider"></param>
     private void Autowired(object service, IServiceProvider serviceProvider)
     {
-        var serviceType = service.GetType();
+        Type? serviceType = service.GetType();
         if (_autowiredActions.TryGetValue(serviceType, out Action<object, IServiceProvider>? act))
         {
             act(service, serviceProvider);
@@ -59,10 +59,10 @@ public class AutowiredServiceHandler
         else
         {
             //参数
-            var objParam = Expression.Parameter(typeof(object), "obj");
-            var spParam = Expression.Parameter(typeof(IServiceProvider), "sp");
-            var obj = Expression.Convert(objParam, serviceType);
-            var getService = typeof(IServiceProvider).GetMethod("GetService");
+            ParameterExpression? objParam = Expression.Parameter(typeof(object), "obj");
+            ParameterExpression? spParam = Expression.Parameter(typeof(IServiceProvider), "sp");
+            UnaryExpression? obj = Expression.Convert(objParam, serviceType);
+            MethodInfo? getService = typeof(IServiceProvider).GetMethod("GetService");
 
             List<Expression> setList = [];
             if (getService != null)
@@ -85,8 +85,8 @@ public class AutowiredServiceHandler
                     select Expression.Assign(propExp, Expression.Convert(createService, property.PropertyType)));
             }
 
-            var bodyExp = Expression.Block(setList);
-            var setAction = Expression.Lambda<Action<object, IServiceProvider>>(bodyExp, objParam, spParam).Compile();
+            BlockExpression? bodyExp = Expression.Block(setList);
+            Action<object, IServiceProvider>? setAction = Expression.Lambda<Action<object, IServiceProvider>>(bodyExp, objParam, spParam).Compile();
             _autowiredActions[serviceType] = setAction;
             setAction(service, serviceProvider);
         }

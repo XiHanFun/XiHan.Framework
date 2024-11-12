@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Security.Cryptography;
 using System.Text;
 using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Text;
@@ -43,7 +42,7 @@ public static class FileHelper
     /// <returns>包含文件所有行的字符串</returns>
     public static async Task<string> ReadAllTextAsync(string filePath)
     {
-        using var reader = File.OpenText(filePath);
+        using StreamReader? reader = File.OpenText(filePath);
         return await reader.ReadToEndAsync();
     }
 
@@ -54,8 +53,8 @@ public static class FileHelper
     /// <returns>包含文件所有字节的字节数组</returns>
     public static async Task<byte[]> ReadAllBytesAsync(string filePath)
     {
-        using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var result = new byte[stream.Length];
+        using FileStream? stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        byte[]? result = new byte[stream.Length];
         await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
         return result;
     }
@@ -80,10 +79,10 @@ public static class FileHelper
         FileOptions fileOptions = FileOptions.Asynchronous | FileOptions.SequentialScan)
     {
         encoding ??= Encoding.UTF8;
-        var lines = new List<string>();
-        using (var stream = new FileStream(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions))
+        List<string>? lines = new();
+        using (FileStream? stream = new(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions))
         {
-            using var reader = new StreamReader(stream, encoding);
+            using StreamReader? reader = new(stream, encoding);
             StringBuilder sb = new();
             string? line;
             while ((line = await reader.ReadLineAsync()) != null)
@@ -91,6 +90,7 @@ public static class FileHelper
                 lines.Add(line);
             }
         }
+
         return [.. lines];
     }
 
@@ -101,7 +101,7 @@ public static class FileHelper
     /// <returns>包含文件所有行的字符串</returns>
     public static async Task<string> ReadWithoutBomAsync(string path)
     {
-        var content = await ReadAllBytesAsync(path);
+        byte[]? content = await ReadAllBytesAsync(path);
         return StringHelper.ConvertFromBytesWithoutBom(content)!;
     }
 
@@ -195,7 +195,7 @@ public static class FileHelper
     /// <returns>文件的哈希值</returns>
     public static string GetHash(string filePath)
     {
-        using var stream = File.OpenRead(filePath);
+        using FileStream? stream = File.OpenRead(filePath);
         return HashHelper.StreamMd5(stream);
     }
 
@@ -266,9 +266,9 @@ public static class FileHelper
     /// <returns></returns>
     public static string GetUniqueName(string fileName)
     {
-        var fileNameWithoutExtension = GetNameWithoutExtension(fileName);
-        var fileExtension = GetExtension(fileName);
-        var uniqueFileName = $"{fileNameWithoutExtension}_{GetDateName()}_{GetRandomName()}";
+        string? fileNameWithoutExtension = GetNameWithoutExtension(fileName);
+        string? fileExtension = GetExtension(fileName);
+        string? uniqueFileName = $"{fileNameWithoutExtension}_{GetDateName()}_{GetRandomName()}";
         return uniqueFileName + fileExtension;
     }
 
@@ -280,7 +280,7 @@ public static class FileHelper
     public static int GetTextLineCount(string filePath)
     {
         // 将文本文件的各行读到一个字符串数组中
-        var rows = File.ReadAllLines(filePath);
+        string[]? rows = File.ReadAllLines(filePath);
         // 返回行数
         return rows.Length;
     }
@@ -308,7 +308,7 @@ public static class FileHelper
     {
         try
         {
-            using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            using FileStream? fileStream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             // 如果没有异常，文件没有被锁定
             return true;
         }

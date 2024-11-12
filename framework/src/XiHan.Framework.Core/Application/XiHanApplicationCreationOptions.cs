@@ -33,7 +33,7 @@ public class XiHanApplicationCreationOptions
     {
         Services = CheckHelper.NotNull(services, nameof(services));
         PlugInSources = [];
-        Configuration = new();
+        Configuration = new XiHanConfigurationBuilderOptions();
     }
 
     /// <summary>

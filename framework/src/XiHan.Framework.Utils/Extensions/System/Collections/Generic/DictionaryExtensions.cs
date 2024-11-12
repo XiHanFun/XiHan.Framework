@@ -65,7 +65,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
     }
 
     /// <summary>
@@ -148,10 +148,10 @@ public static class DictionaryExtensions
     /// <returns>如果值正确，返回表示对象的 ExpandoObject</returns>
     public static dynamic ConvertToDynamicObject(this Dictionary<string, object> dictionary)
     {
-        var expandoObject = new ExpandoObject();
-        var expendObjectCollection = (ICollection<KeyValuePair<string, object>>)expandoObject!;
+        ExpandoObject? expandoObject = new();
+        ICollection<KeyValuePair<string, object>>? expendObjectCollection = (ICollection<KeyValuePair<string, object>>)expandoObject!;
 
-        foreach (var keyValuePair in dictionary)
+        foreach (KeyValuePair<string, object> keyValuePair in dictionary)
         {
             expendObjectCollection.Add(keyValuePair);
         }

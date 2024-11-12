@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Extensions.System;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Extensions.System.Collections.Generic;
@@ -31,7 +30,7 @@ public static class ListExtensions
     /// <param name="items">要插入的项的集合</param>
     public static void InsertRange<T>(this IList<T> source, int index, IEnumerable<T> items)
     {
-        foreach (var item in items)
+        foreach (T? item in items)
         {
             source.Insert(index++, item);
         }
@@ -46,7 +45,7 @@ public static class ListExtensions
     /// <returns>满足条件项的索引，如果未找到则返回 -1</returns>
     public static int FindIndex<T>(this IList<T> source, Predicate<T> selector)
     {
-        for (var i = 0; i < source.Count; ++i)
+        for (int i = 0; i < source.Count; ++i)
         {
             if (selector(source[i]))
             {
@@ -88,7 +87,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertAfter<T>(this IList<T> source, T existingItem, T item)
     {
-        var index = source.IndexOf(existingItem);
+        int index = source.IndexOf(existingItem);
         if (index < 0)
         {
             source.AddFirst(item);
@@ -107,7 +106,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertAfter<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        var index = source.FindIndex(selector);
+        int index = source.FindIndex(selector);
         if (index < 0)
         {
             source.AddFirst(item);
@@ -126,7 +125,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertBefore<T>(this IList<T> source, T existingItem, T item)
     {
-        var index = source.IndexOf(existingItem);
+        int index = source.IndexOf(existingItem);
         if (index < 0)
         {
             source.AddLast(item);
@@ -145,7 +144,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertBefore<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        var index = source.FindIndex(selector);
+        int index = source.FindIndex(selector);
         if (index < 0)
         {
             source.AddLast(item);
@@ -184,7 +183,7 @@ public static class ListExtensions
     {
         for (int i = 0; i < source.Count; i++)
         {
-            var item = source[i];
+            T? item = source[i];
             if (selector(item))
             {
                 source[i] = itemFactory(item);
@@ -222,7 +221,7 @@ public static class ListExtensions
     {
         for (int i = 0; i < source.Count; i++)
         {
-            var item = source[i];
+            T? item = source[i];
             if (selector(item))
             {
                 source[i] = itemFactory(item);
@@ -266,14 +265,14 @@ public static class ListExtensions
         }
 
         // 查找当前项的索引
-        var currentIndex = source.FindIndex(0, selector);
+        int currentIndex = source.FindIndex(0, selector);
         if (currentIndex == targetIndex)
         {
             return;
         }
 
         // 移除当前项并插入到目标索引位置
-        var item = source[currentIndex];
+        T? item = source[currentIndex];
         source.RemoveAt(currentIndex);
         source.Insert(targetIndex, item);
     }
@@ -290,7 +289,7 @@ public static class ListExtensions
     {
         CheckHelper.NotNull(source, nameof(source));
 
-        var item = source.FirstOrDefault(selector);
+        T? item = source.FirstOrDefault(selector);
 
         if (item == null)
         {
@@ -313,11 +312,11 @@ public static class ListExtensions
         where T : notnull
     {
         // 初始化排序列表、访问标记字典
-        var sorted = new List<T>();
-        var visited = new Dictionary<T, bool>(comparer);
+        List<T>? sorted = new();
+        Dictionary<T, bool>? visited = new(comparer);
 
         // 遍历源列表中的每个项并进行拓扑排序
-        foreach (var item in source)
+        foreach (T? item in source)
         {
             SortByDependenciesVisit(item, getDependencies, sorted, visited);
         }
@@ -337,7 +336,7 @@ public static class ListExtensions
         Dictionary<T, bool> visited) where T : notnull
     {
         // 检查项是否已经在处理中或已访问过
-        var alreadyVisited = visited.TryGetValue(item, out bool inProcess);
+        bool alreadyVisited = visited.TryGetValue(item, out bool inProcess);
 
         if (alreadyVisited)
         {
@@ -351,11 +350,11 @@ public static class ListExtensions
             // 标记为正在处理
             visited[item] = true;
 
-            var dependencies = getDependencies(item);
+            IEnumerable<T>? dependencies = getDependencies(item);
             if (dependencies != null)
             {
                 // 递归地对每个依赖进行拓扑排序
-                foreach (var dependency in dependencies)
+                foreach (T? dependency in dependencies)
                 {
                     SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
                 }

@@ -32,8 +32,8 @@ public static class EcdsaHelper
     public static (string publicKey, string privateKey) GenerateKeys()
     {
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var publicKey = Convert.ToBase64String(ecdsa.ExportSubjectPublicKeyInfo());
-        var privateKey = Convert.ToBase64String(ecdsa.ExportPkcs8PrivateKey());
+        string? publicKey = Convert.ToBase64String(ecdsa.ExportSubjectPublicKeyInfo());
+        string? privateKey = Convert.ToBase64String(ecdsa.ExportPkcs8PrivateKey());
         return (publicKey, privateKey);
     }
 
@@ -47,8 +47,8 @@ public static class EcdsaHelper
     {
         using ECDsa ecdsa = ECDsa.Create();
         ecdsa.ImportPkcs8PrivateKey(Convert.FromBase64String(privateKey), out _);
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signature = ecdsa.SignData(dataBytes, HashAlgorithmName.SHA256);
+        byte[]? dataBytes = Encoding.UTF8.GetBytes(data);
+        byte[]? signature = ecdsa.SignData(dataBytes, HashAlgorithmName.SHA256);
         return Convert.ToBase64String(signature);
     }
 
@@ -63,8 +63,8 @@ public static class EcdsaHelper
     {
         using ECDsa ecdsa = ECDsa.Create();
         ecdsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out _);
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signatureBytes = Convert.FromBase64String(signature);
+        byte[]? dataBytes = Encoding.UTF8.GetBytes(data);
+        byte[]? signatureBytes = Convert.FromBase64String(signature);
         return ecdsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256);
     }
 }

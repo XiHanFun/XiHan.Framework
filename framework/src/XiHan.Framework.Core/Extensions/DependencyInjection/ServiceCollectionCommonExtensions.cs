@@ -80,7 +80,7 @@ public static class ServiceCollectionCommonExtensions
     /// <exception cref="InvalidOperationException"></exception>
     public static T GetSingletonInstance<T>(this IServiceCollection services)
     {
-        var service = services.GetSingletonInstanceOrNull<T>();
+        T? service = services.GetSingletonInstanceOrNull<T>();
         return service == null ? throw new InvalidOperationException($"找不到单例服务: {typeof(T).AssemblyQualifiedName}") : service;
     }
 
@@ -93,9 +93,9 @@ public static class ServiceCollectionCommonExtensions
     {
         CheckHelper.NotNull(services, nameof(services));
 
-        foreach (var service in services)
+        foreach (ServiceDescriptor? service in services)
         {
-            var factoryInterface = service.NormalizedImplementationInstance()?.GetType()
+            Type? factoryInterface = service.NormalizedImplementationInstance()?.GetType()
                 .GetTypeInfo().GetInterfaces()
                 .FirstOrDefault(i => i.GetTypeInfo().IsGenericType && i.GetGenericTypeDefinition() == typeof(IServiceProviderFactory<>));
 
@@ -104,7 +104,7 @@ public static class ServiceCollectionCommonExtensions
                 continue;
             }
 
-            var containerBuilderType = factoryInterface.GenericTypeArguments[0];
+            Type? containerBuilderType = factoryInterface.GenericTypeArguments[0];
             return (IServiceProvider)typeof(ServiceCollectionCommonExtensions).GetTypeInfo().GetMethods()
                 .Single(m => m.Name == nameof(BuildServiceProviderFromFactory) && m.IsGenericMethod)
                 .MakeGenericMethod(containerBuilderType)
@@ -126,9 +126,9 @@ public static class ServiceCollectionCommonExtensions
     {
         CheckHelper.NotNull(services, nameof(services));
 
-        var serviceProviderFactory = services.GetSingletonInstanceOrNull<IServiceProviderFactory<TContainerBuilder>>() ??
+        IServiceProviderFactory<TContainerBuilder>? serviceProviderFactory = services.GetSingletonInstanceOrNull<IServiceProviderFactory<TContainerBuilder>>() ??
             throw new XiHanException($"在 {services} 中未发现服务提供器 {typeof(IServiceProviderFactory<TContainerBuilder>).FullName}");
-        var builder = serviceProviderFactory.CreateBuilder(services);
+        TContainerBuilder? builder = serviceProviderFactory.CreateBuilder(services);
         builderAction?.Invoke(builder);
         return serviceProviderFactory.CreateServiceProvider(builder);
     }

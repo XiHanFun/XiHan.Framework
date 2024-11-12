@@ -32,9 +32,9 @@ public static class RsaHelper
     /// <returns>返回公钥和私钥对</returns>
     public static (string publicKey, string privateKey) GenerateKeys(int keySize = 2048)
     {
-        using var rsa = RSA.Create(keySize);
-        var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-        var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+        using RSA? rsa = RSA.Create(keySize);
+        string? privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
+        string? publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
         return (publicKey, privateKey);
     }
 
@@ -46,9 +46,9 @@ public static class RsaHelper
     /// <returns>加密后的密文</returns>
     public static string Encrypt(string plainText, string publicKey)
     {
-        using var rsa = RSA.Create();
+        using RSA? rsa = RSA.Create();
         rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
-        var encryptedBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.Pkcs1);
+        byte[]? encryptedBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.Pkcs1);
         return Convert.ToBase64String(encryptedBytes);
     }
 
@@ -60,9 +60,9 @@ public static class RsaHelper
     /// <returns>解密后的明文</returns>
     public static string Decrypt(string cipherText, string privateKey)
     {
-        using var rsa = RSA.Create();
+        using RSA? rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-        var decryptedBytes = rsa.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.Pkcs1);
+        byte[]? decryptedBytes = rsa.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.Pkcs1);
         return Encoding.UTF8.GetString(decryptedBytes);
     }
 
@@ -74,10 +74,10 @@ public static class RsaHelper
     /// <returns>签名后的字符串</returns>
     public static string SignData(string data, string privateKey)
     {
-        using var rsa = RSA.Create();
+        using RSA? rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        byte[]? dataBytes = Encoding.UTF8.GetBytes(data);
+        byte[]? signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return Convert.ToBase64String(signedBytes);
     }
 
@@ -90,10 +90,10 @@ public static class RsaHelper
     /// <returns>签名是否有效</returns>
     public static bool VerifyData(string data, string signature, string publicKey)
     {
-        using var rsa = RSA.Create();
+        using RSA? rsa = RSA.Create();
         rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signatureBytes = Convert.FromBase64String(signature);
+        byte[]? dataBytes = Encoding.UTF8.GetBytes(data);
+        byte[]? signatureBytes = Convert.FromBase64String(signature);
         return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 }

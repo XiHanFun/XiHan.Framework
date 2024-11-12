@@ -169,9 +169,9 @@ public static class DirectoryHelper
         // 定义一个DirectoryInfo对象
         DirectoryInfo di = new(dirPath);
         // 通过GetFiles方法,获取di目录中的所有文件的大小
-        var len = di.GetFiles().Sum(fi => fi.Length);
+        long len = di.GetFiles().Sum(fi => fi.Length);
         // 获取di中所有的文件夹,并存到一个新的对象数组中,以进行递归
-        var dis = di.GetDirectories();
+        DirectoryInfo[]? dis = di.GetDirectories();
         if (dis.Length <= 0) return len;
 
         len += dis.Sum(t => GetSize(t.FullName));
@@ -222,7 +222,7 @@ public static class DirectoryHelper
     public static bool IsContainsFiles(string directoryPath, string searchPattern, bool isSearchChild)
     {
         // 获取指定的文件列表
-        var fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
+        string[]? fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
         // 判断指定文件是否存在
         return fileNames.Length != 0;
     }
@@ -235,11 +235,11 @@ public static class DirectoryHelper
     public static bool IsEmpty(string directoryPath)
     {
         // 判断是否存在文件
-        var fileNames = GetFiles(directoryPath);
+        string[]? fileNames = GetFiles(directoryPath);
         if (fileNames.Length != 0)
             return false;
         // 判断是否存在文件夹
-        var directoryNames = GetDirectories(directoryPath);
+        string[]? directoryNames = GetDirectories(directoryPath);
         return directoryNames.Length == 0;
     }
 

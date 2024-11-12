@@ -31,7 +31,7 @@ public static class StreamExtensions
             return memoryStream.ToArray();
         }
 
-        using var ms = stream.CreateMemoryStream();
+        using MemoryStream? ms = stream.CreateMemoryStream();
         return ms.ToArray();
     }
 
@@ -48,7 +48,7 @@ public static class StreamExtensions
             return memoryStream.ToArray();
         }
 
-        using var ms = await stream.CreateMemoryStreamAsync(cancellationToken);
+        using MemoryStream? ms = await stream.CreateMemoryStreamAsync(cancellationToken);
         return ms.ToArray();
     }
 
@@ -82,7 +82,7 @@ public static class StreamExtensions
             stream.Position = 0;
         }
 
-        var memoryStream = new MemoryStream();
+        MemoryStream? memoryStream = new();
         stream.CopyTo(memoryStream);
 
         if (stream.CanSeek)
@@ -107,7 +107,7 @@ public static class StreamExtensions
             stream.Position = 0;
         }
 
-        var memoryStream = new MemoryStream();
+        MemoryStream? memoryStream = new();
         await stream.CopyToAsync(memoryStream, cancellationToken);
 
         if (stream.CanSeek)

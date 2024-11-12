@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-  <PropertyGroup>
-	  <Title>XiHan.Framework</Title>
-	  <AssemblyName>XiHan.Framework</AssemblyName>
-	  <PackageId>XiHan.Framework</PackageId>
-	  <Description>曦寒框架库</Description>
-	  <OutputType>Library</OutputType>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework</Title>
+        <AssemblyName>XiHan.Framework</AssemblyName>
+        <PackageId>XiHan.Framework</PackageId>
+        <Description>曦寒框架库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
 </Project>

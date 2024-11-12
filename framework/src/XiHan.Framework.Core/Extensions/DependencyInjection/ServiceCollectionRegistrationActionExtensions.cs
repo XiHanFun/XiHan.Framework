@@ -51,7 +51,7 @@ public static class ServiceCollectionRegistrationActionExtensions
     /// <returns></returns>
     private static ServiceRegistrationActionList GetOrCreateRegistrationActionList(IServiceCollection services)
     {
-        var actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceRegistrationActionList>>()?.Value;
+        ServiceRegistrationActionList? actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceRegistrationActionList>>()?.Value;
         if (actionList == null)
         {
             actionList = [];
@@ -111,7 +111,7 @@ public static class ServiceCollectionRegistrationActionExtensions
     /// <returns></returns>
     private static ServiceExposingActionList GetOrCreateExposingList(IServiceCollection services)
     {
-        var actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceExposingActionList>>()?.Value;
+        ServiceExposingActionList? actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceExposingActionList>>()?.Value;
         if (actionList == null)
         {
             actionList = [];

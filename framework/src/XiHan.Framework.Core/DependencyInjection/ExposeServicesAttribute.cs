@@ -57,11 +57,11 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <returns></returns>
     public Type[] GetExposedServiceTypes(Type targetType)
     {
-        var serviceList = ServiceTypes.ToList();
+        List<Type>? serviceList = ServiceTypes.ToList();
 
         if (IncludeDefaults)
         {
-            foreach (var type in GetDefaultServices(targetType))
+            foreach (Type? type in GetDefaultServices(targetType))
             {
                 serviceList.AddIfNotContains(type);
             }
@@ -86,11 +86,11 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <returns></returns>
     private static List<Type> GetDefaultServices(Type type)
     {
-        var serviceTypes = new List<Type>();
+        List<Type>? serviceTypes = new();
 
-        foreach (var interfaceType in type.GetTypeInfo().GetInterfaces())
+        foreach (Type? interfaceType in type.GetTypeInfo().GetInterfaces())
         {
-            var interfaceName = interfaceType.Name;
+            string? interfaceName = interfaceType.Name;
             if (interfaceType.IsGenericType)
             {
                 interfaceName = interfaceType.Name.Left(interfaceType.Name.IndexOf('`'));

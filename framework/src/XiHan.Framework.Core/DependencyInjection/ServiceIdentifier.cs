@@ -64,6 +64,7 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
         {
             return ServiceType == other.ServiceType && ServiceKey.Equals(other.ServiceKey);
         }
+
         return false;
     }
 
@@ -87,9 +88,10 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
         {
             return ServiceType.GetHashCode();
         }
+
         unchecked
         {
-            return (ServiceType.GetHashCode() * 397) ^ ServiceKey.GetHashCode();
+            return ServiceType.GetHashCode() * 397 ^ ServiceKey.GetHashCode();
         }
     }
 

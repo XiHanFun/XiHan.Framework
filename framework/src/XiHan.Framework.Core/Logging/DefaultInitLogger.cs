@@ -52,7 +52,7 @@ public class DefaultInitLogger<T> : IInitLogger<T>
             EventId = eventId,
             State = state!,
             Exception = exception,
-            Formatter = (s, e) => formatter((TState)s, e),
+            Formatter = (s, e) => formatter((TState)s, e)
         });
     }
 

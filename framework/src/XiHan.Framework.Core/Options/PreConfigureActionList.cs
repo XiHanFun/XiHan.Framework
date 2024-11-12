@@ -25,7 +25,7 @@ public class PreConfigureActionList<TOptions> : List<Action<TOptions>>
     /// <param name="options"></param>
     public void Configure(TOptions options)
     {
-        foreach (var action in this)
+        foreach (Action<TOptions>? action in this)
         {
             action(options);
         }
@@ -37,7 +37,7 @@ public class PreConfigureActionList<TOptions> : List<Action<TOptions>>
     /// <returns></returns>
     public TOptions Configure()
     {
-        var options = Activator.CreateInstance<TOptions>();
+        TOptions? options = Activator.CreateInstance<TOptions>();
         Configure(options);
         return options;
     }

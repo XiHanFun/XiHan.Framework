@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\common.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.EntityFrameworkCore</Title>
-		<AssemblyName>XiHan.Framework.EntityFrameworkCore</AssemblyName>
-		<PackageId>XiHan.Framework.EntityFrameworkCore</PackageId>
-		<Description>曦寒框架实体框架核心库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.EntityFrameworkCore</Title>
+        <AssemblyName>XiHan.Framework.EntityFrameworkCore</AssemblyName>
+        <PackageId>XiHan.Framework.EntityFrameworkCore</PackageId>
+        <Description>曦寒框架实体框架核心库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+    </ItemGroup>
 
 </Project>

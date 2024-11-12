@@ -46,25 +46,25 @@ public static class AesHelper
     public static string Encrypt(string plainText, string password)
     {
         // 生成盐
-        var salt = new byte[BlockSize / 8];
-        using (var rng = RandomNumberGenerator.Create())
+        byte[]? salt = new byte[BlockSize / 8];
+        using (RandomNumberGenerator? rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(salt);
         }
 
-        using var aes = Aes.Create();
+        using Aes? aes = Aes.Create();
         // 扩展密码为 IV 和 KEY
         aes.Key = DeriveKey(password, salt, KeySize / 8);
         aes.IV = DeriveKey(password, salt, BlockSize / 8);
 
         // 加密算法
         string cipherText;
-        using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
-        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        using MemoryStream? ms = new();
+        using CryptoStream? cs = new(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+        byte[]? plainBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(plainBytes, 0, plainBytes.Length);
         cs.FlushFinalBlock();
-        var cipherBytes = ms.ToArray();
+        byte[]? cipherBytes = ms.ToArray();
         cipherText = Convert.ToBase64String(cipherBytes);
 
         // 返回加密结果
@@ -85,25 +85,25 @@ public static class AesHelper
             throw new ArgumentException("密码文本无效", nameof(cipherText));
 
         // 解析盐和密文
-        var parts = cipherText.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
+        string[]? parts = cipherText.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 2)
             throw new ArgumentException("密码文本无效", nameof(cipherText));
 
-        var salt = Convert.FromBase64String(parts[0]);
-        var cipherBytes = Convert.FromBase64String(parts[1]);
+        byte[]? salt = Convert.FromBase64String(parts[0]);
+        byte[]? cipherBytes = Convert.FromBase64String(parts[1]);
 
-        using var aes = Aes.Create();
+        using Aes? aes = Aes.Create();
         // 扩展密码为 IV 和 KEY
         aes.Key = DeriveKey(password, salt, KeySize / 8);
         aes.IV = DeriveKey(password, salt, BlockSize / 8);
 
         // 解密算法
-        using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
+        using MemoryStream? ms = new();
+        using CryptoStream? cs = new(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
         cs.Write(cipherBytes, 0, cipherBytes.Length);
         cs.FlushFinalBlock();
-        var plainBytes = ms.ToArray();
-        var plainText = Encoding.UTF8.GetString(plainBytes);
+        byte[]? plainBytes = ms.ToArray();
+        string? plainText = Encoding.UTF8.GetString(plainBytes);
 
         // 返回解密结果
         return plainText;
@@ -118,7 +118,7 @@ public static class AesHelper
     /// <returns></returns>
     private static byte[] DeriveKey(string password, byte[] salt, int bytes)
     {
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
+        using Rfc2898DeriveBytes? pbkdf2 = new(password, salt, Iterations, HashAlgorithmName.SHA256);
         return pbkdf2.GetBytes(bytes);
     }
 }

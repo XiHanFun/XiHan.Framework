@@ -39,15 +39,15 @@ public static class ConfigurationHelper
         }
 
         // 加载基础配置文件
-        var builder = new ConfigurationBuilder()
+        IConfigurationBuilder? builder = new ConfigurationBuilder()
             .SetBasePath(options.BasePath!)
-            .AddJsonFile(options.FileName + ".json", optional: options.Optional, reloadOnChange: options.ReloadOnChange)
-            .AddJsonFile(options.FileName + ".secrets.json", optional: true, reloadOnChange: options.ReloadOnChange);
+            .AddJsonFile(options.FileName + ".json", options.Optional, options.ReloadOnChange)
+            .AddJsonFile(options.FileName + ".secrets.json", true, options.ReloadOnChange);
 
         // 加载特定环境下的配置文件
         if (!options.EnvironmentName.IsNullOrEmpty())
         {
-            builder = builder.AddJsonFile($"{options.FileName}.{options.EnvironmentName}.json", optional: true, reloadOnChange: options.ReloadOnChange);
+            builder = builder.AddJsonFile($"{options.FileName}.{options.EnvironmentName}.json", true, options.ReloadOnChange);
         }
 
         // 开发环境，加载用户机密
