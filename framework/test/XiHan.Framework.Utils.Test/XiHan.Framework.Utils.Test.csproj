@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props"/>
+    <Import Project="..\..\props\common.props" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
+        <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj"/>
+        <ProjectReference Include="..\..\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
     </ItemGroup>
 
 </Project>
