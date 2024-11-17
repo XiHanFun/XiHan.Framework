@@ -41,14 +41,26 @@ public static class DesHelper
         byte[] key = Encoding.UTF8.GetBytes(defaultKey);
         byte[] iv = Encoding.UTF8.GetBytes(defaultIV);
 
+        return Encrypt(plainText, key, iv);
+    }
+
+    /// <summary>
+    /// 自定义 Key 和 IV 的加密方法
+    /// </summary>
+    /// <param name="plainText">要加密的文本</param>
+    /// <param name="key">自定义的 Key</param>
+    /// <param name="iv">自定义的 IV</param>
+    /// <returns></returns>
+    public static string Encrypt(string plainText, byte[] key, byte[] iv)
+    {
         using DES des = DES.Create();
         des.Key = key;
         des.IV = iv;
 
         ICryptoTransform encryptor = des.CreateEncryptor();
 
-        using MemoryStream? ms = new();
-        using CryptoStream? cs = new(ms, encryptor, CryptoStreamMode.Write);
+        using MemoryStream ms = new();
+        using CryptoStream cs = new(ms, encryptor, CryptoStreamMode.Write);
         byte[] inputBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(inputBytes, 0, inputBytes.Length);
         cs.FlushFinalBlock();
@@ -65,6 +77,19 @@ public static class DesHelper
     {
         byte[] key = Encoding.UTF8.GetBytes(defaultKey);
         byte[] iv = Encoding.UTF8.GetBytes(defaultIV);
+
+        return Decrypt(encryptedText, key, iv);
+    }
+
+    /// <summary>
+    /// 自定义 Key 和 IV 的解密方法
+    /// </summary>
+    /// <param name="encryptedText">要解密的文本</param>
+    /// <param name="key">自定义的 Key</param>
+    /// <param name="iv">自定义的 IV</param>
+    /// <returns></returns>
+    public static string Decrypt(string encryptedText, byte[] key, byte[] iv)
+    {
         byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
 
         using DES des = DES.Create();
@@ -73,9 +98,9 @@ public static class DesHelper
 
         ICryptoTransform decryptor = des.CreateDecryptor();
 
-        using MemoryStream? ms = new(encryptedBytes);
-        using CryptoStream? cs = new(ms, decryptor, CryptoStreamMode.Read);
-        using StreamReader? sr = new(cs);
+        using MemoryStream ms = new(encryptedBytes);
+        using CryptoStream cs = new(ms, decryptor, CryptoStreamMode.Read);
+        using StreamReader sr = new(cs);
         return sr.ReadToEnd();
     }
 }
