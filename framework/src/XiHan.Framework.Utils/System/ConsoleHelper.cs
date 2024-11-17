@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.System;
 /// </summary>
 public static class ConsoleHelper
 {
-    private static readonly object _objLock = new();
+    private static readonly Lock _objLock = new();
 
     /// <summary>
     /// 在控制台输出
