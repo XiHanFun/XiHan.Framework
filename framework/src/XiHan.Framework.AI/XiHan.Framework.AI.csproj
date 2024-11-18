@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props"/>
+    <Import Project="..\..\props\common.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.AI</Title>
@@ -11,7 +11,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+      <PackageReference Include="Microsoft.Extensions.AI" Version="9.0.0-preview.9.24556.5" />
+      <PackageReference Include="Microsoft.Extensions.ML" Version="4.0.0" />
+      <PackageReference Include="Microsoft.ML.Vision" Version="3.0.1" />
+      <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.3.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
     </ItemGroup>
 
 </Project>
