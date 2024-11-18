@@ -30,6 +30,56 @@ public static class CollectionExtensions
     }
 
     /// <summary>
+    /// 如果条件成立，添加项
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="value"></param>
+    /// <param name="flag"></param>
+    public static void AddIf<T>(this ICollection<T> source, T value, bool flag)
+    {
+        _ = CheckHelper.NotNull(source, nameof(source));
+
+        if (flag)
+        {
+            source.Add(value);
+        }
+    }
+
+    /// <summary>
+    /// 如果条件成立，添加项
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="value"></param>
+    /// <param name="func"></param>
+    public static void AddIf<T>(this ICollection<T> source, T value, Func<bool> func)
+    {
+        _ = CheckHelper.NotNull(source, nameof(source));
+
+        if (func())
+        {
+            source.Add(value);
+        }
+    }
+
+    /// <summary>
+    /// 如果给定的集合对象不为空，则添加一个项
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="value"></param>
+    public static void AddIfNotNull<T>(this ICollection<T> source, T value)
+    {
+        _ = CheckHelper.NotNull(source, nameof(source));
+
+        if (value != null)
+        {
+            source.Add(value);
+        }
+    }
+
+    /// <summary>
     /// 如果集合中尚未包含该项，则将其添加到集合中
     /// </summary>
     /// <param name="source">集合对象</param>
@@ -62,7 +112,7 @@ public static class CollectionExtensions
 
         List<T>? addedItems = [];
 
-        foreach (T? item in items)
+        foreach (var item in items)
         {
             if (source.Contains(item))
             {
@@ -108,9 +158,9 @@ public static class CollectionExtensions
     /// <returns>被移除项的列表</returns>
     public static IList<T> RemoveAll<T>(this ICollection<T> source, Func<T, bool> predicate)
     {
-        List<T>? items = source.Where(predicate).ToList();
+        var items = source.Where(predicate).ToList();
 
-        foreach (T? item in items)
+        foreach (var item in items)
         {
             _ = source.Remove(item);
         }
@@ -126,7 +176,7 @@ public static class CollectionExtensions
     /// <param name="items">要移除的项的集合</param>
     public static void RemoveAll<T>(this ICollection<T> source, IEnumerable<T> items)
     {
-        foreach (T? item in items)
+        foreach (var item in items)
         {
             _ = source.Remove(item);
         }

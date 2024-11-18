@@ -57,10 +57,10 @@ public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
     {
         _ = CheckHelper.NotNull(context, nameof(context));
 
-        using IServiceScope? scope = ServiceScopeFactory.CreateScope();
-        IEnumerable<IExceptionSubscriber>? exceptionSubscribers = scope.ServiceProvider.GetServices<IExceptionSubscriber>();
+        using var scope = ServiceScopeFactory.CreateScope();
+        var exceptionSubscribers = scope.ServiceProvider.GetServices<IExceptionSubscriber>();
 
-        foreach (IExceptionSubscriber? exceptionSubscriber in exceptionSubscribers)
+        foreach (var exceptionSubscriber in exceptionSubscribers)
         {
             try
             {

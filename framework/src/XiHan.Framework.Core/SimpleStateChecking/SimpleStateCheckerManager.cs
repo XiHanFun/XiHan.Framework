@@ -64,20 +64,20 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
     {
         SimpleStateCheckerResult<TState>? result = new(states);
 
-        using IServiceScope? scope = ServiceProvider.CreateScope();
-        IEnumerable<ISimpleBatchStateChecker<TState>>? batchStateCheckers = states.SelectMany(x => x.StateCheckers)
+        using var scope = ServiceProvider.CreateScope();
+        var batchStateCheckers = states.SelectMany(x => x.StateCheckers)
             .Where(x => x is ISimpleBatchStateChecker<TState>)
             .Cast<ISimpleBatchStateChecker<TState>>()
             .GroupBy(x => x)
             .Select(x => x.Key);
 
-        foreach (ISimpleBatchStateChecker<TState>? stateChecker in batchStateCheckers)
+        foreach (var stateChecker in batchStateCheckers)
         {
             SimpleBatchStateCheckerContext<TState>? context = new(
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
                 states.Where(x => x.StateCheckers.Contains(stateChecker)).ToArray());
 
-            foreach (KeyValuePair<TState, bool> x in await stateChecker.IsEnabledAsync(context))
+            foreach (var x in await stateChecker.IsEnabledAsync(context))
             {
                 result[x.Key] = x.Value;
             }
@@ -88,7 +88,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
             }
         }
 
-        foreach (ISimpleBatchStateChecker<TState> globalStateChecker in Options.GlobalStateCheckers
+        foreach (var globalStateChecker in Options.GlobalStateCheckers
             .Where(x => typeof(ISimpleBatchStateChecker<TState>).IsAssignableFrom(x))
             .Select(ServiceProvider.GetRequiredService).Cast<ISimpleBatchStateChecker<TState>>())
         {
@@ -96,13 +96,13 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
                 states.Where(x => result.Any(y => y.Key.Equals(x) && y.Value)).ToArray());
 
-            foreach (KeyValuePair<TState, bool> x in await globalStateChecker.IsEnabledAsync(context))
+            foreach (var x in await globalStateChecker.IsEnabledAsync(context))
             {
                 result[x.Key] = x.Value;
             }
         }
 
-        foreach (TState? state in states)
+        foreach (var state in states)
         {
             if (result[state])
             {
@@ -121,10 +121,10 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
     /// <returns></returns>
     protected virtual async Task<bool> InternalIsEnabledAsync(TState state, bool useBatchChecker)
     {
-        using IServiceScope? scope = ServiceProvider.CreateScope();
+        using var scope = ServiceProvider.CreateScope();
         SimpleStateCheckerContext<TState>? context = new(scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(), state);
 
-        foreach (ISimpleStateChecker<TState>? provider in state.StateCheckers.WhereIf(!useBatchChecker, x => x is not ISimpleBatchStateChecker<TState>))
+        foreach (var provider in state.StateCheckers.WhereIf(!useBatchChecker, x => x is not ISimpleBatchStateChecker<TState>))
         {
             if (!await provider.IsEnabledAsync(context))
             {
@@ -132,7 +132,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
             }
         }
 
-        foreach (ISimpleStateChecker<TState> provider in Options.GlobalStateCheckers
+        foreach (var provider in Options.GlobalStateCheckers
             .WhereIf(!useBatchChecker, x => !typeof(ISimpleBatchStateChecker<TState>).IsAssignableFrom(x))
             .Select(ServiceProvider.GetRequiredService).Cast<ISimpleStateChecker<TState>>())
         {

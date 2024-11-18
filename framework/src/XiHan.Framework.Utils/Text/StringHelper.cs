@@ -118,8 +118,8 @@ public static class StringHelper
             sourceEnumerable = sourceEnumerable.Distinct();
         }
 
-        List<string>? enumerable = sourceEnumerable.ToList();
-        foreach (string? item in enumerable)
+        var enumerable = sourceEnumerable.ToList();
+        foreach (var item in enumerable)
         {
             if (item == enumerable.LastOrDefault())
             {
@@ -171,7 +171,7 @@ public static class StringHelper
         else
         {
             // 返回去掉分隔符
-            string? newString = sourceStr.Replace(splitString, string.Empty);
+            var newString = sourceStr.Replace(splitString, string.Empty);
             result = newString;
         }
 
@@ -202,8 +202,8 @@ public static class StringHelper
         else
         {
             //检查传入的字符串长度和样式是否匹配,如果不匹配，则说明使用错误，给出错误信息并返回空值
-            int sourceStrLength = sourceStr.Length;
-            int newStyleLength = GetCleanStyle(newStyle, splitString).Length;
+            var sourceStrLength = sourceStr.Length;
+            var newStyleLength = GetCleanStyle(newStyle, splitString).Length;
             if (sourceStrLength != newStyleLength)
             {
                 returnValue = string.Empty;
@@ -215,7 +215,7 @@ public static class StringHelper
                 StringBuilder newStr = new();
                 if (newStyle != null)
                 {
-                    for (int i = 0; i < newStyle.Length; i++)
+                    for (var i = 0; i < newStyle.Length; i++)
                     {
                         if (newStyle.Substring(i, 1) == splitString)
                         {
@@ -227,7 +227,7 @@ public static class StringHelper
                 if (!string.IsNullOrWhiteSpace(newStr.ToString()))
                 {
                     // 将分隔符放在新样式中的位置
-                    string[]? str = newStr.ToString().Split(',');
+                    var str = newStr.ToString().Split(',');
                     sourceStr = str.Aggregate(sourceStr, (current, bb) => current.Insert(int.Parse(bb), splitString));
                 }
 
@@ -308,9 +308,9 @@ public static class StringHelper
     public static int GetStrLength(string inputString)
     {
         ASCIIEncoding ascii = new();
-        int tempLen = 0;
-        byte[]? s = ascii.GetBytes(inputString);
-        foreach (byte t in s)
+        var tempLen = 0;
+        var s = ascii.GetBytes(inputString);
+        foreach (var t in s)
         {
             if (t == 63)
             {
@@ -337,7 +337,7 @@ public static class StringHelper
     /// <returns>返回处理后的字符串</returns>
     public static string ClipString(string inputString, int len)
     {
-        bool isShowFix = false;
+        var isShowFix = false;
         if (len > 0 && len % 2 == 1)
         {
             isShowFix = true;
@@ -345,10 +345,10 @@ public static class StringHelper
         }
 
         ASCIIEncoding ascii = new();
-        int tempLen = 0;
+        var tempLen = 0;
         StringBuilder sb = new();
-        byte[]? s = ascii.GetBytes(inputString);
-        for (int i = 0; i < s.Length; i++)
+        var s = ascii.GetBytes(inputString);
+        for (var i = 0; i < s.Length; i++)
         {
             if (s[i] == 63)
             {
@@ -374,7 +374,7 @@ public static class StringHelper
             }
         }
 
-        byte[]? myByte = Encoding.Default.GetBytes(inputString);
+        var myByte = Encoding.Default.GetBytes(inputString);
         if (isShowFix && myByte.Length > len)
         {
             _ = sb.Append('…');
@@ -413,7 +413,7 @@ public static class StringHelper
             @"<!--.*\n"
         ];
 
-        string? strOutput = aryReg.Select(t => new Regex(t, RegexOptions.IgnoreCase)).Aggregate(strHtml, (current, regex) => regex.Replace(current, string.Empty));
+        var strOutput = aryReg.Select(t => new Regex(t, RegexOptions.IgnoreCase)).Aggregate(strHtml, (current, regex) => regex.Replace(current, string.Empty));
         strOutput = strOutput.Replace("<", string.Empty).Replace(">", string.Empty).Replace("\n", string.Empty);
         return strOutput;
     }
@@ -462,8 +462,8 @@ public static class StringHelper
         }
         // 有替换字符串开始替换
         StringBuilder strBuffer = new();
-        int start = 0;
-        int end = 0;
+        var start = 0;
+        var end = 0;
         // 查找替换内容，把它之前和上一个替换内容之后的字符串拼接起来
         while (true)
         {
@@ -503,7 +503,7 @@ public static class StringHelper
 
         encoding ??= Encoding.UTF8;
 
-        bool hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
 
         return hasBom ? encoding.GetString(bytes, 3, bytes.Length - 3) : encoding.GetString(bytes);
     }

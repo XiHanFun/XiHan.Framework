@@ -45,26 +45,26 @@ public static class CpuHelper
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                string? output = ShellHelper.Bash(@"top -b -n1 | grep ""Cpu(s)""").Trim();
-                string[]? lines = output.Split(',');
+                var output = ShellHelper.Bash(@"top -b -n1 | grep ""Cpu(s)""").Trim();
+                var lines = output.Split(',');
                 if (lines.Length != 0)
                 {
-                    string? loadPercentage = lines[3].Trim().Split(' ')[0];
+                    var loadPercentage = lines[3].Trim().Split(' ')[0];
                     cpuInfo.CpuRate = loadPercentage.ParseToLong() + "%";
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                string? output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
+                var output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
                 cpuInfo.CpuRate = output.ParseToLong() + "%";
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                string? output = ShellHelper.Cmd("wmic", "cpu get LoadPercentage /Value").Trim();
-                string[]? lines = output.Split(Environment.NewLine);
+                var output = ShellHelper.Cmd("wmic", "cpu get LoadPercentage /Value").Trim();
+                var lines = output.Split(Environment.NewLine);
                 if (lines.Length != 0)
                 {
-                    string? loadPercentage = lines.First(s => s.StartsWith("LoadPercentage")).Split('=')[1];
+                    var loadPercentage = lines.First(s => s.StartsWith("LoadPercentage")).Split('=')[1];
                     cpuInfo.CpuRate = loadPercentage.ParseToLong() + "%";
                 }
             }

@@ -32,7 +32,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="assembly"></param>
     public virtual void AddAssembly(IServiceCollection services, Assembly assembly)
     {
-        Type[]? types = AssemblyHelper.GetAllTypes(assembly)
+        var types = AssemblyHelper.GetAllTypes(assembly)
             .Where(type => type != null && type.IsClass && !type.IsAbstract && !type.IsGenericType)
             .ToArray();
 
@@ -46,7 +46,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="types"></param>
     public virtual void AddTypes(IServiceCollection services, params Type[] types)
     {
-        foreach (Type? type in types)
+        foreach (var type in types)
         {
             AddType(services, type);
         }
@@ -88,11 +88,11 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="serviceTypes"></param>
     protected virtual void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<ServiceIdentifier> serviceTypes)
     {
-        ServiceExposingActionList? exposeActions = services.GetExposingActionList();
+        var exposeActions = services.GetExposingActionList();
         if (exposeActions.Any())
         {
             OnServiceExposingContext? args = new(implementationType, serviceTypes);
-            foreach (Action<IOnServiceExposingContext>? action in exposeActions)
+            foreach (var action in exposeActions)
             {
                 action(args);
             }
@@ -178,7 +178,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     {
         if (lifeTime.IsIn(ServiceLifetime.Singleton, ServiceLifetime.Scoped))
         {
-            Type? redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
+            var redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
 
             if (redirectedType != null)
             {

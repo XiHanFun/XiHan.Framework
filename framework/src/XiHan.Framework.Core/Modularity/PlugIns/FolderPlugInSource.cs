@@ -64,11 +64,11 @@ public class FolderPlugInSource : IPlugInSource
     {
         List<Type>? modules = [];
 
-        foreach (Assembly? assembly in GetAssemblies())
+        foreach (var assembly in GetAssemblies())
         {
             try
             {
-                foreach (Type? type in assembly.GetTypes())
+                foreach (var type in assembly.GetTypes())
                 {
                     if (XiHanModuleHelper.IsXiHanModule(type))
                     {
@@ -91,7 +91,7 @@ public class FolderPlugInSource : IPlugInSource
     /// <returns></returns>
     private List<Assembly> GetAssemblies()
     {
-        IEnumerable<string>? assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
+        var assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
 
         if (Filter != null)
         {

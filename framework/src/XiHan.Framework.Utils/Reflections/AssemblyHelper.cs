@@ -75,7 +75,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetAllReferencedAssemblies(bool skipSystemAssemblies = true)
     {
-        Assembly? rootAssembly = Assembly.GetEntryAssembly();
+        var rootAssembly = Assembly.GetEntryAssembly();
         rootAssembly ??= Assembly.GetCallingAssembly();
 
         HashSet<Assembly>? returnAssemblies = new(new AssemblyEquality());
@@ -93,12 +93,12 @@ public static class AssemblyHelper
 
         while (assembliesToCheck.Count != 0)
         {
-            Assembly? assemblyToCheck = assembliesToCheck.Dequeue();
-            foreach (AssemblyName? reference in assemblyToCheck.GetReferencedAssemblies())
+            var assemblyToCheck = assembliesToCheck.Dequeue();
+            foreach (var reference in assemblyToCheck.GetReferencedAssemblies())
             {
                 if (!loadedAssemblies.Contains(reference.FullName))
                 {
-                    Assembly? assembly = Assembly.Load(reference);
+                    var assembly = Assembly.Load(reference);
                     if (skipSystemAssemblies && IsSystemAssembly(assembly))
                     {
                         continue;
@@ -114,18 +114,18 @@ public static class AssemblyHelper
             }
         }
 
-        IEnumerable<string>? asmsInBaseDir = Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll", new EnumerationOptions
+        var asmsInBaseDir = Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll", new EnumerationOptions
         {
             RecurseSubdirectories = true
         });
-        foreach (string? assemblyPath in asmsInBaseDir)
+        foreach (var assemblyPath in asmsInBaseDir)
         {
             if (!IsManagedAssembly(assemblyPath))
             {
                 continue;
             }
 
-            AssemblyName asmName = AssemblyName.GetAssemblyName(assemblyPath);
+            var asmName = AssemblyName.GetAssemblyName(assemblyPath);
 
             // 如果程序集已经加载过了就不再加载
             if (returnAssemblies.Any(x => AssemblyName.ReferenceMatchesDefinition(x.GetName(), asmName)))
@@ -138,7 +138,7 @@ public static class AssemblyHelper
                 continue;
             }
 
-            Assembly? asm = TryLoadAssembly(assemblyPath);
+            var asm = TryLoadAssembly(assemblyPath);
             if (asm == null)
             {
                 continue;
@@ -481,15 +481,15 @@ public static class AssemblyHelper
         List<NuGetPackage> nugetPackages = [];
 
         // 获取当前应用所有程序集
-        IEnumerable<Assembly>? assemblies = GetXiHanAssemblies();
+        var assemblies = GetXiHanAssemblies();
 
         // 查找被引用程序集中的 NuGet 库依赖项
-        foreach (Assembly? assembly in assemblies)
+        foreach (var assembly in assemblies)
         {
-            IEnumerable<AssemblyName>? referencedAssemblies = assembly.GetReferencedAssemblies()
+            var referencedAssemblies = assembly.GetReferencedAssemblies()
                 .Where(s => !s.FullName.StartsWith("Microsoft") && !s.FullName.StartsWith("System"))
                 .Where(s => !s.FullName.StartsWith("XiHan"));
-            foreach (AssemblyName? referencedAssembly in referencedAssemblies)
+            foreach (var referencedAssembly in referencedAssemblies)
             {
                 // 检查引用的程序集是否来自 NuGet
                 if (referencedAssembly.FullName.Contains("Version="))
@@ -524,14 +524,14 @@ public static class AssemblyHelper
     /// <returns></returns>
     private static bool IsSystemAssembly(Assembly assembly)
     {
-        AssemblyCompanyAttribute? asmCompanyAttr = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
+        var asmCompanyAttr = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
         if (asmCompanyAttr == null)
         {
             return false;
         }
         else
         {
-            string companyName = asmCompanyAttr.Company;
+            var companyName = asmCompanyAttr.Company;
             return companyName.Contains("Microsoft");
         }
     }
@@ -543,7 +543,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     private static bool IsSystemAssembly(string assemblyPath)
     {
-        Assembly? assembly = Assembly.LoadFrom(assemblyPath);
+        var assembly = Assembly.LoadFrom(assemblyPath);
         return IsSystemAssembly(assembly);
     }
 
@@ -573,7 +573,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     private static bool IsManagedAssembly(string file)
     {
-        using FileStream? fs = File.OpenRead(file);
+        using var fs = File.OpenRead(file);
         using PEReader peReader = new(fs);
         return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
     }
@@ -585,7 +585,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     private static Assembly? TryLoadAssembly(string assemblyPath)
     {
-        AssemblyName assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+        var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
         Assembly? assembly = null;
         try
         {

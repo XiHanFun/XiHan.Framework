@@ -75,8 +75,8 @@ public static class ServiceCollectionObjectAccessorExtensions
         }
 
         // 添加到开头，以便快速检索
-        services.Insert(0, ServiceDescriptor.Singleton(typeof(ObjectAccessor<T>), accessor));
-        services.Insert(0, ServiceDescriptor.Singleton(typeof(IObjectAccessor<T>), accessor));
+        services.Insert(0, ServiceDescriptor.Singleton(accessor));
+        services.Insert(0, ServiceDescriptor.Singleton<IObjectAccessor<T>>(accessor));
 
         return accessor;
     }

@@ -42,8 +42,8 @@ public static class DiskHelper
         {
             if (OsPlatformHelper.OsIsUnix)
             {
-                string? output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
-                List<string>? lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
+                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (lines.Count != 0)
                 {
                     diskInfos.AddRange(from line in lines
@@ -65,7 +65,7 @@ public static class DiskHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                List<DriveInfo>? drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
+                var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
                 diskInfos.AddRange(drives.Select(item => new DiskInfo
                 {
                     DiskName = item.Name,

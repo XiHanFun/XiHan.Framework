@@ -57,9 +57,9 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// <returns></returns>
     public virtual async Task InitializeModulesAsync([NotNull] ApplicationInitializationContext context)
     {
-        foreach (IModuleLifecycleContributor? contributor in _lifecycleContributors)
+        foreach (var contributor in _lifecycleContributors)
         {
-            foreach (IModuleDescriptor? module in _moduleContainer.Modules)
+            foreach (var module in _moduleContainer.Modules)
             {
                 try
                 {
@@ -82,9 +82,9 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// <returns></returns>
     public void InitializeModules([NotNull] ApplicationInitializationContext context)
     {
-        foreach (IModuleLifecycleContributor? contributor in _lifecycleContributors)
+        foreach (var contributor in _lifecycleContributors)
         {
-            foreach (IModuleDescriptor? module in _moduleContainer.Modules)
+            foreach (var module in _moduleContainer.Modules)
             {
                 try
                 {
@@ -107,11 +107,11 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// <returns></returns>
     public virtual async Task ShutdownModulesAsync([NotNull] ApplicationShutdownContext context)
     {
-        List<IModuleDescriptor>? modules = _moduleContainer.Modules.Reverse().ToList();
+        var modules = _moduleContainer.Modules.Reverse().ToList();
 
-        foreach (IModuleLifecycleContributor? contributor in _lifecycleContributors)
+        foreach (var contributor in _lifecycleContributors)
         {
-            foreach (IModuleDescriptor? module in modules)
+            foreach (var module in modules)
             {
                 try
                 {
@@ -132,11 +132,11 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// <returns></returns>
     public void ShutdownModules([NotNull] ApplicationShutdownContext context)
     {
-        List<IModuleDescriptor>? modules = _moduleContainer.Modules.Reverse().ToList();
+        var modules = _moduleContainer.Modules.Reverse().ToList();
 
-        foreach (IModuleLifecycleContributor? contributor in _lifecycleContributors)
+        foreach (var contributor in _lifecycleContributors)
         {
-            foreach (IModuleDescriptor? module in modules)
+            foreach (var module in modules)
             {
                 try
                 {

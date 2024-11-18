@@ -43,9 +43,9 @@ public static class AesHelper
     public static string Encrypt(string plainText, string password)
     {
         // 生成盐
-        byte[] salt = new byte[BlockSize / 8];
-        byte[] key = DeriveKey(password, salt, KeySize / 8);
-        byte[] iv = DeriveKey(password, salt, BlockSize / 8);
+        var salt = new byte[BlockSize / 8];
+        var key = DeriveKey(password, salt, KeySize / 8);
+        var iv = DeriveKey(password, salt, BlockSize / 8);
 
         // 返回加密结果
         return Encrypt(plainText, key, iv);
@@ -60,8 +60,8 @@ public static class AesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, string key, string iv)
     {
-        byte[] keyByte = Encoding.UTF8.GetBytes(key);
-        byte[] ivByte = Encoding.UTF8.GetBytes(iv);
+        var keyByte = Encoding.UTF8.GetBytes(key);
+        var ivByte = Encoding.UTF8.GetBytes(iv);
         return Encrypt(plainText, keyByte, ivByte);
     }
 
@@ -74,7 +74,7 @@ public static class AesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, byte[] key, byte[] iv)
     {
-        using Aes aes = Aes.Create();
+        using var aes = Aes.Create();
         aes.Key = key;
         aes.IV = iv;
 
@@ -82,10 +82,10 @@ public static class AesHelper
         string cipherText;
         using MemoryStream ms = new();
         using CryptoStream cs = new(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
-        byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(plainBytes, 0, plainBytes.Length);
         cs.FlushFinalBlock();
-        byte[] cipherBytes = ms.ToArray();
+        var cipherBytes = ms.ToArray();
         cipherText = Convert.ToBase64String(cipherBytes);
 
         // 返回加密结果
@@ -102,9 +102,9 @@ public static class AesHelper
     public static string Decrypt(string cipherText, string password)
     {
         // 生成盐
-        byte[] salt = new byte[BlockSize / 8];
-        byte[] key = DeriveKey(password, salt, KeySize / 8);
-        byte[] iv = DeriveKey(password, salt, BlockSize / 8);
+        var salt = new byte[BlockSize / 8];
+        var key = DeriveKey(password, salt, KeySize / 8);
+        var iv = DeriveKey(password, salt, BlockSize / 8);
 
         return Decrypt(cipherText, key, iv);
     }
@@ -118,8 +118,8 @@ public static class AesHelper
     /// <returns></returns>
     public static string Decrypt(string cipherText, string key, string iv)
     {
-        byte[] keyByte = Encoding.UTF8.GetBytes(key);
-        byte[] ivByte = Encoding.UTF8.GetBytes(iv);
+        var keyByte = Encoding.UTF8.GetBytes(key);
+        var ivByte = Encoding.UTF8.GetBytes(iv);
         return Decrypt(cipherText, keyByte, ivByte);
     }
 
@@ -132,9 +132,9 @@ public static class AesHelper
     /// <returns></returns>
     public static string Decrypt(string cipherText, byte[] key, byte[] iv)
     {
-        byte[] cipherBytes = Convert.FromBase64String(cipherText);
+        var cipherBytes = Convert.FromBase64String(cipherText);
 
-        using Aes aes = Aes.Create();
+        using var aes = Aes.Create();
         aes.Key = key;
         aes.IV = iv;
 
@@ -143,8 +143,8 @@ public static class AesHelper
         using CryptoStream cs = new(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
         cs.Write(cipherBytes, 0, cipherBytes.Length);
         cs.FlushFinalBlock();
-        byte[] plainBytes = ms.ToArray();
-        string plainText = Encoding.UTF8.GetString(plainBytes);
+        var plainBytes = ms.ToArray();
+        var plainText = Encoding.UTF8.GetString(plainBytes);
 
         // 返回解密结果
         return plainText;

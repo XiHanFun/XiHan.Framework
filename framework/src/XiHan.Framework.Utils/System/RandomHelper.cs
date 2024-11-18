@@ -103,7 +103,7 @@ public static class RandomHelper
 
         lock (Lock)
         {
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 _ = result.Append(source[Rnd.Next(0, source.Length)]);
             }
@@ -195,7 +195,7 @@ public static class RandomHelper
 
         while (currentList.Count != 0)
         {
-            int randomIndex = GetRandom(0, currentList.Count);
+            var randomIndex = GetRandom(0, currentList.Count);
             randomList.Add(currentList[randomIndex]);
             currentList.RemoveAt(randomIndex);
         }

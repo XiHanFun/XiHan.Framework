@@ -77,12 +77,12 @@ public static partial class RegexHelper
         {
             case 18:
                 {
-                    bool check = IsNumberPeople18(checkValue);
+                    var check = IsNumberPeople18(checkValue);
                     return check;
                 }
             case 15:
                 {
-                    bool check = IsNumberPeople15(checkValue);
+                    var check = IsNumberPeople15(checkValue);
                     return check;
                 }
             default:
@@ -98,7 +98,7 @@ public static partial class RegexHelper
     public static bool IsNumberPeople18(string checkValue)
     {
         // 数字验证
-        if (long.TryParse(checkValue.Remove(17), out long n) == false || n < Math.Pow(10, 16) ||
+        if (long.TryParse(checkValue.Remove(17), out var n) == false || n < Math.Pow(10, 16) ||
             long.TryParse(checkValue.Replace('x', '0').Replace('X', '0'), out _) == false)
         {
             return false;
@@ -110,22 +110,22 @@ public static partial class RegexHelper
             return false;
         }
         // 生日验证
-        string? birth = checkValue.Substring(6, 8).Insert(6, "-").Insert(4, "-");
+        var birth = checkValue.Substring(6, 8).Insert(6, "-").Insert(4, "-");
         if (!DateTime.TryParse(birth, out _))
         {
             return false;
         }
         // 校验码验证
-        string[]? arrVerifyCode = "1,0,x,9,8,7,6,5,4,3,2".Split(',');
-        string[]? wi = "7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2".Split(',');
-        char[]? ai = checkValue.Remove(17).ToCharArray();
-        int sum = 0;
-        for (int i = 0; i < 17; i++)
+        var arrVerifyCode = "1,0,x,9,8,7,6,5,4,3,2".Split(',');
+        var wi = "7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2".Split(',');
+        var ai = checkValue.Remove(17).ToCharArray();
+        var sum = 0;
+        for (var i = 0; i < 17; i++)
         {
             sum += int.Parse(wi[i]) * int.Parse(ai[i].ToString());
         }
 
-        _ = Math.DivRem(sum, 11, out int y);
+        _ = Math.DivRem(sum, 11, out var y);
         return arrVerifyCode[y].Equals(checkValue.Substring(17, 1), StringComparison.InvariantCultureIgnoreCase);
         // 符合 GB11643-1999标准
     }
@@ -138,7 +138,7 @@ public static partial class RegexHelper
     public static bool IsNumberPeople15(string checkValue)
     {
         // 数字验证
-        if (long.TryParse(checkValue, out long n) == false || n < Math.Pow(10, 14))
+        if (long.TryParse(checkValue, out var n) == false || n < Math.Pow(10, 14))
         {
             return false;
         }
@@ -149,7 +149,7 @@ public static partial class RegexHelper
             return false;
         }
         // 生日验证
-        string? birth = checkValue.Substring(6, 6).Insert(4, "-").Insert(2, "-");
+        var birth = checkValue.Substring(6, 6).Insert(4, "-").Insert(2, "-");
         return DateTime.TryParse(birth, out _);
     }
 
@@ -342,7 +342,7 @@ public static partial class RegexHelper
     /// <returns></returns>
     public static bool IsLengthStr(string source, int begin, int end)
     {
-        int length = LengthStrRegex().Replace(source, "OK").Length;
+        var length = LengthStrRegex().Replace(source, "OK").Length;
         return length > begin || length < end;
     }
 
@@ -484,13 +484,13 @@ public static partial class RegexHelper
     /// <returns></returns>
     public static bool IsIp(string checkValue)
     {
-        bool result = false;
+        var result = false;
         try
         {
-            string[]? checkValueArg = checkValue.Split('.');
+            var checkValueArg = checkValue.Split('.');
             if (string.Empty != checkValue && checkValue.Length < 16 && checkValueArg.Length == 4)
             {
-                for (int i = 0; i < 4; i++)
+                for (var i = 0; i < 4; i++)
                 {
                     int intCheckValue = Convert.ToInt16(checkValueArg[i]);
                     if (intCheckValue <= 255)

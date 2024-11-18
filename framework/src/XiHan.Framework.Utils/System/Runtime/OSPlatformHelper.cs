@@ -90,34 +90,34 @@ public static class OsPlatformHelper
     /// </summary>
     public static string GetRunningTime()
     {
-        string? runTime = string.Empty;
+        var runTime = string.Empty;
 
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                string? output = ShellHelper.Bash("uptime -s").Trim();
-                TimeSpan timeSpan = DateTime.Now - output.Trim().ParseToDateTime();
+                var output = ShellHelper.Bash("uptime -s").Trim();
+                var timeSpan = DateTime.Now - output.Trim().ParseToDateTime();
                 runTime = timeSpan.FormatTimeSpanToString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                string? output = ShellHelper.Bash("uptime | tail -n -1").Trim();
+                var output = ShellHelper.Bash("uptime | tail -n -1").Trim();
                 // 提取运行时间部分
-                int startIndex = output.IndexOf("up ", StringComparison.Ordinal) + 3;
-                int endIndex = output.IndexOf(" user", StringComparison.Ordinal);
-                string? uptime = output[startIndex..endIndex].Trim();
+                var startIndex = output.IndexOf("up ", StringComparison.Ordinal) + 3;
+                var endIndex = output.IndexOf(" user", StringComparison.Ordinal);
+                var uptime = output[startIndex..endIndex].Trim();
                 // 解析运行时间并转换为标准格式
-                TimeSpan uptimeSpan = ParseUptime(uptime);
+                var uptimeSpan = ParseUptime(uptime);
                 runTime = uptimeSpan.FormatTimeSpanToString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                string? output = ShellHelper.Cmd("wmic", "OS get LastBootUpTime /Value").Trim();
-                string[]? outputArr = output.Split('=');
+                var output = ShellHelper.Cmd("wmic", "OS get LastBootUpTime /Value").Trim();
+                var outputArr = output.Split('=');
                 if (outputArr.Length != 0)
                 {
-                    TimeSpan timeSpan = DateTime.Now - outputArr[1].Split('.')[0].FormatStringToDate();
+                    var timeSpan = DateTime.Now - outputArr[1].Split('.')[0].FormatStringToDate();
                     runTime = timeSpan.FormatTimeSpanToString();
                 }
             }
@@ -137,12 +137,12 @@ public static class OsPlatformHelper
     /// <returns></returns>
     private static TimeSpan ParseUptime(string uptime)
     {
-        string[]? parts = uptime.Split(',');
+        var parts = uptime.Split(',');
         int days = 0, hours = 0, minutes = 0;
 
-        foreach (string? part in parts)
+        foreach (var part in parts)
         {
-            string? trimmedPart = part.Trim();
+            var trimmedPart = part.Trim();
 
             if (trimmedPart.Contains("day"))
             {
@@ -150,7 +150,7 @@ public static class OsPlatformHelper
             }
             else if (trimmedPart.Contains(':'))
             {
-                string[]? timeParts = trimmedPart.Split(':');
+                var timeParts = trimmedPart.Split(':');
                 hours = int.Parse(timeParts[0]);
                 minutes = int.Parse(timeParts[1]);
             }

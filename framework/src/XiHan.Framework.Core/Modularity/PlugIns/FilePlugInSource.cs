@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Reflection;
 using System.Runtime.Loader;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
@@ -47,13 +46,13 @@ public class FilePlugInSource : IPlugInSource
     {
         List<Type>? modules = [];
 
-        foreach (string? filePath in FilePaths)
+        foreach (var filePath in FilePaths)
         {
-            Assembly? assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
 
             try
             {
-                foreach (Type? type in assembly.GetTypes())
+                foreach (var type in assembly.GetTypes())
                 {
                     if (XiHanModuleHelper.IsXiHanModule(type))
                     {

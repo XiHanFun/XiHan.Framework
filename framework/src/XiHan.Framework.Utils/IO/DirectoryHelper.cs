@@ -52,12 +52,12 @@ public static class DirectoryHelper
     /// <param name="directoryPath">要清空的目录的路径</param>
     public static void Clear(string directoryPath)
     {
-        foreach (string file in Directory.GetFiles(directoryPath))
+        foreach (var file in Directory.GetFiles(directoryPath))
         {
             File.Delete(file);
         }
 
-        foreach (string dir in Directory.GetDirectories(directoryPath))
+        foreach (var dir in Directory.GetDirectories(directoryPath))
         {
             DeleteIfExists(dir);
         }
@@ -94,16 +94,16 @@ public static class DirectoryHelper
             _ = Directory.CreateDirectory(destinationPath);
         }
 
-        FileInfo[] files = sourceDir.GetFiles();
-        foreach (FileInfo file in files)
+        var files = sourceDir.GetFiles();
+        foreach (var file in files)
         {
             _ = file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
         }
 
-        DirectoryInfo[] dirs = sourceDir.GetDirectories();
-        foreach (DirectoryInfo dir in dirs)
+        var dirs = sourceDir.GetDirectories();
+        foreach (var dir in dirs)
         {
-            string newDirPath = Path.Combine(destinationPath, dir.Name);
+            var newDirPath = Path.Combine(destinationPath, dir.Name);
             Copy(dir.FullName, newDirPath, overwrite);
         }
     }
@@ -169,9 +169,9 @@ public static class DirectoryHelper
         // 定义一个 DirectoryInfo 对象
         DirectoryInfo di = new(dirPath);
         // 通过 GetFiles 方法,获取 di 目录中的所有文件的大小
-        long len = di.GetFiles().Sum(fi => fi.Length);
+        var len = di.GetFiles().Sum(fi => fi.Length);
         // 获取 di 中所有的文件夹,并存到一个新的对象数组中,以进行递归
-        DirectoryInfo[]? dis = di.GetDirectories();
+        var dis = di.GetDirectories();
         if (dis.Length <= 0)
         {
             return len;
@@ -225,7 +225,7 @@ public static class DirectoryHelper
     public static bool IsContainsFiles(string directoryPath, string searchPattern, bool isSearchChild)
     {
         // 获取指定的文件列表
-        string[]? fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
+        var fileNames = GetFiles(directoryPath, searchPattern, isSearchChild);
         // 判断指定文件是否存在
         return fileNames.Length != 0;
     }
@@ -238,13 +238,13 @@ public static class DirectoryHelper
     public static bool IsEmpty(string directoryPath)
     {
         // 判断是否存在文件
-        string[]? fileNames = GetFiles(directoryPath);
+        var fileNames = GetFiles(directoryPath);
         if (fileNames.Length != 0)
         {
             return false;
         }
         // 判断是否存在文件夹
-        string[]? directoryNames = GetDirectories(directoryPath);
+        var directoryNames = GetDirectories(directoryPath);
         return directoryNames.Length == 0;
     }
 

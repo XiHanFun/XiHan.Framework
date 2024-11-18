@@ -39,7 +39,7 @@ public static class ConfigurationHelper
         }
 
         // 加载基础配置文件
-        IConfigurationBuilder? builder = new ConfigurationBuilder()
+        var builder = new ConfigurationBuilder()
             .SetBasePath(options.BasePath!)
             .AddJsonFile(options.FileName + ".json", options.Optional, options.ReloadOnChange)
             .AddJsonFile(options.FileName + ".secrets.json", true, options.ReloadOnChange);

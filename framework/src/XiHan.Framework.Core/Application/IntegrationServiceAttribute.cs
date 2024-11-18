@@ -42,7 +42,7 @@ public class IntegrationServiceAttribute : Attribute
             return true;
         }
 
-        foreach (Type? @interface in type.GetInterfaces())
+        foreach (var @interface in type.GetInterfaces())
         {
             if (@interface.IsDefined(typeof(IntegrationServiceAttribute), true))
             {

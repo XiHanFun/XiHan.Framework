@@ -52,7 +52,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     /// <returns></returns>
     private static ConventionalRegistrarList GetOrCreateRegistrarList(IServiceCollection services)
     {
-        ConventionalRegistrarList? conventionalRegistrars = services.GetSingletonInstanceOrNull<IObjectAccessor<ConventionalRegistrarList>>()?.Value;
+        var conventionalRegistrars = services.GetSingletonInstanceOrNull<IObjectAccessor<ConventionalRegistrarList>>()?.Value;
         if (conventionalRegistrars == null)
         {
             conventionalRegistrars = [new DefaultConventionalRegistrar()];
@@ -81,7 +81,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     /// <returns></returns>
     public static IServiceCollection AddAssembly(this IServiceCollection services, Assembly assembly)
     {
-        foreach (IConventionalRegistrar? registrar in services.GetConventionalRegistrars())
+        foreach (var registrar in services.GetConventionalRegistrars())
         {
             registrar.AddAssembly(services, assembly);
         }
@@ -97,7 +97,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     /// <returns></returns>
     public static IServiceCollection AddTypes(this IServiceCollection services, params Type[] types)
     {
-        foreach (IConventionalRegistrar? registrar in services.GetConventionalRegistrars())
+        foreach (var registrar in services.GetConventionalRegistrars())
         {
             registrar.AddTypes(services, types);
         }
@@ -124,7 +124,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     /// <returns></returns>
     public static IServiceCollection AddType(this IServiceCollection services, Type type)
     {
-        foreach (IConventionalRegistrar? registrar in services.GetConventionalRegistrars())
+        foreach (var registrar in services.GetConventionalRegistrars())
         {
             registrar.AddType(services, type);
         }

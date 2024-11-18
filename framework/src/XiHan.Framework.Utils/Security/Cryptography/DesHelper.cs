@@ -38,8 +38,8 @@ public static class DesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText)
     {
-        byte[] key = Encoding.UTF8.GetBytes(defaultKey);
-        byte[] iv = Encoding.UTF8.GetBytes(defaultIV);
+        var key = Encoding.UTF8.GetBytes(defaultKey);
+        var iv = Encoding.UTF8.GetBytes(defaultIV);
 
         return Encrypt(plainText, key, iv);
     }
@@ -53,18 +53,18 @@ public static class DesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, byte[] key, byte[] iv)
     {
-        using DES des = DES.Create();
+        using var des = DES.Create();
         des.Key = key;
         des.IV = iv;
 
-        ICryptoTransform encryptor = des.CreateEncryptor();
+        var encryptor = des.CreateEncryptor();
 
         using MemoryStream ms = new();
         using CryptoStream cs = new(ms, encryptor, CryptoStreamMode.Write);
-        byte[] inputBytes = Encoding.UTF8.GetBytes(plainText);
+        var inputBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(inputBytes, 0, inputBytes.Length);
         cs.FlushFinalBlock();
-        byte[] encryptedBytes = ms.ToArray();
+        var encryptedBytes = ms.ToArray();
         return Convert.ToBase64String(encryptedBytes);
     }
 
@@ -75,8 +75,8 @@ public static class DesHelper
     /// <returns></returns>
     public static string Decrypt(string encryptedText)
     {
-        byte[] key = Encoding.UTF8.GetBytes(defaultKey);
-        byte[] iv = Encoding.UTF8.GetBytes(defaultIV);
+        var key = Encoding.UTF8.GetBytes(defaultKey);
+        var iv = Encoding.UTF8.GetBytes(defaultIV);
 
         return Decrypt(encryptedText, key, iv);
     }
@@ -90,13 +90,13 @@ public static class DesHelper
     /// <returns></returns>
     public static string Decrypt(string encryptedText, byte[] key, byte[] iv)
     {
-        byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
+        var encryptedBytes = Convert.FromBase64String(encryptedText);
 
-        using DES des = DES.Create();
+        using var des = DES.Create();
         des.Key = key;
         des.IV = iv;
 
-        ICryptoTransform decryptor = des.CreateDecryptor();
+        var decryptor = des.CreateDecryptor();
 
         using MemoryStream ms = new(encryptedBytes);
         using CryptoStream cs = new(ms, decryptor, CryptoStreamMode.Read);

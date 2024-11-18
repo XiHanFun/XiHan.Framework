@@ -55,7 +55,7 @@ public static class ServiceCollectionConfigurationExtensions
     /// <returns></returns>
     public static IConfiguration? GetConfigurationOrNull(this IServiceCollection services)
     {
-        HostBuilderContext? hostBuilderContext = services.GetSingletonInstanceOrNull<HostBuilderContext>();
+        var hostBuilderContext = services.GetSingletonInstanceOrNull<HostBuilderContext>();
         return hostBuilderContext?.Configuration != null
             ? hostBuilderContext.Configuration as IConfigurationRoot
             : services.GetSingletonInstanceOrNull<IConfiguration>();

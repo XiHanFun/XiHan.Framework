@@ -33,7 +33,8 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     /// </summary>
     protected internal ServiceConfigurationContext ServiceConfigurationContext
     {
-        get => _serviceConfigurationContext ?? throw new XiHanException($"{nameof(ServiceConfigurationContext)}只能在{nameof(ConfigureServices)}、{nameof(PreConfigureServices)}和{nameof(PostConfigureServices)}方法中使用。");
+        get => _serviceConfigurationContext ??
+            throw new XiHanException($"{nameof(ServiceConfigurationContext)}只能在{nameof(ConfigureServices)}、{nameof(PreConfigureServices)}和{nameof(PostConfigureServices)}方法中使用。");
         internal set => _serviceConfigurationContext = value;
     }
 
