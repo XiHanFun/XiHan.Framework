@@ -60,8 +60,8 @@ public static class AesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, string key, string iv)
     {
-        byte[] keyByte = Convert.FromBase64String(key);
-        byte[] ivByte = Convert.FromBase64String(iv);
+        byte[] keyByte = Encoding.UTF8.GetBytes(key);
+        byte[] ivByte = Encoding.UTF8.GetBytes(iv);
         return Encrypt(plainText, keyByte, ivByte);
     }
 
@@ -118,8 +118,8 @@ public static class AesHelper
     /// <returns></returns>
     public static string Decrypt(string cipherText, string key, string iv)
     {
-        byte[] keyByte = Convert.FromBase64String(key);
-        byte[] ivByte = Convert.FromBase64String(iv);
+        byte[] keyByte = Encoding.UTF8.GetBytes(key);
+        byte[] ivByte = Encoding.UTF8.GetBytes(iv);
         return Decrypt(cipherText, keyByte, ivByte);
     }
 
