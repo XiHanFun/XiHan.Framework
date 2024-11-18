@@ -48,10 +48,10 @@ public static class EnumerableExtensions
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
     /// </summary>
     /// <param name="source">要应用过滤的枚举对象</param>
-    /// <param name="condition">一个布尔值</param>
     /// <param name="predicate">用于过滤枚举对象的谓词</param>
+    /// <param name="condition">第三方条件</param>
     /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
-    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, bool> predicate)
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, Func<T, bool> predicate, bool condition)
     {
         return condition
             ? source.Where(predicate)
@@ -62,13 +62,33 @@ public static class EnumerableExtensions
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
     /// </summary>
     /// <param name="source">要应用过滤的枚举对象</param>
-    /// <param name="condition">一个布尔值</param>
     /// <param name="predicate">用于过滤枚举对象的谓词，包含索引</param>
+    /// <param name="condition">第三方条件</param>
     /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
-    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, int, bool> predicate)
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, Func<T, int, bool> predicate, bool condition)
     {
         return condition
             ? source.Where(predicate)
             : source;
     }
+
+    ///// <summary>
+    ///// 使用指定的属性名称对 <see cref="IEnumerable{T}"/> 进行排序
+    ///// </summary>
+    ///// <param name="source">要排序的枚举对象</param>
+    ///// <param name="propertyName">属性名称</param>
+    ///// <param name="sortDirection">排序方向</param>
+    ///// <returns></returns>
+    //public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, string propertyName, ListSortDirection sortDirection = ListSortDirection.Ascending)
+    //{
+    //    _ = CheckHelper.NotNull(propertyName, nameof(propertyName));
+
+    //    return CollectionPropertySorter<T>.OrderBy(source, propertyName, sortDirection);
+    //}
+
+    //public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortCondition sortCondition)
+    //{
+    //    sortCondition.CheckNotNull("sortCondition");
+    //    return source.OrderBy(sortCondition.SortField, sortCondition.ListSortDirection);
+    //}
 }

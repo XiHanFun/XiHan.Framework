@@ -49,7 +49,7 @@ public class AssemblyFinder : IAssemblyFinder
     {
         List<Assembly>? assemblies = [];
 
-        foreach (IModuleDescriptor? module in _moduleContainer.Modules)
+        foreach (var module in _moduleContainer.Modules)
         {
             assemblies.AddRange(module.AllAssemblies);
         }

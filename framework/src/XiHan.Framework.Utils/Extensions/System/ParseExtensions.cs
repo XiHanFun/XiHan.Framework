@@ -31,7 +31,7 @@ public static class ParseExtensions
     /// <returns></returns>
     public static bool ParseToBool(this object? thisValue)
     {
-        return thisValue != null && thisValue != DBNull.Value && bool.TryParse(thisValue.ToString(), out bool reveal) && reveal;
+        return thisValue != null && thisValue != DBNull.Value && bool.TryParse(thisValue.ToString(), out var reveal) && reveal;
     }
 
     #endregion
@@ -46,7 +46,7 @@ public static class ParseExtensions
     public static short ParseToShort(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            short.TryParse(thisValue.ToString(), out short reveal)
+            short.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : (short)0;
     }
@@ -60,7 +60,7 @@ public static class ParseExtensions
     public static short ParseToShort(this object? thisValue, short errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            short.TryParse(thisValue.ToString(), out short reveal)
+            short.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -77,7 +77,7 @@ public static class ParseExtensions
     public static long ParseToLong(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            long.TryParse(thisValue.ToString(), out long reveal)
+            long.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : 0L;
     }
@@ -91,7 +91,7 @@ public static class ParseExtensions
     public static long ParseToLong(this object? thisValue, long errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            long.TryParse(thisValue.ToString(), out long reveal)
+            long.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -109,7 +109,7 @@ public static class ParseExtensions
     public static float ParseToFloat(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            float.TryParse(thisValue.ToString(), out float reveal)
+            float.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : 0.0F;
     }
@@ -124,7 +124,7 @@ public static class ParseExtensions
     public static float ParseToFloat(this object? thisValue, float errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            float.TryParse(thisValue.ToString(), out float reveal)
+            float.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -142,7 +142,7 @@ public static class ParseExtensions
     public static double ParseToDouble(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            double.TryParse(thisValue.ToString(), out double reveal)
+            double.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : 0.0D;
     }
@@ -157,7 +157,7 @@ public static class ParseExtensions
     public static double ParseToDouble(this object? thisValue, double errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            double.TryParse(thisValue.ToString(), out double reveal)
+            double.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -175,7 +175,7 @@ public static class ParseExtensions
     public static decimal ParseToDecimal(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            decimal.TryParse(thisValue.ToString(), out decimal reveal)
+            decimal.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : 0M;
     }
@@ -190,7 +190,7 @@ public static class ParseExtensions
     public static decimal ParseToDecimal(this object? thisValue, decimal errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            decimal.TryParse(thisValue.ToString(), out decimal reveal)
+            decimal.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -207,7 +207,7 @@ public static class ParseExtensions
     public static int ParseToInt(this object? thisValue)
     {
         return thisValue == null ? 0 :
-            thisValue != DBNull.Value && int.TryParse(thisValue.ToString(), out int reveal) ? reveal : 0;
+            thisValue != DBNull.Value && int.TryParse(thisValue.ToString(), out var reveal) ? reveal : 0;
     }
 
     /// <summary>
@@ -219,7 +219,7 @@ public static class ParseExtensions
     public static int ParseToInt(this object? thisValue, int errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            int.TryParse(thisValue.ToString(), out int reveal)
+            int.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -236,7 +236,7 @@ public static class ParseExtensions
     public static double ParseToMoney(this object? thisValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            double.TryParse(thisValue.ToString(), out double reveal)
+            double.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : 0;
     }
@@ -250,7 +250,7 @@ public static class ParseExtensions
     public static double ParseToMoney(this object? thisValue, double errorValue)
     {
         return thisValue != null && thisValue != DBNull.Value &&
-            double.TryParse(thisValue.ToString(), out double reveal)
+            double.TryParse(thisValue.ToString(), out var reveal)
                 ? reveal
                 : errorValue;
     }
@@ -333,7 +333,7 @@ public static class ParseExtensions
     /// <returns></returns>
     public static DateTime ParseToDateTime(this object? thisValue)
     {
-        DateTime reveal = DateTime.MinValue;
+        var reveal = DateTime.MinValue;
         if (thisValue != null && thisValue != DBNull.Value && DateTime.TryParse(thisValue.ToString(), out reveal))
         {
             reveal = Convert.ToDateTime(thisValue);
@@ -350,7 +350,7 @@ public static class ParseExtensions
     /// <returns></returns>
     public static DateTime ParseToDateTime(this object? thisValue, DateTime errorValue)
     {
-        return thisValue != null && thisValue != DBNull.Value && DateTime.TryParse(thisValue.ToString(), out DateTime reveal)
+        return thisValue != null && thisValue != DBNull.Value && DateTime.TryParse(thisValue.ToString(), out var reveal)
             ? reveal
             : errorValue;
     }
@@ -393,10 +393,10 @@ public static class ParseExtensions
             yield break;
         }
 
-        foreach (dynamic? objDynamic in objDynamics)
+        foreach (var objDynamic in objDynamics)
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
-            Dictionary<string, dynamic>? item = (objDynamic as object).GetType().GetProperties()
+            var item = (objDynamic as object).GetType().GetProperties()
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;
@@ -417,10 +417,10 @@ public static class ParseExtensions
             yield break;
         }
 
-        foreach (dynamic? objDynamic in objDynamics)
+        foreach (var objDynamic in objDynamics)
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
-            Dictionary<string, dynamic>? item = (objDynamic as object).GetType().GetProperties()
+            var item = (objDynamic as object).GetType().GetProperties()
                 .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
                         .GetPropertyValue<TAttribute, bool>("IsIgnore")))
@@ -471,7 +471,7 @@ public static class ParseExtensions
             return (T)value;
         }
 
-        object? result = value.CastTo(typeof(T));
+        var result = value.CastTo(typeof(T));
         return (T?)result;
     }
 

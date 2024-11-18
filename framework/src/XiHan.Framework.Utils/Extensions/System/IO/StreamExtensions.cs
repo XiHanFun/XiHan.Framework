@@ -31,7 +31,7 @@ public static class StreamExtensions
             return memoryStream.ToArray();
         }
 
-        using MemoryStream? ms = stream.CreateMemoryStream();
+        using var ms = stream.CreateMemoryStream();
         return ms.ToArray();
     }
 
@@ -48,7 +48,7 @@ public static class StreamExtensions
             return memoryStream.ToArray();
         }
 
-        using MemoryStream? ms = await stream.CreateMemoryStreamAsync(cancellationToken);
+        using var ms = await stream.CreateMemoryStreamAsync(cancellationToken);
         return ms.ToArray();
     }
 

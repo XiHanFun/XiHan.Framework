@@ -30,7 +30,7 @@ public static class ConsoleHelper
     {
         lock (_objLock)
         {
-            ConsoleColor currentForeColor = Console.ForegroundColor;
+            var currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = frontColor;
             Console.WriteLine(inputStr);
             Console.ForegroundColor = currentForeColor;

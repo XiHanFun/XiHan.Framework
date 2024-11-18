@@ -132,16 +132,16 @@ public static class QueryableExtensions
             return query;
         }
 
-        ParameterExpression? parameter = Expression.Parameter(typeof(T), "x");
-        MemberExpression? property = Expression.Property(parameter, sorting);
-        LambdaExpression? lambda = Expression.Lambda(property, parameter);
+        var parameter = Expression.Parameter(typeof(T), "x");
+        var property = Expression.Property(parameter, sorting);
+        var lambda = Expression.Lambda(property, parameter);
 
-        string? methodName = "OrderBy";
-        Type[]? types = new Type[]
+        var methodName = "OrderBy";
+        var types = new Type[]
         {
             query.ElementType, property.Type
         };
-        MethodCallExpression? resultExpression = Expression.Call(typeof(Queryable), methodName, types, query.Expression, Expression.Quote(lambda));
+        var resultExpression = Expression.Call(typeof(Queryable), methodName, types, query.Expression, Expression.Quote(lambda));
 
         return (TQueryable)query.Provider.CreateQuery<T>(resultExpression);
     }

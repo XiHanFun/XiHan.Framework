@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -41,7 +40,7 @@ public class ModuleLoader : IModuleLoader
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
         _ = CheckHelper.NotNull(plugInSources, nameof(plugInSources));
 
-        List<IModuleDescriptor>? modules = GetDescriptors(services, startupModuleType, plugInSources);
+        var modules = GetDescriptors(services, startupModuleType, plugInSources);
 
         modules = SortByDependency(modules, startupModuleType);
 
@@ -74,16 +73,16 @@ public class ModuleLoader : IModuleLoader
     /// <param name="plugInSources"></param>
     protected virtual void FillModules(List<XiHanModuleDescriptor> modules, IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
-        ILogger<XiHanApplicationBase>? logger = services.GetInitLogger<XiHanApplicationBase>();
+        var logger = services.GetInitLogger<XiHanApplicationBase>();
 
         // 所有从启动模块开始的模块
-        foreach (Type? moduleType in XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger))
+        foreach (var moduleType in XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger))
         {
             modules.Add(CreateModuleDescriptor(services, moduleType));
         }
 
         // 插件模块
-        foreach (Type? moduleType in plugInSources.GetAllModules(logger))
+        foreach (var moduleType in plugInSources.GetAllModules(logger))
         {
             if (modules.Any(m => m.Type == moduleType))
             {
@@ -100,7 +99,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="modules"></param>
     protected virtual void SetDependencies(List<XiHanModuleDescriptor> modules)
     {
-        foreach (XiHanModuleDescriptor? module in modules)
+        foreach (var module in modules)
         {
             SetDependencies(modules, module);
         }
@@ -114,7 +113,7 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     protected virtual List<IModuleDescriptor> SortByDependency(List<IModuleDescriptor> modules, Type startupModuleType)
     {
-        List<IModuleDescriptor>? sortedModules = modules.SortByDependencies(m => m.Dependencies);
+        var sortedModules = modules.SortByDependencies(m => m.Dependencies);
         sortedModules.MoveItem(m => m.Type == startupModuleType, modules.Count - 1);
         return sortedModules;
     }
@@ -139,7 +138,7 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     protected virtual IXiHanModule CreateAndRegisterModule(IServiceCollection services, Type moduleType)
     {
-        IXiHanModule? module = (IXiHanModule)Activator.CreateInstance(moduleType)!;
+        var module = (IXiHanModule)Activator.CreateInstance(moduleType)!;
         _ = services.AddSingleton(moduleType, module);
         return module;
     }
@@ -152,9 +151,9 @@ public class ModuleLoader : IModuleLoader
     /// <exception cref="Exception"></exception>
     protected virtual void SetDependencies(List<XiHanModuleDescriptor> modules, XiHanModuleDescriptor module)
     {
-        foreach (Type? dependedModuleType in XiHanModuleHelper.FindDependedModuleTypes(module.Type))
+        foreach (var dependedModuleType in XiHanModuleHelper.FindDependedModuleTypes(module.Type))
         {
-            XiHanModuleDescriptor? dependedModule = modules.FirstOrDefault(m => m.Type == dependedModuleType) ??
+            var dependedModule = modules.FirstOrDefault(m => m.Type == dependedModuleType) ??
                 throw new Exception($"在 {module.Type.AssemblyQualifiedName} 无法找到依赖的模块 {dependedModuleType.AssemblyQualifiedName}！");
             module.AddDependency(dependedModule);
         }

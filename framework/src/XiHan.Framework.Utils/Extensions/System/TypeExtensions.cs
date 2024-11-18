@@ -100,9 +100,9 @@ public static class TypeExtensions
             allOthers.AddRange(type.GetInterfaces());
         }
 
-        foreach (Type? other in allOthers)
+        foreach (var other in allOthers)
         {
-            Type? cur = other;
+            var cur = other;
             while (cur != null)
             {
                 if (cur.IsGenericType)
@@ -150,7 +150,7 @@ public static class TypeExtensions
     {
         _ = CheckHelper.NotNull(type, nameof(type));
 
-        Type? baseType = typeof(TBaseType);
+        var baseType = typeof(TBaseType);
         return type.IsBaseOn(baseType);
     }
 
@@ -198,17 +198,17 @@ public static class TypeExtensions
     {
         _ = CheckHelper.NotNull(type, nameof(type));
 
-        string? result = string.Empty;
-        string? fullName = type.FullName ?? result;
+        var result = string.Empty;
+        var fullName = type.FullName ?? result;
 
-        DescriptionAttribute? desc = type.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
+        var desc = type.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
 
         if (desc == null)
         {
             return result;
         }
 
-        string? description = desc.Description;
+        var description = desc.Description;
         result = fullName + "(" + description + ")";
 
         return result;
@@ -331,14 +331,14 @@ public static class TypeExtensions
     {
         if (type.IsGenericType)
         {
-            Type[]? genericArguments = type.GetGenericArguments();
+            var genericArguments = type.GetGenericArguments();
             ProcessGenericType(builder, type, genericArguments, genericArguments.Length, fullName);
         }
         else if (type.IsArray)
         {
             ProcessArrayType(builder, type, fullName);
         }
-        else if (BuiltInTypeNames.TryGetValue(type, out string? builtInName))
+        else if (BuiltInTypeNames.TryGetValue(type, out var builtInName))
         {
             _ = builder.Append(builtInName);
         }
@@ -356,7 +356,7 @@ public static class TypeExtensions
     /// <param name="fullName"></param>
     private static void ProcessArrayType(StringBuilder builder, Type type, bool fullName)
     {
-        Type? innerType = type;
+        var innerType = type;
         while (innerType!.IsArray)
         {
             innerType = innerType.GetElementType();
@@ -384,7 +384,7 @@ public static class TypeExtensions
     private static void ProcessGenericType(StringBuilder builder, Type type, IReadOnlyList<Type> genericArguments, int length,
         bool fullName)
     {
-        int offset = type.IsNested ? type.DeclaringType!.GetGenericArguments().Length : 0;
+        var offset = type.IsNested ? type.DeclaringType!.GetGenericArguments().Length : 0;
 
         if (fullName)
         {
@@ -400,7 +400,7 @@ public static class TypeExtensions
             }
         }
 
-        int genericPartIndex = type.Name.IndexOf('`');
+        var genericPartIndex = type.Name.IndexOf('`');
         if (genericPartIndex <= 0)
         {
             _ = builder.Append(type.Name);
@@ -410,7 +410,7 @@ public static class TypeExtensions
         _ = builder.Append(type.Name, 0, genericPartIndex);
         _ = builder.Append('<');
 
-        for (int i = offset; i < length; i++)
+        for (var i = offset; i < length; i++)
         {
             ProcessType(builder, genericArguments[i], fullName);
             if (i + 1 == length)
