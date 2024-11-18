@@ -23,7 +23,8 @@ public static class RandomHelper
 {
     // 默认随机数生成器
     private static readonly Random Rnd = new();
-    private static Lock Lock = new();
+
+    private static readonly Lock Lock = new();
 
     #region 常用类型
 
