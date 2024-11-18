@@ -30,7 +30,7 @@ public static class ListExtensions
     /// <param name="items">要插入的项的集合</param>
     public static void InsertRange<T>(this IList<T> source, int index, IEnumerable<T> items)
     {
-        foreach (T? item in items)
+        foreach (var item in items)
         {
             source.Insert(index++, item);
         }
@@ -45,7 +45,7 @@ public static class ListExtensions
     /// <returns>满足条件项的索引，如果未找到则返回 -1</returns>
     public static int FindIndex<T>(this IList<T> source, Predicate<T> selector)
     {
-        for (int i = 0; i < source.Count; ++i)
+        for (var i = 0; i < source.Count; ++i)
         {
             if (selector(source[i]))
             {
@@ -87,7 +87,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertAfter<T>(this IList<T> source, T existingItem, T item)
     {
-        int index = source.IndexOf(existingItem);
+        var index = source.IndexOf(existingItem);
         if (index < 0)
         {
             source.AddFirst(item);
@@ -106,7 +106,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertAfter<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        int index = source.FindIndex(selector);
+        var index = source.FindIndex(selector);
         if (index < 0)
         {
             source.AddFirst(item);
@@ -125,7 +125,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertBefore<T>(this IList<T> source, T existingItem, T item)
     {
-        int index = source.IndexOf(existingItem);
+        var index = source.IndexOf(existingItem);
         if (index < 0)
         {
             source.AddLast(item);
@@ -144,7 +144,7 @@ public static class ListExtensions
     /// <param name="item">要插入的新项</param>
     public static void InsertBefore<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        int index = source.FindIndex(selector);
+        var index = source.FindIndex(selector);
         if (index < 0)
         {
             source.AddLast(item);
@@ -163,7 +163,7 @@ public static class ListExtensions
     /// <param name="item">要替换的新项</param>
     public static void ReplaceWhile<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        for (int i = 0; i < source.Count; i++)
+        for (var i = 0; i < source.Count; i++)
         {
             if (selector(source[i]))
             {
@@ -181,9 +181,9 @@ public static class ListExtensions
     /// <param name="itemFactory">一个工厂方法，用于生成要替换的新项</param>
     public static void ReplaceWhile<T>(this IList<T> source, Predicate<T> selector, Func<T, T> itemFactory)
     {
-        for (int i = 0; i < source.Count; i++)
+        for (var i = 0; i < source.Count; i++)
         {
-            T? item = source[i];
+            var item = source[i];
             if (selector(item))
             {
                 source[i] = itemFactory(item);
@@ -200,7 +200,7 @@ public static class ListExtensions
     /// <param name="item">要替换的新项</param>
     public static void ReplaceOne<T>(this IList<T> source, Predicate<T> selector, T item)
     {
-        for (int i = 0; i < source.Count; i++)
+        for (var i = 0; i < source.Count; i++)
         {
             if (selector(source[i]))
             {
@@ -219,9 +219,9 @@ public static class ListExtensions
     /// <param name="itemFactory">一个工厂方法，用于生成要替换的新项</param>
     public static void ReplaceOne<T>(this IList<T> source, Predicate<T> selector, Func<T, T> itemFactory)
     {
-        for (int i = 0; i < source.Count; i++)
+        for (var i = 0; i < source.Count; i++)
         {
-            T? item = source[i];
+            var item = source[i];
             if (selector(item))
             {
                 source[i] = itemFactory(item);
@@ -239,7 +239,7 @@ public static class ListExtensions
     /// <param name="replaceWith">新项</param>
     public static void ReplaceOne<T>(this IList<T> source, T item, T replaceWith)
     {
-        for (int i = 0; i < source.Count; i++)
+        for (var i = 0; i < source.Count; i++)
         {
             if (Comparer<T>.Default.Compare(source[i], item) == 0)
             {
@@ -265,14 +265,14 @@ public static class ListExtensions
         }
 
         // 查找当前项的索引
-        int currentIndex = source.FindIndex(0, selector);
+        var currentIndex = source.FindIndex(0, selector);
         if (currentIndex == targetIndex)
         {
             return;
         }
 
         // 移除当前项并插入到目标索引位置
-        T? item = source[currentIndex];
+        var item = source[currentIndex];
         source.RemoveAt(currentIndex);
         source.Insert(targetIndex, item);
     }
@@ -289,7 +289,7 @@ public static class ListExtensions
     {
         _ = CheckHelper.NotNull(source, nameof(source));
 
-        T? item = source.FirstOrDefault(selector);
+        var item = source.FirstOrDefault(selector);
 
         if (item == null)
         {
@@ -316,7 +316,7 @@ public static class ListExtensions
         Dictionary<T, bool>? visited = new(comparer);
 
         // 遍历源列表中的每个项并进行拓扑排序
-        foreach (T? item in source)
+        foreach (var item in source)
         {
             SortByDependenciesVisit(item, getDependencies, sorted, visited);
         }
@@ -336,7 +336,7 @@ public static class ListExtensions
         Dictionary<T, bool> visited) where T : notnull
     {
         // 检查项是否已经在处理中或已访问过
-        bool alreadyVisited = visited.TryGetValue(item, out bool inProcess);
+        var alreadyVisited = visited.TryGetValue(item, out var inProcess);
 
         if (alreadyVisited)
         {
@@ -350,11 +350,11 @@ public static class ListExtensions
             // 标记为正在处理
             visited[item] = true;
 
-            IEnumerable<T>? dependencies = getDependencies(item);
+            var dependencies = getDependencies(item);
             if (dependencies != null)
             {
                 // 递归地对每个依赖进行拓扑排序
-                foreach (T? dependency in dependencies)
+                foreach (var dependency in dependencies)
                 {
                     SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
                 }

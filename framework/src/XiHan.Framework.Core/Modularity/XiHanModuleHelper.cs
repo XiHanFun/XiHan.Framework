@@ -48,12 +48,12 @@ public static class XiHanModuleHelper
 
         List<Type>? dependencies = [];
 
-        IEnumerable<IDependedTypesProvider>? dependencyDescriptors = moduleType.GetCustomAttributes()
+        var dependencyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IDependedTypesProvider>();
 
-        foreach (IDependedTypesProvider? descriptor in dependencyDescriptors)
+        foreach (var descriptor in dependencyDescriptors)
         {
-            foreach (Type? dependedModuleType in descriptor.GetDependedTypes())
+            foreach (var dependedModuleType in descriptor.GetDependedTypes())
             {
                 _ = dependencies.AddIfNotContains(dependedModuleType);
             }
@@ -71,12 +71,12 @@ public static class XiHanModuleHelper
     {
         List<Assembly>? assemblies = [];
 
-        IEnumerable<IAdditionalModuleAssemblyProvider>? additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
+        var additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IAdditionalModuleAssemblyProvider>();
 
-        foreach (IAdditionalModuleAssemblyProvider? descriptor in additionalAssemblyDescriptors)
+        foreach (var descriptor in additionalAssemblyDescriptors)
         {
-            foreach (Assembly? assembly in descriptor.GetAssemblies())
+            foreach (var assembly in descriptor.GetAssemblies())
             {
                 _ = assemblies.AddIfNotContains(assembly);
             }
@@ -106,7 +106,7 @@ public static class XiHanModuleHelper
         moduleTypes.Add(moduleType);
         logger?.Log(LogLevel.Information, $"{new string(' ', depth * 2)}-{moduleType.FullName}");
 
-        foreach (Type? dependedModuleType in FindDependedModuleTypes(moduleType))
+        foreach (var dependedModuleType in FindDependedModuleTypes(moduleType))
         {
             AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleType, logger, depth + 1);
         }
@@ -119,7 +119,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static bool IsXiHanModule(Type type)
     {
-        TypeInfo? typeInfo = type.GetTypeInfo();
+        var typeInfo = type.GetTypeInfo();
 
         return typeInfo.IsClass && !typeInfo.IsAbstract && !typeInfo.IsGenericType && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
     }

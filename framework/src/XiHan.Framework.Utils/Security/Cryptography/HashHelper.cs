@@ -33,7 +33,7 @@ public static class HashHelper
     public static string Sha256(string data)
     {
         // 创建 SHA256 加密算法实例，将字符串数据转换为字节数组，并生成相应的哈希值
-        byte[]? hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(data));
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes);
     }
 
@@ -45,7 +45,7 @@ public static class HashHelper
     public static string Sha384(string data)
     {
         // 创建 SHA384 加密算法实例，将字符串数据转换为字节数组，并生成相应的哈希值
-        byte[]? hashBytes = SHA384.HashData(Encoding.UTF8.GetBytes(data));
+        var hashBytes = SHA384.HashData(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes);
     }
 
@@ -57,7 +57,7 @@ public static class HashHelper
     public static string Sha512(string data)
     {
         // 创建 SHA512 加密算法实例，将字符串数据转换为字节数组，并生成相应的哈希值
-        byte[]? hashBytes = SHA512.HashData(Encoding.UTF8.GetBytes(data));
+        var hashBytes = SHA512.HashData(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes);
     }
 
@@ -68,7 +68,7 @@ public static class HashHelper
     /// <returns>生成的哈希值</returns>
     public static string Md5(string input)
     {
-        byte[]? hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(input));
+        var hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(hashBytes);
     }
 
@@ -90,7 +90,7 @@ public static class HashHelper
     /// <returns>生成的哈希值</returns>
     public static string StreamMd5(Stream stream)
     {
-        byte[]? hashBytes = MD5.HashData(stream);
+        var hashBytes = MD5.HashData(stream);
         return Convert.ToHexString(hashBytes);
     }
 }

@@ -49,3 +49,8 @@ csharp_indent_labels = one_less_than_current
 
 # 主构造函数使用
 dotnet_diagnostic.IDE0290.severity = none
+
+# 强制使用 var
+csharp_style_var_for_built_in_types = always:suggestion
+csharp_style_var_when_type_is_immutable = always:suggestion
+csharp_style_var_when_type_is_not_built_in = always:suggestion

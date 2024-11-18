@@ -109,7 +109,7 @@ public static class LoggerExtensions
     /// <param name="level"></param>
     public static void LogException(this ILogger logger, Exception ex, LogLevel? level = null)
     {
-        LogLevel selectedLevel = level ?? ex.GetLogLevel();
+        var selectedLevel = level ?? ex.GetLogLevel();
 
         logger.LogWithLevel(selectedLevel, ex.Message, ex);
         LogKnownProperties(logger, ex, selectedLevel);
@@ -151,7 +151,7 @@ public static class LoggerExtensions
 
         StringBuilder? exceptionData = new();
         _ = exceptionData.AppendLine("---------- 异常数据 ----------");
-        foreach (object? key in exception.Data.Keys)
+        foreach (var key in exception.Data.Keys)
         {
             _ = exceptionData.AppendLine($"{key} = {exception.Data[key]}");
         }
@@ -179,7 +179,7 @@ public static class LoggerExtensions
                 loggingExceptions.Add(selfLogging);
             }
 
-            foreach (Exception? innerException in aggException.InnerExceptions)
+            foreach (var innerException in aggException.InnerExceptions)
             {
                 if (innerException is IExceptionWithSelfLogging withSelfLogging)
                 {
@@ -188,7 +188,7 @@ public static class LoggerExtensions
             }
         }
 
-        foreach (IExceptionWithSelfLogging? ex in loggingExceptions)
+        foreach (var ex in loggingExceptions)
         {
             ex.Log(logger);
         }

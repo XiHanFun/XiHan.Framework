@@ -33,19 +33,19 @@ public static class MemberInfoExtensions
     /// <returns>返回 Description 特性描述信息，如不存在则返回成员的名称</returns>
     public static string GetDescription(this MemberInfo member, bool inherit = true)
     {
-        DescriptionAttribute? desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
+        var desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
         if (desc != null)
         {
             return desc.Description;
         }
 
-        DisplayNameAttribute? displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
+        var displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
         if (displayName != null)
         {
             return displayName.DisplayName;
         }
 
-        DisplayAttribute? display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
+        var display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
         return display != null
             ? display.Name ?? string.Empty
             : member.Name;
@@ -79,7 +79,7 @@ public static class MemberInfoExtensions
     {
         ArgumentNullException.ThrowIfNull(memberInfo);
 
-        object[]? attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
+        var attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
         return attrs.Length > 0 ? (TAttribute)attrs[0] : default;
     }
 
@@ -93,7 +93,7 @@ public static class MemberInfoExtensions
     public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type type, bool inherit = true)
         where TAttribute : Attribute
     {
-        TAttribute? attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
+        var attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
         return attr ?? (type.GetTypeInfo().BaseType == null
             ? null
             : (type.GetTypeInfo().BaseType?.GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(inherit)));

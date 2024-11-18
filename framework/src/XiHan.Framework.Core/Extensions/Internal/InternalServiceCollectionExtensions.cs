@@ -50,19 +50,20 @@ internal static class InternalServiceCollectionExtensions
     /// <param name="applicationCreationOptions"></param>
     internal static void AddCoreServices(this IServiceCollection services, IXiHanApplication application, XiHanApplicationCreationOptions applicationCreationOptions)
     {
-        ModuleLoader? moduleLoader = new();
-        AssemblyFinder? assemblyFinder = new(application);
-        TypeFinder? typeFinder = new(assemblyFinder);
+        var moduleLoader = new ModuleLoader();
+        var assemblyFinder = new AssemblyFinder(application);
+        var typeFinder = new TypeFinder(assemblyFinder);
 
         if (!services.IsAdded<IConfiguration>())
         {
             _ = services.ReplaceConfiguration(ConfigurationHelper.BuildConfiguration(applicationCreationOptions.Configuration));
         }
 
-        services.TryAddSingleton<IModuleLoader>(moduleLoader);
         services.TryAddSingleton<IAssemblyFinder>(assemblyFinder);
         services.TryAddSingleton<ITypeFinder>(typeFinder);
         services.TryAddSingleton<IInitLoggerFactory>(new DefaultInitLoggerFactory());
+        services.TryAddSingleton<IModuleLoader>(moduleLoader);
+
         // 属性或字段自动注入服务
         _ = services.AddSingleton<AutowiredServiceHandler>();
 

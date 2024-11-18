@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props"/>
+    <Import Project="..\..\props\common.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.Bot</Title>
@@ -9,9 +9,5 @@
         <Description>曦寒框架自动程序库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
-    </ItemGroup>
 
 </Project>

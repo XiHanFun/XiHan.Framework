@@ -46,8 +46,8 @@ public class JsonHelper
             return default;
         }
 
-        string? jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
-        T? result = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        var jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
+        var result = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         return result;
     }
 
@@ -65,12 +65,12 @@ public class JsonHelper
         }
 
         using StreamReader streamReader = new(_jsonFilePath);
-        string? jsonStr = streamReader.ReadToEnd();
+        var jsonStr = streamReader.ReadToEnd();
         dynamic? obj = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         obj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
-        string[]? keys = keyLink.Split(':');
+        var keys = keyLink.Split(':');
         dynamic? currentObject = obj;
-        foreach (string? key in keys)
+        foreach (var key in keys)
         {
             currentObject = currentObject[key];
             if (currentObject == null)
@@ -92,17 +92,17 @@ public class JsonHelper
     /// <param name="value"></param>
     public void Set<T, TValue>(string keyLink, TValue value)
     {
-        string? jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
+        var jsonStr = File.ReadAllText(_jsonFilePath, Encoding.UTF8);
         dynamic? jsoObj = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         jsoObj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
 
-        string[]? keys = keyLink.Split(':');
+        var keys = keyLink.Split(':');
         dynamic? currentObject = jsoObj;
-        for (int i = 0; i < keys.Length; i++)
+        for (var i = 0; i < keys.Length; i++)
         {
             dynamic? oldObject = currentObject;
             currentObject = currentObject[keys[i]];
-            bool isValueType = value!.GetType().IsValueType;
+            var isValueType = value!.GetType().IsValueType;
             if (i == keys.Length - 1)
             {
                 oldObject[keys[i]] = isValueType || value is string ? (dynamic)JsonSerializer.Serialize(value) : value;
@@ -115,7 +115,7 @@ public class JsonHelper
                     continue;
                 }
 
-                JsonDocument? obj = JsonDocument.Parse(JsonSerializer.Serialize(new object()));
+                var obj = JsonDocument.Parse(JsonSerializer.Serialize(new object()));
                 oldObject[keys[i]] = obj;
                 currentObject = oldObject[keys[i]];
             }
@@ -131,7 +131,7 @@ public class JsonHelper
     /// <param name="jsoObj"></param>
     private void Save<T>(T jsoObj)
     {
-        string? jsonStr = JsonSerializer.Serialize(jsoObj, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        var jsonStr = JsonSerializer.Serialize(jsoObj, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         File.WriteAllText(_jsonFilePath, jsonStr, Encoding.UTF8);
     }
 }

@@ -32,7 +32,7 @@ public static class DictionaryExtensions
     /// <returns>如果字典中存在该键，则返回真(True)；否则返回假(False)</returns>
     internal static bool TryGetValue<T>(this IDictionary<string, object> dictionary, string key, out T? value)
     {
-        if (dictionary.TryGetValue(key, out object? valueObj) && valueObj is T t)
+        if (dictionary.TryGetValue(key, out var valueObj) && valueObj is T t)
         {
             value = t;
             return true;
@@ -52,7 +52,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
+        return dictionary.TryGetValue(key, out var obj) ? obj : default;
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
     {
-        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
+        return dictionary.TryGetValue(key, out var obj) ? obj : default;
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
     {
-        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
+        return dictionary.TryGetValue(key, out var obj) ? obj : default;
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out TValue? obj) ? obj : default;
+        return dictionary.TryGetValue(key, out var obj) ? obj : default;
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，使用工厂方法创建并返回默认值</returns>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> factory)
     {
-        return dictionary.TryGetValue(key, out TValue? obj) ? obj : (dictionary[key] = factory(key));
+        return dictionary.TryGetValue(key, out var obj) ? obj : (dictionary[key] = factory(key));
     }
 
     /// <summary>
@@ -146,7 +146,7 @@ public static class DictionaryExtensions
         ExpandoObject? expandoObject = new();
         ICollection<KeyValuePair<string, object>>? expendObjectCollection = expandoObject!;
 
-        foreach (KeyValuePair<string, object> keyValuePair in dictionary)
+        foreach (var keyValuePair in dictionary)
         {
             expendObjectCollection.Add(keyValuePair);
         }
