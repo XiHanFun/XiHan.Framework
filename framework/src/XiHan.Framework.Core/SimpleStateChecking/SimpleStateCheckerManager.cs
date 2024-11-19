@@ -62,7 +62,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
     /// <returns></returns>
     public virtual async Task<SimpleStateCheckerResult<TState>> IsEnabledAsync(TState[] states)
     {
-        SimpleStateCheckerResult<TState>? result = new(states);
+        var result = new SimpleStateCheckerResult<TState>(states);
 
         using var scope = ServiceProvider.CreateScope();
         var batchStateCheckers = states.SelectMany(x => x.StateCheckers)
@@ -73,7 +73,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
 
         foreach (var stateChecker in batchStateCheckers)
         {
-            SimpleBatchStateCheckerContext<TState>? context = new(
+            var context = new SimpleBatchStateCheckerContext<TState>(
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
                 states.Where(x => x.StateCheckers.Contains(stateChecker)).ToArray());
 
@@ -92,7 +92,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
             .Where(x => typeof(ISimpleBatchStateChecker<TState>).IsAssignableFrom(x))
             .Select(ServiceProvider.GetRequiredService).Cast<ISimpleBatchStateChecker<TState>>())
         {
-            SimpleBatchStateCheckerContext<TState>? context = new(
+            var context = new SimpleBatchStateCheckerContext<TState>(
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
                 states.Where(x => result.Any(y => y.Key.Equals(x) && y.Value)).ToArray());
 
@@ -122,7 +122,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
     protected virtual async Task<bool> InternalIsEnabledAsync(TState state, bool useBatchChecker)
     {
         using var scope = ServiceProvider.CreateScope();
-        SimpleStateCheckerContext<TState>? context = new(scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(), state);
+        var context = new SimpleStateCheckerContext<TState>(scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(), state);
 
         foreach (var provider in state.StateCheckers.WhereIf(!useBatchChecker, x => x is not ISimpleBatchStateChecker<TState>))
         {

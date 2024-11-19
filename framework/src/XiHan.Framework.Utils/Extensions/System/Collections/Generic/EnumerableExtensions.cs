@@ -48,10 +48,10 @@ public static class EnumerableExtensions
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
     /// </summary>
     /// <param name="source">要应用过滤的枚举对象</param>
-    /// <param name="predicate">用于过滤枚举对象的谓词</param>
     /// <param name="condition">第三方条件</param>
+    /// <param name="predicate">用于过滤枚举对象的谓词</param>
     /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
-    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, Func<T, bool> predicate, bool condition)
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, bool> predicate)
     {
         return condition
             ? source.Where(predicate)
@@ -62,10 +62,10 @@ public static class EnumerableExtensions
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
     /// </summary>
     /// <param name="source">要应用过滤的枚举对象</param>
-    /// <param name="predicate">用于过滤枚举对象的谓词，包含索引</param>
     /// <param name="condition">第三方条件</param>
+    /// <param name="predicate">用于过滤枚举对象的谓词，包含索引</param>
     /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
-    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, Func<T, int, bool> predicate, bool condition)
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition ,Func<T, int, bool> predicate)
     {
         return condition
             ? source.Where(predicate)
