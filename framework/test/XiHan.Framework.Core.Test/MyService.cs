@@ -40,7 +40,6 @@ public class MyService
     {
         _logger.LogInformation("Running MyService...");
         await Task.Delay(1000); // 模拟异步操作
-        Console.WriteLine("Hello, World=============!");
         _logger.LogInformation("MyService execution completed.");
     }
 }

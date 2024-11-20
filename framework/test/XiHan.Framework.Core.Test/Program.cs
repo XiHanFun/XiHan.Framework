@@ -11,7 +11,6 @@ application.Initialize();
 
 // 获取服务并执行逻辑
 var logger = application.ServiceProvider.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("Hello, ABP in a top-level statement!");
 
 var myService = application.ServiceProvider.GetRequiredService<MyService>();
 await myService.RunAsync();
