@@ -14,7 +14,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Core.Test;
@@ -36,15 +35,5 @@ public class XiHanFrameworkCoreTestModule : XiHanModule
         });
 
         _ = context.Services.AddTransient<MyService>();
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="context"></param>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        var logger = context.ServiceProvider.GetService<ILogger<XiHanFrameworkCoreTestModule>>();
-        logger?.LogInformation("ABP Module initialized in top-level statement.");
     }
 }
