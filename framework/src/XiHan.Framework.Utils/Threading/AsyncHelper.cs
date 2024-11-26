@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Reflection;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Threading;
@@ -22,37 +21,6 @@ namespace XiHan.Framework.Utils.Threading;
 /// </summary>
 public static class AsyncHelper
 {
-    /// <summary>
-    /// 检查给定方法是否为异步方法
-    /// </summary>
-    /// <param name="method">要检查的方法</param>
-    public static bool IsAsync(this MethodInfo method)
-    {
-        _ = CheckHelper.NotNull(method, nameof(method));
-
-        return method.ReturnType.IsTaskOrTaskOfT();
-    }
-
-    /// <summary>
-    /// 检查给定的 Type 类型是否是 Task 类型或者泛型 Task T 类型
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static bool IsTaskOrTaskOfT(this Type type)
-    {
-        return type == typeof(Task) || (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>));
-    }
-
-    /// <summary>
-    /// 检查给定的 Type 类型是否是泛型 Task T 类型
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static bool IsTaskOfT(this Type type)
-    {
-        return type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>);
-    }
-
     /// <summary>
     /// 如果给定类型是 Task，则返回 void。如果给定类型是 Task{T}，则返回 T。否则返回给定类型。
     /// </summary>

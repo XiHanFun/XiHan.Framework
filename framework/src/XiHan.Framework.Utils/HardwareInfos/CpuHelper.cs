@@ -13,8 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
-using XiHan.Framework.Utils.Diagnostics;
-using XiHan.Framework.Utils.Extensions.System;
+using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;

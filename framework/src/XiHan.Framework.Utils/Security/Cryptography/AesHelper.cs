@@ -26,13 +26,13 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class AesHelper
 {
     // AES KEY 的位数
-    private const int _keySize = 256;
+    private const int KeySize = 256;
 
     // 加密块大小
-    private const int _blockSize = 128;
+    private const int BlockSize = 128;
 
     // 迭代次数
-    private const int _iterations = 10000;
+    private const int Iterations = 10000;
 
     /// <summary>
     /// 加密方法
@@ -45,9 +45,9 @@ public static class AesHelper
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
 
         // 生成盐
-        var salt = new byte[_blockSize / 8];
-        var keyBytes = DeriveKey(password, salt, _keySize / 8);
-        var ivBytes = DeriveKey(password, salt, _blockSize / 8);
+        var salt = new byte[BlockSize / 8];
+        var keyBytes = DeriveKey(password, salt, KeySize / 8);
+        var ivBytes = DeriveKey(password, salt, BlockSize / 8);
         var cipherBytes = EncryptBytes(plainBytes, keyBytes, ivBytes);
         return Convert.ToBase64String(cipherBytes);
     }
@@ -101,9 +101,9 @@ public static class AesHelper
     {
         var cipherBytes = Convert.FromBase64String(cipherText);
         // 生成盐
-        var salt = new byte[_blockSize / 8];
-        var keyBytes = DeriveKey(password, salt, _keySize / 8);
-        var ivBytes = DeriveKey(password, salt, _blockSize / 8);
+        var salt = new byte[BlockSize / 8];
+        var keyBytes = DeriveKey(password, salt, KeySize / 8);
+        var ivBytes = DeriveKey(password, salt, BlockSize / 8);
         var plainBytes = DecryptBytes(cipherBytes, keyBytes, ivBytes);
         return Encoding.UTF8.GetString(plainBytes);
     }
@@ -155,7 +155,7 @@ public static class AesHelper
     /// <returns></returns>
     private static byte[] DeriveKey(string password, byte[] salt, int bytes)
     {
-        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, _iterations, HashAlgorithmName.SHA256);
+        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, Iterations, HashAlgorithmName.SHA256);
         return pbkdf2.GetBytes(bytes);
     }
 }
