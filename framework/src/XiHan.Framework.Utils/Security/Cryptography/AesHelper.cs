@@ -26,13 +26,13 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class AesHelper
 {
     // AES KEY 的位数
-    private const int KeySize = 256;
+    private const int _keySize = 256;
 
     // 加密块大小
-    private const int BlockSize = 128;
+    private const int _blockSize = 128;
 
     // 迭代次数
-    private const int Iterations = 10000;
+    private const int _iterations = 10000;
 
     /// <summary>
     /// 加密方法
@@ -42,13 +42,14 @@ public static class AesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, string password)
     {
-        // 生成盐
-        var salt = new byte[BlockSize / 8];
-        var key = DeriveKey(password, salt, KeySize / 8);
-        var iv = DeriveKey(password, salt, BlockSize / 8);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
 
-        // 返回加密结果
-        return Encrypt(plainText, key, iv);
+        // 生成盐
+        var salt = new byte[_blockSize / 8];
+        var keyBytes = DeriveKey(password, salt, _keySize / 8);
+        var ivBytes = DeriveKey(password, salt, _blockSize / 8);
+        var cipherBytes = EncryptBytes(plainBytes, keyBytes, ivBytes);
+        return Convert.ToBase64String(cipherBytes);
     }
 
     /// <summary>
@@ -60,36 +61,33 @@ public static class AesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText, string key, string iv)
     {
-        var keyByte = Encoding.UTF8.GetBytes(key);
-        var ivByte = Encoding.UTF8.GetBytes(iv);
-        return Encrypt(plainText, keyByte, ivByte);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+        var ivBytes = Encoding.UTF8.GetBytes(iv);
+        var cipherBytes = EncryptBytes(plainBytes, keyBytes, ivBytes);
+        return Convert.ToBase64String(cipherBytes);
     }
 
     /// <summary>
     /// 自定义 Key 和 IV 的加密方法
     /// </summary>
-    /// <param name="plainText">要加密的文本</param>
-    /// <param name="key">自定义的 Key</param>
-    /// <param name="iv">自定义的 IV</param>
+    /// <param name="plainBytes">要加密的文本</param>
+    /// <param name="keyBytes">自定义的 Key</param>
+    /// <param name="ivBytes">自定义的 IV</param>
     /// <returns></returns>
-    public static string Encrypt(string plainText, byte[] key, byte[] iv)
+    public static byte[] EncryptBytes(byte[] plainBytes, byte[] keyBytes, byte[] ivBytes)
     {
         using var aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
+        aes.Key = keyBytes;
+        aes.IV = ivBytes;
 
         // 加密算法
-        string cipherText;
         using MemoryStream ms = new();
         using CryptoStream cs = new(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
-        var plainBytes = Encoding.UTF8.GetBytes(plainText);
         cs.Write(plainBytes, 0, plainBytes.Length);
         cs.FlushFinalBlock();
         var cipherBytes = ms.ToArray();
-        cipherText = Convert.ToBase64String(cipherBytes);
-
-        // 返回加密结果
-        return cipherText;
+        return cipherBytes;
     }
 
     /// <summary>
@@ -101,12 +99,13 @@ public static class AesHelper
     /// <exception cref="ArgumentException"></exception>
     public static string Decrypt(string cipherText, string password)
     {
+        var cipherBytes = Convert.FromBase64String(cipherText);
         // 生成盐
-        var salt = new byte[BlockSize / 8];
-        var key = DeriveKey(password, salt, KeySize / 8);
-        var iv = DeriveKey(password, salt, BlockSize / 8);
-
-        return Decrypt(cipherText, key, iv);
+        var salt = new byte[_blockSize / 8];
+        var keyBytes = DeriveKey(password, salt, _keySize / 8);
+        var ivBytes = DeriveKey(password, salt, _blockSize / 8);
+        var plainBytes = DecryptBytes(cipherBytes, keyBytes, ivBytes);
+        return Encoding.UTF8.GetString(plainBytes);
     }
 
     /// <summary>
@@ -118,25 +117,25 @@ public static class AesHelper
     /// <returns></returns>
     public static string Decrypt(string cipherText, string key, string iv)
     {
-        var keyByte = Encoding.UTF8.GetBytes(key);
-        var ivByte = Encoding.UTF8.GetBytes(iv);
-        return Decrypt(cipherText, keyByte, ivByte);
+        var cipherBytes = Convert.FromBase64String(cipherText);
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+        var ivBytes = Encoding.UTF8.GetBytes(iv);
+        var plainBytes = DecryptBytes(cipherBytes, keyBytes, ivBytes);
+        return Encoding.UTF8.GetString(plainBytes);
     }
 
     /// <summary>
     /// 自定义 Key 和 IV 的解密方法
     /// </summary>
-    /// <param name="cipherText">要解密的文本</param>
-    /// <param name="key">自定义的 Key</param>
-    /// <param name="iv">自定义的 IV</param>
+    /// <param name="cipherBytes">要解密的数据</param>
+    /// <param name="keyBytes">自定义的 Key</param>
+    /// <param name="ivBytes">自定义的 IV</param>
     /// <returns></returns>
-    public static string Decrypt(string cipherText, byte[] key, byte[] iv)
+    public static byte[] DecryptBytes(byte[] cipherBytes, byte[] keyBytes, byte[] ivBytes)
     {
-        var cipherBytes = Convert.FromBase64String(cipherText);
-
         using var aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
+        aes.Key = keyBytes;
+        aes.IV = ivBytes;
 
         // 解密算法
         using MemoryStream ms = new();
@@ -144,10 +143,7 @@ public static class AesHelper
         cs.Write(cipherBytes, 0, cipherBytes.Length);
         cs.FlushFinalBlock();
         var plainBytes = ms.ToArray();
-        var plainText = Encoding.UTF8.GetString(plainBytes);
-
-        // 返回解密结果
-        return plainText;
+        return plainBytes;
     }
 
     /// <summary>
@@ -159,7 +155,7 @@ public static class AesHelper
     /// <returns></returns>
     private static byte[] DeriveKey(string password, byte[] salt, int bytes)
     {
-        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, Iterations, HashAlgorithmName.SHA256);
+        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, _iterations, HashAlgorithmName.SHA256);
         return pbkdf2.GetBytes(bytes);
     }
 }
