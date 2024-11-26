@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+﻿#region<<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
@@ -10,7 +10,7 @@
 // CreateTime:2024/10/11 6:04:12
 // ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>
+#endregion<<版权版本注释>>
 
 using System.Security.Cryptography;
 using System.Text;
@@ -28,42 +28,79 @@ public static class RsaHelper
     /// <summary>
     /// 生成 RSA 密钥对
     /// </summary>
-    /// <param name="keySize">密钥大小，通常为2048或4096</param>
+    /// <param name="keySize">密钥长度，默认为 2048</param>
     /// <returns>返回公钥和私钥对</returns>
     public static (string publicKey, string privateKey) GenerateKeys(int keySize = 2048)
     {
+        var (publicKeyBytes, privateKeyBytes) = GenerateKeysBytes(keySize);
+        return (Convert.ToBase64String(publicKeyBytes), Convert.ToBase64String(privateKeyBytes));
+    }
+
+    /// <summary>
+    /// 生成 RSA 密钥对
+    /// </summary>
+    /// <param name="keySize">密钥长度，默认为 2048</param>
+    /// <returns>返回公钥和私钥对</returns>
+    public static (byte[] publicKeyBytes, byte[] privateKeyBytes) GenerateKeysBytes(int keySize = 2048)
+    {
         using var rsa = RSA.Create(keySize);
-        var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-        var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-        return (publicKey, privateKey);
+        var publicKeyBytes = rsa.ExportRSAPublicKey();
+        var privateKeyBytes = rsa.ExportRSAPrivateKey();
+        return (publicKeyBytes, privateKeyBytes);
     }
 
     /// <summary>
     /// 使用公钥加密数据
     /// </summary>
-    /// <param name="plainText">要加密的明文</param>
+    /// <param name="plainText">要加密的文本</param>
     /// <param name="publicKey">公钥</param>
-    /// <returns>加密后的密文</returns>
+    /// <returns>返回加密后的数据</returns>
     public static string Encrypt(string plainText, string publicKey)
     {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
-        var encryptedBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.Pkcs1);
+        var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+        var publicKeyBytes = Convert.FromBase64String(publicKey);
+        var encryptedBytes = EncryptBytes(plainTextBytes, publicKeyBytes);
         return Convert.ToBase64String(encryptedBytes);
+    }
+
+    /// <summary>
+    /// 使用公钥加密数据
+    /// </summary>
+    /// <param name="plainBytes">要加密的字节数组</param>
+    /// <param name="publicKeyBytes">公钥字节数组</param>
+    /// <returns>返回加密后的数据</returns>
+    public static byte[] EncryptBytes(byte[] plainBytes, byte[] publicKeyBytes)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+        return rsa.Encrypt(plainBytes, RSAEncryptionPadding.Pkcs1);
     }
 
     /// <summary>
     /// 使用私钥解密数据
     /// </summary>
-    /// <param name="cipherText">要解密的密文</param>
+    /// <param name="cipherText">要解密的文本</param>
     /// <param name="privateKey">私钥</param>
-    /// <returns>解密后的明文</returns>
+    /// <returns>返回解密后的数据</returns>
     public static string Decrypt(string cipherText, string privateKey)
     {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-        var decryptedBytes = rsa.Decrypt(Convert.FromBase64String(cipherText), RSAEncryptionPadding.Pkcs1);
+        var cipherTextBytes = Convert.FromBase64String(cipherText);
+        var privateKeyBytes = Convert.FromBase64String(privateKey);
+        var decryptedBytes = DecryptBytes(cipherTextBytes, privateKeyBytes);
         return Encoding.UTF8.GetString(decryptedBytes);
+    }
+
+    /// <summary>
+    /// 使用私钥解密数据
+    /// </summary>
+    /// <param name="cipherBytes">要解密的字节数组</param>
+    /// <param name="privateKeyBytes">私钥字节数组</param>
+    /// <returns>返回解密后的数据</returns>
+    public static byte[] DecryptBytes(byte[] cipherBytes, byte[] privateKeyBytes)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
+        return rsa.Decrypt(cipherBytes, RSAEncryptionPadding.Pkcs1);
     }
 
     /// <summary>
@@ -71,29 +108,55 @@ public static class RsaHelper
     /// </summary>
     /// <param name="data">要签名的数据</param>
     /// <param name="privateKey">私钥</param>
-    /// <returns>签名后的字符串</returns>
+    /// <returns>签名后的数据</returns>
     public static string SignData(string data, string privateKey)
     {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
         var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var privateKeyBytes = Convert.FromBase64String(privateKey);
+        var signedBytes = SignDataBytes(dataBytes, privateKeyBytes);
         return Convert.ToBase64String(signedBytes);
+    }
+
+    /// <summary>
+    /// 使用私钥对数据进行签名
+    /// </summary>
+    /// <param name="dataBytes">要签名的数据</param>
+    /// <param name="privateKeyBytes">私钥</param>
+    /// <returns>签名后的数据</returns>
+    public static byte[] SignDataBytes(byte[] dataBytes, byte[] privateKeyBytes)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
+        var signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return signedBytes;
     }
 
     /// <summary>
     /// 使用公钥验证签名
     /// </summary>
-    /// <param name="data">要验证的数据</param>
+    /// <param name="data">原始数据</param>
     /// <param name="signature">签名</param>
     /// <param name="publicKey">公钥</param>
-    /// <returns>签名是否有效</returns>
+    /// <returns>返回签名是否有效</returns>
     public static bool VerifyData(string data, string signature, string publicKey)
     {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
         var dataBytes = Encoding.UTF8.GetBytes(data);
         var signatureBytes = Convert.FromBase64String(signature);
+        var publicKeyBytes = Convert.FromBase64String(publicKey);
+        return VerifyDataBytes(dataBytes, signatureBytes, publicKeyBytes);
+    }
+
+    /// <summary>
+    /// 使用公钥验证签名
+    /// </summary>
+    /// <param name="dataBytes">原始数据</param>
+    /// <param name="signatureBytes">签名</param>
+    /// <param name="publicKeyBytes">公钥</param>
+    /// <returns>返回签名是否有效</returns>
+    public static bool VerifyDataBytes(byte[] dataBytes, byte[] signatureBytes, byte[] publicKeyBytes)
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
         return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 }
