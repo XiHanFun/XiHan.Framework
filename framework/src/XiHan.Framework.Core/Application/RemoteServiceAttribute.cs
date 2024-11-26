@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
-using XiHan.Framework.Utils.Extensions.System.Reflection;
+using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Core.Application;
 
