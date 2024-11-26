@@ -18,7 +18,7 @@ using XiHan.Framework.Utils.DataFilter.Enums;
 namespace XiHan.Framework.Utils.DataFilter;
 
 /// <summary>
-/// 列表字段排序条件
+/// 通用排序条件基类
 /// </summary>
 public class SortConditionDto
 {
@@ -52,7 +52,7 @@ public class SortConditionDto
 }
 
 /// <summary>
-/// 支持泛型的列表字段排序条件
+/// 通用排序条件泛型基类
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 public class SortConditionDto<T> : SortConditionDto
