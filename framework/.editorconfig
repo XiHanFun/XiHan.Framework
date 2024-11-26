@@ -271,3 +271,6 @@ dotnet_naming_style.private_field.required_prefix = _
 dotnet_naming_style.private_field.required_suffix = 
 dotnet_naming_style.private_field.word_separator = 
 dotnet_naming_style.private_field.capitalization = camel_case
+
+# IDE0290: 使用主构造函数
+csharp_style_prefer_primary_constructors = false

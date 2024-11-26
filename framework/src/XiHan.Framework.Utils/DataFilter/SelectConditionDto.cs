@@ -17,7 +17,7 @@ using XiHan.Framework.Utils.DataFilter.Enums;
 namespace XiHan.Framework.Utils.DataFilter;
 
 /// <summary>
-/// 通用选择条件
+/// 通用选择条件基类
 /// </summary>
 public class SelectConditionDto
 {
@@ -40,4 +40,12 @@ public class SelectConditionDto
     /// 选择比较
     /// </summary>
     public SelectCompareEnum SelectCompare { get; set; }
+}
+
+/// <summary>
+/// 通用选择条件泛型基类
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public class SelectConditionDto<T> : SelectConditionDto
+{
 }
