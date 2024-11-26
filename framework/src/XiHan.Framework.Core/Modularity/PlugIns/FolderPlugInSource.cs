@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 using XiHan.Framework.Core.Exceptions;
-using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
+using XiHan.Framework.Utils.Collections.Generic;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.System;
 
