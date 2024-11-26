@@ -26,10 +26,10 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class DesHelper
 {
     // 默认密匙
-    private static readonly string defaultKey = "12345678";
+    private static readonly string _defaultKey = "12345678";
 
     // 默认向量
-    private static readonly string defaultIV = "87654321";
+    private static readonly string _defaultIV = "87654321";
 
     /// <summary>
     /// 加密方法，只需提供明文文本
@@ -38,31 +38,31 @@ public static class DesHelper
     /// <returns></returns>
     public static string Encrypt(string plainText)
     {
-        var key = Encoding.UTF8.GetBytes(defaultKey);
-        var iv = Encoding.UTF8.GetBytes(defaultIV);
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        var keyBytes = Encoding.UTF8.GetBytes(_defaultKey);
+        var ivBytes = Encoding.UTF8.GetBytes(_defaultIV);
 
-        return Encrypt(plainText, key, iv);
+        return EncryptBytes(plainBytes, keyBytes, ivBytes);
     }
 
     /// <summary>
     /// 自定义 Key 和 IV 的加密方法
     /// </summary>
-    /// <param name="plainText">要加密的文本</param>
-    /// <param name="key">自定义的 Key</param>
-    /// <param name="iv">自定义的 IV</param>
+    /// <param name="plainBytes">要加密的文本</param>
+    /// <param name="keyBytes">自定义的 Key</param>
+    /// <param name="ivBytes">自定义的 IV</param>
     /// <returns></returns>
-    public static string Encrypt(string plainText, byte[] key, byte[] iv)
+    public static string EncryptBytes(byte[] plainBytes, byte[] keyBytes, byte[] ivBytes)
     {
         using var des = DES.Create();
-        des.Key = key;
-        des.IV = iv;
+        des.Key = keyBytes;
+        des.IV = ivBytes;
 
         var encryptor = des.CreateEncryptor();
 
         using MemoryStream ms = new();
         using CryptoStream cs = new(ms, encryptor, CryptoStreamMode.Write);
-        var inputBytes = Encoding.UTF8.GetBytes(plainText);
-        cs.Write(inputBytes, 0, inputBytes.Length);
+        cs.Write(plainBytes, 0, plainBytes.Length);
         cs.FlushFinalBlock();
         var encryptedBytes = ms.ToArray();
         return Convert.ToBase64String(encryptedBytes);
@@ -75,26 +75,25 @@ public static class DesHelper
     /// <returns></returns>
     public static string Decrypt(string encryptedText)
     {
-        var key = Encoding.UTF8.GetBytes(defaultKey);
-        var iv = Encoding.UTF8.GetBytes(defaultIV);
+        var encryptedBytes = Convert.FromBase64String(encryptedText);
+        var keyBytes = Encoding.UTF8.GetBytes(_defaultKey);
+        var ivBytes = Encoding.UTF8.GetBytes(_defaultIV);
 
-        return Decrypt(encryptedText, key, iv);
+        return DecryptBytes(encryptedBytes, keyBytes, ivBytes);
     }
 
     /// <summary>
     /// 自定义 Key 和 IV 的解密方法
     /// </summary>
-    /// <param name="encryptedText">要解密的文本</param>
-    /// <param name="key">自定义的 Key</param>
-    /// <param name="iv">自定义的 IV</param>
+    /// <param name="encryptedBytes">要解密的文本</param>
+    /// <param name="keyBytes">自定义的 Key</param>
+    /// <param name="ivBytes">自定义的 IV</param>
     /// <returns></returns>
-    public static string Decrypt(string encryptedText, byte[] key, byte[] iv)
+    public static string DecryptBytes(byte[] encryptedBytes, byte[] keyBytes, byte[] ivBytes)
     {
-        var encryptedBytes = Convert.FromBase64String(encryptedText);
-
         using var des = DES.Create();
-        des.Key = key;
-        des.IV = iv;
+        des.Key = keyBytes;
+        des.IV = ivBytes;
 
         var decryptor = des.CreateDecryptor();
 

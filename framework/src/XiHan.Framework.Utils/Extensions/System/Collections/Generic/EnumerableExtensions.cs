@@ -65,7 +65,7 @@ public static class EnumerableExtensions
     /// <param name="condition">第三方条件</param>
     /// <param name="predicate">用于过滤枚举对象的谓词，包含索引</param>
     /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
-    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition ,Func<T, int, bool> predicate)
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, int, bool> predicate)
     {
         return condition
             ? source.Where(predicate)

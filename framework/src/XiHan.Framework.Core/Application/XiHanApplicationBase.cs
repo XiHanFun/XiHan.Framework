@@ -163,7 +163,7 @@ public class XiHanApplicationBase : IXiHanApplication
         var configuration = options.Services.GetConfigurationOrNull();
         if (configuration != null)
         {
-            string? appNameConfig = configuration["ApplicationName"];
+            var appNameConfig = configuration["ApplicationName"];
             if (!string.IsNullOrWhiteSpace(appNameConfig))
             {
                 return appNameConfig!;
@@ -234,9 +234,9 @@ public class XiHanApplicationBase : IXiHanApplication
 
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                Module.ServiceConfigurationContext = context;
+                xihanModule.ServiceConfigurationContext = context;
             }
         }
 
@@ -258,9 +258,9 @@ public class XiHanApplicationBase : IXiHanApplication
         // ConfigureServices
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                if (!Module.SkipAutoServiceRegistration)
+                if (!xihanModule.SkipAutoServiceRegistration)
                 {
                     foreach (var assembly in module.AllAssemblies)
                     {
@@ -298,9 +298,9 @@ public class XiHanApplicationBase : IXiHanApplication
 
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                Module.ServiceConfigurationContext = null!;
+                xihanModule.ServiceConfigurationContext = null!;
             }
         }
 
@@ -322,9 +322,9 @@ public class XiHanApplicationBase : IXiHanApplication
 
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                Module.ServiceConfigurationContext = context;
+                xihanModule.ServiceConfigurationContext = context;
             }
         }
 
@@ -346,9 +346,9 @@ public class XiHanApplicationBase : IXiHanApplication
         // ConfigureServices
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                if (!Module.SkipAutoServiceRegistration)
+                if (!xihanModule.SkipAutoServiceRegistration)
                 {
                     foreach (var assembly in module.AllAssemblies)
                     {
@@ -386,9 +386,9 @@ public class XiHanApplicationBase : IXiHanApplication
 
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule Module)
+            if (module.Instance is XiHanModule xihanModule)
             {
-                Module.ServiceConfigurationContext = null!;
+                xihanModule.ServiceConfigurationContext = null!;
             }
         }
 

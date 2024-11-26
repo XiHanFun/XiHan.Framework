@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Core.Test;
@@ -35,5 +36,15 @@ public class XiHanFrameworkCoreTestModule : XiHanModule
         });
 
         _ = context.Services.AddTransient<MyService>();
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context"></param>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        // 初始化模块
+        Console.WriteLine("Application initialized!");
     }
 }
