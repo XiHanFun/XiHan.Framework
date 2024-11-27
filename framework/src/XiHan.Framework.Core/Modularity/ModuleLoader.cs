@@ -34,7 +34,7 @@ public class ModuleLoader : IModuleLoader
     /// <param name="startupModuleType"></param>
     /// <param name="plugInSources"></param>
     /// <returns></returns>
-    public IModuleDescriptor[] LoadModules([NotNull] IServiceCollection services, [NotNull] Type startupModuleType, [NotNull] PlugInSourceList plugInSources)
+    public IModuleDescriptor[] LoadModules(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
         _ = CheckHelper.NotNull(services, nameof(services));
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
@@ -56,7 +56,7 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     private List<IModuleDescriptor> GetDescriptors(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
-        List<XiHanModuleDescriptor>? modules = [];
+        List<XiHanModuleDescriptor> modules = [];
 
         FillModules(modules, services, startupModuleType, plugInSources);
         SetDependencies(modules);
@@ -76,10 +76,7 @@ public class ModuleLoader : IModuleLoader
         var logger = services.GetInitLogger<XiHanApplicationBase>();
 
         // 所有从启动模块开始的模块
-        foreach (var moduleType in XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger))
-        {
-            modules.Add(CreateModuleDescriptor(services, moduleType));
-        }
+        modules.AddRange(XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger).Select(moduleType => CreateModuleDescriptor(services, moduleType)));
 
         // 插件模块
         foreach (var moduleType in plugInSources.GetAllModules(logger))
@@ -151,10 +148,9 @@ public class ModuleLoader : IModuleLoader
     /// <exception cref="Exception"></exception>
     protected virtual void SetDependencies(List<XiHanModuleDescriptor> modules, XiHanModuleDescriptor module)
     {
-        foreach (var dependedModuleType in XiHanModuleHelper.FindDependedModuleTypes(module.Type))
+        foreach (var dependedModule in XiHanModuleHelper.FindDependedModuleTypes(module.Type).Select(dependedModuleType => modules.FirstOrDefault(m => m.Type == dependedModuleType) ??
+            throw new Exception($"在 {module.Type.AssemblyQualifiedName} 无法找到依赖的模块 {dependedModuleType.AssemblyQualifiedName}！")))
         {
-            var dependedModule = modules.FirstOrDefault(m => m.Type == dependedModuleType) ??
-                throw new Exception($"在 {module.Type.AssemblyQualifiedName} 无法找到依赖的模块 {dependedModuleType.AssemblyQualifiedName}！");
             module.AddDependency(dependedModule);
         }
     }

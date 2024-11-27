@@ -31,7 +31,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
-        List<Type>? moduleTypes = [];
+        List<Type> moduleTypes = [];
         logger?.Log(LogLevel.Information, "加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         return moduleTypes;
@@ -46,7 +46,7 @@ public static class XiHanModuleHelper
     {
         CheckXiHanModuleType(moduleType);
 
-        List<Type>? dependencies = [];
+        List<Type> dependencies = [];
 
         var dependencyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IDependedTypesProvider>();
@@ -69,7 +69,7 @@ public static class XiHanModuleHelper
     /// <returns></returns>
     public static Assembly[] GetAllAssemblies(Type moduleType)
     {
-        List<Assembly>? assemblies = [];
+        List<Assembly> assemblies = [];
 
         var additionalAssemblyDescriptors = moduleType.GetCustomAttributes()
             .OfType<IAdditionalModuleAssemblyProvider>();
@@ -121,7 +121,7 @@ public static class XiHanModuleHelper
     {
         var typeInfo = type.GetTypeInfo();
 
-        return typeInfo.IsClass && !typeInfo.IsAbstract && !typeInfo.IsGenericType && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
+        return typeInfo is { IsClass: true, IsAbstract: false, IsGenericType: false } && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
     }
 
     /// <summary>

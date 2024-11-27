@@ -33,7 +33,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     public virtual void AddAssembly(IServiceCollection services, Assembly assembly)
     {
         var types = AssemblyHelper.GetAllTypes(assembly)
-            .Where(type => type != null && type.IsClass && !type.IsAbstract && !type.IsGenericType)
+            .Where(type => type is { IsClass: true, IsAbstract: false, IsGenericType: false })
             .ToArray();
 
         AddTypes(services, types);
@@ -89,13 +89,15 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     protected virtual void TriggerServiceExposing(IServiceCollection services, Type implementationType, List<ServiceIdentifier> serviceTypes)
     {
         var exposeActions = services.GetExposingActionList();
-        if (exposeActions.Any())
+        if (!exposeActions.Any())
         {
-            OnServiceExposingContext? args = new(implementationType, serviceTypes);
-            foreach (var action in exposeActions)
-            {
-                action(args);
-            }
+            return;
+        }
+
+        OnServiceExposingContext args = new(implementationType, serviceTypes);
+        foreach (var action in exposeActions)
+        {
+            action(args);
         }
     }
 
@@ -117,7 +119,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <returns></returns>
     protected virtual ServiceLifetime? GetLifeTimeOrNull(Type type, DependencyAttribute? dependencyAttribute)
     {
-        return dependencyAttribute?.Lifetime ?? GetServiceLifetimeFromClassHierarchy(type) ?? GetDefaultLifeTimeOrNull(type);
+        return dependencyAttribute?.Lifetime ?? GetServiceLifetimeFromClassHierarchy(type) ?? GetDefaultLifeTimeOrNull();
     }
 
     /// <summary>
@@ -137,9 +139,8 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <summary>
     /// 获取默认生命周期
     /// </summary>
-    /// <param name="type"></param>
     /// <returns></returns>
-    protected virtual ServiceLifetime? GetDefaultLifeTimeOrNull(Type type)
+    protected virtual ServiceLifetime? GetDefaultLifeTimeOrNull()
     {
         return null;
     }
@@ -176,16 +177,20 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     protected virtual ServiceDescriptor CreateServiceDescriptor(Type implementationType, object? serviceKey,
         Type exposingServiceType, List<ServiceIdentifier> allExposingServiceTypes, ServiceLifetime lifeTime)
     {
-        if (lifeTime.IsIn(ServiceLifetime.Singleton, ServiceLifetime.Scoped))
+        if (!lifeTime.IsIn(ServiceLifetime.Singleton, ServiceLifetime.Scoped))
         {
-            var redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
+            return serviceKey == null
+                ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
+                : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
+        }
 
-            if (redirectedType != null)
-            {
-                return serviceKey == null
-                    ? ServiceDescriptor.Describe(exposingServiceType, provider => provider.GetService(redirectedType)!, lifeTime)
-                    : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime);
-            }
+        var redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
+
+        if (redirectedType != null)
+        {
+            return serviceKey == null
+                ? ServiceDescriptor.Describe(exposingServiceType, provider => provider.GetService(redirectedType)!, lifeTime)
+                : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime);
         }
 
         return serviceKey == null

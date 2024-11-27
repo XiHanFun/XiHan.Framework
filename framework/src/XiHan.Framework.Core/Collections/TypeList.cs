@@ -20,9 +20,7 @@ namespace XiHan.Framework.Core.Collections;
 /// <summary>
 /// 一个用于 <see cref="TypeList{TBaseType}"/> 的快捷方式，以使用对象作为基本类型
 /// </summary>
-public class TypeList : TypeList<object>, ITypeList
-{
-}
+public class TypeList : TypeList<object>, ITypeList;
 
 /// <summary>
 /// 扩展 <see cref="List{Type}"/> 以添加对特定基本类型的限制

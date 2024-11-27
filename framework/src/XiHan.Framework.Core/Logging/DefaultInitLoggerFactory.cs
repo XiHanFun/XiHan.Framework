@@ -13,14 +13,13 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Collections.Generic;
-using XiHan.Framework.Utils.Extensions.System.Collections.Generic;
 
 namespace XiHan.Framework.Core.Logging;
 
 /// <summary>
 /// 默认初始化日志工厂
 /// </summary>
-public class DefaultInitLoggerFactory : IInitLoggerFactory
+public sealed class DefaultInitLoggerFactory : IInitLoggerFactory
 {
     private readonly Dictionary<Type, object> _cache = [];
 
@@ -29,9 +28,8 @@ public class DefaultInitLoggerFactory : IInitLoggerFactory
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public virtual IInitLogger<T> Create<T>()
+    public IInitLogger<T> Create<T>()
     {
         return (IInitLogger<T>)_cache.GetOrAdd(typeof(T), () => new DefaultInitLogger<T>());
-        ;
     }
 }

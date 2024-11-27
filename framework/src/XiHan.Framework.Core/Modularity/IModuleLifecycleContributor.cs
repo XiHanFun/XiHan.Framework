@@ -29,14 +29,14 @@ public interface IModuleLifecycleContributor : ITransientDependency
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    Task InitializeAsync([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module);
+    Task InitializeAsync(ApplicationInitializationContext context, IXiHanModule module);
 
     /// <summary>
     /// 初始化
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    void Initialize([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module);
+    void Initialize(ApplicationInitializationContext context, IXiHanModule module);
 
     /// <summary>
     /// 关闭，异步
@@ -44,12 +44,12 @@ public interface IModuleLifecycleContributor : ITransientDependency
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    Task ShutdownAsync([NotNull] ApplicationShutdownContext context, [NotNull] IXiHanModule module);
+    Task ShutdownAsync(ApplicationShutdownContext context, IXiHanModule module);
 
     /// <summary>
     /// 关闭
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    void Shutdown([NotNull] ApplicationShutdownContext context, [NotNull] IXiHanModule module);
+    void Shutdown(ApplicationShutdownContext context, IXiHanModule module);
 }

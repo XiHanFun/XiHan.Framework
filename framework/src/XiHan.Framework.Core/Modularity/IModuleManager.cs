@@ -27,24 +27,24 @@ public interface IModuleManager
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    Task InitializeModulesAsync([NotNull] ApplicationInitializationContext context);
+    Task InitializeModulesAsync(ApplicationInitializationContext context);
 
     /// <summary>
     /// 初始化模块
     /// </summary>
     /// <param name="context"></param>
-    void InitializeModules([NotNull] ApplicationInitializationContext context);
+    void InitializeModules(ApplicationInitializationContext context);
 
     /// <summary>
     /// 关闭模块，异步
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    Task ShutdownModulesAsync([NotNull] ApplicationShutdownContext context);
+    Task ShutdownModulesAsync(ApplicationShutdownContext context);
 
     /// <summary>
     /// 关闭模块
     /// </summary>
     /// <param name="context"></param>
-    void ShutdownModules([NotNull] ApplicationShutdownContext context);
+    void ShutdownModules(ApplicationShutdownContext context);
 }

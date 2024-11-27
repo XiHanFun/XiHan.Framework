@@ -32,7 +32,7 @@ public static class ServiceCollectionApplicationExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static IXiHanApplicationWithExternalServiceProvider AddApplication<TStartupModule>(
-        [NotNull] this IServiceCollection services,
+        this IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
@@ -47,8 +47,8 @@ public static class ServiceCollectionApplicationExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static IXiHanApplicationWithExternalServiceProvider AddApplication(
-        [NotNull] this IServiceCollection services,
-        [NotNull] Type startupModuleType,
+        this IServiceCollection services,
+        Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
         return XiHanApplicationFactory.Create(startupModuleType, services, optionsAction);
@@ -62,7 +62,7 @@ public static class ServiceCollectionApplicationExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> AddApplicationAsync<TStartupModule>(
-        [NotNull] this IServiceCollection services,
+        this IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
@@ -77,8 +77,8 @@ public static class ServiceCollectionApplicationExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> AddApplicationAsync(
-        [NotNull] this IServiceCollection services,
-        [NotNull] Type startupModuleType,
+        this IServiceCollection services,
+        Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
         return await XiHanApplicationFactory.CreateAsync(startupModuleType, services, optionsAction);

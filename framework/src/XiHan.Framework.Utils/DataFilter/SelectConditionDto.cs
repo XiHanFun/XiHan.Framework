@@ -46,6 +46,4 @@ public class SelectConditionDto
 /// 通用选择条件泛型基类
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class SelectConditionDto<T> : SelectConditionDto
-{
-}
+public class SelectConditionDto<T> : SelectConditionDto;

@@ -33,7 +33,7 @@ public static class ServiceCollectionConfigurationExtensions
     /// <returns></returns>
     public static IServiceCollection ReplaceConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        return services.Replace(ServiceDescriptor.Singleton<IConfiguration>(configuration));
+        return services.Replace(ServiceDescriptor.Singleton(configuration));
     }
 
     /// <summary>

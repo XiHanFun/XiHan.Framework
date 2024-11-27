@@ -53,7 +53,7 @@ public static class FileHelper
     /// <returns>包含文件所有字节的字节数组</returns>
     public static async Task<byte[]> ReadAllBytesAsync(string filePath)
     {
-        using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var result = new byte[stream.Length];
         _ = await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
         return result;
@@ -79,13 +79,11 @@ public static class FileHelper
         FileOptions fileOptions = FileOptions.Asynchronous | FileOptions.SequentialScan)
     {
         encoding ??= Encoding.UTF8;
-        List<string>? lines = [];
-        using (FileStream? stream = new(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions))
+        List<string> lines = [];
+        await using (FileStream stream = new(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions))
         {
-            using StreamReader? reader = new(stream, encoding);
-            StringBuilder sb = new();
-            string? line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            using StreamReader reader = new(stream, encoding);
+            while (await reader.ReadLineAsync() is { } line)
             {
                 lines.Add(line);
             }
@@ -180,6 +178,7 @@ public static class FileHelper
         {
             return;
         }
+
         // 删除文件
         File.Delete(filePath);
         // 重新创建该文件

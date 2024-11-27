@@ -31,7 +31,7 @@ public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
     /// <summary>
     /// 日志
     /// </summary>
-    public ILogger<ExceptionNotifier> Logger { get; set; }
+    public ILogger<ExceptionNotifier> Logger { get; }
 
     /// <summary>
     /// 服务作用域工厂
@@ -53,7 +53,7 @@ public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual async Task NotifyAsync([NotNull] ExceptionNotificationContext context)
+    public virtual async Task NotifyAsync(ExceptionNotificationContext context)
     {
         _ = CheckHelper.NotNull(context, nameof(context));
 

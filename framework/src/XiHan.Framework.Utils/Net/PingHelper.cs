@@ -45,10 +45,10 @@ public static class PingHelper
         var buffer = Encoding.ASCII.GetBytes(new string('a', bufferSize));
         var options = new PingOptions(ttl, true);
 
-        StringBuilder result = new StringBuilder();
+        var result = new StringBuilder();
         result.AppendLine($"开始 Ping {host}，共 {pingCount} 次：");
 
-        for (int i = 1; i <= pingCount; i++)
+        for (var i = 1; i <= pingCount; i++)
         {
             try
             {

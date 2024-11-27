@@ -36,17 +36,17 @@ public class XiHanConfigurationBuilderOptions
     /// <summary>
     /// 配置文件的名称，默认值为"appsettings"
     /// </summary>
-    public string FileName { get; set; } = "appsettings";
+    public string FileName { get; } = "appsettings";
 
     /// <summary>
     /// 配置文件是否可配置，默认值为 true
     /// </summary>
-    public bool Optional { get; set; } = true;
+    public bool Optional { get; } = true;
 
     /// <summary>
     /// 当文件发生更改时，是否应重新加载配置，默认值为 true
     /// </summary>
-    public bool ReloadOnChange { get; set; } = true;
+    public bool ReloadOnChange { get; } = true;
 
     /// <summary>
     /// 环境名称，通常使用"Development"、"Staging"或"Production"

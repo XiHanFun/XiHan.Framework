@@ -57,6 +57,8 @@ public static class LoggerExtensions
                 break;
 
             // LogLevel.Debug || LogLevel.None
+            case LogLevel.Debug:
+            case LogLevel.None:
             default:
                 logger.LogDebug("{message}", message);
                 break;
@@ -95,6 +97,8 @@ public static class LoggerExtensions
                 break;
 
             // LogLevel.Debug || LogLevel.None
+            case LogLevel.Debug:
+            case LogLevel.None:
             default:
                 logger.LogDebug("{exception}{message}", exception, message);
                 break;
@@ -149,7 +153,7 @@ public static class LoggerExtensions
             return;
         }
 
-        StringBuilder? exceptionData = new();
+        StringBuilder exceptionData = new();
         _ = exceptionData.AppendLine("---------- 异常数据 ----------");
         foreach (var key in exception.Data.Keys)
         {
@@ -166,13 +170,13 @@ public static class LoggerExtensions
     /// <param name="exception"></param>
     private static void LogSelfLogging(ILogger logger, Exception exception)
     {
-        List<IExceptionWithSelfLogging>? loggingExceptions = [];
+        List<IExceptionWithSelfLogging> loggingExceptions = [];
 
         if (exception is IExceptionWithSelfLogging logging)
         {
             loggingExceptions.Add(logging);
         }
-        else if (exception is AggregateException aggException && aggException.InnerException != null)
+        else if (exception is AggregateException { InnerException: not null } aggException)
         {
             if (aggException.InnerException is IExceptionWithSelfLogging selfLogging)
             {

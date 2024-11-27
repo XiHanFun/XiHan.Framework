@@ -44,7 +44,7 @@ public class OnServiceRegistredContext : IOnServiceRegistredContext
     /// </summary>
     /// <param name="serviceType"></param>
     /// <param name="implementationType"></param>
-    public OnServiceRegistredContext([NotNull] Type serviceType, [NotNull] Type implementationType)
+    public OnServiceRegistredContext(Type serviceType, Type implementationType)
     {
         ServiceType = CheckHelper.NotNull(serviceType, nameof(serviceType));
         ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));

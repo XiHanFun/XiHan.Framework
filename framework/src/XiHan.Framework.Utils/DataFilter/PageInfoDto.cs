@@ -38,8 +38,8 @@ public class PageInfoDto
 
     #endregion
 
-    private int _currentIndex = 1;
-    private int _pageSize = 20;
+    private readonly int _currentIndex = 1;
+    private readonly int _pageSize = 20;
 
     /// <summary>
     /// 构造函数
@@ -65,7 +65,7 @@ public class PageInfoDto
     public int CurrentIndex
     {
         get => _currentIndex;
-        set
+        init
         {
             if (value < DefaultIndex)
             {
@@ -82,16 +82,14 @@ public class PageInfoDto
     public int PageSize
     {
         get => _pageSize;
-        set
+        init
         {
-            if (value > DefaultMaxPageSize)
+            value = value switch
             {
-                value = DefaultMaxPageSize;
-            }
-            else if (value < DefaultMinPageSize)
-            {
-                value = DefaultMinPageSize;
-            }
+                > DefaultMaxPageSize => DefaultMaxPageSize,
+                < DefaultMinPageSize => DefaultMinPageSize,
+                _ => value
+            };
 
             _pageSize = value;
         }

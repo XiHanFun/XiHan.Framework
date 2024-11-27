@@ -26,7 +26,7 @@ public static class CollectionExtensions
     /// </summary>
     public static bool IsNullOrEmpty<T>(this ICollection<T>? source)
     {
-        return source == null || source.Count <= 0;
+        return source is not { Count: > 0 };
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public static class CollectionExtensions
     {
         _ = CheckHelper.NotNull(source, nameof(source));
 
-        List<T>? addedItems = [];
+        List<T> addedItems = [];
 
         foreach (var item in items)
         {

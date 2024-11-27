@@ -26,10 +26,10 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class DesHelper
 {
     // 默认密匙
-    private static readonly string _defaultKey = "12345678";
+    private const string DefaultKey = "12345678";
 
     // 默认向量
-    private static readonly string _defaultIV = "87654321";
+    private const string DefaultIv = "87654321";
 
     /// <summary>
     /// 加密方法，只需提供明文文本
@@ -39,8 +39,8 @@ public static class DesHelper
     public static string Encrypt(string plainText)
     {
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
-        var keyBytes = Encoding.UTF8.GetBytes(_defaultKey);
-        var ivBytes = Encoding.UTF8.GetBytes(_defaultIV);
+        var keyBytes = Encoding.UTF8.GetBytes(DefaultKey);
+        var ivBytes = Encoding.UTF8.GetBytes(DefaultIv);
 
         return EncryptBytes(plainBytes, keyBytes, ivBytes);
     }
@@ -76,8 +76,8 @@ public static class DesHelper
     public static string Decrypt(string encryptedText)
     {
         var encryptedBytes = Convert.FromBase64String(encryptedText);
-        var keyBytes = Encoding.UTF8.GetBytes(_defaultKey);
-        var ivBytes = Encoding.UTF8.GetBytes(_defaultIV);
+        var keyBytes = Encoding.UTF8.GetBytes(DefaultKey);
+        var ivBytes = Encoding.UTF8.GetBytes(DefaultIv);
 
         return DecryptBytes(encryptedBytes, keyBytes, ivBytes);
     }

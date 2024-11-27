@@ -89,7 +89,7 @@ public static class ServiceCollectionCommonExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceProvider BuildServiceProviderFromFactory([NotNull] this IServiceCollection services)
+    public static IServiceProvider BuildServiceProviderFromFactory(this IServiceCollection services)
     {
         _ = CheckHelper.NotNull(services, nameof(services));
 
@@ -106,7 +106,7 @@ public static class ServiceCollectionCommonExtensions
 
             var containerBuilderType = factoryInterface.GenericTypeArguments[0];
             return (IServiceProvider)typeof(ServiceCollectionCommonExtensions).GetTypeInfo().GetMethods()
-                .Single(m => m.Name == nameof(BuildServiceProviderFromFactory) && m.IsGenericMethod)
+                .Single(m => m is { Name: nameof(BuildServiceProviderFromFactory), IsGenericMethod: true })
                 .MakeGenericMethod(containerBuilderType)
                 .Invoke(null, [services, null])!;
         }
@@ -122,7 +122,7 @@ public static class ServiceCollectionCommonExtensions
     /// <param name="builderAction"></param>
     /// <returns></returns>
     /// <exception cref="XiHanException"></exception>
-    public static IServiceProvider BuildServiceProviderFromFactory<TContainerBuilder>([NotNull] this IServiceCollection services, Action<TContainerBuilder>? builderAction = null) where TContainerBuilder : notnull
+    public static IServiceProvider BuildServiceProviderFromFactory<TContainerBuilder>(this IServiceCollection services, Action<TContainerBuilder>? builderAction = null) where TContainerBuilder : notnull
     {
         _ = CheckHelper.NotNull(services, nameof(services));
 

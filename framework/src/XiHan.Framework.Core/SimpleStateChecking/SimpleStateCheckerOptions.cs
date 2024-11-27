@@ -34,4 +34,13 @@ public class SimpleStateCheckerOptions<TState>
     {
         GlobalStateCheckers = new TypeList<ISimpleStateChecker<TState>>();
     }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="globalStateCheckers"></param>
+    public SimpleStateCheckerOptions(ITypeList<ISimpleStateChecker<TState>> globalStateCheckers)
+    {
+        GlobalStateCheckers = globalStateCheckers;
+    }
 }

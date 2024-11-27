@@ -31,6 +31,5 @@ public interface IApplicationInfoAccessor
     /// 此应用程序实例的唯一标识符
     /// 当应用程序重新启动时，这个值会改变
     /// </summary>
-    [NotNull]
     string InstanceId { get; }
 }

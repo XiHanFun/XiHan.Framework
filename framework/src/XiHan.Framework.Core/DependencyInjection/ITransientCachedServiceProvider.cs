@@ -20,6 +20,4 @@ namespace XiHan.Framework.Core.DependencyInjection;
 /// 此服务的生命周期是瞬态的
 /// 有关具有作用域生命周期的服务，请参见 <see cref="ICachedServiceProvider"/>
 /// </summary>
-public interface ITransientCachedServiceProvider : ICachedServiceProviderBase
-{
-}
+public interface ITransientCachedServiceProvider : ICachedServiceProviderBase;

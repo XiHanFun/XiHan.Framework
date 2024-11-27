@@ -17,6 +17,8 @@ using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Text;
 
+namespace XiHan.Framework.Utils.Security.Cryptography;
+
 /// <summary>
 /// Blowfish 加密算法辅助类，用于数据的加密和解密
 /// </summary>

@@ -202,11 +202,13 @@ public static class ListExtensions
     {
         for (var i = 0; i < source.Count; i++)
         {
-            if (selector(source[i]))
+            if (!selector(source[i]))
             {
-                source[i] = item;
-                return;
+                continue;
             }
+
+            source[i] = item;
+            return;
         }
     }
 
@@ -222,11 +224,13 @@ public static class ListExtensions
         for (var i = 0; i < source.Count; i++)
         {
             var item = source[i];
-            if (selector(item))
+            if (!selector(item))
             {
-                source[i] = itemFactory(item);
-                return;
+                continue;
             }
+
+            source[i] = itemFactory(item);
+            return;
         }
     }
 
@@ -241,11 +245,13 @@ public static class ListExtensions
     {
         for (var i = 0; i < source.Count; i++)
         {
-            if (Comparer<T>.Default.Compare(source[i], item) == 0)
+            if (Comparer<T>.Default.Compare(source[i], item) != 0)
             {
-                source[i] = replaceWith;
-                return;
+                continue;
             }
+
+            source[i] = replaceWith;
+            return;
         }
     }
 
@@ -291,11 +297,13 @@ public static class ListExtensions
 
         var item = source.FirstOrDefault(selector);
 
-        if (item == null)
+        if (item != null)
         {
-            item = factory();
-            source.Add(item);
+            return item;
         }
+
+        item = factory();
+        source.Add(item);
 
         return item;
     }
@@ -312,8 +320,8 @@ public static class ListExtensions
         where T : notnull
     {
         // 初始化排序列表、访问标记字典
-        List<T>? sorted = [];
-        Dictionary<T, bool>? visited = new(comparer);
+        List<T> sorted = [];
+        Dictionary<T, bool> visited = new(comparer);
 
         // 遍历源列表中的每个项并进行拓扑排序
         foreach (var item in source)
@@ -351,13 +359,10 @@ public static class ListExtensions
             visited[item] = true;
 
             var dependencies = getDependencies(item);
-            if (dependencies != null)
+            // 递归地对每个依赖进行拓扑排序
+            foreach (var dependency in dependencies)
             {
-                // 递归地对每个依赖进行拓扑排序
-                foreach (var dependency in dependencies)
-                {
-                    SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
-                }
+                SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
             }
 
             // 标记为已处理

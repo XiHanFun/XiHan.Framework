@@ -36,20 +36,13 @@ public static class ScriptExecutor
         }
 
         var fileExtension = Path.GetExtension(scriptFilePath).ToLower();
-        switch (fileExtension)
+        return fileExtension switch
         {
-            case ".sh":
-                return ExecuteShellScript(scriptFilePath, arguments);
-
-            case ".ps1":
-                return ExecutePowerShellScript(scriptFilePath, arguments);
-
-            case ".bat":
-                return ExecuteBatchScript(scriptFilePath, arguments);
-
-            default:
-                throw new NotSupportedException("不支持的脚本类型");
-        }
+            ".sh" => ExecuteShellScript(scriptFilePath, arguments),
+            ".ps1" => ExecutePowerShellScript(scriptFilePath, arguments),
+            ".bat" => ExecuteBatchScript(scriptFilePath, arguments),
+            _ => throw new NotSupportedException("不支持的脚本类型")
+        };
     }
 
     /// <summary>
@@ -62,7 +55,7 @@ public static class ScriptExecutor
     {
         var processStartInfo = new ProcessStartInfo
         {
-            FileName = "/bin/bash",  // Linux/macOS 使用 bash 执行脚本
+            FileName = "/bin/bash", // Linux/macOS 使用 bash 执行脚本
             Arguments = $"{scriptFilePath} {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -83,7 +76,7 @@ public static class ScriptExecutor
     {
         var processStartInfo = new ProcessStartInfo
         {
-            FileName = "powershell",  // Windows 使用 PowerShell 执行脚本
+            FileName = "powershell", // Windows 使用 PowerShell 执行脚本
             Arguments = $"-ExecutionPolicy Bypass -File \"{scriptFilePath}\" {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -104,7 +97,7 @@ public static class ScriptExecutor
     {
         var processStartInfo = new ProcessStartInfo
         {
-            FileName = scriptFilePath,  // Windows 使用 cmd 执行批处理脚本
+            FileName = scriptFilePath, // Windows 使用 cmd 执行批处理脚本
             Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -127,30 +120,36 @@ public static class ScriptExecutor
 
         try
         {
-            using (var process = Process.Start(processStartInfo))
+            using var process = Process.Start(processStartInfo);
+            if (process == null)
             {
-                if (process == null)
-                    throw new InvalidOperationException("无法启动进程");
+                throw new InvalidOperationException("无法启动进程");
+            }
 
-                process.OutputDataReceived += (sender, e) =>
+            process.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data != null)
                 {
-                    if (e.Data != null) output.AppendLine(e.Data);
-                };
-
-                process.ErrorDataReceived += (sender, e) =>
-                {
-                    if (e.Data != null) error.AppendLine(e.Data);
-                };
-
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception($"脚本执行失败，错误信息：{error.ToString()}");
+                    output.AppendLine(e.Data);
                 }
+            };
+
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data != null)
+                {
+                    error.AppendLine(e.Data);
+                }
+            };
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"脚本执行失败，错误信息：{error}");
             }
         }
         catch (Exception ex)

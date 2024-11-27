@@ -116,7 +116,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
             return;
         }
 
-        List<string>? failures = [];
+        List<string> failures = [];
         foreach (var validate in _validations)
         {
             var result = validate.Validate(name, options);
@@ -133,7 +133,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     }
 
     /// <summary>
-    ///
+    /// 
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>

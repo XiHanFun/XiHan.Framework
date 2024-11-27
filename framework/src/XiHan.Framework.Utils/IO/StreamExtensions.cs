@@ -82,7 +82,7 @@ public static class StreamExtensions
             stream.Position = 0;
         }
 
-        MemoryStream? memoryStream = new();
+        MemoryStream memoryStream = new();
         stream.CopyTo(memoryStream);
 
         if (stream.CanSeek)
@@ -107,7 +107,7 @@ public static class StreamExtensions
             stream.Position = 0;
         }
 
-        MemoryStream? memoryStream = new();
+        MemoryStream memoryStream = new();
         await stream.CopyToAsync(memoryStream, cancellationToken);
 
         if (stream.CanSeek)

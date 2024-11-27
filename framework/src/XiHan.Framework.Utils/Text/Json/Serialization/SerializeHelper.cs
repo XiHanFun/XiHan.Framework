@@ -14,7 +14,6 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using XiHan.Framework.Utils.Extensions.System.Text;
 
 namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
@@ -52,6 +51,6 @@ public static class SerializeHelper
     public static object? DeserializeTo(string jsonString)
     {
         return JsonSerializer.Deserialize(jsonString.ToStream(),
-            JsonTypeInfo.CreateJsonTypeInfo(typeof(object), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions));
+            JsonTypeInfo.CreateJsonTypeInfo<object>(JsonSerializerOptionsHelper.DefaultJsonSerializerOptions));
     }
 }

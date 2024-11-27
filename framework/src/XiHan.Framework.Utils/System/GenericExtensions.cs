@@ -31,7 +31,7 @@ public static class GenericExtensions
     /// <returns></returns>
     public static string GetGenericTypeName(this Type type)
     {
-        var typeName = string.Empty;
+        string typeName;
 
         if (type.IsGenericType)
         {
@@ -148,11 +148,9 @@ public static class GenericExtensions
     {
         var type = typeof(TEntity);
         var properties = type.GetProperties();
-        return properties.Select(info => new CustomPropertyInfo()
+        return properties.Select(info => new CustomPropertyInfo
         {
-            PropertyName = info.Name,
-            PropertyType = info.PropertyType.Name,
-            PropertyValue = info.GetValue(entity).ParseToString()
+            PropertyName = info.Name, PropertyType = info.PropertyType.Name, PropertyValue = info.GetValue(entity).ParseToString()
         }).ToList();
     }
 
@@ -167,7 +165,7 @@ public static class GenericExtensions
         TEntity entity2) where TEntity : class
     {
         var propertyInfo = typeof(TEntity).GetProperties();
-        List<CustomPropertyVariance>? result = [];
+        List<CustomPropertyVariance> result = [];
 
         foreach (var variance in propertyInfo)
         {
@@ -182,9 +180,7 @@ public static class GenericExtensions
                 {
                     result.Add(new CustomPropertyVariance
                     {
-                        PropertyName = variance.Name,
-                        Value1 = value1?.ToString() ?? string.Empty,
-                        Value2 = value2?.ToString() ?? string.Empty
+                        PropertyName = variance.Name, Value1 = value1.ToString() ?? string.Empty, Value2 = value2.ToString() ?? string.Empty
                     });
                 }
             }
@@ -193,9 +189,7 @@ public static class GenericExtensions
             {
                 result.Add(new CustomPropertyVariance
                 {
-                    PropertyName = variance.Name,
-                    Value1 = value1?.ToString() ?? string.Empty,
-                    Value2 = value2?.ToString() ?? string.Empty
+                    PropertyName = variance.Name, Value1 = value1?.ToString() ?? string.Empty, Value2 = value2?.ToString() ?? string.Empty
                 });
             }
         }
@@ -217,9 +211,7 @@ public static class GenericExtensions
         var list = oldVal.GetPropertiesDetailedCompare(newVal);
         var newList = list.Select(s => new
         {
-            s.PropertyName,
-            s.Value1,
-            s.Value2
+            s.PropertyName, s.Value1, s.Value2
         });
 
         // 要排除某些特殊属性
