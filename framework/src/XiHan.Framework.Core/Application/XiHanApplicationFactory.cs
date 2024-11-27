@@ -51,10 +51,10 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithInternalServiceProvider> CreateAsync(
-        [NotNull] Type startupModuleType,
+        Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        XiHanApplicationWithInternalServiceProvider? app = new(startupModuleType, options =>
+        XiHanApplicationWithInternalServiceProvider app = new(startupModuleType, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -83,7 +83,7 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static IXiHanApplicationWithInternalServiceProvider Create(
-        [NotNull] Type startupModuleType,
+        Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
         return new XiHanApplicationWithInternalServiceProvider(startupModuleType, optionsAction);
@@ -101,7 +101,7 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> CreateAsync<TStartupModule>(
-        [NotNull] IServiceCollection services,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
@@ -122,11 +122,11 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> CreateAsync(
-        [NotNull] Type startupModuleType,
-        [NotNull] IServiceCollection services,
+        Type startupModuleType,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        XiHanApplicationWithExternalServiceProvider? app = new(startupModuleType, services, options =>
+        XiHanApplicationWithExternalServiceProvider app = new(startupModuleType, services, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -143,7 +143,7 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static IXiHanApplicationWithExternalServiceProvider Create<TStartupModule>(
-        [NotNull] IServiceCollection services,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
@@ -158,8 +158,8 @@ public static class XiHanApplicationFactory
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static IXiHanApplicationWithExternalServiceProvider Create(
-        [NotNull] Type startupModuleType,
-        [NotNull] IServiceCollection services,
+        Type startupModuleType,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
         return new XiHanApplicationWithExternalServiceProvider(startupModuleType, services, optionsAction);

@@ -29,7 +29,7 @@ public class XiHanApplicationCreationOptions
     /// 构造函数
     /// </summary>
     /// <param name="services"></param>
-    public XiHanApplicationCreationOptions([NotNull] IServiceCollection services)
+    public XiHanApplicationCreationOptions(IServiceCollection services)
     {
         Services = CheckHelper.NotNull(services, nameof(services));
         PlugInSources = [];
@@ -39,19 +39,16 @@ public class XiHanApplicationCreationOptions
     /// <summary>
     /// 服务容器
     /// </summary>
-    [NotNull]
     public IServiceCollection Services { get; }
 
     /// <summary>
     /// 插件源列表
     /// </summary>
-    [NotNull]
     public PlugInSourceList PlugInSources { get; }
 
     /// <summary>
     /// 此属性中的选项仅在未注册 IConfiguration 时生效
     /// </summary>
-    [NotNull]
     public XiHanConfigurationBuilderOptions Configuration { get; }
 
     /// <summary>

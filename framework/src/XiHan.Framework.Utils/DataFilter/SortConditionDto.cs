@@ -33,18 +33,11 @@ public class SortConditionDto
     public SortDirectionEnum SortDirection { get; set; }
 
     /// <summary>
-    /// 构造一个指定字段名称的升序排序的排序条件
-    /// </summary>
-    /// <param name="sortField">字段名称</param>
-    public SortConditionDto(string sortField) : this(sortField, SortDirectionEnum.Asc)
-    { }
-
-    /// <summary>
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
     /// <param name="sortField">字段名称</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(string sortField, SortDirectionEnum sortDirection)
+    public SortConditionDto(string sortField, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         SortField = sortField;
         SortDirection = sortDirection;
@@ -58,16 +51,11 @@ public class SortConditionDto
 public class SortConditionDto<T> : SortConditionDto
 {
     /// <summary>
-    /// 使用排序字段 初始化一个<see cref="SortConditionDto"/>类型的新实例
-    /// </summary>
-    public SortConditionDto(Expression<Func<T, object>> keySelector) : this(keySelector, SortDirectionEnum.Asc)
-    { }
-
-    /// <summary>
     /// 使用排序字段与排序方式 初始化一个<see cref="SortConditionDto"/>类型的新实例
     /// </summary>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection) : base(GetPropertyName(keySelector), sortDirection)
-    { }
+    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection = SortDirectionEnum.Asc) : base(GetPropertyName(keySelector), sortDirection)
+    {
+    }
 
     /// <summary>
     /// 从泛型委托获取属性名

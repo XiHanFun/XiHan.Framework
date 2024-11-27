@@ -24,7 +24,8 @@ public class DateTimeRange
     /// 初始化一个<see cref="DateTimeRange"/>类型的新实例
     /// </summary>
     public DateTimeRange() : this(DateTime.MinValue, DateTime.MaxValue)
-    { }
+    {
+    }
 
     /// <summary>
     /// 初始化一个<see cref="DateTimeRange"/>类型的新实例
@@ -52,7 +53,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(now.Date.AddDays(-1), now.Date.AddMilliseconds(-1));
         }
     }
@@ -64,7 +65,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(now.Date.Date, now.Date.AddDays(1).AddMilliseconds(-1));
         }
     }
@@ -76,7 +77,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(now.Date.AddDays(1), now.Date.AddDays(2).AddMilliseconds(-1));
         }
     }
@@ -88,18 +89,18 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             DayOfWeek[] weeks =
-            {
-                    DayOfWeek.Sunday,
-                    DayOfWeek.Monday,
-                    DayOfWeek.Tuesday,
-                    DayOfWeek.Wednesday,
-                    DayOfWeek.Thursday,
-                    DayOfWeek.Friday,
-                    DayOfWeek.Saturday
-                };
-            int index = Array.IndexOf(weeks, now.DayOfWeek);
+            [
+                DayOfWeek.Sunday,
+                DayOfWeek.Monday,
+                DayOfWeek.Tuesday,
+                DayOfWeek.Wednesday,
+                DayOfWeek.Thursday,
+                DayOfWeek.Friday,
+                DayOfWeek.Saturday
+            ];
+            var index = Array.IndexOf(weeks, now.DayOfWeek);
             return new DateTimeRange(now.Date.AddDays(-index - 7), now.Date.AddDays(-index).AddMilliseconds(-1));
         }
     }
@@ -111,18 +112,18 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             DayOfWeek[] weeks =
-            {
-                    DayOfWeek.Sunday,
-                    DayOfWeek.Monday,
-                    DayOfWeek.Tuesday,
-                    DayOfWeek.Wednesday,
-                    DayOfWeek.Thursday,
-                    DayOfWeek.Friday,
-                    DayOfWeek.Saturday
-                };
-            int index = Array.IndexOf(weeks, now.DayOfWeek);
+            [
+                DayOfWeek.Sunday,
+                DayOfWeek.Monday,
+                DayOfWeek.Tuesday,
+                DayOfWeek.Wednesday,
+                DayOfWeek.Thursday,
+                DayOfWeek.Friday,
+                DayOfWeek.Saturday
+            ];
+            var index = Array.IndexOf(weeks, now.DayOfWeek);
             return new DateTimeRange(now.Date.AddDays(-index), now.Date.AddDays(7 - index).AddMilliseconds(-1));
         }
     }
@@ -134,18 +135,18 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             DayOfWeek[] weeks =
-            {
-                    DayOfWeek.Sunday,
-                    DayOfWeek.Monday,
-                    DayOfWeek.Tuesday,
-                    DayOfWeek.Wednesday,
-                    DayOfWeek.Thursday,
-                    DayOfWeek.Friday,
-                    DayOfWeek.Saturday
-                };
-            int index = Array.IndexOf(weeks, now.DayOfWeek);
+            [
+                DayOfWeek.Sunday,
+                DayOfWeek.Monday,
+                DayOfWeek.Tuesday,
+                DayOfWeek.Wednesday,
+                DayOfWeek.Thursday,
+                DayOfWeek.Friday,
+                DayOfWeek.Saturday
+            ];
+            var index = Array.IndexOf(weeks, now.DayOfWeek);
             return new DateTimeRange(now.Date.AddDays(-index + 7), now.Date.AddDays(14 - index).AddMilliseconds(-1));
         }
     }
@@ -157,9 +158,9 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
-            DateTime startTime = now.Date.AddDays(-now.Day + 1).AddMonths(-1);
-            DateTime endTime = startTime.AddMonths(1).AddMilliseconds(-1);
+            var now = DateTime.Now;
+            var startTime = now.Date.AddDays(-now.Day + 1).AddMonths(-1);
+            var endTime = startTime.AddMonths(1).AddMilliseconds(-1);
             return new DateTimeRange(startTime, endTime);
         }
     }
@@ -171,9 +172,9 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
-            DateTime startTime = now.Date.AddDays(-now.Day + 1);
-            DateTime endTime = startTime.AddMonths(1).AddMilliseconds(-1);
+            var now = DateTime.Now;
+            var startTime = now.Date.AddDays(-now.Day + 1);
+            var endTime = startTime.AddMonths(1).AddMilliseconds(-1);
             return new DateTimeRange(startTime, endTime);
         }
     }
@@ -185,9 +186,9 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
-            DateTime startTime = now.Date.AddDays(-now.Day + 1).AddMonths(1);
-            DateTime endTime = startTime.AddMonths(1).AddMilliseconds(-1);
+            var now = DateTime.Now;
+            var startTime = now.Date.AddDays(-now.Day + 1).AddMonths(1);
+            var endTime = startTime.AddMonths(1).AddMilliseconds(-1);
             return new DateTimeRange(startTime, endTime);
         }
     }
@@ -199,7 +200,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(new DateTime(now.Year - 1, 1, 1), new DateTime(now.Year, 1, 1).AddMilliseconds(-1));
         }
     }
@@ -211,7 +212,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(new DateTime(now.Year, 1, 1), new DateTime(now.Year + 1, 1, 1).AddMilliseconds(-1));
         }
     }
@@ -223,7 +224,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(new DateTime(now.Year + 1, 1, 1), new DateTime(now.Year + 2, 1, 1).AddMilliseconds(-1));
         }
     }
@@ -235,7 +236,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(now.AddDays(-30), now);
         }
     }
@@ -259,7 +260,7 @@ public class DateTimeRange
     {
         get
         {
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
             return new DateTimeRange(now.AddDays(-7), now);
         }
     }
@@ -284,6 +285,6 @@ public class DateTimeRange
     /// </returns>
     public override string ToString()
     {
-        return string.Format("[{0} - {1}]", StartTime, EndTime);
+        return $"[{StartTime} - {EndTime}]";
     }
 }

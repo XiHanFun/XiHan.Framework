@@ -71,7 +71,7 @@ public static class EciesHelper
     {
         // 生成发送方的临时密钥对
         using var senderEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
-        var senderPrivateKey = senderEcdh.ExportECPrivateKey();
+        senderEcdh.ExportECPrivateKey();
         var senderPublicKey = senderEcdh.ExportSubjectPublicKeyInfo();
 
         // 使用接收方的公钥生成共享密钥
@@ -123,11 +123,11 @@ public static class EciesHelper
         Buffer.BlockCopy(encryptedMessage, 0, senderPublicKey, 0, keySize);
 
         // 提取 AES IV 和密文
-        var ivSize = 16; // AES 固定的 IV 长度
-        var iv = new byte[ivSize];
-        var cipherBytes = new byte[encryptedMessage.Length - keySize - ivSize];
-        Buffer.BlockCopy(encryptedMessage, keySize, iv, 0, ivSize);
-        Buffer.BlockCopy(encryptedMessage, keySize + ivSize, cipherBytes, 0, cipherBytes.Length);
+        const int IvSize = 16; // AES 固定的 IV 长度
+        var iv = new byte[IvSize];
+        var cipherBytes = new byte[encryptedMessage.Length - keySize - IvSize];
+        Buffer.BlockCopy(encryptedMessage, keySize, iv, 0, IvSize);
+        Buffer.BlockCopy(encryptedMessage, keySize + IvSize, cipherBytes, 0, cipherBytes.Length);
 
         // 使用接收方私钥和发送方公钥生成共享密钥
         using var receiverEcdh = ECDiffieHellman.Create();

@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.System;
 /// </summary>
 public static class ConsoleHelper
 {
-    private static readonly Lock _objLock = new();
+    private static readonly Lock ObjLock = new();
 
     /// <summary>
     /// 在控制台输出
@@ -28,7 +28,7 @@ public static class ConsoleHelper
     /// <param name="frontColor">前置颜色</param>
     private static void WriteColorLine(string? inputStr, ConsoleColor frontColor)
     {
-        lock (_objLock)
+        lock (ObjLock)
         {
             var currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = frontColor;

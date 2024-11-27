@@ -78,9 +78,9 @@ public static class AssemblyHelper
         var rootAssembly = Assembly.GetEntryAssembly();
         rootAssembly ??= Assembly.GetCallingAssembly();
 
-        HashSet<Assembly>? returnAssemblies = new(new AssemblyEquality());
-        HashSet<string>? loadedAssemblies = [];
-        Queue<Assembly>? assembliesToCheck = new();
+        HashSet<Assembly> returnAssemblies = new(new AssemblyEquality());
+        HashSet<string> loadedAssemblies = [];
+        Queue<Assembly> assembliesToCheck = new();
         assembliesToCheck.Enqueue(rootAssembly);
 
         if (skipSystemAssemblies && IsSystemAssembly(rootAssembly))
@@ -96,20 +96,22 @@ public static class AssemblyHelper
             var assemblyToCheck = assembliesToCheck.Dequeue();
             foreach (var reference in assemblyToCheck.GetReferencedAssemblies())
             {
-                if (!loadedAssemblies.Contains(reference.FullName))
+                if (loadedAssemblies.Contains(reference.FullName))
                 {
-                    var assembly = Assembly.Load(reference);
-                    if (skipSystemAssemblies && IsSystemAssembly(assembly))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    assembliesToCheck.Enqueue(assembly);
-                    _ = loadedAssemblies.Add(reference.FullName);
-                    if (IsValid(assembly))
-                    {
-                        _ = returnAssemblies.Add(assembly);
-                    }
+                var assembly = Assembly.Load(reference);
+                if (skipSystemAssemblies && IsSystemAssembly(assembly))
+                {
+                    continue;
+                }
+
+                assembliesToCheck.Enqueue(assembly);
+                _ = loadedAssemblies.Add(reference.FullName);
+                if (IsValid(assembly))
+                {
+                    _ = returnAssemblies.Add(assembly);
                 }
             }
         }
@@ -492,20 +494,21 @@ public static class AssemblyHelper
             foreach (var referencedAssembly in referencedAssemblies)
             {
                 // 检查引用的程序集是否来自 NuGet
-                if (referencedAssembly.FullName.Contains("Version="))
+                if (!referencedAssembly.FullName.Contains("Version="))
                 {
-                    NuGetPackage? nuGetPackage = new()
-                    {
-                        // 获取 NuGet 包的名称和版本号
-                        PackageName = referencedAssembly.Name!,
-                        PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
-                    };
+                    continue;
+                }
 
-                    // 避免重复添加相同的 NuGet 包标识
-                    if (!nugetPackages.Contains(nuGetPackage))
-                    {
-                        nugetPackages.Add(nuGetPackage);
-                    }
+                NuGetPackage nuGetPackage = new()
+                {
+                    // 获取 NuGet 包的名称和版本号
+                    PackageName = referencedAssembly.Name!, PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
+                };
+
+                // 避免重复添加相同的 NuGet 包标识
+                if (!nugetPackages.Contains(nuGetPackage))
+                {
+                    nugetPackages.Add(nuGetPackage);
                 }
             }
         }
@@ -529,11 +532,9 @@ public static class AssemblyHelper
         {
             return false;
         }
-        else
-        {
-            var companyName = asmCompanyAttr.Company;
-            return companyName.Contains("Microsoft");
-        }
+
+        var companyName = asmCompanyAttr.Company;
+        return companyName.Contains("Microsoft");
     }
 
     /// <summary>
@@ -600,20 +601,22 @@ public static class AssemblyHelper
             Debug.WriteLine(ex);
         }
 
-        if (assembly == null)
+        if (assembly != null)
         {
-            try
-            {
-                assembly = Assembly.LoadFile(assemblyPath);
-            }
-            catch (BadImageFormatException ex)
-            {
-                Debug.WriteLine(ex);
-            }
-            catch (FileLoadException ex)
-            {
-                Debug.WriteLine(ex);
-            }
+            return assembly;
+        }
+
+        try
+        {
+            assembly = Assembly.LoadFile(assemblyPath);
+        }
+        catch (BadImageFormatException ex)
+        {
+            Debug.WriteLine(ex);
+        }
+        catch (FileLoadException ex)
+        {
+            Debug.WriteLine(ex);
         }
 
         return assembly;
@@ -629,10 +632,10 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return (x == null && y == null) || (x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
+        return x == null && y == null || x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
     }
 
-    public override int GetHashCode([DisallowNull] Assembly obj)
+    public override int GetHashCode(Assembly obj)
     {
         return obj.GetName().FullName.GetHashCode();
     }

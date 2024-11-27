@@ -28,7 +28,7 @@ public class DisposeAction : IDisposable
     /// 创建新的<see cref="DisposeAction"/>对象
     /// </summary>
     /// <param name="action">此对象被处理时所执行的动作</param>
-    public DisposeAction([NotNull] Action action)
+    public DisposeAction(Action action)
     {
         _ = CheckHelper.NotNull(action, nameof(action));
 

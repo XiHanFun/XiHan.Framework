@@ -63,10 +63,10 @@ public static class CheckHelper
         return value == null
             ? throw new ArgumentException($"{parameterName}不能为空!", parameterName)
             : value.Length > maxLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
-            : minLength > 0 && value.Length < minLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
-            : value;
+                ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+                : minLength > 0 && value.Length < minLength
+                    ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+                    : value;
     }
 
     /// <summary>
@@ -83,10 +83,10 @@ public static class CheckHelper
         return string.IsNullOrWhiteSpace(value)
             ? throw new ArgumentException($"{parameterName}不能为无效、空值或空白!", parameterName)
             : value.Length > maxLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
-            : minLength > 0 && value.Length < minLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
-            : value;
+                ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+                : minLength > 0 && value.Length < minLength
+                    ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+                    : value;
     }
 
     /// <summary>
@@ -103,10 +103,10 @@ public static class CheckHelper
         return string.IsNullOrEmpty(value)
             ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName)
             : value.Length > maxLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
-            : minLength > 0 && value.Length < minLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
-            : value;
+                ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+                : minLength > 0 && value.Length < minLength
+                    ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+                    : value;
     }
 
     /// <summary>
@@ -120,20 +120,24 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string? Length(string? value, string parameterName, int maxLength, int minLength = 0)
     {
-        if (minLength > 0)
+        if (minLength <= 0)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName);
-            }
-
-            if (value!.Length < minLength)
-            {
-                throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
-            }
+            return value != null && value.Length > maxLength
+                ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+                : value;
         }
 
-        return value != null && value.Length > maxLength
+        if (string.IsNullOrEmpty(value))
+        {
+            throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName);
+        }
+
+        if (value.Length < minLength)
+        {
+            throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
+        }
+
+        return value.Length > maxLength
             ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
             : value;
     }
@@ -148,6 +152,6 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static ICollection<T> NotNullOrEmpty<T>(ICollection<T>? value, string parameterName)
     {
-        return value == null || value.Count <= 0 ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName) : value;
+        return value is not { Count: > 0 } ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName) : value;
     }
 }

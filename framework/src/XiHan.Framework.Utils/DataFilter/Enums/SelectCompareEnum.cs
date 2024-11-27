@@ -79,5 +79,5 @@ public enum SelectCompareEnum
     /// 在...之间
     /// </summary>
     [Description("在...之间")]
-    Between,
+    Between
 }

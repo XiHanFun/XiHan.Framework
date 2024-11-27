@@ -19,7 +19,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Extensions.System;
+namespace XiHan.Framework.Utils.Text;
 
 /// <summary>
 /// 字符串扩展方法
@@ -213,7 +213,7 @@ public static partial class StringExtensions
         var replaceLength = replace.Length;
         var newLength = str.Length - searchLength + replaceLength;
 
-        Span<char> buffer = newLength <= 1024 ? stackalloc char[newLength] : new char[newLength];
+        var buffer = newLength <= 1024 ? stackalloc char[newLength] : new char[newLength];
 
         // Copy the part of the original string before the search term
         str.AsSpan(0, pos).CopyTo(buffer);
@@ -246,10 +246,9 @@ public static partial class StringExtensions
     /// </summary>
     public static string[] Split(this string str, string separator)
     {
-        return str.Split(new[]
-        {
+        return str.Split([
             separator
-        }, StringSplitOptions.None);
+        ], StringSplitOptions.None);
     }
 
     /// <summary>
@@ -257,10 +256,9 @@ public static partial class StringExtensions
     /// </summary>
     public static string[] Split(this string str, string separator, StringSplitOptions options)
     {
-        return str.Split(new[]
-        {
+        return str.Split([
             separator
-        }, options);
+        ], options);
     }
 
     /// <summary>
@@ -291,10 +289,10 @@ public static partial class StringExtensions
         return string.IsNullOrWhiteSpace(str)
             ? str
             : str.Length == 1
-            ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
-            : handleAbbreviations && IsAllUpperCase(str)
-            ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
-            : (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str[1..];
+                ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
+                : handleAbbreviations && IsAllUpperCase(str)
+                    ? useCurrentCulture ? str.ToLower() : str.ToLowerInvariant()
+                    : (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str[1..];
     }
 
     /// <summary>
@@ -308,8 +306,8 @@ public static partial class StringExtensions
         return string.IsNullOrWhiteSpace(str)
             ? str
             : useCurrentCulture
-            ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
-            : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
+                ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
+                : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
     }
 
     /// <summary>
@@ -380,7 +378,7 @@ public static partial class StringExtensions
         var inputBytes = Encoding.UTF8.GetBytes(str);
         var hashBytes = MD5.HashData(inputBytes);
 
-        StringBuilder? sb = new();
+        StringBuilder sb = new();
         foreach (var hashByte in hashBytes)
         {
             _ = sb.Append(hashByte.ToString("X2"));
@@ -400,8 +398,8 @@ public static partial class StringExtensions
         return string.IsNullOrWhiteSpace(str)
             ? str
             : str.Length == 1
-            ? useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant()
-            : (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
+                ? useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant()
+                : (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
     }
 
     /// <summary>
@@ -421,29 +419,21 @@ public static partial class StringExtensions
     }
 
     /// <summary>
-    /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串。如果被截断，它会在字符串的末尾添加一个“...”后缀。
-    /// 返回的字符串不能长于最大长度。
-    /// </summary>
-    /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
-    public static string? TruncateWithPostfix(this string? str, int maxLength)
-    {
-        return TruncateWithPostfix(str, maxLength, "...");
-    }
-
-    /// <summary>
     /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串。如果被截断，它会将给定的 <paramref name="postfix"/> 添加到字符串的末尾。
     /// 返回的字符串不能长于最大长度。
     /// </summary>
     /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
-    public static string? TruncateWithPostfix(this string? str, int maxLength, string postfix)
+    public static string? TruncateWithPostfix(this string? str, int maxLength, string postfix = "...")
     {
         return str == null
             ? null
             : str == string.Empty || maxLength == 0
-            ? string.Empty
-            : str.Length <= maxLength
-            ? str
-            : maxLength <= postfix.Length ? postfix.Left(maxLength) : str.Left(maxLength - postfix.Length) + postfix;
+                ? string.Empty
+                : str.Length <= maxLength
+                    ? str
+                    : maxLength <= postfix.Length
+                        ? postfix.Left(maxLength)
+                        : str.Left(maxLength - postfix.Length) + postfix;
     }
 
     /// <summary>
@@ -472,15 +462,7 @@ public static partial class StringExtensions
     /// <returns></returns>
     private static bool IsAllUpperCase(string input)
     {
-        for (var i = 0; i < input.Length; i++)
-        {
-            if (char.IsLetter(input[i]) && !char.IsUpper(input[i]))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return input.All(t => !char.IsLetter(t) || char.IsUpper(t));
     }
 
     [GeneratedRegex("[a-z][A-Z]")]

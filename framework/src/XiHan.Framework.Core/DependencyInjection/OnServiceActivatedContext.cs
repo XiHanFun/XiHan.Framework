@@ -22,7 +22,7 @@ public class OnServiceActivatedContext : IOnServiceActivatedContext
     /// <summary>
     /// 服务实例
     /// </summary>
-    public object Instance { get; set; }
+    public object Instance { get; }
 
     /// <summary>
     /// 构造函数

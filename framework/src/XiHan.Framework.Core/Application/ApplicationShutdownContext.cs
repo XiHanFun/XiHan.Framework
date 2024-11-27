@@ -31,7 +31,7 @@ public class ApplicationShutdownContext
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
-    public ApplicationShutdownContext([NotNull] IServiceProvider serviceProvider)
+    public ApplicationShutdownContext(IServiceProvider serviceProvider)
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 

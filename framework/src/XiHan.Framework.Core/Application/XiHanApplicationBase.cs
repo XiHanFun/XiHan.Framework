@@ -23,8 +23,8 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
 using XiHan.Framework.Core.Logging;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Utils.Extensions.System;
 using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Core.Application;
 
@@ -36,7 +36,6 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <summary>
     /// 应用程序启动(入口)模块的类型
     /// </summary>
-    [NotNull]
     public Type StartupModuleType { get; }
 
     /// <summary>
@@ -72,7 +71,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="startupModuleType"></param>
     /// <param name="services"></param>
     /// <param name="optionsAction"></param>
-    internal XiHanApplicationBase([NotNull] Type startupModuleType, [NotNull] IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
+    internal XiHanApplicationBase(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
     {
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
         _ = CheckHelper.NotNull(services, nameof(services));
@@ -85,7 +84,7 @@ public class XiHanApplicationBase : IXiHanApplication
         _ = services.TryAddObjectAccessor<IServiceProvider>();
 
         // 调用用户传入的配置委托
-        XiHanApplicationCreationOptions? options = new(services);
+        XiHanApplicationCreationOptions options = new(services);
         optionsAction?.Invoke(options);
 
         ApplicationName = GetApplicationName(options);
@@ -94,7 +93,7 @@ public class XiHanApplicationBase : IXiHanApplication
         _ = services.AddSingleton<IXiHanApplication>(this);
         _ = services.AddSingleton<IApplicationInfoAccessor>(this);
         _ = services.AddSingleton<IModuleContainer>(this);
-        _ = services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment()
+        _ = services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment
         {
             EnvironmentName = options.Environment
         });
@@ -180,10 +179,10 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="services"></param>
     private static void TryToSetEnvironment(IServiceCollection services)
     {
-        var HostEnvironment = services.GetSingletonInstance<IXiHanHostEnvironment>();
-        if (HostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
+        var hostEnvironment = services.GetSingletonInstance<IXiHanHostEnvironment>();
+        if (hostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
         {
-            HostEnvironment.EnvironmentName = Environments.Production;
+            hostEnvironment.EnvironmentName = Environments.Production;
         }
     }
 
@@ -229,7 +228,7 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         CheckMultipleConfigureServices();
 
-        ServiceConfigurationContext? context = new(Services);
+        ServiceConfigurationContext context = new(Services);
         _ = Services.AddSingleton(context);
 
         foreach (var module in Modules)
@@ -253,23 +252,22 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        HashSet<Assembly>? assemblies = [];
+        HashSet<Assembly> assemblies = [];
 
         // ConfigureServices
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule xihanModule)
+            if (module.Instance is XiHanModule { SkipAutoServiceRegistration: false })
             {
-                if (!xihanModule.SkipAutoServiceRegistration)
+                foreach (var assembly in module.AllAssemblies)
                 {
-                    foreach (var assembly in module.AllAssemblies)
+                    if (assemblies.Contains(assembly))
                     {
-                        if (!assemblies.Contains(assembly))
-                        {
-                            _ = Services.AddAssembly(assembly);
-                            _ = assemblies.Add(assembly);
-                        }
+                        continue;
                     }
+
+                    _ = Services.AddAssembly(assembly);
+                    _ = assemblies.Add(assembly);
                 }
             }
 
@@ -317,7 +315,7 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         CheckMultipleConfigureServices();
 
-        ServiceConfigurationContext? context = new(Services);
+        ServiceConfigurationContext context = new(Services);
         _ = Services.AddSingleton(context);
 
         foreach (var module in Modules)
@@ -341,23 +339,22 @@ public class XiHanApplicationBase : IXiHanApplication
             }
         }
 
-        HashSet<Assembly>? assemblies = [];
+        HashSet<Assembly> assemblies = [];
 
         // ConfigureServices
         foreach (var module in Modules)
         {
-            if (module.Instance is XiHanModule xihanModule)
+            if (module.Instance is XiHanModule { SkipAutoServiceRegistration: false })
             {
-                if (!xihanModule.SkipAutoServiceRegistration)
+                foreach (var assembly in module.AllAssemblies)
                 {
-                    foreach (var assembly in module.AllAssemblies)
+                    if (assemblies.Contains(assembly))
                     {
-                        if (!assemblies.Contains(assembly))
-                        {
-                            _ = Services.AddAssembly(assembly);
-                            _ = assemblies.Add(assembly);
-                        }
+                        continue;
                     }
+
+                    _ = Services.AddAssembly(assembly);
+                    _ = assemblies.Add(assembly);
                 }
             }
 

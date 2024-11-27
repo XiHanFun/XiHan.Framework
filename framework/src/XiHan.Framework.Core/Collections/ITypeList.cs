@@ -17,9 +17,7 @@ namespace XiHan.Framework.Core.Collections;
 /// <summary>
 /// 类型列表接口
 /// </summary>
-public interface ITypeList : ITypeList<object>
-{
-}
+public interface ITypeList : ITypeList<object>;
 
 /// <summary>
 /// 泛型类型列表接口

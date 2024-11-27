@@ -28,7 +28,7 @@ public class OnApplicationInitializationModuleLifecycleContributor : ModuleLifec
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    public override async Task InitializeAsync([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override async Task InitializeAsync(ApplicationInitializationContext context, IXiHanModule module)
     {
         if (module is IOnApplicationInitialization onApplicationInitialization)
         {
@@ -41,7 +41,7 @@ public class OnApplicationInitializationModuleLifecycleContributor : ModuleLifec
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    public override void Initialize([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override void Initialize(ApplicationInitializationContext context, IXiHanModule module)
     {
         (module as IOnApplicationInitialization)?.OnApplicationInitialization(context);
     }
@@ -58,7 +58,7 @@ public class OnApplicationShutdownModuleLifecycleContributor : ModuleLifecycleCo
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    public override async Task ShutdownAsync([NotNull] ApplicationShutdownContext context, [NotNull] IXiHanModule module)
+    public override async Task ShutdownAsync(ApplicationShutdownContext context, IXiHanModule module)
     {
         if (module is IOnApplicationShutdown onApplicationShutdown)
         {
@@ -71,7 +71,7 @@ public class OnApplicationShutdownModuleLifecycleContributor : ModuleLifecycleCo
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    public override void Shutdown([NotNull] ApplicationShutdownContext context, [NotNull] IXiHanModule module)
+    public override void Shutdown(ApplicationShutdownContext context, IXiHanModule module)
     {
         (module as IOnApplicationShutdown)?.OnApplicationShutdown(context);
     }
@@ -88,7 +88,7 @@ public class OnPostApplicationInitializationModuleLifecycleContributor : ModuleL
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    public override async Task InitializeAsync([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override async Task InitializeAsync(ApplicationInitializationContext context, IXiHanModule module)
     {
         if (module is IOnPostApplicationInitialization onPostApplicationInitialization)
         {
@@ -101,7 +101,7 @@ public class OnPostApplicationInitializationModuleLifecycleContributor : ModuleL
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    public override void Initialize([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override void Initialize(ApplicationInitializationContext context, IXiHanModule module)
     {
         (module as IOnPostApplicationInitialization)?.OnPostApplicationInitialization(context);
     }
@@ -118,7 +118,7 @@ public class OnPreApplicationInitializationModuleLifecycleContributor : ModuleLi
     /// <param name="context"></param>
     /// <param name="module"></param>
     /// <returns></returns>
-    public override async Task InitializeAsync([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override async Task InitializeAsync(ApplicationInitializationContext context, IXiHanModule module)
     {
         if (module is IOnPreApplicationInitialization onPreApplicationInitialization)
         {
@@ -131,7 +131,7 @@ public class OnPreApplicationInitializationModuleLifecycleContributor : ModuleLi
     /// </summary>
     /// <param name="context"></param>
     /// <param name="module"></param>
-    public override void Initialize([NotNull] ApplicationInitializationContext context, [NotNull] IXiHanModule module)
+    public override void Initialize(ApplicationInitializationContext context, IXiHanModule module)
     {
         (module as IOnPreApplicationInitialization)?.OnPreApplicationInitialization(context);
     }

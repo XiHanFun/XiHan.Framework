@@ -44,7 +44,7 @@ public class FilePlugInSource : IPlugInSource
     /// <exception cref="XiHanException"></exception>
     public Type[] GetModules()
     {
-        List<Type>? modules = [];
+        List<Type> modules = [];
 
         foreach (var filePath in FilePaths)
         {
