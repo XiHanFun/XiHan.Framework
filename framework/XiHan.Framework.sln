@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1F74D18D-B46F-4D7D-A05D-1D06BE95B192}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.src", "1.src", "{1F74D18D-B46F-4D7D-A05D-1D06BE95B192}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.Base", "1.Base", "{ABAF43CC-1FB6-4831-B94B-918A93386FA5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Core", "2.Core", "{A95AA4B3-D196-48A0-82F1-5F42CDC067B0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.Core Libraries", "3.Core Libraries", "{EC379147-874F-47CF-ACB7-32DB2710B4B5}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.CoreLibraries", "3.CoreLibraries", "{EC379147-874F-47CF-ACB7-32DB2710B4B5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4.AspNetCore", "4.AspNetCore", "{330EF338-ED9F-4B68-8F56-2FF2A9226A78}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5.AspNetCore Libraries", "5.AspNetCore Libraries", "{6A55B17B-FA29-46D0-87F5-96AF3D970AD7}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5.AspNetCoreLibraries", "5.AspNetCoreLibraries", "{6A55B17B-FA29-46D0-87F5-96AF3D970AD7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework", "src\XiHan.Framework\XiHan.Framework.csproj", "{D7EEF707-13D1-45BA-8A6A-5C5865667A14}"
 EndProject
@@ -75,13 +75,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Gateway", "src\XiHan.Framework.Gateway\XiHan.Framework.Gateway.csproj", "{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.test", "2.test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Utils.Test", "test\XiHan.Framework.Utils.Test\XiHan.Framework.Utils.Test.csproj", "{CC2163DA-1C03-4423-B9B1-4AF7FBE60E19}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Core.Test", "test\XiHan.Framework.Core.Test\XiHan.Framework.Core.Test.csproj", "{D67D116F-7BDF-45BE-B077-90EC1C34E94F}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "others", "others", "{1AD44577-09E6-4150-A2C6-D03E22386A11}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.others", "3.others", "{1AD44577-09E6-4150-A2C6-D03E22386A11}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
