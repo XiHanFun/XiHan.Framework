@@ -102,7 +102,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     {
     }
 
-    #endregion
+    #endregion 服务配置
 
     #region 程序相关
 
@@ -187,7 +187,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     {
     }
 
-    #endregion
+    #endregion 程序相关
 
     #region 配置选项
 
@@ -282,5 +282,5 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
         _ = ServiceConfigurationContext.Services.PostConfigureAll(configureOptions);
     }
 
-    #endregion
+    #endregion 配置选项
 }
