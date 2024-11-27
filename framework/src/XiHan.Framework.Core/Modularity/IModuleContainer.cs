@@ -24,6 +24,5 @@ public interface IModuleContainer
     /// <summary>
     /// 模块列表
     /// </summary>
-    [NotNull]
     IReadOnlyList<IModuleDescriptor> Modules { get; }
 }

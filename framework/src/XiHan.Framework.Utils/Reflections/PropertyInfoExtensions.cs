@@ -29,6 +29,6 @@ public static class PropertyInfoExtensions
     public static bool IsVirtual(this PropertyInfo property)
     {
         var accessor = property.GetAccessors().FirstOrDefault();
-        return accessor is not null and { IsVirtual: true, IsFinal: false };
+        return accessor is { IsVirtual: true, IsFinal: false };
     }
 }

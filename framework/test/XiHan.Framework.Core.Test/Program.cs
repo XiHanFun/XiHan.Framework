@@ -10,7 +10,7 @@ using var application = XiHanApplicationFactory.Create<XiHanFrameworkCoreTestMod
 application.Initialize();
 
 // 获取服务并执行逻辑
-var logger = application.ServiceProvider.GetRequiredService<ILogger<Program>>();
+application.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
 var myService = application.ServiceProvider.GetRequiredService<MyService>();
 await myService.RunAsync();

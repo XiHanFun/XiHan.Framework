@@ -51,7 +51,7 @@ public class ServiceConfigurationContext
     /// 构造函数
     /// </summary>
     /// <param name="services"></param>
-    public ServiceConfigurationContext([NotNull] IServiceCollection services)
+    public ServiceConfigurationContext(IServiceCollection services)
     {
         Services = CheckHelper.NotNull(services, nameof(services));
         Items = new Dictionary<string, object?>();

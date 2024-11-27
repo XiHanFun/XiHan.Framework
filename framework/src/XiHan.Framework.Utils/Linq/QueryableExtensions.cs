@@ -15,7 +15,7 @@
 using System.Linq.Expressions;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Extensions.System.Linq;
+namespace XiHan.Framework.Utils.Linq;
 
 /// <summary>
 /// 查询接口<see cref="IQueryable{T}"/>的扩展方法
@@ -136,12 +136,12 @@ public static class QueryableExtensions
         var property = Expression.Property(parameter, sorting);
         var lambda = Expression.Lambda(property, parameter);
 
-        var methodName = "OrderBy";
-        var types = new Type[]
+        const string MethodName = "OrderBy";
+        var types = new[]
         {
             query.ElementType, property.Type
         };
-        var resultExpression = Expression.Call(typeof(Queryable), methodName, types, query.Expression, Expression.Quote(lambda));
+        var resultExpression = Expression.Call(typeof(Queryable), MethodName, types, query.Expression, Expression.Quote(lambda));
 
         return (TQueryable)query.Provider.CreateQuery<T>(resultExpression);
     }

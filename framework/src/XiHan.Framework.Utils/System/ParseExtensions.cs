@@ -514,7 +514,7 @@ public static class ParseExtensions
     public static IEnumerable<TResult> CastSuper<TResult>(this IEnumerable source)
     {
         return from object? item in source
-               select (TResult)Convert.ChangeType(item, typeof(TResult));
+            select (TResult)Convert.ChangeType(item, typeof(TResult));
     }
 
     #endregion

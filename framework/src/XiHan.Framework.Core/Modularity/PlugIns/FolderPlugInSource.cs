@@ -47,7 +47,7 @@ public class FolderPlugInSource : IPlugInSource
     /// </summary>
     /// <param name="folder"></param>
     /// <param name="searchOption"></param>
-    public FolderPlugInSource([NotNull] string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+    public FolderPlugInSource(string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
     {
         _ = CheckHelper.NotNull(folder, nameof(folder));
 
@@ -62,7 +62,7 @@ public class FolderPlugInSource : IPlugInSource
     /// <exception cref="XiHanException"></exception>
     public Type[] GetModules()
     {
-        List<Type>? modules = [];
+        List<Type> modules = [];
 
         foreach (var assembly in GetAssemblies())
         {

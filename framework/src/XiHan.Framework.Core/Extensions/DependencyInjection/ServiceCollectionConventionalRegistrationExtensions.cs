@@ -53,11 +53,13 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     private static ConventionalRegistrarList GetOrCreateRegistrarList(IServiceCollection services)
     {
         var conventionalRegistrars = services.GetSingletonInstanceOrNull<IObjectAccessor<ConventionalRegistrarList>>()?.Value;
-        if (conventionalRegistrars == null)
+        if (conventionalRegistrars != null)
         {
-            conventionalRegistrars = [new DefaultConventionalRegistrar()];
-            _ = services.AddObjectAccessor(conventionalRegistrars);
+            return conventionalRegistrars;
         }
+
+        conventionalRegistrars = [new DefaultConventionalRegistrar()];
+        _ = services.AddObjectAccessor(conventionalRegistrars);
 
         return conventionalRegistrars;
     }

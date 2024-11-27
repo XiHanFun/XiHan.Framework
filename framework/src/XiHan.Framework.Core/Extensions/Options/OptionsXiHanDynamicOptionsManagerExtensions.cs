@@ -58,8 +58,6 @@ public static class OptionsXiHanDynamicOptionsManagerExtensions
     private static XiHanDynamicOptionsManager<T> ToDynamicOptions<T>(this IOptions<T> options)
         where T : class
     {
-        return options is XiHanDynamicOptionsManager<T> dynamicOptionsManager
-            ? dynamicOptionsManager
-            : throw new XiHanException($"选项必须派生自 {typeof(XiHanDynamicOptionsManager<>).FullName}！");
+        return options as XiHanDynamicOptionsManager<T> ?? throw new XiHanException($"选项必须派生自 {typeof(XiHanDynamicOptionsManager<>).FullName}！");
     }
 }

@@ -188,10 +188,11 @@ public static class RandomHelper
     /// <returns></returns>
     public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)
     {
-        _ = CheckHelper.NotNull(items, nameof(items));
+        var enumerable = items as T[] ?? items.ToArray();
+        _ = CheckHelper.NotNull(enumerable, nameof(items));
 
-        List<T>? currentList = new(items);
-        List<T>? randomList = [];
+        List<T> currentList = [..enumerable];
+        List<T> randomList = [];
 
         while (currentList.Count != 0)
         {

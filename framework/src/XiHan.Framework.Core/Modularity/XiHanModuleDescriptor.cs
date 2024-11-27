@@ -65,13 +65,13 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// <param name="instance"></param>
     /// <param name="isLoadedAsPlugIn"></param>
     /// <exception cref="ArgumentException"></exception>
-    public XiHanModuleDescriptor([NotNull] Type type, [NotNull] IXiHanModule instance, bool isLoadedAsPlugIn)
+    public XiHanModuleDescriptor(Type type, IXiHanModule instance, bool isLoadedAsPlugIn)
     {
         _ = CheckHelper.NotNull(type, nameof(type));
         _ = CheckHelper.NotNull(instance, nameof(instance));
         XiHanModuleHelper.CheckXiHanModuleType(type);
 
-        if (!type.GetTypeInfo().IsAssignableFrom(instance.GetType()))
+        if (!type.GetTypeInfo().IsInstanceOfType(instance))
         {
             throw new ArgumentException($"模块实例({instance.GetType().AssemblyQualifiedName})不是模块类型{type.AssemblyQualifiedName}的实例！");
         }

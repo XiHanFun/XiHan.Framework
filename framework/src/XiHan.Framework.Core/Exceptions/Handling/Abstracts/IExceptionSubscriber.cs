@@ -26,5 +26,5 @@ public interface IExceptionSubscriber
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    Task HandleAsync([NotNull] ExceptionNotificationContext context);
+    Task HandleAsync(ExceptionNotificationContext context);
 }

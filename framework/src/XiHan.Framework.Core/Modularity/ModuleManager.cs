@@ -55,7 +55,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual async Task InitializeModulesAsync([NotNull] ApplicationInitializationContext context)
+    public virtual async Task InitializeModulesAsync(ApplicationInitializationContext context)
     {
         foreach (var contributor in _lifecycleContributors)
         {
@@ -80,7 +80,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public void InitializeModules([NotNull] ApplicationInitializationContext context)
+    public void InitializeModules(ApplicationInitializationContext context)
     {
         foreach (var contributor in _lifecycleContributors)
         {
@@ -105,7 +105,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public virtual async Task ShutdownModulesAsync([NotNull] ApplicationShutdownContext context)
+    public virtual async Task ShutdownModulesAsync(ApplicationShutdownContext context)
     {
         var modules = _moduleContainer.Modules.Reverse().ToList();
 
@@ -130,7 +130,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public void ShutdownModules([NotNull] ApplicationShutdownContext context)
+    public void ShutdownModules(ApplicationShutdownContext context)
     {
         var modules = _moduleContainer.Modules.Reverse().ToList();
 

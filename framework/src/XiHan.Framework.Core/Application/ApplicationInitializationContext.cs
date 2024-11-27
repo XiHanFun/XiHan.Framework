@@ -26,13 +26,13 @@ public class ApplicationInitializationContext : IServiceProviderAccessor
     /// <summary>
     /// 服务提供者
     /// </summary>
-    public IServiceProvider ServiceProvider { get; set; }
+    public IServiceProvider ServiceProvider { get; }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
-    public ApplicationInitializationContext([NotNull] IServiceProvider serviceProvider)
+    public ApplicationInitializationContext(IServiceProvider serviceProvider)
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 

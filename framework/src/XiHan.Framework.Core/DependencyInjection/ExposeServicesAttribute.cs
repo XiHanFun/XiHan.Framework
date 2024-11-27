@@ -14,7 +14,7 @@
 
 using System.Reflection;
 using XiHan.Framework.Utils.Collections.Generic;
-using XiHan.Framework.Utils.Extensions.System;
+using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 
@@ -34,12 +34,12 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <summary>
     /// 是否包含默认服务
     /// </summary>
-    public bool IncludeDefaults { get; set; }
+    public bool IncludeDefaults { get; init; }
 
     /// <summary>
     /// 是否包含自身
     /// </summary>
-    public bool IncludeSelf { get; set; }
+    public bool IncludeSelf { get; init; }
 
     /// <summary>
     /// 构造函数
@@ -47,7 +47,7 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <param name="serviceTypes"></param>
     public ExposeServicesAttribute(params Type[] serviceTypes)
     {
-        ServiceTypes = serviceTypes ?? Type.EmptyTypes;
+        ServiceTypes = serviceTypes;
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// <returns></returns>
     private static List<Type> GetDefaultServices(Type type)
     {
-        List<Type>? serviceTypes = [];
+        List<Type> serviceTypes = [];
 
         foreach (var interfaceType in type.GetTypeInfo().GetInterfaces())
         {

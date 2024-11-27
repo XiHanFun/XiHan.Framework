@@ -37,19 +37,6 @@ public class IntegrationServiceAttribute : Attribute
     /// <returns></returns>
     public static bool IsDefinedOrInherited(Type type)
     {
-        if (type.IsDefined(typeof(IntegrationServiceAttribute), true))
-        {
-            return true;
-        }
-
-        foreach (var @interface in type.GetInterfaces())
-        {
-            if (@interface.IsDefined(typeof(IntegrationServiceAttribute), true))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return type.IsDefined(typeof(IntegrationServiceAttribute), true) || type.GetInterfaces().Any(@interface => @interface.IsDefined(typeof(IntegrationServiceAttribute), true));
     }
 }

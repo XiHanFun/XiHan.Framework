@@ -45,7 +45,7 @@ public class TypeFinder : ITypeFinder
     /// <returns></returns>
     private List<Type> FindAll()
     {
-        List<Type>? allTypes = [];
+        List<Type> allTypes = [];
 
         foreach (var assembly in _assemblyFinder.Assemblies)
         {
@@ -53,12 +53,13 @@ public class TypeFinder : ITypeFinder
             {
                 var typesInThisAssembly = AssemblyHelper.GetAllTypes(assembly);
 
-                if (!typesInThisAssembly.Any())
+                var inThisAssembly = typesInThisAssembly as Type[] ?? typesInThisAssembly.ToArray();
+                if (inThisAssembly.Length == 0)
                 {
                     continue;
                 }
 
-                allTypes.AddRange(typesInThisAssembly.Where(type => type != null));
+                allTypes.AddRange(inThisAssembly.Where(type => true));
             }
             catch
             {

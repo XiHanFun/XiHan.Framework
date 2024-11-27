@@ -103,18 +103,21 @@ public static partial class RegexHelper
         {
             return false;
         }
+
         // 省份验证
-        const string address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
-        if (!address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
+        const string Address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
+        if (!Address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
         {
             return false;
         }
+
         // 生日验证
         var birth = checkValue.Substring(6, 8).Insert(6, "-").Insert(4, "-");
         if (!DateTime.TryParse(birth, out _))
         {
             return false;
         }
+
         // 校验码验证
         var arrVerifyCode = "1,0,x,9,8,7,6,5,4,3,2".Split(',');
         var wi = "7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2".Split(',');
@@ -142,12 +145,14 @@ public static partial class RegexHelper
         {
             return false;
         }
+
         // 省份验证
-        const string address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
-        if (!address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
+        const string Address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
+        if (!Address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
         {
             return false;
         }
+
         // 生日验证
         var birth = checkValue.Substring(6, 6).Insert(4, "-").Insert(2, "-");
         return DateTime.TryParse(birth, out _);

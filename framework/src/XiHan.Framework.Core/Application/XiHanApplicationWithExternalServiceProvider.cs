@@ -30,8 +30,8 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// <param name="services"></param>
     /// <param name="optionsAction"></param>
     public XiHanApplicationWithExternalServiceProvider(
-        [NotNull] Type startupModuleType,
-        [NotNull] IServiceCollection services,
+        Type startupModuleType,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction) : base(startupModuleType, services, optionsAction)
     {
         _ = services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
@@ -40,7 +40,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// <summary>
     /// 设置服务提供器，但不初始化模块
     /// </summary>
-    void IXiHanApplicationWithExternalServiceProvider.SetServiceProvider([NotNull] IServiceProvider serviceProvider)
+    void IXiHanApplicationWithExternalServiceProvider.SetServiceProvider(IServiceProvider serviceProvider)
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
@@ -61,7 +61,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// 设置服务提供器并初始化所有模块，异步
     /// 如果之前调用过 <see cref="IXiHanApplicationWithExternalServiceProvider.SetServiceProvider"/>，则应将相同的 <paramref name="serviceProvider"/> 实例传递给此方法
     /// </summary>
-    public async Task InitializeAsync([NotNull] IServiceProvider serviceProvider)
+    public async Task InitializeAsync(IServiceProvider serviceProvider)
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
@@ -74,7 +74,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// 设置服务提供器并初始化所有模块，异步
     /// 如果之前调用过 <see cref="IXiHanApplicationWithExternalServiceProvider.SetServiceProvider"/>，则应将相同的 <paramref name="serviceProvider"/> 实例传递给此方法
     /// </summary>
-    public void Initialize([NotNull] IServiceProvider serviceProvider)
+    public void Initialize(IServiceProvider serviceProvider)
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 

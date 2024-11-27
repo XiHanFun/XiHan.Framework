@@ -69,7 +69,7 @@ public class JsonHelper
         dynamic? obj = JsonSerializer.Deserialize<T>(jsonStr, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         obj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
         var keys = keyLink.Split(':');
-        dynamic? currentObject = obj;
+        var currentObject = obj;
         foreach (var key in keys)
         {
             currentObject = currentObject[key];
@@ -79,7 +79,7 @@ public class JsonHelper
             }
         }
 
-        dynamic? result = JsonSerializer.Deserialize<T>(currentObject.ToString(), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        var result = JsonSerializer.Deserialize<T>(currentObject.ToString(), JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
         return result;
     }
 
@@ -97,10 +97,10 @@ public class JsonHelper
         jsoObj ??= JsonDocument.Parse(JsonSerializer.Serialize(new object()));
 
         var keys = keyLink.Split(':');
-        dynamic? currentObject = jsoObj;
+        var currentObject = jsoObj;
         for (var i = 0; i < keys.Length; i++)
         {
-            dynamic? oldObject = currentObject;
+            var oldObject = currentObject;
             currentObject = currentObject[keys[i]];
             var isValueType = value!.GetType().IsValueType;
             if (i == keys.Length - 1)

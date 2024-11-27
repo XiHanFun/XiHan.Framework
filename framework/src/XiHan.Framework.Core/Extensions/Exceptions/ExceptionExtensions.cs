@@ -29,7 +29,7 @@ public static class ExceptionExtensions
     /// <param name="exception">异常</param>
     /// <param name="isHideStackTrace">是否隐藏异常规模信息</param>
     /// <returns></returns>
-    public static string FormatMessage(this Exception exception, bool isHideStackTrace = false)
+    public static string FormatMessage(this Exception? exception, bool isHideStackTrace = false)
     {
         if (exception == null)
         {

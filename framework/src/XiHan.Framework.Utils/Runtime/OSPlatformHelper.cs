@@ -15,6 +15,7 @@
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Timing;
 
 namespace XiHan.Framework.Utils.Runtime;
 

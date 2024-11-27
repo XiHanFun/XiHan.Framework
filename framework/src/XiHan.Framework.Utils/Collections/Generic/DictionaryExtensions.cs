@@ -52,7 +52,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.GetValueOrDefault(key);
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.GetValueOrDefault(key);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，返回默认值</returns>
     public static TValue? GetOrDefault<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : default;
+        return dictionary.GetValueOrDefault(key);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，使用工厂方法创建并返回默认值</returns>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> factory)
     {
-        return dictionary.TryGetValue(key, out var obj) ? obj : (dictionary[key] = factory(key));
+        return dictionary.TryGetValue(key, out var obj) ? obj : dictionary[key] = factory(key);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，使用工厂方法创建并返回默认值</returns>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> factory)
     {
-        return dictionary.GetOrAdd(key, k => factory());
+        return dictionary.GetOrAdd(key, _ => factory());
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public static class DictionaryExtensions
     /// <returns>如果找到，返回值；如果找不到，使用工厂方法创建并返回默认值</returns>
     public static TValue GetOrAdd<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> factory) where TKey : notnull
     {
-        return dictionary.GetOrAdd(key, k => factory());
+        return dictionary.GetOrAdd(key, _ => factory());
     }
 
     /// <summary>
@@ -143,8 +143,8 @@ public static class DictionaryExtensions
     /// <returns>如果值正确，返回表示对象的 ExpandoObject</returns>
     public static dynamic ConvertToDynamicObject(this Dictionary<string, object> dictionary)
     {
-        ExpandoObject? expandoObject = new();
-        ICollection<KeyValuePair<string, object>>? expendObjectCollection = expandoObject!;
+        ExpandoObject expandoObject = new();
+        ICollection<KeyValuePair<string, object>> expendObjectCollection = expandoObject!;
 
         foreach (var keyValuePair in dictionary)
         {

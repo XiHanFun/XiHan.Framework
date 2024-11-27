@@ -18,7 +18,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 
-namespace XiHan.Framework.Utils.Extensions.System.Text;
+namespace XiHan.Framework.Utils.Text;
 
 /// <summary>
 /// 编码扩展方法
@@ -191,7 +191,7 @@ public static class Base32
             return string.Empty;
         }
 
-        StringBuilder sb = new(((bytes.Length * 8) + 4) / 5);
+        StringBuilder sb = new((bytes.Length * 8 + 4) / 5);
 
         var bitCount = 0;
         var accumulatedBits = 0;
@@ -202,8 +202,8 @@ public static class Base32
             bitCount += 8;
             while (bitCount >= 5)
             {
-                const int mask = 0x1f;
-                var currentBase32Value = accumulatedBits & mask;
+                const int Mask = 0x1f;
+                var currentBase32Value = accumulatedBits & Mask;
                 _ = sb.Append(Base32Alphabet[currentBase32Value]);
                 accumulatedBits >>= 5;
                 bitCount -= 5;
@@ -216,8 +216,8 @@ public static class Base32
         }
 
         {
-            const int mask = 0x1f;
-            var currentBase32Value = accumulatedBits & mask;
+            const int Mask = 0x1f;
+            var currentBase32Value = accumulatedBits & Mask;
             _ = sb.Append(Base32Alphabet[currentBase32Value]);
         }
 
@@ -263,8 +263,8 @@ public static class Base32
                 continue;
             }
 
-            const int mask = 0xff;
-            var currentByteValue = accumulatedBits & mask;
+            const int Mask = 0xff;
+            var currentByteValue = accumulatedBits & Mask;
             buffer[bufferIndex++] = (byte)currentByteValue;
             accumulatedBits >>= 8;
             bitCount -= 8;

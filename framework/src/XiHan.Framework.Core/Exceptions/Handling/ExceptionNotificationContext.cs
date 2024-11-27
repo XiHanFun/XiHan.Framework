@@ -27,7 +27,6 @@ public class ExceptionNotificationContext
     /// <summary>
     /// 异常
     /// </summary>
-    [NotNull]
     public Exception Exception { get; }
 
     /// <summary>
@@ -46,7 +45,7 @@ public class ExceptionNotificationContext
     /// <param name="exception"></param>
     /// <param name="logLevel"></param>
     /// <param name="handled"></param>
-    public ExceptionNotificationContext([NotNull] Exception exception, LogLevel? logLevel = null, bool handled = true)
+    public ExceptionNotificationContext(Exception exception, LogLevel? logLevel = null, bool handled = true)
     {
         Exception = CheckHelper.NotNull(exception, nameof(exception));
         LogLevel = logLevel ?? exception.GetLogLevel();

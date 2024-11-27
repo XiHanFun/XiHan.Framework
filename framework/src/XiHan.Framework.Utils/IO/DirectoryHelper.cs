@@ -243,6 +243,7 @@ public static class DirectoryHelper
         {
             return false;
         }
+
         // 判断是否存在文件夹
         var directoryNames = GetDirectories(directoryPath);
         return directoryNames.Length == 0;

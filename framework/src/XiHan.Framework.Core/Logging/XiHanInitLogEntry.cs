@@ -24,27 +24,27 @@ public class XiHanInitLogEntry
     /// <summary>
     /// 日志等级
     /// </summary>
-    public LogLevel LogLevel { get; set; }
+    public LogLevel LogLevel { get; init; }
 
     /// <summary>
     /// 事件标识符
     /// </summary>
-    public EventId EventId { get; set; }
+    public EventId EventId { get; init; }
 
     /// <summary>
     /// 状态
     /// </summary>
-    public object State { get; set; } = default!;
+    public object State { get; init; } = default!;
 
     /// <summary>
     /// 异常
     /// </summary>
-    public Exception? Exception { get; set; }
+    public Exception? Exception { get; init; }
 
     /// <summary>
     /// 格式化器
     /// </summary>
-    public Func<object, Exception?, string> Formatter { get; set; } = default!;
+    public Func<object, Exception?, string> Formatter { get; init; } = default!;
 
     /// <summary>
     /// 异常消息

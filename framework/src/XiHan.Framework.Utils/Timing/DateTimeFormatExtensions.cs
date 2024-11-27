@@ -175,16 +175,16 @@ public static class DateTimeFormatExtensions
     /// <returns></returns>
     public static string FormatTimeMilliSecondToString(this long ms)
     {
-        const int ss = 1000;
-        const int mi = ss * 60;
-        const int hh = mi * 60;
-        const int dd = hh * 24;
+        const int Ss = 1000;
+        const int Mi = Ss * 60;
+        const int Hh = Mi * 60;
+        const int Dd = Hh * 24;
 
-        var day = ms / dd;
-        var hour = (ms - day * dd) / hh;
-        var minute = (ms - day * dd - hour * hh) / mi;
-        var second = (ms - day * dd - hour * hh - minute * mi) / ss;
-        var milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;
+        var day = ms / Dd;
+        var hour = (ms - day * Dd) / Hh;
+        var minute = (ms - day * Dd - hour * Hh) / Mi;
+        var second = (ms - day * Dd - hour * Hh - minute * Mi) / Ss;
+        var milliSecond = ms - day * Dd - hour * Hh - minute * Mi - second * Ss;
 
         // 天
         var sDay = day < 10 ? "0" + day : string.Empty + day;
@@ -248,16 +248,18 @@ public static class DateTimeFormatExtensions
         return dep.TotalSeconds < 10
             ? "刚刚"
             : dep.TotalSeconds is >= 10 and < 60
-            ? (int)dep.TotalSeconds + "秒前"
-            : dep.TotalMinutes is >= 1 and < 60
-            ? (int)dep.TotalMinutes + "分钟前"
-            : dep.TotalHours < 24
-            ? (int)dep.TotalHours + "小时前"
-            : dep.TotalDays < 7
-            ? (int)dep.TotalDays + "天前"
-            : dep.TotalDays is >= 7 and < 30
-            ? (int)dep.TotalDays / 7 + "周前"
-            : dep.TotalDays is >= 30 and < 365 ? (int)dep.TotalDays / 30 + "个月前" : now.Year - value.Year + "年前";
+                ? (int)dep.TotalSeconds + "秒前"
+                : dep.TotalMinutes is >= 1 and < 60
+                    ? (int)dep.TotalMinutes + "分钟前"
+                    : dep.TotalHours < 24
+                        ? (int)dep.TotalHours + "小时前"
+                        : dep.TotalDays < 7
+                            ? (int)dep.TotalDays + "天前"
+                            : dep.TotalDays is >= 7 and < 30
+                                ? (int)dep.TotalDays / 7 + "周前"
+                                : dep.TotalDays is >= 30 and < 365
+                                    ? (int)dep.TotalDays / 30 + "个月前"
+                                    : now.Year - value.Year + "年前";
     }
 
     /// <summary>

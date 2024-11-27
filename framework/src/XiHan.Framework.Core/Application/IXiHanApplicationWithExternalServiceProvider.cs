@@ -24,17 +24,17 @@ public interface IXiHanApplicationWithExternalServiceProvider : IXiHanApplicatio
     /// <summary>
     /// 设置服务提供器，但不初始化模块
     /// </summary>
-    void SetServiceProvider([NotNull] IServiceProvider serviceProvider);
+    void SetServiceProvider(IServiceProvider serviceProvider);
 
     /// <summary>
     /// 设置服务提供器并初始化所有模块，异步
     /// 如果之前调用过 <see cref="SetServiceProvider"/>，则应将相同的 <paramref name="serviceProvider"/> 实例传递给此方法
     /// </summary>
-    Task InitializeAsync([NotNull] IServiceProvider serviceProvider);
+    Task InitializeAsync(IServiceProvider serviceProvider);
 
     /// <summary>
     /// 设置服务提供器并初始化所有模块
     /// 如果之前调用过 <see cref="SetServiceProvider"/>，则应将相同的 <paramref name="serviceProvider"/> 实例传递给此方法
     /// </summary>
-    void Initialize([NotNull] IServiceProvider serviceProvider);
+    void Initialize(IServiceProvider serviceProvider);
 }

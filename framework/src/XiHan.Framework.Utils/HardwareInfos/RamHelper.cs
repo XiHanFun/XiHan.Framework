@@ -14,6 +14,7 @@
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
+using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;

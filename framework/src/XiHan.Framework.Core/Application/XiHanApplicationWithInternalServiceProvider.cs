@@ -33,7 +33,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// </summary>
     /// <param name="startupModuleType"></param>
     /// <param name="optionsAction"></param>
-    public XiHanApplicationWithInternalServiceProvider([NotNull] Type startupModuleType, Action<XiHanApplicationCreationOptions>? optionsAction)
+    public XiHanApplicationWithInternalServiceProvider(Type startupModuleType, Action<XiHanApplicationCreationOptions>? optionsAction)
         : this(startupModuleType, new ServiceCollection(), optionsAction)
     {
     }
@@ -45,8 +45,8 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// <param name="services"></param>
     /// <param name="optionsAction"></param>
     private XiHanApplicationWithInternalServiceProvider(
-        [NotNull] Type startupModuleType,
-        [NotNull] IServiceCollection services,
+        Type startupModuleType,
+        IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction) : base(startupModuleType, services, optionsAction)
     {
         _ = Services.AddSingleton<IXiHanApplicationWithInternalServiceProvider>(this);
@@ -66,7 +66,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
         ServiceScope = Services.BuildServiceProviderFromFactory().CreateScope();
         SetServiceProvider(ServiceScope.ServiceProvider);
 
-        return ServiceProvider!;
+        return ServiceProvider;
     }
 
     /// <summary>

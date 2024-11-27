@@ -88,15 +88,24 @@ public static class MemberInfoExtensions
     /// </summary>
     /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="type">要检查的类型成员</param>
-    /// <param name="inherit">是否从继承中查找</param>
     /// <returns></returns>
-    public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type type, bool inherit = true)
-        where TAttribute : Attribute
+    public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type? type) where TAttribute : Attribute
     {
-        var attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
-        return attr ?? (type.GetTypeInfo().BaseType == null
-            ? null
-            : (type.GetTypeInfo().BaseType?.GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(inherit)));
+        while (true)
+        {
+            var attr = type?.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
+            if (attr != null)
+            {
+                return attr;
+            }
+
+            if (type != null && type.GetTypeInfo().BaseType == null)
+            {
+                return null;
+            }
+
+            type = type?.GetTypeInfo().BaseType;
+        }
     }
 
     #endregion
