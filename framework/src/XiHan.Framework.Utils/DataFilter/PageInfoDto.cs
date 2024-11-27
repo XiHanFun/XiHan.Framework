@@ -36,7 +36,7 @@ public class PageInfoDto
     /// </summary>
     private const int DefaultMinPageSize = 1;
 
-    #endregion
+    #endregion 默认值
 
     private readonly int _currentIndex = 1;
     private readonly int _pageSize = 20;

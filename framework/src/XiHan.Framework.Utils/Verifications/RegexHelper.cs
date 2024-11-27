@@ -34,7 +34,7 @@ public static partial class RegexHelper
         return Regex.IsMatch(input, pattern, options);
     }
 
-    #endregion
+    #endregion 验证输入字符串是否与模式字符串匹配
 
     #region 是否 Guid
 
@@ -48,7 +48,7 @@ public static partial class RegexHelper
         return GuidRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否 Guid
 
     #region 是否中国电话
 
@@ -62,7 +62,7 @@ public static partial class RegexHelper
         return NumberTelRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否中国电话
 
     #region 是否身份证
 
@@ -158,7 +158,7 @@ public static partial class RegexHelper
         return DateTime.TryParse(birth, out _);
     }
 
-    #endregion
+    #endregion 是否身份证
 
     #region 是否邮箱
 
@@ -172,7 +172,7 @@ public static partial class RegexHelper
         return EmailRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否邮箱
 
     #region 是否数字
 
@@ -286,7 +286,7 @@ public static partial class RegexHelper
         return NumberNegativeIntNotZeroRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否数字
 
     #region 是否字母
 
@@ -320,7 +320,7 @@ public static partial class RegexHelper
         return LetterLowerRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否字母
 
     #region 是否数字或英文字母
 
@@ -334,7 +334,7 @@ public static partial class RegexHelper
         return NumberOrLetterRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否数字或英文字母
 
     #region 字符串长度限定
 
@@ -361,7 +361,7 @@ public static partial class RegexHelper
         return CharThreeRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 字符串长度限定
 
     #region 是否邮政编码
 
@@ -375,7 +375,7 @@ public static partial class RegexHelper
         return PostCodeRegex().IsMatch(source);
     }
 
-    #endregion
+    #endregion 是否邮政编码
 
     #region 是否特殊字符
 
@@ -389,7 +389,7 @@ public static partial class RegexHelper
         return CharSpecialRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否特殊字符
 
     #region 是否汉字
 
@@ -413,7 +413,7 @@ public static partial class RegexHelper
         return ChineseRegex().Matches(checkValue).Count == checkValue.Length;
     }
 
-    #endregion
+    #endregion 是否汉字
 
     #region 是否网址
 
@@ -427,7 +427,7 @@ public static partial class RegexHelper
         return UrlRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否网址
 
     #region 是否日期
 
@@ -468,7 +468,7 @@ public static partial class RegexHelper
         return DayRegex().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否日期
 
     #region 是否 Ip 地址
 
@@ -518,7 +518,7 @@ public static partial class RegexHelper
         return result;
     }
 
-    #endregion
+    #endregion 是否 Ip 地址
 
     #region 是否 Cron 表达式
 
@@ -532,7 +532,7 @@ public static partial class RegexHelper
         return IsCron().IsMatch(checkValue);
     }
 
-    #endregion
+    #endregion 是否 Cron 表达式
 
     [GeneratedRegex(@"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$", RegexOptions.IgnoreCase, "zh-CN")]
     private static partial Regex GuidRegex();

@@ -120,24 +120,15 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string? Length(string? value, string parameterName, int maxLength, int minLength = 0)
     {
-        if (minLength <= 0)
-        {
-            return value != null && value.Length > maxLength
+        return minLength <= 0
+            ? value != null && value.Length > maxLength
                 ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
-                : value;
-        }
-
-        if (string.IsNullOrEmpty(value))
-        {
-            throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName);
-        }
-
-        if (value.Length < minLength)
-        {
-            throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName);
-        }
-
-        return value.Length > maxLength
+                : value
+            : string.IsNullOrEmpty(value)
+            ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName)
+            : value.Length < minLength
+            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+            : value.Length > maxLength
             ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
             : value;
     }

@@ -71,7 +71,7 @@ public static class EciesHelper
     {
         // 生成发送方的临时密钥对
         using var senderEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
-        senderEcdh.ExportECPrivateKey();
+        _ = senderEcdh.ExportECPrivateKey();
         var senderPublicKey = senderEcdh.ExportSubjectPublicKeyInfo();
 
         // 使用接收方的公钥生成共享密钥

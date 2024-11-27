@@ -84,7 +84,7 @@ public static class RandomHelper
         return GetRandom(length ?? 6, source ?? DefaultNumberOrLetterSource);
     }
 
-    #endregion
+    #endregion 常用类型
 
     #region 其他类型
 
@@ -191,7 +191,7 @@ public static class RandomHelper
         var enumerable = items as T[] ?? items.ToArray();
         _ = CheckHelper.NotNull(enumerable, nameof(items));
 
-        List<T> currentList = [..enumerable];
+        List<T> currentList = [.. enumerable];
         List<T> randomList = [];
 
         while (currentList.Count != 0)
@@ -204,5 +204,5 @@ public static class RandomHelper
         return randomList;
     }
 
-    #endregion
+    #endregion 其他类型
 }

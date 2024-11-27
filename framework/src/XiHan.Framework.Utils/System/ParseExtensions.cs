@@ -34,7 +34,7 @@ public static class ParseExtensions
         return thisValue != null && thisValue != DBNull.Value && bool.TryParse(thisValue.ToString(), out var reveal) && reveal;
     }
 
-    #endregion
+    #endregion Bool
 
     #region Short
 
@@ -65,7 +65,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Short
 
     #region Long
 
@@ -96,7 +96,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Long
 
     #region Float
 
@@ -129,7 +129,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Float
 
     #region Double
 
@@ -162,7 +162,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Double
 
     #region Decimal
 
@@ -195,7 +195,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Decimal
 
     #region Int
 
@@ -224,7 +224,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Int
 
     #region Money
 
@@ -255,7 +255,7 @@ public static class ParseExtensions
                 : errorValue;
     }
 
-    #endregion
+    #endregion Money
 
     #region String
 
@@ -322,7 +322,7 @@ public static class ParseExtensions
         return thisValue.IsNotEmptyOrNull() && thisValue.ParseToString() != "0";
     }
 
-    #endregion
+    #endregion String
 
     #region DateTime
 
@@ -355,7 +355,7 @@ public static class ParseExtensions
             : errorValue;
     }
 
-    #endregion
+    #endregion DateTime
 
     #region Guid
 
@@ -377,7 +377,7 @@ public static class ParseExtensions
         }
     }
 
-    #endregion
+    #endregion Guid
 
     #region Dictionary
 
@@ -421,16 +421,16 @@ public static class ParseExtensions
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
             var item = (objDynamic as object).GetType().GetProperties()
-                .Where(prop => !prop.HasAttribute<TAttribute>() || prop.HasAttribute<TAttribute>() &&
+                .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
-                        .GetPropertyValue<TAttribute, bool>("IsIgnore"))
+                        .GetPropertyValue<TAttribute, bool>("IsIgnore")))
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;
         }
     }
 
-    #endregion
+    #endregion Dictionary
 
     #region 强制转换类型
 
@@ -514,8 +514,8 @@ public static class ParseExtensions
     public static IEnumerable<TResult> CastSuper<TResult>(this IEnumerable source)
     {
         return from object? item in source
-            select (TResult)Convert.ChangeType(item, typeof(TResult));
+               select (TResult)Convert.ChangeType(item, typeof(TResult));
     }
 
-    #endregion
+    #endregion 强制转换类型
 }

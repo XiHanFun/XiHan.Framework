@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
