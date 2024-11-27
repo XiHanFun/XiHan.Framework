@@ -61,7 +61,7 @@ public static class StringHelper
         return isAllowsDuplicates ? result : result.Distinct();
     }
 
-    #endregion
+    #endregion 分割
 
     #region 组装
 
@@ -135,7 +135,7 @@ public static class StringHelper
         return sb.ToString();
     }
 
-    #endregion
+    #endregion 组装
 
     #region 删除结尾分割器
 
@@ -150,7 +150,7 @@ public static class StringHelper
         return sourceStr[..sourceStr.LastIndexOf(sepeater)];
     }
 
-    #endregion
+    #endregion 删除结尾分割器
 
     #region 转换为纯字符串
 
@@ -178,7 +178,7 @@ public static class StringHelper
         return result;
     }
 
-    #endregion
+    #endregion 转换为纯字符串
 
     #region 转换为新样式
 
@@ -241,7 +241,7 @@ public static class StringHelper
         return returnValue;
     }
 
-    #endregion
+    #endregion 转换为新样式
 
     #region 是否 SQL 安全字符串
 
@@ -265,7 +265,7 @@ public static class StringHelper
         return sourceStr;
     }
 
-    #endregion
+    #endregion 是否 SQL 安全字符串
 
     #region 检查验证
 
@@ -296,7 +296,7 @@ public static class StringHelper
         return value.Length != 0 && myRegex.IsMatch(value);
     }
 
-    #endregion
+    #endregion 检查验证
 
     #region 得到字符串长度
 
@@ -325,7 +325,7 @@ public static class StringHelper
         return tempLen;
     }
 
-    #endregion
+    #endregion 得到字符串长度
 
     #region 截取指定长度字符串
 
@@ -383,7 +383,7 @@ public static class StringHelper
         return sb.ToString();
     }
 
-    #endregion
+    #endregion 截取指定长度字符串
 
     #region HTML 转行成 TEXT
 
@@ -418,7 +418,7 @@ public static class StringHelper
         return strOutput;
     }
 
-    #endregion
+    #endregion HTML 转行成 TEXT
 
     #region 首字母处理
 
@@ -442,7 +442,7 @@ public static class StringHelper
         return value[..1].ToLowerInvariant() + value[1..];
     }
 
-    #endregion
+    #endregion 首字母处理
 
     #region 整体替换
 
@@ -485,7 +485,7 @@ public static class StringHelper
         return strBuffer.ToString();
     }
 
-    #endregion
+    #endregion 整体替换
 
     #region 字节数组转换字符串
 
@@ -509,5 +509,5 @@ public static class StringHelper
         return hasBom ? encoding.GetString(bytes, 3, bytes.Length - 3) : encoding.GetString(bytes);
     }
 
-    #endregion
+    #endregion 字节数组转换字符串
 }

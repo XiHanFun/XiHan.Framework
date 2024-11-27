@@ -79,7 +79,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string NormalizeLineEndings(this string str)
     {
-        return str.Replace("\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
+        return str.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
     }
 
     /// <summary>

@@ -113,7 +113,7 @@ public static class ObjectExtensions
         return obj;
     }
 
-    #endregion
+    #endregion 转换检查
 
     #region 对象全名
 
@@ -131,7 +131,7 @@ public static class ObjectExtensions
             : fullName ?? throw new ArgumentNullException(nameof(fullName));
     }
 
-    #endregion
+    #endregion 对象全名
 
     #region 字段信息
 
@@ -185,7 +185,7 @@ public static class ObjectExtensions
         return foundFieldInfos ?? throw new NotImplementedException(nameof(foundFieldInfos));
     }
 
-    #endregion
+    #endregion 字段信息
 
     #region 属性信息
 
@@ -239,7 +239,7 @@ public static class ObjectExtensions
         return foundPropertyInfos ?? throw new NotImplementedException(nameof(foundPropertyInfos));
     }
 
-    #endregion
+    #endregion 属性信息
 
     #region 判断为空
 
@@ -270,5 +270,5 @@ public static class ObjectExtensions
         return data is DBNull;
     }
 
-    #endregion
+    #endregion 判断为空
 }

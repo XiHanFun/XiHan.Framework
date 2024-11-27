@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
@@ -217,7 +216,7 @@ public class XiHanApplicationBase : IXiHanApplication
         scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModules(new ApplicationInitializationContext(scope.ServiceProvider));
     }
 
-    #endregion
+    #endregion 初始化模块
 
     #region 配置服务
 
@@ -406,7 +405,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
     }
 
-    #endregion
+    #endregion 配置服务
 
     #region 关闭应用
 
@@ -436,5 +435,5 @@ public class XiHanApplicationBase : IXiHanApplication
         //TODO: 如果之前没有完成，就进行关闭?
     }
 
-    #endregion
+    #endregion 关闭应用
 }
