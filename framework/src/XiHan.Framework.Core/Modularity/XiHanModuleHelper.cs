@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using System.Reflection;
-using XiHan.Framework.Utils.Collections.Generic;
+using XiHan.Framework.Utils.Collections;
 
 namespace XiHan.Framework.Core.Modularity;
 
