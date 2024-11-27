@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -240,7 +239,7 @@ public static class AssemblyHelper
         return GetEffectiveAssemblies("XiHan", "dll", "Application");
     }
 
-    #endregion
+    #endregion 程序集
 
     #region 程序集类
 
@@ -305,7 +304,7 @@ public static class AssemblyHelper
             .Distinct();
     }
 
-    #endregion
+    #endregion 程序集类
 
     #region 获取包含有某属性的类
 
@@ -334,7 +333,7 @@ public static class AssemblyHelper
             .Where(e => e.CustomAttributes.Any(g => g.AttributeType == attribute.GetType()));
     }
 
-    #endregion
+    #endregion 获取包含有某属性的类
 
     #region 获取不包含有某属性的类
 
@@ -363,7 +362,7 @@ public static class AssemblyHelper
             .Where(e => e.CustomAttributes.All(g => g.AttributeType != attribute.GetType()));
     }
 
-    #endregion
+    #endregion 获取不包含有某属性的类
 
     #region 获取某类的子类(非抽象类)
 
@@ -408,7 +407,7 @@ public static class AssemblyHelper
             .ToList();
     }
 
-    #endregion
+    #endregion 获取某类的子类(非抽象类)
 
     #region 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
 
@@ -439,7 +438,7 @@ public static class AssemblyHelper
         return GetSubClasses(type).Intersect(GetContainsAttributeTypes<TAttribute>());
     }
 
-    #endregion
+    #endregion 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
 
     #region 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
 
@@ -470,7 +469,7 @@ public static class AssemblyHelper
         return GetSubClasses(type).Intersect(GetFilterAttributeTypes<TAttribute>());
     }
 
-    #endregion
+    #endregion 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
 
     #region 程序集依赖包
 
@@ -502,7 +501,8 @@ public static class AssemblyHelper
                 NuGetPackage nuGetPackage = new()
                 {
                     // 获取 NuGet 包的名称和版本号
-                    PackageName = referencedAssembly.Name!, PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
+                    PackageName = referencedAssembly.Name!,
+                    PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
                 };
 
                 // 避免重复添加相同的 NuGet 包标识
@@ -516,7 +516,7 @@ public static class AssemblyHelper
         return nugetPackages;
     }
 
-    #endregion
+    #endregion 程序集依赖包
 
     #region 私有方法
 
@@ -622,7 +622,7 @@ public static class AssemblyHelper
         return assembly;
     }
 
-    #endregion
+    #endregion 私有方法
 }
 
 /// <summary>
@@ -632,7 +632,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return x == null && y == null || x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
+        return (x == null && y == null) || (x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
     }
 
     public override int GetHashCode(Assembly obj)

@@ -186,14 +186,11 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
 
         var redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
 
-        if (redirectedType != null)
-        {
-            return serviceKey == null
+        return redirectedType != null
+            ? serviceKey == null
                 ? ServiceDescriptor.Describe(exposingServiceType, provider => provider.GetService(redirectedType)!, lifeTime)
-                : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime);
-        }
-
-        return serviceKey == null
+                : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime)
+            : serviceKey == null
             ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
             : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
     }
