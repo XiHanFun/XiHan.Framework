@@ -46,33 +46,28 @@ public static class PingHelper
         var options = new PingOptions(ttl, true);
 
         var result = new StringBuilder();
-        result.AppendLine($"开始 Ping {host}，共 {pingCount} 次：");
+        _ = result.AppendLine($"开始 Ping {host}，共 {pingCount} 次：");
 
         for (var i = 1; i <= pingCount; i++)
         {
             try
             {
                 var reply = ping.Send(host, timeout, buffer, options);
-                if (reply.Status == IPStatus.Success)
-                {
-                    result.AppendLine($"第 {i} 次：成功，地址：{reply.Address}，往返时间：{reply.RoundtripTime}ms，TTL：{reply.Options?.Ttl}");
-                }
-                else
-                {
-                    result.AppendLine($"第 {i} 次：失败，状态：{reply.Status}");
-                }
+                _ = reply.Status == IPStatus.Success
+                    ? result.AppendLine($"第 {i} 次：成功，地址：{reply.Address}，往返时间：{reply.RoundtripTime}ms，TTL：{reply.Options?.Ttl}")
+                    : result.AppendLine($"第 {i} 次：失败，状态：{reply.Status}");
             }
             catch (PingException ex)
             {
-                result.AppendLine($"第 {i} 次：Ping 异常，错误信息：{ex.Message}");
+                _ = result.AppendLine($"第 {i} 次：Ping 异常，错误信息：{ex.Message}");
             }
             catch (Exception ex)
             {
-                result.AppendLine($"第 {i} 次：未知错误，错误信息：{ex.Message}");
+                _ = result.AppendLine($"第 {i} 次：未知错误，错误信息：{ex.Message}");
             }
         }
 
-        result.AppendLine("Ping 操作结束。");
+        _ = result.AppendLine("Ping 操作结束。");
         return result.ToString();
     }
 

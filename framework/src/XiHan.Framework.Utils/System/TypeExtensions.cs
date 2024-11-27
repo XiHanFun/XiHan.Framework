@@ -153,7 +153,7 @@ public static class TypeExtensions
         return type.IsBaseOn(baseType);
     }
 
-    #endregion
+    #endregion 判断类型
 
     #region 空类型
 
@@ -183,7 +183,7 @@ public static class TypeExtensions
         return nullableConverter.UnderlyingType;
     }
 
-    #endregion
+    #endregion 空类型
 
     #region 获取描述
 
@@ -213,7 +213,7 @@ public static class TypeExtensions
         return result;
     }
 
-    #endregion
+    #endregion 获取描述
 
     #region 类型名称
 
@@ -261,7 +261,7 @@ public static class TypeExtensions
         return sb.ToString();
     }
 
-    #endregion
+    #endregion 类型名称
 
     #region 私有方法
 

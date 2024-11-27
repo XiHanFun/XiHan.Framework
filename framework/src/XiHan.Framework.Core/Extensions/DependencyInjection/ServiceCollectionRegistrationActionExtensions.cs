@@ -82,7 +82,7 @@ public static class ServiceCollectionRegistrationActionExtensions
         return GetOrCreateRegistrationActionList(services).IsClassInterceptorsDisabled;
     }
 
-    #endregion
+    #endregion 注册
 
     #region 暴露
 
@@ -125,5 +125,5 @@ public static class ServiceCollectionRegistrationActionExtensions
         return actionList;
     }
 
-    #endregion
+    #endregion 暴露
 }

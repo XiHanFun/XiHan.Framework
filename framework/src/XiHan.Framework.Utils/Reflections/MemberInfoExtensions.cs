@@ -51,7 +51,7 @@ public static class MemberInfoExtensions
             : member.Name;
     }
 
-    #endregion
+    #endregion 描述信息
 
     #region 特性信息
 
@@ -108,5 +108,5 @@ public static class MemberInfoExtensions
         }
     }
 
-    #endregion
+    #endregion 特性信息
 }

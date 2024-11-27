@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Core.Application;
@@ -89,7 +88,7 @@ public static class XiHanApplicationFactory
         return new XiHanApplicationWithInternalServiceProvider(startupModuleType, optionsAction);
     }
 
-    #endregion
+    #endregion 创建集成服务应用
 
     #region 创建外部服务应用
 
@@ -165,5 +164,5 @@ public static class XiHanApplicationFactory
         return new XiHanApplicationWithExternalServiceProvider(startupModuleType, services, optionsAction);
     }
 
-    #endregion
+    #endregion 创建外部服务应用
 }
