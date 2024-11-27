@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.DataFilter.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Dtos;
 
 /// <summary>
 /// 通用选择条件基类

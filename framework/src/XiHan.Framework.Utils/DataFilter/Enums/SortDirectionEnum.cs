@@ -22,12 +22,6 @@ namespace XiHan.Framework.Utils.DataFilter.Enums;
 public enum SortDirectionEnum
 {
     /// <summary>
-    /// 不排序
-    /// </summary>
-    [Description("不排序")]
-    None,
-
-    /// <summary>
     /// 升序
     /// </summary>
     [Description("升序")]

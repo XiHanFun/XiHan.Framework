@@ -15,7 +15,7 @@
 using System.Collections.Concurrent;
 using System.Dynamic;
 
-namespace XiHan.Framework.Utils.Collections.Generic;
+namespace XiHan.Framework.Utils.Collections;
 
 /// <summary>
 /// 字典扩展方法

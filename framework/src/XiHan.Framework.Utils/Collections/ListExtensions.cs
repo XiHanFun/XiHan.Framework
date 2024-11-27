@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Collections.Generic;
+namespace XiHan.Framework.Utils.Collections;
 
 /// <summary>
 /// 列表扩展方法
@@ -350,7 +350,7 @@ public static class ListExtensions
         {
             if (inProcess)
             {
-                throw new ArgumentException("发现循环依赖！项:" + item);
+                throw new ArgumentException("发现循环依赖项:" + item);
             }
         }
         else
