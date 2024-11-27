@@ -150,7 +150,9 @@ public static class GenericExtensions
         var properties = type.GetProperties();
         return properties.Select(info => new CustomPropertyInfo
         {
-            PropertyName = info.Name, PropertyType = info.PropertyType.Name, PropertyValue = info.GetValue(entity).ParseToString()
+            PropertyName = info.Name,
+            PropertyType = info.PropertyType.Name,
+            PropertyValue = info.GetValue(entity).ParseToString()
         }).ToList();
     }
 
@@ -180,7 +182,9 @@ public static class GenericExtensions
                 {
                     result.Add(new CustomPropertyVariance
                     {
-                        PropertyName = variance.Name, Value1 = value1.ToString() ?? string.Empty, Value2 = value2.ToString() ?? string.Empty
+                        PropertyName = variance.Name,
+                        Value1 = value1.ToString() ?? string.Empty,
+                        Value2 = value2.ToString() ?? string.Empty
                     });
                 }
             }
@@ -189,7 +193,9 @@ public static class GenericExtensions
             {
                 result.Add(new CustomPropertyVariance
                 {
-                    PropertyName = variance.Name, Value1 = value1?.ToString() ?? string.Empty, Value2 = value2?.ToString() ?? string.Empty
+                    PropertyName = variance.Name,
+                    Value1 = value1?.ToString() ?? string.Empty,
+                    Value2 = value2?.ToString() ?? string.Empty
                 });
             }
         }
@@ -211,7 +217,9 @@ public static class GenericExtensions
         var list = oldVal.GetPropertiesDetailedCompare(newVal);
         var newList = list.Select(s => new
         {
-            s.PropertyName, s.Value1, s.Value2
+            s.PropertyName,
+            s.Value1,
+            s.Value2
         });
 
         // 要排除某些特殊属性
@@ -227,7 +235,7 @@ public static class GenericExtensions
         return !enumerable.ChangedNote.Any() ? "{}" : SerializeHelper.SerializeTo(enumerable);
     }
 
-    #endregion
+    #endregion 属性信息
 
     #region 判断为空
 
@@ -259,7 +267,7 @@ public static class GenericExtensions
         return data is DBNull;
     }
 
-    #endregion
+    #endregion 判断为空
 
     #region 判断范围
 
@@ -296,7 +304,7 @@ public static class GenericExtensions
         return flag && (maxEqual ? value.CompareTo(max) <= 0 : value.CompareTo(max) < 0);
     }
 
-    #endregion
+    #endregion 判断范围
 }
 
 /// <summary>
