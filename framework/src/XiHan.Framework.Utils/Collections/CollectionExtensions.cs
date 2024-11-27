@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Collections.Generic;
+namespace XiHan.Framework.Utils.Collections;
 
 /// <summary>
 /// 集合扩展方法

@@ -15,23 +15,13 @@
 using System.Linq.Expressions;
 using XiHan.Framework.Utils.DataFilter.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Dtos;
 
 /// <summary>
 /// 通用排序条件基类
 /// </summary>
 public class SortConditionDto
 {
-    /// <summary>
-    /// 排序字段名称
-    /// </summary>
-    public string SortField { get; set; }
-
-    /// <summary>
-    /// 排序方向
-    /// </summary>
-    public SortDirectionEnum SortDirection { get; set; }
-
     /// <summary>
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
@@ -42,6 +32,21 @@ public class SortConditionDto
         SortField = sortField;
         SortDirection = sortDirection;
     }
+
+    /// <summary>
+    /// 优先级
+    /// </summary>
+    public int Priority { get; set; }
+
+    /// <summary>
+    /// 排序字段名称
+    /// </summary>
+    public string SortField { get; set; }
+
+    /// <summary>
+    /// 排序方向
+    /// </summary>
+    public SortDirectionEnum SortDirection { get; set; }
 }
 
 /// <summary>
@@ -57,15 +62,19 @@ public class SortConditionDto<T> : SortConditionDto
     {
     }
 
+    #region 私有方法
+
     /// <summary>
     /// 从泛型委托获取属性名
     /// </summary>
     private static string GetPropertyName(Expression<Func<T, object>> keySelector)
     {
-        var param = keySelector.Parameters.First().Name ?? throw new ArgumentException("参数不能为空", nameof(keySelector));
-
-        string operand = ((dynamic)keySelector.Body).Operand.ToString();
-        operand = operand.Substring(param.Length + 1, operand.Length - param.Length - 1);
-        return operand;
+        return keySelector.Body is MemberExpression memberExpression
+            ? memberExpression.Member.Name
+            : keySelector.Body is UnaryExpression unaryExpression
+            ? ((MemberExpression)unaryExpression.Operand).Member.Name
+            : throw new ArgumentException("排序字段表达式不正确");
     }
+
+    #endregion
 }
