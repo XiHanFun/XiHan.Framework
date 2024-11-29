@@ -25,6 +25,31 @@ namespace XiHan.Framework.Utils.Collections;
 public static class QueryableExtensions
 {
     /// <summary>
+    /// 对 <see cref="IQueryable{T}"/> 进行过滤
+    /// </summary>
+    /// <param name="source">要应用过滤的查询对象</param>
+    /// <param name="selectCondition">查询条件</param>
+    /// <returns>基于 <paramref name="selectCondition"/> 的过滤或未过滤的查询对象</returns>
+    public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto selectCondition)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IQueryable{T}"/> 进行多条件过滤
+    /// </summary>
+    /// <param name="source">要应用过滤的查询对象</param>
+    /// <param name="selectConditions">查询条件</param>
+    /// <returns>基于 <paramref name="selectConditions"/> 的过滤或未过滤的查询对象</returns>
+    public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto> selectConditions)
+    {
+        if (selectConditions == null || !selectConditions.Any())
+        {
+            return source;
+        }
+    }
+
+    /// <summary>
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IQueryable{T}"/> 进行过滤
     /// </summary>
     /// <param name="source">要应用过滤的查询对象</param>
@@ -117,7 +142,7 @@ public static class QueryableExtensions
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
     /// <returns>排序后的集合</returns>
-    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, List<SortConditionDto> sortConditions)
+    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto> sortConditions)
     {
         // 按优先级升序排列排序条件
         var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
@@ -141,7 +166,7 @@ public static class QueryableExtensions
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
     /// <returns>排序后的集合</returns>
-    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, List<SortConditionDto<T>> sortConditions)
+    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
     {
         // 按优先级升序排列排序条件
         var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();

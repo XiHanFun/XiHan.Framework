@@ -109,6 +109,7 @@ public static class CollectionExtensions
     public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
     {
         _ = CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(items, nameof(items));
 
         List<T> addedItems = [];
 
@@ -137,8 +138,6 @@ public static class CollectionExtensions
     public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
     {
         _ = CheckHelper.NotNull(source, nameof(source));
-        _ = CheckHelper.NotNull(predicate, nameof(predicate));
-        _ = CheckHelper.NotNull(itemFactory, nameof(itemFactory));
 
         if (source.Any(predicate))
         {
@@ -158,6 +157,8 @@ public static class CollectionExtensions
     /// <returns>被移除项的列表</returns>
     public static IList<T> RemoveAll<T>(this ICollection<T> source, Func<T, bool> predicate)
     {
+        _ = CheckHelper.NotNull(source, nameof(source));
+
         var items = source.Where(predicate).ToList();
 
         foreach (var item in items)
@@ -176,6 +177,9 @@ public static class CollectionExtensions
     /// <param name="items">要移除的项的集合</param>
     public static void RemoveAll<T>(this ICollection<T> source, IEnumerable<T> items)
     {
+        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = CheckHelper.NotNull(items, nameof(items));
+
         foreach (var item in items)
         {
             _ = source.Remove(item);
