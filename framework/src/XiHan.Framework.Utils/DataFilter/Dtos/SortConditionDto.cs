@@ -26,22 +26,24 @@ public class SortConditionDto
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
     /// <param name="sortField">字段名称</param>
+    /// <param name="priority">优先级</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(string sortField, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
+    public SortConditionDto(string sortField, int priority, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
-        SortField = sortField;
         SortDirection = sortDirection;
+        SortField = sortField;
+        Priority = priority;
     }
-
-    /// <summary>
-    /// 优先级
-    /// </summary>
-    public int Priority { get; set; }
 
     /// <summary>
     /// 排序字段名称
     /// </summary>
     public string SortField { get; set; }
+
+    /// <summary>
+    /// 优先级
+    /// </summary>
+    public int Priority { get; set; }
 
     /// <summary>
     /// 排序方向
@@ -56,25 +58,13 @@ public class SortConditionDto
 public class SortConditionDto<T> : SortConditionDto
 {
     /// <summary>
-    /// 使用排序字段与排序方式 初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
     /// </summary>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection = SortDirectionEnum.Asc) : base(GetPropertyName(keySelector), sortDirection)
+    /// <param name="keySelector">属性选择器</param>
+    /// <param name="priority">优先级</param>
+    /// <param name="sortDirection">排序方式</param>
+    public SortConditionDto(Expression<Func<T, object>> keySelector, int priority, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
+        : base(KeySelector<T>.GetPropertyName(keySelector), priority, sortDirection)
     {
     }
-
-    #region 私有方法
-
-    /// <summary>
-    /// 从泛型委托获取属性名
-    /// </summary>
-    private static string GetPropertyName(Expression<Func<T, object>> keySelector)
-    {
-        return keySelector.Body is MemberExpression memberExpression
-            ? memberExpression.Member.Name
-            : keySelector.Body is UnaryExpression unaryExpression
-            ? ((MemberExpression)unaryExpression.Operand).Member.Name
-            : throw new ArgumentException("排序字段表达式不正确");
-    }
-
-    #endregion
 }

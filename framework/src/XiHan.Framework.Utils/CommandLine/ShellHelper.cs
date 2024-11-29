@@ -68,7 +68,7 @@ public static class ShellHelper
             FileName = fileName,
             Arguments = args,
             RedirectStandardOutput = true,
-            // 指定是否使用操作系统的外壳程序来启动进程。如果设置为 false，则使用 CreateProcess 函数直接启动进程
+            // 指定是否使用操作系统的外壳程序来启动进程，如果设置为 false，则使用 CreateProcess 函数直接启动进程
             UseShellExecute = false,
             // 指定是否在启动进程时创建一个新的窗口
             CreateNoWindow = true
