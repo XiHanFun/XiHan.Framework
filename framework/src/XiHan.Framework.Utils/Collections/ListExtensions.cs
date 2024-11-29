@@ -329,7 +329,7 @@ public static class ListExtensions
             SortByDependenciesVisit(item, getDependencies, sorted, visited);
         }
 
-        return sorted; // 返回排序后的列表
+        return sorted;
     }
 
     /// <summary>

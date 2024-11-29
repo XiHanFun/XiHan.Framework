@@ -35,7 +35,7 @@ public static class ExpressionParser<T>
     {
         // 检查属性是否有效
         var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
-            throw new ArgumentException($"属性 {propertyName} 在类型 {typeof(T).Name} 中不存在。");
+            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
 
         // 创建表达式参数
         var parameter = Expression.Parameter(typeof(T), "x");

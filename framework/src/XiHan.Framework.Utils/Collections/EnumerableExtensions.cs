@@ -48,6 +48,8 @@ public static class EnumerableExtensions
         return string.Join(separator, source);
     }
 
+    #region 筛选
+
     /// <summary>
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
     /// </summary>
@@ -71,6 +73,10 @@ public static class EnumerableExtensions
     {
         return condition ? source.Where(predicate) : source;
     }
+
+    #endregion
+
+    #region 排序
 
     /// <summary>
     /// 对 <see cref="IEnumerable{T}"/> 进行排序
@@ -193,4 +199,6 @@ public static class EnumerableExtensions
 
         return orderedQuery;
     }
+
+    #endregion
 }
