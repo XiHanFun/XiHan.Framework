@@ -340,8 +340,8 @@ public static class ListExtensions
     /// <param name="getDependencies">用于解析项依赖关系的函数</param>
     /// <param name="sorted">包含排序后项的列表</param>
     /// <param name="visited">包含已访问项的字典</param>
-    private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted,
-        Dictionary<T, bool> visited) where T : notnull
+    private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
+        where T : notnull
     {
         // 检查项是否已经在处理中或已访问过
         var alreadyVisited = visited.TryGetValue(item, out var inProcess);

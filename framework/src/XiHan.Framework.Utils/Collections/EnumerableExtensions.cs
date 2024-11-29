@@ -110,7 +110,7 @@ public static class EnumerableExtensions
     }
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行继续排序
+    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
     /// </summary>
     /// <typeparam name="T">集合元素类型</typeparam>
     /// <param name="source">原始数据源</param>
@@ -123,7 +123,7 @@ public static class EnumerableExtensions
     }
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行继续排序
+    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
     /// </summary>
     /// <typeparam name="T">集合元素类型</typeparam>
     /// <param name="source">原始数据源</param>
@@ -135,7 +135,7 @@ public static class EnumerableExtensions
     }
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行继续排序
+    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
     /// </summary>
     /// <typeparam name="T">集合元素类型</typeparam>
     /// <param name="source">原始数据源</param>
@@ -153,7 +153,7 @@ public static class EnumerableExtensions
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
     /// <returns>排序后的集合</returns>
-    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, List<SortConditionDto> sortConditions)
+    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto> sortConditions)
     {
         // 按优先级升序排列排序条件
         var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
@@ -177,7 +177,7 @@ public static class EnumerableExtensions
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
     /// <returns>排序后的集合</returns>
-    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, List<SortConditionDto<T>> sortConditions)
+    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
     {
         // 按优先级升序排列排序条件
         var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();

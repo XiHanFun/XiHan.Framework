@@ -163,8 +163,8 @@ public static class GenericExtensions
     /// <param name="entity1">对象实例1</param>
     /// <param name="entity2">对象实例2</param>
     /// <returns></returns>
-    public static List<CustomPropertyVariance> GetPropertiesDetailedCompare<TEntity>(this TEntity entity1,
-        TEntity entity2) where TEntity : class
+    public static List<CustomPropertyVariance> GetPropertiesDetailedCompare<TEntity>(this TEntity entity1, TEntity entity2)
+        where TEntity : class
     {
         var propertyInfo = typeof(TEntity).GetProperties();
         List<CustomPropertyVariance> result = [];
@@ -211,8 +211,8 @@ public static class GenericExtensions
     /// <param name="newVal">对象实例2</param>
     /// <param name="specialList">要排除某些特殊属性</param>
     /// <returns></returns>
-    public static string GetPropertiesChangedNote<TEntity>(this TEntity oldVal, TEntity newVal,
-        List<string>? specialList) where TEntity : class
+    public static string GetPropertiesChangedNote<TEntity>(this TEntity oldVal, TEntity newVal, List<string>? specialList)
+        where TEntity : class
     {
         var list = oldVal.GetPropertiesDetailedCompare(newVal);
         var newList = list.Select(s => new

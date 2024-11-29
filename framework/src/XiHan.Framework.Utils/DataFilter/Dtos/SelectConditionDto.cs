@@ -32,11 +32,6 @@ public class SelectConditionDto
     public string Value { get; set; } = string.Empty;
 
     /// <summary>
-    /// 值类型
-    /// </summary>
-    public string ValueType { get; set; } = string.Empty;
-
-    /// <summary>
     /// 选择比较
     /// </summary>
     public SelectCompareEnum SelectCompare { get; set; }

@@ -237,9 +237,10 @@ public static class DateTimeFormatExtensions
     public static string FormatDateTimeToEasyString(this DateTime value)
     {
         var now = DateTime.Now;
-        var strDate = value.ToString("yyyy-MM-dd");
+
         if (now < value)
         {
+            var strDate = value.ToString("yyyy-MM-dd HH:mm:ss");
             return strDate;
         }
 

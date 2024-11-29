@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.DataFilter;
 public static class CollectionPropertySorter<T>
 {
     /// <summary>
-    /// 对 IEnumerable 集合根据属性名称进行初始排序
+    /// 对 IEnumerable 集合根据属性名称进行排序
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="propertyName">属性名称</param>
@@ -32,13 +32,11 @@ public static class CollectionPropertySorter<T>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelector(propertyName);
-        return sortDirection == SortDirectionEnum.Asc
-            ? source.OrderBy(keySelector)
-            : source.OrderByDescending(keySelector);
+        return OrderBy(source, selector => keySelector, sortDirection);
     }
 
     /// <summary>
-    /// 对 IEnumerable 集合进行初始排序
+    /// 对 IEnumerable 集合进行排序
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="keySelector">属性选择器</param>
@@ -52,7 +50,7 @@ public static class CollectionPropertySorter<T>
     }
 
     /// <summary>
-    /// 对 IQueryable 集合根据属性名称进行初始排序
+    /// 对 IQueryable 集合根据属性名称进行排序
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="propertyName">属性名称</param>
@@ -61,13 +59,11 @@ public static class CollectionPropertySorter<T>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return sortDirection == SortDirectionEnum.Asc
-            ? source.OrderBy(keySelector)
-            : source.OrderByDescending(keySelector);
+        return OrderBy(source, selector => keySelector, sortDirection);
     }
 
     /// <summary>
-    /// 对 IQueryable 集合进行初始排序
+    /// 对 IQueryable 集合进行排序
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="keySelector">属性选择器</param>
@@ -90,9 +86,7 @@ public static class CollectionPropertySorter<T>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> orderedSource, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelector(propertyName);
-        return sortDirection == SortDirectionEnum.Asc
-            ? orderedSource.ThenBy(keySelector)
-            : orderedSource.ThenByDescending(keySelector);
+        return ThenBy(orderedSource, selector => keySelector, sortDirection);
     }
 
     /// <summary>
@@ -119,9 +113,7 @@ public static class CollectionPropertySorter<T>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> orderedSource, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return sortDirection == SortDirectionEnum.Asc
-            ? orderedSource.ThenBy(keySelector)
-            : orderedSource.ThenByDescending(keySelector);
+        return ThenBy(orderedSource, selector => keySelector, sortDirection);
     }
 
     /// <summary>
