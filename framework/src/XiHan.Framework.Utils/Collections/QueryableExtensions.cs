@@ -24,6 +24,8 @@ namespace XiHan.Framework.Utils.Collections;
 /// </summary>
 public static class QueryableExtensions
 {
+    #region 筛选
+
     /// <summary>
     /// 对 <see cref="IQueryable{T}"/> 进行过滤
     /// </summary>
@@ -60,6 +62,10 @@ public static class QueryableExtensions
     {
         return condition ? source.Where(predicate) : source;
     }
+
+    #endregion
+
+    #region 排序
 
     /// <summary>
     /// 对 <see cref="IQueryable{T}"/> 进行排序
@@ -182,4 +188,6 @@ public static class QueryableExtensions
 
         return orderedQuery;
     }
+
+    #endregion
 }

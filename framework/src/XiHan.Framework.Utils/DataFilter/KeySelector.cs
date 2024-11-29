@@ -27,15 +27,17 @@ public static class KeySelector<T>
     /// </summary>
     /// <param name="propertyName"></param>
     /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     public static Func<T, object> GetKeySelector(string propertyName)
     {
         var propertyInfo = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
-            throw new ArgumentException($"Property '{propertyName}' does not exist on type '{typeof(T).Name}'.");
+            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
 
         return item =>
         {
             var value = propertyInfo.GetValue(item);
-            return value ?? throw new InvalidOperationException($"Property '{propertyName}' on type '{typeof(T).Name}' returned null.");
+            return value ?? throw new InvalidOperationException($"在类型 {typeof(T).Name} 中的属性 {propertyName} 为空。");
         };
     }
 
@@ -49,5 +51,37 @@ public static class KeySelector<T>
         var parameter = Expression.Parameter(typeof(T), "x");
         var property = Expression.Property(parameter, propertyName);
         return Expression.Lambda<Func<T, object>>(Expression.Convert(property, typeof(object)), parameter);
+    }
+
+    /// <summary>
+    /// 从泛型委托获取属性名
+    /// </summary>
+    /// <param name="keySelector"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    public static string GetPropertyName(Expression<Func<T, object>> keySelector)
+    {
+        return keySelector.Body is MemberExpression memberExpression
+            ? memberExpression.Member.Name
+            : keySelector.Body is UnaryExpression unaryExpression
+            ? ((MemberExpression)unaryExpression.Operand).Member.Name
+            : throw new ArgumentException("字段表达式不正确。");
+    }
+
+    /// <summary>
+    /// 从泛型委托获取属性值
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <param name="keySelector"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    public static object GetPropertyValue(T obj, Expression<Func<T, object>> keySelector)
+    {
+        var propertyName = GetPropertyName(keySelector);
+        var propertyInfo = typeof(T).GetProperty(propertyName) ??
+            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
+
+        return propertyInfo.GetValue(obj) ??
+            throw new InvalidOperationException($"在类型 {typeof(T).Name} 中的属性 {propertyName} 为空。");
     }
 }
