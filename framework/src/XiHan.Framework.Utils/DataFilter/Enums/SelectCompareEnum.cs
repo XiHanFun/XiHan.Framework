@@ -21,11 +21,7 @@ namespace XiHan.Framework.Utils.DataFilter.Enums;
 /// </summary>
 public enum SelectCompareEnum
 {
-    /// <summary>
-    /// 包含
-    /// </summary>
-    [Description("包含")]
-    Contains,
+    #region 单值比较
 
     /// <summary>
     /// 等于
@@ -63,21 +59,37 @@ public enum SelectCompareEnum
     [Description("不等于")]
     NotEqual,
 
+    #endregion
+
+    #region 集合比较
+
     /// <summary>
-    /// 多个值执行包含比较
+    /// 包含
     /// </summary>
-    [Description("多个值执行包含比较")]
+    [Description("包含")]
+    Contains,
+
+    /// <summary>
+    /// 多值包含比较
+    /// </summary>
+    [Description("多值包含比较")]
     InWithContains,
 
     /// <summary>
-    /// 多个值执行等于比较
+    /// 多值等于比较
     /// </summary>
-    [Description("多个值执行等于比较")]
+    [Description("多值等于比较")]
     InWithEqual,
 
+    #endregion
+
+    #region 区间比较
+
     /// <summary>
-    /// 在...之间
+    /// 在于
     /// </summary>
-    [Description("在...之间")]
+    [Description("在于")]
     Between
+
+    #endregion
 }
