@@ -35,46 +35,46 @@ public static class PageExtensions
         return query.Skip((page.CurrentIndex - defaultFirstIndex) * page.PageSize).Take(page.PageSize);
     }
 
-    /// <summary>
-    /// 数据选择分页
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="query"></param>
-    /// <param name="page"></param>
-    /// <param name="selectConditions"></param>
-    /// <returns></returns>
-    public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SelectConditionDto> selectConditions)
-        where T : class, new()
-    {
-        return query.Where(selectConditions).ToPage(page);
-    }
+    ///// <summary>
+    ///// 数据选择分页
+    ///// </summary>
+    ///// <typeparam name="T"></typeparam>
+    ///// <param name="query"></param>
+    ///// <param name="page"></param>
+    ///// <param name="selectConditions"></param>
+    ///// <returns></returns>
+    //public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SelectConditionDto> selectConditions)
+    //    where T : class, new()
+    //{
+    //    return query.Where(selectConditions).ToPage(page);
+    //}
 
-    /// <summary>
-    /// 数据排序分页
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="query"></param>
-    /// <param name="page"></param>
-    /// <param name="sortConditions"></param>
-    /// <returns></returns>
-    public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SortConditionDto> sortConditions)
-        where T : class, new()
-    {
-        return query.ToOrder(sortConditions).ToPage(page);
-    }
+    ///// <summary>
+    ///// 数据排序分页
+    ///// </summary>
+    ///// <typeparam name="T"></typeparam>
+    ///// <param name="query"></param>
+    ///// <param name="page"></param>
+    ///// <param name="sortConditions"></param>
+    ///// <returns></returns>
+    //public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SortConditionDto> sortConditions)
+    //    where T : class, new()
+    //{
+    //    return query.ToOrder(sortConditions).ToPage(page);
+    //}
 
-    /// <summary>
-    /// 数据查询分页
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="query"></param>
-    /// <param name="page"></param>
-    /// <param name="selectConditions"></param>
-    /// <param name="sortConditions"></param>
-    /// <returns></returns>
-    public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SelectConditionDto> selectConditions, IEnumerable<SortConditionDto> sortConditions)
-        where T : class, new()
-    {
-        return query.ToQuery(selectConditions, sortConditions).ToPage(page);
-    }
+    ///// <summary>
+    ///// 数据查询分页
+    ///// </summary>
+    ///// <typeparam name="T"></typeparam>
+    ///// <param name="query"></param>
+    ///// <param name="page"></param>
+    ///// <param name="selectConditions"></param>
+    ///// <param name="sortConditions"></param>
+    ///// <returns></returns>
+    //public static IQueryable<T> ToPage<T>(this IQueryable<T> query, PageInfoDto page, IEnumerable<SelectConditionDto> selectConditions, IEnumerable<SortConditionDto> sortConditions)
+    //    where T : class, new()
+    //{
+    //    return query.ToQuery(selectConditions, sortConditions).ToPage(page);
+    //}
 }

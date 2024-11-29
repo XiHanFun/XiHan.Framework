@@ -37,19 +37,19 @@ public static class QueryableExtensions
         return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
     }
 
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行多条件过滤
-    /// </summary>
-    /// <param name="source">要应用过滤的查询对象</param>
-    /// <param name="selectConditions">查询条件</param>
-    /// <returns>基于 <paramref name="selectConditions"/> 的过滤或未过滤的查询对象</returns>
-    public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto> selectConditions)
-    {
-        if (selectConditions == null || !selectConditions.Any())
-        {
-            return source;
-        }
-    }
+    ///// <summary>
+    ///// 对 <see cref="IQueryable{T}"/> 进行多条件过滤
+    ///// </summary>
+    ///// <param name="source">要应用过滤的查询对象</param>
+    ///// <param name="selectConditions">查询条件</param>
+    ///// <returns>基于 <paramref name="selectConditions"/> 的过滤或未过滤的查询对象</returns>
+    //public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto> selectConditions)
+    //{
+    //    if (selectConditions == null || !selectConditions.Any())
+    //    {
+    //        return source;
+    //    }
+    //}
 
     /// <summary>
     /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IQueryable{T}"/> 进行过滤
