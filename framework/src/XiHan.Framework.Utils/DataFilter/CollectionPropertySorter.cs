@@ -31,8 +31,10 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
-        var keySelector = KeySelector<T>.GetKeySelector(propertyName);
-        return OrderBy(source, selector => keySelector, sortDirection);
+        var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
+        return sortDirection == SortDirectionEnum.Asc
+            ? source.OrderBy(keySelector.Compile())
+            : source.OrderByDescending(keySelector.Compile());
     }
 
     /// <summary>
@@ -59,7 +61,9 @@ public static class CollectionPropertySorter<T>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return OrderBy(source, selector => keySelector, sortDirection);
+        return sortDirection == SortDirectionEnum.Asc
+            ? source.OrderBy(keySelector)
+            : source.OrderByDescending(keySelector);
     }
 
     /// <summary>
@@ -85,8 +89,10 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> orderedSource, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
-        var keySelector = KeySelector<T>.GetKeySelector(propertyName);
-        return ThenBy(orderedSource, selector => keySelector, sortDirection);
+        var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
+        return sortDirection == SortDirectionEnum.Asc
+            ? orderedSource.ThenBy(keySelector.Compile())
+            : orderedSource.ThenByDescending(keySelector.Compile());
     }
 
     /// <summary>
@@ -113,7 +119,9 @@ public static class CollectionPropertySorter<T>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> orderedSource, string propertyName, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
     {
         var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return ThenBy(orderedSource, selector => keySelector, sortDirection);
+        return sortDirection == SortDirectionEnum.Asc
+            ? orderedSource.ThenBy(keySelector)
+            : orderedSource.ThenByDescending(keySelector);
     }
 
     /// <summary>

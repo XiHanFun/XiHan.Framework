@@ -14,7 +14,6 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Utils.DataFilter.Enums;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.DataFilter;
 
@@ -33,8 +32,8 @@ public static class CollectionPropertySelector<T>
     /// <returns>选择后的数据</returns>
     public static IEnumerable<T> Where(IEnumerable<T> source, string propertyName, object propertyValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
-        var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return Where(source, keySelector, propertyValue, selectCompare);
+        var predicate = ExpressionParser<T>.Parse(propertyName, propertyValue, selectCompare);
+        return source.Where(predicate.Compile());
     }
 
     /// <summary>
@@ -42,14 +41,14 @@ public static class CollectionPropertySelector<T>
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="keySelector">属性选择器</param>
+    /// <param name="tObject">泛型对象</param>
     /// <param name="selectCompare">选择比较</param>
     /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where(IEnumerable<T> source, Expression<Func<T, object>> keySelector, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IEnumerable<T> Where(IEnumerable<T> source, Expression<Func<T, object>> keySelector, T tObject, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
-        var propertyName = ((MemberExpression)keySelector.Body).Member.Name;
-        var propertyValue = ((MemberExpression)keySelector.Body).Member.GetPropertyValue(propertyName);
-        var predicate = ExpressionParser<T>.Parse(propertyName, selectCompare, keySelector.Compile());
-        return source.Where(predicate.Compile());
+        var propertyName = KeySelector<T>.GetPropertyName(keySelector);
+        var propertyValue = KeySelector<T>.GetPropertyValue(tObject, keySelector);
+        return Where(source, propertyName, propertyValue, selectCompare);
     }
 
     /// <summary>
@@ -57,12 +56,13 @@ public static class CollectionPropertySelector<T>
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="propertyName">属性名称</param>
+    /// <param name="propertyValue">比较值</param>
     /// <param name="selectCompare">选择比较</param>
     /// <returns>排序后的数据</returns>
-    public static IQueryable<T> Where(IQueryable<T> source, string propertyName, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IQueryable<T> Where(IQueryable<T> source, string propertyName, object propertyValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
-        var keySelector = KeySelector<T>.GetKeySelectorExpression(propertyName);
-        return Where(source, keySelector, selectCompare);
+        var predicate = ExpressionParser<T>.Parse(propertyName, propertyValue, selectCompare);
+        return source.Where(predicate);
     }
 
     /// <summary>
@@ -70,12 +70,13 @@ public static class CollectionPropertySelector<T>
     /// </summary>
     /// <param name="source">原始数据源</param>
     /// <param name="keySelector">属性选择器</param>
+    /// <param name="tObject">泛型对象</param>
     /// <param name="selectCompare">选择比较</param>
     /// <returns>排序后的数据</returns>
-    public static IQueryable<T> Where(IQueryable<T> source, Expression<Func<T, object>> keySelector, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IQueryable<T> Where(IQueryable<T> source, Expression<Func<T, object>> keySelector, T tObject, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
-        var propertyName = ((MemberExpression)keySelector.Body).Member.Name;
-        var predicate = ExpressionParser<T>.Parse(propertyName, selectCompare, keySelector.Compile());
-        return source.Where(predicate);
+        var propertyName = KeySelector<T>.GetPropertyName(keySelector);
+        var propertyValue = KeySelector<T>.GetPropertyValue(tObject, keySelector);
+        return Where(source, propertyName, propertyValue, selectCompare);
     }
 }
