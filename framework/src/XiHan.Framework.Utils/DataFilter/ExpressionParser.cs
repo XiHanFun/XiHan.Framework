@@ -28,10 +28,10 @@ public static class ExpressionParser<T>
     /// 根据选择比较枚举和输入值生成 Lambda 表达式
     /// </summary>
     /// <param name="propertyName">实体属性名称</param>
-    /// <param name="compare">比较操作</param>
     /// <param name="value">比较值</param>
+    /// <param name="compare">比较操作</param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> Parse(string propertyName, SelectCompareEnum compare, object value)
+    public static Expression<Func<T, bool>> Parse(string propertyName, object value, SelectCompareEnum compare)
     {
         // 检查属性是否有效
         var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
@@ -42,7 +42,7 @@ public static class ExpressionParser<T>
         var propertyAccess = Expression.Property(parameter, property);
 
         // 生成比较表达式
-        var comparison = GenerateComparison(propertyAccess, compare, value);
+        var comparison = GenerateComparison(propertyAccess, value, compare);
 
         return Expression.Lambda<Func<T, bool>>(comparison, parameter);
     }
@@ -53,11 +53,11 @@ public static class ExpressionParser<T>
     /// 生成具体的比较表达式
     /// </summary>
     /// <param name="propertyAccess">属性访问表达式 </param>
-    /// <param name="compare">比较操作 </param>
     /// <param name="value">比较值 </param>
+    /// <param name="compare">比较操作 </param>
     /// <returns>生成的比较表达式 </returns>
     /// <exception cref="NotSupportedException"></exception>
-    private static Expression GenerateComparison(MemberExpression propertyAccess, SelectCompareEnum compare, object value)
+    private static Expression GenerateComparison(MemberExpression propertyAccess, object value, SelectCompareEnum compare)
     {
         var constant = Expression.Constant(value);
 
