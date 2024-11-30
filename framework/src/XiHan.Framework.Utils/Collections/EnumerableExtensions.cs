@@ -100,7 +100,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortConditionDto<T> sortCondition)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -158,22 +158,10 @@ public static class EnumerableExtensions
     /// <typeparam name="T">集合中的元素类型</typeparam>
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的集合</returns>
+    /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto> sortConditions)
     {
-        // 按优先级升序排列排序条件
-        var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
-
-        // 按优先级依次应用排序
-        var firstCondition = orderedConditions.First();
-        var orderedQuery = source.OrderBy(firstCondition);
-
-        foreach (var condition in orderedConditions.Skip(1))
-        {
-            orderedQuery = orderedQuery.ThenBy(condition);
-        }
-
-        return orderedQuery;
+        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
     }
 
     /// <summary>
@@ -182,22 +170,10 @@ public static class EnumerableExtensions
     /// <typeparam name="T">集合中的元素类型</typeparam>
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的集合</returns>
+    /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
     {
-        // 按优先级升序排列排序条件
-        var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
-
-        // 按优先级依次应用排序
-        var firstCondition = orderedConditions.First();
-        var orderedQuery = source.OrderBy(firstCondition);
-
-        foreach (var condition in orderedConditions.Skip(1))
-        {
-            orderedQuery = orderedQuery.ThenBy(condition);
-        }
-
-        return orderedQuery;
+        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
     }
 
     #endregion
