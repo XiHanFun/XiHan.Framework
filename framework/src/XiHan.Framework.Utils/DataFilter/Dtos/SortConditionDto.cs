@@ -26,13 +26,44 @@ public class SortConditionDto
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
     /// <param name="sortField">字段名称</param>
-    /// <param name="priority">优先级</param>
-    /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(string sortField, int priority, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
+    public SortConditionDto(string sortField)
     {
-        SortDirection = sortDirection;
         SortField = sortField;
-        Priority = priority;
+    }
+
+    /// <summary>
+    /// 构造一个排序字段名称和排序方式的排序条件
+    /// </summary>
+    /// <param name="sortField">字段名称</param>
+    /// <param name="sortPriority">排序优先级</param>
+    public SortConditionDto(string sortField, int sortPriority)
+    {
+        SortField = sortField;
+        SortPriority = sortPriority;
+    }
+
+    /// <summary>
+    /// 构造一个排序字段名称和排序方式的排序条件
+    /// </summary>
+    /// <param name="sortField">字段名称</param>
+    /// <param name="sortDirection">排序方式</param>
+    public SortConditionDto(string sortField, SortDirectionEnum sortDirection)
+    {
+        SortField = sortField;
+        SortDirection = sortDirection;
+    }
+
+    /// <summary>
+    /// 构造一个排序字段名称和排序方式的排序条件
+    /// </summary>
+    /// <param name="sortField">字段名称</param>
+    /// <param name="sortPriority">排序优先级</param>
+    /// <param name="sortDirection">排序方式</param>
+    public SortConditionDto(string sortField, int sortPriority, SortDirectionEnum sortDirection)
+    {
+        SortField = sortField;
+        SortPriority = sortPriority;
+        SortDirection = sortDirection;
     }
 
     /// <summary>
@@ -41,14 +72,14 @@ public class SortConditionDto
     public string SortField { get; set; }
 
     /// <summary>
-    /// 优先级
+    /// 排序优先级，数值越小优先级越高，默认为0，即最高优先级
     /// </summary>
-    public int Priority { get; set; }
+    public int SortPriority { get; set; } = 0;
 
     /// <summary>
-    /// 排序方向
+    /// 排序方向，默认为升序
     /// </summary>
-    public SortDirectionEnum SortDirection { get; set; }
+    public SortDirectionEnum SortDirection { get; set; } = SortDirectionEnum.Asc;
 }
 
 /// <summary>
@@ -61,10 +92,39 @@ public class SortConditionDto<T> : SortConditionDto
     /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
-    /// <param name="priority">优先级</param>
+    public SortConditionDto(Expression<Func<T, object>> keySelector)
+        : base(KeySelector<T>.GetPropertyName(keySelector))
+    {
+    }
+
+    /// <summary>
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// </summary>
+    /// <param name="keySelector">属性选择器</param>
+    /// <param name="sortPriority">排序优先级</param>
+    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority)
+        : base(KeySelector<T>.GetPropertyName(keySelector), sortPriority)
+    {
+    }
+
+    /// <summary>
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// </summary>
+    /// <param name="keySelector">属性选择器</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, int priority, SortDirectionEnum sortDirection = SortDirectionEnum.Asc)
-        : base(KeySelector<T>.GetPropertyName(keySelector), priority, sortDirection)
+    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection)
+        : base(KeySelector<T>.GetPropertyName(keySelector), sortDirection)
+    {
+    }
+
+    /// <summary>
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// </summary>
+    /// <param name="keySelector">属性选择器</param>
+    /// <param name="sortPriority">排序优先级</param>
+    /// <param name="sortDirection">排序方式</param>
+    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority, SortDirectionEnum sortDirection)
+        : base(KeySelector<T>.GetPropertyName(keySelector), sortPriority, sortDirection)
     {
     }
 }

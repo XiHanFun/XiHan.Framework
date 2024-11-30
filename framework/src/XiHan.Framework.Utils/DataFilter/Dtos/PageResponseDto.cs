@@ -22,6 +22,18 @@ public class PageResponseDto
     /// <summary>
     /// 构造函数
     /// </summary>
+    /// <param name="totalCount"></param>
+    public PageResponseDto(int totalCount)
+    {
+        var page = new PageInfoDto();
+        Page = page;
+        TotalCount = totalCount;
+        PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     /// <param name="page"></param>
     /// <param name="totalCount"></param>
     public PageResponseDto(PageInfoDto page, int totalCount)
