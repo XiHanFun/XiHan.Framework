@@ -24,25 +24,49 @@ namespace XiHan.Framework.Utils.Collections;
 /// </summary>
 public static class QueryableExtensions
 {
-    #region 筛选
+    #region 选择
 
     /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行过滤
+    /// 对 <see cref="IQueryable{T}"/> 进行选择
     /// </summary>
-    /// <param name="source">要应用过滤的查询对象</param>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectField">查询字段</param>
+    /// <param name="criteriaValue">查询值</param>
+    /// <param name="selectCompare">查询比较</param>
+    /// <returns>选择后的数据</returns>
+    public static IQueryable<T> Where<T>(this IQueryable<T> source, string selectField, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IQueryable{T}"/> 进行选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
     /// <param name="selectCondition">查询条件</param>
-    /// <returns>基于 <paramref name="selectCondition"/> 的过滤或未过滤的查询对象</returns>
+    /// <returns>选择后的数据</returns>
     public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto selectCondition)
     {
         return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
     }
 
+    /// <summary>
+    /// 对 <see cref="IQueryable{T}"/> 进行选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectCondition">查询条件</param>
+    /// <returns>选择后的数据</returns>
+    public static IQueryable<T> Where<T, TV>(this IQueryable<T> source, SelectConditionDto<T, TV> selectCondition)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+    }
+
     ///// <summary>
-    ///// 对 <see cref="IQueryable{T}"/> 进行多条件过滤
+    ///// 对 <see cref="IQueryable{T}"/> 进行多条件选择
     ///// </summary>
-    ///// <param name="source">要应用过滤的查询对象</param>
+    ///// <param name="source">要应用选择的查询对象</param>
     ///// <param name="selectConditions">查询条件</param>
-    ///// <returns>基于 <paramref name="selectConditions"/> 的过滤或未过滤的查询对象</returns>
+    ///// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
     //public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto> selectConditions)
     //{
     //    if (selectConditions == null || !selectConditions.Any())
@@ -52,12 +76,12 @@ public static class QueryableExtensions
     //}
 
     /// <summary>
-    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IQueryable{T}"/> 进行过滤
+    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IQueryable{T}"/> 进行选择
     /// </summary>
-    /// <param name="source">要应用过滤的查询对象</param>
+    /// <param name="source">要应用选择的查询对象</param>
     /// <param name="condition">第三方条件</param>
-    /// <param name="predicate">用于过滤查询对象的谓词</param>
-    /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的查询对象</returns>
+    /// <param name="predicate">用于选择查询对象的谓词</param>
+    /// <returns>基于 <paramref name="condition"/> 的选择或未选择的查询对象</returns>
     public static IQueryable<T> WhereIf<T>(this IQueryable<T> source, bool condition, Expression<Func<T, bool>> predicate)
     {
         return condition ? source.Where(predicate) : source;
@@ -147,22 +171,10 @@ public static class QueryableExtensions
     /// <typeparam name="T">集合中的元素类型</typeparam>
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的集合</returns>
+    /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto> sortConditions)
     {
-        // 按优先级升序排列排序条件
-        var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
-
-        // 按优先级依次应用排序
-        var firstCondition = orderedConditions.First();
-        var orderedQuery = source.OrderBy(firstCondition);
-
-        foreach (var condition in orderedConditions.Skip(1))
-        {
-            orderedQuery = orderedQuery.ThenBy(condition);
-        }
-
-        return orderedQuery;
+        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
     }
 
     /// <summary>
@@ -171,22 +183,10 @@ public static class QueryableExtensions
     /// <typeparam name="T">集合中的元素类型</typeparam>
     /// <param name="source">要排序的集合</param>
     /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的集合</returns>
+    /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
     {
-        // 按优先级升序排列排序条件
-        var orderedConditions = sortConditions.OrderBy(c => c.Priority).ToList();
-
-        // 按优先级依次应用排序
-        var firstCondition = orderedConditions.First();
-        var orderedQuery = source.OrderBy(firstCondition);
-
-        foreach (var condition in orderedConditions.Skip(1))
-        {
-            orderedQuery = orderedQuery.ThenBy(condition);
-        }
-
-        return orderedQuery;
+        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
     }
 
     #endregion

@@ -12,45 +12,52 @@
 
 #endregion <<版权版本注释>>
 
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Utils.DataFilter;
 
 /// <summary>
-/// 属性选择器
+/// 键选择器
 /// </summary>
 public static class KeySelector<T>
 {
     /// <summary>
-    /// 获取属性选择器
+    /// 键选择器缓存
     /// </summary>
-    /// <param name="propertyName"></param>
+    private static readonly ConcurrentDictionary<string, LambdaExpression> KeySelectorCache = new();
+
+    /// <summary>
+    /// 获取键选择器
+    /// </summary>
+    /// <param name="keyName">键名称</param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static Func<T, object> GetKeySelector(string propertyName)
+    public static LambdaExpression GetKeySelector(string keyName)
     {
-        var propertyInfo = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
-            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
-
-        return item =>
+        var type = typeof(T);
+        var key = $"{type.FullName}.{keyName}";
+        if (KeySelectorCache.TryGetValue(key, out var keySelector))
         {
-            var value = propertyInfo.GetValue(item);
-            return value ?? throw new InvalidOperationException($"在类型 {typeof(T).Name} 中的属性 {propertyName} 为空。");
-        };
-    }
+            return keySelector;
+        }
 
-    /// <summary>
-    /// 获取属性选择器表达式
-    /// </summary>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    public static Expression<Func<T, object>> GetKeySelectorExpression(string propertyName)
-    {
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var property = Expression.Property(parameter, propertyName);
-        return Expression.Lambda<Func<T, object>>(Expression.Convert(property, typeof(object)), parameter);
+        var param = Expression.Parameter(type);
+        var propertyNames = keyName.Split('.');
+        Expression propertyAccess = param;
+        foreach (var propertyName in propertyNames)
+        {
+            var property = FindProperty(type, propertyName);
+            type = property.PropertyType;
+            propertyAccess = Expression.MakeMemberAccess(propertyAccess, property);
+        }
+
+        keySelector = Expression.Lambda(propertyAccess, param);
+        _ = KeySelectorCache.TryAdd(key, keySelector);
+        return keySelector;
     }
 
     /// <summary>
@@ -58,30 +65,57 @@ public static class KeySelector<T>
     /// </summary>
     /// <param name="keySelector"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     public static string GetPropertyName(Expression<Func<T, object>> keySelector)
     {
-        return keySelector.Body is MemberExpression memberExpression
-            ? memberExpression.Member.Name
-            : keySelector.Body is UnaryExpression unaryExpression
-            ? ((MemberExpression)unaryExpression.Operand).Member.Name
-            : throw new ArgumentException("字段表达式不正确。");
+        if (keySelector.Body is MemberExpression memberExpression)
+        {
+            return memberExpression.Member.Name;
+        }
+        if (keySelector.Body is UnaryExpression unaryExpression)
+        {
+            if (unaryExpression.Operand is MemberExpression operand)
+            {
+                return operand.Member.Name;
+            }
+        }
+        throw new InvalidOperationException("无法从键选择器中获取属性名称。");
     }
+
+    #region 私有方法
 
     /// <summary>
-    /// 从泛型委托获取属性值
+    /// 获取属性
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="keySelector"></param>
+    /// <param name="type"></param>
+    /// <param name="propertyName"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
-    public static object GetPropertyValue(T obj, Expression<Func<T, object>> keySelector)
+    private static PropertyInfo FindProperty(Type type, string propertyName)
     {
-        var propertyName = GetPropertyName(keySelector);
-        var propertyInfo = typeof(T).GetProperty(propertyName) ??
-            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
+        var strategies = new Func<string, string>[]
+        {
+            // 原始名称
+            name => name,
+            // 驼峰命名
+            name => name.ToPascalCase(),
+            // 蛇形命名
+            name => name.ToSnakeCase(),
+            // 短横线命名
+            name => name.ToKebabCase()
+        };
 
-        return propertyInfo.GetValue(obj) ??
-            throw new InvalidOperationException($"在类型 {typeof(T).Name} 中的属性 {propertyName} 为空。");
+        foreach (var strategy in strategies)
+        {
+            var transformedName = strategy(propertyName);
+            var property = type.GetProperty(transformedName);
+            if (property != null)
+            {
+                return property;
+            }
+        }
+
+        throw new ArgumentException($"在类型 {type.Name} 中没有发现属性 {propertyName}。");
     }
+
+    #endregion
 }

@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Text;
@@ -278,7 +278,23 @@ public static partial class StringExtensions
     }
 
     /// <summary>
+    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）。
+    /// 示例:“ThisIsSampleSentence”被转换为“ This is a sample sentence”。
+    /// </summary>
+    /// <param name="str">要转换的字符串。</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
+    public static string ToSentenceCase(this string str, bool useCurrentCulture = false)
+    {
+        return string.IsNullOrWhiteSpace(str)
+            ? str
+            : useCurrentCulture
+                ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
+                : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
+    }
+
+    /// <summary>
     /// 将帕斯卡格式的字符串转换为驼峰格式的字符串。
+    /// 例如:“ThisIsSampleSentence”被转换为“thisIsSampleSentence”。
     /// </summary>
     /// <param name="str">要转换的字符串</param>
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
@@ -296,22 +312,8 @@ public static partial class StringExtensions
     }
 
     /// <summary>
-    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）。
-    /// 示例:“ThisIsSampleSentence”被转换为“ This is a sample sentence”。
-    /// </summary>
-    /// <param name="str">要转换的字符串。</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
-    public static string ToSentenceCase(this string str, bool useCurrentCulture = false)
-    {
-        return string.IsNullOrWhiteSpace(str)
-            ? str
-            : useCurrentCulture
-                ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
-                : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
-    }
-
-    /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为短横线连接格式。
+    /// 例如:“ThisIsSampleSentence”被转换为“this-is-a-sample-sentence”。
     /// </summary>
     /// <param name="str">要转换的字符串。</param>
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
@@ -330,9 +332,24 @@ public static partial class StringExtensions
     }
 
     /// <summary>
+    /// 将驼峰式字符串转换为帕斯卡式字符串。
+    /// 例如"thisIsSampleSentence" 被转换为 "ThisIsSampleSentence"。
+    /// </summary>
+    /// <param name="str">要转换的字符串</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
+    /// <returns>该字符串的帕斯卡式</returns>
+    public static string ToPascalCase(this string str, bool useCurrentCulture = false)
+    {
+        return string.IsNullOrWhiteSpace(str)
+            ? str
+            : str.Length == 1
+                ? useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant()
+                : (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
+    }
+
+    /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为蛇形格式。
     /// 例如:“ThisIsSampleSentence”被转换为“this_is_a_sample_sentence”。
-    /// https://github.com/npgsql/npgsql/blob/dev/src/Npgsql/NameTranslation/NpgsqlSnakeCaseNameTranslator.cs#L51
     /// </summary>
     /// <param name="str">要转换的字符串。</param>
     /// <returns></returns>
@@ -375,31 +392,7 @@ public static partial class StringExtensions
     /// <returns></returns>
     public static string ToMd5(this string str)
     {
-        var inputBytes = Encoding.UTF8.GetBytes(str);
-        var hashBytes = MD5.HashData(inputBytes);
-
-        StringBuilder sb = new();
-        foreach (var hashByte in hashBytes)
-        {
-            _ = sb.Append(hashByte.ToString("X2"));
-        }
-
-        return sb.ToString();
-    }
-
-    /// <summary>
-    /// 将驼峰式字符串转换为帕斯卡式字符串。
-    /// </summary>
-    /// <param name="str">要转换的字符串</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
-    /// <returns>该字符串的帕斯卡式</returns>
-    public static string ToPascalCase(this string str, bool useCurrentCulture = false)
-    {
-        return string.IsNullOrWhiteSpace(str)
-            ? str
-            : str.Length == 1
-                ? useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant()
-                : (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
+        return HashHelper.Md5(str);
     }
 
     /// <summary>
