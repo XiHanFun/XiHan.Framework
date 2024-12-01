@@ -88,7 +88,7 @@ public class QueryableExtensionsTest
     }
 
     [Fact]
-    public void OrderBy_SortsResultsInAscOrder()
+    public void OrderBy_SortsResultsInAscendingOrder()
     {
         var data = new List<TestEntity>
         {
@@ -103,7 +103,7 @@ public class QueryableExtensionsTest
     }
 
     [Fact]
-    public void OrderBy_SortsResultsInDescOrder()
+    public void OrderBy_SortsResultsInDescendingOrder()
     {
         var data = new List<TestEntity>
         {

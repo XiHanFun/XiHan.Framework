@@ -55,7 +55,7 @@ public static class KeySelector<T>
             propertyAccess = Expression.MakeMemberAccess(propertyAccess, property);
         }
 
-        // TestBugLog
+        // TESTLOG
         // 根据错误信息 System.InvalidCastException: 无法将类型 'System.Linq.Expressions.Expression11[System.Func2[XiHan.Framework.Utils.Test.Collections.TestEntity,System.String]]' 的对象强制转换为类型 'System.Linq.Expressions.Expression1[System.Func2[XiHan.Framework.Utils.Test.Collections.TestEntity,System.Object]]'，我们需要确保在 GetKeySelector 方法中生成的表达式类型与返回类型 Expression<Func<T, object>> 一致。
         // keySelector = Expression.Lambda(propertyAccess, param);
 

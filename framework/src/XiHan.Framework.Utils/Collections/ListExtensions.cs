@@ -297,7 +297,7 @@ public static class ListExtensions
 
         var item = source.FirstOrDefault(selector);
 
-        // TestBugLog
+        // TESTLOG
         // 在 ListExtensions 类的 GetOrAdd<T> 方法中，source.FirstOrDefault(selector) 返回的 item 可能为 0，而不是 null。这意味着 item != null 的判断条件未能正确识别 0 作为无效值，从而导致 factory() 未被调用，4 未被添加到列表中。
         // 要解决这个问题，可以将 GetOrAdd 方法中的 item != null 判断改为 item != null && !EqualityComparer<T>.Default.Equals(item, default(T))。这样可以确保 item 既不为 null，也不为类型 T 的默认值（例如 0 对于 int 类型）。
         //if (item != null)
