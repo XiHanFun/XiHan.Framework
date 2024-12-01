@@ -48,27 +48,84 @@ public static class EnumerableExtensions
         return string.Join(separator, source);
     }
 
-    #region 筛选
+    #region 选择
 
     /// <summary>
-    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
+    /// 对 <see cref="IEnumerable{T}"/> 进行选择
     /// </summary>
-    /// <param name="source">要应用过滤的枚举对象</param>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectField">查询字段</param>
+    /// <param name="criteriaValue">查询值</param>
+    /// <param name="selectCompare">查询比较</param>
+    /// <returns>选择后的数据</returns>
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, string selectField, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IEnumerable{T}"/> 进行选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectCondition">查询条件</param>
+    /// <returns>选择后的数据</returns>
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectConditionDto selectCondition)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IEnumerable{T}"/> 进行选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectCondition">查询条件</param>
+    /// <returns>选择后的数据</returns>
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectConditionDto<T> selectCondition)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IEnumerable{T}"/> 进行多条件选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectConditions">查询条件</param>
+    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
+    public static IEnumerable<T> WhereMultiple<T>(this IEnumerable<T> source, IEnumerable<SelectConditionDto> selectConditions)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectConditions);
+    }
+
+    /// <summary>
+    /// 对 <see cref="IEnumerable{T}"/> 进行多条件选择
+    /// </summary>
+    /// <param name="source">要应用选择的查询对象</param>
+    /// <param name="selectConditions">查询条件</param>
+    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
+    public static IEnumerable<T> WhereMultiple<T>(this IEnumerable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
+    {
+        return CollectionPropertySelector<T>.Where(source, selectConditions);
+    }
+
+    /// <summary>
+    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行选择
+    /// </summary>
+    /// <param name="source">要应用选择的枚举对象</param>
     /// <param name="condition">第三方条件</param>
-    /// <param name="predicate">用于过滤枚举对象的谓词</param>
-    /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
+    /// <param name="predicate">用于选择枚举对象的谓词</param>
+    /// <returns>基于 <paramref name="condition"/> 的选择或未选择的枚举对象</returns>
     public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, bool> predicate)
     {
         return condition ? source.Where(predicate) : source;
     }
 
     /// <summary>
-    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行过滤
+    /// 如果给定的条件为真，则使用给定的谓词对 <see cref="IEnumerable{T}"/> 进行选择
     /// </summary>
-    /// <param name="source">要应用过滤的枚举对象</param>
+    /// <param name="source">要应用选择的枚举对象</param>
     /// <param name="condition">第三方条件</param>
-    /// <param name="predicate">用于过滤枚举对象的谓词，包含索引</param>
-    /// <returns>基于 <paramref name="condition"/> 的过滤或未过滤的枚举对象</returns>
+    /// <param name="predicate">用于选择枚举对象的谓词，包含索引</param>
+    /// <returns>基于 <paramref name="condition"/> 的选择或未选择的枚举对象</returns>
     public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, int, bool> predicate)
     {
         return condition ? source.Where(predicate) : source;
