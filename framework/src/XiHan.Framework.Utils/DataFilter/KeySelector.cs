@@ -36,13 +36,13 @@ public static class KeySelector<T>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static LambdaExpression GetKeySelector(string keyName)
+    public static Expression<Func<T, object>> GetKeySelector(string keyName)
     {
         var type = typeof(T);
         var key = $"{type.FullName}.{keyName}";
         if (KeySelectorCache.TryGetValue(key, out var keySelector))
         {
-            return keySelector;
+            return (Expression<Func<T, object>>)keySelector;
         }
 
         var param = Expression.Parameter(type);
@@ -55,9 +55,15 @@ public static class KeySelector<T>
             propertyAccess = Expression.MakeMemberAccess(propertyAccess, property);
         }
 
-        keySelector = Expression.Lambda(propertyAccess, param);
+        // TestBugLog
+        // 根据错误信息 System.InvalidCastException: 无法将类型 'System.Linq.Expressions.Expression11[System.Func2[XiHan.Framework.Utils.Test.Collections.TestEntity,System.String]]' 的对象强制转换为类型 'System.Linq.Expressions.Expression1[System.Func2[XiHan.Framework.Utils.Test.Collections.TestEntity,System.Object]]'，我们需要确保在 GetKeySelector 方法中生成的表达式类型与返回类型 Expression<Func<T, object>> 一致。
+        // keySelector = Expression.Lambda(propertyAccess, param);
+
+        // 将属性访问转换为 object 类型
+        var converted = Expression.Convert(propertyAccess, typeof(object));
+        keySelector = Expression.Lambda<Func<T, object>>(converted, param);
         _ = KeySelectorCache.TryAdd(key, keySelector);
-        return keySelector;
+        return (Expression<Func<T, object>>)keySelector;
     }
 
     /// <summary>

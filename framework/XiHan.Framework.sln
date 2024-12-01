@@ -80,6 +80,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.others", "3.others", "{1AD44577-09E6-4150-A2C6-D03E22386A11}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		global.json = global.json
+		XiHan.txt = XiHan.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Test", "test\XiHan.Framework.AspNetCore.Test\XiHan.Framework.AspNetCore.Test.csproj", "{D3C969C0-C770-4CD8-B468-D4E2A284B101}"
@@ -87,6 +91,45 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Utils.Test", "test\XiHan.Framework.Utils.Test\XiHan.Framework.Utils.Test.csproj", "{59661A4B-1FB1-4095-BBE5-77D2F878A441}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Core.Test", "test\XiHan.Framework.Core.Test\XiHan.Framework.Core.Test.csproj", "{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "props", "props", "{F851D62C-26A2-4527-8983-DC83CA9AE4B5}"
+	ProjectSection(SolutionItems) = preProject
+		props\common.props = props\common.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "snks", "snks", "{3C37066E-F44D-4DF0-9DCB-92FBF2F21160}"
+	ProjectSection(SolutionItems) = preProject
+		snks\XiHan.Framework.snk = snks\XiHan.Framework.snk
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{1A7B29A7-C97C-43FE-898F-751EB26806E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "editor", "editor", "{9116A4F6-DE3E-45AF-829D-14E11AA99C15}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\editor\Class.cs = scripts\editor\Class.cs
+		scripts\editor\Controller.cs = scripts\editor\Controller.cs
+		scripts\editor\CopyFile.bat = scripts\editor\CopyFile.bat
+		scripts\editor\FilePath.txt = scripts\editor\FilePath.txt
+		scripts\editor\Interface.cs = scripts\editor\Interface.cs
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{8F9D7466-5315-4956-9BC6-158A1DE4F6DF}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\nuget\1.SaveNugetApiKey.ps1 = scripts\nuget\1.SaveNugetApiKey.ps1
+		scripts\nuget\2.VersionUpgrade.ps1 = scripts\nuget\2.VersionUpgrade.ps1
+		scripts\nuget\3.PushNugetPackages.ps1 = scripts\nuget\3.PushNugetPackages.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{77365D96-FBFD-42D5-BFC5-C88D619E2537}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\project\ClearProjecBinObj.ps1 = scripts\project\ClearProjecBinObj.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "service", "service", "{8CC5C1AB-2432-4D97-ADB5-C2A919441535}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\service\XiHan.bat = scripts\service\XiHan.bat
+		scripts\service\XiHan.service = scripts\service\XiHan.service
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -269,6 +312,13 @@ Global
 		{D3C969C0-C770-4CD8-B468-D4E2A284B101} = {20326902-EC6E-41A2-A13E-DC1333CAC143}
 		{59661A4B-1FB1-4095-BBE5-77D2F878A441} = {20326902-EC6E-41A2-A13E-DC1333CAC143}
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5} = {20326902-EC6E-41A2-A13E-DC1333CAC143}
+		{F851D62C-26A2-4527-8983-DC83CA9AE4B5} = {1AD44577-09E6-4150-A2C6-D03E22386A11}
+		{3C37066E-F44D-4DF0-9DCB-92FBF2F21160} = {1AD44577-09E6-4150-A2C6-D03E22386A11}
+		{1A7B29A7-C97C-43FE-898F-751EB26806E1} = {1AD44577-09E6-4150-A2C6-D03E22386A11}
+		{9116A4F6-DE3E-45AF-829D-14E11AA99C15} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
+		{8F9D7466-5315-4956-9BC6-158A1DE4F6DF} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
+		{77365D96-FBFD-42D5-BFC5-C88D619E2537} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
+		{8CC5C1AB-2432-4D97-ADB5-C2A919441535} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}

@@ -23,6 +23,13 @@ namespace XiHan.Framework.Utils.DataFilter.Dtos;
 public class SortConditionDto
 {
     /// <summary>
+    /// 初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// </summary>
+    public SortConditionDto()
+    {
+    }
+
+    /// <summary>
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
     /// <param name="sortField">字段名称</param>
@@ -69,7 +76,7 @@ public class SortConditionDto
     /// <summary>
     /// 排序字段名称
     /// </summary>
-    public string SortField { get; set; }
+    public string SortField { get; set; } = string.Empty;
 
     /// <summary>
     /// 排序优先级，数值越小优先级越高，默认为0，即最高优先级
