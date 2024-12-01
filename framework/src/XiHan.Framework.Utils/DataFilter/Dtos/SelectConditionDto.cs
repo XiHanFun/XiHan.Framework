@@ -85,18 +85,16 @@ public class SelectConditionDto
 /// 通用选择条件泛型基类
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
-/// <typeparam name="TV">条件值类型</typeparam>
-public class SelectConditionDto<T, TV> : SelectConditionDto
+public class SelectConditionDto<T> : SelectConditionDto
 {
     /// <summary>
     /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
-    public SelectConditionDto(string selectField, TV criteriaValue)
+    public SelectConditionDto(string selectField, object criteriaValue)
         : base(selectField, criteriaValue!)
     {
-        CriteriaValue = criteriaValue;
     }
 
     /// <summary>
@@ -105,10 +103,9 @@ public class SelectConditionDto<T, TV> : SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, TV criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(string selectField, object criteriaValue, SelectCompareEnum selectCompare)
         : base(selectField, criteriaValue!, selectCompare)
     {
-        CriteriaValue = criteriaValue;
     }
 
     /// <summary>
@@ -118,19 +115,8 @@ public class SelectConditionDto<T, TV> : SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, TV criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(bool isKeywords, string selectField, object criteriaValue, SelectCompareEnum selectCompare)
         : base(isKeywords, selectField, criteriaValue!, selectCompare)
     {
-        CriteriaValue = criteriaValue;
-    }
-
-    /// <summary>
-    /// 字段值（泛型）
-    /// </summary>
-    public new TV CriteriaValue
-    {
-        get => (TV)base.CriteriaValue;
-        set => base.CriteriaValue = value ??
-            throw new ArgumentNullException(nameof(value));
     }
 }

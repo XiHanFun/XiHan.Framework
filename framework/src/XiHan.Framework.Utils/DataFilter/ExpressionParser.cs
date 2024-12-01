@@ -31,7 +31,7 @@ public static class ExpressionParser<T>
     /// <param name="value">比较值</param>
     /// <param name="compare">比较操作</param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> Parse(string propertyName, object value, SelectCompareEnum compare)
+    public static Expression<Func<T, bool>> Parse(string propertyName, object? value, SelectCompareEnum compare)
     {
         // 检查属性是否有效
         var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
@@ -57,7 +57,7 @@ public static class ExpressionParser<T>
     /// <param name="compare">比较操作 </param>
     /// <returns>生成的比较表达式 </returns>
     /// <exception cref="NotSupportedException"></exception>
-    private static Expression GenerateComparison(MemberExpression propertyAccess, object value, SelectCompareEnum compare)
+    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompareEnum compare)
     {
         var constant = Expression.Constant(value);
 
@@ -90,7 +90,7 @@ public static class ExpressionParser<T>
     /// <param name="value">比较值</param>
     /// <returns>Contains 表达式</returns>
     /// <exception cref="ArgumentException"></exception>
-    private static MethodCallExpression GenerateContainsExpression(MemberExpression propertyAccess, object value)
+    private static MethodCallExpression GenerateContainsExpression(MemberExpression propertyAccess, object? value)
     {
         if (value is not string)
         {
@@ -110,7 +110,7 @@ public static class ExpressionParser<T>
     /// <param name="value">比较值</param>
     /// <returns>InWithContains 表达式</returns>
     /// <exception cref="ArgumentException"></exception>
-    private static BinaryExpression GenerateInWithContainsExpression(MemberExpression propertyAccess, object value)
+    private static BinaryExpression GenerateInWithContainsExpression(MemberExpression propertyAccess, object? value)
     {
         if (value is not IEnumerable<string> stringList || !stringList.Any())
         {
@@ -136,7 +136,7 @@ public static class ExpressionParser<T>
     /// <param name="value">比较值</param>
     /// <returns>InWithEqual 表达式</returns>
     /// <exception cref="ArgumentException"></exception>
-    private static BinaryExpression GenerateInWithEqualExpression(MemberExpression propertyAccess, object value)
+    private static BinaryExpression GenerateInWithEqualExpression(MemberExpression propertyAccess, object? value)
     {
         if (value is not IEnumerable<object> valueList)
         {
@@ -156,7 +156,7 @@ public static class ExpressionParser<T>
     /// <param name="value">Between 操作的范围值</param>
     /// <returns>Between 表达式</returns>
     /// <exception cref="ArgumentException"></exception>
-    private static BinaryExpression GenerateBetweenExpression(MemberExpression propertyAccess, object value)
+    private static BinaryExpression GenerateBetweenExpression(MemberExpression propertyAccess, object? value)
     {
         if (value is not Tuple<object, object> range || range.Item1 == null || range.Item2 == null)
         {
