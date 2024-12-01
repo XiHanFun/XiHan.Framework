@@ -294,7 +294,7 @@ public static class AssemblyHelper
     }
 
     /// <summary>
-    /// 获取应用程序集类
+    /// 获取曦寒应用程序集类
     /// </summary>
     /// <returns></returns>
     public static IEnumerable<Type> GetXiHanApplicationTypes()
@@ -306,10 +306,10 @@ public static class AssemblyHelper
 
     #endregion 程序集类
 
-    #region 获取包含有某属性的类
+    #region 获取包含有某特性的类
 
     /// <summary>
-    /// 获取包含有某属性的类
+    /// 获取包含有某特性的类
     /// 第一种实现
     /// </summary>
     /// <typeparam name="TAttribute"></typeparam>
@@ -322,7 +322,7 @@ public static class AssemblyHelper
     }
 
     /// <summary>
-    /// 获取包含有某属性的类
+    /// 获取包含有某特性的类
     /// 第二种实现
     /// </summary>
     /// <param name="attribute"></param>
@@ -333,12 +333,12 @@ public static class AssemblyHelper
             .Where(e => e.CustomAttributes.Any(g => g.AttributeType == attribute.GetType()));
     }
 
-    #endregion 获取包含有某属性的类
+    #endregion 获取包含有某特性的类
 
-    #region 获取不包含有某属性的类
+    #region 获取不包含有某特性的类
 
     /// <summary>
-    /// 获取不包含有某属性的类
+    /// 获取不包含有某特性的类
     /// 第一种实现
     /// </summary>
     /// <typeparam name="TAttribute"></typeparam>
@@ -351,7 +351,7 @@ public static class AssemblyHelper
     }
 
     /// <summary>
-    /// 获取包含有某属性的类
+    /// 获取包含有某特性的类
     /// 第二种实现
     /// </summary>
     /// <param name="attribute"></param>
@@ -362,7 +362,7 @@ public static class AssemblyHelper
             .Where(e => e.CustomAttributes.All(g => g.AttributeType != attribute.GetType()));
     }
 
-    #endregion 获取不包含有某属性的类
+    #endregion 获取不包含有某特性的类
 
     #region 获取某类的子类(非抽象类)
 
@@ -409,10 +409,10 @@ public static class AssemblyHelper
 
     #endregion 获取某类的子类(非抽象类)
 
-    #region 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
+    #region 获取继承自某类的包含有某特性的接口、类的子类(非抽象类)
 
     /// <summary>
-    /// 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
+    /// 获取继承自某类的包含有某特性的接口、类的子类(非抽象类)
     /// 第一种实现
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -426,7 +426,7 @@ public static class AssemblyHelper
     }
 
     /// <summary>
-    /// 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
+    /// 获取继承自某类的包含有某特性的接口、类的子类(非抽象类)
     /// 第二种实现
     /// </summary>
     /// <typeparam name="TAttribute"></typeparam>
@@ -438,12 +438,12 @@ public static class AssemblyHelper
         return GetSubClasses(type).Intersect(GetContainsAttributeTypes<TAttribute>());
     }
 
-    #endregion 获取继承自某类的包含有某属性的接口、类的子类(非抽象类)
+    #endregion 获取继承自某类的包含有某特性的接口、类的子类(非抽象类)
 
-    #region 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
+    #region 获取继承自某类的不包含有某特性的接口、类的子类(非抽象类)
 
     /// <summary>
-    /// 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
+    /// 获取继承自某类的不包含有某特性的接口、类的子类(非抽象类)
     /// 第一种实现
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -457,7 +457,7 @@ public static class AssemblyHelper
     }
 
     /// <summary>
-    /// 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
+    /// 获取继承自某类的不包含有某特性的接口、类的子类(非抽象类)
     /// 第二种实现
     /// </summary>
     /// <typeparam name="TAttribute"></typeparam>
@@ -469,7 +469,7 @@ public static class AssemblyHelper
         return GetSubClasses(type).Intersect(GetFilterAttributeTypes<TAttribute>());
     }
 
-    #endregion 获取继承自某类的不包含有某属性的接口、类的子类(非抽象类)
+    #endregion 获取继承自某类的不包含有某特性的接口、类的子类(非抽象类)
 
     #region 程序集依赖包
 
