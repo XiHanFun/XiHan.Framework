@@ -155,7 +155,7 @@ public static class CollectionExtensions
     /// <param name="source">集合对象</param>
     /// <param name="predicate">用于移除项的条件</param>
     /// <returns>被移除项的列表</returns>
-    public static IList<T> RemoveAll<T>(this ICollection<T> source, Func<T, bool> predicate)
+    public static IList<T> RemoveAllWhere<T>(this ICollection<T> source, Func<T, bool> predicate)
     {
         _ = CheckHelper.NotNull(source, nameof(source));
 

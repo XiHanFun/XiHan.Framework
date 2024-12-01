@@ -33,11 +33,12 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        dynamic keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
-        dynamic keySelector = keySelectorExpression.Compile();
+        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelector = keySelectorExpression;
+
         return sortDirection == SortDirectionEnum.Asc
-            ? Enumerable.OrderBy(source, keySelector)
-            : Enumerable.OrderByDescending(source, keySelector);
+            ? Enumerable.OrderBy(source, keySelector.Compile())
+            : Enumerable.OrderByDescending(source, keySelector.Compile());
     }
 
     /// <summary>
@@ -75,11 +76,12 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        dynamic keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
-        dynamic keySelector = keySelectorExpression.Compile();
+        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelector = keySelectorExpression;
+
         return sortDirection == SortDirectionEnum.Asc
-            ? Enumerable.ThenBy(source, keySelector)
-            : Enumerable.ThenByDescending(source, keySelector);
+            ? Enumerable.ThenBy(source, keySelector.Compile())
+            : Enumerable.ThenByDescending(source, keySelector.Compile());
     }
 
     /// <summary>
@@ -167,8 +169,8 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        dynamic keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
-        dynamic keySelector = keySelectorExpression.Compile();
+        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
             ? Queryable.OrderBy(source, keySelector)
@@ -210,8 +212,8 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        dynamic keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
-        dynamic keySelector = keySelectorExpression.Compile();
+        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
             ? Queryable.ThenBy(source, keySelector)

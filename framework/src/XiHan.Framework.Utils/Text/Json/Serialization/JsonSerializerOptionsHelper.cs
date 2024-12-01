@@ -88,7 +88,7 @@ public static class JsonSerializerOptionsHelper
     public static JsonSerializerOptions Create(JsonSerializerOptions baseOptions, Func<JsonConverter, bool> removeConverterPredicate, params JsonConverter[] addConverters)
     {
         JsonSerializerOptions options = new(baseOptions);
-        _ = options.Converters.RemoveAll(removeConverterPredicate);
+        _ = options.Converters.RemoveAllWhere(removeConverterPredicate);
         _ = options.Converters.AddIfNotContains(addConverters);
         return options;
     }

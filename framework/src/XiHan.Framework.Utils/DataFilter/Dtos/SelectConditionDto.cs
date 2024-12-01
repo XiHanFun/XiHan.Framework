@@ -22,6 +22,13 @@ namespace XiHan.Framework.Utils.DataFilter.Dtos;
 public class SelectConditionDto
 {
     /// <summary>
+    /// 初始化一个<see cref="SelectConditionDto"/>类型的新实例
+    /// </summary>
+    public SelectConditionDto()
+    {
+    }
+
+    /// <summary>
     /// 构造一个选择字段名称和选择值的选择条件
     /// </summary>
     /// <param name="selectField">字段名称</param>
@@ -68,12 +75,12 @@ public class SelectConditionDto
     /// <summary>
     /// 选择字段
     /// </summary>
-    public string SelectField { get; set; }
+    public string SelectField { get; set; } = string.Empty;
 
     /// <summary>
     /// 条件值
     /// </summary>
-    public object CriteriaValue { get; set; }
+    public object CriteriaValue { get; set; } = string.Empty;
 
     /// <summary>
     /// 选择比较，默认为等于
