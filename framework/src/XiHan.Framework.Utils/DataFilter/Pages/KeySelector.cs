@@ -17,7 +17,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using XiHan.Framework.Utils.Text;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Pages;
 
 /// <summary>
 /// 键选择器

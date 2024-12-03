@@ -13,9 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
 /// <summary>
 /// 通用排序条件基类
@@ -94,6 +94,7 @@ public class SortConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 public class SortConditionDto<T> : SortConditionDto
+    where T : class
 {
     /// <summary>
     /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例

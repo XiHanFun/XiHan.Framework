@@ -13,9 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Utils.DataFilter;
-using XiHan.Framework.Utils.DataFilter.Dtos;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages;
+using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
 namespace XiHan.Framework.Utils.Collections;
 
@@ -57,6 +57,7 @@ public static class QueryableExtensions
     /// <param name="selectCondition">查询条件</param>
     /// <returns>选择后的数据</returns>
     public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto<T> selectCondition)
+        where T : class
     {
         return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
     }
@@ -79,6 +80,7 @@ public static class QueryableExtensions
     /// <param name="selectConditions">查询条件</param>
     /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
     public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
+        where T : class
     {
         return CollectionPropertySelector<T>.Where(source, selectConditions);
     }
@@ -132,6 +134,7 @@ public static class QueryableExtensions
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortConditionDto<T> sortCondition)
+        where T : class
     {
         return CollectionPropertySorter<T>.OrderBy(source, sortCondition.SortField, sortCondition.SortDirection);
     }
@@ -169,6 +172,7 @@ public static class QueryableExtensions
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, SortConditionDto<T> sortCondition)
+        where T : class
     {
         return CollectionPropertySorter<T>.ThenBy(source, sortCondition.SortField, sortCondition.SortDirection);
     }
@@ -193,6 +197,7 @@ public static class QueryableExtensions
     /// <param name="sortConditions">排序条件集合</param>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
+        where T : class
     {
         return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
     }

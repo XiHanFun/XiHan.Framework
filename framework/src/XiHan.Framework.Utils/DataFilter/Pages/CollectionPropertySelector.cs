@@ -12,10 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Dtos;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Pages;
 
 /// <summary>
 /// 集合属性选择器

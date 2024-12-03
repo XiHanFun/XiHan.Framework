@@ -1,7 +1,7 @@
 ﻿using JetBrains.Annotations;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.DataFilter.Dtos;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
 namespace XiHan.Framework.Utils.Test.Collections;
 

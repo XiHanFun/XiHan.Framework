@@ -14,7 +14,7 @@
 
 using System.ComponentModel;
 
-namespace XiHan.Framework.Utils.DataFilter.Enums;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
 /// <summary>
 /// 选择比较枚举

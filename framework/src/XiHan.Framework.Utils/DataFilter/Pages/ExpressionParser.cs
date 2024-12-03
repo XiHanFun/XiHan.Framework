@@ -14,9 +14,9 @@
 
 using System.Linq.Expressions;
 using System.Reflection;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Pages;
 
 /// <summary>
 /// 动态表达式解析器

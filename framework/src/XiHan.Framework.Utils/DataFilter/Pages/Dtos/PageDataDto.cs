@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageResponseDto
+// FileName:PageDataDto
 // Guid:373148b9-8be2-41a0-b971-82ef6750800d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,31 +12,19 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DataFilter.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
 /// <summary>
-/// 通用分页响应基类
+/// 通用分页数据响应基类
 /// </summary>
-public class PageResponseDto
+public class PageDataDto
 {
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="totalCount"></param>
-    public PageResponseDto(int totalCount)
-    {
-        var page = new PageInfoDto();
-        Page = page;
-        TotalCount = totalCount;
-        PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
-    }
-
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="page"></param>
     /// <param name="totalCount"></param>
-    public PageResponseDto(PageInfoDto page, int totalCount)
+    public PageDataDto(PageInfoDto page, int totalCount)
     {
         Page = page;
         TotalCount = totalCount;
@@ -56,21 +44,23 @@ public class PageResponseDto
     /// <summary>
     /// 总页数
     /// </summary>
-    public int PageCount { get; set; }
+    public int PageCount { get; set; } = 1;
 }
 
 /// <summary>
 /// 通用分页响应泛型基类
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class PageResponseDto<T> : PageResponseDto
+public class PageDataDto<T> : PageDataDto
+    where T : class
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="page"></param>
-    /// <param name="datas"></param>
-    public PageResponseDto(PageInfoDto page, List<T> datas) : base(page, datas.Count)
+    /// <param name="page">分页信息</param>
+    /// <param name="datas">数据</param>
+    public PageDataDto(PageInfoDto page, List<T> datas)
+        : base(page, datas.Count)
     {
         Datas = datas;
     }
@@ -78,5 +68,5 @@ public class PageResponseDto<T> : PageResponseDto
     /// <summary>
     /// 数据
     /// </summary>
-    public List<T> Datas { get; init; }
+    public List<T>? Datas { get; init; }
 }
