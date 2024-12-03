@@ -28,13 +28,13 @@ XiHan.Framework.Uow  // 曦寒框架单元工作库
 XiHan.Framework.Utils  // 曦寒框架工具库
 
 // 4.AspNetCore
-XiHan.Framework.AspNetCore  // 曦寒框架Web核心库
+XiHan.Framework.AspNetCore  // 曦寒框架 Web 核心库
 
 // 5.AspNetCore Libraries
-XiHan.Framework.AspNetCore.RealTime.SignalR  // 曦寒框架Web核心即时通信SignalR库
-XiHan.Framework.AspNetCore.ApiDoc.Swagger  // 曦寒框架Web核心Api文档Swagger库
-XiHan.Framework.AspNetCore.Authentication.JwtBearer  // 曦寒框架Web核心鉴权Jwt库
-XiHan.Framework.AspNetCore.Authentication.OAuth  // 曦寒框架Web核心鉴权OAuth库
-XiHan.Framework.AspNetCore.Authentication.OpenIdConnect  曦寒框架Web核心鉴权OpenIdConnect库
-XiHan.Framework.AspNetCore.Logging.Serilog  // 曦寒框架Web核心日志Serilog库
-XiHan.Framework.AspNetCore.Refit  // 曦寒框架Web核心客户端库
+XiHan.Framework.AspNetCore.RealTime.SignalR  // 曦寒框架 Web 核心即时通信 SignalR 库
+XiHan.Framework.AspNetCore.ApiDoc.Swagger  // 曦寒框架 Web 核心 Api 文档 Swagger 库
+XiHan.Framework.AspNetCore.Authentication.JwtBearer  // 曦寒框架 Web 核心鉴权 Jwt 库
+XiHan.Framework.AspNetCore.Authentication.OAuth  // 曦寒框架 Web 核心鉴权 OAuth 库
+XiHan.Framework.AspNetCore.Authentication.OpenIdConnect  曦寒框架 Web 核心鉴权 OpenIdConnect 库
+XiHan.Framework.AspNetCore.Logging.Serilog  // 曦寒框架 Web 核心日志 Serilog 库
+XiHan.Framework.AspNetCore.Refit  // 曦寒框架 Web 核心客户端库
