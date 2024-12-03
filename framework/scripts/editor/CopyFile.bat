@@ -1,6 +1,6 @@
 @echo off
 
-REM 将CMD窗口的代码页修改为UTF-8编码
+REM 将 CMD 窗口的代码页修改为 UTF-8编码
 chcp 65001
 
 REM 设置原文件和目标路径变量

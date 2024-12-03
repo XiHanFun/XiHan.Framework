@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
 namespace XiHan.Framework.Utils.DataFilter.Pages;
@@ -22,218 +23,252 @@ namespace XiHan.Framework.Utils.DataFilter.Pages;
 public static class PageExtensions
 {
     /// <summary>
-    /// 获取List的分页后的数据
+    /// 获取 IEnumerable 分页数据
     /// </summary>
-    /// <typeparam name="TEntity">数据源类型</typeparam>
+    /// <typeparam name="T">数据源类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
     /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的List数据</returns>
-    public static List<TEntity> ToPageList<TEntity>(this IEnumerable<TEntity> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
-        where TEntity : class, new()
+    /// <returns>分页后的 List 数据</returns>
+    public static List<T> ToPageList<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
+        where T : class, new()
     {
         return entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize).ToList();
     }
 
     /// <summary>
-    /// 获取List分页后的数据
+    /// 获取 IQueryable 分页数据
     /// </summary>
-    /// <typeparam name="TEntity">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageDto">分页传入实体</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的List数据</returns>
-    public static List<TEntity> ToPageList<TEntity>(this IEnumerable<TEntity> entities, PageInfoDto pageDto, int defaultFirstIndex = 1)
-        where TEntity : class, new()
-    {
-        return entities.Skip((pageDto.CurrentIndex - defaultFirstIndex) * pageDto.PageSize).Take(pageDto.PageSize)
-            .ToList();
-    }
-
-    /// <summary>
-    /// IQueryable数据进行分页(还未在数据库中查询)
-    /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
     /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的List数据</returns>
-    public static List<TEntity> ToPageList<TEntity>(this IQueryable<TEntity> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
-        where TEntity : class, new()
+    /// <returns>分页后的 List 数据</returns>
+    public static List<T> ToPageList<T>(this IQueryable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
+        where T : class, new()
     {
         return [.. entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize)];
     }
 
     /// <summary>
-    /// IQueryable数据进行分页(还未在数据库中查询)
+    /// 获取 IEnumerable 分页数据
     /// </summary>
-    /// <typeparam name="TEntity">数据源类型</typeparam>
+    /// <typeparam name="T">数据源类型</typeparam>
     /// <param name="entities">数据源</param>
-    /// <param name="pageDto">分页传入实体</param>
+    /// <param name="pageInfo">分页信息</param>
     /// <param name="defaultFirstIndex">默认起始下标</param>
-    public static List<TEntity> ToPageList<TEntity>(this IQueryable<TEntity> entities, PageInfoDto pageDto, int defaultFirstIndex = 1)
-        where TEntity : class, new()
+    /// <returns>分页后的 List 数据</returns>
+    public static List<T> ToPageList<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, int defaultFirstIndex = 1)
+        where T : class, new()
     {
-        return [.. entities.Skip((pageDto.CurrentIndex - defaultFirstIndex) * pageDto.PageSize).Take(pageDto.PageSize)];
+        return entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)
+            .ToList();
     }
 
     /// <summary>
-    /// 处理IQueryable数据后分页数据，无Data数据(还未在数据库中查询)
+    /// 获取 IQueryable 分页数据
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据源类型</typeparam>
+    /// <param name="entities">数据源</param>
+    /// <param name="pageInfo">分页信息</param>
+    /// <param name="defaultFirstIndex">默认起始下标</param>
+    public static List<T> ToPageList<T>(this IQueryable<T> entities, PageInfoDto pageInfo, int defaultFirstIndex = 1)
+        where T : class, new()
+    {
+        return [.. entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)];
+    }
+
+    /// <summary>
+    /// 获取 IEnumerable 分页数据
+    /// 只返回分页信息
+    /// </summary>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
-    /// <returns>分页后的List数据</returns>
-    public static PageDataDto<TEntity> ToPageDto<TEntity>(this IQueryable<TEntity> entities, int currentIndex, int pageSize)
-        where TEntity : class, new()
+    /// <returns>分页数据</returns>
+    public static PageDataDto ToPageData<T>(this IEnumerable<T> entities, int currentIndex, int pageSize)
+        where T : class, new()
     {
-        PageDataDto<TEntity> pageDataDto = new()
-        {
-            Page = new PageInfoDto(currentIndex, pageSize),
-            TotalCount = entities.Count()
-        };
-        return pageDataDto;
+        var pageData = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        return pageData;
     }
 
     /// <summary>
-    /// 处理IQueryable数据后分页数据，无Data数据(还未在数据库中查询)
+    /// 获取 IQueryable 分页数据
+    /// 只返回分页信息
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageDto">分页传入实体</param>
-    /// <returns>分页后的List数据</returns>
-    public static PageResponseDto<TEntity> ToPageDto<TEntity>(this IQueryable<TEntity> entities, PageInfoDto pageDto)
-        where TEntity : class, new()
-    {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            Page = pageDto
-        };
-        return pageDataDto;
-    }
-
-    /// <summary>
-    /// 获取Dto数据
-    /// </summary>
-    /// <typeparam name="TEntity">数据源类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的Dto结果</returns>
-    public static PageResponseDto<TEntity> ToPageDataDto<TEntity>(this IList<TEntity> entities, int currentIndex,
-        int pageSize, int defaultFirstIndex = 1) where TEntity : class, new()
+    /// <returns>分页数据</returns>
+    public static PageDataDto ToPageData<T>(this IQueryable<T> entities, int currentIndex, int pageSize)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            PageInfo = new PageInfoDto(currentIndex, pageSize, entities.Count),
-            Data = entities.ToPageList(currentIndex, pageSize, defaultFirstIndex)
-        };
-        return pageDataDto;
+        var pageData = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        return pageData;
     }
 
     /// <summary>
-    /// 获取Dto数据
+    /// 获取 IEnumerable 分页数据
+    /// 只返回分页信息
     /// </summary>
-    /// <typeparam name="TEntity">数据源类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
-    /// <param name="pageDto">分页传入实体</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的Dto结果</returns>
-    public static PageResponseDto<TEntity> ToPageDataDto<TEntity>(this IList<TEntity> entities, PageInfoDto pageDto,
-        int defaultFirstIndex = 1) where TEntity : class, new()
+    /// <param name="pageInfo">分页信息</param>
+    /// <returns>分页数据</returns>
+    public static PageDataDto ToPageData<T>(this IEnumerable<T> entities, PageInfoDto pageInfo)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            PageInfo = new PageInfoDto(pageDto.CurrentIndex, pageDto.PageSize, entities.Count),
-            Data = entities.ToPageList(pageDto, defaultFirstIndex)
-        };
-        return pageDataDto;
+        var pageData = new PageDataDto(pageInfo, entities.Count());
+        return pageData;
     }
 
     /// <summary>
-    /// 处理IQueryable数据后分页数据(还未在数据库中查询)
-    /// 推荐针对部分列的增改
+    /// 获取 IQueryable 分页数据
+    /// 只返回分页信息
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
+    /// <param name="entities">数据源</param>
+    /// <param name="pageInfo">分页信息</param>
+    /// <returns>分页数据</returns>
+    public static PageDataDto ToPageData<T>(this IQueryable<T> entities, PageInfoDto pageInfo)
+        where T : class, new()
+    {
+        var pageData = new PageDataDto(pageInfo, entities.Count());
+        return pageData;
+    }
+
+    /// <summary>
+    /// 获取 IEnumerable 分页数据
+    /// 返回分页信息和数据
+    /// </summary>
+    /// <typeparam name="T">数据源类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的List数据</returns>
-    public static PageResponseDto<TEntity> ToPageDataDto<TEntity>(this IQueryable<TEntity> entities, int currentIndex,
-        int pageSize, int defaultFirstIndex = 1) where TEntity : class, new()
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            PageInfo = new PageInfoDto(currentIndex, pageSize, entities.Count()),
-            Data = entities.ToPageList(currentIndex, pageSize, defaultFirstIndex)
-        };
-        return pageDataDto;
+        var pageDta = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        var responseDatas = entities.ToPageList(currentIndex, pageSize);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        return pageResponse;
     }
 
     /// <summary>
-    /// 处理IQueryable数据后分页数据(还未在数据库中查询)
-    /// 推荐针对部分列的增改
+    /// 获取 IQueryable 分页数据
+    /// 返回分页信息和数据
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
-    /// <param name="pageDto">分页传入实体</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的List数据</returns>
-    public static PageResponseDto<TEntity> ToPageDataDto<TEntity>(this IQueryable<TEntity> entities, PageInfoDto pageDto,
-        int defaultFirstIndex = 1) where TEntity : class, new()
+    /// <param name="currentIndex">当前页标</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> entities, int currentIndex, int pageSize)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            PageInfo = new PageInfoDto(pageDto.CurrentIndex, pageDto.PageSize, entities.Count()),
-            Data = entities.ToPageList(pageDto, defaultFirstIndex)
-        };
-        return pageDataDto;
+        var pageDta = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        var responseDatas = entities.ToPageList(currentIndex, pageSize);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        return pageResponse;
     }
 
     /// <summary>
-    /// 获取全部信息，该信息被分页器包裹
+    /// 获取 IEnumerable 分页数据
+    /// 返回分页信息和数据
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据源类型</typeparam>
     /// <param name="entities">数据源</param>
-    /// <returns>分页后的所有数据</returns>
-    public static PageResponseDto<TEntity> ToAllPageDataDto<TEntity>(this IEnumerable<TEntity> entities)
-        where TEntity : class, new()
+    /// <param name="pageInfo">分页信息</param>
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> entities, PageInfoDto pageInfo)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
-        {
-            PageInfo = new PageInfoDto(),
-            Data = entities.ToList()
-        };
-        pageDataDto.PageInfo.CurrentIndex = 1;
-        pageDataDto.PageInfo.TotalCount = pageDataDto.Data.Count;
-        pageDataDto.PageInfo.PageSize = pageDataDto.PageInfo.TotalCount;
-        pageDataDto.PageInfo.PageCount = 1;
-        return pageDataDto;
+        var pageDta = new PageDataDto(pageInfo, entities.Count());
+        var responseDatas = entities.ToPageList(pageInfo);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        return pageResponse;
     }
 
     /// <summary>
-    /// 获取全部信息，该信息被分页器包裹 [IQueryable]
+    /// 获取 IQueryable 分页数据
+    /// 返回分页信息和数据
     /// </summary>
-    /// <typeparam name="TEntity">数据类型</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
-    /// <returns>分页后的所有数据</returns>
-    public static PageResponseDto<TEntity> ToAllPageDataDto<TEntity>(this IQueryable<TEntity> entities)
-        where TEntity : class, new()
+    /// <param name="pageInfo">分页信息</param>
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> entities, PageInfoDto pageInfo)
+        where T : class, new()
     {
-        PageResponseDto<TEntity> pageDataDto = new()
+        var pageDta = new PageDataDto(pageInfo, entities.Count());
+        var responseDatas = entities.ToPageList(pageInfo);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        return pageResponse;
+    }
+
+    /// <summary>
+    /// 获取 IEnumerable 分页数据
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source">数据源</param>
+    /// <param name="queryDto">分页查询</param>
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> source, PageQueryDto queryDto)
+       where T : class, new()
+    {
+        // 处理查询所有数据的情况
+        if (queryDto.IsQueryAll == true)
         {
-            PageInfo = new PageInfoDto(),
-            Data = [.. entities]
-        };
-        pageDataDto.PageInfo.CurrentIndex = 1;
-        pageDataDto.PageInfo.TotalCount = pageDataDto.Data.Count;
-        pageDataDto.PageInfo.PageSize = pageDataDto.PageInfo.TotalCount;
-        pageDataDto.PageInfo.PageCount = 1;
-        return pageDataDto;
+            return source.ToPagePageResponse(new PageInfoDto());
+        }
+        // 处理选择条件
+        if (queryDto.SelectConditions != null)
+        {
+            source = source.WhereMultiple(queryDto.SelectConditions);
+        }
+        // 处理排序条件
+        if (queryDto.SortConditions != null)
+        {
+            source = source.OrderByMultiple(queryDto.SortConditions);
+        }
+        // 获取分页信息
+        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
+        return source.ToPagePageResponse(pageInfo);
+    }
+
+    /// <summary>
+    /// 获取 IQueryable 分页数据
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source">数据源</param>
+    /// <param name="queryDto">分页查询</param>
+    /// <returns>分页后的分页信息和数据</returns>
+    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> source, PageQueryDto queryDto)
+       where T : class, new()
+    {
+        // 处理查询所有数据的情况
+        if (queryDto.IsQueryAll == true)
+        {
+            return source.ToPagePageResponse(new PageInfoDto());
+        }
+        // 处理选择条件
+        if (queryDto.SelectConditions != null)
+        {
+            source = source.WhereMultiple(queryDto.SelectConditions);
+        }
+        // 处理排序条件
+        if (queryDto.SortConditions != null)
+        {
+            source = source.OrderByMultiple(queryDto.SortConditions);
+        }
+        // 获取分页信息
+        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
+        return source.ToPagePageResponse(pageInfo);
     }
 }

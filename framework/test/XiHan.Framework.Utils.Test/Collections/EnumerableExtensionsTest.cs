@@ -11,7 +11,10 @@ public class EnumerableExtensionsTest
     [Fact]
     public void JoinAsString_JoinsStringsWithSeparator()
     {
-        var source = new List<string> { "a", "b", "c" };
+        var source = new List<string>
+        {
+            "a", "b", "c"
+        };
         var result = source.JoinAsString(", ");
         Assert.Equal("a, b, c", result);
     }
@@ -27,7 +30,10 @@ public class EnumerableExtensionsTest
     [Fact]
     public void JoinAsStringWithGeneric_JoinsObjectsWithSeparator()
     {
-        var source = new List<int> { 1, 2, 3 };
+        var source = new List<int>
+        {
+            1, 2, 3
+        };
         var result = source.JoinAsString(", ");
         Assert.Equal("1, 2, 3", result);
     }
@@ -37,8 +43,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         };
 
         var result = data.Where("Name", "Alice");
@@ -52,8 +64,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         };
 
         var result = data.Where("Name", "Charlie");
@@ -66,14 +84,23 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         };
 
         var conditions = new List<SelectConditionDto>
         {
-            new() { SelectField = "Name", SelectCompare = SelectCompareEnum.Equal, CriteriaValue = "Alice" }
+            new("Name", "Alice", SelectCompareEnum.Equal)
         };
 
         var result = data.WhereMultiple(conditions);
@@ -87,8 +114,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         };
 
         var result = data.WhereIf(true, x => x.Name == "Alice");
@@ -102,8 +135,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         };
 
         var result = data.WhereIf(false, x => x.Name == "Alice");
@@ -116,8 +155,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Bob" },
-            new() { Id = 1, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Bob"
+            },
+            new()
+            {
+                Id = 1, Name = "Alice"
+            }
         };
 
         var result = data.OrderBy("Name", SortDirectionEnum.Asc);
@@ -131,8 +176,14 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         };
 
         var result = data.OrderBy("Name", SortDirectionEnum.Desc);
@@ -146,11 +197,26 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Alice" },
-            new() { Id = 5, Name = "Bob" },
-            new() { Id = 8, Name = "Alice" },
-            new() { Id = 1, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Alice"
+            },
+            new()
+            {
+                Id = 5, Name = "Bob"
+            },
+            new()
+            {
+                Id = 8, Name = "Alice"
+            },
+            new()
+            {
+                Id = 1, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         };
 
         var result = data.OrderBy("Name", SortDirectionEnum.Asc).ThenBy("Id", SortDirectionEnum.Desc);
@@ -164,17 +230,31 @@ public class EnumerableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Alice" },
-            new() { Id = 5, Name = "Bob" },
-            new() { Id = 8, Name = "Alice" },
-            new() { Id = 1, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Alice"
+            },
+            new()
+            {
+                Id = 5, Name = "Bob"
+            },
+            new()
+            {
+                Id = 8, Name = "Alice"
+            },
+            new()
+            {
+                Id = 1, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         };
 
         var conditions = new List<SortConditionDto>
         {
-            new() { SortField = "Name", SortDirection = SortDirectionEnum.Asc },
-            new() { SortField = "Id", SortDirection = SortDirectionEnum.Desc }
+            new("Name", SortDirectionEnum.Asc), new("Id", SortDirectionEnum.Desc)
         };
 
         var result = data.OrderByMultiple(conditions);

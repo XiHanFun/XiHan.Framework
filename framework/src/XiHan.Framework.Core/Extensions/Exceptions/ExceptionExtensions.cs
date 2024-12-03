@@ -69,7 +69,7 @@ public static class ExceptionExtensions
     }
 
     /// <summary>
-    /// 如果<paramref name="isThrow"/>为true，则抛出异常
+    /// 如果<paramref name="isThrow"/>为 true，则抛出异常
     /// </summary>
     /// <param name="exception">异常</param>
     /// <param name="isThrow">是否抛出异常</param>
@@ -82,7 +82,7 @@ public static class ExceptionExtensions
     }
 
     /// <summary>
-    /// 如果<paramref name="isThrowFunc"/>返回true，则抛出异常
+    /// 如果<paramref name="isThrowFunc"/>返回 true，则抛出异常
     /// </summary>
     /// <param name="exception">异常</param>
     /// <param name="isThrowFunc">是否抛出异常</param>

@@ -13,9 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Utils.DataFilter.Pages;
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 
 namespace XiHan.Framework.Utils.Collections;
 
@@ -34,7 +34,7 @@ public static class QueryableExtensions
     /// <param name="criteriaValue">查询值</param>
     /// <param name="selectCompare">查询比较</param>
     /// <returns>选择后的数据</returns>
-    public static IQueryable<T> Where<T>(this IQueryable<T> source, string selectField, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IQueryable<T> Where<T>(this IQueryable<T> source, string selectField, object? criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
         return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
     }
@@ -47,7 +47,7 @@ public static class QueryableExtensions
     /// <returns>选择后的数据</returns>
     public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto selectCondition)
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+        return CollectionPropertySelector<T>.Where(source, selectCondition);
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public static class QueryableExtensions
     public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto<T> selectCondition)
         where T : class
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+        return CollectionPropertySelector<T>.Where(source, selectCondition);
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public static class QueryableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -136,7 +136,7 @@ public static class QueryableExtensions
     public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortConditionDto<T> sortCondition)
         where T : class
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public static class QueryableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>
@@ -174,7 +174,7 @@ public static class QueryableExtensions
     public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, SortConditionDto<T> sortCondition)
         where T : class
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>

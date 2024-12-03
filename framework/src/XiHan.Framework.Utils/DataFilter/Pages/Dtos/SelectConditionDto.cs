@@ -22,18 +22,11 @@ namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 public class SelectConditionDto
 {
     /// <summary>
-    /// 初始化一个<see cref="SelectConditionDto"/>类型的新实例
-    /// </summary>
-    public SelectConditionDto()
-    {
-    }
-
-    /// <summary>
     /// 构造一个选择字段名称和选择值的选择条件
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
-    public SelectConditionDto(string selectField, object criteriaValue)
+    public SelectConditionDto(string selectField, object? criteriaValue)
     {
         SelectField = selectField;
         CriteriaValue = criteriaValue;
@@ -45,7 +38,7 @@ public class SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, object criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
     {
         SelectField = selectField;
         CriteriaValue = criteriaValue;
@@ -59,7 +52,7 @@ public class SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, object criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
     {
         IsKeywords = isKeywords;
         SelectField = selectField;
@@ -70,17 +63,17 @@ public class SelectConditionDto
     /// <summary>
     /// 是否关键字
     /// </summary>
-    public bool IsKeywords { get; set; } = false;
+    public bool IsKeywords { get; set; }
 
     /// <summary>
     /// 选择字段
     /// </summary>
-    public string SelectField { get; set; } = string.Empty;
+    public string SelectField { get; set; }
 
     /// <summary>
     /// 条件值
     /// </summary>
-    public object CriteriaValue { get; set; } = string.Empty;
+    public object? CriteriaValue { get; set; }
 
     /// <summary>
     /// 选择比较，默认为等于
@@ -93,14 +86,13 @@ public class SelectConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 public class SelectConditionDto<T> : SelectConditionDto
-    where T : class
 {
     /// <summary>
     /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
-    public SelectConditionDto(string selectField, object criteriaValue)
+    public SelectConditionDto(string selectField, object? criteriaValue)
         : base(selectField, criteriaValue!)
     {
     }
@@ -111,7 +103,7 @@ public class SelectConditionDto<T> : SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, object criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
         : base(selectField, criteriaValue!, selectCompare)
     {
     }
@@ -123,7 +115,7 @@ public class SelectConditionDto<T> : SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, object criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
         : base(isKeywords, selectField, criteriaValue!, selectCompare)
     {
     }

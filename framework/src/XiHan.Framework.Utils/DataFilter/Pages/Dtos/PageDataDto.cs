@@ -22,11 +22,30 @@ public class PageDataDto
     /// <summary>
     /// 构造函数
     /// </summary>
+    public PageDataDto()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="totalCount"></param>
+    public PageDataDto(int totalCount)
+    {
+        var page = new PageInfoDto();
+        PageInfo = page;
+        TotalCount = totalCount;
+        PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     /// <param name="page"></param>
     /// <param name="totalCount"></param>
     public PageDataDto(PageInfoDto page, int totalCount)
     {
-        Page = page;
+        PageInfo = page;
         TotalCount = totalCount;
         PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
     }
@@ -34,39 +53,15 @@ public class PageDataDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageInfoDto Page { get; set; }
+    public PageInfoDto PageInfo { get; set; } = new PageInfoDto();
 
     /// <summary>
     /// 数据总数
     /// </summary>
-    public int TotalCount { get; set; }
+    public int TotalCount { get; set; } = 0;
 
     /// <summary>
     /// 总页数
     /// </summary>
     public int PageCount { get; set; } = 1;
-}
-
-/// <summary>
-/// 通用分页响应泛型基类
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public class PageDataDto<T> : PageDataDto
-    where T : class
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="page">分页信息</param>
-    /// <param name="datas">数据</param>
-    public PageDataDto(PageInfoDto page, List<T> datas)
-        : base(page, datas.Count)
-    {
-        Datas = datas;
-    }
-
-    /// <summary>
-    /// 数据
-    /// </summary>
-    public List<T>? Datas { get; init; }
 }

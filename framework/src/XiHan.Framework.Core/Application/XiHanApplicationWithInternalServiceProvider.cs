@@ -65,7 +65,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
         ServiceScope = Services.BuildServiceProviderFromFactory().CreateScope();
         SetServiceProvider(ServiceScope.ServiceProvider);
 
-        return ServiceProvider;
+        return ServiceProvider!;
     }
 
     /// <summary>
@@ -95,5 +95,6 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     {
         base.Dispose();
         ServiceScope?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

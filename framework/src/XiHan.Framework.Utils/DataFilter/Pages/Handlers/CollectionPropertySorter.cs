@@ -15,7 +15,7 @@
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 
 /// <summary>
 /// 集合属性排序器
@@ -33,7 +33,7 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
@@ -76,7 +76,7 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
@@ -169,7 +169,7 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
@@ -212,7 +212,7 @@ public static class CollectionPropertySorter<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
-        var keySelectorExpression = KeySelector<T>.GetKeySelector(keyName);
+        var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc

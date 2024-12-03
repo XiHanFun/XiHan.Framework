@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExpressionParser
+// FileName:SelectConditionParser
 // Guid:92cb616e-ee5f-43bd-9e99-68bc6e80959f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,39 +12,72 @@
 
 #endregion <<版权版本注释>>
 
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Reflection;
+using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 
 /// <summary>
-/// 动态表达式解析器
+/// 选择条件解析器
 /// </summary>
 /// <typeparam name="T">实体类型</typeparam>
-public static class ExpressionParser<T>
+public static class SelectConditionParser<T>
 {
     /// <summary>
-    /// 根据选择比较枚举和输入值生成 Lambda 表达式
+    /// 键选择器缓存
     /// </summary>
-    /// <param name="propertyName">实体属性名称</param>
-    /// <param name="value">比较值</param>
-    /// <param name="compare">比较操作</param>
-    /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> Parse(string propertyName, object? value, SelectCompareEnum compare)
-    {
-        // 检查属性是否有效
-        var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance) ??
-            throw new ArgumentException($"在类型 {typeof(T).Name} 中没有发现属性 {propertyName}。");
+    private static readonly ConcurrentDictionary<string, LambdaExpression> SelectConditionParserCache = new();
 
-        // 创建表达式参数
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var propertyAccess = Expression.Property(parameter, property);
+    /// <summary>
+    /// 获取选择条件解析器
+    /// </summary>
+    /// <param name="selectCondition"></param>
+    /// <returns>生成的 Lambda 表达式</returns>
+    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectConditionDto selectCondition)
+    {
+        return GetSelectConditionParser(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+    }
+
+    /// <summary>
+    /// 获取选择条件解析器
+    /// </summary>
+    /// <param name="selectCondition"></param>
+    /// <returns>生成的 Lambda 表达式</returns>
+    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectConditionDto<T> selectCondition)
+    {
+        return GetSelectConditionParser(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+    }
+
+    /// <summary>
+    /// 获取选择条件解析器
+    /// </summary>
+    /// <param name="propertyName">属性名称</param>
+    /// <param name="value">比较值</param>
+    /// <param name="selectCompare">比较操作</param>
+    /// <returns>生成的 Lambda 表达式</returns>
+    public static Expression<Func<T, bool>> GetSelectConditionParser(string propertyName, object? value, SelectCompareEnum selectCompare)
+    {
+        var type = typeof(T);
+        var key = $"{typeof(T).FullName}.{propertyName}.{selectCompare}";
+        if (SelectConditionParserCache.TryGetValue(key, out var selectConditionParser))
+        {
+            return (Expression<Func<T, bool>>)selectConditionParser;
+        }
+
+        var param = Expression.Parameter(type);
+        var property = type.GetPropertyInfo(propertyName);
+        var propertyAccess = Expression.MakeMemberAccess(param, property);
 
         // 生成比较表达式
-        var comparison = GenerateComparison(propertyAccess, value, compare);
+        var comparison = GenerateComparison(propertyAccess, value, selectCompare);
+        var expressionParser = Expression.Lambda<Func<T, bool>>(comparison, param);
 
-        return Expression.Lambda<Func<T, bool>>(comparison, parameter);
+        _ = SelectConditionParserCache.TryAdd(key, expressionParser);
+
+        return expressionParser;
     }
 
     #region 私有方法
@@ -52,16 +85,16 @@ public static class ExpressionParser<T>
     /// <summary>
     /// 生成具体的比较表达式
     /// </summary>
-    /// <param name="propertyAccess">属性访问表达式 </param>
+    /// <param name="propertyAccess">属性访问表达式</param>
     /// <param name="value">比较值 </param>
-    /// <param name="compare">比较操作 </param>
+    /// <param name="selectCompare">比较操作 </param>
     /// <returns>生成的比较表达式 </returns>
     /// <exception cref="NotSupportedException"></exception>
-    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompareEnum compare)
+    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompareEnum selectCompare)
     {
         var constant = Expression.Constant(value);
 
-        return compare switch
+        return selectCompare switch
         {
             // 单值比较
             SelectCompareEnum.Equal => Expression.Equal(propertyAccess, constant),
@@ -79,7 +112,7 @@ public static class ExpressionParser<T>
             // 区间比较
             SelectCompareEnum.Between => GenerateBetweenExpression(propertyAccess, value),
 
-            _ => throw new NotSupportedException($"不支持的比较操作：{compare}")
+            _ => throw new NotSupportedException($"不支持的比较操作：{selectCompare}")
         };
     }
 
