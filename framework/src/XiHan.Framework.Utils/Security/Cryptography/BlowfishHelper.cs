@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// </summary>
 /// <remarks>
 /// 是一种对称加密算法，支持从 32 位到 448 位的可变密钥长度。
-/// 此实现依赖 BouncyCastle 库。
+/// 此实现依赖 Portable.BouncyCastle 库。
 /// </remarks>
 public static class BlowfishHelper
 {
@@ -90,7 +90,7 @@ public static class BlowfishHelper
         // 限制密钥长度为 448 位以内
         if (keyBytes.Length > 56)
         {
-            throw new ArgumentException("Key length must be 448 bits (56 bytes) or less.");
+            throw new ArgumentException("密钥长度必须为 448 位（56 字节）或更少。");
         }
 
         // 创建加密引擎
