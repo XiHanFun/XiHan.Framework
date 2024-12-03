@@ -14,6 +14,7 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
@@ -22,13 +23,6 @@ namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 /// </summary>
 public class SortConditionDto
 {
-    /// <summary>
-    /// 初始化一个<see cref="SortConditionDto"/>类型的新实例
-    /// </summary>
-    public SortConditionDto()
-    {
-    }
-
     /// <summary>
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
@@ -94,14 +88,13 @@ public class SortConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 public class SortConditionDto<T> : SortConditionDto
-    where T : class
 {
     /// <summary>
     /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
     public SortConditionDto(Expression<Func<T, object>> keySelector)
-        : base(KeySelector<T>.GetPropertyName(keySelector))
+        : base(keySelector.GetPropertyName())
     {
     }
 
@@ -111,7 +104,7 @@ public class SortConditionDto<T> : SortConditionDto
     /// <param name="keySelector">属性选择器</param>
     /// <param name="sortPriority">排序优先级</param>
     public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority)
-        : base(KeySelector<T>.GetPropertyName(keySelector), sortPriority)
+        : base(keySelector.GetPropertyName(), sortPriority)
     {
     }
 
@@ -121,7 +114,7 @@ public class SortConditionDto<T> : SortConditionDto
     /// <param name="keySelector">属性选择器</param>
     /// <param name="sortDirection">排序方式</param>
     public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection)
-        : base(KeySelector<T>.GetPropertyName(keySelector), sortDirection)
+        : base(keySelector.GetPropertyName(), sortDirection)
     {
     }
 
@@ -132,7 +125,7 @@ public class SortConditionDto<T> : SortConditionDto
     /// <param name="sortPriority">排序优先级</param>
     /// <param name="sortDirection">排序方式</param>
     public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority, SortDirectionEnum sortDirection)
-        : base(KeySelector<T>.GetPropertyName(keySelector), sortPriority, sortDirection)
+        : base(keySelector.GetPropertyName(), sortPriority, sortDirection)
     {
     }
 }

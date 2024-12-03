@@ -22,6 +22,13 @@ public class PageResponseDto
     /// <summary>
     /// 构造函数
     /// </summary>
+    public PageResponseDto()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     /// <param name="pageData"></param>
     public PageResponseDto(PageDataDto pageData)
     {
@@ -31,7 +38,7 @@ public class PageResponseDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageDataDto PageDta { get; set; }
+    public PageDataDto PageDta { get; set; } = new PageDataDto();
 }
 
 /// <summary>
@@ -39,14 +46,28 @@ public class PageResponseDto
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class PageResponseDto<T> : PageResponseDto
-    where T : class
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="pageData"></param>
-    public PageResponseDto(PageDataDto pageData)
-        : base(pageData)
+    public PageResponseDto()
+        : base()
     {
     }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="pageData"></param>
+    /// <param name="responseDatas"></param>
+    public PageResponseDto(PageDataDto pageData, IList<T>? responseDatas)
+        : base(pageData)
+    {
+        ResponseDatas = responseDatas;
+    }
+
+    /// <summary>
+    /// 数据
+    /// </summary>
+    public IList<T>? ResponseDatas { get; set; }
 }

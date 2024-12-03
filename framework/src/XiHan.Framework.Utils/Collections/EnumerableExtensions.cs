@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Pages;
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 
 namespace XiHan.Framework.Utils.Collections;
 
@@ -58,7 +58,7 @@ public static class EnumerableExtensions
     /// <param name="criteriaValue">查询值</param>
     /// <param name="selectCompare">查询比较</param>
     /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, string selectField, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, string selectField, object? criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
     {
         return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
     }
@@ -71,7 +71,7 @@ public static class EnumerableExtensions
     /// <returns>选择后的数据</returns>
     public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectConditionDto selectCondition)
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+        return CollectionPropertySelector<T>.Where(source, selectCondition);
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public static class EnumerableExtensions
     public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectConditionDto<T> selectCondition)
         where T : class
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition.SelectField, selectCondition.SelectCompare);
+        return CollectionPropertySelector<T>.Where(source, selectCondition);
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>
@@ -210,7 +210,7 @@ public static class EnumerableExtensions
     public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortConditionDto<T> sortCondition)
         where T : class
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition.SortField, sortCondition.SortDirection);
+        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>

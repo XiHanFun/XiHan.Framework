@@ -1,7 +1,7 @@
 ﻿<Project>
 	<!-- 项目属性 -->
 	<PropertyGroup>
-		<!-- 设置C#语言版本 -->
+		<!-- 设置 C# 语言版本 -->
 		<LangVersion>latest</LangVersion>
 		<!-- 指定目标框架 -->
 		<TargetFrameworks>net9.0</TargetFrameworks>
@@ -9,35 +9,35 @@
 		<AssemblyVersion>0.7.4</AssemblyVersion>
 		<FileVersion>0.7.4</FileVersion>
 		<Version>0.7.4</Version>
-		<!-- 启用隐式全局usings -->
+		<!-- 启用隐式全局 usings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<!-- 设置可空引用类型 -->
 		<Nullable>enable</Nullable>
-		<!-- 生成XML文档文件 -->
+		<!-- 生成 XML 文档文件 -->
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<!-- 指定源代码仓库类型 -->
 		<RepositoryType>git</RepositoryType>
-		<!-- 指定源代码仓库URL -->
+		<!-- 指定源代码仓库 URL -->
 		<RepositoryUrl>https://github.com/XiHanFun/XiHan.Framework</RepositoryUrl>
 		<!-- 指定作者信息 -->
 		<Authors>ZhaiFanhua</Authors>
 		<!-- 指定版权信息 -->
 		<Copyright>Copyright ©2021-2024 ZhaiFanhua All Rights Reserved.</Copyright>
-		<!-- 构建时生成NuGet包 -->
+		<!-- 构建时生成 NuGet 包 -->
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<!-- NuGet包图标 -->
+		<!-- NuGet 包图标 -->
 		<PackageIcon>readme.png</PackageIcon>
-		<!-- NuGet包附带的README文件 -->
+		<!-- NuGet 包附带的 README 文件 -->
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<!-- 要求用户在接受许可证协议后才能安装包 -->
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<!-- NuGet包附带的许可证文件 -->
+		<!-- NuGet 包附带的许可证文件 -->
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<!-- 项目网址 -->
 		<PackageProjectUrl>https://docs.xihanfun.com</PackageProjectUrl>
-		<!-- 定义NuGet包的标签 -->
+		<!-- 定义 NuGet 包的标签 -->
 		<PackageTags>csharp aspnetcore web webapp xihan framework zhaifanhua</PackageTags>
-		<!-- NuGet包输出路径 -->
+		<!-- NuGet 包输出路径 -->
 		<PackageOutputPath>..\..\nupkgs</PackageOutputPath>
 		<!-- 程序集签名 -->
 		<SignAssembly>True</SignAssembly>
@@ -46,19 +46,19 @@
 	</PropertyGroup>
 	<!-- 其他文件包含 -->
 	<ItemGroup>
-		<!-- 将readme.png作为NuGet包图标 -->
+		<!-- 将 readme.png 作为 NuGet 包图标 -->
 		<None
 		  Include="..\..\nuget\readme.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-		<!-- 将readme.md作为None类型文件包含在NuGet包中 -->
+		<!-- 将 readme.md 作为 None 类型文件包含在 NuGet 包中 -->
 		<None
 		  Include="..\..\nuget\readme.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-		<!-- 将LICENSE文件包含在NuGet包中 -->
+		<!-- 将 LICENSE 文件包含在 NuGet 包中 -->
 		<None
 		  Include="..\..\nuget\LICENSE">
 			<Pack>True</Pack>

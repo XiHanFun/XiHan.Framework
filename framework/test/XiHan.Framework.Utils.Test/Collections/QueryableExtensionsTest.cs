@@ -13,8 +13,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         }.AsQueryable();
 
         var result = data.Where("Name", "Alice");
@@ -28,8 +34,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         }.AsQueryable();
 
         var result = data.Where("Name", "Charlie");
@@ -42,14 +54,23 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         }.AsQueryable();
 
         var conditions = new List<SelectConditionDto>
         {
-            new() { SelectField = "Name", SelectCompare = SelectCompareEnum.Equal, CriteriaValue = "Alice" }
+            new("Name", "Alice", SelectCompareEnum.Equal)
         };
 
         var result = data.WhereMultiple(conditions);
@@ -63,8 +84,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         }.AsQueryable();
 
         var result = data.WhereIf(true, x => x.Name == "Alice");
@@ -78,8 +105,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         }.AsQueryable();
 
         var result = data.WhereIf(false, x => x.Name == "Alice");
@@ -92,8 +125,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Bob" },
-            new() { Id = 1, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Bob"
+            },
+            new()
+            {
+                Id = 1, Name = "Alice"
+            }
         }.AsQueryable();
 
         var result = data.OrderBy("Name", SortDirectionEnum.Asc);
@@ -107,8 +146,14 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Alice" },
-            new() { Id = 2, Name = "Bob" }
+            new()
+            {
+                Id = 1, Name = "Alice"
+            },
+            new()
+            {
+                Id = 2, Name = "Bob"
+            }
         }.AsQueryable();
 
         var result = data.OrderBy("Name", SortDirectionEnum.Desc);
@@ -122,11 +167,26 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Alice" },
-            new() { Id = 5, Name = "Bob" },
-            new() { Id = 8, Name = "Alice" },
-            new() { Id = 1, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Alice"
+            },
+            new()
+            {
+                Id = 5, Name = "Bob"
+            },
+            new()
+            {
+                Id = 8, Name = "Alice"
+            },
+            new()
+            {
+                Id = 1, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         }.AsQueryable();
 
         var result = data.OrderBy("Name", SortDirectionEnum.Asc).ThenBy("Id", SortDirectionEnum.Desc);
@@ -140,17 +200,31 @@ public class QueryableExtensionsTest
     {
         var data = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Alice" },
-            new() { Id = 5, Name = "Bob" },
-            new() { Id = 8, Name = "Alice" },
-            new() { Id = 1, Name = "Bob" },
-            new() { Id = 3, Name = "Alice" }
+            new()
+            {
+                Id = 2, Name = "Alice"
+            },
+            new()
+            {
+                Id = 5, Name = "Bob"
+            },
+            new()
+            {
+                Id = 8, Name = "Alice"
+            },
+            new()
+            {
+                Id = 1, Name = "Bob"
+            },
+            new()
+            {
+                Id = 3, Name = "Alice"
+            }
         }.AsQueryable();
 
         var conditions = new List<SortConditionDto>
         {
-            new() { SortField = "Name", SortDirection = SortDirectionEnum.Asc },
-            new() { SortField = "Id", SortDirection = SortDirectionEnum.Desc }
+            new("Name", SortDirectionEnum.Asc), new("Id", SortDirectionEnum.Desc)
         };
 
         var result = data.OrderByMultiple(conditions);

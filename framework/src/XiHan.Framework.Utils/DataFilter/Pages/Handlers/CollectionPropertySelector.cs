@@ -15,7 +15,7 @@
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 
 /// <summary>
 /// 集合属性选择器
@@ -25,16 +25,16 @@ public static class CollectionPropertySelector<T>
     #region IEnumerable
 
     /// <summary>
-    /// 对 IEnumerable 集合根据键名称进行选择
+    /// 对 IEnumerable 集合根据属性名称进行选择
     /// </summary>
     /// <param name="source">原始数据源</param>
-    /// <param name="keyName">键名称</param>
+    /// <param name="propertyName">属性名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
     /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where(IEnumerable<T> source, string keyName, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IEnumerable<T> Where(IEnumerable<T> source, string propertyName, object? criteriaValue, SelectCompareEnum selectCompare)
     {
-        var predicate = ExpressionParser<T>.Parse(keyName, criteriaValue, selectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(propertyName, criteriaValue, selectCompare);
         return source.Where(predicate.Compile());
     }
 
@@ -46,7 +46,7 @@ public static class CollectionPropertySelector<T>
     /// <returns>选择后的数据</returns>
     public static IEnumerable<T> Where(IEnumerable<T> source, SelectConditionDto selectCondition)
     {
-        var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate.Compile());
     }
 
@@ -58,7 +58,7 @@ public static class CollectionPropertySelector<T>
     /// <returns>选择后的数据</returns>
     public static IEnumerable<T> Where(IEnumerable<T> source, SelectConditionDto<T> selectCondition)
     {
-        var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate.Compile());
     }
 
@@ -72,7 +72,7 @@ public static class CollectionPropertySelector<T>
     {
         foreach (var selectCondition in selectConditions)
         {
-            var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+            var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate.Compile());
         }
         return source;
@@ -84,11 +84,11 @@ public static class CollectionPropertySelector<T>
     /// <param name="source">原始数据源</param>
     /// <param name="selectConditions">多选择条件</param>
     /// <returns>排序后的数据</returns>
-    public static IEnumerable<T> Where<TV>(IEnumerable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
+    public static IEnumerable<T> Where(IEnumerable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
     {
         foreach (var selectCondition in selectConditions)
         {
-            var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+            var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate.Compile());
         }
         return source;
@@ -99,16 +99,16 @@ public static class CollectionPropertySelector<T>
     #region IQueryable
 
     /// <summary>
-    /// 对 IQueryable 集合根据键名称进行选择
+    /// 对 IQueryable 集合根据属性名称进行选择
     /// </summary>
     /// <param name="source">原始数据源</param>
-    /// <param name="keyName">键名称</param>
+    /// <param name="propertyName">属性名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
     /// <returns>排序后的数据</returns>
-    public static IQueryable<T> Where(IQueryable<T> source, string keyName, object criteriaValue, SelectCompareEnum selectCompare = SelectCompareEnum.Equal)
+    public static IQueryable<T> Where(IQueryable<T> source, string propertyName, object? criteriaValue, SelectCompareEnum selectCompare)
     {
-        var predicate = ExpressionParser<T>.Parse(keyName, criteriaValue, selectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(propertyName, criteriaValue, selectCompare);
         return source.Where(predicate);
     }
 
@@ -120,7 +120,7 @@ public static class CollectionPropertySelector<T>
     /// <returns>排序后的数据</returns>
     public static IQueryable<T> Where(IQueryable<T> source, SelectConditionDto selectCondition)
     {
-        var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate);
     }
 
@@ -132,7 +132,7 @@ public static class CollectionPropertySelector<T>
     /// <returns>选择后的数据</returns>
     public static IQueryable<T> Where(IQueryable<T> source, SelectConditionDto<T> selectCondition)
     {
-        var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+        var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate);
     }
 
@@ -146,7 +146,7 @@ public static class CollectionPropertySelector<T>
     {
         foreach (var selectCondition in selectConditions)
         {
-            var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+            var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate);
         }
         return source;
@@ -162,7 +162,7 @@ public static class CollectionPropertySelector<T>
     {
         foreach (var selectCondition in selectConditions)
         {
-            var predicate = ExpressionParser<T>.Parse(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+            var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate);
         }
         return source;
