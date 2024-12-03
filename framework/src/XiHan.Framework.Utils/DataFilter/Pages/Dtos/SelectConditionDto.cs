@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
 /// <summary>
 /// 通用选择条件基类
@@ -93,6 +93,7 @@ public class SelectConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 public class SelectConditionDto<T> : SelectConditionDto
+    where T : class
 {
     /// <summary>
     /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例

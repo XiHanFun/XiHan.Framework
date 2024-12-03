@@ -12,10 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Dtos;
-using XiHan.Framework.Utils.DataFilter.Enums;
+using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+using XiHan.Framework.Utils.DataFilter.Pages.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter;
+namespace XiHan.Framework.Utils.DataFilter.Pages;
 
 /// <summary>
 /// 集合属性排序器
@@ -37,8 +37,8 @@ public static class CollectionPropertySorter<T>
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? Enumerable.OrderBy(source, keySelector.Compile())
-            : Enumerable.OrderByDescending(source, keySelector.Compile());
+            ? source.OrderBy(keySelector.Compile())
+            : source.OrderByDescending(keySelector.Compile());
     }
 
     /// <summary>
@@ -80,8 +80,8 @@ public static class CollectionPropertySorter<T>
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? Enumerable.ThenBy(source, keySelector.Compile())
-            : Enumerable.ThenByDescending(source, keySelector.Compile());
+            ? source.ThenBy(keySelector.Compile())
+            : source.ThenByDescending(keySelector.Compile());
     }
 
     /// <summary>
@@ -173,8 +173,8 @@ public static class CollectionPropertySorter<T>
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? Queryable.OrderBy(source, keySelector)
-            : Queryable.OrderByDescending(source, keySelector);
+            ? source.OrderBy(keySelector)
+            : source.OrderByDescending(keySelector);
     }
 
     /// <summary>
@@ -216,8 +216,8 @@ public static class CollectionPropertySorter<T>
         var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? Queryable.ThenBy(source, keySelector)
-            : Queryable.ThenByDescending(source, keySelector);
+            ? source.ThenBy(keySelector)
+            : source.ThenByDescending(keySelector);
     }
 
     /// <summary>
