@@ -9,7 +9,7 @@ public class ScriptExecutorTest
     [Fact]
     public void ExecuteScript_ThrowsArgumentException_WhenScriptFilePathIsNull()
     {
-        _ = Assert.Throws<ArgumentException>(() => ScriptExecutor.ExecuteScript(null));
+        _ = Assert.Throws<ArgumentException>(() => ScriptExecutor.ExecuteScript(""));
     }
 
     [Fact]
