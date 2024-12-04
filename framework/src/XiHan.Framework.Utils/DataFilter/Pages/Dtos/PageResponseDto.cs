@@ -32,13 +32,13 @@ public class PageResponseDto
     /// <param name="pageData"></param>
     public PageResponseDto(PageDataDto pageData)
     {
-        PageDta = pageData;
+        PageData = pageData;
     }
 
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageDataDto PageDta { get; set; } = new PageDataDto();
+    public PageDataDto PageData { get; set; } = new PageDataDto();
 }
 
 /// <summary>
