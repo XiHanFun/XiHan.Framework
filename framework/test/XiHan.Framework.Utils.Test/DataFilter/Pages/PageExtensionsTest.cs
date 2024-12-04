@@ -10,7 +10,9 @@ public class PageExtensionsTests
     {
         var data = Enumerable.Range(1, 100).Select(i => new TestClass { Value = i }).ToList();
         var result = data.ToPageList(2, 10);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.Select(r => r.Value));
     }
 
     [Fact]
@@ -18,7 +20,9 @@ public class PageExtensionsTests
     {
         var data = Enumerable.Range(1, 100).Select(i => new TestClass { Value = i }).AsQueryable();
         var result = data.ToPageList(2, 10);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.Select(r => r.Value));
     }
 
     [Fact]
@@ -27,7 +31,9 @@ public class PageExtensionsTests
         var data = Enumerable.Range(1, 100).Select(i => new TestClass { Value = i }).ToList();
         var pageInfo = new PageInfoDto { CurrentIndex = 2, PageSize = 10 };
         var result = data.ToPageList(pageInfo);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.Select(r => r.Value));
     }
 
     [Fact]
@@ -36,7 +42,9 @@ public class PageExtensionsTests
         var data = Enumerable.Range(1, 100).Select(i => new TestClass { Value = i }).AsQueryable();
         var pageInfo = new PageInfoDto { CurrentIndex = 2, PageSize = 10 };
         var result = data.ToPageList(pageInfo);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.Select(r => r.Value));
     }
 
     [Fact]
@@ -68,7 +76,9 @@ public class PageExtensionsTests
         Assert.Equal(2, result.PageData.PageInfo.CurrentIndex);
         Assert.Equal(10, result.PageData.PageInfo.PageSize);
         Assert.Equal(100, result.PageData.TotalCount);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result.ResponseDatas);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.ResponseDatas?.Select(r => r.Value));
     }
 
     [Fact]
@@ -80,7 +90,9 @@ public class PageExtensionsTests
         Assert.Equal(2, result.PageData.PageInfo.CurrentIndex);
         Assert.Equal(10, result.PageData.PageInfo.PageSize);
         Assert.Equal(100, result.PageData.TotalCount);
-        Assert.Equal(Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }), result.ResponseDatas);
+        var expected = Enumerable.Range(11, 10).Select(i => new TestClass { Value = i }).ToList();
+
+        Assert.Equal(expected.Select(e => e.Value), result.ResponseDatas?.Select(r => r.Value));
     }
 
     public class TestClass
