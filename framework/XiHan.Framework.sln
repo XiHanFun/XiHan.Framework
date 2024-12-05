@@ -65,7 +65,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Authentication.OpenIdConnect", "src\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect\XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj", "{A7CB454C-FA7E-417D-924C-4F43A4D336AD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.ApiDoc.Swagger", "src\XiHan.Framework.AspNetCore.ApiDoc.Swagger\XiHan.Framework.AspNetCore.ApiDoc.Swagger.csproj", "{DF651542-8FA5-4EBE-A382-997A62953A40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Swagger", "src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj", "{DF651542-8FA5-4EBE-A382-997A62953A40}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.CodeGeneration", "src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj", "{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}"
 EndProject
@@ -325,7 +325,7 @@ Global
 		{8F9D7466-5315-4956-9BC6-158A1DE4F6DF} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{77365D96-FBFD-42D5-BFC5-C88D619E2537} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{8CC5C1AB-2432-4D97-ADB5-C2A919441535} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4} = {330EF338-ED9F-4B68-8F56-2FF2A9226A78}
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
