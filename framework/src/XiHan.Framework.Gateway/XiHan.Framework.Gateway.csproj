@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\..\props\common.props"/>
+	<Import Project="..\..\props\version.props"/>
 
     <PropertyGroup>
         <Title>XiHan.Framework.Gateway</Title>

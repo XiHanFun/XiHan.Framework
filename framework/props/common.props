@@ -5,10 +5,6 @@
     <LangVersion>latest</LangVersion>
     <!-- 指定目标框架 -->
     <TargetFrameworks>net9.0</TargetFrameworks>
-    <!-- 设置程序集的版本信息 -->
-    <AssemblyVersion>0.7.5</AssemblyVersion>
-    <FileVersion>0.7.5</FileVersion>
-    <Version>0.7.5</Version>
     <!-- 启用隐式全局 usings -->
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- 设置可空引用类型 -->
@@ -44,6 +40,10 @@
     <!-- 指定用于签名的密钥文件 -->
     <AssemblyOriginatorKeyFile>..\..\snks\XiHan.Framework.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <!-- 引用 NuGet 包 -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  </ItemGroup>
   <!-- 其他文件包含 -->
   <ItemGroup>
     <!-- 将 readme.png 作为 NuGet 包图标 -->
