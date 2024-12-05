@@ -1,9 +1,9 @@
-﻿# 设置 common.props 文件路径
-$commonPropsPath = "..\..\props\common.props"
+﻿# 设置 version.props 文件路径
+$versionPropsPath = "..\..\props\version.props"
 $projectPath = "..\..\XiHan.Framework.sln"
-# 读取 common.props 内容，确保以 UTF-8 编码读取
+# 读取 version.props 内容，确保以 UTF-8 编码读取
 [xml]$xml = [System.Xml.XmlDocument]::new()
-$reader = [System.IO.StreamReader]::new($commonPropsPath, [System.Text.Encoding]::UTF8)
+$reader = [System.IO.StreamReader]::new($versionPropsPath, [System.Text.Encoding]::UTF8)
 $xml.Load($reader)
 $reader.Close()
 # 获取当前版本信息
@@ -56,7 +56,7 @@ $settings.Encoding = [System.Text.Encoding]::UTF8
 $settings.CloseOutput = $true
 
 # 使用 StreamWriter 和 XmlWriter 将内容保存为格式化后的 XML
-$writer = [System.Xml.XmlWriter]::Create($commonPropsPath, $settings)
+$writer = [System.Xml.XmlWriter]::Create($versionPropsPath, $settings)
 $xml.Save($writer)
 $writer.Close()
 
