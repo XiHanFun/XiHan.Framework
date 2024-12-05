@@ -33,8 +33,10 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// </remarks>
 public static class Sm2Helper
 {
+    // SM2 椭圆曲线参数
     private static readonly X9ECParameters CurveParameters = SecNamedCurves.GetByName("sm2p256v1");
 
+    // SM2 椭圆曲线域参数
     private static readonly ECDomainParameters DomainParameters = new(CurveParameters.Curve, CurveParameters.G, CurveParameters.N, CurveParameters.H);
 
     /// <summary>

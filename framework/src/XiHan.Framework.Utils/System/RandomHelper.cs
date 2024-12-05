@@ -84,6 +84,27 @@ public static class RandomHelper
         return GetRandom(length ?? 6, source ?? DefaultNumberOrLetterSource);
     }
 
+    /// <summary>
+    /// 此函数为生成指定数目的汉字
+    /// </summary>
+    /// <param name="length">生成长度 默认6个字符</param>
+    /// <returns>所有汉字</returns>
+    public static string RandChineseCharacter(int? length)
+    {
+        //汉字由区位和码位组成(都为0-94,其中区位16-55为一级汉字区,56-87为二级汉字区,1-9为特殊字符区)
+        int area, code;
+        var strtem = new StringBuilder();
+        var rand = new Random();
+        length ??= 6;
+        for (var i = 0; i < length; i++)
+        {
+            area = rand.Next(16, 88);
+            code = area == 55 ? rand.Next(1, 90) : rand.Next(1, 94);
+            _ = strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
+        }
+        return strtem.ToString();
+    }
+
     #endregion 常用类型
 
     #region 其他类型

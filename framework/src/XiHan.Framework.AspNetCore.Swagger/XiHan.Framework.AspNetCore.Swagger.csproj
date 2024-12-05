@@ -11,7 +11,18 @@
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
+		<OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="index.html" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="index.html" />
+    </ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -19,7 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\XiHan.Framework.AspNetCore.MVC\XiHan.Framework.AspNetCore.MVC.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.AspNetCore.Mvc\XiHan.Framework.AspNetCore.Mvc.csproj" />
 	</ItemGroup>
 
 </Project>
