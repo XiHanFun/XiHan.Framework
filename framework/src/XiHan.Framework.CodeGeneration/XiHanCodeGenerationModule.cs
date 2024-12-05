@@ -3,22 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanFrameworkAspNetCoreModule
-// Guid:e188b74b-8725-46e3-b520-c6757cfe0f6f
+// FileName:XiHanCodeGenerationModule
+// Guid:2a782966-77a5-4f6d-81c1-ae556631805a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/6 2:41:18
+// CreateTime:2024/12/6 3:29:57
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore;
+namespace XiHan.Framework.CodeGeneration;
 
 /// <summary>
-/// XiHanFrameworkAspNetCoreModule
+/// XiHanCodeGenerationModule
 /// </summary>
-public class XiHanFrameworkAspNetCoreModule : XiHanModule
+public class XiHanCodeGenerationModule : XiHanModule
 {
+    /// <summary>
+    /// 服务配置
+    /// </summary>
+    /// <param name="context"></param>
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+    }
 }
