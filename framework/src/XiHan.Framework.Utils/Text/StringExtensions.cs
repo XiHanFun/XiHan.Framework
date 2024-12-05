@@ -29,6 +29,10 @@ public static partial class StringExtensions
     /// <summary>
     /// 如果给定字符串不以该字符结尾，则在其末尾添加一个字符
     /// </summary>
+    /// <param name="str"></param>
+    /// <param name="c"></param>
+    /// <param name="comparisonType"></param>
+    /// <returns></returns>
     public static string EnsureEndsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
         _ = CheckHelper.NotNull(str, nameof(str));
@@ -39,6 +43,10 @@ public static partial class StringExtensions
     /// <summary>
     /// 如果给定字符串不以该字符开头，则在其开头添加一个字符
     /// </summary>
+    /// <param name="str"></param>
+    /// <param name="c"></param>
+    /// <param name="comparisonType"></param>
+    /// <returns></returns>
     public static string EnsureStartsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
         _ = CheckHelper.NotNull(str, nameof(str));
@@ -49,6 +57,8 @@ public static partial class StringExtensions
     /// <summary>
     /// 指示此字符串是否为空或一个 System.String.Empty 字符串
     /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
     public static bool IsNullOrEmpty([NotNullWhen(false)] this string? str)
     {
         return string.IsNullOrEmpty(str);
@@ -57,6 +67,8 @@ public static partial class StringExtensions
     /// <summary>
     /// 指示此字符串是否为 null、为空，或者仅由空白字符组成
     /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
     public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? str)
     {
         return string.IsNullOrWhiteSpace(str);

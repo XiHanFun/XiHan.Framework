@@ -159,4 +159,99 @@ public static class RsaHelper
         rsa.ImportRSAPublicKey(publicKeyBytes, out _);
         return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
+
+    /// <summary>
+    /// 生成 RSA 公钥 PEM 文件
+    /// </summary>
+    /// <param name="publicKeyBytes">公钥字节数组</param>
+    /// <param name="filePath">保存公钥 PEM 文件的路径</param>
+    public static void WritePublicKeyToPemFile(byte[] publicKeyBytes, string filePath)
+    {
+        var pem = ExportToPem(publicKeyBytes, "PUBLIC KEY");
+        File.WriteAllText(filePath, pem);
+    }
+
+    /// <summary>
+    /// 生成 RSA 私钥 PEM 文件
+    /// </summary>
+    /// <param name="privateKeyBytes">私钥字节数组</param>
+    /// <param name="filePath">保存私钥 PEM 文件的路径</param>
+    public static void WritePrivateKeyToPemFile(byte[] privateKeyBytes, string filePath)
+    {
+        var pem = ExportToPem(privateKeyBytes, "PRIVATE KEY");
+        File.WriteAllText(filePath, pem);
+    }
+
+    /// <summary>
+    /// 从 PEM 文件读取公钥
+    /// </summary>
+    /// <param name="filePath">PEM 文件路径</param>
+    /// <returns>返回公钥字节数组</returns>
+    public static byte[] ReadPublicKeyFromPemFile(string filePath)
+    {
+        var pem = File.ReadAllText(filePath);
+        return ImportFromPem(pem, "PUBLIC KEY");
+    }
+
+    /// <summary>
+    /// 从 PEM 文件读取私钥
+    /// </summary>
+    /// <param name="filePath">PEM 文件路径</param>
+    /// <returns>返回私钥字节数组</returns>
+    public static byte[] ReadPrivateKeyFromPemFile(string filePath)
+    {
+        var pem = File.ReadAllText(filePath);
+        return ImportFromPem(pem, "PRIVATE KEY");
+    }
+
+    #region 私有方法
+
+    /// <summary>
+    /// 内部方法：将字节数组导出为 PEM 格式字符串
+    /// </summary>
+    /// <param name="keyBytes"></param>
+    /// <param name="keyType"></param>
+    /// <returns></returns>
+    private static string ExportToPem(byte[] keyBytes, string keyType)
+    {
+        var base64 = Convert.ToBase64String(keyBytes);
+        var sb = new StringBuilder();
+        _ = sb.AppendLine($"-----BEGIN {keyType}-----");
+        _ = sb.AppendLine(FormatBase64(base64));
+        _ = sb.AppendLine($"-----END {keyType}-----");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 内部方法：从 PEM 格式字符串导入字节数组
+    /// </summary>
+    /// <param name="pem"></param>
+    /// <param name="keyType"></param>
+    /// <returns></returns>
+    private static byte[] ImportFromPem(string pem, string keyType)
+    {
+        var header = $"-----BEGIN {keyType}-----";
+        var footer = $"-----END {keyType}-----";
+        var start = pem.IndexOf(header, StringComparison.Ordinal) + header.Length;
+        var end = pem.IndexOf(footer, StringComparison.Ordinal);
+        var base64 = pem[start..end].Trim();
+        return Convert.FromBase64String(base64);
+    }
+
+    /// <summary>
+    /// 内部方法：格式化 Base64 字符串，分行显示
+    /// </summary>
+    /// <param name="base64"></param>
+    /// <returns></returns>
+    private static string FormatBase64(string base64)
+    {
+        var sb = new StringBuilder();
+        for (var i = 0; i < base64.Length; i += 64)
+        {
+            _ = sb.AppendLine(base64.Substring(i, Math.Min(64, base64.Length - i)));
+        }
+        return sb.ToString();
+    }
+
+    #endregion
 }

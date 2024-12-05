@@ -38,22 +38,4 @@ public class TreeNodeDto<T>
     /// 子节点
     /// </summary>
     public List<TreeNodeDto<T>> Children { get; set; } = [];
-
-    /// <summary>
-    /// 获取哈希码
-    /// </summary>
-    /// <returns></returns>
-    public override int GetHashCode()
-    {
-        return Value?.GetHashCode() ?? 0;
-    }
-
-    /// <summary>
-    /// 转为字符串
-    /// </summary>
-    /// <returns></returns>
-    public override string? ToString()
-    {
-        return Value?.ToString();
-    }
 }
