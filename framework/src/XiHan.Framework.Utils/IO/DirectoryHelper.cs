@@ -81,30 +81,37 @@ public static class DirectoryHelper
     /// <param name="overwrite">如果目标位置已经存在同名目录，是否覆盖</param>
     public static void Copy(string sourcePath, string destinationPath, bool overwrite = false)
     {
-        // 检查目标目录是否存在，如果存在且 overwrite 为 false，则不执行复制
-        if (Directory.Exists(destinationPath) && !overwrite)
+        try
         {
-            throw new IOException("目标目录已存在且 overwrite 参数为 false ");
-        }
+            // 检查目标目录是否存在，如果存在且 overwrite 为 false，则不执行复制
+            if (Directory.Exists(destinationPath) && !overwrite)
+            {
+                throw new IOException("目标目录已存在且 overwrite 参数为 false ");
+            }
 
-        // 复制目录
-        DirectoryInfo sourceDir = new(sourcePath);
-        if (!Directory.Exists(destinationPath))
-        {
-            _ = Directory.CreateDirectory(destinationPath);
-        }
+            // 复制目录
+            DirectoryInfo sourceDir = new(sourcePath);
+            if (!Directory.Exists(destinationPath))
+            {
+                _ = Directory.CreateDirectory(destinationPath);
+            }
 
-        var files = sourceDir.GetFiles();
-        foreach (var file in files)
-        {
-            _ = file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
-        }
+            var files = sourceDir.GetFiles();
+            foreach (var file in files)
+            {
+                _ = file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
+            }
 
-        var dirs = sourceDir.GetDirectories();
-        foreach (var dir in dirs)
+            var dirs = sourceDir.GetDirectories();
+            foreach (var dir in dirs)
+            {
+                var newDirPath = Path.Combine(destinationPath, dir.Name);
+                Copy(dir.FullName, newDirPath, overwrite);
+            }
+        }
+        catch (Exception ex)
         {
-            var newDirPath = Path.Combine(destinationPath, dir.Name);
-            Copy(dir.FullName, newDirPath, overwrite);
+            throw new Exception("复制目录出错", ex);
         }
     }
 
