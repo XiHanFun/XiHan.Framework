@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanFrameworkAspNetCoreApiDocSwaggerModule
+// FileName:XiHanFrameworkAspNetCoreSwaggerModule
 // Guid:8d8f4d0c-4b66-4d52-b9b7-ef10c658842a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,14 +15,14 @@
 using XiHan.Framework.AspNetCore.MVC;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore.ApiDoc.Swagger;
+namespace XiHan.Framework.AspNetCore.Swagger;
 
 /// <summary>
-/// XiHanFrameworkAspNetCoreApiDocSwaggerModule
+/// XiHanFrameworkAspNetCoreSwaggerModule
 /// </summary>
 [DependsOn(
     typeof(XiHanFrameworkAspNetCoreMVCModule)
     )]
-public class XiHanFrameworkAspNetCoreApiDocSwaggerModule : XiHanModule
+public class XiHanFrameworkAspNetCoreSwaggerModule : XiHanModule
 {
 }

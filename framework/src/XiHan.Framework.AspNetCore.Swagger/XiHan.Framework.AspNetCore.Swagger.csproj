@@ -4,10 +4,10 @@
 	<Import Project="..\..\props\version.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.AspNetCore.ApiDoc.Swagger</Title>
-        <AssemblyName>XiHan.Framework.AspNetCore.ApiDoc.Swagger</AssemblyName>
-        <PackageId>XiHan.Framework.AspNetCore.ApiDoc.Swagger</PackageId>
-        <Description>曦寒框架 Web 核心 Api 文档 Swagger 库</Description>
+        <Title>XiHan.Framework.AspNetCore.Swagger</Title>
+        <AssemblyName>XiHan.Framework.AspNetCore.Swagger</AssemblyName>
+        <PackageId>XiHan.Framework.AspNetCore.Swagger</PackageId>
+        <Description>曦寒框架 Web 核心 Swagger 文档库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
