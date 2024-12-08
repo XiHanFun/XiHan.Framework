@@ -14,7 +14,7 @@
 
 using System.Globalization;
 
-namespace XiHan.Framework.Utils.Money;
+namespace XiHan.Framework.Utils.Maths;
 
 /// <summary>
 /// 金额扩展方法

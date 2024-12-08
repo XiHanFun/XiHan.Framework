@@ -37,17 +37,17 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取或设置 起始时间
+    /// 起始时间
     /// </summary>
     public DateTime StartTime { get; set; }
 
     /// <summary>
-    /// 获取或设置 结束时间
+    /// 结束时间
     /// </summary>
     public DateTime EndTime { get; set; }
 
     /// <summary>
-    /// 获取 昨天的时间范围
+    /// 获取昨天的时间范围
     /// </summary>
     public static DateTimeRange Yesterday
     {
@@ -59,7 +59,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 今天的时间范围
+    /// 获取今天的时间范围
     /// </summary>
     public static DateTimeRange Today
     {
@@ -71,7 +71,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 明天的时间范围
+    /// 获取明天的时间范围
     /// </summary>
     public static DateTimeRange Tomorrow
     {
@@ -83,7 +83,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 上周的时间范围
+    /// 获取上周的时间范围
     /// </summary>
     public static DateTimeRange LastWeek
     {
@@ -106,7 +106,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 本周的时间范围
+    /// 获取本周的时间范围
     /// </summary>
     public static DateTimeRange ThisWeek
     {
@@ -129,7 +129,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 下周的时间范围
+    /// 获取下周的时间范围
     /// </summary>
     public static DateTimeRange NextWeek
     {
@@ -152,7 +152,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 上个月的时间范围
+    /// 获取上个月的时间范围
     /// </summary>
     public static DateTimeRange LastMonth
     {
@@ -166,7 +166,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 本月的时间范围
+    /// 获取本月的时间范围
     /// </summary>
     public static DateTimeRange ThisMonth
     {
@@ -180,7 +180,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 下个月的时间范围
+    /// 获取下个月的时间范围
     /// </summary>
     public static DateTimeRange NextMonth
     {
@@ -194,7 +194,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 上一年的时间范围
+    /// 获取上一年的时间范围
     /// </summary>
     public static DateTimeRange LastYear
     {
@@ -206,7 +206,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 本年的时间范围
+    /// 获取本年的时间范围
     /// </summary>
     public static DateTimeRange ThisYear
     {
@@ -218,7 +218,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 下一年的时间范围
+    /// 获取下一年的时间范围
     /// </summary>
     public static DateTimeRange NextYear
     {
@@ -230,7 +230,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 相对当前时间过去30天的时间范围
+    /// 获取相对当前时间过去30天的时间范围
     /// </summary>
     public static DateTimeRange Last30Days
     {
@@ -242,7 +242,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 截止到昨天的最近30天的天数范围
+    /// 获取截止到昨天的最近30天的天数范围
     /// </summary>
     public static DateTimeRange Last30DaysExceptToday
     {
@@ -254,7 +254,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 相对当前时间过去7天的时间范围
+    /// 获取相对当前时间过去7天的时间范围
     /// </summary>
     public static DateTimeRange Last7Days
     {
@@ -266,7 +266,7 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 获取 截止到昨天的最近7天的天数范围
+    /// 获取截止到昨天的最近7天的天数范围
     /// </summary>
     public static DateTimeRange Last7DaysExceptToday
     {
@@ -278,11 +278,9 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 返回表示当前 <see cref="T:System.Object"/> 的 <see cref="T:System.String"/>。
+    /// ToString
     /// </summary>
-    /// <returns>
-    /// <see cref="T:System.String"/>，表示当前的 <see cref="T:System.Object"/>。
-    /// </returns>
+    /// <returns></returns>
     public override string ToString()
     {
         return $"[{StartTime} - {EndTime}]";

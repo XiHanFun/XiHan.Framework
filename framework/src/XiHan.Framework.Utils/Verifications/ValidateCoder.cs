@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:VerificationCodeHelper
+// FileName:ValidateCoder
 // Guid:7fbc0368-1a12-4a65-bfb6-dcf2f1094f2d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using XiHan.Framework.Utils.System;
 namespace XiHan.Framework.Utils.Verifications;
 
 /// <summary>
-/// 验证码辅助类
+/// 验证码生成器
 /// </summary>
-public static class VerificationCodeHelper
+public static class ValidateCoder
 {
     // 默认数字字符源
     private const string DefaultNumberSource = "0123456789";

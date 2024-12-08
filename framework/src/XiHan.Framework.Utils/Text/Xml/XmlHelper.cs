@@ -17,7 +17,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace XiHan.Framework.Utils.Text;
+namespace XiHan.Framework.Utils.Text.Xml;
 
 /// <summary>
 /// XmlHelper

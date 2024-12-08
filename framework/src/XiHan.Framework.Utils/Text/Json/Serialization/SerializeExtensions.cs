@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SerializeHelper
+// FileName:SerializeExtensions
 // Guid:1345864e-97d1-4fbf-8f3e-5f9d5d51176e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,16 +18,16 @@ using System.Text.Json.Serialization.Metadata;
 namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
 /// <summary>
-/// 序列化帮助类
+/// 序列化扩展
 /// </summary>
-public static class SerializeHelper
+public static class SerializeExtensions
 {
     /// <summary>
     /// 序列化为 Json
     /// </summary>
     /// <param name="item"></param>
     /// <returns></returns>
-    public static string SerializeTo(object item)
+    public static string SerializeTo(this object item)
     {
         return JsonSerializer.Serialize(item, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
     }
@@ -38,7 +38,7 @@ public static class SerializeHelper
     /// <typeparam name="T"></typeparam>
     /// <param name="jsonString"></param>
     /// <returns></returns>
-    public static T? DeserializeTo<T>(string jsonString)
+    public static T? DeserializeTo<T>(this string jsonString)
     {
         return JsonSerializer.Deserialize<T>(jsonString, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
     }
@@ -48,7 +48,7 @@ public static class SerializeHelper
     /// </summary>
     /// <param name="jsonString"></param>
     /// <returns></returns>
-    public static object? DeserializeTo(string jsonString)
+    public static object? DeserializeTo(this string jsonString)
     {
         return JsonSerializer.Deserialize(jsonString.ToStream(),
             JsonTypeInfo.CreateJsonTypeInfo<object>(JsonSerializerOptionsHelper.DefaultJsonSerializerOptions));

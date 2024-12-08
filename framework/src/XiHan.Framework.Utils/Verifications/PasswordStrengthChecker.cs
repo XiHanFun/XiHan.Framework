@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PasswordStrengthHelper
+// FileName:PasswordStrengthChecker
 // Guid:779986e5-8d07-4767-879b-83b78f6ed821
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,9 +17,9 @@ using System.Text;
 namespace XiHan.Framework.Utils.Verifications;
 
 /// <summary>
-/// 密码强度检测辅助类
+/// 密码强度检测器
 /// </summary>
-public class PasswordStrengthHelper
+public class PasswordStrengthChecker
 {
     private static readonly List<string> WeakPasswords =
     [
