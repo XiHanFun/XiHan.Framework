@@ -18,13 +18,25 @@ using System.Text;
 namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
-/// 哈希生成
+/// 哈希生成辅助类
 /// </summary>
 /// <remarks>
 /// 是一系列加密哈希函数，主要用于生成数据的固定长度散列值，以确保数据完整性和安全性。
 /// </remarks>
 public static class HashHelper
 {
+    /// <summary>
+    /// 生成 SHA1 哈希值
+    /// </summary>
+    /// <param name="data">待加密的数据</param>
+    /// <returns>生成的哈希值</returns>
+    public static string Sha1(string data)
+    {
+        // 创建 SHA256 加密算法实例，将字符串数据转换为字节数组，并生成相应的哈希值
+        var hashBytes = SHA1.HashData(Encoding.UTF8.GetBytes(data));
+        return Convert.ToHexString(hashBytes);
+    }
+
     /// <summary>
     /// 生成 SHA256 哈希值
     /// </summary>
