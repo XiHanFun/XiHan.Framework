@@ -232,7 +232,7 @@ public static class GenericExtensions
         {
             ChangedNote = newList
         };
-        return !enumerable.ChangedNote.Any() ? "{}" : SerializeHelper.SerializeTo(enumerable);
+        return !enumerable.ChangedNote.Any() ? "{}" : SerializeExtensions.SerializeTo(enumerable);
     }
 
     #endregion 属性信息
