@@ -16,7 +16,7 @@ using System.Security.Cryptography;
 using System.Text;
 using XiHan.Framework.Utils.Security.Cryptography;
 
-namespace XiHan.Framework.Utils.Security.Otp;
+namespace XiHan.Framework.Utils.Verifications;
 
 /// <summary>
 /// OtpHelper
@@ -146,10 +146,10 @@ public static class OtpHelper
 
         // 动态截取
         var offset = hash[^1] & 0x0F;
-        var binaryCode = ((hash[offset] & 0x7F) << 24) |
-                         (hash[offset + 1] << 16) |
-                         (hash[offset + 2] << 8) |
-                         (hash[offset + 3]);
+        var binaryCode = (hash[offset] & 0x7F) << 24 |
+                         hash[offset + 1] << 16 |
+                         hash[offset + 2] << 8 |
+                         hash[offset + 3];
 
         // 取模以生成固定位数的 OTP
         var otp = binaryCode % (int)Math.Pow(10, digits);

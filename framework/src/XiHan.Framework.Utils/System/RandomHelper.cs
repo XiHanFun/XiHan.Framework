@@ -26,89 +26,6 @@ public static class RandomHelper
 
     private static readonly Lock Lock = new();
 
-    #region 常用类型
-
-    // 默认数字字符源
-    private const string DefaultNumberSource = "0123456789";
-
-    // 默认大写字母字符源
-    private const string DefaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    // 默认小写字母字符源
-    private const string DefaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
-
-    // 默认字母或数字字符源
-    private const string DefaultNumberOrLetterSource = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-    /// <summary>
-    /// 随机数字
-    /// </summary>
-    /// <param name="length">生成长度 默认6个字符</param>
-    /// <param name="source">自定义数字字符源</param>
-    /// <returns></returns>
-    public static string GetNumber(int? length, string? source)
-    {
-        return GetRandom(length ?? 6, source ?? DefaultNumberSource);
-    }
-
-    /// <summary>
-    /// 随机大写字母
-    /// </summary>
-    /// <param name="length">生成长度 默认6个字符</param>
-    /// <param name="source">自定义大写字母字符源</param>
-    /// <returns></returns>
-    public static string GetUpperLetter(int? length, string? source)
-    {
-        return GetRandom(length ?? 6, source?.ToUpperInvariant() ?? DefaultUpperLetterSource);
-    }
-
-    /// <summary>
-    /// 随机小写字母
-    /// </summary>
-    /// <param name="length">生成长度 默认6个字符</param>
-    /// <param name="source">自定义小写字母字符源</param>
-    /// <returns></returns>
-    public static string GetLowerLetter(int? length, string? source)
-    {
-        return GetRandom(length ?? 6, source?.ToLowerInvariant() ?? DefaultLowerLetterSource);
-    }
-
-    /// <summary>
-    /// 随机字母或数字
-    /// </summary>
-    /// <param name="length">生成长度 默认6个字符</param>
-    /// <param name="source">自定义字母或数字字符源</param>
-    /// <returns></returns>
-    public static string GetNumberOrLetter(int? length, string? source)
-    {
-        return GetRandom(length ?? 6, source ?? DefaultNumberOrLetterSource);
-    }
-
-    /// <summary>
-    /// 此函数为生成指定数目的汉字
-    /// </summary>
-    /// <param name="length">生成长度 默认6个字符</param>
-    /// <returns>所有汉字</returns>
-    public static string RandChineseCharacter(int? length)
-    {
-        //汉字由区位和码位组成(都为0-94,其中区位16-55为一级汉字区,56-87为二级汉字区,1-9为特殊字符区)
-        int area, code;
-        var strtem = new StringBuilder();
-        var rand = new Random();
-        length ??= 6;
-        for (var i = 0; i < length; i++)
-        {
-            area = rand.Next(16, 88);
-            code = area == 55 ? rand.Next(1, 90) : rand.Next(1, 94);
-            _ = strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
-        }
-        return strtem.ToString();
-    }
-
-    #endregion 常用类型
-
-    #region 其他类型
-
     /// <summary>
     /// 根据字符源生成随机字符
     /// </summary>
@@ -224,6 +141,4 @@ public static class RandomHelper
 
         return randomList;
     }
-
-    #endregion 其他类型
 }
