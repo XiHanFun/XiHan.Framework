@@ -77,7 +77,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Gateway", "src\XiHan.Framework.Gateway\XiHan.Framework.Gateway.csproj", "{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}"
 EndProject
-
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.test", "2.test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Test", "test\XiHan.Framework.AspNetCore.Test\XiHan.Framework.AspNetCore.Test.csproj", "{D3C969C0-C770-4CD8-B468-D4E2A284B101}"
@@ -86,20 +85,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Utils.Test"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Core.Test", "test\XiHan.Framework.Core.Test\XiHan.Framework.Core.Test.csproj", "{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}"
 EndProject
-
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.others", "3.others", "{1AD44577-09E6-4150-A2C6-D03E22386A11}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		CodeMaid.config = CodeMaid.config
 		global.json = global.json
-		XiHan.txt = XiHan.txt
+		XiHan.Framework.txt = XiHan.Framework.txt
 	EndProjectSection
 EndProject
-
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "props", "props", "{F851D62C-26A2-4527-8983-DC83CA9AE4B5}"
 	ProjectSection(SolutionItems) = preProject
 		props\common.props = props\common.props
+		props\version.props = props\version.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "snks", "snks", "{3C37066E-F44D-4DF0-9DCB-92FBF2F21160}"
@@ -113,7 +112,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "editor", "editor", "{9116A4
 	ProjectSection(SolutionItems) = preProject
 		scripts\editor\Class.cs = scripts\editor\Class.cs
 		scripts\editor\Controller.cs = scripts\editor\Controller.cs
-		scripts\editor\CopyFile.bat = scripts\editor\CopyFile.bat
+		scripts\editor\CopyFile.ps1 = scripts\editor\CopyFile.ps1
 		scripts\editor\FilePath.txt = scripts\editor\FilePath.txt
 		scripts\editor\Interface.cs = scripts\editor\Interface.cs
 	EndProjectSection
@@ -130,13 +129,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{7736
 		scripts\project\ClearProjecBinObj.ps1 = scripts\project\ClearProjecBinObj.ps1
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "service", "service", "{8CC5C1AB-2432-4D97-ADB5-C2A919441535}"
-	ProjectSection(SolutionItems) = preProject
-		scripts\service\XiHan.bat = scripts\service\XiHan.bat
-		scripts\service\XiHan.service = scripts\service\XiHan.service
-	EndProjectSection
-EndProject
-
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -247,6 +239,10 @@ Global
 		{DF651542-8FA5-4EBE-A382-997A62953A40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF651542-8FA5-4EBE-A382-997A62953A40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF651542-8FA5-4EBE-A382-997A62953A40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -275,10 +271,6 @@ Global
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -315,6 +307,7 @@ Global
 		{FD657323-6443-415A-85DF-F2E94BD1C785} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 		{A7CB454C-FA7E-417D-924C-4F43A4D336AD} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 		{DF651542-8FA5-4EBE-A382-997A62953A40} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
+		{431C4FFF-93F5-422A-8A54-BB72CD9532D4} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 		{2EF69F1B-D843-47AE-9B83-F1BACEC98EFC} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{72D92811-E41F-43C1-8272-0F12ADCE4A25} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{75AF9C8C-C70F-4EB3-9509-C7F882F7F965} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
@@ -328,8 +321,6 @@ Global
 		{9116A4F6-DE3E-45AF-829D-14E11AA99C15} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{8F9D7466-5315-4956-9BC6-158A1DE4F6DF} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{77365D96-FBFD-42D5-BFC5-C88D619E2537} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
-		{8CC5C1AB-2432-4D97-ADB5-C2A919441535} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
-		{431C4FFF-93F5-422A-8A54-BB72CD9532D4} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
