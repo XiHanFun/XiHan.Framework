@@ -40,6 +40,7 @@ public class DisposeAction : IDisposable
     public void Dispose()
     {
         _action();
+        GC.SuppressFinalize(this);
     }
 }
 
@@ -75,5 +76,6 @@ public class DisposeAction<T> : IDisposable
         {
             _action(_parameter);
         }
+        GC.SuppressFinalize(this);
     }
 }
