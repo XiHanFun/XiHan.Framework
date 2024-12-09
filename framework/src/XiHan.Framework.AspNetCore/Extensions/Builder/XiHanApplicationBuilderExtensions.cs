@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.System;
@@ -51,7 +50,7 @@ public static class XiHanApplicationBuilderExtensions
     /// 初始化应用程序
     /// </summary>
     /// <param name="app"></param>
-    public static void InitializeApplication([NotNull] this IApplicationBuilder app)
+    public static void InitializeApplication(this IApplicationBuilder app)
     {
         _ = CheckHelper.NotNull(app, nameof(app));
 
