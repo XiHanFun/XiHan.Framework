@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Core.Application;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.AspNetCore;
@@ -22,10 +24,39 @@ namespace XiHan.Framework.AspNetCore;
 public class XiHanAspNetCoreModule : XiHanModule
 {
     /// <summary>
+    /// 服务配置前
+    /// </summary>
+    /// <param name="context"></param>
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        _ = context.Services.GetSingletonInstance<IXiHanHostEnvironment>();
+        //if (xihanHostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
+        //{
+        //    xihanHostEnvironment.EnvironmentName = context.Services.GetHostingEnvironment().EnvironmentName;
+        //}
+    }
+
+    /// <summary>
     /// 服务配置
     /// </summary>
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        _ = services.AddAuthorization();
+
+        //Configure<XiHanAuditingOptions>(options =>
+        //{
+        //    options.Contributors.Add(new AspNetCoreAuditLogContributor());
+        //});
+
+        //Configure<StaticFileOptions>(options =>
+        //{
+        //    options.ContentTypeProvider = context.Services.GetRequiredService<XiHanFileExtensionContentTypeProvider>();
+        //});
+
+        //AddAspNetServices(context.Services);
+        _ = services.AddObjectAccessor<IApplicationBuilder>();
+        //context.Services.AddXiHanDynamicOptions<RequestLocalizationOptions, XiHanRequestLocalizationOptionsManager>();
     }
 }
