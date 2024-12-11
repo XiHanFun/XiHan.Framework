@@ -133,7 +133,7 @@ public static class EnumerableExtensions
         return condition ? source.Where(predicate) : source;
     }
 
-    #endregion
+    #endregion 选择
 
     #region 排序
 
@@ -147,7 +147,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, string sortField, SortDirectionEnum sortDirection)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortField, sortDirection);
+        return CollectionPropertySortor<T>.OrderBy(source, sortField, sortDirection);
     }
 
     /// <summary>
@@ -159,7 +159,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
+        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public static class EnumerableExtensions
     public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortConditionDto<T> sortCondition)
         where T : class
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortCondition);
+        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, string sortField, SortDirectionEnum sortDirection)
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortField, sortDirection);
+        return CollectionPropertySortor<T>.ThenBy(source, sortField, sortDirection);
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortConditionDto sortCondition)
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
+        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>
@@ -210,7 +210,7 @@ public static class EnumerableExtensions
     public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortConditionDto<T> sortCondition)
         where T : class
     {
-        return CollectionPropertySorter<T>.ThenBy(source, sortCondition);
+        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
     }
 
     /// <summary>
@@ -222,7 +222,7 @@ public static class EnumerableExtensions
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto> sortConditions)
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
+        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
     }
 
     /// <summary>
@@ -235,8 +235,8 @@ public static class EnumerableExtensions
     public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
         where T : class
     {
-        return CollectionPropertySorter<T>.OrderBy(source, sortConditions);
+        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
     }
 
-    #endregion
+    #endregion 排序
 }

@@ -107,7 +107,7 @@ public class HttpHelper
         return await HandleResponse<T>(response);
     }
 
-    #endregion
+    #endregion 公共方法
 
     #region 私有方法
 
@@ -162,5 +162,5 @@ public class HttpHelper
         return typeof(T) == typeof(string) ? (T)(object)responseData : JsonSerializer.Deserialize<T>(responseData);
     }
 
-    #endregion
+    #endregion 私有方法
 }

@@ -68,7 +68,7 @@ public static class XmlHelper
         return objectValue is T result ? result : throw new Exception("反序列化失败");
     }
 
-    #endregion
+    #endregion 序列化与反序列化
 
     #region XML 节点操作
 
@@ -168,7 +168,7 @@ public static class XmlHelper
         return doc.OuterXml;
     }
 
-    #endregion
+    #endregion XML 节点操作
 
     #region 辅助功能
 
@@ -202,5 +202,5 @@ public static class XmlHelper
         }
     }
 
-    #endregion
+    #endregion 辅助功能
 }
