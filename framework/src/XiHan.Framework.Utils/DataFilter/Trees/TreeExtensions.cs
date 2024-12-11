@@ -65,9 +65,6 @@ public static class TreeExtensions
             }
         }
         return nodes.Where(node => !nodes.Any(n => n.Children.Contains(node)));
-
-        // 只返回根节点
-        //return nodes.Where(node => !nodes.Any(n => isChild(n.Value, node.Value)));
     }
 
     /// <summary>
@@ -323,5 +320,5 @@ public static class TreeExtensions
         return false;
     }
 
-    #endregion
+    #endregion 私有方法
 }
