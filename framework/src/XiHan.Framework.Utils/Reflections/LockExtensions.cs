@@ -59,7 +59,7 @@ public static class LockExtensions
         }
     }
 
-    #endregion
+    #endregion 基础锁定
 
     #region ReaderWriterLockSlim扩展
 
@@ -157,7 +157,7 @@ public static class LockExtensions
         }
     }
 
-    #endregion
+    #endregion ReaderWriterLockSlim扩展
 
     #region 超时锁定
 
@@ -229,5 +229,5 @@ public static class LockExtensions
         return (false, default);
     }
 
-    #endregion
+    #endregion 超时锁定
 }

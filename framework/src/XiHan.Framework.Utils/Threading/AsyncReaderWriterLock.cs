@@ -84,7 +84,7 @@ public class AsyncReaderWriterLock
         return new Releaser(this, isWriter: false);
     }
 
-    #endregion
+    #endregion 读锁
 
     #region 写锁
 
@@ -109,7 +109,7 @@ public class AsyncReaderWriterLock
         return !await _writerSemaphore.WaitAsync(timeout) ? throw new TimeoutException("未能在超时时间内获取写锁。") : (IDisposable)new Releaser(this, isWriter: true);
     }
 
-    #endregion
+    #endregion 写锁
 
     #region 释放器
 
@@ -166,5 +166,5 @@ public class AsyncReaderWriterLock
         }
     }
 
-    #endregion
+    #endregion 释放器
 }
