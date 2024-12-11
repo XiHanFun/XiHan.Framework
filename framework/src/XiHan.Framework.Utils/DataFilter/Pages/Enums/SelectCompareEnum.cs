@@ -59,7 +59,7 @@ public enum SelectCompareEnum
     [Description("不等于")]
     NotEqual,
 
-    #endregion
+    #endregion 单值比较
 
     #region 集合比较
 
@@ -81,7 +81,7 @@ public enum SelectCompareEnum
     [Description("多值等于比较")]
     InWithEqual,
 
-    #endregion
+    #endregion 集合比较
 
     #region 区间比较
 
@@ -91,5 +91,5 @@ public enum SelectCompareEnum
     [Description("在于")]
     Between
 
-    #endregion
+    #endregion 区间比较
 }

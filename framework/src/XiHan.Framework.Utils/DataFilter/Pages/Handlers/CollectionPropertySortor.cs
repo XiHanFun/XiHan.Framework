@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CollectionPropertySorter
+// FileName:CollectionPropertySortor
 // Guid:1038670b-e9f2-45f0-82b5-eb4ce622a25d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.DataFilter.Pages.Handlers;
 /// <summary>
 /// 集合属性排序器
 /// </summary>
-public static class CollectionPropertySorter<T>
+public static class CollectionPropertySortor<T>
 {
     #region IEnumerable
 
@@ -156,7 +156,7 @@ public static class CollectionPropertySorter<T>
         return orderedSource;
     }
 
-    #endregion
+    #endregion IEnumerable
 
     #region IQueryable
 
@@ -292,5 +292,5 @@ public static class CollectionPropertySorter<T>
         return orderedSource;
     }
 
-    #endregion
+    #endregion IQueryable
 }

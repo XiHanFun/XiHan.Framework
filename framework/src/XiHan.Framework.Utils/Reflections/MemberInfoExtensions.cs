@@ -62,7 +62,8 @@ public static class MemberInfoExtensions
     /// <param name="memberInfo">要检查的成员</param>
     /// <param name="inherit">是否从继承中查找</param>
     /// <returns>是否存在</returns>
-    public static bool HasAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit = true) where TAttribute : Attribute
+    public static bool HasAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit = true)
+        where TAttribute : Attribute
     {
         return memberInfo.IsDefined(typeof(TAttribute), inherit);
     }
@@ -89,7 +90,8 @@ public static class MemberInfoExtensions
     /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="type">要检查的类型成员</param>
     /// <returns></returns>
-    public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type? type) where TAttribute : Attribute
+    public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type? type)
+        where TAttribute : Attribute
     {
         while (true)
         {

@@ -94,7 +94,7 @@ public static class CollectionPropertySelector<T>
         return source;
     }
 
-    #endregion
+    #endregion IEnumerable
 
     #region IQueryable
 
@@ -168,5 +168,5 @@ public static class CollectionPropertySelector<T>
         return source;
     }
 
-    #endregion
+    #endregion IQueryable
 }
