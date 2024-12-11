@@ -323,5 +323,5 @@ public static class TreeExtensions
         return false;
     }
 
-    #endregion
+    #endregion 私有方法
 }
