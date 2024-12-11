@@ -40,8 +40,7 @@
             data-max-traces="15"
             data-toggle-shortcut="Alt+P"
             data-trivial-milliseconds="2.0"
-            data-ignored-duplicate-execute-types="Open,OpenAsync,Close,CloseAsync">
-    </script>
+            data-ignored-duplicate-execute-types="Open,OpenAsync,Close,CloseAsync"></script>
     %(HeadContent)
 </head>
 
@@ -49,17 +48,14 @@
     <div id="swagger-ui"></div>
 
     <!-- Workaround for https://github.com/swagger-api/swagger-editor/issues/1371 -->
-    <script>
-    if (window.navigator.userAgent.indexOf("Edge") > -1) {
+    <script>if (window.navigator.userAgent.indexOf("Edge") > -1) {
         console.log("Removing native Edge fetch in favor of swagger-ui's polyfill")
         window.fetch = undefined;
-    }
-    </script>
+    }</script>
 
     <script src="./swagger-ui-bundle.js"></script>
     <script src="./swagger-ui-standalone-preset.js"></script>
-    <script>
-    /* Source: https://gist.github.com/lamberta/3768814
+    <script>/* Source: https://gist.github.com/lamberta/3768814
                      * Parse a string function definition and return a function object. Does not use eval.
                      * @param {string} str
                      * @return {function}
@@ -128,7 +124,6 @@
         // End Swagger UI call region
 
         window.ui = ui
-    }
-    </script>
+    }</script>
 </body>
 </html>

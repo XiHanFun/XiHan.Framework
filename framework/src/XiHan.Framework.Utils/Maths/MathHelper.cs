@@ -105,7 +105,7 @@ public static class MathHelper
         return Math.Tan(angleInRadians);
     }
 
-    #endregion
+    #endregion 基本运算
 
     #region 几何计算
 
@@ -163,7 +163,7 @@ public static class MathHelper
         return Sqrt(s * (s - a) * (s - b) * (s - c));
     }
 
-    #endregion
+    #endregion 几何计算
 
     #region 统计运算
 
@@ -224,7 +224,7 @@ public static class MathHelper
         return Sqrt(Variance(numbers));
     }
 
-    #endregion
+    #endregion 统计运算
 
     #region 数值处理
 
@@ -292,5 +292,5 @@ public static class MathHelper
         return result;
     }
 
-    #endregion
+    #endregion 数值处理
 }

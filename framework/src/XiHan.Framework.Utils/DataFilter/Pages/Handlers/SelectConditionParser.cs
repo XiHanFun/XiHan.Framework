@@ -201,5 +201,5 @@ public static class SelectConditionParser<T>
         return Expression.AndAlso(lowerBound, upperBound);
     }
 
-    #endregion
+    #endregion 私有方法
 }
