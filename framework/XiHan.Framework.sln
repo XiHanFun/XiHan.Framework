@@ -131,6 +131,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{7736
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Scalar", "src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj", "{D96285FA-6E40-49B4-9E64-76AD3DDA315D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Caching.StackExchangeRedis", "src\XiHan.Framework.Caching.StackExchangeRedis\XiHan.Framework.Caching.StackExchangeRedis.csproj", "{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -277,6 +279,10 @@ Global
 		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -328,6 +334,7 @@ Global
 		{8F9D7466-5315-4956-9BC6-158A1DE4F6DF} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{77365D96-FBFD-42D5-BFC5-C88D619E2537} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{D96285FA-6E40-49B4-9E64-76AD3DDA315D} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
+		{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
