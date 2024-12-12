@@ -129,6 +129,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{7736
 		scripts\project\ClearProjecBinObj.ps1 = scripts\project\ClearProjecBinObj.ps1
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Scalar", "src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj", "{D96285FA-6E40-49B4-9E64-76AD3DDA315D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -271,6 +273,10 @@ Global
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B283BE9E-A448-4A4D-BB7A-C55784F8DAB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D96285FA-6E40-49B4-9E64-76AD3DDA315D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -321,6 +327,7 @@ Global
 		{9116A4F6-DE3E-45AF-829D-14E11AA99C15} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{8F9D7466-5315-4956-9BC6-158A1DE4F6DF} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
 		{77365D96-FBFD-42D5-BFC5-C88D619E2537} = {1A7B29A7-C97C-43FE-898F-751EB26806E1}
+		{D96285FA-6E40-49B4-9E64-76AD3DDA315D} = {6A55B17B-FA29-46D0-87F5-96AF3D970AD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
