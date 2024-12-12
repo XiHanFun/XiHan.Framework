@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.AspNetCore.Extensions;
 using XiHan.Framework.AspNetCore.Mvc;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.AspNetCore.Swagger;
@@ -31,5 +33,18 @@ public class XiHanAspNetCoreSwaggerModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        _ = services.AddSwaggerGen();
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context"></param>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var app = context.GetApplicationBuilder();
+        _ = app.UseSwagger();
+        _ = app.UseSwaggerUI();
     }
 }
