@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Caching;
@@ -27,5 +28,12 @@ public class XiHanCachingModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        _ = services.AddMemoryCache();
+        _ = services.AddDistributedMemoryCache();
+
+        _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
+        //_ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
     }
 }
