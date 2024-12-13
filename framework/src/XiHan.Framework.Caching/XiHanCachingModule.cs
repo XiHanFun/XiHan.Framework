@@ -34,6 +34,6 @@ public class XiHanCachingModule : XiHanModule
         _ = services.AddDistributedMemoryCache();
 
         _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
-        //_ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
+        _ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
     }
 }
