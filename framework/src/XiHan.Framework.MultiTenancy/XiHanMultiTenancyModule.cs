@@ -3,24 +3,23 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanCachingModule
-// Guid:6f62e6f6-d4e0-46a0-a7cc-cdbb69489ba9
+// FileName:XiHanMultiTenancyModule
+// Guid:2d25167f-53fa-4771-97b9-fef8f1e84505
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/6 3:29:38
+// CreateTime:2024/12/14 6:17:26
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.MultiTenancy;
 
 /// <summary>
-/// XiHanCachingModule
+/// 曦寒多租户模块
 /// </summary>
-public class XiHanCachingModule : XiHanModule
+public class XiHanMultiTenancyModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
@@ -28,12 +27,5 @@ public class XiHanCachingModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        var services = context.Services;
-
-        _ = services.AddMemoryCache();
-        _ = services.AddDistributedMemoryCache();
-
-        _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
-        _ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
     }
 }

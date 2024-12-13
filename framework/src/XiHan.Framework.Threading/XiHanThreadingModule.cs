@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2024 ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanCachingModule
-// Guid:6f62e6f6-d4e0-46a0-a7cc-cdbb69489ba9
+// FileName:XiHanThreadingModule
+// Guid:62981b36-b74b-4b1b-8da2-d63cd2f25cfe
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/6 3:29:38
+// CreateTime:2024/12/14 5:57:46
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,25 +15,20 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Threading;
 
 /// <summary>
-/// XiHanCachingModule
+/// XiHanThreadingModule
 /// </summary>
-public class XiHanCachingModule : XiHanModule
+public class XiHanThreadingModule : XiHanModule
 {
     /// <summary>
-    /// 服务配置
+    /// 配置
     /// </summary>
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        var services = context.Services;
-
-        _ = services.AddMemoryCache();
-        _ = services.AddDistributedMemoryCache();
-
-        _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
-        _ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
+        _ = context.Services.AddSingleton<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
+        _ = context.Services.AddSingleton(typeof(IAmbientScopeProvider<>), typeof(AmbientDataContextAmbientScopeProvider<>));
     }
 }
