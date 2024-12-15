@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
+using System.Reflection;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 
 namespace XiHan.Framework.Utils.System;
@@ -143,11 +144,17 @@ public static class GenericExtensions
     /// 获取对象属性信息列表
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>
-    public static List<CustomPropertyInfo> GetProperties<TEntity>(this TEntity entity)
+    /// <param name="entity"></param>
+    /// <param name="isContainsInherited">是否含继承属性</param>
+    /// <returns></returns>
+    public static List<CustomPropertyInfo> GetProperties<TEntity>(this TEntity entity, bool isContainsInherited)
         where TEntity : class
     {
         var type = typeof(TEntity);
-        var properties = type.GetProperties();
+        var properties =
+            isContainsInherited
+                ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                : type.GetProperties();
         return properties.Select(info => new CustomPropertyInfo
         {
             PropertyName = info.Name,
