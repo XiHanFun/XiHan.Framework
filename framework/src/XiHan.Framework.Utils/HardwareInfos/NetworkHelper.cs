@@ -44,17 +44,17 @@ public static class NetworkHelper
                 .ToList();
 
             networkInfos.AddRange(from ni in interfaces
-                                  let properties = ni.GetIPProperties()
-                                  select new NetworkInfo
-                                  {
-                                      Name = ni.Name,
-                                      Description = ni.Description,
-                                      Type = ni.NetworkInterfaceType.ToString(),
-                                      Speed = ni.Speed.ToString("#,##0") + " bps",
-                                      PhysicalAddress = BitConverter.ToString(ni.GetPhysicalAddress().GetAddressBytes()),
-                                      DnsAddresses = properties.DnsAddresses.Select(ip => ip.ToString()).ToList(),
-                                      IpAddresses = properties.UnicastAddresses.Select(ip => ip.Address + " / " + ip.IPv4Mask).ToList()
-                                  });
+                let properties = ni.GetIPProperties()
+                select new NetworkInfo
+                {
+                    Name = ni.Name,
+                    Description = ni.Description,
+                    Type = ni.NetworkInterfaceType.ToString(),
+                    Speed = ni.Speed.ToString("#,##0") + " bps",
+                    PhysicalAddress = BitConverter.ToString(ni.GetPhysicalAddress().GetAddressBytes()),
+                    DnsAddresses = properties.DnsAddresses.Select(ip => ip.ToString()).ToList(),
+                    IpAddresses = properties.UnicastAddresses.Select(ip => ip.Address + " / " + ip.IPv4Mask).ToList()
+                });
         }
         catch (Exception ex)
         {

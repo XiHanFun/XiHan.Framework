@@ -47,20 +47,20 @@ public static class DiskHelper
                 if (lines.Count != 0)
                 {
                     diskInfos.AddRange(from line in lines
-                                       select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
+                        select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
                         into rootDisk
-                                       where rootDisk.Length >= 5
-                                       select new DiskInfo
-                                       {
-                                           DiskName = rootDisk[4].Trim(),
-                                           TypeName = rootDisk[0].Trim(),
-                                           TotalSpace = (rootDisk[1].ParseToLong() * 1024).FormatFileSizeToString(),
-                                           UsedSpace = (rootDisk[2].ParseToLong() * 1024).FormatFileSizeToString(),
-                                           FreeSpace = ((rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024).FormatFileSizeToString(),
-                                           AvailableRate = rootDisk[1].ParseToLong() == 0
-                                               ? "0%"
-                                               : Math.Round((decimal)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3) + "%"
-                                       });
+                        where rootDisk.Length >= 5
+                        select new DiskInfo
+                        {
+                            DiskName = rootDisk[4].Trim(),
+                            TypeName = rootDisk[0].Trim(),
+                            TotalSpace = (rootDisk[1].ParseToLong() * 1024).FormatFileSizeToString(),
+                            UsedSpace = (rootDisk[2].ParseToLong() * 1024).FormatFileSizeToString(),
+                            FreeSpace = ((rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024).FormatFileSizeToString(),
+                            AvailableRate = rootDisk[1].ParseToLong() == 0
+                                ? "0%"
+                                : Math.Round((decimal)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3) + "%"
+                        });
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

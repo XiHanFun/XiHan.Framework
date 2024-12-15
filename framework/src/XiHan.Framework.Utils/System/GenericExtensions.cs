@@ -157,9 +157,7 @@ public static class GenericExtensions
                 : type.GetProperties();
         return properties.Select(info => new CustomPropertyInfo
         {
-            PropertyName = info.Name,
-            PropertyType = info.PropertyType.Name,
-            PropertyValue = info.GetValue(entity).ParseToString()
+            PropertyName = info.Name, PropertyType = info.PropertyType.Name, PropertyValue = info.GetValue(entity).ParseToString()
         }).ToList();
     }
 
@@ -189,9 +187,7 @@ public static class GenericExtensions
                 {
                     result.Add(new CustomPropertyVariance
                     {
-                        PropertyName = variance.Name,
-                        Value1 = value1.ToString() ?? string.Empty,
-                        Value2 = value2.ToString() ?? string.Empty
+                        PropertyName = variance.Name, Value1 = value1.ToString() ?? string.Empty, Value2 = value2.ToString() ?? string.Empty
                     });
                 }
             }
@@ -200,9 +196,7 @@ public static class GenericExtensions
             {
                 result.Add(new CustomPropertyVariance
                 {
-                    PropertyName = variance.Name,
-                    Value1 = value1?.ToString() ?? string.Empty,
-                    Value2 = value2?.ToString() ?? string.Empty
+                    PropertyName = variance.Name, Value1 = value1?.ToString() ?? string.Empty, Value2 = value2?.ToString() ?? string.Empty
                 });
             }
         }
@@ -224,9 +218,7 @@ public static class GenericExtensions
         var list = oldVal.GetPropertiesDetailedCompare(newVal);
         var newList = list.Select(s => new
         {
-            s.PropertyName,
-            s.Value1,
-            s.Value2
+            s.PropertyName, s.Value1, s.Value2
         });
 
         // 要排除某些特殊属性

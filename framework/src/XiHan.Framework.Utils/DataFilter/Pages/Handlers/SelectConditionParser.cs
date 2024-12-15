@@ -178,8 +178,8 @@ public static class SelectConditionParser<T>
 
         // 生成多个 Equal 表达式并连接
         return valueList
-           .Select(v => Expression.Equal(propertyAccess, Expression.Constant(v)))
-           .Aggregate(Expression.OrElse);
+            .Select(v => Expression.Equal(propertyAccess, Expression.Constant(v)))
+            .Aggregate(Expression.OrElse);
     }
 
     /// <summary>

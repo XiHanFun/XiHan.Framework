@@ -84,7 +84,7 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
 
         unchecked
         {
-            return (ServiceType.GetHashCode() * 397) ^ ServiceKey.GetHashCode();
+            return ServiceType.GetHashCode() * 397 ^ ServiceKey.GetHashCode();
         }
     }
 

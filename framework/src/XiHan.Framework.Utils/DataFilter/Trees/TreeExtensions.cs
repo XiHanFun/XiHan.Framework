@@ -64,6 +64,7 @@ public static class TreeExtensions
                 }
             }
         }
+
         return nodes.Where(node => !nodes.Any(n => n.Children.Contains(node)));
     }
 
@@ -86,7 +87,7 @@ public static class TreeExtensions
         }
 
         return nodes.Where(node => parentKeySelector(node.Value) == null
-                                || !nodes.Any(n => keySelector(n.Value)?.Equals(parentKeySelector(node.Value)) == true));
+            || !nodes.Any(n => keySelector(n.Value)?.Equals(parentKeySelector(node.Value)) == true));
     }
 
     /// <summary>
@@ -125,8 +126,8 @@ public static class TreeExtensions
         }
 
         var parentNode = source
-            .DepthFirstTraversal()
-            .FirstOrDefault(node => keySelector(node.Value)?.Equals(keySelector(parent)) == true)
+                .DepthFirstTraversal()
+                .FirstOrDefault(node => keySelector(node.Value)?.Equals(keySelector(parent)) == true)
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
         _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
@@ -160,6 +161,7 @@ public static class TreeExtensions
                 return true;
             }
         }
+
         return false;
     }
 

@@ -116,7 +116,7 @@ public static class DateTimeFormatExtensions
         var diffDay = dayInMonth - firstWeekEndDay;
         diffDay = diffDay > 0 ? diffDay : 1;
         // 当前是第几周，若整除7就减一天
-        return (diffDay % 7 == 0 ? (diffDay / 7) - 1 : diffDay / 7) + 1 + (dayInMonth > firstWeekEndDay ? 1 : 0);
+        return (diffDay % 7 == 0 ? diffDay / 7 - 1 : diffDay / 7) + 1 + (dayInMonth > firstWeekEndDay ? 1 : 0);
     }
 
     /// <summary>
@@ -181,10 +181,10 @@ public static class DateTimeFormatExtensions
         const int Dd = Hh * 24;
 
         var day = ms / Dd;
-        var hour = (ms - (day * Dd)) / Hh;
-        var minute = (ms - (day * Dd) - (hour * Hh)) / Mi;
-        var second = (ms - (day * Dd) - (hour * Hh) - (minute * Mi)) / Ss;
-        var milliSecond = ms - (day * Dd) - (hour * Hh) - (minute * Mi) - (second * Ss);
+        var hour = (ms - day * Dd) / Hh;
+        var minute = (ms - day * Dd - hour * Hh) / Mi;
+        var second = (ms - day * Dd - hour * Hh - minute * Mi) / Ss;
+        var milliSecond = ms - day * Dd - hour * Hh - minute * Mi - second * Ss;
 
         // 天
         var sDay = day < 10 ? "0" + day : string.Empty + day;
@@ -257,9 +257,9 @@ public static class DateTimeFormatExtensions
                         : dep.TotalDays < 7
                             ? (int)dep.TotalDays + "天前"
                             : dep.TotalDays is >= 7 and < 30
-                                ? ((int)dep.TotalDays / 7) + "周前"
+                                ? (int)dep.TotalDays / 7 + "周前"
                                 : dep.TotalDays is >= 30 and < 365
-                                    ? ((int)dep.TotalDays / 30) + "个月前"
+                                    ? (int)dep.TotalDays / 30 + "个月前"
                                     : now.Year - value.Year + "年前";
     }
 

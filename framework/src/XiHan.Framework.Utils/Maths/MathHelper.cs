@@ -194,7 +194,7 @@ public static class MathHelper
         var sorted = numbers.OrderBy(n => n).ToArray();
         var count = sorted.Length;
 
-        return count % 2 == 0 ? (sorted[(count / 2) - 1] + sorted[count / 2]) / 2 : sorted[count / 2];
+        return count % 2 == 0 ? (sorted[count / 2 - 1] + sorted[count / 2]) / 2 : sorted[count / 2];
     }
 
     /// <summary>
@@ -247,6 +247,7 @@ public static class MathHelper
                 return false;
             }
         }
+
         return true;
     }
 
@@ -263,11 +264,15 @@ public static class MathHelper
             throw new ArgumentException("数量必须为正整数。");
         }
 
-        var sequence = new List<int> { 0, 1 };
+        var sequence = new List<int>
+        {
+            0, 1
+        };
         while (sequence.Count < count)
         {
             sequence.Add(sequence[^1] + sequence[^2]);
         }
+
         return sequence.Take(count).ToList();
     }
 
@@ -289,6 +294,7 @@ public static class MathHelper
         {
             result *= i;
         }
+
         return result;
     }
 

@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\props\common.props" />
-	<Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\common.props"/>
+    <Import Project="..\..\props\version.props"/>
 
-	<PropertyGroup>
-		<Title>XiHan.Framework.Threading</Title>
-		<AssemblyName>XiHan.Framework.Threading</AssemblyName>
-		<PackageId>XiHan.Framework.Threading</PackageId>
-		<Description>曦寒框架线程库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
+    <PropertyGroup>
+        <Title>XiHan.Framework.Threading</Title>
+        <AssemblyName>XiHan.Framework.Threading</AssemblyName>
+        <PackageId>XiHan.Framework.Threading</PackageId>
+        <Description>曦寒框架线程库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+    </ItemGroup>
 
 </Project>

@@ -22,7 +22,7 @@ namespace XiHan.Framework.TextTemplating;
 /// </summary>
 [DependsOn(
     typeof(XiHanVirtualFileSystemModule)
-    )]
+)]
 public class XiHanTextTemplatingModule : XiHanModule
 {
     /// <summary>

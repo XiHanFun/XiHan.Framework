@@ -21,7 +21,7 @@ namespace XiHan.Framework.AspNetCore.Mvc;
 /// </summary>
 [DependsOn(
     typeof(XiHanAspNetCoreModule)
-    )]
+)]
 public class XiHanAspNetCoreMvcModule : XiHanModule
 {
     /// <summary>

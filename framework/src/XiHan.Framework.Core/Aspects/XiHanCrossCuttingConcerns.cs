@@ -75,8 +75,8 @@ public class XiHanCrossCuttingConcerns
         return obj == null
             ? throw new ArgumentNullException(nameof(obj))
             : concern == null
-            ? throw new ArgumentNullException(nameof(concern))
-            : (obj as IAvoidDuplicateCrossCuttingConcerns)?.AppliedCrossCuttingConcerns.Contains(concern) ?? false;
+                ? throw new ArgumentNullException(nameof(concern))
+                : (obj as IAvoidDuplicateCrossCuttingConcerns)?.AppliedCrossCuttingConcerns.Contains(concern) ?? false;
     }
 
     /// <summary>

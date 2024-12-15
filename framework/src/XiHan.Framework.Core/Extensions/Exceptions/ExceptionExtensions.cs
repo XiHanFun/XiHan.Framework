@@ -35,15 +35,18 @@ public static class ExceptionExtensions
         {
             return string.Empty;
         }
+
         var message = exception.Message;
         if (isHideStackTrace)
         {
             return message;
         }
+
         if (exception.InnerException != null)
         {
             message += " --> " + exception.InnerException.FormatMessage();
         }
+
         return message;
     }
 

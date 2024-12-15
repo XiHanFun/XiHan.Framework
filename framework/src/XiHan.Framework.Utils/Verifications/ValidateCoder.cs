@@ -95,6 +95,7 @@ public static class ValidateCoder
             code = area == 55 ? RandomHelper.GetRandom(1, 90) : RandomHelper.GetRandom(1, 94);
             _ = strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
         }
+
         return strtem.ToString();
     }
 }

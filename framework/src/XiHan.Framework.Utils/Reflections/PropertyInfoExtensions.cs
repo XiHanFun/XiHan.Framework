@@ -47,6 +47,7 @@ public static class PropertyInfoExtensions
         {
             return memberExpression.Member.Name;
         }
+
         if (keySelector.Body is UnaryExpression unaryExpression)
         {
             if (unaryExpression.Operand is MemberExpression operand)
@@ -54,6 +55,7 @@ public static class PropertyInfoExtensions
                 return operand.Member.Name;
             }
         }
+
         throw new InvalidOperationException("无法从键选择器中获取属性名称。");
     }
 

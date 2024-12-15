@@ -24,7 +24,7 @@ namespace XiHan.Framework.AspNetCore.Swagger;
 /// </summary>
 [DependsOn(
     typeof(XiHanAspNetCoreMvcModule)
-    )]
+)]
 public class XiHanAspNetCoreSwaggerModule : XiHanModule
 {
     /// <summary>

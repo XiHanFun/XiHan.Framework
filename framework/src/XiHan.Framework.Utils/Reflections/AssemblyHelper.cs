@@ -501,8 +501,7 @@ public static class AssemblyHelper
                 NuGetPackage nuGetPackage = new()
                 {
                     // 获取 NuGet 包的名称和版本号
-                    PackageName = referencedAssembly.Name!,
-                    PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
+                    PackageName = referencedAssembly.Name!, PackageVersion = new AssemblyName(referencedAssembly.FullName).Version!.ToString()
                 };
 
                 // 避免重复添加相同的 NuGet 包标识
@@ -632,7 +631,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return (x == null && y == null) || (x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
+        return x == null && y == null || x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
     }
 
     public override int GetHashCode(Assembly obj)

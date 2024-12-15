@@ -125,12 +125,12 @@ public static class CheckHelper
                 ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
                 : value
             : string.IsNullOrEmpty(value)
-            ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName)
-            : value.Length < minLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
-            : value.Length > maxLength
-            ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
-            : value;
+                ? throw new ArgumentException($"{parameterName}不能为无效、空值!", parameterName)
+                : value.Length < minLength
+                    ? throw new ArgumentException($"{parameterName}长度必须等于或大于{minLength}!", parameterName)
+                    : value.Length > maxLength
+                        ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
+                        : value;
     }
 
     /// <summary>

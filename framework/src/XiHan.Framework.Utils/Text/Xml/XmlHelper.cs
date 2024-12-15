@@ -38,9 +38,7 @@ public static class XmlHelper
     {
         var settings = new XmlWriterSettings
         {
-            OmitXmlDeclaration = omitXmlDeclaration,
-            Indent = indent,
-            Encoding = Encoding.UTF8
+            OmitXmlDeclaration = omitXmlDeclaration, Indent = indent, Encoding = Encoding.UTF8
         };
 
         using var stream = new StringWriter();

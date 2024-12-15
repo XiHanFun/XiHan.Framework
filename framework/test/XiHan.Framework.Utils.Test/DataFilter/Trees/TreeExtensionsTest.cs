@@ -18,7 +18,11 @@ public class TreeExtensionsTest
             4,
             5
         };
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+
+        static bool isChild(int parent, int child)
+        {
+            return parent == 1 && child > 1;
+        }
 
         var result = source.ToTree(isChild).ToList();
 
@@ -52,7 +56,11 @@ public class TreeExtensionsTest
     public void ToTree_ReturnsEmpty_WhenSourceIsEmpty()
     {
         var source = new List<int>();
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+
+        static bool isChild(int parent, int child)
+        {
+            return parent == 1 && child > 1;
+        }
 
         var result = source.ToTree(isChild);
 
@@ -66,7 +74,11 @@ public class TreeExtensionsTest
         {
             2, 3, 4, 5
         };
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+
+        static bool isChild(int parent, int child)
+        {
+            return parent == 1 && child > 1;
+        }
 
         var result = source.ToTree(isChild);
 
@@ -80,7 +92,11 @@ public class TreeExtensionsTest
         {
             1, 2, 3
         };
-        static bool isChild(int parent, int child) => (parent == 1 && child == 2) || (parent == 2 && child == 3) || (parent == 3 && child == 1);
+
+        static bool isChild(int parent, int child)
+        {
+            return (parent == 1 && child == 2) || (parent == 2 && child == 3) || (parent == 3 && child == 1);
+        }
 
         var result = source.ToTree(isChild).ToList();
 
@@ -105,7 +121,10 @@ public class TreeExtensionsTest
             5
         };
 
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+        static bool isChild(int parent, int child)
+        {
+            return parent == 1 && child > 1;
+        }
 
         var result = source.ToTree(isChild).ToList();
 

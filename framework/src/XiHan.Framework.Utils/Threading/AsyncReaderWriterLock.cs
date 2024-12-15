@@ -27,7 +27,8 @@ public class AsyncReaderWriterLock
     /// 初始化异步读写锁
     /// </summary>
     public AsyncReaderWriterLock()
-    { }
+    {
+    }
 
     #region 读锁
 
@@ -50,7 +51,7 @@ public class AsyncReaderWriterLock
             _ = _readerSemaphore.Release();
         }
 
-        return new Releaser(this, isWriter: false);
+        return new Releaser(this, false);
     }
 
     /// <summary>
@@ -81,7 +82,7 @@ public class AsyncReaderWriterLock
             _ = _readerSemaphore.Release();
         }
 
-        return new Releaser(this, isWriter: false);
+        return new Releaser(this, false);
     }
 
     #endregion 读锁
@@ -95,7 +96,7 @@ public class AsyncReaderWriterLock
     public async Task<IDisposable> AcquireWriteLockAsync()
     {
         await _writerSemaphore.WaitAsync();
-        return new Releaser(this, isWriter: true);
+        return new Releaser(this, true);
     }
 
     /// <summary>
@@ -106,7 +107,7 @@ public class AsyncReaderWriterLock
     /// <exception cref="TimeoutException"></exception>
     public async Task<IDisposable> AcquireWriteLockAsync(TimeSpan timeout)
     {
-        return !await _writerSemaphore.WaitAsync(timeout) ? throw new TimeoutException("未能在超时时间内获取写锁。") : (IDisposable)new Releaser(this, isWriter: true);
+        return !await _writerSemaphore.WaitAsync(timeout) ? throw new TimeoutException("未能在超时时间内获取写锁。") : (IDisposable)new Releaser(this, true);
     }
 
     #endregion 写锁
