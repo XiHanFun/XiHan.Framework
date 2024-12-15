@@ -68,13 +68,13 @@ public static class TreeExtensions
     }
 
     /// <summary>
-    /// 根据主键和父级主键生成树形结构。
+    /// 根据主键和父级主键生成树形结构
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="source">源数据集合。</param>
-    /// <param name="keySelector">主键选择器。</param>
-    /// <param name="parentKeySelector">父级主键选择器。</param>
-    /// <returns>树形结构。</returns>
+    /// <param name="source">源数据集合</param>
+    /// <param name="keySelector">主键选择器</param>
+    /// <param name="parentKeySelector">父级主键选择器</param>
+    /// <returns>树形结构</returns>
     public static IEnumerable<TreeNodeDto<T>> ToTree<T>(this IEnumerable<T> source, Func<T, object> keySelector, Func<T, object> parentKeySelector)
     {
         var nodes = source.Select(value => new TreeNodeDto<T>(value)).ToList();
@@ -104,30 +104,30 @@ public static class TreeExtensions
     }
 
     /// <summary>
-    /// 添加子节点到指定的父节点。
+    /// 添加子节点到指定的父节点
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="source">源数据集合。</param>
-    /// <param name="parent">父节点对象。</param>
-    /// <param name="child">子节点对象。</param>
-    /// <param name="keySelector">主键选择器。</param>
-    /// <param name="parentKeySelector">父级主键选择器。</param>
+    /// <param name="source">源数据集合</param>
+    /// <param name="parent">父节点对象</param>
+    /// <param name="child">子节点对象</param>
+    /// <param name="keySelector">主键选择器</param>
+    /// <param name="parentKeySelector">父级主键选择器</param>
     public static void AddChild<T>(this IEnumerable<TreeNodeDto<T>> source, T parent, T child, Func<T, object> keySelector, Func<T, object> parentKeySelector)
     {
         if (parent == null)
         {
-            throw new ArgumentNullException(nameof(parent), "父节点不能为空。");
+            throw new ArgumentNullException(nameof(parent), "父节点不能为空");
         }
 
         if (child == null)
         {
-            throw new ArgumentNullException(nameof(child), "子节点不能为空。");
+            throw new ArgumentNullException(nameof(child), "子节点不能为空");
         }
 
         var parentNode = source
             .DepthFirstTraversal()
             .FirstOrDefault(node => keySelector(node.Value)?.Equals(keySelector(parent)) == true)
-            ?? throw new InvalidOperationException("在树中未找到父节点。");
+            ?? throw new InvalidOperationException("在树中未找到父节点");
 
         _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
         parentNode.Children.Add(new TreeNodeDto<T>(child));
@@ -188,7 +188,7 @@ public static class TreeExtensions
     }
 
     /// <summary>
-    /// 深度优先遍历 (DFS) - 遍历树形结构中所有节点。
+    /// 深度优先遍历 (DFS) - 遍历树形结构中所有节点
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="source"></param>
