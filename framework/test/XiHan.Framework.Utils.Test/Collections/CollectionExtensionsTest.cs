@@ -26,7 +26,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void IsNullOrEmpty_ReturnsFalse_WhenCollectionIsNotEmpty()
     {
-        var collection = new List<int> { 1 };
+        var collection = new List<int>
+        {
+            1
+        };
         var result = collection.IsNullOrEmpty();
         Assert.False(result);
     }
@@ -82,7 +85,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void AddIfNotContains_AddsItem_WhenItemDoesNotExist()
     {
-        var collection = new List<int> { 1 };
+        var collection = new List<int>
+        {
+            1
+        };
         var result = collection.AddIfNotContains(2);
         Assert.True(result);
         Assert.Contains(2, collection);
@@ -91,7 +97,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void AddIfNotContains_DoesNotAddItem_WhenItemExists()
     {
-        var collection = new List<int> { 1 };
+        var collection = new List<int>
+        {
+            1
+        };
         var result = collection.AddIfNotContains(1);
         Assert.False(result);
     }
@@ -99,8 +108,14 @@ public class CollectionExtensionsTest
     [Fact]
     public void AddIfNotContainsWithItems_AddsItems_WhenItemsDoNotExist()
     {
-        var collection = new List<int> { 1 };
-        var itemsToAdd = new List<int> { 2, 3 };
+        var collection = new List<int>
+        {
+            1
+        };
+        var itemsToAdd = new List<int>
+        {
+            2, 3
+        };
         var result = collection.AddIfNotContains(itemsToAdd);
         Assert.Contains(2, collection);
         Assert.Contains(3, collection);
@@ -110,7 +125,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void AddIfNotContainsWithPredicate_AddsItem_WhenPredicateDoesNotMatch()
     {
-        var collection = new List<int> { 1 };
+        var collection = new List<int>
+        {
+            1
+        };
         var result = collection.AddIfNotContains(x => x == 2, () => 2);
         Assert.True(result);
         Assert.Contains(2, collection);
@@ -119,7 +137,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void AddIfNotContainsWithPredicate_DoesNotAddItem_WhenPredicateMatches()
     {
-        var collection = new List<int> { 1 };
+        var collection = new List<int>
+        {
+            1
+        };
         var result = collection.AddIfNotContains(x => x == 1, () => 2);
         Assert.False(result);
     }
@@ -127,7 +148,10 @@ public class CollectionExtensionsTest
     [Fact]
     public void RemoveAllWhere_RemovesItems_WhenPredicateMatches()
     {
-        var collection = new List<int> { 1, 2, 3 };
+        var collection = new List<int>
+        {
+            1, 2, 3
+        };
         var result = collection.RemoveAllWhere(x => x > 1);
         Assert.Equal([2, 3], result);
         Assert.DoesNotContain(2, collection);
@@ -137,8 +161,14 @@ public class CollectionExtensionsTest
     [Fact]
     public void RemoveAll_RemovesSpecifiedItems()
     {
-        var collection = new List<int> { 1, 2, 3 };
-        var itemsToRemove = new List<int> { 2, 3 };
+        var collection = new List<int>
+        {
+            1, 2, 3
+        };
+        var itemsToRemove = new List<int>
+        {
+            2, 3
+        };
         collection.RemoveAll(itemsToRemove);
         Assert.DoesNotContain(2, collection);
         Assert.DoesNotContain(3, collection);

@@ -220,23 +220,26 @@ public static class PageExtensions
     /// <param name="queryDto">分页查询</param>
     /// <returns>分页后的分页信息和数据</returns>
     public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> source, PageQueryDto queryDto)
-       where T : class, new()
+        where T : class, new()
     {
         // 处理查询所有数据的情况
         if (queryDto.IsQueryAll == true)
         {
             return source.ToPagePageResponse(new PageInfoDto());
         }
+
         // 处理选择条件
         if (queryDto.SelectConditions != null)
         {
             source = source.WhereMultiple(queryDto.SelectConditions);
         }
+
         // 处理排序条件
         if (queryDto.SortConditions != null)
         {
             source = source.OrderByMultiple(queryDto.SortConditions);
         }
+
         // 获取分页信息
         var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
         return source.ToPagePageResponse(pageInfo);
@@ -250,23 +253,26 @@ public static class PageExtensions
     /// <param name="queryDto">分页查询</param>
     /// <returns>分页后的分页信息和数据</returns>
     public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> source, PageQueryDto queryDto)
-       where T : class, new()
+        where T : class, new()
     {
         // 处理查询所有数据的情况
         if (queryDto.IsQueryAll == true)
         {
             return source.ToPagePageResponse(new PageInfoDto());
         }
+
         // 处理选择条件
         if (queryDto.SelectConditions != null)
         {
             source = source.WhereMultiple(queryDto.SelectConditions);
         }
+
         // 处理排序条件
         if (queryDto.SortConditions != null)
         {
             source = source.OrderByMultiple(queryDto.SortConditions);
         }
+
         // 获取分页信息
         var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
         return source.ToPagePageResponse(pageInfo);

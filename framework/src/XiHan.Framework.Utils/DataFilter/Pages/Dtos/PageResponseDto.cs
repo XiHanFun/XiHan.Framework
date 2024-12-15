@@ -38,7 +38,7 @@ public class PageResponseDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageDataDto PageData { get; set; } = new PageDataDto();
+    public PageDataDto PageData { get; set; } = new();
 }
 
 /// <summary>

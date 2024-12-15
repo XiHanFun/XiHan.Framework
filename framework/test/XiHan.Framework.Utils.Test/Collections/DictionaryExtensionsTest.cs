@@ -10,7 +10,12 @@ public class DictionaryExtensionsTest
     [Fact]
     public void TryGetValue_ReturnsTrueAndValue_WhenKeyExists()
     {
-        var dictionary = new Dictionary<string, object> { { "key", 42 } };
+        var dictionary = new Dictionary<string, object>
+        {
+            {
+                "key", 42
+            }
+        };
         var result = dictionary.TryGetValue("key", out var value);
         Assert.True(result);
         Assert.Equal(42, value);
@@ -28,7 +33,12 @@ public class DictionaryExtensionsTest
     [Fact]
     public void GetOrDefault_ReturnsValue_WhenKeyExists()
     {
-        var dictionary = new Dictionary<string, int> { { "key", 42 } };
+        var dictionary = new Dictionary<string, int>
+        {
+            {
+                "key", 42
+            }
+        };
         var result = dictionary.GetOrDefault("key");
         Assert.Equal(42, result);
     }
@@ -53,7 +63,12 @@ public class DictionaryExtensionsTest
     [Fact]
     public void GetOrAdd_ReturnsExistingValue_WhenKeyExists()
     {
-        var dictionary = new Dictionary<string, int> { { "key", 42 } };
+        var dictionary = new Dictionary<string, int>
+        {
+            {
+                "key", 42
+            }
+        };
         var result = dictionary.GetOrAdd("key", () => 100);
         Assert.Equal(42, result);
     }
@@ -61,8 +76,13 @@ public class DictionaryExtensionsTest
     [Fact]
     public void ConvertToDynamicObject_ReturnsExpandoObject_WithSameValues()
     {
-        var dictionary = new Dictionary<string, object> { { "key", 42 } };
-        dynamic expando = dictionary.ConvertToDynamicObject();
+        var dictionary = new Dictionary<string, object>
+        {
+            {
+                "key", 42
+            }
+        };
+        var expando = dictionary.ConvertToDynamicObject();
         Assert.Equal(42, expando.key);
     }
 

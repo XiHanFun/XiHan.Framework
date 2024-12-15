@@ -22,7 +22,7 @@ namespace XiHan.Framework.AspNetCore.Scalar;
 /// </summary>
 [DependsOn(
     typeof(XiHanAspNetCoreMvcModule)
-    )]
+)]
 public class XiHanAspNetCoreScalarModule : XiHanModule
 {
     /// <summary>

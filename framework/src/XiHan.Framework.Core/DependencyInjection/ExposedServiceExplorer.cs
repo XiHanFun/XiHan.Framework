@@ -27,8 +27,7 @@ public class ExposedServiceExplorer
     private static readonly ExposeServicesAttribute DefaultExposeServicesAttribute =
         new()
         {
-            IncludeDefaults = true,
-            IncludeSelf = true
+            IncludeDefaults = true, IncludeSelf = true
         };
 
     /// <summary>

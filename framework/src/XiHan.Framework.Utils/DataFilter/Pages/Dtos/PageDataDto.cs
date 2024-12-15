@@ -53,7 +53,7 @@ public class PageDataDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageInfoDto PageInfo { get; set; } = new PageInfoDto();
+    public PageInfoDto PageInfo { get; set; } = new();
 
     /// <summary>
     /// 数据总数

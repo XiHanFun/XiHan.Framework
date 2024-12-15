@@ -108,9 +108,7 @@ public static class EnumExtensions
 
             result.Add(new EnumInfo
             {
-                Key = field.Name.ToString(),
-                Value = (int)field.GetRawConstantValue()!,
-                Label = desc
+                Key = field.Name.ToString(), Value = (int)field.GetRawConstantValue()!, Label = desc
             });
         });
         return result;

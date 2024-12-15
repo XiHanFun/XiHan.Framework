@@ -75,6 +75,7 @@ public static class CollectionPropertySelector<T>
             var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate.Compile());
         }
+
         return source;
     }
 
@@ -91,6 +92,7 @@ public static class CollectionPropertySelector<T>
             var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate.Compile());
         }
+
         return source;
     }
 
@@ -149,6 +151,7 @@ public static class CollectionPropertySelector<T>
             var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate);
         }
+
         return source;
     }
 
@@ -165,6 +168,7 @@ public static class CollectionPropertySelector<T>
             var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
             source = source.Where(predicate);
         }
+
         return source;
     }
 
