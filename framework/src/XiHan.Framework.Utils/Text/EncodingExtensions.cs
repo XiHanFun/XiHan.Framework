@@ -191,7 +191,7 @@ public static class Base32
             return string.Empty;
         }
 
-        StringBuilder sb = new(((bytes.Length * 8) + 4) / 5);
+        StringBuilder sb = new((bytes.Length * 8 + 4) / 5);
 
         var bitCount = 0;
         var accumulatedBits = 0;

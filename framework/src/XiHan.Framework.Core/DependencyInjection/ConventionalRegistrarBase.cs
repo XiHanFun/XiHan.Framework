@@ -132,8 +132,10 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
         return typeof(ITransientDependency).GetTypeInfo().IsAssignableFrom(type)
             ? ServiceLifetime.Transient
             : typeof(ISingletonDependency).GetTypeInfo().IsAssignableFrom(type)
-            ? ServiceLifetime.Singleton
-            : typeof(IScopedDependency).GetTypeInfo().IsAssignableFrom(type) ? ServiceLifetime.Scoped : null;
+                ? ServiceLifetime.Singleton
+                : typeof(IScopedDependency).GetTypeInfo().IsAssignableFrom(type)
+                    ? ServiceLifetime.Scoped
+                    : null;
     }
 
     /// <summary>
@@ -191,8 +193,8 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
                 ? ServiceDescriptor.Describe(exposingServiceType, provider => provider.GetService(redirectedType)!, lifeTime)
                 : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime)
             : serviceKey == null
-            ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
-            : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
+                ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
+                : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
     }
 
     /// <summary>
@@ -207,11 +209,11 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
         return allExposingKeyedServiceTypes.Count < 2
             ? null
             : exposingServiceType == implementationType
-            ? null
-            : allExposingKeyedServiceTypes.Any(t => t.ServiceType == implementationType)
-            ? implementationType
-            : allExposingKeyedServiceTypes.FirstOrDefault(
-            t => t.ServiceType != exposingServiceType && exposingServiceType.IsAssignableFrom(t.ServiceType)
-        ).ServiceType;
+                ? null
+                : allExposingKeyedServiceTypes.Any(t => t.ServiceType == implementationType)
+                    ? implementationType
+                    : allExposingKeyedServiceTypes.FirstOrDefault(
+                        t => t.ServiceType != exposingServiceType && exposingServiceType.IsAssignableFrom(t.ServiceType)
+                    ).ServiceType;
     }
 }

@@ -76,6 +76,7 @@ public class DisposeAction<T> : IDisposable
         {
             _action(_parameter);
         }
+
         GC.SuppressFinalize(this);
     }
 }

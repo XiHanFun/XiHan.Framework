@@ -95,7 +95,7 @@ public class PageInfoDto
                 > DefaultMaxPageSize => DefaultMaxPageSize,
                 < DefaultMinPageSize => DefaultMinPageSize,
                 // 不在默认每页大小数组中的值，取最接近的默认值
-                _ => _defaultPageSizeArray.OrderBy(p => Math.Abs(p - value)).First(),
+                _ => _defaultPageSizeArray.OrderBy(p => Math.Abs(p - value)).First()
             };
 
             _pageSize = value;

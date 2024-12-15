@@ -486,7 +486,10 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <param name="slidingExpiration"></param>
     protected virtual void MapMetadata(RedisValue[] results, out DateTimeOffset? absoluteExpiration, out TimeSpan? slidingExpiration)
     {
-        var parameters = new object?[] { results, null, null };
+        var parameters = new object?[]
+        {
+            results, null, null
+        };
         _ = MapMetadataMethod.Invoke(this, parameters);
 
         absoluteExpiration = (DateTimeOffset?)parameters[1];
@@ -540,10 +543,11 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
             lease = null;
             return value.First;
         }
+
         var length = checked((int)value.Length);
         lease = ArrayPool<byte>.Shared.Rent(length);
         value.CopyTo(lease);
-        return new(lease, 0, length);
+        return new ReadOnlyMemory<byte>(lease, 0, length);
     }
 
     /// <summary>
