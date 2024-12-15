@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Scalar.AspNetCore" Version="1.2.51" />
+	  <PackageReference Include="Scalar.AspNetCore" Version="1.2.56" />
 	</ItemGroup>
 
 	<ItemGroup>

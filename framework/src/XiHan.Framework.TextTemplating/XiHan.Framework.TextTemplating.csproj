@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.TextTemplating</Title>
+		<AssemblyName>XiHan.Framework.TextTemplating</AssemblyName>
+		<PackageId>XiHan.Framework.TextTemplating</PackageId>
+		<Description>曦寒框架文本模板库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Scriban" Version="5.12.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+		<ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
+	</ItemGroup>
+
+</Project>
