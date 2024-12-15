@@ -13,12 +13,16 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.TextTemplating;
 
 namespace XiHan.Framework.CodeGeneration;
 
 /// <summary>
 /// XiHanCodeGenerationModule
 /// </summary>
+[DependsOn(
+    typeof(XiHanTextTemplatingModule)
+)]
 public class XiHanCodeGenerationModule : XiHanModule
 {
     /// <summary>
