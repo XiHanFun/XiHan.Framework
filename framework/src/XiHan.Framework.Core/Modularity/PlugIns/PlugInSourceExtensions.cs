@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2024 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:PlugInSourceExtensions
 // Guid:5d2d3037-ab3c-4c72-b825-dec4e03bb03e

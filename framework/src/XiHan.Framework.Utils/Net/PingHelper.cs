@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2024 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:PingHelper
 // Guid:4b03ace8-6bee-43e7-af3a-ee7783ec0f57

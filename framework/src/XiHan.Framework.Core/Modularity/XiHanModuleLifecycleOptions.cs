@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2024 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanModuleLifecycleOptions
 // Guid:f9aabfaa-2442-4f35-8ee8-8285b56c0646
