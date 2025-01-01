@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props"/>
-    <Import Project="..\..\props\version.props"/>
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.TextTemplating</Title>
@@ -12,12 +12,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Scriban" Version="5.12.0"/>
+        <PackageReference Include="Scriban" Version="5.12.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
-        <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj"/>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
     </ItemGroup>
 
 </Project>
