@@ -78,7 +78,7 @@ public static class ApplicationInitializationContextExtensions
     }
 
     /// <summary>
-    /// 获取配置
+    /// 获取日志工厂
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
