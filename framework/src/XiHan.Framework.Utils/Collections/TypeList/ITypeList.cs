@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.Collections;
+namespace XiHan.Framework.Utils.Collections.TypeList;
 
 /// <summary>
 /// 类型列表接口
