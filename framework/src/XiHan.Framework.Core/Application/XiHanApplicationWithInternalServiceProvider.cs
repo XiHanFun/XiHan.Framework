@@ -95,6 +95,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     {
         base.Dispose();
         ServiceScope?.Dispose();
+
         GC.SuppressFinalize(this);
     }
 }

@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Core.Application;
+namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
 /// 在调用释放方法时提供一个操作
