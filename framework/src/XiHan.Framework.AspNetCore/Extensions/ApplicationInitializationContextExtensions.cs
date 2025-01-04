@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Application;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.AspNetCore.Extensions;
