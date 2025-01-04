@@ -7,13 +7,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.src", "1.src", "{1F74D18D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.Base", "1.Base", "{ABAF43CC-1FB6-4831-B94B-918A93386FA5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Core", "2.Core", "{A95AA4B3-D196-48A0-82F1-5F42CDC067B0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Common", "2.Common", "{57FEC00C-80F2-413A-8D51-2B6FDED49200}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.CoreLibraries", "3.CoreLibraries", "{EC379147-874F-47CF-ACB7-32DB2710B4B5}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.Core", "3.Core", "{A95AA4B3-D196-48A0-82F1-5F42CDC067B0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4.AspNetCore", "4.AspNetCore", "{330EF338-ED9F-4B68-8F56-2FF2A9226A78}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4.CoreLibraries", "4.CoreLibraries", "{EC379147-874F-47CF-ACB7-32DB2710B4B5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5.AspNetCoreLibraries", "5.AspNetCoreLibraries", "{6A55B17B-FA29-46D0-87F5-96AF3D970AD7}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5.AspNetCore", "5.AspNetCore", "{330EF338-ED9F-4B68-8F56-2FF2A9226A78}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6.AspNetCoreLibraries", "6.AspNetCoreLibraries", "{6A55B17B-FA29-46D0-87F5-96AF3D970AD7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework", "src\XiHan.Framework\XiHan.Framework.csproj", "{D7EEF707-13D1-45BA-8A6A-5C5865667A14}"
 EndProject
@@ -28,6 +30,16 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AI", "src\XiHan.Framework.AI\XiHan.Framework.AI.csproj", "{EEDFBCC6-3EF8-422F-A48D-EFB173DA65AB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.EventBus", "src\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj", "{CDD7F2D0-12BA-4E0D-85EC-C735607E6E1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Caching.StackExchangeRedis", "src\XiHan.Framework.Caching.StackExchangeRedis\XiHan.Framework.Caching.StackExchangeRedis.csproj", "{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Threading", "src\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj", "{375A0B93-2CD6-4FEE-9F69-DBE674FCBB4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.MultiTenancy", "src\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj", "{A9DCEF72-866B-4F0B-AD76-0DACF7174560}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.VirtualFileSystem", "src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj", "{FEB559DC-0667-491C-B64A-B9B46B01DB50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.TextTemplating", "src\XiHan.Framework.TextTemplating\XiHan.Framework.TextTemplating.csproj", "{ADF76351-777E-4FBC-B925-9065534B03AC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.BlobStoring", "src\XiHan.Framework.BlobStoring\XiHan.Framework.BlobStoring.csproj", "{43FAFB81-D9AF-4DC6-9D79-1267FFEC9DC4}"
 EndProject
@@ -49,15 +61,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Uow", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Serialization", "src\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj", "{B98B1D96-284C-488E-8015-AEAE68D5B694}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.SearchEngines", "src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj", "{DD914906-5344-4EF2-A744-9C55945DCF87}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Localization", "src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj", "{F1B94619-9D1A-46DC-BE22-E110C8F82525}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Gateway", "src\XiHan.Framework.Gateway\XiHan.Framework.Gateway.csproj", "{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}"
+EndProject
+
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore", "src\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj", "{FC3DAEFA-FC39-4649-9A76-4FAB1CBB0202}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.RealTime.SignalR", "src\XiHan.Framework.AspNetCore.RealTime.SignalR\XiHan.Framework.AspNetCore.RealTime.SignalR.csproj", "{036FE54B-33C9-466C-8088-4540F205EF82}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Logging.Serilog", "src\XiHan.Framework.AspNetCore.Logging.Serilog\XiHan.Framework.AspNetCore.Logging.Serilog.csproj", "{7C5BDA24-DFF3-4807-BF01-4890B4BBDCC0}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.SearchEngines", "src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj", "{DD914906-5344-4EF2-A744-9C55945DCF87}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Localization", "src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj", "{F1B94619-9D1A-46DC-BE22-E110C8F82525}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Authentication.JwtBearer", "src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj", "{F895D87C-72CC-4400-9490-76449B126294}"
 EndProject
@@ -75,8 +90,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.EntityFrame
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.AspNetCore.Refit", "src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj", "{75AF9C8C-C70F-4EB3-9509-C7F882F7F965}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XiHan.Framework.Gateway", "src\XiHan.Framework.Gateway\XiHan.Framework.Gateway.csproj", "{DF6E550A-DDBE-4781-93C8-4EFFD918B37D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Scalar", "src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj", "{D96285FA-6E40-49B4-9E64-76AD3DDA315D}"
 EndProject
+
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.test", "2.test", "{20326902-EC6E-41A2-A13E-DC1333CAC143}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Test", "test\XiHan.Framework.AspNetCore.Test\XiHan.Framework.AspNetCore.Test.csproj", "{D3C969C0-C770-4CD8-B468-D4E2A284B101}"
@@ -129,18 +145,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{7736
 		scripts\project\ClearProjecBinObj.ps1 = scripts\project\ClearProjecBinObj.ps1
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.AspNetCore.Scalar", "src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj", "{D96285FA-6E40-49B4-9E64-76AD3DDA315D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Caching.StackExchangeRedis", "src\XiHan.Framework.Caching.StackExchangeRedis\XiHan.Framework.Caching.StackExchangeRedis.csproj", "{FDB3B0D4-1328-4FC7-9CB7-803F2D38CB2C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Threading", "src\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj", "{375A0B93-2CD6-4FEE-9F69-DBE674FCBB4D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.MultiTenancy", "src\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj", "{A9DCEF72-866B-4F0B-AD76-0DACF7174560}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.VirtualFileSystem", "src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj", "{FEB559DC-0667-491C-B64A-B9B46B01DB50}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.TextTemplating", "src\XiHan.Framework.TextTemplating\XiHan.Framework.TextTemplating.csproj", "{ADF76351-777E-4FBC-B925-9065534B03AC}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -318,7 +323,7 @@ Global
 		{330EF338-ED9F-4B68-8F56-2FF2A9226A78} = {1F74D18D-B46F-4D7D-A05D-1D06BE95B192}
 		{6A55B17B-FA29-46D0-87F5-96AF3D970AD7} = {1F74D18D-B46F-4D7D-A05D-1D06BE95B192}
 		{D7EEF707-13D1-45BA-8A6A-5C5865667A14} = {ABAF43CC-1FB6-4831-B94B-918A93386FA5}
-		{B77091EE-6CF4-428E-A70B-4D6BD38B61DD} = {ABAF43CC-1FB6-4831-B94B-918A93386FA5}
+		{B77091EE-6CF4-428E-A70B-4D6BD38B61DD} = {57FEC00C-80F2-413A-8D51-2B6FDED49200}
 		{DF92C723-DD3A-4795-9F39-170C34190869} = {A95AA4B3-D196-48A0-82F1-5F42CDC067B0}
 		{DD903512-8EDC-4FFC-A225-22479359D626} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{9B7C406E-B120-4EDC-B347-A07FC7B8AB7C} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
@@ -363,6 +368,7 @@ Global
 		{A9DCEF72-866B-4F0B-AD76-0DACF7174560} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{FEB559DC-0667-491C-B64A-B9B46B01DB50} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
 		{ADF76351-777E-4FBC-B925-9065534B03AC} = {EC379147-874F-47CF-ACB7-32DB2710B4B5}
+		{57FEC00C-80F2-413A-8D51-2B6FDED49200} = {1F74D18D-B46F-4D7D-A05D-1D06BE95B192}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FCA5DE10-436B-4EFA-9FC4-BF9478249108}
