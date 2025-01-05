@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.Application;
+namespace XiHan.Framework.Utils.System;
 
 /// <summary>
 /// 命名类型选择器

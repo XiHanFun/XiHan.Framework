@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Collections;
 using XiHan.Framework.Core.DynamicProxy;
+using XiHan.Framework.Utils.Collections.TypeList;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 
