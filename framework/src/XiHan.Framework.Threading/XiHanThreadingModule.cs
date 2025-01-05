@@ -18,7 +18,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Threading;
 
 /// <summary>
-/// XiHanThreadingModule
+/// 曦寒框架线程模块
 /// </summary>
 public class XiHanThreadingModule : XiHanModule
 {

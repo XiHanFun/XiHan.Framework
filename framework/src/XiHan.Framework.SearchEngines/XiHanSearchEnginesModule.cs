@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.SearchEngines;
 
 /// <summary>
-/// XiHanSearchEnginesModule
+/// 曦寒框架搜索引擎模块
 /// </summary>
 public class XiHanSearchEnginesModule : XiHanModule
 {
