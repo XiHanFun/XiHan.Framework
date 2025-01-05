@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.BackgroundJobs;
 
 /// <summary>
-/// XiHanBackgroundJobsModule
+/// 曦寒框架后台任务模块
 /// </summary>
 public class XiHanBackgroundJobsModule : XiHanModule
 {

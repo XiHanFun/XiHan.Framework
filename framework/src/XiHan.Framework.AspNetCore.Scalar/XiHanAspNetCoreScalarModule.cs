@@ -18,7 +18,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Scalar;
 
 /// <summary>
-/// XiHanAspNetCoreScalarModule
+/// 曦寒框架 Web 核心 Scalar 文档模块
 /// </summary>
 [DependsOn(
     typeof(XiHanAspNetCoreMvcModule)

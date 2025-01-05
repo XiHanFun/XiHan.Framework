@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Ddd.Application.Contracts;
 
 /// <summary>
-/// XiHanDddApplicationContractsModule
+/// 曦寒框架领域驱动设计应用契约模块
 /// </summary>
 public class XiHanDddApplicationContractsModule : XiHanModule
 {

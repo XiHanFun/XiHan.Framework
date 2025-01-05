@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.VirtualFileSystem;
 
 /// <summary>
-/// XiHanVirtualFileSystemModule
+/// 曦寒框架虚拟文件系统模块
 /// </summary>
 public class XiHanVirtualFileSystemModule : XiHanModule
 {

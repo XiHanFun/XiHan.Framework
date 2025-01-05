@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.EventBus;
 
 /// <summary>
-/// XiHanEventBusModule
+/// 曦寒框架事件总线模块
 /// </summary>
 public class XiHanEventBusModule : XiHanModule
 {

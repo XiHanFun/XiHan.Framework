@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Uow;
 
 /// <summary>
-/// XiHanUowModule
+/// 曦寒框架工作单元模块
 /// </summary>
 public class XiHanUowModule : XiHanModule
 {
