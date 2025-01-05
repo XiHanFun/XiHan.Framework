@@ -14,17 +14,34 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Text.Json.Converter;
+namespace XiHan.Framework.Utils.Text.Json.Converters;
 
 /// <summary>
 /// LongJsonConverter
-/// 参考定义:
-/// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class LongJsonConverter : JsonConverter<long>
 {
+    // 是否超过最大长度 17 再处理
+    private readonly bool _isMax17;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    public LongJsonConverter()
+    {
+        _isMax17 = false;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="isMax17"></param>
+    public LongJsonConverter(bool isMax17)
+    {
+        _isMax17 = isMax17;
+    }
+
     /// <summary>
     /// 读
     /// </summary>
@@ -34,18 +51,36 @@ public class LongJsonConverter : JsonConverter<long>
     /// <returns></returns>
     public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType == JsonTokenType.Number ? reader.GetInt64() : reader.GetString().ParseToLong();
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            if (long.TryParse(reader.GetString(), out var l))
+            {
+                return l;
+            }
+        }
+        else if (reader.TokenType == JsonTokenType.Number)
+        {
+            return reader.GetInt64();
+        }
+        return 0;
     }
 
     /// <summary>
     /// 写
-    /// Guid 数据在前端会出现丢失精度，故转换为 string 类型
     /// </summary>
     /// <param name="writer"></param>
     /// <param name="value"></param>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString());
+        if (_isMax17)
+        {
+            if (value > 99999999999999999)
+            {
+                writer.WriteStringValue(value.ToString());
+                return;
+            }
+        }
+        writer.WriteNumberValue(value);
     }
 }
