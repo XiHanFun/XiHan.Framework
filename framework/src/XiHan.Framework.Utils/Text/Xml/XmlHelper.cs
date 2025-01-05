@@ -38,7 +38,9 @@ public static class XmlHelper
     {
         var settings = new XmlWriterSettings
         {
-            OmitXmlDeclaration = omitXmlDeclaration, Indent = indent, Encoding = Encoding.UTF8
+            OmitXmlDeclaration = omitXmlDeclaration,
+            Indent = indent,
+            Encoding = Encoding.UTF8
         };
 
         using var stream = new StringWriter();
@@ -111,12 +113,7 @@ public static class XmlHelper
     {
         var doc = new XmlDocument();
         doc.LoadXml(xml);
-        var parentNode = doc.SelectSingleNode(xpath);
-        if (parentNode == null)
-        {
-            throw new Exception($"找不到节点：{xpath}");
-        }
-
+        var parentNode = doc.SelectSingleNode(xpath) ?? throw new Exception($"找不到节点：{xpath}");
         var newNode = doc.CreateElement(nodeName);
         newNode.InnerText = nodeValue;
         _ = parentNode.AppendChild(newNode);
@@ -135,12 +132,7 @@ public static class XmlHelper
     {
         var doc = new XmlDocument();
         doc.LoadXml(xml);
-        var node = doc.SelectSingleNode(xpath);
-        if (node == null)
-        {
-            throw new Exception($"找不到节点：{xpath}");
-        }
-
+        var node = doc.SelectSingleNode(xpath) ?? throw new Exception($"找不到节点：{xpath}");
         node.InnerText = newValue;
         return doc.OuterXml;
     }
@@ -156,12 +148,7 @@ public static class XmlHelper
     {
         var doc = new XmlDocument();
         doc.LoadXml(xml);
-        var node = doc.SelectSingleNode(xpath);
-        if (node == null)
-        {
-            throw new Exception($"找不到节点：{xpath}");
-        }
-
+        var node = doc.SelectSingleNode(xpath) ?? throw new Exception($"找不到节点：{xpath}");
         _ = node.ParentNode?.RemoveChild(node);
         return doc.OuterXml;
     }

@@ -357,6 +357,37 @@ public static class ParseExtensions
 
     #endregion DateTime
 
+    #region DateTimeOffset
+
+    /// <summary>
+    /// 对象转 DateTimeOffset
+    /// </summary>
+    /// <param name="thisValue"></param>
+    /// <returns></returns>
+    public static DateTimeOffset ParseToDateTimeOffset(this object? thisValue)
+    {
+        return thisValue != null && thisValue != DBNull.Value &&
+            DateTimeOffset.TryParse(thisValue.ToString(), out var reveal)
+                ? reveal
+                : DateTimeOffset.MinValue;
+    }
+
+    /// <summary>
+    /// 对象转 DateTimeOffset
+    /// </summary>
+    /// <param name="thisValue"></param>
+    /// <param name="errorValue"></param>
+    /// <returns></returns>
+    public static DateTimeOffset ParseToDateTimeOffset(this object? thisValue, DateTimeOffset errorValue)
+    {
+        return thisValue != null && thisValue != DBNull.Value &&
+            DateTimeOffset.TryParse(thisValue.ToString(), out var reveal)
+                ? reveal
+                : errorValue;
+    }
+
+    #endregion DateTimeOffset
+
     #region Guid
 
     /// <summary>
@@ -409,8 +440,8 @@ public static class ParseExtensions
     /// <typeparam name="TAttribute"></typeparam>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public static IEnumerable<Dictionary<string, dynamic>>
-        ParseToDictionaryFilterAttribute<TAttribute>(this object? obj) where TAttribute : Attribute
+    public static IEnumerable<Dictionary<string, dynamic>> ParseToDictionaryFilterAttribute<TAttribute>(this object? obj)
+        where TAttribute : Attribute
     {
         if (obj is not IEnumerable<dynamic> objDynamics)
         {
@@ -421,9 +452,9 @@ public static class ParseExtensions
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
             var item = (objDynamic as object).GetType().GetProperties()
-                .Where(prop => !prop.HasAttribute<TAttribute>() || prop.HasAttribute<TAttribute>() &&
+                .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
-                        .GetPropertyValue<TAttribute, bool>("IsIgnore"))
+                        .GetPropertyValue<TAttribute, bool>("IsIgnore")))
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;
@@ -514,7 +545,7 @@ public static class ParseExtensions
     public static IEnumerable<TResult> CastSuper<TResult>(this IEnumerable source)
     {
         return from object? item in source
-            select (TResult)Convert.ChangeType(item, typeof(TResult));
+               select (TResult)Convert.ChangeType(item, typeof(TResult));
     }
 
     #endregion 强制转换类型
