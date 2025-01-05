@@ -15,7 +15,7 @@
 using System.Collections;
 using System.Reflection;
 
-namespace XiHan.Framework.Core.Collections;
+namespace XiHan.Framework.Utils.Collections.TypeList;
 
 /// <summary>
 /// 一个用于 <see cref="TypeList{TBaseType}"/> 的快捷方式，以使用对象作为基本类型

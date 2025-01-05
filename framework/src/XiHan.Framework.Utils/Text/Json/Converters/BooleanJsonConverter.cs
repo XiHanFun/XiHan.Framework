@@ -16,12 +16,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Text.Json.Converter;
+namespace XiHan.Framework.Utils.Text.Json.Converters;
 
 /// <summary>
 /// BooleanJsonConverter
-/// 参考定义:
-/// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class BooleanJsonConverter : JsonConverter<bool>
 {
