@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Ddd.Domain.Shared;
 
 /// <summary>
-/// XiHanDddDomainSharedModule
+/// 曦寒框架领域驱动设计领域共享模块
 /// </summary>
 public class XiHanDddDomainSharedModule : XiHanModule
 {

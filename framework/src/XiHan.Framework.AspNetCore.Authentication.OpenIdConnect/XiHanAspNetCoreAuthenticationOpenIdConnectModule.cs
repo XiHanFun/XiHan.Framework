@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Authentication.OpenIdConnect;
 
 /// <summary>
-/// XiHanAspNetCoreAuthenticationOpenIdConnectModule
+/// 曦寒框架 Web 核心鉴权 OpenIdConnect 模块
 /// </summary>
 public class XiHanAspNetCoreAuthenticationOpenIdConnectModule : XiHanModule
 {

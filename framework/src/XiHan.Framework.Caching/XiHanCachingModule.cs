@@ -18,7 +18,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Caching;
 
 /// <summary>
-/// XiHanCachingModule
+/// 曦寒框架缓存模块
 /// </summary>
 public class XiHanCachingModule : XiHanModule
 {
