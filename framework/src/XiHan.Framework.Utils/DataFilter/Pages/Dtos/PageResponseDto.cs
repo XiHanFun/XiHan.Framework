@@ -70,4 +70,9 @@ public class PageResponseDto<T> : PageResponseDto
     /// 数据
     /// </summary>
     public IList<T>? ResponseDatas { get; set; }
+
+    /// <summary>
+    /// 用于传递统计、扩展查询
+    /// </summary>
+    public object? ExtraData { get; set; }
 }
