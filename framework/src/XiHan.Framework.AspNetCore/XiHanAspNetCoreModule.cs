@@ -19,7 +19,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore;
 
 /// <summary>
-/// XiHanAspNetCoreModule
+/// 曦寒框架 Web 核心模块
 /// </summary>
 public class XiHanAspNetCoreModule : XiHanModule
 {

@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Bot;
 
 /// <summary>
-/// XiHanBotModule
+/// 曦寒框架自动程序模块
 /// </summary>
 public class XiHanBotModule : XiHanModule
 {

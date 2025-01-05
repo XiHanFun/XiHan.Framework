@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Http;
 
 /// <summary>
-/// XiHanHttpModule
+/// 曦寒框架网络请求模块
 /// </summary>
 public class XiHanHttpModule : XiHanModule
 {

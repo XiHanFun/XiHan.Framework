@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Gateway;
 
 /// <summary>
-/// XiHanGatewayModule
+/// 曦寒框架网关模块
 /// </summary>
 public class XiHanGatewayModule : XiHanModule
 {

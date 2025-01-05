@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Localization;
 
 /// <summary>
-/// XiHanLocalizationModule
+/// 曦寒框架本地化模块
 /// </summary>
 public class XiHanLocalizationModule : XiHanModule
 {

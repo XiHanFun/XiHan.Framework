@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Authentication.JwtBearer;
 
 /// <summary>
-/// XiHanAspNetCoreAuthenticationJwtBearerModule
+/// 曦寒框架 Web 核心鉴权 Jwt 模块
 /// </summary>
 public class XiHanAspNetCoreAuthenticationJwtBearerModule : XiHanModule
 {

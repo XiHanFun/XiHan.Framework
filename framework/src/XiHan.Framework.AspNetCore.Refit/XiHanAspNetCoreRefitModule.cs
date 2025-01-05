@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Refit;
 
 /// <summary>
-/// XiHanAspNetCoreRefitModule
+/// 曦寒框架 Web 核心客户端模块
 /// </summary>
 public class XiHanAspNetCoreRefitModule : XiHanModule
 {
