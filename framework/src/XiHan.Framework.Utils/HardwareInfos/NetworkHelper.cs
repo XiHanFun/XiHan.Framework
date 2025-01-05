@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2022 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:NetworkHelper
 // Guid:dc0502e1-f675-41d3-8a67-dbd590e76260
