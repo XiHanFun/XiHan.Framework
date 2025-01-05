@@ -16,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
@@ -433,6 +432,8 @@ public class XiHanApplicationBase : IXiHanApplication
     public virtual void Dispose()
     {
         //TODO: 如果之前没有完成，就进行关闭?
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion 关闭应用

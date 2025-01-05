@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.CompilerServices;
-using XiHan.Framework.Core.Application;
+using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Core.Extensions.Threading;
 
@@ -188,7 +188,7 @@ public static class SemaphoreSlimExtensions
     /// <param name="semaphoreSlim"></param>
     /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static IDisposable GetDispose(this SemaphoreSlim semaphoreSlim)
+    private static DisposeAction<SemaphoreSlim> GetDispose(this SemaphoreSlim semaphoreSlim)
     {
         return new DisposeAction<SemaphoreSlim>(static (semaphoreSlim) =>
         {

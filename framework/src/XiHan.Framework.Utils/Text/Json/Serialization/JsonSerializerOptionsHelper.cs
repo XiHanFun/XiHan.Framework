@@ -16,7 +16,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Text.Json.Converter;
+using XiHan.Framework.Utils.Text.Json.Converters;
 
 namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
@@ -55,14 +55,28 @@ public static class JsonSerializerOptionsHelper
             // 获取或设置要在转义字符串时使用的编码器，不转义字符
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
+
         // 布尔类型
         options.Converters.Add(new BooleanJsonConverter());
+
         // 数字类型
         options.Converters.Add(new IntJsonConverter());
         options.Converters.Add(new LongJsonConverter());
         options.Converters.Add(new DecimalJsonConverter());
+
         // 日期类型
-        options.Converters.Add(new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss"));
+        options.Converters.Add(new DateTimeOffsetJsonConverter("yyyy-MM-dd HH:mm:ss", false));
+        options.Converters.Add(new DateTimeOffsetNullableConverter("yyyy-MM-dd HH:mm:ss", false));
+
+        options.Converters.Add(new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false));
+        options.Converters.Add(new DateTimeNullableConverter("yyyy-MM-dd HH:mm:ss", false));
+
+        options.Converters.Add(new DateOnlyJsonConverter("yyyy-MM-dd"));
+        options.Converters.Add(new DateOnlyNullableConverter("yyyy-MM-dd"));
+
+        options.Converters.Add(new TimeOnlyJsonConverter("HH:mm:ss"));
+        options.Converters.Add(new TimeOnlyNullableConverter("HH:mm:ss"));
+
         return options;
     }
 

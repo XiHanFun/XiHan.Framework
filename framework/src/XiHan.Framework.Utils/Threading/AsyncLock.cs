@@ -70,6 +70,8 @@ public class AsyncLock : IDisposable
     public void Dispose()
     {
         _semaphore.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

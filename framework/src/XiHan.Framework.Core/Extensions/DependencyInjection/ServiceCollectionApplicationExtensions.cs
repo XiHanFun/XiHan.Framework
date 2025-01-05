@@ -104,7 +104,7 @@ public static class ServiceCollectionApplicationExtensions
     }
 
     /// <summary>
-    /// 获取应用程序版本
+    /// 获取应用程序环境
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>

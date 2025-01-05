@@ -14,18 +14,16 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Text.Json.Converter;
+namespace XiHan.Framework.Utils.Text.Json.Converters;
 
 /// <summary>
 /// DateTimeJsonConverter
-/// 参考定义:
-/// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class DateTimeJsonConverter : JsonConverter<DateTime>
 {
     private readonly string _dateFormatString;
+    private readonly bool _isUtc;
 
     /// <summary>
     /// 构造函数
@@ -33,15 +31,18 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     public DateTimeJsonConverter()
     {
         _dateFormatString = "yyyy-MM-dd HH:mm:ss";
+        _isUtc = false;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="dateFormatString"></param>
-    public DateTimeJsonConverter(string dateFormatString)
+    /// <param name="isUtc"></param>
+    public DateTimeJsonConverter(string dateFormatString, bool isUtc)
     {
         _dateFormatString = dateFormatString;
+        _isUtc = isUtc;
     }
 
     /// <summary>
@@ -53,7 +54,14 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <returns></returns>
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType == JsonTokenType.String ? reader.GetDateTime() : reader.GetString().ParseToDateTime();
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            if (DateTime.TryParse(reader.GetString(), out var time))
+            {
+                return _isUtc ? time.ToUniversalTime() : time;
+            }
+        }
+        return default;
     }
 
     /// <summary>
@@ -64,17 +72,38 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString(_dateFormatString));
+        writer.WriteStringValue(_isUtc ? value.ToUniversalTime().ToString(_dateFormatString) : value.ToString(_dateFormatString));
     }
 }
 
 /// <summary>
 /// DateTimeNullableConverter
-/// 参考定义:
-/// <see href="https://learn.microsoft.com/zh-cn/dotnet/standard/serialization/system-text-json/converters-how-to">如何在 .NET 中编写用于 JSON 序列化(封送)的自定义转换器</see>
 /// </summary>
 public class DateTimeNullableConverter : JsonConverter<DateTime?>
 {
+    private readonly string _dateFormatString;
+    private readonly bool _isUtc;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    public DateTimeNullableConverter()
+    {
+        _dateFormatString = "yyyy-MM-dd HH:mm:ss";
+        _isUtc = false;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="dateFormatString"></param>
+    /// <param name="isUtc"></param>
+    public DateTimeNullableConverter(string dateFormatString, bool isUtc)
+    {
+        _dateFormatString = dateFormatString;
+        _isUtc = isUtc;
+    }
+
     /// <summary>
     /// 读
     /// </summary>
@@ -84,7 +113,14 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     /// <returns></returns>
     public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return string.IsNullOrEmpty(reader.GetString()) ? default(DateTime?) : reader.GetString().ParseToDateTime();
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            if (DateTime.TryParse(reader.GetString(), out var time))
+            {
+                return _isUtc ? time.ToUniversalTime() : time;
+            }
+        }
+        return default;
     }
 
     /// <summary>
@@ -95,6 +131,13 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ParseToDateTime());
+        if (value.HasValue)
+        {
+            writer.WriteStringValue(_isUtc ? value.Value.ToUniversalTime().ToString(_dateFormatString) : value.Value.ToString(_dateFormatString));
+        }
+        else
+        {
+            writer.WriteNullValue();
+        }
     }
 }

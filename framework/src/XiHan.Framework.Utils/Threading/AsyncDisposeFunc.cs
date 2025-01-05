@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Core.Application;
+namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
 /// 异步释放函数
@@ -41,5 +41,7 @@ public class AsyncDisposeFunc : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _func();
+
+        GC.SuppressFinalize(this);
     }
 }
