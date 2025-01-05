@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Serialization;
 
 /// <summary>
-/// XiHanSerializationModule
+/// 曦寒框架序列化模块
 /// </summary>
 public class XiHanSerializationModule : XiHanModule
 {

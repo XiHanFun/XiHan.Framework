@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Mvc;
 
 /// <summary>
-/// XiHanAspNetCoreMvcModule
+/// 曦寒框架 Web 核心 Mvc 模块
 /// </summary>
 [DependsOn(
     typeof(XiHanAspNetCoreModule)

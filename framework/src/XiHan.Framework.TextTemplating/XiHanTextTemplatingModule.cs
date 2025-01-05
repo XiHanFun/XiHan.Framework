@@ -18,7 +18,7 @@ using XiHan.Framework.VirtualFileSystem;
 namespace XiHan.Framework.TextTemplating;
 
 /// <summary>
-/// XiHanTextTemplatingModule
+/// 曦寒框架文本模板模块
 /// </summary>
 [DependsOn(
     typeof(XiHanVirtualFileSystemModule)

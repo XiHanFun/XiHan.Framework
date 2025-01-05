@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.BlobStoring;
 
 /// <summary>
-/// XiHanBlobStoringModule
+/// 曦寒框架粒子存储模块
 /// </summary>
 public class XiHanBlobStoringModule : XiHanModule
 {

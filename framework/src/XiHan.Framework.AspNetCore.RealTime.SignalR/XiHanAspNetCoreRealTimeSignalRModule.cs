@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.RealTime.SignalR;
 
 /// <summary>
-/// XiHanAspNetCoreRealTimeSignalRModule
+/// 曦寒框架 Web 核心即时通信 SignalR 模块
 /// </summary>
 public class XiHanAspNetCoreRealTimeSignalRModule : XiHanModule
 {
