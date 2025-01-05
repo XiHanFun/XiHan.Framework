@@ -194,7 +194,7 @@ public static class MathHelper
         var sorted = numbers.OrderBy(n => n).ToArray();
         var count = sorted.Length;
 
-        return count % 2 == 0 ? (sorted[count / 2 - 1] + sorted[count / 2]) / 2 : sorted[count / 2];
+        return count % 2 == 0 ? (sorted[(count / 2) - 1] + sorted[count / 2]) / 2 : sorted[count / 2];
     }
 
     /// <summary>
