@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AspNetCore.Logging.Serilog;
 
 /// <summary>
-/// XiHanAspNetCoreLoggingSerilogModule
+/// 曦寒框架 Web 核心日志 Serilog 模块
 /// </summary>
 public class XiHanAspNetCoreLoggingSerilogModule : XiHanModule
 {

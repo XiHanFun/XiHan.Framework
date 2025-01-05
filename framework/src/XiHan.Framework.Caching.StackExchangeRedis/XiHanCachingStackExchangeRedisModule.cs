@@ -22,7 +22,7 @@ using XiHan.Framework.Utils.Text;
 namespace XiHan.Framework.Caching.StackExchangeRedis;
 
 /// <summary>
-/// XiHanCachingStackExchangeRedisModule
+/// 曦寒框架缓存 StackExchangeRedis 模块
 /// </summary>
 [DependsOn(
     typeof(XiHanCachingModule)

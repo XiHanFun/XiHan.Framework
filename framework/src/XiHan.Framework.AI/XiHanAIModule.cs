@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.AI;
 
 /// <summary>
-/// XiHanAIModule
+/// 曦寒框架人工智能模块
 /// </summary>
 public class XiHanAIModule : XiHanModule
 {

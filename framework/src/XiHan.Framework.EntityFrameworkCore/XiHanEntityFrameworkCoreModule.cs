@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.EntityFrameworkCore;
 
 /// <summary>
-/// XiHanEntityFrameworkCoreModule
+/// 曦寒框架实体框架核心模块
 /// </summary>
 public class XiHanEntityFrameworkCoreModule : XiHanModule
 {

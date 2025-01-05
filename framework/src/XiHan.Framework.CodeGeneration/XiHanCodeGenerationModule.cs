@@ -18,7 +18,7 @@ using XiHan.Framework.TextTemplating;
 namespace XiHan.Framework.CodeGeneration;
 
 /// <summary>
-/// XiHanCodeGenerationModule
+/// 曦寒框架代码生成模块
 /// </summary>
 [DependsOn(
     typeof(XiHanTextTemplatingModule)
