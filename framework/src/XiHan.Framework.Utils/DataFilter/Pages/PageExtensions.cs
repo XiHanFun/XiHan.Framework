@@ -34,7 +34,9 @@ public static class PageExtensions
     public static List<T> ToPageList<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
         where T : class, new()
     {
-        return entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize).ToList();
+        return entities.Skip((currentIndex - defaultFirstIndex) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 
     /// <summary>
@@ -63,7 +65,8 @@ public static class PageExtensions
     public static List<T> ToPageList<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, int defaultFirstIndex = 1)
         where T : class, new()
     {
-        return entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)
+        return entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize)
+            .Take(pageInfo.PageSize)
             .ToList();
     }
 
@@ -150,11 +153,18 @@ public static class PageExtensions
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
+    /// <param name="isOnlyPage">是否只返回分页信息</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize)
+    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        var pageDta = entities.ToPageData(currentIndex, pageSize);
+
+        if (isOnlyPage)
+        {
+            return new PageResponseDto<T>(pageDta);
+        }
+
         var responseDatas = entities.ToPageList(currentIndex, pageSize);
         var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
         return pageResponse;
@@ -168,11 +178,18 @@ public static class PageExtensions
     /// <param name="entities">数据源</param>
     /// <param name="currentIndex">当前页标</param>
     /// <param name="pageSize">每页大小</param>
+    /// <param name="isOnlyPage">是否只返回分页信息</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> entities, int currentIndex, int pageSize)
+    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = new PageDataDto(new PageInfoDto(currentIndex, pageSize), entities.Count());
+        var pageDta = entities.ToPageData(currentIndex, pageSize);
+
+        if (isOnlyPage)
+        {
+            return new PageResponseDto<T>(pageDta);
+        }
+
         var responseDatas = entities.ToPageList(currentIndex, pageSize);
         var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
         return pageResponse;
@@ -185,11 +202,18 @@ public static class PageExtensions
     /// <typeparam name="T">数据源类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="pageInfo">分页信息</param>
+    /// <param name="isOnlyPage">是否只返回分页信息</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> entities, PageInfoDto pageInfo)
+    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = new PageDataDto(pageInfo, entities.Count());
+        var pageDta = entities.ToPageData(pageInfo);
+
+        if (isOnlyPage)
+        {
+            return new PageResponseDto<T>(pageDta);
+        }
+
         var responseDatas = entities.ToPageList(pageInfo);
         var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
         return pageResponse;
@@ -202,11 +226,18 @@ public static class PageExtensions
     /// <typeparam name="T">数据类型</typeparam>
     /// <param name="entities">数据源</param>
     /// <param name="pageInfo">分页信息</param>
+    /// <param name="isOnlyPage">是否只返回分页信息</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> entities, PageInfoDto pageInfo)
+    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> entities, PageInfoDto pageInfo, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = new PageDataDto(pageInfo, entities.Count());
+        var pageDta = entities.ToPageData(pageInfo);
+
+        if (isOnlyPage)
+        {
+            return new PageResponseDto<T>(pageDta);
+        }
+
         var responseDatas = entities.ToPageList(pageInfo);
         var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
         return pageResponse;
@@ -219,13 +250,17 @@ public static class PageExtensions
     /// <param name="source">数据源</param>
     /// <param name="queryDto">分页查询</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IEnumerable<T> source, PageQueryDto queryDto)
+    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> source, PageQueryDto queryDto)
         where T : class, new()
     {
+        var isQueryAll = queryDto.IsQueryAll ?? false;
+        var isOnlyPage = queryDto.IsOnlyPage ?? false;
+        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
+
         // 处理查询所有数据的情况
-        if (queryDto.IsQueryAll == true)
+        if (isQueryAll)
         {
-            return source.ToPagePageResponse(new PageInfoDto());
+            return source.ToPageResponse(pageInfo, isOnlyPage);
         }
 
         // 处理选择条件
@@ -240,9 +275,7 @@ public static class PageExtensions
             source = source.OrderByMultiple(queryDto.SortConditions);
         }
 
-        // 获取分页信息
-        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
-        return source.ToPagePageResponse(pageInfo);
+        return source.ToPageResponse(pageInfo, isOnlyPage);
     }
 
     /// <summary>
@@ -252,13 +285,17 @@ public static class PageExtensions
     /// <param name="source">数据源</param>
     /// <param name="queryDto">分页查询</param>
     /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPagePageResponse<T>(this IQueryable<T> source, PageQueryDto queryDto)
+    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> source, PageQueryDto queryDto)
         where T : class, new()
     {
+        var isQueryAll = queryDto.IsQueryAll ?? false;
+        var isOnlyPage = queryDto.IsOnlyPage ?? false;
+        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
+
         // 处理查询所有数据的情况
-        if (queryDto.IsQueryAll == true)
+        if (isQueryAll)
         {
-            return source.ToPagePageResponse(new PageInfoDto());
+            return source.ToPageResponse(pageInfo, isOnlyPage);
         }
 
         // 处理选择条件
@@ -273,8 +310,6 @@ public static class PageExtensions
             source = source.OrderByMultiple(queryDto.SortConditions);
         }
 
-        // 获取分页信息
-        var pageInfo = queryDto.PageInfo ?? new PageInfoDto();
-        return source.ToPagePageResponse(pageInfo);
+        return source.ToPageResponse(pageInfo, isOnlyPage);
     }
 }

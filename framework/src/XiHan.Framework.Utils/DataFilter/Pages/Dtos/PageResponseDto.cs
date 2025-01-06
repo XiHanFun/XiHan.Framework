@@ -46,6 +46,7 @@ public class PageResponseDto
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class PageResponseDto<T> : PageResponseDto
+     where T : class, new()
 {
     /// <summary>
     /// 构造函数
@@ -59,20 +60,45 @@ public class PageResponseDto<T> : PageResponseDto
     /// 构造函数
     /// </summary>
     /// <param name="pageData"></param>
-    /// <param name="responseDatas"></param>
-    public PageResponseDto(PageDataDto pageData, IList<T>? responseDatas)
+    public PageResponseDto(PageDataDto pageData)
         : base(pageData)
     {
-        ResponseDatas = responseDatas;
+        ResponseDatas = null;
+        ExtraData = null;
     }
 
     /// <summary>
-    /// 数据
+    /// 构造函数
     /// </summary>
-    public IList<T>? ResponseDatas { get; set; }
+    /// <param name="pageData"></param>
+    /// <param name="responseDatas"></param>
+    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseDatas)
+        : base(pageData)
+    {
+        ResponseDatas = responseDatas;
+        ExtraData = null;
+    }
 
     /// <summary>
-    /// 用于传递统计、扩展查询
+    /// 构造函数
+    /// </summary>
+    /// <param name="pageData"></param>
+    /// <param name="responseDatas"></param>
+    /// <param name="extraData"></param>
+    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseDatas, object extraData)
+        : base(pageData)
+    {
+        ResponseDatas = responseDatas;
+        ExtraData = extraData;
+    }
+
+    /// <summary>
+    /// 数据列表（只读）
+    /// </summary>
+    public IReadOnlyList<T>? ResponseDatas { get; set; }
+
+    /// <summary>
+    /// 扩展数据（只读）
     /// </summary>
     public object? ExtraData { get; set; }
 }
