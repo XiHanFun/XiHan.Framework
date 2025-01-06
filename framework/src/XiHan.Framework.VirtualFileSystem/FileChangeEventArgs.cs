@@ -11,8 +11,6 @@
 
 #endregion <<版权版本注释>>
 
-using System;
-
 namespace XiHan.Framework.VirtualFileSystem;
 
 /// <summary>
@@ -30,6 +28,11 @@ public class FileChangeEventArgs : EventArgs
     /// </summary>
     public WatcherChangeTypes ChangeType { get; }
 
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <param name="changeType"></param>
     public FileChangeEventArgs(string filePath, WatcherChangeTypes changeType)
     {
         FilePath = filePath;
