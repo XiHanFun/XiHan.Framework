@@ -2,6 +2,8 @@
 using XiHan.Framework.Utils.DataFilter.Pages;
 using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
 
+namespace XiHan.Framework.Utils.Test.DataFilter.Pages;
+
 [TestSubject(typeof(PageExtensions))]
 public class PageExtensionsTests
 {
@@ -46,7 +48,8 @@ public class PageExtensionsTests
         }).ToList();
         var pageInfo = new PageInfoDto
         {
-            CurrentIndex = 2, PageSize = 10
+            CurrentIndex = 2,
+            PageSize = 10
         };
         var result = data.ToPageList(pageInfo);
         var expected = Enumerable.Range(11, 10).Select(i => new TestClass
@@ -66,7 +69,8 @@ public class PageExtensionsTests
         }).AsQueryable();
         var pageInfo = new PageInfoDto
         {
-            CurrentIndex = 2, PageSize = 10
+            CurrentIndex = 2,
+            PageSize = 10
         };
         var result = data.ToPageList(pageInfo);
         var expected = Enumerable.Range(11, 10).Select(i => new TestClass
@@ -104,13 +108,13 @@ public class PageExtensionsTests
     }
 
     [Fact]
-    public void ToPagePageResponse_IEnumerable_ReturnsCorrectPageResponse()
+    public void ToPageResponse_IEnumerable_ReturnsCorrectPageResponse()
     {
         var data = Enumerable.Range(1, 100).Select(i => new TestClass
         {
             Value = i
         }).ToList();
-        var result = data.ToPagePageResponse(2, 10);
+        var result = data.ToPageResponse(2, 10);
 
         Assert.Equal(2, result.PageData.PageInfo.CurrentIndex);
         Assert.Equal(10, result.PageData.PageInfo.PageSize);
@@ -124,13 +128,13 @@ public class PageExtensionsTests
     }
 
     [Fact]
-    public void ToPagePageResponse_IQueryable_ReturnsCorrectPageResponse()
+    public void ToPageResponse_IQueryable_ReturnsCorrectPageResponse()
     {
         var data = Enumerable.Range(1, 100).Select(i => new TestClass
         {
             Value = i
         }).AsQueryable();
-        var result = data.ToPagePageResponse(2, 10);
+        var result = data.ToPageResponse(2, 10);
 
         Assert.Equal(2, result.PageData.PageInfo.CurrentIndex);
         Assert.Equal(10, result.PageData.PageInfo.PageSize);
