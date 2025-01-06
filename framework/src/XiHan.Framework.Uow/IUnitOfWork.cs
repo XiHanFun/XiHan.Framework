@@ -68,7 +68,7 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     bool IsCompleted { get; }
 
     /// <summary>
-    /// 预
+    /// 订阅名称
     /// </summary>
     string? ReservationName { get; }
 
