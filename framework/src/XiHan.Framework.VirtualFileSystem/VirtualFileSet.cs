@@ -11,9 +11,6 @@
 
 #endregion <<版权版本注释>>
 
-using System;
-using System.Collections.Generic;
-
 namespace XiHan.Framework.VirtualFileSystem;
 
 /// <summary>
@@ -31,10 +28,14 @@ public class VirtualFileSet
     /// </summary>
     public string Root { get; set; }
 
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="root"></param>
     public VirtualFileSet(string root = "")
     {
         Root = root;
-        FilePatterns = new List<string>();
+        FilePatterns = [];
     }
 
     /// <summary>

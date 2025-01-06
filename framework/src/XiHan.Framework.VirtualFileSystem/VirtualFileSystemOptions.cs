@@ -12,7 +12,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
-using System.Collections.Generic;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -28,9 +27,12 @@ public class VirtualFileSystemOptions
     /// </summary>
     public IReadOnlyList<IFileProvider> FileProviders => _fileProviders;
 
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     public VirtualFileSystemOptions()
     {
-        _fileProviders = new List<IFileProvider>();
+        _fileProviders = [];
     }
 
     /// <summary>
