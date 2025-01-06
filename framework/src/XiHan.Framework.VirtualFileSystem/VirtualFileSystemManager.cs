@@ -11,11 +11,9 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using System;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -28,8 +26,16 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
     private readonly VirtualFileSystemOptions _options;
     private readonly Lazy<IFileProvider> _compositeFileProvider;
 
+    /// <summary>
+    /// 文件变更事件
+    /// </summary>
     public event EventHandler<FileChangeEventArgs>? FileChanged;
 
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="options"></param>
     public VirtualFileSystemManager(
         IServiceProvider serviceProvider,
         IOptions<VirtualFileSystemOptions> options)
@@ -59,11 +65,19 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
         });
     }
 
+    /// <summary>
+    /// 创建组合文件提供器
+    /// </summary>
+    /// <returns></returns>
     private IFileProvider CreateCompositeFileProvider()
     {
         return new CompositeFileProvider(_options.FileProviders);
     }
 
+    /// <summary>
+    /// 触发文件变更事件
+    /// </summary>
+    /// <param name="args"></param>
     public virtual void OnFileChanged(FileChangeEventArgs args)
     {
         FileChanged?.Invoke(this, args);

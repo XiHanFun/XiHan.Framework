@@ -12,10 +12,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -26,6 +22,10 @@ public class VirtualFileSystemOperations : IVirtualFileSystemOperations
 {
     private readonly IVirtualFileSystemManager _virtualFileSystemManager;
 
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="virtualFileSystemManager"></param>
     public VirtualFileSystemOperations(IVirtualFileSystemManager virtualFileSystemManager)
     {
         _virtualFileSystemManager = virtualFileSystemManager;
@@ -100,6 +100,12 @@ public class VirtualFileSystemOperations : IVirtualFileSystemOperations
         }
     }
 
+    /// <summary>
+    /// 文件是否匹配模式
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
     private bool IsFileMatchPattern(string fileName, string pattern)
     {
         return pattern == "*" || fileName.EndsWith(pattern.TrimStart('*'));
