@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EmbeddedFileProvider
-// Guid:e5f1c67d-cb76-467e-b5ef-f29e5a112264
+// FileName:XiHanEmbeddedFileProvider
+// Guid:c3f09c89-702d-4851-8765-5f8444b1d707
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/16 4:15:21
@@ -15,6 +15,7 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 using System.Reflection;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.VirtualFileSystem.Core;
 
 namespace XiHan.Framework.VirtualFileSystem.Embedded;
@@ -22,7 +23,10 @@ namespace XiHan.Framework.VirtualFileSystem.Embedded;
 /// <summary>
 /// 嵌入式文件提供者
 /// </summary>
-public class EmbeddedFileProvider : IVirtualFileProvider
+/// <remarks>
+/// 提供对嵌入式资源的访问，将嵌入式资源适配为虚拟文件系统
+/// </remarks>
+public class XiHanEmbeddedFileProvider : IVirtualFileProvider
 {
     private readonly Assembly _assembly;
     private readonly string _baseNamespace;
@@ -32,7 +36,7 @@ public class EmbeddedFileProvider : IVirtualFileProvider
     /// </summary>
     /// <param name="assembly">包含嵌入式资源的程序集</param>
     /// <param name="baseNamespace">基础命名空间</param>
-    public EmbeddedFileProvider(Assembly assembly, string baseNamespace)
+    public XiHanEmbeddedFileProvider(Assembly assembly, string baseNamespace)
     {
         _assembly = assembly;
         _baseNamespace = baseNamespace;
@@ -56,18 +60,10 @@ public class EmbeddedFileProvider : IVirtualFileProvider
     public IVirtualFile GetVirtualFile(string subpath)
     {
         var resourcePath = GetResourcePath(subpath);
-        if (string.IsNullOrEmpty(resourcePath))
-        {
-            return null;
-        }
-
         var stream = _assembly.GetManifestResourceStream(resourcePath);
-        if (stream == null)
-        {
-            return null;
-        }
-
-        return new EmbeddedVirtualFile(subpath, stream, resourcePath);
+        return stream == null
+            ? throw new XiHanException("未找到嵌入式资源：" + resourcePath)
+            : (IVirtualFile)new EmbeddedVirtualFile(stream, subpath, resourcePath);
     }
 
     /// <summary>
@@ -111,11 +107,16 @@ public class EmbeddedFileProvider : IVirtualFileProvider
         throw new NotSupportedException("嵌入式文件提供者不支持移除文件");
     }
 
+    /// <summary>
+    /// 获取资源路径
+    /// </summary>
+    /// <param name="subpath">子路径</param>
+    /// <returns></returns>
     private string GetResourcePath(string subpath)
     {
         if (string.IsNullOrEmpty(subpath))
         {
-            return null;
+            throw new ArgumentNullException(nameof(subpath));
         }
 
         var resourcePath = subpath.Replace('/', '.');
@@ -125,78 +126,5 @@ public class EmbeddedFileProvider : IVirtualFileProvider
         }
 
         return resourcePath;
-    }
-}
-
-/// <summary>
-/// 嵌入式虚拟文件
-/// </summary>
-internal class EmbeddedVirtualFile : IVirtualFile
-{
-    private readonly Stream _stream;
-
-    /// <summary>
-    /// 初始化嵌入式虚拟文件
-    /// </summary>
-    /// <param name="path">文件路径</param>
-    /// <param name="stream">文件流</param>
-    /// <param name="resourcePath">资源路径</param>
-    public EmbeddedVirtualFile(string path, Stream stream, string resourcePath)
-    {
-        _stream = stream;
-        Name = Path.GetFileName(path);
-        PhysicalPath = null;
-        Length = stream.Length;
-        LastModified = DateTimeOffset.UtcNow;
-        IsDirectory = false;
-        Exists = true;
-    }
-
-    /// <summary>
-    /// 获取文件名
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
-    /// 获取文件大小（字节）
-    /// </summary>
-    public long Length { get; }
-
-    /// <summary>
-    /// 获取最后修改时间
-    /// </summary>
-    public DateTimeOffset LastModified { get; }
-
-    /// <summary>
-    /// 获取是否是目录
-    /// </summary>
-    public bool IsDirectory { get; }
-
-    /// <summary>
-    /// 获取文件是否存在
-    /// </summary>
-    public bool Exists { get; }
-
-    /// <summary>
-    /// 获取物理文件路径
-    /// </summary>
-    public string PhysicalPath { get; }
-
-    /// <summary>
-    /// 创建文件读取流
-    /// </summary>
-    /// <returns>文件流</returns>
-    public Stream CreateReadStream()
-    {
-        return _stream;
-    }
-
-    /// <summary>
-    /// 异步创建文件读取流
-    /// </summary>
-    /// <returns>文件流任务</returns>
-    public Task<Stream> CreateReadStreamAsync()
-    {
-        return Task.FromResult(_stream);
     }
 }

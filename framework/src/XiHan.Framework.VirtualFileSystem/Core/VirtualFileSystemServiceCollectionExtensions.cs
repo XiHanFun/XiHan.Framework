@@ -4,6 +4,7 @@
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:VirtualFileSystemServiceCollectionExtensions
+// Guid:06d18bd5-4f50-4d37-aa8e-4d1822f3c242
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:26:33
@@ -14,9 +15,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
-using XiHan.Framework.VirtualFileSystem.Embedded;
 using XiHan.Framework.VirtualFileSystem.Physical;
-using EmbeddedFileProvider = XiHan.Framework.VirtualFileSystem.Embedded.EmbeddedFileProvider;
+using EmbeddedFileProvider = XiHan.Framework.VirtualFileSystem.Embedded.XiHanEmbeddedFileProvider;
 
 namespace XiHan.Framework.VirtualFileSystem.Core;
 
