@@ -4,6 +4,7 @@
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:FileChangeEventArgs
+// Guid:5ddbbecb-ef26-4f25-a931-ad78a89860d2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:36:33
@@ -38,35 +39,4 @@ public class FileChangeEventArgs : EventArgs
         FilePath = filePath;
         ChangeType = changeType;
     }
-}
-
-/// <summary>
-/// 文件监视变更类型
-/// </summary>
-public enum WatcherChangeTypes
-{
-    /// <summary>
-    /// 创建
-    /// </summary>
-    Created,
-
-    /// <summary>
-    /// 变更
-    /// </summary>
-    Changed,
-
-    /// <summary>
-    /// 删除
-    /// </summary>
-    Deleted,
-
-    /// <summary>
-    /// 修改
-    /// </summary>
-    Modified,
-
-    /// <summary>
-    /// 重命名
-    /// </summary>
-    Renamed
 }

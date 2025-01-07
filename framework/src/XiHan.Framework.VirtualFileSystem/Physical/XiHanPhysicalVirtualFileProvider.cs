@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PhysicalVirtualFileProvider
-// Guid:b8f1c680-cb76-467e-b5ef-f29e5a112264
+// FileName:XiHanPhysicalVirtualFileProvider
+// Guid:52df8d0e-e940-4539-97da-fba19b328533
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/16 4:18:21
@@ -25,7 +25,7 @@ namespace XiHan.Framework.VirtualFileSystem.Physical;
 /// <remarks>
 /// 提供对物理文件系统的访问，将物理文件系统适配为虚拟文件系统
 /// </remarks>
-public class PhysicalVirtualFileProvider : IVirtualFileProvider
+public class XiHanPhysicalVirtualFileProvider : IVirtualFileProvider
 {
     private readonly PhysicalFileProvider _physicalFileProvider;
 
@@ -36,7 +36,7 @@ public class PhysicalVirtualFileProvider : IVirtualFileProvider
     /// <remarks>
     /// 如果根目录不存在，会自动创建
     /// </remarks>
-    public PhysicalVirtualFileProvider(string root)
+    public XiHanPhysicalVirtualFileProvider(string root)
     {
         DirectoryHelper.CreateIfNotExists(root);
         _physicalFileProvider = new PhysicalFileProvider(root);
@@ -63,15 +63,10 @@ public class PhysicalVirtualFileProvider : IVirtualFileProvider
     /// <remarks>
     /// 将物理文件包装为虚拟文件对象
     /// </remarks>
-    public IVirtualFile GetVirtualFile(string subpath)
+    public IVirtualFile? GetVirtualFile(string subpath)
     {
         var fileInfo = _physicalFileProvider.GetFileInfo(subpath);
-        if (!fileInfo.Exists)
-        {
-            return null;
-        }
-
-        return new PhysicalVirtualFile(fileInfo);
+        return !fileInfo.Exists ? null : (IVirtualFile)new PhysicalVirtualFile(fileInfo);
     }
 
     /// <summary>

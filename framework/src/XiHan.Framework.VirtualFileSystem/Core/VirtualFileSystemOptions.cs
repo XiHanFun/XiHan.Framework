@@ -25,12 +25,12 @@ public class VirtualFileSystemOptions
     /// <summary>
     /// 嵌入式程序集列表
     /// </summary>
-    public List<Assembly> EmbeddedAssemblies { get; } = new List<Assembly>();
+    public List<Assembly> EmbeddedAssemblies { get; } = [];
 
     /// <summary>
     /// 物理文件路径列表
     /// </summary>
-    public List<string> PhysicalPaths { get; } = new List<string>();
+    public List<string> PhysicalPaths { get; } = [];
 
     private readonly List<IFileProvider> _fileProviders;
 
@@ -44,7 +44,7 @@ public class VirtualFileSystemOptions
     /// </summary>
     public VirtualFileSystemOptions()
     {
-        _fileProviders = new List<IFileProvider>();
+        _fileProviders = [];
     }
 
     /// <summary>
