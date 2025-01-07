@@ -4,6 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IVirtualFileSystemOperations
+// Guid:5f1c67d-cb76-467e-b5ef-f29e5a112264
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:34:33
@@ -13,7 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.VirtualFileSystem.Core;
 
 /// <summary>
 /// 虚拟文件系统操作接口

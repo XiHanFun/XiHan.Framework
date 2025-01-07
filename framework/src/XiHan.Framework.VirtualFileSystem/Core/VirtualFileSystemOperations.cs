@@ -13,7 +13,7 @@
 
 using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.VirtualFileSystem.Core;
 
 /// <summary>
 /// 虚拟文件系统操作类
