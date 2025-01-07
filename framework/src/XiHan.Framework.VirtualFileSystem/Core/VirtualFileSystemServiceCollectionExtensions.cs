@@ -1,7 +1,7 @@
 #region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:VirtualFileSystemServiceCollectionExtensions
 // Author:zhaifanhua
@@ -14,8 +14,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
+using XiHan.Framework.VirtualFileSystem.Embedded;
+using XiHan.Framework.VirtualFileSystem.Physical;
+using EmbeddedFileProvider = XiHan.Framework.VirtualFileSystem.Embedded.EmbeddedFileProvider;
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.VirtualFileSystem.Core;
 
 /// <summary>
 /// 虚拟文件系统服务集合扩展
