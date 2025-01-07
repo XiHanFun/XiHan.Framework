@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IVirtualFileSystemOperations
-// Guid:5f1c67d-cb76-467e-b5ef-f29e5a112264
+// Guid:4adb0d85-0aa1-447e-9fcf-fd999dd52c03
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:34:33

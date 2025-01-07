@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryFileProvider
-// Guid:d4f1c67c-cb76-467e-b5ef-f29e5a112264
+// FileName:XiHanInMemoryFileProvider
+// Guid:c68d7cb5-b1d6-4f47-ab54-ff4132805611
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/16 4:14:21
@@ -28,7 +28,7 @@ namespace XiHan.Framework.VirtualFileSystem.Memory;
 /// <remarks>
 /// 提供基于内存的文件存储实现，支持文件的添加、删除和监视
 /// </remarks>
-public class InMemoryFileProvider : IVirtualFileProvider
+public class XiHanInMemoryFileProvider : IVirtualFileProvider
 {
     private readonly ConcurrentDictionary<string, IVirtualFile> _files;
     private readonly ConcurrentDictionary<string, List<Action<string>>> _watchers;
@@ -36,7 +36,7 @@ public class InMemoryFileProvider : IVirtualFileProvider
     /// <summary>
     /// 初始化内存文件提供者
     /// </summary>
-    public InMemoryFileProvider()
+    public XiHanInMemoryFileProvider()
     {
         _files = new ConcurrentDictionary<string, IVirtualFile>(StringComparer.OrdinalIgnoreCase);
         _watchers = new ConcurrentDictionary<string, List<Action<string>>>();
@@ -59,7 +59,7 @@ public class InMemoryFileProvider : IVirtualFileProvider
     /// <returns>虚拟文件对象</returns>
     public IVirtualFile GetVirtualFile(string subpath)
     {
-        _files.TryGetValue(subpath, out var file);
+        _ = _files.TryGetValue(subpath, out var file);
         return file;
     }
 
@@ -97,7 +97,7 @@ public class InMemoryFileProvider : IVirtualFileProvider
     /// <returns>变更令牌</returns>
     public IChangeToken Watch(string filter)
     {
-        var watchers = _watchers.GetOrAdd(filter, _ => new List<Action<string>>());
+        var watchers = _watchers.GetOrAdd(filter, _ => []);
         return new ChangeToken(watchers);
     }
 
@@ -110,7 +110,7 @@ public class InMemoryFileProvider : IVirtualFileProvider
     {
         var normalizedPath = path.Replace('\\', '/');
         var file = new InMemoryFile(normalizedPath, stream);
-        _files.AddOrUpdate(normalizedPath, file, (_, __) => file);
+        _ = _files.AddOrUpdate(normalizedPath, file, (_, __) => file);
         NotifyChange(normalizedPath);
     }
 
@@ -143,17 +143,10 @@ public class InMemoryFileProvider : IVirtualFileProvider
 
     private static bool MatchesFilter(string path, string filter)
     {
-        if (string.IsNullOrEmpty(filter))
-        {
-            return false;
-        }
-
-        if (filter.Contains("*"))
-        {
-            return path.StartsWith(filter.TrimEnd('*'), StringComparison.OrdinalIgnoreCase);
-        }
-
-        return string.Equals(path, filter, StringComparison.OrdinalIgnoreCase);
+        return !string.IsNullOrEmpty(filter)
+&& (filter.Contains("*")
+            ? path.StartsWith(filter.TrimEnd('*'), StringComparison.OrdinalIgnoreCase)
+            : string.Equals(path, filter, StringComparison.OrdinalIgnoreCase));
     }
 }
 
@@ -219,7 +212,7 @@ internal class InMemoryFile : IVirtualFile, IFileInfo
     /// <remarks>
     /// 内存文件没有物理路径，始终返回 null
     /// </remarks>
-    public string PhysicalPath { get; }
+    public string? PhysicalPath { get; }
 
     /// <summary>
     /// 创建文件读取流

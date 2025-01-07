@@ -4,6 +4,7 @@
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IVirtualFileSystemManager
+// Guid:d324bb09-40c2-4b58-b8c5-56f14ce08f5f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:24:33

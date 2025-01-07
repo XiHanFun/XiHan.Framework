@@ -4,6 +4,7 @@
 // Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:VirtualFileSystemManager
+// Guid:b9039d60-499e-493c-8709-3667378f59aa
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/1/7 6:22:33
@@ -14,9 +15,9 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using XiHan.Framework.VirtualFileSystem.Embedded;
 using XiHan.Framework.VirtualFileSystem.Memory;
 using XiHan.Framework.VirtualFileSystem.Physical;
-using EmbeddedFileProvider = XiHan.Framework.VirtualFileSystem.Embedded.EmbeddedFileProvider;
 
 namespace XiHan.Framework.VirtualFileSystem.Core;
 
@@ -49,7 +50,7 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
     {
         _serviceProvider = serviceProvider;
         _options = options.Value;
-        _fileProviders = new List<IVirtualFileProvider>();
+        _fileProviders = [];
 
         Initialize();
     }
@@ -57,18 +58,18 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
     private void Initialize()
     {
         // 添加内存文件提供者
-        AddProvider(new InMemoryFileProvider());
+        AddProvider(new XiHanInMemoryFileProvider());
 
         // 添加嵌入式资源文件提供者
         foreach (var assembly in _options.EmbeddedAssemblies)
         {
-            AddProvider(new EmbeddedFileProvider(assembly, string.Empty));
+            AddProvider(new XiHanEmbeddedFileProvider(assembly, string.Empty));
         }
 
         // 添加物理文件提供者
         foreach (var path in _options.PhysicalPaths)
         {
-            AddProvider(new PhysicalVirtualFileProvider(path));
+            AddProvider(new XiHanPhysicalVirtualFileProvider(path));
         }
 
         // 初始化组合文件提供者
@@ -89,7 +90,7 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
 
         // 监听文件变化
         var token = provider.Watch("*");
-        RegisterChangeCallback(token, () =>
+        _ = RegisterChangeCallback(token, () =>
         {
             FileChanged?.Invoke(this, new FileChangeEventArgs("*", WatcherChangeTypes.Changed));
         });
@@ -97,12 +98,9 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
 
     private IDisposable RegisterChangeCallback(IChangeToken changeToken, Action callback)
     {
-        if (changeToken == null)
-        {
-            throw new ArgumentNullException(nameof(changeToken));
-        }
-
-        return changeToken.RegisterChangeCallback(_ => callback(), null);
+        return changeToken == null
+            ? throw new ArgumentNullException(nameof(changeToken))
+            : changeToken.RegisterChangeCallback(_ => callback(), null);
     }
 
     /// <summary>
@@ -113,7 +111,7 @@ public class VirtualFileSystemManager : IVirtualFileSystemManager
     /// <remarks>
     /// 按照文件提供者的添加顺序依次查找文件，返回第一个找到的文件
     /// </remarks>
-    public IVirtualFile GetFile(string path)
+    public IVirtualFile? GetFile(string path)
     {
         foreach (var provider in _fileProviders)
         {
