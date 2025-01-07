@@ -1,7 +1,7 @@
 #region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright 2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:FileChangeEventArgs
 // Author:zhaifanhua
@@ -11,7 +11,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.VirtualFileSystem.Core;
 
 /// <summary>
 /// 文件变更事件参数
@@ -49,6 +49,11 @@ public enum WatcherChangeTypes
     /// 创建
     /// </summary>
     Created,
+
+    /// <summary>
+    /// 变更
+    /// </summary>
+    Changed,
 
     /// <summary>
     /// 删除

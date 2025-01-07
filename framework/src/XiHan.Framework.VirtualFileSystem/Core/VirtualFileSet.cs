@@ -11,7 +11,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.VirtualFileSystem.Core;
 
 /// <summary>
 /// 虚拟文件集合
