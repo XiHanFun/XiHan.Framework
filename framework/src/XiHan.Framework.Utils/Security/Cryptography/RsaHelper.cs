@@ -126,7 +126,7 @@ public static class RsaHelper
     public static byte[] SignDataBytes(byte[] dataBytes, byte[] privateKeyBytes)
     {
         using var rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
+        rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
         var signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return signedBytes;
     }
@@ -156,7 +156,7 @@ public static class RsaHelper
     public static bool VerifyDataBytes(byte[] dataBytes, byte[] signatureBytes, byte[] publicKeyBytes)
     {
         using var rsa = RSA.Create();
-        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+        rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
         return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 
