@@ -148,7 +148,11 @@ public static class StringHelper
     /// <returns></returns>
     public static string DelLastChar(string sourceStr, char sepeater = ',')
     {
-        return sourceStr[..sourceStr.LastIndexOf(sepeater)];
+        return string.IsNullOrEmpty(sourceStr)
+            ? sourceStr
+            : sourceStr.Length > 1
+                ? sourceStr[..^1]
+                : string.Empty;
     }
 
     #endregion 删除结尾分割器
