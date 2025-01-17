@@ -57,7 +57,8 @@ public static class StringHelper
     /// <returns></returns>
     public static IEnumerable<string> GetStrEnumerable(string sourceStr, char sepeater = ',', bool isAllowsDuplicates = true)
     {
-        IEnumerable<string> result = sourceStr.Split(sepeater);
+        IEnumerable<string> result = sourceStr.Split(sepeater, StringSplitOptions.RemoveEmptyEntries);
+
         return isAllowsDuplicates ? result : result.Distinct();
     }
 
