@@ -24,7 +24,7 @@ public static class RandomHelper
     // 默认随机数生成器
     private static readonly Random Rnd = new();
 
-    private static readonly Lock ObjLock = new();
+    private static readonly object ObjLock = new();
 
     /// <summary>
     /// 根据字符源生成随机字符
