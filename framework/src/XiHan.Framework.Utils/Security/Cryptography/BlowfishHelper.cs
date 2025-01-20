@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Text;
@@ -24,7 +25,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// </summary>
 /// <remarks>
 /// 是一种对称加密算法，支持从 32 位到 448 位的可变密钥长度。
-/// 此实现依赖 Portable.BouncyCastle 库。
+/// 此实现依赖 BouncyCastle.Cryptography 库。
 /// </remarks>
 public static class BlowfishHelper
 {
@@ -95,7 +96,7 @@ public static class BlowfishHelper
 
         // 创建加密引擎
         var engine = new BlowfishEngine();
-        var cipher = new PaddedBufferedBlockCipher(engine);
+        var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(engine)); // 使用 CBC 模式
 
         // 初始化加密器
         var keyParam = new KeyParameter(keyBytes);
