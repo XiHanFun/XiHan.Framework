@@ -63,8 +63,8 @@ public static class StringHelper
             return [];
         }
 
-        // 如果没有分隔符，或只有一个分隔符，直接返回
-        if (!sourceStr.Contains(sepeater) || sourceStr.IndexOf(sepeater) == sourceStr.LastIndexOf(sepeater))
+        // 如果没有分隔符，直接返回
+        if (!sourceStr.Contains(sepeater))
         {
             return [sourceStr];
         }
