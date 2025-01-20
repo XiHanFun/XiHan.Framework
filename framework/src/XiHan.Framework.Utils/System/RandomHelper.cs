@@ -24,7 +24,7 @@ public static class RandomHelper
     // 默认随机数生成器
     private static readonly Random Rnd = new();
 
-    private static readonly Lock Lock = new();
+    private static readonly Lock ObjLock = new();
 
     /// <summary>
     /// 根据字符源生成随机字符
@@ -39,7 +39,7 @@ public static class RandomHelper
 
         StringBuilder result = new();
 
-        lock (Lock)
+        lock (ObjLock)
         {
             for (var i = 0; i < length; i++)
             {
@@ -58,7 +58,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static int GetRandom(int minValue, int maxValue)
     {
-        lock (Lock)
+        lock (ObjLock)
         {
             return Rnd.Next(minValue, maxValue);
         }
@@ -74,7 +74,7 @@ public static class RandomHelper
     /// </returns>
     public static int GetRandom(int maxValue)
     {
-        lock (Lock)
+        lock (ObjLock)
         {
             return Rnd.Next(maxValue);
         }
@@ -86,7 +86,7 @@ public static class RandomHelper
     /// <returns>一个 32 位有符号整数，大于或等于零且小于 <see cref="int.MaxValue"/></returns>
     public static int GetRandom()
     {
-        lock (Lock)
+        lock (ObjLock)
         {
             return Rnd.Next();
         }
