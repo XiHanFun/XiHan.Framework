@@ -17,11 +17,10 @@ Write-Host "开始清理目录：$RootPath"
 
 # 查找并删除 bin 和 obj 文件夹
 Get-ChildItem -Path $RootPath -Recurse -Directory -Force |
-Where-Object { $_.Name -in "bin", "obj" } |
+Where-Object { $_.Name -in "bin", "obj", "public" } |
 ForEach-Object {
     try {
-        # 使用 \\?\ 处理长路径问题
-        Remove-Item -Path "\\?\$($_.FullName)" -Recurse -Force
+        Remove-Item -Path "$($_.FullName)" -Recurse -Force
         # 延迟确保释放资源
         Start-Sleep -Milliseconds 100
         Write-Host "已删除: $($_.FullName)"

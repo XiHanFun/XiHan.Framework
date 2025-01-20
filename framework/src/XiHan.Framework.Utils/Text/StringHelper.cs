@@ -57,7 +57,20 @@ public static class StringHelper
     /// <returns></returns>
     public static IEnumerable<string> GetStrEnumerable(string sourceStr, char sepeater = ',', bool isAllowsDuplicates = true)
     {
-        IEnumerable<string> result = sourceStr.Split(sepeater);
+        // 如果为空，返回空列表
+        if (string.IsNullOrWhiteSpace(sourceStr))
+        {
+            return [];
+        }
+
+        // 如果没有分隔符，或只有一个分隔符，直接返回
+        if (!sourceStr.Contains(sepeater) || sourceStr.IndexOf(sepeater) == sourceStr.LastIndexOf(sepeater))
+        {
+            return [sourceStr];
+        }
+
+        var result = sourceStr.Split(sepeater, StringSplitOptions.RemoveEmptyEntries);
+
         return isAllowsDuplicates ? result : result.Distinct();
     }
 
@@ -136,21 +149,6 @@ public static class StringHelper
     }
 
     #endregion 组装
-
-    #region 删除结尾分割器
-
-    /// <summary>
-    /// 删除最后结尾的指定字符后的字符
-    /// </summary>
-    /// <param name="sourceStr">源字符串</param>
-    /// <param name="sepeater">分割器</param>
-    /// <returns></returns>
-    public static string DelLastChar(string sourceStr, char sepeater = ',')
-    {
-        return sourceStr[..sourceStr.LastIndexOf(sepeater)];
-    }
-
-    #endregion 删除结尾分割器
 
     #region 转换为纯字符串
 
