@@ -9,6 +9,13 @@ $INTERFACE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\
 $INTERFACE_CORE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\AspNetCore\Code\1033\Interface"
 $CONTROLLER_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\AspNetCore\Web\ASP.NET\1033\WebApiEmptyController"
 
+# 检查是否以管理员权限运行
+if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Host "请以管理员权限运行脚本！"
+    exit
+}
+
 # 显示当前路径
 Write-Host "当前路径：$SRC_FOLDER"
 Write-Host ""
