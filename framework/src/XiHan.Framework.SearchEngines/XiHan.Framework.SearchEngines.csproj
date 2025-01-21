@@ -12,7 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.17.0" />
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.17.1" />
     </ItemGroup>
 
     <ItemGroup>
