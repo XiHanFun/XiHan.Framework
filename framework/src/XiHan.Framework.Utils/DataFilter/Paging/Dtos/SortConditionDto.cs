@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.DataFilter.Paging.Enums;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 
 /// <summary>
 /// 通用排序条件基类

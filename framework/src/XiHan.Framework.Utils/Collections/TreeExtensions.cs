@@ -12,10 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Trees.Dtos;
+using XiHan.Framework.Utils.Collections.Dtos;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.DataFilter.Trees;
+namespace XiHan.Framework.Utils.Collections;
 
 /// <summary>
 /// 树扩展方法
