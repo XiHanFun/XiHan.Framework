@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
-using XiHan.Framework.Utils.DataFilter.Pages;
-using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+using XiHan.Framework.Utils.DataFilter.Paging;
+using XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 
-namespace XiHan.Framework.Utils.Test.DataFilter.Pages;
+namespace XiHan.Framework.Utils.Test.DataFilter.Paging;
 
 [TestSubject(typeof(PageExtensions))]
 public class PageExtensionsTests
@@ -124,7 +124,7 @@ public class PageExtensionsTests
             Value = i
         }).ToList();
 
-        Assert.Equal(expected.Select(e => e.Value), result.ResponseDatas?.Select(r => r.Value));
+        Assert.Equal(expected.Select(e => e.Value), result.ResponseData?.Select(r => r.Value));
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class PageExtensionsTests
             Value = i
         }).ToList();
 
-        Assert.Equal(expected.Select(e => e.Value), result.ResponseDatas?.Select(r => r.Value));
+        Assert.Equal(expected.Select(e => e.Value), result.ResponseData?.Select(r => r.Value));
     }
 
     public class TestClass
