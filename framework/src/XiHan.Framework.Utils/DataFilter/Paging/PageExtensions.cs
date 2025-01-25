@@ -12,11 +12,11 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Pages.Dtos;
-using XiHan.Framework.Utils.DataFilter.Pages.Enums;
-using XiHan.Framework.Utils.DataFilter.Pages.Handlers;
+using XiHan.Framework.Utils.DataFilter.Paging.Dtos;
+using XiHan.Framework.Utils.DataFilter.Paging.Enums;
+using XiHan.Framework.Utils.DataFilter.Paging.Handlers;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages;
+namespace XiHan.Framework.Utils.DataFilter.Paging;
 
 /// <summary>
 /// 分页扩展方法
@@ -272,15 +272,16 @@ public static class PageExtensions
     public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = entities.ToPageData(currentIndex, pageSize);
+        var enumerable = entities as T[] ?? entities.ToArray();
+        var pageDta = enumerable.ToPageData(currentIndex, pageSize);
 
         if (isOnlyPage)
         {
             return new PageResponseDto<T>(pageDta);
         }
 
-        var responseDatas = entities.ToPageList(currentIndex, pageSize);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        var responseData = enumerable.ToPageList(currentIndex, pageSize);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
         return pageResponse;
     }
 
@@ -296,15 +297,16 @@ public static class PageExtensions
     public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, bool isOnlyPage = false)
         where T : class, new()
     {
-        var pageDta = entities.ToPageData(pageInfo);
+        var enumerable = entities as T[] ?? entities.ToArray();
+        var pageDta = enumerable.ToPageData(pageInfo);
 
         if (isOnlyPage)
         {
             return new PageResponseDto<T>(pageDta);
         }
 
-        var responseDatas = entities.ToPageList(pageInfo);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        var responseData = enumerable.ToPageList(pageInfo);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
         return pageResponse;
     }
 
@@ -598,8 +600,8 @@ public static class PageExtensions
             return new PageResponseDto<T>(pageDta);
         }
 
-        var responseDatas = entities.ToPageList(currentIndex, pageSize);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        var responseData = entities.ToPageList(currentIndex, pageSize);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
         return pageResponse;
     }
 
@@ -622,8 +624,8 @@ public static class PageExtensions
             return new PageResponseDto<T>(pageDta);
         }
 
-        var responseDatas = entities.ToPageList(pageInfo);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseDatas);
+        var responseData = entities.ToPageList(pageInfo);
+        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
         return pageResponse;
     }
 
