@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Pages.Enums;
+using XiHan.Framework.Utils.DataFilter.Paging.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 
 /// <summary>
 /// 通用选择条件基类
