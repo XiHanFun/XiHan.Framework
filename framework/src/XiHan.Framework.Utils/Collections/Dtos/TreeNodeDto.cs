@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DataFilter.Trees.Dtos;
+namespace XiHan.Framework.Utils.Collections.Dtos;
 
 /// <summary>
 /// 树节点数据传输对象

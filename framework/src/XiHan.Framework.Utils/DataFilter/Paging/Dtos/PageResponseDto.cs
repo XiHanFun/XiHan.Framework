@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DataFilter.Pages.Dtos;
+namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 
 /// <summary>
 /// 通用分页响应基类
@@ -46,7 +46,7 @@ public class PageResponseDto
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class PageResponseDto<T> : PageResponseDto
-     where T : class, new()
+    where T : class, new()
 {
     /// <summary>
     /// 构造函数
@@ -63,7 +63,7 @@ public class PageResponseDto<T> : PageResponseDto
     public PageResponseDto(PageDataDto pageData)
         : base(pageData)
     {
-        ResponseDatas = null;
+        ResponseData = null;
         ExtraData = null;
     }
 
@@ -71,11 +71,11 @@ public class PageResponseDto<T> : PageResponseDto
     /// 构造函数
     /// </summary>
     /// <param name="pageData"></param>
-    /// <param name="responseDatas"></param>
-    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseDatas)
+    /// <param name="responseData"></param>
+    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseData)
         : base(pageData)
     {
-        ResponseDatas = responseDatas;
+        ResponseData = responseData;
         ExtraData = null;
     }
 
@@ -83,19 +83,19 @@ public class PageResponseDto<T> : PageResponseDto
     /// 构造函数
     /// </summary>
     /// <param name="pageData"></param>
-    /// <param name="responseDatas"></param>
+    /// <param name="responseData"></param>
     /// <param name="extraData"></param>
-    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseDatas, object extraData)
+    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseData, object extraData)
         : base(pageData)
     {
-        ResponseDatas = responseDatas;
+        ResponseData = responseData;
         ExtraData = extraData;
     }
 
     /// <summary>
     /// 数据列表（只读）
     /// </summary>
-    public IReadOnlyList<T>? ResponseDatas { get; set; }
+    public IReadOnlyList<T>? ResponseData { get; set; }
 
     /// <summary>
     /// 扩展数据（只读）

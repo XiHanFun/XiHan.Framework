@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
-using XiHan.Framework.Utils.DataFilter.Trees;
-using XiHan.Framework.Utils.DataFilter.Trees.Dtos;
+using XiHan.Framework.Utils.Collections;
+using XiHan.Framework.Utils.Collections.Dtos;
 
-namespace XiHan.Framework.Utils.Test.DataFilter.Trees;
+namespace XiHan.Framework.Utils.Test.Collections;
 
 [TestSubject(typeof(TreeExtensions))]
 public class TreeExtensionsTest
