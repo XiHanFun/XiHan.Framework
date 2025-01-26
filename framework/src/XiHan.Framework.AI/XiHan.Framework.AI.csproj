@@ -24,6 +24,7 @@
     <ItemGroup>
       <Folder Include="PlugIns\" />
       <Folder Include="PromptEngineering\" />
+      <Folder Include="Providers\DeepSeek\" />
       <Folder Include="WorkflowManagement\" />
       <Folder Include="ContextManagement\" />
       <Folder Include="Embeddings\" />
