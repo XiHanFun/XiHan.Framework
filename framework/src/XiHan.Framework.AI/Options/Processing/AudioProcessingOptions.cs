@@ -3,29 +3,34 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanDeepSeekOptions
-// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
+// FileName:AudioProcessingOptions
+// Guid:479f4b16-42a8-4cdb-b5cf-856d722bdc05
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:28:26
+// CreateTime:2025/1/27 6:32:44
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options.Base;
+namespace XiHan.Framework.AI.Options.Processing;
 
 /// <summary>
-/// 曦寒 DeepSeek 配置
+/// 音频处理选项
 /// </summary>
-public class XiHanDeepSeekOptions : XiHanAIBaseOptions
+public class AudioProcessingOptions
 {
     /// <summary>
-    /// API Key
+    /// 任务类型：转录、合成、分析等
     /// </summary>
-    public override string ApiKey { get; set; } = string.Empty;
+    public string TaskType { get; set; } = "transcription";
 
     /// <summary>
-    /// 模型
+    /// 音频语言
     /// </summary>
-    public override string Model { get; set; } = "deepseek-r1";
+    public string Language { get; set; } = "en";
+
+    /// <summary>
+    /// 输出格式
+    /// </summary>
+    public string OutputFormat { get; set; } = "wav";
 }

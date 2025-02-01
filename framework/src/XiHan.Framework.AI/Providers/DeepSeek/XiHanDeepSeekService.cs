@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOpenAIService
-// Guid:9bb988db-1708-4ff5-8f21-9a8f26de4ec7
+// FileName:XiHanDeepSeekService
+// Guid:a154756a-aebc-43bf-bea7-3945c888c3ac
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 5:57:00
+// CreateTime:2025/2/2 2:00:43
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,12 +15,12 @@
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
 
-namespace XiHan.Framework.AI.Providers.OpenAI;
+namespace XiHan.Framework.AI.Providers.DeepSeek;
 
 /// <summary>
-/// 基于 OpenAI 的曦寒 AI 服务
+/// 基于 DeepSeek 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteModelService
+public class XiHanDeepSeekService : IXiHanAIService, IXiHanAILocalModelService
 {
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)

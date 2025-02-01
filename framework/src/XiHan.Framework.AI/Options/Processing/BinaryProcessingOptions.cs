@@ -3,29 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOpenAIOptions
-// Guid:08182ea3-ea3c-4a5b-8c7c-ba3362097645
+// FileName:BinaryProcessingOptions
+// Guid:d22e5916-e3d1-4b1a-8a63-20ccd260b192
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:28:03
+// CreateTime:2025/1/27 6:55:26
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options.Base;
+namespace XiHan.Framework.AI.Options.Processing;
 
 /// <summary>
-/// 曦寒 OpenAI 配置
+/// 二进制处理选项
 /// </summary>
-public class XiHanOpenAIOptions : XiHanAIBaseOptions
+public class BinaryProcessingOptions
 {
     /// <summary>
-    /// API Key
+    /// 任务类型（如压缩/加密）
     /// </summary>
-    public override string ApiKey { get; set; } = string.Empty;
+    public string TaskType { get; set; } = "default";
 
     /// <summary>
-    /// 模型
+    /// 可选参数
     /// </summary>
-    public override string Model { get; set; } = "gpt-4o";
+    public Dictionary<string, string>? Parameters { get; set; }
 }
