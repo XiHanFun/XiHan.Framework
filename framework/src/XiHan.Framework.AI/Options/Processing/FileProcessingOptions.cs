@@ -3,29 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAIBaseOptions
-// Guid:737255cb-49b7-42e0-8d00-f7666b117233
+// FileName:FileProcessingOptions
+// Guid:64d7d317-7f75-426b-9190-ce1bcf3d855c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:27:43
+// CreateTime:2025/1/27 6:57:31
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options.Base;
+namespace XiHan.Framework.AI.Options.Processing;
 
 /// <summary>
-/// 曦寒 AI 基础配置
+/// 文件处理选项
 /// </summary>
-public abstract class XiHanAIBaseOptions
+public class FileProcessingOptions
 {
     /// <summary>
-    /// API Key
+    /// 文件类型
     /// </summary>
-    public virtual string ApiKey { get; set; } = string.Empty;
+    public string FileType { get; set; } = "pdf";
 
     /// <summary>
-    /// 模型
+    /// 任务类型（如提取文本/转换格式）
     /// </summary>
-    public virtual string Model { get; set; } = string.Empty;
+    public string? TaskType { get; set; } = "conversion";
 }

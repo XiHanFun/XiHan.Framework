@@ -3,29 +3,20 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AnnotationOptions
-// Guid:9337d78f-1990-451a-bf4c-f3ea353fe0fa
+// FileName:IXiHanAIRemoteModelService
+// Guid:655b4609-3d06-4174-bca2-ad03f8a5cf3a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 6:57:21
+// CreateTime:2025/2/2 1:59:21
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options;
+namespace XiHan.Framework.AI.Providers;
 
 /// <summary>
-/// 注释处理选项
+/// 基于远程模型的曦寒 AI 服务接口
 /// </summary>
-public class AnnotationProcessingOptions
+public interface IXiHanAIRemoteModelService
 {
-    /// <summary>
-    /// 目标语言
-    /// </summary>
-    public string Language { get; set; } = "en";
-
-    /// <summary>
-    /// 是否包含示例
-    /// </summary>
-    public bool IncludeExamples { get; set; } = false;
 }

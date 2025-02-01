@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.AI.Options.Base;
+using XiHan.Framework.AI.Options.Model;
 
 namespace XiHan.Framework.AI;
 

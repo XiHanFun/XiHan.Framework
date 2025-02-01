@@ -3,29 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FileProcessingOptions
-// Guid:64d7d317-7f75-426b-9190-ce1bcf3d855c
+// FileName:AnnotationProcessingOptions
+// Guid:9337d78f-1990-451a-bf4c-f3ea353fe0fa
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 6:57:31
+// CreateTime:2025/1/27 6:57:21
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options;
+namespace XiHan.Framework.AI.Options.Processing;
 
 /// <summary>
-/// 文件处理选项
+/// 注释处理选项
 /// </summary>
-public class FileProcessingOptions
+public class AnnotationProcessingOptions
 {
     /// <summary>
-    /// 文件类型
+    /// 目标语言
     /// </summary>
-    public string FileType { get; set; } = "pdf";
+    public string Language { get; set; } = "en";
 
     /// <summary>
-    /// 任务类型（如提取文本/转换格式）
+    /// 是否包含示例
     /// </summary>
-    public string? TaskType { get; set; } = "conversion";
+    public bool IncludeExamples { get; set; } = false;
 }
