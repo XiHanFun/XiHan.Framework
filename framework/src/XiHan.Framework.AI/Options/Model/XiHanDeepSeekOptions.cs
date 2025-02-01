@@ -3,29 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BinaryProcessingOptions
-// Guid:d22e5916-e3d1-4b1a-8a63-20ccd260b192
+// FileName:XiHanDeepSeekOptions
+// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 6:55:26
+// CreateTime:2025/1/27 7:28:26
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options;
+namespace XiHan.Framework.AI.Options.Model;
 
 /// <summary>
-/// 二进制处理选项
+/// 曦寒 DeepSeek 配置
 /// </summary>
-public class BinaryProcessingOptions
+public class XiHanDeepSeekOptions : IXiHanAIOptions
 {
     /// <summary>
-    /// 任务类型（如压缩/加密）
+    /// API Key
     /// </summary>
-    public string TaskType { get; set; } = "default";
+    public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// 可选参数
+    /// 模型
     /// </summary>
-    public Dictionary<string, string>? Parameters { get; set; }
+    public string Model { get; set; } = "deepseek-r1";
 }

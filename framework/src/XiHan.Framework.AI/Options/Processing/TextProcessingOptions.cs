@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options;
+namespace XiHan.Framework.AI.Options.Processing;
 
 /// <summary>
 /// 文本处理选项

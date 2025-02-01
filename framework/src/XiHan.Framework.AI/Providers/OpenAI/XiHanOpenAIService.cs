@@ -12,32 +12,32 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.AI.Options;
+using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
 
 namespace XiHan.Framework.AI.Providers.OpenAI;
 
 /// <summary>
-/// 基于 OpenAI 的曦寒 AI 服务接口
+/// 基于 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService
+public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteModelService
 {
     /// <inheritdoc/>
-    public Task<AnnotationResult> AnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
 
-    public Task<Results.FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
+    public Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
 
-    public Task<Results.FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
+    public Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
