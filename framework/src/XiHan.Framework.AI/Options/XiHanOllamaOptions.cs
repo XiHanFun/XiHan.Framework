@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IXiHanAIOptions
-// Guid:737255cb-49b7-42e0-8d00-f7666b117233
+// FileName:XiHanOllamaOptions
+// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:27:43
+// CreateTime:2025/1/27 7:28:26
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,17 +15,17 @@
 namespace XiHan.Framework.AI.Options;
 
 /// <summary>
-/// 曦寒 AI 配置接口
+/// 曦寒 Ollama 配置
 /// </summary>
-public interface IXiHanAIOptions
+public class XiHanOllamaOptions
 {
     /// <summary>
-    /// API Key
+    /// 服务端地址
     /// </summary>
-    public string ApiKey { get; set; }
+    public string Endpoint { get; set; } = "http://127.0.0.1:11434";
 
     /// <summary>
     /// 模型
     /// </summary>
-    public string Model { get; set; }
+    public string ModelId { get; set; } = "deepseek-r1";
 }

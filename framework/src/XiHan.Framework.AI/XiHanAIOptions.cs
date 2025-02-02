@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.AI.Options.Model;
+using XiHan.Framework.AI.Options;
 
 namespace XiHan.Framework.AI;
 
@@ -22,17 +22,12 @@ namespace XiHan.Framework.AI;
 public class XiHanAIOptions
 {
     /// <summary>
-    /// 人工智能模块名称
+    /// Ollama 配置
     /// </summary>
-    public string Name { get; set; } = "XiHanAI";
+    public XiHanOllamaOptions? Ollama { get; set; }
 
     /// <summary>
     /// OpenAI 配置
     /// </summary>
-    public XiHanOpenAIOptions OpenAI { get; set; } = new XiHanOpenAIOptions();
-
-    /// <summary>
-    /// DeepSeek 配置
-    /// </summary>
-    public XiHanDeepSeekOptions DeepSeek { get; set; } = new XiHanDeepSeekOptions();
+    public XiHanOpenAIOptions? OpenAI { get; set; }
 }

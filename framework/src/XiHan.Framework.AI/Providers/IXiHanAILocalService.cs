@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IXiHanAILocalModelService
+// FileName:IXiHanAILocalService
 // Guid:7b0ffed1-d182-47fc-a5c2-260d150c0aac
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,8 +15,8 @@
 namespace XiHan.Framework.AI.Providers;
 
 /// <summary>
-/// 基于本地模型的曦寒 AI 服务接口
+/// 基于本地的曦寒 AI 服务接口
 /// </summary>
-public interface IXiHanAILocalModelService
+public interface IXiHanAILocalService
 {
 }
