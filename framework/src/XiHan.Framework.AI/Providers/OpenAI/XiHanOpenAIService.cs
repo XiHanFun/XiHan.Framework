@@ -18,9 +18,9 @@ using XiHan.Framework.AI.Results;
 namespace XiHan.Framework.AI.Providers.OpenAI;
 
 /// <summary>
-/// 基于 OpenAI 的曦寒 AI 服务
+/// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteModelService
+public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
 {
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)

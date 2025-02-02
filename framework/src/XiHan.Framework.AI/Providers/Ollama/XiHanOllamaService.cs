@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanDeepSeekService
+// FileName:XiHanOllamaService
 // Guid:a154756a-aebc-43bf-bea7-3945c888c3ac
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,12 +15,12 @@
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
 
-namespace XiHan.Framework.AI.Providers.DeepSeek;
+namespace XiHan.Framework.AI.Providers.Ollama;
 
 /// <summary>
-/// 基于 DeepSeek 的曦寒 AI 服务
+/// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
-public class XiHanDeepSeekService : IXiHanAIService, IXiHanAILocalModelService
+public class XiHanOllamaService : IXiHanAIService, IXiHanAILocalService
 {
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)

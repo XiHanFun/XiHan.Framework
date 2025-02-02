@@ -3,21 +3,21 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanDeepSeekOptions
-// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
+// FileName:XiHanOpenAIOptions
+// Guid:08182ea3-ea3c-4a5b-8c7c-ba3362097645
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:28:26
+// CreateTime:2025/1/27 7:28:03
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options.Model;
+namespace XiHan.Framework.AI.Options;
 
 /// <summary>
-/// 曦寒 DeepSeek 配置
+/// 曦寒 OpenAI 配置
 /// </summary>
-public class XiHanDeepSeekOptions : IXiHanAIOptions
+public class XiHanOpenAIOptions
 {
     /// <summary>
     /// API Key
@@ -25,7 +25,12 @@ public class XiHanDeepSeekOptions : IXiHanAIOptions
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
+    /// 服务端地址
+    /// </summary>
+    public string Endpoint { get; set; } = "https://api.openai.com";
+
+    /// <summary>
     /// 模型
     /// </summary>
-    public string Model { get; set; } = "deepseek-r1";
+    public string ModelId { get; set; } = "gpt-4o";
 }
