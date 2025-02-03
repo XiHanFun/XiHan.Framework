@@ -20,9 +20,9 @@ namespace XiHan.Framework.AI.Options;
 public class XiHanOpenAIOptions
 {
     /// <summary>
-    /// API Key
+    /// 模型
     /// </summary>
-    public string ApiKey { get; set; } = string.Empty;
+    public string ModelId { get; set; } = "gpt-4o";
 
     /// <summary>
     /// 服务端地址
@@ -30,7 +30,12 @@ public class XiHanOpenAIOptions
     public string Endpoint { get; set; } = "https://api.openai.com";
 
     /// <summary>
-    /// 模型
+    /// API Key
     /// </summary>
-    public string ModelId { get; set; } = "gpt-4o";
+    public string ApiKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 服务标识
+    /// </summary>
+    public string ServiceId { get; set; } = "OpenAI";
 }

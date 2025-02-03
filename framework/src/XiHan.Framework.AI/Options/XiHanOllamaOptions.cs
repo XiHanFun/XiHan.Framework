@@ -20,12 +20,17 @@ namespace XiHan.Framework.AI.Options;
 public class XiHanOllamaOptions
 {
     /// <summary>
+    /// 模型
+    /// </summary>
+    public string ModelId { get; set; } = "deepseek-r1";
+
+    /// <summary>
     /// 服务端地址
     /// </summary>
     public string Endpoint { get; set; } = "http://127.0.0.1:11434";
 
     /// <summary>
-    /// 模型
+    /// 服务标识
     /// </summary>
-    public string ModelId { get; set; } = "deepseek-r1";
+    public string ServiceId { get; set; } = "Ollama";
 }
