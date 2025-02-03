@@ -49,14 +49,24 @@ public class XiHanAIModule : XiHanModule
             if (ollamaOptions is not null)
             {
 #pragma warning disable SKEXP0070
-                _ = builder.Services.AddOllamaChatCompletion(ollamaOptions.ModelId, new Uri(ollamaOptions.Endpoint));
+                _ = builder.Services.AddOllamaChatCompletion(
+                        modelId: ollamaOptions.ModelId,
+                        endpoint: new Uri(ollamaOptions.Endpoint),
+                        serviceId: ollamaOptions.ServiceId);
 #pragma warning restore SKEXP0070
             }
+
             // OpenAI
             var openAIOptions = services.GetRequiredService<IOptions<XiHanOpenAIOptions>>().Value;
             if (openAIOptions is not null)
             {
-                _ = builder.Services.AddOpenAIChatCompletion(openAIOptions.ApiKey);
+#pragma warning disable SKEXP0010
+                _ = builder.Services.AddOpenAIChatCompletion(
+                        modelId: openAIOptions.ModelId,
+                        endpoint: new Uri(openAIOptions.Endpoint),
+                        apiKey: openAIOptions.ApiKey,
+                        serviceId: openAIOptions.ServiceId);
+#pragma warning restore SKEXP0010
             }
 
             var kernel = builder.Build();
