@@ -26,9 +26,10 @@ public interface IHttpPollyService
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> GetAsync<TEntity>(HttpGroupEnum httpGroup, string url,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get 请求
@@ -36,9 +37,10 @@ public interface IHttpPollyService
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<string> GetAsync(HttpGroupEnum httpGroup, string url,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
@@ -49,9 +51,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> PostAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求 上传文件
@@ -61,9 +64,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="fileStream"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, FileStream fileStream,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
@@ -73,9 +77,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
@@ -85,9 +90,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<string> PostAsync<TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
@@ -96,9 +102,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<string> PostAsync(HttpGroupEnum httpGroup, string url, string request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Put 请求
@@ -109,9 +116,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> PutAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Put 请求
@@ -121,9 +129,10 @@ public interface IHttpPollyService
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> PutAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete 请求
@@ -132,7 +141,8 @@ public interface IHttpPollyService
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<TEntity?> DeleteAsync<TEntity>(HttpGroupEnum httpGroup, string url,
-        Dictionary<string, string>? headers = null);
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 }
