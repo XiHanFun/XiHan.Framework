@@ -72,7 +72,7 @@ public class XiHanOllamaService : IXiHanAIService, IXiHanAILocalService
 
     /// <inheritdoc/>
 
-    public Task<string> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
