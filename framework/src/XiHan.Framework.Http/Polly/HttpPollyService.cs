@@ -38,13 +38,13 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Get 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> GetAsync<TEntity>(HttpGroupEnum httpGroup, string url,
+    public async Task<TResponse?> GetAsync<TResponse>(HttpGroupEnum httpGroup, string url,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -61,7 +61,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -99,15 +99,15 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> PostAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    public async Task<TResponse?> PostAsync<TResponse, TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -125,7 +125,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -136,14 +136,14 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Post 请求 上传文件
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="fileStream"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, FileStream fileStream,
+    public async Task<TResponse?> PostAsync<TResponse>(HttpGroupEnum httpGroup, string url, FileStream fileStream,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -163,7 +163,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -174,14 +174,14 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
+    public async Task<TResponse?> PostAsync<TResponse>(HttpGroupEnum httpGroup, string url, string request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -199,7 +199,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -210,14 +210,14 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<string> PostAsync<TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    public async Task<string> PostAsync<TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -269,15 +269,15 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Put 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> PutAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    public async Task<TResponse?> PutAsync<TResponse, TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -295,7 +295,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -306,14 +306,14 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Put 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> PutAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
+    public async Task<TResponse?> PutAsync<TResponse>(HttpGroupEnum httpGroup, string url, string request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -331,7 +331,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
@@ -342,13 +342,13 @@ public class HttpPollyService : IHttpPollyService
     /// <summary>
     /// Delete 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<TEntity?> DeleteAsync<TEntity>(HttpGroupEnum httpGroup, string url,
+    public async Task<TResponse?> DeleteAsync<TResponse>(HttpGroupEnum httpGroup, string url,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
@@ -365,7 +365,7 @@ public class HttpPollyService : IHttpPollyService
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TEntity>(result);
+            return JsonSerializer.Deserialize<TResponse>(result);
         }
         else
         {
