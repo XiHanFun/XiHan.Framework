@@ -18,11 +18,11 @@ using System.Text.Json;
 namespace XiHan.Framework.Utils.Http;
 
 /// <summary>
-/// HttpHelper
+/// 简单的 HTTP 请求工具类
 /// </summary>
-public class HttpHelper
+public static class HttpHelper
 {
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient HttpClient = new();
 
     /// <summary>
     /// 静态构造函数
@@ -30,7 +30,7 @@ public class HttpHelper
     static HttpHelper()
     {
         // 设置默认超时时间
-        _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        HttpClient.Timeout = TimeSpan.FromSeconds(30);
     }
 
     #region 公共方法
@@ -47,7 +47,7 @@ public class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -67,7 +67,7 @@ public class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -87,7 +87,7 @@ public class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -103,7 +103,7 @@ public class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Delete, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
