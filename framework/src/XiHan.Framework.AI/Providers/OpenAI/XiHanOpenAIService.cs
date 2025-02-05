@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Net.Http.Json;
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
 using XiHan.Framework.Http.Polly;
@@ -23,14 +22,10 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// <summary>
 /// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
+public class XiHanOpenAIService : IXiHanAIService
 {
+    private readonly HttpGroupEnum _remoteHttpGroup;
     private readonly IHttpPollyService _httpPollyService;
-
-    /// <summary>
-    /// 网络请求组别
-    /// </summary>
-    public HttpGroupEnum HttpGroup { get; set; } = HttpGroupEnum.Remote;
 
     /// <summary>
     /// 构造函数
@@ -38,6 +33,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
     /// <param name="httpPollyService"></param>
     public XiHanOpenAIService(IHttpPollyService httpPollyService)
     {
+        _remoteHttpGroup = HttpGroupEnum.Remote;
         _httpPollyService = httpPollyService;
     }
 
@@ -50,10 +46,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
     /// <returns>函数执行结果</returns>
     public async Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpPollyService.PostAsync(HttpGroup, $"/functions/{functionName}", new StringContent(parameters), null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        var functionResult = resultContent.DeserializeTo<FunctionResult>();
+        var functionResult = await _httpPollyService.PostAsync<FunctionResult, StringContent>(_remoteHttpGroup, $"/functions/{functionName}", new StringContent(parameters), null, cancellationToken);
         return functionResult ?? throw new InvalidOperationException("Failed to deserialize function result.");
     }
 
@@ -65,13 +58,8 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
     /// <returns>函数返回结果</returns>
     public async Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
     {
-        var response = await _httpPollyService.GetAsync($"/functions/results/{functionId}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-        var resultContent = await response.Content.ReadAsStringAsync();
-        return resultContent.DeserializeTo<FunctionResult>();
+        var functionResult = await _httpPollyService.GetAsync<FunctionResult>(_remoteHttpGroup, $"/functions/results/{functionId}", null, cancellationToken);
+        return functionResult;
     }
 
     /// <summary>
@@ -84,10 +72,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
     public async Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var requestContent = new { Input = input, Options = options };
-        var response = await _httpPollyService.PostAsJsonAsync("/annotate", requestContent, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        var annotationResult = resultContent.DeserializeTo<AnnotationResult>();
+        var annotationResult = await _httpPollyService.PostAsync<AnnotationResult, object>(_remoteHttpGroup, "/annotate", requestContent, null, cancellationToken);
         return annotationResult ?? throw new InvalidOperationException("Failed to deserialize annotation result.");
     }
 
@@ -105,7 +90,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
             { new StreamContent(audioStream), "file", "audio.wav" },
             { new StringContent(options.SerializeTo()), "options" }
         };
-        var response = await _httpPollyService.PostAsync("/audio", content, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/audio", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         var resultContent = await response.Content.ReadAsStringAsync();
         var audioResult = resultContent.DeserializeTo<AudioResult>();
@@ -120,7 +105,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
             { new StreamContent(binaryStream), "file", "binary.bin" },
             { new StringContent(JsonConvert.SerializeObject(options)), "options" }
         };
-        var response = await _httpPollyService.PostAsync("/binary", content, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/binary", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStreamAsync();
     }
@@ -133,7 +118,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
             { new StreamContent(fileStream), "file", "file.dat" },
             { new StringContent(JsonConvert.SerializeObject(options)), "options" }
         };
-        var response = await _httpPollyService.PostAsync("/file", content, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/file", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         var resultContent = await response.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<FileResult>(resultContent);
@@ -147,7 +132,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
             { new StreamContent(imageStream), "file", "image.png" },
             { new StringContent(JsonConvert.SerializeObject(options)), "options" }
         };
-        var response = await _httpPollyService.PostAsync("/image", content, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/image", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         var resultContent = await response.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<ImageResult>(resultContent);
@@ -157,7 +142,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
     public async Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var requestContent = new { Input = input, Options = options };
-        var response = await _httpPollyService.PostAsJsonAsync("/text", requestContent, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/text", requestContent, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         var resultContent = await response.Content.ReadAsStringAsync();
         return resultContent.DeserializeTo<TextResult>();
@@ -171,7 +156,7 @@ public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
             { new StreamContent(videoStream), "file", "video.mp4" },
             { new StringContent(JsonConvert.SerializeObject(options)), "options" }
         };
-        var response = await _httpPollyService.PostAsync("/video", content, cancellationToken);
+        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/video", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
         var resultContent = await response.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<VideoResult>(resultContent);

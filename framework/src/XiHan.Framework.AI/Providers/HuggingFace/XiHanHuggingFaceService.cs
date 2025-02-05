@@ -14,14 +14,28 @@
 
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
+using XiHan.Framework.Http.Polly;
 
 namespace XiHan.Framework.AI.Providers.HuggingFace;
 
 /// <summary>
 /// 基于本地 HuggingFace 的曦寒 AI 服务
 /// </summary>
-public class XiHanHuggingFaceService : IXiHanAIService, IXiHanAILocalService
+public class XiHanHuggingFaceService : IXiHanAIService
 {
+    private readonly HttpGroupEnum _remoteHttpGroup;
+    private readonly IHttpPollyService _httpPollyService;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="httpPollyService"></param>
+    public XiHanHuggingFaceService(IHttpPollyService httpPollyService)
+    {
+        _remoteHttpGroup = HttpGroupEnum.Remote;
+        _httpPollyService = httpPollyService;
+    }
+
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
     {
