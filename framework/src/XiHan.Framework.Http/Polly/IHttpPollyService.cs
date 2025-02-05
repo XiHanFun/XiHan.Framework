@@ -22,13 +22,13 @@ public interface IHttpPollyService
     /// <summary>
     /// Get 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> GetAsync<TEntity>(HttpGroupEnum httpGroup, string url,
+    Task<TResponse?> GetAsync<TResponse>(HttpGroupEnum httpGroup, string url,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -45,54 +45,54 @@ public interface IHttpPollyService
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> PostAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    Task<TResponse?> PostAsync<TResponse, TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求 上传文件
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="fileStream"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, FileStream fileStream,
+    Task<TResponse?> PostAsync<TResponse>(HttpGroupEnum httpGroup, string url, FileStream fileStream,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> PostAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
+    Task<TResponse?> PostAsync<TResponse>(HttpGroupEnum httpGroup, string url, string request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Post 请求
     /// </summary>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<string> PostAsync<TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    Task<string> PostAsync<TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -110,39 +110,39 @@ public interface IHttpPollyService
     /// <summary>
     /// Put 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TREntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <typeparam name="TRequest"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> PutAsync<TEntity, TREntity>(HttpGroupEnum httpGroup, string url, TREntity request,
+    Task<TResponse?> PutAsync<TResponse, TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Put 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="request"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> PutAsync<TEntity>(HttpGroupEnum httpGroup, string url, string request,
+    Task<TResponse?> PutAsync<TResponse>(HttpGroupEnum httpGroup, string url, string request,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete 请求
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
     /// <param name="httpGroup"></param>
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<TEntity?> DeleteAsync<TEntity>(HttpGroupEnum httpGroup, string url,
+    Task<TResponse?> DeleteAsync<TResponse>(HttpGroupEnum httpGroup, string url,
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 }
