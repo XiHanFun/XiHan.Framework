@@ -22,7 +22,7 @@ public class XiHanOllamaOptions
     /// <summary>
     /// 模型
     /// </summary>
-    public string ModelId { get; set; } = "deepseek-r1";
+    public string ModelId { get; set; } = string.Empty;
 
     /// <summary>
     /// 服务端地址

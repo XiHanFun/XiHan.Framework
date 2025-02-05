@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using XiHan.Framework.AI.Options;
+using XiHan.Framework.AI.Providers.HuggingFace;
 using XiHan.Framework.AI.Providers.Ollama;
 using XiHan.Framework.AI.Providers.OpenAI;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -28,6 +29,8 @@ namespace XiHan.Framework.AI;
 /// </summary>
 public class XiHanAIModule : XiHanModule
 {
+    private const string ModuleConfigNode = "XiHan:AI";
+
     /// <summary>
     /// 服务配置
     /// </summary>
@@ -37,9 +40,9 @@ public class XiHanAIModule : XiHanModule
         var services = context.Services;
         var configuration = services.GetConfiguration();
 
-        Configure<XiHanAIOptions>(configuration.GetSection("XiHan:AI"));
+        Configure<XiHanAIOptions>(configuration.GetSection(ModuleConfigNode));
 
-        // 注册 Semantic Kernel 内核，配置 OpenAI、Ollama 等 Connector
+        // 注册 Semantic Kernel 内核，配置 Ollama、HuggingFace、OpenAI 等 Connector
         _ = services.AddSingleton<Kernel>(provider =>
         {
             var builder = Kernel.CreateBuilder();
@@ -49,11 +52,28 @@ public class XiHanAIModule : XiHanModule
             if (ollamaOptions is not null)
             {
 #pragma warning disable SKEXP0070
-                _ = builder.Services.AddOllamaChatCompletion(
+                _ = builder.AddOllamaChatCompletion(
                         modelId: ollamaOptions.ModelId,
                         endpoint: new Uri(ollamaOptions.Endpoint),
                         serviceId: ollamaOptions.ServiceId);
 #pragma warning restore SKEXP0070
+
+                _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
+            }
+
+            // HuggingFace
+            var huggingFaceOptions = services.GetRequiredService<IOptions<XiHanHuggingFaceOptions>>().Value;
+            if (huggingFaceOptions is not null)
+            {
+#pragma warning disable SKEXP0070
+                _ = builder.AddHuggingFaceChatCompletion(
+                        model: huggingFaceOptions.ModelId,
+                        endpoint: new Uri(huggingFaceOptions.Endpoint),
+                        apiKey: huggingFaceOptions.ApiKey,
+                        serviceId: huggingFaceOptions.ServiceId);
+#pragma warning restore SKEXP0070
+
+                _ = services.AddKeyedTransient<IXiHanAIService, XiHanHuggingFaceService>(huggingFaceOptions.ServiceId);
             }
 
             // OpenAI
@@ -61,20 +81,18 @@ public class XiHanAIModule : XiHanModule
             if (openAIOptions is not null)
             {
 #pragma warning disable SKEXP0010
-                _ = builder.Services.AddOpenAIChatCompletion(
+                _ = builder.AddOpenAIChatCompletion(
                         modelId: openAIOptions.ModelId,
                         endpoint: new Uri(openAIOptions.Endpoint),
                         apiKey: openAIOptions.ApiKey,
                         serviceId: openAIOptions.ServiceId);
 #pragma warning restore SKEXP0010
+
+                _ = services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
             }
 
             var kernel = builder.Build();
             return kernel;
         });
-
-        // 注册 AI 服务实现
-        _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>("Ollama");
-        _ = services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>("OpenAI");
     }
 }

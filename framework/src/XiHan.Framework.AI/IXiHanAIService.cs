@@ -23,6 +23,7 @@ namespace XiHan.Framework.AI;
 public interface IXiHanAIService
 {
     /// <summary>
+    ///
     /// 函数调用任务
     /// </summary>
     /// <param name="functionName">函数名称</param>
@@ -91,7 +92,7 @@ public interface IXiHanAIService
     /// <param name="options">文本处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>处理结果文本</returns>
-    Task<string> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default);
+    Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 视频处理任务
