@@ -22,7 +22,7 @@ public class FileResult
     /// <summary>
     /// 输出的文件流
     /// </summary>
-    public required Stream OutputStream { get; set; }
+    public Stream OutputStream { get; set; } = new MemoryStream();
 
     /// <summary>
     /// 额外元信息

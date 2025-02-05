@@ -22,7 +22,7 @@ public class AnnotationResult
     /// <summary>
     /// 注释后的文本
     /// </summary>
-    public required string AnnotatedText { get; set; }
+    public string AnnotatedText { get; set; } = string.Empty;
 
     /// <summary>
     /// 额外元信息
