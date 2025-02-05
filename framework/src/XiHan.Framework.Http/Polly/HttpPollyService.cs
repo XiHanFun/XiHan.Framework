@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -58,15 +57,9 @@ public class HttpPollyService : IHttpPollyService
         }
 
         var response = await client.GetAsync(url, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -91,9 +84,8 @@ public class HttpPollyService : IHttpPollyService
         }
 
         var response = await client.GetAsync(url, cancellationToken);
-        return response.StatusCode == HttpStatusCode.OK
-            ? await response.Content.ReadAsStringAsync(cancellationToken)
-            : throw new Exception($"Http Error StatusCode:{response.StatusCode}");
+        _ = response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     /// <summary>
@@ -122,15 +114,9 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -160,15 +146,9 @@ public class HttpPollyService : IHttpPollyService
         formDataContent.Headers.ContentType = new MediaTypeHeaderValue("multipart/form-data");
         formDataContent.Add(new StreamContent(fileStream, (int)fileStream.Length), "file", fileStream.Name);
         var response = await client.PostAsync(url, formDataContent, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -196,15 +176,9 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(request, Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -232,9 +206,8 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
-        return response.StatusCode == HttpStatusCode.OK
-            ? await response.Content.ReadAsStringAsync(cancellationToken)
-            : throw new Exception($"Http Error StatusCode:{response.StatusCode}");
+        _ = response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     /// <summary>
@@ -261,9 +234,8 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(request, Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
-        return response.StatusCode == HttpStatusCode.OK
-            ? await response.Content.ReadAsStringAsync(cancellationToken)
-            : throw new Exception($"Http Error StatusCode:{response.StatusCode}");
+        _ = response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     /// <summary>
@@ -292,15 +264,9 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var response = await client.PutAsync(url, stringContent, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -328,15 +294,9 @@ public class HttpPollyService : IHttpPollyService
 
         StringContent stringContent = new(request, Encoding.UTF8, "application/json");
         var response = await client.PutAsync(url, stringContent, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 
     /// <summary>
@@ -362,14 +322,8 @@ public class HttpPollyService : IHttpPollyService
         }
 
         var response = await client.DeleteAsync(url, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.OK)
-        {
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return JsonSerializer.Deserialize<TResponse>(result);
-        }
-        else
-        {
-            throw new Exception($"Http Error StatusCode:{response.StatusCode}");
-        }
+        _ = response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<TResponse>(result);
     }
 }
