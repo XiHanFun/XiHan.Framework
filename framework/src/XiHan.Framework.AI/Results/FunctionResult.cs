@@ -22,7 +22,7 @@ public class FunctionResult
     /// <summary>
     /// 函数执行的唯一标识
     /// </summary>
-    public required string FunctionId { get; set; }
+    public string FunctionId { get; set; } = string.Empty;
 
     /// <summary>
     /// 函数执行结果（JSON 格式）

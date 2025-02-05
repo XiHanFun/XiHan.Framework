@@ -44,7 +44,9 @@ public class XiHanAIModule : XiHanModule
         var services = context.Services;
         var configuration = services.GetConfiguration();
 
-        Configure<XiHanAIOptions>(configuration.GetSection(ModuleConfigNode));
+        Configure<XiHanOllamaOptions>(configuration.GetSection($"{ModuleConfigNode}:Ollama"));
+        Configure<XiHanHuggingFaceOptions>(configuration.GetSection($"{ModuleConfigNode}:HuggingFace"));
+        Configure<XiHanOpenAIOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
 
         // 注册 Semantic Kernel 内核，配置 Ollama、HuggingFace、OpenAI 等 Connector
         _ = services.AddSingleton<Kernel>(provider =>
@@ -57,6 +59,14 @@ public class XiHanAIModule : XiHanModule
             {
 #pragma warning disable SKEXP0070
                 _ = builder.AddOllamaChatCompletion(
+                        modelId: ollamaOptions.ModelId,
+                        endpoint: new Uri(ollamaOptions.Endpoint),
+                        serviceId: ollamaOptions.ServiceId);
+                _ = builder.AddOllamaTextEmbeddingGeneration(
+                        modelId: ollamaOptions.ModelId,
+                        endpoint: new Uri(ollamaOptions.Endpoint),
+                        serviceId: ollamaOptions.ServiceId);
+                _ = builder.AddOllamaTextGeneration(
                         modelId: ollamaOptions.ModelId,
                         endpoint: new Uri(ollamaOptions.Endpoint),
                         serviceId: ollamaOptions.ServiceId);
@@ -75,6 +85,21 @@ public class XiHanAIModule : XiHanModule
                         endpoint: new Uri(huggingFaceOptions.Endpoint),
                         apiKey: huggingFaceOptions.ApiKey,
                         serviceId: huggingFaceOptions.ServiceId);
+                _ = builder.AddHuggingFaceImageToText(
+                        model: huggingFaceOptions.ModelId,
+                        endpoint: new Uri(huggingFaceOptions.Endpoint),
+                        apiKey: huggingFaceOptions.ApiKey,
+                        serviceId: huggingFaceOptions.ServiceId);
+                _ = builder.AddHuggingFaceTextEmbeddingGeneration(
+                        model: huggingFaceOptions.ModelId,
+                        endpoint: new Uri(huggingFaceOptions.Endpoint),
+                        apiKey: huggingFaceOptions.ApiKey,
+                        serviceId: huggingFaceOptions.ServiceId);
+                _ = builder.AddHuggingFaceTextGeneration(
+                        model: huggingFaceOptions.ModelId,
+                        endpoint: new Uri(huggingFaceOptions.Endpoint),
+                        apiKey: huggingFaceOptions.ApiKey,
+                        serviceId: huggingFaceOptions.ServiceId);
 #pragma warning restore SKEXP0070
 
                 _ = services.AddKeyedTransient<IXiHanAIService, XiHanHuggingFaceService>(huggingFaceOptions.ServiceId);
@@ -85,9 +110,25 @@ public class XiHanAIModule : XiHanModule
             if (openAIOptions is not null)
             {
 #pragma warning disable SKEXP0010
+                _ = builder.AddOpenAIAudioToText(
+                        modelId: openAIOptions.ModelId,
+                        apiKey: openAIOptions.ApiKey,
+                        serviceId: openAIOptions.ServiceId);
                 _ = builder.AddOpenAIChatCompletion(
                         modelId: openAIOptions.ModelId,
                         endpoint: new Uri(openAIOptions.Endpoint),
+                        apiKey: openAIOptions.ApiKey,
+                        serviceId: openAIOptions.ServiceId);
+                _ = builder.AddOpenAITextEmbeddingGeneration(
+                        modelId: openAIOptions.ModelId,
+                        apiKey: openAIOptions.ApiKey,
+                        serviceId: openAIOptions.ServiceId);
+                _ = builder.AddOpenAITextToAudio(
+                        modelId: openAIOptions.ModelId,
+                        apiKey: openAIOptions.ApiKey,
+                        serviceId: openAIOptions.ServiceId);
+                _ = builder.AddOpenAITextToImage(
+                        modelId: openAIOptions.ModelId,
                         apiKey: openAIOptions.ApiKey,
                         serviceId: openAIOptions.ServiceId);
 #pragma warning restore SKEXP0010

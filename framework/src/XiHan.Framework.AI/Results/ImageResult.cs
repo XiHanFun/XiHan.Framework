@@ -22,7 +22,7 @@ public class ImageResult
     /// <summary>
     /// 处理后的图片数据
     /// </summary>
-    public required byte[] OutputImage { get; set; }
+    public byte[] OutputImage { get; set; } = [];
 
     /// <summary>
     /// 附加元数据
