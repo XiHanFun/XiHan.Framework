@@ -3,34 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOllamaOptions
-// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
+// FileName:TextResult
+// Guid:1b85a24d-0117-42c6-8e0f-3211304834c2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:28:26
+// CreateTime:2025/2/5 20:01:50
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.AI.Options;
+namespace XiHan.Framework.AI.Results;
 
 /// <summary>
-/// 曦寒 Ollama 配置
+/// 文本处理结果
 /// </summary>
-public class XiHanOllamaOptions
+public class TextResult
 {
     /// <summary>
-    /// 模型
+    /// 任务输出文本
     /// </summary>
-    public string ModelId { get; set; } = string.Empty;
+    public string Output { get; set; } = string.Empty;
 
     /// <summary>
-    /// 服务端地址
+    /// 附加元数据
     /// </summary>
-    public string Endpoint { get; set; } = "http://127.0.0.1:11434";
-
-    /// <summary>
-    /// 服务标识
-    /// </summary>
-    public string ServiceId { get; set; } = "Ollama";
+    public Dictionary<string, object> Metadata { get; set; } = [];
 }

@@ -39,19 +39,3 @@ public class TextProcessingOptions
     /// </summary>
     public List<string> StopWords { get; set; } = [];
 }
-
-/// <summary>
-/// 图像处理结果
-/// </summary>
-public class TextResult
-{
-    /// <summary>
-    /// 任务输出文本
-    /// </summary>
-    public required string Output { get; set; }
-
-    /// <summary>
-    /// 附加元数据
-    /// </summary>
-    public Dictionary<string, object> Metadata { get; set; } = [];
-}

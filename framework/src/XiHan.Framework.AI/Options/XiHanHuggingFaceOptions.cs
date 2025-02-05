@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOllamaOptions
-// Guid:0ff36526-6a2d-4988-9027-bf0a1dc40327
+// FileName:XiHanHuggingFaceOptions
+// Guid:f04e740a-bad9-4bd9-ab65-9e593387098b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 7:28:26
+// CreateTime:2025/2/4 17:48:47
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,9 +15,9 @@
 namespace XiHan.Framework.AI.Options;
 
 /// <summary>
-/// 曦寒 Ollama 配置
+/// XiHanHuggingFaceOptions
 /// </summary>
-public class XiHanOllamaOptions
+public class XiHanHuggingFaceOptions
 {
     /// <summary>
     /// 模型
@@ -27,10 +27,15 @@ public class XiHanOllamaOptions
     /// <summary>
     /// 服务端地址
     /// </summary>
-    public string Endpoint { get; set; } = "http://127.0.0.1:11434";
+    public string Endpoint { get; set; } = "https://api-inference.huggingface.co";
+
+    /// <summary>
+    /// API Key
+    /// </summary>
+    public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
     /// 服务标识
     /// </summary>
-    public string ServiceId { get; set; } = "Ollama";
+    public string ServiceId { get; set; } = "HuggingFace";
 }

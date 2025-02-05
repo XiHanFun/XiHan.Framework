@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOpenAIService
-// Guid:9bb988db-1708-4ff5-8f21-9a8f26de4ec7
+// FileName:XiHanHuggingFaceService
+// Guid:6d8f51c9-f1c4-4606-b413-730739802414
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 5:57:00
+// CreateTime:2025/2/4 18:29:07
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,12 +15,12 @@
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
 
-namespace XiHan.Framework.AI.Providers.OpenAI;
+namespace XiHan.Framework.AI.Providers.HuggingFace;
 
 /// <summary>
-/// 基于远程 OpenAI 的曦寒 AI 服务
+/// 基于本地 HuggingFace 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
+public class XiHanHuggingFaceService : IXiHanAIService, IXiHanAILocalService
 {
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
