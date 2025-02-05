@@ -14,14 +14,28 @@
 
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
+using XiHan.Framework.Http.Polly;
 
 namespace XiHan.Framework.AI.Providers.Ollama;
 
 /// <summary>
 /// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
-public class XiHanOllamaService : IXiHanAIService, IXiHanAILocalService
+public class XiHanOllamaService : IXiHanAIService
 {
+    private readonly HttpGroupEnum _localHttpGroup;
+    private readonly IHttpPollyService _httpPollyService;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="httpPollyService"></param>
+    public XiHanOllamaService(IHttpPollyService httpPollyService)
+    {
+        _localHttpGroup = HttpGroupEnum.Local;
+        _httpPollyService = httpPollyService;
+    }
+
     /// <inheritdoc/>
     public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
     {
