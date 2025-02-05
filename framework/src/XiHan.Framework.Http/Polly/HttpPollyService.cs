@@ -152,6 +152,35 @@ public class HttpPollyService : IHttpPollyService
     }
 
     /// <summary>
+    /// Post 请求 下载文件
+    /// </summary>
+    /// <typeparam name="TRequest"></typeparam>
+    /// <param name="httpGroup"></param>
+    /// <param name="url"></param>
+    /// <param name="request"></param>
+    /// <param name="headers"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<Stream> PostAsync<TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
+        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    {
+        using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
+        if (headers != null)
+        {
+            foreach (var header in headers.Where(header =>
+                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            {
+                client.DefaultRequestHeaders.Add(header.Key, header.Value);
+            }
+        }
+
+        StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+        var response = await client.PostAsync(url, stringContent, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// Post 请求
     /// </summary>
     /// <typeparam name="TResponse"></typeparam>
