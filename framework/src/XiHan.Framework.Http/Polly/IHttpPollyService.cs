@@ -70,19 +70,6 @@ public interface IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Post 请求 下载文件
-    /// </summary>
-    /// <typeparam name="TRequest"></typeparam>
-    /// <param name="httpGroup"></param>
-    /// <param name="url"></param>
-    /// <param name="request"></param>
-    /// <param name="headers"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<Stream> PostAsync<TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
-      Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Post 请求
     /// </summary>
     /// <typeparam name="TResponse"></typeparam>
