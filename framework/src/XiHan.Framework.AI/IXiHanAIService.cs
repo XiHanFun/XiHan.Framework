@@ -23,7 +23,6 @@ namespace XiHan.Framework.AI;
 public interface IXiHanAIService
 {
     /// <summary>
-    ///
     /// 函数调用任务
     /// </summary>
     /// <param name="functionName">函数名称</param>

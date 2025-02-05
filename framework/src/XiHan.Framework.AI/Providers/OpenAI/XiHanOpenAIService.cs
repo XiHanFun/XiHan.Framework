@@ -12,8 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using System.Net.Http.Json;
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
+using XiHan.Framework.Utils.Text.Json.Serialization;
 
 namespace XiHan.Framework.AI.Providers.OpenAI;
 
@@ -22,65 +24,150 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// </summary>
 public class XiHanOpenAIService : IXiHanAIService, IXiHanAIRemoteService
 {
-    /// <inheritdoc/>
-    public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
+    private readonly HttpClient _httpClient;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="httpClient"></param>
+    public XiHanOpenAIService(HttpClient httpClient)
     {
-        throw new NotImplementedException();
+        _httpClient = httpClient;
+    }
+
+    /// <summary>
+    /// 函数调用任务
+    /// </summary>
+    /// <param name="functionName">函数名称</param>
+    /// <param name="parameters">函数参数（JSON 格式）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>函数执行结果</returns>
+    public async Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync($"/functions/{functionName}", new StringContent(parameters), cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        var functionResult = resultContent.DeserializeTo<FunctionResult>();
+        return functionResult ?? throw new InvalidOperationException("Failed to deserialize function result.");
+    }
+
+    /// <summary>
+    /// 获取函数结果
+    /// </summary>
+    /// <param name="functionId">函数执行 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>函数返回结果</returns>
+    public async Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/functions/results/{functionId}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+        var resultContent = await response.Content.ReadAsStringAsync();
+        return resultContent.DeserializeTo<FunctionResult>();
+    }
+
+    /// <summary>
+    /// 注释处理任务
+    /// </summary>
+    /// <param name="input">需要注释的内容</param>
+    /// <param name="options">注释处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>注释处理结果</returns>
+    public async Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var requestContent = new { Input = input, Options = options };
+        var response = await _httpClient.PostAsJsonAsync("/annotate", requestContent, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        var annotationResult = resultContent.DeserializeTo<AnnotationResult>();
+        return annotationResult ?? throw new InvalidOperationException("Failed to deserialize annotation result.");
+    }
+
+    /// <summary>
+    /// 音频处理任务
+    /// </summary>
+    /// <param name="audioStream">音频数据流</param>
+    /// <param name="options">音频处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>音频处理结果</returns>
+    public async Task<AudioResult> ProcessAudioAsync(Stream audioStream, AudioProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(audioStream), "file", "audio.wav" },
+            { new StringContent(options.SerializeTo()), "options" }
+        };
+        var response = await _httpClient.PostAsync("/audio", content, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        var audioResult = resultContent.DeserializeTo<AudioResult>();
+        return audioResult ?? throw new InvalidOperationException("Failed to deserialize audio result.");
     }
 
     /// <inheritdoc/>
-
-    public Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
+    public async Task<Stream> ProcessBinaryAsync(Stream binaryStream, BinaryProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(binaryStream), "file", "binary.bin" },
+            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+        };
+        var response = await _httpClient.PostAsync("/binary", content, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStreamAsync();
     }
 
     /// <inheritdoc/>
-
-    public Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<FileResult> ProcessFileAsync(Stream fileStream, FileProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(fileStream), "file", "file.dat" },
+            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+        };
+        var response = await _httpClient.PostAsync("/file", content, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<FileResult>(resultContent);
     }
 
     /// <inheritdoc/>
-
-    public Task<AudioResult> ProcessAudioAsync(Stream audioStream, AudioProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<ImageResult> ProcessImageAsync(Stream imageStream, ImageProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(imageStream), "file", "image.png" },
+            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+        };
+        var response = await _httpClient.PostAsync("/image", content, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<ImageResult>(resultContent);
     }
 
     /// <inheritdoc/>
-
-    public Task<Stream> ProcessBinaryAsync(Stream binaryStream, BinaryProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var requestContent = new { Input = input, Options = options };
+        var response = await _httpClient.PostAsJsonAsync("/text", requestContent, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        return resultContent.DeserializeTo<TextResult>();
     }
 
     /// <inheritdoc/>
-
-    public Task<FileResult> ProcessFileAsync(Stream fileStream, FileProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<VideoResult> ProcessVideoAsync(Stream videoStream, VideoProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-
-    public Task<ImageResult> ProcessImageAsync(Stream imageStream, ImageProcessingOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-
-    public Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-
-    public Task<VideoResult> ProcessVideoAsync(Stream videoStream, VideoProcessingOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(videoStream), "file", "video.mp4" },
+            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+        };
+        var response = await _httpClient.PostAsync("/video", content, cancellationToken);
+        _ = response.EnsureSuccessStatusCode();
+        var resultContent = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<VideoResult>(resultContent);
     }
 }
