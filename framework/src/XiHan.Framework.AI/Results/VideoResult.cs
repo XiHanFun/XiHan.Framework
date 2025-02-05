@@ -22,7 +22,7 @@ public class VideoResult
     /// <summary>
     /// 处理后的视频数据
     /// </summary>
-    public required byte[] OutputVideo { get; set; }
+    public byte[] OutputVideo { get; set; } = [];
 
     /// <summary>
     /// 检测到的目标信息（可选）

@@ -12,10 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.SemanticKernel.ChatCompletion;
+using XiHan.Framework.AI.Options;
 using XiHan.Framework.AI.Options.Processing;
 using XiHan.Framework.AI.Results;
-using XiHan.Framework.Http.Polly;
-using XiHan.Framework.Utils.Text.Json.Serialization;
 
 namespace XiHan.Framework.AI.Providers.OpenAI;
 
@@ -24,17 +26,16 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// </summary>
 public class XiHanOpenAIService : IXiHanAIService
 {
-    private readonly HttpGroupEnum _remoteHttpGroup;
-    private readonly IHttpPollyService _httpPollyService;
+    private readonly IChatCompletionService _openAIChatService;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="httpPollyService"></param>
-    public XiHanOpenAIService(IHttpPollyService httpPollyService)
+    public XiHanOpenAIService(
+        IKeyedServiceProvider keyedServiceProvider,
+        IOptions<XiHanOpenAIOptions> openAIOptions)
     {
-        _remoteHttpGroup = HttpGroupEnum.Remote;
-        _httpPollyService = httpPollyService;
+        _openAIChatService = keyedServiceProvider.GetRequiredKeyedService<IChatCompletionService>(openAIOptions.Value.ServiceId);
     }
 
     /// <summary>
@@ -44,10 +45,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="parameters">函数参数（JSON 格式）</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>函数执行结果</returns>
-    public async Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
+    public Task<FunctionResult> CallFunctionAsync(string functionName, string parameters, CancellationToken cancellationToken = default)
     {
-        var functionResult = await _httpPollyService.PostAsync<FunctionResult, StringContent>(_remoteHttpGroup, $"/functions/{functionName}", new StringContent(parameters), null, cancellationToken);
-        return functionResult ?? throw new InvalidOperationException("Failed to deserialize function result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -56,10 +56,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="functionId">函数执行 ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>函数返回结果</returns>
-    public async Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
+    public Task<FunctionResult?> GetFunctionResultAsync(string functionId, CancellationToken cancellationToken = default)
     {
-        var functionResult = await _httpPollyService.GetAsync<FunctionResult>(_remoteHttpGroup, $"/functions/results/{functionId}", null, cancellationToken);
-        return functionResult;
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -69,11 +68,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">注释处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>注释处理结果</returns>
-    public async Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<AnnotationResult> ProcessAnnotateAsync(string input, AnnotationProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var requestContent = new { Input = input, Options = options };
-        var annotationResult = await _httpPollyService.PostAsync<AnnotationResult, object>(_remoteHttpGroup, "/annotate", requestContent, null, cancellationToken);
-        return annotationResult ?? throw new InvalidOperationException("Failed to deserialize annotation result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -83,15 +80,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">音频处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>音频处理结果</returns>
-    public async Task<AudioResult> ProcessAudioAsync(Stream audioStream, AudioProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<AudioResult> ProcessAudioAsync(Stream audioStream, AudioProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var content = new MultipartFormDataContent
-        {
-            { new StreamContent(audioStream), "file", "audio.wav" },
-            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
-        };
-        var audioResult = await _httpPollyService.PostAsync<AudioResult, object>(_remoteHttpGroup, "/audio", content, null, cancellationToken);
-        return audioResult ?? throw new InvalidOperationException("Failed to deserialize audio result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -101,15 +92,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">二进制处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>处理后的二进制流</returns>
-    public async Task<Stream> ProcessBinaryAsync(Stream binaryStream, BinaryProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<Stream> ProcessBinaryAsync(Stream binaryStream, BinaryProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var content = new MultipartFormDataContent
-        {
-            { new StreamContent(binaryStream), "file", "binary.bin" },
-            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
-        };
-        var streamResult = await _httpPollyService.PostAsync<Stream, MultipartFormDataContent>(_remoteHttpGroup, "/binary", content, null, cancellationToken);
-        return streamResult ?? throw new InvalidOperationException("Failed to deserialize binary stream.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -119,15 +104,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">文件处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>文件处理结果</returns>
-    public async Task<FileResult> ProcessFileAsync(Stream fileStream, FileProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<FileResult> ProcessFileAsync(Stream fileStream, FileProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var content = new MultipartFormDataContent
-        {
-            { new StreamContent(fileStream), "file", "file.dat" },
-            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
-        };
-        var fileResult = await _httpPollyService.PostAsync<FileResult, MultipartFormDataContent>(_remoteHttpGroup, "/file", content, null, cancellationToken);
-        return fileResult ?? throw new InvalidOperationException("Failed to deserialize file result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -137,15 +116,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">图片处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>图片处理结果</returns>
-    public async Task<ImageResult> ProcessImageAsync(Stream imageStream, ImageProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<ImageResult> ProcessImageAsync(Stream imageStream, ImageProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var content = new MultipartFormDataContent
-        {
-            { new StreamContent(imageStream), "file", "image.png" },
-            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
-        };
-        var imageResult = await _httpPollyService.PostAsync<ImageResult, MultipartFormDataContent>(_remoteHttpGroup, "/image", content, null, cancellationToken);
-        return imageResult ?? throw new InvalidOperationException("Failed to deserialize image result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -155,11 +128,9 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">文本处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>处理结果文本</returns>
-    public async Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var requestContent = new { Input = input, Options = options };
-        var textResult = await _httpPollyService.PostAsync<TextResult, object>(_remoteHttpGroup, "/text", requestContent, null, cancellationToken);
-        return textResult ?? throw new InvalidOperationException("Failed to deserialize text result.");
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -169,14 +140,8 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="options">视频处理选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>视频处理结果</returns>
-    public async Task<VideoResult> ProcessVideoAsync(Stream videoStream, VideoProcessingOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<VideoResult> ProcessVideoAsync(Stream videoStream, VideoProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var content = new MultipartFormDataContent
-        {
-            { new StreamContent(videoStream), "file", "video.mp4" },
-            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
-        };
-        var videoResult = await _httpPollyService.PostAsync<VideoResult, MultipartFormDataContent>(_remoteHttpGroup, "/video", content, null, cancellationToken);
-        return videoResult ?? throw new InvalidOperationException("Failed to deserialize video result.");
+        throw new NotImplementedException();
     }
 }

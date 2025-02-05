@@ -22,12 +22,12 @@ public class AudioResult
     /// <summary>
     /// 处理后的音频数据
     /// </summary>
-    public required byte[] OutputAudio { get; set; }
+    public byte[] OutputAudio { get; set; } = [];
 
     /// <summary>
     /// 转录文本（可选）
     /// </summary>
-    public required string Transcription { get; set; }
+    public string Transcription { get; set; } = string.Empty;
 
     /// <summary>
     /// 附加元数据
