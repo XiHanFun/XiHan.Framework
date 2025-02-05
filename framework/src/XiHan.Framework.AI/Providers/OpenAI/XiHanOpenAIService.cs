@@ -94,7 +94,13 @@ public class XiHanOpenAIService : IXiHanAIService
         return audioResult ?? throw new InvalidOperationException("Failed to deserialize audio result.");
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// 二进制流处理任务
+    /// </summary>
+    /// <param name="binaryStream">二进制数据流</param>
+    /// <param name="options">二进制处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>处理后的二进制流</returns>
     public async Task<Stream> ProcessBinaryAsync(Stream binaryStream, BinaryProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new MultipartFormDataContent
@@ -102,60 +108,75 @@ public class XiHanOpenAIService : IXiHanAIService
             { new StreamContent(binaryStream), "file", "binary.bin" },
             { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/binary", content, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStreamAsync();
+        var streamResult = await _httpPollyService.PostAsync<Stream, MultipartFormDataContent>(_remoteHttpGroup, "/binary", content, null, cancellationToken);
+        return streamResult ?? throw new InvalidOperationException("Failed to deserialize binary stream.");
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// 文件处理任务
+    /// </summary>
+    /// <param name="fileStream">文件数据流</param>
+    /// <param name="options">文件处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>文件处理结果</returns>
     public async Task<FileResult> ProcessFileAsync(Stream fileStream, FileProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new MultipartFormDataContent
         {
             { new StreamContent(fileStream), "file", "file.dat" },
-            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/file", content, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<FileResult>(resultContent);
+        var fileResult = await _httpPollyService.PostAsync<FileResult, MultipartFormDataContent>(_remoteHttpGroup, "/file", content, null, cancellationToken);
+        return fileResult ?? throw new InvalidOperationException("Failed to deserialize file result.");
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// 图片处理任务
+    /// </summary>
+    /// <param name="imageStream">图片数据流</param>
+    /// <param name="options">图片处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>图片处理结果</returns>
     public async Task<ImageResult> ProcessImageAsync(Stream imageStream, ImageProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new MultipartFormDataContent
         {
             { new StreamContent(imageStream), "file", "image.png" },
-            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/image", content, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<ImageResult>(resultContent);
+        var imageResult = await _httpPollyService.PostAsync<ImageResult, MultipartFormDataContent>(_remoteHttpGroup, "/image", content, null, cancellationToken);
+        return imageResult ?? throw new InvalidOperationException("Failed to deserialize image result.");
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// 文本处理任务
+    /// </summary>
+    /// <param name="input">输入文本</param>
+    /// <param name="options">文本处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>处理结果文本</returns>
     public async Task<TextResult> ProcessTextAsync(string input, TextProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var requestContent = new { Input = input, Options = options };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/text", requestContent, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        return resultContent.DeserializeTo<TextResult>();
+        var textResult = await _httpPollyService.PostAsync<TextResult, object>(_remoteHttpGroup, "/text", requestContent, null, cancellationToken);
+        return textResult ?? throw new InvalidOperationException("Failed to deserialize text result.");
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// 视频处理任务
+    /// </summary>
+    /// <param name="videoStream">视频数据流</param>
+    /// <param name="options">视频处理选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>视频处理结果</returns>
     public async Task<VideoResult> ProcessVideoAsync(Stream videoStream, VideoProcessingOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new MultipartFormDataContent
         {
             { new StreamContent(videoStream), "file", "video.mp4" },
-            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/video", content, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<VideoResult>(resultContent);
+        var videoResult = await _httpPollyService.PostAsync<VideoResult, MultipartFormDataContent>(_remoteHttpGroup, "/video", content, null, cancellationToken);
+        return videoResult ?? throw new InvalidOperationException("Failed to deserialize video result.");
     }
 }
