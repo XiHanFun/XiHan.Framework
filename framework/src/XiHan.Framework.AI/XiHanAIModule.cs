@@ -21,12 +21,16 @@ using XiHan.Framework.AI.Providers.Ollama;
 using XiHan.Framework.AI.Providers.OpenAI;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Http;
 
 namespace XiHan.Framework.AI;
 
 /// <summary>
 /// 曦寒框架人工智能模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanHttpModule)
+    )]
 public class XiHanAIModule : XiHanModule
 {
     private const string ModuleConfigNode = "XiHan:AI";
