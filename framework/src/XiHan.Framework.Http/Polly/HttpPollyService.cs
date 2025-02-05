@@ -58,7 +58,7 @@ public class HttpPollyService : IHttpPollyService
 
         var response = await client.GetAsync(url, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 
@@ -115,7 +115,8 @@ public class HttpPollyService : IHttpPollyService
         StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 
@@ -147,37 +148,8 @@ public class HttpPollyService : IHttpPollyService
         formDataContent.Add(new StreamContent(fileStream, (int)fileStream.Length), "file", fileStream.Name);
         var response = await client.PostAsync(url, formDataContent, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
-    }
-
-    /// <summary>
-    /// Post 请求 下载文件
-    /// </summary>
-    /// <typeparam name="TRequest"></typeparam>
-    /// <param name="httpGroup"></param>
-    /// <param name="url"></param>
-    /// <param name="request"></param>
-    /// <param name="headers"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<Stream> PostAsync<TRequest>(HttpGroupEnum httpGroup, string url, TRequest request,
-        Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
-    {
-        using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
-        {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
-            {
-                client.DefaultRequestHeaders.Add(header.Key, header.Value);
-            }
-        }
-
-        StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
-        var response = await client.PostAsync(url, stringContent, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
 
     /// <summary>
@@ -206,7 +178,7 @@ public class HttpPollyService : IHttpPollyService
         StringContent stringContent = new(request, Encoding.UTF8, "application/json");
         var response = await client.PostAsync(url, stringContent, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 
@@ -294,7 +266,7 @@ public class HttpPollyService : IHttpPollyService
         StringContent stringContent = new(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var response = await client.PutAsync(url, stringContent, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 
@@ -324,7 +296,7 @@ public class HttpPollyService : IHttpPollyService
         StringContent stringContent = new(request, Encoding.UTF8, "application/json");
         var response = await client.PutAsync(url, stringContent, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 
@@ -352,7 +324,7 @@ public class HttpPollyService : IHttpPollyService
 
         var response = await client.DeleteAsync(url, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(result);
     }
 }
