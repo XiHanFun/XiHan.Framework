@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Http.Polly;
+
 namespace XiHan.Framework.AI.Providers;
 
 /// <summary>
@@ -19,4 +21,8 @@ namespace XiHan.Framework.AI.Providers;
 /// </summary>
 public interface IXiHanAIRemoteService
 {
+    /// <summary>
+    /// 网络请求组别
+    /// </summary>
+    public HttpGroupEnum HttpGroup { get; set; }
 }
