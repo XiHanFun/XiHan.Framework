@@ -88,12 +88,9 @@ public class XiHanOpenAIService : IXiHanAIService
         var content = new MultipartFormDataContent
         {
             { new StreamContent(audioStream), "file", "audio.wav" },
-            { new StringContent(options.SerializeTo()), "options" }
+            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
-        var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/audio", content, null, cancellationToken);
-        _ = response.EnsureSuccessStatusCode();
-        var resultContent = await response.Content.ReadAsStringAsync();
-        var audioResult = resultContent.DeserializeTo<AudioResult>();
+        var audioResult = await _httpPollyService.PostAsync<AudioResult, object>(_remoteHttpGroup, "/audio", content, null, cancellationToken);
         return audioResult ?? throw new InvalidOperationException("Failed to deserialize audio result.");
     }
 
@@ -103,7 +100,7 @@ public class XiHanOpenAIService : IXiHanAIService
         var content = new MultipartFormDataContent
         {
             { new StreamContent(binaryStream), "file", "binary.bin" },
-            { new StringContent(JsonConvert.SerializeObject(options)), "options" }
+            { new StringContent(options?.SerializeTo() ?? string.Empty), "options" }
         };
         var response = await _httpPollyService.PostAsync(_remoteHttpGroup, "/binary", content, null, cancellationToken);
         _ = response.EnsureSuccessStatusCode();
