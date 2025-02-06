@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2023 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LongJsonConverter
 // Guid:6c399d59-ef12-4354-a5b6-d9af73b04f8b
