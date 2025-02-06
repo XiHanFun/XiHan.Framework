@@ -1,7 +1,7 @@
 ﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
-// Copyright ©2023 ZhaiFanhua All Rights Reserved.
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:BoardHelper
 // Guid:083d66ea-4eeb-4083-811c-65e8d406a818
@@ -82,10 +82,7 @@ public static class BoardHelper
 
         return boardInfo;
 
-        string GetParmValue(string[] lines, string parm, char separator)
-        {
-            return lines.First(s => s.StartsWith(parm)).Split(separator)[1].Trim();
-        }
+        string GetParmValue(string[] lines, string parm, char separator) => lines.First(s => s.StartsWith(parm)).Split(separator)[1].Trim();
     }
 }
 
