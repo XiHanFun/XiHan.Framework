@@ -36,7 +36,8 @@ public static class CpuHelper
     {
         CpuInfo cpuInfo = new()
         {
-            CpuCount = Environment.ProcessorCount.ToString(), CpuRate = "0%"
+            CpuCount = Environment.ProcessorCount.ToString(),
+            CpuRate = "0%"
         };
 
         try

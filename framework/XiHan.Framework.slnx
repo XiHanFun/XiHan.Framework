@@ -1,0 +1,88 @@
+<Solution>
+  <Folder Name="/1.src/" />
+  <Folder Name="/1.src/1.Base/">
+    <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Common/">
+    <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
+  </Folder>
+  <Folder Name="/1.src/3.Core/">
+    <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+  </Folder>
+  <Folder Name="/1.src/4.CoreLibraries/">
+    <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
+    <Project Path="src/XiHan.Framework.BackgroundWorkers/XiHan.Framework.BackgroundWorkers.csproj" />
+    <Project Path="src/XiHan.Framework.BlobStoring/XiHan.Framework.BlobStoring.csproj" />
+    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.StackExchangeRedis/XiHan.Framework.Caching.StackExchangeRedis.csproj" />
+    <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
+    <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
+    <Project Path="src/XiHan.Framework.Ddd.Application.Contracts/XiHan.Framework.Ddd.Application.Contracts.csproj" />
+    <Project Path="src/XiHan.Framework.Ddd.Application/XiHan.Framework.Ddd.Application.csproj" />
+    <Project Path="src/XiHan.Framework.Ddd.Domain.Shared/XiHan.Framework.Ddd.Domain.Shared.csproj" />
+    <Project Path="src/XiHan.Framework.Ddd.Domain/XiHan.Framework.Ddd.Domain.csproj" />
+    <Project Path="src/XiHan.Framework.EntityFrameworkCore/XiHan.Framework.EntityFrameworkCore.csproj" />
+    <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
+    <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
+    <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
+    <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
+    <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
+    <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.TextTemplating.csproj" />
+    <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
+    <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
+    <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
+  </Folder>
+  <Folder Name="/1.src/5.AspNetCore/">
+    <Project Path="src/XiHan.Framework.AspNetCore/XiHan.Framework.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/1.src/6.AspNetCoreLibraries/">
+    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OAuth/XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Logging.Serilog/XiHan.Framework.AspNetCore.Logging.Serilog.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.RealTime.SignalR/XiHan.Framework.AspNetCore.RealTime.SignalR.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Scalar/XiHan.Framework.AspNetCore.Scalar.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Swagger/XiHan.Framework.AspNetCore.Swagger.csproj" />
+  </Folder>
+  <Folder Name="/2.test/">
+    <Project Path="test/XiHan.Framework.AspNetCore.Test/XiHan.Framework.AspNetCore.Test.csproj" />
+    <Project Path="test/XiHan.Framework.Core.Test/XiHan.Framework.Core.Test.csproj" />
+    <Project Path="test/XiHan.Framework.Utils.Test/XiHan.Framework.Utils.Test.csproj" />
+  </Folder>
+  <Folder Name="/3.others/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="CodeMaid.config" />
+    <File Path="global.json" />
+    <File Path="XiHan.Framework.txt" />
+  </Folder>
+  <Folder Name="/3.others/props/">
+    <File Path="props/common.props" />
+    <File Path="props/version.props" />
+  </Folder>
+  <Folder Name="/3.others/scripts/" />
+  <Folder Name="/3.others/scripts/editor/">
+    <File Path="scripts/editor/Class.cs" />
+    <File Path="scripts/editor/Controller.cs" />
+    <File Path="scripts/editor/CopyFile.ps1" />
+    <File Path="scripts/editor/FilePath.txt" />
+    <File Path="scripts/editor/Interface.cs" />
+  </Folder>
+  <Folder Name="/3.others/scripts/nuget/">
+    <File Path="scripts/nuget/1.SaveNugetApiKey.ps1" />
+    <File Path="scripts/nuget/2.VersionUpgrade.ps1" />
+    <File Path="scripts/nuget/3.PushNugetPackages.ps1" />
+  </Folder>
+  <Folder Name="/3.others/scripts/project/">
+    <File Path="scripts/project/ClearProjecBinObj.ps1" />
+  </Folder>
+  <Folder Name="/3.others/snks/">
+    <File Path="snks/XiHan.Framework.snk" />
+  </Folder>
+</Solution>
