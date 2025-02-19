@@ -60,7 +60,7 @@ public class ModuleLoader : IModuleLoader
         FillModules(modules, services, startupModuleType, plugInSources);
         SetDependencies(modules);
 
-        return modules.Cast<IModuleDescriptor>().ToList();
+        return [.. modules.Cast<IModuleDescriptor>()];
     }
 
     /// <summary>
