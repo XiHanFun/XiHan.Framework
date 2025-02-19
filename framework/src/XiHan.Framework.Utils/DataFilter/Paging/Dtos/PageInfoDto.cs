@@ -31,21 +31,11 @@ public class PageInfoDto
     /// </summary>
     private const int DefaultPageSize = 20;
 
-    /// <summary>
-    /// 默认每页大小最小值(防止非安全性传参)
-    /// </summary>
-    private const int DefaultMinPageSize = 10;
-
-    /// <summary>
-    /// 默认每页大小最大值(防止非安全性传参)
-    /// </summary>
-    private const int DefaultMaxPageSize = 100;
-
     #endregion 默认值
 
     private readonly int _currentIndex = DefaultIndex;
     private readonly int _pageSize = DefaultPageSize;
-    private readonly int[] _defaultPageSizeArray = [10, 20, 50, 100];
+    private readonly int[] _defaultPageSizeArray = [10, 20, 50, 100, 200, 500];
 
     /// <summary>
     /// 构造函数
@@ -61,8 +51,8 @@ public class PageInfoDto
     /// <param name="pageSize"></param>
     public PageInfoDto(int currentIndex, int pageSize)
     {
-        CurrentIndex = currentIndex;
-        PageSize = pageSize;
+        _currentIndex = currentIndex;
+        _pageSize = pageSize;
     }
 
     /// <summary>
@@ -90,10 +80,13 @@ public class PageInfoDto
         get => _pageSize;
         init
         {
+            var defaultMaxPageSize = _defaultPageSizeArray.Max();
+            var defaultMinPageSize = _defaultPageSizeArray.Min();
+
             value = value switch
             {
-                > DefaultMaxPageSize => DefaultMaxPageSize,
-                < DefaultMinPageSize => DefaultMinPageSize,
+                int pageSize when pageSize > defaultMaxPageSize => defaultMaxPageSize,
+                int pageSize when pageSize < defaultMinPageSize => defaultMinPageSize,
                 // 不在默认每页大小数组中的值，取最接近的默认值
                 _ => _defaultPageSizeArray.OrderBy(p => Math.Abs(p - value)).First()
             };
