@@ -70,8 +70,6 @@ public class ModuleManager : IModuleManager, ISingletonDependency
                 }
             }
         }
-
-        _logger.LogInformation("已初始化所有模块。");
     }
 
     /// <summary>
@@ -95,8 +93,6 @@ public class ModuleManager : IModuleManager, ISingletonDependency
                 }
             }
         }
-
-        _logger.LogInformation("已初始化所有模块。");
     }
 
     /// <summary>

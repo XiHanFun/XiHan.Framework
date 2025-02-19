@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace XiHan.BasicApp.WebHost.Controller;
+namespace XiHan.Framework.Console.Test.Controllers;
 
 /// <summary>
 /// HomeController
