@@ -63,5 +63,5 @@ public class PageDataDto
     /// <summary>
     /// 总页数
     /// </summary>
-    public int PageCount { get; set; } = 1;
+    public int PageCount { get; set; } = 0;
 }
