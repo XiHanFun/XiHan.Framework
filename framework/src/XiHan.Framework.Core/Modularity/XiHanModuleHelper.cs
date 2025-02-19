@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.Modularity;
 
@@ -32,8 +33,11 @@ public static class XiHanModuleHelper
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
         List<Type> moduleTypes = [];
-        logger?.Log(LogLevel.Information, "加载曦寒模块:");
+        ConsoleHelper.Handle("加载曦寒模块:");
+        //logger?.LogInformation("加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
+        ConsoleHelper.Handle("已初始化所有模块。");
+        //logger?.LogInformation("已初始化所有模块。");
         return moduleTypes;
     }
 
@@ -104,7 +108,8 @@ public static class XiHanModuleHelper
         }
 
         moduleTypes.Add(moduleType);
-        logger?.Log(LogLevel.Information, $"{new string(' ', depth * 2)}-{moduleType.FullName}");
+        ConsoleHelper.Handle($"{new string(' ', depth * 2)}-{moduleType.FullName}");
+        //logger?.LogInformation($"{new string(' ', depth * 2)}-{moduleType.FullName}");
 
         foreach (var dependedModuleType in FindDependedModuleTypes(moduleType))
         {
