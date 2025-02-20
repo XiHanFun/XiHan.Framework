@@ -13,12 +13,18 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Ddd.Application.Contracts;
+using XiHan.Framework.Ddd.Domain;
 
 namespace XiHan.Framework.Ddd.Application;
 
 /// <summary>
 /// 曦寒框架领域驱动设计应用模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanDddApplicationContractsModule),
+    typeof(XiHanDddDomainModule)
+    )]
 public class XiHanDddApplicationModule : XiHanModule
 {
     /// <summary>
