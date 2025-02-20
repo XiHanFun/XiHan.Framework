@@ -92,28 +92,40 @@ public static class XiHanModuleHelper
     }
 
     /// <summary>
-    /// 递归添加模块和依赖项
+    /// 递归添加模块和依赖项，并以目录树形式打印
     /// </summary>
-    /// <param name="moduleTypes"></param>
-    /// <param name="moduleType"></param>
-    /// <param name="logger"></param>
-    /// <param name="depth"></param>
-    private static void AddModuleAndDependenciesRecursively(List<Type> moduleTypes, Type moduleType, ILogger? logger, int depth = 0)
+    /// <param name="moduleTypes">已处理的模块列表，避免重复</param>
+    /// <param name="moduleType">当前模块类型</param>
+    /// <param name="logger">日志记录器（可选）</param>
+    /// <param name="prefix">前缀字符串，用于构造目录树分支</param>
+    /// <param name="isLast">当前模块是否为同级中的最后一个</param>
+    private static void AddModuleAndDependenciesRecursively(List<Type> moduleTypes, Type moduleType, ILogger? logger,
+        string prefix = "", bool isLast = true)
     {
+        // 检查是否是合法的 XiHan 模块类型
         CheckXiHanModuleType(moduleType);
 
         if (moduleTypes.Contains(moduleType))
         {
             return;
         }
-
         moduleTypes.Add(moduleType);
-        ConsoleHelper.Handle($"{new string(' ', depth * 2)}-{moduleType.FullName}");
-        //logger?.LogInformation($"{new string(' ', depth * 2)}-{moduleType.FullName}");
 
-        foreach (var dependedModuleType in FindDependedModuleTypes(moduleType))
+        // 构造当前节点的前缀和分支符号
+        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.FullName;
+        ConsoleHelper.Handle(nodeLine);
+        //logger?.LogInformation(nodeLine);
+
+        // 获取当前模块依赖的模块类型
+        var dependedModuleTypes = FindDependedModuleTypes(moduleType);
+
+        // 遍历每个依赖的模块，并递归调用
+        for (var i = 0; i < dependedModuleTypes.Count; i++)
         {
-            AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleType, logger, depth + 1);
+            var childIsLast = i == dependedModuleTypes.Count - 1;
+            // 为子节点构造新的前缀：如果当前节点是最后一个，则用空格，否则用竖线保持上层分支的连贯
+            var childPrefix = prefix + (isLast ? "    " : "│   ");
+            AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleTypes[i], logger, childPrefix, childIsLast);
         }
     }
 

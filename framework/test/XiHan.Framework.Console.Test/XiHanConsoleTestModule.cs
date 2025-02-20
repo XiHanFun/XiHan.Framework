@@ -16,11 +16,11 @@ using Scalar.AspNetCore;
 using XiHan.Framework.AspNetCore.Authentication.JwtBearer;
 using XiHan.Framework.AspNetCore.Authentication.OAuth;
 using XiHan.Framework.AspNetCore.Extensions;
-using XiHan.Framework.AspNetCore.Mvc;
 using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.AspNetCore.Swagger;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Ddd.Application;
 
 namespace XiHan.Framework.Console.Test;
 
@@ -28,7 +28,7 @@ namespace XiHan.Framework.Console.Test;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
-    typeof(XiHanAspNetCoreMvcModule),
+    typeof(XiHanDddApplicationModule),
     typeof(XiHanAspNetCoreAuthenticationJwtBearerModule),
     typeof(XiHanAspNetCoreAuthenticationOAuthModule),
     typeof(XiHanAspNetCoreScalarModule),
