@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props"/>
-    <Import Project="..\..\props\version.props"/>
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.Ddd.Application</Title>
@@ -12,7 +12,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Ddd.Application.Contracts\XiHan.Framework.Ddd.Application.Contracts.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Ddd.Domain\XiHan.Framework.Ddd.Domain.csproj" />
     </ItemGroup>
 
 </Project>
