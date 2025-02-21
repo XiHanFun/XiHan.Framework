@@ -29,10 +29,12 @@ public class XiHanAspNetCoreModule : XiHanModule
     /// <param name="context"></param>
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
-        _ = context.Services.GetSingletonInstance<IXiHanHostEnvironment>();
+        var services = context.Services;
+
+        _ = services.GetSingletonInstance<IXiHanHostEnvironment>();
         //if (xihanHostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
         //{
-        //    xihanHostEnvironment.EnvironmentName = context.Services.GetHostingEnvironment().EnvironmentName;
+        //    xihanHostEnvironment.EnvironmentName = services.GetHostingEnvironment().EnvironmentName;
         //}
     }
 
