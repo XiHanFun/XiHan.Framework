@@ -1,12 +1,25 @@
-﻿using XiHan.Framework.AspNetCore.Extensions.Builder;
+﻿using Serilog;
+using XiHan.Framework.AspNetCore.Extensions.Builder;
 using XiHan.Framework.Console.Test;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
-await builder.Services.AddApplicationAsync<XiHanConsoleTestModule>();
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+    _ = await builder.Services.AddApplicationAsync<XiHanConsoleTestModule>();
 
-await app.InitializeApplicationAsync();
+    var app = builder.Build();
 
-await app.RunAsync();
+    await app.InitializeApplicationAsync();
+
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "应用意外关闭");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

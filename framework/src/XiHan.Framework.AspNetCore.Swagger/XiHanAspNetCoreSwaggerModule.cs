@@ -44,6 +44,7 @@ public class XiHanAspNetCoreSwaggerModule : XiHanModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+
         _ = app.UseSwagger();
         _ = app.UseSwaggerUI();
     }
