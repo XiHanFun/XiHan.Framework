@@ -4,10 +4,10 @@
     <Import Project="..\..\props\version.props"/>
 
     <PropertyGroup>
-        <Title>XiHan.Framework.AspNetCore.RealTime.SignalR</Title>
-        <AssemblyName>XiHan.Framework.AspNetCore.RealTime.SignalR</AssemblyName>
-        <PackageId>XiHan.Framework.AspNetCore.RealTime.SignalR</PackageId>
-        <Description>曦寒框架 Web 核心即时通信 SignalR 库</Description>
+        <Title>XiHan.Framework.AspNetCore.SignalR</Title>
+        <AssemblyName>XiHan.Framework.AspNetCore.SignalR</AssemblyName>
+        <PackageId>XiHan.Framework.AspNetCore.SignalR</PackageId>
+        <Description>曦寒框架 Web 核心 SignalR 库</Description>
         <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>

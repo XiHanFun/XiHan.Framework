@@ -9,8 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Logging.Serilog\XiHan.Framework.AspNetCore.Logging.Serilog.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.RealTime.SignalR\XiHan.Framework.AspNetCore.RealTime.SignalR.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.SignalR\XiHan.Framework.AspNetCore.SignalR.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj" />
