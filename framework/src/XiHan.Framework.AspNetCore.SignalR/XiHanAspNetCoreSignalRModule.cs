@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAspNetCoreRealTimeSignalRModule
+// FileName:XiHanAspNetCoreSignalRModule
 // Guid:2c8a0444-ea76-40c1-8f80-8e066469952d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,12 +14,12 @@
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore.RealTime.SignalR;
+namespace XiHan.Framework.AspNetCore.SignalR;
 
 /// <summary>
-/// 曦寒框架 Web 核心即时通信 SignalR 模块
+/// 曦寒框架 Web 核心 SignalR 模块
 /// </summary>
-public class XiHanAspNetCoreRealTimeSignalRModule : XiHanModule
+public class XiHanAspNetCoreSignalRModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
