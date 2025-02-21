@@ -60,6 +60,5 @@ public class XiHanConsoleTestModule : XiHanModule
     /// <param name="context"></param>
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        throw new NotImplementedException();
     }
 }
