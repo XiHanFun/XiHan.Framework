@@ -43,7 +43,6 @@ public class XiHanAspNetCoreModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        _ = services.AddAuthorization();
 
         //Configure<XiHanAuditingOptions>(options =>
         //{
