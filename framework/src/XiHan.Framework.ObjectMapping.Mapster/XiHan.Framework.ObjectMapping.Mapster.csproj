@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.ObjectMapping.Mapster</Title>
+		<AssemblyName>XiHan.Framework.ObjectMapping.Mapster</AssemblyName>
+		<PackageId>XiHan.Framework.ObjectMapping.Mapster</PackageId>
+		<Description>曦寒框架对象映射库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Mapster.DependencyInjection" Version="1.0.3-pre02" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
