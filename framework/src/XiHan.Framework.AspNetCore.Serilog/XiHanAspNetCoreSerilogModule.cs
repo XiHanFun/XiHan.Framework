@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAspNetCoreLoggingSerilogModule
+// FileName:XiHanAspNetCoreSerilogModule
 // Guid:b377c463-5f66-47c3-9b23-68e9c69b05cc
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,14 +12,18 @@
 
 #endregion <<版权版本注释>>
 
+using Serilog;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore.Logging.Serilog;
+namespace XiHan.Framework.AspNetCore.Serilog;
 
 /// <summary>
-/// 曦寒框架 Web 核心日志 Serilog 模块
+/// 曦寒框架 Web 核心 Serilog 模块
 /// </summary>
-public class XiHanAspNetCoreLoggingSerilogModule : XiHanModule
+[DependsOn(
+    typeof(XiHanAspNetCoreModule)
+    )]
+public class XiHanAspNetCoreSerilogModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
@@ -27,5 +31,13 @@ public class XiHanAspNetCoreLoggingSerilogModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        Log.Logger = new XiHanLoggerBuilder().CreateLoggerDefault();
+
+        _ = services.AddLogging(loggingBuilder =>
+        {
+            _ = loggingBuilder.AddSerilog();
+        });
     }
 }

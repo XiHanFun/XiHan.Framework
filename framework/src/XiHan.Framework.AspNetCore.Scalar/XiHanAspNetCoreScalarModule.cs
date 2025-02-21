@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using Scalar.AspNetCore;
+using XiHan.Framework.AspNetCore.Extensions;
 using XiHan.Framework.AspNetCore.Mvc;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.AspNetCore.Scalar;
@@ -31,5 +34,24 @@ public class XiHanAspNetCoreScalarModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        _ = services.AddOpenApi();
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var app = context.GetApplicationBuilder();
+
+        _ = app.UseEndpoints(endpoints =>
+        {
+            _ = endpoints.MapOpenApi();
+            _ = endpoints.MapScalarApiReference();
+        });
     }
 }
