@@ -42,9 +42,9 @@
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OAuth/XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.Logging.Serilog/XiHan.Framework.AspNetCore.Logging.Serilog.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.Serilog/XiHan.Framework.AspNetCore.Serilog.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.RealTime.SignalR/XiHan.Framework.AspNetCore.RealTime.SignalR.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.SignalR/XiHan.Framework.AspNetCore.SignalR.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Scalar/XiHan.Framework.AspNetCore.Scalar.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Swagger/XiHan.Framework.AspNetCore.Swagger.csproj" />
