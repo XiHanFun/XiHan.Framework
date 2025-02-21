@@ -27,5 +27,8 @@ public class XiHanAspNetCoreAuthenticationOpenIdConnectModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        _ = services.AddAuthorization();
     }
 }
