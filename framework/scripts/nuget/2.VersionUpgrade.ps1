@@ -34,8 +34,8 @@ Write-Output "主版本: $currentMajor，次版本: $currentMinor，修订版本
 Write-Output "请选择升级类型："
 Write-Output "0: 不升级"
 Write-Output "1: 主版本"
-Write-Output "2: 大版本"
-Write-Output "3: 小版本"
+Write-Output "2: 次版本"
+Write-Output "3: 修订版本"
 $upgradeType = Read-Host ">>> 请选择升级类型 (0-3)"
 switch ($upgradeType) {
     0 {
