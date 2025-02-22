@@ -24,28 +24,55 @@ public static partial class DesensitizationHelper
 {
     /// <summary>
     /// 通用脱敏方法：保留前面 frontCount 个字符和后面 endCount 个字符，其余部分用 maskChar 替换
-    /// 如果待处理字符串为空或者前后保留位数超过字符串长度，则直接返回原字符串
+    /// 如果待处理字符串的前后保留位数超过字符串长度，则按字符串长度脱敏<see cref="Mask(string, char)"/>"/>
     /// </summary>
     /// <param name="input">原始字符串</param>
     /// <param name="frontCount">保留前面字符数</param>
     /// <param name="endCount">保留后面字符数</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns>脱敏后的字符串</returns>
-    public static string MaskString(string input, int frontCount, int endCount, char maskChar = '*')
+    public static string Mask(this string input, int frontCount, int endCount, char maskChar = '*')
     {
-        if (string.IsNullOrEmpty(input))
+        if (string.IsNullOrWhiteSpace(input?.Trim()))
         {
-            return input;
+            return string.Empty;
         }
 
         var length = input.Length;
         if (frontCount + endCount >= length)
         {
-            return input;
+            return Mask(input);
         }
 
         var maskLength = length - frontCount - endCount;
         return string.Concat(input.AsSpan(0, frontCount), new string(maskChar, maskLength), input.AsSpan(length - endCount, endCount));
+    }
+
+    /// <summary>
+    /// 通用脱敏方法: 按字符串长度脱敏
+    /// </summary>
+    /// <param name="input">原始字符串</param>
+    /// <param name="maskChar">脱敏字符，默认使用星号*</param>
+    /// <returns></returns>
+    public static string Mask(this string input, char maskChar = '*')
+    {
+        if (string.IsNullOrWhiteSpace(input?.Trim()))
+        {
+            return string.Empty;
+        }
+
+        input = input.Trim();
+        var masks = maskChar.ToString().PadLeft(4, maskChar);
+        return input.Length switch
+        {
+            >= 11 => Regex11().Replace(input, $"$1{masks}$2"),
+            10 => Regex10().Replace(input, $"$1{masks}$2"),
+            9 => Regex9().Replace(input, $"$1{masks}$2"),
+            8 => Regex8().Replace(input, $"$1{masks}$2"),
+            7 => Regex7().Replace(input, $"$1{masks}$2"),
+            6 => Regex6().Replace(input, $"$1{masks}$2"),
+            _ => RegexDefault().Replace(input, $"$1{masks}")
+        };
     }
 
     /// <summary>
@@ -56,7 +83,7 @@ public static partial class DesensitizationHelper
     /// <returns>脱敏后的手机号</returns>
     public static string MaskPhone(string phone)
     {
-        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? phone : MaskString(phone, 3, 4);
+        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? Mask(phone) : Mask(phone, 3, 4);
     }
 
     /// <summary>
@@ -67,7 +94,7 @@ public static partial class DesensitizationHelper
     /// <returns>脱敏后的身份证号</returns>
     public static string MaskIdCard(string idCard)
     {
-        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? idCard : MaskString(idCard, 4, 4);
+        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? Mask(idCard) : Mask(idCard, 4, 4);
     }
 
     /// <summary>
@@ -78,7 +105,7 @@ public static partial class DesensitizationHelper
     /// <returns>脱敏后的银行卡号</returns>
     public static string MaskBankCard(string bankCard)
     {
-        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? bankCard : MaskString(bankCard, 4, 4);
+        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? Mask(bankCard) : Mask(bankCard, 4, 4);
     }
 
     /// <summary>
@@ -151,7 +178,7 @@ public static partial class DesensitizationHelper
         }
 
         var length = address.Length;
-        return length <= 8 ? address : MaskString(address, 6, 2);
+        return length <= 8 ? address : Mask(address, 6, 2);
     }
 
     /// <summary>
@@ -172,7 +199,7 @@ public static partial class DesensitizationHelper
     /// <returns></returns>
     public static string MaskLicensePlate(string plate)
     {
-        return string.IsNullOrEmpty(plate) ? plate : plate.Length < 2 ? plate : MaskString(plate, 2, 1);
+        return string.IsNullOrEmpty(plate) ? plate : plate.Length < 2 ? plate : Mask(plate, 2, 1);
     }
 
     /// <summary>
@@ -224,4 +251,25 @@ public static partial class DesensitizationHelper
 
         return json;
     }
+
+    [GeneratedRegex("(.{3}).*(.{4})")]
+    private static partial Regex Regex11();
+
+    [GeneratedRegex("(.{3}).*(.{3})")]
+    private static partial Regex Regex10();
+
+    [GeneratedRegex("(.{2}).*(.{3})")]
+    private static partial Regex Regex9();
+
+    [GeneratedRegex("(.{2}).*(.{2})")]
+    private static partial Regex Regex8();
+
+    [GeneratedRegex("(.{1}).*(.{2})")]
+    private static partial Regex Regex7();
+
+    [GeneratedRegex("(.{1}).*(.{1})")]
+    private static partial Regex Regex6();
+
+    [GeneratedRegex("(.{1}).*")]
+    private static partial Regex RegexDefault();
 }
