@@ -534,90 +534,183 @@ public static partial class RegexHelper
 
     #endregion 是否 Cron 表达式
 
+    /// <summary>
+    /// 验证输入字符串是否与模式字符串匹配，匹配返回 true
+    /// </summary>
     [GeneratedRegex(@"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex GuidRegex();
+    public static partial Regex GuidRegex();
 
+    /// <summary>
+    /// 验证电话号码是否符合格式
+    /// </summary>
     [GeneratedRegex(@"^(\d{3,4})\d{7,8}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberTelRegex();
+    public static partial Regex NumberTelRegex();
 
+    /// <summary>
+    /// 验证邮箱地址是否符合格式
+    /// </summary>
     [GeneratedRegex(@"^[A-Za-z0-9](([\.\-]?[a-zA-Z0-9]+)*)@([A-Za-z0-9]+)(([\.\-]?[a-zA-Z0-9]+)*)\.([A-Za-z]{2,})$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex EmailRegex();
+    public static partial Regex EmailRegex();
 
+    /// <summary>
+    /// 验证是否为整数
+    /// </summary>
     [GeneratedRegex(@"^(-){0,1}\d+$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex IntRegex();
+    public static partial Regex IntRegex();
 
+    /// <summary>
+    /// 验证是否为数字
+    /// </summary>
     [GeneratedRegex(@"^[0-9]*$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberRegex();
+    public static partial Regex NumberRegex();
 
+    /// <summary>
+    /// 验证是否为整数或小数
+    /// </summary>
     [GeneratedRegex(@"^[0-9]+\.{0,1}[0-9]{0,2}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberIntOrDoubleRegex();
+    public static partial Regex NumberIntOrDoubleRegex();
 
+    /// <summary>
+    /// 验证是否为N位数字
+    /// </summary>
     [GeneratedRegex(@"^\d{n}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberSeveralNRegex();
+    public static partial Regex NumberSeveralNRegex();
 
+    /// <summary>
+    /// 验证是否为至少N位数字
+    /// </summary>
     [GeneratedRegex(@"^\d{n,}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberSeveralAtLeastNRegex();
+    public static partial Regex NumberSeveralAtLeastNRegex();
 
+    /// <summary>
+    /// 验证是否为M至N位数字
+    /// </summary>
     [GeneratedRegex(@"^\d{m,n}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberSeveralMnRegex();
+    public static partial Regex NumberSeveralMnRegex();
 
+    /// <summary>
+    /// 验证是否为零或非零开头的数字
+    /// </summary>
     [GeneratedRegex(@"^(0|[1-9] [0-9]*)$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberBeginZeroOrNotZeroRegex();
+    public static partial Regex NumberBeginZeroOrNotZeroRegex();
 
+    /// <summary>
+    /// 验证是否为2位小数的正实数
+    /// </summary>
     [GeneratedRegex(@"^[0-9]+(.[0-9]{2})?$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberPositiveRealTwoDoubleRegex();
+    public static partial Regex NumberPositiveRealTwoDoubleRegex();
 
+    /// <summary>
+    /// 验证是否为1-3位小数的正实数
+    /// </summary>
     [GeneratedRegex(@"^[0-9]+(.[0-9]{1,3})?$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberPositiveRealOneOrThreeDoubleRegex();
+    public static partial Regex NumberPositiveRealOneOrThreeDoubleRegex();
 
+    /// <summary>
+    /// 验证是否为非零的正整数
+    /// </summary>
     [GeneratedRegex(@"^\+?[1-9][0-9]*$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberPositiveIntNotZeroRegex();
+    public static partial Regex NumberPositiveIntNotZeroRegex();
 
+    /// <summary>
+    /// 验证是否为非零的负整数
+    /// </summary>
     [GeneratedRegex(@"^\-?[1-9][0-9]*$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberNegativeIntNotZeroRegex();
+    public static partial Regex NumberNegativeIntNotZeroRegex();
 
+    /// <summary>
+    /// 验证是否为字母
+    /// </summary>
     [GeneratedRegex(@"^[A-Za-z]+$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex LetterRegex();
+    public static partial Regex LetterRegex();
 
+    /// <summary>
+    /// 验证是否为大写字母
+    /// </summary>
     [GeneratedRegex(@"^[A-Z]+$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex LetterCapitalRegex();
+    public static partial Regex LetterCapitalRegex();
 
+    /// <summary>
+    /// 验证是否为小写字母
+    /// </summary>
     [GeneratedRegex(@"^[a-z]+$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex LetterLowerRegex();
+    public static partial Regex LetterLowerRegex();
 
+    /// <summary>
+    /// 验证是否为数字或英文字母
+    /// </summary>
     [GeneratedRegex(@"^[A-Za-z0-9]+$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex NumberOrLetterRegex();
+    public static partial Regex NumberOrLetterRegex();
 
+    /// <summary>
+    /// 验证字符串长度是否在限定范围内
+    /// </summary>
     [GeneratedRegex(@"[^\x00-\xff]", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex LengthStrRegex();
+    public static partial Regex LengthStrRegex();
 
+    /// <summary>
+    /// 验证是否为长度为3的字符
+    /// </summary>
     [GeneratedRegex(@"^.{3}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex CharThreeRegex();
+    public static partial Regex CharThreeRegex();
 
+    /// <summary>
+    /// 验证是否为邮政编码
+    /// </summary>
     [GeneratedRegex(@"^\d{6}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex PostCodeRegex();
+    public static partial Regex PostCodeRegex();
 
+    /// <summary>
+    /// 验证是否含有特殊字符
+    /// </summary>
     [GeneratedRegex(@"[^%&',;=?$\x22]+", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex CharSpecialRegex();
+    public static partial Regex CharSpecialRegex();
 
+    /// <summary>
+    /// 验证是否包含汉字
+    /// </summary>
     [GeneratedRegex(@"^[\u4e00-\u9fa5]{0,}$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex ContainChineseRegex();
+    public static partial Regex ContainChineseRegex();
 
+    /// <summary>
+    /// 验证是否为汉字
+    /// </summary>
     [GeneratedRegex(@"[一-龥]", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex ChineseRegex();
+    public static partial Regex ChineseRegex();
 
+    /// <summary>
+    /// 验证是否为网址
+    /// </summary>
     [GeneratedRegex(@"^(((file|gopher|news|nntp|telnet|http|ftp|https|ftps|sftp)://)|(www\.))+(([a-zA-Z0-9\.-]+\.[a-zA-Z]{2,6})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}))(/[a-zA-Z0-9\&amp;%\./-~-]*)?$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex UrlRegex();
+    public static partial Regex UrlRegex();
 
+    /// <summary>
+    /// 验证是否为请求安全参数字符串
+    /// </summary>
+    [GeneratedRegex(@"(?<=password=|passwd=|pwd=|secret=|token=)[^&]+", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex RequestSecurityParamsRegex();
+
+    /// <summary>
+    /// 验证是否为月份
+    /// </summary>
     [GeneratedRegex(@"^^(0?[1-9]|1[0-2])$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex MonthRegex();
+    public static partial Regex MonthRegex();
 
+    /// <summary>
+    /// 验证是否为日期
+    /// </summary>
     [GeneratedRegex(@"^((0?[1-9])|((1|2)[0-9])|30|31)$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex DayRegex();
+    public static partial Regex DayRegex();
 
+    /// <summary>
+    /// 验证是否为IP地址
+    /// </summary>
     [GeneratedRegex(@"^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex IpRegex();
+    public static partial Regex IpRegex();
 
+    /// <summary>
+    /// 验证是否为Cron表达式
+    /// </summary>
     [GeneratedRegex(@"^\\s*($|#|\\w+\\s*=|(\\?|\\*|(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?(?:,(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?)*)\\s+(\\?|\\*|(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?(?:,(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?)*)\\s+(\\?|\\*|(?:[01]?\\d|2[0-3])(?:(?:-|\\/|\\,)(?:[01]?\\d|2[0-3]))?(?:,(?:[01]?\\d|2[0-3])(?:(?:-|\\/|\\,)(?:[01]?\\d|2[0-3]))?)*)\\s+(\\?|\\*|(?:0?[1-9]|[12]\\d|3[01])(?:(?:-|\\/|\\,)(?:0?[1-9]|[12]\\d|3[01]))?(?:,(?:0?[1-9]|[12]\\d|3[01])(?:(?:-|\\/|\\,)(?:0?[1-9]|[12]\\d|3[01]))?)*)\\s+(\\?|\\*|(?:[1-9]|1[012])(?:(?:-|\\/|\\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\\/|\\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\\?|\\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\\s+(\\?|\\*|(?:[0-6])(?:(?:-|\\/|\\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\\/|\\,|#)(?:[0-6]))?(?:L)?)*|\\?|\\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\\s)+(\\?|\\*|(?:|\\d{4})(?:(?:-|\\/|\\,)(?:|\\d{4}))?(?:,(?:|\\d{4})(?:(?:-|\\/|\\,)(?:|\\d{4}))?)*))$", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex IsCron();
+    public static partial Regex IsCron();
 }
