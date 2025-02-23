@@ -54,7 +54,6 @@ public class FileVersioningService
             {
                 _ = versions.Pop();
             }
-
             return true;
         }
         return false;
