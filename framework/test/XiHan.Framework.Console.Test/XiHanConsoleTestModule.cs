@@ -18,6 +18,7 @@ using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.AspNetCore.Serilog;
 using XiHan.Framework.AspNetCore.SignalR;
 using XiHan.Framework.AspNetCore.Swagger;
+using XiHan.Framework.BlobStoring;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Ddd.Application;
@@ -28,6 +29,7 @@ namespace XiHan.Framework.Console.Test;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
+    typeof(XiHanBlobStoringModule),
     typeof(XiHanDddApplicationModule),
     typeof(XiHanAspNetCoreSerilogModule),
     typeof(XiHanAspNetCoreSignalRModule),

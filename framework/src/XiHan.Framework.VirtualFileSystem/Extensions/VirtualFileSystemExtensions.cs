@@ -33,8 +33,7 @@ public static class VirtualFileSystemExtensions
         configure?.Invoke(options);
 
         // 注册核心服务
-        _ = services
-            .AddSingleton<IVirtualFileSystem>(provider =>
+        _ = services.AddSingleton<IVirtualFileSystem>(provider =>
             {
                 var orderedProviders = options.Providers
                     .OrderByDescending(p => p.Priority)
@@ -42,12 +41,11 @@ public static class VirtualFileSystemExtensions
                     .ToList();
 
                 return new VirtualFileSystem(orderedProviders);
-            })
-            // 注册附加服务
-            .AddSingleton<FileCacheService>()
-            .AddSingleton<FileVersioningService>()
-            //.AddSingleton<FileOperationInterceptor>()
-            ;
+            });
+        // 注册附加服务
+        _ = services.AddSingleton<FileCacheService>();
+        _ = services.AddSingleton<FileVersioningService>();
+        // _ = services.AddSingleton<FileOperationInterceptor>();
 
         return services;
     }
