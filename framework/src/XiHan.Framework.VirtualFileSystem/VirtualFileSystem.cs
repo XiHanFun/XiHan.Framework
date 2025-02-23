@@ -26,9 +26,10 @@ namespace XiHan.Framework.VirtualFileSystem;
 /// </summary>
 public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
-    private readonly List<PrioritizedFileProvider> _providers = [];
-    private readonly IFileProvider _compositeProvider;
     private readonly Debouncer _changeDebouncer;
+
+    private readonly List<PrioritizedFileProvider> _providers = [];
+    private IFileProvider _compositeProvider;
 
     /// <summary>
     /// 初始化虚拟文件系统
@@ -36,10 +37,10 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// <param name="providers">初始文件提供程序集合</param>
     public VirtualFileSystem(IEnumerable<IFileProvider> providers)
     {
+        _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
         _compositeProvider = new VirtualCompositeFileProvider(
             providers.Select(p => new PrioritizedFileProvider(p, 0))
         );
-        _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
     }
 
     /// <summary>
