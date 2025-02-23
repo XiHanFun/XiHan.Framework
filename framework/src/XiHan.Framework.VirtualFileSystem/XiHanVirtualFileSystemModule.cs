@@ -34,10 +34,14 @@ public class XiHanVirtualFileSystemModule : XiHanModule
         {
             // 默认配置
             _ = config
-                .AddPhysical("wwwroot")      // 默认物理文件目录
-                                             //.AddEmbedded<Program>()      // 主程序集嵌入资源
-                .AddMemory()              // 启用文件缓存
-                                          //.EnableOperationLogging() // 启用操作日志
+            // 默认物理文件目录
+                .AddPhysical("wwwroot")
+                // 使用当前模块类型
+                .AddEmbedded<XiHanVirtualFileSystemModule>()
+                // 启用文件缓存
+                .AddMemory()
+                // 启用操作日志
+                //.EnableOperationLogging()
                 ;
 
             // 开发环境特殊配置

@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.BlobStoring\XiHan.Framework.BlobStoring.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj" />
   </ItemGroup>
 

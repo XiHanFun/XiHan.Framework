@@ -13,12 +13,16 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.BlobStoring;
 
 /// <summary>
 /// 曦寒框架粒子存储模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanVirtualFileSystemModule)
+    )]
 public class XiHanBlobStoringModule : XiHanModule
 {
     /// <summary>
