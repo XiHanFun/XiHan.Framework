@@ -6,7 +6,7 @@ namespace XiHan.Framework.VirtualFileSystem.Services;
 /// <summary>
 /// 文件缓存服务
 /// </summary>
-public class FileCacheService
+public class FileCacheService : IFileCacheService
 {
     private readonly IMemoryCache _cache;
     private readonly TimeSpan _defaultExpiration;
@@ -35,5 +35,14 @@ public class FileCacheService
             entry.AbsoluteExpirationRelativeToNow = _defaultExpiration;
             return factory();
         });
+    }
+
+    /// <summary>
+    /// 移除
+    /// </summary>
+    /// <param name="key"></param>
+    public void Remove(string key)
+    {
+        _cache.Remove(key);
     }
 }

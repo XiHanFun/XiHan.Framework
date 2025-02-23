@@ -14,10 +14,12 @@ try
     await app.InitializeApplicationAsync();
 
     await app.RunAsync();
+
+    Log.Information("应用启动");
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "应用意外关闭");
+    Log.Fatal(ex, "应用关闭");
 }
 finally
 {

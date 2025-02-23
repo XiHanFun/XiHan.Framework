@@ -21,7 +21,7 @@ namespace XiHan.Framework.VirtualFileSystem.Services;
 /// <summary>
 /// 文件版本控制服务
 /// </summary>
-public class FileVersioningService
+public class FileVersioningService : IFileVersioningService
 {
     private readonly ConcurrentDictionary<string, Stack<FileVersion>> _fileVersions = new();
 

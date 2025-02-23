@@ -29,6 +29,33 @@ public static class AssemblyHelper
     #region 程序集
 
     /// <summary>
+    /// 获取入口程序集
+    /// </summary>
+    /// <returns></returns>
+    public static Assembly? GetEntryAssembly()
+    {
+        return Assembly.GetEntryAssembly();
+    }
+
+    /// <summary>
+    /// 获取入口程序集
+    /// </summary>
+    /// <returns></returns>
+    public static string? GetEntryAssemblyName()
+    {
+        return GetEntryAssembly()?.GetName().Name;
+    }
+
+    /// <summary>
+    /// 获取入口程序集
+    /// </summary>
+    /// <returns></returns>
+    public static Version? GetEntryAssemblyVersion()
+    {
+        return GetEntryAssembly()?.GetName().Version;
+    }
+
+    /// <summary>
     /// 获取程序集文件
     /// </summary>
     /// <param name="folderPath"></param>

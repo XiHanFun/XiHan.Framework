@@ -108,14 +108,14 @@ public static class XiHanModuleHelper
         if (moduleTypes.Contains(moduleType))
         {
             // 构造当前节点的前缀和分支符号
-            var nodeContainsLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.FullName + "(此模块之前已加载)";
+            var nodeContainsLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace + "(此模块之前已加载)";
             ConsoleHelper.Handle(nodeContainsLine);
             //logger?.LogInformation(nodeContainsLine);
             return;
         }
 
         // 构造当前节点的前缀和分支符号
-        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.FullName;
+        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace;
         ConsoleHelper.Handle(nodeLine);
         //logger?.LogInformation(nodeLine);
 

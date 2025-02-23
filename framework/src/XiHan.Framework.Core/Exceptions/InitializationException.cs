@@ -37,7 +37,7 @@ public class InitializationException : Exception
     /// <param name="message"></param>
     public InitializationException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleHelper.Danger(DefaultMessage + message);
+        ConsoleHelper.Danger(DefaultMessage + Environment.NewLine + message);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class InitializationException : Exception
     /// <param name="innerException"></param>
     public InitializationException(string? message, Exception? innerException) : base(DefaultMessage + message, innerException)
     {
-        ConsoleHelper.Danger(DefaultMessage + message);
+        ConsoleHelper.Danger(DefaultMessage + Environment.NewLine + message + Environment.NewLine + innerException?.StackTrace);
     }
 
     /// <summary>

@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 
@@ -28,11 +29,19 @@ public class VirtualEmbeddedFileProvider : EmbeddedFileProvider
     public int Priority { get; }
 
     /// <summary>
+    /// 程序集
+    /// </summary>
+    public Assembly Assembly { get; }
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     public VirtualEmbeddedFileProvider(Assembly assembly, int priority = 50)
         : base(assembly)
     {
+        _ = CheckHelper.NotNull(assembly, nameof(assembly));
+
+        Assembly = assembly;
         Priority = priority;
     }
 

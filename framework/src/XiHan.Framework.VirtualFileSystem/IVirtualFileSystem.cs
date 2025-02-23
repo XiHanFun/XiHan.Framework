@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
+using XiHan.Framework.VirtualFileSystem.Events;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -22,6 +23,11 @@ namespace XiHan.Framework.VirtualFileSystem;
 /// </summary>
 public interface IVirtualFileSystem
 {
+    /// <summary>
+    /// 文件变化事件
+    /// </summary>
+    event EventHandler<FileChangedEventArgs> OnFileChanged;
+
     /// <summary>
     /// 异步获取文件信息
     /// </summary>
