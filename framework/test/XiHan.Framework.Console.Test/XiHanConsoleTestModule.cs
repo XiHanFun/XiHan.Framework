@@ -22,6 +22,8 @@ using XiHan.Framework.BlobStoring;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Ddd.Application;
+using XiHan.Framework.VirtualFileSystem;
+using XiHan.Framework.VirtualFileSystem.Options;
 
 namespace XiHan.Framework.Console.Test;
 
@@ -46,6 +48,15 @@ public class XiHanConsoleTestModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<VirtualFileSystemOptions>(config =>
+        {
+            // 默认配置
+            _ = config
+                // 默认物理文件目录
+                .AddPhysical("wwwroot")
+                // 使用当前模块类型
+                .AddEmbedded<XiHanVirtualFileSystemModule>();
+        });
     }
 
     /// <summary>
@@ -54,6 +65,16 @@ public class XiHanConsoleTestModule : XiHanModule
     /// <param name="context"></param>
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        // 获取文件系统实例
+        var fileSystem = context.ServiceProvider.GetRequiredService<IVirtualFileSystem>();
+
+        // 订阅文件变化事件
+        fileSystem.OnFileChanged += (sender, args) =>
+        {
+            // 处理文件变化逻辑
+            System.Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
+        };
+        _ = fileSystem.Watch("**/*");
     }
 
     /// <summary>

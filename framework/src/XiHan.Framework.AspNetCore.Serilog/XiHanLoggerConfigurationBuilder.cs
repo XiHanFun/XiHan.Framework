@@ -15,6 +15,7 @@
 using Serilog;
 using Serilog.Events;
 using System.Text;
+using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.AspNetCore.Serilog;
 
@@ -38,7 +39,7 @@ public class XiHanLoggerConfigurationBuilder
     {
         _loggerConfiguration = new LoggerConfiguration();
         _infoTemplate =
-          @"Date：{Timestamp:yyyy-MM-dd HH:mm:ss.fff}{NewLine}Level：{Level}{NewLine}Message：{Message}{NewLine}================{NewLine}";
+           @"Date：{Timestamp:yyyy-MM-dd HH:mm:ss.fff}{NewLine}Level：{Level}{NewLine}Message：{Message}{NewLine}================{NewLine}";
 
         _warnTemplate =
            @"Date：{Timestamp:yyyy-MM-dd HH:mm:ss.fff}{NewLine}Level：{Level}{NewLine}Source：{SourceContext}{NewLine}Message：{Message}{NewLine}================{NewLine}";
@@ -102,7 +103,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <param name="value"></param>
     /// <param name="destructureObjects"></param>
     /// <returns></returns>
-    public XiHanLoggerConfigurationBuilder EnrichWithProperty(string propertyName, object value, bool destructureObjects = false)
+    public XiHanLoggerConfigurationBuilder EnrichWithProperty(string propertyName, object? value, bool destructureObjects = false)
     {
         _ = _loggerConfiguration.Enrich.WithProperty(propertyName, value, destructureObjects);
         return this;
@@ -114,8 +115,8 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichWithPropertyDefault()
     {
-        _ = EnrichWithProperty("Application", "XiHan");
-        _ = EnrichWithProperty("Application1", "XiHan1");
+        _ = EnrichWithProperty("Application", AssemblyHelper.GetEntryAssemblyName());
+        _ = EnrichWithProperty("Version", AssemblyHelper.GetEntryAssemblyVersion());
         return this;
     }
 

@@ -13,10 +13,15 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using XiHan.Framework.Utils.Threading;
+using XiHan.Framework.VirtualFileSystem.Events;
+using XiHan.Framework.VirtualFileSystem.Options;
 using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Composite;
+using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
+using XiHan.Framework.VirtualFileSystem.Providers.Physical;
 using XiHan.Framework.VirtualFileSystem.Utilities;
 
 namespace XiHan.Framework.VirtualFileSystem;
@@ -26,22 +31,64 @@ namespace XiHan.Framework.VirtualFileSystem;
 /// </summary>
 public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
+    // 文件提供程序集合
+    private readonly List<PrioritizedFileProvider> _providers = [];
+
+    // 组合文件提供程序
+    private IFileProvider _compositeProvider;
+
+    // 存储物理路径
+    private readonly List<string> _physicalPaths = [];
+
+    // 存储嵌入资源路径
+    private readonly List<Type> _embeddedResourceTypes = [];
+
+    // 文件变化防抖处理器
     private readonly Debouncer _changeDebouncer;
 
-    private readonly List<PrioritizedFileProvider> _providers = [];
-    private IFileProvider _compositeProvider;
+    // 缓存文件状态
+    private readonly Dictionary<string, DateTime> _fileStateCache = [];
 
     /// <summary>
     /// 初始化虚拟文件系统
     /// </summary>
-    /// <param name="providers">初始文件提供程序集合</param>
-    public VirtualFileSystem(IEnumerable<IFileProvider> providers)
+    /// <param name="options">虚拟文件系统配置选项</param>
+    public VirtualFileSystem(IOptions<VirtualFileSystemOptions> options)
     {
+        var virtualFileSystemOptions = options.Value;
+        var providers = virtualFileSystemOptions.Providers
+            .OrderByDescending(p => p.Priority)
+            .Select(p => p.Provider)
+            .ToList();
+
         _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
         _compositeProvider = new VirtualCompositeFileProvider(
             providers.Select(p => new PrioritizedFileProvider(p, 0))
         );
+
+        foreach (var provider in providers)
+        {
+            if (provider is VirtualPhysicalFileProvider physicalProvider)
+            {
+                _physicalPaths.Add(physicalProvider.Root);
+                // 初始化时记录已存在的文件
+                var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
+                foreach (var file in files)
+                {
+                    _fileStateCache[file] = File.GetLastWriteTime(file);
+                }
+            }
+            else if (provider is VirtualEmbeddedFileProvider embeddedProvider)
+            {
+                _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
+            }
+        }
     }
+
+    /// <summary>
+    /// 文件变化事件
+    /// </summary>
+    public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
 
     /// <summary>
     /// 异步获取文件信息
@@ -94,10 +141,21 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         // 应用防抖处理
         _changeDebouncer.Debounce(() =>
         {
-            if (originalToken.HasChanged)
+            // 注册回调以触发事件
+            _ = originalToken.RegisterChangeCallback(_ =>
             {
-                //TODO: 通知变化
-            }
+                // 获取变化的文件列表
+                var changedFiles = GetChangedFiles(filter);
+
+                // 遍历变化的文件并触发事件
+                foreach (var file in changedFiles)
+                {
+                    OnFileChanged?.Invoke(this, new FileChangedEventArgs(file.Path, file.ChangeType));
+                }
+
+                // 重新注册监听，实现持续监控
+                _ = Watch(filter);
+            }, null);
         });
         return originalToken;
     }
@@ -137,7 +195,97 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public void Dispose()
     {
+        // 释放防抖器资源
+        _changeDebouncer.Dispose();
+
+        // 释放组合文件提供程序资源
         (_compositeProvider as IDisposable)?.Dispose();
+
+        // 清空文件状态缓存
+        _fileStateCache.Clear();
+
+        // 清空物理路径列表
+        _physicalPaths.Clear();
+
+        // 清空嵌入资源类型列表
+        _embeddedResourceTypes.Clear();
+
+        // 清空文件提供程序集合
+        _providers.Clear();
+    }
+
+    #region 私有方法
+
+    /// <summary>
+    /// 获取变化的文件列表
+    /// </summary>
+    /// <param name="filter"></param>
+    /// <returns></returns>
+    private IEnumerable<(string Path, FileChangeType ChangeType)> GetChangedFiles(string filter)
+    {
+        var changedFiles = new List<(string Path, FileChangeType ChangeType)>();
+
+        // 检查物理路径中的文件变化
+        foreach (var physicalPath in _physicalPaths)
+        {
+            var files = Directory.GetFiles(physicalPath, "*.*", SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                var fileInfo = new FileInfo(file);
+                if (!_fileStateCache.TryGetValue(file, out var lastWriteTime))
+                {
+                    changedFiles.Add((file, FileChangeType.Created));
+                    _fileStateCache[file] = fileInfo.LastWriteTime;
+                }
+                else if (lastWriteTime != fileInfo.LastWriteTime)
+                {
+                    // 修改文件
+                    changedFiles.Add((file, FileChangeType.Modified));
+                    _fileStateCache[file] = fileInfo.LastWriteTime;
+                }
+            }
+
+            // 检查删除的文件
+            var deletedFiles = _fileStateCache.Keys
+                .Where(k => k.StartsWith(physicalPath) && !files.Contains(k))
+                .ToList();
+            foreach (var file in deletedFiles)
+            {
+                changedFiles.Add((file, FileChangeType.Deleted));
+                _ = _fileStateCache.Remove(file);
+            }
+        }
+
+        // 检查嵌入资源中的文件变化
+        foreach (var type in _embeddedResourceTypes)
+        {
+            var assembly = type.Assembly;
+            var resourceNames = assembly.GetManifestResourceNames()
+                .Where(name => name.EndsWith(filter, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var resourceName in resourceNames)
+            {
+                if (!_fileStateCache.ContainsKey(resourceName))
+                {
+                    // 新增资源
+                    changedFiles.Add((resourceName, FileChangeType.Created));
+                    // 嵌入资源无法获取修改时间，使用当前时间
+                    _fileStateCache[resourceName] = DateTime.UtcNow;
+                }
+            }
+
+            // 检查删除的资源
+            var deletedResources = _fileStateCache.Keys
+                .Where(k => k.StartsWith(assembly.GetName().Name!) && !resourceNames.Contains(k))
+                .ToList();
+            foreach (var resource in deletedResources)
+            {
+                changedFiles.Add((resource, FileChangeType.Deleted));
+                _ = _fileStateCache.Remove(resource);
+            }
+        }
+
+        return changedFiles;
     }
 
     /// <summary>
@@ -155,4 +303,6 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             orderedProviders.Select(p => new PrioritizedFileProvider(p, 0))
         );
     }
+
+    #endregion 私有方法
 }
