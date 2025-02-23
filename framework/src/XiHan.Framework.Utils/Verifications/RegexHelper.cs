@@ -98,7 +98,7 @@ public static partial class RegexHelper
     public static bool IsNumberPeople18(string checkValue)
     {
         // 数字验证
-        if (long.TryParse(checkValue.Remove(17), out var n) == false || n < Math.Pow(10, 16) ||
+        if (long.TryParse(checkValue[..17], out var n) == false || n < Math.Pow(10, 16) ||
             long.TryParse(checkValue.Replace('x', '0').Replace('X', '0'), out _) == false)
         {
             return false;
@@ -106,7 +106,7 @@ public static partial class RegexHelper
 
         // 省份验证
         const string Address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
-        if (!Address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
+        if (!Address.Contains(checkValue[..2], StringComparison.CurrentCulture))
         {
             return false;
         }
@@ -121,7 +121,7 @@ public static partial class RegexHelper
         // 校验码验证
         var arrVerifyCode = "1,0,x,9,8,7,6,5,4,3,2".Split(',');
         var wi = "7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2".Split(',');
-        var ai = checkValue.Remove(17).ToCharArray();
+        var ai = checkValue[..17].ToCharArray();
         var sum = 0;
         for (var i = 0; i < 17; i++)
         {
@@ -148,7 +148,7 @@ public static partial class RegexHelper
 
         // 省份验证
         const string Address = "11x22x35x44x53x12x23x36x45x54x13x31x37x46x61x14x32x41x50x62x15x33x42x51x63x21x34x43x52x64x65x71x81x82x91";
-        if (!Address.Contains(checkValue.Remove(2), StringComparison.CurrentCulture))
+        if (!Address.Contains(checkValue[..2], StringComparison.CurrentCulture))
         {
             return false;
         }
@@ -713,4 +713,38 @@ public static partial class RegexHelper
     /// </summary>
     [GeneratedRegex(@"^\\s*($|#|\\w+\\s*=|(\\?|\\*|(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?(?:,(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?)*)\\s+(\\?|\\*|(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?(?:,(?:[0-5]?\\d)(?:(?:-|\\/|\\,)(?:[0-5]?\\d))?)*)\\s+(\\?|\\*|(?:[01]?\\d|2[0-3])(?:(?:-|\\/|\\,)(?:[01]?\\d|2[0-3]))?(?:,(?:[01]?\\d|2[0-3])(?:(?:-|\\/|\\,)(?:[01]?\\d|2[0-3]))?)*)\\s+(\\?|\\*|(?:0?[1-9]|[12]\\d|3[01])(?:(?:-|\\/|\\,)(?:0?[1-9]|[12]\\d|3[01]))?(?:,(?:0?[1-9]|[12]\\d|3[01])(?:(?:-|\\/|\\,)(?:0?[1-9]|[12]\\d|3[01]))?)*)\\s+(\\?|\\*|(?:[1-9]|1[012])(?:(?:-|\\/|\\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\\/|\\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\\?|\\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\\s+(\\?|\\*|(?:[0-6])(?:(?:-|\\/|\\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\\/|\\,|#)(?:[0-6]))?(?:L)?)*|\\?|\\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\\s)+(\\?|\\*|(?:|\\d{4})(?:(?:-|\\/|\\,)(?:|\\d{4}))?(?:,(?:|\\d{4})(?:(?:-|\\/|\\,)(?:|\\d{4}))?)*))$", RegexOptions.IgnoreCase, "zh-CN")]
     public static partial Regex IsCron();
+
+    /// <summary>
+    /// 验证是否为 Windows 普通文件路径
+    /// </summary>
+    /// <returns></returns>
+    [GeneratedRegex(@"^(?:[a-zA-Z]:\\|\\\\)?(?:[^\\\/:*?""<>|\r\n]+\\)*[^\\\/:*?""<>|\r\n]+\\?$", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex WindowsPathRegex();
+
+    /// <summary>
+    /// 验证是否为 Linux 普通文件路径
+    /// </summary>
+    /// <returns></returns>
+    [GeneratedRegex(@"^(\/|\/?([^/\0]+(\/[^/\0]+)*\/?))$", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex LinuxPathRegex();
+
+    /// <summary>
+    /// 验证是否为虚拟文件路径
+    /// </summary>
+    /// <returns></returns>
+    [GeneratedRegex(@"^(~\/|\/)([a-zA-Z0-9_\-\.]+(\/[a-zA-Z0-9_\-\.]+)*)\/?$", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex VirtualPathRegex();
+
+    /// <summary>
+    /// 验证是否为嵌入文件路径
+    /// </summary>
+    [GeneratedRegex(@"^embedded://(?<assembly>[^/]+)/(?<path>.*)$", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex EmbeddedPathRegex();
+
+    /// <summary>
+    /// 验证是否为内存文件路径
+    /// </summary>
+    /// <returns></returns>
+    [GeneratedRegex(@"^(?i:(?:memory|mem):\/\/).+$", RegexOptions.IgnoreCase, "zh-CN")]
+    public static partial Regex MemoryPathRegex();
 }

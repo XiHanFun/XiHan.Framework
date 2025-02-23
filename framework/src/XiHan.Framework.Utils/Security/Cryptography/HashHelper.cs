@@ -105,4 +105,37 @@ public static class HashHelper
         var hashBytes = MD5.HashData(stream);
         return Convert.ToHexString(hashBytes);
     }
+
+    /// <summary>
+    /// 对数据流进行 SHA256 生成哈希
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static string StreamHash(Stream data)
+    {
+        var hashBytes = SHA256.HashData(data);
+        return Convert.ToHexString(hashBytes);
+    }
+
+    /// <summary>
+    /// 对二进制数据进行 MD5 生成哈希
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static string ByteMd5(byte[] data)
+    {
+        var hashBytes = MD5.HashData(data);
+        return Convert.ToHexString(hashBytes);
+    }
+
+    /// <summary>
+    /// 对二进制数据进行 SHA256 生成哈希
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static string ByteHash(byte[] data)
+    {
+        var hashBytes = SHA256.HashData(data);
+        return Convert.ToHexString(hashBytes);
+    }
 }
