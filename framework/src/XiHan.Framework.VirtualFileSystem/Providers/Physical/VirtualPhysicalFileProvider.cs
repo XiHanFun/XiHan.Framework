@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.VirtualFileSystem.Providers.Physical;
 
@@ -31,6 +32,13 @@ public class VirtualPhysicalFileProvider : PhysicalFileProvider
     /// </summary>
     public VirtualPhysicalFileProvider(string root, int priority = 100) : base(root)
     {
+        _ = CheckHelper.NotNull(root, nameof(root));
+
+        if (!Path.IsPathRooted(root))
+        {
+            throw new ArgumentException("必须提供绝对路径", nameof(root));
+        }
+
         Priority = priority;
     }
 

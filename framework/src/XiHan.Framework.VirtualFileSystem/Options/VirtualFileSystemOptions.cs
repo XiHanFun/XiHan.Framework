@@ -14,7 +14,6 @@
 
 using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
-using XiHan.Framework.VirtualFileSystem.Providers.Memory;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
 
 namespace XiHan.Framework.VirtualFileSystem.Options;
@@ -24,7 +23,10 @@ namespace XiHan.Framework.VirtualFileSystem.Options;
 /// </summary>
 public class VirtualFileSystemOptions
 {
-    internal List<PrioritizedFileProvider> Providers { get; } = [];
+    /// <summary>
+    /// 文件提供程序集合
+    /// </summary>
+    public List<PrioritizedFileProvider> Providers { get; } = [];
 
     /// <summary>
     /// 添加物理文件提供程序
@@ -34,7 +36,15 @@ public class VirtualFileSystemOptions
     /// <returns>配置选项实例</returns>
     public VirtualFileSystemOptions AddPhysical(string rootPath, int priority = 100)
     {
-        var provider = new VirtualPhysicalFileProvider(rootPath, priority);
+        var fullPath = Path.GetFullPath(rootPath);
+
+        // 自动创建不存在的目录
+        if (!Directory.Exists(fullPath))
+        {
+            _ = Directory.CreateDirectory(fullPath);
+        }
+
+        var provider = new VirtualPhysicalFileProvider(fullPath, priority);
         Providers.Add(new PrioritizedFileProvider(provider, priority));
         return this;
     }
@@ -49,18 +59,6 @@ public class VirtualFileSystemOptions
     {
         var assembly = typeof(TAssembly).Assembly;
         var provider = new VirtualEmbeddedFileProvider(assembly, priority);
-        Providers.Add(new PrioritizedFileProvider(provider, priority));
-        return this;
-    }
-
-    /// <summary>
-    /// 添加内存文件提供程序
-    /// </summary>
-    /// <param name="priority"></param>
-    /// <returns></returns>
-    public VirtualFileSystemOptions AddMemory(int priority = 0)
-    {
-        var provider = new VirtualMemoryFileProvider();
         Providers.Add(new PrioritizedFileProvider(provider, priority));
         return this;
     }

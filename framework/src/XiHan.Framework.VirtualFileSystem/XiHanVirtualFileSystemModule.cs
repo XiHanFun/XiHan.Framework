@@ -13,9 +13,8 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem.Extensions;
+using XiHan.Framework.VirtualFileSystem.Services;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -30,42 +29,12 @@ public class XiHanVirtualFileSystemModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        _ = context.Services.AddXihanVirtualFileSystem(config =>
-        {
-            // 默认配置
-            _ = config
-            // 默认物理文件目录
-                .AddPhysical("wwwroot")
-                // 使用当前模块类型
-                .AddEmbedded<XiHanVirtualFileSystemModule>()
-                // 启用文件缓存
-                .AddMemory()
-                // 启用操作日志
-                //.EnableOperationLogging()
-                ;
+        var services = context.Services;
 
-            // 开发环境特殊配置
-            //if (context.Services.IsDevelopment())
-            //{
-            //    _ = config
-            //        .AddMemoryStorage(mem => // 内存文件系统
-            //        {
-            //            mem.Priority = 200;
-            //        })
-            //        .AddRemoteFileProvider("https://cdn.xihan.com"); // 开发环境CDN
-        });
-    }
-
-    /// <summary>
-    /// 应用初始化
-    /// </summary>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        // 初始化文件系统监控等
-        var fileSystem = context.ServiceProvider.GetRequiredService<IVirtualFileSystem>();
-        _ = fileSystem.Watch("**/*").RegisterChangeCallback(_ =>
-        {
-            // 文件变化处理逻辑
-        }, null);
+        // 注册核心服务
+        _ = services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
+        // 注册附加服务
+        _ = services.AddSingleton<IFileCacheService, FileCacheService>();
+        _ = services.AddSingleton<IFileVersioningService, FileVersioningService>();
     }
 }
