@@ -12,12 +12,15 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.VirtualFileSystem.Extensions;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
 /// <summary>
-/// 曦寒框架虚拟文件系统模块
+/// 曦寒虚拟文件系统模块
 /// </summary>
 public class XiHanVirtualFileSystemModule : XiHanModule
 {
@@ -27,5 +30,38 @@ public class XiHanVirtualFileSystemModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        _ = context.Services.AddXihanVirtualFileSystem(config =>
+        {
+            // 默认配置
+            _ = config
+                .AddPhysical("wwwroot")      // 默认物理文件目录
+                                             //.AddEmbedded<Program>()      // 主程序集嵌入资源
+                .AddMemory()              // 启用文件缓存
+                                          //.EnableOperationLogging() // 启用操作日志
+                ;
+
+            // 开发环境特殊配置
+            //if (context.Services.IsDevelopment())
+            //{
+            //    _ = config
+            //        .AddMemoryStorage(mem => // 内存文件系统
+            //        {
+            //            mem.Priority = 200;
+            //        })
+            //        .AddRemoteFileProvider("https://cdn.xihan.com"); // 开发环境CDN
+        });
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        // 初始化文件系统监控等
+        var fileSystem = context.ServiceProvider.GetRequiredService<IVirtualFileSystem>();
+        _ = fileSystem.Watch("**/*").RegisterChangeCallback(_ =>
+        {
+            // 文件变化处理逻辑
+        }, null);
     }
 }
