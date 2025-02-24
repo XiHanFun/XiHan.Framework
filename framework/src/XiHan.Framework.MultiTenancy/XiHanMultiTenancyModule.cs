@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Localization;
-using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.MultiTenancy;
 
@@ -22,7 +21,6 @@ namespace XiHan.Framework.MultiTenancy;
 /// 曦寒多租户模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanVirtualFileSystemModule),
     typeof(XiHanLocalizationModule)
 )]
 public class XiHanMultiTenancyModule : XiHanModule
