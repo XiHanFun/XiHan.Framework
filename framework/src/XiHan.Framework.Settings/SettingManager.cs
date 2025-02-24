@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
@@ -26,7 +27,7 @@ namespace XiHan.Framework.Settings;
 /// <summary>
 /// 设置管理器
 /// </summary>
-public class SettingManager : ISettingManager
+public class SettingManager : ISettingManager, ISingletonDependency
 {
     private readonly ILogger<SettingManager> _logger;
     private readonly ISettingStore _settingStore;
@@ -127,7 +128,7 @@ public class SettingManager : ISettingManager
             }
         }
 
-        value ??= await _settingStore.GetOrNullAsync(name, scope) ?? definition.DefaultValue;
+        value ??= await _settingStore.GetOrNullAsync(name, definition.Name, null) ?? definition.DefaultValue;
 
         if (definition.IsEncrypted && !string.IsNullOrEmpty(value))
         {
@@ -165,7 +166,7 @@ public class SettingManager : ISettingManager
             value = EncryptValue(value);
         }
 
-        await _settingStore.SetValueAsync(name, value, scope);
+        await _settingStore.SetValueAsync(name, value, definition.Name, null);
 
         // 触发变更事件
         OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(name, scope, value));
