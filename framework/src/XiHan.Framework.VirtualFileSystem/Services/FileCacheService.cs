@@ -1,48 +1,73 @@
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 namespace XiHan.Framework.VirtualFileSystem.Services;
 
 /// <summary>
-/// ÎÄ¼ş»º´æ·şÎñ
+/// æ–‡ä»¶ç¼“å­˜æœåŠ¡
 /// </summary>
 public class FileCacheService : IFileCacheService
 {
-    private readonly IMemoryCache _cache;
-    private readonly TimeSpan _defaultExpiration;
+    private readonly MemoryCache _cache;
+    private readonly ILogger<FileCacheService> _logger;
 
     /// <summary>
-    /// ¹¹Ôìº¯Êı
+    /// æ„é€ å‡½æ•°
     /// </summary>
-    /// <param name="memoryCache"></param>
-    /// <param name="defaultExpiration"></param>
-    public FileCacheService(IMemoryCache memoryCache, TimeSpan defaultExpiration)
+    /// <param name="logger"></param>
+    public FileCacheService(ILogger<FileCacheService> logger)
     {
-        _cache = memoryCache;
-        _defaultExpiration = defaultExpiration;
-    }
-
-    /// <summary>
-    /// »ñÈ¡»ò»º´æ
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="factory"></param>
-    /// <returns></returns>
-    public IFileInfo? GetOrCache(string key, Func<IFileInfo> factory)
-    {
-        return _cache.GetOrCreate(key, entry =>
+        _cache = new MemoryCache(new MemoryCacheOptions
         {
-            entry.AbsoluteExpirationRelativeToNow = _defaultExpiration;
-            return factory();
+            // 100MB
+            SizeLimit = 1024 * 1024 * 100
         });
+        _logger = logger;
     }
 
     /// <summary>
-    /// ÒÆ³ı
+    /// è·å–æˆ–æ·»åŠ ç¼“å­˜
     /// </summary>
-    /// <param name="key"></param>
-    public void Remove(string key)
+    /// <param name="path"></param>
+    /// <param name="factory"></param>
+    /// <param name="expiration"></param>
+    /// <returns></returns>
+    public async Task<byte[]> GetOrAddAsync(string path, Func<Task<byte[]>> factory, TimeSpan? expiration = null)
     {
-        _cache.Remove(key);
+        if (_cache.TryGetValue(path, out var cachedContent) && cachedContent is byte[] content)
+        {
+            return content;
+        }
+
+        content = await factory();
+        var cacheEntryOptions = new MemoryCacheEntryOptions()
+            .SetSize(content.Length)
+            .SetPriority(CacheItemPriority.Normal);
+
+        if (expiration.HasValue)
+        {
+            _ = cacheEntryOptions.SetAbsoluteExpiration(expiration.Value);
+        }
+
+        _ = _cache.Set(path, content, cacheEntryOptions);
+        return content;
+    }
+
+    /// <summary>
+    /// æ¸…é™¤ç¼“å­˜
+    /// </summary>
+    /// <param name="path"></param>
+    public void Remove(string path)
+    {
+        _cache.Remove(path);
+        _logger.LogInformation("å·²æ¸…é™¤æ–‡ä»¶ç¼“å­˜: {Path}", path);
+    }
+
+    /// <summary>
+    /// æ¸…é™¤æ‰€æœ‰ç¼“å­˜
+    /// </summary>
+    public void Clear()
+    {
+        _cache.Clear();
     }
 }
