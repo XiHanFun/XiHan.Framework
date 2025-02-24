@@ -20,6 +20,7 @@ using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Threading;
 using XiHan.Framework.VirtualFileSystem.Events;
 using XiHan.Framework.VirtualFileSystem.Options;
+using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Composite;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;

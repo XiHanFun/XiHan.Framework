@@ -24,33 +24,36 @@ public static partial class PathResolver
     /// <summary>
     /// 解析虚拟路径
     /// </summary>
-    /// <param name="virtualPath">输入的虚拟路径</param>
+    /// <param name="virtualPath"></param>
     /// <returns></returns>
     public static string ResolveVirtualPath(string virtualPath)
     {
-        var match = RegexHelper.VirtualPathRegex().Match(virtualPath);
-        return match.Success ? match.Groups["path"].Value : virtualPath;
+        return RegexHelper.VirtualPathRegex().Match(virtualPath) is { Success: true } match
+            ? match.Groups["path"].Value
+            : virtualPath;
     }
 
     /// <summary>
-    /// 解析虚拟路径
+    /// 解析嵌入式文件路径
     /// </summary>
-    /// <param name="embeddedPath">输入的虚拟路径</param>
+    /// <param name="embeddedPath"></param>
     /// <returns></returns>
     public static string ResolveEmbeddedPath(string embeddedPath)
     {
-        var match = RegexHelper.EmbeddedPathRegex().Match(embeddedPath);
-        return match.Success ? match.Groups["path"].Value : embeddedPath;
+        return RegexHelper.EmbeddedPathRegex().Match(embeddedPath) is { Success: true } match
+            ? match.Groups["path"].Value
+            : embeddedPath;
     }
 
     /// <summary>
-    /// 内存路径解析
+    /// 解析内存路径
     /// </summary>
     /// <param name="memoryPath"></param>
     /// <returns></returns>
     public static string ResolveMemoryPath(string memoryPath)
     {
-        var math = RegexHelper.MemoryPathRegex().Match(memoryPath);
-        return math.Success ? math.Groups["path"].Value : memoryPath;
+        return RegexHelper.MemoryPathRegex().Match(memoryPath) is { Success: true } match
+            ? match.Groups["path"].Value
+            : memoryPath;
     }
 }

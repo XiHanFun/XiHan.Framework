@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Reflection;
+using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
 
@@ -57,6 +59,19 @@ public class VirtualFileSystemOptions
     public VirtualFileSystemOptions AddEmbedded<TAssembly>(int priority = 50)
     {
         var assembly = typeof(TAssembly).Assembly;
+        var provider = new VirtualEmbeddedFileProvider(assembly, priority);
+        Providers.Add(new PrioritizedFileProvider(provider, priority));
+        return this;
+    }
+
+    /// <summary>
+    /// 添加嵌入式资源提供程序
+    /// </summary>
+    /// <param name="assembly">资源所在程序集</param>
+    /// <param name="priority">提供程序优先级</param>
+    /// <returns>配置选项实例</returns>
+    public VirtualFileSystemOptions AddEmbedded(Assembly assembly, int priority = 50)
+    {
         var provider = new VirtualEmbeddedFileProvider(assembly, priority);
         Providers.Add(new PrioritizedFileProvider(provider, priority));
         return this;
