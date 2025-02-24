@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Settings.Options;
 using XiHan.Framework.Settings.Providers;
@@ -31,23 +29,12 @@ public class XiHanSettingsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        var services = context.Services;
-        var configuration = services.GetConfiguration();
-
-        // 配置选项
-        _ = services.Configure<SettingOptions>(configuration.GetSection("Settings"));
-
-        _ = services.AddMemoryCache();
-        _ = services.AddSingleton<ISettingManager, SettingManager>();
-
-        // 注册默认提供程序
-        _ = services.AddTransient<ISettingValueProvider, DefaultValueSettingValueProvider>();
-
-        // 自动注册其他提供程序
-        //services.Scan(scan => scan
-        //    .FromAssemblyOf<XiHanSettingsModule>()
-        //    .AddClasses(classes => classes.AssignableTo<ISettingValueProvider>())
-        //    .As<ISettingValueProvider>()
-        //    .WithTransientLifetime());
+        Configure<XiHanSettingOptions>(options =>
+        {
+            options.ValueProviders.Add<DefaultValueSettingValueProvider>();
+            options.ValueProviders.Add<ConfigurationSettingValueProvider>();
+            options.ValueProviders.Add<GlobalSettingValueProvider>();
+            options.ValueProviders.Add<UserSettingValueProvider>();
+        });
     }
 }
