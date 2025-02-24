@@ -30,6 +30,7 @@
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
     <Project Path="src/XiHan.Framework.ObjectMapping.Mapster/XiHan.Framework.ObjectMapping.Mapster.csproj" Id="739a42c8-c5bb-4578-a3c3-8ef0d9ec60ab" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
+    <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" Id="2a971048-9a03-4279-b5b3-e8ffe7f28111" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" Id="d3fa9dfb-37e6-4752-8263-f67c03be75b9" />
     <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.TextTemplating.csproj" />
