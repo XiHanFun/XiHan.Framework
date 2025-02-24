@@ -12,6 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using System.Diagnostics.CodeAnalysis;
+using XiHan.Framework.Settings.Definitions;
+
 namespace XiHan.Framework.Settings.Stores;
 
 /// <summary>
@@ -22,10 +25,28 @@ public interface ISettingStore
     /// <summary>
     /// 获取设置值
     /// </summary>
-    Task<string?> GetOrNullAsync(string name, SettingScope scope);
+    /// <param name="name">设置名称</param>
+    /// <param name="providerName">提供者名称</param>
+    /// <param name="providerKey">提供者键</param>
+    /// <returns>设置值</returns>
+    Task<string?> GetOrNullAsync([NotNull] string name, string? providerName, string? providerKey);
+
+    /// <summary>
+    /// 获取所有设置值
+    /// </summary>
+    /// <param name="names">设置名称数组</param>
+    /// <param name="providerName">提供者名称</param>
+    /// <param name="providerKey">提供者键</param>
+    /// <returns>设置值列表</returns>
+    Task<List<SettingValue>> GetAllAsync([NotNull] string[] names, string? providerName, string? providerKey);
 
     /// <summary>
     /// 设置值
     /// </summary>
-    Task SetValueAsync(string name, string? value, SettingScope scope);
+    /// <param name="name">设置名称</param>
+    /// <param name="value">设置值</param>
+    /// <param name="providerName">提供者名称</param>
+    /// <param name="providerKey">提供者键</param>
+    /// <returns>任务</returns>
+    Task SetValueAsync(string name, string? value, string? providerName, string? providerKey);
 }

@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultValueSettingValueProvider
-// Guid:b5772b79-1162-4526-9263-35de4037c11b
+// FileName:GlobalSettingValueProvider
+// Guid:5c09f57c-fd37-4cc0-a1c2-f80fb312d8e9
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/25 4:44:16
+// CreateTime:2025/2/25 4:45:28
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -18,14 +18,14 @@ using XiHan.Framework.Settings.Stores;
 namespace XiHan.Framework.Settings.Providers;
 
 /// <summary>
-/// 默认值设置值提供者
+/// 全局设置值提供者
 /// </summary>
-public class DefaultValueSettingValueProvider : SettingValueProvider
+public class GlobalSettingValueProvider : SettingValueProvider
 {
     /// <summary>
     /// 提供者名称
     /// </summary>
-    public const string ProviderName = "D";
+    public const string ProviderName = "G";
 
     /// <summary>
     /// 名称
@@ -36,7 +36,7 @@ public class DefaultValueSettingValueProvider : SettingValueProvider
     /// 构造函数
     /// </summary>
     /// <param name="settingStore"></param>
-    public DefaultValueSettingValueProvider(ISettingStore settingStore)
+    public GlobalSettingValueProvider(ISettingStore settingStore)
         : base(settingStore)
     {
     }
@@ -48,7 +48,7 @@ public class DefaultValueSettingValueProvider : SettingValueProvider
     /// <returns></returns>
     public override Task<string?> GetOrNullAsync(SettingDefinition setting)
     {
-        return Task.FromResult(setting.DefaultValue);
+        return SettingStore.GetOrNullAsync(setting.Name, Name, null);
     }
 
     /// <summary>
@@ -58,6 +58,6 @@ public class DefaultValueSettingValueProvider : SettingValueProvider
     /// <returns></returns>
     public override Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
-        return Task.FromResult(settings.Select(x => new SettingValue(x.Name, x.DefaultValue)).ToList());
+        return SettingStore.GetAllAsync(settings.Select(x => x.Name).ToArray(), Name, null);
     }
 }

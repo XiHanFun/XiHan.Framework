@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AesOptions
+// FileName:XiHanAesOptions
 // Guid:c83f458d-bee6-4ffc-9ff9-68061d90e6bf
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,9 +15,9 @@
 namespace XiHan.Framework.Settings.Options;
 
 /// <summary>
-/// Aes选项
+/// 曦寒 Aes 选项
 /// </summary>
-public class AesOptions
+public class XiHanAesOptions
 {
     /// <summary>
     /// 密钥
