@@ -55,7 +55,7 @@ public class XiHanConsoleTestModule : XiHanModule
                 // 默认物理文件目录
                 .AddPhysical("wwwroot")
                 // 使用当前模块类型
-                .AddEmbedded<XiHanVirtualFileSystemModule>();
+                .AddEmbedded<XiHanConsoleTestModule>();
         });
     }
 

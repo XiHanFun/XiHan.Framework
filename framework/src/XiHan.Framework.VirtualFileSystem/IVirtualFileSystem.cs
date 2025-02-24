@@ -29,22 +29,6 @@ public interface IVirtualFileSystem
     event EventHandler<FileChangedEventArgs> OnFileChanged;
 
     /// <summary>
-    /// 异步获取文件信息
-    /// </summary>
-    /// <param name="virtualPath"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    Task<IFileInfo> GetFileAsync(string virtualPath, CancellationToken ct = default);
-
-    /// <summary>
-    /// 异步获取目录内容
-    /// </summary>
-    /// <param name="virtualPath"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    Task<IDirectoryContents> GetDirectoryContentsAsync(string virtualPath, CancellationToken ct = default);
-
-    /// <summary>
     /// 获取文件信息
     /// </summary>
     /// <param name="virtualPath">虚拟路径(支持~/embedded://等格式)</param>

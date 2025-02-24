@@ -18,7 +18,6 @@ using Microsoft.Extensions.Primitives;
 using XiHan.Framework.Utils.Threading;
 using XiHan.Framework.VirtualFileSystem.Events;
 using XiHan.Framework.VirtualFileSystem.Options;
-using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Composite;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
@@ -89,28 +88,6 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// 文件变化事件
     /// </summary>
     public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
-
-    /// <summary>
-    /// 异步获取文件信息
-    /// </summary>
-    /// <param name="virtualPath"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    public Task<IFileInfo> GetFileAsync(string virtualPath, CancellationToken ct = default)
-    {
-        return Task.FromResult(GetFile(virtualPath));
-    }
-
-    /// <summary>
-    /// 异步获取目录内容
-    /// </summary>
-    /// <param name="virtualPath"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    public Task<IDirectoryContents> GetDirectoryContentsAsync(string virtualPath, CancellationToken ct = default)
-    {
-        return Task.FromResult(GetDirectoryContents(virtualPath));
-    }
 
     /// <summary>
     /// 获取文件信息
