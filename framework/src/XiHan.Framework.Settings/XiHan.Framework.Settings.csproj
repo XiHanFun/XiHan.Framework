@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Settings</Title>
+		<AssemblyName>XiHan.Framework.Settings</AssemblyName>
+		<PackageId>XiHan.Framework.Settings</PackageId>
+		<Description>曦寒框架设置库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
