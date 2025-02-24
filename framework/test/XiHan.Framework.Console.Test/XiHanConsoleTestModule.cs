@@ -74,7 +74,8 @@ public class XiHanConsoleTestModule : XiHanModule
             // 处理文件变化逻辑
             System.Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
         };
-        _ = fileSystem.Watch("**/*");
+
+        _ = fileSystem.Watch("*.*");
     }
 
     /// <summary>
