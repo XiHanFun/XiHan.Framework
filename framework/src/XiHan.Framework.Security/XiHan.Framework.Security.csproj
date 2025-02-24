@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Security</Title>
+		<AssemblyName>XiHan.Framework.Security</AssemblyName>
+		<PackageId>XiHan.Framework.Security</PackageId>
+		<Description>曦寒框架安全库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
