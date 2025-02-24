@@ -15,6 +15,8 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.Collections.Concurrent;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Threading;
 using XiHan.Framework.VirtualFileSystem.Events;
 using XiHan.Framework.VirtualFileSystem.Options;
@@ -30,23 +32,17 @@ namespace XiHan.Framework.VirtualFileSystem;
 /// </summary>
 public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
-    // 文件提供程序集合
     private readonly List<PrioritizedFileProvider> _providers = [];
-
-    // 组合文件提供程序
     private IFileProvider _compositeProvider;
-
-    // 存储物理路径
-    private readonly List<string> _physicalPaths = [];
-
-    // 存储嵌入资源路径
-    private readonly List<Type> _embeddedResourceTypes = [];
-
-    // 文件变化防抖处理器
     private readonly Debouncer _changeDebouncer;
+    private readonly List<string> _physicalPaths = [];
+    private readonly List<Type> _embeddedResourceTypes = [];
+    private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = [];
 
-    // 缓存文件状态
-    private readonly Dictionary<string, DateTime> _fileStateCache = [];
+    /// <summary>
+    /// 文件变化事件
+    /// </summary>
+    public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
 
     /// <summary>
     /// 初始化虚拟文件系统
@@ -54,40 +50,42 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// <param name="options">虚拟文件系统配置选项</param>
     public VirtualFileSystem(IOptions<VirtualFileSystemOptions> options)
     {
-        var virtualFileSystemOptions = options.Value;
-        var providers = virtualFileSystemOptions.Providers
-            .OrderByDescending(p => p.Priority)
-            .Select(p => p.Provider)
-            .ToList();
-
-        _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
-        _compositeProvider = new VirtualCompositeFileProvider(
-            providers.Select(p => new PrioritizedFileProvider(p, 0))
-        );
-
-        foreach (var provider in providers)
+        try
         {
-            if (provider is VirtualPhysicalFileProvider physicalProvider)
+            var virtualFileSystemOptions = options.Value;
+            var providers = virtualFileSystemOptions.Providers
+                .OrderByDescending(p => p.Priority)
+                .Select(p => p.Provider)
+                .ToList();
+
+            _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
+            _compositeProvider = new VirtualCompositeFileProvider(
+                providers.Select(p => new PrioritizedFileProvider(p, 0))
+            );
+
+            foreach (var provider in providers)
             {
-                _physicalPaths.Add(physicalProvider.Root);
-                // 初始化时记录已存在的文件
-                var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
-                foreach (var file in files)
+                if (provider is VirtualPhysicalFileProvider physicalProvider)
                 {
-                    _fileStateCache[file] = File.GetLastWriteTime(file);
+                    _physicalPaths.Add(physicalProvider.Root);
+                    // 初始化时记录已存在的文件
+                    var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
+                    foreach (var file in files)
+                    {
+                        _fileStateCache[file] = File.GetLastWriteTime(file);
+                    }
+                }
+                else if (provider is VirtualEmbeddedFileProvider embeddedProvider)
+                {
+                    _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
                 }
             }
-            else if (provider is VirtualEmbeddedFileProvider embeddedProvider)
-            {
-                _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
-            }
+        }
+        catch (Exception ex)
+        {
+            throw new XiHanException("虚拟文件系统初始化失败", ex);
         }
     }
-
-    /// <summary>
-    /// 文件变化事件
-    /// </summary>
-    public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
 
     /// <summary>
     /// 获取文件信息
@@ -172,23 +170,30 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public void Dispose()
     {
-        // 释放防抖器资源
-        _changeDebouncer.Dispose();
+        try
+        {
+            // 释放防抖器资源
+            _changeDebouncer.Dispose();
 
-        // 释放组合文件提供程序资源
-        (_compositeProvider as IDisposable)?.Dispose();
+            // 释放组合文件提供程序资源
+            (_compositeProvider as IDisposable)?.Dispose();
 
-        // 清空文件状态缓存
-        _fileStateCache.Clear();
+            // 清空文件状态缓存
+            _fileStateCache.Clear();
 
-        // 清空物理路径列表
-        _physicalPaths.Clear();
+            // 清空物理路径列表
+            _physicalPaths.Clear();
 
-        // 清空嵌入资源类型列表
-        _embeddedResourceTypes.Clear();
+            // 清空嵌入资源类型列表
+            _embeddedResourceTypes.Clear();
 
-        // 清空文件提供程序集合
-        _providers.Clear();
+            // 清空文件提供程序集合
+            _providers.Clear();
+        }
+        catch (Exception ex)
+        {
+            throw new XiHanException("释放虚拟文件系统资源时发生异常", ex);
+        }
     }
 
     #region 私有方法
@@ -229,7 +234,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             foreach (var file in deletedFiles)
             {
                 changedFiles.Add((file, FileChangeType.Deleted));
-                _ = _fileStateCache.Remove(file);
+                _ = _fileStateCache.Remove(file, out _);
             }
         }
 
@@ -258,7 +263,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             foreach (var resource in deletedResources)
             {
                 changedFiles.Add((resource, FileChangeType.Deleted));
-                _ = _fileStateCache.Remove(resource);
+                _ = _fileStateCache.Remove(resource, out _);
             }
         }
 
