@@ -12,7 +12,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
