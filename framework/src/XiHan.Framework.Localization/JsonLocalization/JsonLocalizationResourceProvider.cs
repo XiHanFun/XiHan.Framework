@@ -17,8 +17,10 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.Localization;
 using XiHan.Framework.Localization.Resources;
 using XiHan.Framework.Localization.VirtualFileSystem;
+using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.Localization.JsonLocalization;
 
@@ -29,24 +31,29 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
 {
     private readonly ILogger<JsonLocalizationResourceProvider> _logger;
     private readonly ConcurrentDictionary<string, Dictionary<string, string>> _resourceCache;
+    private readonly IVirtualFileSystem _virtualFileSystem;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="logger"></param>
-    public JsonLocalizationResourceProvider(ILogger<JsonLocalizationResourceProvider> logger)
+    /// <param name="logger">日志记录器</param>
+    /// <param name="virtualFileSystem">虚拟文件系统</param>
+    public JsonLocalizationResourceProvider(
+        ILogger<JsonLocalizationResourceProvider> logger,
+        IVirtualFileSystem virtualFileSystem)
     {
         _logger = logger;
+        _virtualFileSystem = virtualFileSystem;
         _resourceCache = new ConcurrentDictionary<string, Dictionary<string, string>>();
     }
 
     /// <summary>
     /// 获取指定名称的本地化字符串
     /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="name"></param>
-    /// <param name="cultureName"></param>
-    /// <returns></returns>
+    /// <param name="resource">本地化资源</param>
+    /// <param name="name">资源名称</param>
+    /// <param name="cultureName">文化名称</param>
+    /// <returns>本地化字符串，未找到时返回null</returns>
     /// <exception cref="ArgumentNullException"></exception>
     public string? GetString(ILocalizationResource resource, string name, string cultureName)
     {
@@ -82,12 +89,12 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     }
 
     /// <summary>
-    /// 获取指定名称的本地化字符串
+    /// 获取指定名称的本地化字符串集合
     /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="cultureName"></param>
-    /// <param name="includeParentCultures"></param>
-    /// <returns></returns>
+    /// <param name="resource">本地化资源</param>
+    /// <param name="cultureName">文化名称</param>
+    /// <param name="includeParentCultures">是否包含父级文化</param>
+    /// <returns>本地化字符串集合</returns>
     /// <exception cref="ArgumentNullException"></exception>
     public IEnumerable<LocalizedString> GetAllStrings(ILocalizationResource resource, string cultureName, bool includeParentCultures)
     {
@@ -124,10 +131,10 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     }
 
     /// <summary>
-    /// 获取支持的文化
+    /// 获取支持的文化列表
     /// </summary>
-    /// <param name="resource"></param>
-    /// <returns></returns>
+    /// <param name="resource">本地化资源</param>
+    /// <returns>支持的文化列表</returns>
     /// <exception cref="ArgumentNullException"></exception>
     public IReadOnlyList<string> GetSupportedCultures(ILocalizationResource resource)
     {
@@ -138,11 +145,68 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
 
         var cultures = new HashSet<string>();
 
-        // 如果是虚拟文件资源
-        if (resource is VirtualFileLocalizationResource)
+        // 如果是虚拟文件资源，检测所有可用的文化
+        if (resource is VirtualFileLocalizationResource vfResource)
         {
-            // TODO: 实现虚拟文件系统的文化检测
-            _ = cultures.Add(resource.DefaultCulture);
+            // 从文件系统中检测可用的文化
+            var basePath = vfResource.BasePath;
+            var resourceName = vfResource.ResourceName;
+
+            try
+            {
+                // 获取目录内容
+                var directoryContents = _virtualFileSystem.GetDirectoryContents(basePath);
+                if (directoryContents.Exists)
+                {
+                    // 文件名格式应为：ResourceName.culture.json
+                    var filePattern = $"{resourceName}.";
+                    foreach (var file in directoryContents)
+                    {
+                        if (file.IsDirectory || !file.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (file.Name.StartsWith(filePattern, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // 从文件名提取文化代码
+                            var fileName = file.Name;
+                            var withoutExtension = fileName[..fileName.LastIndexOf('.')];
+
+                            if (withoutExtension.Contains('.'))
+                            {
+                                var cultureName = withoutExtension[(withoutExtension.LastIndexOf('.') + 1)..];
+
+                                // 验证文化代码的有效性
+                                if (CultureHelper.IsValidCultureCode(cultureName))
+                                {
+                                    _logger.LogDebug("找到有效的文化文件: {FileName}, 文化代码: {Culture}", fileName, cultureName);
+                                    _ = cultures.Add(cultureName);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("文件名包含无效的文化代码: {FileName}, 文化代码: {Culture}", fileName, cultureName);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("目录不存在: {BasePath}", basePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "扫描本地化资源目录时出错: {BasePath}", basePath);
+            }
+
+            // 至少添加默认文化
+            if (cultures.Count == 0)
+            {
+                _logger.LogInformation("未找到本地化文件，添加默认文化: {Culture}", resource.DefaultCulture);
+                _ = cultures.Add(resource.DefaultCulture);
+            }
         }
 
         // 添加基础资源的文化
@@ -160,10 +224,10 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     /// <summary>
     /// 获取指定资源的字符串
     /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="name"></param>
-    /// <param name="cultureName"></param>
-    /// <returns></returns>
+    /// <param name="resource">本地化资源</param>
+    /// <param name="name">资源名称</param>
+    /// <param name="cultureName">文化名称</param>
+    /// <returns>本地化字符串，未找到时返回null</returns>
     private string? GetStringFromResource(ILocalizationResource resource, string name, string cultureName)
     {
         if (resource is not VirtualFileLocalizationResource vfResource)
@@ -191,9 +255,9 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     /// <summary>
     /// 获取指定资源的所有字符串
     /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="cultureName"></param>
-    /// <returns></returns>
+    /// <param name="resource">本地化资源</param>
+    /// <param name="cultureName">文化名称</param>
+    /// <returns>本地化字符串集合</returns>
     private IEnumerable<LocalizedString> GetAllStringsFromResource(ILocalizationResource resource, string cultureName)
     {
         if (resource is not VirtualFileLocalizationResource vfResource)
@@ -223,9 +287,9 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     /// <summary>
     /// 加载资源文件
     /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="cultureName"></param>
-    /// <returns></returns>
+    /// <param name="resource">虚拟文件资源</param>
+    /// <param name="cultureName">文化名称</param>
+    /// <returns>资源字典，加载失败时返回null</returns>
     private Dictionary<string, string>? LoadResourceFile(VirtualFileLocalizationResource resource, string cultureName)
     {
         try
@@ -233,8 +297,11 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
             using var stream = resource.GetStream(cultureName);
             if (stream == null)
             {
+                _logger.LogDebug("未找到文化资源文件: {Resource}.{Culture}.json", resource.ResourceName, cultureName);
                 return null;
             }
+
+            _logger.LogDebug("加载文化资源文件: {Resource}.{Culture}.json", resource.ResourceName, cultureName);
 
             using var jsonDocument = JsonDocument.Parse(stream);
             var root = jsonDocument.RootElement;
@@ -246,11 +313,12 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
                 FlattenJsonObject(root, "", dictionary);
             }
 
+            _logger.LogDebug("从文件加载了 {Count} 个本地化条目", dictionary.Count);
             return dictionary;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading resource file for {ResourceName}, culture: {Culture}",
+            _logger.LogError(ex, "加载资源文件失败: {ResourceName}, 文化: {Culture}",
                 resource.ResourceName, cultureName);
             return null;
         }
@@ -259,9 +327,9 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
     /// <summary>
     /// 将JSON对象扁平化为键值对
     /// </summary>
-    /// <param name="element"></param>
-    /// <param name="prefix"></param>
-    /// <param name="dictionary"></param>
+    /// <param name="element">JSON元素</param>
+    /// <param name="prefix">前缀</param>
+    /// <param name="dictionary">结果字典</param>
     private void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
     {
         foreach (var property in element.EnumerateObject())

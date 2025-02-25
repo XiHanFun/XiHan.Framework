@@ -109,9 +109,9 @@ public abstract class BaseLocalizationResource : ILocalizationResource
         return resourceType == null
             ? throw new ArgumentNullException(nameof(resourceType))
             : !typeof(ILocalizationResource).IsAssignableFrom(resourceType)
-            ? throw new ArgumentException($"Given type ({resourceType.AssemblyQualifiedName}) must implement the {typeof(ILocalizationResource).FullName} interface!")
-            : Activator.CreateInstance(resourceType) is not ILocalizationResource resource
-            ? throw new XiHanException($"Could not create resource instance from given type: {resourceType.AssemblyQualifiedName}")
-            : InheritFrom(resource);
+                ? throw new ArgumentException($"Given type ({resourceType.AssemblyQualifiedName}) must implement the {typeof(ILocalizationResource).FullName} interface!")
+                : Activator.CreateInstance(resourceType) is not ILocalizationResource resource
+                    ? throw new XiHanException($"Could not create resource instance from given type: {resourceType.AssemblyQualifiedName}")
+                    : InheritFrom(resource);
     }
 }

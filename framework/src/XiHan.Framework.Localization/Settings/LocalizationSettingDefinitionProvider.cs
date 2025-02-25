@@ -31,38 +31,38 @@ public class LocalizationSettingDefinitionProvider : ISettingDefinitionProvider,
         // 默认语言设置
         context.Add(new SettingDefinition(
             LocalizationSettings.DefaultLanguage,
-            defaultValue: "en",
-            displayName: "默认语言",
-            description: "应用程序默认语言",
-            group: LocalizationSettings.GroupName
+            "en",
+            "默认语言",
+            "应用程序默认语言",
+            LocalizationSettings.GroupName
         ));
 
         // 可用语言设置（逗号分隔的语言代码列表）
         context.Add(new SettingDefinition(
             LocalizationSettings.AvailableLanguages,
-            defaultValue: "en,zh-CN",
-            displayName: "可用语言",
-            description: "应用程序支持的语言列表（逗号分隔）",
-            group: LocalizationSettings.GroupName,
+            "en,zh-CN",
+            "可用语言",
+            "应用程序支持的语言列表（逗号分隔）",
+            LocalizationSettings.GroupName,
             validator: value => !string.IsNullOrWhiteSpace(value)
         ));
 
         // 回退到默认语言
         context.Add(new SettingDefinition(
             LocalizationSettings.FallbackToDefaultLanguage,
-            defaultValue: "true",
-            displayName: "回退到默认语言",
-            description: "当请求的语言不可用时，是否回退到默认语言",
-            group: LocalizationSettings.GroupName
+            "true",
+            "回退到默认语言",
+            "当请求的语言不可用时，是否回退到默认语言",
+            LocalizationSettings.GroupName
         ));
 
         // 本地化资源缓存时间（分钟）
         context.Add(new SettingDefinition(
             LocalizationSettings.ResourceCacheMinutes,
-            defaultValue: "30",
-            displayName: "资源缓存时间",
-            description: "本地化资源缓存有效时间（分钟）",
-            group: LocalizationSettings.GroupName,
+            "30",
+            "资源缓存时间",
+            "本地化资源缓存有效时间（分钟）",
+            LocalizationSettings.GroupName,
             validator: value => int.TryParse(value, out var minutes) && minutes >= 0
         ));
     }
