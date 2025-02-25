@@ -65,7 +65,7 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
             }
 
             var value = GetStringSafely(name, _culture);
-            return new LocalizedString(name, value ?? name, resourceNotFound: value == null);
+            return new LocalizedString(name, value ?? name, value == null);
         }
     }
 
@@ -87,7 +87,7 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
 
             var format = GetStringSafely(name, _culture);
             var value = string.Format(_culture, format ?? name, arguments);
-            return new LocalizedString(name, value, resourceNotFound: format == null);
+            return new LocalizedString(name, value, format == null);
         }
     }
 
@@ -122,7 +122,7 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
 
         var cultureInfo = new CultureInfo(culture);
         var value = GetStringSafely(name, cultureInfo);
-        return new LocalizedString(name, value ?? name, resourceNotFound: value == null);
+        return new LocalizedString(name, value ?? name, value == null);
     }
 
     /// <summary>
@@ -148,7 +148,7 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
         var cultureInfo = new CultureInfo(culture);
         var format = GetStringSafely(name, cultureInfo);
         var value = string.Format(cultureInfo, format ?? name, arguments);
-        return new LocalizedString(name, value, resourceNotFound: format == null);
+        return new LocalizedString(name, value, format == null);
     }
 
     /// <summary>
