@@ -22,6 +22,8 @@ using XiHan.Framework.BlobStoring;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Ddd.Application;
+using XiHan.Framework.Localization;
+using XiHan.Framework.Settings;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.VirtualFileSystem.Options;
 
@@ -32,6 +34,8 @@ namespace XiHan.Framework.Console.Test;
 /// </summary>
 [DependsOn(
     typeof(XiHanBlobStoringModule),
+    typeof(XiHanSettingsModule),
+    typeof(XiHanLocalizationModule),
     typeof(XiHanDddApplicationModule),
     typeof(XiHanAspNetCoreSerilogModule),
     typeof(XiHanAspNetCoreSignalRModule),
