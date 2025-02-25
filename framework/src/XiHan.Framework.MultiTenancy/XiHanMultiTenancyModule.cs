@@ -13,7 +13,8 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Localization;
+using XiHan.Framework.Security;
+using XiHan.Framework.Settings;
 
 namespace XiHan.Framework.MultiTenancy;
 
@@ -21,7 +22,8 @@ namespace XiHan.Framework.MultiTenancy;
 /// 曦寒多租户模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanLocalizationModule)
+    typeof(XiHanSettingsModule),
+    typeof(XiHanSecurityModule)
 )]
 public class XiHanMultiTenancyModule : XiHanModule
 {
