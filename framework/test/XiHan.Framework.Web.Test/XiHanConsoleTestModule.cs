@@ -12,8 +12,11 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 using XiHan.Framework.AspNetCore.Authentication.JwtBearer;
 using XiHan.Framework.AspNetCore.Authentication.OAuth;
+using XiHan.Framework.AspNetCore.Extensions;
 using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.AspNetCore.Serilog;
 using XiHan.Framework.AspNetCore.SignalR;
@@ -26,8 +29,9 @@ using XiHan.Framework.Localization;
 using XiHan.Framework.Settings;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.VirtualFileSystem.Options;
+using XiHan.Framework.Web.Test.Localization;
 
-namespace XiHan.Framework.Console.Test;
+namespace XiHan.Framework.Web.Test;
 
 /// <summary>
 /// 曦寒测试应用 Web 主机
@@ -35,7 +39,7 @@ namespace XiHan.Framework.Console.Test;
 [DependsOn(
     typeof(XiHanBlobStoringModule),
     typeof(XiHanSettingsModule),
-    typeof(XiHanLocalizationModule),
+     typeof(XiHanLocalizationModule),
     typeof(XiHanDddApplicationModule),
     typeof(XiHanAspNetCoreSerilogModule),
     typeof(XiHanAspNetCoreSignalRModule),
@@ -50,17 +54,40 @@ public class XiHanConsoleTestModule : XiHanModule
     /// 服务配置
     /// </summary>
     /// <param name="context"></param>
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        // 确保Localization目录在物理位置存在并且被虚拟文件系统正确识别
+        var localizationDir = Path.Combine(AppContext.BaseDirectory, "Localization");
+        if (!Directory.Exists(localizationDir))
+        {
+            _ = Directory.CreateDirectory(localizationDir);
+            System.Console.WriteLine($"创建Localization根目录: {localizationDir}");
+        }
+    }
+
+    /// <summary>
+    /// 服务配置
+    /// </summary>
+    /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 首先，修改虚拟文件系统配置以确保能找到Localization目录
         Configure<VirtualFileSystemOptions>(config =>
         {
-            // 默认配置
+            // 先添加基础目录，确保根目录和Localization目录存在
             _ = config
-                // 默认物理文件目录
+                // 优先使用应用程序基础目录
+                .AddPhysical(AppContext.BaseDirectory)
+                // 然后添加Localization专用目录
+                .AddPhysical(Path.Combine(AppContext.BaseDirectory, "Localization"))
+                // 添加当前目录
+                .AddPhysical(Environment.CurrentDirectory)
+                // 最后添加其他目录
                 .AddPhysical("wwwroot")
-                // 使用当前模块类型
                 .AddEmbedded<XiHanConsoleTestModule>();
         });
+
+        _ = context.Services.AddSingleton<TestResource>();
     }
 
     /// <summary>
@@ -71,22 +98,27 @@ public class XiHanConsoleTestModule : XiHanModule
     {
         // 获取文件系统实例
         var fileSystem = context.ServiceProvider.GetRequiredService<IVirtualFileSystem>();
-
         // 订阅文件变化事件
         fileSystem.OnFileChanged += (sender, args) =>
         {
             // 处理文件变化逻辑
             System.Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
         };
-
         _ = fileSystem.Watch("*.*");
-    }
 
-    /// <summary>
-    /// 应用关闭
-    /// </summary>
-    /// <param name="context"></param>
-    public override void OnApplicationShutdown(ApplicationShutdownContext context)
-    {
+        var app = context.GetApplicationBuilder();
+
+        _ = app.UseRequestLocalization(options =>
+        {
+            var supportedCultures = new[]
+            {
+                new CultureInfo("en"),
+                new CultureInfo("zh-CN")
+            };
+
+            options.DefaultRequestCulture = new RequestCulture("en");
+            options.SupportedCultures = supportedCultures;
+            options.SupportedUICultures = supportedCultures;
+        });
     }
 }

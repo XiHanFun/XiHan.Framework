@@ -1,6 +1,6 @@
 ﻿using Serilog;
 using XiHan.Framework.AspNetCore.Extensions.Builder;
-using XiHan.Framework.Console.Test;
+using XiHan.Framework.Web.Test;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 try
