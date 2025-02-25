@@ -56,8 +56,8 @@ public class LocalizationResourceManager : ILocalizationResourceManager, ISingle
         return string.IsNullOrEmpty(resourceName)
             ? throw new ArgumentException("Resource name cannot be null or empty", nameof(resourceName))
             : !_resources.TryGetValue(resourceName, out var resource)
-            ? throw new XiHanException($"Localization resource '{resourceName}' not found!")
-            : resource;
+                ? throw new XiHanException($"Localization resource '{resourceName}' not found!")
+                : resource;
     }
 
     /// <summary>
