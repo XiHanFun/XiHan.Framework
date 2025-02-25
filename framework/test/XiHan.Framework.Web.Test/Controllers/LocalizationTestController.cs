@@ -35,7 +35,7 @@ public class LocalizationTestController : ControllerBase
 
         // 获取XiHan自定义的本地化器实现
         _localizer = (IXiHanStringLocalizer)factory.Create(typeof(TestResource));
-        System.Console.WriteLine($"控制器初始化完成，本地化器: {(_localizer != null ? "已注入" : "未注入")}");
+        Console.WriteLine($"控制器初始化完成，本地化器: {(_localizer != null ? "已注入" : "未注入")}");
     }
 
     /// <summary>
@@ -111,14 +111,14 @@ public class LocalizationTestController : ControllerBase
         }
 
         var cultures = _localizer.GetSupportedCultures();
-        System.Console.WriteLine($"支持的文化: {string.Join(", ", cultures)}");
-        System.Console.WriteLine($"当前UI文化: {CultureInfo.CurrentUICulture.Name}");
+        Console.WriteLine($"支持的文化: {string.Join(", ", cultures)}");
+        Console.WriteLine($"当前UI文化: {CultureInfo.CurrentUICulture.Name}");
 
         var strings = _localizer.GetAllStrings(includeParentCultures: true).ToList();
-        System.Console.WriteLine($"找到本地化字符串数量: {strings.Count}");
+        Console.WriteLine($"找到本地化字符串数量: {strings.Count}");
 
         var resourcePath = _localizer.GetResourceBasePath();
-        System.Console.WriteLine($"资源基础路径: {resourcePath}");
+        Console.WriteLine($"资源基础路径: {resourcePath}");
 
         return Ok(new
         {
@@ -183,7 +183,7 @@ public class LocalizationTestController : ControllerBase
 
         foreach (var path in possiblePaths)
         {
-            System.Console.WriteLine($"尝试虚拟文件系统获取: {path}");
+            Console.WriteLine($"尝试虚拟文件系统获取: {path}");
             var file = fileSystem.GetFile(path);
             results[path] = new
             {
