@@ -16,6 +16,9 @@
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.BlobStoring\XiHan.Framework.BlobStoring.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
+    <ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
   </ItemGroup>
 
 </Project>
