@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.DependencyInjection;
@@ -31,7 +30,6 @@ public class SettingManager : ISettingManager, ISingletonDependency
 {
     private readonly ILogger<SettingManager> _logger;
     private readonly ISettingStore _settingStore;
-    private readonly IMemoryCache _cache;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<string, SettingDefinition> _definitions = new();
 
@@ -45,17 +43,14 @@ public class SettingManager : ISettingManager, ISingletonDependency
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="settingStore"></param>
-    /// <param name="cache"></param>
     /// <param name="serviceProvider"></param>
     public SettingManager(
         ILogger<SettingManager> logger,
         ISettingStore settingStore,
-        IMemoryCache cache,
         IServiceProvider serviceProvider)
     {
         _logger = logger;
         _settingStore = settingStore;
-        _cache = cache;
         _serviceProvider = serviceProvider;
     }
 
@@ -112,12 +107,6 @@ public class SettingManager : ISettingManager, ISingletonDependency
             throw new XiHanException($"Setting '{name}' is not defined.");
         }
 
-        var cacheKey = $"{name}_{scope}";
-        if (_cache.TryGetValue(cacheKey, out string? cachedValue))
-        {
-            return cachedValue;
-        }
-
         string? value = null;
         foreach (var provider in definition.Providers)
         {
@@ -135,7 +124,6 @@ public class SettingManager : ISettingManager, ISingletonDependency
             value = DecryptValue(value);
         }
 
-        _ = _cache.Set(cacheKey, value, TimeSpan.FromMinutes(5));
         return value;
     }
 
