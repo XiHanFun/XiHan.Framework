@@ -61,7 +61,7 @@ public class XiHanConsoleTestModule : XiHanModule
         if (!Directory.Exists(localizationDir))
         {
             _ = Directory.CreateDirectory(localizationDir);
-            System.Console.WriteLine($"创建Localization根目录: {localizationDir}");
+            Console.WriteLine($"创建Localization根目录: {localizationDir}");
         }
     }
 
@@ -102,7 +102,7 @@ public class XiHanConsoleTestModule : XiHanModule
         fileSystem.OnFileChanged += (sender, args) =>
         {
             // 处理文件变化逻辑
-            System.Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
+            Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
         };
         _ = fileSystem.Watch("*.*");
 
