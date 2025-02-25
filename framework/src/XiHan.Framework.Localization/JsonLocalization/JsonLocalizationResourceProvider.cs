@@ -1,0 +1,287 @@
+#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:JsonLocalizationResourceProvider
+// Guid:1d0b5c4a-9e8d-7f6a-5b4c-3e2d1f0a9b8c
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2025/2/27 12:36:18
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Text.Json;
+using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Localization.Resources;
+using XiHan.Framework.Localization.VirtualFileSystem;
+
+namespace XiHan.Framework.Localization.JsonLocalization;
+
+/// <summary>
+/// JSON本地化资源提供程序
+/// </summary>
+public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingletonDependency
+{
+    private readonly ILogger<JsonLocalizationResourceProvider> _logger;
+    private readonly ConcurrentDictionary<string, Dictionary<string, string>> _resourceCache;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="logger"></param>
+    public JsonLocalizationResourceProvider(ILogger<JsonLocalizationResourceProvider> logger)
+    {
+        _logger = logger;
+        _resourceCache = new ConcurrentDictionary<string, Dictionary<string, string>>();
+    }
+
+    /// <summary>
+    /// 获取指定名称的本地化字符串
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <param name="name"></param>
+    /// <param name="cultureName"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public string? GetString(ILocalizationResource resource, string name, string cultureName)
+    {
+        if (resource == null)
+        {
+            throw new ArgumentNullException(nameof(resource));
+        }
+
+        if (string.IsNullOrEmpty(name))
+        {
+            throw new ArgumentNullException(nameof(name));
+        }
+
+        // 优先尝试从当前资源获取
+        var currentValue = GetStringFromResource(resource, name, cultureName);
+        if (currentValue != null)
+        {
+            return currentValue;
+        }
+
+        // 如果当前资源没有找到，尝试从基础资源中查找
+        foreach (var baseResource in resource.BaseResources)
+        {
+            var baseValue = GetString(baseResource, name, cultureName);
+            if (baseValue != null)
+            {
+                return baseValue;
+            }
+        }
+
+        // 如果文化特定的资源没有找到，尝试使用默认文化
+        return cultureName != resource.DefaultCulture ? GetString(resource, name, resource.DefaultCulture) : null;
+    }
+
+    /// <summary>
+    /// 获取指定名称的本地化字符串
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <param name="cultureName"></param>
+    /// <param name="includeParentCultures"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public IEnumerable<LocalizedString> GetAllStrings(ILocalizationResource resource, string cultureName, bool includeParentCultures)
+    {
+        if (resource == null)
+        {
+            throw new ArgumentNullException(nameof(resource));
+        }
+
+        var result = new Dictionary<string, LocalizedString>();
+
+        // 收集基础资源的字符串
+        if (includeParentCultures)
+        {
+            foreach (var baseResource in resource.BaseResources)
+            {
+                foreach (var localizedString in GetAllStrings(baseResource, cultureName, true))
+                {
+                    if (!result.ContainsKey(localizedString.Name))
+                    {
+                        result[localizedString.Name] = localizedString;
+                    }
+                }
+            }
+        }
+
+        // 添加当前资源的字符串，覆盖基础资源
+        var strings = GetAllStringsFromResource(resource, cultureName);
+        foreach (var s in strings)
+        {
+            result[s.Name] = s;
+        }
+
+        return result.Values;
+    }
+
+    /// <summary>
+    /// 获取支持的文化
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public IReadOnlyList<string> GetSupportedCultures(ILocalizationResource resource)
+    {
+        if (resource == null)
+        {
+            throw new ArgumentNullException(nameof(resource));
+        }
+
+        var cultures = new HashSet<string>();
+
+        // 如果是虚拟文件资源
+        if (resource is VirtualFileLocalizationResource)
+        {
+            // TODO: 实现虚拟文件系统的文化检测
+            _ = cultures.Add(resource.DefaultCulture);
+        }
+
+        // 添加基础资源的文化
+        foreach (var baseResource in resource.BaseResources)
+        {
+            foreach (var culture in GetSupportedCultures(baseResource))
+            {
+                _ = cultures.Add(culture);
+            }
+        }
+
+        return cultures.ToList();
+    }
+
+    /// <summary>
+    /// 获取指定资源的字符串
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <param name="name"></param>
+    /// <param name="cultureName"></param>
+    /// <returns></returns>
+    private string? GetStringFromResource(ILocalizationResource resource, string name, string cultureName)
+    {
+        if (resource is not VirtualFileLocalizationResource vfResource)
+        {
+            return null;
+        }
+
+        var cacheKey = $"{resource.ResourceName}:{cultureName}";
+
+        // 尝试从缓存中获取
+        if (!_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
+        {
+            // 如果缓存中没有，尝试加载资源
+            stringDictionary = LoadResourceFile(vfResource, cultureName);
+            if (stringDictionary != null)
+            {
+                _resourceCache[cacheKey] = stringDictionary;
+            }
+        }
+
+        // 如果找到了资源字典，尝试获取特定的字符串
+        return stringDictionary != null && stringDictionary.TryGetValue(name, out var value) ? value : null;
+    }
+
+    /// <summary>
+    /// 获取指定资源的所有字符串
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <param name="cultureName"></param>
+    /// <returns></returns>
+    private IEnumerable<LocalizedString> GetAllStringsFromResource(ILocalizationResource resource, string cultureName)
+    {
+        if (resource is not VirtualFileLocalizationResource vfResource)
+        {
+            return Enumerable.Empty<LocalizedString>();
+        }
+
+        var cacheKey = $"{resource.ResourceName}:{cultureName}";
+
+        // 尝试从缓存中获取
+        if (!_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
+        {
+            // 如果缓存中没有，尝试加载资源
+            stringDictionary = LoadResourceFile(vfResource, cultureName);
+            if (stringDictionary != null)
+            {
+                _resourceCache[cacheKey] = stringDictionary;
+            }
+        }
+
+        // 如果找到了资源字典，返回所有字符串
+        return stringDictionary != null
+            ? stringDictionary.Select(kvp => new LocalizedString(kvp.Key, kvp.Value, false))
+            : Enumerable.Empty<LocalizedString>();
+    }
+
+    /// <summary>
+    /// 加载资源文件
+    /// </summary>
+    /// <param name="resource"></param>
+    /// <param name="cultureName"></param>
+    /// <returns></returns>
+    private Dictionary<string, string>? LoadResourceFile(VirtualFileLocalizationResource resource, string cultureName)
+    {
+        try
+        {
+            using var stream = resource.GetStream(cultureName);
+            if (stream == null)
+            {
+                return null;
+            }
+
+            using var jsonDocument = JsonDocument.Parse(stream);
+            var root = jsonDocument.RootElement;
+
+            var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                FlattenJsonObject(root, "", dictionary);
+            }
+
+            return dictionary;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading resource file for {ResourceName}, culture: {Culture}",
+                resource.ResourceName, cultureName);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 将JSON对象扁平化为键值对
+    /// </summary>
+    /// <param name="element"></param>
+    /// <param name="prefix"></param>
+    /// <param name="dictionary"></param>
+    private void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            var key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}:{property.Name}";
+
+            switch (property.Value.ValueKind)
+            {
+                case JsonValueKind.String:
+                    dictionary[key] = property.Value.GetString() ?? string.Empty;
+                    break;
+
+                case JsonValueKind.Object:
+                    FlattenJsonObject(property.Value, key, dictionary);
+                    break;
+
+                default:
+                    dictionary[key] = property.Value.ToString();
+                    break;
+            }
+        }
+    }
+}
