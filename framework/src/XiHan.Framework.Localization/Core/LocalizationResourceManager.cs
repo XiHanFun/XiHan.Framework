@@ -52,11 +52,22 @@ public class LocalizationResourceManager : ILocalizationResourceManager
     /// <exception cref="XiHanException"></exception>
     public ILocalizationResource GetResource(string resourceName)
     {
-        return string.IsNullOrEmpty(resourceName)
-            ? throw new ArgumentException("Resource name cannot be null or empty", nameof(resourceName))
-            : !_resources.TryGetValue(resourceName, out var resource)
-                ? throw new XiHanException($"Localization resource '{resourceName}' not found!")
-                : resource;
+        if (string.IsNullOrEmpty(resourceName))
+        {
+            throw new ArgumentException("Resource name cannot be null or empty", nameof(resourceName));
+        }
+
+        if (!_resources.TryGetValue(resourceName, out var resource))
+        {
+            // 添加详细错误日志
+            _logger.LogError("尝试访问未注册的本地化资源: {ResourceName}", resourceName);
+            _logger.LogDebug("已注册资源列表: {Resources}",
+                string.Join(", ", _resources.Keys));
+
+            throw new XiHanException($"Localization resource '{resourceName}' not found!");
+        }
+
+        return resource;
     }
 
     /// <summary>

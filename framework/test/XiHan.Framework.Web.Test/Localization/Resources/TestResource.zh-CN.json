@@ -1,0 +1,12 @@
+{
+  "culture": "zh-CN",
+  "texts": {
+    "Welcome": "欢迎使用曦寒框架本地化功能",
+    "Hello": "你好",
+    "Greeting": "你好，{0}！",
+    "CurrentTime": "当前时间是 {0}",
+    "WelcomeMessage": "欢迎来到 {1}，今天是 {0:yyyy-MM-dd}",
+    "Documentation": "查看文档以了解更多信息",
+    "LanguageName": "简体中文"
+  }
+}
