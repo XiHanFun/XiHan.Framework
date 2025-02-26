@@ -14,7 +14,6 @@
 
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Localization.Resources;
 using XiHan.Framework.Localization.VirtualFileSystem;
@@ -24,7 +23,7 @@ namespace XiHan.Framework.Localization.Core;
 /// <summary>
 /// 本地化资源管理器
 /// </summary>
-public class LocalizationResourceManager : ILocalizationResourceManager, ISingletonDependency
+public class LocalizationResourceManager : ILocalizationResourceManager
 {
     private readonly ConcurrentDictionary<string, ILocalizationResource> _resources;
     private readonly ILogger<LocalizationResourceManager> _logger;

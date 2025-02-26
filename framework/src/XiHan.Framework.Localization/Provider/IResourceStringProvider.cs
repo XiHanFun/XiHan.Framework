@@ -13,8 +13,9 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Localization;
+using XiHan.Framework.Localization.Resources;
 
-namespace XiHan.Framework.Localization.Resources;
+namespace XiHan.Framework.Localization.Provider;
 
 /// <summary>
 /// 资源字符串提供者接口

@@ -16,18 +16,16 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.Localization;
 using XiHan.Framework.Localization.Resources;
-using XiHan.Framework.Localization.VirtualFileSystem;
 using XiHan.Framework.VirtualFileSystem;
 
-namespace XiHan.Framework.Localization.JsonLocalization;
+namespace XiHan.Framework.Localization.Provider;
 
 /// <summary>
 /// JSON本地化资源提供程序
 /// </summary>
-public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingletonDependency
+public class JsonLocalizationResourceProvider : IResourceStringProvider
 {
     private readonly ILogger<JsonLocalizationResourceProvider> _logger;
     private readonly ConcurrentDictionary<string, Dictionary<string, string>> _resourceCache;

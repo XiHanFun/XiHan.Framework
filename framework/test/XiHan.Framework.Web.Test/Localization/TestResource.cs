@@ -18,7 +18,7 @@ public class TestResource : BaseLocalizationResource
         resourceName: typeof(TestResource).FullName!,
         defaultCulture: "en",
         // 确保路径格式正确
-        basePath: "Localization/TestResource")
+        basePath: "Localization")
     {
         Console.WriteLine($"初始化TestResource, 资源名称: {ResourceName}");
         Console.WriteLine($"初始化TestResource, 基础路径: {BasePath}");

@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Localization;
 using System.Globalization;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Localization.Provider;
 using XiHan.Framework.Localization.Resources;
 
 namespace XiHan.Framework.Localization.Core;

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Localization.Resources;
 using XiHan.Framework.VirtualFileSystem;
 
@@ -21,7 +20,7 @@ namespace XiHan.Framework.Localization.VirtualFileSystem;
 /// <summary>
 /// 虚拟文件资源工厂
 /// </summary>
-public class VirtualFileResourceFactory : IVirtualFileResourceFactory, ISingletonDependency
+public class VirtualFileResourceFactory : IVirtualFileResourceFactory
 {
     private readonly IVirtualFileSystem _virtualFileSystem;
 

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Localization;
 using System.Globalization;
 using XiHan.Framework.Localization.Core;
-using XiHan.Framework.Localization.Resources;
+using XiHan.Framework.Localization.Provider;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.Web.Test.Localization;
 
@@ -307,58 +307,5 @@ public class LocalizationTestController : ControllerBase
             localizedString.ResourceNotFound,
             CurrentCulture = CultureInfo.CurrentUICulture.Name
         });
-    }
-
-    [HttpGet]
-    public IActionResult ValidateJsonFiles()
-    {
-        var results = new Dictionary<string, object>();
-        var basePath = Path.Combine(AppContext.BaseDirectory, "Localization", "TestResource");
-
-        var files = new[] {
-            Path.Combine(basePath, "TestResource.en.json"),
-            Path.Combine(basePath, "TestResource.zh-CN.json")
-        };
-
-        foreach (var file in files)
-        {
-            try
-            {
-                if (!System.IO.File.Exists(file))
-                {
-                    results[file] = new { Exists = false };
-                    continue;
-                }
-
-                var content = System.IO.File.ReadAllText(file);
-
-                // 尝试解析JSON以验证格式
-                var json = System.Text.Json.JsonDocument.Parse(content);
-                var rootElement = json.RootElement;
-
-                // 检查是否包含Welcome键
-                var hasWelcome = rootElement.TryGetProperty("Welcome", out var welcomeValue);
-
-                results[file] = new
-                {
-                    Exists = true,
-                    IsValidJson = true,
-                    HasWelcomeKey = hasWelcome,
-                    WelcomeValue = hasWelcome ? welcomeValue.GetString() : null,
-                    ContentPreview = content[..Math.Min(200, content.Length)]
-                };
-            }
-            catch (Exception ex)
-            {
-                results[file] = new
-                {
-                    Exists = System.IO.File.Exists(file),
-                    IsValidJson = false,
-                    Error = ex.Message
-                };
-            }
-        }
-
-        return Ok(results);
     }
 }

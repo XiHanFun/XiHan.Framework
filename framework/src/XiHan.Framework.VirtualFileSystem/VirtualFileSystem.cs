@@ -57,12 +57,9 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             var providers = virtualFileSystemOptions.Providers
                 .OrderByDescending(p => p.Priority)
                 .Select(p => p.Provider)
-                .ToList();
+            .ToList();
 
-            _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
-            _compositeProvider = new VirtualCompositeFileProvider(
-                providers.Select(p => new PrioritizedFileProvider(p, 0))
-            );
+            var prioritizedFileProviders = new List<PrioritizedFileProvider>();
 
             foreach (var provider in providers)
             {
@@ -80,7 +77,12 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
                 {
                     _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
                 }
+
+                prioritizedFileProviders.Add(new PrioritizedFileProvider(provider, 0));
             }
+
+            _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
+            _compositeProvider = new VirtualCompositeFileProvider(prioritizedFileProviders);
         }
         catch (Exception ex)
         {

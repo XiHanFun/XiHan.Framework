@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Localization;
+using XiHan.Framework.Localization.Provider;
 using XiHan.Framework.Localization.Resources;
 
 namespace XiHan.Framework.Localization.Core;
