@@ -168,17 +168,13 @@ public class LocalizationTestController : ControllerBase
         var results = new Dictionary<string, object>();
 
         // 获取TestResource的类型名称
-        var resourceTypeName = typeof(TestResource).Name;
+        _ = typeof(TestResource).Name;
 
         // 尝试多种路径可能
         var possiblePaths = new List<string>
         {
-            $"Localization/{resourceTypeName}/{resourceTypeName}.en.json",
-            $"Localization/{resourceTypeName}/{resourceTypeName}.zh-CN.json",
             $"Localization/TestResource/TestResource.en.json",
             $"Localization/TestResource/TestResource.zh-CN.json",
-            Path.Combine(AppContext.BaseDirectory, "Localization", "TestResource", "TestResource.en.json"),
-            Path.Combine(AppContext.BaseDirectory, "Localization", "TestResource", "TestResource.zh-CN.json")
         };
 
         foreach (var path in possiblePaths)

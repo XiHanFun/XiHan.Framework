@@ -76,14 +76,10 @@ public class XiHanConsoleTestModule : XiHanModule
         {
             // 先添加基础目录，确保根目录和Localization目录存在
             _ = config
-                // 优先使用应用程序基础目录
-                .AddPhysical(AppContext.BaseDirectory)
-                // 然后添加Localization专用目录
-                .AddPhysical(Path.Combine(AppContext.BaseDirectory, "Localization"))
-                // 添加当前目录
-                .AddPhysical(Environment.CurrentDirectory)
-                // 最后添加其他目录
+                // 添加主目录
                 .AddPhysical("wwwroot")
+                // 然后添加Localization专用目录
+                .AddPhysical("Localization")
                 .AddEmbedded<XiHanConsoleTestModule>();
         });
 
