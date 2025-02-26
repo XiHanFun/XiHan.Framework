@@ -32,18 +32,18 @@ public static class LocalizationResourceExtensions
     /// <param name="basePath">基础虚拟路径</param>
     /// <returns>添加的资源列表</returns>
     public static IReadOnlyList<ILocalizationResource> AddVirtualFileResources(
-        this ILocalizationResourceManager resourceManager, 
+        this ILocalizationResourceManager resourceManager,
         string basePath)
     {
         if (string.IsNullOrEmpty(basePath))
         {
             throw new ArgumentException("基础路径不能为空", nameof(basePath));
         }
-        
+
         var resources = new List<ILocalizationResource>();
         var resource = resourceManager.AddVirtualFileResource(basePath);
         resources.Add(resource);
-        
+
         return resources.AsReadOnly();
     }
 
@@ -60,12 +60,7 @@ public static class LocalizationResourceExtensions
         string virtualPath)
     {
         var resource = resourceManager.GetResource(resourceName);
-        if (resource != null)
-        {
-            return resource;
-        }
-
-        return resourceManager.AddVirtualFileResource(virtualPath);
+        return resource ?? resourceManager.AddVirtualFileResource(virtualPath);
     }
 
     /// <summary>
@@ -78,8 +73,8 @@ public static class LocalizationResourceExtensions
         this IServiceCollection services,
         Action<XiHanLocalizationOptions> configureOptions)
     {
-        services.AddXiHanLocalization();
-        services.Configure(configureOptions);
+        _ = services.AddXiHanLocalization();
+        _ = services.Configure(configureOptions);
         return services;
     }
 
@@ -94,9 +89,9 @@ public static class LocalizationResourceExtensions
         IServiceProvider serviceProvider)
     {
         var options = serviceProvider.GetService<XiHanLocalizationOptions>();
-        var defaultPath = options?.DefaultResourcesPath ?? "Localization/Resources";
-        
-        resourceManager.AddVirtualFileResource(defaultPath);
+        var defaultPath = options?.ResourcesPath ?? "Localization/Resources";
+
+        _ = resourceManager.AddVirtualFileResource(defaultPath);
         return resourceManager;
     }
 
@@ -110,7 +105,7 @@ public static class LocalizationResourceExtensions
         var cultures = resource.GetSupportedCultures()
             .Select(c => new CultureInfo(c))
             .ToList();
-            
+
         return cultures.AsReadOnly();
     }
 

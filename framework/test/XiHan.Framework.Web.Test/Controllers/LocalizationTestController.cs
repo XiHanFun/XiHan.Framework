@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using System.Globalization;
 using XiHan.Framework.Localization.Core;
-using XiHan.Framework.Localization.Provider;
+using XiHan.Framework.Localization.Extensions;
+using XiHan.Framework.Localization.Options;
 using XiHan.Framework.VirtualFileSystem;
-using XiHan.Framework.Web.Test.Localization;
 
 namespace XiHan.Framework.Web.Test.Controllers;
 
@@ -17,295 +18,250 @@ namespace XiHan.Framework.Web.Test.Controllers;
 [ApiExplorerSettings(GroupName = "v1")]
 public class LocalizationTestController : ControllerBase
 {
-    private readonly IXiHanStringLocalizer _localizer;
+    private readonly IStringLocalizerFactory _localizerFactory;
     private readonly ILocalizationResourceManager _resourceManager;
-    private readonly IStringLocalizerFactory _factory;
+    private readonly LocalizationCacheManager _cacheManager;
+    private readonly IVirtualFileSystem _virtualFileSystem;
+    private readonly IOptions<XiHanLocalizationOptions> _localizationOptions;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="factory">本地化器工厂</param>
-    /// <param name="resourceManager">资源管理器</param>
     public LocalizationTestController(
-        IStringLocalizerFactory factory,
-        ILocalizationResourceManager resourceManager)
+        IStringLocalizerFactory localizerFactory,
+        ILocalizationResourceManager resourceManager,
+        LocalizationCacheManager cacheManager,
+        IVirtualFileSystem virtualFileSystem,
+        IOptions<XiHanLocalizationOptions> localizationOptions)
     {
-        _factory = factory;
+        _localizerFactory = localizerFactory;
         _resourceManager = resourceManager;
-
-        // 获取XiHan自定义的本地化器实现
-        _localizer = (IXiHanStringLocalizer)factory.Create(typeof(TestResource));
+        _cacheManager = cacheManager;
+        _virtualFileSystem = virtualFileSystem;
+        _localizationOptions = localizationOptions;
     }
 
     /// <summary>
-    /// 获取当前支持的语言
+    /// 获取支持的语言列表
     /// </summary>
     /// <returns>支持的语言列表</returns>
     [HttpGet]
     public IActionResult GetSupportedLanguages()
     {
-        var cultures = _localizer.GetSupportedCultures();
         return Ok(new
         {
-            Cultures = cultures,
-            CurrentCulture = CultureInfo.CurrentCulture.Name,
-            CurrentUICulture = CultureInfo.CurrentUICulture.Name
+            _localizationOptions.Value.SupportedCultures,
+            _localizationOptions.Value.DefaultCulture
         });
     }
 
     /// <summary>
-    /// 获取本地化字符串
+    /// 获取本地化字符串（使用当前语言文化）
     /// </summary>
     /// <param name="key">资源键</param>
-    /// <param name="culture">文化代码，如：en、zh-CN等</param>
+    /// <param name="culture">文化（可选）</param>
     /// <returns>本地化字符串</returns>
     [HttpGet]
     public IActionResult GetString(string key, string? culture = null)
     {
-        var result = string.IsNullOrEmpty(culture) ? _localizer[key] : _localizer.GetWithCulture(key, culture);
+        var localizer = HttpContext.RequestServices.GetXiHanLocalizer("TestResource");
+        var result = string.IsNullOrEmpty(culture) ? localizer[key] : localizer.GetWithCulture(key, culture);
         return Ok(new
         {
             Key = key,
             result.Value,
-            result.ResourceNotFound,
-            Culture = string.IsNullOrEmpty(culture) ? CultureInfo.CurrentUICulture.Name : culture
+            Culture = culture ?? CultureInfo.CurrentUICulture.Name,
+            result.ResourceNotFound
         });
     }
 
     /// <summary>
-    /// 获取带参数的本地化字符串
+    /// 获取带格式化参数的本地化字符串
     /// </summary>
     /// <param name="key">资源键</param>
-    /// <param name="culture">文化代码</param>
+    /// <param name="culture">文化（可选）</param>
     /// <returns>格式化后的本地化字符串</returns>
     [HttpGet]
     public IActionResult GetFormattedString(string key, string? culture = null)
     {
-        LocalizedString result;
-        var currentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-        result = string.IsNullOrEmpty(culture) ? _localizer[key, currentTime] : _localizer.GetWithCulture(key, culture, currentTime);
-
+        var localizer = HttpContext.RequestServices.GetXiHanLocalizer("TestResource");
+        var parameters = new object[] { DateTime.Now, "XiHan Framework" };
+        var result = string.IsNullOrEmpty(culture) ? localizer[key, parameters] : localizer.GetWithCulture(key, culture, parameters);
         return Ok(new
         {
             Key = key,
             result.Value,
-            result.ResourceNotFound,
-            Culture = string.IsNullOrEmpty(culture) ? CultureInfo.CurrentUICulture.Name : culture,
-            Parameter = currentTime
+            Culture = culture ?? CultureInfo.CurrentUICulture.Name,
+            Parameters = parameters,
+            result.ResourceNotFound
         });
     }
 
     /// <summary>
-    /// 获取所有本地化字符串
+    /// 获取资源的所有本地化字符串
     /// </summary>
-    /// <param name="culture">文化代码</param>
+    /// <param name="culture">文化（可选）</param>
     /// <returns>所有本地化字符串</returns>
     [HttpGet]
     public IActionResult GetAllStrings(string? culture = null)
     {
+        var localizer = HttpContext.RequestServices.GetXiHanLocalizer("TestResource");
+
         if (!string.IsNullOrEmpty(culture))
         {
+            var oldCulture = CultureInfo.CurrentUICulture;
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
+
+            try
+            {
+                return Ok(localizer.GetAllStrings());
+            }
+            finally
+            {
+                CultureInfo.CurrentUICulture = oldCulture;
+            }
         }
 
-        var cultures = _localizer.GetSupportedCultures();
-        Console.WriteLine($"支持的文化: {string.Join(", ", cultures)}");
-        Console.WriteLine($"当前UI文化: {CultureInfo.CurrentUICulture.Name}");
-
-        var strings = _localizer.GetAllStrings(includeParentCultures: true).ToList();
-        Console.WriteLine($"找到本地化字符串数量: {strings.Count}");
-
-        var resourcePath = _localizer.GetResourceBasePath();
-        Console.WriteLine($"资源基础路径: {resourcePath}");
-
-        return Ok(new
-        {
-            Culture = CultureInfo.CurrentUICulture.Name,
-            Strings = strings.Select(s => new { s.Name, s.Value, s.ResourceNotFound }),
-            SupportedCultures = cultures,
-            ResourceBasePath = resourcePath
-        });
+        return Ok(localizer.GetAllStrings());
     }
 
     /// <summary>
     /// 切换语言
     /// </summary>
-    /// <param name="culture">文化代码</param>
-    /// <returns>切换结果</returns>
+    /// <param name="culture">文化</param>
+    /// <returns>当前文化信息</returns>
     [HttpGet]
     public IActionResult SwitchLanguage(string culture)
     {
-        if (string.IsNullOrEmpty(culture))
+        if (!_localizationOptions.Value.SupportedCultures.Contains(culture))
         {
-            return BadRequest("文化代码不能为空");
+            return BadRequest($"不支持的语言文化: {culture}");
         }
 
-        try
-        {
-            var cultureInfo = new CultureInfo(culture);
-            CultureInfo.CurrentCulture = cultureInfo;
-            CultureInfo.CurrentUICulture = cultureInfo;
+        var oldCulture = CultureInfo.CurrentUICulture.Name;
+        CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
-            return Ok(new
-            {
-                Success = true,
-                NewCulture = cultureInfo.Name,
-                cultureInfo.DisplayName,
-                cultureInfo.NativeName
-            });
-        }
-        catch (Exception ex)
+        return Ok(new
         {
-            return BadRequest(new { Success = false, Error = ex.Message });
-        }
+            OldCulture = oldCulture,
+            CurrentCulture = CultureInfo.CurrentUICulture.Name,
+            CurrentCultureDisplayName = CultureInfo.CurrentUICulture.DisplayName
+        });
     }
 
+    /// <summary>
+    /// 读取资源文件
+    /// </summary>
+    /// <returns>资源文件列表</returns>
     [HttpGet]
-    public IActionResult ReadResourceFiles([FromServices] IVirtualFileSystem fileSystem)
+    public IActionResult ReadResourceFiles()
     {
-        var results = new Dictionary<string, object>();
+        var resourcePath = _localizationOptions.Value.ResourcesPath;
 
-        // 获取TestResource的类型名称
-        _ = typeof(TestResource).Name;
-
-        // 尝试多种路径可能
-        var possiblePaths = new List<string>
-        {
-            $"TestResource/TestResource.en.json",
-            $"TestResource/TestResource.zh-CN.json",
-        };
-
-        foreach (var path in possiblePaths)
-        {
-            Console.WriteLine($"尝试虚拟文件系统获取: {path}");
-            var file = fileSystem.GetFile(path);
-            results[path] = new
+        // 使用GetDirectoryContents方法获取目录内容
+        var files = _virtualFileSystem.GetDirectoryContents(resourcePath)
+            .Where(f => f.Exists && !f.IsDirectory && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            .Select(f => new
             {
-                file.Exists,
-                Length = file.Exists ? file.Length : 0
-            };
+                f.PhysicalPath,
+                f.Name,
+                f.Length,
+                f.LastModified
+            })
+            .ToList();
 
-            if (file.Exists)
+        return Ok(new
+        {
+            ResourcePath = resourcePath,
+            Files = files
+        });
+    }
+
+    /// <summary>
+    /// 直接读取资源内容
+    /// </summary>
+    /// <returns>资源内容</returns>
+    [HttpGet]
+    public async Task<IActionResult> ReadResourceDirect()
+    {
+        var resourcePath = _localizationOptions.Value.ResourcesPath;
+        var results = new List<object>();
+
+        // 使用GetDirectoryContents方法获取资源文件
+        foreach (var file in _virtualFileSystem.GetDirectoryContents(resourcePath)
+                    .Where(f => f.Exists && !f.IsDirectory && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
             {
-                try
+                using var stream = file.CreateReadStream();
+                using var reader = new StreamReader(stream);
+                var content = await reader.ReadToEndAsync();
+
+                results.Add(new
                 {
-                    using var stream = file.CreateReadStream();
-                    using var reader = new StreamReader(stream);
-                    var content = reader.ReadToEnd();
-                    results[$"{path}_内容"] = content[..Math.Min(100, content.Length)] + "...";
-                }
-                catch (Exception ex)
+                    file.PhysicalPath,
+                    Content = content
+                });
+            }
+            catch (Exception ex)
+            {
+                results.Add(new
                 {
-                    results[$"{path}_错误"] = ex.Message;
-                }
+                    file.PhysicalPath,
+                    Error = ex.Message
+                });
             }
         }
 
         return Ok(results);
     }
 
-    [HttpGet]
-    public IActionResult ReadResourceDirect()
-    {
-        try
-        {
-            var results = new Dictionary<string, object>();
-            var basePath = Path.Combine(AppContext.BaseDirectory, "Localization", "TestResource");
-
-            var files = new[] {
-                Path.Combine(basePath, "TestResource.en.json"),
-                Path.Combine(basePath, "TestResource.zh-CN.json")
-            };
-
-            foreach (var file in files)
-            {
-                if (!System.IO.File.Exists(file))
-                {
-                    results[file] = new { Exists = false };
-                    continue;
-                }
-
-                var content = System.IO.File.ReadAllText(file);
-                results[file] = new
-                {
-                    Exists = true,
-                    ContentLength = content.Length,
-                    ContentPreview = content[..Math.Min(100, content.Length)]
-                };
-            }
-
-            // 直接检查资源字符串提供者
-            var resourceProvider = HttpContext.RequestServices.GetRequiredService<IResourceStringProvider>();
-            var resource = HttpContext.RequestServices.GetRequiredService<TestResource>();
-
-            // 手动调用获取字符串方法
-            var welcomeEn = resourceProvider.GetString(resource, "Welcome", "en");
-            var welcomeZh = resourceProvider.GetString(resource, "Welcome", "zh-CN");
-
-            results["DirectResourceTest"] = new
-            {
-                EnglishWelcome = welcomeEn,
-                ChineseWelcome = welcomeZh
-            };
-
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { Error = ex.Message, ex.StackTrace });
-        }
-    }
-
+    /// <summary>
+    /// 检查资源名称
+    /// </summary>
+    /// <returns>已注册的资源名称</returns>
     [HttpGet]
     public IActionResult CheckResourceNames()
     {
-        var allResources = _resourceManager.GetResources();
-        var resourceNames = allResources.Select(r => r.ResourceName).ToList();
+        var resources = _resourceManager.GetResources();
 
-        var typeLocalizer = HttpContext.RequestServices.GetService<IXiHanStringLocalizer>();
-        var testStr = typeLocalizer?["Welcome"].Value ?? "未找到";
-
-        var results = new Dictionary<string, object>
+        var resourceInfo = resources.Select(r => new
         {
-            { "RegisteredResources", resourceNames },
-            { "ResourceCount", resourceNames.Count },
-            { "TypeLocalizerTest", testStr }
-        };
+            Name = r.ResourceName,
+            Type = r.GetType().Name,
+            SupportedCultures = r.GetSupportedCultures()
+        }).ToList();
 
-        // 测试不同方式获取资源
-        var factory = HttpContext.RequestServices.GetRequiredService<IStringLocalizerFactory>();
-        try
-        {
-            foreach (var name in resourceNames)
-            {
-                var localizer = factory.Create(name, "");
-                results[$"Resource_{name}"] = new
-                {
-                    Welcome = localizer["Welcome"].Value,
-                    Found = !localizer["Welcome"].ResourceNotFound
-                };
-            }
-        }
-        catch (Exception ex)
-        {
-            results["FactoryError"] = ex.Message;
-        }
-
-        return Ok(results);
+        return Ok(resourceInfo);
     }
 
+    /// <summary>
+    /// 简单字符串本地化测试
+    /// </summary>
+    /// <param name="key">资源键</param>
+    /// <returns>本地化字符串</returns>
     [HttpGet]
-    public IActionResult GetSimpleString(string key = "Welcome")
+    public IActionResult GetSimpleString([FromQuery] string key = "Welcome")
     {
-        // 使用标准的字符串本地化器方式
-        var localizedString = _localizer[key];
+        // 创建可本地化字符串
+        var localizableString = new LocalizableString(key, "TestResource");
+        var localizedValue = localizableString.Localize(HttpContext.RequestServices);
+
+        // 使用缓存获取本地化字符串 (演示目的)
+        var localizer = HttpContext.RequestServices.GetXiHanLocalizer("TestResource");
+        var cachedValue = _cacheManager.GetOrAdd(
+            "TestResource",
+            CultureInfo.CurrentUICulture.Name,
+            key,
+            () => localizer[key]
+        );
+
         return Ok(new
         {
             Key = key,
-            localizedString.Value,
-            localizedString.ResourceNotFound,
-            CurrentCulture = CultureInfo.CurrentUICulture.Name
+            LocalizedValue = localizedValue,
+            CachedValue = cachedValue.Value,
+            Culture = CultureInfo.CurrentUICulture.Name
         });
     }
 }

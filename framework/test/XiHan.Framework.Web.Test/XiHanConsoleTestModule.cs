@@ -27,7 +27,6 @@ using XiHan.Framework.Settings;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.VirtualFileSystem.Options;
-using XiHan.Framework.Web.Test.Localization;
 
 namespace XiHan.Framework.Web.Test;
 
@@ -54,19 +53,15 @@ public class XiHanConsoleTestModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
         // 配置虚拟文件系统的本地化资源目录
         Configure<VirtualFileSystemOptions>(config =>
         {
             _ = config
-                // 默认添加应用程序的基目录
                 .AddPhysical(DirectoryHelper.GetBaseDirectory())
-                // 默认添加静态文件目录
-                //.AddPhysical(DirectoryHelper.GetWwwrootDirectory())
-                //.AddEmbedded<XiHanConsoleTestModule>()
-                ;
+                .AddPhysical("Localization/Resources");
         });
-
-        _ = context.Services.AddSingleton<TestResource>();
     }
 
     /// <summary>
@@ -76,9 +71,8 @@ public class XiHanConsoleTestModule : XiHanModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var serviceProvider = context.ServiceProvider;
-
-        // 获取文件系统实例
         var virtualFileSystem = serviceProvider.GetRequiredService<IVirtualFileSystem>();
+
         // 订阅文件变化事件
         virtualFileSystem.OnFileChanged += (sender, args) =>
         {
