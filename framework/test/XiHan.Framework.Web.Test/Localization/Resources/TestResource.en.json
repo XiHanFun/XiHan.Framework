@@ -1,0 +1,12 @@
+{
+  "culture": "en",
+  "texts": {
+    "Welcome": "Welcome to XiHan Framework Localization",
+    "Hello": "Hello",
+    "Greeting": "Hello, {0}!",
+    "CurrentTime": "Current time is {0}",
+    "WelcomeMessage": "Welcome to {1}, today is {0:yyyy-MM-dd}",
+    "Documentation": "See documentation for more information",
+    "LanguageName": "English"
+  }
+}

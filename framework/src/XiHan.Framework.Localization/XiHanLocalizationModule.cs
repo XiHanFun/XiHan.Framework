@@ -12,8 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Localization.Core;
 using XiHan.Framework.Localization.Extensions;
+using XiHan.Framework.Localization.Options;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
 using XiHan.Framework.VirtualFileSystem;
@@ -37,6 +42,18 @@ public class XiHanLocalizationModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+
+        // 配置选项
+        Configure<XiHanLocalizationOptions>(options =>
+        {
+            options.ResourcesPath = "Localization/Resources"; // 确保路径正确
+        });
+
+        // 确保内存缓存服务
+        services.TryAddSingleton<IMemoryCache, MemoryCache>();
+
+        // 添加本地化缓存管理器
+        _ = services.AddSingleton<LocalizationCacheManager>();
 
         // 注册本地化服务
         _ = services.AddXiHanLocalization();

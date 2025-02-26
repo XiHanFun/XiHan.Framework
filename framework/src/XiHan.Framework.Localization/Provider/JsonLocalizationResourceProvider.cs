@@ -14,9 +14,11 @@
 
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using XiHan.Framework.Core.Localization;
+using XiHan.Framework.Localization.Options;
 using XiHan.Framework.Localization.Resources;
 using XiHan.Framework.VirtualFileSystem;
 
@@ -30,19 +32,23 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     private readonly ILogger<JsonLocalizationResourceProvider> _logger;
     private readonly ConcurrentDictionary<string, Dictionary<string, string>> _resourceCache;
     private readonly IVirtualFileSystem _virtualFileSystem;
+    private readonly XiHanLocalizationOptions _options;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="logger">日志记录器</param>
     /// <param name="virtualFileSystem">虚拟文件系统</param>
+    /// <param name="options">本地化选项</param>
     public JsonLocalizationResourceProvider(
         ILogger<JsonLocalizationResourceProvider> logger,
-        IVirtualFileSystem virtualFileSystem)
+        IVirtualFileSystem virtualFileSystem,
+        IOptions<XiHanLocalizationOptions> options)
     {
         _logger = logger;
         _virtualFileSystem = virtualFileSystem;
         _resourceCache = new ConcurrentDictionary<string, Dictionary<string, string>>();
+        _options = options.Value;
     }
 
     /// <summary>

@@ -13,8 +13,10 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
 using XiHan.Framework.Localization.Core;
+using XiHan.Framework.Localization.Options;
 using XiHan.Framework.Localization.Provider;
 using XiHan.Framework.Localization.Settings;
 using XiHan.Framework.Localization.VirtualFileSystem;
@@ -34,16 +36,33 @@ public static class LocalizationExtensions
     /// <returns>服务集合</returns>
     public static IServiceCollection AddXiHanLocalization(this IServiceCollection services)
     {
+        return services.AddXiHanLocalization(_ => { });
+    }
+
+    /// <summary>
+    /// 注册虚拟文件JSON本地化系统
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configure">配置选项</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanLocalization(
+        this IServiceCollection services,
+        Action<XiHanLocalizationOptions> configure)
+    {
+        // 配置选项
+        _ = services.Configure(configure);
+
         // 添加标准化本地化服务
         _ = services.AddLocalization();
 
-        _ = services.AddSingleton<IVirtualFileResourceFactory, VirtualFileResourceFactory>();
-        _ = services.AddSingleton<ILocalizationResourceManager, LocalizationResourceManager>();
-        _ = services.AddSingleton<IResourceStringProvider, JsonLocalizationResourceProvider>();
-        _ = services.AddSingleton<ISettingDefinitionProvider, LocalizationSettingDefinitionProvider>();
+        // 注册核心服务
+        services.TryAddSingleton<IVirtualFileResourceFactory, VirtualFileResourceFactory>();
+        services.TryAddSingleton<ILocalizationResourceManager, LocalizationResourceManager>();
+        services.TryAddSingleton<IResourceStringProvider, JsonLocalizationResourceProvider>();
+        services.TryAddSingleton<ISettingDefinitionProvider, LocalizationSettingDefinitionProvider>();
 
         // 注册资源管理器和工厂
-        _ = services.AddSingleton<IStringLocalizerFactory, XiHanStringLocalizerFactory>();
+        services.TryAddSingleton<IStringLocalizerFactory, XiHanStringLocalizerFactory>();
 
         return services;
     }
@@ -75,5 +94,42 @@ public static class LocalizationExtensions
         var resourceStringProvider = provider.GetRequiredService<IResourceStringProvider>();
 
         return new XiHanStringLocalizer(resource, factory, resourceStringProvider);
+    }
+
+    /// <summary>
+    /// 使用指定文化获取本地化字符串
+    /// </summary>
+    /// <param name="localizer">本地化器</param>
+    /// <param name="name">资源名</param>
+    /// <param name="culture">文化</param>
+    /// <returns>本地化字符串</returns>
+    public static LocalizedString WithCulture(this IStringLocalizer localizer, string name, string culture)
+    {
+        if (localizer is IXiHanStringLocalizer xiHanLocalizer)
+        {
+            return xiHanLocalizer.GetWithCulture(name, culture);
+        }
+
+        // 如果不是 IXiHanStringLocalizer，回退到标准行为
+        return localizer[name];
+    }
+
+    /// <summary>
+    /// 使用指定文化获取本地化字符串，支持格式化参数
+    /// </summary>
+    /// <param name="localizer">本地化器</param>
+    /// <param name="name">资源名</param>
+    /// <param name="culture">文化</param>
+    /// <param name="arguments">格式化参数</param>
+    /// <returns>本地化字符串</returns>
+    public static LocalizedString WithCulture(this IStringLocalizer localizer, string name, string culture, params object[] arguments)
+    {
+        if (localizer is IXiHanStringLocalizer xiHanLocalizer)
+        {
+            return xiHanLocalizer.GetWithCulture(name, culture, arguments);
+        }
+
+        // 如果不是 IXiHanStringLocalizer，回退到标准行为
+        return localizer[name, arguments];
     }
 }
