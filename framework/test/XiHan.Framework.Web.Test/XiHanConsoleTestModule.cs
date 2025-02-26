@@ -27,6 +27,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Ddd.Application;
 using XiHan.Framework.Localization;
 using XiHan.Framework.Settings;
+using XiHan.Framework.Utils.IO;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.VirtualFileSystem.Options;
 using XiHan.Framework.Web.Test.Localization;
@@ -39,7 +40,7 @@ namespace XiHan.Framework.Web.Test;
 [DependsOn(
     typeof(XiHanBlobStoringModule),
     typeof(XiHanSettingsModule),
-     typeof(XiHanLocalizationModule),
+    typeof(XiHanLocalizationModule),
     typeof(XiHanDddApplicationModule),
     typeof(XiHanAspNetCoreSerilogModule),
     typeof(XiHanAspNetCoreSignalRModule),
@@ -54,31 +55,15 @@ public class XiHanConsoleTestModule : XiHanModule
     /// 服务配置
     /// </summary>
     /// <param name="context"></param>
-    public override void PreConfigureServices(ServiceConfigurationContext context)
-    {
-        // 确保Localization目录在物理位置存在并且被虚拟文件系统正确识别
-        var localizationDir = Path.Combine(AppContext.BaseDirectory, "Localization");
-        if (!Directory.Exists(localizationDir))
-        {
-            _ = Directory.CreateDirectory(localizationDir);
-            Console.WriteLine($"创建Localization根目录: {localizationDir}");
-        }
-    }
-
-    /// <summary>
-    /// 服务配置
-    /// </summary>
-    /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // 首先，修改虚拟文件系统配置以确保能找到Localization目录
+        // 配置虚拟文件系统的本地化资源目录
         Configure<VirtualFileSystemOptions>(config =>
         {
-            // 先添加基础目录，确保根目录和Localization目录存在
             _ = config
-                // 添加主目录
+                // 默认添加静态文件目录
                 .AddPhysical("wwwroot")
-                // 然后添加Localization专用目录
+                // 默认添加静态文件目录
                 .AddPhysical("Localization")
                 .AddEmbedded<XiHanConsoleTestModule>();
         });

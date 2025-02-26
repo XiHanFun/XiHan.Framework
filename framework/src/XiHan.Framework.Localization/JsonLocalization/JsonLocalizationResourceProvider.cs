@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -67,12 +67,12 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider, ISingle
             throw new ArgumentNullException(nameof(name));
         }
 
-        // 优先尝试从当前资源获取
-        var currentValue = GetStringFromResource(resource, name, cultureName);
-        if (currentValue != null)
-        {
-            return currentValue;
-        }
+        //// 优先尝试从当前资源获取
+        //var currentValue = GetStringFromResource(resource, name, cultureName);
+        //if (currentValue != null)
+        //{
+        //    return currentValue;
+        //}
 
         // 如果当前资源没有找到，尝试从基础资源中查找
         foreach (var baseResource in resource.BaseResources)
