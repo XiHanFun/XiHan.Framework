@@ -114,4 +114,28 @@ public abstract class BaseLocalizationResource : ILocalizationResource
                     ? throw new XiHanException($"Could not create resource instance from given type: {resourceType.AssemblyQualifiedName}")
                     : InheritFrom(resource);
     }
+
+    /// <summary>
+    /// 获取资源支持的所有文化
+    /// </summary>
+    /// <returns>支持的文化名称列表</returns>
+    public virtual IEnumerable<string> GetSupportedCultures()
+    {
+        var cultures = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // 添加默认文化
+            DefaultCulture
+        };
+
+        // 从基础资源中获取更多的文化
+        foreach (var baseResource in BaseResources)
+        {
+            foreach (var culture in baseResource.GetSupportedCultures())
+            {
+                _ = cultures.Add(culture);
+            }
+        }
+
+        return cultures;
+    }
 }

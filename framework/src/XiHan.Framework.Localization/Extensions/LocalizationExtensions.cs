@@ -15,8 +15,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using XiHan.Framework.Localization.Core;
-using XiHan.Framework.Localization.JsonLocalization;
-using XiHan.Framework.Localization.Resources;
+using XiHan.Framework.Localization.Provider;
+using XiHan.Framework.Localization.Settings;
+using XiHan.Framework.Localization.VirtualFileSystem;
+using XiHan.Framework.Settings.Definitions;
 
 namespace XiHan.Framework.Localization.Extensions;
 
@@ -35,8 +37,10 @@ public static class LocalizationExtensions
         // 添加标准化本地化服务
         _ = services.AddLocalization();
 
-        // 添加JSON资源提供程序
+        _ = services.AddSingleton<IVirtualFileResourceFactory, VirtualFileResourceFactory>();
+        _ = services.AddSingleton<ILocalizationResourceManager, LocalizationResourceManager>();
         _ = services.AddSingleton<IResourceStringProvider, JsonLocalizationResourceProvider>();
+        _ = services.AddSingleton<ISettingDefinitionProvider, LocalizationSettingDefinitionProvider>();
 
         // 注册资源管理器和工厂
         _ = services.AddSingleton<IStringLocalizerFactory, XiHanStringLocalizerFactory>();

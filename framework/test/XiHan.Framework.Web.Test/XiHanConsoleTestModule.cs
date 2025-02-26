@@ -12,11 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Localization;
-using System.Globalization;
 using XiHan.Framework.AspNetCore.Authentication.JwtBearer;
 using XiHan.Framework.AspNetCore.Authentication.OAuth;
-using XiHan.Framework.AspNetCore.Extensions;
 using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.AspNetCore.Serilog;
 using XiHan.Framework.AspNetCore.SignalR;
@@ -61,11 +58,12 @@ public class XiHanConsoleTestModule : XiHanModule
         Configure<VirtualFileSystemOptions>(config =>
         {
             _ = config
+                // 默认添加应用程序的基目录
+                .AddPhysical(DirectoryHelper.GetBaseDirectory())
                 // 默认添加静态文件目录
-                .AddPhysical("wwwroot")
-                // 默认添加静态文件目录
-                .AddPhysical("Localization")
-                .AddEmbedded<XiHanConsoleTestModule>();
+                //.AddPhysical(DirectoryHelper.GetWwwrootDirectory())
+                //.AddEmbedded<XiHanConsoleTestModule>()
+                ;
         });
 
         _ = context.Services.AddSingleton<TestResource>();
@@ -77,29 +75,16 @@ public class XiHanConsoleTestModule : XiHanModule
     /// <param name="context"></param>
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        var serviceProvider = context.ServiceProvider;
+
         // 获取文件系统实例
-        var fileSystem = context.ServiceProvider.GetRequiredService<IVirtualFileSystem>();
+        var virtualFileSystem = serviceProvider.GetRequiredService<IVirtualFileSystem>();
         // 订阅文件变化事件
-        fileSystem.OnFileChanged += (sender, args) =>
+        virtualFileSystem.OnFileChanged += (sender, args) =>
         {
             // 处理文件变化逻辑
             Console.WriteLine($"文件发生变化: {args.FilePath} {args.ChangeType}");
         };
-        _ = fileSystem.Watch("*.*");
-
-        var app = context.GetApplicationBuilder();
-
-        _ = app.UseRequestLocalization(options =>
-        {
-            var supportedCultures = new[]
-            {
-                new CultureInfo("en"),
-                new CultureInfo("zh-CN")
-            };
-
-            options.DefaultRequestCulture = new RequestCulture("en");
-            options.SupportedCultures = supportedCultures;
-            options.SupportedUICultures = supportedCultures;
-        });
+        _ = virtualFileSystem.Watch("*.*");
     }
 }

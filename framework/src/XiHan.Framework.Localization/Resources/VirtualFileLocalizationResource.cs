@@ -12,10 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Localization.Resources;
 using XiHan.Framework.VirtualFileSystem;
 
-namespace XiHan.Framework.Localization.VirtualFileSystem;
+namespace XiHan.Framework.Localization.Resources;
 
 /// <summary>
 /// 虚拟文件本地化资源
