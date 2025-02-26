@@ -1,4 +1,4 @@
-using XiHan.Framework.Localization.Resources;
+﻿using XiHan.Framework.Localization.Resources;
 
 namespace XiHan.Framework.Web.Test.Localization;
 
@@ -24,8 +24,8 @@ public class TestResource : BaseLocalizationResource
         Console.WriteLine($"初始化TestResource, 基础路径: {BasePath}");
 
         // 添加调试日志验证文件
-        var enJsonPath = Path.Combine(Path.Combine(AppContext.BaseDirectory, BasePath), "TestResource.en.json");
-        var zhJsonPath = Path.Combine(Path.Combine(AppContext.BaseDirectory, BasePath), "TestResource.zh-CN.json");
+        var enJsonPath = "TestResource.en.json";
+        var zhJsonPath = "TestResource.zh-CN.json";
 
         Console.WriteLine($"英文资源文件: {enJsonPath}, 存在: {File.Exists(enJsonPath)}");
         if (File.Exists(enJsonPath))

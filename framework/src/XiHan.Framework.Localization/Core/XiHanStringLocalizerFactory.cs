@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Localization;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Localization.Resources;
 
 namespace XiHan.Framework.Localization.Core;
@@ -21,7 +20,7 @@ namespace XiHan.Framework.Localization.Core;
 /// <summary>
 /// 曦寒字符串本地化器工厂
 /// </summary>
-public class XiHanStringLocalizerFactory : IStringLocalizerFactory, ISingletonDependency
+public class XiHanStringLocalizerFactory : IStringLocalizerFactory
 {
     private readonly ILocalizationResourceManager _resourceManager;
     private readonly IResourceStringProvider _resourceStringProvider;
