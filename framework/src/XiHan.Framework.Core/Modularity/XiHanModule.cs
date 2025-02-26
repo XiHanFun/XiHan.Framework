@@ -272,7 +272,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     }
 
     /// <summary>
-    /// 配置前所有选项
+    /// 配置后所有选项
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     /// <param name="configureOptions"></param>
