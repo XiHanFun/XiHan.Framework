@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Localization\TestResource\TestResource.en.json" />
+    <Content Remove="Localization\TestResource\TestResource.zh-CN.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\TestResource\TestResource.en.json" />
+    <EmbeddedResource Include="Localization\TestResource\TestResource.zh-CN.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj" />
@@ -25,6 +35,10 @@
     <Content Update="Localization\TestResource\**\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

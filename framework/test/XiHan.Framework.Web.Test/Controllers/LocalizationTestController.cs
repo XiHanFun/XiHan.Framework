@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Globalization;
 using XiHan.Framework.Localization.Core;
@@ -35,7 +35,6 @@ public class LocalizationTestController : ControllerBase
 
         // 获取XiHan自定义的本地化器实现
         _localizer = (IXiHanStringLocalizer)factory.Create(typeof(TestResource));
-        Console.WriteLine($"控制器初始化完成，本地化器: {(_localizer != null ? "已注入" : "未注入")}");
     }
 
     /// <summary>
@@ -173,8 +172,8 @@ public class LocalizationTestController : ControllerBase
         // 尝试多种路径可能
         var possiblePaths = new List<string>
         {
-            $"Localization/TestResource/TestResource.en.json",
-            $"Localization/TestResource/TestResource.zh-CN.json",
+            $"TestResource/TestResource.en.json",
+            $"TestResource/TestResource.zh-CN.json",
         };
 
         foreach (var path in possiblePaths)
