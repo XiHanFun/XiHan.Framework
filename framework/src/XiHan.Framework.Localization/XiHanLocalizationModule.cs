@@ -12,14 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Localization.Core;
 using XiHan.Framework.Localization.Extensions;
-using XiHan.Framework.Localization.JsonLocalization;
-using XiHan.Framework.Localization.Resources;
-using XiHan.Framework.Localization.VirtualFileSystem;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
 using XiHan.Framework.VirtualFileSystem;
@@ -46,48 +40,5 @@ public class XiHanLocalizationModule : XiHanModule
 
         // 注册本地化服务
         _ = services.AddXiHanLocalization();
-
-        // 注册接口实现
-        _ = services.AddSingleton<ILocalizationResourceManager, LocalizationResourceManager>();
-        _ = services.AddSingleton<IVirtualFileResourceFactory, VirtualFileResourceFactory>();
-        _ = services.AddSingleton<IResourceStringProvider, JsonLocalizationResourceProvider>();
-    }
-
-    /// <summary>
-    /// 应用程序初始化
-    /// </summary>
-    /// <param name="context">应用初始化上下文</param>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        var serviceProvider = context.ServiceProvider;
-
-        // 从虚拟文件系统注册本地化资源
-        RegisterLocalizationResourcesFromVirtualFileSystem(serviceProvider);
-    }
-
-    /// <summary>
-    /// 从虚拟文件系统注册本地化资源
-    /// </summary>
-    /// <param name="serviceProvider">服务提供者</param>
-    private static void RegisterLocalizationResourcesFromVirtualFileSystem(IServiceProvider serviceProvider)
-    {
-        var resourceManager = serviceProvider.GetRequiredService<ILocalizationResourceManager>();
-        var virtualFileSystem = serviceProvider.GetRequiredService<IVirtualFileSystem>();
-
-        // 查找 Localization 目录下的所有JSON文件
-        var directoryContents = virtualFileSystem.GetDirectoryContents("Localization");
-        if (!directoryContents.Exists)
-        {
-            return;
-        }
-
-        foreach (var file in directoryContents)
-        {
-            if (file.IsDirectory)
-            {
-                var resourcePath = $"Localization/{file.Name}";
-                _ = resourceManager.AddVirtualFileResource(resourcePath);
-            }
-        }
     }
 }

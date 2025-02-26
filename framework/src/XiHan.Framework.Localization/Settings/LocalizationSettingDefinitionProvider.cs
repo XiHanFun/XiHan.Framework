@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Settings.Definitions;
 
 namespace XiHan.Framework.Localization.Settings;
@@ -20,7 +19,7 @@ namespace XiHan.Framework.Localization.Settings;
 /// <summary>
 /// 本地化设置定义提供者
 /// </summary>
-public class LocalizationSettingDefinitionProvider : ISettingDefinitionProvider, ISingletonDependency
+public class LocalizationSettingDefinitionProvider : ISettingDefinitionProvider
 {
     /// <summary>
     /// 定义设置

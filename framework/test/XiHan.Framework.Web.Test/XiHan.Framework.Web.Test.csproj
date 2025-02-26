@@ -7,13 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Localization\TestResource\TestResource.en.json" />
-    <Content Remove="Localization\TestResource\TestResource.zh-CN.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Localization\TestResource\TestResource.en.json" />
-    <EmbeddedResource Include="Localization\TestResource\TestResource.zh-CN.json" />
+    <EmbeddedResource Include="Localization\TestResource.en.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Localization\TestResource.zh-CN.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -29,16 +28,6 @@
     <ProjectReference Include="..\..\src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="Localization\TestResource\**\*.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

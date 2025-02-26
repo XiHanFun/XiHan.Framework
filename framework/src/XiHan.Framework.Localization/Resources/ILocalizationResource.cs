@@ -57,4 +57,10 @@ public interface ILocalizationResource
     /// <param name="resourceType">资源类型</param>
     /// <returns>当前资源实例</returns>
     ILocalizationResource InheritFrom(Type resourceType);
+
+    /// <summary>
+    /// 获取资源支持的所有文化
+    /// </summary>
+    /// <returns>支持的文化名称列表</returns>
+    IEnumerable<string> GetSupportedCultures();
 }

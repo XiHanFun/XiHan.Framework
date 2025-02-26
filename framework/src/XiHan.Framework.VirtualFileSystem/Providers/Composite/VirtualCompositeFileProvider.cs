@@ -42,7 +42,6 @@ public class VirtualCompositeFileProvider : IFileProvider
     public IDirectoryContents GetDirectoryContents(string subpath)
     {
         var contents = new CompositeDirectoryContents([.. _providers.Select(p => p.Provider)], subpath);
-
         return new PrioritizedDirectoryContents(contents, _providers);
     }
 
