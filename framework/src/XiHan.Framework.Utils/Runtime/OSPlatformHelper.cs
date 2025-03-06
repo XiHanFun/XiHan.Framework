@@ -14,6 +14,7 @@
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
+using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Timing;
 
@@ -125,7 +126,7 @@ public static class OsPlatformHelper
         }
         catch (Exception ex)
         {
-            ConsoleHelper.Error("获取系统运行时间出错，" + ex.Message);
+            LogHelper.Error("获取系统运行时间出错，" + ex.Message);
         }
 
         return runTime;
