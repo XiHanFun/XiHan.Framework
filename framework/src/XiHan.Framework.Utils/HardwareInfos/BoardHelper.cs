@@ -14,7 +14,7 @@
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
@@ -77,7 +77,7 @@ public static class BoardHelper
         }
         catch (Exception ex)
         {
-            ConsoleHelper.Error("获取主板信息出错，" + ex.Message);
+            LogHelper.Error("获取主板信息出错，" + ex.Message);
         }
 
         return boardInfo;
