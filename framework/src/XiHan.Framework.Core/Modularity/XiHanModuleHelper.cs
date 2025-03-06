@@ -15,7 +15,7 @@
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Core.Modularity;
 
@@ -33,10 +33,10 @@ public static class XiHanModuleHelper
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
         List<Type> moduleTypes = [];
-        ConsoleHelper.Handle("加载曦寒模块:");
+        LogHelper.Handle("加载曦寒模块:");
         //logger?.LogInformation("加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
-        ConsoleHelper.Handle("已初始化所有模块。");
+        LogHelper.Handle("已初始化所有模块。");
         //logger?.LogInformation("已初始化所有模块。");
         return moduleTypes;
     }
@@ -109,14 +109,14 @@ public static class XiHanModuleHelper
         {
             // 构造当前节点的前缀和分支符号
             var nodeContainsLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace + "(此模块之前已加载)";
-            ConsoleHelper.Handle(nodeContainsLine);
+            LogHelper.Handle(nodeContainsLine);
             //logger?.LogInformation(nodeContainsLine);
             return;
         }
 
         // 构造当前节点的前缀和分支符号
         var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace;
-        ConsoleHelper.Handle(nodeLine);
+        LogHelper.Handle(nodeLine);
         //logger?.LogInformation(nodeLine);
 
         moduleTypes.Add(moduleType);

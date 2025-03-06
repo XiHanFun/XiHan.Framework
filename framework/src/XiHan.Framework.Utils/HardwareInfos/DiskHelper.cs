@@ -15,6 +15,7 @@
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.IO;
+using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.Runtime;
 using XiHan.Framework.Utils.System;
 
@@ -79,7 +80,7 @@ public static class DiskHelper
         }
         catch (Exception ex)
         {
-            ConsoleHelper.Error("获取处理器信息出错，" + ex.Message);
+            LogHelper.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return diskInfos;

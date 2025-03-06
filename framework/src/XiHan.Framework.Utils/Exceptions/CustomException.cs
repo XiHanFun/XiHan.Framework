@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.Exceptions;
 
@@ -28,7 +28,7 @@ public class CustomException : Exception
     /// </summary>
     public CustomException() : base(DefaultMessage)
     {
-        ConsoleHelper.Error(DefaultMessage);
+        LogHelper.Error(DefaultMessage);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class CustomException : Exception
     /// <param name="message"></param>
     public CustomException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleHelper.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class CustomException : Exception
     /// <param name="exception"></param>
     public CustomException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
     {
-        ConsoleHelper.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 
     /// <summary>

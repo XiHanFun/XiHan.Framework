@@ -14,6 +14,7 @@
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.CommandLine;
+using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
@@ -70,7 +71,7 @@ public static class CpuHelper
         }
         catch (Exception ex)
         {
-            ConsoleHelper.Error("获取处理器信息出错，" + ex.Message);
+            LogHelper.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return cpuInfo;
