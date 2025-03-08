@@ -16,7 +16,7 @@
         <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.38.0-alpha" />
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.HuggingFace" Version="1.38.0-preview" />
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.38.0-alpha" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.38.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.40.1" />
     </ItemGroup>
 
     <ItemGroup>
