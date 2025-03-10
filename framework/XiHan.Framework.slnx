@@ -55,9 +55,9 @@
   <Folder Name="/2.test/">
     <Project Path="test/XiHan.Framework.AI.Test/XiHan.Framework.AI.Test.csproj" />
     <Project Path="test/XiHan.Framework.AspNetCore.Test/XiHan.Framework.AspNetCore.Test.csproj" />
-    <Project Path="test/XiHan.Framework.Web.Test/XiHan.Framework.Web.Test.csproj" Id="7c879f46-8797-4721-a1d7-37d2c1b8e94c" />
     <Project Path="test/XiHan.Framework.Core.Test/XiHan.Framework.Core.Test.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Test/XiHan.Framework.Utils.Test.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Test/XiHan.Framework.Web.Test.csproj" Id="7c879f46-8797-4721-a1d7-37d2c1b8e94c" />
   </Folder>
   <Folder Name="/3.others/">
     <File Path=".editorconfig" />
@@ -68,7 +68,8 @@
     <File Path="XiHan.Framework.txt" />
   </Folder>
   <Folder Name="/3.others/props/" Id="3d4d95ec-c164-c61f-d550-42be88f514ca">
-    <File Path="props/common.props" />
+    <File Path="props/net.props" />
+    <File Path="props/nuget.props" />
     <File Path="props/version.props" />
   </Folder>
   <Folder Name="/3.others/scripts/" Id="af28042a-d269-3585-82af-65182e6bcb8a" />

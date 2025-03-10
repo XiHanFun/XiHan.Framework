@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\net.props"/>
+    <Import Project="..\..\props\nuget.props" />
     <Import Project="..\..\props\version.props" />
 
     <PropertyGroup>
@@ -12,7 +13,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0-preview.1.25081.1" />
     </ItemGroup>
 
     <ItemGroup>
