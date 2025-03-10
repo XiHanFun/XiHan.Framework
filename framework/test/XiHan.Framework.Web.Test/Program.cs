@@ -1,7 +1,7 @@
 ﻿using Serilog;
 using XiHan.Framework.AspNetCore.Extensions.Builder;
-using XiHan.Framework.Web.Test;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Test;
 
 try
 {
