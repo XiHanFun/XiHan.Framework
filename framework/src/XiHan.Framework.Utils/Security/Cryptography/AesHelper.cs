@@ -155,7 +155,12 @@ public static class AesHelper
     /// <returns></returns>
     private static byte[] DeriveKey(string password, byte[] salt, int bytes)
     {
-        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, Iterations, HashAlgorithmName.SHA256);
-        return pbkdf2.GetBytes(bytes);
+        return Rfc2898DeriveBytes.Pbkdf2(
+            password: password,
+            salt: salt,
+            iterations: Iterations,
+            hashAlgorithm: HashAlgorithmName.SHA256,
+            outputLength: bytes
+        );
     }
 }
