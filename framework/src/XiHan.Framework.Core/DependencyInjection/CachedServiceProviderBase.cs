@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 

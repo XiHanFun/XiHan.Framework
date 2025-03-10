@@ -13,7 +13,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0-preview.1.25081.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
     </ItemGroup>
 
     <ItemGroup>
