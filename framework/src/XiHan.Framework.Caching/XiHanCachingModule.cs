@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Caching.Hybrid;
 
 namespace XiHan.Framework.Caching;
 
@@ -32,8 +33,16 @@ public class XiHanCachingModule : XiHanModule
 
         _ = services.AddMemoryCache();
         _ = services.AddDistributedMemoryCache();
-
         _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
         _ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
+
+        _ = services.AddHybridCache();
+        _ = services.AddSingleton(typeof(IHybridCache<>), typeof(XiHanHybridCache<>));
+        _ = services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
+
+        services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
+        {
+            cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
+        });
     }
 }

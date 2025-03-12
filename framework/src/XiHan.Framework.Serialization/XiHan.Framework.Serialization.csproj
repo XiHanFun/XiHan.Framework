@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\net.props"/>
+    <Import Project="..\..\props\net.props" />
     <Import Project="..\..\props\nuget.props" />
-    <Import Project="..\..\props\version.props"/>
+    <Import Project="..\..\props\version.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.Serialization</Title>
@@ -13,7 +13,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
     </ItemGroup>
 
 </Project>
