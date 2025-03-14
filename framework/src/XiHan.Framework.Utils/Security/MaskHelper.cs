@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DesensitizationHelper
+// FileName:MaskHelper
 // Guid:86738b17-6256-4f60-a9cd-016a7a471396
 // Author:afand
 // Email:me@zhaifanhua.com
@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.Security;
 /// <summary>
 /// 脱敏帮助类，提供常用敏感信息的脱敏处理方法
 /// </summary>
-public static partial class DesensitizationHelper
+public static partial class MaskHelper
 {
     /// <summary>
     /// 通用脱敏方法：保留前面 frontCount 个字符和后面 endCount 个字符，其余部分用 maskChar 替换
