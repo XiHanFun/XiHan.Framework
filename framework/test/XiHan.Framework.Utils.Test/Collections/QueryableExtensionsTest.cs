@@ -1,5 +1,5 @@
 ﻿using JetBrains.Annotations;
-using XiHan.Framework.Utils.Collections;
+using XiHan.Framework.Utils.Linq.Expressions;
 
 namespace XiHan.Framework.Utils.Test.Collections;
 
