@@ -12,8 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using System.ComponentModel;
+using System.Collections.Concurrent;
 using System.Reflection;
+using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Utils.System;
 
@@ -22,6 +23,38 @@ namespace XiHan.Framework.Utils.System;
 /// </summary>
 public static class EnumExtensions
 {
+    // 枚举信息缓存
+    private static readonly ConcurrentDictionary<Type, IEnumerable<EnumInfo>> EnumInfosCatch = [];
+
+    // 枚举类型缓存
+    private static ConcurrentDictionary<string, Type> EnumTypeDict = [];
+
+    /// <summary>
+    /// 根据键获取单个枚举的值
+    /// </summary>
+    /// <param name="keyEnum"></param>
+    /// <returns></returns>
+    public static int GetValue(this Enum keyEnum)
+    {
+        var enumName = keyEnum.ToString();
+        var field = keyEnum.GetType().GetField(enumName);
+        return field == null ? throw new ArgumentException(null, nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
+    }
+
+    /// <summary>
+    /// 根据键获取单个枚举的描述信息
+    /// </summary>
+    /// <param name="keyEnum"></param>
+    /// <returns></returns>
+    public static string GetDescription(this Enum keyEnum)
+    {
+        var enumName = keyEnum.ToString();
+        var field = keyEnum.GetType().GetField(enumName);
+        return field == null
+            ? string.Empty
+            : field.GetDescriptionValue();
+    }
+
     /// <summary>
     /// 根据名称匹配枚举
     /// </summary>
@@ -35,118 +68,71 @@ public static class EnumExtensions
     }
 
     /// <summary>
-    /// 根据键获取单个枚举的值
-    /// </summary>
-    /// <param name="keyEnum"></param>
-    /// <returns></returns>
-    public static int GetEnumValueByKey(this Enum keyEnum)
-    {
-        var enumName = keyEnum.ToString();
-        var field = keyEnum.GetType().GetField(enumName);
-        return field == null ? throw new ArgumentException(null, nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
-    }
-
-    /// <summary>
-    /// 根据键获取单个枚举的描述信息
-    /// </summary>
-    /// <param name="keyEnum"></param>
-    /// <returns></returns>
-    public static string GetEnumDescriptionByKey(this Enum keyEnum)
-    {
-        var enumName = keyEnum.ToString();
-        var field = keyEnum.GetType().GetField(enumName);
-        return field == null
-            ? string.Empty
-            : field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description
-                ? description.Description
-                : string.Empty;
-    }
-
-    /// <summary>
-    /// 根据值获取单个枚举的描述信息
-    /// </summary>
-    /// <param name="enumValue"></param>
-    /// <returns></returns>
-    public static string GetEnumDescriptionByValue<TEnum>(this object enumValue)
-    {
-        string? description;
-        try
-        {
-            var tEnum = Enum.Parse(typeof(TEnum), enumValue.ParseToString()) as Enum;
-            description = tEnum!.GetEnumDescriptionByKey();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("获取单个枚举的描述信息出错，" + ex.Message);
-        }
-
-        return description;
-    }
-
-    /// <summary>
     /// 获取枚举信息列表
     /// </summary>
     /// <param name="enumType"></param>
     /// <returns></returns>
     public static IEnumerable<EnumInfo> GetEnumInfos(this Type enumType)
     {
-        List<EnumInfo> result = [];
-        var fields = enumType.GetFields().Skip(1).ToList();
-        fields.ForEach(field =>
+        if (!enumType.IsEnum)
         {
-            // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum)
-            {
-                return;
-            }
+            throw new ArgumentException("类型不是枚举类型", nameof(enumType));
+        }
 
-            var desc = string.Empty;
-            if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
-            {
-                desc = description.Description;
-            }
+        // 缓存中有则直接返回
+        var enumInfos = new List<EnumInfo>();
+        if (EnumInfosCatch.TryGetValue(enumType, out var enumInfoList))
+        {
+            return enumInfoList;
+        }
 
-            result.Add(new EnumInfo
+        // 枚举字段
+        var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
+        foreach (var field in fields)
+        {
+            enumInfos.Add(new EnumInfo
             {
-                Key = field.Name.ToString(),
+                Key = field.Name,
                 Value = (int)field.GetRawConstantValue()!,
-                Label = desc
+                Label = field.GetDescriptionValue(),
+                Theme = field.GetThemeValue()
             });
-        });
-        return result;
+        }
+
+        // 加入缓存
+        EnumInfosCatch.TryAdd(enumType, enumInfos);
+        return enumInfos;
     }
 
     /// <summary>
-    /// 枚举的值与描述转为字典类型
+    /// 从程序集中查找指定枚举类型
     /// </summary>
-    /// <param name="enumType"></param>
+    /// <param name="assembly"></param>
+    /// <param name="typeName"></param>
     /// <returns></returns>
-    public static Dictionary<int, string> GetEnumValueDescriptionToDictionary(this Type enumType)
+    public static Type? TryToGetEnumType(this Assembly assembly, string typeName)
     {
-        Dictionary<int, string> result = [];
-        var fields = enumType.GetFields().ToList();
-        if (fields.Count != 0)
-        {
-            return result;
-        }
+        // 枚举缓存为空则重新加载枚举类型字典
+        EnumTypeDict ??= LoadEnumTypeDict(assembly);
 
-        fields.ForEach(field =>
-        {
-            // 不是枚举字段不处理
-            if (!field.FieldType.IsEnum)
-            {
-                return;
-            }
+        // 按名称查找
+        return EnumTypeDict.TryGetValue(typeName, out var value) ? value : null;
+    }
 
-            var desc = string.Empty;
-            if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
-            {
-                desc = description.Description;
-            }
+    /// <summary>
+    /// 从程序集中加载所有枚举类型
+    /// </summary>
+    /// <param name="assembly"></param>
+    /// <returns></returns>
+    public static ConcurrentDictionary<string, Type> LoadEnumTypeDict(this Assembly assembly)
+    {
+        // 取程序集中所有类型
+        var typeArray = assembly.GetTypes();
 
-            result.Add((int)field.GetRawConstantValue()!, desc);
-        });
-        return result;
+        // 过滤非枚举类型，转成字典格式并返回
+        var dict = typeArray.Where(o => o.IsEnum).ToDictionary(o => o.Name, o => o);
+        var enumTypeDict = new ConcurrentDictionary<string, Type>(dict);
+        return enumTypeDict;
     }
 }
 
@@ -169,4 +155,9 @@ public record EnumInfo
     /// 描述
     /// </summary>
     public string Label { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 主题
+    /// </summary>
+    public string Theme { get; init; } = string.Empty;
 }
