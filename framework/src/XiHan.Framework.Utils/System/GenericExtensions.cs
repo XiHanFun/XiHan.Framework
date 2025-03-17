@@ -90,7 +90,7 @@ public static class GenericExtensions
         var propertyInfo = objectType.GetProperty(propertyName);
         if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
         {
-            throw new ArgumentException($"""属性"{propertyName}"不存在，或者不是类型"{objectType.Name}"中的泛型类型。""");
+            throw new ArgumentException($"属性 '{propertyName}' 不存在，或者不是类型 '{objectType.Name}' 中的泛型类型。");
         }
 
         var paramObj = Expression.Parameter(typeof(TEntity));
@@ -117,7 +117,7 @@ public static class GenericExtensions
         var propertyInfo = objectType.GetProperty(propertyName);
         if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
         {
-            throw new ArgumentException($"""属性"{propertyName}"不存在，或者不是类型"{objectType.Name}"中的泛型类型。""");
+            throw new ArgumentException($"属性 '{propertyName}' 不存在，或者不是类型 '{objectType.Name}' 中的泛型类型。");
         }
 
         var paramObj = Expression.Parameter(objectType);
