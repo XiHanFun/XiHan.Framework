@@ -74,6 +74,8 @@ public class XiHanApplicationBase : IXiHanApplication
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
         _ = CheckHelper.NotNull(services, nameof(services));
 
+        XiHan.SayHello();
+
         // 设置启动模块
         StartupModuleType = startupModuleType;
         Services = services;

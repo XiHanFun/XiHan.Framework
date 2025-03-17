@@ -14,7 +14,7 @@
 
 using System.Linq.Expressions;
 
-namespace XiHan.Framework.Utils.Collections;
+namespace XiHan.Framework.Utils.Linq.Expressions;
 
 /// <summary>
 /// 可查询扩展方法

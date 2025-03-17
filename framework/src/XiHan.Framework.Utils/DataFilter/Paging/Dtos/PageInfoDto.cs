@@ -17,6 +17,7 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// <summary>
 /// 通用分页信息基类
 /// </summary>
+[Serializable]
 public class PageInfoDto
 {
     #region 默认值
