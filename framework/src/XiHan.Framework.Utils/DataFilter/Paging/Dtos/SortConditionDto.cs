@@ -21,6 +21,7 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// <summary>
 /// 通用排序条件基类
 /// </summary>
+[Serializable]
 public class SortConditionDto
 {
     /// <summary>
@@ -87,6 +88,7 @@ public class SortConditionDto
 /// 通用排序条件泛型基类
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
+[Serializable]
 public class SortConditionDto<T> : SortConditionDto
 {
     /// <summary>
