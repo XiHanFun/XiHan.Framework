@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Security.Claims;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Extensions;
 

@@ -3,18 +3,21 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ISingletonDependency
-// Guid:db43aa3e-99c7-450e-8238-f48ecab29387
+// FileName:ITransientDependency
+// Guid:4d5ce785-7cdd-4fae-befd-494afb9fd55e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 1:04:59
+// CreateTime:2024/10/27 1:04:35
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.CodeAnalysis.Attributes;
+
+namespace XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 /// <summary>
-/// 依赖关系注入生命周期，单例依赖接口
+/// 依赖关系注入生命周期，瞬态依赖接口
 /// </summary>
-public interface ISingletonDependency;
+[ClassOnlyInterface]
+public interface ITransientDependency;
