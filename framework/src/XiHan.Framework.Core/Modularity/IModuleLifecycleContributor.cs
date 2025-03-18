@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Application;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 namespace XiHan.Framework.Core.Modularity;
 

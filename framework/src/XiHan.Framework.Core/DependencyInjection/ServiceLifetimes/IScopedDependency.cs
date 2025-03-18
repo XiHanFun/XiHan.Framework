@@ -3,18 +3,21 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ITransientDependency
-// Guid:4d5ce785-7cdd-4fae-befd-494afb9fd55e
+// FileName:IScopedDependency
+// Guid:03e88a64-a134-4a5b-8880-28b7a2fa253b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 1:04:35
+// CreateTime:2024/10/27 1:05:20
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.CodeAnalysis.Attributes;
+
+namespace XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 /// <summary>
-/// 依赖关系注入生命周期，瞬态依赖接口
+/// 依赖关系注入生命周期，作用域依赖接口
 /// </summary>
-public interface ITransientDependency;
+[ClassOnlyInterface]
+public interface IScopedDependency;
