@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
