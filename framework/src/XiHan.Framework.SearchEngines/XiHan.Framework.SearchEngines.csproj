@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\net.props"/>
-    <Import Project="..\..\props\nuget.props" />
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
     <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.SearchEngines</Title>
@@ -13,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.17.1" />
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.17.3" />
     </ItemGroup>
 
     <ItemGroup>
