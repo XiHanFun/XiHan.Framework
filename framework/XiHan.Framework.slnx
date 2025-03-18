@@ -4,7 +4,6 @@
     <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Common/" Id="f88d891c-e38d-b16c-4ce7-5b17edc07603">
-    <Project Path="src/XiHan.Framework.CodeAnalysis/XiHan.Framework.CodeAnalysis.csproj" Id="75f718e8-af62-4ebe-8e0f-3fb8feb955d7" />
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>
   <Folder Name="/1.src/3.Core/" Id="2a7cc7f2-4b63-775a-282f-2e0753c607dd">
@@ -69,7 +68,9 @@
     <File Path="XiHan.Framework.txt" />
   </Folder>
   <Folder Name="/3.others/props/" Id="3d4d95ec-c164-c61f-d550-42be88f514ca">
-    <File Path="props/net.props" />
+    <File Path="props/common.props" />
+    <File Path="props/netcore.props" />
+    <File Path="props/netstandard.props" />
     <File Path="props/nuget.props" />
     <File Path="props/version.props" />
   </Folder>

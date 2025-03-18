@@ -12,12 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.CodeAnalysis.Attributes;
-
 namespace XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 /// <summary>
 /// 依赖关系注入生命周期，单例依赖接口
 /// </summary>
-[ClassOnlyInterface]
 public interface ISingletonDependency;
