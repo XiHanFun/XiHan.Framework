@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Configuration;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Settings.Definitions;
 
 namespace XiHan.Framework.Settings.Providers;

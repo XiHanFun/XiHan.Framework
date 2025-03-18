@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 namespace XiHan.Framework.Threading;
 
