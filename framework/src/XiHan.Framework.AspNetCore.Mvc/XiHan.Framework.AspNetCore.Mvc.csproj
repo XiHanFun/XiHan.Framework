@@ -10,7 +10,6 @@
         <AssemblyName>XiHan.Framework.AspNetCore.Mvc</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Mvc</PackageId>
         <Description>曦寒框架 Web 核心 Mvc 库</Description>
-        <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>

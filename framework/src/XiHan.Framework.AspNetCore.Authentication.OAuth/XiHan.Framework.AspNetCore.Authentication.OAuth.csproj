@@ -10,7 +10,6 @@
         <AssemblyName>XiHan.Framework.AspNetCore.Authentication.OAuth</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Authentication.OAuth</PackageId>
         <Description>曦寒框架 Web 核心鉴权 OAuth 库</Description>
-        <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>

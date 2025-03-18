@@ -10,7 +10,6 @@
         <AssemblyName>XiHan.Framework.AspNetCore.Serilog</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Serilog</PackageId>
         <Description>曦寒框架 Web 核心 Serilog 库</Description>
-        <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>
