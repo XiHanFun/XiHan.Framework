@@ -10,7 +10,6 @@
         <AssemblyName>XiHan.Framework.AspNetCore.Scalar</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.Scalar</PackageId>
         <Description>曦寒框架 Web 核心 Scalar 文档库</Description>
-        <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
