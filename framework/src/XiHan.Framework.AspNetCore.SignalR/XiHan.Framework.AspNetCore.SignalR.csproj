@@ -10,7 +10,6 @@
         <AssemblyName>XiHan.Framework.AspNetCore.SignalR</AssemblyName>
         <PackageId>XiHan.Framework.AspNetCore.SignalR</PackageId>
         <Description>曦寒框架 Web 核心 SignalR 库</Description>
-        <IsPackable>true</IsPackable>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>
