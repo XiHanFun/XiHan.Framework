@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\..\props\net.props" />
-    <Import Project="..\..\props\nuget.props" />
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
     <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
         <Title>XiHan.Framework.Core</Title>
@@ -25,7 +26,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
-        <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
     </ItemGroup>
 
 </Project>

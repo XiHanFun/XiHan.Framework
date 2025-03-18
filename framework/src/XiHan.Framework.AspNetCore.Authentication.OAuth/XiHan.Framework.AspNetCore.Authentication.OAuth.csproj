@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-    <Import Project="..\..\props\net.props"/>
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
     <Import Project="..\..\props\nuget.props" />
-    <Import Project="..\..\props\version.props"/>
 
     <PropertyGroup>
         <Title>XiHan.Framework.AspNetCore.Authentication.OAuth</Title>

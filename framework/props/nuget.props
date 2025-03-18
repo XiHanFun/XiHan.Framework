@@ -1,6 +1,8 @@
 ﻿<Project>
 	<!-- 项目属性 -->
 	<PropertyGroup>
+		<!-- 允许将项目打包为 NuGet 包 -->
+		<IsPackable>true</IsPackable>
 		<!-- 指定源代码仓库类型 -->
 		<RepositoryType>git</RepositoryType>
 		<!-- 指定源代码仓库 URL -->
@@ -36,10 +38,6 @@
 		<!-- 指定用于签名的密钥文件 -->
 		<AssemblyOriginatorKeyFile>..\..\snks\XiHan.Framework.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
-	<!-- 公共 NuGet 包 -->
-	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-	</ItemGroup>
 	<!-- 其他文件包含 -->
 	<ItemGroup>
 		<!-- 将 readme.png 作为 NuGet 包图标 -->
