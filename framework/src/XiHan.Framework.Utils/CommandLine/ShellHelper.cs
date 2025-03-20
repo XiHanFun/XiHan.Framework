@@ -44,7 +44,7 @@ public static class ShellHelper
         };
 
         using var process = Process.Start(info);
-        if (process == null)
+        if (process is null)
         {
             return output;
         }
@@ -75,7 +75,7 @@ public static class ShellHelper
         };
 
         using var process = Process.Start(info);
-        if (process == null)
+        if (process is null)
         {
             return output;
         }

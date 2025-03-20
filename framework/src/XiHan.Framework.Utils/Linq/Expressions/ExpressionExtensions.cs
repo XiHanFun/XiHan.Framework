@@ -31,12 +31,12 @@ public static class ExpressionExtensions
     /// <returns></returns>
     public static Expression<Func<T, bool>> Combine<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second, Func<Expression, Expression, BinaryExpression> merge)
     {
-        if (first == null)
+        if (first is null)
         {
             return second;
         }
 
-        if (second == null)
+        if (second is null)
         {
             return first;
         }
@@ -148,7 +148,7 @@ public static class ExpressionExtensions
             .MakeGenericMethod(typeof(T), property.Type);
 
         var typeObject = method.Invoke(null, [source, keySelector]);
-        return typeObject == null
+        return typeObject is null
             ? throw new InvalidOperationException("OrderBy 方法调用失败。")
             : (IOrderedQueryable<T>)typeObject;
     }
@@ -173,7 +173,7 @@ public static class ExpressionExtensions
             .MakeGenericMethod(typeof(T), property.Type);
 
         var typeObject = method.Invoke(null, [source, keySelector]);
-        return typeObject == null
+        return typeObject is null
             ? throw new InvalidOperationException("ThenBy 方法调用失败。")
             : (IOrderedQueryable<T>)typeObject;
     }

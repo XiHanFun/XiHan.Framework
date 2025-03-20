@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -74,7 +74,7 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     /// <exception cref="XiHanException"></exception>
     public virtual ILocalizationResource InheritFrom(ILocalizationResource resource)
     {
-        if (resource == null)
+        if (resource is null)
         {
             throw new ArgumentNullException(nameof(resource));
         }
@@ -106,7 +106,7 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     /// <exception cref="XiHanException"></exception>
     public virtual ILocalizationResource InheritFrom(Type resourceType)
     {
-        return resourceType == null
+        return resourceType is null
             ? throw new ArgumentNullException(nameof(resourceType))
             : !typeof(ILocalizationResource).IsAssignableFrom(resourceType)
                 ? throw new ArgumentException($"Given type ({resourceType.AssemblyQualifiedName}) must implement the {typeof(ILocalizationResource).FullName} interface!")

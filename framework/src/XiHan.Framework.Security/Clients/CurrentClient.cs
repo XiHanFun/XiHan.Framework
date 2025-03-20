@@ -45,5 +45,5 @@ public class CurrentClient : ICurrentClient, ITransientDependency
     /// <summary>
     /// 是否已认证
     /// </summary>
-    public virtual bool IsAuthenticated => Id != null;
+    public virtual bool IsAuthenticated => Id is not null;
 }

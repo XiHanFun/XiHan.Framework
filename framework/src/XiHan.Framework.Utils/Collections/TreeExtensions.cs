@@ -86,7 +86,7 @@ public static class TreeExtensions
             node.Children.AddRange(lookup[keySelector(node.Value)]);
         }
 
-        return nodes.Where(node => parentKeySelector(node.Value) == null
+        return nodes.Where(node => parentKeySelector(node.Value) is null
             || !nodes.Any(n => keySelector(n.Value)?.Equals(parentKeySelector(node.Value)) == true));
     }
 
@@ -115,12 +115,12 @@ public static class TreeExtensions
     /// <param name="parentKeySelector">父级主键选择器</param>
     public static void AddChild<T>(this IEnumerable<TreeNodeDto<T>> source, T parent, T child, Func<T, object> keySelector, Func<T, object> parentKeySelector)
     {
-        if (parent == null)
+        if (parent is null)
         {
             throw new ArgumentNullException(nameof(parent), "父节点不能为空");
         }
 
-        if (child == null)
+        if (child is null)
         {
             throw new ArgumentNullException(nameof(child), "子节点不能为空");
         }
@@ -143,7 +143,7 @@ public static class TreeExtensions
     /// <returns></returns>
     public static bool RemoveNode<T>(this TreeNodeDto<T> root, T value)
     {
-        if (root == null)
+        if (root is null)
         {
             return false;
         }
@@ -173,7 +173,7 @@ public static class TreeExtensions
     /// <returns></returns>
     public static IEnumerable<TreeNodeDto<T>> DepthFirstTraversal<T>(this TreeNodeDto<T> root)
     {
-        if (root == null)
+        if (root is null)
         {
             yield break;
         }
@@ -197,7 +197,7 @@ public static class TreeExtensions
     /// <returns></returns>
     public static IEnumerable<TreeNodeDto<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNodeDto<T>> source)
     {
-        if (source == null)
+        if (source is null)
         {
             yield break;
         }
@@ -219,7 +219,7 @@ public static class TreeExtensions
     /// <returns></returns>
     public static IEnumerable<TreeNodeDto<T>> BreadthFirstTraversal<T>(this TreeNodeDto<T> root)
     {
-        if (root == null)
+        if (root is null)
         {
             yield break;
         }
@@ -272,7 +272,7 @@ public static class TreeExtensions
     /// <returns></returns>
     public static int GetHeight<T>(this TreeNodeDto<T> root)
     {
-        return root == null ? 0 : 1 + root.Children.Select(child => child.GetHeight()).DefaultIfEmpty(0).Max();
+        return root is null ? 0 : 1 + root.Children.Select(child => child.GetHeight()).DefaultIfEmpty(0).Max();
     }
 
     /// <summary>
@@ -298,7 +298,7 @@ public static class TreeExtensions
     /// <returns></returns>
     private static bool FindPath<T>(TreeNodeDto<T> node, T value, List<TreeNodeDto<T>> path)
     {
-        if (node == null)
+        if (node is null)
         {
             return false;
         }

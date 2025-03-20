@@ -36,12 +36,12 @@ public static class DeepMergeHelper
     public static T DeepMerge<T>(params T[] configs) where T : class, new()
     {
         // 快速路径：没有配置或只有一个配置
-        if (configs == null || configs.Length == 0)
+        if (configs is null || configs.Length == 0)
         {
             return new T();
         }
 
-        if (configs.Length == 1 && configs[0] != null)
+        if (configs.Length == 1 && configs[0] is not null)
         {
             return DeepClone(configs[0]) as T ?? new T();
         }
@@ -79,7 +79,7 @@ public static class DeepMergeHelper
         // 按优先级顺序检查每个配置
         foreach (var config in configs)
         {
-            if (config == null)
+            if (config is null)
             {
                 continue;
             }
@@ -125,7 +125,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool CanMerge(object? target, object? source)
     {
-        return target != null && source != null && ((IsMergeableCollection(target) && IsMergeableCollection(source)) ||
+        return target is not null && source is not null && ((IsMergeableCollection(target) && IsMergeableCollection(source)) ||
                (IsDictionary(target) && IsDictionary(source)) ||
                (IsComplexObject(target) && IsComplexObject(source) && target.GetType() == source.GetType()));
     }
@@ -158,7 +158,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool NeedsCloning(object? value)
     {
-        return value != null && (IsComplexObject(value) || IsCollection(value) || IsDictionary(value));
+        return value is not null && (IsComplexObject(value) || IsCollection(value) || IsDictionary(value));
     }
 
     /// <summary>
@@ -166,7 +166,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool IsNullOrDefault(object? value)
     {
-        if (value == null)
+        if (value is null)
         {
             return true;
         }
@@ -208,7 +208,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool IsMergeableCollection(object? value)
     {
-        if (value == null)
+        if (value is null)
         {
             return false;
         }
@@ -244,7 +244,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool IsComplexObject(object? value)
     {
-        if (value == null)
+        if (value is null)
         {
             return false;
         }
@@ -269,7 +269,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static object? MergeCollections(object? target, object? source)
     {
-        if (target == null || source == null)
+        if (target is null || source is null)
         {
             return target ?? source;
         }
@@ -331,12 +331,12 @@ public static class DeepMergeHelper
     /// </summary>
     private static object? MergeDictionaries(object? target, object? source)
     {
-        if (target == null)
+        if (target is null)
         {
-            return source != null ? DeepClone(source) : null;
+            return source is not null ? DeepClone(source) : null;
         }
 
-        if (source == null)
+        if (source is null)
         {
             return DeepClone(target);
         }
@@ -391,12 +391,12 @@ public static class DeepMergeHelper
     /// </summary>
     private static object? MergeComplexObjects(object? target, object? source)
     {
-        if (target == null)
+        if (target is null)
         {
-            return source != null ? DeepClone(source) : null;
+            return source is not null ? DeepClone(source) : null;
         }
 
-        if (source == null)
+        if (source is null)
         {
             return DeepClone(target);
         }
@@ -466,7 +466,7 @@ public static class DeepMergeHelper
     /// </summary>
     private static object? DeepClone(object? obj)
     {
-        if (obj == null)
+        if (obj is null)
         {
             return null;
         }
@@ -615,7 +615,7 @@ public static class DeepMergeHelper
                 try
                 {
                     var value = property.GetValue(obj);
-                    if (value != null)
+                    if (value is not null)
                     {
                         property.SetValue(newObj, DeepClone(value));
                     }

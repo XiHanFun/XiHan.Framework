@@ -126,7 +126,7 @@ public static class ObjectExtensions
     /// <exception cref="ArgumentNullException"></exception>
     public static string GetObjectFullNameOf(this object instance, [CallerArgumentExpression(nameof(instance))] string fullName = "")
     {
-        return instance == null
+        return instance is null
             ? throw new ArgumentNullException(nameof(instance))
             : fullName ?? throw new ArgumentNullException(nameof(fullName));
     }
@@ -143,13 +143,13 @@ public static class ObjectExtensions
     /// <returns>是否包含</returns>
     public static bool IsObjectContainField(this object? instance, string fieldName)
     {
-        if (instance == null || string.IsNullOrEmpty(fieldName))
+        if (instance is null || string.IsNullOrEmpty(fieldName))
         {
             return false;
         }
 
         var foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundFieldInfo != null;
+        return foundFieldInfo is not null;
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public static class ObjectExtensions
     /// <returns>字段信息</returns>
     public static FieldInfo GetObjectField(this object? instance, string fieldName)
     {
-        if (instance == null || string.IsNullOrEmpty(fieldName))
+        if (instance is null || string.IsNullOrEmpty(fieldName))
         {
             throw new NotImplementedException(nameof(fieldName));
         }
@@ -176,7 +176,7 @@ public static class ObjectExtensions
     /// <returns>字段信息</returns>
     public static FieldInfo[] GetObjectFields(this object? instance)
     {
-        if (instance == null)
+        if (instance is null)
         {
             throw new NotImplementedException(nameof(instance));
         }
@@ -197,13 +197,13 @@ public static class ObjectExtensions
     /// <returns>是否包含</returns>
     public static bool IsContainObjectProperty(this object? instance, string propertyName)
     {
-        if (instance == null || string.IsNullOrEmpty(propertyName))
+        if (instance is null || string.IsNullOrEmpty(propertyName))
         {
             return false;
         }
 
         var foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundPropertyInfo != null;
+        return foundPropertyInfo is not null;
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ public static class ObjectExtensions
     /// <returns>属性信息</returns>
     public static PropertyInfo GetObjectProperty(this object? instance, string propertyName)
     {
-        if (instance == null || string.IsNullOrEmpty(propertyName))
+        if (instance is null || string.IsNullOrEmpty(propertyName))
         {
             throw new NotImplementedException(nameof(propertyName));
         }
@@ -230,7 +230,7 @@ public static class ObjectExtensions
     /// <returns>属性信息</returns>
     public static PropertyInfo[] GetObjectProperties(this object? instance)
     {
-        if (instance == null)
+        if (instance is null)
         {
             throw new NotImplementedException(nameof(instance));
         }
@@ -250,7 +250,7 @@ public static class ObjectExtensions
     public static bool IsNullOrEmpty(this object? data)
     {
         // 如果为 null
-        if (data == null)
+        if (data is null)
         {
             return true;
         }
