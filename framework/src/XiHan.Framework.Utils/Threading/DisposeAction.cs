@@ -72,7 +72,7 @@ public class DisposeAction<T> : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_parameter != null)
+        if (_parameter is not null)
         {
             _action(_parameter);
         }

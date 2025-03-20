@@ -162,7 +162,7 @@ public static class StringHelper
     {
         string? result;
         // 如果为空，返回空值
-        if (sourceStr == null)
+        if (sourceStr is null)
         {
             result = string.Empty;
         }
@@ -192,7 +192,7 @@ public static class StringHelper
     {
         string? returnValue;
         // 如果输入空值，返回空，并给出错误提示
-        if (sourceStr == null)
+        if (sourceStr is null)
         {
             returnValue = string.Empty;
             error = "请输入需要划分格式的字符串";
@@ -211,7 +211,7 @@ public static class StringHelper
             {
                 // 检查新样式中分隔符的位置
                 StringBuilder newStr = new();
-                if (newStyle != null)
+                if (newStyle is not null)
                 {
                     for (var i = 0; i < newStyle.Length; i++)
                     {
@@ -285,7 +285,7 @@ public static class StringHelper
     /// <returns></returns>
     public static bool IsValidateStr(string express, string? value)
     {
-        if (value == null)
+        if (value is null)
         {
             return false;
         }
@@ -495,7 +495,7 @@ public static class StringHelper
     /// <returns>转换得到的字符串</returns>
     public static string? ConvertFromBytesWithoutBom(byte[]? bytes, Encoding? encoding = null)
     {
-        if (bytes == null)
+        if (bytes is null)
         {
             return null;
         }

@@ -47,7 +47,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -74,7 +74,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -103,7 +103,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -135,7 +135,7 @@ public class HttpPollyService : IHttpPollyService
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         using MultipartFormDataContent formDataContent = [];
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !formDataContent.Headers.Contains(header.Key)))
@@ -166,7 +166,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -196,7 +196,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -224,7 +224,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -254,7 +254,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -284,7 +284,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))
@@ -313,7 +313,7 @@ public class HttpPollyService : IHttpPollyService
         Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers.Where(header =>
                                  !client.DefaultRequestHeaders.Contains(header.Key)))

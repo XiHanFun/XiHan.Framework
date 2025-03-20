@@ -84,7 +84,7 @@ public static class DateTimeFormatExtensions
     /// <returns></returns>
     public static DateTime GetBeginTime(this DateTime? dateTime, int days = 0)
     {
-        return dateTime == DateTime.MinValue || dateTime == null ? DateTime.Now.AddDays(days) : (DateTime)dateTime;
+        return dateTime == DateTime.MinValue || dateTime is null ? DateTime.Now.AddDays(days) : (DateTime)dateTime;
     }
 
     /// <summary>
