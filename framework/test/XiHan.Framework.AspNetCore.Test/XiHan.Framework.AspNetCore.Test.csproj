@@ -32,6 +32,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Test.Base\XiHan.Framework.Test.Base.csproj" />
     </ItemGroup>
 
     <ItemGroup>
