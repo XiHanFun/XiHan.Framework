@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -79,7 +79,7 @@ public class LocalizableString
     {
         IStringLocalizer localizer;
 
-        if (_resourceType != null)
+        if (_resourceType is not null)
         {
             var localizerFactory = serviceProvider.GetRequiredService<IStringLocalizerFactory>();
             localizer = localizerFactory.Create(_resourceType);

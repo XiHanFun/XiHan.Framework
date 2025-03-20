@@ -331,13 +331,13 @@ public static class PageExtensions
         }
 
         // 处理选择条件
-        if (queryDto.SelectConditions != null)
+        if (queryDto.SelectConditions is not null)
         {
             source = source.WhereMultiple(queryDto.SelectConditions);
         }
 
         // 处理排序条件
-        if (queryDto.SortConditions != null)
+        if (queryDto.SortConditions is not null)
         {
             source = source.OrderByMultiple(queryDto.SortConditions);
         }
@@ -650,13 +650,13 @@ public static class PageExtensions
         }
 
         // 处理选择条件
-        if (queryDto.SelectConditions != null)
+        if (queryDto.SelectConditions is not null)
         {
             source = source.WhereMultiple(queryDto.SelectConditions);
         }
 
         // 处理排序条件
-        if (queryDto.SortConditions != null)
+        if (queryDto.SortConditions is not null)
         {
             source = source.OrderByMultiple(queryDto.SortConditions);
         }

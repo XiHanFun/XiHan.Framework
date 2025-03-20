@@ -32,7 +32,7 @@ public static class CheckHelper
     /// <exception cref="ArgumentNullException"></exception>
     public static T NotNull<T>(T? value, string parameterName)
     {
-        return value == null ? throw new ArgumentNullException(parameterName) : value;
+        return value is null ? throw new ArgumentNullException(parameterName) : value;
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public static class CheckHelper
     /// <exception cref="ArgumentNullException"></exception>
     public static T NotNull<T>(T? value, string parameterName, string message)
     {
-        return value == null ? throw new ArgumentNullException(parameterName, message) : value;
+        return value is null ? throw new ArgumentNullException(parameterName, message) : value;
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public static class CheckHelper
     /// <exception cref="ArgumentException"></exception>
     public static string NotNull(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
-        return value == null
+        return value is null
             ? throw new ArgumentException($"{parameterName}不能为空!", parameterName)
             : value.Length > maxLength
                 ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
@@ -121,7 +121,7 @@ public static class CheckHelper
     public static string? Length(string? value, string parameterName, int maxLength, int minLength = 0)
     {
         return minLength <= 0
-            ? value != null && value.Length > maxLength
+            ? value is not null && value.Length > maxLength
                 ? throw new ArgumentException($"{parameterName}长度必须等于或小于{maxLength}!", parameterName)
                 : value
             : string.IsNullOrEmpty(value)

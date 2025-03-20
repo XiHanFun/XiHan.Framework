@@ -58,7 +58,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     public T? GetValue(string contextKey)
     {
         var item = GetCurrentItem(contextKey);
-        return item == null ? default : item.Value;
+        return item is null ? default : item.Value;
     }
 
     /// <summary>
@@ -85,12 +85,12 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
 
             _ = scopeDictionary.TryRemove(item.Id, out item);
 
-            if (item == null)
+            if (item is null)
             {
                 return;
             }
 
-            if (item.Outer == null)
+            if (item.Outer is null)
             {
                 dataContext.SetData(contextKey, null);
                 return;

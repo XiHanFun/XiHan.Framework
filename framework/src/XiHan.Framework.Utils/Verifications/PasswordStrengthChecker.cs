@@ -104,7 +104,7 @@ public class PasswordStrengthChecker
         }
 
         // 检查是否包含自定义黑名单
-        if (customBlacklist != null && customBlacklist.Any(password.Contains))
+        if (customBlacklist is not null && customBlacklist.Any(password.Contains))
         {
             return new PasswordStrengthResult(false, "密码包含禁止使用的词汇", score - 30);
         }

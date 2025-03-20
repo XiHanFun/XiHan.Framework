@@ -167,7 +167,7 @@ public static class AssemblyHelper
             }
 
             var asm = TryLoadAssembly(assemblyPath);
-            if (asm == null)
+            if (asm is null)
             {
                 continue;
             }
@@ -555,7 +555,7 @@ public static class AssemblyHelper
     private static bool IsSystemAssembly(Assembly assembly)
     {
         var asmCompanyAttr = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
-        if (asmCompanyAttr == null)
+        if (asmCompanyAttr is null)
         {
             return false;
         }
@@ -628,7 +628,7 @@ public static class AssemblyHelper
             Debug.WriteLine(ex);
         }
 
-        if (assembly != null)
+        if (assembly is not null)
         {
             return assembly;
         }
@@ -659,7 +659,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return (x == null && y == null) || (x != null && y != null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
+        return (x is null && y is null) || (x is not null && y is not null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
     }
 
     public override int GetHashCode(Assembly obj)

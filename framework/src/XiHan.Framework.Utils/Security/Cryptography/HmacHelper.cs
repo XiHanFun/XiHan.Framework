@@ -84,12 +84,12 @@ public static class HmacHelper
             throw new ArgumentException("算法名称不能为空", nameof(algorithm));
         }
 
-        if (key == null || key.Length == 0)
+        if (key is null || key.Length == 0)
         {
             throw new ArgumentException("密钥不能为空", nameof(key));
         }
 
-        if (message == null)
+        if (message is null)
         {
             throw new ArgumentException("消息不能为空", nameof(message));
         }

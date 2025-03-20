@@ -34,19 +34,19 @@ public static class MemberInfoExtensions
     public static string GetDescription(this MemberInfo member, bool inherit = true)
     {
         var desc = member.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
-        if (desc != null)
+        if (desc is not null)
         {
             return desc.Description;
         }
 
         var displayName = member.GetSingleAttributeOrNull<DisplayNameAttribute>(inherit);
-        if (displayName != null)
+        if (displayName is not null)
         {
             return displayName.DisplayName;
         }
 
         var display = member.GetSingleAttributeOrNull<DisplayAttribute>(inherit);
-        return display != null
+        return display is not null
             ? display.Name ?? string.Empty
             : member.Name;
     }
@@ -96,12 +96,12 @@ public static class MemberInfoExtensions
         while (true)
         {
             var attr = type?.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
-            if (attr != null)
+            if (attr is not null)
             {
                 return attr;
             }
 
-            if (type != null && type.GetTypeInfo().BaseType == null)
+            if (type is not null && type.GetTypeInfo().BaseType is null)
             {
                 return null;
             }

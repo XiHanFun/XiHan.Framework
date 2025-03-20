@@ -43,7 +43,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
-        if (ServiceProvider != null)
+        if (ServiceProvider is not null)
         {
             if (ServiceProvider != serviceProvider)
             {

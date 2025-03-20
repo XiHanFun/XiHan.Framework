@@ -121,7 +121,7 @@ public class XiHanApplicationBase : IXiHanApplication
     protected virtual void WriteInitLogs(IServiceProvider serviceProvider)
     {
         var logger = serviceProvider.GetService<ILogger<XiHanApplicationBase>>();
-        if (logger == null)
+        if (logger is null)
         {
             return;
         }
@@ -160,7 +160,7 @@ public class XiHanApplicationBase : IXiHanApplication
         }
 
         var configuration = options.Services.GetConfigurationOrNull();
-        if (configuration != null)
+        if (configuration is not null)
         {
             var appNameConfig = configuration["ApplicationName"];
             if (!string.IsNullOrWhiteSpace(appNameConfig))

@@ -37,7 +37,7 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
         var dependencyAttribute = GetDependencyAttributeOrNull(type);
         var lifeTime = GetLifeTimeOrNull(type, dependencyAttribute);
 
-        if (lifeTime == null)
+        if (lifeTime is null)
         {
             return;
         }
@@ -47,8 +47,8 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
         TriggerServiceExposing(services, type, exposedServiceAndKeyedServiceTypes);
 
         foreach (var serviceDescriptor in from exposedServiceType in exposedServiceAndKeyedServiceTypes
-                                          let allExposingServiceTypes = exposedServiceType.ServiceKey == null
-                                              ? exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey == null).ToList()
+                                          let allExposingServiceTypes = exposedServiceType.ServiceKey is null
+                                              ? exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey is null).ToList()
                                               : exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey?.ToString() == exposedServiceType.ServiceKey?.ToString()).ToList()
                                           select CreateServiceDescriptor(type, exposedServiceType.ServiceKey, exposedServiceType.ServiceType, allExposingServiceTypes, lifeTime.Value))
         {

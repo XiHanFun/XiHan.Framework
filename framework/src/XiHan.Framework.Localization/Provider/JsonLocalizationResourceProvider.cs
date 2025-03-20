@@ -61,7 +61,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public string? GetString(ILocalizationResource resource, string name, string cultureName)
     {
-        if (resource == null)
+        if (resource is null)
         {
             throw new ArgumentNullException(nameof(resource));
         }
@@ -73,7 +73,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
 
         //// 优先尝试从当前资源获取
         //var currentValue = GetStringFromResource(resource, name, cultureName);
-        //if (currentValue != null)
+        //if (currentValue is not null)
         //{
         //    return currentValue;
         //}
@@ -82,7 +82,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
         foreach (var baseResource in resource.BaseResources)
         {
             var baseValue = GetString(baseResource, name, cultureName);
-            if (baseValue != null)
+            if (baseValue is not null)
             {
                 return baseValue;
             }
@@ -102,7 +102,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public IEnumerable<LocalizedString> GetAllStrings(ILocalizationResource resource, string cultureName, bool includeParentCultures)
     {
-        if (resource == null)
+        if (resource is null)
         {
             throw new ArgumentNullException(nameof(resource));
         }
@@ -142,7 +142,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public IReadOnlyList<string> GetSupportedCultures(ILocalizationResource resource)
     {
-        if (resource == null)
+        if (resource is null)
         {
             throw new ArgumentNullException(nameof(resource));
         }
@@ -246,14 +246,14 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
         {
             // 如果缓存中没有，尝试加载资源
             stringDictionary = LoadResourceFile(vfResource, cultureName);
-            if (stringDictionary != null)
+            if (stringDictionary is not null)
             {
                 _resourceCache[cacheKey] = stringDictionary;
             }
         }
 
         // 如果找到了资源字典，尝试获取特定的字符串
-        return stringDictionary != null && stringDictionary.TryGetValue(name, out var value) ? value : null;
+        return stringDictionary is not null && stringDictionary.TryGetValue(name, out var value) ? value : null;
     }
 
     /// <summary>
@@ -276,14 +276,14 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
         {
             // 如果缓存中没有，尝试加载资源
             stringDictionary = LoadResourceFile(vfResource, cultureName);
-            if (stringDictionary != null)
+            if (stringDictionary is not null)
             {
                 _resourceCache[cacheKey] = stringDictionary;
             }
         }
 
         // 如果找到了资源字典，返回所有字符串
-        return stringDictionary != null
+        return stringDictionary is not null
             ? stringDictionary.Select(kvp => new LocalizedString(kvp.Key, kvp.Value, false))
             : Enumerable.Empty<LocalizedString>();
     }
@@ -299,7 +299,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
         try
         {
             using var stream = resource.GetStream(cultureName);
-            if (stream == null)
+            if (stream is null)
             {
                 _logger.LogDebug("未找到文化资源文件: {Resource}.{Culture}.json", resource.ResourceName, cultureName);
                 return null;

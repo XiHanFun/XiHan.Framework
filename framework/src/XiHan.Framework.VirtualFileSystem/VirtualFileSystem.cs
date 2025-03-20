@@ -158,7 +158,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         lock (_providers)
         {
             var item = _providers.FirstOrDefault(p => p.Provider == provider);
-            if (item != null)
+            if (item is not null)
             {
                 _ = _providers.Remove(item);
                 RebuildCompositeProvider();

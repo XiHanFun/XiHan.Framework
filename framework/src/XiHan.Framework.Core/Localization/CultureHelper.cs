@@ -37,7 +37,7 @@ public static class CultureHelper
 
         return Use(
             new CultureInfo(culture),
-            uiCulture == null
+            uiCulture is null
                 ? null
                 : new CultureInfo(uiCulture)
         );

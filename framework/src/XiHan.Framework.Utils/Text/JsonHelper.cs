@@ -73,7 +73,7 @@ public class JsonHelper
         foreach (var key in keys)
         {
             currentObject = currentObject[key];
-            if (currentObject == null)
+            if (currentObject is null)
             {
                 return default;
             }
@@ -110,7 +110,7 @@ public class JsonHelper
             else
             {
                 //如果不存在，新建
-                if (currentObject != null)
+                if (currentObject is not null)
                 {
                     continue;
                 }
