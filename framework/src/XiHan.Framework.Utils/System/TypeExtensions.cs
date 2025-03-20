@@ -102,7 +102,7 @@ public static class TypeExtensions
         foreach (var other in allOthers)
         {
             var cur = other;
-            while (cur != null)
+            while (cur is not null)
             {
                 if (cur.IsGenericType)
                 {
@@ -114,7 +114,7 @@ public static class TypeExtensions
                     return true;
                 }
 
-                if (cur.BaseType != null)
+                if (cur.BaseType is not null)
                 {
                     cur = cur.BaseType;
                 }
@@ -202,7 +202,7 @@ public static class TypeExtensions
 
         var desc = type.GetSingleAttributeOrNull<DescriptionAttribute>(inherit);
 
-        if (desc == null)
+        if (desc is null)
         {
             return result;
         }

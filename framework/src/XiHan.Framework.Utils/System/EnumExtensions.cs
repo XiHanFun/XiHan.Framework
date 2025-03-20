@@ -23,11 +23,11 @@ namespace XiHan.Framework.Utils.System;
 /// </summary>
 public static class EnumExtensions
 {
+    // 枚举类型缓存
+    private static readonly ConcurrentDictionary<Assembly, IEnumerable<Type>> EnumTypesCatch = [];
+
     // 枚举信息缓存
     private static readonly ConcurrentDictionary<Type, IEnumerable<EnumInfo>> EnumInfosCatch = [];
-
-    // 枚举类型缓存
-    private static ConcurrentDictionary<string, Type> EnumTypeDict = [];
 
     /// <summary>
     /// 根据键获取单个枚举的值
@@ -38,7 +38,7 @@ public static class EnumExtensions
     {
         var enumName = keyEnum.ToString();
         var field = keyEnum.GetType().GetField(enumName);
-        return field == null ? throw new ArgumentException(null, nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
+        return field is null ? throw new ArgumentException(null, nameof(keyEnum)) : (int)field.GetRawConstantValue()!;
     }
 
     /// <summary>
@@ -50,21 +50,23 @@ public static class EnumExtensions
     {
         var enumName = keyEnum.ToString();
         var field = keyEnum.GetType().GetField(enumName);
-        return field == null
+        return field is null
             ? string.Empty
             : field.GetDescriptionValue();
     }
 
     /// <summary>
-    /// 根据名称匹配枚举
+    /// 根据键获取单个枚举的主题信息
     /// </summary>
-    /// <param name="name"></param>
+    /// <param name="keyEnum"></param>
     /// <returns></returns>
-    public static TEnum GetEnumByName<TEnum>(this string name)
-        where TEnum : struct
+    public static string GetTheme(this Enum keyEnum)
     {
-        var tEnum = Enum.Parse<TEnum>(name, true);
-        return tEnum;
+        var enumName = keyEnum.ToString();
+        var field = keyEnum.GetType().GetField(enumName);
+        return field is null
+            ? string.Empty
+            : field.GetThemeValue();
     }
 
     /// <summary>
@@ -108,31 +110,33 @@ public static class EnumExtensions
     /// 从程序集中查找指定枚举类型
     /// </summary>
     /// <param name="assembly"></param>
-    /// <param name="typeName"></param>
     /// <returns></returns>
-    public static Type? TryToGetEnumType(this Assembly assembly, string typeName)
+    public static IEnumerable<Type> GetEnumTypes(this Assembly assembly)
     {
-        // 枚举缓存为空则重新加载枚举类型字典
-        EnumTypeDict ??= LoadEnumTypeDict(assembly);
+        // 缓存中有则直接返回
+        var enumTypes = new List<Type>();
+        if (EnumTypesCatch.TryGetValue(assembly, out var enumTypeList))
+        {
+            return enumTypeList;
+        }
 
-        // 按名称查找
-        return EnumTypeDict.TryGetValue(typeName, out var value) ? value : null;
+        // 取程序集中所有类型
+        var typeArray = assembly.GetTypes();
+        // 过滤非枚举类型，转成字典格式并返回
+        EnumTypesCatch.TryAdd(assembly, typeArray.Where(o => o.IsEnum));
+        return enumTypes;
     }
 
     /// <summary>
-    /// 从程序集中加载所有枚举类型
+    /// 从程序集中查找指定枚举类型
     /// </summary>
     /// <param name="assembly"></param>
+    /// <param name="typeName"></param>
     /// <returns></returns>
-    public static ConcurrentDictionary<string, Type> LoadEnumTypeDict(this Assembly assembly)
+    public static Type? GetEnumTypeByName(this Assembly assembly, string typeName)
     {
-        // 取程序集中所有类型
-        var typeArray = assembly.GetTypes();
-
-        // 过滤非枚举类型，转成字典格式并返回
-        var dict = typeArray.Where(o => o.IsEnum).ToDictionary(o => o.Name, o => o);
-        var enumTypeDict = new ConcurrentDictionary<string, Type>(dict);
-        return enumTypeDict;
+        var enumTypes = assembly.GetEnumTypes();
+        return enumTypes.FirstOrDefault(o => o.Name == typeName);
     }
 }
 

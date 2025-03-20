@@ -56,9 +56,9 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
     /// <returns></returns>
     public bool Equals(ServiceIdentifier other)
     {
-        return ServiceKey == null && other.ServiceKey == null
+        return ServiceKey is null && other.ServiceKey is null
             ? ServiceType == other.ServiceType
-            : ServiceKey != null && other.ServiceKey != null && ServiceType == other.ServiceType && ServiceKey.Equals(other.ServiceKey);
+            : ServiceKey is not null && other.ServiceKey is not null && ServiceType == other.ServiceType && ServiceKey.Equals(other.ServiceKey);
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
     /// <returns></returns>
     public override int GetHashCode()
     {
-        if (ServiceKey == null)
+        if (ServiceKey is null)
         {
             return ServiceType.GetHashCode();
         }

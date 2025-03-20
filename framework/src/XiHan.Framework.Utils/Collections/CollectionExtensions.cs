@@ -73,7 +73,7 @@ public static class CollectionExtensions
     {
         _ = CheckHelper.NotNull(source, nameof(source));
 
-        if (value != null)
+        if (value is not null)
         {
             source.Add(value);
         }

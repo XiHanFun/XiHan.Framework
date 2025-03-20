@@ -72,9 +72,9 @@ public class XiHanCrossCuttingConcerns
     /// <exception cref="ArgumentNullException"></exception>
     public static bool IsApplied([NotNull] object obj, [NotNull] string concern)
     {
-        return obj == null
+        return obj is null
             ? throw new ArgumentNullException(nameof(obj))
-            : concern == null
+            : concern is null
                 ? throw new ArgumentNullException(nameof(concern))
                 : (obj as IAvoidDuplicateCrossCuttingConcerns)?.AppliedCrossCuttingConcerns.Contains(concern) ?? false;
     }

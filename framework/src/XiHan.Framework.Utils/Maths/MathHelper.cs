@@ -175,7 +175,7 @@ public static class MathHelper
     /// <exception cref="ArgumentException"></exception>
     public static double Average(IEnumerable<double> numbers)
     {
-        return numbers == null || !numbers.Any() ? throw new ArgumentException("集合不能为空。") : numbers.Average();
+        return numbers is null || !numbers.Any() ? throw new ArgumentException("集合不能为空。") : numbers.Average();
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public static class MathHelper
     /// <exception cref="ArgumentException"></exception>
     public static double Median(IEnumerable<double> numbers)
     {
-        if (numbers == null || !numbers.Any())
+        if (numbers is null || !numbers.Any())
         {
             throw new ArgumentException("集合不能为空。");
         }
@@ -205,7 +205,7 @@ public static class MathHelper
     /// <exception cref="ArgumentException"></exception>
     public static double Variance(IEnumerable<double> numbers)
     {
-        if (numbers == null || !numbers.Any())
+        if (numbers is null || !numbers.Any())
         {
             throw new ArgumentException("集合不能为空。");
         }

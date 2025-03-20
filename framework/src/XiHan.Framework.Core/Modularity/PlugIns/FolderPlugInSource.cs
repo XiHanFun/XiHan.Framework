@@ -92,7 +92,7 @@ public class FolderPlugInSource : IPlugInSource
     {
         var assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
 
-        if (Filter != null)
+        if (Filter is not null)
         {
             assemblyFiles = assemblyFiles.Where(Filter);
         }

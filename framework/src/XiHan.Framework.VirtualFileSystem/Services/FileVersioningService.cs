@@ -31,7 +31,7 @@ public class FileVersioningService : IFileVersioningService
     /// <param name="file"></param>
     public void Snapshot(IFileInfo file)
     {
-        if (file.PhysicalPath == null)
+        if (file.PhysicalPath is null)
         {
             throw new ArgumentNullException(nameof(file));
         }

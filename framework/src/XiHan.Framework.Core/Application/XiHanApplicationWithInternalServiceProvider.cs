@@ -57,7 +57,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// </summary>
     public IServiceProvider CreateServiceProvider()
     {
-        if (ServiceProvider != null)
+        if (ServiceProvider is not null)
         {
             return ServiceProvider;
         }

@@ -118,7 +118,7 @@ public static class HttpHelper
     /// <param name="headers"></param>
     private static void AddHeaders(HttpRequestMessage request, Dictionary<string, string>? headers)
     {
-        if (headers != null)
+        if (headers is not null)
         {
             foreach (var header in headers)
             {
@@ -134,7 +134,7 @@ public static class HttpHelper
     /// <returns></returns>
     private static StringContent SerializeJson(object? data)
     {
-        if (data == null)
+        if (data is null)
         {
             return new StringContent("");
         }

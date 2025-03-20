@@ -84,7 +84,7 @@ public static class PropertyInfoExtensions
         {
             var transformedName = strategy(propertyName);
             var property = type.GetProperty(transformedName);
-            if (property != null)
+            if (property is not null)
             {
                 return property;
             }

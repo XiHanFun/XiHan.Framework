@@ -31,7 +31,7 @@ public static class ExceptionExtensions
     /// <returns></returns>
     public static string FormatMessage(this Exception? exception, bool isHideStackTrace = false)
     {
-        if (exception == null)
+        if (exception is null)
         {
             return string.Empty;
         }
@@ -42,7 +42,7 @@ public static class ExceptionExtensions
             return message;
         }
 
-        if (exception.InnerException != null)
+        if (exception.InnerException is not null)
         {
             message += " --> " + exception.InnerException.FormatMessage();
         }
