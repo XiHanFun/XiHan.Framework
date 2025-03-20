@@ -46,7 +46,7 @@ public class XiHanStringLocalizerFactory : IStringLocalizerFactory
     /// <returns>字符串本地化器</returns>
     public IStringLocalizer Create(Type resourceType)
     {
-        if (resourceType == null)
+        if (resourceType is null)
         {
             throw new ArgumentNullException(nameof(resourceType));
         }

@@ -423,7 +423,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         foreach (var configure in _distributedCacheOption.CacheConfigurators)
         {
             var options = configure.Invoke(CacheName);
-            if (options != null)
+            if (options is not null)
             {
                 return options;
             }
@@ -459,7 +459,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         if (ShouldConsiderUow(considerUow))
         {
             var value = GetUnitOfWorkCache().GetOrDefault(key)?.GetUnRemovedValueOrNull();
-            if (value != null)
+            if (value is not null)
             {
                 return value;
             }
@@ -507,7 +507,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             foreach (var key in keyArray)
             {
                 var value = uowCache.GetOrDefault(key)?.GetUnRemovedValueOrNull();
-                if (value != null)
+                if (value is not null)
                 {
                     cachedValues.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, value));
                 }
@@ -591,7 +591,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             foreach (var key in keyArray)
             {
                 var value = uowCache.GetOrDefault(key)?.GetUnRemovedValueOrNull();
-                if (value != null)
+                if (value is not null)
                 {
                     cachedValues.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, value));
                 }
@@ -672,7 +672,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         if (ShouldConsiderUow(considerUow))
         {
             var value = GetUnitOfWorkCache().GetOrDefault(key)?.GetUnRemovedValueOrNull();
-            if (value != null)
+            if (value is not null)
             {
                 return value;
             }
@@ -694,7 +694,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             throw;
         }
 
-        return cachedBytes == null ? null : Serializer.Deserialize<TCacheItem>(cachedBytes);
+        return cachedBytes is null ? null : Serializer.Deserialize<TCacheItem>(cachedBytes);
     }
 
     /// <summary>
@@ -709,7 +709,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     public virtual TCacheItem? GetOrAdd(TCacheKey key, Func<TCacheItem> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false)
     {
         var value = Get(key, hideErrors, considerUow);
-        if (value != null)
+        if (value is not null)
         {
             return value;
         }
@@ -717,7 +717,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         using (SyncSemaphore.Lock())
         {
             value = Get(key, hideErrors, considerUow);
-            if (value != null)
+            if (value is not null)
             {
                 return value;
             }
@@ -756,7 +756,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     {
         token = CancellationTokenProvider.FallbackToProvider(token);
         var value = await GetAsync(key, hideErrors, considerUow, token);
-        if (value != null)
+        if (value is not null)
         {
             return value;
         }
@@ -764,7 +764,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         using (await SyncSemaphore.LockAsync(token))
         {
             value = await GetAsync(key, hideErrors, considerUow, token);
-            if (value != null)
+            if (value is not null)
             {
                 return value;
             }
@@ -816,7 +816,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 foreach (var key in keyArray)
                 {
                     var value = uowCache.GetOrDefault(key)?.GetUnRemovedValueOrNull();
-                    if (value != null)
+                    if (value is not null)
                     {
                         cachedValues.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, value));
                     }
@@ -850,7 +850,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
         }
 
-        if (result.All(x => x.Value != null))
+        if (result.All(x => x.Value is not null))
         {
             return result!;
         }
@@ -859,7 +859,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         var missingValuesIndex = new List<int>();
         for (var i = 0; i < keyArray.Length; i++)
         {
-            if (result[i].Value != null)
+            if (result[i].Value is not null)
             {
                 continue;
             }
@@ -907,7 +907,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 foreach (var key in keyArray)
                 {
                     var value = uowCache.GetOrDefault(key)?.GetUnRemovedValueOrNull();
-                    if (value != null)
+                    if (value is not null)
                     {
                         cachedValues.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, value));
                     }
@@ -941,7 +941,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
         }
 
-        if (result.All(x => x.Value != null))
+        if (result.All(x => x.Value is not null))
         {
             return result;
         }
@@ -950,7 +950,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         var missingValuesIndex = new List<int>();
         for (var i = 0; i < keyArray.Length; i++)
         {
-            if (result[i].Value != null)
+            if (result[i].Value is not null)
             {
                 continue;
             }
@@ -1639,7 +1639,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual TCacheItem? ToCacheItem(byte[]? bytes)
     {
-        return bytes == null ? null : Serializer.Deserialize<TCacheItem>(bytes);
+        return bytes is null ? null : Serializer.Deserialize<TCacheItem>(bytes);
     }
 
     /// <summary>
@@ -1669,7 +1669,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual bool ShouldConsiderUow(bool considerUow)
     {
-        return considerUow && UnitOfWorkManager.Current != null;
+        return considerUow && UnitOfWorkManager.Current is not null;
     }
 
     /// <summary>
@@ -1688,7 +1688,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <exception cref="XiHanException"></exception>
     protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
     {
-        return UnitOfWorkManager.Current == null
+        return UnitOfWorkManager.Current is null
             ? throw new XiHanException($"没有活跃的 UOW")
             : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(), key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
     }

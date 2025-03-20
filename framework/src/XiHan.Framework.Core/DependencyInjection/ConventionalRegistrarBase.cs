@@ -182,18 +182,18 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     {
         if (!lifeTime.IsIn(ServiceLifetime.Singleton, ServiceLifetime.Scoped))
         {
-            return serviceKey == null
+            return serviceKey is null
                 ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
                 : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
         }
 
         var redirectedType = GetRedirectedTypeOrNull(implementationType, exposingServiceType, allExposingServiceTypes);
 
-        return redirectedType != null
-            ? serviceKey == null
+        return redirectedType is not null
+            ? serviceKey is null
                 ? ServiceDescriptor.Describe(exposingServiceType, provider => provider.GetService(redirectedType)!, lifeTime)
                 : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, (provider, key) => provider.GetKeyedService(redirectedType, key)!, lifeTime)
-            : serviceKey == null
+            : serviceKey is null
                 ? ServiceDescriptor.Describe(exposingServiceType, implementationType, lifeTime)
                 : ServiceDescriptor.DescribeKeyed(exposingServiceType, serviceKey, implementationType, lifeTime);
     }

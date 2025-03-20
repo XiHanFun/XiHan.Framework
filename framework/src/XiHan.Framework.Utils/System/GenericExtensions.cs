@@ -69,7 +69,7 @@ public static class GenericExtensions
         while (true)
         {
             var value = entity.GetPropertyValue<TEntity, TEntity>(propertyName);
-            if (value == null)
+            if (value is null)
             {
                 return entity;
             }
@@ -88,7 +88,7 @@ public static class GenericExtensions
     {
         var objectType = typeof(TEntity);
         var propertyInfo = objectType.GetProperty(propertyName);
-        if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
+        if (propertyInfo is null || !propertyInfo.PropertyType.IsGenericType)
         {
             throw new ArgumentException($"属性 '{propertyName}' 不存在，或者不是类型 '{objectType.Name}' 中的泛型类型。");
         }
@@ -115,7 +115,7 @@ public static class GenericExtensions
     {
         var objectType = typeof(TEntity);
         var propertyInfo = objectType.GetProperty(propertyName);
-        if (propertyInfo == null || !propertyInfo.PropertyType.IsGenericType)
+        if (propertyInfo is null || !propertyInfo.PropertyType.IsGenericType)
         {
             throw new ArgumentException($"属性 '{propertyName}' 不存在，或者不是类型 '{objectType.Name}' 中的泛型类型。");
         }
@@ -128,7 +128,7 @@ public static class GenericExtensions
         var setMethod = propertyInfo.GetSetMethod(true);
 
         // 如果只是只读,则 setMethod==null
-        if (setMethod == null)
+        if (setMethod is null)
         {
             return false;
         }
@@ -179,30 +179,30 @@ public static class GenericExtensions
         foreach (var variance in propertyInfo)
         {
             var type = variance.PropertyType;
-            var value1 = variance.GetValue(entity1, null).CastTo(type);
-            var value2 = variance.GetValue(entity2, null).CastTo(type);
+            var before = variance.GetValue(entity1, null).CastTo(type);
+            var after = variance.GetValue(entity2, null).CastTo(type);
 
             // 使用 Equals 进行值比较，处理值类型和引用类型
-            if (value1 != null && value2 != null)
+            if (before is not null && after is not null)
             {
-                if (!value1.Equals(value2))
+                if (!before.Equals(after))
                 {
                     result.Add(new CustomPropertyVariance
                     {
                         PropertyName = variance.Name,
-                        Value1 = value1.ToString() ?? string.Empty,
-                        Value2 = value2.ToString() ?? string.Empty
+                        Before = before.ToString() ?? string.Empty,
+                        After = after.ToString() ?? string.Empty
                     });
                 }
             }
             // 处理 null 的情况
-            else if (value1 != value2)
+            else if (before != after)
             {
                 result.Add(new CustomPropertyVariance
                 {
                     PropertyName = variance.Name,
-                    Value1 = value1?.ToString() ?? string.Empty,
-                    Value2 = value2?.ToString() ?? string.Empty
+                    Before = before?.ToString() ?? string.Empty,
+                    After = after?.ToString() ?? string.Empty
                 });
             }
         }
@@ -225,12 +225,12 @@ public static class GenericExtensions
         var newList = list.Select(s => new
         {
             s.PropertyName,
-            s.Value1,
-            s.Value2
+            s.Before,
+            s.After
         });
 
         // 要排除某些特殊属性
-        if (specialList != null && specialList.Count != 0)
+        if (specialList is not null && specialList.Count != 0)
         {
             newList = newList.Where(s => !specialList.Contains(s.PropertyName));
         }
@@ -239,7 +239,7 @@ public static class GenericExtensions
         {
             ChangedNote = newList
         };
-        return !enumerable.ChangedNote.Any() ? "{}" : SerializeExtensions.SerializeTo(enumerable);
+        return enumerable.SerializeTo();
     }
 
     #endregion 属性信息
@@ -254,7 +254,7 @@ public static class GenericExtensions
     public static bool IsNullOrEmpty<T>(this T? data)
     {
         // 如果为 null
-        if (data == null)
+        if (data is null)
         {
             return true;
         }
@@ -346,12 +346,12 @@ public record CustomPropertyVariance
     public string PropertyName { get; init; } = string.Empty;
 
     /// <summary>
-    /// 值1
+    /// 变化之前
     /// </summary>
-    public string Value1 { get; init; } = string.Empty;
+    public string Before { get; init; } = string.Empty;
 
     /// <summary>
-    /// 值2
+    /// 变化之后
     /// </summary>
-    public string Value2 { get; init; } = string.Empty;
+    public string After { get; init; } = string.Empty;
 }

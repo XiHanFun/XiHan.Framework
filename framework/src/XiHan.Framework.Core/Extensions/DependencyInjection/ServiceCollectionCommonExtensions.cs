@@ -80,7 +80,7 @@ public static class ServiceCollectionCommonExtensions
     public static T GetSingletonInstance<T>(this IServiceCollection services)
     {
         var service = services.GetSingletonInstanceOrNull<T>();
-        return service == null ? throw new InvalidOperationException($"找不到单例服务: {typeof(T).AssemblyQualifiedName}") : service;
+        return service is null ? throw new InvalidOperationException($"找不到单例服务: {typeof(T).AssemblyQualifiedName}") : service;
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public static class ServiceCollectionCommonExtensions
                 .GetTypeInfo().GetInterfaces()
                 .FirstOrDefault(i => i.GetTypeInfo().IsGenericType && i.GetGenericTypeDefinition() == typeof(IServiceProviderFactory<>));
 
-            if (factoryInterface == null)
+            if (factoryInterface is null)
             {
                 continue;
             }

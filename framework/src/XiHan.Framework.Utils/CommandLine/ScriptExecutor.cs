@@ -121,14 +121,14 @@ public static class ScriptExecutor
         try
         {
             using var process = Process.Start(processStartInfo);
-            if (process == null)
+            if (process is null)
             {
                 throw new InvalidOperationException("无法启动进程");
             }
 
             process.OutputDataReceived += (_, e) =>
             {
-                if (e.Data != null)
+                if (e.Data is not null)
                 {
                     _ = output.AppendLine(e.Data);
                 }
@@ -136,7 +136,7 @@ public static class ScriptExecutor
 
             process.ErrorDataReceived += (_, e) =>
             {
-                if (e.Data != null)
+                if (e.Data is not null)
                 {
                     _ = error.AppendLine(e.Data);
                 }

@@ -48,7 +48,7 @@ public static class CurrentUserExtensions
         where T : struct
     {
         var value = currentUser.FindClaimValue(claimType);
-        return value == null ? default : value.To<T>();
+        return value is null ? default : value.To<T>();
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public static class CurrentUserExtensions
     /// <returns></returns>
     public static Guid GetId(this ICurrentUser currentUser)
     {
-        Debug.Assert(currentUser.Id != null, "currentUser.Id != null");
+        Debug.Assert(currentUser.Id is not null, "currentUser.Id is not null");
 
         return currentUser!.Id!.Value;
     }
@@ -113,7 +113,7 @@ public static class CurrentUserExtensions
     public static string GetSessionId([NotNull] this ICurrentUser currentUser)
     {
         var sessionId = currentUser.FindSessionId();
-        Debug.Assert(sessionId != null, "sessionId != null");
+        Debug.Assert(sessionId is not null, "sessionId is not null");
         return sessionId!;
     }
 

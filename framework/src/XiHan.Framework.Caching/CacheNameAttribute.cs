@@ -62,6 +62,6 @@ public class CacheNameAttribute : Attribute
             .OfType<CacheNameAttribute>()
             .FirstOrDefault();
 
-        return cacheNameAttribute != null ? cacheNameAttribute.Name : cacheItemType.FullName!.RemovePostFix("CacheItem");
+        return cacheNameAttribute is not null ? cacheNameAttribute.Name : cacheItemType.FullName!.RemovePostFix("CacheItem");
     }
 }

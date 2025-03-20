@@ -297,7 +297,7 @@ public static class ListExtensions
 
         var item = source.FirstOrDefault(selector);
 
-        if (item != null && !EqualityComparer<T>.Default.Equals(item, default))
+        if (item is not null && !EqualityComparer<T>.Default.Equals(item, default))
         {
             return item;
         }

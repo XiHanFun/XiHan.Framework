@@ -412,7 +412,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string? Truncate(this string? str, int maxLength)
     {
-        return str == null ? null : str.Length <= maxLength ? str : str.Left(maxLength);
+        return str is null ? null : str.Length <= maxLength ? str : str.Left(maxLength);
     }
 
     /// <summary>
@@ -420,7 +420,7 @@ public static partial class StringExtensions
     /// </summary>
     public static string? TruncateFromBeginning(this string? str, int maxLength)
     {
-        return str == null ? null : str.Length <= maxLength ? str : str.Right(maxLength);
+        return str is null ? null : str.Length <= maxLength ? str : str.Right(maxLength);
     }
 
     /// <summary>
@@ -430,7 +430,7 @@ public static partial class StringExtensions
     /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
     public static string? TruncateWithPostfix(this string? str, int maxLength, string postfix = "...")
     {
-        return str == null
+        return str is null
             ? null
             : str == string.Empty || maxLength == 0
                 ? string.Empty

@@ -261,7 +261,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         foreach (var configure in DistributedCacheOption.CacheConfigurators)
         {
             var options = configure.Invoke(CacheName);
-            if (options != null)
+            if (options is not null)
             {
                 return options;
             }
@@ -333,14 +333,14 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
                 if (ShouldConsiderUow(considerUow))
                 {
                     value = GetUnitOfWorkCache().GetOrDefault(key)?.GetUnRemovedValueOrNull();
-                    if (value != null)
+                    if (value is not null)
                     {
                         return value;
                     }
                 }
 
                 var bytes = await DistributedCacheCache.GetAsync(NormalizeKey(key), token);
-                if (bytes != null)
+                if (bytes is not null)
                 {
                     return ResolveSerializer().Deserialize(new ReadOnlySequence<byte>(bytes, 0, bytes.Length)); ;
                 }
@@ -524,7 +524,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <returns></returns>
     protected virtual bool ShouldConsiderUow(bool considerUow)
     {
-        return considerUow && UnitOfWorkManager.Current != null;
+        return considerUow && UnitOfWorkManager.Current is not null;
     }
 
     /// <summary>
@@ -543,7 +543,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <exception cref="XiHanException"></exception>
     protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
     {
-        if (UnitOfWorkManager.Current == null)
+        if (UnitOfWorkManager.Current is null)
         {
             throw new XiHanException($"没有活跃的 UOW。");
         }

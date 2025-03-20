@@ -99,7 +99,7 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsExplicitlyEnabledFor(Type type)
     {
         var remoteServiceAttr = type.GetTypeInfo().GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && remoteServiceAttr.IsEnabledFor(type);
+        return remoteServiceAttr is not null && remoteServiceAttr.IsEnabledFor(type);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsExplicitlyDisabledFor(Type type)
     {
         var remoteServiceAttr = type.GetTypeInfo().GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && !remoteServiceAttr.IsEnabledFor(type);
+        return remoteServiceAttr is not null && !remoteServiceAttr.IsEnabledFor(type);
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsMetadataExplicitlyEnabledFor(Type type)
     {
         var remoteServiceAttr = type.GetTypeInfo().GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && remoteServiceAttr.IsMetadataEnabledFor(type);
+        return remoteServiceAttr is not null && remoteServiceAttr.IsMetadataEnabledFor(type);
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsMetadataExplicitlyDisabledFor(Type type)
     {
         var remoteServiceAttr = type.GetTypeInfo().GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && !remoteServiceAttr.IsMetadataEnabledFor(type);
+        return remoteServiceAttr is not null && !remoteServiceAttr.IsMetadataEnabledFor(type);
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsMetadataExplicitlyEnabledFor(MethodInfo method)
     {
         var remoteServiceAttr = method.GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && remoteServiceAttr.IsMetadataEnabledFor(method);
+        return remoteServiceAttr is not null && remoteServiceAttr.IsMetadataEnabledFor(method);
     }
 
     /// <summary>
@@ -154,6 +154,6 @@ public class RemoteServiceAttribute : Attribute
     public static bool IsMetadataExplicitlyDisabledFor(MethodInfo method)
     {
         var remoteServiceAttr = method.GetSingleAttributeOrNull<RemoteServiceAttribute>();
-        return remoteServiceAttr != null && !remoteServiceAttr.IsMetadataEnabledFor(method);
+        return remoteServiceAttr is not null && !remoteServiceAttr.IsMetadataEnabledFor(method);
     }
 }

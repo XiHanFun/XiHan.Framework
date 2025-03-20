@@ -111,7 +111,7 @@ public class SettingManager : ISettingManager, ISingletonDependency
         foreach (var provider in definition.Providers)
         {
             value = await provider.GetOrNullAsync(definition);
-            if (value != null)
+            if (value is not null)
             {
                 break;
             }
@@ -143,7 +143,7 @@ public class SettingManager : ISettingManager, ISingletonDependency
         }
 
         // 数据验证
-        if (definition.Validator != null && !definition.Validator(value))
+        if (definition.Validator is not null && !definition.Validator(value))
         {
             throw new XiHanException($"设置 '{name}' 的值无效");
         }

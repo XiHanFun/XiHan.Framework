@@ -191,7 +191,7 @@ public static class SelectConditionParser<T>
     /// <exception cref="ArgumentException"></exception>
     private static BinaryExpression GenerateBetweenExpression(MemberExpression propertyAccess, object? value)
     {
-        if (value is not Tuple<object, object> range || range.Item1 == null || range.Item2 == null)
+        if (value is not Tuple<object, object> range || range.Item1 is null || range.Item2 is null)
         {
             throw new ArgumentException("Between 操作需要一个范围值（Tuple<object, object>）。");
         }

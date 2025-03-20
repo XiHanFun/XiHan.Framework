@@ -65,13 +65,13 @@ public class AutowiredServiceHandler
             var getService = typeof(IServiceProvider).GetMethod("GetService");
 
             List<Expression> setList = [];
-            if (getService != null)
+            if (getService is not null)
             {
                 // 字段赋值
                 setList.AddRange(
                     from field in serviceType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     let autowiredAttr = field.GetCustomAttribute<AutowiredServiceAttribute>()
-                    where autowiredAttr != null
+                    where autowiredAttr is not null
                     let fieldExp = Expression.Field(obj, field)
                     let createService = Expression.Call(spParam, getService, Expression.Constant(field.FieldType))
                     select Expression.Assign(fieldExp, Expression.Convert(createService, field.FieldType)));
@@ -79,7 +79,7 @@ public class AutowiredServiceHandler
                 setList.AddRange(
                     from property in serviceType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     let autowiredAttr = property.GetCustomAttribute<AutowiredServiceAttribute>()
-                    where autowiredAttr != null
+                    where autowiredAttr is not null
                     let propExp = Expression.Property(obj, property)
                     let createService = Expression.Call(spParam, getService, Expression.Constant(property.PropertyType))
                     select Expression.Assign(propExp, Expression.Convert(createService, property.PropertyType)));
