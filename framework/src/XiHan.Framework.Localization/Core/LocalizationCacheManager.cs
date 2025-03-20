@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -69,14 +69,14 @@ public class LocalizationCacheManager : IDisposable
     {
         var cacheKey = $"L:{resourceName}:{cultureName}:{key}";
 
-        if (_cache.TryGetValue(cacheKey, out LocalizedString? cachedValue) && cachedValue != null)
+        if (_cache.TryGetValue(cacheKey, out LocalizedString? cachedValue) && cachedValue is not null)
         {
             return cachedValue;
         }
 
         using (await _semaphore.LockAsync(_cancellationTokenProvider.Token))
         {
-            if (_cache.TryGetValue(cacheKey, out cachedValue) && cachedValue != null)
+            if (_cache.TryGetValue(cacheKey, out cachedValue) && cachedValue is not null)
             {
                 return cachedValue;
             }
@@ -111,14 +111,14 @@ public class LocalizationCacheManager : IDisposable
     {
         var cacheKey = $"L:{resourceName}:{cultureName}:{key}";
 
-        if (_cache.TryGetValue(cacheKey, out LocalizedString? cachedValue) && cachedValue != null)
+        if (_cache.TryGetValue(cacheKey, out LocalizedString? cachedValue) && cachedValue is not null)
         {
             return cachedValue;
         }
 
         using (_semaphore.Lock(_cancellationTokenProvider.Token))
         {
-            if (_cache.TryGetValue(cacheKey, out cachedValue) && cachedValue != null)
+            if (_cache.TryGetValue(cacheKey, out cachedValue) && cachedValue is not null)
             {
                 return cachedValue;
             }

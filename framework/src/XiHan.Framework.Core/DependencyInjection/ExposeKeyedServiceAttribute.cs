@@ -35,7 +35,7 @@ public class ExposeKeyedServiceAttribute<TServiceType> : Attribute, IExposedKeye
     /// <exception cref="XiHanException"></exception>
     public ExposeKeyedServiceAttribute(object serviceKey)
     {
-        if (serviceKey == null)
+        if (serviceKey is null)
         {
             throw new XiHanException($"{nameof(serviceKey)} can not be null! Use {nameof(ExposeServicesAttribute)} instead.");
         }

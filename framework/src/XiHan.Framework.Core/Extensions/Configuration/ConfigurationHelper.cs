@@ -53,11 +53,11 @@ public static class ConfigurationHelper
         // 开发环境，加载用户机密
         if (options.EnvironmentName == "Development")
         {
-            if (options.UserSecretsId != null)
+            if (options.UserSecretsId is not null)
             {
                 _ = builder.AddUserSecrets(options.UserSecretsId);
             }
-            else if (options.UserSecretsAssembly != null)
+            else if (options.UserSecretsAssembly is not null)
             {
                 _ = builder.AddUserSecrets(options.UserSecretsAssembly, true);
             }
@@ -65,7 +65,7 @@ public static class ConfigurationHelper
 
         builder = builder.AddEnvironmentVariables(options.EnvironmentVariablesPrefix);
 
-        if (options.CommandLineArgs != null)
+        if (options.CommandLineArgs is not null)
         {
             builder = builder.AddCommandLine(options.CommandLineArgs);
         }
