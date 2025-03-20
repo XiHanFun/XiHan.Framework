@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Test.Base\XiHan.Framework.Test.Base.csproj" />
   </ItemGroup>
 
 </Project>
