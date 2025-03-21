@@ -43,15 +43,6 @@ public static class XiHan
     public static string Copyright => $@"Copyright (C)2021-Present ZhaiFanhua All Rights Reserved.";
 
     /// <summary>
-    /// 寄语
-    /// </summary>
-    public static string SendWord => $@"
-碧落降恩承淑颜，共挚崎缘挽曦寒。
-迁般故事终成忆，谨此葳蕤换思短。
-           —— 致她
-";
-
-    /// <summary>
     /// 文档
     /// </summary>
     public static string Doc => $@"https://docs.xihanfun.com";
@@ -67,6 +58,19 @@ public static class XiHan
     public static string Rep => $@"https://github.com/XiHanFun/XiHan.Framework";
 
     /// <summary>
+    /// 寄语
+    /// </summary>
+    public static string SendWord => $@"
+碧落降恩承淑颜，共挚崎缘挽曦寒。
+迁般故事终成忆，谨此葳蕤换思短。
+";
+
+    /// <summary>
+    /// 标语
+    /// </summary>
+    public static string Tagline => $@"快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。";
+
+    /// <summary>
     /// 欢迎使用曦寒
     /// </summary>
     public static void SayHello()
@@ -74,11 +78,11 @@ public static class XiHan
         Console.WriteLine(Logo);
         Console.WriteLine(Version);
         Console.WriteLine(Copyright);
+        Console.WriteLine(Doc);
+        Console.WriteLine(Org);
+        Console.WriteLine(Rep);
         Console.WriteLine(SendWord);
-        Console.WriteLine($"官方文档：{Doc}");
-        Console.WriteLine($"社区组织：{Org}");
-        Console.WriteLine($"源码仓库：{Rep}");
-        Console.WriteLine($"快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。");
+        Console.WriteLine(Tagline);
         Console.WriteLine();
     }
 }
