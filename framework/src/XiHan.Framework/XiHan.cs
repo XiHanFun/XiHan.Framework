@@ -63,6 +63,7 @@ public static class XiHan
     public static string SendWord => $@"
 碧落降恩承淑颜，共挚崎缘挽曦寒。
 迁般故事终成忆，谨此葳蕤换思短。
+              —— 致她
 ";
 
     /// <summary>
