@@ -80,7 +80,7 @@ public static class DiskHelper
         }
         catch (Exception ex)
         {
-            LogHelper.Error("获取处理器信息出错，" + ex.Message);
+            ConsoleLogHelper.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return diskInfos;
