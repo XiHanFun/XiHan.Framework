@@ -25,6 +25,7 @@
     <Project Path="src/XiHan.Framework.EntityFrameworkCore/XiHan.Framework.EntityFrameworkCore.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
+    <Project Path="src/XiHan.Framework.Http.Client/XiHan.Framework.Http.Client.csproj" Id="dad9f394-0ec8-427b-b317-b4a2b2bb38a9" />
     <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
