@@ -96,7 +96,7 @@ public static class RamHelper
         }
         catch (Exception ex)
         {
-            LogHelper.Error("获取内存信息出错，" + ex.Message);
+            ConsoleLogger.Error("获取内存信息出错，" + ex.Message);
         }
 
         return ramInfos;
