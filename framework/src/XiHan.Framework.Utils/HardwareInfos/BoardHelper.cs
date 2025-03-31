@@ -77,7 +77,7 @@ public static class BoardHelper
         }
         catch (Exception ex)
         {
-            LogHelper.Error("获取主板信息出错，" + ex.Message);
+            ConsoleLogger.Error("获取主板信息出错，" + ex.Message);
         }
 
         return boardInfo;

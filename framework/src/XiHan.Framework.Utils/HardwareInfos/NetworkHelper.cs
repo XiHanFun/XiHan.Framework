@@ -58,7 +58,7 @@ public static class NetworkHelper
         }
         catch (Exception ex)
         {
-            LogHelper.Error("获取网卡信息出错，" + ex.Message);
+            ConsoleLogger.Error("获取网卡信息出错，" + ex.Message);
         }
 
         return networkInfos;
