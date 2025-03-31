@@ -28,7 +28,7 @@ public class XiHanException : Exception
     /// </summary>
     public XiHanException() : base(DefaultMessage)
     {
-        ConsoleLogHelper.Error(DefaultMessage);
+        ConsoleLogger.Error(DefaultMessage);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class XiHanException : Exception
     /// <param name="message"></param>
     public XiHanException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleLogHelper.Error(DefaultMessage + message);
+        ConsoleLogger.Error(DefaultMessage + message);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class XiHanException : Exception
     /// <param name="exception"></param>
     public XiHanException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
     {
-        ConsoleLogHelper.Error(DefaultMessage + message);
+        ConsoleLogger.Error(DefaultMessage + message);
     }
 
     /// <summary>
