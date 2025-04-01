@@ -151,7 +151,7 @@ public static class XiHanClaimsIdentityExtensions
     }
 
     /// <summary>
-    /// 查找租户管理员标识
+    /// 查找模仿者租户标识
     /// </summary>
     /// <param name="principal"></param>
     /// <returns></returns>
@@ -166,7 +166,7 @@ public static class XiHanClaimsIdentityExtensions
     }
 
     /// <summary>
-    /// 查找租户管理员标识
+    /// 查找模仿者租户标识
     /// </summary>
     /// <param name="identity"></param>
     /// <returns></returns>
@@ -183,7 +183,7 @@ public static class XiHanClaimsIdentityExtensions
     }
 
     /// <summary>
-    /// 查找用户管理员标识
+    /// 查找模仿者用户标识
     /// </summary>
     /// <param name="principal"></param>
     /// <returns></returns>
@@ -198,7 +198,7 @@ public static class XiHanClaimsIdentityExtensions
     }
 
     /// <summary>
-    /// 查找用户管理员标识
+    /// 查找模仿者用户标识
     /// </summary>
     /// <param name="identity"></param>
     /// <returns></returns>
