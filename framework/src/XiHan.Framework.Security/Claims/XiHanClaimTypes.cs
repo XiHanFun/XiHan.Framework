@@ -17,102 +17,113 @@ using System.Security.Claims;
 namespace XiHan.Framework.Security.Claims;
 
 /// <summary>
-/// 曦寒声明类型
+/// 曦寒身份声明类型
 /// </summary>
+/// <remarks>
+/// 模仿者（Impersonator），通常指的是在多租户（Multi-Tenant）系统中，进行身份冒充（Impersonation）操作时，用于标识发起冒充行为的租户ID。
+/// 在一些系统中，用户（或管理员）可能会以其他用户的身份执行操作，这种行为称为“冒充”或“假冒”。
+/// 为了保证安全性和审计的完整性，系统会记录下真正发起冒充操作的租户标识。
+/// 这样可以区分操作的实际发起者和被冒充的用户，并帮助系统进行权限管理和日志记录。
+/// </remarks>
 public static class XiHanClaimTypes
 {
     /// <summary>
-    /// Default: <see cref="ClaimTypes.Name"/>
+    /// 用户名
     /// </summary>
     public static string UserName { get; set; } = ClaimTypes.Name;
 
     /// <summary>
-    /// Default: <see cref="ClaimTypes.GivenName"/>
+    /// 名字
     /// </summary>
     public static string Name { get; set; } = ClaimTypes.GivenName;
 
     /// <summary>
-    /// Default: <see cref="ClaimTypes.Surname"/>
+    /// 姓氏
     /// </summary>
     public static string SurName { get; set; } = ClaimTypes.Surname;
 
     /// <summary>
-    /// Default: <see cref="ClaimTypes.NameIdentifier"/>
+    /// 用户标识
     /// </summary>
     public static string UserId { get; set; } = ClaimTypes.NameIdentifier;
 
     /// <summary>
-    /// Default: <see cref="ClaimTypes.Role"/>
+    /// 角色
     /// </summary>
     public static string Role { get; set; } = ClaimTypes.Role;
 
     /// <summary>
-    /// Default: <see cref="ClaimTypes.Email"/>
+    /// 邮箱
     /// </summary>
     public static string Email { get; set; } = ClaimTypes.Email;
 
     /// <summary>
-    /// Default: "email_verified".
+    /// 邮箱是否已验证
     /// </summary>
     public static string EmailVerified { get; set; } = "email_verified";
 
     /// <summary>
-    /// Default: "phone_number".
+    /// 手机号
     /// </summary>
     public static string PhoneNumber { get; set; } = "phone_number";
 
     /// <summary>
-    /// Default: "phone_number_verified".
+    /// 手机号是否已验证
     /// </summary>
     public static string PhoneNumberVerified { get; set; } = "phone_number_verified";
 
     /// <summary>
-    /// Default: "tenantid".
+    /// 租户标识
     /// </summary>
     public static string TenantId { get; set; } = "tenantid";
 
     /// <summary>
-    /// Default: "editionid".
+    /// 版本标识
     /// </summary>
     public static string EditionId { get; set; } = "editionid";
 
     /// <summary>
-    /// Default: "client_id".
+    /// 客户端标识
     /// </summary>
     public static string ClientId { get; set; } = "client_id";
 
     /// <summary>
-    /// Default: "impersonator_tenantid".
+    /// 模仿者租户标识
     /// </summary>
     public static string ImpersonatorTenantId { get; set; } = "impersonator_tenantid";
 
     /// <summary>
-    /// Default: "impersonator_userid".
+    /// 模仿者用户标识
     /// </summary>
     public static string ImpersonatorUserId { get; set; } = "impersonator_userid";
 
     /// <summary>
-    /// Default: "impersonator_tenantname".
+    /// 模仿者租户名
     /// </summary>
     public static string ImpersonatorTenantName { get; set; } = "impersonator_tenantname";
 
     /// <summary>
-    /// Default: "impersonator_username".
+    /// 模仿者用户名
     /// </summary>
     public static string ImpersonatorUserName { get; set; } = "impersonator_username";
 
     /// <summary>
-    /// Default: "picture".
+    /// 头像路径
     /// </summary>
     public static string Picture { get; set; } = "picture";
 
     /// <summary>
-    /// Default: "remember_me".
+    /// 是否记住
     /// </summary>
     public static string RememberMe { get; set; } = "remember_me";
 
     /// <summary>
-    /// Default: "session_id".
+    /// 会话标识
     /// </summary>
     public static string SessionId { get; set; } = "session_id";
+
+    /// <summary>
+    /// 设备指纹
+    /// </summary>
+    public static string DeviceFingerprint { get; set; } = "device_fingerprint";
 }
