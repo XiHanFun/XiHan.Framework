@@ -58,13 +58,13 @@ public static class CurrentUserExtensions
     /// <returns></returns>
     public static Guid GetId(this ICurrentUser currentUser)
     {
-        Debug.Assert(currentUser.Id is not null, "currentUser.Id is not null");
+        Debug.Assert(currentUser.Id is not null, "当前用户Id不为空");
 
         return currentUser!.Id!.Value;
     }
 
     /// <summary>
-    /// 获取租户标识
+    /// 获取模仿者租户标识
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
@@ -75,7 +75,7 @@ public static class CurrentUserExtensions
     }
 
     /// <summary>
-    /// 获取用户标识
+    /// 获取模仿者用户标识
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
@@ -86,7 +86,7 @@ public static class CurrentUserExtensions
     }
 
     /// <summary>
-    /// 获取租户名称
+    /// 获取模仿者租户名称
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
@@ -96,7 +96,7 @@ public static class CurrentUserExtensions
     }
 
     /// <summary>
-    /// 获取用户名
+    /// 获取模仿者用户名
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
@@ -113,7 +113,7 @@ public static class CurrentUserExtensions
     public static string GetSessionId([NotNull] this ICurrentUser currentUser)
     {
         var sessionId = currentUser.FindSessionId();
-        Debug.Assert(sessionId is not null, "sessionId is not null");
+        Debug.Assert(sessionId is not null, "sessionId 不为空");
         return sessionId!;
     }
 
