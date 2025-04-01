@@ -18,4 +18,8 @@
         <ProjectReference Include="..\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Filters\" />
+    </ItemGroup>
+
 </Project>

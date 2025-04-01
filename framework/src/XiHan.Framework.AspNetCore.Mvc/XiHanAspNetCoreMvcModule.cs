@@ -33,17 +33,25 @@ public class XiHanAspNetCoreMvcModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var aspNetCoreMvcOptions = new XiHanAspNetCoreMvcOptions();
 
-        _ = services.AddControllers();
+        _ = services.AddControllers(options =>
+        {
+            options = aspNetCoreMvcOptions.MvcOptions;
+        }).ConfigureApiBehaviorOptions(options =>
+        {
+            options = aspNetCoreMvcOptions.ApiBehaviorOptions;
+        }).AddJsonOptions(options =>
+        {
+            options = aspNetCoreMvcOptions.JsonOptions;
+        }).AddFormatterMappings(options =>
+        {
+            options = aspNetCoreMvcOptions.FormatterOptions;
+        });
 
         _ = services.AddCors(options =>
         {
-            options.AddDefaultPolicy(builder =>
-            {
-                _ = builder.AllowAnyOrigin()
-                    .AllowAnyMethod()
-                    .AllowAnyHeader();
-            });
+            options = aspNetCoreMvcOptions.CorsOptions;
         });
     }
 

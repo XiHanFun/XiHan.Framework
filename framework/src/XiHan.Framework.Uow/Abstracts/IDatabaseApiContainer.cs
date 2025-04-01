@@ -3,43 +3,44 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ITransactionApiContainer
-// Guid:55e9866d-12a1-4450-a827-f2ae1d967ecf
+// FileName:IDatabaseApiContainer
+// Guid:8f7833d1-55da-4c59-acca-d996c519ade0
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 4:01:17
+// CreateTime:2024/12/16 3:59:59
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
+using XiHan.Framework.Core.DependencyInjection;
 
-namespace XiHan.Framework.Uow;
+namespace XiHan.Framework.Uow.Abstracts;
 
 /// <summary>
-/// 事务API容器
+/// 数据库API容器接口
 /// </summary>
-public interface ITransactionApiContainer
+public interface IDatabaseApiContainer : IServiceProviderAccessor
 {
     /// <summary>
-    /// 查找事务API
+    /// 查找数据库API
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    ITransactionApi? FindTransactionApi([NotNull] string key);
+    IDatabaseApi? FindDatabaseApi([NotNull] string key);
 
     /// <summary>
-    /// 添加事务API
+    /// 添加数据库API
     /// </summary>
     /// <param name="key"></param>
     /// <param name="api"></param>
-    void AddTransactionApi([NotNull] string key, [NotNull] ITransactionApi api);
+    void AddDatabaseApi([NotNull] string key, [NotNull] IDatabaseApi api);
 
     /// <summary>
-    /// 获取或添加事务API
+    /// 获取或添加数据库API
     /// </summary>
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    ITransactionApi GetOrAddTransactionApi([NotNull] string key, [NotNull] Func<ITransactionApi> factory);
+    IDatabaseApi GetOrAddDatabaseApi([NotNull] string key, [NotNull] Func<IDatabaseApi> factory);
 }

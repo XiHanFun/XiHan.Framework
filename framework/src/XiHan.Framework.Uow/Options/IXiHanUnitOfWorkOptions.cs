@@ -3,32 +3,36 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IOnServiceRegistredContext
-// Guid:ba3d16d3-8bd0-4f79-b3ec-b55006c91beb
+// FileName:IXiHanUnitOfWorkOptions
+// Guid:4521fa4f-b62a-457f-9781-4950d1aa75e1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 1:33:51
+// CreateTime:2024/12/16 4:07:55
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Collections;
-using XiHan.Framework.Core.DynamicProxy;
+using System.Data;
 
-namespace XiHan.Framework.Core.DependencyInjection;
+namespace XiHan.Framework.Uow.Options;
 
 /// <summary>
-/// 服务注册上下文接口
+/// 工作单元选项接口
 /// </summary>
-public interface IOnServiceRegistredContext
+public interface IXiHanUnitOfWorkOptions
 {
     /// <summary>
-    /// 服务拦截器列表
+    /// 是否启用事务
     /// </summary>
-    ITypeList<IXiHanInterceptor> Interceptors { get; }
+    bool IsTransactional { get; }
 
     /// <summary>
-    /// 实现类型
+    /// 事务隔离级别
     /// </summary>
-    Type ImplementationType { get; }
+    IsolationLevel? IsolationLevel { get; }
+
+    /// <summary>
+    /// 超时时间
+    /// </summary>
+    int? Timeout { get; }
 }
