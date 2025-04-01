@@ -42,9 +42,9 @@ public static class RamHelper
         try
         {
             // 单位是 Byte
-            var totalMemoryParts = 0.ParseToLong();
-            var usedMemoryParts = 0.ParseToLong();
-            var freeMemoryParts = 0.ParseToLong();
+            var totalMemoryParts = 0L;
+            var usedMemoryParts = 0L;
+            var freeMemoryParts = 0L;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
