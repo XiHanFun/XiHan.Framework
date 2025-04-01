@@ -3,36 +3,34 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IXiHanUnitOfWorkOptions
-// Guid:4521fa4f-b62a-457f-9781-4950d1aa75e1
-// Author:zhaifanhua
+// FileName:UnitOfWorkTransactionBehavior
+// Guid:a527b463-3c07-4d0a-95b5-be8a0fa104b9
+// Author:afand
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 4:07:55
+// CreateTime:2025/4/1 20:46:39
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using System.Data;
-
-namespace XiHan.Framework.Uow;
+namespace XiHan.Framework.Uow.Options;
 
 /// <summary>
-/// 工作单元选项接口
+/// 工作单元事务行为
 /// </summary>
-public interface IXiHanUnitOfWorkOptions
+public enum UnitOfWorkTransactionBehavior
 {
     /// <summary>
-    /// 是否启用事务
+    /// 自动
     /// </summary>
-    bool IsTransactional { get; }
+    Auto,
 
     /// <summary>
-    /// 事务隔离级别
+    /// 启用
     /// </summary>
-    IsolationLevel? IsolationLevel { get; }
+    Enabled,
 
     /// <summary>
-    /// 超时时间
+    /// 禁用
     /// </summary>
-    int? Timeout { get; }
+    Disabled
 }

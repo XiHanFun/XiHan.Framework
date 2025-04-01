@@ -12,15 +12,27 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Http;
+using XiHan.Framework.Security;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Utils.Text;
+using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.AspNetCore;
 
 /// <summary>
 /// 曦寒框架 Web 核心模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanSecurityModule),
+    typeof(XiHanVirtualFileSystemModule),
+    typeof(XiHanUowModule),
+    typeof(XiHanHttpModule)
+    )]
 public class XiHanAspNetCoreModule : XiHanModule
 {
     /// <summary>
@@ -31,11 +43,11 @@ public class XiHanAspNetCoreModule : XiHanModule
     {
         var services = context.Services;
 
-        _ = services.GetSingletonInstance<IXiHanHostEnvironment>();
-        //if (xihanHostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
-        //{
-        //    xihanHostEnvironment.EnvironmentName = services.GetHostingEnvironment().EnvironmentName;
-        //}
+        var xihanHostEnvironment = services.GetSingletonInstance<IXiHanHostEnvironment>();
+        if (xihanHostEnvironment.EnvironmentName.IsNullOrWhiteSpace())
+        {
+            xihanHostEnvironment.EnvironmentName = services.GetHostingEnvironment().EnvironmentName;
+        }
     }
 
     /// <summary>

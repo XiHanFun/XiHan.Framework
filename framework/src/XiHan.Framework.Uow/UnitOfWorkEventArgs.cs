@@ -20,7 +20,7 @@ namespace XiHan.Framework.Uow;
 /// <summary>
 /// 工作单元事件参数
 /// </summary>
-public class UnitOfWorkEventArgs
+public class UnitOfWorkEventArgs : EventArgs
 {
     /// <summary>
     /// 工作单元

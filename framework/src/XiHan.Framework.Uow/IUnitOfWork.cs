@@ -13,6 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
+using XiHan.Framework.Uow.Abstracts;
+using XiHan.Framework.Uow.Options;
 
 namespace XiHan.Framework.Uow;
 
@@ -31,7 +33,7 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     /// </summary>
     Dictionary<string, object> Items { get; }
 
-    //TODO: Switch to OnFailed (sync) and OnDisposed (sync) methods to be compatible with OnCompleted
+    //TODO：切换到OnFailed （sync）和ondispose （sync）方法来兼容OnCompleted
     /// <summary>
     /// 工作单元失败事件
     /// </summary>
