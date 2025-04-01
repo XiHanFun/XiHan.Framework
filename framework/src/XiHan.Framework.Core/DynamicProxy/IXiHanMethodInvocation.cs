@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IMethodInvocation
+// FileName:IXiHanMethodInvocation
 // Guid:7956d463-bc5e-44ce-8b62-14d39cd2655d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,9 +17,9 @@ using System.Reflection;
 namespace XiHan.Framework.Core.DynamicProxy;
 
 /// <summary>
-/// 方法调用接口
+/// 曦寒方法调用接口
 /// </summary>
-public interface IMethodInvocation
+public interface IXiHanMethodInvocation
 {
     /// <summary>
     /// 参数

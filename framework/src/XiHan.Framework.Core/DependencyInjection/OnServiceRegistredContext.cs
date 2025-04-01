@@ -26,7 +26,7 @@ public class OnServiceRegistredContext : IOnServiceRegistredContext
     /// <summary>
     /// 拦截器
     /// </summary>
-    public virtual ITypeList<IInterceptor> Interceptors { get; }
+    public virtual ITypeList<IXiHanInterceptor> Interceptors { get; }
 
     /// <summary>
     /// 服务类型
@@ -48,6 +48,6 @@ public class OnServiceRegistredContext : IOnServiceRegistredContext
         ServiceType = CheckHelper.NotNull(serviceType, nameof(serviceType));
         ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
 
-        Interceptors = new TypeList<IInterceptor>();
+        Interceptors = new TypeList<IXiHanInterceptor>();
     }
 }

@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Uow;
@@ -21,6 +22,15 @@ namespace XiHan.Framework.Uow;
 /// </summary>
 public class XiHanUowModule : XiHanModule
 {
+    /// <summary>
+    /// 服务配置前
+    /// </summary>
+    /// <param name="context"></param>
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.OnRegistered(UnitOfWorkInterceptorRegistrar.RegisterIfNeeded);
+    }
+
     /// <summary>
     /// 服务配置
     /// </summary>
