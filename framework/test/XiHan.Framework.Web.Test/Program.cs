@@ -1,5 +1,5 @@
 ﻿using Serilog;
-using XiHan.Framework.AspNetCore.Extensions.Builder;
+using XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Test;
 

@@ -3,26 +3,20 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ITransactionApi
-// Guid:af57ecf1-1be6-4206-b13c-c15fea484308
+// FileName:IDatabaseApi
+// Guid:b7e3c569-3667-4bb4-8563-0c8048493550
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 4:01:52
+// CreateTime:2024/12/16 4:00:39
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Uow;
+namespace XiHan.Framework.Uow.Abstracts;
 
 /// <summary>
-/// 事务API
+/// 数据库API接口
 /// </summary>
-public interface ITransactionApi : IDisposable
+public interface IDatabaseApi
 {
-    /// <summary>
-    /// 异步提交
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task CommitAsync(CancellationToken cancellationToken = default);
 }

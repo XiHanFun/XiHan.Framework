@@ -3,20 +3,26 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDatabaseApi
-// Guid:b7e3c569-3667-4bb4-8563-0c8048493550
-// Author:zhaifanhua
+// FileName:ISupportsRollback
+// Guid:af0157eb-aa14-44cb-aac4-36e27eff170a
+// Author:afand
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 4:00:39
+// CreateTime:2025/4/1 20:59:34
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Uow;
+namespace XiHan.Framework.Uow.Abstracts;
 
 /// <summary>
-/// 数据库API接口
+/// 支持回滚
 /// </summary>
-public interface IDatabaseApi
+public interface ISupportsRollback
 {
+    /// <summary>
+    /// 回滚
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task RollbackAsync(CancellationToken cancellationToken = default);
 }

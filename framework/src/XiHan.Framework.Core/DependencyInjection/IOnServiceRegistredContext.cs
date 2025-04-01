@@ -25,7 +25,7 @@ public interface IOnServiceRegistredContext
     /// <summary>
     /// 服务拦截器列表
     /// </summary>
-    ITypeList<IInterceptor> Interceptors { get; }
+    ITypeList<IXiHanInterceptor> Interceptors { get; }
 
     /// <summary>
     /// 实现类型
