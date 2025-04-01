@@ -15,7 +15,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
     </ItemGroup>
 
 </Project>
