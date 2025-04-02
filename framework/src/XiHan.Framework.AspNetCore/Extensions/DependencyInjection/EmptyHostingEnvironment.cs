@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:EmptyHostingEnvironment
 // Guid:2fb6ef51-e121-43ba-b38f-5afa7628c697
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 19:49:24
 // ----------------------------------------------------------------

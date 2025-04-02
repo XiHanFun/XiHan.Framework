@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanClaimsTransformation
 // Guid:bf65e21c-9742-4a18-aac0-3b8a01122177
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 19:41:21
 // ----------------------------------------------------------------

@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ISupportsSavingChanges
 // Guid:61fbba93-936f-4e0d-afbd-6d00183d9ad9
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 20:55:12
 // ----------------------------------------------------------------

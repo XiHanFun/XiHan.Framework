@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:EventHandlerExtensions
 // Guid:1541cea1-9140-48ea-bab1-f7bedb079767
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 21:04:08
 // ----------------------------------------------------------------

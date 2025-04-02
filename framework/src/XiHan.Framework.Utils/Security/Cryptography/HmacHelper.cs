@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:HmacHelper
 // Guid:8481bb9a-16db-41dd-9c56-1b4e5a01e6a5
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/8 19:17:18
 // ----------------------------------------------------------------

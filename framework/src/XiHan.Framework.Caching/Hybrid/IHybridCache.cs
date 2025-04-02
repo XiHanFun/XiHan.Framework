@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IHybridCache
 // Guid:d8b3d16b-634e-4833-995c-f298cfabf7eb
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/3/12 19:46:18
 // ----------------------------------------------------------------

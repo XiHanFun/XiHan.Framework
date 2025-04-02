@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IUnitOfWorkEventPublisher
 // Guid:79938703-3ec4-45ed-bcb6-dbee5c995b62
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 20:48:43
 // ----------------------------------------------------------------
