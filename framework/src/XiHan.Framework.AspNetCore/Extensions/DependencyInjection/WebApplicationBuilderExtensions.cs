@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:WebApplicationBuilderExtensions
 // Guid:897266ed-08e5-47b7-9f91-6cde7964e091
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 19:52:22
 // ----------------------------------------------------------------

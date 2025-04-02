@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanSystemTextJsonSerializerOptions
 // Guid:d675cdb1-7b76-4751-a60e-ff5773255376
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/3/12 20:53:09
 // ----------------------------------------------------------------

@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:MaskHelper
 // Guid:86738b17-6256-4f60-a9cd-016a7a471396
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/02/22 14:28:00
 // ----------------------------------------------------------------

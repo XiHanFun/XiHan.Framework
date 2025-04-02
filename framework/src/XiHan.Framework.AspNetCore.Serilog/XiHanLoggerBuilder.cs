@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanLoggerBuilder
 // Guid:cd0ca5ff-940a-41a6-8296-e37433e984da
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/2/21 15:55:11
 // ----------------------------------------------------------------
