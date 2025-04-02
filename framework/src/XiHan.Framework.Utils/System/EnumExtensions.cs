@@ -14,6 +14,7 @@
 
 using System.Collections.Concurrent;
 using System.Reflection;
+using XiHan.Framework.Utils.Attributes;
 using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Utils.System;
@@ -60,13 +61,13 @@ public static class EnumExtensions
     /// </summary>
     /// <param name="keyEnum"></param>
     /// <returns></returns>
-    public static string GetTheme(this Enum keyEnum)
+    public static ThemeColor GetTheme(this Enum keyEnum)
     {
         var enumName = keyEnum.ToString();
         var field = keyEnum.GetType().GetField(enumName);
         return field is null
-            ? string.Empty
-            : field.GetThemeValue();
+            ? new ThemeColor { Theme = "default", Color = "#35495E" }
+            : field.GetThemeColorValue();
     }
 
     /// <summary>
@@ -97,7 +98,8 @@ public static class EnumExtensions
                 Key = field.Name,
                 Value = (int)field.GetRawConstantValue()!,
                 Label = field.GetDescriptionValue(),
-                Theme = field.GetThemeValue()
+                Theme = field.GetThemeColorValue().Theme,
+                Color = field.GetThemeColorValue().Color
             });
         }
 
@@ -143,7 +145,7 @@ public static class EnumExtensions
 /// <summary>
 /// 枚举信息
 /// </summary>
-public record EnumInfo
+public record EnumInfo : ThemeColor
 {
     /// <summary>
     /// 键
@@ -159,9 +161,4 @@ public record EnumInfo
     /// 描述
     /// </summary>
     public string Label { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 主题
-    /// </summary>
-    public string Theme { get; init; } = string.Empty;
 }
