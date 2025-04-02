@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ProxyHelper
 // Guid:af0fb8a5-355b-4ca0-97ed-645b385e1f5a
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 20:13:11
 // ----------------------------------------------------------------

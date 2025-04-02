@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanAspNetCoreMvcOptions
 // Guid:680e435e-92b7-49bd-bdb2-39981206a474
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 17:54:04
 // ----------------------------------------------------------------

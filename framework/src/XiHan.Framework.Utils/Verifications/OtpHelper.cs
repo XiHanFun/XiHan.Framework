@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:OtpHelper
 // Guid:86738b17-6280-4f60-a9cd-016a7a691396
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/8 14:28:00
 // ----------------------------------------------------------------

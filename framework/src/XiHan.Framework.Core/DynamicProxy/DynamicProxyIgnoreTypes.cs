@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DynamicProxyIgnoreTypes
 // Guid:7d5424a4-5b87-4af4-a5f5-80358807168a
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 20:09:09
 // ----------------------------------------------------------------
