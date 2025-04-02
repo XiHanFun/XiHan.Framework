@@ -34,7 +34,7 @@ public static class FieldInfoExtensions
         var descValue = field.Name;
         if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
         {
-            descValue = !string.IsNullOrEmpty(description.Description) ? description.Description : descValue;
+            descValue = description.Description ?? descValue;
         }
         return descValue;
     }
@@ -49,7 +49,7 @@ public static class FieldInfoExtensions
         var displayValue = field.Name;
         if (field.GetCustomAttribute(typeof(DisplayAttribute), false) is DisplayAttribute display)
         {
-            displayValue = !string.IsNullOrEmpty(display.Description) ? display.Description : displayValue;
+            displayValue = display.Description ?? displayValue;
         }
         return displayValue;
     }
@@ -59,13 +59,13 @@ public static class FieldInfoExtensions
     /// </summary>
     /// <param name="field"></param>
     /// <returns></returns>
-    public static string GetThemeValue(this FieldInfo field)
+    public static ThemeColor GetThemeColorValue(this FieldInfo field)
     {
-        var themeValue = ThemeType.Default.ToString().ToLower();
-        if (field.GetCustomAttribute(typeof(EnumThemeAttribute), false) is EnumThemeAttribute theme)
+        var themeColor = new ThemeColor();
+        if (field.GetCustomAttribute(typeof(ThemeAttribute), false) is ThemeAttribute theme)
         {
-            themeValue = theme.Theme;
+            themeColor = theme.ThemeColor;
         }
-        return themeValue;
+        return themeColor;
     }
 }
