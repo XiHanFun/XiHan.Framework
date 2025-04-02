@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:UnitOfWorkInterceptorRegistrar
 // Guid:940a5d2d-e054-4a1e-8781-7e141db6a691
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 20:06:47
 // ----------------------------------------------------------------

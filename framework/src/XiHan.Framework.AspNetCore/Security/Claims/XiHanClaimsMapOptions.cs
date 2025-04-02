@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanClaimsMapOptions
 // Guid:80bd6346-1fda-4e8a-85e5-0ebfec6fc327
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/4/1 19:42:01
 // ----------------------------------------------------------------
