@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanHybridCacheJsonSerializerFactory
 // Guid:126f0e98-f081-40f5-ac65-32bf7e4e2958
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/3/12 20:51:11
 // ----------------------------------------------------------------

@@ -5,7 +5,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanHybridCacheOptions
 // Guid:aaf54764-7166-4f64-840c-e63284a5fad8
-// Author:afand
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/3/12 19:58:50
 // ----------------------------------------------------------------
