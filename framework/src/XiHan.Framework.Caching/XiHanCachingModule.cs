@@ -14,7 +14,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Hybrid;
-
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Caching;
