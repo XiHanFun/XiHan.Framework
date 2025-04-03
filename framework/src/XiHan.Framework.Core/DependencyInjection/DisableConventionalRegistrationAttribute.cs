@@ -18,4 +18,4 @@ namespace XiHan.Framework.Core.DependencyInjection;
 /// 禁止常规注册特性
 /// </summary>
 [AttributeUsage(AttributeTargets.All)]
-public class DisableConventionalRegistrationAttribute : Attribute;
+public sealed class DisableConventionalRegistrationAttribute : Attribute;
