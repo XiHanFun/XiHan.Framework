@@ -21,16 +21,6 @@ public class SimpleBatchStateCheckerContext<TState>
     where TState : IHasSimpleStateCheckers<TState>
 {
     /// <summary>
-    /// 服务提供程序
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
-    /// 状态
-    /// </summary>
-    public TState[] States { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -40,4 +30,14 @@ public class SimpleBatchStateCheckerContext<TState>
         ServiceProvider = serviceProvider;
         States = states;
     }
+
+    /// <summary>
+    /// 服务提供程序
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// 状态
+    /// </summary>
+    public TState[] States { get; }
 }

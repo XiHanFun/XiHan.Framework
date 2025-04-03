@@ -23,16 +23,6 @@ public class UnitOfWorkCacheItem<TValue>
     where TValue : class
 {
     /// <summary>
-    /// 是否已移除
-    /// </summary>
-    public bool IsRemoved { get; set; }
-
-    /// <summary>
-    /// 值
-    /// </summary>
-    public TValue? Value { get; set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public UnitOfWorkCacheItem()
@@ -58,6 +48,16 @@ public class UnitOfWorkCacheItem<TValue>
         Value = value;
         IsRemoved = isRemoved;
     }
+
+    /// <summary>
+    /// 是否已移除
+    /// </summary>
+    public bool IsRemoved { get; set; }
+
+    /// <summary>
+    /// 值
+    /// </summary>
+    public TValue? Value { get; set; }
 
     /// <summary>
     /// 设置值

@@ -26,11 +26,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class RootServiceProvider : IRootServiceProvider, ISingletonDependency
 {
     /// <summary>
-    /// 服务提供者
-    /// </summary>
-    protected IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="objectAccessor"></param>
@@ -38,6 +33,11 @@ public class RootServiceProvider : IRootServiceProvider, ISingletonDependency
     {
         ServiceProvider = objectAccessor.Value!;
     }
+
+    /// <summary>
+    /// 服务提供者
+    /// </summary>
+    protected IServiceProvider ServiceProvider { get; }
 
     /// <summary>
     /// 获取服务

@@ -25,11 +25,6 @@ namespace XiHan.Framework.Caching;
 public class CacheNameAttribute : Attribute
 {
     /// <summary>
-    /// 缓存名称
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="name"></param>
@@ -39,6 +34,11 @@ public class CacheNameAttribute : Attribute
 
         Name = name;
     }
+
+    /// <summary>
+    /// 缓存名称
+    /// </summary>
+    public string Name { get; }
 
     /// <summary>
     /// 获取缓存名称

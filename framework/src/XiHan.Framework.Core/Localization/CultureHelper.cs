@@ -26,6 +26,11 @@ namespace XiHan.Framework.Core.Localization;
 public static class CultureHelper
 {
     /// <summary>
+    /// 是否是文本从右向左流动的书写系统
+    /// </summary>
+    public static bool IsRtl => CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+
+    /// <summary>
     /// 使用指定的文化和UI文化
     /// </summary>
     /// <param name="culture"></param>
@@ -66,11 +71,6 @@ public static class CultureHelper
             CultureInfo.CurrentUICulture = currentUiCulture;
         }, (currentCulture, currentUiCulture));
     }
-
-    /// <summary>
-    /// 是否是文本从右向左流动的书写系统
-    /// </summary>
-    public static bool IsRtl => CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
 
     /// <summary>
     /// 是否为有效的文化代码

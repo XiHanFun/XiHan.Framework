@@ -22,21 +22,6 @@ namespace XiHan.Framework.Uow.Options;
 public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
 {
     /// <summary>
-    /// 是否事务性
-    /// </summary>
-    public bool IsTransactional { get; set; }
-
-    /// <summary>
-    /// 隔离级别
-    /// </summary>
-    public IsolationLevel? IsolationLevel { get; set; }
-
-    /// <summary>
-    /// 超时时间 (单位：毫秒)
-    /// </summary>
-    public int? Timeout { get; set; }
-
-    /// <summary>
     /// 默认构造函数
     /// </summary>
     public XiHanUnitOfWorkOptions()
@@ -55,6 +40,21 @@ public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
         IsolationLevel = isolationLevel;
         Timeout = timeout;
     }
+
+    /// <summary>
+    /// 是否事务性
+    /// </summary>
+    public bool IsTransactional { get; set; }
+
+    /// <summary>
+    /// 隔离级别
+    /// </summary>
+    public IsolationLevel? IsolationLevel { get; set; }
+
+    /// <summary>
+    /// 超时时间 (单位：毫秒)
+    /// </summary>
+    public int? Timeout { get; set; }
 
     /// <summary>
     /// 克隆

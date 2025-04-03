@@ -23,11 +23,6 @@ namespace XiHan.Framework.Core.Application;
 public class ApplicationInitializationContext : IServiceProviderAccessor
 {
     /// <summary>
-    /// 服务提供者
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -37,4 +32,9 @@ public class ApplicationInitializationContext : IServiceProviderAccessor
 
         ServiceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 服务提供者
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
 }

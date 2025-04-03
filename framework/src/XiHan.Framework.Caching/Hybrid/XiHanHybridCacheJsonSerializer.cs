@@ -24,11 +24,6 @@ namespace XiHan.Framework.Caching.Hybrid;
 public class XiHanHybridCacheJsonSerializer<T> : IHybridCacheSerializer<T>
 {
     /// <summary>
-    /// Json序列化选项
-    /// </summary>
-    protected JsonSerializerOptions JsonSerializerOptions { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="jsonSerializerOptions"></param>
@@ -36,6 +31,11 @@ public class XiHanHybridCacheJsonSerializer<T> : IHybridCacheSerializer<T>
     {
         JsonSerializerOptions = jsonSerializerOptions;
     }
+
+    /// <summary>
+    /// Json序列化选项
+    /// </summary>
+    protected JsonSerializerOptions JsonSerializerOptions { get; }
 
     /// <summary>
     /// 反序列化

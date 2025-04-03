@@ -20,16 +20,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
 {
     /// <summary>
-    /// 服务 Key
-    /// </summary>
-    public object? ServiceKey { get; }
-
-    /// <summary>
-    /// 服务类型
-    /// </summary>
-    public Type ServiceType { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceType"></param>
@@ -47,6 +37,38 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
     {
         ServiceKey = serviceKey;
         ServiceType = serviceType;
+    }
+
+    /// <summary>
+    /// 服务 Key
+    /// </summary>
+    public object? ServiceKey { get; }
+
+    /// <summary>
+    /// 服务类型
+    /// </summary>
+    public Type ServiceType { get; }
+
+    /// <summary>
+    /// 相等操作符
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    /// <returns></returns>
+    public static bool operator ==(ServiceIdentifier left, ServiceIdentifier right)
+    {
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// 不相等操作符
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    /// <returns></returns>
+    public static bool operator !=(ServiceIdentifier left, ServiceIdentifier right)
+    {
+        return !(left == right);
     }
 
     /// <summary>
@@ -86,27 +108,5 @@ public readonly struct ServiceIdentifier : IEquatable<ServiceIdentifier>
         {
             return (ServiceType.GetHashCode() * 397) ^ ServiceKey.GetHashCode();
         }
-    }
-
-    /// <summary>
-    /// 相等操作符
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    /// <returns></returns>
-    public static bool operator ==(ServiceIdentifier left, ServiceIdentifier right)
-    {
-        return left.Equals(right);
-    }
-
-    /// <summary>
-    /// 不相等操作符
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    /// <returns></returns>
-    public static bool operator !=(ServiceIdentifier left, ServiceIdentifier right)
-    {
-        return !(left == right);
     }
 }

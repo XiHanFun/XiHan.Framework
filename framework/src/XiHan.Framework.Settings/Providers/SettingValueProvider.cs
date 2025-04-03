@@ -24,6 +24,15 @@ namespace XiHan.Framework.Settings.Providers;
 public abstract class SettingValueProvider : ISettingValueProvider, ITransientDependency
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="settingStore"></param>
+    protected SettingValueProvider(ISettingStore settingStore)
+    {
+        SettingStore = settingStore;
+    }
+
+    /// <summary>
     /// 名称
     /// </summary>
     public abstract string Name { get; }
@@ -32,15 +41,6 @@ public abstract class SettingValueProvider : ISettingValueProvider, ITransientDe
     /// 设置存储
     /// </summary>
     protected ISettingStore SettingStore { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="settingStore"></param>
-    protected SettingValueProvider(ISettingStore settingStore)
-    {
-        SettingStore = settingStore;
-    }
 
     /// <summary>
     /// 获取设置值

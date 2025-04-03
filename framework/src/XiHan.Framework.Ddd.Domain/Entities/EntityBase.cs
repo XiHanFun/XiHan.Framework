@@ -24,18 +24,18 @@ namespace XiHan.Framework.Ddd.Domain.Entities;
 public abstract class EntityBase : IEntityBase
 {
     /// <summary>
-    /// 版本控制标识，用于处理并发
-    /// </summary>
-    [ConcurrencyCheck]
-    [Timestamp]
-    public virtual byte[] RowVersion { get; set; } = default!;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     protected EntityBase()
     {
     }
+
+    /// <summary>
+    /// 版本控制标识，用于处理并发
+    /// </summary>
+    [ConcurrencyCheck]
+    [Timestamp]
+    public virtual byte[] RowVersion { get; set; } = default!;
 
     /// <summary>
     /// 重写实体相等性判断
@@ -70,11 +70,6 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 主键
-    /// </summary>
-    public virtual TKey BasicId { get; protected set; } = default!;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     protected EntityBase()
@@ -88,6 +83,33 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     protected EntityBase(TKey id)
     {
         BasicId = id;
+    }
+
+    /// <summary>
+    /// 主键
+    /// </summary>
+    public virtual TKey BasicId { get; protected set; } = default!;
+
+    /// <summary>
+    /// 重载 == 运算符
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <returns></returns>
+    public static bool operator ==(EntityBase<TKey> a, EntityBase<TKey> b)
+    {
+        return ReferenceEquals(a, b) || (a is not null && b is not null && a.Equals(b));
+    }
+
+    /// <summary>
+    /// 重载 != 运算符
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <returns></returns>
+    public static bool operator !=(EntityBase<TKey> a, EntityBase<TKey> b)
+    {
+        return !(a == b);
     }
 
     /// <summary>
@@ -122,27 +144,5 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     public override string ToString()
     {
         return $"{GetType().Name}({BasicId})({RowVersion})";
-    }
-
-    /// <summary>
-    /// 重载 == 运算符
-    /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    public static bool operator ==(EntityBase<TKey> a, EntityBase<TKey> b)
-    {
-        return ReferenceEquals(a, b) || (a is not null && b is not null && a.Equals(b));
-    }
-
-    /// <summary>
-    /// 重载 != 运算符
-    /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    public static bool operator !=(EntityBase<TKey> a, EntityBase<TKey> b)
-    {
-        return !(a == b);
     }
 }

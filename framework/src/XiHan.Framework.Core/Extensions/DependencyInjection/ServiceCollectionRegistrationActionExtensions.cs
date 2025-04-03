@@ -46,25 +46,6 @@ public static class ServiceCollectionRegistrationActionExtensions
     }
 
     /// <summary>
-    /// 获取或创建注册服务时的操作列表
-    /// </summary>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    private static ServiceRegistrationActionList GetOrCreateRegistrationActionList(IServiceCollection services)
-    {
-        var actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceRegistrationActionList>>()?.Value;
-        if (actionList is not null)
-        {
-            return actionList;
-        }
-
-        actionList = [];
-        _ = services.AddObjectAccessor(actionList);
-
-        return actionList;
-    }
-
-    /// <summary>
     /// 禁用拦截器
     /// </summary>
     /// <param name="services"></param>
@@ -81,6 +62,25 @@ public static class ServiceCollectionRegistrationActionExtensions
     public static bool IsClassInterceptorsDisabled(this IServiceCollection services)
     {
         return GetOrCreateRegistrationActionList(services).IsClassInterceptorsDisabled;
+    }
+
+    /// <summary>
+    /// 获取或创建注册服务时的操作列表
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    private static ServiceRegistrationActionList GetOrCreateRegistrationActionList(IServiceCollection services)
+    {
+        var actionList = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceRegistrationActionList>>()?.Value;
+        if (actionList is not null)
+        {
+            return actionList;
+        }
+
+        actionList = [];
+        _ = services.AddObjectAccessor(actionList);
+
+        return actionList;
     }
 
     #endregion 注册

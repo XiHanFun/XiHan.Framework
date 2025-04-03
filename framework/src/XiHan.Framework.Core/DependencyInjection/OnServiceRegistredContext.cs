@@ -24,6 +24,19 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class OnServiceRegistredContext : IOnServiceRegistredContext
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="serviceType"></param>
+    /// <param name="implementationType"></param>
+    public OnServiceRegistredContext(Type serviceType, Type implementationType)
+    {
+        ServiceType = CheckHelper.NotNull(serviceType, nameof(serviceType));
+        ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
+
+        Interceptors = new TypeList<IXiHanInterceptor>();
+    }
+
+    /// <summary>
     /// 拦截器
     /// </summary>
     public virtual ITypeList<IXiHanInterceptor> Interceptors { get; }
@@ -37,17 +50,4 @@ public class OnServiceRegistredContext : IOnServiceRegistredContext
     /// 实现类型
     /// </summary>
     public virtual Type ImplementationType { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="serviceType"></param>
-    /// <param name="implementationType"></param>
-    public OnServiceRegistredContext(Type serviceType, Type implementationType)
-    {
-        ServiceType = CheckHelper.NotNull(serviceType, nameof(serviceType));
-        ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
-
-        Interceptors = new TypeList<IXiHanInterceptor>();
-    }
 }

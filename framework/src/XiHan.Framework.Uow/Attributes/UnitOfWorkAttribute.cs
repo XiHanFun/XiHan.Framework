@@ -29,31 +29,6 @@ namespace XiHan.Framework.Uow.Attributes;
 public class UnitOfWorkAttribute : Attribute
 {
     /// <summary>
-    /// 此 UOW 是否为事务性？
-    /// 若未提供，则使用默认值。
-    /// </summary>
-    public bool? IsTransactional { get; set; }
-
-    /// <summary>
-    /// 单位为毫秒的 UOW 超时时间。
-    /// 若未提供，则使用默认值。
-    /// </summary>
-    public int? Timeout { get; set; }
-
-    /// <summary>
-    /// 如果此 UOW 是事务性的，此选项表示事务的隔离级别。
-    /// 如果未提供，则使用默认值。
-    /// </summary>
-    public IsolationLevel? IsolationLevel { get; set; }
-
-    /// <summary>
-    /// 用于防止为方法启动工作单元。
-    /// 如果已启动工作单元，则忽略此属性。
-    /// 默认值：false。
-    /// </summary>
-    public bool IsDisabled { get; set; }
-
-    /// <summary>
     /// 默认构造函数
     /// </summary>
     public UnitOfWorkAttribute()
@@ -92,6 +67,31 @@ public class UnitOfWorkAttribute : Attribute
         IsolationLevel = isolationLevel;
         Timeout = timeout;
     }
+
+    /// <summary>
+    /// 此 UOW 是否为事务性？
+    /// 若未提供，则使用默认值。
+    /// </summary>
+    public bool? IsTransactional { get; set; }
+
+    /// <summary>
+    /// 单位为毫秒的 UOW 超时时间。
+    /// 若未提供，则使用默认值。
+    /// </summary>
+    public int? Timeout { get; set; }
+
+    /// <summary>
+    /// 如果此 UOW 是事务性的，此选项表示事务的隔离级别。
+    /// 如果未提供，则使用默认值。
+    /// </summary>
+    public IsolationLevel? IsolationLevel { get; set; }
+
+    /// <summary>
+    /// 用于防止为方法启动工作单元。
+    /// 如果已启动工作单元，则忽略此属性。
+    /// 默认值：false。
+    /// </summary>
+    public bool IsDisabled { get; set; }
 
     /// <summary>
     /// 设置选项

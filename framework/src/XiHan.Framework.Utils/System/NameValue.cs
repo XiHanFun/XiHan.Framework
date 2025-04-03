@@ -46,16 +46,6 @@ public class NameValue : NameValue<string>
 public class NameValue<T>
 {
     /// <summary>
-    /// 键
-    /// </summary>
-    public string Name { get; set; } = default!;
-
-    /// <summary>
-    /// 值
-    /// </summary>
-    public T Value { get; set; } = default!;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public NameValue()
@@ -72,4 +62,14 @@ public class NameValue<T>
         Name = name;
         Value = value;
     }
+
+    /// <summary>
+    /// 键
+    /// </summary>
+    public string Name { get; set; } = default!;
+
+    /// <summary>
+    /// 值
+    /// </summary>
+    public T Value { get; set; } = default!;
 }

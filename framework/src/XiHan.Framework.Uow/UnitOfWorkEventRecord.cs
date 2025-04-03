@@ -20,6 +20,21 @@ namespace XiHan.Framework.Uow;
 public class UnitOfWorkEventRecord
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="eventType"></param>
+    /// <param name="eventData"></param>
+    /// <param name="eventOrder"></param>
+    /// <param name="useOutbox"></param>
+    public UnitOfWorkEventRecord(Type eventType, object eventData, long eventOrder, bool useOutbox = true)
+    {
+        EventType = eventType;
+        EventData = eventData;
+        EventOrder = eventOrder;
+        UseOutbox = useOutbox;
+    }
+
+    /// <summary>
     /// 事件数据
     /// </summary>
     public object EventData { get; }
@@ -43,21 +58,6 @@ public class UnitOfWorkEventRecord
     /// 额外属性
     /// </summary>
     public Dictionary<string, object> Properties { get; } = [];
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="eventType"></param>
-    /// <param name="eventData"></param>
-    /// <param name="eventOrder"></param>
-    /// <param name="useOutbox"></param>
-    public UnitOfWorkEventRecord(Type eventType, object eventData, long eventOrder, bool useOutbox = true)
-    {
-        EventType = eventType;
-        EventData = eventData;
-        EventOrder = eventOrder;
-        UseOutbox = useOutbox;
-    }
 
     /// <summary>
     /// 设置事件顺序

@@ -22,11 +22,6 @@ namespace XiHan.Framework.Core.Application;
 public class ApplicationShutdownContext
 {
     /// <summary>
-    /// 服务提供者
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -36,4 +31,9 @@ public class ApplicationShutdownContext
 
         ServiceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 服务提供者
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
 }

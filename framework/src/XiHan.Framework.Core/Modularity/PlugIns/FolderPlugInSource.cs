@@ -27,6 +27,19 @@ namespace XiHan.Framework.Core.Modularity.PlugIns;
 public class FolderPlugInSource : IPlugInSource
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="folder"></param>
+    /// <param name="searchOption"></param>
+    public FolderPlugInSource(string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+    {
+        _ = CheckHelper.NotNull(folder, nameof(folder));
+
+        Folder = folder;
+        SearchOption = searchOption;
+    }
+
+    /// <summary>
     /// 文件夹
     /// </summary>
     public string Folder { get; }
@@ -40,19 +53,6 @@ public class FolderPlugInSource : IPlugInSource
     /// 过滤器
     /// </summary>
     public Func<string, bool>? Filter { get; set; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="folder"></param>
-    /// <param name="searchOption"></param>
-    public FolderPlugInSource(string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
-    {
-        _ = CheckHelper.NotNull(folder, nameof(folder));
-
-        Folder = folder;
-        SearchOption = searchOption;
-    }
 
     /// <summary>
     /// 获取模块

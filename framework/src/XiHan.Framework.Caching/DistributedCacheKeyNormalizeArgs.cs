@@ -20,6 +20,19 @@ namespace XiHan.Framework.Caching;
 public class DistributedCacheKeyNormalizeArgs
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="cacheName"></param>
+    /// <param name="ignoreMultiTenancy"></param>
+    public DistributedCacheKeyNormalizeArgs(string key, string cacheName, bool ignoreMultiTenancy)
+    {
+        Key = key;
+        CacheName = cacheName;
+        IgnoreMultiTenancy = ignoreMultiTenancy;
+    }
+
+    /// <summary>
     /// 键
     /// </summary>
     public string Key { get; }
@@ -33,17 +46,4 @@ public class DistributedCacheKeyNormalizeArgs
     /// 是否忽略多租户
     /// </summary>
     public bool IgnoreMultiTenancy { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="cacheName"></param>
-    /// <param name="ignoreMultiTenancy"></param>
-    public DistributedCacheKeyNormalizeArgs(string key, string cacheName, bool ignoreMultiTenancy)
-    {
-        Key = key;
-        CacheName = cacheName;
-        IgnoreMultiTenancy = ignoreMultiTenancy;
-    }
 }

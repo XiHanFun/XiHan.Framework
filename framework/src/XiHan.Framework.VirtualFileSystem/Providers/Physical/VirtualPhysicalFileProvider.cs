@@ -23,11 +23,6 @@ namespace XiHan.Framework.VirtualFileSystem.Providers.Physical;
 public class VirtualPhysicalFileProvider : PhysicalFileProvider
 {
     /// <summary>
-    /// 提供程序优先级
-    /// </summary>
-    public int Priority { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public VirtualPhysicalFileProvider(string root, int priority = 100) : base(root)
@@ -41,6 +36,11 @@ public class VirtualPhysicalFileProvider : PhysicalFileProvider
 
         Priority = priority;
     }
+
+    /// <summary>
+    /// 提供程序优先级
+    /// </summary>
+    public int Priority { get; }
 
     /// <summary>
     /// 获取带优先级的文件信息

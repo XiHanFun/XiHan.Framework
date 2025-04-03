@@ -29,16 +29,6 @@ public class UserSettingValueProvider : SettingValueProvider
     public const string ProviderName = "U";
 
     /// <summary>
-    /// 名称
-    /// </summary>
-    public override string Name => ProviderName;
-
-    /// <summary>
-    /// 当前用户
-    /// </summary>
-    protected ICurrentUser CurrentUser { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="settingStore"></param>
@@ -48,6 +38,16 @@ public class UserSettingValueProvider : SettingValueProvider
     {
         CurrentUser = currentUser;
     }
+
+    /// <summary>
+    /// 名称
+    /// </summary>
+    public override string Name => ProviderName;
+
+    /// <summary>
+    /// 当前用户
+    /// </summary>
+    protected ICurrentUser CurrentUser { get; }
 
     /// <summary>
     /// 获取设置值

@@ -21,15 +21,18 @@ namespace XiHan.Framework.Utils.Verifications;
 /// </summary>
 public class PasswordStrengthChecker
 {
+    private const string SpecialCharacters = "!@#$%^&*()-_=+[]{}|;:'\",.<>?/";
+
+    private const string UppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private const string LowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
+
+    private const string Digits = "0123456789";
+
     private static readonly List<string> WeakPasswords =
-    [
+                    [
         "123456", "password", "123456789", "12345678", "111111", "123123"
     ];
-
-    private const string SpecialCharacters = "!@#$%^&*()-_=+[]{}|;:'\",.<>?/";
-    private const string UppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private const string LowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
-    private const string Digits = "0123456789";
 
     /// <summary>
     /// 检查密码强度
@@ -147,6 +150,19 @@ public class PasswordStrengthChecker
 public class PasswordStrengthResult
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="isStrong"></param>
+    /// <param name="message"></param>
+    /// <param name="score"></param>
+    public PasswordStrengthResult(bool isStrong, string message, int score)
+    {
+        IsStrong = isStrong;
+        Message = message;
+        Score = score;
+    }
+
+    /// <summary>
     /// 是否强密码
     /// </summary>
     public bool IsStrong { get; }
@@ -160,19 +176,6 @@ public class PasswordStrengthResult
     /// 评分
     /// </summary>
     public int Score { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="isStrong"></param>
-    /// <param name="message"></param>
-    /// <param name="score"></param>
-    public PasswordStrengthResult(bool isStrong, string message, int score)
-    {
-        IsStrong = isStrong;
-        Message = message;
-        Score = score;
-    }
 
     /// <summary>
     /// ToString

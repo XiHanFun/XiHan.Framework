@@ -22,11 +22,6 @@ namespace XiHan.Framework.AspNetCore.Security.Claims;
 public class XiHanClaimsMapOptions
 {
     /// <summary>
-    /// 映射
-    /// </summary>
-    public Dictionary<string, Func<string>> Maps { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public XiHanClaimsMapOptions()
@@ -41,4 +36,9 @@ public class XiHanClaimsMapOptions
                 { "given_name", () => XiHanClaimTypes.Name }
             };
     }
+
+    /// <summary>
+    /// 映射
+    /// </summary>
+    public Dictionary<string, Func<string>> Maps { get; }
 }
