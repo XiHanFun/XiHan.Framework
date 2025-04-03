@@ -19,4 +19,12 @@
         <ProjectReference Include="..\XiHan.Framework.TextTemplating\XiHan.Framework.TextTemplating.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="T4\" />
+    </ItemGroup>
+
 </Project>

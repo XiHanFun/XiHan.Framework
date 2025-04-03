@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Attributes;
 /// 主题特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-public class ThemeAttribute : Attribute
+public sealed class ThemeAttribute : Attribute
 {
     // 缓存
     private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
@@ -106,10 +106,10 @@ public record ThemeColor
     /// <summary>
     /// 主题
     /// </summary>
-    public string Theme { get; set; } = string.Empty;
+    public string Theme { get; set; } = "default";
 
     /// <summary>
     /// 颜色
     /// </summary>
-    public string Color { get; set; } = string.Empty;
+    public string Color { get; set; } = "#35495E";
 }

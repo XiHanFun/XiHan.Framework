@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Ddd.Domain.Shared.Entities;
 
 namespace XiHan.Framework.Ddd.Domain.Entities;
@@ -19,8 +20,23 @@ namespace XiHan.Framework.Ddd.Domain.Entities;
 /// <summary>
 /// 实体基类
 /// </summary>
+[Serializable]
 public abstract class EntityBase : IEntityBase
 {
+    /// <summary>
+    /// 版本控制标识，用于处理并发
+    /// </summary>
+    [ConcurrencyCheck]
+    [Timestamp]
+    public virtual byte[] RowVersion { get; set; } = default!;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    protected EntityBase()
+    {
+    }
+
     /// <summary>
     /// 重写实体相等性判断
     /// </summary>
@@ -28,18 +44,12 @@ public abstract class EntityBase : IEntityBase
     /// <returns></returns>
     public override bool Equals(object? obj)
     {
-        if (obj is null || obj.GetType() != GetType())
+        if (obj is not EntityBase other)
         {
             return false;
         }
 
-        if (ReferenceEquals(this, obj))
-        {
-            return true;
-        }
-
-        // 默认情况下仅使用引用比较，具体实体可以重写此方法
-        return false;
+        return ReferenceEquals(this, obj) || (RowVersion is not null && other.RowVersion is not null && RowVersion.Equals(other.RowVersion));
     }
 
     /// <summary>
@@ -47,7 +57,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     public override int GetHashCode()
     {
-        return base.GetHashCode();
+        return RowVersion is null ? 0 : RowVersion.GetHashCode();
     }
 }
 
@@ -55,6 +65,7 @@ public abstract class EntityBase : IEntityBase
 /// 泛型主键实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
+[Serializable]
 public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
@@ -92,7 +103,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
         }
 
         // 相同引用或者两个主键均不为空且相等，则认为两个实体相等
-        return ReferenceEquals(this, obj) || (BasicId is not null && other.BasicId is not null && BasicId.Equals(other.BasicId));
+        return ReferenceEquals(this, obj) || base.Equals(obj) || (BasicId is not null && other.BasicId is not null && BasicId.Equals(other.BasicId));
     }
 
     /// <summary>
@@ -110,7 +121,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// <returns></returns>
     public override string ToString()
     {
-        return $"{GetType().Name}({BasicId})";
+        return $"{GetType().Name}({BasicId})({RowVersion})";
     }
 
     /// <summary>
