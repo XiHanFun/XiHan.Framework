@@ -23,11 +23,6 @@ namespace XiHan.Framework.Core.Modularity;
 public class AdditionalAssemblyAttribute : Attribute, IAdditionalModuleAssemblyProvider
 {
     /// <summary>
-    /// 程序集类型
-    /// </summary>
-    public Type[] TypesInAssemblies { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="typesInAssemblies"></param>
@@ -35,6 +30,11 @@ public class AdditionalAssemblyAttribute : Attribute, IAdditionalModuleAssemblyP
     {
         TypesInAssemblies = typesInAssemblies ?? Type.EmptyTypes;
     }
+
+    /// <summary>
+    /// 程序集类型
+    /// </summary>
+    public Type[] TypesInAssemblies { get; }
 
     /// <summary>
     /// 获取程序集

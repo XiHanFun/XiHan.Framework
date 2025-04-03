@@ -92,6 +92,31 @@ public static class XiHanModuleHelper
     }
 
     /// <summary>
+    /// 是否为曦寒模块
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public static bool IsXiHanModule(Type type)
+    {
+        var typeInfo = type.GetTypeInfo();
+
+        return typeInfo is { IsClass: true, IsAbstract: false, IsGenericType: false } && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
+    }
+
+    /// <summary>
+    /// 检测曦寒模块类
+    /// </summary>
+    /// <param name="moduleType"></param>
+    /// <exception cref="ArgumentException"></exception>
+    internal static void CheckXiHanModuleType(Type moduleType)
+    {
+        if (!IsXiHanModule(moduleType))
+        {
+            throw new ArgumentException("给定的类型不是曦寒模块:" + moduleType.AssemblyQualifiedName);
+        }
+    }
+
+    /// <summary>
     /// 递归添加模块和依赖项，并以目录树形式打印
     /// </summary>
     /// <param name="moduleTypes">已处理的模块列表，避免重复</param>
@@ -131,31 +156,6 @@ public static class XiHanModuleHelper
             // 为子节点构造新的前缀：如果当前节点是最后一个，则用空格，否则用竖线保持上层分支的连贯
             var childPrefix = prefix + (isLast ? "    " : "│   ");
             AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleTypes[i], logger, childPrefix, childIsLast);
-        }
-    }
-
-    /// <summary>
-    /// 是否为曦寒模块
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static bool IsXiHanModule(Type type)
-    {
-        var typeInfo = type.GetTypeInfo();
-
-        return typeInfo is { IsClass: true, IsAbstract: false, IsGenericType: false } && typeof(IXiHanModule).GetTypeInfo().IsAssignableFrom(type);
-    }
-
-    /// <summary>
-    /// 检测曦寒模块类
-    /// </summary>
-    /// <param name="moduleType"></param>
-    /// <exception cref="ArgumentException"></exception>
-    internal static void CheckXiHanModuleType(Type moduleType)
-    {
-        if (!IsXiHanModule(moduleType))
-        {
-            throw new ArgumentException("给定的类型不是曦寒模块:" + moduleType.AssemblyQualifiedName);
         }
     }
 }

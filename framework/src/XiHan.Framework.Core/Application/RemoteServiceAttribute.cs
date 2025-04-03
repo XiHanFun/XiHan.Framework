@@ -25,6 +25,16 @@ namespace XiHan.Framework.Core.Application;
 public class RemoteServiceAttribute : Attribute
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="isEnabled"></param>
+    public RemoteServiceAttribute(bool isEnabled = true)
+    {
+        IsEnabled = isEnabled;
+        IsMetadataEnabled = true;
+    }
+
+    /// <summary>
     /// 是否启用
     /// </summary>
     public bool IsEnabled { get; set; }
@@ -40,56 +50,6 @@ public class RemoteServiceAttribute : Attribute
     /// 此名称也用于区分该组的服务端点。
     /// </summary>
     public string Name { get; set; } = default!;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="isEnabled"></param>
-    public RemoteServiceAttribute(bool isEnabled = true)
-    {
-        IsEnabled = isEnabled;
-        IsMetadataEnabled = true;
-    }
-
-    /// <summary>
-    /// 是否启用
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public virtual bool IsEnabledFor(Type type)
-    {
-        return IsEnabled;
-    }
-
-    /// <summary>
-    /// 是否启用
-    /// </summary>
-    /// <param name="method"></param>
-    /// <returns></returns>
-    public virtual bool IsEnabledFor(MethodInfo method)
-    {
-        return IsEnabled;
-    }
-
-    /// <summary>
-    /// 是否启用元数据
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public virtual bool IsMetadataEnabledFor(Type type)
-    {
-        return IsMetadataEnabled;
-    }
-
-    /// <summary>
-    /// 是否启用元数据
-    /// </summary>
-    /// <param name="method"></param>
-    /// <returns></returns>
-    public virtual bool IsMetadataEnabledFor(MethodInfo method)
-    {
-        return IsMetadataEnabled;
-    }
 
     /// <summary>
     /// 是否明确启用
@@ -155,5 +115,45 @@ public class RemoteServiceAttribute : Attribute
     {
         var remoteServiceAttr = method.GetSingleAttributeOrNull<RemoteServiceAttribute>();
         return remoteServiceAttr is not null && !remoteServiceAttr.IsMetadataEnabledFor(method);
+    }
+
+    /// <summary>
+    /// 是否启用
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public virtual bool IsEnabledFor(Type type)
+    {
+        return IsEnabled;
+    }
+
+    /// <summary>
+    /// 是否启用
+    /// </summary>
+    /// <param name="method"></param>
+    /// <returns></returns>
+    public virtual bool IsEnabledFor(MethodInfo method)
+    {
+        return IsEnabled;
+    }
+
+    /// <summary>
+    /// 是否启用元数据
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public virtual bool IsMetadataEnabledFor(Type type)
+    {
+        return IsMetadataEnabled;
+    }
+
+    /// <summary>
+    /// 是否启用元数据
+    /// </summary>
+    /// <param name="method"></param>
+    /// <returns></returns>
+    public virtual bool IsMetadataEnabledFor(MethodInfo method)
+    {
+        return IsMetadataEnabled;
     }
 }

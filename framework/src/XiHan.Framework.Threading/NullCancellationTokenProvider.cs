@@ -20,6 +20,14 @@ namespace XiHan.Framework.Threading;
 public class NullCancellationTokenProvider : CancellationTokenProviderBase
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    private NullCancellationTokenProvider()
+        : base(new AmbientDataContextAmbientScopeProvider<CancellationTokenOverride>(new AsyncLocalAmbientDataContext()))
+    {
+    }
+
+    /// <summary>
     /// 实例
     /// </summary>
     public static NullCancellationTokenProvider Instance { get; } = new();
@@ -28,12 +36,4 @@ public class NullCancellationTokenProvider : CancellationTokenProviderBase
     /// 令牌
     /// </summary>
     public override CancellationToken Token => OverrideValue?.CancellationToken ?? CancellationToken.None;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    private NullCancellationTokenProvider()
-        : base(new AmbientDataContextAmbientScopeProvider<CancellationTokenOverride>(new AsyncLocalAmbientDataContext()))
-    {
-    }
 }

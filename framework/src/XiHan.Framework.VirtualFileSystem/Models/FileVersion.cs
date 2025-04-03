@@ -23,6 +23,21 @@ namespace XiHan.Framework.VirtualFileSystem.Models;
 public class FileVersion
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    public FileVersion(IFileInfo file)
+    {
+        using var stream = file.CreateReadStream();
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+
+        Content = memoryStream.ToArray();
+        ContentHash = HashHelper.ByteHash(Content);
+        Length = file.Length;
+        Timestamp = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
     /// 文件内容哈希
     /// </summary>
     public string ContentHash { get; }
@@ -41,19 +56,4 @@ public class FileVersion
     /// 文件内容
     /// </summary>
     public byte[] Content { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public FileVersion(IFileInfo file)
-    {
-        using var stream = file.CreateReadStream();
-        using var memoryStream = new MemoryStream();
-        stream.CopyTo(memoryStream);
-
-        Content = memoryStream.ToArray();
-        ContentHash = HashHelper.ByteHash(Content);
-        Length = file.Length;
-        Timestamp = DateTimeOffset.UtcNow;
-    }
 }

@@ -23,26 +23,6 @@ namespace XiHan.Framework.Utils.Collections;
 public static class DictionaryExtensions
 {
     /// <summary>
-    /// 如果字典中存在指定的键，则尝试获取其值
-    /// </summary>
-    /// <typeparam name="T">值的类型</typeparam>
-    /// <param name="dictionary">字典对象</param>
-    /// <param name="key">要查找的键</param>
-    /// <param name="value">键对应的值，如果键不存在，则为默认值</param>
-    /// <returns>如果字典中存在该键，则返回真(True)；否则返回假(False)</returns>
-    internal static bool TryGetValue<T>(this IDictionary<string, object> dictionary, string key, out T? value)
-    {
-        if (dictionary.TryGetValue(key, out var valueObj) && valueObj is T t)
-        {
-            value = t;
-            return true;
-        }
-
-        value = default;
-        return false;
-    }
-
-    /// <summary>
     /// 使用给定的键从字典中获取值。如果找不到，则返回默认值
     /// </summary>
     /// <typeparam name="TKey">键的类型</typeparam>
@@ -152,5 +132,25 @@ public static class DictionaryExtensions
         }
 
         return expandoObject;
+    }
+
+    /// <summary>
+    /// 如果字典中存在指定的键，则尝试获取其值
+    /// </summary>
+    /// <typeparam name="T">值的类型</typeparam>
+    /// <param name="dictionary">字典对象</param>
+    /// <param name="key">要查找的键</param>
+    /// <param name="value">键对应的值，如果键不存在，则为默认值</param>
+    /// <returns>如果字典中存在该键，则返回真(True)；否则返回假(False)</returns>
+    internal static bool TryGetValue<T>(this IDictionary<string, object> dictionary, string key, out T? value)
+    {
+        if (dictionary.TryGetValue(key, out var valueObj) && valueObj is T t)
+        {
+            value = t;
+            return true;
+        }
+
+        value = default;
+        return false;
     }
 }

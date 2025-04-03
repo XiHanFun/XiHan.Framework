@@ -26,6 +26,33 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     private readonly List<IModuleDescriptor> _dependencies;
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="instance"></param>
+    /// <param name="isLoadedAsPlugIn"></param>
+    /// <exception cref="ArgumentException"></exception>
+    public XiHanModuleDescriptor(Type type, IXiHanModule instance, bool isLoadedAsPlugIn)
+    {
+        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = CheckHelper.NotNull(instance, nameof(instance));
+        XiHanModuleHelper.CheckXiHanModuleType(type);
+
+        if (!type.GetTypeInfo().IsInstanceOfType(instance))
+        {
+            throw new ArgumentException($"模块实例({instance.GetType().AssemblyQualifiedName})不是模块类型{type.AssemblyQualifiedName}的实例！");
+        }
+
+        Type = type;
+        Assembly = type.Assembly;
+        AllAssemblies = XiHanModuleHelper.GetAllAssemblies(type);
+        Instance = instance;
+        IsLoadedAsPlugIn = isLoadedAsPlugIn;
+
+        _dependencies = [];
+    }
+
+    /// <summary>
     /// 模块类
     /// </summary>
     public Type Type { get; }
@@ -56,33 +83,6 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// 一个模块可以通过<see cref="DependsOnAttribute"/>属性依赖于另一个模块
     /// </summary>
     public IReadOnlyList<IModuleDescriptor> Dependencies => [.. _dependencies];
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="type"></param>
-    /// <param name="instance"></param>
-    /// <param name="isLoadedAsPlugIn"></param>
-    /// <exception cref="ArgumentException"></exception>
-    public XiHanModuleDescriptor(Type type, IXiHanModule instance, bool isLoadedAsPlugIn)
-    {
-        _ = CheckHelper.NotNull(type, nameof(type));
-        _ = CheckHelper.NotNull(instance, nameof(instance));
-        XiHanModuleHelper.CheckXiHanModuleType(type);
-
-        if (!type.GetTypeInfo().IsInstanceOfType(instance))
-        {
-            throw new ArgumentException($"模块实例({instance.GetType().AssemblyQualifiedName})不是模块类型{type.AssemblyQualifiedName}的实例！");
-        }
-
-        Type = type;
-        Assembly = type.Assembly;
-        AllAssemblies = XiHanModuleHelper.GetAllAssemblies(type);
-        Instance = instance;
-        IsLoadedAsPlugIn = isLoadedAsPlugIn;
-
-        _dependencies = [];
-    }
 
     /// <summary>
     /// 添加依赖项

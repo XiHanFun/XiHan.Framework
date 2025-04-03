@@ -22,15 +22,15 @@ namespace XiHan.Framework.Core.Modularity;
 public class XiHanModuleLifecycleOptions
 {
     /// <summary>
-    /// 贡献者
-    /// </summary>
-    public ITypeList<IModuleLifecycleContributor> Contributors { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public XiHanModuleLifecycleOptions()
     {
         Contributors = new TypeList<IModuleLifecycleContributor>();
     }
+
+    /// <summary>
+    /// 贡献者
+    /// </summary>
+    public ITypeList<IModuleLifecycleContributor> Contributors { get; }
 }

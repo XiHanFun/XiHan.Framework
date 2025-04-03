@@ -23,21 +23,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class DependencyAttribute : Attribute
 {
     /// <summary>
-    /// 生命周期
-    /// </summary>
-    public virtual ServiceLifetime? Lifetime { get; set; }
-
-    /// <summary>
-    /// 是否尝试注册
-    /// </summary>
-    public virtual bool TryRegister { get; set; }
-
-    /// <summary>
-    /// 是否替换服务
-    /// </summary>
-    public virtual bool ReplaceServices { get; set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public DependencyAttribute()
@@ -52,4 +37,19 @@ public class DependencyAttribute : Attribute
     {
         Lifetime = lifetime;
     }
+
+    /// <summary>
+    /// 生命周期
+    /// </summary>
+    public virtual ServiceLifetime? Lifetime { get; set; }
+
+    /// <summary>
+    /// 是否尝试注册
+    /// </summary>
+    public virtual bool TryRegister { get; set; }
+
+    /// <summary>
+    /// 是否替换服务
+    /// </summary>
+    public virtual bool ReplaceServices { get; set; }
 }
