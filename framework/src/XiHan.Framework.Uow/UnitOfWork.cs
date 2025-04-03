@@ -30,100 +30,9 @@ namespace XiHan.Framework.Uow;
 public class UnitOfWork : IUnitOfWork, ITransientDependency
 {
     /// <summary>
-    /// 是否启用过时的 DbContext 创建警告
-    /// </summary>
-    public static bool EnableObsoleteDbContextCreationWarning { get; } = false;
-
-    /// <summary>
     /// 工作单元保留名称
     /// </summary>
     public const string UnitOfWorkReservationName = "_XiHanActionUnitOfWork";
-
-    /// <summary>
-    /// 工作单元ID
-    /// </summary>
-    public Guid Id { get; } = Guid.NewGuid();
-
-    /// <summary>
-    /// 工作单元选项
-    /// </summary>
-    public IXiHanUnitOfWorkOptions Options { get; private set; } = default!;
-
-    /// <summary>
-    /// 外部工作单元
-    /// </summary>
-    public IUnitOfWork? Outer { get; private set; }
-
-    /// <summary>
-    /// 是否已保留
-    /// </summary>
-    public bool IsReserved { get; set; }
-
-    /// <summary>
-    /// 是否已释放
-    /// </summary>
-    public bool IsDisposed { get; private set; }
-
-    /// <summary>
-    /// 是否已完成
-    /// </summary>
-    public bool IsCompleted { get; private set; }
-
-    /// <summary>
-    /// 预留名称
-    /// </summary>
-    public string? ReservationName { get; set; }
-
-    /// <summary>
-    /// 完成处理程序
-    /// </summary>
-    protected List<Func<Task>> CompletedHandlers { get; } = [];
-
-    /// <summary>
-    /// 分布式事件与谓词
-    /// </summary>
-    protected List<KeyValuePair<UnitOfWorkEventRecord, Predicate<UnitOfWorkEventRecord>?>> DistributedEventWithPredicates { get; } = [];
-
-    /// <summary>
-    /// 分布式事件
-    /// </summary>
-    protected List<UnitOfWorkEventRecord> DistributedEvents { get; } = [];
-
-    /// <summary>
-    /// 本地事件与谓词
-    /// </summary>
-    protected List<KeyValuePair<UnitOfWorkEventRecord, Predicate<UnitOfWorkEventRecord>?>> LocalEventWithPredicates { get; } = [];
-
-    /// <summary>
-    /// 本地事件
-    /// </summary>
-    protected List<UnitOfWorkEventRecord> LocalEvents { get; } = [];
-
-    /// <summary>
-    /// 工作单元失败事件
-    /// </summary>
-    public event EventHandler<UnitOfWorkFailedEventArgs> Failed = default!;
-
-    /// <summary>
-    /// 工作单元完成事件
-    /// </summary>
-    public event EventHandler<UnitOfWorkEventArgs> Disposed = default!;
-
-    /// <summary>
-    /// 服务提供程序
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
-    /// 工作单元事件发布者
-    /// </summary>
-    protected IUnitOfWorkEventPublisher UnitOfWorkEventPublisher { get; }
-
-    /// <summary>
-    /// 工作单元项
-    /// </summary>
-    [NotNull]
-    public Dictionary<string, object> Items { get; }
 
     // 数据库API
     private readonly Dictionary<string, IDatabaseApi> _databaseApis;
@@ -163,6 +72,97 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
 
         Items = [];
     }
+
+    /// <summary>
+    /// 工作单元失败事件
+    /// </summary>
+    public event EventHandler<UnitOfWorkFailedEventArgs> Failed = default!;
+
+    /// <summary>
+    /// 工作单元完成事件
+    /// </summary>
+    public event EventHandler<UnitOfWorkEventArgs> Disposed = default!;
+
+    /// <summary>
+    /// 是否启用过时的 DbContext 创建警告
+    /// </summary>
+    public static bool EnableObsoleteDbContextCreationWarning { get; } = false;
+
+    /// <summary>
+    /// 工作单元ID
+    /// </summary>
+    public Guid Id { get; } = Guid.NewGuid();
+
+    /// <summary>
+    /// 工作单元选项
+    /// </summary>
+    public IXiHanUnitOfWorkOptions Options { get; private set; } = default!;
+
+    /// <summary>
+    /// 外部工作单元
+    /// </summary>
+    public IUnitOfWork? Outer { get; private set; }
+
+    /// <summary>
+    /// 是否已保留
+    /// </summary>
+    public bool IsReserved { get; set; }
+
+    /// <summary>
+    /// 是否已释放
+    /// </summary>
+    public bool IsDisposed { get; private set; }
+
+    /// <summary>
+    /// 是否已完成
+    /// </summary>
+    public bool IsCompleted { get; private set; }
+
+    /// <summary>
+    /// 预留名称
+    /// </summary>
+    public string? ReservationName { get; set; }
+
+    /// <summary>
+    /// 服务提供程序
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// 工作单元项
+    /// </summary>
+    [NotNull]
+    public Dictionary<string, object> Items { get; }
+
+    /// <summary>
+    /// 完成处理程序
+    /// </summary>
+    protected List<Func<Task>> CompletedHandlers { get; } = [];
+
+    /// <summary>
+    /// 分布式事件与谓词
+    /// </summary>
+    protected List<KeyValuePair<UnitOfWorkEventRecord, Predicate<UnitOfWorkEventRecord>?>> DistributedEventWithPredicates { get; } = [];
+
+    /// <summary>
+    /// 分布式事件
+    /// </summary>
+    protected List<UnitOfWorkEventRecord> DistributedEvents { get; } = [];
+
+    /// <summary>
+    /// 本地事件与谓词
+    /// </summary>
+    protected List<KeyValuePair<UnitOfWorkEventRecord, Predicate<UnitOfWorkEventRecord>?>> LocalEventWithPredicates { get; } = [];
+
+    /// <summary>
+    /// 本地事件
+    /// </summary>
+    protected List<UnitOfWorkEventRecord> LocalEvents { get; } = [];
+
+    /// <summary>
+    /// 工作单元事件发布者
+    /// </summary>
+    protected IUnitOfWorkEventPublisher UnitOfWorkEventPublisher { get; }
 
     /// <summary>
     /// 初始化
@@ -444,6 +444,39 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     }
 
     /// <summary>
+    /// 释放
+    /// </summary>
+    public virtual void Dispose()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        IsDisposed = true;
+
+        DisposeTransactions();
+
+        if (!IsCompleted || _exception != null)
+        {
+            OnFailed();
+        }
+
+        OnDisposed();
+
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// 转换为字符串
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        return $"[UnitOfWork {Id}]";
+    }
+
+    /// <summary>
     /// 获取事件记录
     /// </summary>
     /// <param name="eventWithPredicates"></param>
@@ -507,59 +540,6 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     }
 
     /// <summary>
-    /// 释放
-    /// </summary>
-    public virtual void Dispose()
-    {
-        if (IsDisposed)
-        {
-            return;
-        }
-
-        IsDisposed = true;
-
-        DisposeTransactions();
-
-        if (!IsCompleted || _exception != null)
-        {
-            OnFailed();
-        }
-
-        OnDisposed();
-
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// 释放事务
-    /// </summary>
-    private void DisposeTransactions()
-    {
-        foreach (var transactionApi in GetAllActiveTransactionApis())
-        {
-            try
-            {
-                transactionApi.Dispose();
-            }
-            catch
-            {
-            }
-        }
-    }
-
-    /// <summary>
-    /// 防止多次完成
-    /// </summary>
-    /// <exception cref="XiHanException"></exception>
-    private void PreventMultipleComplete()
-    {
-        if (IsCompleted || _isCompleting)
-        {
-            throw new XiHanException("已经要求完成这个工作单元。");
-        }
-    }
-
-    /// <summary>
     /// 回滚所有异步
     /// </summary>
     /// <param name="cancellationToken"></param>
@@ -605,11 +585,31 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     }
 
     /// <summary>
-    /// 转换为字符串
+    /// 释放事务
     /// </summary>
-    /// <returns></returns>
-    public override string ToString()
+    private void DisposeTransactions()
     {
-        return $"[UnitOfWork {Id}]";
+        foreach (var transactionApi in GetAllActiveTransactionApis())
+        {
+            try
+            {
+                transactionApi.Dispose();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// 防止多次完成
+    /// </summary>
+    /// <exception cref="XiHanException"></exception>
+    private void PreventMultipleComplete()
+    {
+        if (IsCompleted || _isCompleting)
+        {
+            throw new XiHanException("已经要求完成这个工作单元。");
+        }
     }
 }

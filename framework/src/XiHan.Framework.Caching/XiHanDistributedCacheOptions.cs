@@ -22,6 +22,16 @@ namespace XiHan.Framework.Caching;
 public class XiHanDistributedCacheOptions
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    public XiHanDistributedCacheOptions()
+    {
+        CacheConfigurators = [];
+        GlobalCacheEntryOptions = new DistributedCacheEntryOptions();
+        KeyPrefix = "";
+    }
+
+    /// <summary>
     /// 是否隐藏错误
     /// </summary>
     public bool HideErrors { get; set; } = true;
@@ -40,16 +50,6 @@ public class XiHanDistributedCacheOptions
     /// 缓存配置器
     /// </summary>
     public List<Func<string, DistributedCacheEntryOptions?>> CacheConfigurators { get; set; } //TODO: 是否使用配置器接口来代替？
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public XiHanDistributedCacheOptions()
-    {
-        CacheConfigurators = [];
-        GlobalCacheEntryOptions = new DistributedCacheEntryOptions();
-        KeyPrefix = "";
-    }
 
     /// <summary>
     /// 配置缓存

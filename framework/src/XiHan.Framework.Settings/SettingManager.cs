@@ -34,11 +34,6 @@ public class SettingManager : ISettingManager, ISingletonDependency
     private readonly ConcurrentDictionary<string, SettingDefinition> _definitions = new();
 
     /// <summary>
-    /// 设置值变更事件
-    /// </summary>
-    public event EventHandler<SettingChangedEventArgs>? OnSettingChanged;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="logger"></param>
@@ -53,6 +48,11 @@ public class SettingManager : ISettingManager, ISingletonDependency
         _settingStore = settingStore;
         _serviceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 设置值变更事件
+    /// </summary>
+    public event EventHandler<SettingChangedEventArgs>? OnSettingChanged;
 
     /// <summary>
     /// 添加设置定义

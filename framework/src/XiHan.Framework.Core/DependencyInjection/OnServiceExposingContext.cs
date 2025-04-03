@@ -22,16 +22,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class OnServiceExposingContext : IOnServiceExposingContext
 {
     /// <summary>
-    /// 实现类型
-    /// </summary>
-    public Type ImplementationType { get; }
-
-    /// <summary>
-    /// 暴露的类型
-    /// </summary>
-    public List<ServiceIdentifier> ExposedTypes { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="implementationType"></param>
@@ -52,4 +42,14 @@ public class OnServiceExposingContext : IOnServiceExposingContext
         ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
         ExposedTypes = CheckHelper.NotNull(exposedTypes, nameof(exposedTypes));
     }
+
+    /// <summary>
+    /// 实现类型
+    /// </summary>
+    public Type ImplementationType { get; }
+
+    /// <summary>
+    /// 暴露的类型
+    /// </summary>
+    public List<ServiceIdentifier> ExposedTypes { get; }
 }

@@ -34,6 +34,15 @@ public class ConfigurationSettingValueProvider : ISettingValueProvider, ITransie
     public const string ProviderName = "C";
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="configuration"></param>
+    public ConfigurationSettingValueProvider(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+    /// <summary>
     /// 名称
     /// </summary>
     public string Name => ProviderName;
@@ -42,15 +51,6 @@ public class ConfigurationSettingValueProvider : ISettingValueProvider, ITransie
     /// 配置
     /// </summary>
     protected IConfiguration Configuration { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="configuration"></param>
-    public ConfigurationSettingValueProvider(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
 
     /// <summary>
     /// 获取设置值

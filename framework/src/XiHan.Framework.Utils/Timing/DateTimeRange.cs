@@ -37,16 +37,6 @@ public class DateTimeRange
     }
 
     /// <summary>
-    /// 起始时间
-    /// </summary>
-    public DateTime StartTime { get; set; }
-
-    /// <summary>
-    /// 结束时间
-    /// </summary>
-    public DateTime EndTime { get; set; }
-
-    /// <summary>
     /// 获取昨天的时间范围
     /// </summary>
     public static DateTimeRange Yesterday
@@ -276,6 +266,16 @@ public class DateTimeRange
             return new DateTimeRange(now.Date.AddDays(-7), now.Date.AddMilliseconds(-1));
         }
     }
+
+    /// <summary>
+    /// 起始时间
+    /// </summary>
+    public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// 结束时间
+    /// </summary>
+    public DateTime EndTime { get; set; }
 
     /// <summary>
     /// ToString

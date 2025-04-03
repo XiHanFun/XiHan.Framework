@@ -27,11 +27,6 @@ public class PrioritizedFileInfo : IFileInfo
     private readonly IFileInfo _inner;
 
     /// <summary>
-    /// 优先级
-    /// </summary>
-    public int Priority { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="inner"></param>
@@ -41,6 +36,11 @@ public class PrioritizedFileInfo : IFileInfo
         _inner = inner;
         Priority = priority;
     }
+
+    /// <summary>
+    /// 优先级
+    /// </summary>
+    public int Priority { get; }
 
     /// <summary>
     /// 是否存在

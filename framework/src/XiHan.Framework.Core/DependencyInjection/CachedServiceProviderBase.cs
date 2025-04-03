@@ -24,16 +24,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public abstract class CachedServiceProviderBase : ICachedServiceProviderBase
 {
     /// <summary>
-    /// 服务提供器
-    /// </summary>
-    protected IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
-    /// 缓存的服务集合
-    /// </summary>
-    protected ConcurrentDictionary<ServiceIdentifier, Lazy<object?>> CachedServices { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -43,6 +33,16 @@ public abstract class CachedServiceProviderBase : ICachedServiceProviderBase
         CachedServices = new ConcurrentDictionary<ServiceIdentifier, Lazy<object?>>();
         _ = CachedServices.TryAdd(new ServiceIdentifier(typeof(IServiceProvider)), new Lazy<object?>(() => ServiceProvider));
     }
+
+    /// <summary>
+    /// 服务提供器
+    /// </summary>
+    protected IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// 缓存的服务集合
+    /// </summary>
+    protected ConcurrentDictionary<ServiceIdentifier, Lazy<object?>> CachedServices { get; }
 
     /// <summary>
     /// 获取服务

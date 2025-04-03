@@ -23,17 +23,17 @@ namespace XiHan.Framework.Core.Logging;
 public class DefaultInitLogger<T> : IInitLogger<T>
 {
     /// <summary>
-    /// 日志记录器
-    /// </summary>
-    public List<XiHanInitLogEntry> Entries { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public DefaultInitLogger()
     {
         Entries = [];
     }
+
+    /// <summary>
+    /// 日志记录器
+    /// </summary>
+    public List<XiHanInitLogEntry> Entries { get; }
 
     /// <summary>
     /// 记录日志

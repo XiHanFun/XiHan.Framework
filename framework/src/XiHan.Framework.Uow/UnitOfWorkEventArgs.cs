@@ -23,11 +23,6 @@ namespace XiHan.Framework.Uow;
 public class UnitOfWorkEventArgs : EventArgs
 {
     /// <summary>
-    /// 工作单元
-    /// </summary>
-    public IUnitOfWork UnitOfWork { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="unitOfWork"></param>
@@ -37,4 +32,9 @@ public class UnitOfWorkEventArgs : EventArgs
 
         UnitOfWork = unitOfWork;
     }
+
+    /// <summary>
+    /// 工作单元
+    /// </summary>
+    public IUnitOfWork UnitOfWork { get; }
 }

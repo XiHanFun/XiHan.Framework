@@ -24,6 +24,23 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     private readonly List<ILocalizationResource> _baseResources;
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="resourceName"></param>
+    /// <param name="defaultCulture"></param>
+    /// <param name="basePath"></param>
+    /// <param name="priority"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    protected BaseLocalizationResource(string resourceName, string defaultCulture = "en", string basePath = "", int priority = 0)
+    {
+        ResourceName = resourceName ?? throw new ArgumentNullException(nameof(resourceName));
+        DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+        BasePath = basePath ?? string.Empty;
+        Priority = priority;
+        _baseResources = [];
+    }
+
+    /// <summary>
     /// 资源名称
     /// </summary>
     public string ResourceName { get; }
@@ -47,23 +64,6 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     /// 继承资源列表（按优先级排序）
     /// </summary>
     public IReadOnlyList<ILocalizationResource> BaseResources => _baseResources.AsReadOnly();
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="resourceName"></param>
-    /// <param name="defaultCulture"></param>
-    /// <param name="basePath"></param>
-    /// <param name="priority"></param>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected BaseLocalizationResource(string resourceName, string defaultCulture = "en", string basePath = "", int priority = 0)
-    {
-        ResourceName = resourceName ?? throw new ArgumentNullException(nameof(resourceName));
-        DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
-        BasePath = basePath ?? string.Empty;
-        Priority = priority;
-        _baseResources = [];
-    }
 
     /// <summary>
     /// 继承自指定资源

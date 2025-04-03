@@ -23,16 +23,6 @@ namespace XiHan.Framework.Uow;
 /// </summary>
 public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, IDisposable
 {
-    /// <summary>
-    /// 工作单元ID
-    /// </summary>
-    Guid Id { get; }
-
-    /// <summary>
-    /// 工作单元项
-    /// </summary>
-    Dictionary<string, object> Items { get; }
-
     //TODO：切换到OnFailed （sync）和ondispose （sync）方法来兼容OnCompleted
     /// <summary>
     /// 工作单元失败事件
@@ -43,6 +33,16 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     /// 工作单元完成事件
     /// </summary>
     event EventHandler<UnitOfWorkEventArgs> Disposed;
+
+    /// <summary>
+    /// 工作单元ID
+    /// </summary>
+    Guid Id { get; }
+
+    /// <summary>
+    /// 工作单元项
+    /// </summary>
+    Dictionary<string, object> Items { get; }
 
     /// <summary>
     /// 工作单元选项

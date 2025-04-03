@@ -27,6 +27,15 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     private const string DefaultInterfaceNameInitial = "I";
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="serviceTypes"></param>
+    public ExposeServicesAttribute(params Type[] serviceTypes)
+    {
+        ServiceTypes = serviceTypes;
+    }
+
+    /// <summary>
     /// 服务类型
     /// </summary>
     public Type[] ServiceTypes { get; }
@@ -40,15 +49,6 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
     /// 是否包含自身
     /// </summary>
     public bool IncludeSelf { get; init; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="serviceTypes"></param>
-    public ExposeServicesAttribute(params Type[] serviceTypes)
-    {
-        ServiceTypes = serviceTypes;
-    }
 
     /// <summary>
     /// 获取暴露的服务类型

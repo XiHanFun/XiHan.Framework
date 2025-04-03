@@ -25,6 +25,16 @@ namespace XiHan.Framework.Uow;
 public class UnitOfWorkFailedEventArgs : UnitOfWorkEventArgs
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    public UnitOfWorkFailedEventArgs([NotNull] IUnitOfWork unitOfWork, Exception? exception, bool isRolledback)
+        : base(unitOfWork)
+    {
+        Exception = exception;
+        IsRolledback = isRolledback;
+    }
+
+    /// <summary>
     /// 导致失败的异常。仅当 <see cref="IUnitOfWork.CompleteAsync"/> 期间发生错误时才设置
     /// 如果没有异常，但未调用 <see cref="IUnitOfWork.CompleteAsync"/>，则可以为 null
     /// 如果 UOW 期间发生另一个异常，则可以为 null
@@ -35,14 +45,4 @@ public class UnitOfWorkFailedEventArgs : UnitOfWorkEventArgs
     /// 如果工作单元被手动回滚，则为真
     /// </summary>
     public bool IsRolledback { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public UnitOfWorkFailedEventArgs([NotNull] IUnitOfWork unitOfWork, Exception? exception, bool isRolledback)
-        : base(unitOfWork)
-    {
-        Exception = exception;
-        IsRolledback = isRolledback;
-    }
 }

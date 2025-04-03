@@ -23,11 +23,6 @@ namespace XiHan.Framework.Core.Application;
 public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase, IXiHanApplicationWithInternalServiceProvider
 {
     /// <summary>
-    /// 作用域服务
-    /// </summary>
-    public IServiceScope? ServiceScope { get; private set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="startupModuleType"></param>
@@ -50,6 +45,11 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     {
         _ = Services.AddSingleton<IXiHanApplicationWithInternalServiceProvider>(this);
     }
+
+    /// <summary>
+    /// 作用域服务
+    /// </summary>
+    public IServiceScope? ServiceScope { get; private set; }
 
     /// <summary>
     /// 创建服务提供器，但不初始化模块。

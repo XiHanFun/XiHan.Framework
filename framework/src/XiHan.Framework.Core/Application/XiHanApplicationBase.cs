@@ -31,36 +31,6 @@ namespace XiHan.Framework.Core.Application;
 /// </summary>
 public class XiHanApplicationBase : IXiHanApplication
 {
-    /// <summary>
-    /// 应用程序启动(入口)模块的类型
-    /// </summary>
-    public Type StartupModuleType { get; }
-
-    /// <summary>
-    /// 所有服务注册的列表，应用程序初始化后，不能向这个集合添加新的服务
-    /// </summary>
-    public IServiceCollection Services { get; }
-
-    /// <summary>
-    /// 应用程序根服务提供器，在初始化应用程序之前不能使用
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; private set; } = default!;
-
-    /// <summary>
-    /// 模块
-    /// </summary>
-    public IReadOnlyList<IModuleDescriptor> Modules { get; }
-
-    /// <summary>
-    /// 应用名称
-    /// </summary>
-    public string? ApplicationName { get; }
-
-    /// <summary>
-    /// 实例 ID
-    /// </summary>
-    public string InstanceId { get; } = Guid.NewGuid().ToString();
-
     private bool _configuredServices;
 
     /// <summary>
@@ -112,6 +82,36 @@ public class XiHanApplicationBase : IXiHanApplication
         }
     }
 
+    /// <summary>
+    /// 应用程序启动(入口)模块的类型
+    /// </summary>
+    public Type StartupModuleType { get; }
+
+    /// <summary>
+    /// 所有服务注册的列表，应用程序初始化后，不能向这个集合添加新的服务
+    /// </summary>
+    public IServiceCollection Services { get; }
+
+    /// <summary>
+    /// 应用程序根服务提供器，在初始化应用程序之前不能使用
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; private set; } = default!;
+
+    /// <summary>
+    /// 模块
+    /// </summary>
+    public IReadOnlyList<IModuleDescriptor> Modules { get; }
+
+    /// <summary>
+    /// 应用名称
+    /// </summary>
+    public string? ApplicationName { get; }
+
+    /// <summary>
+    /// 实例 ID
+    /// </summary>
+    public string InstanceId { get; } = Guid.NewGuid().ToString();
+
     #region 初始化模块
 
     /// <summary>
@@ -145,6 +145,37 @@ public class XiHanApplicationBase : IXiHanApplication
     protected virtual IReadOnlyList<IModuleDescriptor> LoadModules(IServiceCollection services, XiHanApplicationCreationOptions options)
     {
         return services.GetSingletonInstance<IModuleLoader>().LoadModules(services, StartupModuleType, options.PlugInSources);
+    }
+
+    /// <summary>
+    /// 设置服务提供器
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    protected virtual void SetServiceProvider(IServiceProvider serviceProvider)
+    {
+        ServiceProvider = serviceProvider;
+        ServiceProvider.GetRequiredService<ObjectAccessor<IServiceProvider>>().Value = ServiceProvider;
+    }
+
+    /// <summary>
+    /// 初始化模块，异步
+    /// </summary>
+    /// <returns></returns>
+    protected virtual async Task InitializeModulesAsync()
+    {
+        using var scope = ServiceProvider.CreateScope();
+        WriteInitLogs(scope.ServiceProvider);
+        await scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModulesAsync(new ApplicationInitializationContext(scope.ServiceProvider));
+    }
+
+    /// <summary>
+    /// 初始化模块
+    /// </summary>
+    protected virtual void InitializeModules()
+    {
+        using var scope = ServiceProvider.CreateScope();
+        WriteInitLogs(scope.ServiceProvider);
+        scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModules(new ApplicationInitializationContext(scope.ServiceProvider));
     }
 
     /// <summary>
@@ -184,37 +215,6 @@ public class XiHanApplicationBase : IXiHanApplication
         {
             hostEnvironment.EnvironmentName = Environments.Production;
         }
-    }
-
-    /// <summary>
-    /// 设置服务提供器
-    /// </summary>
-    /// <param name="serviceProvider"></param>
-    protected virtual void SetServiceProvider(IServiceProvider serviceProvider)
-    {
-        ServiceProvider = serviceProvider;
-        ServiceProvider.GetRequiredService<ObjectAccessor<IServiceProvider>>().Value = ServiceProvider;
-    }
-
-    /// <summary>
-    /// 初始化模块，异步
-    /// </summary>
-    /// <returns></returns>
-    protected virtual async Task InitializeModulesAsync()
-    {
-        using var scope = ServiceProvider.CreateScope();
-        WriteInitLogs(scope.ServiceProvider);
-        await scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModulesAsync(new ApplicationInitializationContext(scope.ServiceProvider));
-    }
-
-    /// <summary>
-    /// 初始化模块
-    /// </summary>
-    protected virtual void InitializeModules()
-    {
-        using var scope = ServiceProvider.CreateScope();
-        WriteInitLogs(scope.ServiceProvider);
-        scope.ServiceProvider.GetRequiredService<IModuleManager>().InitializeModules(new ApplicationInitializationContext(scope.ServiceProvider));
     }
 
     #endregion 初始化模块

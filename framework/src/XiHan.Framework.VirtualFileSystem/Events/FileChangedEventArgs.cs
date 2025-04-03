@@ -20,16 +20,6 @@ namespace XiHan.Framework.VirtualFileSystem.Events;
 public class FileChangedEventArgs : EventArgs
 {
     /// <summary>
-    /// 变化的文件路径
-    /// </summary>
-    public string FilePath { get; }
-
-    /// <summary>
-    /// 文件变化类型
-    /// </summary>
-    public FileChangeType ChangeType { get; }
-
-    /// <summary>
     /// 初始化文件变化事件参数
     /// </summary>
     /// <param name="filePath">变化的文件路径</param>
@@ -39,4 +29,14 @@ public class FileChangedEventArgs : EventArgs
         FilePath = filePath;
         ChangeType = changeType;
     }
+
+    /// <summary>
+    /// 变化的文件路径
+    /// </summary>
+    public string FilePath { get; }
+
+    /// <summary>
+    /// 文件变化类型
+    /// </summary>
+    public FileChangeType ChangeType { get; }
 }
