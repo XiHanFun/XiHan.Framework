@@ -46,4 +46,4 @@ namespace XiHan.Framework.Core.DependencyInjection;
 /// </summary>
 /// <remarks>由此启发：<see href="https://www.cnblogs.com/loogn/p/10566510.html"/></remarks>
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-public sealed class AutowiredServiceAttribute : Attribute;
+public class AutowiredServiceAttribute : Attribute;

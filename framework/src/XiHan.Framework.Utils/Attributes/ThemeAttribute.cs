@@ -69,7 +69,7 @@ public enum ThemeType
 /// 主题特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-public sealed class ThemeAttribute : Attribute
+public class ThemeAttribute : Attribute
 {
     // 缓存
     private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
