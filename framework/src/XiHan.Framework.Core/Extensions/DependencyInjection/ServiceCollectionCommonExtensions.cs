@@ -133,30 +133,6 @@ public static class ServiceCollectionCommonExtensions
     }
 
     /// <summary>
-    /// 使用给定的服务容器解析依赖项
-    /// 该方法只能在依赖注入注册阶段完成后使用
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    internal static T? GetService<T>(this IServiceCollection services)
-    {
-        return services.GetSingletonInstance<IXiHanApplication>().ServiceProvider.GetService<T>();
-    }
-
-    /// <summary>
-    /// 使用给定的 <see cref="IServiceCollection"/>解析依赖项
-    /// 该方法只能在依赖注入注册阶段完成后使用
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    internal static object? GetService(this IServiceCollection services, Type type)
-    {
-        return services.GetSingletonInstance<IXiHanApplication>().ServiceProvider.GetService(type);
-    }
-
-    /// <summary>
     /// 使用给定的<see cref="IServiceCollection"/>解析依赖项
     /// 如果未注册服务则抛出异常，该方法只能在依赖注入注册阶段完成后使用
     /// </summary>
@@ -236,5 +212,29 @@ public static class ServiceCollectionCommonExtensions
     public static IServiceProvider? GetServiceProviderOrNull(this IServiceCollection services)
     {
         return services.GetObjectOrNull<IServiceProvider>();
+    }
+
+    /// <summary>
+    /// 使用给定的服务容器解析依赖项
+    /// 该方法只能在依赖注入注册阶段完成后使用
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    internal static T? GetService<T>(this IServiceCollection services)
+    {
+        return services.GetSingletonInstance<IXiHanApplication>().ServiceProvider.GetService<T>();
+    }
+
+    /// <summary>
+    /// 使用给定的 <see cref="IServiceCollection"/>解析依赖项
+    /// 该方法只能在依赖注入注册阶段完成后使用
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    internal static object? GetService(this IServiceCollection services, Type type)
+    {
+        return services.GetSingletonInstance<IXiHanApplication>().ServiceProvider.GetService(type);
     }
 }

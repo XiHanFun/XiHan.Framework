@@ -28,11 +28,6 @@ public class DefaultValueSettingValueProvider : SettingValueProvider
     public const string ProviderName = "D";
 
     /// <summary>
-    /// 名称
-    /// </summary>
-    public override string Name => ProviderName;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="settingStore"></param>
@@ -40,6 +35,11 @@ public class DefaultValueSettingValueProvider : SettingValueProvider
         : base(settingStore)
     {
     }
+
+    /// <summary>
+    /// 名称
+    /// </summary>
+    public override string Name => ProviderName;
 
     /// <summary>
     /// 获取设置值

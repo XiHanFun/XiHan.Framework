@@ -24,11 +24,6 @@ namespace XiHan.Framework.AspNetCore.Security.Claims;
 public class XiHanClaimsTransformation : IClaimsTransformation
 {
     /// <summary>
-    /// 映射选项
-    /// </summary>
-    protected IOptions<XiHanClaimsMapOptions> XiHanClaimsMapOptions { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="claimsMapOptions"></param>
@@ -36,6 +31,11 @@ public class XiHanClaimsTransformation : IClaimsTransformation
     {
         XiHanClaimsMapOptions = claimsMapOptions;
     }
+
+    /// <summary>
+    /// 映射选项
+    /// </summary>
+    protected IOptions<XiHanClaimsMapOptions> XiHanClaimsMapOptions { get; }
 
     /// <summary>
     /// 转换

@@ -100,11 +100,6 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// </summary>
     protected static readonly MethodInfo RecycleMethodInfo;
 
-    /// <summary>
-    /// 实例前缀
-    /// </summary>
-    protected RedisKey InstancePrefix { get; }
-
     static XiHanRedisCache()
     {
         var type = typeof(RedisCache);
@@ -152,32 +147,9 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     }
 
     /// <summary>
-    /// 连接
+    /// 实例前缀
     /// </summary>
-    /// <returns></returns>
-    protected virtual IDatabase Connect()
-    {
-        return (IDatabase)ConnectMethod.Invoke(this, [])!;
-    }
-
-    /// <summary>
-    /// 异步连接
-    /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    protected virtual async ValueTask<IDatabase> ConnectAsync(CancellationToken token = default)
-    {
-        return await (ValueTask<IDatabase>)ConnectAsyncMethod.Invoke(this, [token])!;
-    }
-
-    /// <summary>
-    /// 回收
-    /// </summary>
-    /// <param name="lease"></param>
-    protected virtual void Recycle(byte[]? lease)
-    {
-        _ = RecycleMethodInfo.Invoke(this, [lease!]);
-    }
+    protected RedisKey InstancePrefix { get; }
 
     /// <summary>
     /// 获取多个
@@ -323,6 +295,34 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
             OnRedisError(ex, cache);
             throw;
         }
+    }
+
+    /// <summary>
+    /// 连接
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IDatabase Connect()
+    {
+        return (IDatabase)ConnectMethod.Invoke(this, [])!;
+    }
+
+    /// <summary>
+    /// 异步连接
+    /// </summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    protected virtual async ValueTask<IDatabase> ConnectAsync(CancellationToken token = default)
+    {
+        return await (ValueTask<IDatabase>)ConnectAsyncMethod.Invoke(this, [token])!;
+    }
+
+    /// <summary>
+    /// 回收
+    /// </summary>
+    /// <param name="lease"></param>
+    protected virtual void Recycle(byte[]? lease)
+    {
+        _ = RecycleMethodInfo.Invoke(this, [lease!]);
     }
 
     /// <summary>

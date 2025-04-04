@@ -18,6 +18,4 @@ namespace XiHan.Framework.MultiTenancy;
 /// 忽略多租户
 /// </summary>
 [AttributeUsage(AttributeTargets.All)]
-public class IgnoreMultiTenancyAttribute : Attribute
-{
-}
+public sealed class IgnoreMultiTenancyAttribute : Attribute;

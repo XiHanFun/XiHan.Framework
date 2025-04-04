@@ -38,26 +38,6 @@ public class XiHanUnitOfWorkDefaultOptions
     public int? Timeout { get; set; }
 
     /// <summary>
-    /// 默认构造函数
-    /// </summary>
-    /// <param name="options"></param>
-    /// <returns></returns>
-    internal XiHanUnitOfWorkOptions Normalize(XiHanUnitOfWorkOptions options)
-    {
-        if (options.IsolationLevel == null)
-        {
-            options.IsolationLevel = IsolationLevel;
-        }
-
-        if (options.Timeout == null)
-        {
-            options.Timeout = Timeout;
-        }
-
-        return options;
-    }
-
-    /// <summary>
     /// 计算是否事务性
     /// </summary>
     /// <param name="autoValue"></param>
@@ -79,5 +59,25 @@ public class XiHanUnitOfWorkDefaultOptions
             default:
                 throw new XiHanException("未实现的事务行为：" + TransactionBehavior);
         }
+    }
+
+    /// <summary>
+    /// 默认构造函数
+    /// </summary>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    internal XiHanUnitOfWorkOptions Normalize(XiHanUnitOfWorkOptions options)
+    {
+        if (options.IsolationLevel == null)
+        {
+            options.IsolationLevel = IsolationLevel;
+        }
+
+        if (options.Timeout == null)
+        {
+            options.Timeout = Timeout;
+        }
+
+        return options;
     }
 }

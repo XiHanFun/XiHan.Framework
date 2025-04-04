@@ -24,6 +24,19 @@ namespace XiHan.Framework.Core.Exceptions.Handling;
 public class ExceptionNotificationContext
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="exception"></param>
+    /// <param name="logLevel"></param>
+    /// <param name="handled"></param>
+    public ExceptionNotificationContext(Exception exception, LogLevel? logLevel = null, bool handled = true)
+    {
+        Exception = CheckHelper.NotNull(exception, nameof(exception));
+        LogLevel = logLevel ?? exception.GetLogLevel();
+        Handled = handled;
+    }
+
+    /// <summary>
     /// 异常
     /// </summary>
     public Exception Exception { get; }
@@ -37,17 +50,4 @@ public class ExceptionNotificationContext
     /// 是否已处理
     /// </summary>
     public bool Handled { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="exception"></param>
-    /// <param name="logLevel"></param>
-    /// <param name="handled"></param>
-    public ExceptionNotificationContext(Exception exception, LogLevel? logLevel = null, bool handled = true)
-    {
-        Exception = CheckHelper.NotNull(exception, nameof(exception));
-        LogLevel = logLevel ?? exception.GetLogLevel();
-        Handled = handled;
-    }
 }

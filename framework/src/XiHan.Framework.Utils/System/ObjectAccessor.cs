@@ -21,11 +21,6 @@ namespace XiHan.Framework.Utils.System;
 public class ObjectAccessor<T> : IObjectAccessor<T>
 {
     /// <summary>
-    /// 泛型对象
-    /// </summary>
-    public T? Value { get; set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public ObjectAccessor()
@@ -40,4 +35,9 @@ public class ObjectAccessor<T> : IObjectAccessor<T>
     {
         Value = obj;
     }
+
+    /// <summary>
+    /// 泛型对象
+    /// </summary>
+    public T? Value { get; set; }
 }

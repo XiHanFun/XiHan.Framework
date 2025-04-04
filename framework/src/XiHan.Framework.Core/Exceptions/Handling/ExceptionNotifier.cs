@@ -28,16 +28,6 @@ namespace XiHan.Framework.Core.Exceptions.Handling;
 public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
 {
     /// <summary>
-    /// 日志
-    /// </summary>
-    public ILogger<ExceptionNotifier> Logger { get; }
-
-    /// <summary>
-    /// 服务作用域工厂
-    /// </summary>
-    protected IServiceScopeFactory ServiceScopeFactory { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceScopeFactory"></param>
@@ -46,6 +36,16 @@ public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
         ServiceScopeFactory = serviceScopeFactory;
         Logger = NullLogger<ExceptionNotifier>.Instance;
     }
+
+    /// <summary>
+    /// 日志
+    /// </summary>
+    public ILogger<ExceptionNotifier> Logger { get; }
+
+    /// <summary>
+    /// 服务作用域工厂
+    /// </summary>
+    protected IServiceScopeFactory ServiceScopeFactory { get; }
 
     /// <summary>
     /// 通知，异步

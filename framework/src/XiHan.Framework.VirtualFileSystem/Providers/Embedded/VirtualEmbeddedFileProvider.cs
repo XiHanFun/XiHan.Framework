@@ -24,16 +24,6 @@ namespace XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 public class VirtualEmbeddedFileProvider : EmbeddedFileProvider
 {
     /// <summary>
-    /// 提供程序优先级
-    /// </summary>
-    public int Priority { get; }
-
-    /// <summary>
-    /// 程序集
-    /// </summary>
-    public Assembly Assembly { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public VirtualEmbeddedFileProvider(Assembly assembly, int priority = 50)
@@ -44,6 +34,16 @@ public class VirtualEmbeddedFileProvider : EmbeddedFileProvider
         Assembly = assembly;
         Priority = priority;
     }
+
+    /// <summary>
+    /// 提供程序优先级
+    /// </summary>
+    public int Priority { get; }
+
+    /// <summary>
+    /// 程序集
+    /// </summary>
+    public Assembly Assembly { get; }
 
     /// <summary>
     /// 获取带优先级的文件信息

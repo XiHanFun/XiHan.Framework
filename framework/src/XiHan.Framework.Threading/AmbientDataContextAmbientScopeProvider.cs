@@ -28,11 +28,6 @@ namespace XiHan.Framework.Threading;
 /// </summary>
 public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T>
 {
-    /// <summary>
-    /// 日志
-    /// </summary>
-    public ILogger<AmbientDataContextAmbientScopeProvider<T>> Logger { get; set; }
-
     private static readonly ConcurrentDictionary<string, ScopeItem> ScopeDictionary = new();
 
     private readonly IAmbientDataContext _dataContext;
@@ -49,6 +44,11 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
 
         Logger = NullLogger<AmbientDataContextAmbientScopeProvider<T>>.Instance;
     }
+
+    /// <summary>
+    /// 日志
+    /// </summary>
+    public ILogger<AmbientDataContextAmbientScopeProvider<T>> Logger { get; set; }
 
     /// <summary>
     /// 获取值
@@ -116,6 +116,19 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     private class ScopeItem
     {
         /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="outer"></param>
+        public ScopeItem(T value, ScopeItem? outer = null)
+        {
+            Id = Guid.NewGuid().ToString();
+
+            Value = value;
+            Outer = outer;
+        }
+
+        /// <summary>
         /// 主键
         /// </summary>
         public string Id { get; }
@@ -129,18 +142,5 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
         /// 值
         /// </summary>
         public T Value { get; }
-
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="outer"></param>
-        public ScopeItem(T value, ScopeItem? outer = null)
-        {
-            Id = Guid.NewGuid().ToString();
-
-            Value = value;
-            Outer = outer;
-        }
     }
 }

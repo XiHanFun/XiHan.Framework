@@ -22,6 +22,19 @@ namespace XiHan.Framework.Settings.Events;
 public class SettingChangedEventArgs : EventArgs
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="scope"></param>
+    /// <param name="newValue"></param>
+    public SettingChangedEventArgs(string name, SettingScope scope, string? newValue)
+    {
+        Name = name;
+        Scope = scope;
+        NewValue = newValue;
+    }
+
+    /// <summary>
     /// 设置名称
     /// </summary>
     public string Name { get; }
@@ -35,17 +48,4 @@ public class SettingChangedEventArgs : EventArgs
     /// 新值
     /// </summary>
     public string? NewValue { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="scope"></param>
-    /// <param name="newValue"></param>
-    public SettingChangedEventArgs(string name, SettingScope scope, string? newValue)
-    {
-        Name = name;
-        Scope = scope;
-        NewValue = newValue;
-    }
 }

@@ -22,11 +22,6 @@ namespace XiHan.Framework.Serialization.Options;
 public class XiHanSystemTextJsonSerializerOptions
 {
     /// <summary>
-    /// System.Text.Json序列化器选项
-    /// </summary>
-    public JsonSerializerOptions JsonSerializerOptions { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public XiHanSystemTextJsonSerializerOptions()
@@ -37,4 +32,9 @@ public class XiHanSystemTextJsonSerializerOptions
             AllowTrailingCommas = true
         };
     }
+
+    /// <summary>
+    /// System.Text.Json序列化器选项
+    /// </summary>
+    public JsonSerializerOptions JsonSerializerOptions { get; }
 }

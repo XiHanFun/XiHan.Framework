@@ -20,16 +20,6 @@ namespace XiHan.Framework.Utils.System;
 public class NamedTypeSelector
 {
     /// <summary>
-    /// 选择器名称
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
-    /// 断言
-    /// </summary>
-    public Func<Type, bool> Predicate { get; set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="name">Name</param>
@@ -39,4 +29,14 @@ public class NamedTypeSelector
         Name = name;
         Predicate = predicate;
     }
+
+    /// <summary>
+    /// 选择器名称
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    /// 断言
+    /// </summary>
+    public Func<Type, bool> Predicate { get; set; }
 }

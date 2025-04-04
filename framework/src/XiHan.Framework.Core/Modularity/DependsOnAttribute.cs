@@ -21,11 +21,6 @@ namespace XiHan.Framework.Core.Modularity;
 public class DependsOnAttribute : Attribute, IDependedTypesProvider
 {
     /// <summary>
-    /// 依赖类型集合
-    /// </summary>
-    public Type[] DependedTypes { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="dependedTypes"></param>
@@ -33,6 +28,11 @@ public class DependsOnAttribute : Attribute, IDependedTypesProvider
     {
         DependedTypes = dependedTypes ?? Type.EmptyTypes;
     }
+
+    /// <summary>
+    /// 依赖类型集合
+    /// </summary>
+    public Type[] DependedTypes { get; }
 
     /// <summary>
     /// 获取依赖类型

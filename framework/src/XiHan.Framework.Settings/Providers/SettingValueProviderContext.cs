@@ -23,21 +23,6 @@ namespace XiHan.Framework.Settings.Providers;
 public class SettingValueProviderContext
 {
     /// <summary>
-    /// 设置定义
-    /// </summary>
-    public SettingDefinition Setting { get; }
-
-    /// <summary>
-    /// 作用域
-    /// </summary>
-    public SettingScope Scope { get; }
-
-    /// <summary>
-    /// 服务提供者
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="setting"></param>
@@ -52,4 +37,19 @@ public class SettingValueProviderContext
         Scope = scope;
         ServiceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 设置定义
+    /// </summary>
+    public SettingDefinition Setting { get; }
+
+    /// <summary>
+    /// 作用域
+    /// </summary>
+    public SettingScope Scope { get; }
+
+    /// <summary>
+    /// 服务提供者
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
 }

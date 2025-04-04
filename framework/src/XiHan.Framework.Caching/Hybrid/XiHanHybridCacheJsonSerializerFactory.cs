@@ -25,11 +25,6 @@ namespace XiHan.Framework.Caching.Hybrid;
 public class XiHanHybridCacheJsonSerializerFactory : IHybridCacheSerializerFactory
 {
     /// <summary>
-    /// System.Text.Json序列化器选项
-    /// </summary>
-    protected IOptions<XiHanSystemTextJsonSerializerOptions> Options { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
@@ -37,6 +32,11 @@ public class XiHanHybridCacheJsonSerializerFactory : IHybridCacheSerializerFacto
     {
         Options = options;
     }
+
+    /// <summary>
+    /// System.Text.Json序列化器选项
+    /// </summary>
+    protected IOptions<XiHanSystemTextJsonSerializerOptions> Options { get; }
 
     /// <summary>
     /// 尝试创建序列化器

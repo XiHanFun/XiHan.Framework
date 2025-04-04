@@ -14,8 +14,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
-using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
