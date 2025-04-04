@@ -18,39 +18,6 @@ using System.ComponentModel.DataAnnotations;
 namespace XiHan.Framework.Utils.Attributes;
 
 /// <summary>
-/// 主题特性
-/// </summary>
-[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-public class ThemeAttribute : Attribute
-{
-    // 缓存
-    private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
-    {
-        [ThemeType.Default] = new() { Theme = "default", Color = "#35495E" },
-        [ThemeType.Tertiary] = new() { Theme = "tertiary", Color = "#697882" },
-        [ThemeType.Primary] = new() { Theme = "primary", Color = "#3B86FF" },
-        [ThemeType.Info] = new() { Theme = "info", Color = "#FFFFFF00" },
-        [ThemeType.Success] = new() { Theme = "success", Color = "#19BE6B" },
-        [ThemeType.Warning] = new() { Theme = "warning", Color = "#FF9900" },
-        [ThemeType.Error] = new() { Theme = "error", Color = "#ED4014" }
-    };
-
-    /// <summary>
-    /// 主题颜色
-    /// </summary>
-    public ThemeColor ThemeColor { get; set; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="type"></param>
-    public ThemeAttribute(ThemeType type)
-    {
-        ThemeColor = ThemeColorsCatch[type];
-    }
-}
-
-/// <summary>
 /// 主题类型 default、tertiary、primary、info、success、warning 和 error
 /// </summary>
 public enum ThemeType
@@ -99,6 +66,39 @@ public enum ThemeType
 }
 
 /// <summary>
+/// 主题特性
+/// </summary>
+[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
+public sealed class ThemeAttribute : Attribute
+{
+    // 缓存
+    private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
+    {
+        [ThemeType.Default] = new() { Theme = "default", Color = "#35495E" },
+        [ThemeType.Tertiary] = new() { Theme = "tertiary", Color = "#697882" },
+        [ThemeType.Primary] = new() { Theme = "primary", Color = "#3B86FF" },
+        [ThemeType.Info] = new() { Theme = "info", Color = "#FFFFFF00" },
+        [ThemeType.Success] = new() { Theme = "success", Color = "#19BE6B" },
+        [ThemeType.Warning] = new() { Theme = "warning", Color = "#FF9900" },
+        [ThemeType.Error] = new() { Theme = "error", Color = "#ED4014" }
+    };
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="type"></param>
+    public ThemeAttribute(ThemeType type)
+    {
+        ThemeColor = ThemeColorsCatch[type];
+    }
+
+    /// <summary>
+    /// 主题颜色
+    /// </summary>
+    public ThemeColor ThemeColor { get; set; }
+}
+
+/// <summary>
 /// 主题颜色
 /// </summary>
 public record ThemeColor
@@ -106,10 +106,10 @@ public record ThemeColor
     /// <summary>
     /// 主题
     /// </summary>
-    public string Theme { get; set; } = string.Empty;
+    public string Theme { get; set; } = "default";
 
     /// <summary>
     /// 颜色
     /// </summary>
-    public string Color { get; set; } = string.Empty;
+    public string Color { get; set; } = "#35495E";
 }

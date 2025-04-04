@@ -25,6 +25,15 @@ public abstract class CancellationTokenProviderBase : ICancellationTokenProvider
     public const string CancellationTokenOverrideContextKey = "XiHan.Framework.Threading.CancellationToken.Override";
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="cancellationTokenOverrideScopeProvider"></param>
+    protected CancellationTokenProviderBase(IAmbientScopeProvider<CancellationTokenOverride> cancellationTokenOverrideScopeProvider)
+    {
+        CancellationTokenOverrideScopeProvider = cancellationTokenOverrideScopeProvider;
+    }
+
+    /// <summary>
     /// 令牌
     /// </summary>
     public abstract CancellationToken Token { get; }
@@ -38,15 +47,6 @@ public abstract class CancellationTokenProviderBase : ICancellationTokenProvider
     /// 重写值
     /// </summary>
     protected CancellationTokenOverride? OverrideValue => CancellationTokenOverrideScopeProvider.GetValue(CancellationTokenOverrideContextKey);
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="cancellationTokenOverrideScopeProvider"></param>
-    protected CancellationTokenProviderBase(IAmbientScopeProvider<CancellationTokenOverride> cancellationTokenOverrideScopeProvider)
-    {
-        CancellationTokenOverrideScopeProvider = cancellationTokenOverrideScopeProvider;
-    }
 
     /// <summary>
     /// 使用

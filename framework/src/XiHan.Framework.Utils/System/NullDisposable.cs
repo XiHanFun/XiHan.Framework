@@ -20,16 +20,16 @@ namespace XiHan.Framework.Utils.System;
 public sealed class NullDisposable : IDisposable
 {
     /// <summary>
-    /// 实例
-    /// </summary>
-    public static NullDisposable Instance { get; } = new();
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     private NullDisposable()
     {
     }
+
+    /// <summary>
+    /// 实例
+    /// </summary>
+    public static NullDisposable Instance { get; } = new();
 
     /// <summary>
     /// 释放资源

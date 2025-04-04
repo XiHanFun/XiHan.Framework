@@ -20,11 +20,6 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class OnServiceActivatedContext : IOnServiceActivatedContext
 {
     /// <summary>
-    /// 服务实例
-    /// </summary>
-    public object Instance { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="instance"></param>
@@ -32,4 +27,9 @@ public class OnServiceActivatedContext : IOnServiceActivatedContext
     {
         Instance = instance;
     }
+
+    /// <summary>
+    /// 服务实例
+    /// </summary>
+    public object Instance { get; }
 }

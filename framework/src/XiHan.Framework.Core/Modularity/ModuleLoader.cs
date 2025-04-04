@@ -47,23 +47,6 @@ public class ModuleLoader : IModuleLoader
     }
 
     /// <summary>
-    /// 获取模块描述器列表
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="startupModuleType"></param>
-    /// <param name="plugInSources"></param>
-    /// <returns></returns>
-    private List<IModuleDescriptor> GetDescriptors(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
-    {
-        List<XiHanModuleDescriptor> modules = [];
-
-        FillModules(modules, services, startupModuleType, plugInSources);
-        SetDependencies(modules);
-
-        return [.. modules.Cast<IModuleDescriptor>()];
-    }
-
-    /// <summary>
     /// 填充模块
     /// </summary>
     /// <param name="modules"></param>
@@ -152,5 +135,22 @@ public class ModuleLoader : IModuleLoader
         {
             module.AddDependency(dependedModule);
         }
+    }
+
+    /// <summary>
+    /// 获取模块描述器列表
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="startupModuleType"></param>
+    /// <param name="plugInSources"></param>
+    /// <returns></returns>
+    private List<IModuleDescriptor> GetDescriptors(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
+    {
+        List<XiHanModuleDescriptor> modules = [];
+
+        FillModules(modules, services, startupModuleType, plugInSources);
+        SetDependencies(modules);
+
+        return [.. modules.Cast<IModuleDescriptor>()];
     }
 }

@@ -41,11 +41,6 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     where TCacheItem : class
 {
     /// <summary>
-    /// 获取内部缓存
-    /// </summary>
-    public IDistributedCache<TCacheItem, string> InternalCache { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="internalCache"></param>
@@ -53,6 +48,11 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     {
         InternalCache = internalCache;
     }
+
+    /// <summary>
+    /// 获取内部缓存
+    /// </summary>
+    public IDistributedCache<TCacheItem, string> InternalCache { get; }
 
     /// <summary>
     /// 获取缓存项
@@ -324,6 +324,37 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     public const string UowCacheName = "XiHanDistributedCache";
 
     /// <summary>
+    /// 默认缓存条目选项
+    /// </summary>
+    protected DistributedCacheEntryOptions DefaultCacheOptions = default!;
+
+    private readonly XiHanDistributedCacheOptions _distributedCacheOption;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="distributedCacheOption"></param>
+    /// <param name="cache"></param>
+    /// <param name="cancellationTokenProvider"></param>
+    /// <param name="serializer"></param>
+    /// <param name="keyNormalizer"></param>
+    /// <param name="serviceScopeFactory"></param>
+    /// <param name="unitOfWorkManager"></param>
+    public DistributedCache(IOptions<XiHanDistributedCacheOptions> distributedCacheOption, IDistributedCache cache, ICancellationTokenProvider cancellationTokenProvider, IDistributedCacheSerializer serializer, IDistributedCacheKeyNormalizer keyNormalizer, IServiceScopeFactory serviceScopeFactory, IUnitOfWorkManager unitOfWorkManager)
+    {
+        _distributedCacheOption = distributedCacheOption.Value;
+        Cache = cache;
+        CancellationTokenProvider = cancellationTokenProvider;
+        Logger = NullLogger<DistributedCache<TCacheItem, TCacheKey>>.Instance;
+        Serializer = serializer;
+        KeyNormalizer = keyNormalizer;
+        ServiceScopeFactory = serviceScopeFactory;
+        UnitOfWorkManager = unitOfWorkManager;
+        SyncSemaphore = new SemaphoreSlim(1, 1);
+        SetDefaultOptions();
+    }
+
+    /// <summary>
     /// 日志记录器
     /// </summary>
     public ILogger<DistributedCache<TCacheItem, TCacheKey>> Logger { get; set; }
@@ -372,79 +403,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// 同步信号量
     /// </summary>
     protected SemaphoreSlim SyncSemaphore { get; }
-
-    /// <summary>
-    /// 默认缓存条目选项
-    /// </summary>
-    protected DistributedCacheEntryOptions DefaultCacheOptions = default!;
-
-    private readonly XiHanDistributedCacheOptions _distributedCacheOption;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="distributedCacheOption"></param>
-    /// <param name="cache"></param>
-    /// <param name="cancellationTokenProvider"></param>
-    /// <param name="serializer"></param>
-    /// <param name="keyNormalizer"></param>
-    /// <param name="serviceScopeFactory"></param>
-    /// <param name="unitOfWorkManager"></param>
-    public DistributedCache(IOptions<XiHanDistributedCacheOptions> distributedCacheOption, IDistributedCache cache, ICancellationTokenProvider cancellationTokenProvider, IDistributedCacheSerializer serializer, IDistributedCacheKeyNormalizer keyNormalizer, IServiceScopeFactory serviceScopeFactory, IUnitOfWorkManager unitOfWorkManager)
-    {
-        _distributedCacheOption = distributedCacheOption.Value;
-        Cache = cache;
-        CancellationTokenProvider = cancellationTokenProvider;
-        Logger = NullLogger<DistributedCache<TCacheItem, TCacheKey>>.Instance;
-        Serializer = serializer;
-        KeyNormalizer = keyNormalizer;
-        ServiceScopeFactory = serviceScopeFactory;
-        UnitOfWorkManager = unitOfWorkManager;
-        SyncSemaphore = new SemaphoreSlim(1, 1);
-        SetDefaultOptions();
-    }
-
-    /// <summary>
-    /// 处理异常
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    protected virtual string NormalizeKey(TCacheKey key)
-    {
-        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(key.ToString()!, CacheName, IgnoreMultiTenancy));
-    }
-
-    /// <summary>
-    /// 获取默认缓存条目选项
-    /// </summary>
-    /// <returns></returns>
-    protected virtual DistributedCacheEntryOptions GetDefaultCacheEntryOptions()
-    {
-        foreach (var configure in _distributedCacheOption.CacheConfigurators)
-        {
-            var options = configure.Invoke(CacheName);
-            if (options is not null)
-            {
-                return options;
-            }
-        }
-
-        return _distributedCacheOption.GlobalCacheEntryOptions;
-    }
-
-    /// <summary>
-    /// 设置默认选项
-    /// </summary>
-    protected virtual void SetDefaultOptions()
-    {
-        CacheName = CacheNameAttribute.GetCacheName<TCacheItem>();
-
-        //IgnoreMultiTenancy
-        IgnoreMultiTenancy = typeof(TCacheItem).IsDefined(typeof(IgnoreMultiTenancyAttribute), true);
-
-        //Configure default cache entry options
-        DefaultCacheOptions = GetDefaultCacheEntryOptions();
-    }
 
     /// <summary>
     /// 获取缓存
@@ -542,32 +500,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     }
 
     /// <summary>
-    /// 获取多个回滚
-    /// </summary>
-    /// <param name="keys"></param>
-    /// <param name="hideErrors"></param>
-    /// <param name="considerUow">确认缓存</param>
-    /// <returns></returns>
-    protected virtual KeyValuePair<TCacheKey, TCacheItem?>[] GetManyFallback(TCacheKey[] keys, bool? hideErrors = null, bool considerUow = false)
-    {
-        hideErrors ??= _distributedCacheOption.HideErrors;
-        try
-        {
-            return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, Get(key, false, considerUow))).ToArray();
-        }
-        catch (Exception ex)
-        {
-            if (hideErrors == true)
-            {
-                HandleException(ex);
-                return ToCacheItemsWithDefaultValues(keys);
-            }
-
-            throw;
-        }
-    }
-
-    /// <summary>
     /// 异步获取多个缓存
     /// </summary>
     /// <param name="keys"></param>
@@ -623,39 +555,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
 
         return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
-    }
-
-    /// <summary>
-    /// 异步获取多个回滚
-    /// </summary>
-    /// <param name="keys"></param>
-    /// <param name="hideErrors"></param>
-    /// <param name="considerUow"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    protected virtual async Task<KeyValuePair<TCacheKey, TCacheItem?>[]> GetManyFallbackAsync(TCacheKey[] keys, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
-    {
-        hideErrors ??= _distributedCacheOption.HideErrors;
-        try
-        {
-            var result = new List<KeyValuePair<TCacheKey, TCacheItem?>>();
-            foreach (var key in keys)
-            {
-                result.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, await GetAsync(key, false, considerUow, token)));
-            }
-
-            return [.. result];
-        }
-        catch (Exception ex)
-        {
-            if (hideErrors == true)
-            {
-                await HandleExceptionAsync(ex);
-                return ToCacheItemsWithDefaultValues(keys);
-            }
-
-            throw;
-        }
     }
 
     /// <summary>
@@ -1137,35 +1036,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     }
 
     /// <summary>
-    /// 设置多个回滚
-    /// </summary>
-    /// <param name="items"></param>
-    /// <param name="options"></param>
-    /// <param name="hideErrors"></param>
-    /// <param name="considerUow"></param>
-    protected virtual void SetManyFallback(KeyValuePair<TCacheKey, TCacheItem>[] items, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false)
-    {
-        hideErrors ??= _distributedCacheOption.HideErrors;
-        try
-        {
-            foreach (var item in items)
-            {
-                Set(item.Key, item.Value, options, false, considerUow);
-            }
-        }
-        catch (Exception ex)
-        {
-            if (hideErrors == true)
-            {
-                HandleException(ex);
-                return;
-            }
-
-            throw;
-        }
-    }
-
-    /// <summary>
     /// 异步设置多个缓存项
     /// </summary>
     /// <param name="items"></param>
@@ -1222,37 +1092,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         else
         {
             await SetRealCache();
-        }
-    }
-
-    /// <summary>
-    /// 异步设置多个回滚
-    /// </summary>
-    /// <param name="items"></param>
-    /// <param name="options"></param>
-    /// <param name="hideErrors"></param>
-    /// <param name="considerUow"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    protected virtual async Task SetManyFallbackAsync(KeyValuePair<TCacheKey, TCacheItem>[] items, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
-    {
-        hideErrors ??= _distributedCacheOption.HideErrors;
-        try
-        {
-            foreach (var item in items)
-            {
-                await SetAsync(item.Key, item.Value, options, false, considerUow, token);
-            }
-        }
-        catch (Exception ex)
-        {
-            if (hideErrors == true)
-            {
-                await HandleExceptionAsync(ex);
-                return;
-            }
-
-            throw;
         }
     }
 
@@ -1591,6 +1430,167 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <summary>
     /// 处理异常
     /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    protected virtual string NormalizeKey(TCacheKey key)
+    {
+        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(key.ToString()!, CacheName, IgnoreMultiTenancy));
+    }
+
+    /// <summary>
+    /// 获取默认缓存条目选项
+    /// </summary>
+    /// <returns></returns>
+    protected virtual DistributedCacheEntryOptions GetDefaultCacheEntryOptions()
+    {
+        foreach (var configure in _distributedCacheOption.CacheConfigurators)
+        {
+            var options = configure.Invoke(CacheName);
+            if (options is not null)
+            {
+                return options;
+            }
+        }
+
+        return _distributedCacheOption.GlobalCacheEntryOptions;
+    }
+
+    /// <summary>
+    /// 设置默认选项
+    /// </summary>
+    protected virtual void SetDefaultOptions()
+    {
+        CacheName = CacheNameAttribute.GetCacheName<TCacheItem>();
+
+        //IgnoreMultiTenancy
+        IgnoreMultiTenancy = typeof(TCacheItem).IsDefined(typeof(IgnoreMultiTenancyAttribute), true);
+
+        //Configure default cache entry options
+        DefaultCacheOptions = GetDefaultCacheEntryOptions();
+    }
+
+    /// <summary>
+    /// 获取多个回滚
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow">确认缓存</param>
+    /// <returns></returns>
+    protected virtual KeyValuePair<TCacheKey, TCacheItem?>[] GetManyFallback(TCacheKey[] keys, bool? hideErrors = null, bool considerUow = false)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        try
+        {
+            return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, Get(key, false, considerUow))).ToArray();
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors == true)
+            {
+                HandleException(ex);
+                return ToCacheItemsWithDefaultValues(keys);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 异步获取多个回滚
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    protected virtual async Task<KeyValuePair<TCacheKey, TCacheItem?>[]> GetManyFallbackAsync(TCacheKey[] keys, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        try
+        {
+            var result = new List<KeyValuePair<TCacheKey, TCacheItem?>>();
+            foreach (var key in keys)
+            {
+                result.Add(new KeyValuePair<TCacheKey, TCacheItem?>(key, await GetAsync(key, false, considerUow, token)));
+            }
+
+            return [.. result];
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors == true)
+            {
+                await HandleExceptionAsync(ex);
+                return ToCacheItemsWithDefaultValues(keys);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 设置多个回滚
+    /// </summary>
+    /// <param name="items"></param>
+    /// <param name="options"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    protected virtual void SetManyFallback(KeyValuePair<TCacheKey, TCacheItem>[] items, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        try
+        {
+            foreach (var item in items)
+            {
+                Set(item.Key, item.Value, options, false, considerUow);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors == true)
+            {
+                HandleException(ex);
+                return;
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 异步设置多个回滚
+    /// </summary>
+    /// <param name="items"></param>
+    /// <param name="options"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    protected virtual async Task SetManyFallbackAsync(KeyValuePair<TCacheKey, TCacheItem>[] items, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        try
+        {
+            foreach (var item in items)
+            {
+                await SetAsync(item.Key, item.Value, options, false, considerUow, token);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors == true)
+            {
+                await HandleExceptionAsync(ex);
+                return;
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 处理异常
+    /// </summary>
     /// <param name="ex"></param>
     protected virtual void HandleException(Exception ex)
     {
@@ -1653,16 +1653,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     }
 
     /// <summary>
-    /// 转化缓存项为默认值
-    /// </summary>
-    /// <param name="keys"></param>
-    /// <returns></returns>
-    private static KeyValuePair<TCacheKey, TCacheItem?>[] ToCacheItemsWithDefaultValues(TCacheKey[] keys)
-    {
-        return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, default)).ToArray();
-    }
-
-    /// <summary>
     /// 是否应该确认 UOW
     /// </summary>
     /// <param name="considerUow"></param>
@@ -1691,5 +1681,15 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         return UnitOfWorkManager.Current is null
             ? throw new XiHanException($"没有活跃的 UOW")
             : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(), key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
+    }
+
+    /// <summary>
+    /// 转化缓存项为默认值
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <returns></returns>
+    private static KeyValuePair<TCacheKey, TCacheItem?>[] ToCacheItemsWithDefaultValues(TCacheKey[] keys)
+    {
+        return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, default)).ToArray();
     }
 }

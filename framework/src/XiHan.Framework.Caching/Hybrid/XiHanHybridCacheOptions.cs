@@ -22,6 +22,16 @@ namespace XiHan.Framework.Caching.Hybrid;
 public class XiHanHybridCacheOptions
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    public XiHanHybridCacheOptions()
+    {
+        CacheConfigurators = new List<Func<string, HybridCacheEntryOptions?>>();
+        GlobalHybridCacheEntryOptions = new HybridCacheEntryOptions();
+        KeyPrefix = "";
+    }
+
+    /// <summary>
     /// 是否隐藏错误
     /// </summary>
     public bool HideErrors { get; set; } = true;
@@ -40,16 +50,6 @@ public class XiHanHybridCacheOptions
     /// 缓存配置器
     /// </summary>
     public List<Func<string, HybridCacheEntryOptions?>> CacheConfigurators { get; set; } //TODO: use a configurator interface instead?
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public XiHanHybridCacheOptions()
-    {
-        CacheConfigurators = new List<Func<string, HybridCacheEntryOptions?>>();
-        GlobalHybridCacheEntryOptions = new HybridCacheEntryOptions();
-        KeyPrefix = "";
-    }
 
     /// <summary>
     /// 配置缓存

@@ -28,6 +28,16 @@ public class TypeList : TypeList<object>, ITypeList;
 /// <typeparam name="TBaseType"></typeparam>
 public class TypeList<TBaseType> : ITypeList<TBaseType>
 {
+    private readonly List<Type> _typeList;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    public TypeList()
+    {
+        _typeList = [];
+    }
+
     /// <summary>
     /// 数量
     /// </summary>
@@ -52,16 +62,6 @@ public class TypeList<TBaseType> : ITypeList<TBaseType>
             CheckType(value);
             _typeList[index] = value;
         }
-    }
-
-    private readonly List<Type> _typeList;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public TypeList()
-    {
-        _typeList = [];
     }
 
     /// <summary>

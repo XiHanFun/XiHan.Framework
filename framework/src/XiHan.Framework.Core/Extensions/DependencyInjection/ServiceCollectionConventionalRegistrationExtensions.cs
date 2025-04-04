@@ -47,25 +47,6 @@ public static class ServiceCollectionConventionalRegistrationExtensions
     }
 
     /// <summary>
-    /// 获取或创建常规注册器
-    /// </summary>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    private static ConventionalRegistrarList GetOrCreateRegistrarList(IServiceCollection services)
-    {
-        var conventionalRegistrars = services.GetSingletonInstanceOrNull<IObjectAccessor<ConventionalRegistrarList>>()?.Value;
-        if (conventionalRegistrars is not null)
-        {
-            return conventionalRegistrars;
-        }
-
-        conventionalRegistrars = [new DefaultConventionalRegistrar()];
-        _ = services.AddObjectAccessor(conventionalRegistrars);
-
-        return conventionalRegistrars;
-    }
-
-    /// <summary>
     /// 添加泛型程序集
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -133,5 +114,24 @@ public static class ServiceCollectionConventionalRegistrationExtensions
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// 获取或创建常规注册器
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    private static ConventionalRegistrarList GetOrCreateRegistrarList(IServiceCollection services)
+    {
+        var conventionalRegistrars = services.GetSingletonInstanceOrNull<IObjectAccessor<ConventionalRegistrarList>>()?.Value;
+        if (conventionalRegistrars is not null)
+        {
+            return conventionalRegistrars;
+        }
+
+        conventionalRegistrars = [new DefaultConventionalRegistrar()];
+        _ = services.AddObjectAccessor(conventionalRegistrars);
+
+        return conventionalRegistrars;
     }
 }

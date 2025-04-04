@@ -24,11 +24,6 @@ public class ExposeKeyedServiceAttribute<TServiceType> : Attribute, IExposedKeye
     where TServiceType : class
 {
     /// <summary>
-    /// 服务标识
-    /// </summary>
-    public ServiceIdentifier ServiceIdentifier { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceKey"></param>
@@ -42,6 +37,11 @@ public class ExposeKeyedServiceAttribute<TServiceType> : Attribute, IExposedKeye
 
         ServiceIdentifier = new ServiceIdentifier(serviceKey, typeof(TServiceType));
     }
+
+    /// <summary>
+    /// 服务标识
+    /// </summary>
+    public ServiceIdentifier ServiceIdentifier { get; }
 
     /// <summary>
     /// 获取暴露的服务类型

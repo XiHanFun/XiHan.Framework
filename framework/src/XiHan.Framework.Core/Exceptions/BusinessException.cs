@@ -23,21 +23,6 @@ namespace XiHan.Framework.Core.Exceptions;
 public class BusinessException : Exception, IBusinessException, IHasErrorCode, IHasErrorDetails, IHasLogLevel
 {
     /// <summary>
-    /// 异常代码
-    /// </summary>
-    public string? Code { get; set; }
-
-    /// <summary>
-    /// 异常详情
-    /// </summary>
-    public string? Details { get; set; }
-
-    /// <summary>
-    /// 日志级别
-    /// </summary>
-    public LogLevel LogLevel { get; set; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="code"></param>
@@ -54,6 +39,29 @@ public class BusinessException : Exception, IBusinessException, IHasErrorCode, I
     }
 
     /// <summary>
+    /// 异常代码
+    /// </summary>
+    public string? Code { get; set; }
+
+    /// <summary>
+    /// 异常详情
+    /// </summary>
+    public string? Details { get; set; }
+
+    /// <summary>
+    /// 日志级别
+    /// </summary>
+    public LogLevel LogLevel { get; set; }
+
+    /// <summary>
+    /// 抛出异常
+    /// </summary>
+    public static void Throw(string? code = null, string? message = null, string? details = null, Exception? innerException = null, LogLevel logLevel = LogLevel.Warning)
+    {
+        throw new BusinessException(code, message, details, innerException, logLevel);
+    }
+
+    /// <summary>
     /// 写入数据
     /// </summary>
     /// <param name="name"></param>
@@ -63,13 +71,5 @@ public class BusinessException : Exception, IBusinessException, IHasErrorCode, I
     {
         Data[name] = value;
         return this;
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? code = null, string? message = null, string? details = null, Exception? innerException = null, LogLevel logLevel = LogLevel.Warning)
-    {
-        throw new BusinessException(code, message, details, innerException, logLevel);
     }
 }

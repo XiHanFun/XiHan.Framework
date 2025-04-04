@@ -24,11 +24,6 @@ namespace XiHan.Framework.Core.Modularity.PlugIns;
 public class FilePlugInSource : IPlugInSource
 {
     /// <summary>
-    /// 文件路径
-    /// </summary>
-    public string[] FilePaths { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="filePaths"></param>
@@ -36,6 +31,11 @@ public class FilePlugInSource : IPlugInSource
     {
         FilePaths = filePaths ?? [];
     }
+
+    /// <summary>
+    /// 文件路径
+    /// </summary>
+    public string[] FilePaths { get; }
 
     /// <summary>
     /// 获取模块

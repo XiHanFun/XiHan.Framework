@@ -28,6 +28,18 @@ namespace XiHan.Framework.AspNetCore.Mvc;
 public class XiHanAspNetCoreMvcOptions
 {
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    public XiHanAspNetCoreMvcOptions()
+    {
+        MvcOptions = new MvcOptions();
+        ApiBehaviorOptions = new ApiBehaviorOptions();
+        JsonOptions = new JsonOptions();
+        FormatterOptions = new FormatterMappings();
+        CorsOptions = new CorsOptions();
+    }
+
+    /// <summary>
     /// Mvc 配置项
     /// </summary>
     public MvcOptions MvcOptions { get; }
@@ -51,18 +63,6 @@ public class XiHanAspNetCoreMvcOptions
     /// Cors 配置项
     /// </summary>
     public CorsOptions CorsOptions { get; }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public XiHanAspNetCoreMvcOptions()
-    {
-        MvcOptions = new MvcOptions();
-        ApiBehaviorOptions = new ApiBehaviorOptions();
-        JsonOptions = new JsonOptions();
-        FormatterOptions = new FormatterMappings();
-        CorsOptions = new CorsOptions();
-    }
 
     /// <summary>
     /// 配置 MvcOptions

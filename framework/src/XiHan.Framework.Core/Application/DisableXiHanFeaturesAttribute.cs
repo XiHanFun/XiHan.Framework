@@ -18,7 +18,7 @@ namespace XiHan.Framework.Core.Application;
 /// 禁用曦寒功能特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class DisableXiHanFeaturesAttribute : Attribute
+public sealed class DisableXiHanFeaturesAttribute : Attribute
 {
     /// <summary>
     /// 将不会为该类注册任何拦截器
