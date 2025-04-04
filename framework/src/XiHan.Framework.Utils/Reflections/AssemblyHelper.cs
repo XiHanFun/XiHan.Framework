@@ -533,14 +533,14 @@ public static class AssemblyHelper
                 };
 
                 // 避免重复添加相同的 NuGet 包标识
-                if (!nugetPackages.Contains(nuGetPackage))
+                if (!nugetPackages.Select(x => x.PackageName).Contains(nuGetPackage.PackageName))
                 {
                     nugetPackages.Add(nuGetPackage);
                 }
             }
         }
 
-        return nugetPackages;
+        return nugetPackages.OrderBy(o => o.PackageName).ToList();
     }
 
     #endregion 程序集依赖包
