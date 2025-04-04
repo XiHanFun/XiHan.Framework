@@ -18,4 +18,4 @@ namespace XiHan.Framework.Core.DependencyInjection;
 /// 禁用属性注入特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property)]
-public sealed class DisablePropertyInjectionAttribute : Attribute;
+public class DisablePropertyInjectionAttribute : Attribute;
