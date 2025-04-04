@@ -26,16 +26,6 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
     where TState : IHasSimpleStateCheckers<TState>
 {
     /// <summary>
-    /// 服务提供程序
-    /// </summary>
-    protected IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
-    /// 选项
-    /// </summary>
-    protected SimpleStateCheckerOptions<TState> Options { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -45,6 +35,16 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
         ServiceProvider = serviceProvider;
         Options = options.Value;
     }
+
+    /// <summary>
+    /// 服务提供程序
+    /// </summary>
+    protected IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// 选项
+    /// </summary>
+    protected SimpleStateCheckerOptions<TState> Options { get; }
 
     /// <summary>
     /// 是否启用

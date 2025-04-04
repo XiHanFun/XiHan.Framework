@@ -28,11 +28,6 @@ public class GlobalSettingValueProvider : SettingValueProvider
     public const string ProviderName = "G";
 
     /// <summary>
-    /// 名称
-    /// </summary>
-    public override string Name => ProviderName;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="settingStore"></param>
@@ -40,6 +35,11 @@ public class GlobalSettingValueProvider : SettingValueProvider
         : base(settingStore)
     {
     }
+
+    /// <summary>
+    /// 名称
+    /// </summary>
+    public override string Name => ProviderName;
 
     /// <summary>
     /// 获取设置值

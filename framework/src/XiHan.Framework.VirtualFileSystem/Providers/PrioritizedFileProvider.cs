@@ -22,16 +22,6 @@ namespace XiHan.Framework.VirtualFileSystem.Providers;
 public class PrioritizedFileProvider
 {
     /// <summary>
-    /// 文件提供程序实例
-    /// </summary>
-    public IFileProvider Provider { get; }
-
-    /// <summary>
-    /// 优先级（数值越大优先级越高）
-    /// </summary>
-    public int Priority { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="provider">文件提供程序</param>
@@ -41,4 +31,14 @@ public class PrioritizedFileProvider
         Provider = provider;
         Priority = priority;
     }
+
+    /// <summary>
+    /// 文件提供程序实例
+    /// </summary>
+    public IFileProvider Provider { get; }
+
+    /// <summary>
+    /// 优先级（数值越大优先级越高）
+    /// </summary>
+    public int Priority { get; }
 }

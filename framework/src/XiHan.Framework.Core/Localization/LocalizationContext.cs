@@ -24,16 +24,6 @@ namespace XiHan.Framework.Core.Localization;
 public class LocalizationContext : IServiceProviderAccessor
 {
     /// <summary>
-    /// 服务提供者
-    /// </summary>
-    public IServiceProvider ServiceProvider { get; }
-
-    /// <summary>
-    /// 本地化工厂
-    /// </summary>
-    public IStringLocalizerFactory LocalizerFactory { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider"></param>
@@ -42,4 +32,14 @@ public class LocalizationContext : IServiceProviderAccessor
         ServiceProvider = serviceProvider;
         LocalizerFactory = ServiceProvider.GetRequiredService<IStringLocalizerFactory>();
     }
+
+    /// <summary>
+    /// 服务提供者
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// 本地化工厂
+    /// </summary>
+    public IStringLocalizerFactory LocalizerFactory { get; }
 }

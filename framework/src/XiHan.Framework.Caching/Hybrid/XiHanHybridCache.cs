@@ -15,25 +15,25 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System.Buffers;
 using System.Collections.Concurrent;
-using XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+using System.Diagnostics.CodeAnalysis;
+using XiHan.Framework.Caching.Extensions;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Handling;
+using XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+using XiHan.Framework.Core.Extensions.Logging;
 using XiHan.Framework.Core.Extensions.Threading;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Threading;
-using XiHan.Framework.Uow;
-using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Core.Exceptions;
-using XiHan.Framework.Uow.Extensions;
-using XiHan.Framework.Core.Extensions.Logging;
 using XiHan.Framework.Threading.Extensions;
-using XiHan.Framework.Caching.Extensions;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Uow.Extensions;
+using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace XiHan.Framework.Caching.Hybrid;
 
@@ -44,11 +44,6 @@ public class XiHanHybridCache<TCacheItem> : IHybridCache<TCacheItem>
     where TCacheItem : class
 {
     /// <summary>
-    /// 内部缓存
-    /// </summary>
-    public IHybridCache<TCacheItem, string> InternalCache { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="internalCache"></param>
@@ -56,6 +51,11 @@ public class XiHanHybridCache<TCacheItem> : IHybridCache<TCacheItem>
     {
         InternalCache = internalCache;
     }
+
+    /// <summary>
+    /// 内部缓存
+    /// </summary>
+    public IHybridCache<TCacheItem, string> InternalCache { get; }
 
     /// <summary>
     /// 获取或添加缓存项
@@ -129,6 +129,54 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     public const string UowCacheName = "XiHanHybridCache";
 
     /// <summary>
+    /// 默认缓存项选项
+    /// </summary>
+    protected HybridCacheEntryOptions DefaultCacheOptions = default!;
+
+    /// <summary>
+    /// 序列化器缓存
+    /// </summary>
+    private readonly ConcurrentDictionary<Type, object> _serializersCache = new();
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="distributedCacheOption"></param>
+    /// <param name="hybridCache"></param>
+    /// <param name="distributedCache"></param>
+    /// <param name="cancellationTokenProvider"></param>
+    /// <param name="serializer"></param>
+    /// <param name="keyNormalizer"></param>
+    /// <param name="serviceScopeFactory"></param>
+    /// <param name="unitOfWorkManager"></param>
+    public XiHanHybridCache(
+        IServiceProvider serviceProvider,
+        IOptions<XiHanHybridCacheOptions> distributedCacheOption,
+        HybridCache hybridCache,
+        IDistributedCache distributedCache,
+        ICancellationTokenProvider cancellationTokenProvider,
+        IDistributedCacheSerializer serializer,
+        IDistributedCacheKeyNormalizer keyNormalizer,
+        IServiceScopeFactory serviceScopeFactory,
+        IUnitOfWorkManager unitOfWorkManager)
+    {
+        ServiceProvider = serviceProvider;
+        DistributedCacheOption = distributedCacheOption.Value;
+        HybridCache = hybridCache;
+        DistributedCacheCache = distributedCache;
+        CancellationTokenProvider = cancellationTokenProvider;
+        Logger = NullLogger<XiHanHybridCache<TCacheItem, TCacheKey>>.Instance;
+        KeyNormalizer = keyNormalizer;
+        ServiceScopeFactory = serviceScopeFactory;
+        UnitOfWorkManager = unitOfWorkManager;
+
+        SyncSemaphore = new SemaphoreSlim(1, 1);
+
+        SetDefaultOptions();
+    }
+
+    /// <summary>
     /// 日志记录器
     /// </summary>
     public ILogger<XiHanHybridCache<TCacheItem, TCacheKey>> Logger { get; set; }
@@ -184,105 +232,9 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     protected SemaphoreSlim SyncSemaphore { get; }
 
     /// <summary>
-    /// 默认缓存项选项
-    /// </summary>
-    protected HybridCacheEntryOptions DefaultCacheOptions = default!;
-
-    /// <summary>
     /// 分布式缓存选项
     /// </summary>
     protected XiHanHybridCacheOptions DistributedCacheOption { get; }
-
-    /// <summary>
-    /// 序列化器缓存
-    /// </summary>
-    private readonly ConcurrentDictionary<Type, object> _serializersCache = new();
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="distributedCacheOption"></param>
-    /// <param name="hybridCache"></param>
-    /// <param name="distributedCache"></param>
-    /// <param name="cancellationTokenProvider"></param>
-    /// <param name="serializer"></param>
-    /// <param name="keyNormalizer"></param>
-    /// <param name="serviceScopeFactory"></param>
-    /// <param name="unitOfWorkManager"></param>
-    public XiHanHybridCache(
-        IServiceProvider serviceProvider,
-        IOptions<XiHanHybridCacheOptions> distributedCacheOption,
-        HybridCache hybridCache,
-        IDistributedCache distributedCache,
-        ICancellationTokenProvider cancellationTokenProvider,
-        IDistributedCacheSerializer serializer,
-        IDistributedCacheKeyNormalizer keyNormalizer,
-        IServiceScopeFactory serviceScopeFactory,
-        IUnitOfWorkManager unitOfWorkManager)
-    {
-        ServiceProvider = serviceProvider;
-        DistributedCacheOption = distributedCacheOption.Value;
-        HybridCache = hybridCache;
-        DistributedCacheCache = distributedCache;
-        CancellationTokenProvider = cancellationTokenProvider;
-        Logger = NullLogger<XiHanHybridCache<TCacheItem, TCacheKey>>.Instance;
-        KeyNormalizer = keyNormalizer;
-        ServiceScopeFactory = serviceScopeFactory;
-        UnitOfWorkManager = unitOfWorkManager;
-
-        SyncSemaphore = new SemaphoreSlim(1, 1);
-
-        SetDefaultOptions();
-    }
-
-    /// <summary>
-    /// 规范化键
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    protected virtual string NormalizeKey(TCacheKey key)
-    {
-        return KeyNormalizer.NormalizeKey(
-            new DistributedCacheKeyNormalizeArgs(
-                key.ToString()!,
-                CacheName,
-                IgnoreMultiTenancy
-            )
-        );
-    }
-
-    /// <summary>
-    /// 获取默认缓存项选项
-    /// </summary>
-    /// <returns></returns>
-    protected virtual HybridCacheEntryOptions GetDefaultCacheEntryOptions()
-    {
-        foreach (var configure in DistributedCacheOption.CacheConfigurators)
-        {
-            var options = configure.Invoke(CacheName);
-            if (options is not null)
-            {
-                return options;
-            }
-        }
-
-        return DistributedCacheOption.GlobalHybridCacheEntryOptions;
-    }
-
-    /// <summary>
-    /// 设置默认选项
-    /// </summary>
-    protected virtual void SetDefaultOptions()
-    {
-        CacheName = CacheNameAttribute.GetCacheName<TCacheItem>();
-
-        //IgnoreMultiTenancy
-        IgnoreMultiTenancy = typeof(TCacheItem).IsDefined(typeof(IgnoreMultiTenancyAttribute), true);
-
-        //Configure default cache entry options
-        DefaultCacheOptions = GetDefaultCacheEntryOptions();
-    }
 
     /// <summary>
     /// 获取或添加缓存项
@@ -500,6 +452,54 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         {
             await RemoveRealCache();
         }
+    }
+
+    /// <summary>
+    /// 规范化键
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    protected virtual string NormalizeKey(TCacheKey key)
+    {
+        return KeyNormalizer.NormalizeKey(
+            new DistributedCacheKeyNormalizeArgs(
+                key.ToString()!,
+                CacheName,
+                IgnoreMultiTenancy
+            )
+        );
+    }
+
+    /// <summary>
+    /// 获取默认缓存项选项
+    /// </summary>
+    /// <returns></returns>
+    protected virtual HybridCacheEntryOptions GetDefaultCacheEntryOptions()
+    {
+        foreach (var configure in DistributedCacheOption.CacheConfigurators)
+        {
+            var options = configure.Invoke(CacheName);
+            if (options is not null)
+            {
+                return options;
+            }
+        }
+
+        return DistributedCacheOption.GlobalHybridCacheEntryOptions;
+    }
+
+    /// <summary>
+    /// 设置默认选项
+    /// </summary>
+    protected virtual void SetDefaultOptions()
+    {
+        CacheName = CacheNameAttribute.GetCacheName<TCacheItem>();
+
+        //IgnoreMultiTenancy
+        IgnoreMultiTenancy = typeof(TCacheItem).IsDefined(typeof(IgnoreMultiTenancyAttribute), true);
+
+        //Configure default cache entry options
+        DefaultCacheOptions = GetDefaultCacheEntryOptions();
     }
 
     /// <summary>

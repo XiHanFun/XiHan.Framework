@@ -20,11 +20,6 @@ namespace XiHan.Framework.Threading;
 public class CancellationTokenOverride
 {
     /// <summary>
-    /// 令牌
-    /// </summary>
-    public CancellationToken CancellationToken { get; }
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="cancellationToken"></param>
@@ -32,4 +27,9 @@ public class CancellationTokenOverride
     {
         CancellationToken = cancellationToken;
     }
+
+    /// <summary>
+    /// 令牌
+    /// </summary>
+    public CancellationToken CancellationToken { get; }
 }

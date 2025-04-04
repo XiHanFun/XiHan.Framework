@@ -22,22 +22,6 @@ public static class ConsoleLogger
     private static readonly Lock ObjLock = new();
 
     /// <summary>
-    /// 在控制台输出
-    /// </summary>
-    /// <param name="inputStr">打印文本</param>
-    /// <param name="frontColor">前置颜色</param>
-    private static void WriteColorLine(string? inputStr, ConsoleColor frontColor)
-    {
-        lock (ObjLock)
-        {
-            var currentForeColor = Console.ForegroundColor;
-            Console.ForegroundColor = frontColor;
-            Console.WriteLine(inputStr);
-            Console.ForegroundColor = currentForeColor;
-        }
-    }
-
-    /// <summary>
     /// 正常信息
     /// </summary>
     /// <param name="inputStr"></param>
@@ -85,5 +69,21 @@ public static class ConsoleLogger
     public static void Error(string? inputStr, ConsoleColor frontColor = ConsoleColor.Red)
     {
         WriteColorLine(inputStr, frontColor);
+    }
+
+    /// <summary>
+    /// 在控制台输出
+    /// </summary>
+    /// <param name="inputStr">打印文本</param>
+    /// <param name="frontColor">前置颜色</param>
+    private static void WriteColorLine(string? inputStr, ConsoleColor frontColor)
+    {
+        lock (ObjLock)
+        {
+            var currentForeColor = Console.ForegroundColor;
+            Console.ForegroundColor = frontColor;
+            Console.WriteLine(inputStr);
+            Console.ForegroundColor = currentForeColor;
+        }
     }
 }

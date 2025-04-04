@@ -34,16 +34,11 @@ namespace XiHan.Framework.VirtualFileSystem;
 public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
     private readonly List<PrioritizedFileProvider> _providers = [];
-    private IFileProvider _compositeProvider;
     private readonly Debouncer _changeDebouncer;
     private readonly List<string> _physicalPaths = [];
     private readonly List<Type> _embeddedResourceTypes = [];
     private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = [];
-
-    /// <summary>
-    /// 文件变化事件
-    /// </summary>
-    public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
+    private IFileProvider _compositeProvider;
 
     /// <summary>
     /// 初始化虚拟文件系统
@@ -89,6 +84,11 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             throw new XiHanException("虚拟文件系统初始化失败", ex);
         }
     }
+
+    /// <summary>
+    /// 文件变化事件
+    /// </summary>
+    public event EventHandler<FileChangedEventArgs> OnFileChanged = delegate { };
 
     /// <summary>
     /// 获取文件信息
