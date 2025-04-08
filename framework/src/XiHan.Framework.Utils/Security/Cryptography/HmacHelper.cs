@@ -97,7 +97,7 @@ public static class HmacHelper
         var keyBytes = Encoding.UTF8.GetBytes(key);
         using var hmac = CreateHmacAlgorithm(algorithm, keyBytes);
         var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-        return Convert.ToHexString(hashBytes);
+        return Convert.ToBase64String(hashBytes);
     }
 
     /// <summary>
