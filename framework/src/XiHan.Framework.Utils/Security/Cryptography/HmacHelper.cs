@@ -75,9 +75,9 @@ public static class HmacHelper
     /// </summary>
     /// <param name="algorithm">HMAC 算法类型，例如 "HMACSHA1", "HMACSHA256", "HMACSHA512"</param>
     /// <param name="key">密钥（字节数组）</param>
-    /// <param name="message">消息内容</param>
+    /// <param name="data">数据内容</param>
     /// <returns>HMAC 值（Base64 编码）</returns>
-    public static string ComputeHmac(string algorithm, string key, string message)
+    public static string ComputeHmac(string algorithm, string key, string data)
     {
         if (string.IsNullOrWhiteSpace(algorithm))
         {
@@ -89,14 +89,14 @@ public static class HmacHelper
             throw new ArgumentException("密钥不能为空", nameof(key));
         }
 
-        if (message is null)
+        if (data is null)
         {
-            throw new ArgumentException("消息不能为空", nameof(message));
+            throw new ArgumentException("数据不能为空", nameof(data));
         }
 
-        var keyBytes = Convert.FromBase64String(key);
+        var keyBytes = Encoding.UTF8.GetBytes(key);
         using var hmac = CreateHmacAlgorithm(algorithm, keyBytes);
-        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes);
     }
 
