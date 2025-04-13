@@ -12,19 +12,19 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Collections.Dtos;
+namespace XiHan.Framework.Utils.Collections.Tree;
 
 /// <summary>
 /// 树节点数据传输对象
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class TreeNodeDto<T>
+public class TreeNode<T>
 {
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="value"></param>
-    public TreeNodeDto(T value)
+    public TreeNode(T value)
     {
         Value = value;
     }
@@ -37,5 +37,5 @@ public class TreeNodeDto<T>
     /// <summary>
     /// 子节点
     /// </summary>
-    public List<TreeNodeDto<T>> Children { get; set; } = [];
+    public List<TreeNode<T>> Children { get; set; } = [];
 }
