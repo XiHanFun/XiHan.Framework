@@ -43,7 +43,7 @@ public class GenericEventNameAttribute : Attribute, IEventNameProvider
     {
         if (!eventType.IsGenericType)
         {
-            throw new XiHanException($"Given type is not generic: {eventType.AssemblyQualifiedName}");
+            throw new XiHanException($"给定类型 {eventType.AssemblyQualifiedName} 不是通用的");
         }
 
         var genericArguments = eventType.GetGenericArguments();
