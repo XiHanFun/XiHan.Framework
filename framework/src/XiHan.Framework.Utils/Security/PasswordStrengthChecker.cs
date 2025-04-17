@@ -14,7 +14,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.Utils.Verifications;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// 密码强度检测器

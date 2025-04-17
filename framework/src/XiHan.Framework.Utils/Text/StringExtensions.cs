@@ -15,16 +15,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Verifications;
 
 namespace XiHan.Framework.Utils.Text;
 
 /// <summary>
 /// 字符串扩展方法
 /// </summary>
-public static partial class StringExtensions
+public static class StringExtensions
 {
     /// <summary>
     /// 如果给定字符串不以该字符结尾，则在其末尾添加一个字符
@@ -300,8 +300,8 @@ public static partial class StringExtensions
         return string.IsNullOrWhiteSpace(str)
             ? str
             : useCurrentCulture
-                ? RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
-                : RegexLetter().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
+                ? RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
+                : RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
     }
 
     /// <summary>
@@ -339,8 +339,8 @@ public static partial class StringExtensions
         str = str.ToCamelCase();
 
         return useCurrentCulture
-            ? RegexLetter().Replace(str, m => m.Value[0] + "-" + char.ToLower(m.Value[1]))
-            : RegexLetter().Replace(str, m => m.Value[0] + "-" + char.ToLowerInvariant(m.Value[1]));
+            ? RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + "-" + char.ToLower(m.Value[1]))
+            : RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + "-" + char.ToLowerInvariant(m.Value[1]));
     }
 
     /// <summary>
@@ -469,7 +469,4 @@ public static partial class StringExtensions
     {
         return input.All(t => !char.IsLetter(t) || char.IsUpper(t));
     }
-
-    [GeneratedRegex("[a-z][A-Z]")]
-    private static partial Regex RegexLetter();
 }
