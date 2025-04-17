@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Collections.Dtos;
+using XiHan.Framework.Utils.Collections.Tree;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Collections;
@@ -29,9 +29,9 @@ public static class TreeExtensions
     /// <param name="source"></param>
     /// <param name="isChild"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNodeDto<T>> ToTree<T>(this IEnumerable<T> source, Func<T, T, bool> isChild)
+    public static IEnumerable<TreeNode<T>> ToTree<T>(this IEnumerable<T> source, Func<T, T, bool> isChild)
     {
-        var nodes = source.Select(value => new TreeNodeDto<T>(value)).ToList();
+        var nodes = source.Select(value => new TreeNode<T>(value)).ToList();
         var visited = new HashSet<T>();
 
         foreach (var node in nodes)
@@ -41,7 +41,7 @@ public static class TreeExtensions
                 continue;
             }
 
-            var stack = new Stack<TreeNodeDto<T>>();
+            var stack = new Stack<TreeNode<T>>();
             stack.Push(node);
 
             while (stack.Count > 0)
@@ -76,9 +76,9 @@ public static class TreeExtensions
     /// <param name="keySelector">主键选择器</param>
     /// <param name="parentKeySelector">父级主键选择器</param>
     /// <returns>树形结构</returns>
-    public static IEnumerable<TreeNodeDto<T>> ToTree<T>(this IEnumerable<T> source, Func<T, object> keySelector, Func<T, object> parentKeySelector)
+    public static IEnumerable<TreeNode<T>> ToTree<T>(this IEnumerable<T> source, Func<T, object> keySelector, Func<T, object> parentKeySelector)
     {
-        var nodes = source.Select(value => new TreeNodeDto<T>(value)).ToList();
+        var nodes = source.Select(value => new TreeNode<T>(value)).ToList();
         var lookup = nodes.ToLookup(node => parentKeySelector(node.Value), node => node);
 
         foreach (var node in nodes)
@@ -97,11 +97,11 @@ public static class TreeExtensions
     /// <param name="parent"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    public static void AddChild<T>(this TreeNodeDto<T> parent, T value)
+    public static void AddChild<T>(this TreeNode<T> parent, T value)
     {
         ArgumentNullException.ThrowIfNull(parent);
 
-        parent.Children.Add(new TreeNodeDto<T>(value));
+        parent.Children.Add(new TreeNode<T>(value));
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public static class TreeExtensions
     /// <param name="child">子节点对象</param>
     /// <param name="keySelector">主键选择器</param>
     /// <param name="parentKeySelector">父级主键选择器</param>
-    public static void AddChild<T>(this IEnumerable<TreeNodeDto<T>> source, T parent, T child, Func<T, object> keySelector, Func<T, object> parentKeySelector)
+    public static void AddChild<T>(this IEnumerable<TreeNode<T>> source, T parent, T child, Func<T, object> keySelector, Func<T, object> parentKeySelector)
     {
         if (parent is null)
         {
@@ -131,7 +131,7 @@ public static class TreeExtensions
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
         _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
-        parentNode.Children.Add(new TreeNodeDto<T>(child));
+        parentNode.Children.Add(new TreeNode<T>(child));
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ public static class TreeExtensions
     /// <param name="root"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static bool RemoveNode<T>(this TreeNodeDto<T> root, T value)
+    public static bool RemoveNode<T>(this TreeNode<T> root, T value)
     {
         if (root is null)
         {
@@ -171,7 +171,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNodeDto<T>> DepthFirstTraversal<T>(this TreeNodeDto<T> root)
+    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this TreeNode<T> root)
     {
         if (root is null)
         {
@@ -195,7 +195,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="source"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNodeDto<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNodeDto<T>> source)
+    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNode<T>> source)
     {
         if (source is null)
         {
@@ -217,14 +217,14 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNodeDto<T>> BreadthFirstTraversal<T>(this TreeNodeDto<T> root)
+    public static IEnumerable<TreeNode<T>> BreadthFirstTraversal<T>(this TreeNode<T> root)
     {
         if (root is null)
         {
             yield break;
         }
 
-        var queue = new Queue<TreeNodeDto<T>>();
+        var queue = new Queue<TreeNode<T>>();
         queue.Enqueue(root);
 
         while (queue.Count > 0)
@@ -246,7 +246,7 @@ public static class TreeExtensions
     /// <param name="root"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static TreeNodeDto<T>? FindNode<T>(this TreeNodeDto<T> root, T value)
+    public static TreeNode<T>? FindNode<T>(this TreeNode<T> root, T value)
     {
         return root.DepthFirstTraversal().FirstOrDefault(node => EqualityComparer<T>.Default.Equals(node.Value, value));
     }
@@ -258,9 +258,9 @@ public static class TreeExtensions
     /// <param name="root"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static List<TreeNodeDto<T>>? GetPath<T>(this TreeNodeDto<T> root, T value)
+    public static List<TreeNode<T>>? GetPath<T>(this TreeNode<T> root, T value)
     {
-        var path = new List<TreeNodeDto<T>>();
+        var path = new List<TreeNode<T>>();
         return FindPath(root, value, path) ? path : null;
     }
 
@@ -270,7 +270,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static int GetHeight<T>(this TreeNodeDto<T> root)
+    public static int GetHeight<T>(this TreeNode<T> root)
     {
         return root is null ? 0 : 1 + root.Children.Select(child => child.GetHeight()).DefaultIfEmpty(0).Max();
     }
@@ -281,7 +281,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNodeDto<T>> GetLeafNodes<T>(this TreeNodeDto<T> root)
+    public static IEnumerable<TreeNode<T>> GetLeafNodes<T>(this TreeNode<T> root)
     {
         return root.DepthFirstTraversal().Where(node => node.Children.Count == 0);
     }
@@ -296,7 +296,7 @@ public static class TreeExtensions
     /// <param name="value"></param>
     /// <param name="path"></param>
     /// <returns></returns>
-    private static bool FindPath<T>(TreeNodeDto<T> node, T value, List<TreeNodeDto<T>> path)
+    private static bool FindPath<T>(TreeNode<T> node, T value, List<TreeNode<T>> path)
     {
         if (node is null)
         {

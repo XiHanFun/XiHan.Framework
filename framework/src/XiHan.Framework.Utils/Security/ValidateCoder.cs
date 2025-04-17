@@ -15,7 +15,7 @@
 using System.Text;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Verifications;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// 验证码生成器
