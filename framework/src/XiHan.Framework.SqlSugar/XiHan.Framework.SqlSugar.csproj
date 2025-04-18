@@ -6,15 +6,15 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.EntityFrameworkCore</Title>
-        <AssemblyName>XiHan.Framework.EntityFrameworkCore</AssemblyName>
-        <PackageId>XiHan.Framework.EntityFrameworkCore</PackageId>
-        <Description>曦寒框架 EFCore 库</Description>
+        <Title>XiHan.Framework.SqlSugar</Title>
+        <AssemblyName>XiHan.Framework.SqlSugar</AssemblyName>
+        <PackageId>XiHan.Framework.SqlSugar</PackageId>
+        <Description>曦寒框架 SqlSugar 库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
+      <PackageReference Include="SqlSugarCore" Version="5.1.4.189-preview31" />
     </ItemGroup>
 
     <ItemGroup>
