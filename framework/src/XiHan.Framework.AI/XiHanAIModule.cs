@@ -16,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using XiHan.Framework.AI.Options;
-using XiHan.Framework.AI.Providers.HuggingFace;
 using XiHan.Framework.AI.Providers.Ollama;
 using XiHan.Framework.AI.Providers.OpenAI;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -48,7 +47,7 @@ public class XiHanAIModule : XiHanModule
         Configure<XiHanHuggingFaceOptions>(configuration.GetSection($"{ModuleConfigNode}:HuggingFace"));
         Configure<XiHanOpenAIOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
 
-        // 注册 Semantic Kernel 内核，配置 Ollama、HuggingFace、OpenAI 等 Connector
+        // 注册 Semantic Kernel 内核，配置 Ollama、OpenAI 等 Connector
         var kernelBuilder = services.AddKernel();
 
         // Ollama
@@ -64,43 +63,9 @@ public class XiHanAIModule : XiHanModule
                     modelId: ollamaOptions.ModelId,
                     endpoint: new Uri(ollamaOptions.Endpoint),
                     serviceId: ollamaOptions.ServiceId);
-            _ = kernelBuilder.AddOllamaTextGeneration(
-                    modelId: ollamaOptions.ModelId,
-                    endpoint: new Uri(ollamaOptions.Endpoint),
-                    serviceId: ollamaOptions.ServiceId);
 #pragma warning restore SKEXP0070
 
             _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
-        }
-
-        // HuggingFace
-        var huggingFaceOptions = services.GetRequiredService<IOptions<XiHanHuggingFaceOptions>>().Value;
-        if (huggingFaceOptions is not null)
-        {
-#pragma warning disable SKEXP0070
-            _ = kernelBuilder.AddHuggingFaceChatCompletion(
-                    model: huggingFaceOptions.ModelId,
-                    endpoint: new Uri(huggingFaceOptions.Endpoint),
-                    apiKey: huggingFaceOptions.ApiKey,
-                    serviceId: huggingFaceOptions.ServiceId);
-            _ = kernelBuilder.AddHuggingFaceImageToText(
-                    model: huggingFaceOptions.ModelId,
-                    endpoint: new Uri(huggingFaceOptions.Endpoint),
-                    apiKey: huggingFaceOptions.ApiKey,
-                    serviceId: huggingFaceOptions.ServiceId);
-            _ = kernelBuilder.AddHuggingFaceTextEmbeddingGeneration(
-                    model: huggingFaceOptions.ModelId,
-                    endpoint: new Uri(huggingFaceOptions.Endpoint),
-                    apiKey: huggingFaceOptions.ApiKey,
-                    serviceId: huggingFaceOptions.ServiceId);
-            _ = kernelBuilder.AddHuggingFaceTextGeneration(
-                    model: huggingFaceOptions.ModelId,
-                    endpoint: new Uri(huggingFaceOptions.Endpoint),
-                    apiKey: huggingFaceOptions.ApiKey,
-                    serviceId: huggingFaceOptions.ServiceId);
-#pragma warning restore SKEXP0070
-
-            _ = services.AddKeyedTransient<IXiHanAIService, XiHanHuggingFaceService>(huggingFaceOptions.ServiceId);
         }
 
         // OpenAI
@@ -108,24 +73,12 @@ public class XiHanAIModule : XiHanModule
         if (openAIOptions is not null)
         {
 #pragma warning disable SKEXP0010
-            _ = kernelBuilder.AddOpenAIAudioToText(
-                    modelId: openAIOptions.ModelId,
-                    apiKey: openAIOptions.ApiKey,
-                    serviceId: openAIOptions.ServiceId);
             _ = kernelBuilder.AddOpenAIChatCompletion(
                     modelId: openAIOptions.ModelId,
                     endpoint: new Uri(openAIOptions.Endpoint),
                     apiKey: openAIOptions.ApiKey,
                     serviceId: openAIOptions.ServiceId);
             _ = kernelBuilder.AddOpenAITextEmbeddingGeneration(
-                    modelId: openAIOptions.ModelId,
-                    apiKey: openAIOptions.ApiKey,
-                    serviceId: openAIOptions.ServiceId);
-            _ = kernelBuilder.AddOpenAITextToAudio(
-                    modelId: openAIOptions.ModelId,
-                    apiKey: openAIOptions.ApiKey,
-                    serviceId: openAIOptions.ServiceId);
-            _ = kernelBuilder.AddOpenAITextToImage(
                     modelId: openAIOptions.ModelId,
                     apiKey: openAIOptions.ApiKey,
                     serviceId: openAIOptions.ServiceId);
