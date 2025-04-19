@@ -18,167 +18,243 @@ using System.Text;
 namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
-/// Rsa 加密算法，用于加密、解密、签名和验证签名的功能
+/// RSA 加密算法助手类，提供加密、解密、签名和验证签名的功能
 /// </summary>
 /// <remarks>
-/// 是一种基于大整数因式分解问题的非对称加密算法，它依赖于数学中两个大质数相乘形成的乘积很容易计算，但从乘积推导出这两个质数却极其困难的特性。
+/// RSA 是一种基于大整数因式分解问题的非对称加密算法。本实现提供了安全的加密解密方法和数字签名功能。
 /// </remarks>
 public static class RsaHelper
 {
+    private const int MinimumKeySize = 2048;
+    private const int DefaultKeySize = 2048;
+    private const int DefaultBlockSize = 214; // For 2048 bit key with PKCS#1 padding
+    private const string DefaultBlockSeparator = "|"; // 默认块分隔符
+
     /// <summary>
     /// 生成 RSA 密钥对
     /// </summary>
-    /// <param name="keySize">密钥长度，默认为 2048</param>
-    /// <returns>返回公钥和私钥对</returns>
-    public static (string publicKey, string privateKey) GenerateKeys(int keySize = 2048)
+    /// <param name="keySize">密钥长度，默认为 2048 位</param>
+    /// <returns>返回公钥和私钥对（Base64 编码）</returns>
+    /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
+    public static (string publicKey, string privateKey) GenerateKeys(int keySize = DefaultKeySize)
     {
+        ValidateKeySize(keySize);
         var (publicKeyBytes, privateKeyBytes) = GenerateKeysBytes(keySize);
         return (Convert.ToBase64String(publicKeyBytes), Convert.ToBase64String(privateKeyBytes));
     }
 
     /// <summary>
-    /// 生成 RSA 密钥对
+    /// 生成 RSA 密钥对（字节数组格式）
     /// </summary>
-    /// <param name="keySize">密钥长度，默认为 2048</param>
-    /// <returns>返回公钥和私钥对</returns>
-    public static (byte[] publicKeyBytes, byte[] privateKeyBytes) GenerateKeysBytes(int keySize = 2048)
+    /// <param name="keySize">密钥长度，默认为 2048 位</param>
+    /// <returns>返回公钥和私钥对（字节数组）</returns>
+    /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
+    public static (byte[] publicKeyBytes, byte[] privateKeyBytes) GenerateKeysBytes(int keySize = DefaultKeySize)
     {
+        ValidateKeySize(keySize);
         using var rsa = RSA.Create(keySize);
-        var publicKeyBytes = rsa.ExportRSAPublicKey();
-        var privateKeyBytes = rsa.ExportRSAPrivateKey();
-        return (publicKeyBytes, privateKeyBytes);
+        return (rsa.ExportRSAPublicKey(), rsa.ExportRSAPrivateKey());
     }
 
     /// <summary>
     /// 使用公钥加密数据
     /// </summary>
     /// <param name="plainText">要加密的文本</param>
-    /// <param name="publicKey">公钥</param>
-    /// <returns>返回加密后的数据</returns>
-    public static string Encrypt(string plainText, string publicKey)
+    /// <param name="publicKey">Base64 编码的公钥或 PEM 格式的公钥</param>
+    /// <param name="blockSize">分块大小，默认为 214 字节（适用于 2048 位密钥）</param>
+    /// <param name="blockSeparator">块分隔符，默认为 "|"，如果为 null 则不使用分隔符</param>
+    /// <returns>返回 Base64 编码的加密数据</returns>
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="CryptographicException">加密过程中发生错误时抛出</exception>
+    public static string Encrypt(string plainText, string publicKey, int? blockSize = null, string? blockSeparator = DefaultBlockSeparator)
     {
-        var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-        var publicKeyBytes = Convert.FromBase64String(publicKey);
-        var encryptedBytes = EncryptBytes(plainTextBytes, publicKeyBytes);
-        return Convert.ToBase64String(encryptedBytes);
-    }
+        ArgumentNullException.ThrowIfNull(plainText);
+        ArgumentNullException.ThrowIfNull(publicKey);
 
-    /// <summary>
-    /// 使用公钥加密数据
-    /// </summary>
-    /// <param name="plainBytes">要加密的字节数组</param>
-    /// <param name="publicKeyBytes">公钥字节数组</param>
-    /// <returns>返回加密后的数据</returns>
-    public static byte[] EncryptBytes(byte[] plainBytes, byte[] publicKeyBytes)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
-        return rsa.Encrypt(plainBytes, RSAEncryptionPadding.Pkcs1);
+        try
+        {
+            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+            var publicKeyBytes = publicKey.Contains("-----BEGIN PUBLIC KEY-----")
+                ? Convert.FromBase64String(ImportFromPem(publicKey, "PUBLIC KEY"))
+                : Convert.FromBase64String(publicKey);
+
+            // 分块加密处理
+            using var rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
+
+            var effectiveBlockSize = blockSize ?? DefaultBlockSize;
+            var encryptedBlocks = new List<string>();
+            var position = 0;
+
+            while (position < plainTextBytes.Length)
+            {
+                var currentBlockSize = Math.Min(effectiveBlockSize, plainTextBytes.Length - position);
+                var blockData = new byte[currentBlockSize];
+                Buffer.BlockCopy(plainTextBytes, position, blockData, 0, currentBlockSize);
+
+                var encryptedBlock = rsa.Encrypt(blockData, RSAEncryptionPadding.Pkcs1);
+                encryptedBlocks.Add(Convert.ToBase64String(encryptedBlock));
+
+                position += currentBlockSize;
+            }
+
+            return blockSeparator != null
+                ? string.Join(blockSeparator, encryptedBlocks)
+                : string.Concat(encryptedBlocks);
+        }
+        catch (Exception ex) when (ex is FormatException or CryptographicException)
+        {
+            throw new CryptographicException("加密过程中发生错误", ex);
+        }
     }
 
     /// <summary>
     /// 使用私钥解密数据
     /// </summary>
-    /// <param name="cipherText">要解密的文本</param>
-    /// <param name="privateKey">私钥</param>
-    /// <returns>返回解密后的数据</returns>
-    public static string Decrypt(string cipherText, string privateKey)
+    /// <param name="cipherText">Base64 编码的加密文本</param>
+    /// <param name="privateKey">Base64 编码的私钥或 PEM 格式的私钥</param>
+    /// <param name="blockSize">分块大小，默认为密钥长度/8</param>
+    /// <param name="blockSeparator">块分隔符，默认为 "|"，如果为 null 则不使用分隔符</param>
+    /// <returns>返回解密后的原文</returns>
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="CryptographicException">解密过程中发生错误时抛出</exception>
+    public static string Decrypt(string cipherText, string privateKey, int? blockSize = null, string? blockSeparator = DefaultBlockSeparator)
     {
-        var cipherTextBytes = Convert.FromBase64String(cipherText);
-        var privateKeyBytes = Convert.FromBase64String(privateKey);
-        var decryptedBytes = DecryptBytes(cipherTextBytes, privateKeyBytes);
-        return Encoding.UTF8.GetString(decryptedBytes);
-    }
+        ArgumentNullException.ThrowIfNull(cipherText);
+        ArgumentNullException.ThrowIfNull(privateKey);
 
-    /// <summary>
-    /// 使用私钥解密数据
-    /// </summary>
-    /// <param name="cipherBytes">要解密的字节数组</param>
-    /// <param name="privateKeyBytes">私钥字节数组</param>
-    /// <returns>返回解密后的数据</returns>
-    public static byte[] DecryptBytes(byte[] cipherBytes, byte[] privateKeyBytes)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
-        return rsa.Decrypt(cipherBytes, RSAEncryptionPadding.Pkcs1);
+        try
+        {
+            var privateKeyBytes = privateKey.Contains("-----BEGIN PRIVATE KEY-----")
+                ? Convert.FromBase64String(ImportFromPem(privateKey, "PRIVATE KEY"))
+                : Convert.FromBase64String(privateKey);
+
+            using var rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
+
+            var effectiveBlockSize = blockSize ?? (rsa.KeySize / 8);
+            var buffer = new MemoryStream();
+
+            // 分割加密块
+            var encryptedBlocks = blockSeparator != null
+                ? cipherText.Split(blockSeparator)
+                : [cipherText];
+
+            foreach (var block in encryptedBlocks)
+            {
+                var blockData = Convert.FromBase64String(block);
+                var decryptedBlock = rsa.Decrypt(blockData, RSAEncryptionPadding.Pkcs1);
+                buffer.Write(decryptedBlock, 0, decryptedBlock.Length);
+            }
+
+            return Encoding.UTF8.GetString(buffer.ToArray());
+        }
+        catch (Exception ex) when (ex is FormatException or CryptographicException)
+        {
+            throw new CryptographicException("解密过程中发生错误", ex);
+        }
     }
 
     /// <summary>
     /// 使用私钥对数据进行签名
     /// </summary>
     /// <param name="data">要签名的数据</param>
-    /// <param name="privateKey">私钥</param>
-    /// <returns>签名后的数据</returns>
-    public static string SignData(string data, string privateKey)
+    /// <param name="privateKey">Base64 编码的私钥或 PEM 格式的私钥</param>
+    /// <param name="hashAlgorithm">哈希算法名称，默认为 SHA256</param>
+    /// <returns>返回 Base64 编码的签名</returns>
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="CryptographicException">签名过程中发生错误时抛出</exception>
+    public static string SignData(string data, string privateKey, HashAlgorithmName? hashAlgorithm = null)
     {
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var privateKeyBytes = Convert.FromBase64String(privateKey);
-        var signedBytes = SignDataBytes(dataBytes, privateKeyBytes);
-        return Convert.ToBase64String(signedBytes);
-    }
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(privateKey);
 
-    /// <summary>
-    /// 使用私钥对数据进行签名
-    /// </summary>
-    /// <param name="dataBytes">要签名的数据</param>
-    /// <param name="privateKeyBytes">私钥</param>
-    /// <returns>签名后的数据</returns>
-    public static byte[] SignDataBytes(byte[] dataBytes, byte[] privateKeyBytes)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
-        var signedBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        return signedBytes;
+        try
+        {
+            var dataBytes = Encoding.UTF8.GetBytes(data);
+            var privateKeyBytes = privateKey.Contains("-----BEGIN PRIVATE KEY-----")
+                ? Convert.FromBase64String(ImportFromPem(privateKey, "PRIVATE KEY"))
+                : Convert.FromBase64String(privateKey);
+
+            var algorithm = hashAlgorithm ?? HashAlgorithmName.SHA256;
+
+            using var rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
+            var signatureBytes = rsa.SignData(dataBytes, algorithm, RSASignaturePadding.Pkcs1);
+
+            return Convert.ToBase64String(signatureBytes);
+        }
+        catch (Exception ex) when (ex is FormatException or CryptographicException)
+        {
+            throw new CryptographicException("签名过程中发生错误", ex);
+        }
     }
 
     /// <summary>
     /// 使用公钥验证签名
     /// </summary>
     /// <param name="data">原始数据</param>
-    /// <param name="signature">签名</param>
-    /// <param name="publicKey">公钥</param>
+    /// <param name="signature">Base64 编码的签名</param>
+    /// <param name="publicKey">Base64 编码的公钥或 PEM 格式的公钥</param>
+    /// <param name="hashAlgorithm">哈希算法名称，默认为 SHA256</param>
     /// <returns>返回签名是否有效</returns>
-    public static bool VerifyData(string data, string signature, string publicKey)
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="CryptographicException">验证过程中发生错误时抛出</exception>
+    public static bool VerifyData(string data, string signature, string publicKey, HashAlgorithmName? hashAlgorithm = null)
     {
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-        var signatureBytes = Convert.FromBase64String(signature);
-        var publicKeyBytes = Convert.FromBase64String(publicKey);
-        return VerifyDataBytes(dataBytes, signatureBytes, publicKeyBytes);
-    }
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(signature);
+        ArgumentNullException.ThrowIfNull(publicKey);
 
-    /// <summary>
-    /// 使用公钥验证签名
-    /// </summary>
-    /// <param name="dataBytes">原始数据</param>
-    /// <param name="signatureBytes">签名</param>
-    /// <param name="publicKeyBytes">公钥</param>
-    /// <returns>返回签名是否有效</returns>
-    public static bool VerifyDataBytes(byte[] dataBytes, byte[] signatureBytes, byte[] publicKeyBytes)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
-        return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        try
+        {
+            var dataBytes = Encoding.UTF8.GetBytes(data);
+            var signatureBytes = Convert.FromBase64String(signature);
+            var publicKeyBytes = publicKey.Contains("-----BEGIN PUBLIC KEY-----")
+                ? Convert.FromBase64String(ImportFromPem(publicKey, "PUBLIC KEY"))
+                : Convert.FromBase64String(publicKey);
+
+            var algorithm = hashAlgorithm ?? HashAlgorithmName.SHA256;
+
+            using var rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(publicKeyBytes, out _);
+            return rsa.VerifyData(dataBytes, signatureBytes, algorithm, RSASignaturePadding.Pkcs1);
+        }
+        catch (Exception ex) when (ex is FormatException or CryptographicException)
+        {
+            throw new CryptographicException("验证签名过程中发生错误", ex);
+        }
     }
 
     /// <summary>
     /// 生成 RSA 公钥 PEM 文件
     /// </summary>
-    /// <param name="publicKeyBytes">公钥字节数组</param>
+    /// <param name="publicKey">Base64 编码的公钥</param>
     /// <param name="filePath">保存公钥 PEM 文件的路径</param>
-    public static void WritePublicKeyToPemFile(byte[] publicKeyBytes, string filePath)
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="IOException">文件操作失败时抛出</exception>
+    public static void WritePublicKeyToPemFile(string publicKey, string filePath)
     {
-        var pem = ExportToPem(publicKeyBytes, "PUBLIC KEY");
+        ArgumentNullException.ThrowIfNull(publicKey);
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        var pem = ExportToPem(publicKey, "PUBLIC KEY");
         File.WriteAllText(filePath, pem);
     }
 
     /// <summary>
     /// 生成 RSA 私钥 PEM 文件
     /// </summary>
-    /// <param name="privateKeyBytes">私钥字节数组</param>
+    /// <param name="privateKey">Base64 编码的私钥</param>
     /// <param name="filePath">保存私钥 PEM 文件的路径</param>
-    public static void WritePrivateKeyToPemFile(byte[] privateKeyBytes, string filePath)
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="IOException">文件操作失败时抛出</exception>
+    public static void WritePrivateKeyToPemFile(string privateKey, string filePath)
     {
-        var pem = ExportToPem(privateKeyBytes, "PRIVATE KEY");
+        ArgumentNullException.ThrowIfNull(privateKey);
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        var pem = ExportToPem(privateKey, "PRIVATE KEY");
         File.WriteAllText(filePath, pem);
     }
 
@@ -186,9 +262,17 @@ public static class RsaHelper
     /// 从 PEM 文件读取公钥
     /// </summary>
     /// <param name="filePath">PEM 文件路径</param>
-    /// <returns>返回公钥字节数组</returns>
-    public static byte[] ReadPublicKeyFromPemFile(string filePath)
+    /// <returns>返回 Base64 编码的公钥</returns>
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="IOException">文件操作失败时抛出</exception>
+    /// <exception cref="FormatException">PEM 格式无效时抛出</exception>
+    public static string ReadPublicKeyFromPemFile(string filePath)
     {
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("指定的 PEM 文件不存在", filePath);
+
         var pem = File.ReadAllText(filePath);
         return ImportFromPem(pem, "PUBLIC KEY");
     }
@@ -197,61 +281,79 @@ public static class RsaHelper
     /// 从 PEM 文件读取私钥
     /// </summary>
     /// <param name="filePath">PEM 文件路径</param>
-    /// <returns>返回私钥字节数组</returns>
-    public static byte[] ReadPrivateKeyFromPemFile(string filePath)
+    /// <returns>返回 Base64 编码的私钥</returns>
+    /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
+    /// <exception cref="IOException">文件操作失败时抛出</exception>
+    /// <exception cref="FormatException">PEM 格式无效时抛出</exception>
+    public static string ReadPrivateKeyFromPemFile(string filePath)
     {
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("指定的 PEM 文件不存在", filePath);
+
         var pem = File.ReadAllText(filePath);
         return ImportFromPem(pem, "PRIVATE KEY");
+    }
+
+    /// <summary>
+    /// 将密钥转换为 PEM 格式
+    /// </summary>
+    public static string ExportToPem(string base64String, string keyType)
+    {
+        ArgumentNullException.ThrowIfNull(base64String);
+        ArgumentNullException.ThrowIfNull(keyType);
+
+        return new StringBuilder()
+            .AppendLine($"-----BEGIN {keyType}-----")
+            .AppendLine(string.Join(Environment.NewLine,
+                Enumerable.Range(0, (base64String.Length + 63) / 64)
+                    .Select(i => base64String.Substring(i * 64, Math.Min(64, base64String.Length - (i * 64))))))
+            .AppendLine($"-----END {keyType}-----")
+            .ToString();
+    }
+
+    /// <summary>
+    /// 从 PEM 格式导入密钥
+    /// </summary>
+    public static string ImportFromPem(string pemString, string keyType)
+    {
+        ArgumentNullException.ThrowIfNull(pemString);
+        ArgumentNullException.ThrowIfNull(keyType);
+
+        var header = $"-----BEGIN {keyType}-----";
+        var footer = $"-----END {keyType}-----";
+
+        var start = pemString.IndexOf(header, StringComparison.Ordinal);
+        var end = pemString.IndexOf(footer, StringComparison.Ordinal);
+
+        if (start == -1 || end == -1)
+            throw new FormatException("无效的 PEM 格式");
+
+        start += header.Length;
+        var base64Content = pemString[start..end]
+            .Replace(Environment.NewLine, "")
+            .Replace("\n", "")
+            .Trim();
+
+        if (string.IsNullOrEmpty(base64Content))
+            throw new FormatException("PEM 内容为空");
+
+        return base64Content;
     }
 
     #region 私有方法
 
     /// <summary>
-    /// 内部方法：将字节数组导出为 PEM 格式字符串
+    /// 验证密钥大小是否合法
     /// </summary>
-    /// <param name="keyBytes"></param>
-    /// <param name="keyType"></param>
-    /// <returns></returns>
-    private static string ExportToPem(byte[] keyBytes, string keyType)
+    private static void ValidateKeySize(int keySize)
     {
-        var base64 = Convert.ToBase64String(keyBytes);
-        var sb = new StringBuilder();
-        _ = sb.AppendLine($"-----BEGIN {keyType}-----");
-        _ = sb.AppendLine(FormatBase64(base64));
-        _ = sb.AppendLine($"-----END {keyType}-----");
-        return sb.ToString();
-    }
+        if (keySize < MinimumKeySize)
+            throw new ArgumentException($"密钥长度必须大于或等于 {MinimumKeySize} 位", nameof(keySize));
 
-    /// <summary>
-    /// 内部方法：从 PEM 格式字符串导入字节数组
-    /// </summary>
-    /// <param name="pem"></param>
-    /// <param name="keyType"></param>
-    /// <returns></returns>
-    private static byte[] ImportFromPem(string pem, string keyType)
-    {
-        var header = $"-----BEGIN {keyType}-----";
-        var footer = $"-----END {keyType}-----";
-        var start = pem.IndexOf(header, StringComparison.Ordinal) + header.Length;
-        var end = pem.IndexOf(footer, StringComparison.Ordinal);
-        var base64 = pem[start..end].Trim();
-        return Convert.FromBase64String(base64);
-    }
-
-    /// <summary>
-    /// 内部方法：格式化 Base64 字符串，分行显示
-    /// </summary>
-    /// <param name="base64"></param>
-    /// <returns></returns>
-    private static string FormatBase64(string base64)
-    {
-        var sb = new StringBuilder();
-        for (var i = 0; i < base64.Length; i += 64)
-        {
-            _ = sb.AppendLine(base64.Substring(i, Math.Min(64, base64.Length - i)));
-        }
-
-        return sb.ToString();
+        if (keySize % 8 != 0)
+            throw new ArgumentException("密钥长度必须是 8 的倍数", nameof(keySize));
     }
 
     #endregion
