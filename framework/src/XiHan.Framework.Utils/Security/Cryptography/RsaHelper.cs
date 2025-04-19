@@ -25,10 +25,17 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// </remarks>
 public static class RsaHelper
 {
+    // 最小安全密钥长度
     private const int MinimumKeySize = 2048;
+
+    // 默认密钥长度
     private const int DefaultKeySize = 2048;
-    private const int DefaultBlockSize = 214; // For 2048 bit key with PKCS#1 padding
-    private const string DefaultBlockSeparator = "|"; // 默认块分隔符
+
+    // 分块加密时的默认分块大小
+    private const int DefaultBlockSize = 214;
+
+    // 分块加密时的默认分隔符
+    private const string DefaultBlockSeparator = "|";
 
     /// <summary>
     /// 生成 RSA 密钥对
