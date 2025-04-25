@@ -167,10 +167,11 @@ public static class GenericExtensions
     /// 对比两个相同类型的相同属性之间的差异信息
     /// </summary>
     /// <typeparam name="TEntity">对象类型</typeparam>
-    /// <param name="entity1">对象实例1</param>
-    /// <param name="entity2">对象实例2</param>
+    /// <param name="oldEntity">对象实例1</param>
+    /// <param name="newEntity">对象实例2</param>
+    /// <param name="specialList">要排除某些特殊属性</param>
     /// <returns></returns>
-    public static List<CustomPropertyVariance> GetPropertiesDetailedCompare<TEntity>(this TEntity entity1, TEntity entity2)
+    public static List<CustomPropertyVariance> GetPropertiesDetailedCompare<TEntity>(this TEntity oldEntity, TEntity newEntity, List<string>? specialList)
         where TEntity : class
     {
         var propertyInfo = typeof(TEntity).GetProperties();
@@ -179,8 +180,8 @@ public static class GenericExtensions
         foreach (var variance in propertyInfo)
         {
             var type = variance.PropertyType;
-            var before = variance.GetValue(entity1, null).CastTo(type);
-            var after = variance.GetValue(entity2, null).CastTo(type);
+            var before = variance.GetValue(oldEntity, null).CastTo(type);
+            var after = variance.GetValue(newEntity, null).CastTo(type);
 
             // 使用 Equals 进行值比较，处理值类型和引用类型
             if (before is not null && after is not null)
@@ -207,6 +208,12 @@ public static class GenericExtensions
             }
         }
 
+        // 要排除某些特殊属性
+        if (result.Count != 0 && specialList is not null && specialList.Count != 0)
+        {
+            result = [.. result.Where(s => !specialList.Contains(s.PropertyName))];
+        }
+
         return result;
     }
 
@@ -214,30 +221,23 @@ public static class GenericExtensions
     /// 把两个对象的属性差异信息转换为 Json 格式
     /// </summary>
     /// <typeparam name="TEntity">对象类型</typeparam>
-    /// <param name="oldVal">对象实例1</param>
-    /// <param name="newVal">对象实例2</param>
+    /// <param name="oldEntity">对象实例1</param>
+    /// <param name="newEntity">对象实例2</param>
     /// <param name="specialList">要排除某些特殊属性</param>
     /// <returns></returns>
-    public static string GetPropertiesChangedNote<TEntity>(this TEntity oldVal, TEntity newVal, List<string>? specialList)
+    public static string GetPropertiesChangedNote<TEntity>(this TEntity oldEntity, TEntity newEntity, List<string>? specialList)
         where TEntity : class
     {
-        var list = oldVal.GetPropertiesDetailedCompare(newVal);
-        var newList = list.Select(s => new
-        {
-            s.PropertyName,
-            s.Before,
-            s.After
-        });
-
-        // 要排除某些特殊属性
-        if (specialList is not null && specialList.Count != 0)
-        {
-            newList = newList.Where(s => !specialList.Contains(s.PropertyName));
-        }
+        var list = oldEntity.GetPropertiesDetailedCompare(newEntity, specialList);
 
         var enumerable = new
         {
-            ChangedNote = newList
+            ChangedNote = list.Select(s => new
+            {
+                s.PropertyName,
+                s.Before,
+                s.After
+            })
         };
         return enumerable.SerializeTo();
     }
