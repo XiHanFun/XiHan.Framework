@@ -112,7 +112,7 @@ public class CacheManagerTest
         // Arrange
         var defaultCache = CacheManager.Instance.DefaultCache;
         var testCache = CacheManager.Instance.GetCache("ClearTestCache");
-        
+
         defaultCache.Set("key1", "value1");
         testCache.Set("key2", "value2");
 
@@ -192,4 +192,4 @@ public class CacheManagerTest
         Assert.False(existsWithEmpty);
         Assert.False(existsWithNull);
     }
-} 
+}

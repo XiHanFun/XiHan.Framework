@@ -47,10 +47,10 @@ public class MemoryCacheTest
 
         // Act
         cache.Set(key, value, expiration);
-        
+
         // Wait for expiration
         Thread.Sleep(200);
-        
+
         var result = cache.TryGet(key, out string? _);
 
         // Assert
@@ -68,10 +68,10 @@ public class MemoryCacheTest
 
         // Act
         cache.Set(key, value, expiration);
-        
+
         // Wait for expiration
         Thread.Sleep(200);
-        
+
         var result = cache.TryGet(key, out string? _);
 
         // Assert
@@ -103,7 +103,7 @@ public class MemoryCacheTest
         var key = "existingKey";
         var existingValue = "existingValue";
         var newValue = "newValue";
-        
+
         cache.Set(key, existingValue);
 
         // Act
@@ -137,7 +137,7 @@ public class MemoryCacheTest
         var cache = new MemoryCache();
         var key = "removeKey";
         var value = "removeValue";
-        
+
         cache.Set(key, value);
 
         // Act
@@ -176,7 +176,7 @@ public class MemoryCacheTest
         var cache = new MemoryCache();
         var key = "containsKey";
         var value = "containsValue";
-        
+
         cache.Set(key, value);
 
         // Act
@@ -208,12 +208,12 @@ public class MemoryCacheTest
         cache.Set("key1", "value1");
         cache.Set("key2", "value2");
         cache.Set("key3", "value3");
-        
+
         var keys = new List<string>();
         var values = new List<string>();
 
         // Act
-        cache.ForEach<string>((key, value) => 
+        cache.ForEach<string>((key, value) =>
         {
             keys.Add(key);
             values.Add(value);
@@ -235,27 +235,27 @@ public class MemoryCacheTest
     {
         // Arrange
         var cache = new MemoryCache();
-        
+
         // Act & Assert - Empty cache
         Assert.Equal(0, cache.Count());
-        
+
         // Add items
         cache.Set("key1", "value1");
         cache.Set("key2", "value2");
-        
+
         // Act & Assert - Two items
         Assert.Equal(2, cache.Count());
-        
+
         // Add one more
         cache.Set("key3", "value3");
-        
+
         // Act & Assert - Three items
         Assert.Equal(3, cache.Count());
-        
+
         // Remove one
         cache.Remove("key2");
-        
+
         // Act & Assert - Two items again
         Assert.Equal(2, cache.Count());
     }
-} 
+}
