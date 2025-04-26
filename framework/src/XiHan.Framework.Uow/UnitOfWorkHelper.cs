@@ -39,12 +39,7 @@ public static class UnitOfWorkHelper
         }
 
         // 传统类
-        if (typeof(IUnitOfWorkEnabled).GetTypeInfo().IsAssignableFrom(implementationType))
-        {
-            return true;
-        }
-
-        return false;
+        return typeof(IUnitOfWorkEnabled).GetTypeInfo().IsAssignableFrom(implementationType);
     }
 
     /// <summary>
