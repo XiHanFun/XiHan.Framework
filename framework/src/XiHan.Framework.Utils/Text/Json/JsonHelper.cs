@@ -16,7 +16,7 @@ using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 
-namespace XiHan.Framework.Utils.Text;
+namespace XiHan.Framework.Utils.Text.Json;
 
 /// <summary>
 /// JsonHelper

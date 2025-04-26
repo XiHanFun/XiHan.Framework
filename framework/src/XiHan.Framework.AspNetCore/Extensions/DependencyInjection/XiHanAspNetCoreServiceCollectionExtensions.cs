@@ -32,15 +32,12 @@ public static class XiHanAspNetCoreServiceCollectionExtensions
     {
         var hostingEnvironment = services.GetSingletonInstanceOrNull<IWebHostEnvironment>();
 
-        if (hostingEnvironment == null)
-        {
-            return new EmptyHostingEnvironment()
+        return hostingEnvironment == null
+            ? new EmptyHostingEnvironment()
             {
                 EnvironmentName = Environments.Development
-            };
-        }
-
-        return hostingEnvironment;
+            }
+            : hostingEnvironment;
     }
 
     /// <summary>
