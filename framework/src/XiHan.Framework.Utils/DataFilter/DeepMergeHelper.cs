@@ -25,7 +25,7 @@ namespace XiHan.Framework.Utils.DataFilter;
 public static class DeepMergeHelper
 {
     // 缓存类型属性，提高性能
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = [];
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = [];
 
     /// <summary>
     /// 深度合并多个配置，按优先级返回合并后的配置
@@ -51,10 +51,10 @@ public static class DeepMergeHelper
         var type = typeof(T);
 
         // 从缓存获取属性或添加到缓存
-        if (!PropertyCache.TryGetValue(type, out var properties))
+        if (!_propertyCache.TryGetValue(type, out var properties))
         {
             properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-            PropertyCache[type] = properties;
+            _propertyCache[type] = properties;
         }
 
         // 处理每个属性
@@ -414,10 +414,10 @@ public static class DeepMergeHelper
         }
 
         // 获取或从缓存中检索属性
-        if (!PropertyCache.TryGetValue(type, out var properties))
+        if (!_propertyCache.TryGetValue(type, out var properties))
         {
             properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-            PropertyCache[type] = properties;
+            _propertyCache[type] = properties;
         }
 
         // 依次处理每个属性
@@ -597,10 +597,10 @@ public static class DeepMergeHelper
             var newObj = Activator.CreateInstance(type);
 
             // 获取或从缓存中检索属性
-            if (!PropertyCache.TryGetValue(type, out var properties))
+            if (!_propertyCache.TryGetValue(type, out var properties))
             {
                 properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-                PropertyCache[type] = properties;
+                _propertyCache[type] = properties;
             }
 
             // 复制所有属性

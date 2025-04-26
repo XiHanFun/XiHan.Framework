@@ -29,7 +29,7 @@ public class PasswordStrengthChecker
 
     private const string Digits = "0123456789";
 
-    private static readonly List<string> WeakPasswords =
+    private static readonly List<string> _weakPasswords =
                     [
         "123456", "password", "123456789", "12345678", "111111", "123123"
     ];
@@ -101,7 +101,7 @@ public class PasswordStrengthChecker
         }
 
         // 检查是否包含弱密码模式
-        if (WeakPasswords.Any(password.Contains))
+        if (_weakPasswords.Any(password.Contains))
         {
             return new PasswordStrengthResult(false, "密码过于简单，包含弱密码模式", score - 30);
         }

@@ -89,10 +89,10 @@ public class DataCheckerTest
     {
         // Arrange
         // 注意：这是一个虚构的、符合规则的身份证号码
-        var valid18DigitIDCard = "110101199001011234";
+        var valid18DigitIdCard = "110101199001011234";
 
         // Act
-        var result = DataChecker.IsNumberPeople(valid18DigitIDCard);
+        var result = DataChecker.IsNumberPeople(valid18DigitIdCard);
 
         // Assert
         Assert.True(result);
@@ -102,10 +102,10 @@ public class DataCheckerTest
     public void IsNumberPeople_WithInvalid18DigitIDCard_ReturnsFalse()
     {
         // Arrange
-        var invalid18DigitIDCard = "110101199099011234"; // 不符合日期规则
+        var invalid18DigitIdCard = "110101199099011234"; // 不符合日期规则
 
         // Act
-        var result = DataChecker.IsNumberPeople(invalid18DigitIDCard);
+        var result = DataChecker.IsNumberPeople(invalid18DigitIdCard);
 
         // Assert
         Assert.False(result);
