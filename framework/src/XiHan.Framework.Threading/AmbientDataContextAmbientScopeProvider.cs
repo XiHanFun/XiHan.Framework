@@ -28,7 +28,7 @@ namespace XiHan.Framework.Threading;
 /// </summary>
 public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T>
 {
-    private static readonly ConcurrentDictionary<string, ScopeItem> ScopeDictionary = new();
+    private static readonly ConcurrentDictionary<string, ScopeItem> _scopeDictionary = new();
 
     private readonly IAmbientDataContext _dataContext;
 
@@ -72,7 +72,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     {
         var item = new ScopeItem(value, GetCurrentItem(contextKey));
 
-        if (!ScopeDictionary.TryAdd(item.Id, item))
+        if (!_scopeDictionary.TryAdd(item.Id, item))
         {
             throw new XiHanException("无法添加项目！ScopeDictionary.TryAdd 返回 false！");
         }
@@ -97,7 +97,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
             }
 
             dataContext.SetData(contextKey, item.Outer.Id);
-        }, (ScopeDictionary, item, _dataContext, contextKey));
+        }, (_scopeDictionary, item, _dataContext, contextKey));
     }
 
     /// <summary>
@@ -107,7 +107,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     /// <returns></returns>
     private ScopeItem? GetCurrentItem(string contextKey)
     {
-        return _dataContext.GetData(contextKey) is string objKey ? ScopeDictionary.GetOrDefault(objKey) : null;
+        return _dataContext.GetData(contextKey) is string objKey ? _scopeDictionary.GetOrDefault(objKey) : null;
     }
 
     /// <summary>

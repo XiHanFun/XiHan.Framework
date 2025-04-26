@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// 曦寒 OpenAI 配置
 /// </summary>
-public class XiHanOpenAIOptions
+public class XiHanOpenAiOptions
 {
     /// <summary>
     /// 模型

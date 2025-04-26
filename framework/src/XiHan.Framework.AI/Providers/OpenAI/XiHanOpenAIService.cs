@@ -24,18 +24,18 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// <summary>
 /// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService
+public class XiHanOpenAiService : IXiHanAiService
 {
-    private readonly IChatCompletionService _openAIChatService;
+    private readonly IChatCompletionService _openAiChatService;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public XiHanOpenAIService(
+    public XiHanOpenAiService(
         IKeyedServiceProvider keyedServiceProvider,
-        IOptions<XiHanOpenAIOptions> openAIOptions)
+        IOptions<XiHanOpenAiOptions> openAiOptions)
     {
-        _openAIChatService = keyedServiceProvider.GetRequiredKeyedService<IChatCompletionService>(openAIOptions.Value.ServiceId);
+        _openAiChatService = keyedServiceProvider.GetRequiredKeyedService<IChatCompletionService>(openAiOptions.Value.ServiceId);
     }
 
     /// <summary>

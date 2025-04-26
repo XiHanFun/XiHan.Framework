@@ -24,7 +24,7 @@ public class ExposedServiceExplorer
     /// <summary>
     /// 默认暴露服务特性
     /// </summary>
-    private static readonly ExposeServicesAttribute DefaultExposeServicesAttribute =
+    private static readonly ExposeServicesAttribute _defaultExposeServicesAttribute =
         new()
         {
             IncludeDefaults = true,
@@ -46,7 +46,7 @@ public class ExposedServiceExplorer
             return [];
         }
 
-        return [.. exposedServiceTypesProviders.DefaultIfEmpty(DefaultExposeServicesAttribute)
+        return [.. exposedServiceTypesProviders.DefaultIfEmpty(_defaultExposeServicesAttribute)
             .SelectMany(p => p.GetExposedServiceTypes(type))
             .Distinct()];
     }
