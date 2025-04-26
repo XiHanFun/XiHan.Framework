@@ -126,7 +126,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)
     {
-        var enumerable = items as T[] ?? items.ToArray();
+        var enumerable = items as T[] ?? [.. items];
         _ = CheckHelper.NotNull(enumerable, nameof(items));
 
         List<T> currentList = [.. enumerable];

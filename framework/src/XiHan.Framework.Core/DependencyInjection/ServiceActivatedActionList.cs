@@ -28,6 +28,6 @@ public class ServiceActivatedActionList : List<KeyValuePair<ServiceDescriptor, A
     /// <returns></returns>
     public List<Action<IOnServiceActivatedContext>> GetActions(ServiceDescriptor descriptor)
     {
-        return this.Where(x => x.Key == descriptor).Select(x => x.Value).ToList();
+        return [.. this.Where(x => x.Key == descriptor).Select(x => x.Value)];
     }
 }

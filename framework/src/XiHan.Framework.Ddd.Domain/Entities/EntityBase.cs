@@ -44,12 +44,9 @@ public abstract class EntityBase : IEntityBase
     /// <returns></returns>
     public override bool Equals(object? obj)
     {
-        if (obj is not EntityBase other)
-        {
-            return false;
-        }
-
-        return ReferenceEquals(this, obj) || (RowVersion is not null && other.RowVersion is not null && RowVersion.Equals(other.RowVersion));
+        return obj is not EntityBase other
+            ? false
+            : ReferenceEquals(this, obj) || (RowVersion is not null && other.RowVersion is not null && RowVersion.Equals(other.RowVersion));
     }
 
     /// <summary>

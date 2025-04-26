@@ -26,7 +26,7 @@ public class XiHanHybridCacheOptions
     /// </summary>
     public XiHanHybridCacheOptions()
     {
-        CacheConfigurators = new List<Func<string, HybridCacheEntryOptions?>>();
+        CacheConfigurators = [];
         GlobalHybridCacheEntryOptions = new HybridCacheEntryOptions();
         KeyPrefix = "";
     }
