@@ -471,7 +471,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
             }
 
-            notCachedKeys = keyArray.Except(cachedValues.Select(x => x.Key)).ToList();
+            notCachedKeys = [.. keyArray.Except(cachedValues.Select(x => x.Key))];
             if (notCachedKeys.Count == 0)
             {
                 return [.. cachedValues];
@@ -529,7 +529,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
             }
 
-            notCachedKeys = keyArray.Except(cachedValues.Select(x => x.Key)).ToList();
+            notCachedKeys = [.. keyArray.Except(cachedValues.Select(x => x.Key))];
             if (notCachedKeys.Count == 0)
             {
                 return [.. cachedValues];
@@ -721,7 +721,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                     }
                 }
 
-                notCachedKeys = keyArray.Except(cachedValues.Select(x => x.Key)).ToList();
+                notCachedKeys = [.. keyArray.Except(cachedValues.Select(x => x.Key))];
                 if (notCachedKeys.Count == 0)
                 {
                     return [.. cachedValues];
@@ -812,7 +812,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                     }
                 }
 
-                notCachedKeys = keyArray.Except(cachedValues.Select(x => x.Key)).ToList();
+                notCachedKeys = [.. keyArray.Except(cachedValues.Select(x => x.Key))];
                 if (notCachedKeys.Count == 0)
                 {
                     return [.. cachedValues];
@@ -1481,7 +1481,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         hideErrors ??= _distributedCacheOption.HideErrors;
         try
         {
-            return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, Get(key, false, considerUow))).ToArray();
+            return [.. keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, Get(key, false, considerUow)))];
         }
         catch (Exception ex)
         {
@@ -1649,7 +1649,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual KeyValuePair<string, byte[]>[] ToRawCacheItems(KeyValuePair<TCacheKey, TCacheItem>[] items)
     {
-        return items.Select(i => new KeyValuePair<string, byte[]>(NormalizeKey(i.Key), Serializer.Serialize(i.Value))).ToArray();
+        return [.. items.Select(i => new KeyValuePair<string, byte[]>(NormalizeKey(i.Key), Serializer.Serialize(i.Value)))];
     }
 
     /// <summary>
@@ -1690,6 +1690,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     private static KeyValuePair<TCacheKey, TCacheItem?>[] ToCacheItemsWithDefaultValues(TCacheKey[] keys)
     {
-        return keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, default)).ToArray();
+        return [.. keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, default))];
     }
 }

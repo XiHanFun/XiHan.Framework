@@ -155,12 +155,12 @@ public static class GenericExtensions
             isContainsInherited
                 ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 : type.GetProperties();
-        return properties.Select(info => new CustomPropertyInfo
+        return [.. properties.Select(info => new CustomPropertyInfo
         {
             PropertyName = info.Name,
             PropertyType = info.PropertyType.Name,
             PropertyValue = info.GetValue(entity).ParseToString()
-        }).ToList();
+        })];
     }
 
     /// <summary>

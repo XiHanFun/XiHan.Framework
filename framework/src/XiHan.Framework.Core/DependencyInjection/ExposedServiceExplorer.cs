@@ -46,10 +46,9 @@ public class ExposedServiceExplorer
             return [];
         }
 
-        return exposedServiceTypesProviders.DefaultIfEmpty(DefaultExposeServicesAttribute)
+        return [.. exposedServiceTypesProviders.DefaultIfEmpty(DefaultExposeServicesAttribute)
             .SelectMany(p => p.GetExposedServiceTypes(type))
-            .Distinct()
-            .ToList();
+            .Distinct()];
     }
 
     /// <summary>
@@ -59,9 +58,8 @@ public class ExposedServiceExplorer
     /// <returns></returns>
     public static List<ServiceIdentifier> GetExposedKeyedServices(Type type)
     {
-        return type.GetCustomAttributes(true).OfType<IExposedKeyedServiceTypesProvider>()
+        return [.. type.GetCustomAttributes(true).OfType<IExposedKeyedServiceTypesProvider>()
             .SelectMany(p => p.GetExposedServiceTypes(type))
-            .Distinct()
-            .ToList();
+            .Distinct()];
     }
 }

@@ -222,7 +222,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
             }
         }
 
-        return cultures.ToList();
+        return [.. cultures];
     }
 
     /// <summary>
