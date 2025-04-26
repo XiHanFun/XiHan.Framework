@@ -232,9 +232,15 @@ public static class TemplateEngine
             if (values.TryGetValue(variableName, out var value))
             {
                 if (value is bool boolValue)
+                {
                     return boolValue;
+                }
+
                 if (value is string strValue)
+                {
                     return !string.IsNullOrEmpty(strValue);
+                }
+
                 return value != null;
             }
             return false;
@@ -252,10 +258,10 @@ public static class TemplateEngine
         expression = expression.Trim();
 
         // 检查是否是字符串字面量
-        if (expression.StartsWith("\"") && expression.EndsWith("\"") ||
-            expression.StartsWith("'") && expression.EndsWith("'"))
+        if ((expression.Length > 1 && expression.StartsWith('"') && expression.EndsWith('"')) ||
+            (expression.Length > 1 && expression.StartsWith('\'') && expression.EndsWith('\'')))
         {
-            return expression.Substring(1, expression.Length - 2);
+            return expression[1..^1];
         }
 
         // 检查是否是数字字面量
@@ -276,12 +282,7 @@ public static class TemplateEngine
         }
 
         // 否则视为变量
-        if (values.TryGetValue(expression, out var value))
-        {
-            return value;
-        }
-
-        return null;
+        return values.TryGetValue(expression, out var value) ? value : null;
     }
 
     #endregion 高级模板渲染
