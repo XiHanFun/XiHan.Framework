@@ -207,9 +207,7 @@ public static class PageExtensions
     public static List<T> ToPageList<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
         where T : class, new()
     {
-        return entities.Skip((currentIndex - defaultFirstIndex) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        return [.. entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize)];
     }
 
     /// <summary>
@@ -223,9 +221,7 @@ public static class PageExtensions
     public static List<T> ToPageList<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, int defaultFirstIndex = 1)
         where T : class, new()
     {
-        return entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize)
-            .Take(pageInfo.PageSize)
-            .ToList();
+        return [.. entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)];
     }
 
     /// <summary>
@@ -272,7 +268,7 @@ public static class PageExtensions
     public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
         where T : class, new()
     {
-        var enumerable = entities as T[] ?? entities.ToArray();
+        var enumerable = entities as T[] ?? [.. entities];
         var pageDta = enumerable.ToPageData(currentIndex, pageSize);
 
         if (isOnlyPage)
@@ -297,7 +293,7 @@ public static class PageExtensions
     public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, PageInfoDto pageInfo, bool isOnlyPage = false)
         where T : class, new()
     {
-        var enumerable = entities as T[] ?? entities.ToArray();
+        var enumerable = entities as T[] ?? [.. entities];
         var pageDta = enumerable.ToPageData(pageInfo);
 
         if (isOnlyPage)

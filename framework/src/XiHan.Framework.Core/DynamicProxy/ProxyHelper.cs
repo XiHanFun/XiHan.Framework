@@ -47,12 +47,7 @@ public static class ProxyHelper
             .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
             .FirstOrDefault(f => f.Name == "__target");
 
-        if (targetField == null)
-        {
-            return obj;
-        }
-
-        return targetField.GetValue(obj)!;
+        return targetField == null ? obj : targetField.GetValue(obj)!;
     }
 
     /// <summary>
@@ -65,12 +60,7 @@ public static class ProxyHelper
         if (obj.GetType().Namespace == ProxyNamespace)
         {
             var target = UnProxy(obj);
-            if (target == obj)
-            {
-                return obj.GetType().GetTypeInfo().BaseType!;
-            }
-
-            return target.GetType();
+            return target == obj ? obj.GetType().GetTypeInfo().BaseType! : target.GetType();
         }
 
         return obj.GetType();

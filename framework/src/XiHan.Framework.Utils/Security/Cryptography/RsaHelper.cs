@@ -278,7 +278,9 @@ public static class RsaHelper
         ArgumentNullException.ThrowIfNull(filePath);
 
         if (!File.Exists(filePath))
+        {
             throw new FileNotFoundException("指定的 PEM 文件不存在", filePath);
+        }
 
         var pem = File.ReadAllText(filePath);
         return ImportFromPem(pem, "PUBLIC KEY");
@@ -297,7 +299,9 @@ public static class RsaHelper
         ArgumentNullException.ThrowIfNull(filePath);
 
         if (!File.Exists(filePath))
+        {
             throw new FileNotFoundException("指定的 PEM 文件不存在", filePath);
+        }
 
         var pem = File.ReadAllText(filePath);
         return ImportFromPem(pem, "PRIVATE KEY");
@@ -335,7 +339,9 @@ public static class RsaHelper
         var end = pemString.IndexOf(footer, StringComparison.Ordinal);
 
         if (start == -1 || end == -1)
+        {
             throw new FormatException("无效的 PEM 格式");
+        }
 
         start += header.Length;
         var base64Content = pemString[start..end]
@@ -343,10 +349,7 @@ public static class RsaHelper
             .Replace("\n", "")
             .Trim();
 
-        if (string.IsNullOrEmpty(base64Content))
-            throw new FormatException("PEM 内容为空");
-
-        return base64Content;
+        return string.IsNullOrEmpty(base64Content) ? throw new FormatException("PEM 内容为空") : base64Content;
     }
 
     #region 私有方法
@@ -357,10 +360,14 @@ public static class RsaHelper
     private static void ValidateKeySize(int keySize)
     {
         if (keySize < MinimumKeySize)
+        {
             throw new ArgumentException($"密钥长度必须大于或等于 {MinimumKeySize} 位", nameof(keySize));
+        }
 
         if (keySize % 8 != 0)
+        {
             throw new ArgumentException("密钥长度必须是 8 的倍数", nameof(keySize));
+        }
     }
 
     #endregion

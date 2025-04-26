@@ -273,7 +273,7 @@ public static class MathHelper
             sequence.Add(sequence[^1] + sequence[^2]);
         }
 
-        return sequence.Take(count).ToList();
+        return [.. sequence.Take(count)];
     }
 
     /// <summary>

@@ -76,7 +76,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
         {
             var context = new SimpleBatchStateCheckerContext<TState>(
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
-                states.Where(x => x.StateCheckers.Contains(stateChecker)).ToArray());
+                [.. states.Where(x => x.StateCheckers.Contains(stateChecker))]);
 
             foreach (var x in await stateChecker.IsEnabledAsync(context))
             {
@@ -95,7 +95,7 @@ public class SimpleStateCheckerManager<TState> : ISimpleStateCheckerManager<TSta
         {
             var context = new SimpleBatchStateCheckerContext<TState>(
                 scope.ServiceProvider.GetRequiredService<ICachedServiceProvider>(),
-                states.Where(x => result.Any(y => y.Key.Equals(x) && y.Value)).ToArray());
+                [.. states.Where(x => result.Any(y => y.Key.Equals(x) && y.Value))]);
 
             foreach (var x in await globalStateChecker.IsEnabledAsync(context))
             {

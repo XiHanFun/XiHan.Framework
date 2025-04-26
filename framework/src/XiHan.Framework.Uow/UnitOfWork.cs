@@ -230,7 +230,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual IReadOnlyList<IDatabaseApi> GetAllActiveDatabaseApis()
     {
-        return _databaseApis.Values.ToImmutableList();
+        return [.. _databaseApis.Values];
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual IReadOnlyList<ITransactionApi> GetAllActiveTransactionApis()
     {
-        return _transactionApis.Values.ToImmutableList();
+        return [.. _transactionApis.Values];
     }
 
     /// <summary>
