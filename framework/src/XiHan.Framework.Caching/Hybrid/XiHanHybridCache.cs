@@ -543,12 +543,9 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <exception cref="XiHanException"></exception>
     protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
     {
-        if (UnitOfWorkManager.Current is null)
-        {
-            throw new XiHanException($"没有活跃的 UOW。");
-        }
-
-        return UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(),
+        return UnitOfWorkManager.Current is null
+            ? throw new XiHanException($"没有活跃的 UOW。")
+            : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(),
             key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
     }
 
