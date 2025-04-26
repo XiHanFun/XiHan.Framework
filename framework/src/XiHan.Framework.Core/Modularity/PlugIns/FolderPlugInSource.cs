@@ -97,6 +97,6 @@ public class FolderPlugInSource : IPlugInSource
             assemblyFiles = assemblyFiles.Where(Filter);
         }
 
-        return assemblyFiles.Select(AssemblyLoadContext.Default.LoadFromAssemblyPath).ToList();
+        return [.. assemblyFiles.Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)];
     }
 }
