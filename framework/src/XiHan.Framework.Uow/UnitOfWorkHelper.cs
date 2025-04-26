@@ -39,12 +39,7 @@ public static class UnitOfWorkHelper
         }
 
         // 传统类
-        if (typeof(IUnitOfWorkEnabled).GetTypeInfo().IsAssignableFrom(implementationType))
-        {
-            return true;
-        }
-
-        return false;
+        return typeof(IUnitOfWorkEnabled).GetTypeInfo().IsAssignableFrom(implementationType);
     }
 
     /// <summary>
@@ -68,7 +63,7 @@ public static class UnitOfWorkHelper
         if (methodInfo.DeclaringType != null)
         {
             // 类声明
-            attrs = methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>().ToArray();
+            attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
             if (attrs.Length != 0)
             {
                 unitOfWorkAttribute = attrs.First();
@@ -102,7 +97,7 @@ public static class UnitOfWorkHelper
 
         if (methodInfo.DeclaringType != null)
         {
-            attrs = methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>().ToArray();
+            attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
             if (attrs.Length > 0)
             {
                 return attrs[0];

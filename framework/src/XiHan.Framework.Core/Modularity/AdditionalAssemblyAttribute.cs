@@ -42,6 +42,6 @@ public class AdditionalAssemblyAttribute : Attribute, IAdditionalModuleAssemblyP
     /// <returns></returns>
     public virtual Assembly[] GetAssemblies()
     {
-        return TypesInAssemblies.Select(t => t.Assembly).Distinct().ToArray();
+        return [.. TypesInAssemblies.Select(t => t.Assembly).Distinct()];
     }
 }

@@ -52,8 +52,8 @@ public static class NetworkHelper
                                       Type = ni.NetworkInterfaceType.ToString(),
                                       Speed = ni.Speed.ToString("#,##0") + " bps",
                                       PhysicalAddress = BitConverter.ToString(ni.GetPhysicalAddress().GetAddressBytes()),
-                                      DnsAddresses = properties.DnsAddresses.Select(ip => ip.ToString()).ToList(),
-                                      IpAddresses = properties.UnicastAddresses.Select(ip => ip.Address + " / " + ip.IPv4Mask).ToList()
+                                      DnsAddresses = [.. properties.DnsAddresses.Select(ip => ip.ToString())],
+                                      IpAddresses = [.. properties.UnicastAddresses.Select(ip => ip.Address + " / " + ip.IPv4Mask)]
                                   });
         }
         catch (Exception ex)

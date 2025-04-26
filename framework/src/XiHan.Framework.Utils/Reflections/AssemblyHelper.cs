@@ -80,9 +80,7 @@ public static class AssemblyHelper
     {
         _ = CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
 
-        return GetAssemblyFiles(folderPath, searchOption)
-            .Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)
-            .ToList();
+        return [.. GetAssemblyFiles(folderPath, searchOption).Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)];
     }
 
     /// <summary>
@@ -427,11 +425,10 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Type> GetSubClassesByGenericInterface(Type interfaceType)
     {
-        return GetAllTypes()
+        return [.. GetAllTypes()
             .Where(type => type is { IsInterface: false, IsClass: true, IsAbstract: false }
                 && type.GetInterfaces().Any(i => i.IsGenericType
-                    && i.GetGenericTypeDefinition() == interfaceType))
-            .ToList();
+                    && i.GetGenericTypeDefinition() == interfaceType))];
     }
 
     #endregion 获取某类的子类(非抽象类)
@@ -540,7 +537,7 @@ public static class AssemblyHelper
             }
         }
 
-        return nugetPackages.OrderBy(o => o.PackageName).ToList();
+        return [.. nugetPackages.OrderBy(o => o.PackageName)];
     }
 
     #endregion 程序集依赖包

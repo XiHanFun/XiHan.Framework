@@ -53,9 +53,7 @@ public static class DeepMergeHelper
         // 从缓存获取属性或添加到缓存
         if (!PropertyCache.TryGetValue(type, out var properties))
         {
-            properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                             .Where(p => p.CanWrite)
-                             .ToArray();
+            properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
             PropertyCache[type] = properties;
         }
 
@@ -418,9 +416,7 @@ public static class DeepMergeHelper
         // 获取或从缓存中检索属性
         if (!PropertyCache.TryGetValue(type, out var properties))
         {
-            properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                             .Where(p => p.CanWrite)
-                             .ToArray();
+            properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
             PropertyCache[type] = properties;
         }
 
@@ -603,9 +599,7 @@ public static class DeepMergeHelper
             // 获取或从缓存中检索属性
             if (!PropertyCache.TryGetValue(type, out var properties))
             {
-                properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                 .Where(p => p.CanWrite)
-                                 .ToArray();
+                properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
                 PropertyCache[type] = properties;
             }
 
