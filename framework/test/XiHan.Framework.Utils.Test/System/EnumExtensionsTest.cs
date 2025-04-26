@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using System.ComponentModel;
 using System.Reflection;
 using XiHan.Framework.Utils.System;
-using Xunit;
 
 namespace XiHan.Framework.Utils.Test.System;
 
@@ -31,19 +31,19 @@ public class EnumExtensionsTest
         /// <summary>
         /// 值1
         /// </summary>
-        [System.ComponentModel.Description("描述1")]
+        [Description("描述1")]
         Value1 = 1,
 
         /// <summary>
         /// 值2
         /// </summary>
-        [System.ComponentModel.Description("描述2")]
+        [Description("描述2")]
         Value2 = 2,
 
         /// <summary>
         /// 值3
         /// </summary>
-        [System.ComponentModel.Description("描述3")]
+        [Description("描述3")]
         Value3 = 3
     }
 
@@ -284,11 +284,11 @@ public class EnumExtensionsTest
 
         // Assert
         Assert.Equal(3, infos.Count);
-        
+
         var info1 = infos.First(i => i.Key == "Value1");
         Assert.Equal(1, info1.Value);
         Assert.Equal("描述1", info1.Label);
-        
+
         var info2 = infos.First(i => i.Key == "Value2");
         Assert.Equal(2, info2.Value);
         Assert.Equal("描述2", info2.Label);
@@ -448,4 +448,4 @@ public class EnumExtensionsTest
     }
 
     #endregion
-} 
+}

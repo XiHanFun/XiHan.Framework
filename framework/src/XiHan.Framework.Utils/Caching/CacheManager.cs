@@ -24,7 +24,7 @@ public class CacheManager
     /// </summary>
     public const string DefaultCacheName = "Default";
 
-    private static readonly Lazy<CacheManager> LazyInstance = new(() => new CacheManager());
+    private static readonly Lazy<CacheManager> _lazyInstance = new(() => new CacheManager());
 
     private readonly Dictionary<string, MemoryCache> _caches = [];
 
@@ -44,7 +44,7 @@ public class CacheManager
     /// <summary>
     /// 单例实例
     /// </summary>
-    public static CacheManager Instance => LazyInstance.Value;
+    public static CacheManager Instance => _lazyInstance.Value;
 
     /// <summary>
     /// 默认缓存实例

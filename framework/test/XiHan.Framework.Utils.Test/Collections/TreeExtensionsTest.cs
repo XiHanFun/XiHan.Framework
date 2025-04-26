@@ -19,9 +19,9 @@ public class TreeExtensionsTest
             5
         };
 
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+        static bool IsChild(int parent, int child) => parent == 1 && child > 1;
 
-        var result = source.ToTree(isChild).ToList();
+        var result = source.ToTree(IsChild).ToList();
 
         _ = Assert.Single(result);
         Assert.Equal(1, result[0].Value);
@@ -54,9 +54,9 @@ public class TreeExtensionsTest
     {
         var source = new List<int>();
 
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+        static bool IsChild(int parent, int child) => parent == 1 && child > 1;
 
-        var result = source.ToTree(isChild);
+        var result = source.ToTree(IsChild);
 
         Assert.Empty(result);
     }
@@ -69,9 +69,9 @@ public class TreeExtensionsTest
             2, 3, 4, 5
         };
 
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+        static bool IsChild(int parent, int child) => parent == 1 && child > 1;
 
-        var result = source.ToTree(isChild);
+        var result = source.ToTree(IsChild);
 
         Assert.Empty(result);
     }
@@ -84,9 +84,9 @@ public class TreeExtensionsTest
             1, 2, 3
         };
 
-        static bool isChild(int parent, int child) => (parent == 1 && child == 2) || (parent == 2 && child == 3) || (parent == 3 && child == 1);
+        static bool IsChild(int parent, int child) => (parent == 1 && child == 2) || (parent == 2 && child == 3) || (parent == 3 && child == 1);
 
-        var result = source.ToTree(isChild).ToList();
+        var result = source.ToTree(IsChild).ToList();
 
         _ = Assert.Single(result);
         Assert.Equal(1, result[0].Value);
@@ -109,9 +109,9 @@ public class TreeExtensionsTest
             5
         };
 
-        static bool isChild(int parent, int child) => parent == 1 && child > 1;
+        static bool IsChild(int parent, int child) => parent == 1 && child > 1;
 
-        var result = source.ToTree(isChild).ToList();
+        var result = source.ToTree(IsChild).ToList();
 
         _ = Assert.Single(result);
         Assert.Equal(1, result[0].Value);

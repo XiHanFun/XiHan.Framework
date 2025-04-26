@@ -27,5 +27,5 @@ public class XiHanAesOptions
     /// <summary>
     /// IV
     /// </summary>
-    public string IV { get; set; } = string.Empty;
+    public string Iv { get; set; } = string.Empty;
 }

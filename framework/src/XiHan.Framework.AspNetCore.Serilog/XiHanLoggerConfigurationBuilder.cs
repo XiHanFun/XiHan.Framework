@@ -206,19 +206,19 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder WriteToFileDefault()
     {
-        const string debugPath = @"Logs/Debug/.log";
-        const string infoPath = @"Logs/Info/.log";
-        const string waringPath = @"Logs/Waring/.log";
-        const string errorPath = @"Logs/Error/.log";
-        const string fatalPath = @"Logs/Fatal/.log";
+        const string DebugPath = @"Logs/Debug/.log";
+        const string InfoPath = @"Logs/Info/.log";
+        const string WaringPath = @"Logs/Waring/.log";
+        const string ErrorPath = @"Logs/Error/.log";
+        const string FatalPath = @"Logs/Fatal/.log";
 
 #if DEBUG
-        _ = WriteToFile(LogEventLevel.Debug, debugPath, _infoTemplate);
+        _ = WriteToFile(LogEventLevel.Debug, DebugPath, _infoTemplate);
 #endif
-        _ = WriteToFile(LogEventLevel.Information, infoPath, _infoTemplate);
-        _ = WriteToFile(LogEventLevel.Warning, waringPath, _warnTemplate);
-        _ = WriteToFile(LogEventLevel.Error, errorPath, _errorTemplate);
-        _ = WriteToFile(LogEventLevel.Fatal, fatalPath, _errorTemplate);
+        _ = WriteToFile(LogEventLevel.Information, InfoPath, _infoTemplate);
+        _ = WriteToFile(LogEventLevel.Warning, WaringPath, _warnTemplate);
+        _ = WriteToFile(LogEventLevel.Error, ErrorPath, _errorTemplate);
+        _ = WriteToFile(LogEventLevel.Fatal, FatalPath, _errorTemplate);
 
         return this;
     }

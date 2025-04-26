@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Yaml;
 /// </summary>
 public static partial class YamlHelper
 {
-    private static readonly string[] Separator = ["\r\n", "\n"];
+    private static readonly string[] _separator = ["\r\n", "\n"];
 
     /// <summary>
     /// 从YAML文件加载字典
@@ -61,7 +61,7 @@ public static partial class YamlHelper
         var result = new Dictionary<string, string>();
 
         // 分行处理
-        var lines = yaml.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
+        var lines = yaml.Split(_separator, StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
             // 跳过注释行和空行
@@ -126,7 +126,7 @@ public static partial class YamlHelper
     public static Dictionary<string, string> ParseNestedYaml(string yaml)
     {
         var result = new Dictionary<string, string>();
-        var lines = yaml.Split(Separator, StringSplitOptions.None);
+        var lines = yaml.Split(_separator, StringSplitOptions.None);
 
         var currentPrefix = "";
         var indentStack = new Stack<(string Prefix, int Indent)>();
@@ -145,7 +145,7 @@ public static partial class YamlHelper
             // 回退缩进栈，直到找到合适的父级
             while (indentStack.Count > 0 && leadingSpaces <= indentStack.Peek().Indent)
             {
-                var (Prefix, Indent) = indentStack.Pop();
+                var (prefix, indent) = indentStack.Pop();
                 if (indentStack.Count > 0)
                 {
                     currentPrefix = indentStack.Peek().Prefix;

@@ -24,7 +24,7 @@ namespace XiHan.Framework.AI.Providers.Ollama;
 /// <summary>
 /// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
-public class XiHanOllamaService : IXiHanAIService
+public class XiHanOllamaService : IXiHanAiService
 {
     private readonly IChatCompletionService _ollamaChatService;
 

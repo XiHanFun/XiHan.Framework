@@ -30,7 +30,7 @@ namespace XiHan.Framework.AI;
 [DependsOn(
     typeof(XiHanHttpModule)
     )]
-public class XiHanAIModule : XiHanModule
+public class XiHanAiModule : XiHanModule
 {
     private const string ModuleConfigNode = "XiHan:AI";
 
@@ -45,7 +45,7 @@ public class XiHanAIModule : XiHanModule
 
         Configure<XiHanOllamaOptions>(configuration.GetSection($"{ModuleConfigNode}:Ollama"));
         Configure<XiHanHuggingFaceOptions>(configuration.GetSection($"{ModuleConfigNode}:HuggingFace"));
-        Configure<XiHanOpenAIOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
+        Configure<XiHanOpenAiOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
 
         // 注册 Semantic Kernel 内核，配置 Ollama、OpenAI 等 Connector
         var kernelBuilder = services.AddKernel();
@@ -65,26 +65,26 @@ public class XiHanAIModule : XiHanModule
                     serviceId: ollamaOptions.ServiceId);
 #pragma warning restore SKEXP0070
 
-            _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
+            _ = services.AddKeyedTransient<IXiHanAiService, XiHanOllamaService>(ollamaOptions.ServiceId);
         }
 
         // OpenAI
-        var openAIOptions = services.GetRequiredService<IOptions<XiHanOpenAIOptions>>().Value;
-        if (openAIOptions is not null)
+        var openAiOptions = services.GetRequiredService<IOptions<XiHanOpenAiOptions>>().Value;
+        if (openAiOptions is not null)
         {
 #pragma warning disable SKEXP0010
             _ = kernelBuilder.AddOpenAIChatCompletion(
-                    modelId: openAIOptions.ModelId,
-                    endpoint: new Uri(openAIOptions.Endpoint),
-                    apiKey: openAIOptions.ApiKey,
-                    serviceId: openAIOptions.ServiceId);
+                    modelId: openAiOptions.ModelId,
+                    endpoint: new Uri(openAiOptions.Endpoint),
+                    apiKey: openAiOptions.ApiKey,
+                    serviceId: openAiOptions.ServiceId);
             _ = kernelBuilder.AddOpenAITextEmbeddingGeneration(
-                    modelId: openAIOptions.ModelId,
-                    apiKey: openAIOptions.ApiKey,
-                    serviceId: openAIOptions.ServiceId);
+                    modelId: openAiOptions.ModelId,
+                    apiKey: openAiOptions.ApiKey,
+                    serviceId: openAiOptions.ServiceId);
 #pragma warning restore SKEXP0010
 
-            _ = services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
+            _ = services.AddKeyedTransient<IXiHanAiService, XiHanOpenAiService>(openAiOptions.ServiceId);
         }
 
         _ = kernelBuilder.Build();
