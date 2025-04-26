@@ -68,7 +68,7 @@ public static class UnitOfWorkHelper
         if (methodInfo.DeclaringType != null)
         {
             // 类声明
-            attrs = methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>().ToArray();
+            attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
             if (attrs.Length != 0)
             {
                 unitOfWorkAttribute = attrs.First();
@@ -102,7 +102,7 @@ public static class UnitOfWorkHelper
 
         if (methodInfo.DeclaringType != null)
         {
-            attrs = methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>().ToArray();
+            attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
             if (attrs.Length > 0)
             {
                 return attrs[0];

@@ -49,9 +49,9 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
         IEnumerable<IPostConfigureOptions<TOptions>> postConfigures,
         IEnumerable<IValidateOptions<TOptions>> validations)
     {
-        _setups = setups as IConfigureOptions<TOptions>[] ?? new List<IConfigureOptions<TOptions>>(setups).ToArray();
-        _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? new List<IPostConfigureOptions<TOptions>>(postConfigures).ToArray();
-        _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
+        _setups = setups as IConfigureOptions<TOptions>[] ?? [.. setups];
+        _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? [.. postConfigures];
+        _validations = validations as IValidateOptions<TOptions>[] ?? [.. validations];
     }
 
     /// <summary>

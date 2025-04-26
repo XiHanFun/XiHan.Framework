@@ -28,9 +28,8 @@ public class PlugInSourceList : List<IPlugInSource>
     /// <returns></returns>
     internal Type[] GetAllModules(ILogger logger)
     {
-        return this
+        return [.. this
             .SelectMany(pluginSource => pluginSource.GetModulesWithAllDependencies(logger))
-            .Distinct()
-            .ToArray();
+            .Distinct()];
     }
 }

@@ -49,7 +49,7 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
         foreach (var serviceDescriptor in from exposedServiceType in exposedServiceAndKeyedServiceTypes
                                           let allExposingServiceTypes = exposedServiceType.ServiceKey is null
                                               ? exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey is null).ToList()
-                                              : exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey?.ToString() == exposedServiceType.ServiceKey?.ToString()).ToList()
+                                              : [.. exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey?.ToString() == exposedServiceType.ServiceKey?.ToString())]
                                           select CreateServiceDescriptor(type, exposedServiceType.ServiceKey, exposedServiceType.ServiceType, allExposingServiceTypes, lifeTime.Value))
         {
             if (dependencyAttribute?.ReplaceServices == true)
