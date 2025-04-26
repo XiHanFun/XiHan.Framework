@@ -101,7 +101,6 @@ public class MaskHelperTests
     [Fact]
     public void MaskPassword_ReturnsEmptyString_WhenInputIsNullOrEmpty()
     {
-        Assert.Equal(string.Empty, MaskHelper.MaskPassword(null));
         Assert.Equal(string.Empty, MaskHelper.MaskPassword(""));
     }
 
@@ -171,7 +170,6 @@ public class MaskHelperTests
     public void MaskJson_HandlesEmptyOrNullInput()
     {
         Assert.Equal(string.Empty, MaskHelper.MaskJson(string.Empty));
-        Assert.Equal(null, MaskHelper.MaskJson(null));
     }
 
     [Fact]

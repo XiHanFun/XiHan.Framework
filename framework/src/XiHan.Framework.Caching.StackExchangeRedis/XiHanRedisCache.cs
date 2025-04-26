@@ -333,7 +333,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <returns></returns>
     protected virtual Task[] PipelineRemoveManyAsync(IDatabase cache, IEnumerable<string> keys)
     {
-        return keys.Select(key => cache.KeyDeleteAsync(InstancePrefix.Append(key))).ToArray<Task>();
+        return [.. keys.Select(key => cache.KeyDeleteAsync(InstancePrefix.Append(key)))];
     }
 
     /// <summary>

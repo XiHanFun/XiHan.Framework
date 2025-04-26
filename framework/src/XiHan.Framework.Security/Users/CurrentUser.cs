@@ -90,7 +90,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <summary>
     /// 角色
     /// </summary>
-    public virtual string[] Roles => FindClaims(XiHanClaimTypes.Role).Select(c => c.Value).Distinct().ToArray();
+    public virtual string[] Roles => [.. FindClaims(XiHanClaimTypes.Role).Select(c => c.Value).Distinct()];
 
     /// <summary>
     /// 获取声明

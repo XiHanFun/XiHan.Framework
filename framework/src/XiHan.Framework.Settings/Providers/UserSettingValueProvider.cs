@@ -67,7 +67,7 @@ public class UserSettingValueProvider : SettingValueProvider
     public override async Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
         return CurrentUser.Id is null
-            ? settings.Select(x => new SettingValue(x.Name, null)).ToList()
-            : await SettingStore.GetAllAsync(settings.Select(x => x.Name).ToArray(), Name, CurrentUser.Id.ToString());
+            ? [.. settings.Select(x => new SettingValue(x.Name, null))]
+            : await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, CurrentUser.Id.ToString());
     }
 }

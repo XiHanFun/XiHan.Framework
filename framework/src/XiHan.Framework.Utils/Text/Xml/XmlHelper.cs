@@ -97,7 +97,7 @@ public static class XmlHelper
         var doc = new XmlDocument();
         doc.LoadXml(xml);
         var nodes = doc.SelectNodes(xpath);
-        return nodes is null ? [] : nodes.Cast<XmlNode>().Select(n => n.InnerText).ToList();
+        return nodes is null ? [] : [.. nodes.Cast<XmlNode>().Select(n => n.InnerText)];
     }
 
     /// <summary>

@@ -54,6 +54,6 @@ public class AssemblyFinder : IAssemblyFinder
             assemblies.AddRange(module.AllAssemblies);
         }
 
-        return assemblies.Distinct().ToImmutableList();
+        return [.. assemblies.Distinct()];
     }
 }

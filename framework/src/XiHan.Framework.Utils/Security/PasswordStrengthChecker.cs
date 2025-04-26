@@ -138,9 +138,7 @@ public class PasswordStrengthChecker
         }
 
         var random = new Random();
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => characterPool[random.Next(characterPool.Length)])
-            .ToArray());
+        return new string([.. Enumerable.Range(0, length).Select(_ => characterPool[random.Next(characterPool.Length)])]);
     }
 }
 

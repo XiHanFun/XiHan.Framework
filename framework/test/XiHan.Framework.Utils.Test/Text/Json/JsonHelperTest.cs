@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using System.Text.Json;
-using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Utils.Text.Json;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 
-namespace XiHan.Framework.Utils.Test.Text;
+namespace XiHan.Framework.Utils.Test.Text.Json;
 
 public class JsonHelperTest : IDisposable
 {

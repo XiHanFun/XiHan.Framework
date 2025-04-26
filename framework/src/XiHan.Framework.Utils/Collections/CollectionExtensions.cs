@@ -109,7 +109,7 @@ public static class CollectionExtensions
     public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
     {
         _ = CheckHelper.NotNull(source, nameof(source));
-        var enumerable = items as T[] ?? items.ToArray();
+        var enumerable = items as T[] ?? [.. items];
         _ = CheckHelper.NotNull(enumerable, nameof(items));
 
         List<T> addedItems = [];
@@ -179,7 +179,7 @@ public static class CollectionExtensions
     public static void RemoveAll<T>(this ICollection<T> source, IEnumerable<T> items)
     {
         _ = CheckHelper.NotNull(source, nameof(source));
-        var enumerable = items as T[] ?? items.ToArray();
+        var enumerable = items as T[] ?? [.. items];
         _ = CheckHelper.NotNull(enumerable, nameof(items));
 
         foreach (var item in enumerable)

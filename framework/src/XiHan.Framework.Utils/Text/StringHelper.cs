@@ -33,7 +33,7 @@ public static class StringHelper
     /// <returns></returns>
     public static List<string> GetStrList(string sourceStr, char sepeater = ',', bool isAllowsDuplicates = true)
     {
-        return GetStrEnumerable(sourceStr, sepeater, isAllowsDuplicates).ToList();
+        return [.. GetStrEnumerable(sourceStr, sepeater, isAllowsDuplicates)];
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public static class StringHelper
     /// <returns></returns>
     public static string[] GetStrArray(string sourceStr, char sepeater = ',', bool isAllowsDuplicates = true)
     {
-        return GetStrEnumerable(sourceStr, sepeater, isAllowsDuplicates).ToArray();
+        return [.. GetStrEnumerable(sourceStr, sepeater, isAllowsDuplicates)];
     }
 
     /// <summary>
