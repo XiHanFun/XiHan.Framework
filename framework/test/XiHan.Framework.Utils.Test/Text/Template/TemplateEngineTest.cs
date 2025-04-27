@@ -1,4 +1,4 @@
-using XiHan.Framework.Utils.Text.Template;
+﻿using XiHan.Framework.Utils.Text.Template;
 
 namespace XiHan.Framework.Utils.Test.Text.Template;
 
@@ -67,7 +67,7 @@ public class TemplateEngineTest
     {
         // Arrange
         var template = "Hello, {{name}}!";
-        Dictionary<string, object?>? values = null;
+        var values = new Dictionary<string, object?>();
 
         // Act
         var result = TemplateEngine.Render(template, values);
