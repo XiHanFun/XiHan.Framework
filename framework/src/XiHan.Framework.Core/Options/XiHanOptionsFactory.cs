@@ -133,7 +133,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     }
 
     /// <summary>
-    ///
+    /// 创建实例
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
