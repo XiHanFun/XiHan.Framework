@@ -81,7 +81,7 @@ public class UnitOfWorkInterceptor : XiHanInterceptor, ITransientDependency
     /// <param name="invocation"></param>
     /// <param name="unitOfWorkAttribute"></param>
     /// <returns></returns>
-    private XiHanUnitOfWorkOptions CreateOptions(IServiceProvider serviceProvider, IXiHanMethodInvocation invocation, UnitOfWorkAttribute? unitOfWorkAttribute)
+    private static XiHanUnitOfWorkOptions CreateOptions(IServiceProvider serviceProvider, IXiHanMethodInvocation invocation, UnitOfWorkAttribute? unitOfWorkAttribute)
     {
         var options = new XiHanUnitOfWorkOptions();
 
