@@ -22,6 +22,7 @@
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.47.0" />
         <PackageReference Include="Microsoft.KernelMemory.AI.Ollama" Version="0.98.250324.1" />
         <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.98.250324.1" />
+        <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.11" />
     </ItemGroup>
 
     <ItemGroup>
