@@ -334,7 +334,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <param name="element">JSON元素</param>
     /// <param name="prefix">前缀</param>
     /// <param name="dictionary">结果字典</param>
-    private void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
+    private static void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
     {
         foreach (var property in element.EnumerateObject())
         {
