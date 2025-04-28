@@ -15,7 +15,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.System;
@@ -36,7 +35,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     /// 构造函数
     /// </summary>
     /// <param name="dataContext"></param>
-    public AmbientDataContextAmbientScopeProvider([NotNull] IAmbientDataContext dataContext)
+    public AmbientDataContextAmbientScopeProvider(IAmbientDataContext dataContext)
     {
         _ = CheckHelper.NotNull(dataContext, nameof(dataContext));
 
@@ -79,7 +78,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
 
         _dataContext.SetData(contextKey, item.Id);
 
-        return new DisposeAction<ValueTuple<ConcurrentDictionary<string, ScopeItem>, ScopeItem, IAmbientDataContext, string>>(static (state) =>
+        return new DisposeAction<ValueTuple<ConcurrentDictionary<string, ScopeItem>, ScopeItem, IAmbientDataContext, string>>(static state =>
         {
             var (scopeDictionary, item, dataContext, contextKey) = state;
 

@@ -128,14 +128,14 @@ public class JsonHelperTest : IDisposable
     // 测试用类
     private class TestObject
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public int Id { get; init; }
+        public string Name { get; init; } = string.Empty;
         public DateTime CreatedTime { get; set; }
-        public NestedObject? Nested { get; set; }
+        public NestedObject? Nested { get; init; }
     }
 
     private class NestedObject
     {
-        public string Value { get; set; } = string.Empty;
+        public string Value { get; init; } = string.Empty;
     }
 }

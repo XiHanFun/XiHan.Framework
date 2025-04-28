@@ -58,25 +58,29 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
             foreach (var provider in providers)
             {
-                if (provider is VirtualPhysicalFileProvider physicalProvider)
+                switch (provider)
                 {
-                    _physicalPaths.Add(physicalProvider.Root);
-                    // 初始化时记录已存在的文件
-                    var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
-                    foreach (var file in files)
-                    {
-                        _fileStateCache[file] = File.GetLastWriteTime(file);
-                    }
-                }
-                else if (provider is VirtualEmbeddedFileProvider embeddedProvider)
-                {
-                    _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
+                    case VirtualPhysicalFileProvider physicalProvider:
+                        {
+                            _physicalPaths.Add(physicalProvider.Root);
+                            // 初始化时记录已存在的文件
+                            var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
+                            foreach (var file in files)
+                            {
+                                _fileStateCache[file] = File.GetLastWriteTime(file);
+                            }
+
+                            break;
+                        }
+                    case VirtualEmbeddedFileProvider embeddedProvider:
+                        _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
+                        break;
                 }
 
                 prioritizedFileProviders.Add(new PrioritizedFileProvider(provider, 0));
             }
 
-            _changeDebouncer = new(TimeSpan.FromMilliseconds(500));
+            _changeDebouncer = new Debouncer(TimeSpan.FromMilliseconds(500));
             _compositeProvider = new VirtualCompositeFileProvider(prioritizedFileProviders);
         }
         catch (Exception ex)
@@ -120,7 +124,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         _changeDebouncer.Debounce(() =>
         {
             // 注册回调以触发事件
-            _ = originalToken.RegisterChangeCallback(_ =>
+            _ = originalToken.RegisterChangeCallback(o =>
             {
                 // 获取变化的文件列表
                 var changedFiles = GetChangedFiles(filter);
@@ -132,7 +136,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
                 }
 
                 // 重新注册监听，实现持续监控
-                _ = Watch(filter);
+                o = Watch(filter);
             }, null);
         });
         return originalToken;
@@ -250,13 +254,15 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
             foreach (var resourceName in resourceNames)
             {
-                if (!_fileStateCache.ContainsKey(resourceName))
+                if (_fileStateCache.ContainsKey(resourceName))
                 {
-                    // 新增资源
-                    changedFiles.Add((resourceName, FileChangeType.Created));
-                    // 嵌入资源无法获取修改时间，使用当前时间
-                    _fileStateCache[resourceName] = DateTime.UtcNow;
+                    continue;
                 }
+
+                // 新增资源
+                changedFiles.Add((resourceName, FileChangeType.Created));
+                // 嵌入资源无法获取修改时间，使用当前时间
+                _fileStateCache[resourceName] = DateTime.UtcNow;
             }
 
             // 检查删除的资源

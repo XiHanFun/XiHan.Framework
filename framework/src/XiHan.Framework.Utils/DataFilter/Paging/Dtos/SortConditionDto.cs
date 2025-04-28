@@ -76,7 +76,7 @@ public class SortConditionDto
     /// <summary>
     /// 排序优先级，数值越小优先级越高，默认为0，即最高优先级
     /// </summary>
-    public int SortPriority { get; set; } = 0;
+    public int SortPriority { get; set; }
 
     /// <summary>
     /// 排序方向，默认为升序

@@ -60,7 +60,7 @@ public static class LocalizationResourceExtensions
         string virtualPath)
     {
         var resource = resourceManager.GetResource(resourceName);
-        return resource ?? resourceManager.AddVirtualFileResource(virtualPath);
+        return resource;
     }
 
     /// <summary>

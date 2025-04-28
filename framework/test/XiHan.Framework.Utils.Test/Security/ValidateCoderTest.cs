@@ -222,7 +222,7 @@ public class ValidateCoderTest
     public void GetCustom_OnlyNumbers_ReturnsOnlyNumbers()
     {
         // Act
-        var result = ValidateCoder.GetCustom(8, true, false, false, false);
+        var result = ValidateCoder.GetCustom(8, true, false, false);
 
         // Assert
         Assert.Equal(8, result.Length);
@@ -233,7 +233,7 @@ public class ValidateCoderTest
     public void GetCustom_OnlyUpperLetters_ReturnsOnlyUpperLetters()
     {
         // Act
-        var result = ValidateCoder.GetCustom(7, false, true, false, false);
+        var result = ValidateCoder.GetCustom(7, false, true, false);
 
         // Assert
         Assert.Equal(7, result.Length);
@@ -244,7 +244,7 @@ public class ValidateCoderTest
     public void GetCustom_OnlyLowerLetters_ReturnsOnlyLowerLetters()
     {
         // Act
-        var result = ValidateCoder.GetCustom(9, false, false, true, false);
+        var result = ValidateCoder.GetCustom(9, false, false);
 
         // Assert
         Assert.Equal(9, result.Length);
@@ -266,7 +266,7 @@ public class ValidateCoderTest
     public void GetCustom_NoOptions_ReturnsAlphanumericString()
     {
         // Act
-        var result = ValidateCoder.GetCustom(8, false, false, false, false);
+        var result = ValidateCoder.GetCustom(8, false, false, false);
 
         // Assert
         Assert.Equal(8, result.Length);

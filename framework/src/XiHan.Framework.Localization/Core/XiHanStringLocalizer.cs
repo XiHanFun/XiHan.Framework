@@ -60,13 +60,10 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
     {
         get
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             var value = GetStringSafely(name, _culture);
-            return new LocalizedString(name, value ?? name, value is null);
+            return new LocalizedString(name, value, false);
         }
     }
 
@@ -81,14 +78,11 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
     {
         get
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             var format = GetStringSafely(name, _culture);
-            var value = string.Format(_culture, format ?? name, arguments);
-            return new LocalizedString(name, value, format is null);
+            var value = string.Format(_culture, format, arguments);
+            return new LocalizedString(name, value, false);
         }
     }
 
@@ -123,7 +117,7 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
 
         var cultureInfo = new CultureInfo(culture);
         var value = GetStringSafely(name, cultureInfo);
-        return new LocalizedString(name, value ?? name, value is null);
+        return new LocalizedString(name, value, false);
     }
 
     /// <summary>
@@ -148,8 +142,8 @@ public class XiHanStringLocalizer : IXiHanStringLocalizer
 
         var cultureInfo = new CultureInfo(culture);
         var format = GetStringSafely(name, cultureInfo);
-        var value = string.Format(cultureInfo, format ?? name, arguments);
-        return new LocalizedString(name, value, format is null);
+        var value = string.Format(cultureInfo, format, arguments);
+        return new LocalizedString(name, value, false);
     }
 
     /// <summary>

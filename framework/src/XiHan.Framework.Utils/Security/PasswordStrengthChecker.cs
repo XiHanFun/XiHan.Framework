@@ -50,14 +50,14 @@ public class PasswordStrengthChecker
         // 初始化评分
         var score = 0;
 
-        // 检查长度
-        if (password.Length < 8)
+        switch (password.Length)
         {
-            return new PasswordStrengthResult(false, "密码长度不足8位", score);
-        }
-        else if (password.Length >= 12)
-        {
-            score += 20;
+            // 检查长度
+            case < 8:
+                return new PasswordStrengthResult(false, "密码长度不足8位", score);
+            case >= 12:
+                score += 20;
+                break;
         }
 
         // 检查是否包含大写字母

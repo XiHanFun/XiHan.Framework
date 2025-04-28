@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Collections.Immutable;
 using System.Reflection;
 using XiHan.Framework.Core.Modularity;
 

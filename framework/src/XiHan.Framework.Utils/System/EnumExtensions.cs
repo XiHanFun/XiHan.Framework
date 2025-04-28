@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
-using System.ComponentModel;
 using System.Reflection;
 using XiHan.Framework.Utils.Attributes;
 using XiHan.Framework.Utils.Reflections;
@@ -255,19 +254,16 @@ public static class EnumExtensions
         }
 
         // 枚举字段
-        var enumInfos = new List<EnumInfo>();
         var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (var field in fields)
-        {
-            enumInfos.Add(new EnumInfo
+        var enumInfos = fields.Select(field => new EnumInfo
             {
                 Key = field.Name,
                 Value = (int)field.GetRawConstantValue()!,
                 Label = field.GetDescriptionValue(),
                 Theme = field.GetThemeColorValue().Theme,
                 Color = field.GetThemeColorValue().Color
-            });
-        }
+            })
+            .ToList();
 
         // 加入缓存
         _enumInfosCatch.TryAdd(enumType, enumInfos);
@@ -363,15 +359,7 @@ public static class EnumExtensions
     public static bool IsDescriptionDefined<TEnum>(string description) where TEnum : struct, Enum
     {
         var type = typeof(TEnum);
-        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
-        {
-            var desc = field.GetDescriptionValue();
-            if (desc == description)
-            {
-                return true;
-            }
-        }
-        return false;
+        return type.GetFields(BindingFlags.Public | BindingFlags.Static).Select(field => field.GetDescriptionValue()).Any(desc => desc == description);
     }
 
     #endregion 枚举检查

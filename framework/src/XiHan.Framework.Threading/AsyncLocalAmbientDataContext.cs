@@ -31,7 +31,7 @@ public class AsyncLocalAmbientDataContext : IAmbientDataContext, ISingletonDepen
     /// <param name="value"></param>
     public void SetData(string key, object? value)
     {
-        var asyncLocal = _asyncLocalDictionary.GetOrAdd(key, (k) => new AsyncLocal<object?>());
+        var asyncLocal = _asyncLocalDictionary.GetOrAdd(key, k => new AsyncLocal<object?>());
         asyncLocal.Value = value;
     }
 
@@ -42,7 +42,7 @@ public class AsyncLocalAmbientDataContext : IAmbientDataContext, ISingletonDepen
     /// <returns></returns>
     public object? GetData(string key)
     {
-        var asyncLocal = _asyncLocalDictionary.GetOrAdd(key, (k) => new AsyncLocal<object?>());
+        var asyncLocal = _asyncLocalDictionary.GetOrAdd(key, k => new AsyncLocal<object?>());
         return asyncLocal.Value;
     }
 }

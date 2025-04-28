@@ -31,18 +31,12 @@ public class DecimalJsonConverter : JsonConverter<decimal>
     /// <returns></returns>
     public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.Number)
+        return reader.TokenType switch
         {
-            return reader.GetDecimal();
-        }
-        else if (reader.TokenType == JsonTokenType.String)
-        {
-            if (decimal.TryParse(reader.GetString(), out var value))
-            {
-                return value;
-            }
-        }
-        return 0;
+            JsonTokenType.Number => reader.GetDecimal(),
+            JsonTokenType.String when decimal.TryParse(reader.GetString(), out var value) => value,
+            _ => 0
+        };
     }
 
     /// <summary>

@@ -40,7 +40,7 @@ public class CurrentClient : ICurrentClient, ITransientDependency
     /// <summary>
     /// 客户端标识
     /// </summary>
-    public virtual string? Id => _principalAccessor.Principal?.FindClientId();
+    public virtual string? Id => _principalAccessor.Principal.FindClientId();
 
     /// <summary>
     /// 是否已认证

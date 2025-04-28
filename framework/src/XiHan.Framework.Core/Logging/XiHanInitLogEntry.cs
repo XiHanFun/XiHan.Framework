@@ -34,7 +34,7 @@ public class XiHanInitLogEntry
     /// <summary>
     /// 状态
     /// </summary>
-    public object State { get; init; } = default!;
+    public object State { get; init; } = null!;
 
     /// <summary>
     /// 异常
@@ -44,7 +44,7 @@ public class XiHanInitLogEntry
     /// <summary>
     /// 格式化器
     /// </summary>
-    public Func<object, Exception?, string> Formatter { get; init; } = default!;
+    public Func<object, Exception?, string> Formatter { get; init; } = null!;
 
     /// <summary>
     /// 异常消息

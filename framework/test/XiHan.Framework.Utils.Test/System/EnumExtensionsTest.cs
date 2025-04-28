@@ -280,7 +280,7 @@ public class EnumExtensionsTest
         var enumType = typeof(TestEnum);
 
         // Act
-        var infos = EnumExtensions.GetEnumInfos(enumType).ToList();
+        var infos = enumType.GetEnumInfos().ToList();
 
         // Assert
         Assert.Equal(3, infos.Count);

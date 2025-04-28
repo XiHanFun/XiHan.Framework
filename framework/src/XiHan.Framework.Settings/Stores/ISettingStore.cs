@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Settings.Definitions;
 
 namespace XiHan.Framework.Settings.Stores;
@@ -29,7 +28,7 @@ public interface ISettingStore
     /// <param name="providerName">提供者名称</param>
     /// <param name="providerKey">提供者键</param>
     /// <returns>设置值</returns>
-    Task<string?> GetOrNullAsync([NotNull] string name, string? providerName, string? providerKey);
+    Task<string?> GetOrNullAsync(string name, string? providerName, string? providerKey);
 
     /// <summary>
     /// 获取所有设置值
@@ -38,7 +37,7 @@ public interface ISettingStore
     /// <param name="providerName">提供者名称</param>
     /// <param name="providerKey">提供者键</param>
     /// <returns>设置值列表</returns>
-    Task<List<SettingValue>> GetAllAsync([NotNull] string[] names, string? providerName, string? providerKey);
+    Task<List<SettingValue>> GetAllAsync(string[] names, string? providerName, string? providerKey);
 
     /// <summary>
     /// 设置值

@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
-using System.Diagnostics.CodeAnalysis;
 
 namespace XiHan.Framework.Caching;
 
@@ -77,7 +76,7 @@ public interface IDistributedCache<TCacheItem, TCacheKey> where TCacheItem : cla
     /// <param name="considerUow">是否将缓存存储在当前工作单元中，直到工作单元结束</param>
     /// <param name="token">任务的 <see cref="T:System.Threading.CancellationToken" /></param>
     /// <returns>缓存项或 null</returns>
-    Task<TCacheItem?> GetAsync([NotNull] TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+    Task<TCacheItem?> GetAsync(TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
 
     /// <summary>
     /// 获取或添加指定键的缓存项如果找不到缓存项，则使用 <paramref name="factory" /> 委托提供的缓存项，并返回它
@@ -100,7 +99,7 @@ public interface IDistributedCache<TCacheItem, TCacheKey> where TCacheItem : cla
     /// <param name="considerUow">是否将缓存存储在当前工作单元中，直到工作单元结束</param>
     /// <param name="token">任务的 <see cref="T:System.Threading.CancellationToken" /></param>
     /// <returns>缓存项</returns>
-    Task<TCacheItem?> GetOrAddAsync([NotNull] TCacheKey key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+    Task<TCacheItem?> GetOrAddAsync(TCacheKey key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
 
     /// <summary>
     /// 获取或添加多个缓存项，使用给定的键，如果某些缓存项未找到，则使用 <paramref name="factory" /> 委托添加缓存项，并返回提供的缓存项
@@ -145,7 +144,7 @@ public interface IDistributedCache<TCacheItem, TCacheKey> where TCacheItem : cla
     /// <param name="considerUow">此选项将缓存存储在当前工作单元中，直到当前工作单元结束才会影响缓存</param>
     /// <param name="token">任务的 <see cref="T:System.Threading.CancellationToken" /></param>
     /// <returns>一个异步任务，表示操作的完成</returns>
-    Task SetAsync([NotNull] TCacheKey key, [NotNull] TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+    Task SetAsync(TCacheKey key, TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
 
     /// <summary>
     /// 设置多个缓存项

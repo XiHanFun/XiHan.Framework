@@ -19,7 +19,7 @@ namespace XiHan.Framework.VirtualFileSystem.Utilities;
 /// <summary>
 /// 路径解析服务
 /// </summary>
-public static partial class PathResolver
+public static class PathResolver
 {
     /// <summary>
     /// 解析虚拟路径

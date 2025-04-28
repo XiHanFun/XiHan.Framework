@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Text;
 
@@ -28,7 +27,7 @@ public class CacheNameAttribute : Attribute
     /// 构造函数
     /// </summary>
     /// <param name="name"></param>
-    public CacheNameAttribute([NotNull] string name)
+    public CacheNameAttribute(string name)
     {
         _ = CheckHelper.NotNull(name, nameof(name));
 

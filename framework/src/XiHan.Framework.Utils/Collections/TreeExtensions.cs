@@ -86,8 +86,7 @@ public static class TreeExtensions
             node.Children.AddRange(lookup[keySelector(node.Value)]);
         }
 
-        return nodes.Where(node => parentKeySelector(node.Value) is null
-            || !nodes.Any(n => keySelector(n.Value)?.Equals(parentKeySelector(node.Value)) == true));
+        return nodes.Where(node => !nodes.Any(n => keySelector(n.Value).Equals(parentKeySelector(node.Value)) == true));
     }
 
     /// <summary>
@@ -127,7 +126,7 @@ public static class TreeExtensions
 
         var parentNode = source
                 .DepthFirstTraversal()
-                .FirstOrDefault(node => keySelector(node.Value)?.Equals(keySelector(parent)) == true)
+                .FirstOrDefault(node => keySelector(node.Value).Equals(keySelector(parent)) == true)
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
         _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
@@ -141,7 +140,7 @@ public static class TreeExtensions
     /// <param name="root"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static bool RemoveNode<T>(this TreeNode<T> root, T value)
+    public static bool RemoveNode<T>(this TreeNode<T>? root, T value)
     {
         if (root is null)
         {
@@ -171,7 +170,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this TreeNode<T> root)
+    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this TreeNode<T>? root)
     {
         if (root is null)
         {
@@ -195,7 +194,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="source"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNode<T>> source)
+    public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNode<T>>? source)
     {
         if (source is null)
         {
@@ -217,7 +216,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static IEnumerable<TreeNode<T>> BreadthFirstTraversal<T>(this TreeNode<T> root)
+    public static IEnumerable<TreeNode<T>> BreadthFirstTraversal<T>(this TreeNode<T>? root)
     {
         if (root is null)
         {
@@ -270,7 +269,7 @@ public static class TreeExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static int GetHeight<T>(this TreeNode<T> root)
+    public static int GetHeight<T>(this TreeNode<T>? root)
     {
         return root is null ? 0 : 1 + root.Children.Select(child => child.GetHeight()).DefaultIfEmpty(0).Max();
     }
@@ -296,7 +295,7 @@ public static class TreeExtensions
     /// <param name="value"></param>
     /// <param name="path"></param>
     /// <returns></returns>
-    private static bool FindPath<T>(TreeNode<T> node, T value, List<TreeNode<T>> path)
+    private static bool FindPath<T>(TreeNode<T>? node, T value, List<TreeNode<T>> path)
     {
         if (node is null)
         {

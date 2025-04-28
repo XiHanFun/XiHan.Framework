@@ -51,18 +51,12 @@ public class LongJsonConverter : JsonConverter<long>
     /// <returns></returns>
     public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.String)
+        return reader.TokenType switch
         {
-            if (long.TryParse(reader.GetString(), out var l))
-            {
-                return l;
-            }
-        }
-        else if (reader.TokenType == JsonTokenType.Number)
-        {
-            return reader.GetInt64();
-        }
-        return 0;
+            JsonTokenType.String when long.TryParse(reader.GetString(), out var l) => l,
+            JsonTokenType.Number => reader.GetInt64(),
+            _ => 0
+        };
     }
 
     /// <summary>

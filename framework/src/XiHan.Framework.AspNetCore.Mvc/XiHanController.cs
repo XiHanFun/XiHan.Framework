@@ -26,7 +26,7 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// <summary>
     /// 缓存服务提供程序
     /// </summary>
-    public ICachedServiceProvider CachedServiceProvider { get; set; } = default!;
+    public ICachedServiceProvider CachedServiceProvider { get; set; } = null!;
 
     /// <summary>
     /// 应用的横切关注点

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
@@ -33,7 +32,7 @@ public static class WebApplicationBuilderExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> AddApplicationAsync<TStartupModule>(
-        [NotNull] this WebApplicationBuilder builder,
+        this WebApplicationBuilder builder,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
         where TStartupModule : IXiHanModule
     {
@@ -56,8 +55,8 @@ public static class WebApplicationBuilderExtensions
     /// <param name="optionsAction"></param>
     /// <returns></returns>
     public static async Task<IXiHanApplicationWithExternalServiceProvider> AddApplicationAsync(
-        [NotNull] this WebApplicationBuilder builder,
-        [NotNull] Type startupModuleType,
+        this WebApplicationBuilder builder,
+        Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
         return await builder.Services.AddApplicationAsync(startupModuleType, options =>

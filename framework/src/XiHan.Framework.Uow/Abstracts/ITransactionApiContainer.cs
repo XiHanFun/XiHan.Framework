@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Uow.Abstracts;
 
 /// <summary>
@@ -26,14 +24,14 @@ public interface ITransactionApiContainer
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    ITransactionApi? FindTransactionApi([NotNull] string key);
+    ITransactionApi? FindTransactionApi(string key);
 
     /// <summary>
     /// 添加事务API
     /// </summary>
     /// <param name="key"></param>
     /// <param name="api"></param>
-    void AddTransactionApi([NotNull] string key, [NotNull] ITransactionApi api);
+    void AddTransactionApi(string key, ITransactionApi api);
 
     /// <summary>
     /// 获取或添加事务API
@@ -41,5 +39,5 @@ public interface ITransactionApiContainer
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    ITransactionApi GetOrAddTransactionApi([NotNull] string key, [NotNull] Func<ITransactionApi> factory);
+    ITransactionApi GetOrAddTransactionApi(string key, Func<ITransactionApi> factory);
 }

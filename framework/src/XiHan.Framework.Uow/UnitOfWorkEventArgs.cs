@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Uow;
@@ -26,7 +25,7 @@ public class UnitOfWorkEventArgs : EventArgs
     /// 构造函数
     /// </summary>
     /// <param name="unitOfWork"></param>
-    public UnitOfWorkEventArgs([NotNull] IUnitOfWork unitOfWork)
+    public UnitOfWorkEventArgs(IUnitOfWork unitOfWork)
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
 

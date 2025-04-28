@@ -57,12 +57,13 @@ public static class ProxyHelper
     /// <returns></returns>
     public static Type GetUnProxiedType(object obj)
     {
-        if (obj.GetType().Namespace == ProxyNamespace)
+        if (obj.GetType().Namespace != ProxyNamespace)
         {
-            var target = UnProxy(obj);
-            return target == obj ? obj.GetType().GetTypeInfo().BaseType! : target.GetType();
+            return obj.GetType();
         }
 
-        return obj.GetType();
+        var target = UnProxy(obj);
+        return target == obj ? obj.GetType().GetTypeInfo().BaseType! : target.GetType();
+
     }
 }
