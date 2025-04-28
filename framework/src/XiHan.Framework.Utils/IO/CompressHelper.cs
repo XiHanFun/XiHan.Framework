@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ZipHelper
+// FileName:CompressHelper
 // Guid:85265278-4d78-4775-a590-07b938651804
 // Author:Administrator
 // Email:me@zhaifanhua.com
@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.IO;
 /// <summary>
 /// 压缩帮助类
 /// </summary>
-public static class ZipHelper
+public static class CompressHelper
 {
     /// <summary>
     /// 解压

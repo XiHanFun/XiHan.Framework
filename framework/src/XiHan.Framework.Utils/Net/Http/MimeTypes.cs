@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Http;
+namespace XiHan.Framework.Utils.Net.Http;
 
 /// <summary>
 /// 定义了一组常见的 MIME 类型，用于表示不同类型的文件和数据流。
