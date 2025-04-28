@@ -86,8 +86,8 @@ public class PageInfoDto
 
             value = value switch
             {
-                int pageSize when pageSize > defaultMaxPageSize => defaultMaxPageSize,
-                int pageSize when pageSize < defaultMinPageSize => defaultMinPageSize,
+                _ when value > defaultMaxPageSize => defaultMaxPageSize,
+                _ when value < defaultMinPageSize => defaultMinPageSize,
                 // 不在默认每页大小数组中的值，取最接近的默认值
                 _ => _defaultPageSizeArray.OrderBy(p => Math.Abs(p - value)).First()
             };

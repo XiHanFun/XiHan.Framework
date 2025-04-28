@@ -313,10 +313,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
             if (_options.TimestampType == 1)
             {
                 // 秒级时间戳，同一秒内增加序列号
-                var maxSequence = _maxSeqNumber;
                 _currentSeqNumber++;
 
-                if (_currentSeqNumber > maxSequence)
+                if (_currentSeqNumber > _maxSeqNumber)
                 {
                     // 序列号超过上限，等待下一秒
                     _currentSeqNumber = _minSeqNumber;
@@ -326,10 +325,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
             else
             {
                 // 毫秒级时间戳，同一毫秒内增加序列号
-                var maxSequence = _maxSeqNumber;
                 _currentSeqNumber++;
 
-                if (_currentSeqNumber > maxSequence)
+                if (_currentSeqNumber > _maxSeqNumber)
                 {
                     // 序列号超过上限，等待下一毫秒
                     _currentSeqNumber = _minSeqNumber;
