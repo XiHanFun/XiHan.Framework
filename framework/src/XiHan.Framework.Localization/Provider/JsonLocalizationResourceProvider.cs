@@ -159,27 +159,31 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
                             continue;
                         }
 
-                        if (file.Name.StartsWith(filePattern, StringComparison.OrdinalIgnoreCase))
+                        if (!file.Name.StartsWith(filePattern, StringComparison.OrdinalIgnoreCase))
                         {
-                            // 从文件名提取文化代码
-                            var fileName = file.Name;
-                            var withoutExtension = fileName[..fileName.LastIndexOf('.')];
+                            continue;
+                        }
 
-                            if (withoutExtension.Contains('.'))
-                            {
-                                var cultureName = withoutExtension[(withoutExtension.LastIndexOf('.') + 1)..];
+                        // 从文件名提取文化代码
+                        var fileName = file.Name;
+                        var withoutExtension = fileName[..fileName.LastIndexOf('.')];
 
-                                // 验证文化代码的有效性
-                                if (CultureHelper.IsValidCultureCode(cultureName))
-                                {
-                                    _logger.LogDebug("找到有效的文化文件: {FileName}, 文化代码: {Culture}", fileName, cultureName);
-                                    _ = cultures.Add(cultureName);
-                                }
-                                else
-                                {
-                                    _logger.LogWarning("文件名包含无效的文化代码: {FileName}, 文化代码: {Culture}", fileName, cultureName);
-                                }
-                            }
+                        if (!withoutExtension.Contains('.'))
+                        {
+                            continue;
+                        }
+
+                        var cultureName = withoutExtension[(withoutExtension.LastIndexOf('.') + 1)..];
+
+                        // 验证文化代码的有效性
+                        if (CultureHelper.IsValidCultureCode(cultureName))
+                        {
+                            _logger.LogDebug("找到有效的文化文件: {FileName}, 文化代码: {Culture}", fileName, cultureName);
+                            _ = cultures.Add(cultureName);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("文件名包含无效的文化代码: {FileName}, 文化代码: {Culture}", fileName, cultureName);
                         }
                     }
                 }
@@ -214,6 +218,35 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     }
 
     /// <summary>
+    /// 将JSON对象扁平化为键值对
+    /// </summary>
+    /// <param name="element">JSON元素</param>
+    /// <param name="prefix">前缀</param>
+    /// <param name="dictionary">结果字典</param>
+    private static void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            var key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}:{property.Name}";
+
+            switch (property.Value.ValueKind)
+            {
+                case JsonValueKind.String:
+                    dictionary[key] = property.Value.GetString() ?? string.Empty;
+                    break;
+
+                case JsonValueKind.Object:
+                    FlattenJsonObject(property.Value, key, dictionary);
+                    break;
+
+                default:
+                    dictionary[key] = property.Value.ToString();
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
     /// 获取指定资源的字符串
     /// </summary>
     /// <param name="resource">本地化资源</param>
@@ -230,18 +263,20 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
         var cacheKey = $"{resource.ResourceName}:{cultureName}";
 
         // 尝试从缓存中获取
-        if (!_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
+        if (_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
         {
-            // 如果缓存中没有，尝试加载资源
-            stringDictionary = LoadResourceFile(vfResource, cultureName);
-            if (stringDictionary is not null)
-            {
-                _resourceCache[cacheKey] = stringDictionary;
-            }
+            return stringDictionary is not null && stringDictionary.TryGetValue(name, out var cacheValue) ? cacheValue : null;
+        }
+
+        // 如果缓存中没有，尝试加载资源
+        stringDictionary = LoadResourceFile(vfResource, cultureName);
+        if (stringDictionary is not null)
+        {
+            _resourceCache[cacheKey] = stringDictionary;
         }
 
         // 如果找到了资源字典，尝试获取特定的字符串
-        return stringDictionary is not null && stringDictionary.TryGetValue(name, out var value) ? value : null;
+        return stringDictionary is not null && stringDictionary.TryGetValue(name, out var oValue) ? oValue : null;
     }
 
     /// <summary>
@@ -254,26 +289,30 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     {
         if (resource is not VirtualFileLocalizationResource vfResource)
         {
-            return Enumerable.Empty<LocalizedString>();
+            return [];
         }
 
         var cacheKey = $"{resource.ResourceName}:{cultureName}";
 
         // 尝试从缓存中获取
-        if (!_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
+        if (_resourceCache.TryGetValue(cacheKey, out var stringDictionary))
         {
-            // 如果缓存中没有，尝试加载资源
-            stringDictionary = LoadResourceFile(vfResource, cultureName);
-            if (stringDictionary is not null)
-            {
-                _resourceCache[cacheKey] = stringDictionary;
-            }
+            return stringDictionary is not null
+                ? stringDictionary.Select(kvp => new LocalizedString(kvp.Key, kvp.Value, false))
+                : [];
+        }
+
+        // 如果缓存中没有，尝试加载资源
+        stringDictionary = LoadResourceFile(vfResource, cultureName);
+        if (stringDictionary is not null)
+        {
+            _resourceCache[cacheKey] = stringDictionary;
         }
 
         // 如果找到了资源字典，返回所有字符串
         return stringDictionary is not null
             ? stringDictionary.Select(kvp => new LocalizedString(kvp.Key, kvp.Value, false))
-            : Enumerable.Empty<LocalizedString>();
+            : [];
     }
 
     /// <summary>
@@ -313,35 +352,6 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
             _logger.LogError(ex, "加载资源文件失败: {ResourceName}, 文化: {Culture}",
                 resource.ResourceName, cultureName);
             return null;
-        }
-    }
-
-    /// <summary>
-    /// 将JSON对象扁平化为键值对
-    /// </summary>
-    /// <param name="element">JSON元素</param>
-    /// <param name="prefix">前缀</param>
-    /// <param name="dictionary">结果字典</param>
-    private static void FlattenJsonObject(JsonElement element, string prefix, Dictionary<string, string> dictionary)
-    {
-        foreach (var property in element.EnumerateObject())
-        {
-            var key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}:{property.Name}";
-
-            switch (property.Value.ValueKind)
-            {
-                case JsonValueKind.String:
-                    dictionary[key] = property.Value.GetString() ?? string.Empty;
-                    break;
-
-                case JsonValueKind.Object:
-                    FlattenJsonObject(property.Value, key, dictionary);
-                    break;
-
-                default:
-                    dictionary[key] = property.Value.ToString();
-                    break;
-            }
         }
     }
 }
