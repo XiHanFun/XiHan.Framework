@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:YitIdGenerator
+// FileName:SnowflakeIdGenerator
 // Guid:9f4e3d28-a7b6-47c9-81e0-5f9c2d6cf4e8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
