@@ -28,17 +28,19 @@ public static class IdGeneratorFactory
     /// <returns>ID生成器</returns>
     public static IDistributedIdGenerator GetInstance()
     {
-        if (_defaultInstance == null)
+        if (_defaultInstance != null)
         {
-            // 使用默认配置
-            var options = new IdGeneratorOptions
-            {
-                WorkerId = 1,
-                SeqBitLength = 6,
-                WorkerIdBitLength = 6
-            };
-            _defaultInstance = new SnowflakeIdGenerator(options);
+            return _defaultInstance;
         }
+
+        // 使用默认配置
+        var options = new IdGeneratorOptions
+        {
+            WorkerId = 1,
+            SeqBitLength = 6,
+            WorkerIdBitLength = 6
+        };
+        _defaultInstance = new SnowflakeIdGenerator(options);
         return _defaultInstance;
     }
 

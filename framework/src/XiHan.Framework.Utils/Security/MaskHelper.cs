@@ -31,7 +31,7 @@ public static partial class MaskHelper
     /// <param name="endCount">保留后面字符数</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns>脱敏后的字符串</returns>
-    public static string Mask(this string input, int frontCount, int endCount, char maskChar = '*')
+    public static string Mask(this string? input, int frontCount, int endCount, char maskChar = '*')
     {
         if (string.IsNullOrWhiteSpace(input?.Trim()))
         {
@@ -54,7 +54,7 @@ public static partial class MaskHelper
     /// <param name="input">原始字符串</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns></returns>
-    public static string Mask(this string input, char maskChar = '*')
+    public static string Mask(this string? input, char maskChar = '*')
     {
         if (string.IsNullOrWhiteSpace(input?.Trim()))
         {
@@ -156,11 +156,12 @@ public static partial class MaskHelper
         }
 
         var length = name.Length;
-        return length == 1
-            ? name
-            : length == 2
-                ? string.Concat(name.AsSpan(0, 1), "*")
-                : string.Concat(name.AsSpan(0, 1), new string('*', length - 2), name.AsSpan(length - 1, 1));
+        return length switch
+        {
+            1 => name,
+            2 => string.Concat(name.AsSpan(0, 1), "*"),
+            _ => string.Concat(name.AsSpan(0, 1), new string('*', length - 2), name.AsSpan(length - 1, 1))
+        };
     }
 
     /// <summary>

@@ -61,10 +61,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public string? GetString(ILocalizationResource resource, string name, string cultureName)
     {
-        if (resource is null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
+        ArgumentNullException.ThrowIfNull(resource);
 
         if (string.IsNullOrEmpty(name))
         {
@@ -102,10 +99,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public IEnumerable<LocalizedString> GetAllStrings(ILocalizationResource resource, string cultureName, bool includeParentCultures)
     {
-        if (resource is null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
+        ArgumentNullException.ThrowIfNull(resource);
 
         var result = new Dictionary<string, LocalizedString>();
 
@@ -116,10 +110,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
             {
                 foreach (var localizedString in GetAllStrings(baseResource, cultureName, true))
                 {
-                    if (!result.ContainsKey(localizedString.Name))
-                    {
-                        result[localizedString.Name] = localizedString;
-                    }
+                    result.TryAdd(localizedString.Name, localizedString);
                 }
             }
         }
@@ -142,10 +133,7 @@ public class JsonLocalizationResourceProvider : IResourceStringProvider
     /// <exception cref="ArgumentNullException"></exception>
     public IReadOnlyList<string> GetSupportedCultures(ILocalizationResource resource)
     {
-        if (resource is null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
+        ArgumentNullException.ThrowIfNull(resource);
 
         var cultures = new HashSet<string>();
 

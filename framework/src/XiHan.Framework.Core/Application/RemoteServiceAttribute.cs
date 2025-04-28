@@ -49,7 +49,7 @@ public class RemoteServiceAttribute : Attribute
     /// 一个模块的所有服务的组名预计应相同。
     /// 此名称也用于区分该组的服务端点。
     /// </summary>
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// 是否明确启用

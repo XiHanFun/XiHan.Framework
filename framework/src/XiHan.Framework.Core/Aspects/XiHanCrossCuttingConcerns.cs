@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Threading;
 
@@ -70,7 +69,7 @@ public class XiHanCrossCuttingConcerns
     /// <param name="concern"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool IsApplied([NotNull] object obj, [NotNull] string concern)
+    public static bool IsApplied(object obj, string concern)
     {
         return obj is null
             ? throw new ArgumentNullException(nameof(obj))
@@ -88,7 +87,7 @@ public class XiHanCrossCuttingConcerns
     public static IDisposable Applying(object obj, params string[] concerns)
     {
         AddApplied(obj, concerns);
-        return new DisposeAction<ValueTuple<object, string[]>>(static (state) =>
+        return new DisposeAction<ValueTuple<object, string[]>>(static state =>
         {
             var (obj, concerns) = state;
             RemoveApplied(obj, concerns);

@@ -45,7 +45,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <summary>
     /// 用户标识
     /// </summary>
-    public virtual Guid? Id => _principalAccessor.Principal?.FindUserId();
+    public virtual Guid? Id => _principalAccessor.Principal.FindUserId();
 
     /// <summary>
     /// 用户名
@@ -85,7 +85,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <summary>
     /// 租户标识
     /// </summary>
-    public virtual Guid? TenantId => _principalAccessor.Principal?.FindTenantId();
+    public virtual Guid? TenantId => _principalAccessor.Principal.FindTenantId();
 
     /// <summary>
     /// 角色
@@ -99,7 +99,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim? FindClaim(string claimType)
     {
-        return _principalAccessor.Principal?.Claims.FirstOrDefault(c => c.Type == claimType);
+        return _principalAccessor.Principal.Claims.FirstOrDefault(c => c.Type == claimType);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] FindClaims(string claimType)
     {
-        return _principalAccessor.Principal?.Claims.Where(c => c.Type == claimType).ToArray() ?? _emptyClaimsArray;
+        return _principalAccessor.Principal.Claims.Where(c => c.Type == claimType).ToArray() ?? _emptyClaimsArray;
     }
 
     /// <summary>
@@ -118,7 +118,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] GetAllClaims()
     {
-        return _principalAccessor.Principal?.Claims.ToArray() ?? _emptyClaimsArray;
+        return _principalAccessor.Principal.Claims.ToArray() ?? _emptyClaimsArray;
     }
 
     /// <summary>

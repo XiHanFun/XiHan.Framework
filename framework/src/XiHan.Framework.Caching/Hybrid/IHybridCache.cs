@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Hybrid;
-using System.Diagnostics.CodeAnalysis;
 
 namespace XiHan.Framework.Caching.Hybrid;
 
@@ -48,7 +47,7 @@ public interface IHybridCache<TCacheItem, TCacheKey>
     /// <param name="token"></param>
     /// <returns></returns>
     Task<TCacheItem?> GetOrCreateAsync(
-        [NotNull] TCacheKey key,
+        TCacheKey key,
         Func<Task<TCacheItem>> factory,
         Func<HybridCacheEntryOptions>? optionsFactory = null,
         bool? hideErrors = null,
@@ -66,7 +65,7 @@ public interface IHybridCache<TCacheItem, TCacheKey>
     /// <param name="token"></param>
     /// <returns></returns>
     Task SetAsync(
-        [NotNull] TCacheKey key,
+        TCacheKey key,
         TCacheItem value,
         HybridCacheEntryOptions? options = null,
         bool? hideErrors = null,
@@ -82,7 +81,7 @@ public interface IHybridCache<TCacheItem, TCacheKey>
     /// <param name="token"></param>
     /// <returns></returns>
     Task RemoveAsync(
-        [NotNull] TCacheKey key,
+        TCacheKey key,
         bool? hideErrors = null,
         bool considerUow = false,
         CancellationToken token = default);

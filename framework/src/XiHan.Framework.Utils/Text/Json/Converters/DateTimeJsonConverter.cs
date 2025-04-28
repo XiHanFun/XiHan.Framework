@@ -120,7 +120,7 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
                 return _isUtc ? time.ToUniversalTime() : time;
             }
         }
-        return default;
+        return null;
     }
 
     /// <summary>

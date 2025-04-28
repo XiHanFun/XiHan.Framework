@@ -26,8 +26,8 @@ public class XiHanClaimsMapOptions
     /// </summary>
     public XiHanClaimsMapOptions()
     {
-        Maps = new Dictionary<string, Func<string>>()
-            {
+        Maps = new Dictionary<string, Func<string>>
+        {
                 { "sub", () => XiHanClaimTypes.UserId },
                 { "role", () => XiHanClaimTypes.Role },
                 { "email", () => XiHanClaimTypes.Email },

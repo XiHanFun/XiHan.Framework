@@ -13,8 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Uow.Abstracts;
@@ -76,12 +74,12 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <summary>
     /// 工作单元失败事件
     /// </summary>
-    public event EventHandler<UnitOfWorkFailedEventArgs> Failed = default!;
+    public event EventHandler<UnitOfWorkFailedEventArgs> Failed = null!;
 
     /// <summary>
     /// 工作单元完成事件
     /// </summary>
-    public event EventHandler<UnitOfWorkEventArgs> Disposed = default!;
+    public event EventHandler<UnitOfWorkEventArgs> Disposed = null!;
 
     /// <summary>
     /// 是否启用过时的 DbContext 创建警告
@@ -96,7 +94,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <summary>
     /// 工作单元选项
     /// </summary>
-    public IXiHanUnitOfWorkOptions Options { get; private set; } = default!;
+    public IXiHanUnitOfWorkOptions Options { get; private set; } = null!;
 
     /// <summary>
     /// 外部工作单元
@@ -131,7 +129,6 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <summary>
     /// 工作单元项
     /// </summary>
-    [NotNull]
     public Dictionary<string, object> Items { get; }
 
     /// <summary>
@@ -169,7 +166,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// </summary>
     /// <param name="options"></param>
     /// <exception cref="XiHanException"></exception>
-    public virtual void Initialize([NotNull] XiHanUnitOfWorkOptions options)
+    public virtual void Initialize(XiHanUnitOfWorkOptions options)
     {
         CheckHelper.NotNull(options, nameof(options));
 
@@ -186,7 +183,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// 预留
     /// </summary>
     /// <param name="reservationName"></param>
-    public virtual void Reserve([NotNull] string reservationName)
+    public virtual void Reserve(string reservationName)
     {
         CheckHelper.NotNullOrWhiteSpace(reservationName, nameof(reservationName));
 
@@ -327,7 +324,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    public virtual IDatabaseApi? FindDatabaseApi([NotNull] string key)
+    public virtual IDatabaseApi? FindDatabaseApi(string key)
     {
         return _databaseApis.GetOrDefault(key);
     }
@@ -338,17 +335,15 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="key"></param>
     /// <param name="api"></param>
     /// <exception cref="XiHanException"></exception>
-    public virtual void AddDatabaseApi([NotNull] string key, [NotNull] IDatabaseApi api)
+    public virtual void AddDatabaseApi(string key, IDatabaseApi api)
     {
         CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
         CheckHelper.NotNull(api, nameof(api));
 
-        if (_databaseApis.ContainsKey(key))
+        if (!_databaseApis.TryAdd(key, api))
         {
             throw new XiHanException("This unit of work already contains a database API for the given key.");
         }
-
-        _databaseApis.Add(key, api);
     }
 
     /// <summary>
@@ -357,7 +352,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    public virtual IDatabaseApi GetOrAddDatabaseApi([NotNull] string key, [NotNull] Func<IDatabaseApi> factory)
+    public virtual IDatabaseApi GetOrAddDatabaseApi(string key, Func<IDatabaseApi> factory)
     {
         CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
         CheckHelper.NotNull(factory, nameof(factory));
@@ -370,7 +365,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    public virtual ITransactionApi? FindTransactionApi([NotNull] string key)
+    public virtual ITransactionApi? FindTransactionApi(string key)
     {
         CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
 
@@ -383,17 +378,15 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="key"></param>
     /// <param name="api"></param>
     /// <exception cref="XiHanException"></exception>
-    public virtual void AddTransactionApi([NotNull] string key, [NotNull] ITransactionApi api)
+    public virtual void AddTransactionApi(string key, ITransactionApi api)
     {
         CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
         CheckHelper.NotNull(api, nameof(api));
 
-        if (_transactionApis.ContainsKey(key))
+        if (!_transactionApis.TryAdd(key, api))
         {
             throw new XiHanException("这个工作单元已经包含了给定键的事务API。");
         }
-
-        _transactionApis.Add(key, api);
     }
 
     /// <summary>
@@ -402,7 +395,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    public virtual ITransactionApi GetOrAddTransactionApi([NotNull] string key, [NotNull] Func<ITransactionApi> factory)
+    public virtual ITransactionApi GetOrAddTransactionApi(string key, Func<ITransactionApi> factory)
     {
         CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
         CheckHelper.NotNull(factory, nameof(factory));

@@ -21,7 +21,7 @@ public class AsyncReaderWriterLock
 {
     private readonly SemaphoreSlim _readerSemaphore = new(1, 1);
     private readonly SemaphoreSlim _writerSemaphore = new(1, 1);
-    private int _readerCount = 0;
+    private int _readerCount;
 
     /// <summary>
     /// 初始化异步读写锁

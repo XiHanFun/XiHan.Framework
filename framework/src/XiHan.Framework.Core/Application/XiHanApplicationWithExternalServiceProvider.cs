@@ -43,17 +43,12 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     {
         _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
 
-        if (ServiceProvider is not null)
+        if (ServiceProvider != serviceProvider)
         {
-            if (ServiceProvider != serviceProvider)
-            {
-                throw new Exception("服务提供器之前已设置为另一个服务提供器实例！");
-            }
-
-            return;
+            throw new Exception("服务提供器之前已设置为另一个服务提供器实例！");
         }
 
-        SetServiceProvider(serviceProvider);
+        return;
     }
 
     /// <summary>

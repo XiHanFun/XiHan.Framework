@@ -73,20 +73,22 @@ public static partial class YamlHelper
 
             // 解析键值对（格式：key: value）
             var match = YamlKeyValueRegex().Match(trimmedLine);
-            if (match.Success)
+            if (!match.Success)
             {
-                var key = match.Groups[1].Value.Trim();
-                var value = match.Groups[2].Value.Trim();
-
-                // 处理引号包裹的值
-                if ((value.StartsWith('\'') && value.EndsWith('\'')) ||
-                    (value.StartsWith('\"') && value.EndsWith('\"')))
-                {
-                    value = value[1..^1];
-                }
-
-                result[key] = value;
+                continue;
             }
+
+            var key = match.Groups[1].Value.Trim();
+            var value = match.Groups[2].Value.Trim();
+
+            // 处理引号包裹的值
+            if (value.StartsWith('\'') && value.EndsWith('\'') ||
+                value.StartsWith('\"') && value.EndsWith('\"'))
+            {
+                value = value[1..^1];
+            }
+
+            result[key] = value;
         }
 
         return result;
@@ -141,52 +143,43 @@ public static partial class YamlHelper
             // 计算当前行的缩进级别
             var leadingSpaces = line.Length - line.TrimStart().Length;
 
-            int currentIndent;
             // 回退缩进栈，直到找到合适的父级
             while (indentStack.Count > 0 && leadingSpaces <= indentStack.Peek().Indent)
             {
                 var (prefix, indent) = indentStack.Pop();
-                if (indentStack.Count > 0)
-                {
-                    currentPrefix = indentStack.Peek().Prefix;
-                    currentIndent = indentStack.Peek().Indent;
-                }
-                else
-                {
-                    currentPrefix = "";
-                    currentIndent = 0;
-                }
+                currentPrefix = indentStack.Count > 0 ? indentStack.Peek().Prefix : "";
             }
 
             var trimmedLine = line.Trim();
             var keyValueMatch = YamlKeyValueRegex().Match(trimmedLine);
 
-            if (keyValueMatch.Success)
+            if (!keyValueMatch.Success)
             {
-                var key = keyValueMatch.Groups[1].Value.Trim();
-                var value = keyValueMatch.Groups[2].Value.Trim();
+                continue;
+            }
 
-                var fullKey = string.IsNullOrEmpty(currentPrefix) ? key : $"{currentPrefix}.{key}";
+            var key = keyValueMatch.Groups[1].Value.Trim();
+            var value = keyValueMatch.Groups[2].Value.Trim();
 
-                // 如果值不为空，则是叶子节点
-                if (!string.IsNullOrEmpty(value))
+            var fullKey = string.IsNullOrEmpty(currentPrefix) ? key : $"{currentPrefix}.{key}";
+
+            // 如果值不为空，则是叶子节点
+            if (!string.IsNullOrEmpty(value))
+            {
+                // 处理引号包裹的值
+                if (value.StartsWith('\'') && value.EndsWith('\'') ||
+                    value.StartsWith('\"') && value.EndsWith('\"'))
                 {
-                    // 处理引号包裹的值
-                    if ((value.StartsWith('\'') && value.EndsWith('\'')) ||
-                        (value.StartsWith('\"') && value.EndsWith('\"')))
-                    {
-                        value = value[1..^1];
-                    }
+                    value = value[1..^1];
+                }
 
-                    result[fullKey] = value;
-                }
-                // 如果值为空，则是中间节点
-                else
-                {
-                    indentStack.Push((fullKey, leadingSpaces));
-                    currentPrefix = fullKey;
-                    currentIndent = leadingSpaces;
-                }
+                result[fullKey] = value;
+            }
+            // 如果值为空，则是中间节点
+            else
+            {
+                indentStack.Push((fullKey, leadingSpaces));
+                currentPrefix = fullKey;
             }
         }
 

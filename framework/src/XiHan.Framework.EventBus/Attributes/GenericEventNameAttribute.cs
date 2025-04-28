@@ -61,7 +61,7 @@ public class GenericEventNameAttribute : Attribute, IEventNameProvider
 
         if (!Postfix.IsNullOrEmpty())
         {
-            eventName = eventName + Postfix;
+            eventName += Postfix;
         }
 
         return eventName;

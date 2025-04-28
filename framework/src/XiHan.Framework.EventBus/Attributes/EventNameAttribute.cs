@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.EventBus.Attributes;
@@ -27,7 +26,7 @@ public class EventNameAttribute : Attribute, IEventNameProvider
     /// 构造函数
     /// </summary>
     /// <param name="name"></param>
-    public EventNameAttribute([NotNull] string name)
+    public EventNameAttribute(string name)
     {
         Name = CheckHelper.NotNullOrWhiteSpace(name, nameof(name));
     }
@@ -52,7 +51,7 @@ public class EventNameAttribute : Attribute, IEventNameProvider
     /// </summary>
     /// <param name="eventType"></param>
     /// <returns></returns>
-    public static string GetNameOrDefault([NotNull] Type eventType)
+    public static string GetNameOrDefault(Type eventType)
     {
         CheckHelper.NotNull(eventType, nameof(eventType));
 

@@ -35,7 +35,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     [ConcurrencyCheck]
     [Timestamp]
-    public virtual byte[] RowVersion { get; set; } = default!;
+    public virtual byte[] RowVersion { get; set; } = null!;
 
     /// <summary>
     /// 重写实体相等性判断
@@ -93,7 +93,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// <param name="a"></param>
     /// <param name="b"></param>
     /// <returns></returns>
-    public static bool operator ==(EntityBase<TKey> a, EntityBase<TKey> b)
+    public static bool operator ==(EntityBase<TKey>? a, EntityBase<TKey>? b)
     {
         return ReferenceEquals(a, b) || (a is not null && b is not null && a.Equals(b));
     }

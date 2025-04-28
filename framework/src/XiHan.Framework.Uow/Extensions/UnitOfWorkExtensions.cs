@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.System;
 
@@ -29,7 +28,7 @@ public static class UnitOfWorkExtensions
     /// <param name="unitOfWork"></param>
     /// <param name="reservationName"></param>
     /// <returns></returns>
-    public static bool IsReservedFor([NotNull] this IUnitOfWork unitOfWork, string reservationName)
+    public static bool IsReservedFor(this IUnitOfWork unitOfWork, string reservationName)
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
 
@@ -43,7 +42,7 @@ public static class UnitOfWorkExtensions
     /// <param name="unitOfWork"></param>
     /// <param name="key"></param>
     /// <param name="value"></param>
-    public static void AddItem<TValue>([NotNull] this IUnitOfWork unitOfWork, string key, TValue value)
+    public static void AddItem<TValue>(this IUnitOfWork unitOfWork, string key, TValue value)
         where TValue : class
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
@@ -58,7 +57,7 @@ public static class UnitOfWorkExtensions
     /// <param name="unitOfWork"></param>
     /// <param name="key"></param>
     /// <returns></returns>
-    public static TValue GetItemOrDefault<TValue>([NotNull] this IUnitOfWork unitOfWork, string key)
+    public static TValue GetItemOrDefault<TValue>(this IUnitOfWork unitOfWork, string key)
         where TValue : class
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
@@ -74,7 +73,7 @@ public static class UnitOfWorkExtensions
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    public static TValue GetOrAddItem<TValue>([NotNull] this IUnitOfWork unitOfWork, string key, Func<string, TValue> factory)
+    public static TValue GetOrAddItem<TValue>(this IUnitOfWork unitOfWork, string key, Func<string, TValue> factory)
         where TValue : class
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
@@ -87,7 +86,7 @@ public static class UnitOfWorkExtensions
     /// </summary>
     /// <param name="unitOfWork"></param>
     /// <param name="key"></param>
-    public static void RemoveItem([NotNull] this IUnitOfWork unitOfWork, string key)
+    public static void RemoveItem(this IUnitOfWork unitOfWork, string key)
     {
         _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
 

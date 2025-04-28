@@ -24,30 +24,30 @@ public class EmptyHostingEnvironment : IWebHostEnvironment
     /// <summary>
     /// 环境名称
     /// </summary>
-    public string EnvironmentName { get; set; } = default!;
+    public string EnvironmentName { get; set; } = null!;
 
     /// <summary>
     /// 应用名称
     /// </summary>
-    public string ApplicationName { get; set; } = default!;
+    public string ApplicationName { get; set; } = null!;
 
     /// <summary>
     /// Web 根路径
     /// </summary>
-    public string WebRootPath { get; set; } = default!;
+    public string WebRootPath { get; set; } = null!;
 
     /// <summary>
     /// Web 根文件提供者
     /// </summary>
-    public IFileProvider WebRootFileProvider { get; set; } = default!;
+    public IFileProvider WebRootFileProvider { get; set; } = null!;
 
     /// <summary>
     /// 内容根路径
     /// </summary>
-    public string ContentRootPath { get; set; } = default!;
+    public string ContentRootPath { get; set; } = null!;
 
     /// <summary>
     /// 内容根文件提供者
     /// </summary>
-    public IFileProvider ContentRootFileProvider { get; set; } = default!;
+    public IFileProvider ContentRootFileProvider { get; set; } = null!;
 }

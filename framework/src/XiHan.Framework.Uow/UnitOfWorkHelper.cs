@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using XiHan.Framework.Uow.Abstracts;
 using XiHan.Framework.Uow.Attributes;
@@ -48,7 +47,7 @@ public static class UnitOfWorkHelper
     /// <param name="methodInfo"></param>
     /// <param name="unitOfWorkAttribute"></param>
     /// <returns></returns>
-    public static bool IsUnitOfWorkMethod([NotNull] MethodInfo methodInfo, out UnitOfWorkAttribute? unitOfWorkAttribute)
+    public static bool IsUnitOfWorkMethod(MethodInfo methodInfo, out UnitOfWorkAttribute? unitOfWorkAttribute)
     {
         CheckHelper.NotNull(methodInfo, nameof(methodInfo));
 

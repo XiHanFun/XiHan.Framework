@@ -21,9 +21,6 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
 {
     private readonly IdGeneratorOptions _options;
 
-    // 时间戳位数
-    private readonly byte _timestampBitLength;
-
     // 数据中心ID位数
     private readonly byte _dataCenterIdBitLength;
 
@@ -51,9 +48,6 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     // 锁对象
     private readonly Lock _lock = new();
 
-    // 秒级计数器
-    private readonly long _secMask = 0;
-
     // 最大序列数
     private readonly long _maxSeqNumber;
 
@@ -65,12 +59,6 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
 
     // 基准时间戳
     private readonly long _baseTimestamp;
-
-    // 漂移中使用的序列号
-    private readonly long _currentTimeTick;
-
-    // 是否过期时间
-    private readonly long _runTimeTick;
 
     // 当前序列号
     private long _currentSeqNumber;
@@ -107,11 +95,11 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 2.时间戳相关
         if (options.TimestampType == 1)
         {
-            _timestampBitLength = 32; // 32位，最大表示2^32秒=136年
+            // 32位，最大表示2^32秒=136年
         }
         else
         {
-            _timestampBitLength = 41; // 41位，最大表示2^41毫秒=69年
+            // 41位，最大表示2^41毫秒=69年
         }
 
         // 3.位移计算
@@ -169,9 +157,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>时间戳</returns>
     public DateTime ExtractTime(long id)
     {
-        var timestamp = _options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod
-            ? (id >> _timestampShift) + _baseTimestamp
-            : (id >> _timestampShift) + _baseTimestamp;
+        var timestamp = (id >> _timestampShift) + _baseTimestamp;
         return _options.TimestampType == 1
             ? DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime
             : DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
@@ -227,7 +213,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 1.检查BaseTime
         if (GetCurrentTimestamp() < _baseTimestamp)
         {
-            throw new Exception($"基准时间不能超过当前时间");
+            throw new Exception("基准时间不能超过当前时间");
         }
 
         // 2.检查WorkerId
@@ -260,19 +246,19 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 3.检查SeqBitLength和WorkerIdBitLength之和不能超过22位(64-42)
         if (_seqBitLength + _workerIdBitLength > 22)
         {
-            throw new ArgumentException($"序列号位长与机器码位长之和不能超过22");
+            throw new ArgumentException("序列号位长与机器码位长之和不能超过22");
         }
 
         // 4.检查SeqBitLength范围
         if (_seqBitLength is < 3 or > 21)
         {
-            throw new ArgumentException($"序列号位长必须在3-21之间");
+            throw new ArgumentException("序列号位长必须在3-21之间");
         }
 
         // 5.检查WorkerIdBitLength范围
         if (_workerIdBitLength is < 1 or > 15)
         {
-            throw new ArgumentException($"机器码位长必须在1-15之间");
+            throw new ArgumentException("机器码位长必须在1-15之间");
         }
 
         // 6.检查MaxSeqNumber范围
@@ -284,13 +270,13 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 7.检查MinSeqNumber范围
         if (_minSeqNumber is < 0 or > 127)
         {
-            throw new ArgumentException($"最小序列数必须在0-127之间");
+            throw new ArgumentException("最小序列数必须在0-127之间");
         }
 
         // 8.检查TopOverCostCount
         if (_topOverCostCount is < 0 or > 10000)
         {
-            throw new ArgumentException($"最大漂移次数必须在0-10000之间");
+            throw new ArgumentException("最大漂移次数必须在0-10000之间");
         }
     }
 

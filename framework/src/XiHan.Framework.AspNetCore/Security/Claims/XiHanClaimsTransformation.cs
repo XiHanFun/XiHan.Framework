@@ -44,7 +44,7 @@ public class XiHanClaimsTransformation : IClaimsTransformation
     /// <returns></returns>
     public virtual Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
-        var mapClaims = principal.Claims.Where(claim => XiHanClaimsMapOptions.Value.Maps.Keys.Contains(claim.Type));
+        var mapClaims = principal.Claims.Where(claim => XiHanClaimsMapOptions.Value.Maps.ContainsKey(claim.Type));
 
         principal.AddIdentity(new ClaimsIdentity(mapClaims.Select(
                     claim => new Claim(
