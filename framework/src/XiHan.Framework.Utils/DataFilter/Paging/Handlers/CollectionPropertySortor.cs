@@ -34,11 +34,10 @@ public static class CollectionPropertySortor<T>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
         var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
-        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? source.OrderBy(keySelector.Compile())
-            : source.OrderByDescending(keySelector.Compile());
+            ? source.OrderBy(keySelectorExpression.Compile())
+            : source.OrderByDescending(keySelectorExpression.Compile());
     }
 
     /// <summary>
@@ -77,11 +76,10 @@ public static class CollectionPropertySortor<T>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
         var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
-        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? source.ThenBy(keySelector.Compile())
-            : source.ThenByDescending(keySelector.Compile());
+            ? source.ThenBy(keySelectorExpression.Compile())
+            : source.ThenByDescending(keySelectorExpression.Compile());
     }
 
     /// <summary>
@@ -125,12 +123,7 @@ public static class CollectionPropertySortor<T>
         var firstCondition = sortConditions.First();
         var orderedSource = OrderBy(source, firstCondition);
 
-        foreach (var sortCondition in sortConditions.Skip(1))
-        {
-            orderedSource = ThenBy(orderedSource, sortCondition);
-        }
-
-        return orderedSource;
+        return sortConditions.Skip(1).Aggregate(orderedSource, ThenBy);
     }
 
     /// <summary>
@@ -148,12 +141,7 @@ public static class CollectionPropertySortor<T>
         var firstCondition = sortConditions.First();
         var orderedSource = OrderBy(source, firstCondition);
 
-        foreach (var sortCondition in sortConditions.Skip(1))
-        {
-            orderedSource = ThenBy(orderedSource, sortCondition);
-        }
-
-        return orderedSource;
+        return sortConditions.Skip(1).Aggregate(orderedSource, ThenBy);
     }
 
     #endregion IEnumerable
@@ -170,11 +158,10 @@ public static class CollectionPropertySortor<T>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
         var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
-        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? source.OrderBy(keySelector)
-            : source.OrderByDescending(keySelector);
+            ? source.OrderBy(keySelectorExpression)
+            : source.OrderByDescending(keySelectorExpression);
     }
 
     /// <summary>
@@ -213,11 +200,10 @@ public static class CollectionPropertySortor<T>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, string keyName, SortDirectionEnum sortDirection)
     {
         var keySelectorExpression = SortConditionParser<T>.GetSortConditionParser(keyName);
-        var keySelector = keySelectorExpression;
 
         return sortDirection == SortDirectionEnum.Asc
-            ? source.ThenBy(keySelector)
-            : source.ThenByDescending(keySelector);
+            ? source.ThenBy(keySelectorExpression)
+            : source.ThenByDescending(keySelectorExpression);
     }
 
     /// <summary>
@@ -261,12 +247,7 @@ public static class CollectionPropertySortor<T>
         var firstCondition = sortConditions.First();
         var orderedSource = OrderBy(source, firstCondition);
 
-        foreach (var sortCondition in sortConditions.Skip(1))
-        {
-            orderedSource = ThenBy(orderedSource, sortCondition);
-        }
-
-        return orderedSource;
+        return sortConditions.Skip(1).Aggregate(orderedSource, ThenBy);
     }
 
     /// <summary>
@@ -284,12 +265,7 @@ public static class CollectionPropertySortor<T>
         var firstCondition = sortConditions.First();
         var orderedSource = OrderBy(source, firstCondition);
 
-        foreach (var sortCondition in sortConditions.Skip(1))
-        {
-            orderedSource = ThenBy(orderedSource, sortCondition);
-        }
-
-        return orderedSource;
+        return sortConditions.Skip(1).Aggregate(orderedSource, ThenBy);
     }
 
     #endregion IQueryable
