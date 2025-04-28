@@ -546,13 +546,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return ToCacheItemsWithDefaultValues(keyArray);
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
+            return ToCacheItemsWithDefaultValues(keyArray);
+
         }
 
         return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -739,13 +740,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    HandleException(ex);
-                    return ToCacheItemsWithDefaultValues(keyArray);
+                    throw;
                 }
 
-                throw;
+                HandleException(ex);
+                return ToCacheItemsWithDefaultValues(keyArray);
+
             }
 
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -830,13 +832,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return ToCacheItemsWithDefaultValues(keyArray);
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
+                return ToCacheItemsWithDefaultValues(keyArray);
+
             }
 
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -890,13 +893,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    HandleException(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                HandleException(ex);
+                return;
+
             }
         }
 
@@ -945,13 +949,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
+                return;
+
             }
         }
 
@@ -1000,13 +1005,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    HandleException(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                HandleException(ex);
+                return;
+
             }
         }
 
@@ -1135,13 +1141,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return;
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
+            return;
+
         }
     }
 
@@ -1230,13 +1237,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    HandleException(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                HandleException(ex);
+                return;
+
             }
         }
 
@@ -1279,13 +1287,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
+                return;
+
             }
         }
 
@@ -1387,13 +1396,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
                 catch (Exception ex)
                 {
-                    if (hideErrors == true)
+                    if (hideErrors != true)
                     {
-                        await HandleExceptionAsync(ex);
-                        return;
+                        throw;
                     }
 
-                    throw;
+                    await HandleExceptionAsync(ex);
+                    return;
+
                 }
             }
 
@@ -1516,13 +1526,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return ToCacheItemsWithDefaultValues(keys);
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
+            return ToCacheItemsWithDefaultValues(keys);
+
         }
     }
 

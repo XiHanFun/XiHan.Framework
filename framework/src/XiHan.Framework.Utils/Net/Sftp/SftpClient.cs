@@ -84,11 +84,13 @@ public class SftpClient : IDisposable
     /// </summary>
     public void Disconnect()
     {
-        if (_client != null && _isConnected)
+        if (_client == null || !_isConnected)
         {
-            _client.Disconnect();
-            _isConnected = false;
+            return;
         }
+
+        _client.Disconnect();
+        _isConnected = false;
     }
 
     /// <summary>

@@ -57,17 +57,18 @@ public class LocalizationResourceManager : ILocalizationResourceManager
             throw new ArgumentException("Resource name cannot be null or empty", nameof(resourceName));
         }
 
-        if (!_resources.TryGetValue(resourceName, out var resource))
+        if (_resources.TryGetValue(resourceName, out var resource))
         {
-            // 添加详细错误日志
-            _logger.LogError("尝试访问未注册的本地化资源: {ResourceName}", resourceName);
-            _logger.LogDebug("已注册资源列表: {Resources}",
-                string.Join(", ", _resources.Keys));
-
-            throw new XiHanException($"Localization resource '{resourceName}' not found!");
+            return resource;
         }
 
-        return resource;
+        // 添加详细错误日志
+        _logger.LogError("尝试访问未注册的本地化资源: {ResourceName}", resourceName);
+        _logger.LogDebug("已注册资源列表: {Resources}",
+            string.Join(", ", _resources.Keys));
+
+        throw new XiHanException($"Localization resource '{resourceName}' not found!");
+
     }
 
     /// <summary>

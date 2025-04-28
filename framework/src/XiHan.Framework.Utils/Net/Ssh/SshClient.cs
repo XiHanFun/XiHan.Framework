@@ -87,11 +87,13 @@ public class SshClient : IDisposable
     {
         CloseShellStream();
 
-        if (_client != null && _isConnected)
+        if (_client == null || !_isConnected)
         {
-            _client.Disconnect();
-            _isConnected = false;
+            return;
         }
+
+        _client.Disconnect();
+        _isConnected = false;
     }
 
     /// <summary>
@@ -231,12 +233,14 @@ public class SshClient : IDisposable
     /// </summary>
     public void CloseShellStream()
     {
-        if (_shellStream != null)
+        if (_shellStream == null)
         {
-            _shellStream.Close();
-            _shellStream.Dispose();
-            _shellStream = null;
+            return;
         }
+
+        _shellStream.Close();
+        _shellStream.Dispose();
+        _shellStream = null;
     }
 
     /// <summary>
@@ -374,11 +378,13 @@ public class SshClient : IDisposable
 
         _client = new Renci.SshNet.SshClient(connectionInfo);
 
-        if (_connectionInfo.UseCompression)
+        if (!_connectionInfo.UseCompression)
         {
-            _client.ConnectionInfo.CompressionAlgorithms.Clear();
-            _client.ConnectionInfo.CompressionAlgorithms.Add("zlib@openssh.com", () => new ZlibOpenSsh());
+            return;
         }
+
+        _client.ConnectionInfo.CompressionAlgorithms.Clear();
+        _client.ConnectionInfo.CompressionAlgorithms.Add("zlib@openssh.com", () => new ZlibOpenSsh());
     }
 
     /// <summary>

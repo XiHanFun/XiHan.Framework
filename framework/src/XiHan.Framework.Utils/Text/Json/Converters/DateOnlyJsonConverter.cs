@@ -50,12 +50,14 @@ public class DateOnlyJsonConverter : JsonConverter<DateOnly>
     /// <returns></returns>
     public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.String)
+        if (reader.TokenType != JsonTokenType.String)
         {
-            if (DateOnly.TryParse(reader.GetString(), out var date))
-            {
-                return date;
-            }
+            return default;
+        }
+
+        if (DateOnly.TryParse(reader.GetString(), out var date))
+        {
+            return date;
         }
         return default;
     }
@@ -105,12 +107,14 @@ public class DateOnlyNullableConverter : JsonConverter<DateOnly?>
     /// <returns></returns>
     public override DateOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.String)
+        if (reader.TokenType != JsonTokenType.String)
         {
-            if (DateOnly.TryParse(reader.GetString(), out var date))
-            {
-                return date;
-            }
+            return null;
+        }
+
+        if (DateOnly.TryParse(reader.GetString(), out var date))
+        {
+            return date;
         }
         return null;
     }
