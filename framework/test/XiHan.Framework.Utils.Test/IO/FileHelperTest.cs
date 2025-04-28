@@ -144,15 +144,14 @@ public class FileHelperTest : IDisposable
     public void Copy_CopiesFile()
     {
         // Arrange
-        var sourcePath = _testFilePath;
         var destinationPath = Path.Combine(_testDirectory, "copy.txt");
 
         // Act
-        FileHelper.Copy(sourcePath, destinationPath);
+        FileHelper.Copy(_testFilePath, destinationPath);
 
         // Assert
         Assert.True(File.Exists(destinationPath));
-        Assert.Equal(File.ReadAllText(sourcePath), File.ReadAllText(destinationPath));
+        Assert.Equal(File.ReadAllText(_testFilePath), File.ReadAllText(destinationPath));
     }
 
     [Fact]

@@ -27,7 +27,7 @@ public static class SortConditionParser<T>
     /// <summary>
     /// 排序条件缓存
     /// </summary>
-    private static readonly ConcurrentDictionary<string, LambdaExpression> SortConditionParserCache = new();
+    private static readonly ConcurrentDictionary<string, LambdaExpression> _sortConditionParserCache = new();
 
     /// <summary>
     /// 获取排序条件解析器
@@ -60,7 +60,7 @@ public static class SortConditionParser<T>
     {
         var type = typeof(T);
         var key = $"{type.FullName}.{propertyName}";
-        if (SortConditionParserCache.TryGetValue(key, out var sortConditionParser))
+        if (_sortConditionParserCache.TryGetValue(key, out var sortConditionParser))
         {
             return (Expression<Func<T, object>>)sortConditionParser;
         }
@@ -73,7 +73,7 @@ public static class SortConditionParser<T>
         var converted = Expression.Convert(propertyAccess, typeof(object));
         sortConditionParser = Expression.Lambda<Func<T, object>>(converted, param);
 
-        _ = SortConditionParserCache.TryAdd(key, sortConditionParser);
+        _ = _sortConditionParserCache.TryAdd(key, sortConditionParser);
 
         return (Expression<Func<T, object>>)sortConditionParser;
     }

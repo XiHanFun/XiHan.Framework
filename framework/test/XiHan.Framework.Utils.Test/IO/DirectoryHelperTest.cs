@@ -112,14 +112,13 @@ public class DirectoryHelperTest : IDisposable
     public void Copy_CopiesDirectory()
     {
         // Arrange
-        var sourcePath = _subDirectory;
-        var filePath = Path.Combine(sourcePath, "file.txt");
+        var filePath = Path.Combine(_subDirectory, "file.txt");
         File.WriteAllText(filePath, "Content");
 
         var destPath = Path.Combine(_testDirectory, "CopiedDir");
 
         // Act
-        DirectoryHelper.Copy(sourcePath, destPath);
+        DirectoryHelper.Copy(_subDirectory, destPath);
 
         // Assert
         Assert.True(Directory.Exists(destPath));
