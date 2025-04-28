@@ -107,22 +107,22 @@ public class LocalizationTestController : ControllerBase
     {
         var localizer = HttpContext.RequestServices.GetXiHanLocalizer("TestResource");
 
-        if (!string.IsNullOrEmpty(culture))
+        if (string.IsNullOrEmpty(culture))
         {
-            var oldCulture = CultureInfo.CurrentUICulture;
-            CultureInfo.CurrentUICulture = new CultureInfo(culture);
-
-            try
-            {
-                return Ok(localizer.GetAllStrings());
-            }
-            finally
-            {
-                CultureInfo.CurrentUICulture = oldCulture;
-            }
+            return Ok(localizer.GetAllStrings());
         }
 
-        return Ok(localizer.GetAllStrings());
+        var oldCulture = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = new CultureInfo(culture);
+
+        try
+        {
+            return Ok(localizer.GetAllStrings());
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = oldCulture;
+        }
     }
 
     /// <summary>

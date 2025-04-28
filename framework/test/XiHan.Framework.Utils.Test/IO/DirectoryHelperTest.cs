@@ -25,16 +25,18 @@ public class DirectoryHelperTest : IDisposable
     public void Dispose()
     {
         // 清理测试目录
-        if (Directory.Exists(_testDirectory))
+        if (!Directory.Exists(_testDirectory))
         {
-            try
-            {
-                Directory.Delete(_testDirectory, true);
-            }
-            catch
-            {
-                // 忽略因文件锁定等导致的删除失败
-            }
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(_testDirectory, true);
+        }
+        catch
+        {
+            // 忽略因文件锁定等导致的删除失败
         }
     }
 

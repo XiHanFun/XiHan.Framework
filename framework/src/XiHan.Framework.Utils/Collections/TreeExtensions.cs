@@ -54,13 +54,10 @@ public static class TreeExtensions
 
                 _ = visited.Add(current.Value);
 
-                foreach (var child in nodes)
+                foreach (var child in nodes.Where(child => isChild(current.Value, child.Value)))
                 {
-                    if (isChild(current.Value, child.Value))
-                    {
-                        current.Children.Add(child);
-                        stack.Push(child);
-                    }
+                    current.Children.Add(child);
+                    stack.Push(child);
                 }
             }
         }

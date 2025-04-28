@@ -87,14 +87,16 @@ public class UnitOfWorkInterceptor : XiHanInterceptor, ITransientDependency
 
         unitOfWorkAttribute?.SetOptions(options);
 
-        if (unitOfWorkAttribute?.IsTransactional == null)
+        if (unitOfWorkAttribute?.IsTransactional != null)
         {
-            var defaultOptions = serviceProvider.GetRequiredService<IOptions<XiHanUnitOfWorkDefaultOptions>>().Value;
-            options.IsTransactional = defaultOptions.CalculateIsTransactional(
-                autoValue: serviceProvider.GetRequiredService<IUnitOfWorkTransactionBehaviourProvider>().IsTransactional
-                           ?? !invocation.Method.Name.StartsWith("Get", StringComparison.InvariantCultureIgnoreCase)
-            );
+            return options;
         }
+
+        var defaultOptions = serviceProvider.GetRequiredService<IOptions<XiHanUnitOfWorkDefaultOptions>>().Value;
+        options.IsTransactional = defaultOptions.CalculateIsTransactional(
+            autoValue: serviceProvider.GetRequiredService<IUnitOfWorkTransactionBehaviourProvider>().IsTransactional
+            ?? !invocation.Method.Name.StartsWith("Get", StringComparison.InvariantCultureIgnoreCase)
+        );
 
         return options;
     }

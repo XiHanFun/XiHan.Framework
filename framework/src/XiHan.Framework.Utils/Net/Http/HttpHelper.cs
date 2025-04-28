@@ -118,12 +118,14 @@ public static class HttpHelper
     /// <param name="headers"></param>
     private static void AddHeaders(HttpRequestMessage request, Dictionary<string, string>? headers)
     {
-        if (headers is not null)
+        if (headers is null)
         {
-            foreach (var header in headers)
-            {
-                _ = request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
+            return;
+        }
+
+        foreach (var header in headers)
+        {
+            _ = request.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
     }
 

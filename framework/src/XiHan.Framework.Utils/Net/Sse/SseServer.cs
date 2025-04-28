@@ -170,13 +170,15 @@ public class SseServer
             {
                 await Task.Delay(_options.KeepAliveInterval, cancellationToken);
 
-                if (!cancellationToken.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    // 发送注释作为心跳
-                    var commentBytes = Encoding.UTF8.GetBytes($": {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n");
-                    await stream.WriteAsync(commentBytes, cancellationToken);
-                    await stream.FlushAsync(cancellationToken);
+                    continue;
                 }
+
+                // 发送注释作为心跳
+                var commentBytes = Encoding.UTF8.GetBytes($": {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n");
+                await stream.WriteAsync(commentBytes, cancellationToken);
+                await stream.FlushAsync(cancellationToken);
             }
         }
         catch (OperationCanceledException)

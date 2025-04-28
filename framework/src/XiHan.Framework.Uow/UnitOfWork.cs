@@ -541,26 +541,30 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     {
         foreach (var databaseApi in GetAllActiveDatabaseApis())
         {
-            if (databaseApi is ISupportsRollback supportsRollbackDatabaseApi)
+            if (databaseApi is not ISupportsRollback supportsRollbackDatabaseApi)
             {
-                try
-                {
-                    await supportsRollbackDatabaseApi.RollbackAsync(cancellationToken);
-                }
-                catch { }
+                continue;
             }
+
+            try
+            {
+                await supportsRollbackDatabaseApi.RollbackAsync(cancellationToken);
+            }
+            catch { }
         }
 
         foreach (var transactionApi in GetAllActiveTransactionApis())
         {
-            if (transactionApi is ISupportsRollback supportsRollbackTransactionApi)
+            if (transactionApi is not ISupportsRollback supportsRollbackTransactionApi)
             {
-                try
-                {
-                    await supportsRollbackTransactionApi.RollbackAsync(cancellationToken);
-                }
-                catch { }
+                continue;
             }
+
+            try
+            {
+                await supportsRollbackTransactionApi.RollbackAsync(cancellationToken);
+            }
+            catch { }
         }
     }
 

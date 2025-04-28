@@ -94,16 +94,13 @@ public static class UnitOfWorkHelper
             return attrs[0];
         }
 
-        if (methodInfo.DeclaringType != null)
+        if (methodInfo.DeclaringType == null)
         {
-            attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
-            if (attrs.Length > 0)
-            {
-                return attrs[0];
-            }
+            return null;
         }
 
-        return null;
+        attrs = [.. methodInfo.DeclaringType.GetTypeInfo().GetCustomAttributes(true).OfType<UnitOfWorkAttribute>()];
+        return attrs.Length > 0 ? attrs[0] : null;
     }
 
     /// <summary>
