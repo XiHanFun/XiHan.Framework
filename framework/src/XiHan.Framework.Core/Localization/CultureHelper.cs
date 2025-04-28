@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Text;
@@ -36,7 +35,7 @@ public static class CultureHelper
     /// <param name="culture"></param>
     /// <param name="uiCulture"></param>
     /// <returns></returns>
-    public static IDisposable Use([NotNull] string culture, string? uiCulture = null)
+    public static IDisposable Use(string culture, string? uiCulture = null)
     {
         _ = CheckHelper.NotNull(culture, nameof(culture));
 
@@ -54,7 +53,7 @@ public static class CultureHelper
     /// <param name="culture"></param>
     /// <param name="uiCulture"></param>
     /// <returns></returns>
-    public static IDisposable Use([NotNull] CultureInfo culture, CultureInfo? uiCulture = null)
+    public static IDisposable Use(CultureInfo culture, CultureInfo? uiCulture = null)
     {
         _ = CheckHelper.NotNull(culture, nameof(culture));
 
@@ -64,7 +63,7 @@ public static class CultureHelper
         CultureInfo.CurrentCulture = culture;
         CultureInfo.CurrentUICulture = uiCulture ?? culture;
 
-        return new DisposeAction<ValueTuple<CultureInfo, CultureInfo>>(static (state) =>
+        return new DisposeAction<ValueTuple<CultureInfo, CultureInfo>>(static state =>
         {
             var (currentCulture, currentUiCulture) = state;
             CultureInfo.CurrentCulture = currentCulture;
@@ -118,19 +117,21 @@ public static class CultureHelper
             return true;
         }
 
-        if (sourceCultureName.StartsWith("zh") && targetCultureName.StartsWith("zh"))
+        if (!sourceCultureName.StartsWith("zh") || !targetCultureName.StartsWith("zh"))
         {
-            var culture = new CultureInfo(targetCultureName);
-            do
-            {
-                if (culture.Name == sourceCultureName)
-                {
-                    return true;
-                }
-
-                culture = new CultureInfo(culture.Name).Parent;
-            } while (!culture.Equals(CultureInfo.InvariantCulture));
+            return !sourceCultureName.Contains('-') && targetCultureName.Contains('-') && sourceCultureName == GetBaseCultureName(targetCultureName);
         }
+
+        var culture = new CultureInfo(targetCultureName);
+        do
+        {
+            if (culture.Name == sourceCultureName)
+            {
+                return true;
+            }
+
+            culture = new CultureInfo(culture.Name).Parent;
+        } while (!culture.Equals(CultureInfo.InvariantCulture));
 
         return !sourceCultureName.Contains('-') && targetCultureName.Contains('-') && sourceCultureName == GetBaseCultureName(targetCultureName);
     }

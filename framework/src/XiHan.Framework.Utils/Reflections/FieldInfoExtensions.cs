@@ -34,7 +34,7 @@ public static class FieldInfoExtensions
         var descValue = field.Name;
         if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
         {
-            descValue = description.Description ?? descValue;
+            descValue = description.Description;
         }
         return descValue;
     }

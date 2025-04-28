@@ -20,7 +20,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Caching.Extensions;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Handling;
@@ -67,7 +66,7 @@ public class XiHanHybridCache<TCacheItem> : IHybridCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<TCacheItem?> GetOrCreateAsync([NotNull] string key, Func<Task<TCacheItem>> factory, Func<HybridCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task<TCacheItem?> GetOrCreateAsync(string key, Func<Task<TCacheItem>> factory, Func<HybridCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         return await InternalCache.GetOrCreateAsync(key, factory, optionsFactory, hideErrors, considerUow, token);
     }
@@ -80,7 +79,7 @@ public class XiHanHybridCache<TCacheItem> : IHybridCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task RemoveAsync([NotNull] string key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task RemoveAsync(string key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         await InternalCache.RemoveAsync(key, hideErrors, considerUow, token);
     }
@@ -108,7 +107,7 @@ public class XiHanHybridCache<TCacheItem> : IHybridCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task SetAsync([NotNull] string key, TCacheItem value, HybridCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task SetAsync(string key, TCacheItem value, HybridCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         await InternalCache.SetAsync(key, value, options, hideErrors, considerUow, token);
     }
@@ -131,7 +130,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <summary>
     /// 默认缓存项选项
     /// </summary>
-    protected HybridCacheEntryOptions DefaultCacheOptions = default!;
+    protected HybridCacheEntryOptions DefaultCacheOptions = null!;
 
     /// <summary>
     /// 序列化器缓存
@@ -184,7 +183,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <summary>
     /// 缓存名称
     /// </summary>
-    protected string CacheName { get; set; } = default!;
+    protected string CacheName { get; set; } = null!;
 
     /// <summary>
     /// 是否忽略多租户
@@ -246,12 +245,12 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<TCacheItem?> GetOrCreateAsync([NotNull] TCacheKey key, Func<Task<TCacheItem>> factory, Func<HybridCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task<TCacheItem?> GetOrCreateAsync(TCacheKey key, Func<Task<TCacheItem>> factory, Func<HybridCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         token = CancellationTokenProvider.FallbackToProvider(token);
         hideErrors ??= DistributedCacheOption.HideErrors;
 
-        TCacheItem? value = null;
+        TCacheItem? value;
 
         if (!considerUow)
         {
@@ -266,13 +265,14 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return null;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
+                return null;
+
             }
 
             return value;
@@ -294,7 +294,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
                 var bytes = await DistributedCacheCache.GetAsync(NormalizeKey(key), token);
                 if (bytes is not null)
                 {
-                    return ResolveSerializer().Deserialize(new ReadOnlySequence<byte>(bytes, 0, bytes.Length)); ;
+                    return ResolveSerializer().Deserialize(new ReadOnlySequence<byte>(bytes, 0, bytes.Length));
                 }
 
                 value = await factory();
@@ -317,13 +317,14 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return null;
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
+            return null;
+
         }
 
         return value;
@@ -339,7 +340,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task SetAsync([NotNull] TCacheKey key, TCacheItem value, HybridCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task SetAsync(TCacheKey key, TCacheItem value, HybridCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         async Task SetRealCache()
         {
@@ -358,13 +359,12 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
             }
         }
 
@@ -396,7 +396,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task RemoveAsync([NotNull] TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task RemoveAsync(TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         await RemoveManyAsync([key], hideErrors, considerUow, token);
     }
@@ -424,13 +424,12 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
             }
         }
 
@@ -544,7 +543,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
     {
         return UnitOfWorkManager.Current is null
-            ? throw new XiHanException($"没有活跃的 UOW。")
+            ? throw new XiHanException("没有活跃的 UOW。")
             : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(),
             key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
     }
@@ -562,18 +561,24 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         }
 
         serializer = ServiceProvider.GetService<IHybridCacheSerializer<TCacheItem>>();
-        if (serializer is null)
+        if (serializer is not null)
         {
-            var factories = ServiceProvider.GetServices<IHybridCacheSerializerFactory>().ToArray();
-            Array.Reverse(factories);
-            foreach (var factory in factories)
+            return serializer is null
+                ? throw new InvalidOperationException($"在 '{typeof(TCacheItem).Name}' 中没有可用配置 {nameof(IHybridCacheSerializer<TCacheItem>)}")
+                : serializer.As<IHybridCacheSerializer<TCacheItem>>();
+        }
+
+        var factories = ServiceProvider.GetServices<IHybridCacheSerializerFactory>().ToArray();
+        Array.Reverse(factories);
+        foreach (var factory in factories)
+        {
+            if (!factory.TryCreateSerializer<TCacheItem>(out var current))
             {
-                if (factory.TryCreateSerializer<TCacheItem>(out var current))
-                {
-                    serializer = current;
-                    break;
-                }
+                continue;
             }
+
+            serializer = current;
+            break;
         }
 
         return serializer is null

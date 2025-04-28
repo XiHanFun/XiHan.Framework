@@ -31,7 +31,7 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     /// <param name="basePath"></param>
     /// <param name="priority"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    protected BaseLocalizationResource(string resourceName, string defaultCulture = "en", string basePath = "", int priority = 0)
+    protected BaseLocalizationResource(string resourceName, string defaultCulture = "en", string? basePath = "", int priority = 0)
     {
         ResourceName = resourceName ?? throw new ArgumentNullException(nameof(resourceName));
         DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
@@ -74,10 +74,7 @@ public abstract class BaseLocalizationResource : ILocalizationResource
     /// <exception cref="XiHanException"></exception>
     public virtual ILocalizationResource InheritFrom(ILocalizationResource resource)
     {
-        if (resource is null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
+        ArgumentNullException.ThrowIfNull(resource);
 
         if (resource == this)
         {

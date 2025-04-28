@@ -57,15 +57,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// </summary>
     public IServiceProvider CreateServiceProvider()
     {
-        if (ServiceProvider is not null)
-        {
-            return ServiceProvider;
-        }
-
-        ServiceScope = Services.BuildServiceProviderFromFactory().CreateScope();
-        SetServiceProvider(ServiceScope.ServiceProvider);
-
-        return ServiceProvider!;
+        return ServiceProvider;
     }
 
     /// <summary>

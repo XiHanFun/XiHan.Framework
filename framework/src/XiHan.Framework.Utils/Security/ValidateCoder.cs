@@ -94,8 +94,8 @@ public static class ValidateCoder
     /// <returns>随机字母或数字字符串</returns>
     public static string GetNumberOrLetter(int? length = 6, string? source = null)
     {
-        var defaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource;
-        return RandomHelper.GetRandom(length ?? 6, source ?? defaultSource);
+        const string DefaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource;
+        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultSource);
     }
 
     /// <summary>

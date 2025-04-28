@@ -29,16 +29,11 @@ public static class ExpressionExtensions
     /// <param name="second"></param>
     /// <param name="merge"></param>
     /// <returns></returns>
-    public static Expression<Func<T, bool>> Combine<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second, Func<Expression, Expression, BinaryExpression> merge)
+    public static Expression<Func<T, bool>> Combine<T>(this Expression<Func<T, bool>>? first, Expression<Func<T, bool>> second, Func<Expression, Expression, BinaryExpression> merge)
     {
         if (first is null)
         {
             return second;
-        }
-
-        if (second is null)
-        {
-            return first;
         }
 
         var parameter = Expression.Parameter(typeof(T), "x");

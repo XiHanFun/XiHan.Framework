@@ -54,7 +54,6 @@ public class PageResponseDto<T> : PageResponseDto
     /// 构造函数
     /// </summary>
     public PageResponseDto()
-        : base()
     {
     }
 

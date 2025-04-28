@@ -87,10 +87,7 @@ public class LocalizationResourceManager : ILocalizationResourceManager
     /// <exception cref="XiHanException"></exception>
     public void AddResource(ILocalizationResource resource)
     {
-        if (resource is null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
+        ArgumentNullException.ThrowIfNull(resource);
 
         if (_resources.TryGetValue(resource.ResourceName, out var existingResource))
         {

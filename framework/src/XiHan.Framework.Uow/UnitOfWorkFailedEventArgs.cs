@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Uow;
 
 /// <summary>
@@ -27,7 +25,7 @@ public class UnitOfWorkFailedEventArgs : UnitOfWorkEventArgs
     /// <summary>
     /// 构造函数
     /// </summary>
-    public UnitOfWorkFailedEventArgs([NotNull] IUnitOfWork unitOfWork, Exception? exception, bool isRolledback)
+    public UnitOfWorkFailedEventArgs(IUnitOfWork unitOfWork, Exception? exception, bool isRolledback)
         : base(unitOfWork)
     {
         Exception = exception;

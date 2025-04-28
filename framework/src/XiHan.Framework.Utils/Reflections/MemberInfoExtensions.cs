@@ -80,8 +80,8 @@ public static class MemberInfoExtensions
     {
         ArgumentNullException.ThrowIfNull(memberInfo);
 
-        var attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit).ToArray();
-        return attrs.Length > 0 ? (TAttribute)attrs[0] : default;
+        var attrs = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit);
+        return attrs.Length > 0 ? (TAttribute)attrs[0] : null;
     }
 
     /// <summary>

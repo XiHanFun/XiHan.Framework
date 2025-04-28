@@ -45,20 +45,13 @@ public class XiHanUnitOfWorkDefaultOptions
     /// <exception cref="XiHanException"></exception>
     public bool CalculateIsTransactional(bool autoValue)
     {
-        switch (TransactionBehavior)
+        return TransactionBehavior switch
         {
-            case UnitOfWorkTransactionBehavior.Enabled:
-                return true;
-
-            case UnitOfWorkTransactionBehavior.Disabled:
-                return false;
-
-            case UnitOfWorkTransactionBehavior.Auto:
-                return autoValue;
-
-            default:
-                throw new XiHanException("未实现的事务行为：" + TransactionBehavior);
-        }
+            UnitOfWorkTransactionBehavior.Enabled => true,
+            UnitOfWorkTransactionBehavior.Disabled => false,
+            UnitOfWorkTransactionBehavior.Auto => autoValue,
+            _ => throw new XiHanException("未实现的事务行为：" + TransactionBehavior)
+        };
     }
 
     /// <summary>
@@ -68,15 +61,9 @@ public class XiHanUnitOfWorkDefaultOptions
     /// <returns></returns>
     internal XiHanUnitOfWorkOptions Normalize(XiHanUnitOfWorkOptions options)
     {
-        if (options.IsolationLevel == null)
-        {
-            options.IsolationLevel = IsolationLevel;
-        }
+        options.IsolationLevel ??= IsolationLevel;
 
-        if (options.Timeout == null)
-        {
-            options.Timeout = Timeout;
-        }
+        options.Timeout ??= Timeout;
 
         return options;
     }

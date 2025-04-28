@@ -160,7 +160,7 @@ public class LocalizationTestController : ControllerBase
 
         // 使用GetDirectoryContents方法获取目录内容
         var files = _virtualFileSystem.GetDirectoryContents(resourcePath)
-            .Where(f => f.Exists && !f.IsDirectory && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            .Where(f => f is { Exists: true, IsDirectory: false } && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             .Select(f => new
             {
                 f.PhysicalPath,
@@ -189,7 +189,7 @@ public class LocalizationTestController : ControllerBase
 
         // 使用GetDirectoryContents方法获取资源文件
         foreach (var file in _virtualFileSystem.GetDirectoryContents(resourcePath)
-                    .Where(f => f.Exists && !f.IsDirectory && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
+                    .Where(f => f is { Exists: true, IsDirectory: false } && f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
         {
             try
             {

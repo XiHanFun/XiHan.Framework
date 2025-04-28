@@ -31,7 +31,7 @@ public static class TemplateEngine
     /// <param name="template">模板文本，使用 {{变量名}} 作为占位符</param>
     /// <param name="values">变量值字典</param>
     /// <returns>渲染后的文本</returns>
-    public static string Render(string template, IDictionary<string, object?> values)
+    public static string Render(string template, IDictionary<string, object?>? values)
     {
         if (string.IsNullOrEmpty(template))
         {
@@ -88,7 +88,7 @@ public static class TemplateEngine
     /// <param name="template">模板文本，支持 {{if condition}}...{{else}}...{{endif}} 条件语句</param>
     /// <param name="values">变量值字典</param>
     /// <returns>渲染后的文本</returns>
-    public static string RenderAdvanced(string template, IDictionary<string, object?> values)
+    public static string RenderAdvanced(string template, IDictionary<string, object?>? values)
     {
         if (string.IsNullOrEmpty(template))
         {
@@ -214,7 +214,8 @@ public static class TemplateEngine
                 rightValue?.ToString() ?? string.Empty,
                 StringComparison.Ordinal);
         }
-        else if (condition.Contains("!="))
+
+        if (condition.Contains("!="))
         {
             var parts = condition.Split("!=", StringSplitOptions.TrimEntries);
             var leftValue = GetValueFromExpression(parts[0], values);
@@ -225,26 +226,20 @@ public static class TemplateEngine
                 rightValue?.ToString() ?? string.Empty,
                 StringComparison.Ordinal);
         }
-        else
+
+        // 简单的变量存在性检查
+        var variableName = condition.Trim();
+        if (!values.TryGetValue(variableName, out var value))
         {
-            // 简单的变量存在性检查
-            var variableName = condition.Trim();
-            if (values.TryGetValue(variableName, out var value))
-            {
-                if (value is bool boolValue)
-                {
-                    return boolValue;
-                }
-
-                if (value is string strValue)
-                {
-                    return !string.IsNullOrEmpty(strValue);
-                }
-
-                return value != null;
-            }
             return false;
         }
+
+        if (value is bool boolValue)
+        {
+            return boolValue;
+        }
+
+        return value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
     }
 
     /// <summary>
@@ -258,8 +253,8 @@ public static class TemplateEngine
         expression = expression.Trim();
 
         // 检查是否是字符串字面量
-        if ((expression.Length > 1 && expression.StartsWith('"') && expression.EndsWith('"')) ||
-            (expression.Length > 1 && expression.StartsWith('\'') && expression.EndsWith('\'')))
+        if (expression.Length > 1 && expression.StartsWith('"') && expression.EndsWith('"') ||
+            expression.Length > 1 && expression.StartsWith('\'') && expression.EndsWith('\''))
         {
             return expression[1..^1];
         }

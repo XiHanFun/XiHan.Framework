@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Utils.System;
@@ -48,7 +47,7 @@ public static class CurrentUserExtensions
         where T : struct
     {
         var value = currentUser.FindClaimValue(claimType);
-        return value is null ? default : value.To<T>();
+        return value?.To<T>() ?? default;
     }
 
     /// <summary>
@@ -60,7 +59,7 @@ public static class CurrentUserExtensions
     {
         Debug.Assert(currentUser.Id is not null, "当前用户Id不为空");
 
-        return currentUser!.Id!.Value;
+        return currentUser.Id!.Value;
     }
 
     /// <summary>
@@ -68,7 +67,7 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorTenantId([NotNull] this ICurrentUser currentUser)
+    public static Guid? FindImpersonatorTenantId(this ICurrentUser currentUser)
     {
         var impersonatorTenantId = currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorTenantId);
         return impersonatorTenantId.IsNullOrWhiteSpace() ? null : Guid.TryParse(impersonatorTenantId, out var guid) ? guid : null;
@@ -79,7 +78,7 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorUserId([NotNull] this ICurrentUser currentUser)
+    public static Guid? FindImpersonatorUserId(this ICurrentUser currentUser)
     {
         var impersonatorUserId = currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorUserId);
         return impersonatorUserId.IsNullOrWhiteSpace() ? null : Guid.TryParse(impersonatorUserId, out var guid) ? guid : null;
@@ -90,7 +89,7 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static string? FindImpersonatorTenantName([NotNull] this ICurrentUser currentUser)
+    public static string? FindImpersonatorTenantName(this ICurrentUser currentUser)
     {
         return currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorTenantName);
     }
@@ -100,7 +99,7 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static string? FindImpersonatorUserName([NotNull] this ICurrentUser currentUser)
+    public static string? FindImpersonatorUserName(this ICurrentUser currentUser)
     {
         return currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorUserName);
     }
@@ -110,11 +109,11 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static string GetSessionId([NotNull] this ICurrentUser currentUser)
+    public static string GetSessionId(this ICurrentUser currentUser)
     {
         var sessionId = currentUser.FindSessionId();
         Debug.Assert(sessionId is not null, "sessionId 不为空");
-        return sessionId!;
+        return sessionId;
     }
 
     /// <summary>
@@ -122,7 +121,7 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static string? FindSessionId([NotNull] this ICurrentUser currentUser)
+    public static string? FindSessionId(this ICurrentUser currentUser)
     {
         return currentUser.FindClaimValue(XiHanClaimTypes.SessionId);
     }

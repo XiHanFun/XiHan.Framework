@@ -66,7 +66,7 @@ public class NameValue<T>
     /// <summary>
     /// 键
     /// </summary>
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// 值

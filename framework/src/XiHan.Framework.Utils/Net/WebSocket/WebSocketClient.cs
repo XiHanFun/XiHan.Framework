@@ -307,21 +307,27 @@ public class WebSocketClient : IDisposable
                     break;
                 }
 
-                // 处理完整消息
-                if (result.MessageType == WebSocketMessageType.Text && messageBuffer.Count > 0)
+                switch (result.MessageType)
                 {
-                    var message = Encoding.UTF8.GetString(messageBuffer.ToArray());
-                    OnMessage?.Invoke(this, new WebSocketEventArgs(message));
-                }
-                else if (result.MessageType == WebSocketMessageType.Binary)
-                {
-                    // 处理二进制消息
-                    // 将二进制数据转换为Base64字符串传递
-                    if (messageBuffer.Count > 0)
-                    {
-                        var base64 = Convert.ToBase64String(messageBuffer.ToArray());
-                        OnMessage?.Invoke(this, new WebSocketEventArgs($"BINARY:{base64}"));
-                    }
+                    // 处理完整消息
+                    case WebSocketMessageType.Text when messageBuffer.Count > 0:
+                        {
+                            var message = Encoding.UTF8.GetString([.. messageBuffer]);
+                            OnMessage?.Invoke(this, new WebSocketEventArgs(message));
+                            break;
+                        }
+                    case WebSocketMessageType.Binary:
+                        {
+                            // 处理二进制消息
+                            // 将二进制数据转换为Base64字符串传递
+                            if (messageBuffer.Count > 0)
+                            {
+                                var base64 = Convert.ToBase64String(messageBuffer.ToArray());
+                                OnMessage?.Invoke(this, new WebSocketEventArgs($"BINARY:{base64}"));
+                            }
+
+                            break;
+                        }
                 }
             }
         }

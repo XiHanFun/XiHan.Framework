@@ -656,7 +656,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return (x is null && y is null) || (x is not null && y is not null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
+        return x is null && y is null || x is not null && y is not null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
     }
 
     public override int GetHashCode(Assembly obj)

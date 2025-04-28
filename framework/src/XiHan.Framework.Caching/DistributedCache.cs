@@ -17,7 +17,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Caching.Extensions;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Handling;
@@ -99,7 +98,7 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<TCacheItem?> GetAsync([NotNull] string key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public Task<TCacheItem?> GetAsync(string key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         return InternalCache.GetAsync(key, hideErrors, considerUow, token);
     }
@@ -128,7 +127,7 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<TCacheItem?> GetOrAddAsync([NotNull] string key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public Task<TCacheItem?> GetOrAddAsync(string key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         return InternalCache.GetOrAddAsync(key, factory, optionsFactory, hideErrors, considerUow, token);
     }
@@ -185,7 +184,7 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task SetAsync([NotNull] string key, [NotNull] TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public Task SetAsync(string key, TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         return InternalCache.SetAsync(key, value, options, hideErrors, considerUow, token);
     }
@@ -326,7 +325,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <summary>
     /// 默认缓存条目选项
     /// </summary>
-    protected DistributedCacheEntryOptions DefaultCacheOptions = default!;
+    protected DistributedCacheEntryOptions DefaultCacheOptions = null!;
 
     private readonly XiHanDistributedCacheOptions _distributedCacheOption;
 
@@ -362,7 +361,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <summary>
     /// 缓存名称
     /// </summary>
-    protected string CacheName { get; set; } = default!;
+    protected string CacheName { get; set; } = null!;
 
     /// <summary>
     /// 是否忽略多租户
@@ -430,13 +429,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return null;
+                throw;
             }
 
-            throw;
+            HandleException(ex);
+            return null;
+
         }
 
         return ToCacheItem(cachedBytes);
@@ -487,13 +487,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return ToCacheItemsWithDefaultValues(keyArray);
+                throw;
             }
 
-            throw;
+            HandleException(ex);
+            return ToCacheItemsWithDefaultValues(keyArray);
+
         }
 
         return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -565,7 +566,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<TCacheItem?> GetAsync([NotNull] TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task<TCacheItem?> GetAsync(TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         hideErrors ??= _distributedCacheOption.HideErrors;
         if (ShouldConsiderUow(considerUow))
@@ -584,13 +585,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return null;
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
+            return null;
+
         }
 
         return cachedBytes is null ? null : Serializer.Deserialize<TCacheItem>(cachedBytes);
@@ -651,7 +653,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<TCacheItem?> GetOrAddAsync([NotNull] TCacheKey key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task<TCacheItem?> GetOrAddAsync(TCacheKey key, Func<Task<TCacheItem>> factory, Func<DistributedCacheEntryOptions>? optionsFactory = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         token = CancellationTokenProvider.FallbackToProvider(token);
         var value = await GetAsync(key, hideErrors, considerUow, token);
@@ -751,7 +753,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
         if (result.All(x => x.Value is not null))
         {
-            return result!;
+            return result;
         }
 
         var missingKeys = new List<TCacheKey>();
@@ -932,7 +934,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="considerUow"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task SetAsync([NotNull] TCacheKey key, [NotNull] TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    public virtual async Task SetAsync(TCacheKey key, TCacheItem value, DistributedCacheEntryOptions? options = null, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         async Task SetRealCache()
         {
@@ -1062,13 +1064,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
             catch (Exception ex)
             {
-                if (hideErrors == true)
+                if (hideErrors != true)
                 {
-                    await HandleExceptionAsync(ex);
-                    return;
+                    throw;
                 }
 
-                throw;
+                await HandleExceptionAsync(ex);
             }
         }
 
@@ -1109,13 +1110,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return;
+                throw;
             }
 
-            throw;
+            HandleException(ex);
         }
     }
 
@@ -1169,13 +1169,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return;
+                throw;
             }
 
-            throw;
+            HandleException(ex);
         }
     }
 
@@ -1205,13 +1204,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return;
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
         }
     }
 
@@ -1327,13 +1325,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
                 catch (Exception ex)
                 {
-                    if (hideErrors == true)
+                    if (hideErrors != true)
                     {
-                        HandleException(ex);
-                        return;
+                        throw;
                     }
 
-                    throw;
+                    HandleException(ex);
                 }
             }
 
@@ -1485,13 +1482,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return ToCacheItemsWithDefaultValues(keys);
+                throw;
             }
 
-            throw;
+            HandleException(ex);
+            return ToCacheItemsWithDefaultValues(keys);
+
         }
     }
 
@@ -1547,13 +1545,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                HandleException(ex);
-                return;
+                throw;
             }
 
-            throw;
+            HandleException(ex);
         }
     }
 
@@ -1578,13 +1575,12 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         }
         catch (Exception ex)
         {
-            if (hideErrors == true)
+            if (hideErrors != true)
             {
-                await HandleExceptionAsync(ex);
-                return;
+                throw;
             }
 
-            throw;
+            await HandleExceptionAsync(ex);
         }
     }
 
@@ -1679,7 +1675,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
     {
         return UnitOfWorkManager.Current is null
-            ? throw new XiHanException($"没有活跃的 UOW")
+            ? throw new XiHanException("没有活跃的 UOW")
             : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(), key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
     }
 
@@ -1690,6 +1686,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     private static KeyValuePair<TCacheKey, TCacheItem?>[] ToCacheItemsWithDefaultValues(TCacheKey[] keys)
     {
-        return [.. keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, default))];
+        return [.. keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, null))];
     }
 }

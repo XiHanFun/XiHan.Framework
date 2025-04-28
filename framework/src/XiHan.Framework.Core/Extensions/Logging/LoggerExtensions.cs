@@ -172,24 +172,28 @@ public static class LoggerExtensions
     {
         List<IExceptionWithSelfLogging> loggingExceptions = [];
 
-        if (exception is IExceptionWithSelfLogging logging)
+        switch (exception)
         {
-            loggingExceptions.Add(logging);
-        }
-        else if (exception is AggregateException { InnerException: not null } aggException)
-        {
-            if (aggException.InnerException is IExceptionWithSelfLogging selfLogging)
-            {
-                loggingExceptions.Add(selfLogging);
-            }
-
-            foreach (var innerException in aggException.InnerExceptions)
-            {
-                if (innerException is IExceptionWithSelfLogging withSelfLogging)
+            case IExceptionWithSelfLogging logging:
+                loggingExceptions.Add(logging);
+                break;
+            case AggregateException { InnerException: not null } aggException:
                 {
-                    _ = loggingExceptions.AddIfNotContains(withSelfLogging);
+                    if (aggException.InnerException is IExceptionWithSelfLogging selfLogging)
+                    {
+                        loggingExceptions.Add(selfLogging);
+                    }
+
+                    foreach (var innerException in aggException.InnerExceptions)
+                    {
+                        if (innerException is IExceptionWithSelfLogging withSelfLogging)
+                        {
+                            _ = loggingExceptions.AddIfNotContains(withSelfLogging);
+                        }
+                    }
+
+                    break;
                 }
-            }
         }
 
         foreach (var ex in loggingExceptions)

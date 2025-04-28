@@ -6,7 +6,6 @@ public class DirectoryHelperTest : IDisposable
 {
     private readonly string _testDirectory;
     private readonly string _subDirectory;
-    private readonly string _testFilePath;
 
     public DirectoryHelperTest()
     {
@@ -19,8 +18,8 @@ public class DirectoryHelperTest : IDisposable
         Directory.CreateDirectory(_subDirectory);
 
         // 创建测试文件
-        _testFilePath = Path.Combine(_testDirectory, "test.txt");
-        File.WriteAllText(_testFilePath, "Hello, World!");
+        var testFilePath = Path.Combine(_testDirectory, "test.txt");
+        File.WriteAllText(testFilePath, "Hello, World!");
     }
 
     public void Dispose()

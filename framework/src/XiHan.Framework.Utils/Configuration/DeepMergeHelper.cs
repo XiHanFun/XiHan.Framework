@@ -33,7 +33,7 @@ public static class DeepMergeHelper
     /// <typeparam name="T">配置类型</typeparam>
     /// <param name="configs">按优先级排序的配置列表，第一个为最高优先级</param>
     /// <returns>合并后的配置</returns>
-    public static T DeepMerge<T>(params T[] configs) where T : class, new()
+    public static T DeepMerge<T>(params T[]? configs) where T : class, new()
     {
         // 快速路径：没有配置或只有一个配置
         if (configs is null || configs.Length == 0)
@@ -41,7 +41,7 @@ public static class DeepMergeHelper
             return new T();
         }
 
-        if (configs.Length == 1 && configs[0] is not null)
+        if (configs is [not null])
         {
             return DeepClone(configs[0]) as T ?? new T();
         }
@@ -77,44 +77,43 @@ public static class DeepMergeHelper
         // 按优先级顺序检查每个配置
         foreach (var config in configs)
         {
-            if (config is null)
-            {
-                continue;
-            }
-
             // 获取当前配置的属性值
             var value = property.GetValue(config);
 
             // 检查值是否为空
-            if (!IsNullOrDefault(value))
+            if (IsNullOrDefault(value))
             {
-                if (!valueFound)
-                {
-                    // 首次找到非空值
-                    valueToSet = NeedsCloning(value) ? DeepClone(value) : value;
-                    valueFound = true;
-                }
-                else if (CanMerge(valueToSet, value))
-                {
-                    // 尝试合并值
-                    valueToSet = MergeValues(valueToSet, value);
-                }
-                // 对于已找到的标量值，保持高优先级的值
+                continue;
             }
+
+            if (!valueFound)
+            {
+                // 首次找到非空值
+                valueToSet = NeedsCloning(value) ? DeepClone(value) : value;
+                valueFound = true;
+            }
+            else if (CanMerge(valueToSet, value))
+            {
+                // 尝试合并值
+                valueToSet = MergeValues(valueToSet, value);
+            }
+            // 对于已找到的标量值，保持高优先级的值
         }
 
         // 如果找到了值，设置到结果中
-        if (valueFound)
+        if (!valueFound)
         {
-            try
-            {
-                property.SetValue(result, valueToSet);
-            }
-            catch (Exception ex) when (ex is ArgumentException or TargetInvocationException)
-            {
-                // 记录或处理属性设置失败的情况
-                ConsoleLogger.Error($"无法设置属性 {property.Name}: {ex.Message}");
-            }
+            return;
+        }
+
+        try
+        {
+            property.SetValue(result, valueToSet);
+        }
+        catch (Exception ex) when (ex is ArgumentException or TargetInvocationException)
+        {
+            // 记录或处理属性设置失败的情况
+            ConsoleLogger.Error($"无法设置属性 {property.Name}: {ex.Message}");
         }
     }
 
@@ -177,27 +176,25 @@ public static class DeepMergeHelper
             return value.Equals(Activator.CreateInstance(type));
         }
 
-        // 处理字符串
-        if (value is string strValue)
+        switch (value)
         {
-            return string.IsNullOrEmpty(strValue);
-        }
-
-        // 处理集合
-        if (value is ICollection collection)
-        {
-            return collection.Count == 0;
-        }
-
-        // 其他类型使用默认相等比较
-        try
-        {
-            return value.Equals(Activator.CreateInstance(type));
-        }
-        catch
-        {
-            // 某些类型可能没有默认构造函数
-            return false;
+            // 处理字符串
+            case string strValue:
+                return string.IsNullOrEmpty(strValue);
+            // 处理集合
+            case ICollection collection:
+                return collection.Count == 0;
+            default:
+                // 其他类型使用默认相等比较
+                try
+                {
+                    return value.Equals(Activator.CreateInstance(type));
+                }
+                catch
+                {
+                    // 某些类型可能没有默认构造函数
+                    return false;
+                }
         }
     }
 
@@ -250,16 +247,15 @@ public static class DeepMergeHelper
         var type = value.GetType();
 
         // 排除基本类型、枚举和常见值类型
-        return !type.IsPrimitive &&
-               !type.IsEnum &&
-               type != typeof(string) &&
-               type != typeof(DateTime) &&
-               type != typeof(DateTimeOffset) &&
-               type != typeof(TimeSpan) &&
-               type != typeof(decimal) &&
-               type != typeof(Guid) &&
-               !type.IsArray &&
-               value is not ICollection;
+        return type is { IsPrimitive: false, IsEnum: false } &&
+            type != typeof(string) &&
+            type != typeof(DateTime) &&
+            type != typeof(DateTimeOffset) &&
+            type != typeof(TimeSpan) &&
+            type != typeof(decimal) &&
+            type != typeof(Guid) &&
+            !type.IsArray &&
+            value is not ICollection;
     }
 
     /// <summary>
@@ -273,55 +269,56 @@ public static class DeepMergeHelper
         }
 
         // 处理列表类型
-        if (target is IList targetList && source is IList sourceList)
+        if (target is not IList targetList || source is not IList sourceList)
         {
-            // 提取元素类型
-            Type elementType;
-            var targetType = target.GetType();
-
-            if (targetType.IsGenericType)
-            {
-                elementType = targetType.GetGenericArguments()[0];
-            }
-            else if (targetType.IsArray)
-            {
-                elementType = targetType.GetElementType()!;
-            }
-            else
-            {
-                return target; // 无法确定元素类型，返回高优先级值
-            }
-
-            // 创建新列表
-            var listType = typeof(List<>).MakeGenericType(elementType);
-            var resultList = (IList)Activator.CreateInstance(listType)!;
-
-            // 添加所有唯一项
-            var addedItems = new HashSet<object?>();
-
-            // 先添加高优先级集合中的项
-            foreach (var item in targetList)
-            {
-                if (addedItems.Add(item))
-                {
-                    _ = resultList.Add(DeepClone(item));
-                }
-            }
-
-            // 再添加低优先级集合中的项（如果尚未添加）
-            foreach (var item in sourceList)
-            {
-                if (addedItems.Add(item))
-                {
-                    _ = resultList.Add(DeepClone(item));
-                }
-            }
-
-            return resultList;
+            return DeepClone(target);
         }
 
+        // 提取元素类型
+        Type elementType;
+        var targetType = target.GetType();
+
+        if (targetType.IsGenericType)
+        {
+            elementType = targetType.GetGenericArguments()[0];
+        }
+        else if (targetType.IsArray)
+        {
+            elementType = targetType.GetElementType()!;
+        }
+        else
+        {
+            return target; // 无法确定元素类型，返回高优先级值
+        }
+
+        // 创建新列表
+        var listType = typeof(List<>).MakeGenericType(elementType);
+        var resultList = (IList)Activator.CreateInstance(listType)!;
+
+        // 添加所有唯一项
+        var addedItems = new HashSet<object?>();
+
+        // 先添加高优先级集合中的项
+        foreach (var item in targetList)
+        {
+            if (addedItems.Add(item))
+            {
+                _ = resultList.Add(DeepClone(item));
+            }
+        }
+
+        // 再添加低优先级集合中的项（如果尚未添加）
+        foreach (var item in sourceList)
+        {
+            if (addedItems.Add(item))
+            {
+                _ = resultList.Add(DeepClone(item));
+            }
+        }
+
+        return resultList;
+
         // 其他集合类型，返回高优先级集合
-        return DeepClone(target);
     }
 
     /// <summary>
@@ -334,54 +331,50 @@ public static class DeepMergeHelper
             return source is not null ? DeepClone(source) : null;
         }
 
-        if (source is null)
+        if (source is null || target is not IDictionary targetDict || source is not IDictionary sourceDict)
         {
             return DeepClone(target);
         }
 
-        if (target is IDictionary targetDict && source is IDictionary sourceDict)
+        // 提取键值类型
+        var targetType = target.GetType();
+        if (!targetType.IsGenericType)
         {
-            // 提取键值类型
-            var targetType = target.GetType();
-            if (!targetType.IsGenericType)
-            {
-                return DeepClone(target); // 非泛型字典，返回高优先级值
-            }
-
-            var args = targetType.GetGenericArguments();
-            var keyType = args[0];
-            var valueType = args[1];
-
-            // 创建新字典
-            var dictType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            var resultDict = (IDictionary)Activator.CreateInstance(dictType)!;
-
-            // 复制目标字典的所有项
-            foreach (DictionaryEntry entry in targetDict)
-            {
-                resultDict.Add(entry.Key, DeepClone(entry.Value));
-            }
-
-            // 合并源字典中的项
-            foreach (DictionaryEntry entry in sourceDict)
-            {
-                if (!resultDict.Contains(entry.Key))
-                {
-                    // 如果键不存在，添加克隆的值
-                    resultDict.Add(entry.Key, DeepClone(entry.Value));
-                }
-                else if (CanMerge(resultDict[entry.Key], entry.Value))
-                {
-                    // 如果两个值可以合并，进行合并
-                    resultDict[entry.Key] = MergeValues(resultDict[entry.Key], entry.Value);
-                }
-                // 对于不能合并的项，保持高优先级值
-            }
-
-            return resultDict;
+            return DeepClone(target); // 非泛型字典，返回高优先级值
         }
 
-        return DeepClone(target);
+        var args = targetType.GetGenericArguments();
+        var keyType = args[0];
+        var valueType = args[1];
+
+        // 创建新字典
+        var dictType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+        var resultDict = (IDictionary)Activator.CreateInstance(dictType)!;
+
+        // 复制目标字典的所有项
+        foreach (DictionaryEntry entry in targetDict)
+        {
+            resultDict.Add(entry.Key, DeepClone(entry.Value));
+        }
+
+        // 合并源字典中的项
+        foreach (DictionaryEntry entry in sourceDict)
+        {
+            if (!resultDict.Contains(entry.Key))
+            {
+                // 如果键不存在，添加克隆的值
+                resultDict.Add(entry.Key, DeepClone(entry.Value));
+            }
+            else if (CanMerge(resultDict[entry.Key], entry.Value))
+            {
+                // 如果两个值可以合并，进行合并
+                resultDict[entry.Key] = MergeValues(resultDict[entry.Key], entry.Value);
+            }
+            // 对于不能合并的项，保持高优先级值
+        }
+
+        return resultDict;
+
     }
 
     /// <summary>
@@ -450,7 +443,6 @@ public static class DeepMergeHelper
             catch
             {
                 // 属性设置失败时，跳过
-                continue;
             }
         }
 
@@ -475,20 +467,16 @@ public static class DeepMergeHelper
             return obj;
         }
 
-        // 处理字典
-        if (obj is IDictionary dict)
+        return obj switch
         {
-            return CloneDictionary(dict);
-        }
-
-        // 处理列表
-        if (obj is IList list)
-        {
-            return CloneList(list);
-        }
+            // 处理字典
+            IDictionary dict => CloneDictionary(dict),
+            // 处理列表
+            IList list => CloneList(list),
+            _ => CloneComplexObject(obj)
+        };
 
         // 处理复杂对象
-        return CloneComplexObject(obj);
     }
 
     /// <summary>
@@ -617,7 +605,6 @@ public static class DeepMergeHelper
                 catch
                 {
                     // 单个属性克隆失败，继续处理其他属性
-                    continue;
                 }
             }
 

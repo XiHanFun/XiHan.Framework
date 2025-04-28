@@ -290,7 +290,6 @@ public static class DateTimeFormatExtensions
                 8 => DateTime.ParseExact(thisValue, "yyyyMMdd", CultureInfo.CurrentCulture),
                 10 => DateTime.ParseExact(thisValue, "yyyyMMddHH", CultureInfo.CurrentCulture),
                 12 => DateTime.ParseExact(thisValue, "yyyyMMddHHmm", CultureInfo.CurrentCulture),
-                14 => DateTime.ParseExact(thisValue, "yyyyMMddHHmmss", CultureInfo.CurrentCulture),
                 _ => DateTime.ParseExact(thisValue, "yyyyMMddHHmmss", CultureInfo.CurrentCulture)
             };
         }

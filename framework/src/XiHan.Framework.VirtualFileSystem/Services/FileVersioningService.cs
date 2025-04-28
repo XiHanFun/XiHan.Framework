@@ -48,14 +48,15 @@ public class FileVersioningService : IFileVersioningService
     /// <returns></returns>
     public bool Rollback(string path, int steps = 1)
     {
-        if (_fileVersions.TryGetValue(path, out var versions))
+        if (!_fileVersions.TryGetValue(path, out var versions))
         {
-            while (steps-- > 0 && versions.Count > 0)
-            {
-                _ = versions.Pop();
-            }
-            return true;
+            return false;
         }
-        return false;
+
+        while (steps-- > 0 && versions.Count > 0)
+        {
+            _ = versions.Pop();
+        }
+        return true;
     }
 }

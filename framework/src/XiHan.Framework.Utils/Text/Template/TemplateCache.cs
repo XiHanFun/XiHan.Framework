@@ -99,12 +99,9 @@ public static class TemplateCache
     public static string RenderCachedTemplate(string key, IDictionary<string, object?> values)
     {
         var template = GetTemplate(key);
-        if (string.IsNullOrEmpty(template))
-        {
-            throw new KeyNotFoundException($"模板缓存中不存在键名为 {key} 的模板");
-        }
-
-        return TemplateEngine.Render(template, values);
+        return string.IsNullOrEmpty(template)
+            ? throw new KeyNotFoundException($"模板缓存中不存在键名为 {key} 的模板")
+            : TemplateEngine.Render(template, values);
     }
 
     /// <summary>
@@ -116,12 +113,9 @@ public static class TemplateCache
     public static string RenderAdvancedCachedTemplate(string key, IDictionary<string, object?> values)
     {
         var template = GetTemplate(key);
-        if (string.IsNullOrEmpty(template))
-        {
-            throw new KeyNotFoundException($"模板缓存中不存在键名为 {key} 的模板");
-        }
-
-        return TemplateEngine.RenderAdvanced(template, values);
+        return string.IsNullOrEmpty(template)
+            ? throw new KeyNotFoundException($"模板缓存中不存在键名为 {key} 的模板")
+            : TemplateEngine.RenderAdvanced(template, values);
     }
 
     /// <summary>

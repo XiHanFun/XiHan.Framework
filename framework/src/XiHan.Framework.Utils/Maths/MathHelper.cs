@@ -173,7 +173,7 @@ public static class MathHelper
     /// <param name="numbers"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static double Average(IEnumerable<double> numbers)
+    public static double Average(IEnumerable<double>? numbers)
     {
         return numbers is null || !numbers.Any() ? throw new ArgumentException("集合不能为空。") : numbers.Average();
     }

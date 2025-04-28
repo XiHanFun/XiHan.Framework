@@ -39,12 +39,10 @@ public class SettingDefinitionContext : ISettingDefinitionContext, ISingletonDep
     /// <exception cref="XiHanException">设置已存在时抛出</exception>
     public void Add(SettingDefinition definition)
     {
-        if (_settings.ContainsKey(definition.Name))
+        if (!_settings.TryAdd(definition.Name, definition))
         {
             throw new XiHanException($"设置 '{definition.Name}' 已存在!");
         }
-
-        _settings[definition.Name] = definition;
     }
 
     /// <summary>
@@ -54,7 +52,7 @@ public class SettingDefinitionContext : ISettingDefinitionContext, ISingletonDep
     /// <returns>设置定义，不存在时返回null</returns>
     public SettingDefinition? GetOrNull(string name)
     {
-        return _settings.TryGetValue(name, out var setting) ? setting : null;
+        return _settings.GetValueOrDefault(name);
     }
 
     /// <summary>

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.DependencyInjection;
 
 namespace XiHan.Framework.Uow.Abstracts;
@@ -27,14 +26,14 @@ public interface IDatabaseApiContainer : IServiceProviderAccessor
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    IDatabaseApi? FindDatabaseApi([NotNull] string key);
+    IDatabaseApi? FindDatabaseApi(string key);
 
     /// <summary>
     /// 添加数据库API
     /// </summary>
     /// <param name="key"></param>
     /// <param name="api"></param>
-    void AddDatabaseApi([NotNull] string key, [NotNull] IDatabaseApi api);
+    void AddDatabaseApi(string key, IDatabaseApi api);
 
     /// <summary>
     /// 获取或添加数据库API
@@ -42,5 +41,5 @@ public interface IDatabaseApiContainer : IServiceProviderAccessor
     /// <param name="key"></param>
     /// <param name="factory"></param>
     /// <returns></returns>
-    IDatabaseApi GetOrAddDatabaseApi([NotNull] string key, [NotNull] Func<IDatabaseApi> factory);
+    IDatabaseApi GetOrAddDatabaseApi(string key, Func<IDatabaseApi> factory);
 }

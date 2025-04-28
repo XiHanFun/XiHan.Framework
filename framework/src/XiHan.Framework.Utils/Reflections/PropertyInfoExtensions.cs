@@ -43,20 +43,12 @@ public static class PropertyInfoExtensions
     /// <exception cref="InvalidOperationException"></exception>
     public static string GetPropertyName<T>(this Expression<Func<T, object>> keySelector)
     {
-        if (keySelector.Body is MemberExpression memberExpression)
+        return keySelector.Body switch
         {
-            return memberExpression.Member.Name;
-        }
-
-        if (keySelector.Body is UnaryExpression unaryExpression)
-        {
-            if (unaryExpression.Operand is MemberExpression operand)
-            {
-                return operand.Member.Name;
-            }
-        }
-
-        throw new InvalidOperationException("无法从键选择器中获取属性名称。");
+            MemberExpression memberExpression => memberExpression.Member.Name,
+            UnaryExpression { Operand: MemberExpression operand } => operand.Member.Name,
+            _ => throw new InvalidOperationException("无法从键选择器中获取属性名称。")
+        };
     }
 
     /// <summary>

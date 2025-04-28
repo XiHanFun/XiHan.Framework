@@ -35,7 +35,7 @@ public static class EventHandlerExtensions
     /// <param name="eventHandler">事件处理程序</param>
     /// <param name="sender">事件来源</param>
     /// <param name="e">事件参数</param>
-    public static void InvokeSafely(this EventHandler eventHandler, object sender, EventArgs e)
+    public static void InvokeSafely(this EventHandler? eventHandler, object sender, EventArgs e)
     {
         eventHandler?.Invoke(sender, e);
     }
@@ -47,7 +47,7 @@ public static class EventHandlerExtensions
     /// <param name="eventHandler">事件处理程序</param>
     /// <param name="sender">事件来源</param>
     /// <param name="e">事件参数</param>
-    public static void InvokeSafely<TEventArgs>(this EventHandler<TEventArgs> eventHandler, object sender, TEventArgs e)
+    public static void InvokeSafely<TEventArgs>(this EventHandler<TEventArgs>? eventHandler, object sender, TEventArgs e)
         where TEventArgs : EventArgs
     {
         eventHandler?.Invoke(sender, e);

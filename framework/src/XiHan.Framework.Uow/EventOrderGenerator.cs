@@ -19,7 +19,7 @@ namespace XiHan.Framework.Uow;
 /// </summary>
 public static class EventOrderGenerator
 {
-    private static long LastOrder;
+    private static long _lastOrder;
 
     /// <summary>
     /// 获取下一个顺序
@@ -27,6 +27,6 @@ public static class EventOrderGenerator
     /// <returns></returns>
     public static long GetNext()
     {
-        return Interlocked.Increment(ref LastOrder);
+        return Interlocked.Increment(ref _lastOrder);
     }
 }

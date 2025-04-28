@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Renci.SshNet;
+using Renci.SshNet.Compression;
 using System.Text;
 
 namespace XiHan.Framework.Utils.Net.Ssh;
@@ -376,7 +377,7 @@ public class SshClient : IDisposable
         if (_connectionInfo.UseCompression)
         {
             _client.ConnectionInfo.CompressionAlgorithms.Clear();
-            _client.ConnectionInfo.CompressionAlgorithms.Add("zlib@openssh.com", () => new Renci.SshNet.Compression.ZlibOpenSsh());
+            _client.ConnectionInfo.CompressionAlgorithms.Add("zlib@openssh.com", () => new ZlibOpenSsh());
         }
     }
 

@@ -32,7 +32,7 @@ public static class SseExtensions
     /// <returns>SSE客户端实例</returns>
     public static async Task<SseClient> ConnectToSseAsync(
         this string url,
-        Action<SseMessage> messageHandler,
+        Action<SseMessage>? messageHandler,
         Action<Exception?>? closedHandler = null,
         SseClientOptions? options = null,
         CancellationToken cancellationToken = default)

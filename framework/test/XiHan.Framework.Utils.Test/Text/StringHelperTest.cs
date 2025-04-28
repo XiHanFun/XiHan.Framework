@@ -43,7 +43,7 @@ public class StringHelperTest
         var sourceStr = "a,b,a,c";
 
         // Act
-        var resultWithDuplicates = StringHelper.GetStrList(sourceStr, ',', true);
+        var resultWithDuplicates = StringHelper.GetStrList(sourceStr);
         var resultWithoutDuplicates = StringHelper.GetStrList(sourceStr, ',', false);
 
         // Assert

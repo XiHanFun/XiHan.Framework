@@ -190,7 +190,7 @@ public static class SemaphoreSlimExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DisposeAction<SemaphoreSlim> GetDispose(this SemaphoreSlim semaphoreSlim)
     {
-        return new DisposeAction<SemaphoreSlim>(static (semaphoreSlim) =>
+        return new DisposeAction<SemaphoreSlim>(static semaphoreSlim =>
         {
             _ = semaphoreSlim.Release();
         }, semaphoreSlim);

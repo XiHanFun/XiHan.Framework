@@ -24,7 +24,7 @@ public static class XiHan
     /// <summary>
     /// Logo
     /// </summary>
-    public static string Logo => $@"
+    public static string Logo => @"
 ██╗  ██╗██╗██╗  ██╗ █████╗ ███╗   ██╗
 ╚██╗██╔╝██║██║  ██║██╔══██╗████╗  ██║
  ╚███╔╝ ██║███████║███████║██╔██╗ ██║
@@ -35,32 +35,32 @@ public static class XiHan
     /// <summary>
     /// 版本
     /// </summary>
-    public static string Version => $@"v{Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString()}" ?? "v1.0.0";
+    public static string Version => $@"v{Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString()}";
 
     /// <summary>
     /// 版权
     /// </summary>
-    public static string Copyright => $@"Copyright (C)2021-Present ZhaiFanhua All Rights Reserved.";
+    public static string Copyright => @"Copyright (C)2021-Present ZhaiFanhua All Rights Reserved.";
 
     /// <summary>
     /// 文档
     /// </summary>
-    public static string Doc => $@"https://docs.xihanfun.com";
+    public static string Doc => @"https://docs.xihanfun.com";
 
     /// <summary>
     /// 组织
     /// </summary>
-    public static string Org => $@"https://github.com/XiHanFun";
+    public static string Org => @"https://github.com/XiHanFun";
 
     /// <summary>
     /// 仓库
     /// </summary>
-    public static string Rep => $@"https://github.com/XiHanFun/XiHan.Framework";
+    public static string Rep => @"https://github.com/XiHanFun/XiHan.Framework";
 
     /// <summary>
     /// 寄语
     /// </summary>
-    public static string SendWord => $@"
+    public static string SendWord => @"
 碧落降恩承淑颜，共挚崎缘挽曦寒。
 迁般故事终成忆，谨此葳蕤换思短。
               —— 致她
@@ -69,7 +69,7 @@ public static class XiHan
     /// <summary>
     /// 标语
     /// </summary>
-    public static string Tagline => $@"快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。";
+    public static string Tagline => @"快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。";
 
     /// <summary>
     /// 欢迎使用曦寒

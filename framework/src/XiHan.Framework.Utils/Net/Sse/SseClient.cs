@@ -27,7 +27,7 @@ public class SseClient : IDisposable
     /// 初始化SSE客户端
     /// </summary>
     /// <param name="options">客户端配置选项</param>
-    public SseClient(SseClientOptions options)
+    public SseClient(SseClientOptions? options)
     {
         _options = options ?? new SseClientOptions();
         _httpClient = _options.HttpClient ?? new HttpClient();
@@ -183,7 +183,6 @@ public class SseClient : IDisposable
                 // 注释行，忽略
                 else if (line.StartsWith(':'))
                 {
-                    continue;
                 }
             }
 

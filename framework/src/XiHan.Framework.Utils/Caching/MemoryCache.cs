@@ -56,7 +56,6 @@ public class MemoryCache
 {
     private readonly ConcurrentDictionary<string, object> _cache = new();
     private readonly Timer? _cleanupTimer;
-    private readonly TimeSpan _cleanupInterval;
     private readonly bool _enableCleanup;
 
     /// <summary>
@@ -67,11 +66,11 @@ public class MemoryCache
     public MemoryCache(bool enableCleanup = true, int cleanupIntervalMinutes = 10)
     {
         _enableCleanup = enableCleanup;
-        _cleanupInterval = TimeSpan.FromMinutes(cleanupIntervalMinutes);
+        var cleanupInterval = TimeSpan.FromMinutes(cleanupIntervalMinutes);
 
         if (_enableCleanup)
         {
-            _cleanupTimer = new Timer(CleanupCallback, null, _cleanupInterval, _cleanupInterval);
+            _cleanupTimer = new Timer(CleanupCallback, null, cleanupInterval, cleanupInterval);
         }
     }
 
@@ -102,7 +101,8 @@ public class MemoryCache
         }
 
         var cacheItem = new CacheItem<T>(value, absoluteExpiration);
-        return _cache.AddOrUpdate(key, cacheItem, (_, _) => cacheItem) != null;
+        _cache.AddOrUpdate(key, cacheItem, (_, _) => cacheItem);
+        return true;
     }
 
     /// <summary>
@@ -259,13 +259,14 @@ public class MemoryCache
             return false;
         }
 
-        if (IsExpired(key))
+        if (!IsExpired(key))
         {
-            _ = _cache.TryRemove(key, out _);
-            return false;
+            return true;
         }
 
-        return true;
+        _ = _cache.TryRemove(key, out _);
+        return false;
+
     }
 
     /// <summary>
@@ -277,7 +278,7 @@ public class MemoryCache
     {
         foreach (var item in _cache)
         {
-            if (item.Value is CacheItem<T> cacheItem && !cacheItem.IsExpired)
+            if (item.Value is CacheItem<T> { IsExpired: false } cacheItem)
             {
                 action(item.Key, cacheItem.Value);
             }
@@ -314,11 +315,6 @@ public class MemoryCache
     private bool IsExpired(string key)
     {
         if (!_cache.TryGetValue(key, out var obj))
-        {
-            return true;
-        }
-
-        if (obj == null)
         {
             return true;
         }

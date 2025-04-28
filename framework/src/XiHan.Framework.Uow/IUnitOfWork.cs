@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Uow.Abstracts;
 using XiHan.Framework.Uow.Options;
 
@@ -84,13 +83,13 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     /// 初始化
     /// </summary>
     /// <param name="options"></param>
-    void Initialize([NotNull] XiHanUnitOfWorkOptions options);
+    void Initialize(XiHanUnitOfWorkOptions options);
 
     /// <summary>
     /// 开始
     /// </summary>
     /// <param name="reservationName"></param>
-    void Reserve([NotNull] string reservationName);
+    void Reserve(string reservationName);
 
     /// <summary>
     /// 异步保存更改

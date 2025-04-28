@@ -126,19 +126,19 @@ public static class ScriptExecutor
                 throw new InvalidOperationException("无法启动进程");
             }
 
-            process.OutputDataReceived += (_, e) =>
+            process.OutputDataReceived += (o, e) =>
             {
                 if (e.Data is not null)
                 {
-                    _ = output.AppendLine(e.Data);
+                    o = output.AppendLine(e.Data);
                 }
             };
 
-            process.ErrorDataReceived += (_, e) =>
+            process.ErrorDataReceived += (o, e) =>
             {
                 if (e.Data is not null)
                 {
-                    _ = error.AppendLine(e.Data);
+                    o = error.AppendLine(e.Data);
                 }
             };
 
