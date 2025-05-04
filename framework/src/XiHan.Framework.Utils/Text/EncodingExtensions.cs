@@ -15,8 +15,8 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
+using XiHan.Framework.Utils.Verifications;
 
 namespace XiHan.Framework.Utils.Text;
 
@@ -132,7 +132,8 @@ public static partial class EncodingExtensions
     /// <returns>解码后的字符串</returns>
     public static string UnicodeDecode(this string data)
     {
-        return UnicodeRegex().Replace(data, match => ((char)int.Parse(match.Groups[1].Value, NumberStyles.HexNumber)).ToString());
+        var regex = RegexHelper.UnicodeRegex();
+        return regex.Replace(data, match => ((char)int.Parse(match.Groups[1].Value, NumberStyles.HexNumber)).ToString());
     }
 
     /// <summary>
@@ -165,8 +166,50 @@ public static partial class EncodingExtensions
         return new MemoryStream(Encoding.UTF8.GetBytes(data));
     }
 
-    [GeneratedRegex(@"\\u([0-9A-Za-z]{4})")]
-    private static partial Regex UnicodeRegex();
+    /// <summary>
+    /// 将字符串转换为二进制表示
+    /// </summary>
+    public static string FromStringToBinary(this string input)
+    {
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var result = new StringBuilder();
+
+        foreach (var b in bytes)
+        {
+            result.Append(Convert.ToString(b, 8));
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// 将二进制表示转换为字符串
+    /// </summary>
+    public static string FromBinaryToString(this string binary)
+    {
+        try
+        {
+            var byteChunks = new List<byte>();
+
+            for (var i = 0; i < binary.Length; i += 3)
+            {
+                if (i + 3 <= binary.Length)
+                {
+                    var chunk = binary.Substring(i, 3);
+                    if (byte.TryParse(chunk, out var byteValue))
+                    {
+                        byteChunks.Add(byteValue);
+                    }
+                }
+            }
+
+            return Encoding.UTF8.GetString([.. byteChunks]);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
 }
 
 /// <summary>
