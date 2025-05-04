@@ -241,18 +241,4 @@ public static partial class RegexHelper
     /// <returns></returns>
     [GeneratedRegex(@">([^<>]*)<", RegexOptions.IgnoreCase)]
     public static partial Regex HtmlTagContentRegex();
-
-    /// <summary>
-    /// 验证是否文本分割为句子
-    /// </summary>
-    /// <returns></returns>
-    [GeneratedRegex(@"[^.!?。！？]+[.!?。！？]?", RegexOptions.IgnoreCase)]
-    public static partial Regex SentenceSplitterRegex();
-
-    /// <summary>
-    /// 验证是否为 Unicode 字符
-    /// </summary>
-    /// <returns></returns>
-    [GeneratedRegex(@"\\u([0-9A-Za-z]{4})")]
-    public static partial Regex UnicodeRegex();
 }
