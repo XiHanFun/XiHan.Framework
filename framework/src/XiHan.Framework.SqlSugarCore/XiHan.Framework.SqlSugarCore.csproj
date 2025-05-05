@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.SqlSugar</Title>
-        <AssemblyName>XiHan.Framework.SqlSugar</AssemblyName>
-        <PackageId>XiHan.Framework.SqlSugar</PackageId>
-        <Description>曦寒框架 SqlSugar 库</Description>
+        <Title>XiHan.Framework.SqlSugarCore</Title>
+        <AssemblyName>XiHan.Framework.SqlSugarCore</AssemblyName>
+        <PackageId>XiHan.Framework.SqlSugarCore</PackageId>
+        <Description>曦寒框架 SqlSugarCore 库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
@@ -19,6 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
     </ItemGroup>
 
 </Project>
