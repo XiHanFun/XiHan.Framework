@@ -14,8 +14,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Ddd.Domain;
 using XiHan.Framework.SqlSugarCore.Options;
-using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.SqlSugarCore;
 
@@ -23,7 +23,7 @@ namespace XiHan.Framework.SqlSugarCore;
 /// 曦寒框架 SqlSugarCore 模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanUowModule)
+    typeof(XiHanDddDomainModule)
 )]
 public class XiHanSqlSugarCoreModule : XiHanModule
 {
