@@ -14,9 +14,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Ddd.Application.Contracts\XiHan.Framework.Ddd.Application.Contracts.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Ddd.Domain\XiHan.Framework.Ddd.Domain.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
     </ItemGroup>
 
 </Project>
