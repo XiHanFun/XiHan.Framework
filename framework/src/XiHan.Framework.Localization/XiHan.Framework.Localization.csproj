@@ -19,7 +19,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
         <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
