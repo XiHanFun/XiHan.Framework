@@ -14,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj"/>
+        <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
     </ItemGroup>
 
 </Project>
