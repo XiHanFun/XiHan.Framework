@@ -32,6 +32,16 @@ public static class DateTimeFormatExtensions
     }
 
     /// <summary>
+    /// 获取 Unix 时间戳
+    /// </summary>
+    /// <param name="dateTime"></param>
+    /// <returns></returns>
+    public static long GetUnixTimeStamp(this DateTimeOffset dateTime)
+    {
+        return dateTime.ToUnixTimeMilliseconds();
+    }
+
+    /// <summary>
     /// 获取当前时间的时间戳
     /// </summary>
     /// <param name="dateTime"></param>
