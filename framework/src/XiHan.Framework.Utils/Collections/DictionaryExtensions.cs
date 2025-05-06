@@ -142,7 +142,7 @@ public static class DictionaryExtensions
     /// <param name="key">要查找的键</param>
     /// <param name="value">键对应的值，如果键不存在，则为默认值</param>
     /// <returns>如果字典中存在该键，则返回真(True)；否则返回假(False)</returns>
-    internal static bool TryGetValue<T>(this IDictionary<string, object> dictionary, string key, out T? value)
+    public static bool TryGetValue<T>(this IDictionary<string, object> dictionary, string key, out T? value)
     {
         if (dictionary.TryGetValue(key, out var valueObj) && valueObj is T t)
         {
@@ -152,5 +152,29 @@ public static class DictionaryExtensions
 
         value = default;
         return false;
+    }
+
+    /// <summary>
+    /// 字典根据 key 删除，返回一个新的字典
+    /// </summary>
+    /// <param name="dictionary"></param>
+    /// <param name="keys"></param>
+    /// <returns>移除后新的字典</returns>
+    public static IDictionary<string, object> RemoveByKeys(this IDictionary<string, object> dictionary, params string[] keys)
+    {
+        ArgumentNullException.ThrowIfNull(dictionary);
+
+        if (keys == null || keys.Length == 0)
+        {
+            return dictionary;
+        }
+
+        // 创建一个新的字典，避免修改原始字典
+        var newDic = new Dictionary<string, object>(dictionary);
+        foreach (var key in keys)
+        {
+            newDic.Remove(key);
+        }
+        return newDic;
     }
 }
