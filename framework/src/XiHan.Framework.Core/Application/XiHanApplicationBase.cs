@@ -21,6 +21,7 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
 using XiHan.Framework.Core.Logging;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Text;
 
@@ -44,7 +45,7 @@ public class XiHanApplicationBase : IXiHanApplication
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
         _ = CheckHelper.NotNull(services, nameof(services));
 
-        XiHan.SayHello();
+        ConsoleLogger.Info(XiHan.XiHanInfo);
 
         // 设置启动模块
         StartupModuleType = startupModuleType;
