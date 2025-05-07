@@ -22,68 +22,24 @@ namespace XiHan.Framework;
 public static class XiHan
 {
     /// <summary>
-    /// Logo
+    /// XiHan
     /// </summary>
-    public static string Logo => @"
-██╗  ██╗██╗██╗  ██╗ █████╗ ███╗   ██╗
-╚██╗██╔╝██║██║  ██║██╔══██╗████╗  ██║
- ╚███╔╝ ██║███████║███████║██╔██╗ ██║
- ██╔██╗ ██║██╔══██║██╔══██║██║╚██╗██║
-██╔╝ ██╗██║██║  ██║██║  ██║██║ ╚████║
-╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝";
+    public static string XiHanInfo => $@"
+   _  __ ______  _____    _   __
+  | |/ //  _/ / / /   |  / | / /
+  |   / / // /_/ / /| | /  |/ /
+ /   |_/ // __  / ___ |/ /|  /
+/_/|_/___/_/ /_/_/  |_/_/ |_/
+v{Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString()}
+Copyright (C)2021-Present ZhaiFanhua All Rights Reserved.
+https://docs.xihanfun.com
+https://github.com/XiHanFun
+https://github.com/XiHanFun/XiHan.Framework
 
-    /// <summary>
-    /// 版本
-    /// </summary>
-    public static string Version => $@"v{Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString()}";
-
-    /// <summary>
-    /// 版权
-    /// </summary>
-    public static string Copyright => @"Copyright (C)2021-Present ZhaiFanhua All Rights Reserved.";
-
-    /// <summary>
-    /// 文档
-    /// </summary>
-    public static string Doc => @"https://docs.xihanfun.com";
-
-    /// <summary>
-    /// 组织
-    /// </summary>
-    public static string Org => @"https://github.com/XiHanFun";
-
-    /// <summary>
-    /// 仓库
-    /// </summary>
-    public static string Rep => @"https://github.com/XiHanFun/XiHan.Framework";
-
-    /// <summary>
-    /// 寄语
-    /// </summary>
-    public static string SendWord => @"
 碧落降恩承淑颜，共挚崎缘挽曦寒。
 迁般故事终成忆，谨此葳蕤换思短。
-              —— 致她
+—— 致她
+
+快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。
 ";
-
-    /// <summary>
-    /// 标语
-    /// </summary>
-    public static string Tagline => @"快速、轻量、高效、用心的开发框架和组件库。基于 DotNet 和 Vue 构建。";
-
-    /// <summary>
-    /// 欢迎使用曦寒
-    /// </summary>
-    public static void SayHello()
-    {
-        Console.WriteLine(Logo);
-        Console.WriteLine(Version);
-        Console.WriteLine(Copyright);
-        Console.WriteLine(Doc);
-        Console.WriteLine(Org);
-        Console.WriteLine(Rep);
-        Console.WriteLine(SendWord);
-        Console.WriteLine(Tagline);
-        Console.WriteLine();
-    }
 }
