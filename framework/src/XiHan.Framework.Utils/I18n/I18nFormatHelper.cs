@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FormatHelper
+// FileName:I18nFormatHelper
 // Guid:8a7b6c5d-4e3f-2c1b-9a8d-7f6e5d4c3b2a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using System.Text;
 namespace XiHan.Framework.Utils.I18n;
 
 /// <summary>
-/// 格式化处理帮助类
+/// 国际化格式化处理帮助类
 /// </summary>
-public static class FormatHelper
+public static class I18nFormatHelper
 {
     /// <summary>
     /// 格式化日期时间
