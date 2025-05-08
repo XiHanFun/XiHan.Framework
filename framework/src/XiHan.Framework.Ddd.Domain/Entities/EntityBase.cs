@@ -28,6 +28,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     protected EntityBase()
     {
+        RowVersion = [];
     }
 
     /// <summary>
@@ -35,7 +36,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     [ConcurrencyCheck]
     [Timestamp]
-    public virtual byte[] RowVersion { get; set; } = null!;
+    public virtual byte[] RowVersion { get; set; }
 
     /// <summary>
     /// 重写实体相等性判断
@@ -45,8 +46,10 @@ public abstract class EntityBase : IEntityBase
     public override bool Equals(object? obj)
     {
         return obj is EntityBase other
-            && (ReferenceEquals(this, obj)
-            || (RowVersion is not null && other.RowVersion is not null && RowVersion.Equals(other.RowVersion)));
+            && (ReferenceEquals(this, other)
+                || (RowVersion is not null
+                    && other.RowVersion is not null
+                    && RowVersion.SequenceEqual(other.RowVersion)));
     }
 
     /// <summary>
@@ -121,8 +124,22 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
             return false;
         }
 
-        // 相同引用或者两个主键均不为空且相等，则认为两个实体相等
-        return ReferenceEquals(this, obj) || base.Equals(obj) || (BasicId is not null && other.BasicId is not null && BasicId.Equals(other.BasicId));
+        // 先检查引用相等
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        // 检查基类相等（RowVersion比较）
+        if (base.Equals(other))
+        {
+            return true;
+        }
+
+        // 最后检查ID相等
+        return !EqualityComparer<TKey>.Default.Equals(BasicId, default) &&
+               !EqualityComparer<TKey>.Default.Equals(other.BasicId, default) &&
+               EqualityComparer<TKey>.Default.Equals(BasicId, other.BasicId);
     }
 
     /// <summary>
@@ -131,7 +148,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// <returns></returns>
     public override int GetHashCode()
     {
-        return BasicId is null ? 0 : BasicId.GetHashCode();
+        return EqualityComparer<TKey>.Default.Equals(BasicId, default) ? 0 : BasicId.GetHashCode();
     }
 
     /// <summary>

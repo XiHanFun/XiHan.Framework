@@ -52,7 +52,37 @@ public static class HttpHelper
     }
 
     /// <summary>
-    /// POST 请求 (JSON)
+    /// GET 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<string> GetStringAsync(string url, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseString(response);
+    }
+
+    /// <summary>
+    /// GET 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<Stream> GetStreamAsync(string url, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseStream(response);
+    }
+
+    /// <summary>
+    /// POST 请求
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="url"></param>
@@ -72,7 +102,45 @@ public static class HttpHelper
     }
 
     /// <summary>
-    /// PUT 请求 (JSON)
+    /// POST 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="data"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<string> PostStringAsync(string url, object? data = null, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = SerializeJson(data)
+        };
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseString(response);
+    }
+
+    /// <summary>
+    /// POST 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="data"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<Stream> PostStreamAsync(string url, object? data = null, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = SerializeJson(data)
+        };
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseStream(response);
+    }
+
+    /// <summary>
+    /// PUT 请求
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="url"></param>
@@ -92,6 +160,44 @@ public static class HttpHelper
     }
 
     /// <summary>
+    /// PUT 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="data"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<string> PutStringAsync<T>(string url, object? data = null, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = SerializeJson(data)
+        };
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseString(response);
+    }
+
+    /// <summary>
+    /// PUT 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="data"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<Stream> PutAsync(string url, object? data = null, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = SerializeJson(data)
+        };
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseStream(response);
+    }
+
+    /// <summary>
     /// DELETE 请求
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -105,6 +211,36 @@ public static class HttpHelper
 
         var response = await _httpClient.SendAsync(request);
         return await HandleResponse<T>(response);
+    }
+
+    /// <summary>
+    /// DELETE 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<string> DeleteStringAsync<T>(string url, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseString(response);
+    }
+
+    /// <summary>
+    /// DELETE 请求
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public static async Task<Stream> DeleteStreamAsync<T>(string url, Dictionary<string, string>? headers = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        AddHeaders(request, headers);
+
+        var response = await _httpClient.SendAsync(request);
+        return await HandleResponseStream(response);
     }
 
     #endregion 公共方法
@@ -162,6 +298,42 @@ public static class HttpHelper
 
         var responseData = await response.Content.ReadAsStringAsync();
         return typeof(T) == typeof(string) ? (T)(object)responseData : JsonSerializer.Deserialize<T>(responseData);
+    }
+
+    /// <summary>
+    /// 处理 HTTP 响应
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="response"></param>
+    /// <returns></returns>
+    /// <exception cref="HttpRequestException"></exception>
+    private static async Task<string> HandleResponseString(HttpResponseMessage response)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"请求失败，状态码: {response.StatusCode}, 错误信息: {error}");
+        }
+
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    /// <summary>
+    /// 处理 HTTP 响应
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="response"></param>
+    /// <returns></returns>
+    /// <exception cref="HttpRequestException"></exception>
+    private static async Task<Stream> HandleResponseStream(HttpResponseMessage response)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStreamAsync();
+            throw new HttpRequestException($"请求失败，状态码: {response.StatusCode}, 错误信息: {error}");
+        }
+
+        return await response.Content.ReadAsStreamAsync();
     }
 
     #endregion 私有方法
