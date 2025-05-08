@@ -50,12 +50,7 @@ public class TimeOnlyJsonConverter : JsonConverter<TimeOnly>
     /// <returns></returns>
     public override TimeOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            return default;
-        }
-
-        return TimeOnly.TryParse(reader.GetString(), out var time) ? time : default;
+        return reader.TokenType != JsonTokenType.String ? default : TimeOnly.TryParse(reader.GetString(), out var time) ? time : default;
     }
 
     /// <summary>
@@ -108,11 +103,7 @@ public class TimeOnlyNullableConverter : JsonConverter<TimeOnly?>
             return null;
         }
 
-        if (TimeOnly.TryParse(reader.GetString(), out var time))
-        {
-            return time;
-        }
-        return null;
+        return TimeOnly.TryParse(reader.GetString(), out var time) ? time : null;
     }
 
     /// <summary>

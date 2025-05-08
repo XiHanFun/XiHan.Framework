@@ -120,12 +120,7 @@ public static class ScriptExecutor
 
         try
         {
-            using var process = Process.Start(processStartInfo);
-            if (process is null)
-            {
-                throw new InvalidOperationException("无法启动进程");
-            }
-
+            using var process = Process.Start(processStartInfo) ?? throw new InvalidOperationException("无法启动进程");
             process.OutputDataReceived += (o, e) =>
             {
                 if (e.Data is not null)
