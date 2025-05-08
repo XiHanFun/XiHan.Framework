@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -234,12 +234,7 @@ public static class TemplateEngine
             return false;
         }
 
-        if (value is bool boolValue)
-        {
-            return boolValue;
-        }
-
-        return value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
+        return value is bool boolValue ? boolValue : value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
     }
 
     /// <summary>

@@ -462,12 +462,9 @@ public static class DeepMergeHelper
         var type = obj.GetType();
 
         // 处理简单类型（直接返回）
-        if (IsSimpleType(type))
-        {
-            return obj;
-        }
-
-        return obj switch
+        return IsSimpleType(type)
+            ? obj
+            : obj switch
         {
             // 处理字典
             IDictionary dict => CloneDictionary(dict),
