@@ -59,11 +59,7 @@ public class DateTimeOffsetJsonConverter : JsonConverter<DateTimeOffset>
             return default;
         }
 
-        if (DateTimeOffset.TryParse(reader.GetString(), out var time))
-        {
-            return _isUtc ? time.ToUniversalTime() : time;
-        }
-        return default;
+        return DateTimeOffset.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : default;
     }
 
     /// <summary>
@@ -120,11 +116,7 @@ public class DateTimeOffsetNullableConverter : JsonConverter<DateTimeOffset?>
             return null;
         }
 
-        if (DateTimeOffset.TryParse(reader.GetString(), out var time))
-        {
-            return _isUtc ? time.ToUniversalTime() : time;
-        }
-        return null;
+        return DateTimeOffset.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : null;
     }
 
     /// <summary>

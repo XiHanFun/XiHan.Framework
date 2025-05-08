@@ -15,10 +15,10 @@
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Uow;
 
-namespace XiHan.Framework.Ddd.Application;
+namespace XiHan.Framework.Data;
 
 /// <summary>
-/// 曦寒框架领域驱动设计应用模块
+/// 曦寒框架数据模块
 /// </summary>
 [DependsOn(
     typeof(XiHanUowModule)
