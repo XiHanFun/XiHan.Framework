@@ -36,12 +36,12 @@ public static class PythonDynamicLoader
         /// 直接执行（-c 参数）
         /// </summary>
         Direct,
-        
+
         /// <summary>
         /// 通过标准输入执行
         /// </summary>
         StdIn,
-        
+
         /// <summary>
         /// 通过临时文件执行
         /// </summary>
@@ -87,16 +87,125 @@ public static class PythonDynamicLoader
     /// <returns>标准输出</returns>
     public static string ExecuteCode(string pythonCode, ExecutionMode mode, params string[] args)
     {
-        switch (mode)
+        return mode switch
         {
-            case ExecutionMode.Direct:
-                return ExecuteCodeDirect(pythonCode, args);
-            case ExecutionMode.StdIn:
-                return ExecuteCodeViaStdIn(pythonCode, args);
-            case ExecutionMode.TempFile:
-                return ExecuteCodeViaTempFile(pythonCode, args);
-            default:
-                throw new ArgumentOutOfRangeException(nameof(mode), mode, "不支持的执行模式");
+            ExecutionMode.Direct => ExecuteCodeDirect(pythonCode, args),
+            ExecutionMode.StdIn => ExecuteCodeViaStdIn(pythonCode, args),
+            ExecutionMode.TempFile => ExecuteCodeViaTempFile(pythonCode, args),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "不支持的执行模式"),
+        };
+    }
+
+    /// <summary>
+    /// 执行 Python 文件
+    /// </summary>
+    /// <param name="filePath">Python 文件路径</param>
+    /// <param name="args">命令行参数</param>
+    /// <returns>标准输出</returns>
+    public static string ExecuteFile(string filePath, params string[] args)
+    {
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException("找不到 Python 文件", filePath);
+        }
+
+        // 构建参数字符串
+        var arguments = $"\"{filePath}\"";
+        if (args?.Length > 0)
+        {
+            arguments += " " + string.Join(" ", args.Select(arg => $"\"{arg}\""));
+        }
+
+        // 执行 Python 解释器
+        return ExecutePythonProcess(_pythonPath, arguments);
+    }
+
+    /// <summary>
+    /// 执行 Python 代码并获取结果对象
+    /// </summary>
+    /// <typeparam name="T">返回值类型</typeparam>
+    /// <param name="pythonCode">Python 代码</param>
+    /// <param name="args">命令行参数</param>
+    /// <returns>反序列化的结果对象</returns>
+    public static T? ExecuteCodeAndGetResult<T>(string pythonCode, params string[] args)
+    {
+        // 在 Python 代码末尾添加 JSON 序列化
+        var jsonCode = pythonCode + @"
+import json
+import sys
+
+# 确保最后一行是函数调用或返回值
+# 将结果转换为 JSON
+result = locals().get('result', None)
+json.dump(result, sys.stdout)
+";
+        var jsonResult = ExecuteCode(jsonCode, args);
+
+        if (string.IsNullOrWhiteSpace(jsonResult))
+        {
+            return default;
+        }
+
+        // 反序列化 JSON 结果
+        return JsonSerializer.Deserialize<T>(jsonResult);
+    }
+
+    /// <summary>
+    /// 检查 Python 是否已安装
+    /// </summary>
+    /// <returns>是否已安装</returns>
+    public static bool IsPythonInstalled()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = _pythonPath,
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 获取安装的 Python 版本
+    /// </summary>
+    /// <returns>Python 版本</returns>
+    public static string GetPythonVersion()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = _pythonPath,
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            return output.Trim();
+        }
+        catch (Exception ex)
+        {
+            return $"获取 Python 版本时出错: {ex.Message}";
         }
     }
 
@@ -190,13 +299,10 @@ public static class PythonDynamicLoader
             process.WaitForExit();
 
             // 如果进程返回非零值，表示有错误
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Python 执行错误 (ExitCode={process.ExitCode}):\n{error}");
-            }
-
-            return output.ToString();
+            return process.ExitCode != 0
+                ? throw new InvalidOperationException(
+                    $"Python 执行错误 (ExitCode={process.ExitCode}):\n{error}")
+                : output.ToString();
         }
         catch (Exception ex)
         {
@@ -237,30 +343,6 @@ public static class PythonDynamicLoader
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// 执行 Python 文件
-    /// </summary>
-    /// <param name="filePath">Python 文件路径</param>
-    /// <param name="args">命令行参数</param>
-    /// <returns>标准输出</returns>
-    public static string ExecuteFile(string filePath, params string[] args)
-    {
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException("找不到 Python 文件", filePath);
-        }
-
-        // 构建参数字符串
-        var arguments = $"\"{filePath}\"";
-        if (args?.Length > 0)
-        {
-            arguments += " " + string.Join(" ", args.Select(arg => $"\"{arg}\""));
-        }
-
-        // 执行 Python 解释器
-        return ExecutePythonProcess(_pythonPath, arguments);
     }
 
     /// <summary>
@@ -316,106 +398,14 @@ public static class PythonDynamicLoader
             process.WaitForExit();
 
             // 如果进程返回非零值，表示有错误
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Python 执行错误 (ExitCode={process.ExitCode}):\n{error}");
-            }
-
-            return output.ToString();
+            return process.ExitCode != 0
+                ? throw new InvalidOperationException(
+                    $"Python 执行错误 (ExitCode={process.ExitCode}):\n{error}")
+                : output.ToString();
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"执行 Python 脚本时出错: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// 执行 Python 代码并获取结果对象
-    /// </summary>
-    /// <typeparam name="T">返回值类型</typeparam>
-    /// <param name="pythonCode">Python 代码</param>
-    /// <param name="args">命令行参数</param>
-    /// <returns>反序列化的结果对象</returns>
-    public static T? ExecuteCodeAndGetResult<T>(string pythonCode, params string[] args)
-    {
-        // 在 Python 代码末尾添加 JSON 序列化
-        var jsonCode = pythonCode + @"
-import json
-import sys
-
-# 确保最后一行是函数调用或返回值
-# 将结果转换为 JSON
-result = locals().get('result', None)
-json.dump(result, sys.stdout)
-";
-        var jsonResult = ExecuteCode(jsonCode, args);
-
-        if (string.IsNullOrWhiteSpace(jsonResult))
-        {
-            return default;
-        }
-
-        // 反序列化 JSON 结果
-        return JsonSerializer.Deserialize<T>(jsonResult);
-    }
-
-    /// <summary>
-    /// 检查 Python 是否已安装
-    /// </summary>
-    /// <returns>是否已安装</returns>
-    public static bool IsPythonInstalled()
-    {
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _pythonPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            process.Start();
-            process.WaitForExit();
-            return process.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// 获取安装的 Python 版本
-    /// </summary>
-    /// <returns>Python 版本</returns>
-    public static string GetPythonVersion()
-    {
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _pythonPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            process.Start();
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            return output.Trim();
-        }
-        catch (Exception ex)
-        {
-            return $"获取 Python 版本时出错: {ex.Message}";
         }
     }
 }

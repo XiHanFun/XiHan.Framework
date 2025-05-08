@@ -55,11 +55,7 @@ public class DateOnlyJsonConverter : JsonConverter<DateOnly>
             return default;
         }
 
-        if (DateOnly.TryParse(reader.GetString(), out var date))
-        {
-            return date;
-        }
-        return default;
+        return DateOnly.TryParse(reader.GetString(), out var date) ? date : default;
     }
 
     /// <summary>
@@ -112,11 +108,7 @@ public class DateOnlyNullableConverter : JsonConverter<DateOnly?>
             return null;
         }
 
-        if (DateOnly.TryParse(reader.GetString(), out var date))
-        {
-            return date;
-        }
-        return null;
+        return DateOnly.TryParse(reader.GetString(), out var date) ? date : null;
     }
 
     /// <summary>
