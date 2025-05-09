@@ -25,22 +25,22 @@ public static class ValidateCoder
     /// <summary>
     /// 默认数字字符源
     /// </summary>
-    public const string DefaultNumberSource = "0123456789";
+    private const string DefaultNumberSource = "0123456789";
 
     /// <summary>
     /// 默认特殊符号字符源
     /// </summary>
-    public const string DefaultSpecialCharSource = "!@#$%^&*()-_=+[]{}|;:,.<>?/";
+    private const string DefaultSpecialCharSource = "!@#$%^&*()-_=+[]{}|;:,.<>?/";
 
     /// <summary>
     /// 默认大写字母字符源
     /// </summary>
-    public const string DefaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private const string DefaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /// <summary>
     /// 默认小写字母字符源
     /// </summary>
-    public const string DefaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
+    private const string DefaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
 
     /// <summary>
     /// 随机数字
