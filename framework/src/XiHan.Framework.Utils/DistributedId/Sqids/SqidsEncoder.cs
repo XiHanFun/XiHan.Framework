@@ -171,8 +171,7 @@ public class SqidsEncoder<T> where T : INumber<T>
         while (value.CompareTo(T.Zero) > 0)
         {
             var remainder = value.Mod(alphabetLength);
-            // 将 remainder 转换为 int 用于索引
-            var index = Convert.ToInt32(remainder);
+            var index = T.ToInt32(remainder);
             id.Insert(0, alphabet[index]);
             value = value.Div(alphabetLength);
         }
