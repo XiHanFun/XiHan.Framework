@@ -137,7 +137,7 @@ public class SqidsExtensionsTest
     public void FromSqidToInt64Array_ShouldWork()
     {
         // Arrange
-        var numbers = new[] { 1000000000L, 2000000000L, 3000000000L };
+        var numbers = new[] { 1000000000L, 2000000000L, 3000000000L, 4000000000L, 3000004000L, 3000050000L, 3000580000L };
         var sqid = numbers.ToSqid();
 
         // Act
