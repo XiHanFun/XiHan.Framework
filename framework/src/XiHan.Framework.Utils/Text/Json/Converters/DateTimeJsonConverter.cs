@@ -54,12 +54,9 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <returns></returns>
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            return default;
-        }
-
-        return DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : default;
+        return reader.TokenType != JsonTokenType.String
+            ? default
+            : DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : default;
     }
 
     /// <summary>
@@ -111,12 +108,9 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     /// <returns></returns>
     public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            return null;
-        }
-
-        return DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : null;
+        return reader.TokenType != JsonTokenType.String
+            ? null
+            : DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : null;
     }
 
     /// <summary>
