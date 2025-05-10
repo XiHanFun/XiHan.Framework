@@ -1,13 +1,13 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ImageResult
-// Guid:8f0f49dd-d203-412a-ac10-1d6e7a9704bc
+// FileName:ChatStreamingResult
+// Guid:7091834d-1feb-47e3-b20b-767a42f08bd5
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/27 6:52:39
+// CreateTime:2025/5/25
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,17 +15,22 @@
 namespace XiHan.Framework.AI.Results;
 
 /// <summary>
-/// 图片处理结果
+/// 流式聊天结果
 /// </summary>
-public class ImageResult
+public class ChatStreamingResult
 {
     /// <summary>
-    /// 处理后的图片数据
+    /// 是否结束
     /// </summary>
-    public byte[] OutputImage { get; set; } = [];
+    public bool IsEnd { get; set; }
 
     /// <summary>
-    /// 附加元数据
+    /// 内容片段
     /// </summary>
-    public Dictionary<string, object> Metadata { get; set; } = [];
+    public string ContentDelta { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 完整内容(累积)
+    /// </summary>
+    public string ContentSoFar { get; set; } = string.Empty;
 }
