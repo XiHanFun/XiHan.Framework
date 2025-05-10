@@ -30,6 +30,13 @@ public interface INumber<TSelf> where TSelf : INumber<TSelf>
     static abstract TSelf One { get; }
 
     /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    static abstract int ToInt32(TSelf value);
+
+    /// <summary>
     /// 从一个对象创建数字类型实例
     /// </summary>
     /// <param name="value">要转换的值</param>
