@@ -698,19 +698,52 @@ public class SftpClient : IDisposable
         var permissions = 0;
 
         // 所有者权限
-        if (attrs.OwnerCanRead) permissions |= 4 << 6;
-        if (attrs.OwnerCanWrite) permissions |= 2 << 6;
-        if (attrs.OwnerCanExecute) permissions |= 1 << 6;
+        if (attrs.OwnerCanRead)
+        {
+            permissions |= 4 << 6;
+        }
+
+        if (attrs.OwnerCanWrite)
+        {
+            permissions |= 2 << 6;
+        }
+
+        if (attrs.OwnerCanExecute)
+        {
+            permissions |= 1 << 6;
+        }
 
         // 组权限
-        if (attrs.GroupCanRead) permissions |= 4 << 3;
-        if (attrs.GroupCanWrite) permissions |= 2 << 3;
-        if (attrs.GroupCanExecute) permissions |= 1 << 3;
+        if (attrs.GroupCanRead)
+        {
+            permissions |= 4 << 3;
+        }
+
+        if (attrs.GroupCanWrite)
+        {
+            permissions |= 2 << 3;
+        }
+
+        if (attrs.GroupCanExecute)
+        {
+            permissions |= 1 << 3;
+        }
 
         // 其他人权限
-        if (attrs.OthersCanRead) permissions |= 4;
-        if (attrs.OthersCanWrite) permissions |= 2;
-        if (attrs.OthersCanExecute) permissions |= 1;
+        if (attrs.OthersCanRead)
+        {
+            permissions |= 4;
+        }
+
+        if (attrs.OthersCanWrite)
+        {
+            permissions |= 2;
+        }
+
+        if (attrs.OthersCanExecute)
+        {
+            permissions |= 1;
+        }
 
         return permissions;
     }
