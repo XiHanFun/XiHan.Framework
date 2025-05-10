@@ -11,6 +11,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Numerics;
 using System.Text;
 using XiHan.Framework.Utils.Maths;
 
@@ -177,7 +178,7 @@ public class SqidsEncoder<T> where T : INumber<T>
         while (value.CompareTo(T.Zero) > 0)
         {
             var remainder = value.Mod(alphabetLength);
-            var index = T.ToInt32(remainder);
+            var index = Convert.ToInt32(remainder);
             id.Insert(0, alphabet[index]);
             value = value.Div(alphabetLength);
         }
@@ -308,7 +309,7 @@ public class SqidsEncoder<T> where T : INumber<T>
 /// <summary>
 /// 为不支持泛型约束的版本提供的非泛型包装器
 /// </summary>
-public class SqidsEncoder : SqidsEncoder<Int32Number>
+public class SqidsEncoder : SqidsEncoder<int>
 {
     /// <summary>
     /// 使用默认选项初始化Sqids编码器
@@ -330,10 +331,9 @@ public class SqidsEncoder : SqidsEncoder<Int32Number>
     /// </summary>
     /// <param name="numbers">要编码的整数</param>
     /// <returns>编码后的字符串</returns>
-    public string Encode(params int[] numbers)
+    public new string Encode(params int[] numbers)
     {
-        var convertedNumbers = numbers.Select(n => (Int32Number)n).ToArray();
-        return base.Encode(convertedNumbers);
+        return base.Encode(numbers);
     }
 
     /// <summary>
@@ -343,7 +343,6 @@ public class SqidsEncoder : SqidsEncoder<Int32Number>
     /// <returns>解码后的整数数组</returns>
     public new int[] Decode(string id)
     {
-        var result = base.Decode(id);
-        return [.. result.Select(n => (int)n)];
+        return base.Decode(id);
     }
 }

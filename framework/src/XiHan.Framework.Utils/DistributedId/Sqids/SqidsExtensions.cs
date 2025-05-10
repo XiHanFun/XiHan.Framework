@@ -11,8 +11,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Maths;
-
 namespace XiHan.Framework.Utils.DistributedId.Sqids;
 
 /// <summary>
@@ -20,10 +18,10 @@ namespace XiHan.Framework.Utils.DistributedId.Sqids;
 /// </summary>
 public static class SqidsExtensions
 {
-    private static readonly SqidsEncoder<Int32Number> _int32NumberEncoder = new();
-    private static readonly SqidsEncoder<Int64Number> _int64NumberEncoder = new();
-    private static readonly SqidsEncoder<UInt32Number> _uInt32NumberEncoder = new();
-    private static readonly SqidsEncoder<UInt64Number> _uInt64NumberEncoder = new();
+    private static readonly SqidsEncoder<int> _intEncoder = new();
+    private static readonly SqidsEncoder<uint> _uintEncoder = new();
+    private static readonly SqidsEncoder<long> _longEncoder = new();
+    private static readonly SqidsEncoder<ulong> _ulongEncoder = new();
 
     /// <summary>
     /// 将整数编码为Sqids格式
@@ -32,7 +30,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this int number)
     {
-        return _int32NumberEncoder.Encode(number);
+        return _intEncoder.Encode(number);
     }
 
     /// <summary>
@@ -42,7 +40,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this int[] numbers)
     {
-        return _int32NumberEncoder.Encode([.. numbers.Select(n => (Int32Number)n)]);
+        return _intEncoder.Encode(numbers);
     }
 
     /// <summary>
@@ -52,7 +50,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this long number)
     {
-        return _int64NumberEncoder.Encode(number);
+        return _longEncoder.Encode(number);
     }
 
     /// <summary>
@@ -62,7 +60,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this long[] numbers)
     {
-        return _int64NumberEncoder.Encode([.. numbers.Select(n => (Int64Number)n)]);
+        return _longEncoder.Encode(numbers);
     }
 
     /// <summary>
@@ -72,7 +70,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this uint number)
     {
-        return _uInt32NumberEncoder.Encode(number);
+        return _uintEncoder.Encode(number);
     }
 
     /// <summary>
@@ -82,7 +80,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this ulong number)
     {
-        return _uInt64NumberEncoder.Encode(number);
+        return _ulongEncoder.Encode(number);
     }
 
     /// <summary>
@@ -92,7 +90,7 @@ public static class SqidsExtensions
     /// <returns>解码后的整数</returns>
     public static int FromSqidToInt32(this string sqid)
     {
-        var result = _int32NumberEncoder.Decode(sqid);
+        var result = _intEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -103,7 +101,7 @@ public static class SqidsExtensions
     /// <returns>解码后的整数数组</returns>
     public static int[] FromSqidToInt32Array(this string sqid)
     {
-        return [.. _int32NumberEncoder.Decode(sqid).Select(n => (int)n)];
+        return _intEncoder.Decode(sqid);
     }
 
     /// <summary>
@@ -113,7 +111,7 @@ public static class SqidsExtensions
     /// <returns>解码后的长整数</returns>
     public static long FromSqidToInt64(this string sqid)
     {
-        var result = _int64NumberEncoder.Decode(sqid);
+        var result = _longEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -124,7 +122,7 @@ public static class SqidsExtensions
     /// <returns>解码后的长整数数组</returns>
     public static long[] FromSqidToInt64Array(this string sqid)
     {
-        return [.. _int64NumberEncoder.Decode(sqid).Select(n => (long)n)];
+        return _longEncoder.Decode(sqid);
     }
 
     /// <summary>
@@ -134,7 +132,7 @@ public static class SqidsExtensions
     /// <returns>解码后的无符号整数</returns>
     public static uint FromSqidToUInt32(this string sqid)
     {
-        var result = _uInt32NumberEncoder.Decode(sqid);
+        var result = _uintEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -145,7 +143,7 @@ public static class SqidsExtensions
     /// <returns>解码后的无符号长整数</returns>
     public static ulong FromSqidToUInt64(this string sqid)
     {
-        var result = _uInt64NumberEncoder.Decode(sqid);
+        var result = _ulongEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 }

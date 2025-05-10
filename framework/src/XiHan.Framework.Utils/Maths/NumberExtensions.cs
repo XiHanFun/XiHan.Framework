@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Numerics;
+
 namespace XiHan.Framework.Utils.Maths;
 
 /// <summary>
@@ -28,7 +30,8 @@ public static class NumberExtensions
     /// <returns>非负余数</returns>
     public static T Mod<T>(this T value, T modulus) where T : INumber<T>
     {
-        return T.Abs(T.Remainder(value, modulus));
+        var remainder = value % modulus;
+        return remainder < T.Zero ? remainder + modulus : remainder;
     }
 
     /// <summary>

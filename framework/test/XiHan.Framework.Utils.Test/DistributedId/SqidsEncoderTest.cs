@@ -11,16 +11,16 @@ namespace XiHan.Framework.Utils.Test.DistributedId;
 public class SqidsEncoderTest
 {
     private readonly SqidsEncoder _defaultEncoder;
-    private readonly SqidsEncoder<Int32Number> _int32Encoder;
-    private readonly SqidsEncoder<Int64Number> _int64Encoder;
+    private readonly SqidsEncoder<int> _intEncoder;
+    private readonly SqidsEncoder<long> _longEncoder;
     private readonly SqidsOptions _customOptions;
     private readonly SqidsEncoder _customEncoder;
 
     public SqidsEncoderTest()
     {
         _defaultEncoder = new SqidsEncoder();
-        _int32Encoder = new SqidsEncoder<Int32Number>();
-        _int64Encoder = new SqidsEncoder<Int64Number>();
+        _intEncoder = new SqidsEncoder<int>();
+        _longEncoder = new SqidsEncoder<long>();
 
         _customOptions = new SqidsOptions
         {
@@ -67,11 +67,11 @@ public class SqidsEncoderTest
     public void Int32Encoder_ShouldWorkCorrectly()
     {
         // Arrange
-        var numbers = new[] { (Int32Number)1, (Int32Number)2, (Int32Number)3 };
+        var numbers = new[] { (int)1, (int)2, (int)3 };
 
         // Act
-        var encoded = _int32Encoder.Encode(numbers);
-        var decoded = _int32Encoder.Decode(encoded);
+        var encoded = _intEncoder.Encode(numbers);
+        var decoded = _intEncoder.Decode(encoded);
 
         // Assert
         Assert.Equal(numbers.Length, decoded.Length);
@@ -85,11 +85,11 @@ public class SqidsEncoderTest
     public void Int64Encoder_ShouldWorkCorrectly()
     {
         // Arrange
-        var numbers = new[] { (Int64Number)1000000000L, (Int64Number)2000000000L, (Int64Number)3000000000L };
+        var numbers = new[] { (long)1000000000L, (long)2000000000L, (long)3000000000L };
 
         // Act
-        var encoded = _int64Encoder.Encode(numbers);
-        var decoded = _int64Encoder.Decode(encoded);
+        var encoded = _longEncoder.Encode(numbers);
+        var decoded = _longEncoder.Decode(encoded);
 
         // Assert
         Assert.Equal(numbers.Length, decoded.Length);
