@@ -229,12 +229,9 @@ public static class TemplateEngine
 
         // 简单的变量存在性检查
         var variableName = condition.Trim();
-        if (!values.TryGetValue(variableName, out var value))
-        {
-            return false;
-        }
-
-        return value is bool boolValue ? boolValue : value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
+        return !values.TryGetValue(variableName, out var value)
+            ? false
+            : value is bool boolValue ? boolValue : value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
     }
 
     /// <summary>

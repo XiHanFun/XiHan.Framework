@@ -98,12 +98,7 @@ public class TimeOnlyNullableConverter : JsonConverter<TimeOnly?>
     /// <returns></returns>
     public override TimeOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            return null;
-        }
-
-        return TimeOnly.TryParse(reader.GetString(), out var time) ? time : null;
+        return reader.TokenType != JsonTokenType.String ? null : TimeOnly.TryParse(reader.GetString(), out var time) ? time : null;
     }
 
     /// <summary>
