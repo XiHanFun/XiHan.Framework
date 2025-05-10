@@ -54,6 +54,11 @@ public readonly struct Int32Number : INumber<Int32Number>
     public static implicit operator Int32Number(int value) => new(value);
 
     /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    public static int ToInt32(Int32Number value) => value._value;
+
+    /// <summary>
     /// 从其他类型创建Int32Number
     /// </summary>
     public static Int32Number CreateChecked<TOther>(TOther value) => new(Convert.ToInt32(value));
@@ -148,6 +153,11 @@ public readonly struct Int64Number : INumber<Int64Number>
     /// 隐式从long转换
     /// </summary>
     public static implicit operator Int64Number(long value) => new(value);
+
+    /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    public static int ToInt32(Int64Number value) => (int)value._value;
 
     /// <summary>
     /// 从其他类型创建Int64Number
@@ -246,6 +256,11 @@ public readonly struct UInt32Number : INumber<UInt32Number>
     public static implicit operator UInt32Number(uint value) => new(value);
 
     /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    public static int ToInt32(UInt32Number value) => (int)value._value;
+
+    /// <summary>
     /// 从其他类型创建UInt32Number
     /// </summary>
     public static UInt32Number CreateChecked<TOther>(TOther value) => new(Convert.ToUInt32(value));
@@ -256,7 +271,7 @@ public readonly struct UInt32Number : INumber<UInt32Number>
     public static UInt32Number Remainder(UInt32Number left, UInt32Number right) => left._value % right._value;
 
     /// <summary>
-    /// 取绝对值（无符号类型直接返回原值）
+    /// 取绝对值
     /// </summary>
     public static UInt32Number Abs(UInt32Number value) => value;
 
@@ -342,6 +357,11 @@ public readonly struct UInt64Number : INumber<UInt64Number>
     public static implicit operator UInt64Number(ulong value) => new(value);
 
     /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    public static int ToInt32(UInt64Number value) => (int)value._value;
+
+    /// <summary>
     /// 从其他类型创建UInt64Number
     /// </summary>
     public static UInt64Number CreateChecked<TOther>(TOther value) => new(Convert.ToUInt64(value));
@@ -352,7 +372,7 @@ public readonly struct UInt64Number : INumber<UInt64Number>
     public static UInt64Number Remainder(UInt64Number left, UInt64Number right) => left._value % right._value;
 
     /// <summary>
-    /// 取绝对值（无符号类型直接返回原值）
+    /// 取绝对值
     /// </summary>
     public static UInt64Number Abs(UInt64Number value) => value;
 
@@ -438,11 +458,21 @@ public readonly struct BigIntegerNumber : INumber<BigIntegerNumber>
     public static implicit operator BigIntegerNumber(BigInteger value) => new(value);
 
     /// <summary>
+    /// 转换为int类型
+    /// </summary>
+    public static int ToInt32(BigIntegerNumber value) => (int)value._value;
+
+    /// <summary>
     /// 从其他类型创建BigIntegerNumber
     /// </summary>
     public static BigIntegerNumber CreateChecked<TOther>(TOther value)
     {
-        return value is BigInteger bi ? new(bi) : (BigIntegerNumber)new(new BigInteger(Convert.ToInt64(value)));
+        return value switch
+        {
+            int intValue => new BigIntegerNumber(new BigInteger(intValue)),
+            long longValue => new BigIntegerNumber(new BigInteger(longValue)),
+            _ => new BigIntegerNumber(BigInteger.Parse(value.ToString()!))
+        };
     }
 
     /// <summary>
