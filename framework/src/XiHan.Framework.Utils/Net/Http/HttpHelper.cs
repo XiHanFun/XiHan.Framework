@@ -303,7 +303,6 @@ public static class HttpHelper
     /// <summary>
     /// 处理 HTTP 响应
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="response"></param>
     /// <returns></returns>
     /// <exception cref="HttpRequestException"></exception>
@@ -321,7 +320,6 @@ public static class HttpHelper
     /// <summary>
     /// 处理 HTTP 响应
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="response"></param>
     /// <returns></returns>
     /// <exception cref="HttpRequestException"></exception>

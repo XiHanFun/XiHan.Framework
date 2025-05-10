@@ -44,7 +44,6 @@ public class XiHanAiModule : XiHanModule
         var configuration = services.GetConfiguration();
 
         Configure<XiHanOllamaOptions>(configuration.GetSection($"{ModuleConfigNode}:Ollama"));
-        Configure<XiHanHuggingFaceOptions>(configuration.GetSection($"{ModuleConfigNode}:HuggingFace"));
         Configure<XiHanOpenAiOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
 
         // 注册 Semantic Kernel 内核，配置 Ollama、OpenAI 等 Connector
