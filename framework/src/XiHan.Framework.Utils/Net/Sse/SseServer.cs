@@ -17,6 +17,7 @@ using System.Text;
 namespace XiHan.Framework.Utils.Net.Sse;
 
 /// <summary>
+/// Server-Sent Events
 /// SSE服务器，用于实现服务端事件推送
 /// </summary>
 public class SseServer
