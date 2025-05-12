@@ -25,6 +25,8 @@ using XiHan.Framework.Http;
 
 namespace XiHan.Framework.AI;
 
+#pragma warning disable SKEXP0070,SKEXP0010,SKEXP0001
+
 /// <summary>
 /// 曦寒框架人工智能模块
 /// </summary>
@@ -52,7 +54,6 @@ public class XiHanAIModule : XiHanModule
 
         // Ollama
         var ollamaOptions = services.GetRequiredService<IOptions<OllamaOptions>>().Value;
-#pragma warning disable SKEXP0070
         _ = kernelBuilder.AddOllamaChatCompletion(
             modelId: ollamaOptions.ModelName,
             endpoint: new Uri(ollamaOptions.BaseUrl),
@@ -61,13 +62,10 @@ public class XiHanAIModule : XiHanModule
             modelId: ollamaOptions.ModelName,
             endpoint: new Uri(ollamaOptions.BaseUrl),
             serviceId: ollamaOptions.ServiceId);
-#pragma warning restore SKEXP0070
-
         _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
 
         // OpenAI
         var openAIOptions = services.GetRequiredService<IOptions<OpenAIOptions>>().Value;
-#pragma warning disable SKEXP0010
         _ = kernelBuilder.AddOpenAIChatCompletion(
             modelId: openAIOptions.ModelName,
             endpoint: new Uri(openAIOptions.BaseUrl),
@@ -77,10 +75,10 @@ public class XiHanAIModule : XiHanModule
             modelId: openAIOptions.ModelName,
             apiKey: openAIOptions.ApiKey,
             serviceId: openAIOptions.ServiceId);
-#pragma warning restore SKEXP0010
-
         _ = services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
 
         _ = kernelBuilder.Build();
     }
 }
+
+#pragma warning restore SKEXP0070, SKEXP0010, SKEXP0001
