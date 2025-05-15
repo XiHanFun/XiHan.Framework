@@ -50,7 +50,7 @@ public class UnitOfWorkEventRecord
     public long EventOrder { get; protected set; }
 
     /// <summary>
-    /// 是否使用Outbox
+    /// 是否使用 Outbox
     /// </summary>
     public bool UseOutbox { get; }
 

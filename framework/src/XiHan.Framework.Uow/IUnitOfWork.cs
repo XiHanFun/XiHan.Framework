@@ -22,7 +22,7 @@ namespace XiHan.Framework.Uow;
 /// </summary>
 public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, IDisposable
 {
-    //TODO：切换到OnFailed （sync）和ondispose （sync）方法来兼容OnCompleted
+    //TODO：切换到 OnFailed(sync) 和 OnDispose(sync) 方法来兼容OnCompleted
     /// <summary>
     /// 工作单元失败事件
     /// </summary>
