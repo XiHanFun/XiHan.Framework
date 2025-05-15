@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -24,10 +24,15 @@ namespace XiHan.Framework.SqlSugarCore;
 /// <summary>
 /// SqlSugar数据库上下文
 /// </summary>
-public class SqlSugarDbContext : ISqlSugarDbContext, ITransientDependency, ISupportsRollback
+public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsSavingChanges, ISupportsRollback, ITransientDependency
 {
+    // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
     private readonly SqlSugarScope _sqlSugarScope;
+
+    // 选项配置
     private readonly XiHanSqlSugarCoreOptions _options;
+
+    // 标记是否有活动事务
     private bool _hasActiveTransaction;
 
     /// <summary>
@@ -43,11 +48,16 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransientDependency, ISupp
     /// <summary>
     /// 保存实体变更
     /// </summary>
-    /// <param name="_">取消令牌(未使用)</param>
-    public static Task SaveChangesAsync(CancellationToken _ = default)
+    /// <param name="cancellationToken">取消令牌(未使用)</param>
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // SqlSugar没有类似EF的SaveChanges方法，它是立即执行的
-        return Task.CompletedTask;
+        // SqlSugar 没有提供 SaveChangesAsync 方法
+        if (_hasActiveTransaction)
+        {
+            return;
+        }
+        // 提交事务
+        await CommitAsync(cancellationToken);
     }
 
     /// <summary>
@@ -106,7 +116,7 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransientDependency, ISupp
 
         try
         {
-            await Task.Run(() => _sqlSugarScope.Ado.CommitTran(), cancellationToken);
+            await Task.Run(() => _sqlSugarScope.Ado.CommitTranAsync(), cancellationToken);
         }
         finally
         {
@@ -127,12 +137,24 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransientDependency, ISupp
 
         try
         {
-            await Task.Run(() => _sqlSugarScope.Ado.RollbackTran(), cancellationToken);
+            await Task.Run(() => _sqlSugarScope.Ado.RollbackTranAsync(), cancellationToken);
         }
         finally
         {
             _hasActiveTransaction = false;
         }
+    }
+
+    /// <summary>
+    /// 释放
+    /// </summary>
+    public void Dispose()
+    {
+        // 释放SqlSugarScope资源
+        _sqlSugarScope?.Dispose();
+
+        // 调用 GC.SuppressFinalize 以防止派生类需要重新实现 IDisposable
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

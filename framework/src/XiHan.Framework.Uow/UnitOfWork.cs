@@ -25,6 +25,13 @@ namespace XiHan.Framework.Uow;
 /// <summary>
 /// 工作单元
 /// </summary>
+/// <remarks>
+/// 层级：业务层面，应用逻辑中对对象变更的抽象
+/// 粒度：一次业务操作涉及的多个对象和动作
+/// 作用：管理对象状态，延迟写出，减少重复提交，处理并发冲突
+/// 实现依赖：可整合多个存储机制，通常在提交时内部启动一个数据库事务
+/// 回滚范围：影响整个业务对象变更集合，对象层面与数据层面可解耦回滚处理
+/// </remarks>
 public class UnitOfWork : IUnitOfWork, ITransientDependency
 {
     /// <summary>
@@ -342,7 +349,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
 
         if (!_databaseApis.TryAdd(key, api))
         {
-            throw new XiHanException("This unit of work already contains a database API for the given key.");
+            throw new XiHanException($"此工作单元已包含 {key} 的数据库 API。");
         }
     }
 
@@ -385,7 +392,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
 
         if (!_transactionApis.TryAdd(key, api))
         {
-            throw new XiHanException("这个工作单元已经包含了给定键的事务API。");
+            throw new XiHanException($"此工作单元已包含 {key} 的事务API。");
         }
     }
 
