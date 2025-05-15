@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Text;
 /// <summary>
 /// 编码扩展方法
 /// </summary>
-public static partial class EncodingExtensions
+public static class EncodingExtensions
 {
     /// <summary>
     /// 对字符串进行 Base32 编码

@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Options;
 using SqlSugar;
 using System.Linq.Expressions;
+using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.SqlSugarCore.Options;
 using XiHan.Framework.Uow.Abstracts;
@@ -24,13 +25,16 @@ namespace XiHan.Framework.SqlSugarCore;
 /// <summary>
 /// SqlSugar数据库上下文
 /// </summary>
-public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsSavingChanges, ISupportsRollback, ITransientDependency
+public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsSavingChanges, ISupportsRollback, IScopedDependency
 {
-    // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
-    private readonly SqlSugarScope _sqlSugarScope;
-
     // 选项配置
     private readonly XiHanSqlSugarCoreOptions _options;
+
+    // 服务提供器
+    private readonly ITransientCachedServiceProvider _transientCachedServiceProvider;
+
+    // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
+    private readonly SqlSugarScope _sqlSugarScope;
 
     // 标记是否有活动事务
     private bool _hasActiveTransaction;
@@ -39,9 +43,12 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
-    public SqlSugarDbContext(IOptions<XiHanSqlSugarCoreOptions> options)
+    /// <param name="transientCachedServiceProvider"></param>
+    public SqlSugarDbContext(IOptions<XiHanSqlSugarCoreOptions> options, ITransientCachedServiceProvider transientCachedServiceProvider)
     {
         _options = options.Value;
+        _transientCachedServiceProvider = transientCachedServiceProvider;
+
         _sqlSugarScope = CreateSqlSugarScope();
     }
 
