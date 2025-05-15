@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Uow.Abstracts;
 
 /// <summary>
-/// 工作单元事务行为提供者
+/// 工作单元事务行为提供者接口
 /// </summary>
 public interface IUnitOfWorkTransactionBehaviourProvider
 {
