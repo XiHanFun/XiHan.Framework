@@ -124,8 +124,8 @@ public static class StringExtensions
     /// <summary>
     /// 从给定字符串的末尾移除给定后缀的第一个出现
     /// </summary>
-    /// <param name="str">字符串。</param>
-    /// <param name="postFixes">一个或多个后缀。</param>
+    /// <param name="str">字符串</param>
+    /// <param name="postFixes">一个或多个后缀</param>
     /// <returns>修改后的字符串，或者如果它没有任何给定的后缀，则返回相同的字符串</returns>
     public static string RemovePostFix(this string str, params string[] postFixes)
     {
@@ -135,9 +135,9 @@ public static class StringExtensions
     /// <summary>
     /// 从给定字符串的末尾移除给定后缀的首次出现
     /// </summary>
-    /// <param name="str">字符串。</param>
+    /// <param name="str">字符串</param>
     /// <param name="comparisonType">字符串比较类型</param>
-    /// <param name="postFixes">一个或多个后缀。</param>
+    /// <param name="postFixes">一个或多个后缀</param>
     /// <returns>如果没有给定的任何后缀，则返回修改后的字符串或相同的字符串</returns>
     public static string RemovePostFix(this string str, StringComparison comparisonType, params string[] postFixes)
     {
@@ -163,10 +163,10 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 从给定字符串的开头移除给定前缀的首次出现。
+    /// 从给定字符串的开头移除给定前缀的首次出现
     /// </summary>
-    /// <param name="str">字符串。</param>
-    /// <param name="preFixes">一个或多个前缀。</param>
+    /// <param name="str">字符串</param>
+    /// <param name="preFixes">一个或多个前缀</param>
     /// <returns>如果没有给定的任何前缀，则返回修改后的字符串或相同的字符串</returns>
     public static string RemovePreFix(this string str, params string[] preFixes)
     {
@@ -174,11 +174,11 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 从给定字符串的开头移除给定前缀的首次出现。
+    /// 从给定字符串的开头移除给定前缀的首次出现
     /// </summary>
-    /// <param name="str">该字符串。</param>
-    /// <param name="comparisonType">字符串比较类型。</param>
-    /// <param name="preFixes">一个或多个前缀。</param>
+    /// <param name="str">该字符串</param>
+    /// <param name="comparisonType">字符串比较类型</param>
+    /// <param name="preFixes">一个或多个前缀</param>
     /// <returns>如果没有任何给定的前缀，则返回修改后的字符串或相同的字符串</returns>
     public static string RemovePreFix(this string str, StringComparison comparisonType, params string[] preFixes)
     {
@@ -204,7 +204,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 从字符串的开头移除给定前缀的所有出现。
+    /// 从字符串的开头移除给定前缀的所有出现
     /// </summary>
     /// <param name="str"></param>
     /// <param name="search"></param>
@@ -227,20 +227,20 @@ public static class StringExtensions
 
         var buffer = newLength <= 1024 ? stackalloc char[newLength] : new char[newLength];
 
-        // Copy the part of the original string before the search term
+        // 复制搜索词前的原始字符串部分
         str.AsSpan(0, pos).CopyTo(buffer);
 
-        // Copy the replacement text
+        // 复制替换文本
         replace.AsSpan().CopyTo(buffer[pos..]);
 
-        // Copy the remainder of the original string
+        // 复制原始字符串的剩余部分
         str.AsSpan(pos + searchLength).CopyTo(buffer[(pos + replaceLength)..]);
 
         return buffer.ToString();
     }
 
     /// <summary>
-    /// 从字符串的末尾获取该字符串的子字符串。
+    /// 从字符串的末尾获取该字符串的子字符串
     /// </summary>
     /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
     /// <exception cref="ArgumentException">如果 <paramref name="len"/> 大于字符串的长度，则抛出</exception>
@@ -254,7 +254,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 使用字符串的 Split 方法按给定分隔符拆分给定字符串。
+    /// 使用字符串的 Split 方法按给定分隔符拆分给定字符串
     /// </summary>
     public static string[] Split(this string str, string separator)
     {
@@ -264,7 +264,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 使用字符串的 Split 方法按给定分隔符拆分给定字符串。
+    /// 使用字符串的 Split 方法按给定分隔符拆分给定字符串
     /// </summary>
     public static string[] Split(this string str, string separator, StringSplitOptions options)
     {
@@ -274,7 +274,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 使用字符串的 Split 方法按 <see cref="Environment.NewLine"/> 拆分给定字符串。
+    /// 使用字符串的 Split 方法按 <see cref="Environment.NewLine"/> 拆分给定字符串
     /// </summary>
     public static string[] SplitToLines(this string str)
     {
@@ -282,7 +282,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 使用字符串的“Split”方法，根据 <see cref="Environment.NewLine"/> 来拆分给定的字符串。
+    /// 使用字符串的"Split"方法，根据 <see cref="Environment.NewLine"/> 来拆分给定的字符串
     /// </summary>
     public static string[] SplitToLines(this string str, StringSplitOptions options)
     {
@@ -290,11 +290,11 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）。
-    /// 示例:“ThisIsSampleSentence”被转换为“ This is a sample sentence”。
+    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）
+    /// 示例:ThisIsSampleSentence被转换为 This is a sample sentence
     /// </summary>
-    /// <param name="str">要转换的字符串。</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
+    /// <param name="str">要转换的字符串</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
     public static string ToSentenceCase(this string str, bool useCurrentCulture = false)
     {
         return string.IsNullOrWhiteSpace(str)
@@ -305,12 +305,12 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将帕斯卡格式的字符串转换为驼峰格式的字符串。
-    /// 例如:“ThisIsSampleSentence”被转换为“thisIsSampleSentence”。
+    /// 将帕斯卡格式的字符串转换为小驼峰格式的字符串
+    /// 例如:ThisIsSampleSentence被转换为thisIsSampleSentence
     /// </summary>
     /// <param name="str">要转换的字符串</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
-    /// <param name="handleAbbreviations">如果您希望将 'XYZ' 转换为 'xyz'，则设置为 true。</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
+    /// <param name="handleAbbreviations">如果您希望将 'XYZ' 转换为 'xyz'，则设置为 true</param>
     /// <returns>该字符串的驼峰格式</returns>
     public static string ToCamelCase(this string str, bool useCurrentCulture = false, bool handleAbbreviations = false)
     {
@@ -324,11 +324,11 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将给定的帕斯卡格式/驼峰格式字符串转换为短横线连接格式。
-    /// 例如:“ThisIsSampleSentence”被转换为“this-is-a-sample-sentence”。
+    /// 将给定的帕斯卡格式/驼峰格式字符串转换为短横线连接格式
+    /// 例如:ThisIsSampleSentence被转换为this-is-a-sample-sentence
     /// </summary>
-    /// <param name="str">要转换的字符串。</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
+    /// <param name="str">要转换的字符串</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
     public static string ToKebabCase(this string str, bool useCurrentCulture = false)
     {
         if (string.IsNullOrWhiteSpace(str))
@@ -344,11 +344,11 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将驼峰式字符串转换为帕斯卡式字符串。
-    /// 例如"thisIsSampleSentence" 被转换为 "ThisIsSampleSentence"。
+    /// 将小驼峰式字符串转换为帕斯卡式字符串
+    /// 例如:thisIsSampleSentence 被转换为 ThisIsSampleSentence
     /// </summary>
     /// <param name="str">要转换的字符串</param>
-    /// <param name="useCurrentCulture">设置为 true 以使用当前文化。否则，将使用不变文化。</param>
+    /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
     /// <returns>该字符串的帕斯卡式</returns>
     public static string ToPascalCase(this string str, bool useCurrentCulture = false)
     {
@@ -360,10 +360,10 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将给定的帕斯卡格式/驼峰格式字符串转换为蛇形格式。
-    /// 例如:“ThisIsSampleSentence”被转换为“this_is_a_sample_sentence”。
+    /// 将给定的帕斯卡格式/驼峰格式字符串转换为蛇形格式
+    /// 例如:ThisIsSampleSentence 被转换为 this_is_a_sample_sentence
     /// </summary>
-    /// <param name="str">要转换的字符串。</param>
+    /// <param name="str">要转换的字符串</param>
     /// <returns></returns>
     public static string ToSnakeCase(this string str)
     {
@@ -371,7 +371,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将字符串转换为枚举值。
+    /// 将字符串转换为枚举值
     /// </summary>
     /// <typeparam name="T">枚举的类型</typeparam>
     /// <param name="value">要转换的字符串值</param>
@@ -384,7 +384,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将字符串转换为枚举值。
+    /// 将字符串转换为枚举值
     /// </summary>
     /// <typeparam name="T">枚举的类型</typeparam>
     /// <param name="value">要转换的字符串值</param>
@@ -408,7 +408,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串。
+    /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串
     /// </summary>
     public static string? Truncate(this string? str, int maxLength)
     {
@@ -416,7 +416,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 如果字符串超过最大长度，则从字符串的结尾获取该字符串的子字符串。
+    /// 如果字符串超过最大长度，则从字符串的结尾获取该字符串的子字符串
     /// </summary>
     public static string? TruncateFromBeginning(this string? str, int maxLength)
     {
@@ -424,8 +424,8 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串。如果被截断，它会将给定的 <paramref name="postfix"/> 添加到字符串的末尾。
-    /// 返回的字符串不能长于最大长度。
+    /// 如果字符串超过最大长度，则从字符串的开头获取该字符串的子字符串如果被截断，它会将给定的 <paramref name="postfix"/> 添加到字符串的末尾
+    /// 返回的字符串不能长于最大长度
     /// </summary>
     /// <exception cref="ArgumentNullException">如果 <paramref name="str"/> 为 null，则抛出</exception>
     public static string? TruncateWithPostfix(this string? str, int maxLength, string postfix = "...")
@@ -442,7 +442,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 使用 <see cref="Encoding.UTF8"/> 编码将给定字符串转换为字节数组。
+    /// 使用 <see cref="Encoding.UTF8"/> 编码将给定字符串转换为字节数组
     /// </summary>
     public static byte[] GetBytes(this string str)
     {
@@ -458,6 +458,405 @@ public static class StringExtensions
         _ = CheckHelper.NotNull(encoding, nameof(encoding));
 
         return encoding.GetBytes(str);
+    }
+
+    /// <summary>
+    /// 检查字符串是否为有效的 JSON
+    /// </summary>
+    /// <param name="str">要检查的字符串</param>
+    /// <returns>如果是有效的 JSON 则返回 true，否则返回 false</returns>
+    public static bool IsValidJson(this string str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(str);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 比较两个字符串是否相等（忽略大小写）
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <param name="value">要比较的字符串</param>
+    /// <returns>如果两个字符串相等（忽略大小写）则返回 true，否则返回 false</returns>
+    public static bool EqualsIgnoreCase(this string? str, string? value)
+    {
+        return string.Equals(str, value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 将字符串的第一个字符转换为大写
+    /// </summary>
+    /// <param name="str">要转换的字符串</param>
+    /// <returns>首字母大写的字符串</returns>
+    public static string FirstCharToUpper(this string str)
+    {
+        return string.IsNullOrEmpty(str) || char.IsUpper(str[0]) ? str : char.ToUpperInvariant(str[0]) + str[1..];
+    }
+
+    /// <summary>
+    /// 将字符串的第一个字符转换为小写
+    /// </summary>
+    /// <param name="str">要转换的字符串</param>
+    /// <returns>首字母小写的字符串</returns>
+    public static string FirstCharToLower(this string str)
+    {
+        return string.IsNullOrEmpty(str) || char.IsLower(str[0]) ? str : char.ToLowerInvariant(str[0]) + str[1..];
+    }
+
+    /// <summary>
+    /// 检查字符串是否包含指定集合中的任意字符串
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <param name="values">要检查的字符串集合</param>
+    /// <param name="comparisonType">字符串比较类型</param>
+    /// <returns>如果包含任意一个指定的字符串则返回 true，否则返回 false</returns>
+    public static bool ContainsAny(this string str, IEnumerable<string> values, StringComparison comparisonType = StringComparison.Ordinal)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(values, nameof(values));
+
+        foreach (var value in values)
+        {
+            if (str.Contains(value, comparisonType))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 检查字符串是否包含指定集合中的所有字符串
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <param name="values">要检查的字符串集合</param>
+    /// <param name="comparisonType">字符串比较类型</param>
+    /// <returns>如果包含所有指定的字符串则返回 true，否则返回 false</returns>
+    public static bool ContainsAll(this string str, IEnumerable<string> values, StringComparison comparisonType = StringComparison.Ordinal)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(values, nameof(values));
+
+        foreach (var value in values)
+        {
+            if (!str.Contains(value, comparisonType))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 将字符串分割成指定长度的部分
+    /// </summary>
+    /// <param name="str">要分割的字符串</param>
+    /// <param name="partLength">每部分的长度</param>
+    /// <returns>分割后的字符串数组</returns>
+    public static IEnumerable<string> SplitInParts(this string str, int partLength)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        if (partLength <= 0)
+        {
+            throw new ArgumentException("部分长度必须大于零", nameof(partLength));
+        }
+
+        for (var i = 0; i < str.Length; i += partLength)
+        {
+            yield return str.Substring(i, Math.Min(partLength, str.Length - i));
+        }
+    }
+
+    /// <summary>
+    /// 使用 ReadOnlySpan 高效地检查字符串是否包含指定字符
+    /// </summary>
+    /// <param name="str">要搜索的字符串</param>
+    /// <param name="value">要查找的字符</param>
+    /// <returns>如果找到字符，则为 true；否则为 false</returns>
+    public static bool Contains(this string str, char value)
+    {
+        return str.AsSpan().Contains(value);
+    }
+
+    /// <summary>
+    /// 格式化字符串，与 string.Format 类似
+    /// </summary>
+    /// <param name="format">格式化字符串</param>
+    /// <param name="args">格式化参数</param>
+    /// <returns>格式化后的字符串</returns>
+
+    public static string Format(this string format, params object[] args)
+    {
+        return string.Format(format, args);
+    }
+
+    /// <summary>
+    /// 检查字符串是否为空或只包含空白字符，如果是则返回默认值
+    /// </summary>
+    /// <param name="str">要检查的字符串</param>
+    /// <param name="defaultValue">如果字符串为空或空白，则返回的默认值</param>
+    /// <returns>原始字符串或默认值</returns>
+    public static string? DefaultIfNullOrWhiteSpace(this string? str, string? defaultValue)
+    {
+        return string.IsNullOrWhiteSpace(str) ? defaultValue : str;
+    }
+
+    /// <summary>
+    /// 检查字符串是否为空或空白字符串，如果不是则执行指定操作
+    /// </summary>
+    /// <param name="str">要检查的字符串</param>
+    /// <param name="action">如果字符串不为空或空白，则执行的操作</param>
+    public static void IfNotNullOrWhiteSpace(this string? str, Action<string> action)
+    {
+        if (!string.IsNullOrWhiteSpace(str) && action != null)
+        {
+            action(str);
+        }
+    }
+
+    /// <summary>
+    /// 获取字符串内容的字节大小
+    /// </summary>
+    /// <param name="str">要计算大小的字符串</param>
+    /// <param name="encoding">使用的编码，默认为 UTF8</param>
+    /// <returns>字符串的字节大小</returns>
+    public static int GetByteSize(this string str, Encoding? encoding = null)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        encoding ??= Encoding.UTF8;
+        return encoding.GetByteCount(str);
+    }
+
+    /// <summary>
+    /// 移除字符串中的所有空白字符
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <returns>移除空白字符后的字符串</returns>
+    public static string RemoveWhiteSpaces(this string str)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        // 预先计算移除空白后的长度以优化内存分配
+        var resultLength = 0;
+        foreach (var c in str)
+        {
+            if (!char.IsWhiteSpace(c))
+            {
+                resultLength++;
+            }
+        }
+
+        if (resultLength == str.Length)
+        {
+            return str;
+        }
+
+        var result = new char[resultLength];
+        var index = 0;
+
+        foreach (var c in str)
+        {
+            if (!char.IsWhiteSpace(c))
+            {
+                result[index++] = c;
+            }
+        }
+
+        return new string(result);
+    }
+
+    /// <summary>
+    /// 从字符串中移除不可见字符（控制字符和空白字符）
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <returns>移除不可见字符后的字符串</returns>
+    public static string RemoveInvisibleChars(this string str)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        // 预计算移除后长度
+        var resultLength = 0;
+        foreach (var c in str)
+        {
+            if (!char.IsControl(c) && !char.IsWhiteSpace(c))
+            {
+                resultLength++;
+            }
+        }
+
+        if (resultLength == str.Length)
+        {
+            return str;
+        }
+
+        var result = new char[resultLength];
+        var index = 0;
+
+        foreach (var c in str)
+        {
+            if (!char.IsControl(c) && !char.IsWhiteSpace(c))
+            {
+                result[index++] = c;
+            }
+        }
+
+        return new string(result);
+    }
+
+    /// <summary>
+    /// 安全地截取字符串，避免因索引超出范围而抛出异常
+    /// </summary>
+    /// <param name="str">源字符串</param>
+    /// <param name="startIndex">起始索引</param>
+    /// <param name="length">长度</param>
+    /// <returns>截取的子字符串</returns>
+    public static string SafeSubstring(this string str, int startIndex, int? length = null)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        if (startIndex < 0)
+        {
+            startIndex = 0;
+        }
+
+        if (startIndex >= str.Length)
+        {
+            return string.Empty;
+        }
+
+        if (length == null)
+        {
+            return str[startIndex..];
+        }
+
+        var realLength = length.Value;
+        if (realLength < 0)
+        {
+            realLength = 0;
+        }
+
+        if (startIndex + realLength > str.Length)
+        {
+            realLength = str.Length - startIndex;
+        }
+
+        return str.Substring(startIndex, realLength);
+    }
+
+    /// <summary>
+    /// 计算两个字符串之间的 Levenshtein 距离（编辑距离）
+    /// </summary>
+    /// <param name="str">第一个字符串</param>
+    /// <param name="other">第二个字符串</param>
+    /// <returns>表示两个字符串之间的编辑距离</returns>
+    public static int LevenshteinDistance(this string str, string other)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = CheckHelper.NotNull(other, nameof(other));
+
+        var n = str.Length;
+        var m = other.Length;
+        var d = new int[n + 1, m + 1];
+
+        // 第一列初始化
+        for (var i = 0; i <= n; i++)
+        {
+            d[i, 0] = i;
+        }
+
+        // 第一行初始化
+        for (var j = 0; j <= m; j++)
+        {
+            d[0, j] = j;
+        }
+
+        // 计算编辑距离
+        for (var i = 1; i <= n; i++)
+        {
+            for (var j = 1; j <= m; j++)
+            {
+                var cost = (other[j - 1] == str[i - 1]) ? 0 : 1;
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+
+        return d[n, m];
+    }
+
+    /// <summary>
+    /// 检查字符串是否包含中文字符
+    /// </summary>
+    /// <param name="str">要检查的字符串</param>
+    /// <returns>如果包含中文字符则返回 true，否则返回 false</returns>
+    public static bool ContainsChinese(this string str)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        return str.Any(c => c is >= (char)0x4E00 and <= (char)0x9FFF);
+    }
+
+    /// <summary>
+    /// 反转字符串中的字符顺序
+    /// </summary>
+    /// <param name="str">要反转的字符串</param>
+    /// <returns>反转后的字符串</returns>
+    public static string Reverse(this string str)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        if (str.Length <= 1)
+        {
+            return str;
+        }
+
+        var charArray = str.ToCharArray();
+        Array.Reverse(charArray);
+        return new string(charArray);
+    }
+
+    /// <summary>
+    /// 确保字符串是指定长度，不足则用指定字符填充
+    /// </summary>
+    /// <param name="str">要处理的字符串</param>
+    /// <param name="length">目标长度</param>
+    /// <param name="padChar">填充字符</param>
+    /// <param name="padLeft">是否左填充</param>
+    /// <returns>处理后的字符串</returns>
+    public static string PadToLength(this string str, int length, char padChar = ' ', bool padLeft = false)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        return str.Length >= length ? str : padLeft ? str.PadLeft(length, padChar) : str.PadRight(length, padChar);
+    }
+
+    /// <summary>
+    /// 将字符串重复指定次数
+    /// </summary>
+    /// <param name="str">要重复的字符串</param>
+    /// <param name="count">重复次数</param>
+    /// <returns>重复后的字符串</returns>
+    public static string Repeat(this string str, int count)
+    {
+        _ = CheckHelper.NotNull(str, nameof(str));
+
+        return count <= 0 ? string.Empty : count == 1 || str.Length == 0 ? str : string.Concat(Enumerable.Repeat(str, count));
     }
 
     /// <summary>
