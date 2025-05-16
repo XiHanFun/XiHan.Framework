@@ -23,24 +23,24 @@ namespace XiHan.Framework.Utils.Security;
 public static class ValidateCoder
 {
     /// <summary>
-    /// 默认数字字符源
-    /// </summary>
-    private const string DefaultNumberSource = "0123456789";
-
-    /// <summary>
     /// 默认特殊符号字符源
     /// </summary>
-    private const string DefaultSpecialCharSource = "!@#$%^&*()-_=+[]{}|;:,.<>?/";
+    private static readonly string _defaultSpecialCharSource = "!@#$%^&*()-_=+[]{}|;:,.<>?/";
 
     /// <summary>
     /// 默认大写字母字符源
     /// </summary>
-    private const string DefaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static readonly string _defaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /// <summary>
     /// 默认小写字母字符源
     /// </summary>
-    private const string DefaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
+    private static readonly string _defaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
+
+    /// <summary>
+    /// 默认数字字符源
+    /// </summary>
+    private static readonly string _defaultNumberSource = "0123456789";
 
     /// <summary>
     /// 随机数字
@@ -50,7 +50,7 @@ public static class ValidateCoder
     /// <returns>随机数字字符串</returns>
     public static string GetNumber(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultNumberSource);
+        return RandomHelper.GetRandom(length ?? 6, source ?? _defaultNumberSource);
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public static class ValidateCoder
     /// <returns>随机特殊符号字符串</returns>
     public static string GetSpecialChars(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultSpecialCharSource);
+        return RandomHelper.GetRandom(length ?? 6, source ?? _defaultSpecialCharSource);
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public static class ValidateCoder
     /// <returns>随机大写字母字符串</returns>
     public static string GetUpperLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source?.ToUpperInvariant() ?? DefaultUpperLetterSource);
+        return RandomHelper.GetRandom(length ?? 6, source?.ToUpperInvariant() ?? _defaultUpperLetterSource);
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public static class ValidateCoder
     /// <returns>随机小写字母字符串</returns>
     public static string GetLowerLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source?.ToLowerInvariant() ?? DefaultLowerLetterSource);
+        return RandomHelper.GetRandom(length ?? 6, source?.ToLowerInvariant() ?? _defaultLowerLetterSource);
     }
 
     /// <summary>
@@ -94,8 +94,8 @@ public static class ValidateCoder
     /// <returns>随机字母或数字字符串</returns>
     public static string GetNumberOrLetter(int? length = 6, string? source = null)
     {
-        const string DefaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource;
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultSource);
+        var defaultSource = _defaultNumberSource + _defaultUpperLetterSource + _defaultLowerLetterSource;
+        return RandomHelper.GetRandom(length ?? 6, source ?? defaultSource);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public static class ValidateCoder
     /// <returns>随机强密码字符串</returns>
     public static string GetStrongPassword(int? length = 12, string? source = null)
     {
-        var defaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource + DefaultSpecialCharSource;
+        var defaultSource = _defaultNumberSource + _defaultUpperLetterSource + _defaultLowerLetterSource + _defaultSpecialCharSource;
         return RandomHelper.GetRandom(length ?? 12, source ?? defaultSource);
     }
 
@@ -126,28 +126,28 @@ public static class ValidateCoder
 
         if (includeNumbers)
         {
-            source.Append(DefaultNumberSource);
+            source.Append(_defaultNumberSource);
         }
 
         if (includeUpperLetters)
         {
-            source.Append(DefaultUpperLetterSource);
+            source.Append(_defaultUpperLetterSource);
         }
 
         if (includeLowerLetters)
         {
-            source.Append(DefaultLowerLetterSource);
+            source.Append(_defaultLowerLetterSource);
         }
 
         if (includeSpecialChars)
         {
-            source.Append(DefaultSpecialCharSource);
+            source.Append(_defaultSpecialCharSource);
         }
 
         // 如果没有选择任何字符集，默认使用数字和字母
         if (source.Length == 0)
         {
-            source.Append(DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource);
+            source.Append(_defaultNumberSource + _defaultUpperLetterSource + _defaultLowerLetterSource);
         }
 
         return RandomHelper.GetRandom(length, source.ToString());
