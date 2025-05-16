@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ChatStreamingResult
+// FileName:XiHanChatStreamingResult
 // Guid:7091834d-1feb-47e3-b20b-767a42f08bd5
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// 流式聊天结果
 /// </summary>
-public class ChatStreamingResult
+public class XiHanChatStreamingResult
 {
     /// <summary>
     /// 是否结束

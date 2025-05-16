@@ -12,12 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.Ollama;
-using Microsoft.SemanticKernel.Embeddings;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -36,7 +36,7 @@ public class XiHanOllamaService : IXiHanAIService
     private readonly Kernel _kernel;
     private readonly OllamaOptions _options;
     private readonly IChatCompletionService _ollamaChatService;
-    private readonly ITextEmbeddingGenerationService _ollamaTextEmbeddingService;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _ollamaTextEmbeddingService;
     private readonly ILogger<XiHanOllamaService> _logger;
 
     private string _currentModel;
@@ -56,7 +56,7 @@ public class XiHanOllamaService : IXiHanAIService
         _options = options.Value;
         _currentModel = _options.ModelName;
         _ollamaChatService = _kernel.GetRequiredService<IChatCompletionService>(_options.ServiceId);
-        _ollamaTextEmbeddingService = _kernel.GetRequiredService<ITextEmbeddingGenerationService>(_options.ServiceId);
+        _ollamaTextEmbeddingService = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>(_options.ServiceId);
         _logger = logger;
     }
 
@@ -68,9 +68,9 @@ public class XiHanOllamaService : IXiHanAIService
     /// <summary>
     /// 异步聊天接口
     /// </summary>
-    public async Task<ChatResult> ChatAsync(string message, ChatOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<XiHanChatResult> ChatAsync(string message, XiHanChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        options ??= new ChatOptions();
+        options ??= new XiHanChatOptions();
         var stopwatch = Stopwatch.StartNew();
 
         // 创建聊天历史
@@ -123,7 +123,7 @@ public class XiHanOllamaService : IXiHanAIService
         }
 
         // 创建结果
-        var result = ChatResult.Success(response.Content ?? string.Empty);
+        var result = XiHanChatResult.Success(response.Content ?? string.Empty);
         result.ResponseTimeMs = stopwatch.ElapsedMilliseconds;
         result.ToolCalls = toolCalls;
 
@@ -144,12 +144,9 @@ public class XiHanOllamaService : IXiHanAIService
     /// <summary>
     /// 流式聊天接口
     /// </summary>
-    public async IAsyncEnumerable<ChatStreamingResult> ChatStreamingAsync(
-        string message,
-        ChatOptions? options = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<XiHanChatStreamingResult> ChatStreamingAsync(string message, XiHanChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        options ??= new ChatOptions();
+        options ??= new XiHanChatOptions();
 
         // 创建聊天历史
         var chatHistory = new ChatHistory();
@@ -195,7 +192,7 @@ public class XiHanOllamaService : IXiHanAIService
         {
             contentSoFar += content.Content;
 
-            yield return new ChatStreamingResult
+            yield return new XiHanChatStreamingResult
             {
                 IsEnd = false,
                 ContentDelta = content.Content ?? string.Empty,
@@ -204,7 +201,7 @@ public class XiHanOllamaService : IXiHanAIService
         }
 
         // 最后一个流式结果标记结束
-        yield return new ChatStreamingResult
+        yield return new XiHanChatStreamingResult
         {
             IsEnd = true,
             ContentDelta = string.Empty,
@@ -219,9 +216,13 @@ public class XiHanOllamaService : IXiHanAIService
     {
         try
         {
-            var embeddings = await _ollamaTextEmbeddingService.GenerateEmbeddingAsync(text, _kernel, cancellationToken);
+            // 修正方法调用，将单个字符串放入数组中，并移除不兼容的_kernel参数
+            var result = await _ollamaTextEmbeddingService.GenerateAsync(
+                [text],
+                cancellationToken: cancellationToken);
 
-            return embeddings.ToArray();
+            // 获取第一个结果的向量
+            return result.Count > 0 ? result[0].Vector.ToArray() : [];
         }
         catch (Exception ex)
         {
