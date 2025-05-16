@@ -14,6 +14,7 @@
 
 using System.ComponentModel;
 using System.Reflection;
+using XiHan.Framework.Utils.Enums;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Test.System;
