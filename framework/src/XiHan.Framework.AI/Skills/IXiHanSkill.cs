@@ -38,7 +38,7 @@ public interface IXiHanSkill
     /// <param name="context">技能上下文</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>技能执行结果</returns>
-    Task<SkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default);
+    Task<XiHanSkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 判断技能是否可处理指定输入

@@ -56,7 +56,7 @@ public class MathSkill : IXiHanSkill
     /// <summary>
     /// 执行技能
     /// </summary>
-    public Task<SkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default)
+    public Task<XiHanSkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -64,7 +64,7 @@ public class MathSkill : IXiHanSkill
             var match = _mathExpressionRegex.Match(input);
             if (!match.Success || match.Groups.Count < 2)
             {
-                return Task.FromResult(SkillResult.Failure("无法识别数学表达式"));
+                return Task.FromResult(XiHanSkillResult.Failure("无法识别数学表达式"));
             }
 
             var expression = match.Groups[1].Value.Trim();
@@ -74,12 +74,12 @@ public class MathSkill : IXiHanSkill
 
             _logger.LogInformation("数学计算: {Expression} = {Result}", expression, result);
 
-            return Task.FromResult(SkillResult.Success($"计算结果: {expression} = {result}"));
+            return Task.FromResult(XiHanSkillResult.Success($"计算结果: {expression} = {result}"));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "计算表达式时出错");
-            return Task.FromResult(SkillResult.Failure($"计算出错: {ex.Message}"));
+            return Task.FromResult(XiHanSkillResult.Failure($"计算出错: {ex.Message}"));
         }
     }
 

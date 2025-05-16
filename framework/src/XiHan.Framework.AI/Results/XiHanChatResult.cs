@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SkillResult
-// Guid:aeeb6d18-a113-4a16-aaa4-63cd1b046202
+// FileName:XiHanChatResult
+// Guid:49d79315-e582-45ef-b944-9585c5d9c8fa
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/5/25
@@ -15,14 +15,14 @@
 namespace XiHan.Framework.AI.Results;
 
 /// <summary>
-/// 技能执行结果
+/// 聊天结果
 /// </summary>
-public class SkillResult : AIResult
+public class XiHanChatResult : XiHanAIResult
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public SkillResult() : base()
+    public XiHanChatResult() : base()
     {
     }
 
@@ -31,37 +31,34 @@ public class SkillResult : AIResult
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
     /// <param name="content">内容</param>
-    /// <param name="contentType">内容类型</param>
-    public SkillResult(bool isSuccess, string content, string contentType = "text/plain") : base(isSuccess)
+    public XiHanChatResult(bool isSuccess, string content) : base(isSuccess)
     {
         Content = content;
-        ContentType = contentType;
     }
 
     /// <summary>
-    /// 结果内容
+    /// 回复内容
     /// </summary>
     public string Content { get; set; } = string.Empty;
 
     /// <summary>
-    /// 结果类型
+    /// 响应时间(毫秒)
     /// </summary>
-    public string ContentType { get; set; } = "text/plain";
+    public long ResponseTimeMs { get; set; }
 
     /// <summary>
-    /// 相关元数据
+    /// 工具调用结果
     /// </summary>
-    public Dictionary<string, object> Metadata { get; set; } = [];
+    public ToolCallResult[]? ToolCalls { get; set; }
 
     /// <summary>
     /// 创建成功结果
     /// </summary>
-    /// <param name="content">结果内容</param>
-    /// <param name="contentType">结果类型</param>
+    /// <param name="content">回复内容</param>
     /// <returns>成功结果</returns>
-    public static SkillResult Success(string content, string contentType = "text/plain")
+    public static XiHanChatResult Success(string content)
     {
-        return new SkillResult(true, content, contentType);
+        return new XiHanChatResult(true, content);
     }
 
     /// <summary>
@@ -69,12 +66,33 @@ public class SkillResult : AIResult
     /// </summary>
     /// <param name="errorMessage">错误信息</param>
     /// <returns>失败结果</returns>
-    public static SkillResult Failure(string errorMessage)
+    public static XiHanChatResult Failure(string errorMessage)
     {
-        var result = new SkillResult(false, string.Empty)
+        var result = new XiHanChatResult(false, string.Empty)
         {
             ErrorMessage = errorMessage
         };
         return result;
     }
+}
+
+/// <summary>
+/// 工具调用结果
+/// </summary>
+public class ToolCallResult
+{
+    /// <summary>
+    /// 工具ID
+    /// </summary>
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 工具名称
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 参数JSON
+    /// </summary>
+    public string ArgumentsJson { get; set; } = string.Empty;
 }

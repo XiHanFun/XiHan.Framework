@@ -106,7 +106,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
     /// <summary>
     /// 检索记忆
     /// </summary>
-    public async Task<IEnumerable<MemoryResult>> SearchAsync(string collection, string query, int limit = 5, double minRelevance = 0.7, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<XiHanMemoryResult>> SearchAsync(string collection, string query, int limit = 5, double minRelevance = 0.7, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -119,7 +119,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
                 cancellationToken: cancellationToken);
 
             // 转换结果
-            var results = new List<MemoryResult>();
+            var results = new List<XiHanMemoryResult>();
 
             // 手动转换，安全访问属性
             if (searchResults.Results != null)
@@ -131,7 +131,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
                         ? result.Partitions[0]
                         : null;
 
-                    var memoryResult = new MemoryResult
+                    var memoryResult = new XiHanMemoryResult
                     {
                         Id = result.SourceName ?? string.Empty,
                         // 从分区获取文本和相关性得分

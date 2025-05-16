@@ -34,7 +34,7 @@ public interface IXiHanAIService
     /// <param name="options">聊天选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>聊天结果</returns>
-    Task<ChatResult> ChatAsync(string message, ChatOptions? options = null, CancellationToken cancellationToken = default);
+    Task<XiHanChatResult> ChatAsync(string message, XiHanChatOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 生成文本嵌入向量
@@ -59,5 +59,5 @@ public interface IXiHanAIService
     /// <param name="options">聊天选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>流式聊天结果</returns>
-    IAsyncEnumerable<ChatStreamingResult> ChatStreamingAsync(string message, ChatOptions? options = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<XiHanChatStreamingResult> ChatStreamingAsync(string message, XiHanChatOptions? options = null, CancellationToken cancellationToken = default);
 }

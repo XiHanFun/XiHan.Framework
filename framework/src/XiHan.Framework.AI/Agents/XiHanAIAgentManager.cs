@@ -92,11 +92,11 @@ public class XiHanAIAgentManager : IXiHanAIAgentService
     /// <summary>
     /// 向Agent发送消息
     /// </summary>
-    public async Task<ChatResult> SendMessageAsync(string agentId, string message, CancellationToken cancellationToken = default)
+    public async Task<XiHanChatResult> SendMessageAsync(string agentId, string message, CancellationToken cancellationToken = default)
     {
         if (!_agents.TryGetValue(agentId, out var agent))
         {
-            return ChatResult.Failure($"未找到Agent: {agentId}");
+            return XiHanChatResult.Failure($"未找到Agent: {agentId}");
         }
 
         try
@@ -106,7 +106,7 @@ public class XiHanAIAgentManager : IXiHanAIAgentService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Agent {AgentId} 处理消息时出错", agentId);
-            return ChatResult.Failure($"处理消息时出错: {ex.Message}");
+            return XiHanChatResult.Failure($"处理消息时出错: {ex.Message}");
         }
     }
 }

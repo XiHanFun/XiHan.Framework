@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ChatOptions
+// FileName:XiHanChatOptions
 // Guid:9be00b56-842d-4c8a-8559-d6606d2dfd64
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// 聊天选项
 /// </summary>
-public class ChatOptions
+public class XiHanChatOptions
 {
     /// <summary>
     /// 聊天模型名称
