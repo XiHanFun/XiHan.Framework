@@ -15,7 +15,7 @@ using System.Numerics;
 using System.Text;
 using XiHan.Framework.Utils.Maths;
 
-namespace XiHan.Framework.Utils.DistributedId.Sqids;
+namespace XiHan.Framework.DistributedIds.Sqids;
 
 /// <summary>
 /// Sqids编码器

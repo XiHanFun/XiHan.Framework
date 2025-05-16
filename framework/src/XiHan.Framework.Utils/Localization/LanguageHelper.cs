@@ -15,7 +15,7 @@
 using System.Globalization;
 using System.Resources;
 
-namespace XiHan.Framework.Utils.I18n;
+namespace XiHan.Framework.Utils.Localization;
 
 /// <summary>
 /// 多语言支持帮助类

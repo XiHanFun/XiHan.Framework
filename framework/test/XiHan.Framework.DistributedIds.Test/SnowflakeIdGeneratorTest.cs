@@ -1,9 +1,8 @@
 using JetBrains.Annotations;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using XiHan.Framework.Utils.DistributedId;
 
-namespace XiHan.Framework.Utils.Test.DistributedId;
+namespace XiHan.Framework.DistributedIds.Test;
 
 /// <summary>
 /// 雪花ID生成器测试

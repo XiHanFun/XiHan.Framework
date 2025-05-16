@@ -11,7 +11,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DistributedId.Sqids;
+namespace XiHan.Framework.DistributedIds.Sqids;
 
 /// <summary>
 /// Sqids配置选项

@@ -12,7 +12,22 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DistributedId;
+
+#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:SnowflakeIdGenerator
+// Guid:9f4e3d28-a7b6-47c9-81e0-5f9c2d6cf4e8
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2025/4/28 19:32:01
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
+namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
 /// 雪花漂移算法ID生成器
@@ -170,7 +185,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>工作机器ID</returns>
     public int ExtractWorkerId(long id)
     {
-        return (int)((id >> _workerIdShift) & ~(-1L << _workerIdBitLength));
+        return (int)(id >> _workerIdShift & ~(-1L << _workerIdBitLength));
     }
 
     /// <summary>
@@ -351,7 +366,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _lastTimestamp = currentTimestamp;
 
         // 生成ID
-        var result = ((currentTimestamp - _baseTimestamp) << _timestampShift) | (_workerId << _workerIdShift) | _currentSeqNumber;
+        var result = currentTimestamp - _baseTimestamp << _timestampShift | _workerId << _workerIdShift | _currentSeqNumber;
         return result;
     }
 
@@ -373,7 +388,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 如果是同一时间戳，则增加序列号
         if (_lastTimestamp == timestamp)
         {
-            _currentSeqNumber = (_currentSeqNumber + 1) & _maxSeqNumber;
+            _currentSeqNumber = _currentSeqNumber + 1 & _maxSeqNumber;
             // 同一毫秒的序列数已经达到最大
             if (_currentSeqNumber == 0)
             {
@@ -391,7 +406,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _lastTimestamp = timestamp;
 
         // 生成ID
-        return ((timestamp - _baseTimestamp) << _timestampShift) | (_dataCenterId << _dataCenterIdShift) | (_workerId << _workerIdShift) | _currentSeqNumber;
+        return timestamp - _baseTimestamp << _timestampShift | _dataCenterId << _dataCenterIdShift | _workerId << _workerIdShift | _currentSeqNumber;
     }
 
     /// <summary>
