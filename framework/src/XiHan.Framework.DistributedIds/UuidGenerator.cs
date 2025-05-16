@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DistributedId;
+namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
 /// UUID生成器

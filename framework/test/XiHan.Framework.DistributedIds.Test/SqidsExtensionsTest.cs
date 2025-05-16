@@ -1,7 +1,7 @@
 ﻿using JetBrains.Annotations;
-using XiHan.Framework.Utils.DistributedId.Sqids;
+using XiHan.Framework.DistributedIds.Sqids;
 
-namespace XiHan.Framework.Utils.Test.DistributedId;
+namespace XiHan.Framework.DistributedIds.Test;
 
 /// <summary>
 /// Sqids扩展方法测试

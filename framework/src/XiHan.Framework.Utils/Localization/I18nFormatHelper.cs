@@ -15,7 +15,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace XiHan.Framework.Utils.I18n;
+namespace XiHan.Framework.Utils.Localization;
 
 /// <summary>
 /// 国际化格式化处理帮助类

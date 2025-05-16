@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DistributedId;
+namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
 /// 分布式ID生成器接口

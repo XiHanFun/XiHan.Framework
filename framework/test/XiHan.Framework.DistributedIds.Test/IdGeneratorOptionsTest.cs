@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
-using XiHan.Framework.Utils.DistributedId;
+using XiHan.Framework.DistributedIds;
 
-namespace XiHan.Framework.Utils.Test.DistributedId;
+namespace XiHan.Framework.DistributedIds.Test;
 
 /// <summary>
 /// ID生成器选项测试

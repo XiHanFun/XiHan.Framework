@@ -14,7 +14,7 @@
 
 using System.Globalization;
 
-namespace XiHan.Framework.Utils.I18n;
+namespace XiHan.Framework.Utils.Localization;
 
 /// <summary>
 /// 时区处理帮助类
