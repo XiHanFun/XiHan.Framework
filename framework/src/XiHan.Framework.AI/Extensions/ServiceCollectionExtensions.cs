@@ -45,7 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IXiHanAIAgentService, XiHanAIAgentManager>();
         services.AddSingleton<ISkillRegistry, SkillRegistry>();
         services.AddSingleton<IXiHanAIMemoryService, XiHanAIMemoryService>();
-        services.AddSingleton<IXiHanAIPromptManager, PromptManager>();
+        services.AddSingleton<IXiHanAIPromptManager, XiHanPromptManager>();
 
         return services;
     }

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PromptManager
+// FileName:XiHanPromptManager
 // Guid:aa38cb1d-88cd-4d77-9668-5a5adbb81cad
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -22,17 +22,17 @@ namespace XiHan.Framework.AI.Prompts;
 /// <summary>
 /// 提示词管理器实现
 /// </summary>
-public class PromptManager : IXiHanAIPromptManager
+public class XiHanPromptManager : IXiHanAIPromptManager
 {
     private readonly ConcurrentDictionary<string, string> _templates = new();
     private readonly string _templatesDirectory;
-    private readonly ILogger<PromptManager> _logger;
+    private readonly ILogger<XiHanPromptManager> _logger;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="logger">日志记录器</param>
-    public PromptManager(ILogger<PromptManager> logger)
+    public XiHanPromptManager(ILogger<XiHanPromptManager> logger)
     {
         _logger = logger;
 

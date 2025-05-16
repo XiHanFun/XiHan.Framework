@@ -40,7 +40,7 @@ public interface IXiHanAIMemoryService
     /// <param name="minRelevance">最小相关度</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>记忆结果集</returns>
-    Task<IEnumerable<MemoryResult>> SearchAsync(string collection, string query, int limit = 5, double minRelevance = 0.7, CancellationToken cancellationToken = default);
+    Task<IEnumerable<XiHanMemoryResult>> SearchAsync(string collection, string query, int limit = 5, double minRelevance = 0.7, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除记忆

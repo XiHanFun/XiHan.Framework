@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ChatResult
-// Guid:49d79315-e582-45ef-b944-9585c5d9c8fa
+// FileName:XiHanSkillResult
+// Guid:aeeb6d18-a113-4a16-aaa4-63cd1b046202
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/5/25
@@ -15,14 +15,14 @@
 namespace XiHan.Framework.AI.Results;
 
 /// <summary>
-/// 聊天结果
+/// 技能执行结果
 /// </summary>
-public class ChatResult : AIResult
+public class XiHanSkillResult : XiHanAIResult
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public ChatResult() : base()
+    public XiHanSkillResult() : base()
     {
     }
 
@@ -31,34 +31,37 @@ public class ChatResult : AIResult
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
     /// <param name="content">内容</param>
-    public ChatResult(bool isSuccess, string content) : base(isSuccess)
+    /// <param name="contentType">内容类型</param>
+    public XiHanSkillResult(bool isSuccess, string content, string contentType = "text/plain") : base(isSuccess)
     {
         Content = content;
+        ContentType = contentType;
     }
 
     /// <summary>
-    /// 回复内容
+    /// 结果内容
     /// </summary>
     public string Content { get; set; } = string.Empty;
 
     /// <summary>
-    /// 响应时间(毫秒)
+    /// 结果类型
     /// </summary>
-    public long ResponseTimeMs { get; set; }
+    public string ContentType { get; set; } = "text/plain";
 
     /// <summary>
-    /// 工具调用结果
+    /// 相关元数据
     /// </summary>
-    public ToolCallResult[]? ToolCalls { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = [];
 
     /// <summary>
     /// 创建成功结果
     /// </summary>
-    /// <param name="content">回复内容</param>
+    /// <param name="content">结果内容</param>
+    /// <param name="contentType">结果类型</param>
     /// <returns>成功结果</returns>
-    public static ChatResult Success(string content)
+    public static XiHanSkillResult Success(string content, string contentType = "text/plain")
     {
-        return new ChatResult(true, content);
+        return new XiHanSkillResult(true, content, contentType);
     }
 
     /// <summary>
@@ -66,33 +69,12 @@ public class ChatResult : AIResult
     /// </summary>
     /// <param name="errorMessage">错误信息</param>
     /// <returns>失败结果</returns>
-    public static ChatResult Failure(string errorMessage)
+    public static XiHanSkillResult Failure(string errorMessage)
     {
-        var result = new ChatResult(false, string.Empty)
+        var result = new XiHanSkillResult(false, string.Empty)
         {
             ErrorMessage = errorMessage
         };
         return result;
     }
-}
-
-/// <summary>
-/// 工具调用结果
-/// </summary>
-public class ToolCallResult
-{
-    /// <summary>
-    /// 工具ID
-    /// </summary>
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 工具名称
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 参数JSON
-    /// </summary>
-    public string ArgumentsJson { get; set; } = string.Empty;
 }

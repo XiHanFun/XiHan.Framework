@@ -123,7 +123,7 @@ public class BaseAgent : IXiHanAIAgent
     /// <summary>
     /// 执行Agent任务
     /// </summary>
-    public async Task<ChatResult> InvokeAsync(string message, CancellationToken cancellationToken = default)
+    public async Task<XiHanChatResult> InvokeAsync(string message, CancellationToken cancellationToken = default)
     {
         if (!_isInitialized)
         {
@@ -132,7 +132,7 @@ public class BaseAgent : IXiHanAIAgent
 
         if (_aiService == null)
         {
-            return ChatResult.Failure("AI服务未初始化");
+            return XiHanChatResult.Failure("AI服务未初始化");
         }
 
         // 添加用户消息到历史
@@ -160,7 +160,7 @@ public class BaseAgent : IXiHanAIAgent
                     {
                         // 添加Assistant回复到历史
                         _chatHistory.Add(("assistant", skillResult.Content));
-                        return ChatResult.Success(skillResult.Content);
+                        return XiHanChatResult.Success(skillResult.Content);
                     }
                 }
             }
@@ -176,7 +176,7 @@ public class BaseAgent : IXiHanAIAgent
             }
 
             // 构建聊天选项
-            var chatOptions = new ChatOptions
+            var chatOptions = new XiHanChatOptions
             {
                 ModelName = _options.ModelName,
                 SystemPrompt = _options.SystemPrompt,
@@ -211,7 +211,7 @@ public class BaseAgent : IXiHanAIAgent
         catch (Exception ex)
         {
             _logger.LogError(ex, "Agent {AgentId} 处理消息时出错", Id);
-            return ChatResult.Failure($"处理消息时出错: {ex.Message}");
+            return XiHanChatResult.Failure($"处理消息时出错: {ex.Message}");
         }
     }
 

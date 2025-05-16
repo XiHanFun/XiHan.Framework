@@ -61,7 +61,7 @@ public class SearchSkill : IXiHanSkill
     /// <summary>
     /// 执行技能
     /// </summary>
-    public async Task<SkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default)
+    public async Task<XiHanSkillResult> ExecuteAsync(string input, SkillContext context, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -69,7 +69,7 @@ public class SearchSkill : IXiHanSkill
             var match = _searchPattern.Match(input);
             if (!match.Success || match.Groups.Count < 3)
             {
-                return SkillResult.Failure("无法识别搜索关键字");
+                return XiHanSkillResult.Failure("无法识别搜索关键字");
             }
 
             var keyword = match.Groups[2].Value.Trim();
@@ -79,17 +79,17 @@ public class SearchSkill : IXiHanSkill
 
             if (string.IsNullOrEmpty(searchResults))
             {
-                return SkillResult.Failure($"未找到关于{keyword}的相关信息");
+                return XiHanSkillResult.Failure($"未找到关于{keyword}的相关信息");
             }
 
             _logger.LogInformation("搜索关键字: {Keyword}, 找到结果", keyword);
 
-            return SkillResult.Success(searchResults);
+            return XiHanSkillResult.Success(searchResults);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "搜索时出错");
-            return SkillResult.Failure($"搜索出错: {ex.Message}");
+            return XiHanSkillResult.Failure($"搜索出错: {ex.Message}");
         }
     }
 

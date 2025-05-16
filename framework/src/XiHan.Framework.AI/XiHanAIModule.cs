@@ -58,7 +58,7 @@ public class XiHanAIModule : XiHanModule
             modelId: ollamaOptions.ModelName,
             endpoint: new Uri(ollamaOptions.BaseUrl),
             serviceId: ollamaOptions.ServiceId);
-        _ = kernelBuilder.AddOllamaTextEmbeddingGeneration(
+        _ = kernelBuilder.AddOllamaEmbeddingGenerator(
             modelId: ollamaOptions.ModelName,
             endpoint: new Uri(ollamaOptions.BaseUrl),
             serviceId: ollamaOptions.ServiceId);
@@ -71,7 +71,7 @@ public class XiHanAIModule : XiHanModule
             endpoint: new Uri(openAIOptions.BaseUrl),
             apiKey: openAIOptions.ApiKey,
             serviceId: openAIOptions.ServiceId);
-        _ = kernelBuilder.AddOpenAITextEmbeddingGeneration(
+        _ = kernelBuilder.AddOpenAIEmbeddingGenerator(
             modelId: openAIOptions.ModelName,
             apiKey: openAIOptions.ApiKey,
             serviceId: openAIOptions.ServiceId);

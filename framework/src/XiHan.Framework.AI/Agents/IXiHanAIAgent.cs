@@ -57,7 +57,7 @@ public interface IXiHanAIAgent
     /// <param name="message">用户消息</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>执行结果</returns>
-    Task<ChatResult> InvokeAsync(string message, CancellationToken cancellationToken = default);
+    Task<XiHanChatResult> InvokeAsync(string message, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 添加技能

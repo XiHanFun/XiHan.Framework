@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AIResult
+// FileName:XiHanAIResult
 // Guid:9ce8f646-7816-4761-bd64-31425983752c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// AI结果基类
 /// </summary>
-public class AIResult
+public class XiHanAIResult
 {
     /// <summary>
     /// 是否成功
@@ -42,7 +42,7 @@ public class AIResult
     /// <summary>
     /// 构造函数
     /// </summary>
-    public AIResult()
+    public XiHanAIResult()
     {
     }
 
@@ -50,7 +50,7 @@ public class AIResult
     /// 构造函数
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
-    public AIResult(bool isSuccess)
+    public XiHanAIResult(bool isSuccess)
     {
         IsSuccess = isSuccess;
     }
@@ -60,7 +60,7 @@ public class AIResult
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
     /// <param name="errorMessage">错误消息</param>
-    public AIResult(bool isSuccess, string errorMessage)
+    public XiHanAIResult(bool isSuccess, string errorMessage)
     {
         IsSuccess = isSuccess;
         ErrorMessage = errorMessage;

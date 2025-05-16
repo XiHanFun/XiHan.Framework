@@ -54,5 +54,5 @@ public interface IXiHanAIAgentService
     /// <param name="message">消息内容</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>聊天结果</returns>
-    Task<ChatResult> SendMessageAsync(string agentId, string message, CancellationToken cancellationToken = default);
+    Task<XiHanChatResult> SendMessageAsync(string agentId, string message, CancellationToken cancellationToken = default);
 }
