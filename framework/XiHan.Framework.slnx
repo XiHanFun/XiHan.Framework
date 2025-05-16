@@ -1,15 +1,15 @@
 <Solution>
   <Folder Name="/1.src/" />
-  <Folder Name="/1.src/1.Base/" Id="268cd282-b2ee-026d-5a01-26825fa26abe">
+  <Folder Name="/1.src/1.Base/">
     <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
   </Folder>
-  <Folder Name="/1.src/2.Common/" Id="f88d891c-e38d-b16c-4ce7-5b17edc07603">
+  <Folder Name="/1.src/2.Common/">
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>
-  <Folder Name="/1.src/3.Core/" Id="2a7cc7f2-4b63-775a-282f-2e0753c607dd">
+  <Folder Name="/1.src/3.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
   </Folder>
-  <Folder Name="/1.src/4.CoreLibraries/" Id="2d08e2c1-7b7d-02cf-6404-2716c4627276">
+  <Folder Name="/1.src/4.CoreLibraries/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
     <Project Path="src/XiHan.Framework.BackgroundWorkers/XiHan.Framework.BackgroundWorkers.csproj" />
@@ -23,6 +23,7 @@
     <Project Path="src/XiHan.Framework.Ddd.Application/XiHan.Framework.Ddd.Application.csproj" />
     <Project Path="src/XiHan.Framework.Ddd.Domain.Shared/XiHan.Framework.Ddd.Domain.Shared.csproj" />
     <Project Path="src/XiHan.Framework.Ddd.Domain/XiHan.Framework.Ddd.Domain.csproj" />
+    <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" Id="d864f895-e9e5-4f02-9e57-77d4556df66c" />
     <Project Path="src/XiHan.Framework.EntityFrameworkCore/XiHan.Framework.EntityFrameworkCore.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
@@ -41,10 +42,10 @@
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
-  <Folder Name="/1.src/5.AspNetCore/" Id="8c765efc-0e95-81d8-f986-454d3454ce70">
+  <Folder Name="/1.src/5.AspNetCore/">
     <Project Path="src/XiHan.Framework.AspNetCore/XiHan.Framework.AspNetCore.csproj" />
   </Folder>
-  <Folder Name="/1.src/6.AspNetCoreLibraries/" Id="23bcbaa0-6f6d-c068-2abd-78a2048de189">
+  <Folder Name="/1.src/6.AspNetCoreLibraries/">
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OAuth/XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj" />
@@ -59,6 +60,7 @@
     <Project Path="test/XiHan.Framework.AI.Test/XiHan.Framework.AI.Test.csproj" />
     <Project Path="test/XiHan.Framework.AspNetCore.Test/XiHan.Framework.AspNetCore.Test.csproj" />
     <Project Path="test/XiHan.Framework.Core.Test/XiHan.Framework.Core.Test.csproj" />
+    <Project Path="test/XiHan.Framework.DistributedIds.Test/XiHan.Framework.DistributedIds.Test.csproj" Id="70766c03-a5bd-4469-97c2-5db972652bc1" />
     <Project Path="test/XiHan.Framework.Test.Base/XiHan.Framework.Test.Base.csproj" Id="593c35d7-e47a-4fee-b636-d5141c297d3d" />
     <Project Path="test/XiHan.Framework.Utils.Test/XiHan.Framework.Utils.Test.csproj" />
     <Project Path="test/XiHan.Framework.Web.Test/XiHan.Framework.Web.Test.csproj" Id="7c879f46-8797-4721-a1d7-37d2c1b8e94c" />
@@ -71,30 +73,30 @@
     <File Path="global.json" />
     <File Path="XiHan.Framework.txt" />
   </Folder>
-  <Folder Name="/3.others/props/" Id="3d4d95ec-c164-c61f-d550-42be88f514ca">
+  <Folder Name="/3.others/props/">
     <File Path="props/common.props" />
     <File Path="props/netcore.props" />
     <File Path="props/netstandard.props" />
     <File Path="props/nuget.props" />
     <File Path="props/version.props" />
   </Folder>
-  <Folder Name="/3.others/scripts/" Id="af28042a-d269-3585-82af-65182e6bcb8a" />
-  <Folder Name="/3.others/scripts/editor/" Id="3f1b702d-b316-6ea0-770c-2c0f5344ba3f">
+  <Folder Name="/3.others/scripts/" />
+  <Folder Name="/3.others/scripts/editor/">
     <File Path="scripts/editor/Class.cs" />
     <File Path="scripts/editor/Controller.cs" />
     <File Path="scripts/editor/CopyFile.ps1" />
     <File Path="scripts/editor/FilePath.txt" />
     <File Path="scripts/editor/Interface.cs" />
   </Folder>
-  <Folder Name="/3.others/scripts/nuget/" Id="651d00b9-f366-6a36-6521-feef87220689">
+  <Folder Name="/3.others/scripts/nuget/">
     <File Path="scripts/nuget/1.SaveNugetApiKey.ps1" />
     <File Path="scripts/nuget/2.VersionUpgrade.ps1" />
     <File Path="scripts/nuget/3.PushNugetPackages.ps1" />
   </Folder>
-  <Folder Name="/3.others/scripts/project/" Id="08f103f5-090a-b973-c128-9a7bac219049">
+  <Folder Name="/3.others/scripts/project/">
     <File Path="scripts/project/ClearProjecBinObj.ps1" />
   </Folder>
-  <Folder Name="/3.others/snks/" Id="56f7518b-acf3-bc7e-bea2-7b442114ffa1">
+  <Folder Name="/3.others/snks/">
     <File Path="snks/XiHan.Framework.snk" />
   </Folder>
 </Solution>

@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
-using XiHan.Framework.Utils.DistributedId.Sqids;
+using XiHan.Framework.DistributedIds.Sqids;
 using XiHan.Framework.Utils.Maths;
 
-namespace XiHan.Framework.Utils.Test.DistributedId;
+namespace XiHan.Framework.DistributedIds.Test;
 
 /// <summary>
 /// Sqids编码器测试
@@ -67,7 +67,7 @@ public class SqidsEncoderTest
     public void Int32Encoder_ShouldWorkCorrectly()
     {
         // Arrange
-        var numbers = new[] { (int)1, (int)2, (int)3 };
+        var numbers = new[] { 1, 2, 3 };
 
         // Act
         var encoded = _intEncoder.Encode(numbers);
@@ -85,7 +85,7 @@ public class SqidsEncoderTest
     public void Int64Encoder_ShouldWorkCorrectly()
     {
         // Arrange
-        var numbers = new[] { (long)1000000000L, (long)2000000000L, (long)3000000000L };
+        var numbers = new[] { 1000000000L, 2000000000L, 3000000000L };
 
         // Act
         var encoded = _longEncoder.Encode(numbers);
