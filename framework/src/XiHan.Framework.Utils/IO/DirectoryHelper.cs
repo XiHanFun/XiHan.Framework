@@ -270,16 +270,6 @@ public static class DirectoryHelper
     }
 
     /// <summary>
-    /// 返回应用程序的默认静态文件目录
-    /// 用于存放静态文件，如图片、CSS、JS 等
-    /// </summary>
-    /// <returns></returns>
-    public static string GetWwwrootDirectory()
-    {
-        return Path.Combine(GetBaseDirectory(), "wwwroot");
-    }
-
-    /// <summary>
     /// 当前进程的工作目录，即程序启动时或运行过程中当前的“活动目录”
     /// 这个目录可以在程序运行过程中被修改，所以它不一定是程序所在的文件夹
     /// 举例：如果你从命令行的 D:\Projects 目录启动了程序，即使程序实际文件在 C:\MyApp\ 下，这个方法返回的就是 D:\Projects
@@ -288,6 +278,16 @@ public static class DirectoryHelper
     public static string GetCurrentDirectory()
     {
         return Directory.GetCurrentDirectory();
+    }
+
+    /// <summary>
+    /// 返回应用程序的默认静态文件目录
+    /// 用于存放静态文件，如图片、CSS、JS 等
+    /// </summary>
+    /// <returns></returns>
+    public static string GetWwwrootDirectory()
+    {
+        return Path.Combine(GetBaseDirectory(), "wwwroot");
     }
 
     #endregion 目录检查

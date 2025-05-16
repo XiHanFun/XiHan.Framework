@@ -20,6 +20,16 @@ namespace XiHan.Framework.Utils.Logging;
 public static class ConsoleLogger
 {
     private static readonly Lock _objLock = new();
+    private static bool _isWriteToFile = false;
+
+    /// <summary>
+    /// 设置日志文件目录
+    /// </summary>
+    /// <param name="isWriteToFile">是否写入文件</param>
+    public static void SetIsWriteToFile(bool isWriteToFile)
+    {
+        _isWriteToFile = isWriteToFile;
+    }
 
     /// <summary>
     /// 正常信息
@@ -29,6 +39,11 @@ public static class ConsoleLogger
     public static void Info(string? inputStr, ConsoleColor frontColor = ConsoleColor.White)
     {
         WriteColorLine(inputStr, frontColor);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Info(inputStr);
     }
 
     /// <summary>
@@ -39,6 +54,11 @@ public static class ConsoleLogger
     public static void Success(string? inputStr, ConsoleColor frontColor = ConsoleColor.Green)
     {
         WriteColorLine(inputStr, frontColor);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Success(inputStr);
     }
 
     /// <summary>
@@ -49,6 +69,11 @@ public static class ConsoleLogger
     public static void Handle(string? inputStr, ConsoleColor frontColor = ConsoleColor.Blue)
     {
         WriteColorLine(inputStr, frontColor);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Handle(inputStr);
     }
 
     /// <summary>
@@ -59,6 +84,11 @@ public static class ConsoleLogger
     public static void Warn(string? inputStr, ConsoleColor frontColor = ConsoleColor.Yellow)
     {
         WriteColorLine(inputStr, frontColor);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Warn(inputStr);
     }
 
     /// <summary>
@@ -69,6 +99,11 @@ public static class ConsoleLogger
     public static void Error(string? inputStr, ConsoleColor frontColor = ConsoleColor.Red)
     {
         WriteColorLine(inputStr, frontColor);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Error(inputStr);
     }
 
     /// <summary>

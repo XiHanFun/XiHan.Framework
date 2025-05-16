@@ -14,10 +14,9 @@
 
 using System.Collections.Concurrent;
 using System.Reflection;
-using XiHan.Framework.Utils.Attributes;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Utils.System;
+namespace XiHan.Framework.Utils.Enums;
 
 /// <summary>
 /// 枚举扩展方法
@@ -256,13 +255,13 @@ public static class EnumExtensions
         // 枚举字段
         var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
         var enumInfos = fields.Select(field => new EnumInfo
-            {
-                Key = field.Name,
-                Value = (int)field.GetRawConstantValue()!,
-                Label = field.GetDescriptionValue(),
-                Theme = field.GetThemeColorValue().Theme,
-                Color = field.GetThemeColorValue().Color
-            })
+        {
+            Key = field.Name,
+            Value = (int)field.GetRawConstantValue()!,
+            Label = field.GetDescriptionValue(),
+            Theme = field.GetThemeColorValue().Theme,
+            Color = field.GetThemeColorValue().Color
+        })
             .ToList();
 
         // 加入缓存
@@ -402,25 +401,4 @@ public static class EnumExtensions
     }
 
     #endregion 枚举类型查找
-}
-
-/// <summary>
-/// 枚举信息
-/// </summary>
-public record EnumInfo : ThemeColor
-{
-    /// <summary>
-    /// 键
-    /// </summary>
-    public string Key { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 值
-    /// </summary>
-    public int Value { get; init; }
-
-    /// <summary>
-    /// 描述
-    /// </summary>
-    public string Label { get; init; } = string.Empty;
 }
