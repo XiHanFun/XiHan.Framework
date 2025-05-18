@@ -1,4 +1,8 @@
 ﻿using JetBrains.Annotations;
+using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace XiHan.Framework.DistributedIds.Test;
 
@@ -213,7 +217,7 @@ public class SnowflakeIdGeneratorTest
         // Arrange
         var options = new IdGeneratorOptions();
         var generator = new SnowflakeIdGenerator(options);
-        var count = 5;
+        var count = 500000;
 
         // Act
         var ids = await generator.NextIdsAsync(count);
@@ -381,5 +385,266 @@ public class SnowflakeIdGeneratorTest
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => generator.NextIdStringsAsync(0));
         await Assert.ThrowsAsync<ArgumentException>(() => generator.NextIdStringsAsync(-1));
+    }
+
+    [Fact(DisplayName = "验证雪花算法生成重复ID所需时间测试", Skip = "耗时测试，仅在需要验证时运行")]
+    public void GenerateDuplicateId_ShouldTakeLongTime()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions
+        {
+            // 使用漂移算法，提高生成速度
+            Method = IdGeneratorOptions.SnowFlakeMethod,
+            // 使用较小的序列位长度，增加重复可能性
+            SeqBitLength = 8
+        };
+        var generator = new SnowflakeIdGenerator(options);
+
+        var ids = new HashSet<long>(10_000_000); // 预分配一个较大的容量
+        var duplicateFound = false;
+        var duplicateId = 0L;
+        var totalGeneratedCount = 0;
+
+        var stopwatch = Stopwatch.StartNew();
+        var maxRunTime = TimeSpan.FromMinutes(5); // 最多运行5分钟
+
+        // Act
+        try
+        {
+            while (!duplicateFound && stopwatch.Elapsed < maxRunTime)
+            {
+                var id = generator.NextId();
+                totalGeneratedCount++;
+
+                if (!ids.Add(id))
+                {
+                    // 找到重复ID
+                    duplicateFound = true;
+                    duplicateId = id;
+                    break;
+                }
+
+                // 每生成100万个ID打印一次进度
+                if (totalGeneratedCount % 1_000_000 == 0)
+                {
+                    Console.WriteLine($"已生成 {totalGeneratedCount:N0} 个ID，耗时: {stopwatch.Elapsed}");
+                }
+            }
+        }
+        finally
+        {
+            stopwatch.Stop();
+        }
+
+        // Assert
+        if (duplicateFound)
+        {
+            Console.WriteLine($"在生成 {totalGeneratedCount:N0} 个ID后，发现重复ID: {duplicateId}，耗时: {stopwatch.Elapsed}");
+            // 这里我们期望足够长的时间后才会出现重复
+            Assert.True(totalGeneratedCount > 1_000_000, $"ID重复出现得太快: 仅生成 {totalGeneratedCount:N0} 个ID");
+        }
+        else
+        {
+            Console.WriteLine($"在最大运行时间 {maxRunTime} 内，生成了 {totalGeneratedCount:N0} 个ID，未发现重复");
+            // 如果在最大运行时间内没有找到重复，测试也算通过
+            Assert.True(totalGeneratedCount > 0);
+        }
+    }
+
+    [Fact(DisplayName = "并发环境下验证雪花算法重复ID生成测试", Skip = "耗时测试，仅在需要验证时运行")]
+    public void GenerateDuplicateIdInParallel_ShouldTakeLongTime()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions
+        {
+            Method = IdGeneratorOptions.SnowFlakeMethod
+        };
+        var generator = new SnowflakeIdGenerator(options);
+
+        var ids = new ConcurrentDictionary<long, byte>();
+        var duplicateFound = false;
+        var duplicateId = 0L;
+        var totalGeneratedCount = 0;
+
+        var stopwatch = Stopwatch.StartNew();
+        var maxRunTime = TimeSpan.FromMinutes(3); // 最多运行3分钟
+        var concurrentTasks = 8; // 并发任务数
+
+        // Act
+        try
+        {
+            var tasks = new Task[concurrentTasks];
+            var counters = new int[concurrentTasks];
+            var duplicates = new long[concurrentTasks];
+            var foundDuplicates = new bool[concurrentTasks];
+
+            for (var i = 0; i < concurrentTasks; i++)
+            {
+                var taskId = i;
+                tasks[i] = Task.Run(() =>
+                {
+                    while (!duplicateFound && stopwatch.Elapsed < maxRunTime)
+                    {
+                        var id = generator.NextId();
+                        Interlocked.Increment(ref counters[taskId]);
+
+                        if (!ids.TryAdd(id, 0))
+                        {
+                            duplicates[taskId] = id;
+                            foundDuplicates[taskId] = true;
+                            Interlocked.Exchange(ref duplicateFound, true);
+                            break;
+                        }
+                    }
+                });
+            }
+
+            // 等待所有任务完成或任一任务发现重复
+            Task.WaitAll(tasks);
+
+            // 计算总生成数量
+            totalGeneratedCount = counters.Sum();
+
+            // 查找第一个发现重复的任务
+            for (var i = 0; i < concurrentTasks; i++)
+            {
+                if (foundDuplicates[i])
+                {
+                    duplicateId = duplicates[i];
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            stopwatch.Stop();
+        }
+
+        // Assert
+        if (duplicateFound)
+        {
+            Console.WriteLine($"在并发({concurrentTasks}个线程)环境下，生成 {totalGeneratedCount:N0} 个ID后，发现重复ID: {duplicateId}，耗时: {stopwatch.Elapsed}");
+            // 这里我们期望足够长的时间后才会出现重复
+            Assert.True(totalGeneratedCount > 1_000_000, $"ID重复出现得太快: 仅生成 {totalGeneratedCount:N0} 个ID");
+        }
+        else
+        {
+            Console.WriteLine($"在最大运行时间 {maxRunTime} 内，并发({concurrentTasks}个线程)生成了 {totalGeneratedCount:N0} 个ID，未发现重复");
+            // 如果在最大运行时间内没有找到重复，测试也算通过
+            Assert.True(totalGeneratedCount > 0);
+        }
+    }
+
+    [Fact(DisplayName = "1秒内生成10万个ID检查重复测试")]
+    public void Generate100000IdsInOneSecond_ShouldNotHaveDuplicates()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions
+        {
+            // 使用漂移算法，提高生成速度
+            Method = IdGeneratorOptions.SnowFlakeMethod
+        };
+        var generator = new SnowflakeIdGenerator(options);
+
+        var ids = new ConcurrentBag<long>();
+        var stopwatch = Stopwatch.StartNew();
+        var targetDuration = TimeSpan.FromSeconds(1);
+        var targetCount = 100000;
+
+        // Act - 使用多线程并行生成ID
+        Parallel.For(0, targetCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, _ =>
+        {
+            // 如果已经超过1秒，则不再生成
+            if (stopwatch.Elapsed <= targetDuration)
+            {
+                ids.Add(generator.NextId());
+            }
+        });
+
+        stopwatch.Stop();
+
+        // 将并发集合转换为列表以便分析
+        var idList = ids.ToList();
+        var distinctIds = new HashSet<long>(idList);
+        var actualCount = idList.Count;
+        var elapsedMs = stopwatch.ElapsedMilliseconds;
+
+        // 计算每秒生成速率
+        var idsPerSecond = actualCount / (elapsedMs / 1000.0);
+
+        // Assert
+        Console.WriteLine($"在 {elapsedMs} 毫秒内生成了 {actualCount:N0} 个ID");
+        Console.WriteLine($"生成速率: {idsPerSecond:N0} IDs/秒");
+
+        if (actualCount < targetCount)
+        {
+            Console.WriteLine($"警告: 未能在1秒内生成目标数量 {targetCount:N0} 个ID");
+        }
+
+        // 验证没有重复
+        Assert.Equal(distinctIds.Count, actualCount);
+
+        // 验证生成的ID数量应该符合预期
+        Assert.True(actualCount > 0, "至少应生成一些ID");
+
+        // 理想情况下应该接近目标数量
+        if (elapsedMs >= 1000)
+        {
+            // 如果用了超过1秒，期望至少达到目标的80%
+            Assert.True(actualCount >= targetCount * 0.8,
+                $"应至少生成目标数量的80%，实际生成: {actualCount:N0}/{targetCount:N0} ({actualCount * 100.0 / targetCount:F2}%)");
+        }
+    }
+
+    [Fact(DisplayName = "1秒内高性能批量生成10万个ID检查重复测试")]
+    public void Generate100000IdsInOneSecondOptimized_ShouldNotHaveDuplicates()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions
+        {
+            Method = IdGeneratorOptions.SnowFlakeMethod
+        };
+        var generator = new SnowflakeIdGenerator(options);
+
+        var maxIds = 150000; // 增加目标数以确保能达到10万
+        var batchSize = 10000; // 每次批量生成的数量
+        var allIds = new List<long>(maxIds);
+
+        var stopwatch = Stopwatch.StartNew();
+        var targetDuration = TimeSpan.FromSeconds(1);
+
+        // Act - 使用批量生成方法
+        while (stopwatch.Elapsed < targetDuration && allIds.Count < maxIds)
+        {
+            // 计算本批次应生成的ID数量
+            var currentBatchSize = Math.Min(batchSize, maxIds - allIds.Count);
+
+            // 批量生成ID
+            var batchIds = generator.NextIds(currentBatchSize);
+            allIds.AddRange(batchIds);
+        }
+
+        stopwatch.Stop();
+
+        // 截取1秒内生成的数量（但不超过目标10万）
+        var actualIds = allIds.Take(Math.Min(allIds.Count, 100000)).ToList();
+        var distinctIds = new HashSet<long>(actualIds);
+        var actualCount = actualIds.Count;
+        var elapsedMs = stopwatch.ElapsedMilliseconds;
+
+        // 计算每秒生成速率
+        var idsPerSecond = actualCount / (elapsedMs / 1000.0);
+
+        // Assert
+        Console.WriteLine($"在 {elapsedMs} 毫秒内生成了 {actualCount:N0} 个ID");
+        Console.WriteLine($"生成速率: {idsPerSecond:N0} IDs/秒");
+
+        // 验证没有重复
+        Assert.Equal(distinctIds.Count, actualCount);
+        Assert.True(actualCount > 0, "至少应生成一些ID");
+
+        // 如果用了超过1秒，期望至少达到目标的80%
+        Assert.True(actualCount >= 100000,
+            $"警告: 未能在1秒内生成10万个ID，实际生成: {actualCount:N0}");
     }
 }
