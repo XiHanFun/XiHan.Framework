@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.ComponentModel.DataAnnotations;
-
 namespace XiHan.Framework.Utils.Enums;
 
 /// <summary>
@@ -24,42 +22,35 @@ public enum ThemeType
     /// <summary>
     /// 默认
     /// </summary>
-    [Display(Name = "default", Description = "#35495E")]
     Default,
 
     /// <summary>
     /// 三级
     /// </summary>
-    [Display(Name = "tertiary", Description = "#697882")]
     Tertiary,
 
     /// <summary>
     /// 主要
     /// </summary>
-    [Display(Name = "primary", Description = "#3B86FF")]
     Primary,
 
     /// <summary>
     /// 信息
     /// </summary>
-    [Display(Name = "info", Description = "#FFFFFF00")]
     Info,
 
     /// <summary>
     /// 成功
     /// </summary>
-    [Display(Name = "success", Description = "#19BE6B")]
     Success,
 
     /// <summary>
     /// 警告
     /// </summary>
-    [Display(Name = "warning", Description = "#FF9900")]
     Warning,
 
     /// <summary>
     /// 错误
     /// </summary>
-    [Display(Name = "error", Description = "#ED4014")]
     Error
 }
