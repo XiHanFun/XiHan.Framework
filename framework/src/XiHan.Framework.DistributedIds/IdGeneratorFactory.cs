@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text.Json;
+using XiHan.Framework.DistributedIds.NanoIds;
+using XiHan.Framework.DistributedIds.SnowflakeIds;
+using XiHan.Framework.DistributedIds.Uuids;
 
 namespace XiHan.Framework.DistributedIds;
 
@@ -21,86 +23,76 @@ namespace XiHan.Framework.DistributedIds;
 /// </summary>
 public static class IdGeneratorFactory
 {
-    // 实例缓存
-    private static readonly Dictionary<string, IDistributedIdGenerator> _instances = [];
-
-    // 默认实例
-    private static IDistributedIdGenerator? _defaultInstance;
-
-    /// <summary>
-    /// 获取默认ID生成器实例
-    /// </summary>
-    /// <returns>ID生成器</returns>
-    public static IDistributedIdGenerator GetInstance()
-    {
-        if (_defaultInstance != null)
-        {
-            return _defaultInstance;
-        }
-
-        // 使用默认配置
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = 1,
-            SeqBitLength = 6,
-            WorkerIdBitLength = 6
-        };
-        _defaultInstance = new SnowflakeIdGenerator(options);
-        return _defaultInstance;
-    }
-
-    /// <summary>
-    /// 设置默认ID生成器实例
-    /// </summary>
-    /// <param name="generator">ID生成器</param>
-    public static void SetInstance(IDistributedIdGenerator generator)
-    {
-        _defaultInstance = generator;
-    }
-
-    /// <summary>
-    /// 通过名称获取ID生成器实例
-    /// </summary>
-    /// <param name="name">实例名称</param>
-    /// <returns>ID生成器</returns>
-    public static IDistributedIdGenerator GetInstanceByName(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException("实例名称不能为空");
-        }
-
-        if (_instances.TryGetValue(name, out var instance))
-        {
-            return instance;
-        }
-
-        throw new KeyNotFoundException($"未找到名称为 {name} 的ID生成器实例");
-    }
-
-    /// <summary>
-    /// 保存ID生成器实例
-    /// </summary>
-    /// <param name="name">实例名称</param>
-    /// <param name="generator">ID生成器</param>
-    public static void SaveInstance(string name, IDistributedIdGenerator generator)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException("实例名称不能为空");
-        }
-
-        _instances[name] = generator;
-    }
-
     /// <summary>
     /// 创建雪花漂移算法ID生成器
     /// </summary>
     /// <param name="options">配置选项</param>
     /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateSnowflakeIdGenerator(IdGeneratorOptions options)
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator(SnowflakeIdOptions options)
     {
         return new SnowflakeIdGenerator(options);
+    }
+
+    /// <summary>
+    /// 创建雪花漂移算法ID生成器，适用于低并发场景
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>雪花漂移算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_LowWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.LowWorkload(workerId));
+    }
+
+    /// <summary>
+    /// 创建雪花漂移算法ID生成器，适用于中等并发场景
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>雪花漂移算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_MediumWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.MediumWorkload(workerId));
+    }
+
+    /// <summary>
+    /// 创建雪花漂移算法ID生成器，适用于高并发场景
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>雪花漂移算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_HighWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.HighWorkload(workerId));
+    }
+
+    /// <summary>
+    /// 创建短ID生成器（适合URL友好的短ID）
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>雪花漂移算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_ShortId(ushort workerId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.ShortId(workerId));
+    }
+
+    /// <summary>
+    /// 创建有前缀的ID生成器
+    /// </summary>
+    /// <param name="prefix">ID前缀</param>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>雪花漂移算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_PrefixedId(string prefix, ushort workerId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.PrefixedId(prefix, workerId));
+    }
+
+    /// <summary>
+    /// 创建经典雪花算法ID生成器（Twitter Snowflake兼容）
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <param name="dataCenterId">数据中心ID</param>
+    /// <returns>经典雪花算法ID生成器</returns>
+    public static IDistributedIdGenerator CreateSnowflakeIdGenerator_Classic(ushort workerId = 1, byte dataCenterId = 1)
+    {
+        return new SnowflakeIdGenerator(SnowflakeIdOptions.Classic(workerId, dataCenterId));
     }
 
     /// <summary>
@@ -117,7 +109,7 @@ public static class IdGeneratorFactory
     /// </summary>
     /// <param name="uuidType">UUID类型</param>
     /// <returns>UUID生成器</returns>
-    public static IDistributedIdGenerator CreateUuidGenerator(UuidType uuidType)
+    public static IDistributedIdGenerator CreateUuidGenerator(UuidTypes uuidType)
     {
         return new UuidGenerator(uuidType);
     }
@@ -129,212 +121,102 @@ public static class IdGeneratorFactory
     /// <param name="namespaceName">命名空间名称</param>
     /// <param name="name">名称</param>
     /// <returns>UUID生成器</returns>
-    public static IDistributedIdGenerator CreateNameBasedUuidGenerator(UuidType uuidType, string namespaceName, string name)
+    public static IDistributedIdGenerator CreateUuidGenerator_NameBased(UuidTypes uuidType, string namespaceName, string name)
     {
         return new UuidGenerator(uuidType, namespaceName, name);
     }
 
     /// <summary>
-    /// 创建雪花漂移算法ID生成器，适用于低并发场景
+    /// 创建NanoID生成器
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateLowWorkload(ushort workerId = 1)
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator()
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            SeqBitLength = 6,
-            WorkerIdBitLength = 6
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator();
     }
 
     /// <summary>
-    /// 创建雪花漂移算法ID生成器，适用于中等并发场景
+    /// 创建NanoID生成器
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateMediumWorkload(ushort workerId = 1)
+    /// <param name="options">配置选项</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator(NanoIdOptions options)
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            SeqBitLength = 10,
-            WorkerIdBitLength = 6
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator(options);
     }
 
     /// <summary>
-    /// 创建雪花漂移算法ID生成器，适用于高并发场景
+    /// 创建数字形式的NanoID生成器
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateHighWorkload(ushort workerId = 1)
+    /// <param name="size">长度（默认为10）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Numeric(int size = 10)
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            SeqBitLength = 12,
-            WorkerIdBitLength = 6
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator(NanoIdOptions.OnlyNumbers(size));
     }
 
     /// <summary>
-    /// 创建短ID生成器（适合URL友好的短ID）
+    /// 创建小写字母形式的NanoID生成器
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateShortId(ushort workerId = 1)
+    /// <param name="size">长度（默认为16）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Lowercase(int size = 16)
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            SeqBitLength = 8,
-            WorkerIdBitLength = 4,
-            IdLength = 10
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator(NanoIdOptions.OnlyLowercase(size));
     }
 
     /// <summary>
-    /// 创建有前缀的ID生成器
+    /// 创建大写字母形式的NanoID生成器
     /// </summary>
-    /// <param name="prefix">ID前缀</param>
-    /// <param name="workerId">工作机器ID</param>
-    /// <returns>雪花漂移算法ID生成器</returns>
-    public static IDistributedIdGenerator CreatePrefixedId(string prefix, ushort workerId = 1)
+    /// <param name="size">长度（默认为16）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Uppercase(int size = 16)
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            SeqBitLength = 8,
-            WorkerIdBitLength = 6,
-            IdPrefix = prefix
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator(NanoIdOptions.OnlyUppercase(size));
     }
 
     /// <summary>
-    /// 创建经典雪花算法ID生成器（Twitter Snowflake兼容）
+    /// 创建URL安全的NanoID生成器
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <param name="dataCenterId">数据中心ID</param>
-    /// <returns>经典雪花算法ID生成器</returns>
-    public static IDistributedIdGenerator CreateClassicSnowflake(ushort workerId = 1, byte dataCenterId = 1)
+    /// <param name="size">长度（默认为21）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_UrlSafe(int size = 21)
     {
-        var options = new IdGeneratorOptions
-        {
-            WorkerId = workerId,
-            DataCenterId = dataCenterId,
-            SeqBitLength = 12,
-            WorkerIdBitLength = 5,
-            DataCenterIdBitLength = 5,
-            Method = IdGeneratorOptions.ClassicSnowFlakeMethod
-        };
-        return new SnowflakeIdGenerator(options);
+        return new NanoIdGenerator(NanoIdOptions.UrlSafe(size));
     }
 
     /// <summary>
-    /// 从JSON配置文件创建ID生成器
+    /// 创建安全字符集的NanoID生成器（无相似字符如：1/I/l, 0/O/o 等）
     /// </summary>
-    /// <param name="filePath">配置文件路径</param>
-    /// <returns>ID生成器</returns>
-    public static IDistributedIdGenerator CreateFromJsonFile(string filePath)
+    /// <param name="size">长度（默认为21）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Safe(int size = 21)
     {
-        if (string.IsNullOrEmpty(filePath))
-        {
-            throw new ArgumentException("配置文件路径不能为空");
-        }
-
-        try
-        {
-            var jsonString = File.ReadAllText(filePath);
-            var config = JsonDocument.Parse(jsonString).RootElement;
-
-            var generatorType = config.GetProperty("GeneratorType").GetString();
-            switch (generatorType?.ToLower())
-            {
-                case "snowflake":
-                    var optionsJson = config.GetProperty("Options").GetRawText();
-                    var options = JsonSerializer.Deserialize<IdGeneratorOptions>(optionsJson)
-                        ?? throw new InvalidOperationException("无法解析Snowflake配置选项");
-                    return new SnowflakeIdGenerator(options);
-
-                case "uuid":
-                    var uuidTypeStr = config.GetProperty("UuidType").GetString();
-                    if (!Enum.TryParse<UuidType>(uuidTypeStr, out var uuidType))
-                    {
-                        uuidType = UuidType.Standard;
-                    }
-
-                    if (uuidType is UuidType.NameBasedMD5 or UuidType.NameBasedSHA1)
-                    {
-                        var namespaceName = config.GetProperty("Namespace").GetString() ?? "DNS";
-                        var name = config.GetProperty("Name").GetString() ?? "default";
-                        return new UuidGenerator(uuidType, namespaceName, name);
-                    }
-
-                    return new UuidGenerator(uuidType);
-
-                default:
-                    throw new NotSupportedException($"不支持的生成器类型：{generatorType}");
-            }
-        }
-        catch (FileNotFoundException)
-        {
-            throw new FileNotFoundException($"配置文件不存在：{filePath}");
-        }
-        catch (JsonException ex)
-        {
-            throw new InvalidOperationException($"配置文件格式错误：{ex.Message}", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"从配置文件创建生成器失败：{ex.Message}", ex);
-        }
+        return new NanoIdGenerator(NanoIdOptions.Safe(size));
     }
 
     /// <summary>
-    /// 从环境变量创建ID生成器
+    /// 创建十六进制字符集的NanoID生成器
     /// </summary>
-    /// <returns>ID生成器</returns>
-    public static IDistributedIdGenerator CreateFromEnvironment()
+    /// <param name="size">长度（默认为32）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Hex(int size = 32)
     {
-        var type = Environment.GetEnvironmentVariable("ID_GENERATOR_TYPE") ?? "snowflake";
+        return new NanoIdGenerator(NanoIdOptions.Hex(size));
+    }
 
-        if (type.Equals("uuid", StringComparison.OrdinalIgnoreCase))
+    /// <summary>
+    /// 创建自定义字符集的NanoID生成器
+    /// </summary>
+    /// <param name="alphabet">自定义字符集</param>
+    /// <param name="size">长度（默认为21）</param>
+    /// <returns>NanoID生成器</returns>
+    public static IDistributedIdGenerator CreateNanoIdGenerator_Custom(string alphabet, int size = 21)
+    {
+        return new NanoIdGenerator(new NanoIdOptions
         {
-            var uuidTypeStr = Environment.GetEnvironmentVariable("ID_GENERATOR_UUID_TYPE") ?? "Standard";
-            if (!Enum.TryParse<UuidType>(uuidTypeStr, out var uuidType))
-            {
-                uuidType = UuidType.Standard;
-            }
-            return new UuidGenerator(uuidType);
-        }
-        else // 默认使用雪花算法
-        {
-            var options = new IdGeneratorOptions();
-
-            // 尝试从环境变量读取配置
-            if (ushort.TryParse(Environment.GetEnvironmentVariable("ID_GENERATOR_WORKER_ID"), out var workerId))
-            {
-                options.WorkerId = workerId;
-            }
-
-            if (byte.TryParse(Environment.GetEnvironmentVariable("ID_GENERATOR_DATA_CENTER_ID"), out var dataCenterId))
-            {
-                options.DataCenterId = dataCenterId;
-            }
-
-            if (byte.TryParse(Environment.GetEnvironmentVariable("ID_GENERATOR_METHOD"), out var method))
-            {
-                options.Method = method;
-            }
-
-            return new SnowflakeIdGenerator(options);
-        }
+            Size = size,
+            Alphabet = alphabet
+        });
     }
 }

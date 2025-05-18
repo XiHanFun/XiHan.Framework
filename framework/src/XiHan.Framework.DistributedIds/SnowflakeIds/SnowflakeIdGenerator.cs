@@ -12,14 +12,26 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.DistributedIds;
+namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
 /// 雪花漂移算法ID生成器
+/// 用于生成高性能、有序、分布式的长整型唯一标识符（ID）
+/// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息ID等
+/// 主要特点：
+/// 高性能（High-Performance）：纯内存操作，每秒可生成数百万个ID，无需数据库访问。
+/// 有序性（Ordered）：ID中包含时间戳，天然有序，便于索引和分区。
+/// 分布式（Distributed）：通过工作机器ID和数据中心ID区分不同节点，避免冲突。
+/// 信息丰富（Informative）：可从ID中提取生成时间、工作机器ID、数据中心ID和序列号。
+/// 算法可选（Versatile）：支持经典雪花算法和雪花漂移算法，满足不同场景需求。
 /// </summary>
 public class SnowflakeIdGenerator : IDistributedIdGenerator
 {
-    private readonly IdGeneratorOptions _options;
+    // 生成器配置
+    private readonly SnowflakeIdOptions _options;
+
+    // 生成器类型
+    private readonly SnowflakeIdTypes _snowflakeIdTypes;
 
     // 数据中心ID位数
     private readonly byte _dataCenterIdBitLength;
@@ -79,7 +91,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// 构造函数
     /// </summary>
     /// <param name="options">生成器配置</param>
-    public SnowflakeIdGenerator(IdGeneratorOptions options)
+    public SnowflakeIdGenerator(SnowflakeIdOptions options)
     {
         _options = options;
 
@@ -99,7 +111,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _topOverCostCount = options.TopOverCostCount;
 
         // 2.时间戳相关
-        if (options.TimestampType == 1)
+        if (options.TimestampType == TimestampTypes.Seconds)
         {
             // 32位，最大表示2^32秒=136年
             _timestampBitLength = 32;
@@ -115,7 +127,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 3.位移计算
         _workerIdShift = _seqBitLength;
         _dataCenterIdShift = _seqBitLength + _workerIdBitLength;
-        if (options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod)
+        _snowflakeIdTypes = options.SnowflakeIdType;
+        if (_snowflakeIdTypes == SnowflakeIdTypes.ClassicSnowFlakeMethod)
         {
             _dataCenterIdBitLength = 5;
             _timestampShift = _seqBitLength + _workerIdBitLength + _dataCenterIdBitLength;
@@ -126,7 +139,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         }
 
         // 4.计算基准时间戳
-        if (options.TimestampType == 1)
+        if (options.TimestampType == TimestampTypes.Seconds)
         {
             _baseTimestamp = GetSecondTimestamp(options.BaseTime); // 秒级时间戳
         }
@@ -150,7 +163,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     {
         lock (_lock)
         {
-            return _options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod ? NextClassicId() : NextSnowflakeId();
+            return _snowflakeIdTypes == SnowflakeIdTypes.ClassicSnowFlakeMethod ? NextClassicId() : NextSnowflakeId();
         }
     }
 
@@ -194,7 +207,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     public DateTime ExtractTime(long id)
     {
         var timestamp = ((id >> _timestampShift) & _timestampMask) + _baseTimestamp;
-        return _options.TimestampType == 1
+        return _options.TimestampType == TimestampTypes.Seconds
             ? DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime
             : DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
     }
@@ -235,7 +248,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>生成器类型</returns>
     public string GetGeneratorType()
     {
-        return _options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod ? "雪花算法(经典)" : "雪花算法(漂移)";
+        return $"SnowflakeId ({_snowflakeIdTypes})";
     }
 
     /// <summary>
@@ -254,7 +267,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
             { "CurrentSequence", _currentSeqNumber },
             { "OverCostCount", _overCostCountInCurrentPeriod },
             { "BaseTime", _options.BaseTime },
-            { "TimestampType", _options.TimestampType == 1 ? "秒级" : "毫秒级" }
+            { "TimestampType", _options.TimestampType == TimestampTypes.Seconds ? "秒级" : "毫秒级" }
         };
         return stats;
     }
@@ -389,7 +402,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 2.如果是同一时间，增加序列号
         if (currentTimestamp == _lastTimestamp)
         {
-            if (_options.TimestampType == 1)
+            if (_options.TimestampType == TimestampTypes.Seconds)
             {
                 // 秒级时间戳，同一秒内增加序列号
                 _currentSeqNumber++;
@@ -558,7 +571,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>当前时间戳</returns>
     private long GetCurrentTimestamp()
     {
-        return _options.TimestampType == 1
+        return _options.TimestampType == TimestampTypes.Seconds
             ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() & _timestampMask
             : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() & _timestampMask;
     }

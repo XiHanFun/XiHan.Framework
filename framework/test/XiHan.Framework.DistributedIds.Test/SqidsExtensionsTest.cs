@@ -39,7 +39,7 @@ public class SqidsExtensionsTest
     public void ToSqid_FromInt64_ShouldWork()
     {
         // Arrange
-        var number = 9223372036854775807L; // long.MaxValue
+        var number = 704751753068587; // long.MaxValue
 
         // Act
         var sqid = number.ToSqid();

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IdGeneratorOptions
+// FileName:SnowflakeIdOptions
 // Guid:a6b21358-4c08-4d91-99d6-827d8dcdf311
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,111 +14,68 @@
 
 using System.Text.Json;
 
-namespace XiHan.Framework.DistributedIds;
+namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
-/// ID生成器选项
+/// 雪花ID生成器选项
 /// </summary>
-public class IdGeneratorOptions
+public class SnowflakeIdOptions
 {
-    /// <summary>
-    /// 雪花漂移算法
-    /// </summary>
-    public const byte SnowFlakeMethod = 1;
-
-    /// <summary>
-    /// 传统雪花算法
-    /// </summary>
-    public const byte ClassicSnowFlakeMethod = 2;
-
+    // JSON序列化选项
     private static readonly JsonSerializerOptions _cachedJsonSerializerOptions = new()
     {
         WriteIndented = true
     };
 
-    /// <summary>
-    /// 数据中心ID位长
-    /// </summary>
+    // 数据中心ID位长
     private readonly byte _dataCenterIdBitLength = 5;
 
-    /// <summary>
-    /// ID生成长度
-    /// </summary>
+    // ID生成长度
     private byte _idLength = 0;
 
-    /// <summary>
-    /// ID前缀
-    /// </summary>
+    // ID前缀
     private string _idPrefix = string.Empty;
 
-    /// <summary>
-    /// 是否循环使用序列号
-    /// </summary>
+    // 是否循环使用序列号
     private bool _loopedSequence = false;
 
-    /// <summary>
-    /// 最大时钟回拨容忍时间(毫秒)
-    /// </summary>
+    // 最大时钟回拨容忍时间(毫秒)
     private int _maxBackwardToleranceMs = 10000;
 
-    /// <summary>
-    /// 是否使用自定义纪元时间
-    /// </summary>
+    // 是否使用自定义纪元时间
     private bool _useCustomEpoch = true;
 
-    /// <summary>
-    /// 生成器唯一标识
-    /// </summary>
+    // 生成器唯一标识
     private string _generatorId = Guid.NewGuid().ToString("N");
 
-    /// <summary>
-    /// 基础时间(纪元时间)
-    /// </summary>
+    // 基础时间(纪元时间)
     private DateTime _baseTime = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    /// <summary>
-    /// 工作机器ID
-    /// </summary>
+    // 工作机器ID
     private ushort _workerId = 0;
 
-    /// <summary>
-    /// 工作机器ID位长
-    /// </summary>
+    // 工作机器ID位长
     private byte _workerIdBitLength = 6;
 
-    /// <summary>
-    /// 序列号位长
-    /// </summary>
+    // 序列号位长
     private byte _seqBitLength = 6;
 
-    /// <summary>
-    /// 最大序列数
-    /// </summary>
+    // 最大序列数
     private int _maxSeqNumber = 63;
 
-    /// <summary>
-    /// 最小序列数
-    /// </summary>
+    // 最小序列数
     private int _minSeqNumber = 5;
 
-    /// <summary>
-    /// 最大漂移次数
-    /// </summary>
+    // 最大漂移次数
     private int _topOverCostCount = 2000;
 
-    /// <summary>
-    /// 时间戳类型(1秒级/2毫秒级)
-    /// </summary>
-    private byte _timestampType = 2;
+    // 时间戳类型(1秒级/2毫秒级)
+    private TimestampTypes _timestampType = TimestampTypes.Milliseconds;
 
-    /// <summary>
-    /// 算法类型(1雪花漂移/2传统雪花)
-    /// </summary>
-    private byte _method = SnowFlakeMethod;
+    // 算法类型(1雪花漂移/2传统雪花)
+    private SnowflakeIdTypes _snowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod;
 
-    /// <summary>
-    /// 数据中心ID
-    /// </summary>
+    // 数据中心ID
     private byte _dataCenterId = 0;
 
     /// <summary>
@@ -263,14 +220,14 @@ public class IdGeneratorOptions
     /// 时间戳类型
     /// 1-秒级，2-毫秒级，默认2
     /// </summary>
-    public byte TimestampType
+    public TimestampTypes TimestampType
     {
         get => _timestampType;
         set
         {
-            if (value is < 1 or > 2)
+            if (value is not TimestampTypes.Seconds and not TimestampTypes.Milliseconds)
             {
-                throw new ArgumentException("时间戳类型必须是1或2");
+                throw new ArgumentException("时间戳类型必须是秒级或毫秒级");
             }
             _timestampType = value;
         }
@@ -280,16 +237,16 @@ public class IdGeneratorOptions
     /// 漂移方法
     /// 1-雪花漂移，2-传统雪花，默认1
     /// </summary>
-    public byte Method
+    public SnowflakeIdTypes SnowflakeIdType
     {
-        get => _method;
+        get => _snowflakeIdType;
         set
         {
-            if (value is < 1 or > 2)
+            if (value is not SnowflakeIdTypes.SnowFlakeMethod and not SnowflakeIdTypes.ClassicSnowFlakeMethod)
             {
-                throw new ArgumentException("漂移方法必须是1或2");
+                throw new ArgumentException("算法类型必须是1或2");
             }
-            _method = value;
+            _snowflakeIdType = value;
         }
     }
 
@@ -393,11 +350,108 @@ public class IdGeneratorOptions
     }
 
     /// <summary>
+    /// 低负载模式
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions LowWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            SeqBitLength = 6,
+            WorkerIdBitLength = 6
+        };
+    }
+
+    /// <summary>
+    /// 中负载模式
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions MediumWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            SeqBitLength = 10,
+            WorkerIdBitLength = 6
+        };
+    }
+
+    /// <summary>
+    /// 高负载模式
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions HighWorkload(ushort workerId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            SeqBitLength = 12,
+            WorkerIdBitLength = 6
+        };
+    }
+
+    /// <summary>
+    /// 短ID模式
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions ShortId(ushort workerId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            SeqBitLength = 8,
+            WorkerIdBitLength = 4,
+            IdLength = 10
+        };
+    }
+
+    /// <summary>
+    /// 带前缀的ID模式
+    /// </summary>
+    /// <param name="prefix">前缀</param>
+    /// <param name="workerId">工作机器ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions PrefixedId(string prefix, ushort workerId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            SeqBitLength = 8,
+            WorkerIdBitLength = 6,
+            IdPrefix = prefix
+        };
+    }
+
+    /// <summary>
+    /// 经典雪花算法模式
+    /// </summary>
+    /// <param name="workerId">工作机器ID</param>
+    /// <param name="dataCenterId">数据中心ID</param>
+    /// <returns>配置对象</returns>
+    public static SnowflakeIdOptions Classic(ushort workerId = 1, byte dataCenterId = 1)
+    {
+        return new SnowflakeIdOptions
+        {
+            WorkerId = workerId,
+            DataCenterId = dataCenterId,
+            SeqBitLength = 12,
+            WorkerIdBitLength = 5,
+            DataCenterIdBitLength = 5,
+            SnowflakeIdType = SnowflakeIdTypes.ClassicSnowFlakeMethod
+        };
+    }
+
+    /// <summary>
     /// 从JSON字符串加载配置
     /// </summary>
     /// <param name="json">JSON配置字符串</param>
     /// <returns>加载后的配置对象</returns>
-    public static IdGeneratorOptions FromJson(string json)
+    public static SnowflakeIdOptions FromJson(string json)
     {
         if (string.IsNullOrEmpty(json))
         {
@@ -406,7 +460,7 @@ public class IdGeneratorOptions
 
         try
         {
-            return System.Text.Json.JsonSerializer.Deserialize<IdGeneratorOptions>(json)
+            return JsonSerializer.Deserialize<SnowflakeIdOptions>(json)
                 ?? throw new InvalidOperationException("无法反序列化JSON到IdGeneratorOptions");
         }
         catch (Exception ex)
@@ -428,7 +482,7 @@ public class IdGeneratorOptions
     /// 克隆当前配置
     /// </summary>
     /// <returns>克隆的配置对象</returns>
-    public IdGeneratorOptions Clone()
+    public SnowflakeIdOptions Clone()
     {
         return this;
     }

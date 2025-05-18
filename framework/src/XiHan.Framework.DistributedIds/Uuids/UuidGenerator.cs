@@ -14,15 +14,23 @@
 
 using System.Security.Cryptography;
 
-namespace XiHan.Framework.DistributedIds;
+namespace XiHan.Framework.DistributedIds.Uuids;
 
 /// <summary>
 /// UUID生成器
+/// 用于生成全球唯一、标准化的通用唯一标识符
+/// 通常用于需要跨系统、跨平台、跨时间保证唯一性的场景，如分布式数据库主键、跨组织数据交换等
+/// 主要特点：
+/// 全球唯一（Universally Unique）：通过结合时间、空间和随机数保证在全球范围内唯一性。
+/// 多种版本（Multiple Versions）：支持基于时间(v1)、基于名称(v3/v5)、纯随机(v4)等多种生成机制。
+/// 互操作性（Interoperability）：符合RFC4122规范，与其他系统和语言生成的UUID完全兼容。
+/// 无中心化（Decentralized）：无需中央授权机构，任何系统都可以独立生成不冲突的UUID。
+/// 可排序选项（Sortable Option）：提供顺序UUID模式，使UUID可按时间顺序排列，便于索引。
 /// </summary>
 public class UuidGenerator : IDistributedIdGenerator
 {
-    // 默认生成器类型
-    private readonly UuidType _uuidType;
+    // 生成器类型
+    private readonly UuidTypes _uuidType;
 
     // 排序UUID使用的起始时间
     private readonly DateTime _sequentialBaseTime = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -46,7 +54,7 @@ public class UuidGenerator : IDistributedIdGenerator
     /// 构造函数
     /// </summary>
     /// <param name="uuidType">UUID类型</param>
-    public UuidGenerator(UuidType uuidType = UuidType.Standard)
+    public UuidGenerator(UuidTypes uuidType = UuidTypes.Standard)
     {
         _uuidType = uuidType;
         _namespace = _predefinedNamespaces["DNS"];
@@ -59,7 +67,7 @@ public class UuidGenerator : IDistributedIdGenerator
     /// <param name="uuidType">UUID类型</param>
     /// <param name="namespaceName">命名空间名称(DNS, URL, OID, X500)</param>
     /// <param name="name">名称</param>
-    public UuidGenerator(UuidType uuidType, string namespaceName, string name)
+    public UuidGenerator(UuidTypes uuidType, string namespaceName, string name)
     {
         _uuidType = uuidType;
 
@@ -78,7 +86,7 @@ public class UuidGenerator : IDistributedIdGenerator
     /// <param name="uuidType">UUID类型</param>
     /// <param name="namespace">命名空间GUID</param>
     /// <param name="name">名称</param>
-    public UuidGenerator(UuidType uuidType, Guid @namespace, string name)
+    public UuidGenerator(UuidTypes uuidType, Guid @namespace, string name)
     {
         _uuidType = uuidType;
         _namespace = @namespace;
@@ -189,15 +197,15 @@ public class UuidGenerator : IDistributedIdGenerator
     public DateTime ExtractTime(long id)
     {
         // 仅顺序UUID和基于时间的UUID包含时间信息
-        if (_uuidType == UuidType.Sequential)
+        if (_uuidType == UuidTypes.Sequential)
         {
-            var guid = new Guid(BitConverter.GetBytes(id).Concat(new byte[8]).ToArray());
+            var guid = new Guid([.. BitConverter.GetBytes(id), .. new byte[8]]);
             var timestamp = BitConverter.ToInt64(guid.ToByteArray(), 0);
             return _sequentialBaseTime.AddTicks(timestamp);
         }
-        else if (_uuidType == UuidType.TimeBasedV1)
+        else if (_uuidType == UuidTypes.TimeBasedV1)
         {
-            var guid = new Guid(BitConverter.GetBytes(id).Concat(new byte[8]).ToArray());
+            var guid = new Guid([.. BitConverter.GetBytes(id), .. new byte[8]]);
             var bytes = guid.ToByteArray();
 
             // 提取时间戳（需要调整顺序）
@@ -273,13 +281,46 @@ public class UuidGenerator : IDistributedIdGenerator
             { "UuidType", _uuidType.ToString() }
         };
 
-        if (_uuidType is UuidType.NameBasedMD5 or UuidType.NameBasedSHA1)
+        if (_uuidType is UuidTypes.NameBasedMD5 or UuidTypes.NameBasedSHA1)
         {
             stats.Add("Namespace", _namespace);
             stats.Add("Name", _name);
         }
 
         return stats;
+    }
+
+    /// <summary>
+    /// 生成基于时间的UUID (v1)
+    /// </summary>
+    /// <returns>基于时间的UUID</returns>
+    private static Guid GenerateGuidV1()
+    {
+        // 这是一个简化版本，生产环境应该使用更复杂的实现
+        var ticks = DateTime.UtcNow.Ticks;
+        var bytes = new byte[16];
+        var tickBytes = BitConverter.GetBytes(ticks);
+
+        // Version 1 UUID 格式设置
+        Array.Copy(tickBytes, 0, bytes, 0, Math.Min(8, tickBytes.Length));
+
+        // 设置版本号(v1)
+        bytes[7] = (byte)((bytes[7] & 0x0F) | 0x10);
+
+        // 设置变体
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+
+        // 填充剩余字节
+        var random = new Random();
+        for (var i = 8; i < 16; i++)
+        {
+            if (i != 8) // 跳过已设置的变体字节
+            {
+                bytes[i] = (byte)random.Next(256);
+            }
+        }
+
+        return new Guid(bytes);
     }
 
     /// <summary>
@@ -290,11 +331,11 @@ public class UuidGenerator : IDistributedIdGenerator
     {
         return _uuidType switch
         {
-            UuidType.Sequential => GenerateSequentialGuid(),
-            UuidType.TimeBasedV1 => GenerateGuidV1(),
-            UuidType.NameBasedMD5 => GenerateGuidV3(),
-            UuidType.RandomV4 => Guid.NewGuid(),
-            UuidType.NameBasedSHA1 => GenerateGuidV5(),
+            UuidTypes.Sequential => GenerateSequentialGuid(),
+            UuidTypes.TimeBasedV1 => GenerateGuidV1(),
+            UuidTypes.NameBasedMD5 => GenerateGuidV3(),
+            UuidTypes.RandomV4 => Guid.NewGuid(),
+            UuidTypes.NameBasedSHA1 => GenerateGuidV5(),
             _ => Guid.NewGuid()
         };
     }
@@ -321,39 +362,6 @@ public class UuidGenerator : IDistributedIdGenerator
         var randomBytes = new byte[8];
         new Random().NextBytes(randomBytes);
         Array.Copy(randomBytes, 0, bytes, 8, 8);
-
-        return new Guid(bytes);
-    }
-
-    /// <summary>
-    /// 生成基于时间的UUID (v1)
-    /// </summary>
-    /// <returns>基于时间的UUID</returns>
-    private Guid GenerateGuidV1()
-    {
-        // 这是一个简化版本，生产环境应该使用更复杂的实现
-        var ticks = DateTime.UtcNow.Ticks;
-        var bytes = new byte[16];
-        var tickBytes = BitConverter.GetBytes(ticks);
-
-        // Version 1 UUID 格式设置
-        Array.Copy(tickBytes, 0, bytes, 0, Math.Min(8, tickBytes.Length));
-
-        // 设置版本号(v1)
-        bytes[7] = (byte)((bytes[7] & 0x0F) | 0x10);
-
-        // 设置变体
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
-
-        // 填充剩余字节
-        var random = new Random();
-        for (var i = 8; i < 16; i++)
-        {
-            if (i != 8) // 跳过已设置的变体字节
-            {
-                bytes[i] = (byte)random.Next(256);
-            }
-        }
 
         return new Guid(bytes);
     }
