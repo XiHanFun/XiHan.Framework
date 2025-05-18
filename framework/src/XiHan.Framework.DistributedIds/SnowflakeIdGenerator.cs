@@ -12,21 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SnowflakeIdGenerator
-// Guid:9f4e3d28-a7b6-47c9-81e0-5f9c2d6cf4e8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/4/28 19:32:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
-
 namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
@@ -45,6 +30,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     // 序列号位长
     private readonly byte _seqBitLength;
 
+    // 时间戳位长
+    private readonly byte _timestampBitLength;
+
     // 存储数据中心ID
     private readonly long _dataCenterId;
 
@@ -59,6 +47,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
 
     // 时间戳左移位数
     private readonly int _timestampShift;
+
+    // 时间戳掩码
+    private readonly long _timestampMask;
 
     // 锁对象
     private readonly Lock _lock = new();
@@ -111,20 +102,27 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         if (options.TimestampType == 1)
         {
             // 32位，最大表示2^32秒=136年
+            _timestampBitLength = 32;
+            _timestampMask = ~(-1L << _timestampBitLength);
         }
         else
         {
             // 41位，最大表示2^41毫秒=69年
+            _timestampBitLength = 41;
+            _timestampMask = ~(-1L << _timestampBitLength);
         }
 
         // 3.位移计算
         _workerIdShift = _seqBitLength;
         _dataCenterIdShift = _seqBitLength + _workerIdBitLength;
-        _timestampShift = _seqBitLength + _workerIdBitLength;
         if (options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod)
         {
             _dataCenterIdBitLength = 5;
             _timestampShift = _seqBitLength + _workerIdBitLength + _dataCenterIdBitLength;
+        }
+        else
+        {
+            _timestampShift = _seqBitLength + _workerIdBitLength + _options.DataCenterIdBitLength;
         }
 
         // 4.计算基准时间戳
@@ -162,7 +160,30 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>生成的ID字符串</returns>
     public string NextIdString()
     {
-        return NextId().ToString();
+        var id = NextId().ToString();
+
+        // 添加前缀（如果有）
+        if (!string.IsNullOrEmpty(_options.IdPrefix))
+        {
+            id = _options.IdPrefix + id;
+        }
+
+        // 如果设置了IdLength且不为0
+        if (_options.IdLength > 0)
+        {
+            // 如果实际长度大于指定长度，截断
+            if (id.Length > _options.IdLength)
+            {
+                return id[^_options.IdLength..];
+            }
+            // 如果实际长度小于指定长度，左侧填充0
+            else if (id.Length < _options.IdLength)
+            {
+                return id.PadLeft(_options.IdLength, '0');
+            }
+        }
+
+        return id;
     }
 
     /// <summary>
@@ -172,7 +193,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>时间戳</returns>
     public DateTime ExtractTime(long id)
     {
-        var timestamp = (id >> _timestampShift) + _baseTimestamp;
+        var timestamp = ((id >> _timestampShift) & _timestampMask) + _baseTimestamp;
         return _options.TimestampType == 1
             ? DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime
             : DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
@@ -185,7 +206,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>工作机器ID</returns>
     public int ExtractWorkerId(long id)
     {
-        return (int)(id >> _workerIdShift & ~(-1L << _workerIdBitLength));
+        return (int)((id >> _workerIdShift) & ~(-1L << _workerIdBitLength));
     }
 
     /// <summary>
@@ -196,6 +217,124 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     public int ExtractSequence(long id)
     {
         return (int)(id & ~(-1L << _seqBitLength));
+    }
+
+    /// <summary>
+    /// 从ID中提取数据中心ID
+    /// </summary>
+    /// <param name="id">ID</param>
+    /// <returns>数据中心ID</returns>
+    public int ExtractDataCenterId(long id)
+    {
+        return (int)((id >> _dataCenterIdShift) & ~(-1L << _dataCenterIdBitLength));
+    }
+
+    /// <summary>
+    /// 获取生成器类型
+    /// </summary>
+    /// <returns>生成器类型</returns>
+    public string GetGeneratorType()
+    {
+        return _options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod ? "雪花算法(经典)" : "雪花算法(漂移)";
+    }
+
+    /// <summary>
+    /// 获取生成器状态信息
+    /// </summary>
+    /// <returns>状态信息字典</returns>
+    public Dictionary<string, object> GetStats()
+    {
+        var stats = new Dictionary<string, object>
+        {
+            { "GeneratorId", _options.GeneratorId },
+            { "GeneratorType", GetGeneratorType() },
+            { "WorkerId", _workerId },
+            { "DataCenterId", _dataCenterId },
+            { "LastTimestamp", _lastTimestamp },
+            { "CurrentSequence", _currentSeqNumber },
+            { "OverCostCount", _overCostCountInCurrentPeriod },
+            { "BaseTime", _options.BaseTime },
+            { "TimestampType", _options.TimestampType == 1 ? "秒级" : "毫秒级" }
+        };
+        return stats;
+    }
+
+    /// <summary>
+    /// 批量获取ID
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID数组</returns>
+    public long[] NextIds(int count)
+    {
+        if (count <= 0)
+        {
+            throw new ArgumentException("批量生成ID的数量必须大于0");
+        }
+
+        var ids = new long[count];
+        for (var i = 0; i < count; i++)
+        {
+            ids[i] = NextId();
+        }
+        return ids;
+    }
+
+    /// <summary>
+    /// 批量获取ID（字符串形式）
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID字符串数组</returns>
+    public string[] NextIdStrings(int count)
+    {
+        if (count <= 0)
+        {
+            throw new ArgumentException("批量生成ID的数量必须大于0");
+        }
+
+        var idStrings = new string[count];
+        for (var i = 0; i < count; i++)
+        {
+            idStrings[i] = NextIdString();
+        }
+        return idStrings;
+    }
+
+    /// <summary>
+    /// 异步获取下一个ID
+    /// </summary>
+    /// <returns>生成的ID</returns>
+    public Task<long> NextIdAsync()
+    {
+        return Task.FromResult(NextId());
+    }
+
+    /// <summary>
+    /// 异步获取下一个ID（字符串形式）
+    /// </summary>
+    /// <returns>生成的ID字符串</returns>
+    public Task<string> NextIdStringAsync()
+    {
+        return Task.FromResult(NextIdString());
+    }
+
+    /// <summary>
+    /// 异步批量获取ID
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID数组</returns>
+    public Task<long[]> NextIdsAsync(int count)
+    {
+        return Task.FromResult(NextIds(count));
+    }
+
+    /// <summary>
+    /// 异步批量获取ID（字符串形式）
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID字符串数组</returns>
+    public Task<string[]> NextIdStringsAsync(int count)
+    {
+        return Task.FromResult(NextIdStrings(count));
     }
 
     /// <summary>
@@ -225,73 +364,10 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// </summary>
     private void ValidateOptions()
     {
-        // 1.检查BaseTime
+        // 检查BaseTime
         if (GetCurrentTimestamp() < _baseTimestamp)
         {
             throw new Exception("基准时间不能超过当前时间");
-        }
-
-        // 2.检查WorkerId
-        if (_options.Method == IdGeneratorOptions.ClassicSnowFlakeMethod)
-        {
-            // 数据中心ID最大值
-            var maxDataCenterId = ~(-1L << _dataCenterIdBitLength);
-            if (_dataCenterId > maxDataCenterId || _dataCenterId < 0)
-            {
-                throw new ArgumentException($"数据中心ID必须在0-{maxDataCenterId}之间");
-            }
-
-            // 工作机器ID最大值
-            var maxWorkerId = ~(-1L << _workerIdBitLength);
-            if (_workerId > maxWorkerId || _workerId < 0)
-            {
-                throw new ArgumentException($"工作机器ID必须在0-{maxWorkerId}之间");
-            }
-        }
-        else
-        {
-            // 工作机器ID最大值
-            var maxWorkerId = ~(-1L << _workerIdBitLength);
-            if (_workerId > maxWorkerId || _workerId < 0)
-            {
-                throw new ArgumentException($"工作机器ID必须在0-{maxWorkerId}之间");
-            }
-        }
-
-        // 3.检查SeqBitLength和WorkerIdBitLength之和不能超过22位(64-42)
-        if (_seqBitLength + _workerIdBitLength > 22)
-        {
-            throw new ArgumentException("序列号位长与机器码位长之和不能超过22");
-        }
-
-        // 4.检查SeqBitLength范围
-        if (_seqBitLength is < 3 or > 21)
-        {
-            throw new ArgumentException("序列号位长必须在3-21之间");
-        }
-
-        // 5.检查WorkerIdBitLength范围
-        if (_workerIdBitLength is < 1 or > 15)
-        {
-            throw new ArgumentException("机器码位长必须在1-15之间");
-        }
-
-        // 6.检查MaxSeqNumber范围
-        if (_maxSeqNumber > (1 << _seqBitLength) - 1 || _maxSeqNumber < 0)
-        {
-            throw new ArgumentException($"最大序列数不能超过{(1 << _seqBitLength) - 1}或小于0");
-        }
-
-        // 7.检查MinSeqNumber范围
-        if (_minSeqNumber is < 0 or > 127)
-        {
-            throw new ArgumentException("最小序列数必须在0-127之间");
-        }
-
-        // 8.检查TopOverCostCount
-        if (_topOverCostCount is < 0 or > 10000)
-        {
-            throw new ArgumentException("最大漂移次数必须在0-10000之间");
         }
     }
 
@@ -306,20 +382,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 1.当前时间小于上次时间，说明时间回拨
         if (currentTimestamp < _lastTimestamp)
         {
-            if (_lastTimestamp - currentTimestamp > 10000)
-            {
-                throw new Exception($"时钟回拨太多: {_lastTimestamp - currentTimestamp}ms");
-            }
-
-            // 时间回退，等待一会
-            Thread.Sleep(10);
-
-            _overCostCountInCurrentPeriod++;
-
-            // 如果漂移次数超过上限，抛出异常
-            return _overCostCountInCurrentPeriod > _topOverCostCount
-                ? throw new Exception($"时钟回拨次数超过上限: {_topOverCostCount}次")
-                : NextSnowflakeId();
+            // 时钟回拨处理策略
+            return HandleClockBackwards(currentTimestamp);
         }
 
         // 2.如果是同一时间，增加序列号
@@ -332,9 +396,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
 
                 if (_currentSeqNumber > _maxSeqNumber)
                 {
-                    // 序列号超过上限，等待下一秒
-                    _currentSeqNumber = _minSeqNumber;
-                    currentTimestamp = GetNextTimestamp();
+                    // 序列号处理策略
+                    return HandleSequenceOverflow(currentTimestamp);
                 }
             }
             else
@@ -344,9 +407,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
 
                 if (_currentSeqNumber > _maxSeqNumber)
                 {
-                    // 序列号超过上限，等待下一毫秒
-                    _currentSeqNumber = _minSeqNumber;
-                    currentTimestamp = GetNextTimestamp();
+                    // 序列号处理策略
+                    return HandleSequenceOverflow(currentTimestamp);
                 }
             }
         }
@@ -366,8 +428,72 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _lastTimestamp = currentTimestamp;
 
         // 生成ID
-        var result = currentTimestamp - _baseTimestamp << _timestampShift | _workerId << _workerIdShift | _currentSeqNumber;
+        var result = (((currentTimestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
+                    (_dataCenterId << _dataCenterIdShift) |
+                    (_workerId << _workerIdShift) |
+                    _currentSeqNumber;
         return result;
+    }
+
+    /// <summary>
+    /// 处理时钟回拨情况
+    /// </summary>
+    /// <param name="currentTimestamp">当前时间戳</param>
+    /// <returns>生成的ID</returns>
+    private long HandleClockBackwards(long currentTimestamp)
+    {
+        // 计算回拨的时间
+        var backwardsTime = _lastTimestamp - currentTimestamp;
+
+        // 如果回拨时间超过最大容忍值，抛出异常
+        if (backwardsTime > _options.MaxBackwardToleranceMs)
+        {
+            throw new Exception($"时钟回拨太多: {backwardsTime}ms，超过了允许的最大值{_options.MaxBackwardToleranceMs}ms");
+        }
+
+        // 等待一会儿，期待时钟会恢复正常
+        Thread.Sleep(5);
+
+        // 增加漂移计数
+        _overCostCountInCurrentPeriod++;
+
+        // 如果漂移次数超过上限，抛出异常
+        if (_overCostCountInCurrentPeriod > _topOverCostCount)
+        {
+            throw new Exception($"时钟回拨次数超过上限: {_topOverCostCount}次");
+        }
+
+        // 递归调用直到不再有时钟回拨
+        return NextSnowflakeId();
+    }
+
+    /// <summary>
+    /// 处理序列号溢出情况
+    /// </summary>
+    /// <param name="currentTimestamp">当前时间戳</param>
+    /// <returns>生成的ID</returns>
+    private long HandleSequenceOverflow(long currentTimestamp)
+    {
+        // 如果开启了循环序列
+        if (_options.LoopedSequence)
+        {
+            _currentSeqNumber = _minSeqNumber;
+        }
+        else
+        {
+            // 序列号超过上限，等待下一个时间单位
+            _currentSeqNumber = _minSeqNumber;
+            currentTimestamp = GetNextTimestamp();
+        }
+
+        // 记录最后时间戳
+        _lastTimestamp = currentTimestamp;
+
+        // 生成ID
+        return (((currentTimestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
+               (_dataCenterId << _dataCenterIdShift) |
+               (_workerId << _workerIdShift) |
+               _currentSeqNumber;
     }
 
     /// <summary>
@@ -388,7 +514,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 如果是同一时间戳，则增加序列号
         if (_lastTimestamp == timestamp)
         {
-            _currentSeqNumber = _currentSeqNumber + 1 & _maxSeqNumber;
+            _currentSeqNumber = (_currentSeqNumber + 1) & _maxSeqNumber;
             // 同一毫秒的序列数已经达到最大
             if (_currentSeqNumber == 0)
             {
@@ -406,7 +532,10 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _lastTimestamp = timestamp;
 
         // 生成ID
-        return timestamp - _baseTimestamp << _timestampShift | _dataCenterId << _dataCenterIdShift | _workerId << _workerIdShift | _currentSeqNumber;
+        return (((timestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
+               (_dataCenterId << _dataCenterIdShift) |
+               (_workerId << _workerIdShift) |
+               _currentSeqNumber;
     }
 
     /// <summary>
@@ -429,6 +558,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <returns>当前时间戳</returns>
     private long GetCurrentTimestamp()
     {
-        return _options.TimestampType == 1 ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        return _options.TimestampType == 1
+            ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() & _timestampMask
+            : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() & _timestampMask;
     }
 }

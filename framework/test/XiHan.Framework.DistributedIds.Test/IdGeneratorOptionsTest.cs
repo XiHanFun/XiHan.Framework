@@ -1,5 +1,4 @@
-using JetBrains.Annotations;
-using XiHan.Framework.DistributedIds;
+﻿using JetBrains.Annotations;
 
 namespace XiHan.Framework.DistributedIds.Test;
 
@@ -20,12 +19,20 @@ public class IdGeneratorOptionsTest
         Assert.Equal(0, options.WorkerId);
         Assert.Equal(6, options.WorkerIdBitLength);
         Assert.Equal(6, options.SeqBitLength);
-        Assert.Equal(0, options.MaxSeqNumber);
+        Assert.Equal(63, options.MaxSeqNumber);
         Assert.Equal(5, options.MinSeqNumber);
         Assert.Equal(2000, options.TopOverCostCount);
         Assert.Equal(2, options.TimestampType);
         Assert.Equal(IdGeneratorOptions.SnowFlakeMethod, options.Method);
         Assert.Equal(0, options.DataCenterId);
+        Assert.Equal(5, options.DataCenterIdBitLength);
+        Assert.Equal(0, options.IdLength);
+        Assert.Empty(options.IdPrefix);
+        Assert.False(options.LoopedSequence);
+        Assert.Equal(10000, options.MaxBackwardToleranceMs);
+        Assert.True(options.UseCustomEpoch);
+        Assert.NotNull(options.GeneratorId);
+        Assert.NotEmpty(options.GeneratorId);
     }
 
     [Fact(DisplayName = "自定义选项测试")]
@@ -43,7 +50,8 @@ public class IdGeneratorOptionsTest
             TopOverCostCount = 1000,
             TimestampType = 1,
             Method = IdGeneratorOptions.ClassicSnowFlakeMethod,
-            DataCenterId = 2
+            DataCenterId = 2,
+            DataCenterIdBitLength = 6
         };
 
         // Assert
@@ -57,6 +65,7 @@ public class IdGeneratorOptionsTest
         Assert.Equal(1, options.TimestampType);
         Assert.Equal(IdGeneratorOptions.ClassicSnowFlakeMethod, options.Method);
         Assert.Equal(2, options.DataCenterId);
+        Assert.Equal(6, options.DataCenterIdBitLength);
     }
 
     [Fact(DisplayName = "WorkerId范围测试")]
@@ -188,5 +197,102 @@ public class IdGeneratorOptionsTest
             SeqBitLength = 16
         };
         Assert.Throws<ArgumentException>(() => options.SeqBitLength = 17);
+    }
+
+    [Fact(DisplayName = "DataCenterIdBitLength范围测试")]
+    public void DataCenterIdBitLength_ShouldBeWithinValidRange()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => options.DataCenterIdBitLength = 0);
+        Assert.Throws<ArgumentException>(() => options.DataCenterIdBitLength = 11);
+        options.DataCenterIdBitLength = 1;
+        options.DataCenterIdBitLength = 10;
+    }
+
+    [Fact(DisplayName = "IdLength范围测试")]
+    public void IdLength_ShouldBeWithinValidRange()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => options.IdLength = 1);
+        Assert.Throws<ArgumentException>(() => options.IdLength = 9);
+        Assert.Throws<ArgumentException>(() => options.IdLength = 21);
+        options.IdLength = 0;
+        options.IdLength = 10;
+        options.IdLength = 15;
+        options.IdLength = 20;
+    }
+
+    [Fact(DisplayName = "MaxBackwardToleranceMs范围测试")]
+    public void MaxBackwardToleranceMs_ShouldBeWithinValidRange()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => options.MaxBackwardToleranceMs = -1);
+        Assert.Throws<ArgumentException>(() => options.MaxBackwardToleranceMs = 60001);
+        options.MaxBackwardToleranceMs = 0;
+        options.MaxBackwardToleranceMs = 60000;
+    }
+
+    [Fact(DisplayName = "LoopedSequence测试")]
+    public void LoopedSequence_ShouldSetCorrectly()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+
+        // Act & Assert
+        Assert.False(options.LoopedSequence); // 默认值应为false
+        options.LoopedSequence = true;
+        Assert.True(options.LoopedSequence);
+    }
+
+    [Fact(DisplayName = "UseCustomEpoch测试")]
+    public void UseCustomEpoch_ShouldSetCorrectly()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+
+        // Act & Assert
+        Assert.True(options.UseCustomEpoch); // 默认值应为true
+        options.UseCustomEpoch = false;
+        Assert.False(options.UseCustomEpoch);
+    }
+
+    [Fact(DisplayName = "GeneratorId测试")]
+    public void GeneratorId_ShouldSetCorrectly()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+        var testId = "test-generator-id";
+
+        // Act & Assert
+        Assert.NotNull(options.GeneratorId); // 默认值不应为null
+        Assert.NotEmpty(options.GeneratorId); // 默认值不应为空
+        options.GeneratorId = testId;
+        Assert.Equal(testId, options.GeneratorId);
+        options.GeneratorId = null;
+        Assert.NotNull(options.GeneratorId); // 设置null应转为默认值而不是null
+    }
+
+    [Fact(DisplayName = "IdPrefix测试")]
+    public void IdPrefix_ShouldSetCorrectly()
+    {
+        // Arrange
+        var options = new IdGeneratorOptions();
+        var testPrefix = "TEST_";
+
+        // Act & Assert
+        Assert.Empty(options.IdPrefix); // 默认值应为空字符串
+        options.IdPrefix = testPrefix;
+        Assert.Equal(testPrefix, options.IdPrefix);
+        options.IdPrefix = null;
+        Assert.Empty(options.IdPrefix); // 设置null应转为空字符串
     }
 }
