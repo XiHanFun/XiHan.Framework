@@ -32,6 +32,46 @@ public interface IDistributedIdGenerator
     string NextIdString();
 
     /// <summary>
+    /// 批量获取ID
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID数组</returns>
+    long[] NextIds(int count);
+
+    /// <summary>
+    /// 批量获取ID（字符串形式）
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID字符串数组</returns>
+    string[] NextIdStrings(int count);
+
+    /// <summary>
+    /// 异步获取下一个ID
+    /// </summary>
+    /// <returns>生成的ID</returns>
+    Task<long> NextIdAsync();
+
+    /// <summary>
+    /// 异步获取下一个ID（字符串形式）
+    /// </summary>
+    /// <returns>生成的ID字符串</returns>
+    Task<string> NextIdStringAsync();
+
+    /// <summary>
+    /// 异步批量获取ID
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID数组</returns>
+    Task<long[]> NextIdsAsync(int count);
+
+    /// <summary>
+    /// 异步批量获取ID（字符串形式）
+    /// </summary>
+    /// <param name="count">需要获取的ID数量</param>
+    /// <returns>ID字符串数组</returns>
+    Task<string[]> NextIdStringsAsync(int count);
+
+    /// <summary>
     /// 从ID中提取时间戳
     /// </summary>
     /// <param name="id">ID</param>
@@ -51,4 +91,23 @@ public interface IDistributedIdGenerator
     /// <param name="id">ID</param>
     /// <returns>序列号</returns>
     int ExtractSequence(long id);
+
+    /// <summary>
+    /// 从ID中提取数据中心ID
+    /// </summary>
+    /// <param name="id">ID</param>
+    /// <returns>数据中心ID</returns>
+    int ExtractDataCenterId(long id);
+
+    /// <summary>
+    /// 获取生成器类型
+    /// </summary>
+    /// <returns>生成器类型</returns>
+    string GetGeneratorType();
+
+    /// <summary>
+    /// 获取生成器状态信息
+    /// </summary>
+    /// <returns>状态信息字典</returns>
+    Dictionary<string, object> GetStats();
 }
