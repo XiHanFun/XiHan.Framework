@@ -1,6 +1,5 @@
 ﻿using JetBrains.Annotations;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Collections.Tree;
 
 namespace XiHan.Framework.Utils.Test.Collections;
 
@@ -84,7 +83,7 @@ public class TreeExtensionsTest
             1, 2, 3
         };
 
-        static bool IsChild(int parent, int child) => parent == 1 && child == 2 || parent == 2 && child == 3 || parent == 3 && child == 1;
+        static bool IsChild(int parent, int child) => (parent == 1 && child == 2) || (parent == 2 && child == 3) || (parent == 3 && child == 1);
 
         var result = source.ToTree(IsChild).ToList();
 
