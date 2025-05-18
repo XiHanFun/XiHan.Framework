@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using XiHan.Framework.DistributedIds.Uuids;
 
 namespace XiHan.Framework.DistributedIds.Test;
 
@@ -18,40 +19,40 @@ public class UuidGeneratorTest
         Assert.NotNull(generator);
         var stats = generator.GetStats();
         Assert.Equal("UUID (Standard)", stats["GeneratorType"]);
-        Assert.Equal(UuidType.Standard.ToString(), stats["UuidType"]);
+        Assert.Equal(UuidTypes.Standard.ToString(), stats["UuidType"]);
     }
 
     [Fact(DisplayName = "指定UUID类型构造函数测试")]
     public void Constructor_WithUuidType_ShouldInitializeCorrectly()
     {
         // Arrange & Act
-        var generator = new UuidGenerator(UuidType.RandomV4);
+        var generator = new UuidGenerator(UuidTypes.RandomV4);
 
         // Assert
         Assert.NotNull(generator);
         var stats = generator.GetStats();
         Assert.Equal("UUID (RandomV4)", stats["GeneratorType"]);
-        Assert.Equal(UuidType.RandomV4.ToString(), stats["UuidType"]);
+        Assert.Equal(UuidTypes.RandomV4.ToString(), stats["UuidType"]);
     }
 
     [Fact(DisplayName = "基于名称空间名称的构造函数测试")]
     public void Constructor_WithNamespaceNameAndName_ShouldInitializeCorrectly()
     {
         // Arrange & Act
-        var generator = new UuidGenerator(UuidType.NameBasedMD5, "DNS", "test.com");
+        var generator = new UuidGenerator(UuidTypes.NameBasedMD5, "DNS", "test.com");
 
         // Assert
         Assert.NotNull(generator);
         var stats = generator.GetStats();
         Assert.Equal("UUID (NameBasedMD5)", stats["GeneratorType"]);
-        Assert.Equal(UuidType.NameBasedMD5.ToString(), stats["UuidType"]);
+        Assert.Equal(UuidTypes.NameBasedMD5.ToString(), stats["UuidType"]);
     }
 
     [Fact(DisplayName = "无效名称空间名称构造函数测试")]
     public void Constructor_WithInvalidNamespaceName_ShouldThrowException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentException>(() => new UuidGenerator(UuidType.NameBasedMD5, "InvalidNamespace", "test"));
+        Assert.Throws<ArgumentException>(() => new UuidGenerator(UuidTypes.NameBasedMD5, "InvalidNamespace", "test"));
     }
 
     [Fact(DisplayName = "基于GUID名称空间的构造函数测试")]
@@ -61,20 +62,20 @@ public class UuidGeneratorTest
         var namespaceGuid = Guid.NewGuid();
 
         // Act
-        var generator = new UuidGenerator(UuidType.NameBasedSHA1, namespaceGuid, "test");
+        var generator = new UuidGenerator(UuidTypes.NameBasedSHA1, namespaceGuid, "test");
 
         // Assert
         Assert.NotNull(generator);
         var stats = generator.GetStats();
         Assert.Equal("UUID (NameBasedSHA1)", stats["GeneratorType"]);
-        Assert.Equal(UuidType.NameBasedSHA1.ToString(), stats["UuidType"]);
+        Assert.Equal(UuidTypes.NameBasedSHA1.ToString(), stats["UuidType"]);
     }
 
     [Fact(DisplayName = "标准UUID生成测试")]
     public void NextId_WithStandardType_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.Standard);
+        var generator = new UuidGenerator(UuidTypes.Standard);
 
         // Act
         var id = generator.NextId();
@@ -87,7 +88,7 @@ public class UuidGeneratorTest
     public void NextId_WithRandomV4_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.RandomV4);
+        var generator = new UuidGenerator(UuidTypes.RandomV4);
 
         // Act
         var id = generator.NextId();
@@ -100,7 +101,7 @@ public class UuidGeneratorTest
     public void NextId_WithTimeBasedV1_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.TimeBasedV1);
+        var generator = new UuidGenerator(UuidTypes.TimeBasedV1);
 
         // Act
         var id = generator.NextId();
@@ -113,7 +114,7 @@ public class UuidGeneratorTest
     public void NextId_WithNameBasedMD5_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.NameBasedMD5, "DNS", "test.com");
+        var generator = new UuidGenerator(UuidTypes.NameBasedMD5, "DNS", "test.com");
 
         // Act
         var id = generator.NextId();
@@ -126,7 +127,7 @@ public class UuidGeneratorTest
     public void NextId_WithNameBasedSHA1_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.NameBasedSHA1, "URL", "https://test.com");
+        var generator = new UuidGenerator(UuidTypes.NameBasedSHA1, "URL", "https://test.com");
 
         // Act
         var id = generator.NextId();
@@ -139,7 +140,7 @@ public class UuidGeneratorTest
     public void NextId_WithSequential_ShouldGenerateId()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.Sequential);
+        var generator = new UuidGenerator(UuidTypes.Sequential);
 
         // Act
         var id = generator.NextId();
@@ -253,7 +254,7 @@ public class UuidGeneratorTest
     public void ExtractTime_WithSequentialType_ShouldReturnTimeCloseToNow()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.Sequential);
+        var generator = new UuidGenerator(UuidTypes.Sequential);
         var beforeGeneration = DateTime.UtcNow;
         var id = generator.NextId();
         var afterGeneration = DateTime.UtcNow;
@@ -270,7 +271,7 @@ public class UuidGeneratorTest
     public void ExtractTime_WithTimeBasedV1Type_ShouldReturnTime()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.TimeBasedV1);
+        var generator = new UuidGenerator(UuidTypes.TimeBasedV1);
         var id = generator.NextId();
 
         // Act
@@ -286,7 +287,7 @@ public class UuidGeneratorTest
     public void ExtractTime_WithNonTimeBasedType_ShouldReturnCurrentTime()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.RandomV4);
+        var generator = new UuidGenerator(UuidTypes.RandomV4);
         var beforeGeneration = DateTime.UtcNow;
         var id = generator.NextId();
         var afterGeneration = DateTime.UtcNow.AddSeconds(1);
@@ -346,12 +347,12 @@ public class UuidGeneratorTest
     public void GetGeneratorType_ShouldReturnCorrectType()
     {
         // Arrange
-        var standardGenerator = new UuidGenerator(UuidType.Standard);
-        var randomGenerator = new UuidGenerator(UuidType.RandomV4);
-        var timeGenerator = new UuidGenerator(UuidType.TimeBasedV1);
-        var md5Generator = new UuidGenerator(UuidType.NameBasedMD5, "DNS", "test");
-        var sha1Generator = new UuidGenerator(UuidType.NameBasedSHA1, "URL", "test");
-        var seqGenerator = new UuidGenerator(UuidType.Sequential);
+        var standardGenerator = new UuidGenerator(UuidTypes.Standard);
+        var randomGenerator = new UuidGenerator(UuidTypes.RandomV4);
+        var timeGenerator = new UuidGenerator(UuidTypes.TimeBasedV1);
+        var md5Generator = new UuidGenerator(UuidTypes.NameBasedMD5, "DNS", "test");
+        var sha1Generator = new UuidGenerator(UuidTypes.NameBasedSHA1, "URL", "test");
+        var seqGenerator = new UuidGenerator(UuidTypes.Sequential);
 
         // Act & Assert
         Assert.Equal("UUID (Standard)", standardGenerator.GetGeneratorType());
@@ -366,7 +367,7 @@ public class UuidGeneratorTest
     public void GetStats_WithNameBasedGenerator_ShouldIncludeNamespaceInfo()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.NameBasedMD5, "DNS", "test.com");
+        var generator = new UuidGenerator(UuidTypes.NameBasedMD5, "DNS", "test.com");
 
         // Act
         var stats = generator.GetStats();
@@ -383,7 +384,7 @@ public class UuidGeneratorTest
     public void GetStats_WithOtherTypes_ShouldNotIncludeNamespaceInfo()
     {
         // Arrange
-        var generator = new UuidGenerator(UuidType.RandomV4);
+        var generator = new UuidGenerator(UuidTypes.RandomV4);
 
         // Act
         var stats = generator.GetStats();
@@ -439,4 +440,4 @@ public class UuidGeneratorTest
         await Assert.ThrowsAsync<ArgumentException>(() => generator.NextIdStringsAsync(0));
         await Assert.ThrowsAsync<ArgumentException>(() => generator.NextIdStringsAsync(-1));
     }
-} 
+}

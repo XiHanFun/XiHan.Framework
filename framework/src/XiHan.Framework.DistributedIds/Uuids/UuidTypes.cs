@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UuidType
+// FileName:UuidTypes
 // Guid:ff7c2ee4-96dd-4ee7-bec1-bd26d60d745a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,12 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.DistributedIds;
+namespace XiHan.Framework.DistributedIds.Uuids;
 
 /// <summary>
 /// UUID生成器类型
 /// </summary>
-public enum UuidType
+public enum UuidTypes
 {
     /// <summary>
     /// 标准UUID，随机生成
