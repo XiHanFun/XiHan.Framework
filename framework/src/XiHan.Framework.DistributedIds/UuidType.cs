@@ -3,54 +3,49 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ThemeType
-// Guid:0a12b528-1de2-4e23-bf99-6b7e4428bd98
+// FileName:UuidType
+// Guid:ff7c2ee4-96dd-4ee7-bec1-bd26d60d745a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/5/17 3:29:48
+// CreateTime:2025/5/18 20:27:56
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Enums;
+namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
-/// 主题类型 default、tertiary、primary、info、success、warning 和 error
+/// UUID生成器类型
 /// </summary>
-public enum ThemeType
+public enum UuidType
 {
     /// <summary>
-    /// 默认
+    /// 标准UUID，随机生成
     /// </summary>
-    Default,
+    Standard = 0,
 
     /// <summary>
-    /// 三级
+    /// 顺序UUID，包含时间戳，用于排序
     /// </summary>
-    Tertiary,
+    Sequential = 1,
 
     /// <summary>
-    /// 主要
+    /// 基于时间的UUID (v1)
     /// </summary>
-    Primary,
+    TimeBasedV1 = 2,
 
     /// <summary>
-    /// 信息
+    /// 基于名称和MD5的UUID (v3)
     /// </summary>
-    Info,
+    NameBasedMD5 = 3,
 
     /// <summary>
-    /// 成功
+    /// 随机生成的UUID (v4)
     /// </summary>
-    Success,
+    RandomV4 = 4,
 
     /// <summary>
-    /// 警告
+    /// 基于名称和SHA1的UUID (v5)
     /// </summary>
-    Warning,
-
-    /// <summary>
-    /// 错误
-    /// </summary>
-    Error
+    NameBasedSHA1 = 5
 }

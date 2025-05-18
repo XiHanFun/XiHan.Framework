@@ -261,8 +261,7 @@ public static class EnumExtensions
             Label = field.GetDescriptionValue(),
             Theme = field.GetThemeColorValue().Theme,
             Color = field.GetThemeColorValue().Color
-        })
-            .ToList();
+        }).ToList();
 
         // 加入缓存
         _enumInfosCatch.TryAdd(enumType, enumInfos);
