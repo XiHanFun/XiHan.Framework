@@ -1,8 +1,7 @@
 ﻿using JetBrains.Annotations;
-using System.Diagnostics;
 using System.Collections.Concurrent;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using XiHan.Framework.DistributedIds.SnowflakeIds;
 
 namespace XiHan.Framework.DistributedIds.Test;
 
@@ -16,7 +15,7 @@ public class SnowflakeIdGeneratorTest
     public void Constructor_WithDefaultOptions_ShouldInitializeCorrectly()
     {
         // Arrange & Act
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Assert
@@ -31,11 +30,11 @@ public class SnowflakeIdGeneratorTest
     public void Constructor_WithCustomOptions_ShouldInitializeCorrectly()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             DataCenterId = 3,
             WorkerId = 5,
-            Method = IdGeneratorOptions.SnowFlakeMethod
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod
         };
 
         // Act
@@ -53,9 +52,9 @@ public class SnowflakeIdGeneratorTest
     public void GetGeneratorType_WithClassicMethod_ShouldReturnCorrectType()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
-            Method = IdGeneratorOptions.ClassicSnowFlakeMethod
+            SnowflakeIdType = SnowflakeIdTypes.ClassicSnowFlakeMethod
         };
         var generator = new SnowflakeIdGenerator(options);
 
@@ -70,9 +69,9 @@ public class SnowflakeIdGeneratorTest
     public void GetGeneratorType_WithSnowflakeMethod_ShouldReturnCorrectType()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
-            Method = IdGeneratorOptions.SnowFlakeMethod
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod
         };
         var generator = new SnowflakeIdGenerator(options);
 
@@ -87,7 +86,7 @@ public class SnowflakeIdGeneratorTest
     public void NextId_ShouldGenerateUniqueIds()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var count = 1000;
         var ids = new HashSet<long>();
@@ -106,7 +105,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIdString_ShouldGenerateValidStringId()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act
@@ -121,7 +120,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIdString_WithPrefix_ShouldIncludePrefix()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             IdPrefix = "TEST_"
         };
@@ -138,7 +137,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIdString_WithIdLength_ShouldHaveCorrectLength()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             IdLength = 10
         };
@@ -155,7 +154,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIds_ShouldGenerateSpecifiedNumberOfIds()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var count = 5;
 
@@ -171,7 +170,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIdStrings_ShouldGenerateSpecifiedNumberOfStringIds()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var count = 5;
 
@@ -187,7 +186,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdAsync_ShouldGenerateId()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act
@@ -201,7 +200,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdStringAsync_ShouldGenerateStringId()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act
@@ -215,7 +214,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdsAsync_ShouldGenerateSpecifiedNumberOfIds()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var count = 500000;
 
@@ -231,7 +230,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdStringsAsync_ShouldGenerateSpecifiedNumberOfStringIds()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var count = 5;
 
@@ -247,7 +246,7 @@ public class SnowflakeIdGeneratorTest
     public void ExtractTime_ShouldReturnCorrectTime()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var beforeGeneration = DateTime.UtcNow;
         var id = generator.NextId();
@@ -266,7 +265,7 @@ public class SnowflakeIdGeneratorTest
     {
         // Arrange
         var workerId = 7;
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             WorkerId = (ushort)workerId
         };
@@ -284,7 +283,7 @@ public class SnowflakeIdGeneratorTest
     public void ExtractSequence_ShouldReturnValidSequence()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
         var id = generator.NextId();
 
@@ -301,10 +300,10 @@ public class SnowflakeIdGeneratorTest
     {
         // Arrange
         var dataCenterId = 3;
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             DataCenterId = (byte)dataCenterId,
-            Method = IdGeneratorOptions.ClassicSnowFlakeMethod // 注意：必须使用经典雪花算法才能正确提取数据中心ID
+            SnowflakeIdType = SnowflakeIdTypes.ClassicSnowFlakeMethod // 注意：必须使用经典雪花算法才能正确提取数据中心ID
         };
         var generator = new SnowflakeIdGenerator(options);
         var id = generator.NextId();
@@ -320,7 +319,7 @@ public class SnowflakeIdGeneratorTest
     public void GetStats_ShouldReturnValidDictionary()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act
@@ -343,7 +342,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIds_WithInvalidCount_ShouldThrowException()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act & Assert
@@ -355,7 +354,7 @@ public class SnowflakeIdGeneratorTest
     public void NextIdStrings_WithInvalidCount_ShouldThrowException()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act & Assert
@@ -367,7 +366,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdsAsync_WithInvalidCount_ShouldThrowException()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act & Assert
@@ -379,7 +378,7 @@ public class SnowflakeIdGeneratorTest
     public async Task NextIdStringsAsync_WithInvalidCount_ShouldThrowException()
     {
         // Arrange
-        var options = new IdGeneratorOptions();
+        var options = new SnowflakeIdOptions();
         var generator = new SnowflakeIdGenerator(options);
 
         // Act & Assert
@@ -391,10 +390,10 @@ public class SnowflakeIdGeneratorTest
     public void GenerateDuplicateId_ShouldTakeLongTime()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             // 使用漂移算法，提高生成速度
-            Method = IdGeneratorOptions.SnowFlakeMethod,
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod,
             // 使用较小的序列位长度，增加重复可能性
             SeqBitLength = 8
         };
@@ -452,12 +451,12 @@ public class SnowflakeIdGeneratorTest
     }
 
     [Fact(DisplayName = "并发环境下验证雪花算法重复ID生成测试", Skip = "耗时测试，仅在需要验证时运行")]
-    public void GenerateDuplicateIdInParallel_ShouldTakeLongTime()
+    public async Task GenerateDuplicateIdInParallel_ShouldTakeLongTime()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
-            Method = IdGeneratorOptions.SnowFlakeMethod
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod
         };
         var generator = new SnowflakeIdGenerator(options);
 
@@ -500,7 +499,7 @@ public class SnowflakeIdGeneratorTest
             }
 
             // 等待所有任务完成或任一任务发现重复
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             // 计算总生成数量
             totalGeneratedCount = counters.Sum();
@@ -539,10 +538,10 @@ public class SnowflakeIdGeneratorTest
     public void Generate100000IdsInOneSecond_ShouldNotHaveDuplicates()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
             // 使用漂移算法，提高生成速度
-            Method = IdGeneratorOptions.SnowFlakeMethod
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod
         };
         var generator = new SnowflakeIdGenerator(options);
 
@@ -600,15 +599,17 @@ public class SnowflakeIdGeneratorTest
     public void Generate100000IdsInOneSecondOptimized_ShouldNotHaveDuplicates()
     {
         // Arrange
-        var options = new IdGeneratorOptions
+        var options = new SnowflakeIdOptions
         {
-            Method = IdGeneratorOptions.SnowFlakeMethod
+            IdLength = 15,
+            SnowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod
         };
         var generator = new SnowflakeIdGenerator(options);
 
         var maxIds = 150000; // 增加目标数以确保能达到10万
         var batchSize = 10000; // 每次批量生成的数量
         var allIds = new List<long>(maxIds);
+        var allIdStrings = new List<string>(maxIds); // 收集字符串形式的ID
 
         var stopwatch = Stopwatch.StartNew();
         var targetDuration = TimeSpan.FromSeconds(1);
@@ -619,16 +620,24 @@ public class SnowflakeIdGeneratorTest
             // 计算本批次应生成的ID数量
             var currentBatchSize = Math.Min(batchSize, maxIds - allIds.Count);
 
-            // 批量生成ID
+            // 批量生成ID (数值形式)
             var batchIds = generator.NextIds(currentBatchSize);
             allIds.AddRange(batchIds);
+
+            // 批量生成ID (字符串形式)
+            var batchStringIds = generator.NextIdStrings(currentBatchSize);
+            allIdStrings.AddRange(batchStringIds);
         }
 
         stopwatch.Stop();
 
         // 截取1秒内生成的数量（但不超过目标10万）
         var actualIds = allIds.Take(Math.Min(allIds.Count, 100000)).ToList();
+        var actualStringIds = allIdStrings.Take(Math.Min(allIdStrings.Count, 100000)).ToList();
+
         var distinctIds = new HashSet<long>(actualIds);
+        var distinctStringIds = new HashSet<string>(actualStringIds);
+
         var actualCount = actualIds.Count;
         var elapsedMs = stopwatch.ElapsedMilliseconds;
 
@@ -641,7 +650,18 @@ public class SnowflakeIdGeneratorTest
 
         // 验证没有重复
         Assert.Equal(distinctIds.Count, actualCount);
+        Assert.Equal(distinctStringIds.Count, actualStringIds.Count);
         Assert.True(actualCount > 0, "至少应生成一些ID");
+
+        // 验证ID字符串长度是否符合设置
+        foreach (var idString in actualStringIds.Take(10))
+        {
+            Console.WriteLine($"ID字符串样本: {idString}, 长度: {idString.Length}");
+        }
+
+        // 验证所有字符串形式ID的长度都是设置的15位
+        Assert.True(actualStringIds.All(id => id.Length == 15),
+            $"ID长度应为15位，实际样本: {string.Join(", ", actualStringIds.Take(5).Select(id => $"'{id}'(长度{id.Length})"))}");
 
         // 如果用了超过1秒，期望至少达到目标的80%
         Assert.True(actualCount >= 100000,
