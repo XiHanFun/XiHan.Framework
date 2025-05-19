@@ -14,7 +14,6 @@
 
 using XiHan.Framework.DistributedIds.NanoIds;
 using XiHan.Framework.DistributedIds.SnowflakeIds;
-using XiHan.Framework.DistributedIds.Uuids;
 
 namespace XiHan.Framework.DistributedIds;
 
@@ -93,37 +92,6 @@ public static class IdGeneratorFactory
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_Classic(ushort workerId = 1, byte dataCenterId = 1)
     {
         return new SnowflakeIdGenerator(SnowflakeIdOptions.Classic(workerId, dataCenterId));
-    }
-
-    /// <summary>
-    /// 创建UUID生成器
-    /// </summary>
-    /// <returns>UUID生成器</returns>
-    public static IDistributedIdGenerator CreateUuidGenerator()
-    {
-        return new UuidGenerator();
-    }
-
-    /// <summary>
-    /// 创建UUID生成器
-    /// </summary>
-    /// <param name="uuidType">UUID类型</param>
-    /// <returns>UUID生成器</returns>
-    public static IDistributedIdGenerator CreateUuidGenerator(UuidTypes uuidType)
-    {
-        return new UuidGenerator(uuidType);
-    }
-
-    /// <summary>
-    /// 创建基于名称的UUID生成器
-    /// </summary>
-    /// <param name="uuidType">UUID类型</param>
-    /// <param name="namespaceName">命名空间名称</param>
-    /// <param name="name">名称</param>
-    /// <returns>UUID生成器</returns>
-    public static IDistributedIdGenerator CreateUuidGenerator_NameBased(UuidTypes uuidType, string namespaceName, string name)
-    {
-        return new UuidGenerator(uuidType, namespaceName, name);
     }
 
     /// <summary>
