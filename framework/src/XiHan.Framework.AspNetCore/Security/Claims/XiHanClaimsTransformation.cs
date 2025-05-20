@@ -51,11 +51,7 @@ public class XiHanClaimsTransformation : IClaimsTransformation
                         XiHanClaimsMapOptions.Value.Maps[claim.Type](),
                         claim.Value,
                         claim.ValueType,
-                        claim.Issuer
-                    )
-                )
-            )
-        );
+                        claim.Issuer))));
 
         return Task.FromResult(principal);
     }
