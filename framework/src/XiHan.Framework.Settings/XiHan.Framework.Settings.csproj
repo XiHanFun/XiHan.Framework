@@ -14,7 +14,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+		<ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.DataFiltering.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
 	</ItemGroup>
