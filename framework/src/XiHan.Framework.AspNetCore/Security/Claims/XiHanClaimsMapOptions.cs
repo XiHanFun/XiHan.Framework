@@ -28,13 +28,13 @@ public class XiHanClaimsMapOptions
     {
         Maps = new Dictionary<string, Func<string>>
         {
-                { "sub", () => XiHanClaimTypes.UserId },
-                { "role", () => XiHanClaimTypes.Role },
-                { "email", () => XiHanClaimTypes.Email },
-                { "name", () => XiHanClaimTypes.UserName },
-                { "family_name", () => XiHanClaimTypes.SurName },
-                { "given_name", () => XiHanClaimTypes.Name }
-            };
+            { "sub", () => XiHanClaimTypes.UserId },
+            { "role", () => XiHanClaimTypes.Role },
+            { "email", () => XiHanClaimTypes.Email },
+            { "name", () => XiHanClaimTypes.UserName },
+            { "family_name", () => XiHanClaimTypes.SurName },
+            { "given_name", () => XiHanClaimTypes.Name }
+        };
     }
 
     /// <summary>
