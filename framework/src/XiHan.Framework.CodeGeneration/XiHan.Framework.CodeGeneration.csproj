@@ -15,7 +15,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.AI\XiHan.Framework.AI.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.TextTemplating\XiHan.Framework.TextTemplating.csproj" />
     </ItemGroup>
 

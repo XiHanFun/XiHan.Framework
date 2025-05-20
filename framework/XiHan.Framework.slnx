@@ -11,6 +11,7 @@
   </Folder>
   <Folder Name="/1.src/4.CoreLibraries/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" Id="26e1247d-951c-4668-a817-ef74010e7777" />
     <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
     <Project Path="src/XiHan.Framework.BackgroundWorkers/XiHan.Framework.BackgroundWorkers.csproj" />
     <Project Path="src/XiHan.Framework.BlobStoring/XiHan.Framework.BlobStoring.csproj" />
@@ -40,6 +41,7 @@
     <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.TextTemplating.csproj" />
     <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
+    <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" Id="5a1a058e-e622-4f06-938e-ae8431e541d8" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
   <Folder Name="/1.src/5.AspNetCore/">
