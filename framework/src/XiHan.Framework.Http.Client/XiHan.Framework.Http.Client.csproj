@@ -9,7 +9,7 @@
         <Title>XiHan.Framework.Http.Client</Title>
         <AssemblyName>XiHan.Framework.Http.Client</AssemblyName>
         <PackageId>XiHan.Framework.Http.Client</PackageId>
-        <Description>曦寒框架网络请求客户端库</Description>
+        <Description>曦寒框架服务间调用库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
