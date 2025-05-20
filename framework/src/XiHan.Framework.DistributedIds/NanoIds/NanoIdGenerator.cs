@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -234,7 +234,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <returns>生成器类型</returns>
     public string GetGeneratorType()
     {
-        return "NanoID";
+        return "NanoId";
     }
 
     /// <summary>
