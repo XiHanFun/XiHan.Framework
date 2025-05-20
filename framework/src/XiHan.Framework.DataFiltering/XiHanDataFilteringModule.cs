@@ -15,15 +15,15 @@
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Uow;
 
-namespace XiHan.Framework.Data;
+namespace XiHan.Framework.DataFiltering;
 
 /// <summary>
-/// 曦寒框架数据模块
+/// 曦寒框架数据过滤模块
 /// </summary>
 [DependsOn(
     typeof(XiHanUowModule)
     )]
-public class XiHanDataModule : XiHanModule
+public class XiHanDataFilteringModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
