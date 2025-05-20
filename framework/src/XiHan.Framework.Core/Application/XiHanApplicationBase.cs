@@ -45,7 +45,7 @@ public class XiHanApplicationBase : IXiHanApplication
         _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
         _ = CheckHelper.NotNull(services, nameof(services));
 
-        ConsoleLogger.Info(XiHan.XiHanInfo);
+        ConsoleLogger.Info(XiHan.SayHello());
 
         // 设置启动模块
         StartupModuleType = startupModuleType;

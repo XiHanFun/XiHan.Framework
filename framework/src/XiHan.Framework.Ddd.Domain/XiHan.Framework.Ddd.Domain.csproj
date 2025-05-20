@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.DataFiltering\XiHan.Framework.DataFiltering.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Ddd.Domain.Shared\XiHan.Framework.Ddd.Domain.Shared.csproj" />
         <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
         <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
