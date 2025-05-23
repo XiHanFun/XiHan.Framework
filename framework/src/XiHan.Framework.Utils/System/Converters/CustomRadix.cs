@@ -119,32 +119,4 @@ public class CustomRadix
         var leadingZeroCount = encoded.TakeWhile(c => c == _alphabet[0]).Count();
         return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. bytes.Reverse()];
     }
-
-    /// <summary>
-    /// 将字符串转换为自定义进制编码
-    /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public string EncodeString(string input)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-
-        var bytes = Encoding.UTF8.GetBytes(input);
-        return Encode(bytes);
-    }
-
-    /// <summary>
-    /// 将自定义进制编码转换为字符串
-    /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public byte[] DecodeString(string input)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-
-        var bytes = Decode(input);
-        return bytes;
-    }
 }
