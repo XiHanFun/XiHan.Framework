@@ -26,7 +26,7 @@ public class SqidsOptions
     /// <summary>
     /// 默认最小长度
     /// </summary>
-    internal const int DefaultMinLength = 0;
+    internal const int DefaultMinLength = 5;
 
     /// <summary>
     /// 默认屏蔽词列表
