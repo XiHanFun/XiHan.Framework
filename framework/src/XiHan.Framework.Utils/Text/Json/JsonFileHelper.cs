@@ -237,10 +237,7 @@ public static class JsonFileHelper
     /// <returns>反序列化后的对象</returns>
     public static async Task<T?> ReadFromStreamAsync<T>(Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         try
         {
@@ -263,10 +260,7 @@ public static class JsonFileHelper
     /// <param name="cancellationToken">取消令牌</param>
     public static async Task WriteToStreamAsync<T>(Stream stream, T obj, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         try
         {
@@ -532,10 +526,7 @@ public static class JsonFileHelper
     /// <param name="updateAction">更新操作</param>
     public static void UpdateConfig<T>(string configPath, Action<T> updateAction) where T : new()
     {
-        if (updateAction == null)
-        {
-            throw new ArgumentNullException(nameof(updateAction));
-        }
+        ArgumentNullException.ThrowIfNull(updateAction);
 
         try
         {
@@ -563,10 +554,7 @@ public static class JsonFileHelper
     /// <returns>读取结果字典（文件路径 -> 对象）</returns>
     public static Dictionary<string, T?> BatchReadFromFiles<T>(IEnumerable<string> filePaths, JsonSerializerOptions? options = null, Encoding? encoding = null)
     {
-        if (filePaths == null)
-        {
-            throw new ArgumentNullException(nameof(filePaths));
-        }
+        ArgumentNullException.ThrowIfNull(filePaths);
 
         var results = new Dictionary<string, T?>();
 
@@ -596,10 +584,7 @@ public static class JsonFileHelper
     /// <returns>写入结果字典（文件路径 -> 是否成功）</returns>
     public static Dictionary<string, bool> BatchWriteToFiles<T>(Dictionary<string, T> fileData, JsonSerializerOptions? options = null, Encoding? encoding = null, bool createDirectory = true)
     {
-        if (fileData == null)
-        {
-            throw new ArgumentNullException(nameof(fileData));
-        }
+        ArgumentNullException.ThrowIfNull(fileData);
 
         var results = new Dictionary<string, bool>();
 

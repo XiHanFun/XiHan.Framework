@@ -70,7 +70,7 @@ public static class JsonExtensions
     /// <returns>转换后的对象</returns>
     public static TTarget? ConvertTo<TSource, TTarget>(this TSource obj)
     {
-        return JsonHelper.ConvertTo<TTarget>(obj);
+        return obj == null ? default : JsonHelper.ConvertTo<TTarget>(obj);
     }
 
     #endregion
@@ -175,7 +175,10 @@ public static class JsonExtensions
     public static T? GetValueByPath<T>(this string json, string path, JsonSerializerOptions? options = null)
     {
         var node = JsonHelper.GetValueByPath(json, path);
-        if (node == null) return default;
+        if (node == null)
+        {
+            return default;
+        }
 
         try
         {
@@ -214,7 +217,10 @@ public static class JsonExtensions
     public static T? GetValueByPath<T>(this JsonNode jsonNode, string path, JsonSerializerOptions? options = null)
     {
         var node = JsonHelper.GetValueByPath(jsonNode, path);
-        if (node == null) return default;
+        if (node == null)
+        {
+            return default;
+        }
 
         try
         {
@@ -416,4 +422,4 @@ public static class JsonExtensions
     }
 
     #endregion
-} 
+}
