@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\nuget.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Script</Title>
+		<AssemblyName>XiHan.Framework.Script</AssemblyName>
+		<PackageId>XiHan.Framework.Script</PackageId>
+		<Description>曦寒框架动态脚本库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" PrivateAssets="all" />
+		<PackageReference Include="System.Reflection.Metadata" Version="9.0.5" />
+		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+	</ItemGroup>
+
+</Project>
