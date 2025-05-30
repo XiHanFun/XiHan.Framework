@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ValidateCoder
+// FileName:RandomCoder
 // Guid:7fbc0368-1a12-4a65-bfb6-dcf2f1094f2d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using XiHan.Framework.Utils.System;
 namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
-/// 验证码生成器
+/// 随机码生成器
 /// </summary>
-public static class ValidateCoder
+public static class RandomCoder
 {
     /// <summary>
     /// 默认特殊符号字符源
