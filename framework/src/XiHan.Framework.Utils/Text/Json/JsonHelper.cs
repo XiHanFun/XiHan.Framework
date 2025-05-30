@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Dynamic;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using XiHan.Framework.Utils.Text.Json.Serialization;
@@ -25,7 +24,7 @@ namespace XiHan.Framework.Utils.Text.Json;
 /// </summary>
 public static class JsonHelper
 {
-    private static readonly JsonSerializerOptions _cachedDefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
 
     #region 序列化与反序列化
 
@@ -43,7 +42,7 @@ public static class JsonHelper
             return "null";
         }
 
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         return JsonSerializer.Serialize(obj, options);
     }
 
@@ -61,7 +60,7 @@ public static class JsonHelper
             return "null";
         }
 
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         return JsonSerializer.Serialize(obj, type, options);
     }
 
@@ -79,7 +78,7 @@ public static class JsonHelper
             return default;
         }
 
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         return JsonSerializer.Deserialize<T>(json, options);
     }
 
@@ -97,7 +96,7 @@ public static class JsonHelper
             return null;
         }
 
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         return JsonSerializer.Deserialize(json, type, options);
     }
 
@@ -120,7 +119,7 @@ public static class JsonHelper
                 return false;
             }
 
-            options ??= _cachedDefaultOptions;
+            options ??= _defaultOptions;
             result = JsonSerializer.Deserialize<T>(json, options);
             return true;
         }
@@ -342,7 +341,7 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = _cachedDefaultOptions;
+            var options = _defaultOptions;
             options.WriteIndented = indented;
             return JsonSerializer.Serialize(document.RootElement, options);
         }
@@ -623,7 +622,7 @@ public static class JsonHelper
     /// <returns>异步任务</returns>
     public static async Task SerializeAsync<T>(Stream stream, T obj, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         await JsonSerializer.SerializeAsync(stream, obj, options, cancellationToken);
     }
 
@@ -637,7 +636,7 @@ public static class JsonHelper
     /// <returns>反序列化后的对象</returns>
     public static async Task<T?> DeserializeAsync<T>(Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        options ??= _cachedDefaultOptions;
+        options ??= _defaultOptions;
         return await JsonSerializer.DeserializeAsync<T>(stream, options, cancellationToken);
     }
 

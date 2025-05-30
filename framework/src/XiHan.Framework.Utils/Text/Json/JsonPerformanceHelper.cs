@@ -13,6 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -26,6 +28,8 @@ namespace XiHan.Framework.Utils.Text.Json;
 public static class JsonPerformanceHelper
 {
     private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly Dictionary<Type, JsonTypeInfo> _typeInfoCache = [];
+    private static readonly Lock _cachelock = new();
 
     #region 高性能序列化
 
@@ -38,15 +42,20 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字符串</returns>
     public static string SerializeWithArrayPool<T>(T obj, JsonSerializerOptions? options = null)
     {
-        if (obj == null) return "null";
+        if (obj == null)
+        {
+            return "null";
+        }
 
         options ??= _defaultOptions;
-        
-        var bufferWriter = new ArrayBufferWriter<byte>();
+
+        // 预分配缓冲区
+        const int BufferSize = 4096;
+        var bufferWriter = new ArrayBufferWriter<byte>(BufferSize);
         using var writer = new Utf8JsonWriter(bufferWriter);
-        
+
         JsonSerializer.Serialize(writer, obj, options);
-        
+
         return Encoding.UTF8.GetString(bufferWriter.WrittenSpan);
     }
 
@@ -68,11 +77,17 @@ public static class JsonPerformanceHelper
         }
 
         options ??= _defaultOptions;
-        
-        using var writer = new Utf8JsonWriter(buffer);
-        JsonSerializer.Serialize(writer, obj, options);
-        
-        return (int)writer.BytesCommitted;
+
+        const int BufferSize = 4096;
+        var bufferWriter = new ArrayBufferWriter<byte>(BufferSize);
+        using (var writer = new Utf8JsonWriter(bufferWriter))
+        {
+            JsonSerializer.Serialize(writer, obj, options);
+        }
+
+        var writtenSpan = bufferWriter.WrittenSpan;
+        writtenSpan.CopyTo(buffer);
+        return writtenSpan.Length;
     }
 
     /// <summary>
@@ -84,7 +99,10 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字节数据</returns>
     public static ReadOnlyMemory<byte> SerializeToMemory<T>(T obj, JsonSerializerOptions? options = null)
     {
-        if (obj == null) return "null"u8.ToArray();
+        if (obj == null)
+        {
+            return "null"u8.ToArray();
+        }
 
         options ??= _defaultOptions;
         return JsonSerializer.SerializeToUtf8Bytes(obj, options);
@@ -103,7 +121,10 @@ public static class JsonPerformanceHelper
     /// <returns>反序列化后的对象</returns>
     public static T? DeserializeFromSpan<T>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
     {
-        if (utf8Json.IsEmpty) return default;
+        if (utf8Json.IsEmpty)
+        {
+            return default;
+        }
 
         options ??= _defaultOptions;
         return JsonSerializer.Deserialize<T>(utf8Json, options);
@@ -118,7 +139,10 @@ public static class JsonPerformanceHelper
     /// <returns>反序列化后的对象</returns>
     public static T? DeserializeFromMemory<T>(ReadOnlyMemory<byte> utf8Json, JsonSerializerOptions? options = null)
     {
-        if (utf8Json.IsEmpty) return default;
+        if (utf8Json.IsEmpty)
+        {
+            return default;
+        }
 
         options ??= _defaultOptions;
         return JsonSerializer.Deserialize<T>(utf8Json.Span, options);
@@ -133,7 +157,10 @@ public static class JsonPerformanceHelper
     /// <returns>反序列化后的对象</returns>
     public static T? DeserializeWithReader<T>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
     {
-        if (utf8Json.IsEmpty) return default;
+        if (utf8Json.IsEmpty)
+        {
+            return default;
+        }
 
         options ??= _defaultOptions;
         var reader = new Utf8JsonReader(utf8Json);
@@ -155,17 +182,17 @@ public static class JsonPerformanceHelper
     public static async Task WriteJsonArrayAsync<T>(Stream stream, IAsyncEnumerable<T> items, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= _defaultOptions;
-        
+
         await using var writer = new Utf8JsonWriter(stream);
-        
+
         writer.WriteStartArray();
-        
+
         await foreach (var item in items.WithCancellation(cancellationToken))
         {
             JsonSerializer.Serialize(writer, item, options);
             await writer.FlushAsync(cancellationToken);
         }
-        
+
         writer.WriteEndArray();
         await writer.FlushAsync(cancellationToken);
     }
@@ -178,12 +205,12 @@ public static class JsonPerformanceHelper
     /// <param name="options">反序列化选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>异步枚举的元素</returns>
-    public static async IAsyncEnumerable<T?> ReadJsonArrayAsync<T>(Stream stream, JsonSerializerOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public static async IAsyncEnumerable<T?> ReadJsonArrayAsync<T>(Stream stream, JsonSerializerOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         options ??= _defaultOptions;
-        
+
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        
+
         if (document.RootElement.ValueKind != JsonValueKind.Array)
         {
             yield break;
@@ -192,7 +219,7 @@ public static class JsonPerformanceHelper
         foreach (var element in document.RootElement.EnumerateArray())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             var json = element.GetRawText();
             yield return JsonSerializer.Deserialize<T>(json, options);
         }
@@ -207,7 +234,7 @@ public static class JsonPerformanceHelper
     public static async Task ProcessLargeJsonAsync(Stream stream, Func<string, JsonElement, Task> propertyHandler, CancellationToken cancellationToken = default)
     {
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        
+
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
             return;
@@ -234,18 +261,21 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字符串</returns>
     public static string SerializeWithPool<T>(T obj, int bufferSize = 4096, JsonSerializerOptions? options = null)
     {
-        if (obj == null) return "null";
+        if (obj == null)
+        {
+            return "null";
+        }
 
         options ??= _defaultOptions;
-        
+
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
         {
-            var bufferWriter = new ArrayBufferWriter<byte>(buffer);
+            var bufferWriter = new ArrayBufferWriter<byte>(bufferSize);
             using var writer = new Utf8JsonWriter(bufferWriter);
-            
+
             JsonSerializer.Serialize(writer, obj, options);
-            
+
             return Encoding.UTF8.GetString(bufferWriter.WrittenSpan);
         }
         finally
@@ -263,27 +293,30 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字符串数组</returns>
     public static string[] BatchSerialize<T>(IEnumerable<T> objects, JsonSerializerOptions? options = null)
     {
-        if (objects == null) return Array.Empty<string>();
+        if (objects == null)
+        {
+            return [];
+        }
 
         options ??= _defaultOptions;
-        
+
         var objectList = objects.ToList();
         var results = new string[objectList.Count];
-        
+
         // 预分配缓冲区
-        const int bufferSize = 8192;
-        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-        
+        const int BufferSize = 8192;
+        var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+
         try
         {
             for (var i = 0; i < objectList.Count; i++)
             {
-                var bufferWriter = new ArrayBufferWriter<byte>(buffer);
+                var bufferWriter = new ArrayBufferWriter<byte>(BufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter);
-                
+
                 JsonSerializer.Serialize(writer, objectList[i], options);
                 results[i] = Encoding.UTF8.GetString(bufferWriter.WrittenSpan);
-                
+
                 bufferWriter.Clear();
             }
         }
@@ -291,16 +324,13 @@ public static class JsonPerformanceHelper
         {
             ArrayPool<byte>.Shared.Return(buffer);
         }
-        
+
         return results;
     }
 
     #endregion
 
     #region 类型信息缓存
-
-    private static readonly Dictionary<Type, JsonTypeInfo> _typeInfoCache = new();
-    private static readonly object _cachelock = new();
 
     /// <summary>
     /// 获取缓存的类型信息
@@ -312,14 +342,14 @@ public static class JsonPerformanceHelper
     {
         options ??= _defaultOptions;
         var type = typeof(T);
-        
+
         lock (_cachelock)
         {
             if (_typeInfoCache.TryGetValue(type, out var cachedInfo))
             {
                 return (JsonTypeInfo<T>)cachedInfo;
             }
-            
+
             var typeInfo = JsonTypeInfo.CreateJsonTypeInfo<T>(options);
             _typeInfoCache[type] = typeInfo;
             return typeInfo;
@@ -335,7 +365,10 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字符串</returns>
     public static string SerializeWithCachedTypeInfo<T>(T obj, JsonSerializerOptions? options = null)
     {
-        if (obj == null) return "null";
+        if (obj == null)
+        {
+            return "null";
+        }
 
         var typeInfo = GetCachedTypeInfo<T>(options);
         return JsonSerializer.Serialize(obj, typeInfo);
@@ -350,7 +383,10 @@ public static class JsonPerformanceHelper
     /// <returns>反序列化后的对象</returns>
     public static T? DeserializeWithCachedTypeInfo<T>(string json, JsonSerializerOptions? options = null)
     {
-        if (string.IsNullOrWhiteSpace(json)) return default;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return default;
+        }
 
         var typeInfo = GetCachedTypeInfo<T>(options);
         return JsonSerializer.Deserialize(json, typeInfo);
@@ -381,31 +417,34 @@ public static class JsonPerformanceHelper
     /// <returns>性能测量结果</returns>
     public static PerformanceResult MeasureSerializationPerformance<T>(T obj, int iterations = 1000, JsonSerializerOptions? options = null)
     {
-        if (obj == null) throw new ArgumentNullException(nameof(obj));
+        if (obj == null)
+        {
+            throw new ArgumentNullException(nameof(obj));
+        }
 
         options ??= _defaultOptions;
-        
+
         // 预热
         for (var i = 0; i < 10; i++)
         {
             JsonSerializer.Serialize(obj, options);
         }
-        
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        
+
         var startMemory = GC.GetTotalMemory(false);
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+        var stopwatch = Stopwatch.StartNew();
+
         for (var i = 0; i < iterations; i++)
         {
             JsonSerializer.Serialize(obj, options);
         }
-        
+
         stopwatch.Stop();
         var endMemory = GC.GetTotalMemory(false);
-        
+
         return new PerformanceResult
         {
             ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
@@ -425,31 +464,34 @@ public static class JsonPerformanceHelper
     /// <returns>性能测量结果</returns>
     public static PerformanceResult MeasureDeserializationPerformance<T>(string json, int iterations = 1000, JsonSerializerOptions? options = null)
     {
-        if (string.IsNullOrWhiteSpace(json)) throw new ArgumentException("JSON 字符串不能为空", nameof(json));
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            throw new ArgumentException("JSON 字符串不能为空", nameof(json));
+        }
 
         options ??= _defaultOptions;
-        
+
         // 预热
         for (var i = 0; i < 10; i++)
         {
             JsonSerializer.Deserialize<T>(json, options);
         }
-        
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        
+
         var startMemory = GC.GetTotalMemory(false);
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+        var stopwatch = Stopwatch.StartNew();
+
         for (var i = 0; i < iterations; i++)
         {
             JsonSerializer.Deserialize<T>(json, options);
         }
-        
+
         stopwatch.Stop();
         var endMemory = GC.GetTotalMemory(false);
-        
+
         return new PerformanceResult
         {
             ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
@@ -503,4 +545,4 @@ public class PerformanceResult
                $"每秒操作数: {OperationsPerSecond:F0}, " +
                $"内存使用: {MemoryUsed / 1024.0:F2}KB";
     }
-} 
+}
