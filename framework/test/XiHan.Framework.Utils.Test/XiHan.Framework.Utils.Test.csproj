@@ -40,4 +40,8 @@
         <Using Include="Xunit" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Text\Json\" />
+    </ItemGroup>
+
 </Project>
