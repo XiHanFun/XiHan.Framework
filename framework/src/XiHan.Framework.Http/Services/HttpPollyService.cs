@@ -169,8 +169,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
@@ -199,8 +198,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
@@ -227,8 +225,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
@@ -257,8 +254,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
@@ -287,8 +283,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
@@ -316,8 +311,7 @@ public class HttpPollyService : IHttpPollyService
         using var client = _httpClientFactory.CreateClient(httpGroup.ToString());
         if (headers is not null)
         {
-            foreach (var header in headers.Where(header =>
-                                 !client.DefaultRequestHeaders.Contains(header.Key)))
+            foreach (var header in headers.Where(header => !client.DefaultRequestHeaders.Contains(header.Key)))
             {
                 client.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
