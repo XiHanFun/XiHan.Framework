@@ -435,9 +435,8 @@ public class ScriptEngine : IScriptEngine, IDisposable
     /// 查找入口点
     /// </summary>
     /// <param name="assembly">程序集</param>
-    /// <param name="options">脚本选项</param>
     /// <returns>入口点方法</returns>
-    private static MethodInfo? FindEntryPoint(Assembly assembly, ScriptOptions options)
+    private static MethodInfo? FindEntryPoint(Assembly assembly)
     {
         // 查找ScriptClass类的Execute方法
         var type = assembly.GetType("ScriptClass");
@@ -453,7 +452,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
     private static object? InvokeEntryPoint(MethodInfo entryPoint, ScriptOptions options)
     {
         var parameters = entryPoint.GetParameters();
-        var args = new object[parameters.Length];
+        var args = new object?[parameters.Length];
 
         // 填充参数（如果有）
         for (var i = 0; i < parameters.Length; i++)
@@ -523,7 +522,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
                 var assembly = Assembly.Load(compilationResult.Assembly);
 
                 // 查找入口点
-                var entryPoint = FindEntryPoint(assembly, options);
+                var entryPoint = FindEntryPoint(assembly);
                 if (entryPoint == null)
                 {
                     return ScriptResult.Failure("未找到有效的入口点");
