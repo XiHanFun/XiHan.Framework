@@ -366,6 +366,33 @@ public static class JsonHelper
     #region JSON 路径操作
 
     /// <summary>
+    /// 根据路径获取 JSON 值并转换为指定类型
+    /// </summary>
+    /// <typeparam name="T">目标类型</typeparam>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="path">JSON 路径</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>转换后的值</returns>
+    public static T? GetValueByPath<T>(string json, string path, JsonSerializerOptions? options = null)
+    {
+        var node = GetValueByPath(json, path);
+        if (node == null)
+        {
+            return default;
+        }
+
+        try
+        {
+            options ??= _defaultOptions;
+            return JsonSerializer.Deserialize<T>(node, options);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
+    /// <summary>
     /// 根据 JSON 路径获取值
     /// </summary>
     /// <param name="json">JSON 字符串</param>
