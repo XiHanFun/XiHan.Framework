@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:Script
+// FileName:XiHanScript
 // Guid:63414530-6120-44c9-9f60-71943a75b861
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -23,7 +23,7 @@ namespace XiHan.Framework.Script;
 /// 简化的脚本执行器
 /// 提供静态方法快速执行脚本
 /// </summary>
-public static class Script
+public static class XiHanScript
 {
     private static readonly Lazy<IScriptEngine> _defaultEngine = new(() => ScriptEngineFactory.CreateDefault());
 

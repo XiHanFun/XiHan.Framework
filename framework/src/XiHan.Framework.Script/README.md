@@ -24,18 +24,18 @@ XiHan.Framework.Script 是一个基于 Roslyn 编译器的动态 C# 脚本执行
 using XiHan.Framework.Script;
 
 // 1. 简单表达式求值
-var result = Script.Eval("1 + 2 * 3");
+var result = XiHanScript.Eval("1 + 2 * 3");
 Console.WriteLine(result); // 输出: 7
 
 // 2. 执行语句脚本
-var scriptResult = Script.Run(@"
+var scriptResult = XiHanScript.Run(@"
     var name = ""World"";
     result = $""Hello, {name}!"";
 ");
 Console.WriteLine(scriptResult.Value); // 输出: Hello, World!
 
 // 3. 强类型返回值
-var intResult = Script.Eval<int>("Math.Max(10, 20)");
+var intResult = XiHanScript.Eval<int>("Math.Max(10, 20)");
 Console.WriteLine(intResult); // 输出: 20
 ```
 
@@ -43,19 +43,20 @@ Console.WriteLine(intResult); // 输出: 20
 
 ```csharp
 // 异步执行脚本
-var result = await Script.RunAsync(@"
+var result = await XiHanScript.RunAsync(@"
     await Task.Delay(100);
     result = DateTime.Now.ToString();
 ");
 
 // 异步表达式求值
-var value = await Script.EvalAsync<string>("$""Current time: {DateTime.Now}""");
+var value = await XiHanScript.EvalAsync<string>("$""Current time: {DateTime.Now}""");
 ```
 
 ### 使用脚本选项
 
 ```csharp
 using XiHan.Framework.Script.Models;
+using XiHan.Framework.Script.Options;
 
 // 配置脚本选项
 var options = ScriptOptions.Default
@@ -64,7 +65,7 @@ var options = ScriptOptions.Default
     .AddGlobal("userName", "张三")
     .WithTimeout(5000);
 
-var result = Script.Run(@"
+var result = XiHanScript.Run(@"
     var table = new DataTable();
     table.Columns.Add(""Name"");
     table.Rows.Add(userName);
@@ -75,7 +76,7 @@ var result = Script.Run(@"
 ### 脚本引擎实例
 
 ```csharp
-using XiHan.Framework.Script.Abstractions;
+using XiHan.Framework.Script.Core;
 
 // 创建专用引擎实例
 var engine = ScriptEngineFactory.CreateDefault();
@@ -93,7 +94,7 @@ Console.WriteLine($"缓存命中率: {stats.CacheHitRate:F1}%");
 
 ```csharp
 // 使用构建器创建配置化引擎
-var engine = Script.CreateBuilder()
+var engine = XiHanScript.CreateBuilder()
     .AddReference(typeof(Newtonsoft.Json.JsonConvert))
     .AddImport("Newtonsoft.Json")
     .WithTimeout(10000)
@@ -111,15 +112,17 @@ var result = await engine.ExecuteAsync(@"
 ### 1. 表达式脚本
 
 ```csharp
+using XiHan.Framework.Script.Enums;
+
 var options = ScriptOptions.Default.WithScriptType(ScriptType.Expression);
-var result = Script.Run("Math.Sqrt(16) + Math.Pow(2, 3)", options);
+var result = XiHanScript.Run("Math.Sqrt(16) + Math.Pow(2, 3)", options);
 // 结果: 12
 ```
 
 ### 2. 语句脚本
 
 ```csharp
-var result = Script.Run(@"
+var result = XiHanScript.Run(@"
     var numbers = new[] { 1, 2, 3, 4, 5 };
     var sum = numbers.Sum();
     var average = numbers.Average();
@@ -131,7 +134,7 @@ var result = Script.Run(@"
 
 ```csharp
 var options = ScriptOptions.Default.WithScriptType(ScriptType.Class);
-var result = Script.Run(@"
+var result = XiHanScript.Run(@"
     public class Calculator
     {
         public static int Add(int a, int b) => a + b;
@@ -149,7 +152,7 @@ var result = Script.Run(@"
 
 ```csharp
 var options = ScriptOptions.Default.WithScriptType(ScriptType.Program);
-var result = Script.Run(@"
+var result = XiHanScript.Run(@"
     using System;
     using System.Linq;
 
@@ -176,13 +179,15 @@ await File.WriteAllTextAsync("script.cs", @"
 ");
 
 // 执行脚本文件
-var result = await Script.RunFileAsync("script.cs");
+var result = await XiHanScript.RunFileAsync("script.cs");
 Console.WriteLine(result.Value);
 ```
 
 ### 批量执行
 
 ```csharp
+using XiHan.Framework.Script.Extensions;
+
 var scripts = new[]
 {
     "1 + 1",
@@ -227,6 +232,8 @@ if (!validation.IsValid)
 ### 超时控制
 
 ```csharp
+using XiHan.Framework.Script.Exceptions;
+
 try
 {
     var result = await engine.ExecuteWithTimeoutAsync(@"
@@ -244,7 +251,7 @@ catch (ScriptTimeoutException ex)
 ## 错误处理
 
 ```csharp
-var result = await Script.RunAsync(@"
+var result = await XiHanScript.RunAsync(@"
     var x = 10;
     var y = 0;
     result = x / y; // 除零错误
@@ -295,6 +302,65 @@ foreach (var kvp in allStats)
 
 // 清理资源
 ScriptEngineFactory.ReleaseAll();
+```
+
+## 核心 API
+
+### XiHanScript 静态类
+
+提供简化的脚本执行入口：
+
+```csharp
+// 执行脚本
+Task<ScriptResult> RunAsync(string code, ScriptOptions? options = null)
+ScriptResult Run(string code, ScriptOptions? options = null)
+
+// 强类型执行
+Task<ScriptResult<T>> RunAsync<T>(string code, ScriptOptions? options = null)
+ScriptResult<T> Run<T>(string code, ScriptOptions? options = null)
+
+// 表达式求值
+Task<object?> EvalAsync(string expression, ScriptOptions? options = null)
+object? Eval(string expression, ScriptOptions? options = null)
+
+// 强类型求值
+Task<T?> EvalAsync<T>(string expression, ScriptOptions? options = null)
+T? Eval<T>(string expression, ScriptOptions? options = null)
+
+// 文件执行
+Task<ScriptResult> RunFileAsync(string filePath, ScriptOptions? options = null)
+ScriptResult RunFile(string filePath, ScriptOptions? options = null)
+
+// 构建器创建
+ScriptEngineBuilder CreateBuilder()
+```
+
+### IScriptEngine 接口
+
+完整的脚本引擎功能：
+
+```csharp
+// 执行脚本
+Task<ScriptResult> ExecuteAsync(string scriptCode, ScriptOptions? options = null)
+Task<ScriptResult<T>> ExecuteAsync<T>(string scriptCode, ScriptOptions? options = null)
+
+// 执行文件
+Task<ScriptResult> ExecuteFileAsync(string scriptFilePath, ScriptOptions? options = null)
+Task<ScriptResult<T>> ExecuteFileAsync<T>(string scriptFilePath, ScriptOptions? options = null)
+
+// 编译脚本
+Task<CompilationResult> CompileAsync(string scriptCode, ScriptOptions? options = null)
+
+// 创建实例
+Task<T?> CreateInstanceAsync<T>(string scriptCode, ScriptOptions? options = null) where T : class
+
+// 表达式求值
+Task<object?> EvaluateAsync(string expression, ScriptOptions? options = null)
+Task<T?> EvaluateAsync<T>(string expression, ScriptOptions? options = null)
+
+// 缓存和统计
+void ClearCache()
+EngineStatistics GetStatistics()
 ```
 
 ## 最佳实践
