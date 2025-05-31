@@ -149,7 +149,6 @@ public static class JsonHelper
             {
                 return false;
             }
-
             var jsonNode = JsonNode.Parse(json);
             jsonObject = ConvertJsonNodeToDynamic(jsonNode);
             return true;

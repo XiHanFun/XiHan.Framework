@@ -105,6 +105,17 @@ public static class JsonExtensions
     }
 
     /// <summary>
+    /// 尝试将 JSON 字符串解析为动态对象
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="jsonObject">解析结果</param>
+    /// <returns>是否解析成功</returns>
+    public static bool TryParseJsonDynamic(string json, out dynamic? jsonObject)
+    {
+        return JsonHelper.TryParseJsonDynamic(json, out jsonObject);
+    }
+
+    /// <summary>
     /// 验证字符串是否为有效的 JSON
     /// </summary>
     /// <param name="json">要验证的字符串</param>
