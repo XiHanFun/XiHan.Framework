@@ -271,11 +271,105 @@ try
 {
     var value = await engine.ExecuteOrThrowAsync("throw new Exception(""测试异常"");");
 }
+catch (ScriptTimeoutException ex)
+{
+    Console.WriteLine($"脚本执行超时: {ex.TimeoutMs}ms");
+}
+catch (ScriptSecurityException ex)
+{
+    Console.WriteLine($"脚本安全检查失败: {ex.Message} (类型: {ex.ViolationType})");
+}
+catch (ScriptLoadException ex)
+{
+    Console.WriteLine($"脚本加载失败: {ex.Message} (文件: {ex.ScriptPath})");
+}
+catch (ScriptCompilationException ex)
+{
+    Console.WriteLine($"脚本编译失败: {ex.Message}");
+    Console.WriteLine("编译错误详情:");
+    Console.WriteLine(ex.GetFormattedErrors());
+}
 catch (ScriptExecutionException ex)
 {
-    Console.WriteLine($"脚本执行异常: {ex.Message}");
+    Console.WriteLine($"脚本执行异常: {ex.Message} (耗时: {ex.ExecutionTimeMs}ms)");
 }
 ```
+
+### 安全执行
+
+```csharp
+using XiHan.Framework.Script.Extensions;
+
+// 安全执行（不抛出异常）
+var result = await engine.ExecuteSafelyAsync(@"
+    var dangerousCode = ""Process.Start(\"\"notepad.exe\"\")"";
+    // 这段代码会被安全检查拦截
+");
+
+if (!result.IsSuccess)
+{
+    Console.WriteLine($"安全执行失败: {result.ErrorMessage}");
+}
+
+// 安全执行脚本文件
+var fileResult = await engine.ExecuteFileSafelyAsync("script.cs");
+```
+
+## 安全功能
+
+### 安全配置
+
+```csharp
+using XiHan.Framework.Script.Options;
+
+// 严格安全模式
+var strictOptions = ScriptOptions.Default.WithStrictSecurity();
+
+// 自定义安全配置
+var customOptions = ScriptOptions.Default.WithSecurity(security =>
+{
+    security.AllowFileSystemAccess = false;
+    security.AllowNetworkAccess = false;
+    security.AllowProcessOperations = false;
+    security.MaxFileSize = 1024 * 1024; // 1MB
+});
+
+// 使用预定义安全配置
+var permissiveOptions = ScriptOptions.Default;
+permissiveOptions.SecurityOptions = SecurityOptions.Permissive();
+
+var restrictedOptions = ScriptOptions.Default;
+restrictedOptions.SecurityOptions = SecurityOptions.Strict();
+```
+
+### 安全验证
+
+```csharp
+// 验证脚本安全性
+var securityResult = await engine.ValidateSecurityAsync(@"
+    var client = new HttpClient();
+    var process = Process.Start(""notepad.exe"");
+");
+
+Console.WriteLine($"安全检查结果: {securityResult.IsSecure}");
+Console.WriteLine($"风险级别: {securityResult.RiskLevel}");
+if (!securityResult.IsSecure)
+{
+    Console.WriteLine("安全问题:");
+    Console.WriteLine(securityResult.FormatIssues());
+}
+```
+
+### 异常类型
+
+| 异常类型                     | 说明         | 使用场景               |
+| ---------------------------- | ------------ | ---------------------- |
+| `ScriptException`            | 基础脚本异常 | 所有脚本相关异常的基类 |
+| `ScriptCompilationException` | 脚本编译异常 | 编译错误、语法错误     |
+| `ScriptExecutionException`   | 脚本执行异常 | 运行时错误、逻辑异常   |
+| `ScriptLoadException`        | 脚本加载异常 | 文件读取失败、路径错误 |
+| `ScriptSecurityException`    | 脚本安全异常 | 安全检查失败、权限不足 |
+| `ScriptTimeoutException`     | 脚本超时异常 | 执行超时、无限循环     |
 
 ## 引擎管理
 
@@ -361,6 +455,29 @@ Task<T?> EvaluateAsync<T>(string expression, ScriptOptions? options = null)
 // 缓存和统计
 void ClearCache()
 EngineStatistics GetStatistics()
+```
+
+### 扩展方法
+
+```csharp
+// 安全执行扩展
+Task<ScriptResult> ExecuteSafelyAsync(string scriptCode, ScriptOptions? options = null)
+Task<ScriptResult> ExecuteFileSafelyAsync(string scriptFilePath, ScriptOptions? options = null)
+
+// 超时控制扩展
+Task<ScriptResult> ExecuteWithTimeoutAsync(string scriptCode, int timeoutMs, ScriptOptions? options = null)
+
+// 安全验证扩展
+Task<SecurityValidationResult> ValidateSecurityAsync(string scriptCode, ScriptOptions? options = null)
+
+// 批量执行扩展
+Task<IEnumerable<ScriptResult>> ExecuteBatchAsync(IEnumerable<string> scripts, ScriptOptions? options = null, bool parallel = false)
+
+// 性能测试扩展
+Task<PerformanceStatistics> BenchmarkAsync(string scriptCode, int iterations = 100, ScriptOptions? options = null)
+
+// 语法验证扩展
+Task<SyntaxValidationResult> ValidateSyntaxAsync(string scriptCode, ScriptOptions? options = null)
 ```
 
 ## 最佳实践

@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.CodeAnalysis;
 using XiHan.Framework.Script.Core;
+using XiHan.Framework.Script.Enums;
 using XiHan.Framework.Script.Exceptions;
 using XiHan.Framework.Script.Models;
 using XiHan.Framework.Script.Options;
@@ -260,6 +262,7 @@ public static class ScriptEngineExtensions
     /// <param name="timeoutMs">超时时间（毫秒）</param>
     /// <param name="options">脚本选项</param>
     /// <returns>执行结果</returns>
+    /// <exception cref="ScriptTimeoutException">脚本执行超时时抛出</exception>
     public static async Task<ScriptResult> ExecuteWithTimeoutAsync(this IScriptEngine engine,
         string scriptCode, int timeoutMs, ScriptOptions? options = null)
     {
@@ -274,7 +277,192 @@ public static class ScriptEngineExtensions
         }
         catch (OperationCanceledException)
         {
-            return ScriptResult.Failure($"脚本执行超时（{timeoutMs}ms）");
+            throw new ScriptTimeoutException(timeoutMs, scriptCode);
+        }
+        catch (TimeoutException)
+        {
+            throw new ScriptTimeoutException(timeoutMs, scriptCode);
+        }
+    }
+
+    /// <summary>
+    /// 安全执行脚本（带完整异常处理）
+    /// </summary>
+    /// <param name="engine">脚本引擎</param>
+    /// <param name="scriptCode">脚本代码</param>
+    /// <param name="options">脚本选项</param>
+    /// <returns>执行结果</returns>
+    public static async Task<ScriptResult> ExecuteSafelyAsync(this IScriptEngine engine,
+        string scriptCode, ScriptOptions? options = null)
+    {
+        try
+        {
+            return await engine.ExecuteAsync(scriptCode, options);
+        }
+        catch (ScriptTimeoutException ex)
+        {
+            return ScriptResult.Failure($"脚本执行超时: {ex.TimeoutMs}ms", ex);
+        }
+        catch (ScriptSecurityException ex)
+        {
+            return ScriptResult.Failure($"脚本安全检查失败: {ex.Message} (类型: {ex.ViolationType})", ex);
+        }
+        catch (ScriptLoadException ex)
+        {
+            return ScriptResult.Failure($"脚本加载失败: {ex.Message} (路径: {ex.ScriptPath})", ex);
+        }
+        catch (ScriptCompilationException ex)
+        {
+            return ScriptResult.Failure($"脚本编译失败: {ex.Message}\n{ex.GetFormattedErrors()}", ex);
+        }
+        catch (ScriptExecutionException ex)
+        {
+            return ScriptResult.Failure($"脚本执行失败: {ex.Message} (耗时: {ex.ExecutionTimeMs}ms)", ex);
+        }
+        catch (ScriptException ex)
+        {
+            return ScriptResult.Failure($"脚本操作失败: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            return ScriptResult.Failure($"未知错误: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 安全执行脚本文件（带完整异常处理）
+    /// </summary>
+    /// <param name="engine">脚本引擎</param>
+    /// <param name="scriptFilePath">脚本文件路径</param>
+    /// <param name="options">脚本选项</param>
+    /// <returns>执行结果</returns>
+    public static async Task<ScriptResult> ExecuteFileSafelyAsync(this IScriptEngine engine,
+        string scriptFilePath, ScriptOptions? options = null)
+    {
+        try
+        {
+            return await engine.ExecuteFileAsync(scriptFilePath, options);
+        }
+        catch (ScriptLoadException ex)
+        {
+            return ScriptResult.Failure($"脚本文件加载失败: {ex.Message} (文件: {ex.ScriptPath})", ex);
+        }
+        catch (ScriptSecurityException ex)
+        {
+            return ScriptResult.Failure($"脚本文件安全检查失败: {ex.Message} (类型: {ex.ViolationType})", ex);
+        }
+        catch (ScriptTimeoutException ex)
+        {
+            return ScriptResult.Failure($"脚本文件执行超时: {ex.TimeoutMs}ms", ex);
+        }
+        catch (ScriptCompilationException ex)
+        {
+            return ScriptResult.Failure($"脚本文件编译失败: {ex.Message}\n{ex.GetFormattedErrors()}", ex);
+        }
+        catch (ScriptExecutionException ex)
+        {
+            return ScriptResult.Failure($"脚本文件执行失败: {ex.Message} (耗时: {ex.ExecutionTimeMs}ms)", ex);
+        }
+        catch (ScriptException ex)
+        {
+            return ScriptResult.Failure($"脚本文件操作失败: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            return ScriptResult.Failure($"脚本文件处理时发生未知错误: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 验证脚本安全性
+    /// </summary>
+    /// <param name="engine">脚本引擎</param>
+    /// <param name="scriptCode">脚本代码</param>
+    /// <param name="options">脚本选项</param>
+    /// <returns>安全验证结果</returns>
+    public static async Task<SecurityValidationResult> ValidateSecurityAsync(this IScriptEngine engine,
+        string scriptCode, ScriptOptions? options = null)
+    {
+        try
+        {
+            // 先进行语法验证
+            var syntaxResult = await engine.ValidateSyntaxAsync(scriptCode, options);
+
+            if (!syntaxResult.IsValid)
+            {
+                return new SecurityValidationResult
+                {
+                    IsSecure = false,
+                    Issues = ["脚本包含语法错误"],
+                    RiskLevel = SecurityRiskLevel.High
+                };
+            }
+
+            // 检查危险关键字
+            var dangerousKeywords = new[]
+            {
+                "unsafe", "fixed", "stackalloc",
+                "DllImport", "Marshal",
+                "Assembly.Load", "Activator.CreateInstance",
+                "Process.Start", "File.Delete", "Directory.Delete",
+                "Registry.", "Environment.Exit"
+            };
+
+            var issues = new List<string>();
+            var riskLevel = SecurityRiskLevel.Low;
+
+            foreach (var keyword in dangerousKeywords)
+            {
+                if (scriptCode.Contains(keyword))
+                {
+                    issues.Add($"检测到危险关键字: {keyword}");
+                    riskLevel = SecurityRiskLevel.High;
+                }
+            }
+
+            // 检查网络相关操作
+            var networkKeywords = new[] { "HttpClient", "WebRequest", "Socket", "TcpClient", "UdpClient" };
+            foreach (var keyword in networkKeywords)
+            {
+                if (scriptCode.Contains(keyword))
+                {
+                    issues.Add($"检测到网络操作: {keyword}");
+                    if (riskLevel < SecurityRiskLevel.Medium)
+                    {
+                        riskLevel = SecurityRiskLevel.Medium;
+                    }
+                }
+            }
+
+            // 检查文件系统操作
+            var fileKeywords = new[] { "File.", "Directory.", "FileStream", "StreamWriter", "StreamReader" };
+            foreach (var keyword in fileKeywords)
+            {
+                if (scriptCode.Contains(keyword))
+                {
+                    issues.Add($"检测到文件系统操作: {keyword}");
+                    if (riskLevel < SecurityRiskLevel.Medium)
+                    {
+                        riskLevel = SecurityRiskLevel.Medium;
+                    }
+                }
+            }
+
+            return new SecurityValidationResult
+            {
+                IsSecure = riskLevel == SecurityRiskLevel.Low,
+                Issues = issues,
+                RiskLevel = riskLevel
+            };
+        }
+        catch (Exception ex)
+        {
+            return new SecurityValidationResult
+            {
+                IsSecure = false,
+                Issues = [$"安全验证过程中发生错误: {ex.Message}"],
+                RiskLevel = SecurityRiskLevel.High
+            };
         }
     }
 

@@ -20,6 +20,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using XiHan.Framework.Script.Enums;
+using XiHan.Framework.Script.Exceptions;
+
 using XiHan.Framework.Script.Models;
 using XiHan.Framework.Script.Options;
 
@@ -164,6 +166,11 @@ public class ScriptEngine : IScriptEngine, IDisposable
     /// <returns>执行结果</returns>
     public async Task<ScriptResult> ExecuteFileAsync(string scriptFilePath, ScriptOptions? options = null)
     {
+        if (string.IsNullOrWhiteSpace(scriptFilePath))
+        {
+            return ScriptResult.Failure("脚本文件路径不能为空");
+        }
+
         if (!File.Exists(scriptFilePath))
         {
             return ScriptResult.Failure($"脚本文件不存在: {scriptFilePath}");
@@ -171,8 +178,12 @@ public class ScriptEngine : IScriptEngine, IDisposable
 
         try
         {
-            var scriptCode = await File.ReadAllTextAsync(scriptFilePath);
             options ??= ScriptOptions.Default;
+
+            // 安全检查：验证文件扩展名
+            ValidateScriptFileSecurity(scriptFilePath, options.SecurityOptions);
+
+            var scriptCode = await File.ReadAllTextAsync(scriptFilePath);
 
             // 使用文件路径作为缓存键的一部分
             if (string.IsNullOrEmpty(options.CacheKey))
@@ -182,9 +193,29 @@ public class ScriptEngine : IScriptEngine, IDisposable
 
             return await ExecuteAsync(scriptCode, options);
         }
+        catch (ScriptSecurityException)
+        {
+            throw; // 重新抛出安全异常
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new ScriptLoadException($"没有权限访问脚本文件: {scriptFilePath}", ex, scriptFilePath);
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            throw new ScriptLoadException($"脚本文件目录不存在: {scriptFilePath}", ex, scriptFilePath);
+        }
+        catch (FileNotFoundException ex)
+        {
+            throw new ScriptLoadException($"脚本文件未找到: {scriptFilePath}", ex, scriptFilePath);
+        }
+        catch (IOException ex)
+        {
+            throw new ScriptLoadException($"读取脚本文件失败: {scriptFilePath} - {ex.Message}", ex, scriptFilePath);
+        }
         catch (Exception ex)
         {
-            return ScriptResult.Failure($"读取脚本文件失败: {ex.Message}", ex);
+            throw new ScriptLoadException($"加载脚本文件时发生未知错误: {scriptFilePath} - {ex.Message}", ex, scriptFilePath);
         }
     }
 
@@ -521,6 +552,9 @@ public class ScriptEngine : IScriptEngine, IDisposable
                 // 加载程序集
                 var assembly = Assembly.Load(compilationResult.Assembly);
 
+                // 执行安全检查
+                ValidateAssemblySecurity(assembly, options);
+
                 // 查找入口点
                 var entryPoint = FindEntryPoint(assembly);
                 if (entryPoint == null)
@@ -537,11 +571,151 @@ public class ScriptEngine : IScriptEngine, IDisposable
         }
         catch (OperationCanceledException)
         {
-            return ScriptResult.Failure($"脚本执行超时（{options.TimeoutMs}ms）");
+            throw new ScriptTimeoutException(options.TimeoutMs);
+        }
+        catch (ScriptSecurityException)
+        {
+            throw; // 重新抛出安全异常
         }
         catch (Exception ex)
         {
-            return ScriptResult.Failure($"脚本执行异常: {ex.Message}", ex);
+            throw new ScriptExecutionException($"脚本执行异常: {ex.Message}", ex, executionTimeMs: options.TimeoutMs);
+        }
+    }
+
+    /// <summary>
+    /// 验证脚本文件安全性
+    /// </summary>
+    /// <param name="scriptFilePath">脚本文件路径</param>
+    /// <param name="securityOptions">安全选项</param>
+    /// <exception cref="ScriptSecurityException">安全检查失败时抛出</exception>
+    private static void ValidateScriptFileSecurity(string scriptFilePath, SecurityOptions securityOptions)
+    {
+        if (!securityOptions.EnableSecurityChecks)
+        {
+            return;
+        }
+
+        // 检查文件扩展名
+        var extension = Path.GetExtension(scriptFilePath).ToLowerInvariant();
+
+        if (!securityOptions.AllowedFileExtensions.Contains(extension))
+        {
+            throw new ScriptSecurityException($"不允许的脚本文件扩展名: {extension}", "InvalidFileExtension");
+        }
+
+        // 检查文件路径是否包含危险字符
+        var dangerousChars = new[] { "..", "~", "$" };
+        if (dangerousChars.Any(dc => scriptFilePath.Contains(dc)))
+        {
+            throw new ScriptSecurityException("脚本文件路径包含危险字符", "DangerousPath");
+        }
+
+        // 检查文件大小（防止过大的文件导致内存问题）
+        var fileInfo = new FileInfo(scriptFilePath);
+        if (fileInfo.Length > securityOptions.MaxFileSize)
+        {
+            throw new ScriptSecurityException($"脚本文件过大: {fileInfo.Length} 字节，最大允许: {securityOptions.MaxFileSize} 字节", "FileTooLarge");
+        }
+    }
+
+    /// <summary>
+    /// 验证程序集安全性
+    /// </summary>
+    /// <param name="assembly">程序集</param>
+    /// <param name="options">脚本选项</param>
+    /// <exception cref="ScriptSecurityException">安全检查失败时抛出</exception>
+    private static void ValidateAssemblySecurity(Assembly assembly, ScriptOptions options)
+    {
+        var securityOptions = options.SecurityOptions;
+
+        if (!securityOptions.EnableSecurityChecks)
+        {
+            return;
+        }
+
+        var types = assembly.GetTypes();
+
+        // 如果不允许不安全代码，检查程序集是否包含不安全代码
+        if (!options.AllowUnsafe)
+        {
+            foreach (var type in types)
+            {
+                // 检查是否使用了 unsafe 关键字或指针类型
+                if (type.Name.Contains("Unsafe") || HasUnsafeMembers(type))
+                {
+                    throw new ScriptSecurityException("脚本包含不安全的代码", "UnsafeCode");
+                }
+            }
+        }
+
+        // 检查是否尝试访问禁止的命名空间
+        foreach (var type in types)
+        {
+            if (securityOptions.ForbiddenNamespaces.Any(ns => type.Namespace?.StartsWith(ns) == true))
+            {
+                throw new ScriptSecurityException($"脚本尝试访问受限制的命名空间: {type.Namespace}", "RestrictedNamespace");
+            }
+
+            // 检查是否使用了禁止的类型
+            if (securityOptions.ForbiddenTypes.Any(ft => type.FullName?.Contains(ft) == true))
+            {
+                throw new ScriptSecurityException($"脚本尝试使用受限制的类型: {type.FullName}", "RestrictedType");
+            }
+        }
+
+        // 检查方法中的危险调用
+        foreach (var type in types)
+        {
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            foreach (var method in methods)
+            {
+                try
+                {
+                    var methodBody = method.GetMethodBody();
+                    if (methodBody != null)
+                    {
+                        // 这里可以添加更详细的方法体分析
+                        // 目前简单检查方法名是否包含危险操作
+                        if (securityOptions.DangerousKeywords.Any(keyword => method.Name.Contains(keyword)))
+                        {
+                            throw new ScriptSecurityException($"脚本包含危险方法调用: {method.Name}", "DangerousMethodCall");
+                        }
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // 某些方法可能无法获取方法体，忽略这种情况
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 检查类型是否包含不安全成员
+    /// </summary>
+    /// <param name="type">类型</param>
+    /// <returns>是否包含不安全成员</returns>
+    private static bool HasUnsafeMembers(Type type)
+    {
+        try
+        {
+            // 检查字段
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            if (fields.Any(f => f.FieldType.IsPointer))
+            {
+                return true;
+            }
+
+            // 检查方法
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            return methods.Any(m => m.GetParameters().Any(p => p.ParameterType.IsPointer) ||
+                                m.ReturnType.IsPointer);
+        }
+        catch
+        {
+            // 如果检查过程中发生异常，为了安全起见，假设它包含不安全成员
+            return true;
         }
     }
 
