@@ -110,7 +110,7 @@ public static class JsonExtensions
     /// <param name="json">JSON 字符串</param>
     /// <param name="jsonObject">解析结果</param>
     /// <returns>是否解析成功</returns>
-    public static bool TryParseJsonDynamic(string json, out dynamic? jsonObject)
+    public static bool TryParseJsonDynamic(this string json, out dynamic? jsonObject)
     {
         return JsonHelper.TryParseJsonDynamic(json, out jsonObject);
     }
