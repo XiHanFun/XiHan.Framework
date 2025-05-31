@@ -14,7 +14,7 @@
 
 using System.ComponentModel;
 
-namespace XiHan.Framework.Http.Polly;
+namespace XiHan.Framework.Http.Enums;
 
 /// <summary>
 /// 网络请求组别

@@ -1,0 +1,437 @@
+﻿#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:HttpServiceExtensions
+// Guid:eb49c74d-450f-46da-ab34-be16755ac116
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2025/5/31 20:13:54
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
+using XiHan.Framework.Http.Models;
+using XiHan.Framework.Http.Services;
+using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
+
+namespace XiHan.Framework.Http.Extensions;
+
+/// <summary>
+/// HTTP 服务扩展方法
+/// </summary>
+public static class HttpServiceExtensions
+{
+    /// <summary>
+    /// 添加授权头
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="token">令牌</param>
+    /// <param name="scheme">认证方案</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithAuthorization(this HttpRequestOptions options, string token, string scheme = "Bearer")
+    {
+        return options.AddHeader("Authorization", $"{scheme} {token}");
+    }
+
+    /// <summary>
+    /// 添加基本认证
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="username">用户名</param>
+    /// <param name="password">密码</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithBasicAuth(this HttpRequestOptions options, string username, string password)
+    {
+        var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
+        return options.AddHeader("Authorization", $"Basic {credentials}");
+    }
+
+    /// <summary>
+    /// 设置内容类型为JSON
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions AsJson(this HttpRequestOptions options)
+    {
+        options.ContentType = "application/json";
+        return options;
+    }
+
+    /// <summary>
+    /// 设置内容类型为XML
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions AsXml(this HttpRequestOptions options)
+    {
+        options.ContentType = "application/xml";
+        return options;
+    }
+
+    /// <summary>
+    /// 设置内容类型为表单
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions AsForm(this HttpRequestOptions options)
+    {
+        options.ContentType = "application/x-www-form-urlencoded";
+        return options;
+    }
+
+    /// <summary>
+    /// 禁用重试
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithoutRetry(this HttpRequestOptions options)
+    {
+        options.EnableRetry = false;
+        return options;
+    }
+
+    /// <summary>
+    /// 禁用熔断器
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithoutCircuitBreaker(this HttpRequestOptions options)
+    {
+        options.EnableCircuitBreaker = false;
+        return options;
+    }
+
+    /// <summary>
+    /// 设置用户代理
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="userAgent">用户代理</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithUserAgent(this HttpRequestOptions options, string userAgent)
+    {
+        return options.AddHeader("User-Agent", userAgent);
+    }
+
+    /// <summary>
+    /// 添加关联ID
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="correlationId">关联ID</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithCorrelationId(this HttpRequestOptions options, string? correlationId = null)
+    {
+        correlationId ??= Guid.NewGuid().ToString();
+        return options.AddHeader("X-Correlation-ID", correlationId);
+    }
+
+    /// <summary>
+    /// 设置接受语言
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="language">语言代码</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithLanguage(this HttpRequestOptions options, string language)
+    {
+        return options.AddHeader("Accept-Language", language);
+    }
+
+    /// <summary>
+    /// 添加缓存控制
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="cacheControl">缓存控制</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithCacheControl(this HttpRequestOptions options, string cacheControl)
+    {
+        return options.AddHeader("Cache-Control", cacheControl);
+    }
+
+    /// <summary>
+    /// 禁用缓存
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithoutCache(this HttpRequestOptions options)
+    {
+        return options.WithCacheControl("no-cache, no-store, must-revalidate");
+    }
+
+    /// <summary>
+    /// 使用指定的HTTP客户端
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <param name="clientName">客户端名称</param>
+    /// <returns></returns>
+    public static HttpRequestOptions UseClient(this HttpRequestOptions options, string clientName)
+    {
+        return options.AddTag("ClientName", clientName);
+    }
+
+    /// <summary>
+    /// 启用详细日志
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithVerboseLogging(this HttpRequestOptions options)
+    {
+        options.LogRequest = true;
+        options.LogResponse = true;
+        return options;
+    }
+
+    /// <summary>
+    /// 禁用日志
+    /// </summary>
+    /// <param name="options">请求选项</param>
+    /// <returns></returns>
+    public static HttpRequestOptions WithoutLogging(this HttpRequestOptions options)
+    {
+        options.LogRequest = false;
+        options.LogResponse = false;
+        return options;
+    }
+
+    /// <summary>
+    /// 获取成功的数据或抛出异常
+    /// </summary>
+    /// <typeparam name="T">数据类型</typeparam>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    /// <exception cref="HttpRequestException">请求失败时抛出</exception>
+    public static T GetDataOrThrow<T>(this HttpResult<T> result)
+    {
+        if (result.IsSuccess && result.Data != null)
+        {
+            return result.Data;
+        }
+
+        var message = result.ErrorMessage ?? "HTTP请求失败";
+        if (result.Exception != null)
+        {
+            throw new HttpRequestException(message, result.Exception);
+        }
+
+        throw new HttpRequestException(message);
+    }
+
+    /// <summary>
+    /// 获取成功的数据或返回默认值
+    /// </summary>
+    /// <typeparam name="T">数据类型</typeparam>
+    /// <param name="result">HTTP结果</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns></returns>
+    public static T GetDataOrDefault<T>(this HttpResult<T> result, T defaultValue = default!)
+    {
+        return result.IsSuccess && result.Data != null ? result.Data : defaultValue;
+    }
+
+    /// <summary>
+    /// 检查是否为成功状态码
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    public static bool IsSuccessStatusCode<T>(this HttpResult<T> result)
+    {
+        var statusCode = (int)result.StatusCode;
+        return statusCode is >= 200 and <= 299;
+    }
+
+    /// <summary>
+    /// 检查是否为客户端错误
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    public static bool IsClientError<T>(this HttpResult<T> result)
+    {
+        var statusCode = (int)result.StatusCode;
+        return statusCode is >= 400 and <= 499;
+    }
+
+    /// <summary>
+    /// 检查是否为服务器错误
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    public static bool IsServerError<T>(this HttpResult<T> result)
+    {
+        var statusCode = (int)result.StatusCode;
+        return statusCode is >= 500 and <= 599;
+    }
+
+    /// <summary>
+    /// 获取响应头值
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <param name="headerName">头名称</param>
+    /// <returns></returns>
+    public static string? GetHeader<T>(this HttpResult<T> result, string headerName)
+    {
+        return result.Headers.TryGetValue(headerName, out var values) ? values.FirstOrDefault() : null;
+    }
+
+    /// <summary>
+    /// 获取内容类型
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    public static string? GetContentType<T>(this HttpResult<T> result)
+    {
+        return result.GetHeader("Content-Type");
+    }
+
+    /// <summary>
+    /// 获取内容长度
+    /// </summary>
+    /// <param name="result">HTTP结果</param>
+    /// <returns></returns>
+    public static long? GetContentLength<T>(this HttpResult<T> result)
+    {
+        var contentLength = result.GetHeader("Content-Length");
+        return long.TryParse(contentLength, out var length) ? length : null;
+    }
+}
+
+/// <summary>
+/// HTTP 服务便捷方法
+/// </summary>
+public static class HttpServiceConvenience
+{
+    /// <summary>
+    /// 快速GET请求
+    /// </summary>
+    /// <typeparam name="T">响应类型</typeparam>
+    /// <param name="httpService">HTTP服务</param>
+    /// <param name="url">URL</param>
+    /// <param name="token">授权令牌</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public static async Task<HttpResult<T>> QuickGetAsync<T>(
+        this IAdvancedHttpService httpService,
+        string url,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var options = new HttpRequestOptions();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            options.WithAuthorization(token);
+        }
+
+        return await httpService.GetAsync<T>(url, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// 快速POST请求
+    /// </summary>
+    /// <typeparam name="TRequest">请求类型</typeparam>
+    /// <typeparam name="TResponse">响应类型</typeparam>
+    /// <param name="httpService">HTTP服务</param>
+    /// <param name="url">URL</param>
+    /// <param name="request">请求数据</param>
+    /// <param name="token">授权令牌</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public static async Task<HttpResult<TResponse>> QuickPostAsync<TRequest, TResponse>(
+        this IAdvancedHttpService httpService,
+        string url,
+        TRequest request,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var options = new HttpRequestOptions().AsJson();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            options.WithAuthorization(token);
+        }
+
+        return await httpService.PostAsync<TRequest, TResponse>(url, request, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// 快速PUT请求
+    /// </summary>
+    /// <typeparam name="TRequest">请求类型</typeparam>
+    /// <typeparam name="TResponse">响应类型</typeparam>
+    /// <param name="httpService">HTTP服务</param>
+    /// <param name="url">URL</param>
+    /// <param name="request">请求数据</param>
+    /// <param name="token">授权令牌</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public static async Task<HttpResult<TResponse>> QuickPutAsync<TRequest, TResponse>(
+        this IAdvancedHttpService httpService,
+        string url,
+        TRequest request,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var options = new HttpRequestOptions().AsJson();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            options.WithAuthorization(token);
+        }
+
+        return await httpService.PutAsync<TRequest, TResponse>(url, request, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// 快速DELETE请求
+    /// </summary>
+    /// <param name="httpService">HTTP服务</param>
+    /// <param name="url">URL</param>
+    /// <param name="token">授权令牌</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public static async Task<HttpResult> QuickDeleteAsync(
+        this IAdvancedHttpService httpService,
+        string url,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var options = new HttpRequestOptions();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            options.WithAuthorization(token);
+        }
+
+        return await httpService.DeleteAsync(url, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// 分页GET请求
+    /// </summary>
+    /// <typeparam name="T">数据类型</typeparam>
+    /// <param name="httpService">HTTP服务</param>
+    /// <param name="url">URL</param>
+    /// <param name="page">页码</param>
+    /// <param name="size">页大小</param>
+    /// <param name="token">授权令牌</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public static async Task<HttpResult<T>> GetPagedAsync<T>(
+        this IAdvancedHttpService httpService,
+        string url,
+        int page = 1,
+        int size = 20,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var options = new HttpRequestOptions()
+            .AddQueryParameter("page", page.ToString())
+            .AddQueryParameter("size", size.ToString());
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            options.WithAuthorization(token);
+        }
+
+        return await httpService.GetAsync<T>(url, options, cancellationToken);
+    }
+}
