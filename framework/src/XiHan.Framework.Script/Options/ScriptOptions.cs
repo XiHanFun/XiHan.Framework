@@ -100,6 +100,11 @@ public class ScriptOptions
     public Platform Platform { get; set; } = Platform.AnyCpu;
 
     /// <summary>
+    /// 安全选项
+    /// </summary>
+    public SecurityOptions SecurityOptions { get; set; } = new();
+
+    /// <summary>
     /// 添加程序集引用
     /// </summary>
     /// <param name="assembly">程序集</param>
@@ -209,12 +214,43 @@ public class ScriptOptions
     }
 
     /// <summary>
-    /// 允许不安全代码
+    /// 启用不安全代码
     /// </summary>
-    /// <returns>当前选项实例</returns>
     public ScriptOptions WithUnsafe()
     {
         AllowUnsafe = true;
+        return this;
+    }
+
+    /// <summary>
+    /// 配置安全选项
+    /// </summary>
+    /// <param name="configure">安全选项配置</param>
+    public ScriptOptions WithSecurity(Action<SecurityOptions> configure)
+    {
+        configure(SecurityOptions);
+        return this;
+    }
+
+    /// <summary>
+    /// 启用严格安全模式
+    /// </summary>
+    public ScriptOptions WithStrictSecurity()
+    {
+        SecurityOptions.EnableStrictMode = true;
+        SecurityOptions.AllowFileSystemAccess = false;
+        SecurityOptions.AllowNetworkAccess = false;
+        SecurityOptions.AllowReflectionAccess = false;
+        AllowUnsafe = false;
+        return this;
+    }
+
+    /// <summary>
+    /// 禁用安全检查
+    /// </summary>
+    public ScriptOptions DisableSecurity()
+    {
+        SecurityOptions.EnableSecurityChecks = false;
         return this;
     }
 }
