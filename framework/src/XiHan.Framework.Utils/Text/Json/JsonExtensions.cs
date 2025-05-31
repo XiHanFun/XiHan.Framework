@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -23,6 +23,8 @@ namespace XiHan.Framework.Utils.Text.Json;
 /// </summary>
 public static class JsonExtensions
 {
+    private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+
     #region 对象扩展
 
     /// <summary>
@@ -73,7 +75,7 @@ public static class JsonExtensions
         return obj == null ? default : JsonHelper.ConvertTo<TTarget>(obj);
     }
 
-    #endregion
+    #endregion 对象扩展
 
     #region 字符串扩展
 
@@ -100,6 +102,17 @@ public static class JsonExtensions
     public static bool TryFromJson<T>(this string json, out T? result, JsonSerializerOptions? options = null)
     {
         return JsonHelper.TryDeserialize(json, out result, options);
+    }
+
+    /// <summary>
+    /// 尝试将 JSON 字符串解析为动态对象
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="jsonObject">解析结果</param>
+    /// <returns>是否解析成功</returns>
+    public static bool TryParseJsonDynamic(this string json, out dynamic? jsonObject)
+    {
+        return JsonHelper.TryParseJsonDynamic(json, out jsonObject);
     }
 
     /// <summary>
@@ -174,24 +187,10 @@ public static class JsonExtensions
     /// <returns>转换后的值</returns>
     public static T? GetValueByPath<T>(this string json, string path, JsonSerializerOptions? options = null)
     {
-        var node = JsonHelper.GetValueByPath(json, path);
-        if (node == null)
-        {
-            return default;
-        }
-
-        try
-        {
-            options ??= JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
-            return JsonSerializer.Deserialize<T>(node.ToJsonString(), options);
-        }
-        catch
-        {
-            return default;
-        }
+        return JsonHelper.GetValueByPath<T>(json, path, options);
     }
 
-    #endregion
+    #endregion 字符串扩展
 
     #region JsonNode 扩展
 
@@ -224,8 +223,8 @@ public static class JsonExtensions
 
         try
         {
-            options ??= JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
-            return JsonSerializer.Deserialize<T>(node.ToJsonString(), options);
+            options ??= _defaultOptions;
+            return JsonSerializer.Deserialize<T>(node, options);
         }
         catch
         {
@@ -244,8 +243,8 @@ public static class JsonExtensions
     {
         try
         {
-            options ??= JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
-            return JsonSerializer.Deserialize<T>(jsonNode.ToJsonString(), options);
+            options ??= _defaultOptions;
+            return JsonSerializer.Deserialize<T>(jsonNode, options);
         }
         catch
         {
@@ -266,8 +265,8 @@ public static class JsonExtensions
         result = default;
         try
         {
-            options ??= JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
-            result = JsonSerializer.Deserialize<T>(jsonNode.ToJsonString(), options);
+            options ??= _defaultOptions;
+            result = JsonSerializer.Deserialize<T>(jsonNode, options);
             return true;
         }
         catch
@@ -276,7 +275,7 @@ public static class JsonExtensions
         }
     }
 
-    #endregion
+    #endregion JsonNode 扩展
 
     #region 集合扩展
 
@@ -316,7 +315,7 @@ public static class JsonExtensions
         return JsonHelper.Deserialize<List<T>>(jsonArray, options);
     }
 
-    #endregion
+    #endregion 集合扩展
 
     #region 字典扩展
 
@@ -346,7 +345,7 @@ public static class JsonExtensions
         return JsonHelper.Deserialize<Dictionary<TKey, TValue>>(jsonObject, options);
     }
 
-    #endregion
+    #endregion 字典扩展
 
     #region 文件扩展
 
@@ -391,7 +390,7 @@ public static class JsonExtensions
         return JsonFileHelper.TryWriteToFile(filePath, obj, options, createDirectory: createDirectory);
     }
 
-    #endregion
+    #endregion 文件扩展
 
     #region 流扩展
 
@@ -421,5 +420,5 @@ public static class JsonExtensions
         return await JsonHelper.DeserializeAsync<T>(stream, options, cancellationToken);
     }
 
-    #endregion
+    #endregion 流扩展
 }

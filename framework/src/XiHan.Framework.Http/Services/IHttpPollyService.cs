@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Http.Polly;
+using XiHan.Framework.Http.Enums;
+
+namespace XiHan.Framework.Http.Services;
 
 /// <summary>
 /// IHttpPollyService

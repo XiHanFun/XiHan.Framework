@@ -25,12 +25,20 @@ public static class OsPlatformHelper
     /// <summary>
     /// 操作系统
     /// </summary>
-    public static string OperatingSystem => GetOperatingSystem();
+    public static string OperatingSystem =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+            ? OSPlatform.OSX.ToString()
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                ? OSPlatform.Linux.ToString()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? OSPlatform.Windows.ToString()
+                    : throw new Exception("Cannot determine operating system!");
 
     /// <summary>
     /// 是否 Unix 系统
     /// </summary>
-    public static bool OsIsUnix => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+    public static bool OsIsUnix =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
     /// <summary>
@@ -67,20 +75,4 @@ public static class OsPlatformHelper
     /// 交互模式
     /// </summary>
     public static string InteractiveMode => Environment.UserInteractive ? "交互运行" : "非交互运行";
-
-    /// <summary>
-    /// 获取操作系统
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public static string GetOperatingSystem()
-    {
-        return RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-            ? OSPlatform.OSX.ToString()
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                ? OSPlatform.Linux.ToString()
-                : RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? OSPlatform.Windows.ToString()
-                    : throw new Exception("Cannot determine operating system!");
-    }
 }
