@@ -87,13 +87,109 @@ public static class TypeExtensions
     }
 
     /// <summary>
+    /// 判断当前类型是否可派生至指定泛型类型
+    /// </summary>
+    /// <param name="type">当前类型</param>
+    /// <param name="genericType">目标泛型类型</param>
+    /// <returns>如果当前类型可以分配给指定的泛型类型，则返回 true；否则返回 false</returns>
+    /// <exception cref="ArgumentException">当 genericType 不是泛型类型时抛出</exception>
+    public static bool IsAssignableToGeneric(this Type type, Type genericType)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+        _ = Guard.NotNull(genericType, nameof(genericType));
+
+        if (!genericType.IsGenericType)
+        {
+            throw new ArgumentException("该功能只支持泛型类型的调用，非泛型类型可使用 IsAssignableTo 方法", nameof(genericType));
+        }
+
+        // 获取泛型类型定义
+        var genericTypeDefinition = genericType.IsGenericTypeDefinition
+            ? genericType
+            : genericType.GetGenericTypeDefinition();
+
+        // 检查当前类型及其所有基类和接口
+        var typesToCheck = new List<Type> { type };
+
+        // 添加所有基类
+        var baseType = type.BaseType;
+        while (baseType is not null)
+        {
+            typesToCheck.Add(baseType);
+            baseType = baseType.BaseType;
+        }
+
+        // 添加所有接口
+        typesToCheck.AddRange(type.GetInterfaces());
+
+        // 检查每个类型是否匹配泛型定义
+        foreach (var typeToCheck in typesToCheck)
+        {
+            if (typeToCheck.IsGenericType)
+            {
+                var typeDefinition = typeToCheck.GetGenericTypeDefinition();
+                if (typeDefinition == genericTypeDefinition)
+                {
+                    return true;
+                }
+            }
+            else if (typeToCheck == genericTypeDefinition)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 判断当前类型是否可派生至指定泛型类型
+    /// </summary>
+    /// <typeparam name="TGenericType">目标泛型类型</typeparam>
+    /// <param name="type">当前类型</param>
+    /// <returns>如果当前类型可以分配给指定的泛型类型，则返回 true；否则返回 false</returns>
+    public static bool IsAssignableToGeneric<TGenericType>(this Type type)
+    {
+        return type.IsAssignableToGeneric(typeof(TGenericType));
+    }
+
+    /// <summary>
+    /// 返回当前类型是否可派生自指定基类
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="baseType"></param>
+    /// <returns></returns>
+    public static bool IsAssignableFrom(this Type type, Type baseType)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+
+        return baseType.IsGenericTypeDefinition
+            ? baseType.IsAssignableFromGeneric(type)
+            : baseType.IsAssignableFrom(type);
+    }
+
+    /// <summary>
+    /// 返回当前类型是否可派生自指定基类
+    /// </summary>
+    /// <typeparam name="TBaseType"></typeparam>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public static bool IsAssignableFrom<TBaseType>(this Type type)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+
+        var baseType = typeof(TBaseType);
+        return type.IsAssignableFrom(baseType);
+    }
+
+    /// <summary>
     /// 判断当前泛型类型是否可派生自指定类型
     /// </summary>
     /// <param name="genericType"></param>
     /// <param name="baseType"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static bool IsGenericAssignableFrom(this Type genericType, Type baseType)
+    public static bool IsAssignableFromGeneric(this Type genericType, Type baseType)
     {
         _ = Guard.NotNull(genericType, nameof(genericType));
 
@@ -134,32 +230,15 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// 返回当前类型是否可派生自指定基类
+    /// 判断当前泛型类型是否可派生自指定类型
     /// </summary>
-    /// <param name="type"></param>
-    /// <param name="baseType"></param>
-    /// <returns></returns>
-    public static bool IsAssignableFrom(this Type type, Type baseType)
+    /// <typeparam name="TBaseType">基类类型</typeparam>
+    /// <param name="genericType">泛型类型</param>
+    /// <returns>如果泛型类型可以从指定的基类类型派生，则返回 true；否则返回 false</returns>
+    /// <exception cref="ArgumentException">当 genericType 不是泛型类型时抛出</exception>
+    public static bool IsAssignableFromGeneric<TBaseType>(this Type genericType)
     {
-        _ = Guard.NotNull(type, nameof(type));
-
-        return baseType.IsGenericTypeDefinition
-            ? baseType.IsGenericAssignableFrom(type)
-            : baseType.IsAssignableFrom(type);
-    }
-
-    /// <summary>
-    /// 返回当前类型是否可派生自指定基类
-    /// </summary>
-    /// <typeparam name="TBaseType"></typeparam>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static bool IsAssignableFrom<TBaseType>(this Type type)
-    {
-        _ = Guard.NotNull(type, nameof(type));
-
-        var baseType = typeof(TBaseType);
-        return type.IsAssignableFrom(baseType);
+        return genericType.IsAssignableFromGeneric(typeof(TBaseType));
     }
 
     #endregion 判断类型
