@@ -3,26 +3,25 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IEventNameProvider
-// Guid:fd3bb7a4-b2a7-49a3-bbf2-a9d96a69b9c5
+// FileName:ILocalEventHandler
+// Guid:edc067ef-749c-4df1-bef4-f5e16ebec9d8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/4/13 13:36:46
+// CreateTime:2025/6/2 6:54:15
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.EventBus;
+namespace XiHan.Framework.EventBus.Abstractions.Local;
 
 /// <summary>
-/// 事件名称提供器接口
+/// 本地事件处理器接口
 /// </summary>
-public interface IEventNameProvider
+public interface ILocalEventHandler<in TEvent> : IEventHandler
 {
     /// <summary>
-    /// 获取事件名称
+    /// 事件处理器通过实现此方法来处理事件
     /// </summary>
-    /// <param name="eventType"></param>
-    /// <returns></returns>
-    string GetName(Type eventType);
+    /// <param name="eventData">事件数据</param>
+    Task HandleEventAsync(TEvent eventData);
 }
