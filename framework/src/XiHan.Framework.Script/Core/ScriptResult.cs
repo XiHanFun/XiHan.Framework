@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -15,7 +15,7 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
-namespace XiHan.Framework.Script.Models;
+namespace XiHan.Framework.Script.Core;
 
 /// <summary>
 /// 脚本执行结果
