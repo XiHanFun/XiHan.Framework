@@ -126,7 +126,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
             {
                 foreach (var result in searchResults.Results)
                 {
-                    // 从结果中获取分区的第一个元素（如果有）
+                    // 从结果中获取分区的第一个元素(如果有)
                     var partition = result.Partitions != null && result.Partitions.Count > 0
                         ? result.Partitions[0]
                         : null;

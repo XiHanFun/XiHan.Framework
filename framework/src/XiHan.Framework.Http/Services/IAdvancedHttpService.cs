@@ -33,7 +33,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<T>> GetAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 GET 请求（返回字符串）
+    /// 发送 GET 请求(返回字符串)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="options">请求选项</param>
@@ -42,7 +42,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<string>> GetStringAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 GET 请求（返回字节数组）
+    /// 发送 GET 请求(返回字节数组)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="options">请求选项</param>
@@ -51,7 +51,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<byte[]>> GetBytesAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 GET 请求（返回流）
+    /// 发送 GET 请求(返回流)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="options">请求选项</param>
@@ -72,7 +72,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<TResponse>> PostAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 POST 请求（JSON）
+    /// 发送 POST 请求(JSON)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
     /// <param name="url">请求URL</param>
@@ -83,7 +83,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<T>> PostJsonAsync<T>(string url, string jsonContent, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 POST 请求（表单数据）
+    /// 发送 POST 请求(表单数据)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
     /// <param name="url">请求URL</param>
@@ -156,7 +156,7 @@ public interface IAdvancedHttpService
     Task<HttpResult<T>> DeleteAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 发送 DELETE 请求（无响应内容）
+    /// 发送 DELETE 请求(无响应内容)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="options">请求选项</param>

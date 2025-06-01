@@ -26,7 +26,7 @@ public interface IDistributedIdGenerator
     long NextId();
 
     /// <summary>
-    /// 获取下一个ID（字符串形式）
+    /// 获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     string NextIdString();
@@ -39,7 +39,7 @@ public interface IDistributedIdGenerator
     long[] NextIds(int count);
 
     /// <summary>
-    /// 批量获取ID（字符串形式）
+    /// 批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -52,7 +52,7 @@ public interface IDistributedIdGenerator
     Task<long> NextIdAsync();
 
     /// <summary>
-    /// 异步获取下一个ID（字符串形式）
+    /// 异步获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     Task<string> NextIdStringAsync();
@@ -65,7 +65,7 @@ public interface IDistributedIdGenerator
     Task<long[]> NextIdsAsync(int count);
 
     /// <summary>
-    /// 异步批量获取ID（字符串形式）
+    /// 异步批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>

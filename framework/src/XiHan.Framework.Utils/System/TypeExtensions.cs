@@ -27,26 +27,6 @@ public static class TypeExtensions
     #region 判断类型
 
     /// <summary>
-    /// 判断当前类型是否可由指定类型派生
-    /// </summary>
-    public static bool IsDeriveClassFrom<TBaseType>(this Type type, bool canAbstract = false)
-    {
-        _ = CheckHelper.NotNull(type, nameof(type));
-
-        return type.IsDeriveClassFrom(typeof(TBaseType), canAbstract);
-    }
-
-    /// <summary>
-    /// 判断当前类型是否可由指定类型派生
-    /// </summary>
-    public static bool IsDeriveClassFrom(this Type type, Type baseType, bool canAbstract = false)
-    {
-        _ = CheckHelper.NotNull(type, nameof(type));
-
-        return type.IsClass && (canAbstract || !type.IsAbstract) && type.IsBaseOn(baseType);
-    }
-
-    /// <summary>
     /// 判断类型是否为 Nullable 类型
     /// </summary>
     /// <param name="type"> 要处理的类型 </param>
@@ -73,30 +53,59 @@ public static class TypeExtensions
     /// <returns>是返回 True，不是返回 False</returns>
     public static bool IsEnumerable(this Type type)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         return type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type);
     }
 
     /// <summary>
-    /// 判断当前泛型类型是否可由指定类型的实例填充
+    /// 判断当前类型是否可派生至指定类型
     /// </summary>
-    /// <param name="genericType">泛型类型</param>
-    /// <param name="type">指定类型</param>
+    /// <typeparam name="TBaseType"></typeparam>
+    /// <param name="type"></param>
+    /// <param name="canAbstract"></param>
     /// <returns></returns>
-    public static bool IsGenericAssignableFrom(this Type genericType, Type type)
+    public static bool IsAssignableTo<TBaseType>(this Type type, bool canAbstract = false)
     {
-        _ = CheckHelper.NotNull(genericType, nameof(genericType));
+        _ = Guard.NotNull(type, nameof(type));
+
+        return type.IsAssignableTo(typeof(TBaseType), canAbstract);
+    }
+
+    /// <summary>
+    /// 判断当前类型是否可派生至指定类型
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="baseType"></param>
+    /// <param name="canAbstract"></param>
+    /// <returns></returns>
+    public static bool IsAssignableTo(this Type type, Type baseType, bool canAbstract = false)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+
+        return type.IsClass && (canAbstract || !type.IsAbstract) && type.IsAssignableFrom(baseType);
+    }
+
+    /// <summary>
+    /// 判断当前泛型类型是否可派生自指定类型
+    /// </summary>
+    /// <param name="genericType"></param>
+    /// <param name="baseType"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    public static bool IsGenericAssignableFrom(this Type genericType, Type baseType)
+    {
+        _ = Guard.NotNull(genericType, nameof(genericType));
 
         if (!genericType.IsGenericType)
         {
-            throw new ArgumentException("该功能只支持泛型类型的调用，非泛型类型可使用 IsAssignableFrom 方法。");
+            throw new ArgumentException("该功能只支持泛型类型的调用，非泛型类型可使用 IsAssignableFrom 方法");
         }
 
-        List<Type> allOthers = [type];
+        List<Type> allOthers = [baseType];
         if (genericType.IsInterface)
         {
-            allOthers.AddRange(type.GetInterfaces());
+            allOthers.AddRange(baseType.GetInterfaces());
         }
 
         foreach (var other in allOthers)
@@ -125,14 +134,14 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// 返回当前类型是否是指定基类的派生类
+    /// 返回当前类型是否可派生自指定基类
     /// </summary>
-    /// <param name="type">当前类型</param>
-    /// <param name="baseType">要判断的基类型</param>
+    /// <param name="type"></param>
+    /// <param name="baseType"></param>
     /// <returns></returns>
-    public static bool IsBaseOn(this Type type, Type baseType)
+    public static bool IsAssignableFrom(this Type type, Type baseType)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         return baseType.IsGenericTypeDefinition
             ? baseType.IsGenericAssignableFrom(type)
@@ -140,28 +149,61 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// 返回当前类型是否是指定基类的派生类
+    /// 返回当前类型是否可派生自指定基类
     /// </summary>
-    /// <typeparam name="TBaseType">要判断的基类型</typeparam>
-    /// <param name="type">当前类型</param>
+    /// <typeparam name="TBaseType"></typeparam>
+    /// <param name="type"></param>
     /// <returns></returns>
-    public static bool IsBaseOn<TBaseType>(this Type type)
+    public static bool IsAssignableFrom<TBaseType>(this Type type)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         var baseType = typeof(TBaseType);
-        return type.IsBaseOn(baseType);
+        return type.IsAssignableFrom(baseType);
     }
 
     #endregion 判断类型
+
+    #region 获取基类
+
+    /// <summary>
+    /// 获取指定类型的所有基类
+    /// </summary>
+    /// <param name="type">要获取其基类的类型</param>
+    /// <param name="includeObject">如果为 true，则在返回结果中包含标准的 <see cref="object"/> 类型</param>
+    public static Type[] GetBaseClasses(this Type type, bool includeObject = true)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+
+        var types = new List<Type>();
+        AddTypeAndBaseTypesRecursively(types, type.BaseType, includeObject);
+        return [.. types];
+    }
+
+    /// <summary>
+    /// 获取指定类型的所有基类
+    /// </summary>
+    /// <param name="type">要获取其基类的类型</param>
+    /// <param name="stoppingType">停止查找的基类类型，该类型也会包含在返回结果中</param>
+    /// <param name="includeObject">如果为 true，则在返回结果中包含标准的 <see cref="object"/> 类型</param>
+    public static Type[] GetBaseClasses(this Type type, Type stoppingType, bool includeObject = true)
+    {
+        _ = Guard.NotNull(type, nameof(type));
+
+        var types = new List<Type>();
+        AddTypeAndBaseTypesRecursively(types, type.BaseType, includeObject, stoppingType);
+        return [.. types];
+    }
+
+    #endregion
 
     #region 空类型
 
     /// <summary>
     /// 由类型的 Nullable 类型返回实际类型
     /// </summary>
-    /// <param name="type"> 要处理的类型对象 </param>
-    /// <returns> </returns>
+    /// <param name="type"></param>
+    /// <returns></returns>
     public static Type GetNonNullableType(this Type type)
     {
         return type.IsNullableType() ? type.GetGenericArguments()[0] : type;
@@ -170,8 +212,8 @@ public static class TypeExtensions
     /// <summary>
     /// 通过类型转换器获取 Nullable 类型的基础类型
     /// </summary>
-    /// <param name="type"> 要处理的类型对象 </param>
-    /// <returns> </returns>
+    /// <param name="type"></param>
+    /// <returns></returns>
     public static Type GetUnNullableType(this Type type)
     {
         if (!type.IsNullableType())
@@ -195,7 +237,7 @@ public static class TypeExtensions
     /// <returns>返回 Description 特性描述信息，如不存在则返回类型的全名</returns>
     public static string GetDescription(this Type type, bool inherit = true)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         var result = string.Empty;
         var fullName = type.FullName ?? result;
@@ -224,7 +266,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static string GetFullNameWithAssemblyName(this Type type)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         return $"{type.FullName},{type.Assembly.GetName().Name}";
     }
@@ -234,7 +276,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetFullNameWithModule(this Type type)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         return $"{type.FullName},{type.Module.Name.Replace(".dll", string.Empty).Replace(".exe", string.Empty)}";
     }
@@ -244,7 +286,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetShortDisplayName(this Type type)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         return type.GetDisplayName(false);
     }
@@ -254,7 +296,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetDisplayName(this Type type, bool fullName = true)
     {
-        _ = CheckHelper.NotNull(type, nameof(type));
+        _ = Guard.NotNull(type, nameof(type));
 
         StringBuilder sb = new();
         ProcessType(sb, type, fullName);
@@ -425,6 +467,29 @@ public static class TypeExtensions
         }
 
         _ = builder.Append('>');
+    }
+
+    /// <summary>
+    /// 递归添加类型及其基类到列表中
+    /// </summary>
+    /// <param name="types">用于收集类型的列表</param>
+    /// <param name="type">当前要添加的类型</param>
+    /// <param name="includeObject">是否包含 object 类型</param>
+    /// <param name="stoppingType">如果指定了该类型，则在遇到它时停止递归(包含该类型)</param>
+    private static void AddTypeAndBaseTypesRecursively(List<Type> types, Type? type, bool includeObject, Type? stoppingType = null)
+    {
+        if (type == null || type == stoppingType)
+        {
+            return;
+        }
+
+        if (!includeObject && type == typeof(object))
+        {
+            return;
+        }
+
+        AddTypeAndBaseTypesRecursively(types, type.BaseType, includeObject, stoppingType);
+        types.Add(type);
     }
 
     #endregion 私有方法

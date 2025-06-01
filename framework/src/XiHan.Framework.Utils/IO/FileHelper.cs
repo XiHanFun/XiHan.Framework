@@ -68,7 +68,7 @@ public static class FileHelper
     /// <param name="fileAccess">定义对文件的读取、写入或读写访问的常量默认为 Read</param>
     /// <param name="fileShare">包含控制其他 FileStream 对象可以对同一文件拥有的访问类型的常量默认为 Read</param>
     /// <param name="bufferSize">StreamReader 缓冲区的长度默认为 4096</param>
-    /// <param name="fileOptions">指示 FileStream 选项默认为 Asynchronous（文件将用于异步读取）和 SequentialScan（文件将从开始到末尾顺序访问）</param>
+    /// <param name="fileOptions">指示 FileStream 选项默认为 Asynchronous(文件将用于异步读取)和 SequentialScan(文件将从开始到末尾顺序访问)</param>
     /// <returns>包含文件所有行的字符串数组</returns>
     public static async Task<string[]> ReadAllLinesAsync(string path,
         Encoding? encoding = null,
@@ -241,7 +241,7 @@ public static class FileHelper
 
     /// <summary>
     /// 从文件的绝对路径中获取扩展方法名
-    /// 文件扩展方法名是包含点（.）的
+    /// 文件扩展方法名是包含点(.)的
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>

@@ -36,12 +36,12 @@ public class LocalizationSettingDefinitionProvider : ISettingDefinitionProvider
             LocalizationSettings.GroupName
         ));
 
-        // 可用语言设置（逗号分隔的语言代码列表）
+        // 可用语言设置(逗号分隔的语言代码列表)
         context.Add(new SettingDefinition(
             LocalizationSettings.AvailableLanguages,
             "en,zh-CN",
             "可用语言",
-            "应用程序支持的语言列表（逗号分隔）",
+            "应用程序支持的语言列表(逗号分隔)",
             LocalizationSettings.GroupName,
             validator: value => !string.IsNullOrWhiteSpace(value)
         ));
@@ -55,12 +55,12 @@ public class LocalizationSettingDefinitionProvider : ISettingDefinitionProvider
             LocalizationSettings.GroupName
         ));
 
-        // 本地化资源缓存时间（分钟）
+        // 本地化资源缓存时间(分钟)
         context.Add(new SettingDefinition(
             LocalizationSettings.ResourceCacheMinutes,
             "30",
             "资源缓存时间",
-            "本地化资源缓存有效时间（分钟）",
+            "本地化资源缓存有效时间(分钟)",
             LocalizationSettings.GroupName,
             validator: value => int.TryParse(value, out var minutes) && minutes >= 0
         ));

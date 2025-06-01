@@ -43,7 +43,7 @@ public class CompilationResult
     public ImmutableArray<Diagnostic> Diagnostics { get; set; }
 
     /// <summary>
-    /// 编译时间（毫秒）
+    /// 编译时间(毫秒)
     /// </summary>
     public long CompilationTimeMs { get; set; }
 

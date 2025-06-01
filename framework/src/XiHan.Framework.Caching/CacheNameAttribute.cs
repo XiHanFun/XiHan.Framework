@@ -29,7 +29,7 @@ public class CacheNameAttribute : Attribute
     /// <param name="name"></param>
     public CacheNameAttribute(string name)
     {
-        _ = CheckHelper.NotNull(name, nameof(name));
+        _ = Guard.NotNull(name, nameof(name));
 
         Name = name;
     }

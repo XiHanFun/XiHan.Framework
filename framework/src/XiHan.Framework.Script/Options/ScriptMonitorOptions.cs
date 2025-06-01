@@ -40,12 +40,12 @@ public class ScriptMonitorOptions
     public int MaxLogEntries { get; set; } = 10000;
 
     /// <summary>
-    /// 慢执行阈值（毫秒）
+    /// 慢执行阈值(毫秒)
     /// </summary>
     public long SlowExecutionThresholdMs { get; set; } = 5000;
 
     /// <summary>
-    /// 高内存使用阈值（字节）
+    /// 高内存使用阈值(字节)
     /// </summary>
     public long HighMemoryUsageThresholdBytes { get; set; } = 100 * 1024 * 1024; // 100MB
 
@@ -55,7 +55,7 @@ public class ScriptMonitorOptions
     public bool EnableLogCleanup { get; set; } = true;
 
     /// <summary>
-    /// 日志保留时间（小时）
+    /// 日志保留时间(小时)
     /// </summary>
     public int LogRetentionHours { get; set; } = 24;
 

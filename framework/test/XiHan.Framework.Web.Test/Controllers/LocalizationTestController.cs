@@ -56,10 +56,10 @@ public class LocalizationTestController : ControllerBase
     }
 
     /// <summary>
-    /// 获取本地化字符串（使用当前语言文化）
+    /// 获取本地化字符串(使用当前语言文化)
     /// </summary>
     /// <param name="key">资源键</param>
-    /// <param name="culture">文化（可选）</param>
+    /// <param name="culture">文化(可选)</param>
     /// <returns>本地化字符串</returns>
     [HttpGet]
     public IActionResult GetString(string key, string? culture = null)
@@ -79,7 +79,7 @@ public class LocalizationTestController : ControllerBase
     /// 获取带格式化参数的本地化字符串
     /// </summary>
     /// <param name="key">资源键</param>
-    /// <param name="culture">文化（可选）</param>
+    /// <param name="culture">文化(可选)</param>
     /// <returns>格式化后的本地化字符串</returns>
     [HttpGet]
     public IActionResult GetFormattedString(string key, string? culture = null)
@@ -100,7 +100,7 @@ public class LocalizationTestController : ControllerBase
     /// <summary>
     /// 获取资源的所有本地化字符串
     /// </summary>
-    /// <param name="culture">文化（可选）</param>
+    /// <param name="culture">文化(可选)</param>
     /// <returns>所有本地化字符串</returns>
     [HttpGet]
     public IActionResult GetAllStrings(string? culture = null)

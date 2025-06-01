@@ -20,42 +20,42 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 public class NanoIdOptions
 {
     /// <summary>
-    /// 默认字符集：URL安全字符集（A-Z, a-z, 0-9）
+    /// 默认字符集：URL安全字符集(A-Z, a-z, 0-9)
     /// </summary>
     public const string DefaultAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     /// <summary>
-    /// 数字字符集（0-9）
+    /// 数字字符集(0-9)
     /// </summary>
     public const string NumbersAlphabet = "0123456789";
 
     /// <summary>
-    /// 小写字母字符集（a-z）
+    /// 小写字母字符集(a-z)
     /// </summary>
     public const string LowercaseAlphabet = "abcdefghijklmnopqrstuvwxyz";
 
     /// <summary>
-    /// 大写字母字符集（A-Z）
+    /// 大写字母字符集(A-Z)
     /// </summary>
     public const string UppercaseAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /// <summary>
-    /// URL安全字符集（a-z, A-Z, 0-9, _, -）
+    /// URL安全字符集(a-z, A-Z, 0-9, _, -)
     /// </summary>
     public const string UrlSafeAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
 
     /// <summary>
-    /// 安全字符集（无相似字符如: 1, l, I, 0, O, o, u, v, 5, S, s, 2, Z）
+    /// 安全字符集(无相似字符如: 1, l, I, 0, O, o, u, v, 5, S, s, 2, Z)
     /// </summary>
     public const string SafeAlphabet = "346789ABCDEFGHJKLMNPQRTUWXYabcdefghijkmnpqrtwxyz";
 
     /// <summary>
-    /// 十六进制字符集（0-9, a-f）
+    /// 十六进制字符集(0-9, a-f)
     /// </summary>
     public const string HexAlphabet = "0123456789abcdef";
 
     /// <summary>
-    /// 默认开始时间（2020年1月1日）
+    /// 默认开始时间(2020年1月1日)
     /// </summary>
     public static readonly DateTime DefaultStartTime = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -90,7 +90,7 @@ public class NanoIdOptions
 
     /// <summary>
     /// 字符集
-    /// 默认为URL安全字符集（A-Z, a-z, 0-9）
+    /// 默认为URL安全字符集(A-Z, a-z, 0-9)
     /// </summary>
     public string Alphabet
     {
@@ -134,7 +134,7 @@ public class NanoIdOptions
     /// <summary>
     /// 创建只包含数字的配置
     /// </summary>
-    /// <param name="size">长度（默认为10）</param>
+    /// <param name="size">长度(默认为10)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions OnlyNumbers(int size = 10)
     {
@@ -148,7 +148,7 @@ public class NanoIdOptions
     /// <summary>
     /// 创建只包含小写字母的配置
     /// </summary>
-    /// <param name="size">长度（默认为16）</param>
+    /// <param name="size">长度(默认为16)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions OnlyLowercase(int size = 16)
     {
@@ -162,7 +162,7 @@ public class NanoIdOptions
     /// <summary>
     /// 创建只包含大写字母的配置
     /// </summary>
-    /// <param name="size">长度（默认为16）</param>
+    /// <param name="size">长度(默认为16)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions OnlyUppercase(int size = 16)
     {
@@ -176,7 +176,7 @@ public class NanoIdOptions
     /// <summary>
     /// 创建URL安全的配置
     /// </summary>
-    /// <param name="size">长度（默认为21）</param>
+    /// <param name="size">长度(默认为21)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions UrlSafe(int size = 21)
     {
@@ -188,9 +188,9 @@ public class NanoIdOptions
     }
 
     /// <summary>
-    /// 创建安全字符集的配置（无相似字符如：1/I/l, 0/O/o 等）
+    /// 创建安全字符集的配置(无相似字符如：1/I/l, 0/O/o 等)
     /// </summary>
-    /// <param name="size">长度（默认为21）</param>
+    /// <param name="size">长度(默认为21)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions Safe(int size = 21)
     {
@@ -204,7 +204,7 @@ public class NanoIdOptions
     /// <summary>
     /// 创建十六进制字符集的配置
     /// </summary>
-    /// <param name="size">长度（默认为32）</param>
+    /// <param name="size">长度(默认为32)</param>
     /// <returns>配置对象</returns>
     public static NanoIdOptions Hex(int size = 32)
     {

@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.Collections;
 public static class EnumerableExtensions
 {
     /// <summary>
-    /// 使用指定的分隔符连接构造的 <see cref="IEnumerable{T}"/> 集合（类型为 System.String）的成员
+    /// 使用指定的分隔符连接构造的 <see cref="IEnumerable{T}"/> 集合(类型为 System.String)的成员
     /// 这是 string.Join(...) 的快捷方式
     /// </summary>
     /// <param name="source">包含要连接的字符串的集合</param>

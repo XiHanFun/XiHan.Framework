@@ -53,7 +53,7 @@ public class HttpResult<T>
     public Dictionary<string, IEnumerable<string>> Headers { get; set; } = [];
 
     /// <summary>
-    /// 请求耗时（毫秒）
+    /// 请求耗时(毫秒)
     /// </summary>
     public long ElapsedMilliseconds { get; set; }
 
@@ -103,7 +103,7 @@ public class HttpResult<T>
 }
 
 /// <summary>
-/// HTTP 请求结果（无泛型）
+/// HTTP 请求结果(无泛型)
 /// </summary>
 public class HttpResult : HttpResult<object>
 {

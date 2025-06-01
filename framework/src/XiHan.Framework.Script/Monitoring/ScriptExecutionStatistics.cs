@@ -35,22 +35,22 @@ public class ScriptExecutionStatistics
     public int FailedExecutions { get; set; }
 
     /// <summary>
-    /// 平均执行时间（毫秒）
+    /// 平均执行时间(毫秒)
     /// </summary>
     public double AverageExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 平均编译时间（毫秒）
+    /// 平均编译时间(毫秒)
     /// </summary>
     public double AverageCompilationTimeMs { get; set; }
 
     /// <summary>
-    /// 总内存使用量（字节）
+    /// 总内存使用量(字节)
     /// </summary>
     public long TotalMemoryUsageBytes { get; set; }
 
     /// <summary>
-    /// 缓存命中率（百分比）
+    /// 缓存命中率(百分比)
     /// </summary>
     public double CacheHitRate { get; set; }
 
@@ -75,7 +75,7 @@ public class ScriptExecutionStatistics
     public IEnumerable<ScriptExecutionLog> SlowScripts { get; set; } = [];
 
     /// <summary>
-    /// 成功率（百分比）
+    /// 成功率(百分比)
     /// </summary>
     public double SuccessRate => TotalExecutions > 0 ? (double)SuccessfulExecutions / TotalExecutions * 100 : 0;
 }

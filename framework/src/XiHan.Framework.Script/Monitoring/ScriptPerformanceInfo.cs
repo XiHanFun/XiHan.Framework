@@ -30,22 +30,22 @@ public class ScriptPerformanceInfo
     public long ExecutionCount { get; set; }
 
     /// <summary>
-    /// 总执行时间（毫秒）
+    /// 总执行时间(毫秒)
     /// </summary>
     public long TotalExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 平均执行时间（毫秒）
+    /// 平均执行时间(毫秒)
     /// </summary>
     public double AverageExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 最小执行时间（毫秒）
+    /// 最小执行时间(毫秒)
     /// </summary>
     public long MinExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 最大执行时间（毫秒）
+    /// 最大执行时间(毫秒)
     /// </summary>
     public long MaxExecutionTimeMs { get; set; }
 

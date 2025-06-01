@@ -120,7 +120,7 @@ Write-Host "删除失败: $failedCount 个文件夹" -ForegroundColor $(if ($fai
 if ($failedCount -gt 0) {
     Write-Host "建议:" -ForegroundColor Yellow
     Write-Host "1. 确保以管理员权限运行此脚本" -ForegroundColor Yellow
-    Write-Host "2. 关闭所有可能锁定文件的程序（如 Visual Studio、编译进程等）" -ForegroundColor Yellow
+    Write-Host "2. 关闭所有可能锁定文件的程序(如 Visual Studio、编译进程等)" -ForegroundColor Yellow
     Write-Host "3. 重新运行脚本" -ForegroundColor Yellow
 }
 

@@ -27,7 +27,7 @@ public static class ScriptExecutor
     /// </summary>
     /// <param name="scriptFilePath">脚本文件的完整路径</param>
     /// <param name="arguments">传递给脚本的参数</param>
-    /// <returns>执行结果（标准输出和标准错误）</returns>
+    /// <returns>执行结果(标准输出和标准错误)</returns>
     public static string ExecuteScript(string scriptFilePath, string arguments = "")
     {
         if (string.IsNullOrWhiteSpace(scriptFilePath) || !File.Exists(scriptFilePath))
@@ -46,7 +46,7 @@ public static class ScriptExecutor
     }
 
     /// <summary>
-    /// 执行 Shell 脚本（Linux/macOS）
+    /// 执行 Shell 脚本(Linux/macOS)
     /// </summary>
     /// <param name="scriptFilePath">脚本文件的完整路径</param>
     /// <param name="arguments">传递给脚本的参数</param>
@@ -67,7 +67,7 @@ public static class ScriptExecutor
     }
 
     /// <summary>
-    /// 执行 PowerShell 脚本（Windows）
+    /// 执行 PowerShell 脚本(Windows)
     /// </summary>
     /// <param name="scriptFilePath">脚本文件的完整路径</param>
     /// <param name="arguments">传递给脚本的参数</param>
@@ -88,7 +88,7 @@ public static class ScriptExecutor
     }
 
     /// <summary>
-    /// 执行批处理脚本（Windows）
+    /// 执行批处理脚本(Windows)
     /// </summary>
     /// <param name="scriptFilePath">脚本文件的完整路径</param>
     /// <param name="arguments">传递给脚本的参数</param>

@@ -81,7 +81,7 @@ public static class JsonSerializerOptionsHelper
     }
 
     /// <summary>
-    /// 使用 baseOptions 作为基础，移除 removeConverter，并添加 addConverters 中的转换器（如果它们尚不存在）
+    /// 使用 baseOptions 作为基础，移除 removeConverter，并添加 addConverters 中的转换器(如果它们尚不存在)
     /// </summary>
     /// <param name="baseOptions"></param>
     /// <param name="removeConverter"></param>
@@ -93,7 +93,7 @@ public static class JsonSerializerOptionsHelper
     }
 
     /// <summary>
-    /// 使用 baseOptions 作为基础，移除匹配 removeConverterPredicate 谓词的转换器，并添加 addConverters 中的转换器（如果它们尚不存在）
+    /// 使用 baseOptions 作为基础，移除匹配 removeConverterPredicate 谓词的转换器，并添加 addConverters 中的转换器(如果它们尚不存在)
     /// </summary>
     /// <param name="baseOptions"></param>
     /// <param name="removeConverterPredicate"></param>

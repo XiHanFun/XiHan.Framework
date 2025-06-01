@@ -30,8 +30,8 @@ public class OnServiceRegistredContext : IOnServiceRegistredContext
     /// <param name="implementationType"></param>
     public OnServiceRegistredContext(Type serviceType, Type implementationType)
     {
-        ServiceType = CheckHelper.NotNull(serviceType, nameof(serviceType));
-        ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
+        ServiceType = Guard.NotNull(serviceType, nameof(serviceType));
+        ImplementationType = Guard.NotNull(implementationType, nameof(implementationType));
 
         Interceptors = new TypeList<IXiHanInterceptor>();
     }

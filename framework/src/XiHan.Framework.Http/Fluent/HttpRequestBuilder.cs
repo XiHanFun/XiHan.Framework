@@ -121,7 +121,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置请求体（对象）
+    /// 设置请求体(对象)
     /// </summary>
     /// <param name="body">请求体对象</param>
     /// <param name="contentType">内容类型</param>
@@ -135,7 +135,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置请求体（字符串）
+    /// 设置请求体(字符串)
     /// </summary>
     /// <param name="content">请求体内容</param>
     /// <param name="contentType">内容类型</param>
@@ -183,7 +183,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置超时时间（秒）
+    /// 设置超时时间(秒)
     /// </summary>
     /// <param name="seconds">超时秒数</param>
     /// <returns></returns>
@@ -321,7 +321,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 发送 GET 请求（返回字符串）
+    /// 发送 GET 请求(返回字符串)
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -331,7 +331,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 发送 GET 请求（返回字节数组）
+    /// 发送 GET 请求(返回字节数组)
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -368,7 +368,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 发送 POST 请求（返回字符串）
+    /// 发送 POST 请求(返回字符串)
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -415,7 +415,7 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 发送 DELETE 请求（无响应内容）
+    /// 发送 DELETE 请求(无响应内容)
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>

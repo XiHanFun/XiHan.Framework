@@ -106,7 +106,7 @@ public static class CurrencyHelper
     /// 获取货币本地名称
     /// </summary>
     /// <param name="currencyCode">货币代码</param>
-    /// <param name="_">文化（未使用）</param>
+    /// <param name="_">文化(未使用)</param>
     /// <returns>货币本地名称</returns>
     public static string GetCurrencyNativeName(string currencyCode, CultureInfo _)
     {
@@ -128,8 +128,8 @@ public static class CurrencyHelper
     /// 转换货币金额
     /// </summary>
     /// <param name="amount">金额</param>
-    /// <param name="_1">源货币代码（未使用）</param>
-    /// <param name="_2">目标货币代码（未使用）</param>
+    /// <param name="_1">源货币代码(未使用)</param>
+    /// <param name="_2">目标货币代码(未使用)</param>
     /// <param name="exchangeRate">汇率</param>
     /// <returns>转换后的金额</returns>
     public static decimal ConvertCurrency(decimal amount, string _1, string _2, decimal exchangeRate)

@@ -38,7 +38,7 @@ public static class CollectionExtensions
     /// <param name="flag"></param>
     public static void AddIf<T>(this ICollection<T> source, T value, bool flag)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         if (flag)
         {
@@ -55,7 +55,7 @@ public static class CollectionExtensions
     /// <param name="func"></param>
     public static void AddIf<T>(this ICollection<T> source, T value, Func<bool> func)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         if (func())
         {
@@ -71,7 +71,7 @@ public static class CollectionExtensions
     /// <param name="value"></param>
     public static void AddIfNotNull<T>(this ICollection<T> source, T value)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         if (value is not null)
         {
@@ -85,10 +85,10 @@ public static class CollectionExtensions
     /// <param name="source">集合对象</param>
     /// <param name="item">要检查并添加的项</param>
     /// <typeparam name="T">集合中项的类型</typeparam>
-    /// <returns>如果添加了项，则返回真(True)；如果没有添加（即项已存在）则返回假(False)</returns>
+    /// <returns>如果添加了项，则返回真(True)；如果没有添加(即项已存在)则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, T item)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         if (source.Contains(item))
         {
@@ -108,9 +108,9 @@ public static class CollectionExtensions
     /// <returns>返回添加的项的集合</returns>
     public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
         var enumerable = items as T[] ?? [.. items];
-        _ = CheckHelper.NotNull(enumerable, nameof(items));
+        _ = Guard.NotNull(enumerable, nameof(items));
 
         List<T> addedItems = [];
 
@@ -135,10 +135,10 @@ public static class CollectionExtensions
     /// <param name="predicate">决定项是否已存在于集合中的条件</param>
     /// <param name="itemFactory">返回项的工厂函数</param>
     /// <typeparam name="T">集合中项的类型</typeparam>
-    /// <returns>如果添加了项，则返回真(True)；如果没有添加（即项已存在）则返回假(False)</returns>
+    /// <returns>如果添加了项，则返回真(True)；如果没有添加(即项已存在)则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         if (source.Any(predicate))
         {
@@ -158,7 +158,7 @@ public static class CollectionExtensions
     /// <returns>被移除项的列表</returns>
     public static IList<T> RemoveAllWhere<T>(this ICollection<T> source, Func<T, bool> predicate)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         var items = source.Where(predicate).ToList();
 
@@ -178,9 +178,9 @@ public static class CollectionExtensions
     /// <param name="items">要移除的项的集合</param>
     public static void RemoveAll<T>(this ICollection<T> source, IEnumerable<T> items)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
         var enumerable = items as T[] ?? [.. items];
-        _ = CheckHelper.NotNull(enumerable, nameof(items));
+        _ = Guard.NotNull(enumerable, nameof(items));
 
         foreach (var item in enumerable)
         {

@@ -16,14 +16,14 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
 /// 雪花漂移算法ID生成器
-/// 用于生成高性能、有序、分布式的长整型唯一标识符（ID）
+/// 用于生成高性能、有序、分布式的长整型唯一标识符(ID)
 /// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息ID等
 /// 主要特点：
-/// 高性能（High-Performance）：纯内存操作，每秒可生成数百万个ID，无需数据库访问。
-/// 有序性（Ordered）：ID中包含时间戳，天然有序，便于索引和分区。
-/// 分布式（Distributed）：通过工作机器ID和数据中心ID区分不同节点，避免冲突。
-/// 信息丰富（Informative）：可从ID中提取生成时间、工作机器ID、数据中心ID和序列号。
-/// 算法可选（Versatile）：支持经典雪花算法和雪花漂移算法，满足不同场景需求。
+/// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个ID，无需数据库访问。
+/// 有序性(Ordered)：ID中包含时间戳，天然有序，便于索引和分区。
+/// 分布式(Distributed)：通过工作机器ID和数据中心ID区分不同节点，避免冲突。
+/// 信息丰富(Informative)：可从ID中提取生成时间、工作机器ID、数据中心ID和序列号。
+/// 算法可选(Versatile)：支持经典雪花算法和雪花漂移算法，满足不同场景需求。
 /// </summary>
 public class SnowflakeIdGenerator : IDistributedIdGenerator
 {
@@ -101,7 +101,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         _workerIdBitLength = options.WorkerIdBitLength;
         _seqBitLength = options.SeqBitLength;
 
-        // 如果用户没有设置MaxSeqNumber，则使用默认值（2^SeqBitLength-1）
+        // 如果用户没有设置MaxSeqNumber，则使用默认值(2^SeqBitLength-1)
         _maxSeqNumber = options.MaxSeqNumber <= 0 ? (1 << _seqBitLength) - 1 : options.MaxSeqNumber;
 
         // 最小序列数取默认值或用户设置值
@@ -168,14 +168,14 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个ID（字符串形式）
+    /// 获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public string NextIdString()
     {
         var id = NextId().ToString();
 
-        // 添加前缀（如果有）
+        // 添加前缀(如果有)
         if (!string.IsNullOrEmpty(_options.IdPrefix))
         {
             id = _options.IdPrefix + id;
@@ -293,7 +293,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取ID（字符串形式）
+    /// 批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -322,7 +322,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步获取下一个ID（字符串形式）
+    /// 异步获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public Task<string> NextIdStringAsync()
@@ -341,7 +341,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取ID（字符串形式）
+    /// 异步批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>

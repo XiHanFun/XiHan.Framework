@@ -37,7 +37,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
     /// <param name="dataContext"></param>
     public AmbientDataContextAmbientScopeProvider(IAmbientDataContext dataContext)
     {
-        _ = CheckHelper.NotNull(dataContext, nameof(dataContext));
+        _ = Guard.NotNull(dataContext, nameof(dataContext));
 
         _dataContext = dataContext;
 

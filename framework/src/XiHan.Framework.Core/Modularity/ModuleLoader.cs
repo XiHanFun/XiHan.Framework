@@ -35,9 +35,9 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     public IModuleDescriptor[] LoadModules(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
-        _ = CheckHelper.NotNull(services, nameof(services));
-        _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
-        _ = CheckHelper.NotNull(plugInSources, nameof(plugInSources));
+        _ = Guard.NotNull(services, nameof(services));
+        _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
+        _ = Guard.NotNull(plugInSources, nameof(plugInSources));
 
         var modules = GetDescriptors(services, startupModuleType, plugInSources);
 

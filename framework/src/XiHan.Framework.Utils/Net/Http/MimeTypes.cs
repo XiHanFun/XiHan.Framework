@@ -42,7 +42,7 @@ public static class MimeTypes
         public const string Ecmascript = "application/ecmascript";
 
         /// <summary>
-        /// 表示 Java 档案（JAR）文件的 MIME 类型，JAR 文件是一个打包的 Java 应用程序或库。
+        /// 表示 Java 档案(JAR)文件的 MIME 类型，JAR 文件是一个打包的 Java 应用程序或库。
         /// </summary>
         public const string JavaArchive = "application/java-archive";
 
@@ -97,7 +97,7 @@ public static class MimeTypes
         public const string Postscript = "application/postscript";
 
         /// <summary>
-        /// 表示资源描述（RDF）数据的 MIME 类型，RDF 是一种用于描述网络资源的模型。
+        /// 表示资源描述(RDF)数据的 MIME 类型，RDF 是一种用于描述网络资源的模型。
         /// </summary>
         public const string RdfXml = "application/rdf+xml";
 
@@ -107,12 +107,12 @@ public static class MimeTypes
         public const string RssXml = "application/rss+xml";
 
         /// <summary>
-        /// 表示富文本格式（RTF）文档的 MIME 类型，RTF 是一种文档格式，支持基本文档格式化。
+        /// 表示富文本格式(RTF)文档的 MIME 类型，RTF 是一种文档格式，支持基本文档格式化。
         /// </summary>
         public const string Rtf = "application/rtf";
 
         /// <summary>
-        /// 表示同步多媒体集成语言（SMIL）文档的 MIME 类型，SMIL 用于描述多媒体演示。
+        /// 表示同步多媒体集成语言(SMIL)文档的 MIME 类型，SMIL 用于描述多媒体演示。
         /// </summary>
         public const string SmilXml = "application/smil+xml";
 
@@ -152,17 +152,17 @@ public static class MimeTypes
         public const string XhtmlXml = "application/xhtml+xml";
 
         /// <summary>
-        /// 表示可扩展方法标记语言（XML）文档的 MIME 类型，XML 是一种用于存储和传输数据的格式。
+        /// 表示可扩展方法标记语言(XML)文档的 MIME 类型，XML 是一种用于存储和传输数据的格式。
         /// </summary>
         public const string Xml = "application/xml";
 
         /// <summary>
-        /// 表示 XML 数据类型定义（DTD）的 MIME 类型，DTD 是定义 XML 文档结构的文档类型。
+        /// 表示 XML 数据类型定义(DTD)的 MIME 类型，DTD 是定义 XML 文档结构的文档类型。
         /// </summary>
         public const string XmlDtd = "application/xml-dtd";
 
         /// <summary>
-        /// 表示可扩展方法样式表语言转换（XSLT）文档的 MIME 类型，XSLT 用于将 XML 文档转换成 HTML、文本或其他 XML 文档。
+        /// 表示可扩展方法样式表语言转换(XSLT)文档的 MIME 类型，XSLT 用于将 XML 文档转换成 HTML、文本或其他 XML 文档。
         /// </summary>
         public const string XsltXml = "application/xslt+xml";
 
@@ -179,7 +179,7 @@ public static class MimeTypes
     public static class Audio
     {
         /// <summary>
-        /// 表示音乐器数字接口（MIDI）文件的 MIME 类型，MIDI 是一种广泛使用的乐器和音乐软件的数字协议。
+        /// 表示音乐器数字接口(MIDI)文件的 MIME 类型，MIDI 是一种广泛使用的乐器和音乐软件的数字协议。
         /// </summary>
         public const string Midi = "audio/midi";
 
@@ -204,12 +204,12 @@ public static class MimeTypes
         public const string Webm = "audio/webm";
 
         /// <summary>
-        /// 表示高级音频编码（AAC）文件的 MIME 类型，AAC 是一种广泛使用的音频压缩标准，提供比 MP3更好的音质。
+        /// 表示高级音频编码(AAC)文件的 MIME 类型，AAC 是一种广泛使用的音频压缩标准，提供比 MP3更好的音质。
         /// </summary>
         public const string XAac = "audio/x-aac";
 
         /// <summary>
-        /// 表示音频交换文件格式（AIFF）文件的 MIME 类型，AIFF 是一种无损音频文件格式，常用于专业音频制作。
+        /// 表示音频交换文件格式(AIFF)文件的 MIME 类型，AIFF 是一种无损音频文件格式，常用于专业音频制作。
         /// </summary>
         public const string XAiff = "audio/x-aiff";
 
@@ -219,12 +219,12 @@ public static class MimeTypes
         public const string XMpegurl = "audio/x-mpegurl";
 
         /// <summary>
-        /// 表示 Windows Media Audio（WMA）文件的 MIME 类型，WMA 是微软开发的一种音频压缩格式。
+        /// 表示 Windows Media Audio(WMA)文件的 MIME 类型，WMA 是微软开发的一种音频压缩格式。
         /// </summary>
         public const string XMsWma = "audio/x-ms-wma";
 
         /// <summary>
-        /// 表示波形音频文件（WAV）的 MIME 类型，WAV 是一种无损音频文件格式，广泛用于保存未压缩的音频。
+        /// 表示波形音频文件(WAV)的 MIME 类型，WAV 是一种无损音频文件格式，广泛用于保存未压缩的音频。
         /// </summary>
         public const string XWav = "audio/x-wav";
     }
@@ -236,32 +236,32 @@ public static class MimeTypes
     public static class Image
     {
         /// <summary>
-        /// 表示 Windows 位图（BMP）图像文件的 MIME 类型，BMP 是一种未压缩的位图图像文件格式。
+        /// 表示 Windows 位图(BMP)图像文件的 MIME 类型，BMP 是一种未压缩的位图图像文件格式。
         /// </summary>
         public const string Bmp = "image/bmp";
 
         /// <summary>
-        /// 表示图形交换格式（GIF）图像文件的 MIME 类型，GIF 支持动画和透明背景。
+        /// 表示图形交换格式(GIF)图像文件的 MIME 类型，GIF 支持动画和透明背景。
         /// </summary>
         public const string Gif = "image/gif";
 
         /// <summary>
-        /// 表示联合图像专家组（JPEG）图像文件的 MIME 类型，JPEG 是一种常用的有损压缩图像格式，适合用于照片。
+        /// 表示联合图像专家组(JPEG)图像文件的 MIME 类型，JPEG 是一种常用的有损压缩图像格式，适合用于照片。
         /// </summary>
         public const string Jpeg = "image/jpeg";
 
         /// <summary>
-        /// 表示便携式网络图形（PNG）图像文件的 MIME 类型，PNG 支持无损压缩和透明背景。
+        /// 表示便携式网络图形(PNG)图像文件的 MIME 类型，PNG 支持无损压缩和透明背景。
         /// </summary>
         public const string Png = "image/png";
 
         /// <summary>
-        /// 表示可缩放矢量图形（SVG）图像文件的 MIME 类型，SVG 是一种基于 XML 的矢量图像格式。
+        /// 表示可缩放矢量图形(SVG)图像文件的 MIME 类型，SVG 是一种基于 XML 的矢量图像格式。
         /// </summary>
         public const string SvgXml = "image/svg+xml";
 
         /// <summary>
-        /// 表示标记图像文件格式（TIFF）图像文件的 MIME 类型，TIFF 是一种灵活的、适用于打印的位图图像格式。
+        /// 表示标记图像文件格式(TIFF)图像文件的 MIME 类型，TIFF 是一种灵活的、适用于打印的位图图像格式。
         /// </summary>
         public const string Tiff = "image/tiff";
 
@@ -278,12 +278,12 @@ public static class MimeTypes
     public static class Text
     {
         /// <summary>
-        /// 表示层叠样式表（CSS）文件的 MIME 类型，CSS 用于定义 Web 页面的布局和视觉样式。
+        /// 表示层叠样式表(CSS)文件的 MIME 类型，CSS 用于定义 Web 页面的布局和视觉样式。
         /// </summary>
         public const string Css = "text/css";
 
         /// <summary>
-        /// 表示逗号分隔值（CSV）文件的 MIME 类型，CSV 是一种常见的表格数据表示格式，广泛应用于电子表格和数据分析。
+        /// 表示逗号分隔值(CSV)文件的 MIME 类型，CSV 是一种常见的表格数据表示格式，广泛应用于电子表格和数据分析。
         /// </summary>
         public const string Csv = "text/csv";
 
@@ -298,12 +298,12 @@ public static class MimeTypes
         public const string Plain = "text/plain";
 
         /// <summary>
-        /// 表示富文本（Rich Text）格式的 MIME 类型，富文本是一种包含格式化信息的文本格式，但不包含 HTML 标签。
+        /// 表示富文本(Rich Text)格式的 MIME 类型，富文本是一种包含格式化信息的文本格式，但不包含 HTML 标签。
         /// </summary>
         public const string RichText = "text/richtext";
 
         /// <summary>
-        /// 表示标准通用标记语言（SGML）的 MIME 类型，SGML 是一种文档结构的国际标准，HTML 是 SGML 的一个子集。
+        /// 表示标准通用标记语言(SGML)的 MIME 类型，SGML 是一种文档结构的国际标准，HTML 是 SGML 的一个子集。
         /// </summary>
         public const string Sgml = "text/sgml";
 

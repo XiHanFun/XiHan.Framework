@@ -20,17 +20,17 @@ namespace XiHan.Framework.Script.Core;
 public class MemoryUsage
 {
     /// <summary>
-    /// 执行前内存使用量（字节）
+    /// 执行前内存使用量(字节)
     /// </summary>
     public long MemoryBefore { get; set; }
 
     /// <summary>
-    /// 执行后内存使用量（字节）
+    /// 执行后内存使用量(字节)
     /// </summary>
     public long MemoryAfter { get; set; }
 
     /// <summary>
-    /// 内存增长量（字节）
+    /// 内存增长量(字节)
     /// </summary>
     public long MemoryIncrease => MemoryAfter - MemoryBefore;
 

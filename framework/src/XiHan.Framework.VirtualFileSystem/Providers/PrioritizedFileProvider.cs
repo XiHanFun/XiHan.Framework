@@ -38,7 +38,7 @@ public class PrioritizedFileProvider
     public IFileProvider Provider { get; }
 
     /// <summary>
-    /// 优先级（数值越大优先级越高）
+    /// 优先级(数值越大优先级越高)
     /// </summary>
     public int Priority { get; }
 }

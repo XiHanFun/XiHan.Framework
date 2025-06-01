@@ -40,7 +40,7 @@ public static class LocalizationSettings
     public const string FallbackToDefaultLanguage = GroupName + ".FallbackToDefaultLanguage";
 
     /// <summary>
-    /// 本地化资源缓存时间设置键（分钟）
+    /// 本地化资源缓存时间设置键(分钟)
     /// </summary>
     public const string ResourceCacheMinutes = GroupName + ".ResourceCacheMinutes";
 }

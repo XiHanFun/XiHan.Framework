@@ -43,7 +43,7 @@ public static class XiHanScript
     }
 
     /// <summary>
-    /// 执行脚本代码（同步）
+    /// 执行脚本代码(同步)
     /// </summary>
     /// <param name="code">脚本代码</param>
     /// <param name="options">脚本选项</param>
@@ -66,7 +66,7 @@ public static class XiHanScript
     }
 
     /// <summary>
-    /// 执行脚本并返回强类型结果（同步）
+    /// 执行脚本并返回强类型结果(同步)
     /// </summary>
     /// <typeparam name="T">返回类型</typeparam>
     /// <param name="code">脚本代码</param>
@@ -89,7 +89,7 @@ public static class XiHanScript
     }
 
     /// <summary>
-    /// 评估表达式（同步）
+    /// 评估表达式(同步)
     /// </summary>
     /// <param name="expression">表达式</param>
     /// <param name="options">脚本选项</param>
@@ -112,7 +112,7 @@ public static class XiHanScript
     }
 
     /// <summary>
-    /// 评估表达式并返回强类型结果（同步）
+    /// 评估表达式并返回强类型结果(同步)
     /// </summary>
     /// <typeparam name="T">返回类型</typeparam>
     /// <param name="expression">表达式</param>
@@ -135,7 +135,7 @@ public static class XiHanScript
     }
 
     /// <summary>
-    /// 执行脚本文件（同步）
+    /// 执行脚本文件(同步)
     /// </summary>
     /// <param name="filePath">脚本文件路径</param>
     /// <param name="options">脚本选项</param>
