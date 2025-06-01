@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.Data;
+namespace XiHan.Framework.Validation;
 
 /// <summary>
 /// 曦寒框架数据校验模块
