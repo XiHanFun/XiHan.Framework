@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
-/// 防抖器（用于防止频繁触发事件）
+/// 防抖器(用于防止频繁触发事件)
 /// </summary>
 public class Debouncer : IDisposable
 {

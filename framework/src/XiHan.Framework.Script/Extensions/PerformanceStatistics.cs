@@ -25,12 +25,12 @@ public class PerformanceStatistics
     public int TotalIterations { get; set; }
 
     /// <summary>
-    /// 总耗时（毫秒）
+    /// 总耗时(毫秒)
     /// </summary>
     public long TotalTimeMs { get; set; }
 
     /// <summary>
-    /// 内存使用量（字节）
+    /// 内存使用量(字节)
     /// </summary>
     public long MemoryUsageBytes { get; set; }
 
@@ -45,17 +45,17 @@ public class PerformanceStatistics
     public int FailureCount { get; set; }
 
     /// <summary>
-    /// 平均执行时间（毫秒）
+    /// 平均执行时间(毫秒)
     /// </summary>
     public double AverageExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 最小执行时间（毫秒）
+    /// 最小执行时间(毫秒)
     /// </summary>
     public long MinExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 最大执行时间（毫秒）
+    /// 最大执行时间(毫秒)
     /// </summary>
     public long MaxExecutionTimeMs { get; set; }
 
@@ -65,7 +65,7 @@ public class PerformanceStatistics
     public int CacheHitCount { get; set; }
 
     /// <summary>
-    /// 平均编译时间（毫秒）
+    /// 平均编译时间(毫秒)
     /// </summary>
     public double AverageCompilationTimeMs { get; set; }
 
@@ -75,12 +75,12 @@ public class PerformanceStatistics
     public double ExecutionsPerSecond => TotalIterations / (TotalTimeMs / 1000.0);
 
     /// <summary>
-    /// 成功率（百分比）
+    /// 成功率(百分比)
     /// </summary>
     public double SuccessRate => TotalIterations == 0 ? 0 : (double)SuccessCount / TotalIterations * 100;
 
     /// <summary>
-    /// 缓存命中率（百分比）
+    /// 缓存命中率(百分比)
     /// </summary>
     public double CacheHitRate => TotalIterations == 0 ? 0 : (double)CacheHitCount / TotalIterations * 100;
 }

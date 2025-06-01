@@ -79,16 +79,16 @@ var extractedWatermark = TextWatermarkHelper.ExtractHtmlWatermark(watermarkedHtm
 // 多个文本块
 var textBlocks = new List<string> { "文本1", "文本2", "文本3" };
 
-// 批量嵌入水印（每个文本块会有唯一编号）
+// 批量嵌入水印(每个文本块会有唯一编号)
 var identifier = "ArticleSet_20240629";
 var watermarkedBlocks = TextWatermarkHelper.EmbedBatchWatermark(textBlocks, identifier);
 ```
 
 ## 技术原理
 
-1. **Unicode 不可见字符**：利用 Unicode 中的零宽字符（如零宽空格、零宽连字等）作为水印载体
+1. **Unicode 不可见字符**：利用 Unicode 中的零宽字符(如零宽空格、零宽连字等)作为水印载体
 2. **水印编码**：将水印信息转换为特定编码，再映射到不可见字符
-3. **文本分析**：在文本的自然分隔处（如句子结尾）插入水印，确保不影响排版和可读性
+3. **文本分析**：在文本的自然分隔处(如句子结尾)插入水印，确保不影响排版和可读性
 4. **加密保护**：可选择使用 AES 加密算法对水印信息进行加密
 
 ## 应用场景

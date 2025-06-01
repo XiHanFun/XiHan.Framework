@@ -30,7 +30,7 @@ public static class PlugInSourceExtensions
     /// <returns></returns>
     public static Type[] GetModulesWithAllDependencies(this IPlugInSource plugInSource, ILogger logger)
     {
-        _ = CheckHelper.NotNull(plugInSource, nameof(plugInSource));
+        _ = Guard.NotNull(plugInSource, nameof(plugInSource));
 
         return [.. plugInSource.GetModules()
             .SelectMany(type => XiHanModuleHelper.FindAllModuleTypes(type, logger))

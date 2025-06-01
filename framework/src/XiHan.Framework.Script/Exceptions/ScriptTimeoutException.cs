@@ -25,7 +25,7 @@ public class ScriptTimeoutException : ScriptExecutionException
     /// <param name="timeoutMs">超时时间</param>
     /// <param name="scriptCode">脚本代码</param>
     public ScriptTimeoutException(int timeoutMs, string? scriptCode = null)
-        : base($"脚本执行超时（{timeoutMs}ms）", scriptCode, timeoutMs)
+        : base($"脚本执行超时({timeoutMs}ms)", scriptCode, timeoutMs)
     {
         TimeoutMs = timeoutMs;
     }
@@ -37,13 +37,13 @@ public class ScriptTimeoutException : ScriptExecutionException
     /// <param name="innerException">内部异常</param>
     /// <param name="scriptCode">脚本代码</param>
     public ScriptTimeoutException(int timeoutMs, Exception innerException, string? scriptCode = null)
-        : base($"脚本执行超时（{timeoutMs}ms）", innerException, scriptCode, timeoutMs)
+        : base($"脚本执行超时({timeoutMs}ms)", innerException, scriptCode, timeoutMs)
     {
         TimeoutMs = timeoutMs;
     }
 
     /// <summary>
-    /// 超时时间（毫秒）
+    /// 超时时间(毫秒)
     /// </summary>
     public int TimeoutMs { get; }
 }

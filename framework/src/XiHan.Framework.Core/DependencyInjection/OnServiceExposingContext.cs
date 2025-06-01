@@ -28,8 +28,8 @@ public class OnServiceExposingContext : IOnServiceExposingContext
     /// <param name="exposedTypes"></param>
     public OnServiceExposingContext(Type implementationType, List<Type> exposedTypes)
     {
-        ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
-        ExposedTypes = CheckHelper.NotNull(exposedTypes, nameof(exposedTypes)).ConvertAll(t => new ServiceIdentifier(t));
+        ImplementationType = Guard.NotNull(implementationType, nameof(implementationType));
+        ExposedTypes = Guard.NotNull(exposedTypes, nameof(exposedTypes)).ConvertAll(t => new ServiceIdentifier(t));
     }
 
     /// <summary>
@@ -39,8 +39,8 @@ public class OnServiceExposingContext : IOnServiceExposingContext
     /// <param name="exposedTypes"></param>
     public OnServiceExposingContext(Type implementationType, List<ServiceIdentifier> exposedTypes)
     {
-        ImplementationType = CheckHelper.NotNull(implementationType, nameof(implementationType));
-        ExposedTypes = CheckHelper.NotNull(exposedTypes, nameof(exposedTypes));
+        ImplementationType = Guard.NotNull(implementationType, nameof(implementationType));
+        ExposedTypes = Guard.NotNull(exposedTypes, nameof(exposedTypes));
     }
 
     /// <summary>

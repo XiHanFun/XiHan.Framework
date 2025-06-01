@@ -27,7 +27,7 @@ public class HttpClientConfiguration
     public string? BaseAddress { get; set; }
 
     /// <summary>
-    /// 超时时间（秒）
+    /// 超时时间(秒)
     /// </summary>
     [Range(1, 300)]
     public int? TimeoutSeconds { get; set; }

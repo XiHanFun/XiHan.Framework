@@ -29,9 +29,9 @@ public static class PingHelper
     /// 执行 Ping 操作
     /// </summary>
     /// <param name="host">目标 IP 或域名</param>
-    /// <param name="timeout">超时时间（毫秒），默认 4000ms</param>
+    /// <param name="timeout">超时时间(毫秒)，默认 4000ms</param>
     /// <param name="bufferSize">缓冲区大小，默认 32 字节</param>
-    /// <param name="ttl">TTL（生存时间），默认 128</param>
+    /// <param name="ttl">TTL(生存时间)，默认 128</param>
     /// <param name="pingCount">Ping 次数，默认 4 次</param>
     /// <returns>Ping 结果字符串</returns>
     public static string Ping(string host, int timeout = 4000, int bufferSize = 32, int ttl = 128, int pingCount = 4)
@@ -75,7 +75,7 @@ public static class PingHelper
     /// 快速测试目标是否可达
     /// </summary>
     /// <param name="host">目标 IP 或域名</param>
-    /// <param name="timeout">超时时间（毫秒），默认 1000ms</param>
+    /// <param name="timeout">超时时间(毫秒)，默认 1000ms</param>
     /// <returns>是否可达</returns>
     public static bool IsHostReachable(string host, int timeout = 1000)
     {

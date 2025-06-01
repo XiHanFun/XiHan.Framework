@@ -45,12 +45,12 @@ public class EngineStatistics
     public long CacheMisses { get; set; }
 
     /// <summary>
-    /// 平均执行时间（毫秒）
+    /// 平均执行时间(毫秒)
     /// </summary>
     public double AverageExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 平均编译时间（毫秒）
+    /// 平均编译时间(毫秒)
     /// </summary>
     public double AverageCompilationTimeMs { get; set; }
 
@@ -60,7 +60,7 @@ public class EngineStatistics
     public int CacheSize { get; set; }
 
     /// <summary>
-    /// 总内存使用量（字节）
+    /// 总内存使用量(字节)
     /// </summary>
     public long TotalMemoryUsage { get; set; }
 

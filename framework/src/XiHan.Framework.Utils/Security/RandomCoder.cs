@@ -99,7 +99,7 @@ public static class RandomCoder
     }
 
     /// <summary>
-    /// 生成强密码（包含字母、数字和特殊字符的组合）
+    /// 生成强密码(包含字母、数字和特殊字符的组合)
     /// </summary>
     /// <param name="length">生成长度 默认12个字符</param>
     /// <param name="source">自定义强密码字符源</param>

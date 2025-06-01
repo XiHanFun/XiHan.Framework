@@ -300,7 +300,7 @@ catch (ScriptExecutionException ex)
 ```csharp
 using XiHan.Framework.Script.Extensions;
 
-// 安全执行（不抛出异常）
+// 安全执行(不抛出异常)
 var result = await engine.ExecuteSafelyAsync(@"
     var dangerousCode = ""Process.Start(\"\"notepad.exe\"\")"";
     // 这段代码会被安全检查拦截

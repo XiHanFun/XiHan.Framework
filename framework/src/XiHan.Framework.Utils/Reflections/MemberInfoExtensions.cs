@@ -85,7 +85,7 @@ public static class MemberInfoExtensions
     }
 
     /// <summary>
-    /// 获取特定类型或基类型的单个属性（或为 null）
+    /// 获取特定类型或基类型的单个属性(或为 null)
     /// </summary>
     /// <typeparam name="TAttribute">要检查的 Attribute 特性类型</typeparam>
     /// <param name="type">要检查的类型成员</param>

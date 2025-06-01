@@ -52,7 +52,7 @@ public class ScriptExecutionException : ScriptException
     public string? ScriptCode { get; }
 
     /// <summary>
-    /// 执行时间（毫秒）
+    /// 执行时间(毫秒)
     /// </summary>
     public long ExecutionTimeMs { get; }
 }

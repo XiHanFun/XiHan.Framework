@@ -122,9 +122,9 @@ public static class DeepMergeHelper
     /// </summary>
     private static bool CanMerge(object? target, object? source)
     {
-        return target is not null && source is not null && (IsMergeableCollection(target) && IsMergeableCollection(source) ||
-               IsDictionary(target) && IsDictionary(source) ||
-               IsComplexObject(target) && IsComplexObject(source) && target.GetType() == source.GetType());
+        return target is not null && source is not null && ((IsMergeableCollection(target) && IsMergeableCollection(source)) ||
+               (IsDictionary(target) && IsDictionary(source)) ||
+               (IsComplexObject(target) && IsComplexObject(source) && target.GetType() == source.GetType()));
     }
 
     /// <summary>
@@ -211,11 +211,11 @@ public static class DeepMergeHelper
         var type = value.GetType();
 
         // 数组或实现了泛型集合接口的类型
-        return type.IsArray || type.IsGenericType && (
+        return type.IsArray || (type.IsGenericType && (
             typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
             typeof(ICollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
             typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition())
-        );
+        ));
     }
 
     /// <summary>
@@ -307,7 +307,7 @@ public static class DeepMergeHelper
             }
         }
 
-        // 再添加低优先级集合中的项（如果尚未添加）
+        // 再添加低优先级集合中的项(如果尚未添加)
         foreach (var item in sourceList)
         {
             if (addedItems.Add(item))
@@ -461,7 +461,7 @@ public static class DeepMergeHelper
 
         var type = obj.GetType();
 
-        // 处理简单类型（直接返回）
+        // 处理简单类型(直接返回)
         return IsSimpleType(type)
             ? obj
             : obj switch
@@ -477,7 +477,7 @@ public static class DeepMergeHelper
     }
 
     /// <summary>
-    /// 判断是否为简单类型（不需要深度克隆）
+    /// 判断是否为简单类型(不需要深度克隆)
     /// </summary>
     private static bool IsSimpleType(Type type)
     {

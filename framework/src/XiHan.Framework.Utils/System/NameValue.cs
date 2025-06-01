@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Utils.System;
 
 /// <summary>
-/// 可用于存储名称/值（或键/值）对
+/// 可用于存储名称/值(或键/值)对
 /// </summary>
 [Serializable]
 public class NameValue : NameValue<string>
@@ -40,7 +40,7 @@ public class NameValue : NameValue<string>
 }
 
 /// <summary>
-/// 可用于存储名称/值（或键/值）对
+/// 可用于存储名称/值(或键/值)对
 /// </summary>
 [Serializable]
 public class NameValue<T>

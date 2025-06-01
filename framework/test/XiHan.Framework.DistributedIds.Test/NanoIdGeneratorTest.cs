@@ -318,12 +318,12 @@ public class NanoIdGeneratorTest
         // Assert
         Assert.Equal(count, ids.Count); // 确保所有ID都是唯一的
 
-        // 输出性能信息（每秒生成的ID数）
+        // 输出性能信息(每秒生成的ID数)
         var idsPerSecond = count / (elapsedMs / 1000.0);
         Console.WriteLine($"生成 {count:N0} 个NanoID耗时: {elapsedMs}毫秒");
         Console.WriteLine($"生成速率: {idsPerSecond:N0} IDs/秒");
 
-        // 合理的性能期望（每秒应该能生成至少10000个ID）
+        // 合理的性能期望(每秒应该能生成至少10000个ID)
         Assert.True(idsPerSecond > 10000, $"性能太低: {idsPerSecond:N0} IDs/秒");
     }
 

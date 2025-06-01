@@ -281,7 +281,7 @@ public static class JsonFileHelper
     /// 从 JSON 文件中根据路径获取值
     /// </summary>
     /// <param name="filePath">文件路径</param>
-    /// <param name="jsonPath">JSON 路径（如：$.user.name）</param>
+    /// <param name="jsonPath">JSON 路径(如：$.user.name)</param>
     /// <param name="encoding">文件编码</param>
     /// <returns>路径对应的值</returns>
     public static JsonNode? GetValueFromFile(string filePath, string jsonPath, Encoding? encoding = null)
@@ -339,7 +339,7 @@ public static class JsonFileHelper
                 rootNode = new JsonObject();
             }
 
-            // 设置值（这里需要实现路径设置逻辑）
+            // 设置值(这里需要实现路径设置逻辑)
             SetValueByPath(rootNode, jsonPath, value);
 
             // 写回文件
@@ -457,7 +457,7 @@ public static class JsonFileHelper
     /// </summary>
     /// <typeparam name="T">配置类型</typeparam>
     /// <param name="configPath">配置文件路径</param>
-    /// <param name="defaultConfig">默认配置（文件不存在时使用）</param>
+    /// <param name="defaultConfig">默认配置(文件不存在时使用)</param>
     /// <param name="createIfNotExists">文件不存在时是否创建</param>
     /// <returns>配置对象</returns>
     public static T ReadConfig<T>(string configPath, T? defaultConfig = default, bool createIfNotExists = true) where T : new()
@@ -551,7 +551,7 @@ public static class JsonFileHelper
     /// <param name="filePaths">文件路径列表</param>
     /// <param name="options">序列化选项</param>
     /// <param name="encoding">文件编码</param>
-    /// <returns>读取结果字典（文件路径 -> 对象）</returns>
+    /// <returns>读取结果字典(文件路径 -> 对象)</returns>
     public static Dictionary<string, T?> BatchReadFromFiles<T>(IEnumerable<string> filePaths, JsonSerializerOptions? options = null, Encoding? encoding = null)
     {
         ArgumentNullException.ThrowIfNull(filePaths);
@@ -577,11 +577,11 @@ public static class JsonFileHelper
     /// 批量写入 JSON 文件
     /// </summary>
     /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="fileData">文件数据字典（文件路径 -> 对象）</param>
+    /// <param name="fileData">文件数据字典(文件路径 -> 对象)</param>
     /// <param name="options">序列化选项</param>
     /// <param name="encoding">文件编码</param>
     /// <param name="createDirectory">是否自动创建目录</param>
-    /// <returns>写入结果字典（文件路径 -> 是否成功）</returns>
+    /// <returns>写入结果字典(文件路径 -> 是否成功)</returns>
     public static Dictionary<string, bool> BatchWriteToFiles<T>(Dictionary<string, T> fileData, JsonSerializerOptions? options = null, Encoding? encoding = null, bool createDirectory = true)
     {
         ArgumentNullException.ThrowIfNull(fileData);

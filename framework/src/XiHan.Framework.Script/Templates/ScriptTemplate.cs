@@ -206,22 +206,22 @@ public class TemplateParameter
     public bool Required { get; set; } = false;
 
     /// <summary>
-    /// 可选值列表（用于枚举类型）
+    /// 可选值列表(用于枚举类型)
     /// </summary>
     public List<string> Options { get; set; } = [];
 
     /// <summary>
-    /// 最小值（用于数值类型）
+    /// 最小值(用于数值类型)
     /// </summary>
     public double? MinValue { get; set; }
 
     /// <summary>
-    /// 最大值（用于数值类型）
+    /// 最大值(用于数值类型)
     /// </summary>
     public double? MaxValue { get; set; }
 
     /// <summary>
-    /// 正则表达式验证（用于字符串类型）
+    /// 正则表达式验证(用于字符串类型)
     /// </summary>
     public string? Pattern { get; set; }
 

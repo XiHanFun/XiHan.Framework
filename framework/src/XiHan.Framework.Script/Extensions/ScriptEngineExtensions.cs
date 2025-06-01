@@ -258,7 +258,7 @@ public static class ScriptEngineExtensions
     /// </summary>
     /// <param name="engine">脚本引擎</param>
     /// <param name="scriptCode">脚本代码</param>
-    /// <param name="timeoutMs">超时时间（毫秒）</param>
+    /// <param name="timeoutMs">超时时间(毫秒)</param>
     /// <param name="options">脚本选项</param>
     /// <returns>执行结果</returns>
     /// <exception cref="ScriptTimeoutException">脚本执行超时时抛出</exception>
@@ -285,7 +285,7 @@ public static class ScriptEngineExtensions
     }
 
     /// <summary>
-    /// 安全执行脚本（带完整异常处理）
+    /// 安全执行脚本(带完整异常处理)
     /// </summary>
     /// <param name="engine">脚本引擎</param>
     /// <param name="scriptCode">脚本代码</param>
@@ -329,7 +329,7 @@ public static class ScriptEngineExtensions
     }
 
     /// <summary>
-    /// 安全执行脚本文件（带完整异常处理）
+    /// 安全执行脚本文件(带完整异常处理)
     /// </summary>
     /// <param name="engine">脚本引擎</param>
     /// <param name="scriptFilePath">脚本文件路径</param>

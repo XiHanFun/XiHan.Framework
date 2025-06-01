@@ -316,7 +316,7 @@ public class ScriptTemplateManager
                 {
                     Name = "Numbers",
                     Type = TemplateParameterType.String,
-                    Description = "数字列表（逗号分隔）",
+                    Description = "数字列表(逗号分隔)",
                     DefaultValue = "1, 2, 3, 4, 5",
                     Required = true,
                     Pattern = @"^[\d\s,]+$"

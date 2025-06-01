@@ -27,7 +27,7 @@ public static class StringHttpExtensions
     private static IAdvancedHttpService? _httpService;
 
     /// <summary>
-    /// 设置HTTP服务（通常在应用启动时调用）
+    /// 设置HTTP服务(通常在应用启动时调用)
     /// </summary>
     /// <param name="httpService">HTTP服务实例</param>
     public static void SetHttpService(IAdvancedHttpService httpService)
@@ -170,7 +170,7 @@ public static class StringHttpExtensions
     }
 
     /// <summary>
-    /// 设置超时时间（秒）
+    /// 设置超时时间(秒)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="seconds">超时秒数</param>
@@ -204,7 +204,7 @@ public static class StringHttpExtensions
     }
 
     /// <summary>
-    /// 快速GET请求（返回字符串）
+    /// 快速GET请求(返回字符串)
     /// </summary>
     /// <param name="url">请求URL</param>
     /// <param name="cancellationToken">取消令牌</param>

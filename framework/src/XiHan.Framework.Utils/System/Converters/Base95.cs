@@ -22,13 +22,13 @@ namespace XiHan.Framework.Utils.System.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：最紧凑的标准编码之一，可打印字符集，可读性较差，URL 不完全安全
-/// 常见用途：密钥/口令生成（可打印）、二维码 / 短信传输、嵌入式系统传输数据、空间压缩极致场景、数据序列化压缩格式
+/// 常见用途：密钥/口令生成(可打印)、二维码 / 短信传输、嵌入式系统传输数据、空间压缩极致场景、数据序列化压缩格式
 /// </remarks>
 public static class Base95
 {
     private const int Base = 95;
 
-    // ASCII 可打印字符（从 32 到 126，共 95 个字符）
+    // ASCII 可打印字符(从 32 到 126，共 95 个字符)
     // !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
     // 0-31 ASCII 控制字符
     // 32-126 ASCII 字符

@@ -35,7 +35,7 @@ public static class StringExtensions
     /// <returns></returns>
     public static string EnsureEndsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.EndsWith(c.ToString(), comparisonType) ? str : str + c;
     }
@@ -49,7 +49,7 @@ public static class StringExtensions
     /// <returns></returns>
     public static string EnsureStartsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.StartsWith(c.ToString(), comparisonType) ? str : c + str;
     }
@@ -81,7 +81,7 @@ public static class StringExtensions
     /// <exception cref="ArgumentException">如果 <paramref name="len"/> 大于字符串的长度，则抛出</exception>
     public static string Left(this string str, int len)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.Length < len ? throw new ArgumentException("len 参数不能大于给定字符串的长度！") : str[..len];
     }
@@ -102,7 +102,7 @@ public static class StringExtensions
     /// <param name="n">出现次数</param>
     public static int NthIndexOf(this string str, char c, int n)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         var count = 0;
         for (var i = 0; i < str.Length; i++)
@@ -213,7 +213,7 @@ public static class StringExtensions
     /// <returns></returns>
     public static string ReplaceFirst(this string str, string search, string replace, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         var pos = str.IndexOf(search, comparisonType);
         if (pos < 0)
@@ -246,7 +246,7 @@ public static class StringExtensions
     /// <exception cref="ArgumentException">如果 <paramref name="len"/> 大于字符串的长度，则抛出</exception>
     public static string Right(this string str, int len)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.Length < len
             ? throw new ArgumentException("len argument can not be bigger than given string's length!")
@@ -290,7 +290,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子（通过按空格分隔单词）
+    /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子(通过按空格分隔单词)
     /// 示例:ThisIsSampleSentence被转换为 This is a sample sentence
     /// </summary>
     /// <param name="str">要转换的字符串</param>
@@ -379,7 +379,7 @@ public static class StringExtensions
     public static T ToEnum<T>(this string value)
         where T : struct
     {
-        _ = CheckHelper.NotNull(value, nameof(value));
+        _ = Guard.NotNull(value, nameof(value));
         return Enum.Parse<T>(value);
     }
 
@@ -393,7 +393,7 @@ public static class StringExtensions
     public static T ToEnum<T>(this string value, bool ignoreCase)
         where T : struct
     {
-        _ = CheckHelper.NotNull(value, nameof(value));
+        _ = Guard.NotNull(value, nameof(value));
         return Enum.Parse<T>(value, ignoreCase);
     }
 
@@ -454,8 +454,8 @@ public static class StringExtensions
     /// </summary>
     public static byte[] GetBytes(this string str, Encoding encoding)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
-        _ = CheckHelper.NotNull(encoding, nameof(encoding));
+        _ = Guard.NotNull(str, nameof(str));
+        _ = Guard.NotNull(encoding, nameof(encoding));
 
         return encoding.GetBytes(str);
     }
@@ -484,11 +484,11 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 比较两个字符串是否相等（忽略大小写）
+    /// 比较两个字符串是否相等(忽略大小写)
     /// </summary>
     /// <param name="str">源字符串</param>
     /// <param name="value">要比较的字符串</param>
-    /// <returns>如果两个字符串相等（忽略大小写）则返回 true，否则返回 false</returns>
+    /// <returns>如果两个字符串相等(忽略大小写)则返回 true，否则返回 false</returns>
     public static bool EqualsIgnoreCase(this string? str, string? value)
     {
         return string.Equals(str, value, StringComparison.OrdinalIgnoreCase);
@@ -523,8 +523,8 @@ public static class StringExtensions
     /// <returns>如果包含任意一个指定的字符串则返回 true，否则返回 false</returns>
     public static bool ContainsAny(this string str, IEnumerable<string> values, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
-        _ = CheckHelper.NotNull(values, nameof(values));
+        _ = Guard.NotNull(str, nameof(str));
+        _ = Guard.NotNull(values, nameof(values));
 
         foreach (var value in values)
         {
@@ -546,8 +546,8 @@ public static class StringExtensions
     /// <returns>如果包含所有指定的字符串则返回 true，否则返回 false</returns>
     public static bool ContainsAll(this string str, IEnumerable<string> values, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
-        _ = CheckHelper.NotNull(values, nameof(values));
+        _ = Guard.NotNull(str, nameof(str));
+        _ = Guard.NotNull(values, nameof(values));
 
         foreach (var value in values)
         {
@@ -568,7 +568,7 @@ public static class StringExtensions
     /// <returns>分割后的字符串数组</returns>
     public static IEnumerable<string> SplitInParts(this string str, int partLength)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         if (partLength <= 0)
         {
@@ -636,7 +636,7 @@ public static class StringExtensions
     /// <returns>字符串的字节大小</returns>
     public static int GetByteSize(this string str, Encoding? encoding = null)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         encoding ??= Encoding.UTF8;
         return encoding.GetByteCount(str);
@@ -649,7 +649,7 @@ public static class StringExtensions
     /// <returns>移除空白字符后的字符串</returns>
     public static string RemoveWhiteSpaces(this string str)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         // 预先计算移除空白后的长度以优化内存分配
         var resultLength = 0;
@@ -681,13 +681,13 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 从字符串中移除不可见字符（控制字符和空白字符）
+    /// 从字符串中移除不可见字符(控制字符和空白字符)
     /// </summary>
     /// <param name="str">源字符串</param>
     /// <returns>移除不可见字符后的字符串</returns>
     public static string RemoveInvisibleChars(this string str)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         // 预计算移除后长度
         var resultLength = 0;
@@ -727,7 +727,7 @@ public static class StringExtensions
     /// <returns>截取的子字符串</returns>
     public static string SafeSubstring(this string str, int startIndex, int? length = null)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         if (startIndex < 0)
         {
@@ -759,15 +759,15 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// 计算两个字符串之间的 Levenshtein 距离（编辑距离）
+    /// 计算两个字符串之间的 Levenshtein 距离(编辑距离)
     /// </summary>
     /// <param name="str">第一个字符串</param>
     /// <param name="other">第二个字符串</param>
     /// <returns>表示两个字符串之间的编辑距离</returns>
     public static int LevenshteinDistance(this string str, string other)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
-        _ = CheckHelper.NotNull(other, nameof(other));
+        _ = Guard.NotNull(str, nameof(str));
+        _ = Guard.NotNull(other, nameof(other));
 
         var n = str.Length;
         var m = other.Length;
@@ -807,7 +807,7 @@ public static class StringExtensions
     /// <returns>如果包含中文字符则返回 true，否则返回 false</returns>
     public static bool ContainsChinese(this string str)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.Any(c => c is >= (char)0x4E00 and <= (char)0x9FFF);
     }
@@ -819,7 +819,7 @@ public static class StringExtensions
     /// <returns>反转后的字符串</returns>
     public static string Reverse(this string str)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         if (str.Length <= 1)
         {
@@ -841,7 +841,7 @@ public static class StringExtensions
     /// <returns>处理后的字符串</returns>
     public static string PadToLength(this string str, int length, char padChar = ' ', bool padLeft = false)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return str.Length >= length ? str : padLeft ? str.PadLeft(length, padChar) : str.PadRight(length, padChar);
     }
@@ -854,7 +854,7 @@ public static class StringExtensions
     /// <returns>重复后的字符串</returns>
     public static string Repeat(this string str, int count)
     {
-        _ = CheckHelper.NotNull(str, nameof(str));
+        _ = Guard.NotNull(str, nameof(str));
 
         return count <= 0 ? string.Empty : count == 1 || str.Length == 0 ? str : string.Concat(Enumerable.Repeat(str, count));
     }

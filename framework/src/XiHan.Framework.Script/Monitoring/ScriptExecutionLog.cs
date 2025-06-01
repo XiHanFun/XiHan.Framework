@@ -35,17 +35,17 @@ public class ScriptExecutionLog
     public bool IsSuccess { get; set; }
 
     /// <summary>
-    /// 执行时间（毫秒）
+    /// 执行时间(毫秒)
     /// </summary>
     public long ExecutionTimeMs { get; set; }
 
     /// <summary>
-    /// 编译时间（毫秒）
+    /// 编译时间(毫秒)
     /// </summary>
     public long CompilationTimeMs { get; set; }
 
     /// <summary>
-    /// 内存使用量（字节）
+    /// 内存使用量(字节)
     /// </summary>
     public long MemoryUsageBytes { get; set; }
 

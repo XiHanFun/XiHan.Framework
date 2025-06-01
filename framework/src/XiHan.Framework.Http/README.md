@@ -92,7 +92,7 @@ services.AddModule<XiHanHttpModule>();
 
 ## 使用示例
 
-### 🔗 链式调用 API（推荐）
+### 🔗 链式调用 API(推荐)
 
 #### 基础用法
 
@@ -230,7 +230,7 @@ public class UserService
 ### 文件操作
 
 ```csharp
-// 上传文件（使用链式调用）
+// 上传文件(使用链式调用)
 using var fileStream = File.OpenRead("document.pdf");
 var uploadResult = await "https://api.example.com/upload"
     .SetAuthorization("your-token")
@@ -324,7 +324,7 @@ else if (result.IsServerError())
     .SetBody(object, "application/json")           // 设置请求体
     .SetJsonBody(object)                           // 设置JSON请求体
     .SetFormData(formData)                         // 设置表单数据
-    .SetTimeout(30)                                // 设置超时时间（秒）
+    .SetTimeout(30)                                // 设置超时时间(秒)
     .SetTimeout(TimeSpan.FromSeconds(30))          // 设置超时时间
     .UseClient("ApiClient")                        // 使用指定客户端
     .WithVerboseLogging()                          // 启用详细日志

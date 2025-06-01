@@ -483,7 +483,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
         var parameters = entryPoint.GetParameters();
         var args = new object?[parameters.Length];
 
-        // 填充参数（如果有）
+        // 填充参数(如果有)
         for (var i = 0; i < parameters.Length; i++)
         {
             var paramName = parameters[i].Name;
@@ -609,7 +609,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
             throw new ScriptSecurityException("脚本文件路径包含危险字符", "DangerousPath");
         }
 
-        // 检查文件大小（防止过大的文件导致内存问题）
+        // 检查文件大小(防止过大的文件导致内存问题)
         var fileInfo = new FileInfo(scriptFilePath);
         if (fileInfo.Length > securityOptions.MaxFileSize)
         {

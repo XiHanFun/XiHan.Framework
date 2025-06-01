@@ -510,7 +510,7 @@ public static class JsonPerformanceHelper
 public class PerformanceResult
 {
     /// <summary>
-    /// 总耗时（毫秒）
+    /// 总耗时(毫秒)
     /// </summary>
     public long ElapsedMilliseconds { get; set; }
 
@@ -520,12 +520,12 @@ public class PerformanceResult
     public int Iterations { get; set; }
 
     /// <summary>
-    /// 内存使用量（字节）
+    /// 内存使用量(字节)
     /// </summary>
     public long MemoryUsed { get; set; }
 
     /// <summary>
-    /// 平均每次操作耗时（毫秒）
+    /// 平均每次操作耗时(毫秒)
     /// </summary>
     public double AverageTimePerOperation { get; set; }
 

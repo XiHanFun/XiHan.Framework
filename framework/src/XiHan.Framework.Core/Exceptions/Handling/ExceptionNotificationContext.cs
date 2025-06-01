@@ -31,7 +31,7 @@ public class ExceptionNotificationContext
     /// <param name="handled"></param>
     public ExceptionNotificationContext(Exception exception, LogLevel? logLevel = null, bool handled = true)
     {
-        Exception = CheckHelper.NotNull(exception, nameof(exception));
+        Exception = Guard.NotNull(exception, nameof(exception));
         LogLevel = logLevel ?? exception.GetLogLevel();
         Handled = handled;
     }

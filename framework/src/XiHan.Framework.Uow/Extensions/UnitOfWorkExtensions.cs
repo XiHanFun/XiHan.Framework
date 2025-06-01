@@ -30,7 +30,7 @@ public static class UnitOfWorkExtensions
     /// <returns></returns>
     public static bool IsReservedFor(this IUnitOfWork unitOfWork, string reservationName)
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         return unitOfWork.IsReserved && unitOfWork.ReservationName == reservationName;
     }
@@ -45,7 +45,7 @@ public static class UnitOfWorkExtensions
     public static void AddItem<TValue>(this IUnitOfWork unitOfWork, string key, TValue value)
         where TValue : class
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         unitOfWork.Items[key] = value;
     }
@@ -60,7 +60,7 @@ public static class UnitOfWorkExtensions
     public static TValue GetItemOrDefault<TValue>(this IUnitOfWork unitOfWork, string key)
         where TValue : class
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         return unitOfWork.Items.FirstOrDefault(x => x.Key == key).Value.As<TValue>();
     }
@@ -76,7 +76,7 @@ public static class UnitOfWorkExtensions
     public static TValue GetOrAddItem<TValue>(this IUnitOfWork unitOfWork, string key, Func<string, TValue> factory)
         where TValue : class
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         return unitOfWork.Items.GetOrAdd(key, factory).As<TValue>();
     }
@@ -88,7 +88,7 @@ public static class UnitOfWorkExtensions
     /// <param name="key"></param>
     public static void RemoveItem(this IUnitOfWork unitOfWork, string key)
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         _ = unitOfWork.Items.RemoveAllWhere(x => x.Key == key);
     }

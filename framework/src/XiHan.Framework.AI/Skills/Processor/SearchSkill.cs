@@ -74,7 +74,7 @@ public class SearchSkill : IXiHanSkill
 
             var keyword = match.Groups[2].Value.Trim();
 
-            // 执行搜索（模拟实现）
+            // 执行搜索(模拟实现)
             var searchResults = await SearchAsync(keyword, cancellationToken);
 
             if (string.IsNullOrEmpty(searchResults))
@@ -101,7 +101,7 @@ public class SearchSkill : IXiHanSkill
     /// <returns>搜索结果</returns>
     private static async Task<string> SearchAsync(string keyword, CancellationToken cancellationToken)
     {
-        // 模拟搜索结果（实际项目中应调用真实搜索API）
+        // 模拟搜索结果(实际项目中应调用真实搜索API)
         await Task.Delay(500, cancellationToken); // 模拟网络延迟
 
         // 简单返回一些模拟结果

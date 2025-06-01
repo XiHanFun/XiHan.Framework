@@ -63,7 +63,7 @@ public static class IdGeneratorFactory
     }
 
     /// <summary>
-    /// 创建短ID生成器（适合URL友好的短ID）
+    /// 创建短ID生成器(适合URL友好的短ID)
     /// </summary>
     /// <param name="workerId">工作机器ID</param>
     /// <returns>雪花漂移算法ID生成器</returns>
@@ -84,7 +84,7 @@ public static class IdGeneratorFactory
     }
 
     /// <summary>
-    /// 创建经典雪花算法ID生成器（Twitter Snowflake兼容）
+    /// 创建经典雪花算法ID生成器(Twitter Snowflake兼容)
     /// </summary>
     /// <param name="workerId">工作机器ID</param>
     /// <param name="dataCenterId">数据中心ID</param>
@@ -116,7 +116,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建数字形式的NanoID生成器
     /// </summary>
-    /// <param name="size">长度（默认为10）</param>
+    /// <param name="size">长度(默认为10)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Numeric(int size = 10)
     {
@@ -126,7 +126,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建小写字母形式的NanoID生成器
     /// </summary>
-    /// <param name="size">长度（默认为16）</param>
+    /// <param name="size">长度(默认为16)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Lowercase(int size = 16)
     {
@@ -136,7 +136,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建大写字母形式的NanoID生成器
     /// </summary>
-    /// <param name="size">长度（默认为16）</param>
+    /// <param name="size">长度(默认为16)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Uppercase(int size = 16)
     {
@@ -146,7 +146,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建URL安全的NanoID生成器
     /// </summary>
-    /// <param name="size">长度（默认为21）</param>
+    /// <param name="size">长度(默认为21)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_UrlSafe(int size = 21)
     {
@@ -154,9 +154,9 @@ public static class IdGeneratorFactory
     }
 
     /// <summary>
-    /// 创建安全字符集的NanoID生成器（无相似字符如：1/I/l, 0/O/o 等）
+    /// 创建安全字符集的NanoID生成器(无相似字符如：1/I/l, 0/O/o 等)
     /// </summary>
-    /// <param name="size">长度（默认为21）</param>
+    /// <param name="size">长度(默认为21)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Safe(int size = 21)
     {
@@ -166,7 +166,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建十六进制字符集的NanoID生成器
     /// </summary>
-    /// <param name="size">长度（默认为32）</param>
+    /// <param name="size">长度(默认为32)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Hex(int size = 32)
     {
@@ -177,7 +177,7 @@ public static class IdGeneratorFactory
     /// 创建自定义字符集的NanoID生成器
     /// </summary>
     /// <param name="alphabet">自定义字符集</param>
-    /// <param name="size">长度（默认为21）</param>
+    /// <param name="size">长度(默认为21)</param>
     /// <returns>NanoID生成器</returns>
     public static IDistributedIdGenerator CreateNanoIdGenerator_Custom(string alphabet, int size = 21)
     {

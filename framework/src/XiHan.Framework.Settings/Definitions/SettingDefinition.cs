@@ -55,7 +55,7 @@ public class SettingDefinition
     }
 
     /// <summary>
-    /// 设置名称（唯一标识）
+    /// 设置名称(唯一标识)
     /// </summary>
     public string Name { get; }
 

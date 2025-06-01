@@ -33,8 +33,8 @@ public static class BlowfishHelper
     /// 使用 Blowfish 加密数据
     /// </summary>
     /// <param name="data">要加密的明文数据</param>
-    /// <param name="key">密钥（建议 128 位或更长）</param>
-    /// <returns>加密后的数据（Base64 编码）</returns>
+    /// <param name="key">密钥(建议 128 位或更长)</param>
+    /// <returns>加密后的数据(Base64 编码)</returns>
     public static string Encrypt(string data, string key)
     {
         var dataBytes = Encoding.UTF8.GetBytes(data);
@@ -44,7 +44,7 @@ public static class BlowfishHelper
     }
 
     /// <summary>
-    /// 使用 Blowfish 加密数据（字节级别）
+    /// 使用 Blowfish 加密数据(字节级别)
     /// </summary>
     /// <param name="dataBytes">要加密的明文字节数据</param>
     /// <param name="keyBytes">密钥字节数据</param>
@@ -57,8 +57,8 @@ public static class BlowfishHelper
     /// <summary>
     /// 使用 Blowfish 解密数据
     /// </summary>
-    /// <param name="encryptedData">加密的密文数据（Base64 编码）</param>
-    /// <param name="key">密钥（与加密时使用的密钥一致）</param>
+    /// <param name="encryptedData">加密的密文数据(Base64 编码)</param>
+    /// <param name="key">密钥(与加密时使用的密钥一致)</param>
     /// <returns>解密后的明文数据</returns>
     public static string Decrypt(string encryptedData, string key)
     {
@@ -69,7 +69,7 @@ public static class BlowfishHelper
     }
 
     /// <summary>
-    /// 使用 Blowfish 解密数据（字节级别）
+    /// 使用 Blowfish 解密数据(字节级别)
     /// </summary>
     /// <param name="cipherBytes">加密的密文字节数据</param>
     /// <param name="keyBytes">密钥字节数据</param>
@@ -82,7 +82,7 @@ public static class BlowfishHelper
     /// <summary>
     /// 执行加密或解密操作
     /// </summary>
-    /// <param name="inputBytes">输入数据（明文或密文）</param>
+    /// <param name="inputBytes">输入数据(明文或密文)</param>
     /// <param name="keyBytes">密钥字节数据</param>
     /// <param name="forEncryption">指示是加密 (true) 还是解密 (false)</param>
     /// <returns>处理后的字节数据</returns>
@@ -91,7 +91,7 @@ public static class BlowfishHelper
         // 限制密钥长度为 448 位以内
         if (keyBytes.Length > 56)
         {
-            throw new ArgumentException("密钥长度必须为 448 位（56 字节）或更少。");
+            throw new ArgumentException("密钥长度必须为 448 位(56 字节)或更少。");
         }
 
         // 创建加密引擎

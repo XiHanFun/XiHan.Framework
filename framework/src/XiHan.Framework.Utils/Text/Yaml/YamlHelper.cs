@@ -71,7 +71,7 @@ public static partial class YamlHelper
                 continue;
             }
 
-            // 解析键值对（格式：key: value）
+            // 解析键值对(格式：key: value)
             var match = YamlKeyValueRegex().Match(trimmedLine);
             if (!match.Success)
             {
@@ -82,8 +82,8 @@ public static partial class YamlHelper
             var value = match.Groups[2].Value.Trim();
 
             // 处理引号包裹的值
-            if (value.StartsWith('\'') && value.EndsWith('\'') ||
-                value.StartsWith('\"') && value.EndsWith('\"'))
+            if ((value.StartsWith('\'') && value.EndsWith('\'')) ||
+                (value.StartsWith('\"') && value.EndsWith('\"')))
             {
                 value = value[1..^1];
             }
@@ -121,7 +121,7 @@ public static partial class YamlHelper
     }
 
     /// <summary>
-    /// 解析多层级的YAML（扁平化处理）
+    /// 解析多层级的YAML(扁平化处理)
     /// </summary>
     /// <param name="yaml">YAML字符串</param>
     /// <returns>扁平化的键值对字典，键使用点号分隔层级</returns>
@@ -167,8 +167,8 @@ public static partial class YamlHelper
             if (!string.IsNullOrEmpty(value))
             {
                 // 处理引号包裹的值
-                if (value.StartsWith('\'') && value.EndsWith('\'') ||
-                    value.StartsWith('\"') && value.EndsWith('\"'))
+                if ((value.StartsWith('\'') && value.EndsWith('\'')) ||
+                    (value.StartsWith('\"') && value.EndsWith('\"')))
                 {
                     value = value[1..^1];
                 }

@@ -28,7 +28,7 @@ public class HttpClientOptions
     public const string SectionName = "XiHan:Http";
 
     /// <summary>
-    /// 默认超时时间（秒）
+    /// 默认超时时间(秒)
     /// </summary>
     [Range(1, 300)]
     public int DefaultTimeoutSeconds { get; set; } = 30;
@@ -40,7 +40,7 @@ public class HttpClientOptions
     public int RetryCount { get; set; } = 3;
 
     /// <summary>
-    /// 重试间隔（秒）
+    /// 重试间隔(秒)
     /// </summary>
     public int[] RetryDelaySeconds { get; set; } = [1, 5, 10];
 
@@ -51,7 +51,7 @@ public class HttpClientOptions
     public int CircuitBreakerFailureThreshold { get; set; } = 5;
 
     /// <summary>
-    /// 熔断器采样持续时间（秒）
+    /// 熔断器采样持续时间(秒)
     /// </summary>
     [Range(10, 300)]
     public int CircuitBreakerSamplingDurationSeconds { get; set; } = 60;
@@ -63,7 +63,7 @@ public class HttpClientOptions
     public int CircuitBreakerMinimumThroughput { get; set; } = 10;
 
     /// <summary>
-    /// 熔断器断开持续时间（秒）
+    /// 熔断器断开持续时间(秒)
     /// </summary>
     [Range(10, 600)]
     public int CircuitBreakerDurationOfBreakSeconds { get; set; } = 30;
@@ -84,13 +84,13 @@ public class HttpClientOptions
     public bool LogSensitiveData { get; set; } = false;
 
     /// <summary>
-    /// 最大响应内容长度（用于日志记录）
+    /// 最大响应内容长度(用于日志记录)
     /// </summary>
     [Range(1024, 1048576)]
     public int MaxResponseContentLength { get; set; } = 4096;
 
     /// <summary>
-    /// 客户端生存期（分钟）
+    /// 客户端生存期(分钟)
     /// </summary>
     [Range(1, 1440)]
     public int ClientLifetimeMinutes { get; set; } = 5;

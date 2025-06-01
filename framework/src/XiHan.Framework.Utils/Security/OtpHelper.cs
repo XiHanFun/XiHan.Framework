@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Security;
 public static class OtpHelper
 {
     /// <summary>
-    /// 生成随机的密钥（适用于 TOTP 和 HOTP）
+    /// 生成随机的密钥(适用于 TOTP 和 HOTP)
     /// </summary>
     /// <param name="length"></param>
     /// <returns></returns>
@@ -116,7 +116,7 @@ public static class OtpHelper
     }
 
     /// <summary>
-    /// 获取当前时间的计数器（用于 TOTP）
+    /// 获取当前时间的计数器(用于 TOTP)
     /// </summary>
     /// <param name="step"></param>
     /// <returns></returns>

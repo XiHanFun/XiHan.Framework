@@ -27,7 +27,7 @@ public class UnitOfWorkEventArgs : EventArgs
     /// <param name="unitOfWork"></param>
     public UnitOfWorkEventArgs(IUnitOfWork unitOfWork)
     {
-        _ = CheckHelper.NotNull(unitOfWork, nameof(unitOfWork));
+        _ = Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
         UnitOfWork = unitOfWork;
     }

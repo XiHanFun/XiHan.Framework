@@ -130,7 +130,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
             return true;
         }
 
-        // 检查基类相等（RowVersion比较）
+        // 检查基类相等(RowVersion比较)
         if (base.Equals(other))
         {
             return true;

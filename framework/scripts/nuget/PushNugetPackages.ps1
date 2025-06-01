@@ -65,7 +65,7 @@ if ($confirm -ne "Y") {
     exit
 }
 
-# 获取剩余文件（应只包含当前版本的文件）
+# 获取剩余文件(应只包含当前版本的文件)
 $nupkgFiles = Get-ChildItem -Path $nupkgsPath -Filter *.nupkg
 
 # 推送当前版本的 nupkg 文件

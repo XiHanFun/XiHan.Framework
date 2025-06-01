@@ -29,7 +29,7 @@ public class ServiceConfigurationContext
     /// <param name="services"></param>
     public ServiceConfigurationContext(IServiceCollection services)
     {
-        Services = CheckHelper.NotNull(services, nameof(services));
+        Services = Guard.NotNull(services, nameof(services));
         Items = new Dictionary<string, object?>();
     }
 

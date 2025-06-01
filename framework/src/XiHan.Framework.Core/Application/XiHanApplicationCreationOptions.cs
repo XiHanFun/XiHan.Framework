@@ -30,7 +30,7 @@ public class XiHanApplicationCreationOptions
     /// <param name="services"></param>
     public XiHanApplicationCreationOptions(IServiceCollection services)
     {
-        Services = CheckHelper.NotNull(services, nameof(services));
+        Services = Guard.NotNull(services, nameof(services));
         PlugInSources = [];
         Configuration = new XiHanConfigurationBuilderOptions();
     }

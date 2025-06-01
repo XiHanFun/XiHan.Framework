@@ -26,7 +26,7 @@ namespace XiHan.Framework.Utils.System.Converters;
 /// </remarks>
 public static class Base62
 {
-    // 字符表：62 个字符（0-9A-Za-z）
+    // 字符表：62 个字符(0-9A-Za-z)
     private const string Base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     private static readonly Dictionary<char, int> _charMap = [];

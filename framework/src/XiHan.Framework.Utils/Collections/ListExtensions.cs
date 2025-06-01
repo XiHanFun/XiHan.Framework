@@ -293,7 +293,7 @@ public static class ListExtensions
     /// <returns>返回找到的项或新添加的项</returns>
     public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory)
     {
-        _ = CheckHelper.NotNull(source, nameof(source));
+        _ = Guard.NotNull(source, nameof(source));
 
         var item = source.FirstOrDefault(selector);
 

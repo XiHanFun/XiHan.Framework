@@ -30,7 +30,7 @@ public static class HostEnvironmentExtensions
     /// <returns></returns>
     public static bool IsDevelopment(this IXiHanHostEnvironment hostEnvironment)
     {
-        _ = CheckHelper.NotNull(hostEnvironment, nameof(hostEnvironment));
+        _ = Guard.NotNull(hostEnvironment, nameof(hostEnvironment));
 
         return hostEnvironment.IsEnvironment(Environments.Development);
     }
@@ -42,7 +42,7 @@ public static class HostEnvironmentExtensions
     /// <returns></returns>
     public static bool IsStaging(this IXiHanHostEnvironment hostEnvironment)
     {
-        _ = CheckHelper.NotNull(hostEnvironment, nameof(hostEnvironment));
+        _ = Guard.NotNull(hostEnvironment, nameof(hostEnvironment));
 
         return hostEnvironment.IsEnvironment(Environments.Staging);
     }
@@ -54,7 +54,7 @@ public static class HostEnvironmentExtensions
     /// <returns></returns>
     public static bool IsProduction(this IXiHanHostEnvironment hostEnvironment)
     {
-        _ = CheckHelper.NotNull(hostEnvironment, nameof(hostEnvironment));
+        _ = Guard.NotNull(hostEnvironment, nameof(hostEnvironment));
 
         return hostEnvironment.IsEnvironment(Environments.Production);
     }
@@ -67,7 +67,7 @@ public static class HostEnvironmentExtensions
     /// <returns></returns>
     public static bool IsEnvironment(this IXiHanHostEnvironment hostEnvironment, string environmentName)
     {
-        _ = CheckHelper.NotNull(hostEnvironment, nameof(hostEnvironment));
+        _ = Guard.NotNull(hostEnvironment, nameof(hostEnvironment));
 
         return string.Equals(hostEnvironment.EnvironmentName, environmentName, StringComparison.OrdinalIgnoreCase);
     }

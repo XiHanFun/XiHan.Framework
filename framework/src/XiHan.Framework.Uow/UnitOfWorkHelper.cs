@@ -49,7 +49,7 @@ public static class UnitOfWorkHelper
     /// <returns></returns>
     public static bool IsUnitOfWorkMethod(MethodInfo methodInfo, out UnitOfWorkAttribute? unitOfWorkAttribute)
     {
-        CheckHelper.NotNull(methodInfo, nameof(methodInfo));
+        Guard.NotNull(methodInfo, nameof(methodInfo));
 
         // 方法声明
         var attrs = methodInfo.GetCustomAttributes(true).OfType<UnitOfWorkAttribute>().ToArray();

@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.System.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：不区分大小写、支持错误检测，编码长度较长
-/// 常见用途：TOTP（谷歌验证码）、DNS编码、二维码等
+/// 常见用途：TOTP(谷歌验证码)、DNS编码、二维码等
 /// </remarks>
 public static class Base32
 {

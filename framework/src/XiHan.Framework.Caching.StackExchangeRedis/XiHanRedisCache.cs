@@ -104,21 +104,21 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     {
         var type = typeof(RedisCache);
 
-        RedisDatabaseField = CheckHelper.NotNull(type.GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic), nameof(RedisDatabaseField));
+        RedisDatabaseField = Guard.NotNull(type.GetField("_cache", BindingFlags.Instance | BindingFlags.NonPublic), nameof(RedisDatabaseField));
 
-        ConnectMethod = CheckHelper.NotNull(type.GetMethod("Connect", BindingFlags.Instance | BindingFlags.NonPublic), nameof(ConnectMethod));
+        ConnectMethod = Guard.NotNull(type.GetMethod("Connect", BindingFlags.Instance | BindingFlags.NonPublic), nameof(ConnectMethod));
 
-        ConnectAsyncMethod = CheckHelper.NotNull(type.GetMethod("ConnectAsync", BindingFlags.Instance | BindingFlags.NonPublic), nameof(ConnectAsyncMethod));
+        ConnectAsyncMethod = Guard.NotNull(type.GetMethod("ConnectAsync", BindingFlags.Instance | BindingFlags.NonPublic), nameof(ConnectAsyncMethod));
 
-        MapMetadataMethod = CheckHelper.NotNull(type.GetMethod("MapMetadata", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static), nameof(MapMetadataMethod));
+        MapMetadataMethod = Guard.NotNull(type.GetMethod("MapMetadata", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static), nameof(MapMetadataMethod));
 
-        GetAbsoluteExpirationMethod = CheckHelper.NotNull(type.GetMethod("GetAbsoluteExpiration", BindingFlags.Static | BindingFlags.NonPublic), nameof(GetAbsoluteExpirationMethod));
+        GetAbsoluteExpirationMethod = Guard.NotNull(type.GetMethod("GetAbsoluteExpiration", BindingFlags.Static | BindingFlags.NonPublic), nameof(GetAbsoluteExpirationMethod));
 
-        GetExpirationInSecondsMethod = CheckHelper.NotNull(type.GetMethod("GetExpirationInSeconds", BindingFlags.Static | BindingFlags.NonPublic), nameof(GetExpirationInSecondsMethod));
+        GetExpirationInSecondsMethod = Guard.NotNull(type.GetMethod("GetExpirationInSeconds", BindingFlags.Static | BindingFlags.NonPublic), nameof(GetExpirationInSecondsMethod));
 
-        OnRedisErrorMethod = CheckHelper.NotNull(type.GetMethod("OnRedisError", BindingFlags.Instance | BindingFlags.NonPublic), nameof(OnRedisErrorMethod));
+        OnRedisErrorMethod = Guard.NotNull(type.GetMethod("OnRedisError", BindingFlags.Instance | BindingFlags.NonPublic), nameof(OnRedisErrorMethod));
 
-        RecycleMethodInfo = CheckHelper.NotNull(type.GetMethod("Recycle", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static), nameof(RecycleMethodInfo));
+        RecycleMethodInfo = Guard.NotNull(type.GetMethod("Recycle", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static), nameof(RecycleMethodInfo));
 
         AbsoluteExpirationKey = type.GetField("AbsoluteExpirationKey", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!.ToString()!;
 
@@ -158,7 +158,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <returns></returns>
     public virtual byte[]?[] GetMany(IEnumerable<string> keys)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         return GetAndRefreshMany(keys, true);
     }
@@ -171,7 +171,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <returns></returns>
     public virtual async Task<byte[]?[]> GetManyAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         return await GetAndRefreshManyAsync(keys, true, token);
     }
@@ -234,7 +234,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <param name="keys"></param>
     public virtual void RefreshMany(IEnumerable<string> keys)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         _ = GetAndRefreshMany(keys, false);
     }
@@ -247,7 +247,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <returns></returns>
     public virtual async Task RefreshManyAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         _ = await GetAndRefreshManyAsync(keys, false, token);
     }
@@ -258,7 +258,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <param name="keys"></param>
     public virtual void RemoveMany(IEnumerable<string> keys)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         var cache = Connect();
 
@@ -281,7 +281,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <returns></returns>
     public virtual async Task RemoveManyAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
-        keys = CheckHelper.NotNull(keys, nameof(keys));
+        keys = Guard.NotNull(keys, nameof(keys));
 
         token.ThrowIfCancellationRequested();
         var cache = await ConnectAsync(token);

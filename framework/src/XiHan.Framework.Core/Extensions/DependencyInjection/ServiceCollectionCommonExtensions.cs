@@ -90,7 +90,7 @@ public static class ServiceCollectionCommonExtensions
     /// <returns></returns>
     public static IServiceProvider BuildServiceProviderFromFactory(this IServiceCollection services)
     {
-        _ = CheckHelper.NotNull(services, nameof(services));
+        _ = Guard.NotNull(services, nameof(services));
 
         foreach (var service in services)
         {
@@ -123,7 +123,7 @@ public static class ServiceCollectionCommonExtensions
     /// <exception cref="XiHanException"></exception>
     public static IServiceProvider BuildServiceProviderFromFactory<TContainerBuilder>(this IServiceCollection services, Action<TContainerBuilder>? builderAction = null) where TContainerBuilder : notnull
     {
-        _ = CheckHelper.NotNull(services, nameof(services));
+        _ = Guard.NotNull(services, nameof(services));
 
         var serviceProviderFactory = services.GetSingletonInstanceOrNull<IServiceProviderFactory<TContainerBuilder>>() ??
             throw new XiHanException($"在 {services} 中未发现服务提供器 {typeof(IServiceProviderFactory<TContainerBuilder>).FullName}");

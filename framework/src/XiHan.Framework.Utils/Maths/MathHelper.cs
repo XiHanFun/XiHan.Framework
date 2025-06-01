@@ -145,7 +145,7 @@ public static class MathHelper
     }
 
     /// <summary>
-    /// 计算三角形的面积（海伦公式）
+    /// 计算三角形的面积(海伦公式)
     /// </summary>
     /// <param name="a"></param>
     /// <param name="b"></param>

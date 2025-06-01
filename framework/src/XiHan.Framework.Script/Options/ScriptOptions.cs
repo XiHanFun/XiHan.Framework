@@ -75,7 +75,7 @@ public class ScriptOptions
     public string? CacheKey { get; set; }
 
     /// <summary>
-    /// 超时时间（毫秒）
+    /// 超时时间(毫秒)
     /// </summary>
     public int TimeoutMs { get; set; } = 30000;
 
@@ -174,7 +174,7 @@ public class ScriptOptions
     /// <summary>
     /// 设置超时时间
     /// </summary>
-    /// <param name="timeoutMs">超时时间（毫秒）</param>
+    /// <param name="timeoutMs">超时时间(毫秒)</param>
     /// <returns>当前选项实例</returns>
     public ScriptOptions WithTimeout(int timeoutMs)
     {

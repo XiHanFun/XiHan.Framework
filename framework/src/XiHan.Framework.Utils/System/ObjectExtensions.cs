@@ -84,7 +84,7 @@ public static class ObjectExtensions
     /// <param name="func">仅当条件为 <code>true</code> 时才执行的函数</param>
     /// <typeparam name="T">对象的类型</typeparam>
     /// <returns>
-    /// 如果 <paramref name="condition"/> 为 <code>true</code>，则返回由 <paramref name="func"/> 修改后的对象（）
+    /// 如果 <paramref name="condition"/> 为 <code>true</code>，则返回由 <paramref name="func"/> 修改后的对象()
     /// 如果 <paramref name="condition"/> 为 <code>false</code>，则返回原始对象
     /// </returns>
     public static T If<T>(this T obj, bool condition, Func<T, T> func)

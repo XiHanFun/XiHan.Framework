@@ -42,8 +42,8 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="optionsAction"></param>
     internal XiHanApplicationBase(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
     {
-        _ = CheckHelper.NotNull(startupModuleType, nameof(startupModuleType));
-        _ = CheckHelper.NotNull(services, nameof(services));
+        _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
+        _ = Guard.NotNull(services, nameof(services));
 
         ConsoleLogger.Info(XiHan.SayHello());
 

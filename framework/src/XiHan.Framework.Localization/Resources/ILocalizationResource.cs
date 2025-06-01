@@ -35,12 +35,12 @@ public interface ILocalizationResource
     string BasePath { get; }
 
     /// <summary>
-    /// 优先级（值越大优先级越高）
+    /// 优先级(值越大优先级越高)
     /// </summary>
     int Priority { get; }
 
     /// <summary>
-    /// 继承资源列表（按优先级排序）
+    /// 继承资源列表(按优先级排序)
     /// </summary>
     IReadOnlyList<ILocalizationResource> BaseResources { get; }
 

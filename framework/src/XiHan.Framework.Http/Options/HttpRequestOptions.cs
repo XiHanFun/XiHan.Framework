@@ -62,12 +62,12 @@ public class HttpRequestOptions
     public bool? ValidateSslCertificate { get; set; }
 
     /// <summary>
-    /// 请求标识（用于日志追踪）
+    /// 请求标识(用于日志追踪)
     /// </summary>
     public string? RequestId { get; set; }
 
     /// <summary>
-    /// 自定义标签（用于监控和日志）
+    /// 自定义标签(用于监控和日志)
     /// </summary>
     public Dictionary<string, object> Tags { get; set; } = [];
 

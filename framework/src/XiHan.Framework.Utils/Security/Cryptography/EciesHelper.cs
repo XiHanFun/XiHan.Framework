@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// Ecies 椭圆曲线加密解密
 /// </summary>
 /// <remarks>
-/// 结合了 ECC 的密钥交换和对称加密算法（如 AES）来实现安全的加密通信。
+/// 结合了 ECC 的密钥交换和对称加密算法(如 AES)来实现安全的加密通信。
 /// </remarks>
 public static class EciesHelper
 {
@@ -79,7 +79,7 @@ public static class EciesHelper
         receiverEcdh.ImportSubjectPublicKeyInfo(receiverPublicKeyBytes, out _);
         var sharedSecret = senderEcdh.DeriveKeyMaterial(receiverEcdh.PublicKey);
 
-        // 使用共享密钥对消息进行加密（AES）
+        // 使用共享密钥对消息进行加密(AES)
         using var aes = Aes.Create();
         aes.Key = sharedSecret;
         aes.GenerateIV();
@@ -135,7 +135,7 @@ public static class EciesHelper
         senderEcdh.ImportSubjectPublicKeyInfo(senderPublicKey, out _);
         var sharedSecret = receiverEcdh.DeriveKeyMaterial(senderEcdh.PublicKey);
 
-        // 使用共享密钥对密文进行解密（AES）
+        // 使用共享密钥对密文进行解密(AES)
         using var aes = Aes.Create();
         aes.Key = sharedSecret;
         aes.IV = iv;

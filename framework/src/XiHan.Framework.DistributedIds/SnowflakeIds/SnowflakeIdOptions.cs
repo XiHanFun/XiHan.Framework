@@ -79,7 +79,7 @@ public class SnowflakeIdOptions
     private byte _dataCenterId = 0;
 
     /// <summary>
-    /// 基础时间（默认为2024-01-01）
+    /// 基础时间(默认为2024-01-01)
     /// 不能超过当前系统时间
     /// </summary>
     public DateTime BaseTime
@@ -117,9 +117,9 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 机器码位长（默认值6）
+    /// 机器码位长(默认值6)
     /// 范围：1-15
-    /// 机器码与序列号的位数之和不能超过22（64位-42）
+    /// 机器码与序列号的位数之和不能超过22(64位-42)
     /// </summary>
     public byte WorkerIdBitLength
     {
@@ -140,9 +140,9 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 序列数位长（默认值6）
+    /// 序列数位长(默认值6)
     /// 范围：3-21
-    /// 机器码与序列号的位数之和不能超过22（64位-42）
+    /// 机器码与序列号的位数之和不能超过22(64位-42)
     /// </summary>
     public byte SeqBitLength
     {
@@ -163,7 +163,7 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 最大序列数（含）
+    /// 最大序列数(含)
     /// 设置范围：0-131071
     /// 默认值63，表示最大序列数是63
     /// </summary>
@@ -182,7 +182,7 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 最小序列数（含）
+    /// 最小序列数(含)
     /// 默认值5，表示最小序列数是5
     /// 设置范围：0-127
     /// </summary>
@@ -200,7 +200,7 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 最大漂移次数（含）
+    /// 最大漂移次数(含)
     /// 默认2000，推荐范围：100-5000
     /// </summary>
     public int TopOverCostCount
@@ -269,13 +269,13 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 数据中心ID位长（默认值5）
+    /// 数据中心ID位长(默认值5)
     /// 范围：1-10
     /// </summary>
     public byte DataCenterIdBitLength { get; set; } = 5;
 
     /// <summary>
-    /// ID生成长度（默认值0表示使用默认长度）
+    /// ID生成长度(默认值0表示使用默认长度)
     /// 范围：0或10-20，0表示使用默认长度
     /// 注意：设置了此值后，生成的ID会被截断或填充到指定长度
     /// </summary>
@@ -293,7 +293,7 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// ID前缀（可选）
+    /// ID前缀(可选)
     /// </summary>
     public string IdPrefix
     {
@@ -313,8 +313,8 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 最大等待回拨时间（毫秒）
-    /// 默认10000ms（10秒）
+    /// 最大等待回拨时间(毫秒)
+    /// 默认10000ms(10秒)
     /// </summary>
     public int MaxBackwardToleranceMs
     {
