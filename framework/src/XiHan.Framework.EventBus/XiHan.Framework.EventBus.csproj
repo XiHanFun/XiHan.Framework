@@ -14,7 +14,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.BackgroundWorkers\XiHan.Framework.BackgroundWorkers.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
     </ItemGroup>
 
 </Project>

@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.EventBus.Attributes;
@@ -43,13 +44,13 @@ public class GenericEventNameAttribute : Attribute, IEventNameProvider
     {
         if (!eventType.IsGenericType)
         {
-            throw new XiHanException($"给定类型 {eventType.AssemblyQualifiedName} 不是通用的");
+            throw new XiHanException($"{eventType.AssemblyQualifiedName} 类型不是泛型类型");
         }
 
         var genericArguments = eventType.GetGenericArguments();
         if (genericArguments.Length > 1)
         {
-            throw new XiHanException($"Given type has more than one generic argument: {eventType.AssemblyQualifiedName}");
+            throw new XiHanException($"{eventType.AssemblyQualifiedName} 类型具有多个泛型参数");
         }
 
         var eventName = EventNameAttribute.GetNameOrDefault(genericArguments[0]);
