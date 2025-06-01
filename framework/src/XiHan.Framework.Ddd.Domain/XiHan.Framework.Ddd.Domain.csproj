@@ -22,6 +22,7 @@
         <ProjectReference Include="..\XiHan.Framework.Ddd.Domain.Shared\XiHan.Framework.Ddd.Domain.Shared.csproj" />
         <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
         <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
         <ProjectReference Include="..\XiHan.Framework.ObjectMapping.Mapster\XiHan.Framework.ObjectMapping.Mapster.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
     </ItemGroup>
