@@ -1,24 +1,32 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DebugOptions
-// Guid:d9e6f3a1-4b2c-5d8e-9f1a-2b3c4d5e6f7g
+// Guid:05e3c60b-a738-492d-856d-9ca4f1e76064
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/2 10:30:00
+// CreateTime:2025/6/1 11:02:17
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Script.Debugging;
+using XiHan.Framework.Script.Debugging;
+using XiHan.Framework.Script.Enums;
+
+namespace XiHan.Framework.Script.Options;
 
 /// <summary>
 /// 脚本调试选项
 /// </summary>
 public class DebugOptions
 {
+    /// <summary>
+    /// 创建默认调试配置
+    /// </summary>
+    public static DebugOptions Default => new();
+
     /// <summary>
     /// 是否启用调试
     /// </summary>
@@ -65,11 +73,6 @@ public class DebugOptions
     public bool EnableProfiling { get; set; } = false;
 
     /// <summary>
-    /// 创建默认调试配置
-    /// </summary>
-    public static DebugOptions Default => new();
-
-    /// <summary>
     /// 创建详细调试配置
     /// </summary>
     public static DebugOptions Verbose()
@@ -101,106 +104,3 @@ public class DebugOptions
         };
     }
 }
-
-/// <summary>
-/// 断点信息
-/// </summary>
-public class Breakpoint
-{
-    /// <summary>
-    /// 行号
-    /// </summary>
-    public int LineNumber { get; set; }
-
-    /// <summary>
-    /// 列号
-    /// </summary>
-    public int? ColumnNumber { get; set; }
-
-    /// <summary>
-    /// 文件路径
-    /// </summary>
-    public string? FilePath { get; set; }
-
-    /// <summary>
-    /// 条件表达式
-    /// </summary>
-    public string? Condition { get; set; }
-
-    /// <summary>
-    /// 是否启用
-    /// </summary>
-    public bool Enabled { get; set; } = true;
-
-    /// <summary>
-    /// 命中次数
-    /// </summary>
-    public int HitCount { get; set; }
-
-    /// <summary>
-    /// 命中条件
-    /// </summary>
-    public HitCountCondition HitCountCondition { get; set; } = HitCountCondition.Always;
-
-    /// <summary>
-    /// 命中次数阈值
-    /// </summary>
-    public int HitCountThreshold { get; set; } = 1;
-}
-
-/// <summary>
-/// 调试级别
-/// </summary>
-public enum DebugLevel
-{
-    /// <summary>
-    /// 无输出
-    /// </summary>
-    None,
-
-    /// <summary>
-    /// 错误
-    /// </summary>
-    Error,
-
-    /// <summary>
-    /// 警告
-    /// </summary>
-    Warning,
-
-    /// <summary>
-    /// 信息
-    /// </summary>
-    Information,
-
-    /// <summary>
-    /// 详细
-    /// </summary>
-    Verbose
-}
-
-/// <summary>
-/// 命中条件
-/// </summary>
-public enum HitCountCondition
-{
-    /// <summary>
-    /// 总是命中
-    /// </summary>
-    Always,
-
-    /// <summary>
-    /// 等于指定次数
-    /// </summary>
-    Equal,
-
-    /// <summary>
-    /// 大于等于指定次数
-    /// </summary>
-    GreaterOrEqual,
-
-    /// <summary>
-    /// 是指定次数的倍数
-    /// </summary>
-    Multiple
-} 

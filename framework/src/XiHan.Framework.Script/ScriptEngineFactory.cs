@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Script.Core;
-using XiHan.Framework.Script.Models;
 using XiHan.Framework.Script.Options;
 
 namespace XiHan.Framework.Script;

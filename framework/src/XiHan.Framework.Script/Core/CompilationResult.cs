@@ -15,7 +15,7 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
-namespace XiHan.Framework.Script.Models;
+namespace XiHan.Framework.Script.Core;
 
 /// <summary>
 /// 编译结果

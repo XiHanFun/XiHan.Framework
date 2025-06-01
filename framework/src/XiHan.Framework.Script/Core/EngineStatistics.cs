@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Script.Models;
+namespace XiHan.Framework.Script.Core;
 
 /// <summary>
 /// 引擎统计信息
@@ -77,7 +77,7 @@ public class EngineStatistics
     /// <summary>
     /// 缓存命中率
     /// </summary>
-    public double CacheHitRate => (CacheHits + CacheMisses) == 0 ? 0 : (double)CacheHits / (CacheHits + CacheMisses) * 100;
+    public double CacheHitRate => CacheHits + CacheMisses == 0 ? 0 : (double)CacheHits / (CacheHits + CacheMisses) * 100;
 
     /// <summary>
     /// 运行时间

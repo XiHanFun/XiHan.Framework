@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Script.Core;
 using XiHan.Framework.Script.Extensions;
-using XiHan.Framework.Script.Models;
 using XiHan.Framework.Script.Options;
 
 namespace XiHan.Framework.Script;

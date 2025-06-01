@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -16,7 +16,6 @@ using Microsoft.CodeAnalysis;
 using XiHan.Framework.Script.Core;
 using XiHan.Framework.Script.Enums;
 using XiHan.Framework.Script.Exceptions;
-using XiHan.Framework.Script.Models;
 using XiHan.Framework.Script.Options;
 
 namespace XiHan.Framework.Script.Extensions;
@@ -481,8 +480,8 @@ public static class ScriptEngineExtensions
         return new SyntaxValidationResult
         {
             IsValid = compilationResult.IsSuccess,
-            Errors = [.. compilationResult.Diagnostics.Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)],
-            Warnings = [.. compilationResult.Diagnostics.Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning)],
+            Errors = [.. compilationResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)],
+            Warnings = [.. compilationResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning)],
             CompilationTimeMs = compilationResult.CompilationTimeMs
         };
     }
