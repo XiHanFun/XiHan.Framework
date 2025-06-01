@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.Data;
+namespace XiHan.Framework.Authorization;
 
 /// <summary>
 /// 曦寒框架权限模块
