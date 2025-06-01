@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Script.Models;
+namespace XiHan.Framework.Script.Extensions;
 
 /// <summary>
 /// 性能统计信息

@@ -92,9 +92,9 @@
     <File Path="scripts/editor/Interface.cs" />
   </Folder>
   <Folder Name="/3.others/scripts/nuget/">
-    <File Path="scripts/nuget/1.SaveNugetApiKey.ps1" />
-    <File Path="scripts/nuget/2.VersionUpgrade.ps1" />
-    <File Path="scripts/nuget/3.PushNugetPackages.ps1" />
+    <File Path="scripts/nuget/PushNugetPackages.ps1" />
+    <File Path="scripts/nuget/SaveNugetApiKey.ps1" />
+    <File Path="scripts/nuget/VersionUpgrade.ps1" />
   </Folder>
   <Folder Name="/3.others/scripts/project/">
     <File Path="scripts/project/ClearProjecBinObj.ps1" />
