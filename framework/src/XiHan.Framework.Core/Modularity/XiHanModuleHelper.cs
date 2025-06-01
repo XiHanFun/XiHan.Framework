@@ -121,7 +121,7 @@ public static class XiHanModuleHelper
     /// </summary>
     /// <param name="moduleTypes">已处理的模块列表，避免重复</param>
     /// <param name="moduleType">当前模块类型</param>
-    /// <param name="logger">日志记录器（可选）</param>
+    /// <param name="logger">日志记录器(可选)</param>
     /// <param name="prefix">前缀字符串，用于构造目录树分支</param>
     /// <param name="isLast">当前模块是否为同级中的最后一个</param>
     private static void AddModuleAndDependenciesRecursively(List<Type> moduleTypes, Type moduleType, ILogger? logger,

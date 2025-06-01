@@ -63,7 +63,7 @@ public class DebugOptions
     public int MaxDebugOutputLength { get; set; } = 10000;
 
     /// <summary>
-    /// 调试会话超时时间（毫秒）
+    /// 调试会话超时时间(毫秒)
     /// </summary>
     public int DebugSessionTimeoutMs { get; set; } = 300000; // 5分钟
 

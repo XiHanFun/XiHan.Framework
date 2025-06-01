@@ -94,12 +94,12 @@ public class PageResponseDto<T> : PageResponseDto
     }
 
     /// <summary>
-    /// 数据列表（只读）
+    /// 数据列表(只读)
     /// </summary>
     public IReadOnlyList<T>? ResponseData { get; set; }
 
     /// <summary>
-    /// 扩展数据（只读）
+    /// 扩展数据(只读)
     /// </summary>
     public object? ExtraData { get; set; }
 }

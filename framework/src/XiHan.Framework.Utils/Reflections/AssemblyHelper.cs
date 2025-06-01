@@ -63,7 +63,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<string> GetAssemblyFiles(string folderPath, SearchOption searchOption)
     {
-        _ = CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
+        _ = Guard.NotNullOrEmpty(folderPath, nameof(folderPath));
 
         return Directory
             .EnumerateFiles(folderPath, "*.*", searchOption)
@@ -78,7 +78,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static List<Assembly> LoadAssemblies(string folderPath, SearchOption searchOption)
     {
-        _ = CheckHelper.NotNullOrEmpty(folderPath, nameof(folderPath));
+        _ = Guard.NotNullOrEmpty(folderPath, nameof(folderPath));
 
         return [.. GetAssemblyFiles(folderPath, searchOption).Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)];
     }
@@ -195,9 +195,9 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectiveAssemblies(string prefix, string suffix, string contain)
     {
-        _ = CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
-        _ = CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
-        _ = CheckHelper.NotNullOrEmpty(contain, nameof(contain));
+        _ = Guard.NotNullOrEmpty(prefix, nameof(prefix));
+        _ = Guard.NotNullOrEmpty(suffix, nameof(suffix));
+        _ = Guard.NotNullOrEmpty(contain, nameof(contain));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.EndsWith(suffix, StringComparison.InvariantCultureIgnoreCase))
@@ -214,8 +214,8 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectivePatchAssemblies(string prefix, string suffix)
     {
-        _ = CheckHelper.NotNullOrEmpty(prefix, nameof(prefix));
-        _ = CheckHelper.NotNullOrEmpty(suffix, nameof(suffix));
+        _ = Guard.NotNullOrEmpty(prefix, nameof(prefix));
+        _ = Guard.NotNullOrEmpty(suffix, nameof(suffix));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.EndsWith(suffix, StringComparison.InvariantCultureIgnoreCase))
@@ -230,7 +230,7 @@ public static class AssemblyHelper
     /// <returns></returns>
     public static IEnumerable<Assembly> GetEffectiveCenterAssemblies(string contain)
     {
-        _ = CheckHelper.NotNullOrEmpty(contain, nameof(contain));
+        _ = Guard.NotNullOrEmpty(contain, nameof(contain));
 
         return GetAllAssemblies()
             .Where(assembly => assembly.ManifestModule.Name.Contains(contain, StringComparison.InvariantCultureIgnoreCase))
@@ -656,7 +656,7 @@ internal class AssemblyEquality : EqualityComparer<Assembly>
 {
     public override bool Equals(Assembly? x, Assembly? y)
     {
-        return x is null && y is null || x is not null && y is not null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName());
+        return (x is null && y is null) || (x is not null && y is not null && AssemblyName.ReferenceMatchesDefinition(x.GetName(), y.GetName()));
     }
 
     public override int GetHashCode(Assembly obj)

@@ -56,7 +56,7 @@ public class CacheManager
     /// </summary>
     /// <param name="name">缓存名称</param>
     /// <param name="enableCleanup">是否启用自动清理</param>
-    /// <param name="cleanupIntervalMinutes">清理间隔（分钟）</param>
+    /// <param name="cleanupIntervalMinutes">清理间隔(分钟)</param>
     /// <returns>内存缓存实例</returns>
     public MemoryCache GetCache(string name, bool enableCleanup = true, int cleanupIntervalMinutes = 10)
     {

@@ -28,7 +28,7 @@ public class EventNameAttribute : Attribute, IEventNameProvider
     /// <param name="name"></param>
     public EventNameAttribute(string name)
     {
-        Name = CheckHelper.NotNullOrWhiteSpace(name, nameof(name));
+        Name = Guard.NotNullOrWhiteSpace(name, nameof(name));
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public class EventNameAttribute : Attribute, IEventNameProvider
     /// <returns></returns>
     public static string GetNameOrDefault(Type eventType)
     {
-        CheckHelper.NotNull(eventType, nameof(eventType));
+        Guard.NotNull(eventType, nameof(eventType));
 
         return (eventType
                     .GetCustomAttributes(true)

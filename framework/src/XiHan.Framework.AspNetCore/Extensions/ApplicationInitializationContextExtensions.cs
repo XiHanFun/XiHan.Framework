@@ -31,7 +31,7 @@ public static class ApplicationInitializationContextExtensions
     {
         var applicationBuilder = context.ServiceProvider.GetRequiredService<IObjectAccessor<IApplicationBuilder>>().Value;
 
-        _ = CheckHelper.NotNull(applicationBuilder, nameof(applicationBuilder));
+        _ = Guard.NotNull(applicationBuilder, nameof(applicationBuilder));
 
         return applicationBuilder!;
     }

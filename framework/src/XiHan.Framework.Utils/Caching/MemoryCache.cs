@@ -62,7 +62,7 @@ public class MemoryCache
     /// 内存缓存构造函数
     /// </summary>
     /// <param name="enableCleanup">是否启用自动清理</param>
-    /// <param name="cleanupIntervalMinutes">清理间隔（分钟）</param>
+    /// <param name="cleanupIntervalMinutes">清理间隔(分钟)</param>
     public MemoryCache(bool enableCleanup = true, int cleanupIntervalMinutes = 10)
     {
         _enableCleanup = enableCleanup;
@@ -170,7 +170,7 @@ public class MemoryCache
     }
 
     /// <summary>
-    /// 获取缓存项，如果不存在则创建（使用相对过期时间）
+    /// 获取缓存项，如果不存在则创建(使用相对过期时间)
     /// </summary>
     /// <typeparam name="T">缓存项类型</typeparam>
     /// <param name="key">缓存键</param>
@@ -203,7 +203,7 @@ public class MemoryCache
     }
 
     /// <summary>
-    /// 获取缓存项，如果不存在则使用异步方式创建（使用相对过期时间）
+    /// 获取缓存项，如果不存在则使用异步方式创建(使用相对过期时间)
     /// </summary>
     /// <typeparam name="T">缓存项类型</typeparam>
     /// <param name="key">缓存键</param>

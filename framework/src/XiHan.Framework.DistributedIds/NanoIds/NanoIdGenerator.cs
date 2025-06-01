@@ -18,13 +18,13 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 
 /// <summary>
 /// NanoID生成器
-/// 用于生成安全、URL友好、随机的唯一标识符（ID）
+/// 用于生成安全、URL友好、随机的唯一标识符(ID)
 /// 通常用于需要较短ID但又不想暴露顺序信息的场景，如API标识符、数据库关联ID、短链接等
 /// 主要特点：
-/// 安全性（Security）：使用加密安全的随机数生成，保证ID的不可预测性和抗冲突性。
-/// 紧凑长度（Compact）：比UUID更短，默认21个字符，但可根据需求调整长度。
-/// 字符友好（URL-Safe）：仅使用URL安全字符(A-Za-z0-9_-)，避免转义问题，适合各类系统。
-/// 时间可提取（Time-Extractable）：支持从生成的ID中提取创建时间，便于分析和调试。
+/// 安全性(Security)：使用加密安全的随机数生成，保证ID的不可预测性和抗冲突性。
+/// 紧凑长度(Compact)：比UUID更短，默认21个字符，但可根据需求调整长度。
+/// 字符友好(URL-Safe)：仅使用URL安全字符(A-Za-z0-9_-)，避免转义问题，适合各类系统。
+/// 时间可提取(Time-Extractable)：支持从生成的ID中提取创建时间，便于分析和调试。
 /// </summary>
 public class NanoIdGenerator : IDistributedIdGenerator
 {
@@ -95,7 +95,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个ID（字符串形式）
+    /// 获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public string NextIdString()
@@ -124,7 +124,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取ID（字符串形式）
+    /// 批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -153,7 +153,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步获取下一个ID（字符串形式）
+    /// 异步获取下一个ID(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public Task<string> NextIdStringAsync()
@@ -172,7 +172,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取ID（字符串形式）
+    /// 异步批量获取ID(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -188,7 +188,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <returns>时间戳</returns>
     public DateTime ExtractTime(long id)
     {
-        // 提取时间戳（高42位）
+        // 提取时间戳(高42位)
         var timestamp = id >> 22;
 
         // 根据时间戳类型转换为DateTime
@@ -213,7 +213,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <returns>序列号</returns>
     public int ExtractSequence(long id)
     {
-        // 提取序列号（低22位）
+        // 提取序列号(低22位)
         return (int)(id & 0x3FFFFF);
     }
 

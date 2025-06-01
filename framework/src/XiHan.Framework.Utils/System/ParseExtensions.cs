@@ -452,9 +452,9 @@ public static class ParseExtensions
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
             var item = (objDynamic as object).GetType().GetProperties()
-                .Where(prop => !prop.HasAttribute<TAttribute>() || prop.HasAttribute<TAttribute>() &&
+                .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
-                        .GetPropertyValue<TAttribute, bool>("IsIgnore"))
+                        .GetPropertyValue<TAttribute, bool>("IsIgnore")))
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;

@@ -47,7 +47,7 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 将对象序列化为 JSON 字符串（非泛型版本）
+    /// 将对象序列化为 JSON 字符串(非泛型版本)
     /// </summary>
     /// <param name="obj">要序列化的对象</param>
     /// <param name="type">对象类型</param>
@@ -83,7 +83,7 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 将 JSON 字符串反序列化为指定类型的对象（非泛型版本）
+    /// 将 JSON 字符串反序列化为指定类型的对象(非泛型版本)
     /// </summary>
     /// <param name="json">JSON 字符串</param>
     /// <param name="type">目标类型</param>
@@ -325,7 +325,7 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 格式化 JSON 字符串（美化输出）
+    /// 格式化 JSON 字符串(美化输出)
     /// </summary>
     /// <param name="json">JSON 字符串</param>
     /// <param name="indented">是否缩进</param>
@@ -351,7 +351,7 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 压缩 JSON 字符串（移除空白字符）
+    /// 压缩 JSON 字符串(移除空白字符)
     /// </summary>
     /// <param name="json">JSON 字符串</param>
     /// <returns>压缩后的 JSON 字符串</returns>
@@ -395,7 +395,7 @@ public static class JsonHelper
     /// 根据 JSON 路径获取值
     /// </summary>
     /// <param name="json">JSON 字符串</param>
-    /// <param name="path">JSON 路径（如：$.user.name）</param>
+    /// <param name="path">JSON 路径(如：$.user.name)</param>
     /// <returns>路径对应的值</returns>
     public static JsonNode? GetValueByPath(string json, string path)
     {
@@ -430,7 +430,7 @@ public static class JsonHelper
 
         try
         {
-            // 简单的路径解析实现（支持 $.property 和 $.array[index] 格式）
+            // 简单的路径解析实现(支持 $.property 和 $.array[index] 格式)
             var segments = path.TrimStart('$', '.').Split('.');
             var current = jsonNode;
 

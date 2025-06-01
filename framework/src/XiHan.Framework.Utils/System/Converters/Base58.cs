@@ -21,12 +21,12 @@ namespace XiHan.Framework.Utils.System.Converters;
 /// Base58 编码和解码
 /// </summary>
 /// <remarks>
-/// 主要特点：排除易混字符（0/O/I/l），高可读性，编码长度较短
+/// 主要特点：排除易混字符(0/O/I/l)，高可读性，编码长度较短
 /// 常见用途：比特币地址、钱包ID、邀请码
 /// </remarks>
 public static class Base58
 {
-    // Bitcoin Base58 字符表（不含 0, O, I, l 等易混淆字符）
+    // Bitcoin Base58 字符表(不含 0, O, I, l 等易混淆字符)
     private const string Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
     private static readonly int[] _indexes = new int[128];
@@ -61,7 +61,7 @@ public static class Base58
             result.Insert(0, Alphabet[remainder]);
         }
 
-        // 处理前导0（Base58 用 '1' 表示）
+        // 处理前导0(Base58 用 '1' 表示)
         foreach (var b in input)
         {
             if (b == 0)
@@ -102,7 +102,7 @@ public static class Base58
             bytes = [.. bytes.Take(bytes.Length - 1)]; // 移除补零
         }
 
-        // 处理前导 '1'（即 Base58 中的0）
+        // 处理前导 '1'(即 Base58 中的0)
         var leadingZeros = input.TakeWhile(c => c == '1').Count();
         return [.. Enumerable.Repeat((byte)0, leadingZeros), .. bytes.Reverse()];
     }

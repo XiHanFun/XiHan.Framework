@@ -124,7 +124,7 @@ public static class TimeZoneHelper
     /// 获取时区显示名称
     /// </summary>
     /// <param name="timeZone">时区</param>
-    /// <param name="_">文化（未使用）</param>
+    /// <param name="_">文化(未使用)</param>
     /// <returns>显示名称</returns>
     public static string GetTimeZoneDisplayName(TimeZoneInfo timeZone, CultureInfo _)
     {

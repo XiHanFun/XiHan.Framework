@@ -631,7 +631,7 @@ public class SnowflakeIdGeneratorTest
 
         stopwatch.Stop();
 
-        // 截取1秒内生成的数量（但不超过目标10万）
+        // 截取1秒内生成的数量(但不超过目标10万)
         var actualIds = allIds.Take(Math.Min(allIds.Count, 100000)).ToList();
         var actualStringIds = allIdStrings.Take(Math.Min(allIdStrings.Count, 100000)).ToList();
 

@@ -52,7 +52,7 @@ public static class TextWatermarkExample
         // 嵌入加密水印
         var watermarkedText = TextWatermarkHelper.EmbedWatermark(originalText, watermark, key);
 
-        // 提取水印（使用正确的密钥）
+        // 提取水印(使用正确的密钥)
         var extractedWatermark = TextWatermarkHelper.ExtractWatermark(watermarkedText, key);
 
         // 尝试使用错误的密钥提取水印

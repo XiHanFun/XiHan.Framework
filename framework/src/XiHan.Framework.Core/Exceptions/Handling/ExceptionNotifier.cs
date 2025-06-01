@@ -54,7 +54,7 @@ public class ExceptionNotifier : IExceptionNotifier, ITransientDependency
     /// <returns></returns>
     public virtual async Task NotifyAsync(ExceptionNotificationContext context)
     {
-        _ = CheckHelper.NotNull(context, nameof(context));
+        _ = Guard.NotNull(context, nameof(context));
 
         using var scope = ServiceScopeFactory.CreateScope();
         var exceptionSubscribers = scope.ServiceProvider.GetServices<IExceptionSubscriber>();

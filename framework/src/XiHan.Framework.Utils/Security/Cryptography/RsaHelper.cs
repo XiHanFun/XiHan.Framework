@@ -41,7 +41,7 @@ public static class RsaHelper
     /// 生成 RSA 密钥对
     /// </summary>
     /// <param name="keySize">密钥长度，默认为 2048 位</param>
-    /// <returns>返回公钥和私钥对（Base64 编码）</returns>
+    /// <returns>返回公钥和私钥对(Base64 编码)</returns>
     /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
     public static (string publicKey, string privateKey) GenerateKeys(int keySize = DefaultKeySize)
     {
@@ -51,10 +51,10 @@ public static class RsaHelper
     }
 
     /// <summary>
-    /// 生成 RSA 密钥对（字节数组格式）
+    /// 生成 RSA 密钥对(字节数组格式)
     /// </summary>
     /// <param name="keySize">密钥长度，默认为 2048 位</param>
-    /// <returns>返回公钥和私钥对（字节数组）</returns>
+    /// <returns>返回公钥和私钥对(字节数组)</returns>
     /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
     public static (byte[] publicKeyBytes, byte[] privateKeyBytes) GenerateKeysBytes(int keySize = DefaultKeySize)
     {
@@ -68,7 +68,7 @@ public static class RsaHelper
     /// </summary>
     /// <param name="plainText">要加密的文本</param>
     /// <param name="publicKey">Base64 编码的公钥或 PEM 格式的公钥</param>
-    /// <param name="blockSize">分块大小，默认为 214 字节（适用于 2048 位密钥）</param>
+    /// <param name="blockSize">分块大小，默认为 214 字节(适用于 2048 位密钥)</param>
     /// <param name="blockSeparator">块分隔符，默认为 "|"，如果为 null 则不使用分隔符</param>
     /// <returns>返回 Base64 编码的加密数据</returns>
     /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>

@@ -201,7 +201,7 @@ public static partial class TextWatermarkHelper
     }
 
     /// <summary>
-    /// 在HTML文本中嵌入水印（在HTML标签之间插入不可见字符）
+    /// 在HTML文本中嵌入水印(在HTML标签之间插入不可见字符)
     /// </summary>
     /// <param name="htmlText">原始HTML文本</param>
     /// <param name="watermark">水印信息</param>

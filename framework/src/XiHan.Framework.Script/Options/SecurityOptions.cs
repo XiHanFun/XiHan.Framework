@@ -60,7 +60,7 @@ public class SecurityOptions
     public bool AllowEnvironmentAccess { get; set; } = true;
 
     /// <summary>
-    /// 最大文件大小限制（字节）
+    /// 最大文件大小限制(字节)
     /// </summary>
     public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
 

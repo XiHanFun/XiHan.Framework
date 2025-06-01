@@ -175,7 +175,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <exception cref="XiHanException"></exception>
     public virtual void Initialize(XiHanUnitOfWorkOptions options)
     {
-        CheckHelper.NotNull(options, nameof(options));
+        Guard.NotNull(options, nameof(options));
 
         if (Options != null)
         {
@@ -192,7 +192,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="reservationName"></param>
     public virtual void Reserve(string reservationName)
     {
-        CheckHelper.NotNullOrWhiteSpace(reservationName, nameof(reservationName));
+        Guard.NotNullOrWhiteSpace(reservationName, nameof(reservationName));
 
         ReservationName = reservationName;
         IsReserved = true;
@@ -344,8 +344,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <exception cref="XiHanException"></exception>
     public virtual void AddDatabaseApi(string key, IDatabaseApi api)
     {
-        CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
-        CheckHelper.NotNull(api, nameof(api));
+        Guard.NotNullOrWhiteSpace(key, nameof(key));
+        Guard.NotNull(api, nameof(api));
 
         if (!_databaseApis.TryAdd(key, api))
         {
@@ -361,8 +361,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual IDatabaseApi GetOrAddDatabaseApi(string key, Func<IDatabaseApi> factory)
     {
-        CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
-        CheckHelper.NotNull(factory, nameof(factory));
+        Guard.NotNullOrWhiteSpace(key, nameof(key));
+        Guard.NotNull(factory, nameof(factory));
 
         return _databaseApis.GetOrAdd(key, factory);
     }
@@ -374,7 +374,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual ITransactionApi? FindTransactionApi(string key)
     {
-        CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
+        Guard.NotNullOrWhiteSpace(key, nameof(key));
 
         return _transactionApis.GetOrDefault(key);
     }
@@ -387,8 +387,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <exception cref="XiHanException"></exception>
     public virtual void AddTransactionApi(string key, ITransactionApi api)
     {
-        CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
-        CheckHelper.NotNull(api, nameof(api));
+        Guard.NotNullOrWhiteSpace(key, nameof(key));
+        Guard.NotNull(api, nameof(api));
 
         if (!_transactionApis.TryAdd(key, api))
         {
@@ -404,8 +404,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual ITransactionApi GetOrAddTransactionApi(string key, Func<ITransactionApi> factory)
     {
-        CheckHelper.NotNullOrWhiteSpace(key, nameof(key));
-        CheckHelper.NotNull(factory, nameof(factory));
+        Guard.NotNullOrWhiteSpace(key, nameof(key));
+        Guard.NotNull(factory, nameof(factory));
 
         return _transactionApis.GetOrAdd(key, factory);
     }

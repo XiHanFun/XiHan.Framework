@@ -84,7 +84,7 @@ public class ScriptEngineBuilder
     /// <summary>
     /// 设置超时时间
     /// </summary>
-    /// <param name="timeoutMs">超时时间（毫秒）</param>
+    /// <param name="timeoutMs">超时时间(毫秒)</param>
     /// <returns>构建器实例</returns>
     public ScriptEngineBuilder WithTimeout(int timeoutMs)
     {

@@ -193,7 +193,7 @@ public static class SelectConditionParser<T>
     {
         if (value is not Tuple<object, object> range || range.Item1 is null || range.Item2 is null)
         {
-            throw new ArgumentException("Between 操作需要一个范围值（Tuple<object, object>）。");
+            throw new ArgumentException("Between 操作需要一个范围值(Tuple<object, object>)。");
         }
 
         var lowerBound = Expression.GreaterThanOrEqual(propertyAccess, Expression.Constant(range.Item1));

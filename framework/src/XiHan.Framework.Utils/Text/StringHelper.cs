@@ -488,7 +488,7 @@ public static class StringHelper
     #region 字节数组转换字符串
 
     /// <summary>
-    /// 将字节数组 byte[]转换为不包含字节顺序标记（BOM）的字符串
+    /// 将字节数组 byte[]转换为不包含字节顺序标记(BOM)的字符串
     /// </summary>
     /// <param name="bytes">要转换为字符串的 byte[]数组</param>
     /// <param name="encoding">获取字符串的编码默认为 UTF8</param>

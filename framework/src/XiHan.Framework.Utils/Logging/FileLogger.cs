@@ -43,7 +43,7 @@ public static class FileLogger
     /// 正常信息
     /// </summary>
     /// <param name="inputStr">日志内容</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     public static void Info(string? inputStr, string? fileName = null)
     {
         WriteToFile(inputStr, "INFO", fileName);
@@ -53,7 +53,7 @@ public static class FileLogger
     /// 成功信息
     /// </summary>
     /// <param name="inputStr">日志内容</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     public static void Success(string? inputStr, string? fileName = null)
     {
         WriteToFile(inputStr, "SUCCESS", fileName);
@@ -63,7 +63,7 @@ public static class FileLogger
     /// 处理、查询信息
     /// </summary>
     /// <param name="inputStr">日志内容</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     public static void Handle(string? inputStr, string? fileName = null)
     {
         WriteToFile(inputStr, "HANDLE", fileName);
@@ -73,7 +73,7 @@ public static class FileLogger
     /// 警告、新增、更新信息
     /// </summary>
     /// <param name="inputStr">日志内容</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     public static void Warn(string? inputStr, string? fileName = null)
     {
         WriteToFile(inputStr, "WARN", fileName);
@@ -83,7 +83,7 @@ public static class FileLogger
     /// 错误、删除、危险、异常信息
     /// </summary>
     /// <param name="inputStr">日志内容</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     public static void Error(string? inputStr, string? fileName = null)
     {
         WriteToFile(inputStr, "ERROR", fileName);
@@ -94,7 +94,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="logType">日志类型</param>
-    /// <param name="fileName">日志文件名（不含扩展名）</param>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
     private static void WriteToFile(string? inputStr, string logType, string? fileName = null)
     {
         if (inputStr == null)

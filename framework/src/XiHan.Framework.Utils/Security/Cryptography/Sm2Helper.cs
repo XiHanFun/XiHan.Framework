@@ -60,8 +60,8 @@ public static class Sm2Helper
     /// 使用私钥对数据进行签名
     /// </summary>
     /// <param name="data">要签名的数据</param>
-    /// <param name="privateKey">私钥（Base64 编码）</param>
-    /// <returns>签名后的数据（Base64 编码）</returns>
+    /// <param name="privateKey">私钥(Base64 编码)</param>
+    /// <returns>签名后的数据(Base64 编码)</returns>
     public static string SignData(string data, string privateKey)
     {
         var dataBytes = Encoding.UTF8.GetBytes(data);
@@ -80,8 +80,8 @@ public static class Sm2Helper
     /// 使用公钥验证签名
     /// </summary>
     /// <param name="data">原始数据</param>
-    /// <param name="signature">签名（Base64 编码）</param>
-    /// <param name="publicKey">公钥（Base64 编码）</param>
+    /// <param name="signature">签名(Base64 编码)</param>
+    /// <param name="publicKey">公钥(Base64 编码)</param>
     /// <returns>验证结果，true 表示签名有效</returns>
     public static bool VerifyData(string data, string signature, string publicKey)
     {

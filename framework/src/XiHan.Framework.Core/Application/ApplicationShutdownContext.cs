@@ -27,7 +27,7 @@ public class ApplicationShutdownContext
     /// <param name="serviceProvider"></param>
     public ApplicationShutdownContext(IServiceProvider serviceProvider)
     {
-        _ = CheckHelper.NotNull(serviceProvider, nameof(serviceProvider));
+        _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
         ServiceProvider = serviceProvider;
     }
