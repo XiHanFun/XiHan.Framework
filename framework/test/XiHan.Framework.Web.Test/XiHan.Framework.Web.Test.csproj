@@ -10,6 +10,7 @@
 	</PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\XiHan.Framework.AI\XiHan.Framework.AI.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
     <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj" />

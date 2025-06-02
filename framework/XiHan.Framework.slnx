@@ -46,13 +46,13 @@
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
   <Folder Name="/1.src/5.AspNetCore/">
+    <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore/XiHan.Framework.AspNetCore.csproj" />
   </Folder>
   <Folder Name="/1.src/6.AspNetCoreLibraries/">
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OAuth/XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Scalar/XiHan.Framework.AspNetCore.Scalar.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Serilog/XiHan.Framework.AspNetCore.Serilog.csproj" />
