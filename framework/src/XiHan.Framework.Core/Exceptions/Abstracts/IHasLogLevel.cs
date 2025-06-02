@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+namespace XiHan.Framework.Core.Exceptions.Abstracts;
 
 /// <summary>
 /// 日志级别接口
