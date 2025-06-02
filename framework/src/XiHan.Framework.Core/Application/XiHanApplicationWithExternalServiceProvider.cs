@@ -28,10 +28,8 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// <param name="startupModuleType"></param>
     /// <param name="services"></param>
     /// <param name="optionsAction"></param>
-    public XiHanApplicationWithExternalServiceProvider(
-        Type startupModuleType,
-        IServiceCollection services,
-        Action<XiHanApplicationCreationOptions>? optionsAction) : base(startupModuleType, services, optionsAction)
+    public XiHanApplicationWithExternalServiceProvider(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
+        : base(startupModuleType, services, optionsAction)
     {
         _ = services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
     }

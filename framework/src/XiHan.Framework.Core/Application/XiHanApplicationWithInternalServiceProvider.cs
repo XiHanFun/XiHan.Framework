@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Core.Application;
 
@@ -38,10 +37,8 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// <param name="startupModuleType"></param>
     /// <param name="services"></param>
     /// <param name="optionsAction"></param>
-    private XiHanApplicationWithInternalServiceProvider(
-        Type startupModuleType,
-        IServiceCollection services,
-        Action<XiHanApplicationCreationOptions>? optionsAction) : base(startupModuleType, services, optionsAction)
+    private XiHanApplicationWithInternalServiceProvider(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
+        : base(startupModuleType, services, optionsAction)
     {
         _ = Services.AddSingleton<IXiHanApplicationWithInternalServiceProvider>(this);
     }
