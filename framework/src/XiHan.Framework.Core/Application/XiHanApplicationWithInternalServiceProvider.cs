@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Core.Application;
 
@@ -49,12 +50,19 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     public IServiceScope? ServiceScope { get; private set; }
 
     /// <summary>
-    /// 创建服务提供器，但不初始化模块。
-    /// 多次调用将返回相同的服务提供器，而不会再次创建
+    /// 创建服务提供器
     /// </summary>
     public IServiceProvider CreateServiceProvider()
     {
-        return ServiceProvider;
+        if (ServiceProvider != null)
+        {
+            return ServiceProvider;
+        }
+
+        ServiceScope = Services.BuildServiceProviderFromFactory().CreateScope();
+        SetServiceProvider(ServiceScope.ServiceProvider);
+
+        return ServiceProvider!;
     }
 
     /// <summary>

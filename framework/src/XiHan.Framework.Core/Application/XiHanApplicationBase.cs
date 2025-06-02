@@ -97,7 +97,7 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <summary>
     /// 应用程序根服务提供器，在初始化应用程序之前不能使用
     /// </summary>
-    public IServiceProvider ServiceProvider { get; private set; } = null!;
+    public IServiceProvider ServiceProvider { get; private set; } = default!;
 
     /// <summary>
     /// 模块
