@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using XiHan.Framework.AI.Options;
 using XiHan.Framework.AI.Providers;
@@ -53,31 +52,32 @@ public class XiHanAIModule : XiHanModule
         var kernelBuilder = services.AddKernel();
 
         // Ollama
-        var ollamaOptions = services.GetRequiredService<IOptions<OllamaOptions>>().Value;
-        _ = kernelBuilder.AddOllamaChatCompletion(
-            modelId: ollamaOptions.ModelName,
-            endpoint: new Uri(ollamaOptions.BaseUrl),
-            serviceId: ollamaOptions.ServiceId);
-        _ = kernelBuilder.AddOllamaEmbeddingGenerator(
-            modelId: ollamaOptions.ModelName,
-            endpoint: new Uri(ollamaOptions.BaseUrl),
-            serviceId: ollamaOptions.ServiceId);
-        _ = services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
-
+        PostConfigure<OllamaOptions>(ollamaOptions =>
+        {
+            kernelBuilder.AddOllamaChatCompletion(
+                modelId: ollamaOptions.ModelName,
+                endpoint: new Uri(ollamaOptions.BaseUrl),
+                serviceId: ollamaOptions.ServiceId);
+            kernelBuilder.AddOllamaEmbeddingGenerator(
+                modelId: ollamaOptions.ModelName,
+                endpoint: new Uri(ollamaOptions.BaseUrl),
+                serviceId: ollamaOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
+        });
         // OpenAI
-        var openAIOptions = services.GetRequiredService<IOptions<OpenAIOptions>>().Value;
-        _ = kernelBuilder.AddOpenAIChatCompletion(
-            modelId: openAIOptions.ModelName,
-            endpoint: new Uri(openAIOptions.BaseUrl),
-            apiKey: openAIOptions.ApiKey,
-            serviceId: openAIOptions.ServiceId);
-        _ = kernelBuilder.AddOpenAIEmbeddingGenerator(
-            modelId: openAIOptions.ModelName,
-            apiKey: openAIOptions.ApiKey,
-            serviceId: openAIOptions.ServiceId);
-        _ = services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
-
-        _ = kernelBuilder.Build();
+        PostConfigure<OpenAIOptions>(openAIOptions =>
+        {
+            kernelBuilder.AddOpenAIChatCompletion(
+                modelId: openAIOptions.ModelName,
+                endpoint: new Uri(openAIOptions.BaseUrl),
+                apiKey: openAIOptions.ApiKey,
+                serviceId: openAIOptions.ServiceId);
+            kernelBuilder.AddOpenAIEmbeddingGenerator(
+                modelId: openAIOptions.ModelName,
+                apiKey: openAIOptions.ApiKey,
+                serviceId: openAIOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
+        });
     }
 }
 
