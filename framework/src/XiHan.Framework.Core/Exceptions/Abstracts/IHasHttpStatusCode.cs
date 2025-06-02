@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+namespace XiHan.Framework.Core.Exceptions.Abstracts;
 
 /// <summary>
 /// 网络请求状态码接口

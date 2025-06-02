@@ -49,28 +49,4 @@ public class InitializationException : Exception
     {
         ConsoleLogger.Error(DefaultMessage + Environment.NewLine + message + Environment.NewLine + innerException?.StackTrace);
     }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw()
-    {
-        throw new InitializationException();
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message)
-    {
-        throw new InitializationException(message);
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message, Exception? exception)
-    {
-        throw new InitializationException(message, exception);
-    }
 }

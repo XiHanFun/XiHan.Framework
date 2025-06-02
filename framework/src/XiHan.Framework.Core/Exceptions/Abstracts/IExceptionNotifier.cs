@@ -3,24 +3,28 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IHasErrorCode
-// Guid:8fecb332-8ee4-492c-a404-3d1ead7f2bfd
+// FileName:IExceptionNotifier
+// Guid:88ba0f7b-0ee4-44be-8f03-52bf1e40c51a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/4/23 0:53:18
+// CreateTime:2024/4/23 1:02:47
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+using XiHan.Framework.Core.Exceptions.Handling;
+
+namespace XiHan.Framework.Core.Exceptions.Abstracts;
 
 /// <summary>
-/// 异常代码接口
+/// 异常通知器
 /// </summary>
-public interface IHasErrorCode
+public interface IExceptionNotifier
 {
     /// <summary>
-    /// 异常代码
+    /// 通知
     /// </summary>
-    string? Code { get; }
+    /// <param name="context"></param>
+    /// <returns></returns>
+    Task NotifyAsync(ExceptionNotificationContext context);
 }

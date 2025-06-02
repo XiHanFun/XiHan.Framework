@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using System.Runtime.ExceptionServices;
-using XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+using XiHan.Framework.Core.Exceptions.Abstracts;
 
 namespace XiHan.Framework.Core.Extensions.Exceptions;
 

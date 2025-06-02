@@ -49,28 +49,4 @@ public class XiHanException : Exception
     {
         ConsoleLogger.Error(DefaultMessage + message);
     }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw()
-    {
-        throw new XiHanException();
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message)
-    {
-        throw new XiHanException(message);
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message, Exception? exception)
-    {
-        throw new XiHanException(message, exception);
-    }
 }

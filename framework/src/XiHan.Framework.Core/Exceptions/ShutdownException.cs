@@ -49,28 +49,4 @@ public class ShutdownException : Exception
     {
         ConsoleLogger.Error(DefaultMessage + message);
     }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw()
-    {
-        throw new ShutdownException();
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message)
-    {
-        throw new ShutdownException(message);
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message, Exception? exception)
-    {
-        throw new ShutdownException(message, exception);
-    }
 }
