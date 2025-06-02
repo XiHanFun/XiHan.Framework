@@ -6,9 +6,9 @@
 	<Import Project="..\..\props\nuget.props" />
 
 	<PropertyGroup>
-		<Title>XiHan.Framework.DataFiltering</Title>
-		<AssemblyName>XiHan.Framework.DataFiltering</AssemblyName>
-		<PackageId>XiHan.Framework.DataFiltering</PackageId>
+		<Title>XiHan.Framework.Data</Title>
+		<AssemblyName>XiHan.Framework.Data</AssemblyName>
+		<PackageId>XiHan.Framework.Data</PackageId>
 		<Description>曦寒框架数据访问库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
