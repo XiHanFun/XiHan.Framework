@@ -130,17 +130,16 @@ public static class XiHanModuleHelper
         // 检查是否是合法的 XiHan 模块类型
         CheckXiHanModuleType(moduleType);
 
+        // 构造当前节点的前缀和分支符号
+        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─" : "├─")) + moduleType.Namespace;
         if (moduleTypes.Contains(moduleType))
         {
-            // 构造当前节点的前缀和分支符号
-            var nodeContainsLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace + "(此模块之前已加载)";
-            ConsoleLogger.Handle(nodeContainsLine);
-            //logger?.LogInformation(nodeContainsLine);
+            nodeLine += " 跳过(此前已加载)";
+            ConsoleLogger.Handle(nodeLine);
+            //logger?.LogInformation(nodeLine);
             return;
         }
 
-        // 构造当前节点的前缀和分支符号
-        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─ " : "├─ ")) + moduleType.Namespace;
         ConsoleLogger.Handle(nodeLine);
         //logger?.LogInformation(nodeLine);
 
@@ -154,7 +153,7 @@ public static class XiHanModuleHelper
         {
             var childIsLast = i == dependedModuleTypes.Count - 1;
             // 为子节点构造新的前缀：如果当前节点是最后一个，则用空格，否则用竖线保持上层分支的连贯
-            var childPrefix = prefix + (isLast ? "    " : "│   ");
+            var childPrefix = prefix + (isLast ? "  " : "│ ");
             AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleTypes[i], logger, childPrefix, childIsLast);
         }
     }
