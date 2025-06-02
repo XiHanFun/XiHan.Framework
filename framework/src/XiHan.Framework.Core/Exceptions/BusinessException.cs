@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+using XiHan.Framework.Core.Exceptions.Abstracts;
 
 namespace XiHan.Framework.Core.Exceptions;
 
@@ -52,14 +52,6 @@ public class BusinessException : Exception, IBusinessException, IHasErrorCode, I
     /// 日志级别
     /// </summary>
     public LogLevel LogLevel { get; set; }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? code = null, string? message = null, string? details = null, Exception? innerException = null, LogLevel logLevel = LogLevel.Warning)
-    {
-        throw new BusinessException(code, message, details, innerException, logLevel);
-    }
 
     /// <summary>
     /// 写入数据

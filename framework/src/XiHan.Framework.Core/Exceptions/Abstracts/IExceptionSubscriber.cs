@@ -3,28 +3,28 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ILocalizeErrorMessage
-// Guid:a618c88c-9431-43dd-ab00-7c1526423b7d
+// FileName:IExceptionSubscriber
+// Guid:7413c0fb-b0ae-40ed-b39f-a9ae194ba891
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/4/23 0:58:17
+// CreateTime:2024/4/23 1:11:16
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Localization;
+using XiHan.Framework.Core.Exceptions.Handling;
 
-namespace XiHan.Framework.Core.Exceptions.Handling.Abstracts;
+namespace XiHan.Framework.Core.Exceptions.Abstracts;
 
 /// <summary>
-/// 本地化报错信息接口
+/// 异常订阅者接口
 /// </summary>
-public interface ILocalizeErrorMessage
+public interface IExceptionSubscriber
 {
     /// <summary>
-    /// 本地化报错信息
+    /// 处理异常，异步
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    string LocalizeErrorMessage(LocalizationContext context);
+    Task HandleAsync(ExceptionNotificationContext context);
 }

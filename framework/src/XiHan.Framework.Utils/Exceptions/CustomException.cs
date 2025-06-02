@@ -49,28 +49,4 @@ public class CustomException : Exception
     {
         ConsoleLogger.Error(DefaultMessage + message);
     }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw()
-    {
-        throw new CustomException();
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message)
-    {
-        throw new CustomException(message);
-    }
-
-    /// <summary>
-    /// 抛出异常
-    /// </summary>
-    public static void Throw(string? message, Exception? exception)
-    {
-        throw new CustomException(message, exception);
-    }
 }
