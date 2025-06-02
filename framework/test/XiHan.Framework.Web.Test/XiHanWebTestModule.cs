@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.AspNetCore;
+using XiHan.Framework.AspNetCore.Mvc;
 using XiHan.Framework.AspNetCore.Serilog;
+using XiHan.Framework.AspNetCore.Swagger;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
@@ -22,7 +25,10 @@ namespace XiHan.Framework.Web.Test;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
-    typeof(XiHanAspNetCoreSerilogModule)
+    typeof(XiHanAspNetCoreModule),
+    typeof(XiHanAspNetCoreMvcModule),
+    typeof(XiHanAspNetCoreSerilogModule),
+    typeof(XiHanAspNetCoreSwaggerModule)
 )]
 public class XiHanWebTestModule : XiHanModule
 {
