@@ -289,12 +289,7 @@ public static class JsonHelper
             return stringValue;
         }
 
-        if (jsonValue.TryGetValue<DateTime>(out var dateTimeValue))
-        {
-            return dateTimeValue;
-        }
-
-        return jsonValue.ToString();
+        return jsonValue.TryGetValue<DateTime>(out var dateTimeValue) ? dateTimeValue : jsonValue.ToString();
     }
 
     #endregion 动态 JSON 解析
