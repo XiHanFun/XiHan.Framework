@@ -35,18 +35,22 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     }
 
     /// <summary>
-    /// 设置服务提供器，但不初始化模块
+    /// 设置服务提供器
     /// </summary>
     void IXiHanApplicationWithExternalServiceProvider.SetServiceProvider(IServiceProvider serviceProvider)
     {
         _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
-        if (ServiceProvider != serviceProvider)
+        if (ServiceProvider != null)
         {
-            throw new Exception("服务提供器之前已设置为另一个服务提供器实例！");
+            if (ServiceProvider != serviceProvider)
+            {
+                throw new Exception("服务提供器之前已设置为另一个服务提供器实例！");
+            }
+            return;
         }
 
-        return;
+        SetServiceProvider(serviceProvider);
     }
 
     /// <summary>
