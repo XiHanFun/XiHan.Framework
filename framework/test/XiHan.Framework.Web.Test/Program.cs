@@ -7,7 +7,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    _ = await builder.Services.AddApplicationAsync<XiHanConsoleTestModule>();
+    _ = await builder.Services.AddApplicationAsync<XiHanWebTestModule>();
 
     var app = builder.Build();
 
