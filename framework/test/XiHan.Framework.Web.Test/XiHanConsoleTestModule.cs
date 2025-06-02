@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.AI;
 using XiHan.Framework.AspNetCore.Authentication.JwtBearer;
 using XiHan.Framework.AspNetCore.Authentication.OAuth;
 using XiHan.Framework.AspNetCore.Scalar;
@@ -34,6 +35,7 @@ namespace XiHan.Framework.Web.Test;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
+    typeof(XiHanAIModule),
     typeof(XiHanBlobStoringModule),
     typeof(XiHanSettingsModule),
     typeof(XiHanLocalizationModule),
