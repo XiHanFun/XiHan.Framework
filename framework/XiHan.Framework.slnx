@@ -19,6 +19,7 @@
     <Project Path="src/XiHan.Framework.Caching.StackExchangeRedis/XiHan.Framework.Caching.StackExchangeRedis.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
     <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
+    <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" Id="c88e3b35-9699-4d63-8bbb-c1b822d260cb" />
     <Project Path="src/XiHan.Framework.DataFiltering/XiHan.Framework.DataFiltering.csproj" Id="1b4ee4ea-54f6-4a8b-832c-ca58a570a014" />
     <Project Path="src/XiHan.Framework.Ddd.Application.Contracts/XiHan.Framework.Ddd.Application.Contracts.csproj" />
     <Project Path="src/XiHan.Framework.Ddd.Application/XiHan.Framework.Ddd.Application.csproj" />
