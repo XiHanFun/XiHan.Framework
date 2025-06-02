@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using System.Text;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Logging;
 
@@ -130,18 +131,18 @@ public static class XiHanModuleHelper
         // 检查是否是合法的 XiHan 模块类型
         CheckXiHanModuleType(moduleType);
 
-        // 构造当前节点的前缀和分支符号
-        var nodeLine = (prefix == "" ? "" : prefix + (isLast ? "└─" : "├─")) + moduleType.Namespace;
-        if (moduleTypes.Contains(moduleType))
-        {
-            nodeLine += " 跳过(此前已加载)";
-            ConsoleLogger.Handle(nodeLine);
-            //logger?.LogInformation(nodeLine);
-            return;
-        }
+        var isAlreadyLoaded = moduleTypes.Contains(moduleType);
+
+        // 构造树形结构的节点显示信息
+        var nodeLine = BuildModuleNodeLine(moduleType, prefix, isLast, isAlreadyLoaded);
 
         ConsoleLogger.Handle(nodeLine);
         //logger?.LogInformation(nodeLine);
+
+        if (isAlreadyLoaded)
+        {
+            return;
+        }
 
         moduleTypes.Add(moduleType);
 
@@ -152,9 +153,73 @@ public static class XiHanModuleHelper
         for (var i = 0; i < dependedModuleTypes.Count; i++)
         {
             var childIsLast = i == dependedModuleTypes.Count - 1;
-            // 为子节点构造新的前缀：如果当前节点是最后一个，则用空格，否则用竖线保持上层分支的连贯
-            var childPrefix = prefix + (isLast ? "  " : "│ ");
+            var childPrefix = BuildChildPrefix(prefix, isLast);
             AddModuleAndDependenciesRecursively(moduleTypes, dependedModuleTypes[i], logger, childPrefix, childIsLast);
         }
+    }
+
+    /// <summary>
+    /// 构造模块节点的显示行
+    /// </summary>
+    /// <param name="moduleType">模块类型</param>
+    /// <param name="prefix">前缀字符串</param>
+    /// <param name="isLast">是否为同级最后一个</param>
+    /// <param name="isAlreadyLoaded">是否已经加载</param>
+    /// <returns>格式化的节点显示行</returns>
+    private static string BuildModuleNodeLine(Type moduleType, string prefix, bool isLast, bool isAlreadyLoaded)
+    {
+        // 构造树形分支符号
+        var branchSymbol = GetBranchSymbol(prefix, isLast);
+
+        // 获取模块简短名称（去除命名空间前缀以提高可读性）
+        var moduleName = GetModuleDisplayName(moduleType);
+
+        // 构造完整的节点行
+        var nodeBuilder = new StringBuilder();
+        nodeBuilder.Append(prefix);
+        nodeBuilder.Append(branchSymbol);
+        nodeBuilder.Append(moduleName);
+
+        if (isAlreadyLoaded)
+        {
+            nodeBuilder.Append(" [已跳过-重复加载]");
+        }
+
+        return nodeBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 获取树形分支符号
+    /// </summary>
+    /// <param name="prefix">当前前缀</param>
+    /// <param name="isLast">是否为同级最后一个</param>
+    /// <returns>分支符号</returns>
+    private static string GetBranchSymbol(string prefix, bool isLast)
+    {
+        return string.IsNullOrEmpty(prefix) ? "" : isLast ? "└─" : "├─";
+    }
+
+    /// <summary>
+    /// 构造子节点前缀
+    /// </summary>
+    /// <param name="currentPrefix">当前节点前缀</param>
+    /// <param name="isCurrentLast">当前节点是否为同级最后一个</param>
+    /// <returns>子节点前缀</returns>
+    private static string BuildChildPrefix(string currentPrefix, bool isCurrentLast)
+    {
+        return currentPrefix + (isCurrentLast ? "  " : "│ ");
+    }
+
+    /// <summary>
+    /// 获取模块的显示名称
+    /// </summary>
+    /// <param name="moduleType">模块类型</param>
+    /// <returns>模块显示名称</returns>
+    private static string GetModuleDisplayName(Type moduleType)
+    {
+        var fullName = moduleType.Namespace ?? moduleType.Name;
+
+        // 如果是 XiHan.Framework 命名空间，显示简短形式
+        return fullName.StartsWith("XiHan.Framework.") ? fullName["XiHan.Framework.".Length..] : fullName;
     }
 }
