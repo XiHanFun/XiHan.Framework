@@ -21,7 +21,7 @@ namespace XiHan.Framework.Script.Templates;
 /// </summary>
 public class ScriptTemplateManager
 {
-    private readonly Dictionary<string, ScriptTemplate> _templates = new();
+    private readonly Dictionary<string, ScriptTemplate> _templates = [];
     private readonly string _templateDirectory;
 
     /// <summary>
@@ -71,7 +71,7 @@ public class ScriptTemplateManager
     /// <returns>模板列表</returns>
     public IEnumerable<ScriptTemplate> SearchTemplatesByTags(params string[] tags)
     {
-        return _templates.Values.Where(t => 
+        return _templates.Values.Where(t =>
             tags.Any(tag => t.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)));
     }
 
@@ -126,7 +126,7 @@ public class ScriptTemplateManager
 
         Directory.CreateDirectory(_templateDirectory);
         var filePath = Path.Combine(_templateDirectory, $"{template.Name}.json");
-        
+
         var json = JsonSerializer.Serialize(template, new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -235,7 +235,7 @@ public class ScriptTemplateManager
                 double a = #{NumberA};
                 double b = #{NumberB};
                 string operation = "#{Operation}";
-                
+
                 double result = operation switch
                 {
                     "add" => a + b,
@@ -244,7 +244,7 @@ public class ScriptTemplateManager
                     "divide" => b != 0 ? a / b : throw new DivideByZeroException("除数不能为零"),
                     _ => throw new ArgumentException($"不支持的操作: {operation}")
                 };
-                
+
                 Console.WriteLine($"{a} {operation} {b} = {result}");
                 return result;
                 """,
@@ -290,16 +290,16 @@ public class ScriptTemplateManager
             Author = "System",
             Code = """
                 using System.Linq;
-                
+
                 // 数据处理示例
                 var numbers = new[] { #{Numbers} };
-                
+
                 var sum = numbers.Sum();
                 var average = numbers.Average();
                 var max = numbers.Max();
                 var min = numbers.Min();
                 var count = numbers.Count();
-                
+
                 var summary = new {
                     Sum = sum,
                     Average = Math.Round(average, 2),
@@ -307,7 +307,7 @@ public class ScriptTemplateManager
                     Min = min,
                     Count = count
                 };
-                
+
                 Console.WriteLine($"数据统计: 总和={summary.Sum}, 平均值={summary.Average}, 最大值={summary.Max}, 最小值={summary.Min}, 数量={summary.Count}");
                 result = summary;
                 """,
@@ -352,4 +352,4 @@ public class ScriptTemplateManager
             }
         }
     }
-} 
+}
