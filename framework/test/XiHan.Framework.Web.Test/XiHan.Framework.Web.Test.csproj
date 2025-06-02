@@ -9,21 +9,10 @@
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>
 	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\XiHan.Framework.AI\XiHan.Framework.AI.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.JwtBearer\XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Authentication.OAuth\XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.SignalR\XiHan.Framework.AspNetCore.SignalR.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Refit\XiHan.Framework.AspNetCore.Refit.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Scalar\XiHan.Framework.AspNetCore.Scalar.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Swagger\XiHan.Framework.AspNetCore.Swagger.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.BlobStoring\XiHan.Framework.BlobStoring.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
-    <ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
-    <ProjectReference Include="..\XiHan.Framework.Test.Base\XiHan.Framework.Test.Base.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Serilog\XiHan.Framework.AspNetCore.Serilog.csproj" />
+	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
+	  <ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
 
 </Project>
