@@ -51,7 +51,7 @@ public class TypeFinder : ITypeFinder
         {
             try
             {
-                var typesInThisAssembly = AssemblyHelper.GetAllTypes(assembly);
+                var typesInThisAssembly = ReflectionHelper.GetAllTypes(assembly);
 
                 var inThisAssembly = typesInThisAssembly as Type[] ?? [.. typesInThisAssembly];
                 if (inThisAssembly.Length == 0)
