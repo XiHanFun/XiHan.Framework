@@ -205,7 +205,7 @@ public static class StringHelper
             if (sourceStrLength != newStyleLength)
             {
                 returnValue = string.Empty;
-                error = "样式格式的长度与输入的字符长度不符，请重新输入";
+                error = "样式格式的长度与输入的字符长度不符";
             }
             else
             {
