@@ -34,6 +34,7 @@ public class XiHanAspNetCoreSwaggerModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+
         _ = services.AddSwaggerGen();
     }
 
