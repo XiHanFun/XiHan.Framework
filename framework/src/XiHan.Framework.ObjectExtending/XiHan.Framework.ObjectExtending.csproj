@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj" />
   </ItemGroup>
 
 </Project>
