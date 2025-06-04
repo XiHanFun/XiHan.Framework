@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Utils.Verifications;
 
 /// <summary>
-/// DataChecker
+/// 数据验证器
 /// </summary>
 public static class DataChecker
 {
