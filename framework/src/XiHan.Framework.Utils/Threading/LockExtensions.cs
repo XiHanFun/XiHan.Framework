@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Reflections;
+namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
 /// 锁扩展方法
