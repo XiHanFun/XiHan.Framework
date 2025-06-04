@@ -35,7 +35,6 @@ public class XiHanAspNetCoreSwaggerModule : XiHanModule
     {
         var services = context.Services;
 
-        _ = services.AddOpenApi();
         _ = services.AddSwaggerGen();
     }
 
