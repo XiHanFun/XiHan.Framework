@@ -14,8 +14,9 @@
 
 using System.Reflection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Core.Reflection;
 
-namespace XiHan.Framework.Core.Reflection;
+namespace XiHan.Framework.Core.Reflections;
 
 /// <summary>
 /// 程序集查找器
