@@ -33,6 +33,7 @@
     <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectExtending/XiHan.Framework.ObjectExtending.csproj" Id="3c4e1603-6746-41e0-b3ef-258bcb04836a" />
     <Project Path="src/XiHan.Framework.ObjectMapping.Mapster/XiHan.Framework.ObjectMapping.Mapster.csproj" Id="739a42c8-c5bb-4578-a3c3-8ef0d9ec60ab" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" Id="7d9f570d-c251-4093-a29e-d5c8f08a419d" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
