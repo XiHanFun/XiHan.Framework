@@ -1040,6 +1040,27 @@ public class AccuracyMetrics
 }
 
 /// <summary>
+/// 距离计算类型枚举
+/// </summary>
+public enum DistanceType
+{
+    /// <summary>
+    /// 欧几里得距离
+    /// </summary>
+    Euclidean,
+
+    /// <summary>
+    /// 曼哈顿距离
+    /// </summary>
+    Manhattan,
+
+    /// <summary>
+    /// 切比雪夫距离
+    /// </summary>
+    Chebyshev
+}
+
+/// <summary>
 /// 决策树节点
 /// </summary>
 public class DecisionTreeNode
