@@ -17,9 +17,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using XiHan.Framework.Core.Localization;
 using XiHan.Framework.Localization.Options;
 using XiHan.Framework.Localization.Resources;
+using XiHan.Framework.Utils.Localization;
 using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.Localization.Provider;

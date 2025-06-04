@@ -17,7 +17,7 @@ using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Text;
 using XiHan.Framework.Utils.Threading;
 
-namespace XiHan.Framework.Core.Localization;
+namespace XiHan.Framework.Utils.Localization;
 
 /// <summary>
 /// 本地文化帮助类
