@@ -14,6 +14,7 @@
 
 using XiHan.Framework.AspNetCore;
 using XiHan.Framework.AspNetCore.Mvc;
+using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.AspNetCore.Serilog;
 using XiHan.Framework.AspNetCore.Swagger;
 using XiHan.Framework.Core.Application;
@@ -28,7 +29,8 @@ namespace XiHan.Framework.Web.Test;
     typeof(XiHanAspNetCoreModule),
     typeof(XiHanAspNetCoreMvcModule),
     typeof(XiHanAspNetCoreSerilogModule),
-    typeof(XiHanAspNetCoreSwaggerModule)
+    typeof(XiHanAspNetCoreSwaggerModule),
+    typeof(XiHanAspNetCoreScalarModule)
 )]
 public class XiHanWebTestModule : XiHanModule
 {
