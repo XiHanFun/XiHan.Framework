@@ -53,6 +53,8 @@ public class XiHanAspNetCoreMvcModule : XiHanModule
         {
             options = aspNetCoreMvcOptions.CorsOptions;
         });
+
+        _ = services.AddOpenApi();
     }
 
     /// <summary>
@@ -72,6 +74,7 @@ public class XiHanAspNetCoreMvcModule : XiHanModule
         {
             // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由
             _ = endpoints.MapControllers();
+            _ = endpoints.MapOpenApi();
         });
     }
 }

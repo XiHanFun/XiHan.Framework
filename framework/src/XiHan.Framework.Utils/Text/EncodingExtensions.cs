@@ -211,4 +211,171 @@ public static class EncodingExtensions
             return string.Empty;
         }
     }
+
+    /// <summary>
+    /// 对字符串中的特殊字符进行转义
+    /// </summary>
+    /// <param name="data">待转义的字符串</param>
+    /// <returns>转义后的字符串</returns>
+    public static string EscapeString(this string data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+
+        return data
+            .Replace("\\", "\\\\")  // 反斜杠必须最先处理
+            .Replace("\"", "\\\"")  // 双引号
+            .Replace("'", "\\'")    // 单引号
+            .Replace("\n", "\\n")   // 换行符
+            .Replace("\r", "\\r")   // 回车符
+            .Replace("\t", "\\t")   // 制表符
+            .Replace("\b", "\\b")   // 退格符
+            .Replace("\f", "\\f")   // 换页符
+            .Replace("\a", "\\a")   // 响铃符
+            .Replace("\v", "\\v")   // 垂直制表符
+            .Replace("\0", "\\0");  // 空字符
+    }
+
+    /// <summary>
+    /// 对转义字符串进行反转义
+    /// </summary>
+    /// <param name="data">待反转义的字符串</param>
+    /// <returns>反转义后的字符串</returns>
+    public static string UnescapeString(this string data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+
+        return data
+            .Replace("\\\"", "\"")  // 双引号
+            .Replace("\\'", "'")    // 单引号
+            .Replace("\\n", "\n")   // 换行符
+            .Replace("\\r", "\r")   // 回车符
+            .Replace("\\t", "\t")   // 制表符
+            .Replace("\\b", "\b")   // 退格符
+            .Replace("\\f", "\f")   // 换页符
+            .Replace("\\a", "\a")   // 响铃符
+            .Replace("\\v", "\v")   // 垂直制表符
+            .Replace("\\0", "\0")   // 空字符
+            .Replace("\\\\", "\\"); // 反斜杠必须最后处理
+    }
+
+    /// <summary>
+    /// 对字符串中的特殊字符进行 C# 风格转义
+    /// </summary>
+    /// <param name="data">待转义的字符串</param>
+    /// <returns>转义后的字符串</returns>
+    public static string EscapeForCSharp(this string data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+
+        var sb = new StringBuilder();
+        foreach (var c in data)
+        {
+            switch (c)
+            {
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\'':
+                    sb.Append("\\'");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                case '\b':
+                    sb.Append("\\b");
+                    break;
+                case '\f':
+                    sb.Append("\\f");
+                    break;
+                case '\a':
+                    sb.Append("\\a");
+                    break;
+                case '\v':
+                    sb.Append("\\v");
+                    break;
+                case '\0':
+                    sb.Append("\\0");
+                    break;
+                default:
+                    // 处理其他控制字符
+                    if (char.IsControl(c))
+                    {
+                        sb.Append($"\\u{(int)c:x4}");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                    break;
+            }
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 对字符串中的特殊字符进行 JSON 风格转义
+    /// </summary>
+    /// <param name="data">待转义的字符串</param>
+    /// <returns>转义后的字符串</returns>
+    public static string EscapeForJson(this string data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+
+        var sb = new StringBuilder();
+        foreach (var c in data)
+        {
+            switch (c)
+            {
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case '/':
+                    sb.Append("\\/");
+                    break;
+                case '\b':
+                    sb.Append("\\b");
+                    break;
+                case '\f':
+                    sb.Append("\\f");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                default:
+                    // 处理 Unicode 控制字符
+                    if (char.IsControl(c))
+                    {
+                        sb.Append($"\\u{(int)c:x4}");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                    break;
+            }
+        }
+        return sb.ToString();
+    }
 }
