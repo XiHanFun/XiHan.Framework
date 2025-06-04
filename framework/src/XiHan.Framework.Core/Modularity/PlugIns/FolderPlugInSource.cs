@@ -90,7 +90,7 @@ public class FolderPlugInSource : IPlugInSource
     /// <returns></returns>
     private List<Assembly> GetAssemblies()
     {
-        var assemblyFiles = AssemblyHelper.GetAssemblyFiles(Folder, SearchOption);
+        var assemblyFiles = ReflectionHelper.GetAssemblyFiles(Folder, SearchOption);
 
         if (Filter is not null)
         {
