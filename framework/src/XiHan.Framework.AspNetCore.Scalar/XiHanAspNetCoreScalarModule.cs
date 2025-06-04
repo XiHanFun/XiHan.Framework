@@ -35,8 +35,6 @@ public class XiHanAspNetCoreScalarModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-
-        _ = services.AddOpenApi();
     }
 
     /// <summary>
@@ -50,7 +48,6 @@ public class XiHanAspNetCoreScalarModule : XiHanModule
 
         _ = app.UseEndpoints(endpoints =>
         {
-            _ = endpoints.MapOpenApi();
             _ = endpoints.MapScalarApiReference();
         });
     }
