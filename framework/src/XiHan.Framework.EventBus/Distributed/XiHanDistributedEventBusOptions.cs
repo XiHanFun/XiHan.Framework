@@ -26,11 +26,14 @@ namespace XiHan.Framework.EventBus.Distributed;
 /// </remarks>
 public class XiHanDistributedEventBusOptions
 {
+    /// <summary>
+    /// 默认构造函数
+    /// </summary>
     public XiHanDistributedEventBusOptions()
     {
         Handlers = new TypeList<IEventHandler>();
-        Outboxes = new OutboxConfigDictionary();
-        Inboxes = new InboxConfigDictionary();
+        Outboxes = [];
+        Inboxes = [];
     }
 
     /// <summary>
