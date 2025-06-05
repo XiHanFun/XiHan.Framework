@@ -593,7 +593,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <returns></returns>
     private async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        if (typeof(T) == typeof(string))
+        if (typeof(T) == typeof(string) || typeof(T) == typeof(object))
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             return (T)(object)content;
