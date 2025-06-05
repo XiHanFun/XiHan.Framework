@@ -41,16 +41,16 @@ public class OutgoingEventInfo : IOutgoingEventInfo
         DateTime creationTime)
     {
         Id = id;
-        EventName = ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
-        
+        EventName = Guard.NotNullOrWhiteSpace(eventName, nameof(eventName), MaxEventNameLength);
+
         if (eventName.Length > MaxEventNameLength)
         {
             throw new ArgumentException($"事件名称长度不能超过 {MaxEventNameLength} 个字符", nameof(eventName));
         }
-        
+
         EventData = eventData ?? throw new ArgumentNullException(nameof(eventData));
         CreationTime = creationTime;
-        ExtraProperties = new ExtraPropertyDictionary();
+        ExtraProperties = [];
         this.SetDefaultsForExtraProperties();
     }
 
@@ -60,7 +60,7 @@ public class OutgoingEventInfo : IOutgoingEventInfo
     /// </summary>
     protected OutgoingEventInfo()
     {
-        ExtraProperties = new ExtraPropertyDictionary();
+        ExtraProperties = [];
         this.SetDefaultsForExtraProperties();
     }
 
