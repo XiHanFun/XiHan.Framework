@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.EventBus.Abstractions.Distributed;
+
 namespace XiHan.Framework.EventBus.Abstractions;
 
 /// <summary>
@@ -21,24 +23,27 @@ namespace XiHan.Framework.EventBus.Abstractions;
 /// </summary>
 public interface ISupportsEventBoxes
 {
-    ///// <summary>
-    ///// 从出站事件盒中发布一个事件
-    ///// </summary>
-    ///// <param name="outgoingEvent">出站事件信息</param>
-    ///// <param name="outboxConfig">出站事件盒配置</param>
-    //Task PublishFromOutboxAsync(OutgoingEventInfo outgoingEvent, OutboxConfig outboxConfig);
+    /// <summary>
+    /// 从出站事件盒中发布一个事件
+    /// </summary>
+    /// <param name="outgoingEvent">出站事件信息</param>
+    /// <param name="outboxConfig">出站事件盒配置</param>
+    /// <returns>表示异步操作的任务</returns>
+    Task PublishFromOutboxAsync(OutgoingEventInfo outgoingEvent, OutboxConfig outboxConfig);
 
-    ///// <summary>
-    ///// 从出站事件盒中批量发布多个事件
-    ///// </summary>
-    ///// <param name="outgoingEvents">出站事件集合</param>
-    ///// <param name="outboxConfig">出站事件盒配置</param>
-    //Task PublishManyFromOutboxAsync(IEnumerable<OutgoingEventInfo> outgoingEvents, OutboxConfig outboxConfig);
+    /// <summary>
+    /// 从出站事件盒中批量发布多个事件
+    /// </summary>
+    /// <param name="outgoingEvents">出站事件集合</param>
+    /// <param name="outboxConfig">出站事件盒配置</param>
+    /// <returns>表示异步操作的任务</returns>
+    Task PublishManyFromOutboxAsync(IEnumerable<OutgoingEventInfo> outgoingEvents, OutboxConfig outboxConfig);
 
-    ///// <summary>
-    ///// 处理从入站事件盒接收到的事件
-    ///// </summary>
-    ///// <param name="incomingEvent">入站事件信息</param>
-    ///// <param name="inboxConfig">入站事件盒配置</param>
-    //Task ProcessFromInboxAsync(IncomingEventInfo incomingEvent, InboxConfig inboxConfig);
+    /// <summary>
+    /// 处理从入站事件盒接收到的事件
+    /// </summary>
+    /// <param name="incomingEvent">入站事件信息</param>
+    /// <param name="inboxConfig">入站事件盒配置</param>
+    /// <returns>表示异步操作的任务</returns>
+    Task ProcessFromInboxAsync(IncomingEventInfo incomingEvent, InboxConfig inboxConfig);
 }

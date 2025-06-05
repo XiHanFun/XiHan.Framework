@@ -22,8 +22,8 @@ public class EventTypeWithEventHandlerFactories
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="eventType"></param>
-    /// <param name="eventHandlerFactories"></param>
+    /// <param name="eventType">事件类型</param>
+    /// <param name="eventHandlerFactories">事件处理器工厂列表</param>
     public EventTypeWithEventHandlerFactories(Type eventType, List<IEventHandlerFactory> eventHandlerFactories)
     {
         EventType = eventType;
