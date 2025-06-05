@@ -22,6 +22,9 @@ using System.Text.Json;
 using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
+using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Text.Json;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
@@ -593,29 +596,58 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <returns></returns>
     private async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        if (typeof(T) == typeof(string))
+        var targetType = typeof(T);
+
+        // 处理字符串类型
+        if (targetType == typeof(string))
         {
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            return (T)(object)content;
+            var contentData = await response.Content.ReadAsStringAsync(cancellationToken);
+            return string.IsNullOrEmpty(contentData) ? default : (T)(object)contentData;
         }
 
-        if (typeof(T) == typeof(byte[]))
+        // 处理字节数组类型
+        if (targetType == typeof(byte[]))
         {
-            var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return (T)(object)content;
+            var byteData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return byteData.Length == 0 ? default : (T)(object)byteData;
         }
 
-        if (typeof(T) == typeof(Stream))
+        // 处理流类型
+        if (targetType == typeof(Stream))
         {
-            var content = await response.Content.ReadAsStreamAsync(cancellationToken);
-            return (T)(object)content;
+            var streamData = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return streamData.Length == 0 ? default : (T)(object)streamData;
         }
 
-        if (typeof(T) == typeof(object))
+        // 处理 object、dynamic 类型
+        if (targetType.Name == "Object" && targetType == typeof(object))
         {
-            return default;
+            var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrEmpty(jsonString))
+            {
+                return default;
+            }
+
+            // 尝试直接解析为 dynamic
+            return !JsonHelper.TryParseJsonDynamic(jsonString, out var dataObject) ? default : (T?)dataObject;
         }
 
+        // 处理基础类型
+        if (TypeHelper.IsNonNullablePrimitiveType(targetType) || TypeHelper.IsNullable(targetType))
+        {
+            var stringData = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrEmpty(stringData) || stringData.Trim() == "null")
+            {
+                return default;
+            }
+
+            // 移除可能的引号
+            stringData = stringData.Trim('"');
+            var convertedValue = stringData.CastTo<T>();
+            return convertedValue;
+        }
+
+        // 处理复杂类型
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, cancellationToken);
     }

@@ -34,6 +34,10 @@ namespace XiHan.Framework.EventBus;
     )]
 public class XiHanEventBusModule : XiHanModule
 {
+    /// <summary>
+    /// 服务配置前，异步
+    /// </summary>
+    /// <param name="context"></param>
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
         AddEventHandlers(context.Services);
@@ -47,6 +51,10 @@ public class XiHanEventBusModule : XiHanModule
     {
     }
 
+    /// <summary>
+    /// 添加事件处理器
+    /// </summary>
+    /// <param name="services"></param>
     private static void AddEventHandlers(IServiceCollection services)
     {
         var localHandlers = new List<Type>();

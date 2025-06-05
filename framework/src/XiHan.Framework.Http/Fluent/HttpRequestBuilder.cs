@@ -331,6 +331,16 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
+    /// 发送 GET 请求(返回动态对象)
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public async Task<HttpResult<dynamic>> GetDynamicAsync(CancellationToken cancellationToken = default)
+    {
+        return await _httpService.GetAsync<dynamic>(_url, _options, cancellationToken);
+    }
+
+    /// <summary>
     /// 发送 GET 请求(返回字节数组)
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
@@ -375,6 +385,16 @@ public class HttpRequestBuilder
     public async Task<HttpResult<string>> PostStringAsync(CancellationToken cancellationToken = default)
     {
         return await PostAsync<string>(cancellationToken);
+    }
+
+    /// <summary>
+    /// 发送 POST 请求(返回动态对象)
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public async Task<HttpResult<dynamic>> PostDynamicAsync(CancellationToken cancellationToken = default)
+    {
+        return await PostAsync<dynamic>(cancellationToken);
     }
 
     /// <summary>

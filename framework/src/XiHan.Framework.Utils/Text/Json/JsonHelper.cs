@@ -224,7 +224,7 @@ public static class JsonHelper
     /// </summary>
     /// <param name="jsonObject">JsonObject</param>
     /// <returns>动态对象</returns>
-    private static ExpandoObject ConvertJsonObjectToDynamic(JsonObject jsonObject)
+    private static dynamic ConvertJsonObjectToDynamic(JsonObject jsonObject)
     {
         var expandoObject = new ExpandoObject();
         var dictionary = (IDictionary<string, object?>)expandoObject;
@@ -242,12 +242,12 @@ public static class JsonHelper
     /// </summary>
     /// <param name="jsonArray">JsonArray</param>
     /// <returns>动态数组</returns>
-    private static object[] ConvertJsonArrayToDynamic(JsonArray jsonArray)
+    private static dynamic ConvertJsonArrayToDynamic(JsonArray jsonArray)
     {
-        var array = new object[jsonArray.Count];
+        var array = new object?[jsonArray.Count];
         for (var i = 0; i < jsonArray.Count; i++)
         {
-            array[i] = ConvertJsonNodeToDynamic(jsonArray[i])!;
+            array[i] = ConvertJsonNodeToDynamic(jsonArray[i]);
         }
         return array;
     }
@@ -257,7 +257,7 @@ public static class JsonHelper
     /// </summary>
     /// <param name="jsonValue">JsonValue</param>
     /// <returns>对应的 .NET 类型值</returns>
-    private static object? ConvertJsonValueToDynamic(JsonValue jsonValue)
+    private static dynamic? ConvertJsonValueToDynamic(JsonValue jsonValue)
     {
         if (jsonValue.TryGetValue<bool>(out var boolValue))
         {
