@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.DistributedIds;
-using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Ddd.Domain.Services;
 
