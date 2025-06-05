@@ -33,7 +33,7 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     /// <param name="assembly"></param>
     public virtual void AddAssembly(IServiceCollection services, Assembly assembly)
     {
-        var types = AssemblyHelper.GetAllTypes(assembly)
+        var types = ReflectionHelper.GetAllTypes(assembly)
             .Where(type => type is { IsClass: true, IsAbstract: false, IsGenericType: false })
             .ToArray();
 
