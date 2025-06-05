@@ -388,6 +388,37 @@ public static class ParseExtensions
 
     #endregion DateTimeOffset
 
+    #region TimeSpan
+
+    /// <summary>
+    /// 对象转 DateTimeOffset
+    /// </summary>
+    /// <param name="thisValue"></param>
+    /// <returns></returns>
+    public static TimeSpan ParseToTimeSpan(this object? thisValue)
+    {
+        return thisValue is not null && thisValue != DBNull.Value &&
+            TimeSpan.TryParse(thisValue.ToString(), out var reveal)
+                ? reveal
+                : TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// 对象转 DateTimeOffset
+    /// </summary>
+    /// <param name="thisValue"></param>
+    /// <param name="errorValue"></param>
+    /// <returns></returns>
+    public static TimeSpan ParseToTimeSpan(this object? thisValue, TimeSpan errorValue)
+    {
+        return thisValue is not null && thisValue != DBNull.Value &&
+            TimeSpan.TryParse(thisValue.ToString(), out var reveal)
+                ? reveal
+                : errorValue;
+    }
+
+    #endregion TimeSpan
+
     #region Guid
 
     /// <summary>
@@ -531,6 +562,8 @@ public static class ParseExtensions
             { } t when t == typeof(int) => value.ParseToInt(),
             { } t when t == typeof(string) => value.ParseToString(),
             { } t when t == typeof(DateTime) => value.ParseToDateTime(),
+            { } t when t == typeof(DateTimeOffset) => value.ParseToDateTimeOffset(),
+            { } t when t == typeof(TimeSpan) => value.ParseToTimeSpan(),
             { } t when t == typeof(Guid) => value.ParseToGuid(),
             _ => Convert.ChangeType(value, conversionType) // 处理未知类型的情况
         };

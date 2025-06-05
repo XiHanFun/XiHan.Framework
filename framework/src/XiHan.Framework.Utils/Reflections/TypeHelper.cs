@@ -69,7 +69,8 @@ public static class TypeHelper
     public static bool IsNonNullablePrimitiveType(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return _nonNullablePrimitiveTypes.Contains(type);
+
+        return type.IsPrimitive || _nonNullablePrimitiveTypes.Contains(type);
     }
 
     /// <summary>
@@ -123,6 +124,7 @@ public static class TypeHelper
     public static bool IsNullable(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
+
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
 
