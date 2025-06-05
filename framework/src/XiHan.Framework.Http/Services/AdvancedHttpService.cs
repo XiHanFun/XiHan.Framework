@@ -596,19 +596,19 @@ public class AdvancedHttpService : IAdvancedHttpService
         if (typeof(T) == typeof(string) || typeof(T) == typeof(object))
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            return (T)(object)content;
+            return JsonSerializer.Deserialize<T>(content, _jsonOptions);
         }
 
         if (typeof(T) == typeof(byte[]))
         {
             var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return (T)(object)content;
+            return JsonSerializer.Deserialize<T>(content, _jsonOptions);
         }
 
         if (typeof(T) == typeof(Stream))
         {
             var content = await response.Content.ReadAsStreamAsync(cancellationToken);
-            return (T)(object)content;
+            return JsonSerializer.Deserialize<T>(content, _jsonOptions);
         }
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
