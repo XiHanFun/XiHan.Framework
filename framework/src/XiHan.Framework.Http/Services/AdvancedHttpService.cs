@@ -611,11 +611,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             return (T)(object)content;
         }
 
-        if (typeof(T) == typeof(object))
-        {
-            return default;
-        }
-
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, cancellationToken);
     }
