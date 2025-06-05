@@ -17,7 +17,8 @@ using XiHan.Framework.EventBus.Abstractions.Local;
 namespace XiHan.Framework.EventBus.Abstractions;
 
 /// <summary>
-/// IEventBus
+/// 事件总线接口
+/// 提供事件发布、订阅和注销功能
 /// </summary>
 public interface IEventBus
 {
