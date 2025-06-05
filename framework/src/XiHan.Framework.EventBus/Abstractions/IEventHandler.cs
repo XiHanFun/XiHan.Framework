@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
 
 namespace XiHan.Framework.EventBus.Abstractions;

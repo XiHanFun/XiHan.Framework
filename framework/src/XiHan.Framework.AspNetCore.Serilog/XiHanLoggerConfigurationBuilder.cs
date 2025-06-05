@@ -115,8 +115,8 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichWithPropertyDefault()
     {
-        _ = EnrichWithProperty("Application", AssemblyHelper.GetEntryAssemblyName());
-        _ = EnrichWithProperty("Version", AssemblyHelper.GetEntryAssemblyVersion());
+        _ = EnrichWithProperty("Application", ReflectionHelper.GetEntryAssemblyName());
+        _ = EnrichWithProperty("Version", ReflectionHelper.GetEntryAssemblyVersion());
         return this;
     }
 
