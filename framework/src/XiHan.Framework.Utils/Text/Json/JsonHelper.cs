@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using System.Dynamic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using XiHan.Framework.Utils.Text.Json.Dynamic;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 
 namespace XiHan.Framework.Utils.Text.Json;
@@ -226,15 +226,14 @@ public static class JsonHelper
     /// <returns>动态对象</returns>
     private static dynamic ConvertJsonObjectToDynamic(JsonObject jsonObject)
     {
-        var expandoObject = new ExpandoObject();
-        var dictionary = (IDictionary<string, object?>)expandoObject;
+        var dynamicJsonObject = new DynamicJsonObject();
 
         foreach (var kvp in jsonObject)
         {
-            dictionary[kvp.Key] = ConvertJsonNodeToDynamic(kvp.Value);
+            dynamicJsonObject[kvp.Key] = ConvertJsonNodeToDynamic(kvp.Value);
         }
 
-        return expandoObject;
+        return dynamicJsonObject;
     }
 
     /// <summary>
@@ -244,52 +243,22 @@ public static class JsonHelper
     /// <returns>动态数组</returns>
     private static dynamic ConvertJsonArrayToDynamic(JsonArray jsonArray)
     {
-        var array = new object?[jsonArray.Count];
+        var dynamicJsonArray = new DynamicJsonArray();
         for (var i = 0; i < jsonArray.Count; i++)
         {
-            array[i] = ConvertJsonNodeToDynamic(jsonArray[i]);
+            dynamicJsonArray.Add(ConvertJsonNodeToDynamic(jsonArray[i]));
         }
-        return array;
+        return dynamicJsonArray;
     }
 
     /// <summary>
-    /// 将 JsonValue 转换为对应的 .NET 类型
+    /// 将 JsonValue 转换为对应的动态类型
     /// </summary>
     /// <param name="jsonValue">JsonValue</param>
-    /// <returns>对应的 .NET 类型值</returns>
+    /// <returns>动态值对象</returns>
     private static dynamic? ConvertJsonValueToDynamic(JsonValue jsonValue)
     {
-        if (jsonValue.TryGetValue<bool>(out var boolValue))
-        {
-            return boolValue;
-        }
-
-        if (jsonValue.TryGetValue<int>(out var intValue))
-        {
-            return intValue;
-        }
-
-        if (jsonValue.TryGetValue<long>(out var longValue))
-        {
-            return longValue;
-        }
-
-        if (jsonValue.TryGetValue<double>(out var doubleValue))
-        {
-            return doubleValue;
-        }
-
-        if (jsonValue.TryGetValue<decimal>(out var decimalValue))
-        {
-            return decimalValue;
-        }
-
-        if (jsonValue.TryGetValue<string>(out var stringValue))
-        {
-            return stringValue;
-        }
-
-        return jsonValue.TryGetValue<DateTime>(out var dateTimeValue) ? dateTimeValue : jsonValue.ToString();
+        return DynamicJsonValue.FromJsonValue(jsonValue);
     }
 
     #endregion 动态 JSON 解析
