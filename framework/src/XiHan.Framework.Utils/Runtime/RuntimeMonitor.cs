@@ -18,174 +18,6 @@ using System.Diagnostics;
 namespace XiHan.Framework.Utils.Runtime;
 
 /// <summary>
-/// 性能指标快照
-/// </summary>
-public class PerformanceSnapshot
-{
-    /// <summary>
-    /// 快照时间
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-
-    /// <summary>
-    /// CPU使用率百分比
-    /// </summary>
-    public double CpuUsage { get; set; }
-
-    /// <summary>
-    /// 内存使用量（字节）
-    /// </summary>
-    public long MemoryUsage { get; set; }
-
-    /// <summary>
-    /// 私有内存使用量（字节）
-    /// </summary>
-    public long PrivateMemorySize { get; set; }
-
-    /// <summary>
-    /// 虚拟内存使用量（字节）
-    /// </summary>
-    public long VirtualMemorySize { get; set; }
-
-    /// <summary>
-    /// 工作集大小（字节）
-    /// </summary>
-    public long WorkingSet { get; set; }
-
-    /// <summary>
-    /// GC代0收集次数
-    /// </summary>
-    public int GcGen0Collections { get; set; }
-
-    /// <summary>
-    /// GC代1收集次数
-    /// </summary>
-    public int GcGen1Collections { get; set; }
-
-    /// <summary>
-    /// GC代2收集次数
-    /// </summary>
-    public int GcGen2Collections { get; set; }
-
-    /// <summary>
-    /// 托管内存使用量（字节）
-    /// </summary>
-    public long ManagedMemory { get; set; }
-
-    /// <summary>
-    /// 线程数量
-    /// </summary>
-    public int ThreadCount { get; set; }
-
-    /// <summary>
-    /// 句柄数量
-    /// </summary>
-    public int HandleCount { get; set; }
-
-    /// <summary>
-    /// 用户处理器时间
-    /// </summary>
-    public TimeSpan UserProcessorTime { get; set; }
-
-    /// <summary>
-    /// 特权处理器时间
-    /// </summary>
-    public TimeSpan PrivilegedProcessorTime { get; set; }
-
-    /// <summary>
-    /// 总处理器时间
-    /// </summary>
-    public TimeSpan TotalProcessorTime { get; set; }
-
-    /// <summary>
-    /// 进程运行时间
-    /// </summary>
-    public TimeSpan ProcessUptime { get; set; }
-}
-
-/// <summary>
-/// 性能趋势分析结果
-/// </summary>
-public class PerformanceTrend
-{
-    /// <summary>
-    /// 计数器类型
-    /// </summary>
-    public PerformanceCounterType CounterType { get; set; }
-
-    /// <summary>
-    /// 当前值
-    /// </summary>
-    public double CurrentValue { get; set; }
-
-    /// <summary>
-    /// 平均值
-    /// </summary>
-    public double AverageValue { get; set; }
-
-    /// <summary>
-    /// 最小值
-    /// </summary>
-    public double MinValue { get; set; }
-
-    /// <summary>
-    /// 最大值
-    /// </summary>
-    public double MaxValue { get; set; }
-
-    /// <summary>
-    /// 变化趋势（正数表示上升，负数表示下降）
-    /// </summary>
-    public double Trend { get; set; }
-
-    /// <summary>
-    /// 标准差
-    /// </summary>
-    public double StandardDeviation { get; set; }
-
-    /// <summary>
-    /// 样本数量
-    /// </summary>
-    public int SampleCount { get; set; }
-
-    /// <summary>
-    /// 分析时间范围
-    /// </summary>
-    public TimeSpan AnalysisTimespan { get; set; }
-}
-
-/// <summary>
-/// 性能计数器类型枚举
-/// </summary>
-public enum PerformanceCounterType
-{
-    /// <summary>
-    /// CPU使用率
-    /// </summary>
-    CpuUsage = 1,
-
-    /// <summary>
-    /// 内存使用量
-    /// </summary>
-    MemoryUsage = 2,
-
-    /// <summary>
-    /// GC收集次数
-    /// </summary>
-    GcCollections = 3,
-
-    /// <summary>
-    /// 线程数量
-    /// </summary>
-    ThreadCount = 4,
-
-    /// <summary>
-    /// 句柄数量
-    /// </summary>
-    HandleCount = 5
-}
-
-/// <summary>
 /// 运行时监控器
 /// </summary>
 public class RuntimeMonitor : IDisposable
@@ -553,4 +385,172 @@ public class RuntimeMonitor : IDisposable
             ProcessUptime = DateTime.Now - _currentProcess.StartTime
         };
     }
+}
+
+/// <summary>
+/// 性能指标快照
+/// </summary>
+public record PerformanceSnapshot
+{
+    /// <summary>
+    /// 快照时间
+    /// </summary>
+    public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// CPU使用率百分比
+    /// </summary>
+    public double CpuUsage { get; set; }
+
+    /// <summary>
+    /// 内存使用量（字节）
+    /// </summary>
+    public long MemoryUsage { get; set; }
+
+    /// <summary>
+    /// 私有内存使用量（字节）
+    /// </summary>
+    public long PrivateMemorySize { get; set; }
+
+    /// <summary>
+    /// 虚拟内存使用量（字节）
+    /// </summary>
+    public long VirtualMemorySize { get; set; }
+
+    /// <summary>
+    /// 工作集大小（字节）
+    /// </summary>
+    public long WorkingSet { get; set; }
+
+    /// <summary>
+    /// GC代0收集次数
+    /// </summary>
+    public int GcGen0Collections { get; set; }
+
+    /// <summary>
+    /// GC代1收集次数
+    /// </summary>
+    public int GcGen1Collections { get; set; }
+
+    /// <summary>
+    /// GC代2收集次数
+    /// </summary>
+    public int GcGen2Collections { get; set; }
+
+    /// <summary>
+    /// 托管内存使用量（字节）
+    /// </summary>
+    public long ManagedMemory { get; set; }
+
+    /// <summary>
+    /// 线程数量
+    /// </summary>
+    public int ThreadCount { get; set; }
+
+    /// <summary>
+    /// 句柄数量
+    /// </summary>
+    public int HandleCount { get; set; }
+
+    /// <summary>
+    /// 用户处理器时间
+    /// </summary>
+    public TimeSpan UserProcessorTime { get; set; }
+
+    /// <summary>
+    /// 特权处理器时间
+    /// </summary>
+    public TimeSpan PrivilegedProcessorTime { get; set; }
+
+    /// <summary>
+    /// 总处理器时间
+    /// </summary>
+    public TimeSpan TotalProcessorTime { get; set; }
+
+    /// <summary>
+    /// 进程运行时间
+    /// </summary>
+    public TimeSpan ProcessUptime { get; set; }
+}
+
+/// <summary>
+/// 性能趋势分析结果
+/// </summary>
+public record PerformanceTrend
+{
+    /// <summary>
+    /// 计数器类型
+    /// </summary>
+    public PerformanceCounterType CounterType { get; set; }
+
+    /// <summary>
+    /// 当前值
+    /// </summary>
+    public double CurrentValue { get; set; }
+
+    /// <summary>
+    /// 平均值
+    /// </summary>
+    public double AverageValue { get; set; }
+
+    /// <summary>
+    /// 最小值
+    /// </summary>
+    public double MinValue { get; set; }
+
+    /// <summary>
+    /// 最大值
+    /// </summary>
+    public double MaxValue { get; set; }
+
+    /// <summary>
+    /// 变化趋势（正数表示上升，负数表示下降）
+    /// </summary>
+    public double Trend { get; set; }
+
+    /// <summary>
+    /// 标准差
+    /// </summary>
+    public double StandardDeviation { get; set; }
+
+    /// <summary>
+    /// 样本数量
+    /// </summary>
+    public int SampleCount { get; set; }
+
+    /// <summary>
+    /// 分析时间范围
+    /// </summary>
+    public TimeSpan AnalysisTimespan { get; set; }
+}
+
+/// <summary>
+/// 性能计数器类型枚举
+/// </summary>
+public enum PerformanceCounterType
+{
+    /// <summary>
+    /// CPU使用率
+    /// </summary>
+    CpuUsage = 1,
+
+    /// <summary>
+    /// 内存使用量
+    /// </summary>
+    MemoryUsage = 2,
+
+    /// <summary>
+    /// GC收集次数
+    /// </summary>
+    GcCollections = 3,
+
+    /// <summary>
+    /// 线程数量
+    /// </summary>
+    ThreadCount = 4,
+
+    /// <summary>
+    /// 句柄数量
+    /// </summary>
+    HandleCount = 5
 }

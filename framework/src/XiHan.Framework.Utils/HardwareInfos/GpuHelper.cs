@@ -13,9 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.HardwareInfos.Abstractions;
-using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
@@ -25,41 +24,19 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class GpuHelper
 {
-    private static readonly GpuInfoProvider Provider = new();
-
     /// <summary>
     /// GPU信息
     /// </summary>
-    public static List<GpuInfo> GpuInfos => Provider.GetCachedInfo();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static List<GpuInfo> GpuInfos => CacheManager.Instance.DefaultCache.GetOrAdd("GpuInfos", () => GetGpuInfos(), TimeSpan.FromMinutes(60));
 
     /// <summary>
     /// 获取GPU信息
     /// </summary>
     /// <returns></returns>
-    public static List<GpuInfo> GetGpuInfos() => Provider.GetInfo();
-
-    /// <summary>
-    /// 异步获取GPU信息
-    /// </summary>
-    /// <returns></returns>
-    public static Task<List<GpuInfo>> GetGpuInfosAsync() => Provider.GetInfoAsync();
-
-    /// <summary>
-    /// 获取缓存的GPU信息
-    /// </summary>
-    /// <param name="forceRefresh">是否强制刷新</param>
-    /// <returns></returns>
-    public static List<GpuInfo> GetCachedGpuInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
-}
-
-/// <summary>
-/// GPU信息提供者
-/// </summary>
-internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
-{
-    protected override TimeSpan CacheExpiry => TimeSpan.FromMinutes(5); // GPU信息相对稳定
-
-    protected override List<GpuInfo> GetInfoCore()
+    public static List<GpuInfo> GetGpuInfos()
     {
         List<GpuInfo> gpuInfos = [];
 
@@ -83,9 +60,6 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
             ConsoleLogger.Error("获取GPU信息出错，" + ex.Message);
             gpuInfos.Add(new GpuInfo
             {
-                Timestamp = DateTime.Now,
-                IsAvailable = false,
-                ErrorMessage = ex.Message,
                 Name = "Error",
                 Description = "Failed to retrieve GPU information"
             });
@@ -94,6 +68,10 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
         return gpuInfos;
     }
 
+    /// <summary>
+    /// 获取Windows GPU信息
+    /// </summary>
+    /// <param name="gpuInfos"></param>
     private static void GetWindowsGpuInfo(List<GpuInfo> gpuInfos)
     {
         var output = ShellHelper.Cmd("wmic", "path win32_VideoController get Name,DriverVersion,AdapterRAM,VideoModeDescription,Status /Value").Trim();
@@ -128,8 +106,6 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
                         }
                         currentGpu = new GpuInfo
                         {
-                            Timestamp = DateTime.Now,
-                            IsAvailable = true,
                             Name = value
                         };
                         break;
@@ -159,6 +135,11 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
         }
     }
 
+    /// <summary>
+    /// 获取Linux GPU信息
+    /// </summary>
+    /// <param name="gpuInfos"></param>
+    /// <exception cref="Exception"></exception>
     private static void GetLinuxGpuInfo(List<GpuInfo> gpuInfos)
     {
         try
@@ -169,11 +150,7 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
 
             foreach (var line in lines)
             {
-                var gpuInfo = new GpuInfo
-                {
-                    Timestamp = DateTime.Now,
-                    IsAvailable = true
-                };
+                var gpuInfo = new GpuInfo();
 
                 // 解析lspci输出
                 var parts = line.Split(':', StringSplitOptions.RemoveEmptyEntries);
@@ -243,6 +220,11 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
         }
     }
 
+    /// <summary>
+    /// 获取macOS GPU信息
+    /// </summary>
+    /// <param name="gpuInfos"></param>
+    /// <exception cref="Exception"></exception>
     private static void GetMacOsGpuInfo(List<GpuInfo> gpuInfos)
     {
         try
@@ -266,8 +248,6 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
 
                     currentGpu = new GpuInfo
                     {
-                        Timestamp = DateTime.Now,
-                        IsAvailable = true,
                         Name = trimmedLine.TrimEnd(':')
                     };
                 }
@@ -316,23 +296,8 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
 /// <summary>
 /// GPU信息
 /// </summary>
-public record GpuInfo : IHardwareInfo
+public record GpuInfo
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// GPU名称
     /// </summary>
@@ -367,11 +332,6 @@ public record GpuInfo : IHardwareInfo
     /// 显存大小（字节）
     /// </summary>
     public long MemoryBytes { get; set; }
-
-    /// <summary>
-    /// 显存大小（格式化字符串）
-    /// </summary>
-    public string MemorySize => MemoryBytes > 0 ? MemoryBytes.FormatFileSizeToString() : "Unknown";
 
     /// <summary>
     /// GPU温度（°C）

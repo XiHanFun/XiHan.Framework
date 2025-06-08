@@ -13,12 +13,13 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Timing;
 
-namespace XiHan.Framework.Utils.HardwareInfos;
+namespace XiHan.Framework.Utils.Runtime;
 
 /// <summary>
 /// 系统运行时间
@@ -28,7 +29,10 @@ public static class RunningTimeHelper
     /// <summary>
     /// 处理器信息
     /// </summary>
-    public static string RunningTime => GetRunningTime();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static string RunningTime => CacheManager.Instance.DefaultCache.GetOrAdd("RunningTime", () => GetRunningTime(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取系统运行时间

@@ -12,8 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text.Json;
-using XiHan.Framework.Utils.HardwareInfos.Abstractions;
+using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
@@ -23,54 +22,23 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class HardwareInfoManager
 {
-
     /// <summary>
     /// 获取完整的系统硬件信息
     /// </summary>
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
     /// <returns>系统硬件信息</returns>
     public static SystemHardwareInfo GetSystemHardwareInfo()
     {
         return new SystemHardwareInfo
         {
-            Timestamp = DateTime.Now,
-            IsAvailable = true,
-            CpuInfo = CpuHelper.GetCachedCpuInfos(),
-            RamInfo = RamHelper.GetCachedRamInfos(),
+            CpuInfo = CpuHelper.CpuInfos,
+            RamInfo = RamHelper.RamInfos,
             DiskInfos = DiskHelper.DiskInfos,
-            NetworkInfos = NetworkHelper.GetCachedNetworkInfos(),
-            GpuInfos = GpuHelper.GetCachedGpuInfos(),
-            BoardInfo = BoardHelper.BoardInfos,
-            SystemUptime = RunningTimeHelper.RunningTime
-        };
-    }
-
-    /// <summary>
-    /// 异步获取完整的系统硬件信息
-    /// </summary>
-    /// <returns>系统硬件信息</returns>
-    public static async Task<SystemHardwareInfo> GetSystemHardwareInfoAsync()
-    {
-        var tasks = new Task[]
-        {
-            CpuHelper.GetCpuInfosAsync(),
-            RamHelper.GetRamInfosAsync(),
-            NetworkHelper.GetNetworkInfosAsync(),
-            GpuHelper.GetGpuInfosAsync()
-        };
-
-        await Task.WhenAll(tasks);
-
-        return new SystemHardwareInfo
-        {
-            Timestamp = DateTime.Now,
-            IsAvailable = true,
-            CpuInfo = await CpuHelper.GetCpuInfosAsync(),
-            RamInfo = await RamHelper.GetRamInfosAsync(),
-            DiskInfos = DiskHelper.DiskInfos,
-            NetworkInfos = await NetworkHelper.GetNetworkInfosAsync(),
-            GpuInfos = await GpuHelper.GetGpuInfosAsync(),
-            BoardInfo = BoardHelper.BoardInfos,
-            SystemUptime = RunningTimeHelper.RunningTime
+            NetworkInfos = NetworkHelper.NetworkInfos,
+            GpuInfos = GpuHelper.GpuInfos,
+            BoardInfo = BoardHelper.BoardInfos
         };
     }
 
@@ -82,48 +50,29 @@ public static class HardwareInfoManager
     {
         try
         {
-            var cpuInfo = CpuHelper.GetCachedCpuInfos();
-            var ramInfo = RamHelper.GetCachedRamInfos();
+            var cpuInfo = CpuHelper.CpuInfos;
+            var ramInfo = RamHelper.RamInfos;
             var diskInfos = DiskHelper.DiskInfos;
-            var networkInfos = NetworkHelper.GetCachedNetworkInfos();
-            var gpuInfos = GpuHelper.GetCachedGpuInfos();
+            var networkInfos = NetworkHelper.NetworkInfos;
+            var gpuInfos = GpuHelper.GpuInfos;
 
             return new SystemHardwareSummary
             {
-                Timestamp = DateTime.Now,
-                IsAvailable = true,
                 CpuName = cpuInfo.ProcessorName,
                 CpuCores = $"{cpuInfo.PhysicalCoreCount}C/{cpuInfo.LogicalCoreCount}T",
                 CpuUsage = $"{cpuInfo.UsagePercentage:F1}%",
-                TotalMemory = ramInfo.TotalSpace,
+                TotalMemory = ramInfo.TotalBytes.FormatFileSizeToString(),
                 MemoryUsage = $"{ramInfo.UsagePercentage:F1}%",
-                TotalDiskSpace = diskInfos.Sum(d => long.TryParse(d.TotalSpace.Replace(" GB", "").Replace(" MB", "").Replace(" TB", ""), out var size) ? size : 0).ToString() + " GB",
-                NetworkInterfaceCount = networkInfos.Count(n => n.IsAvailable),
-                GpuCount = gpuInfos.Count(g => g.IsAvailable),
-                PrimaryGpu = gpuInfos.FirstOrDefault(g => g.IsAvailable)?.Name ?? "Unknown"
+                TotalDiskSpace = diskInfos.Sum(d => d.TotalSpace).FormatFileSizeToString(),
+                NetworkInterfaceCount = networkInfos.Count,
+                GpuCount = gpuInfos.Count,
             };
         }
         catch (Exception ex)
         {
             ConsoleLogger.Error($"获取系统硬件摘要失败: {ex.Message}");
-            return new SystemHardwareSummary
-            {
-                Timestamp = DateTime.Now,
-                IsAvailable = false,
-                ErrorMessage = ex.Message
-            };
+            return new SystemHardwareSummary();
         }
-    }
-
-    /// <summary>
-    /// 清除所有缓存
-    /// </summary>
-    public static void ClearAllCache()
-    {
-        BaseHardwareInfoProvider<CpuInfo>.ClearCache<CpuInfo>();
-        BaseHardwareInfoProvider<RamInfo>.ClearCache<RamInfo>();
-        BaseHardwareInfoProvider<List<NetworkInfo>>.ClearCache<List<NetworkInfo>>();
-        BaseHardwareInfoProvider<List<GpuInfo>>.ClearCache<List<GpuInfo>>();
     }
 
     /// <summary>
@@ -132,16 +81,12 @@ public static class HardwareInfoManager
     /// <returns>诊断报告</returns>
     public static HardwareDiagnosticReport GetDiagnosticReport()
     {
-        var report = new HardwareDiagnosticReport
-        {
-            Timestamp = DateTime.Now,
-            IsAvailable = true
-        };
+        var report = new HardwareDiagnosticReport();
 
         try
         {
-            var cpuInfo = CpuHelper.GetCachedCpuInfos();
-            var ramInfo = RamHelper.GetCachedRamInfos();
+            var cpuInfo = CpuHelper.CpuInfos;
+            var ramInfo = RamHelper.RamInfos;
             var diskInfos = DiskHelper.DiskInfos;
 
             // CPU诊断
@@ -167,8 +112,7 @@ public static class HardwareInfoManager
             // 磁盘诊断
             foreach (var disk in diskInfos)
             {
-                var availableRate = double.TryParse(disk.AvailableRate.Replace("%", ""), out var rate) ? rate : 0;
-                if (availableRate < 10)
+                if (disk.AvailableRate < 10)
                 {
                     report.Issues.Add($"磁盘 {disk.DiskName} 可用空间不足 (<10%)");
                 }
@@ -176,10 +120,8 @@ public static class HardwareInfoManager
 
             report.Status = report.Issues.Count == 0 ? "正常" : "发现问题";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            report.IsAvailable = false;
-            report.ErrorMessage = ex.Message;
             report.Status = "诊断失败";
         }
 
@@ -190,23 +132,8 @@ public static class HardwareInfoManager
 /// <summary>
 /// 系统硬件信息
 /// </summary>
-public record SystemHardwareInfo : IHardwareInfo
+public record SystemHardwareInfo
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// CPU信息
     /// </summary>
@@ -236,33 +163,13 @@ public record SystemHardwareInfo : IHardwareInfo
     /// 主板信息
     /// </summary>
     public BoardInfo BoardInfo { get; set; } = new();
-
-    /// <summary>
-    /// 系统运行时间
-    /// </summary>
-    public string SystemUptime { get; set; } = string.Empty;
 }
 
 /// <summary>
 /// 系统硬件摘要信息
 /// </summary>
-public record SystemHardwareSummary : IHardwareInfo
+public record SystemHardwareSummary
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// CPU名称
     /// </summary>
@@ -312,23 +219,8 @@ public record SystemHardwareSummary : IHardwareInfo
 /// <summary>
 /// 硬件诊断报告
 /// </summary>
-public record HardwareDiagnosticReport : IHardwareInfo
+public record HardwareDiagnosticReport
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// 诊断状态
     /// </summary>

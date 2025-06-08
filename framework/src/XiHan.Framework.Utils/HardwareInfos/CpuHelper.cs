@@ -13,9 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.HardwareInfos.Abstractions;
 using XiHan.Framework.Utils.Logging;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
@@ -24,46 +25,22 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class CpuHelper
 {
-    private static readonly CpuInfoProvider Provider = new();
-
     /// <summary>
     /// 处理器信息
     /// </summary>
-    public static CpuInfo CpuInfos => Provider.GetCachedInfo();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static CpuInfo CpuInfos => CacheManager.Instance.DefaultCache.GetOrAdd("CpuInfos", () => GetCpuInfos(), TimeSpan.FromMinutes(5));
 
     /// <summary>
     /// 获取处理器信息
     /// </summary>
     /// <returns></returns>
-    public static CpuInfo GetCpuInfos() => Provider.GetInfo();
-
-    /// <summary>
-    /// 异步获取处理器信息
-    /// </summary>
-    /// <returns></returns>
-    public static Task<CpuInfo> GetCpuInfosAsync() => Provider.GetInfoAsync();
-
-    /// <summary>
-    /// 获取缓存的处理器信息
-    /// </summary>
-    /// <param name="forceRefresh">是否强制刷新</param>
-    /// <returns></returns>
-    public static CpuInfo GetCachedCpuInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
-}
-
-/// <summary>
-/// CPU信息提供者
-/// </summary>
-internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
-{
-    protected override TimeSpan CacheExpiry => TimeSpan.FromSeconds(30); // CPU信息更新较快，缓存时间较短
-
-    protected override CpuInfo GetInfoCore()
+    public static CpuInfo GetCpuInfos()
     {
         var cpuInfo = new CpuInfo
         {
-            Timestamp = DateTime.Now,
-            IsAvailable = true,
             LogicalCoreCount = Environment.ProcessorCount,
             ProcessorArchitecture = RuntimeInformation.ProcessArchitecture.ToString()
         };
@@ -81,14 +58,16 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
         }
         catch (Exception ex)
         {
-            cpuInfo.IsAvailable = false;
-            cpuInfo.ErrorMessage = ex.Message;
             ConsoleLogger.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return cpuInfo;
     }
 
+    /// <summary>
+    /// 获取CPU使用率
+    /// </summary>
+    /// <param name="cpuInfo"></param>
     private static void GetCpuUsage(CpuInfo cpuInfo)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -137,6 +116,10 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
         }
     }
 
+    /// <summary>
+    /// 获取CPU温度信息（如果可用）
+    /// </summary>
+    /// <param name="cpuInfo"></param>
     private static void GetCpuTemperature(CpuInfo cpuInfo)
     {
         try
@@ -167,6 +150,10 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
         }
     }
 
+    /// <summary>
+    /// 获取CPU详细信息
+    /// </summary>
+    /// <param name="cpuInfo"></param>
     private static void GetCpuDetails(CpuInfo cpuInfo)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -189,7 +176,7 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
                 }
                 else if (line.StartsWith("cache size"))
                 {
-                    cpuInfo.CacheSize = line.Split(':')[1].Trim();
+                    cpuInfo.CacheBytes = line.Split(':')[1].Trim().ParseToLong();
                 }
                 else if (line.StartsWith("cpu cores"))
                 {
@@ -241,7 +228,7 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
                     var cache = line.Split('=')[1].Trim();
                     if (!string.IsNullOrEmpty(cache) && cache != "0")
                     {
-                        cpuInfo.CacheSize = cache + " KB";
+                        cpuInfo.CacheBytes = cache.ParseToLong() * 1024;
                     }
                 }
             }
@@ -252,23 +239,8 @@ internal class CpuInfoProvider : BaseHardwareInfoProvider<CpuInfo>
 /// <summary>
 /// 处理器信息
 /// </summary>
-public record CpuInfo : IHardwareInfo
+public record CpuInfo
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// 处理器名称
     /// </summary>
@@ -297,7 +269,7 @@ public record CpuInfo : IHardwareInfo
     /// <summary>
     /// 缓存大小
     /// </summary>
-    public string CacheSize { get; set; } = string.Empty;
+    public long CacheBytes { get; set; }
 
     /// <summary>
     /// CPU使用率(%)
@@ -308,14 +280,4 @@ public record CpuInfo : IHardwareInfo
     /// CPU温度(°C)
     /// </summary>
     public double? Temperature { get; set; }
-
-    /// <summary>
-    /// 处理器个数（兼容旧版本）
-    /// </summary>
-    public string CpuCount => LogicalCoreCount.ToString();
-
-    /// <summary>
-    /// 处理器使用占比（兼容旧版本）
-    /// </summary>
-    public string CpuRate => $"{UsagePercentage:F1}%";
 }

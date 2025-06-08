@@ -15,7 +15,7 @@
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using XiHan.Framework.Utils.HardwareInfos.Abstractions;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
@@ -25,78 +25,19 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class NetworkHelper
 {
-    private static readonly NetworkInfoProvider Provider = new();
-
     /// <summary>
     /// 网卡信息
     /// </summary>
-    public static List<NetworkInfo> NetworkInfos => Provider.GetCachedInfo();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static List<NetworkInfo> NetworkInfos => CacheManager.Instance.DefaultCache.GetOrAdd("NetworkInfos", () => GetNetworkInfos(), TimeSpan.FromMinutes(5));
 
     /// <summary>
     /// 获取网卡信息
     /// </summary>
     /// <returns></returns>
-    public static List<NetworkInfo> GetNetworkInfos() => Provider.GetInfo();
-
-    /// <summary>
-    /// 异步获取网卡信息
-    /// </summary>
-    /// <returns></returns>
-    public static Task<List<NetworkInfo>> GetNetworkInfosAsync() => Provider.GetInfoAsync();
-
-    /// <summary>
-    /// 获取缓存的网卡信息
-    /// </summary>
-    /// <param name="forceRefresh">是否强制刷新</param>
-    /// <returns></returns>
-    public static List<NetworkInfo> GetCachedNetworkInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
-
-    /// <summary>
-    /// 获取网络统计信息
-    /// </summary>
-    /// <returns></returns>
-    public static NetworkStatistics GetNetworkStatistics()
-    {
-        var statistics = new NetworkStatistics
-        {
-            Timestamp = DateTime.Now,
-            IsAvailable = true
-        };
-
-        try
-        {
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.OperationalStatus == OperationalStatus.Up)
-                .Where(ni => ni.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.Wireless80211);
-
-            foreach (var ni in interfaces)
-            {
-                var stats = ni.GetIPv4Statistics();
-                statistics.TotalBytesReceived += stats.BytesReceived;
-                statistics.TotalBytesSent += stats.BytesSent;
-                statistics.TotalPacketsReceived += stats.UnicastPacketsReceived + stats.NonUnicastPacketsReceived;
-                statistics.TotalPacketsSent += stats.UnicastPacketsSent + stats.NonUnicastPacketsSent;
-            }
-        }
-        catch (Exception ex)
-        {
-            statistics.IsAvailable = false;
-            statistics.ErrorMessage = ex.Message;
-            ConsoleLogger.Error("获取网络统计信息出错，" + ex.Message);
-        }
-
-        return statistics;
-    }
-}
-
-/// <summary>
-/// 网络信息提供者
-/// </summary>
-internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
-{
-    protected override TimeSpan CacheExpiry => TimeSpan.FromMinutes(2); // 网卡信息相对稳定
-
-    protected override List<NetworkInfo> GetInfoCore()
+    public static List<NetworkInfo> GetNetworkInfos()
     {
         List<NetworkInfo> networkInfos = [];
 
@@ -109,8 +50,6 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
             {
                 var networkInfo = new NetworkInfo
                 {
-                    Timestamp = DateTime.Now,
-                    IsAvailable = true,
                     Name = ni.Name,
                     Description = ni.Description,
                     Type = ni.NetworkInterfaceType.ToString(),
@@ -135,8 +74,6 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
 
                     // IPv4 地址信息
                     var unicastAddresses = properties.UnicastAddresses.ToList();
-                    networkInfo.IpAddresses = [.. unicastAddresses.Select(ip => $"{ip.Address} / {ip.IPv4Mask}")];
-
                     networkInfo.IPv4Addresses = [.. unicastAddresses
                         .Where(addr => addr.Address.AddressFamily == AddressFamily.InterNetwork)
                         .Select(addr => new IpAddressInfo
@@ -178,7 +115,15 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
                 }
                 catch (Exception ex)
                 {
-                    networkInfo.ErrorMessage = $"获取IP属性时出错: {ex.Message}";
+                    // 如果获取IP属性失败，记录错误信息
+                    ConsoleLogger.Error($"获取网卡 {ni.Name} 的IP属性出错，{ex.Message}");
+                }
+
+                if (networkInfo.DhcpServerAddresses.Count == 0 && networkInfo.DnsAddresses.Count == 0 &&
+                    networkInfo.GatewayAddresses.Count == 0 && networkInfo.IPv4Addresses.Count == 0 &&
+                    networkInfo.IPv6Addresses.Count == 0)
+                {
+                    continue;
                 }
 
                 networkInfos.Add(networkInfo);
@@ -190,9 +135,6 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
             ConsoleLogger.Error("获取网卡信息出错，" + ex.Message);
             networkInfos.Add(new NetworkInfo
             {
-                Timestamp = DateTime.Now,
-                IsAvailable = false,
-                ErrorMessage = ex.Message,
                 Name = "Error",
                 Description = "Failed to retrieve network information"
             });
@@ -205,23 +147,8 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
 /// <summary>
 /// 网卡信息
 /// </summary>
-public record NetworkInfo : IHardwareInfo
+public record NetworkInfo
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// 名称
     /// </summary>
@@ -276,11 +203,6 @@ public record NetworkInfo : IHardwareInfo
     /// DHCP服务器地址
     /// </summary>
     public List<string> DhcpServerAddresses { get; set; } = [];
-
-    /// <summary>
-    /// IP 地址（兼容旧版本）
-    /// </summary>
-    public List<string> IpAddresses { get; set; } = [];
 
     /// <summary>
     /// IPv4 地址详细信息
@@ -368,23 +290,8 @@ public record NetworkInterfaceStatistics
 /// <summary>
 /// 网络统计信息
 /// </summary>
-public record NetworkStatistics : IHardwareInfo
+public record NetworkStatistics
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// 总接收字节数
     /// </summary>
