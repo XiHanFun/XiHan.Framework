@@ -64,7 +64,7 @@ public class AsyncBarrier : IDisposable
         }
 
         // 初始状态：阶段0，参与者总数为participantCount，当前计数为0
-        _state = ((long)participantCount << 16);
+        _state = (long)participantCount << 16;
         _currentPhaseCompletion = new TaskCompletionSource<bool>();
     }
 
@@ -317,7 +317,7 @@ public class AsyncBarrier : IDisposable
         oldCompletion?.SetException(new InvalidOperationException("屏障已重置"));
 
         // 重置状态到阶段0
-        var newState = ((long)newParticipantCount << 16);
+        var newState = (long)newParticipantCount << 16;
         Interlocked.Exchange(ref _state, newState);
     }
 

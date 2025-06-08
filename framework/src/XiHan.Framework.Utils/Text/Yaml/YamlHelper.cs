@@ -252,7 +252,7 @@ public static partial class YamlHelper
 
             return result ?? throw new InvalidOperationException("反序列化失败：结果为空");
         }
-        catch (Exception ex) when (!(ex is ArgumentException || ex is InvalidOperationException))
+        catch (Exception ex) when (ex is not (ArgumentException or InvalidOperationException))
         {
             throw new InvalidOperationException($"反序列化失败：{ex.Message}", ex);
         }
@@ -702,7 +702,7 @@ public static partial class YamlHelper
                 {
                     sb.Append($"{indentStr}{property.Name}:");
 
-                    if (property.Value.ValueKind == JsonValueKind.Object || property.Value.ValueKind == JsonValueKind.Array)
+                    if (property.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
                     {
                         sb.AppendLine();
                         sb.Append(ConvertJsonElementToYaml(property.Value, options, indent + 1));
@@ -718,7 +718,7 @@ public static partial class YamlHelper
                 foreach (var item in element.EnumerateArray())
                 {
                     sb.Append($"{indentStr}- ");
-                    if (item.ValueKind == JsonValueKind.Object || item.ValueKind == JsonValueKind.Array)
+                    if (item.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
                     {
                         sb.AppendLine();
                         sb.Append(ConvertJsonElementToYaml(item, options, indent + 1));
@@ -807,7 +807,7 @@ public static partial class YamlHelper
             var keys = kvp.Key.Split(separator);
             var current = result;
 
-            for (int i = 0; i < keys.Length - 1; i++)
+            for (var i = 0; i < keys.Length - 1; i++)
             {
                 if (!current.ContainsKey(keys[i]))
                 {
@@ -846,12 +846,9 @@ public static partial class YamlHelper
             return false;
         }
 
-        if (int.TryParse(value, out var intValue))
-        {
-            return intValue;
-        }
-
-        return double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue) ? doubleValue : value;
+        return int.TryParse(value, out var intValue)
+            ? intValue
+            : double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue) ? doubleValue : value;
     }
 
     #endregion 私有辅助方法
