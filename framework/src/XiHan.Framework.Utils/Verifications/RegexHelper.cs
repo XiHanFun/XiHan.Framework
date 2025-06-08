@@ -40,6 +40,12 @@ public static partial class RegexHelper
     public static partial Regex EmailRegex();
 
     /// <summary>
+    /// 验证一个或多个数字
+    /// </summary>
+    [GeneratedRegex(@"(\d+)", RegexOptions.IgnoreCase)]
+    public static partial Regex OneOrMoreNumbersRegex();
+
+    /// <summary>
     /// 验证是否为整数
     /// </summary>
     [GeneratedRegex(@"^(-){0,1}\d+$", RegexOptions.IgnoreCase)]

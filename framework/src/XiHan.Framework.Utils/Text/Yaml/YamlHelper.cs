@@ -807,7 +807,7 @@ public static partial class YamlHelper
             var keys = kvp.Key.Split(separator);
             var current = result;
 
-            for (int i = 0; i < keys.Length - 1; i++)
+            for (var i = 0; i < keys.Length - 1; i++)
             {
                 if (!current.ContainsKey(keys[i]))
                 {

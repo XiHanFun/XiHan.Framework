@@ -49,7 +49,7 @@ public static class DiskHelper
                 {
                     diskInfos.AddRange(from line in lines
                                        select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
-                        into rootDisk
+                                       into rootDisk
                                        where rootDisk.Length >= 5
                                        select new DiskInfo
                                        {
