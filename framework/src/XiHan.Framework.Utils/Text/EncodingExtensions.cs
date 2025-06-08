@@ -284,36 +284,47 @@ public static class EncodingExtensions
                 case '\\':
                     sb.Append("\\\\");
                     break;
+
                 case '"':
                     sb.Append("\\\"");
                     break;
+
                 case '\'':
                     sb.Append("\\'");
                     break;
+
                 case '\n':
                     sb.Append("\\n");
                     break;
+
                 case '\r':
                     sb.Append("\\r");
                     break;
+
                 case '\t':
                     sb.Append("\\t");
                     break;
+
                 case '\b':
                     sb.Append("\\b");
                     break;
+
                 case '\f':
                     sb.Append("\\f");
                     break;
+
                 case '\a':
                     sb.Append("\\a");
                     break;
+
                 case '\v':
                     sb.Append("\\v");
                     break;
+
                 case '\0':
                     sb.Append("\\0");
                     break;
+
                 default:
                     // 处理其他控制字符
                     if (char.IsControl(c))
@@ -350,27 +361,35 @@ public static class EncodingExtensions
                 case '"':
                     sb.Append("\\\"");
                     break;
+
                 case '\\':
                     sb.Append("\\\\");
                     break;
+
                 case '/':
                     sb.Append("\\/");
                     break;
+
                 case '\b':
                     sb.Append("\\b");
                     break;
+
                 case '\f':
                     sb.Append("\\f");
                     break;
+
                 case '\n':
                     sb.Append("\\n");
                     break;
+
                 case '\r':
                     sb.Append("\\r");
                     break;
+
                 case '\t':
                     sb.Append("\\t");
                     break;
+
                 default:
                     // 处理 Unicode 控制字符
                     if (char.IsControl(c))

@@ -284,6 +284,23 @@ public abstract class EventBusBase : IEventBus
     }
 
     /// <summary>
+    /// 抛出原始异常
+    /// 根据异常数量决定抛出单个异常还是聚合异常
+    /// </summary>
+    /// <param name="eventType">事件类型</param>
+    /// <param name="exceptions">异常列表</param>
+    /// <exception cref="AggregateException">当存在多个异常时</exception>
+    protected static void ThrowOriginalExceptions(Type eventType, List<Exception> exceptions)
+    {
+        if (exceptions.Count == 1)
+        {
+            exceptions[0].ReThrow();
+        }
+
+        throw new AggregateException("触发事件时发生多个错误：" + eventType, exceptions);
+    }
+
+    /// <summary>
     /// 发布事件到事件总线（抽象方法）
     /// 子类必须实现此方法来提供具体的事件发布机制
     /// </summary>
@@ -335,23 +352,6 @@ public abstract class EventBusBase : IEventBus
                 await PublishToEventBusAsync(baseEventType, baseEventData);
             }
         }
-    }
-
-    /// <summary>
-    /// 抛出原始异常
-    /// 根据异常数量决定抛出单个异常还是聚合异常
-    /// </summary>
-    /// <param name="eventType">事件类型</param>
-    /// <param name="exceptions">异常列表</param>
-    /// <exception cref="AggregateException">当存在多个异常时</exception>
-    protected static void ThrowOriginalExceptions(Type eventType, List<Exception> exceptions)
-    {
-        if (exceptions.Count == 1)
-        {
-            exceptions[0].ReThrow();
-        }
-
-        throw new AggregateException("触发事件时发生多个错误：" + eventType, exceptions);
     }
 
     /// <summary>

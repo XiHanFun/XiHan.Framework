@@ -55,6 +55,7 @@ public class PasswordStrengthChecker
             // 检查长度
             case < 8:
                 return new PasswordStrengthResult(false, "密码长度不足8位", score);
+
             case >= 12:
                 score += 20;
                 break;

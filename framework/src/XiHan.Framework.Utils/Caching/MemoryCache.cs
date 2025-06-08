@@ -266,7 +266,6 @@ public class MemoryCache
 
         _ = _cache.TryRemove(key, out _);
         return false;
-
     }
 
     /// <summary>

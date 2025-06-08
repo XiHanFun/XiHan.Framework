@@ -272,7 +272,6 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
 
                 await HandleExceptionAsync(ex);
                 return null;
-
             }
 
             return value;
@@ -324,7 +323,6 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
 
             await HandleExceptionAsync(ex);
             return null;
-
         }
 
         return value;
