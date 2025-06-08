@@ -436,7 +436,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             HandleException(ex);
             return null;
-
         }
 
         return ToCacheItem(cachedBytes);
@@ -494,7 +493,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             HandleException(ex);
             return ToCacheItemsWithDefaultValues(keyArray);
-
         }
 
         return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -553,7 +551,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             await HandleExceptionAsync(ex);
             return ToCacheItemsWithDefaultValues(keyArray);
-
         }
 
         return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -593,7 +590,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             await HandleExceptionAsync(ex);
             return null;
-
         }
 
         return cachedBytes is null ? null : Serializer.Deserialize<TCacheItem>(cachedBytes);
@@ -747,7 +743,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
                 HandleException(ex);
                 return ToCacheItemsWithDefaultValues(keyArray);
-
             }
 
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -839,7 +834,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
                 await HandleExceptionAsync(ex);
                 return ToCacheItemsWithDefaultValues(keyArray);
-
             }
 
             result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
@@ -1485,7 +1479,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             HandleException(ex);
             return ToCacheItemsWithDefaultValues(keys);
-
         }
     }
 
@@ -1519,7 +1512,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
 
             await HandleExceptionAsync(ex);
             return ToCacheItemsWithDefaultValues(keys);
-
         }
     }
 

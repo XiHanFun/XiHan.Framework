@@ -177,6 +177,7 @@ public static class LoggerExtensions
             case IExceptionWithSelfLogging logging:
                 loggingExceptions.Add(logging);
                 break;
+
             case AggregateException { InnerException: not null } aggException:
                 {
                     if (aggException.InnerException is IExceptionWithSelfLogging selfLogging)
