@@ -15,19 +15,209 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 
 namespace XiHan.Framework.Utils.Runtime;
 
 /// <summary>
-/// 系统运行时信息
+/// 操作系统平台帮助类
 /// </summary>
-public class RuntimeInfo
+public static class OsPlatformHelper
 {
+    /// <summary>
+    /// 是否为 Unix 系统
+    /// </summary>
+    public static bool IsUnixSystem { get; } = GetIsUnixSystem();
+
     /// <summary>
     /// 操作系统平台类型
     /// </summary>
-    public OsPlatformType PlatformType { get; set; }
+    public static OSPlatform PlatformType { get; } = GetPlatformType();
 
+    /// <summary>
+    /// 是否 Windows 平台
+    /// </summary>
+    public static bool IsWindows => PlatformType == OSPlatform.Windows;
+
+    /// <summary>
+    /// 是否 Linux 平台
+    /// </summary>
+    public static bool IsLinux => PlatformType == OSPlatform.Linux;
+
+    /// <summary>
+    /// 是否 macOS 平台
+    /// </summary>
+    public static bool IsMacOs => PlatformType == OSPlatform.OSX;
+
+    /// <summary>
+    /// 是否 FreeBSD 平台
+    /// </summary>
+    public static bool IsFreeBsd => PlatformType == OSPlatform.FreeBSD;
+
+    /// <summary>
+    /// 处理器信息
+    /// </summary>
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static RuntimeInfo RuntimeInfos => CacheManager.Instance.DefaultCache.GetOrAdd("RuntimeInfos", () => GetRuntimeInfo(), TimeSpan.FromMinutes(1));
+
+    /// <summary>
+    /// 收集运行时信息
+    /// </summary>
+    public static RuntimeInfo GetRuntimeInfo()
+    {
+        try
+        {
+            var currentProcess = Process.GetCurrentProcess();
+            var runtimeInfo = new RuntimeInfo
+            {
+                OsName = GetOperatingSystemName(),
+                OsDescription = RuntimeInformation.OSDescription,
+                OsVersion = Environment.OSVersion.Version.ToString(),
+                OsArchitecture = RuntimeInformation.OSArchitecture.ToString(),
+                ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
+                FrameworkDescription = RuntimeInformation.FrameworkDescription,
+                RuntimeVersion = Environment.Version.ToString(),
+                Is64BitOperatingSystem = Environment.Is64BitOperatingSystem,
+                Is64BitProcess = Environment.Is64BitProcess,
+                IsInteractive = Environment.UserInteractive,
+                ProcessorCount = Environment.ProcessorCount,
+                SystemDirectory = Environment.SystemDirectory,
+                CurrentDirectory = Environment.CurrentDirectory,
+                MachineName = Environment.MachineName,
+                UserName = Environment.UserName,
+                UserDomainName = Environment.UserDomainName,
+                WorkingSet = Environment.WorkingSet,
+                SystemStartTime = DateTime.Now - TimeSpan.FromMilliseconds(Environment.TickCount64),
+                SystemUptime = TimeSpan.FromMilliseconds(Environment.TickCount64),
+                ProcessStartTime = currentProcess.StartTime,
+                ProcessUptime = DateTime.Now - currentProcess.StartTime,
+                ProcessId = currentProcess.Id,
+                ProcessName = currentProcess.ProcessName,
+                ClrVersion = Environment.Version.ToString(),
+                EnvironmentVariableCount = Environment.GetEnvironmentVariables().Count,
+                CommandLineArgs = Environment.GetCommandLineArgs()
+            };
+
+            return runtimeInfo;
+        }
+        catch (Exception ex)
+        {
+            // 异常时返回基本信息
+            return new RuntimeInfo
+            {
+                OsName = "Unknown",
+                OsDescription = $"Error collecting info: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// 获取环境变量
+    /// </summary>
+    /// <param name="variableName">变量名</param>
+    /// <param name="target">环境变量目标</param>
+    /// <returns>环境变量值</returns>
+    public static string? GetEnvironmentVariable(string variableName, EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
+    {
+        return Environment.GetEnvironmentVariable(variableName, target);
+    }
+
+    /// <summary>
+    /// 获取所有环境变量
+    /// </summary>
+    /// <param name="target">环境变量目标</param>
+    /// <returns>环境变量字典</returns>
+    public static Dictionary<string, string?> GetAllEnvironmentVariables(EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
+    {
+        var variables = Environment.GetEnvironmentVariables(target);
+        return variables.Cast<DictionaryEntry>()
+            .ToDictionary(entry => entry.Key.ToString()!, entry => entry.Value?.ToString());
+    }
+
+    /// <summary>
+    /// 检查特定的操作系统版本
+    /// </summary>
+    /// <param name="minimumVersion">最小版本要求</param>
+    /// <returns>是否满足版本要求</returns>
+    public static bool CheckOsVersion(Version minimumVersion)
+    {
+        try
+        {
+            return Environment.OSVersion.Version >= minimumVersion;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 获取.NET运行时位置
+    /// </summary>
+    /// <returns>运行时路径</returns>
+    public static string GetRuntimeLocation()
+    {
+        try
+        {
+            return Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// 判断当前操作系统是否为 Unix 系统
+    /// </summary>
+    /// <returns></returns>
+    public static bool GetIsUnixSystem()
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                                RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
+    }
+
+    /// <summary>
+    /// 获取操作系统平台类型
+    /// </summary>
+    private static OSPlatform GetPlatformType()
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? OSPlatform.Windows
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? OSPlatform.Linux
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+            ? OSPlatform.OSX
+            : RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD)
+            ? OSPlatform.FreeBSD
+            : OSPlatform.Create("Unknown");
+    }
+
+    /// <summary>
+    /// 获取操作系统名称
+    /// </summary>
+    private static string GetOperatingSystemName()
+    {
+        var platformType = GetPlatformType();
+        return platformType.ToString() switch
+        {
+            "Windows" => "Windows",
+            "Linux" => "Linux",
+            "OSX" => "MacOS",
+            "FreeBSD" => "FreeBSD",
+            _ => "Unknown"
+        };
+    }
+}
+
+/// <summary>
+/// 系统运行时信息
+/// </summary>
+public record RuntimeInfo
+{
     /// <summary>
     /// 操作系统名称
     /// </summary>
@@ -74,14 +264,14 @@ public class RuntimeInfo
     public bool Is64BitProcess { get; set; }
 
     /// <summary>
-    /// 是否Unix系统
-    /// </summary>
-    public bool IsUnixSystem { get; set; }
-
-    /// <summary>
     /// 是否交互模式
     /// </summary>
     public bool IsInteractive { get; set; }
+
+    /// <summary>
+    /// 交互模式描述
+    /// </summary>
+    public string InteractiveMode => IsInteractive ? "交互运行" : "非交互运行";
 
     /// <summary>
     /// 处理器数量
@@ -162,373 +352,4 @@ public class RuntimeInfo
     /// 命令行参数
     /// </summary>
     public string[] CommandLineArgs { get; set; } = [];
-
-    /// <summary>
-    /// 信息收集时间
-    /// </summary>
-    public DateTime CollectedAt { get; set; }
-}
-
-/// <summary>
-/// 操作系统平台类型枚举
-/// </summary>
-public enum OsPlatformType
-{
-    /// <summary>
-    /// 未知平台
-    /// </summary>
-    Unknown = 0,
-
-    /// <summary>
-    /// Windows 平台
-    /// </summary>
-    Windows = 1,
-
-    /// <summary>
-    /// Linux 平台
-    /// </summary>
-    Linux = 2,
-
-    /// <summary>
-    /// macOS 平台
-    /// </summary>
-    MacOs = 3,
-
-    /// <summary>
-    /// FreeBSD 平台
-    /// </summary>
-    FreeBsd = 4
-}
-
-/// <summary>
-/// 运行时框架类型枚举
-/// </summary>
-public enum RuntimeFrameworkType
-{
-    /// <summary>
-    /// 未知框架
-    /// </summary>
-    Unknown = 0,
-
-    /// <summary>
-    /// .NET Framework
-    /// </summary>
-    NetFramework = 1,
-
-    /// <summary>
-    /// .NET Core
-    /// </summary>
-    NetCore = 2,
-
-    /// <summary>
-    /// .NET 5+
-    /// </summary>
-    Net5Plus = 3,
-
-    /// <summary>
-    /// Mono
-    /// </summary>
-    Mono = 4
-}
-
-/// <summary>
-/// 操作系统平台帮助类
-/// </summary>
-public static class OsPlatformHelper
-{
-    private static readonly Lazy<RuntimeInfo> RuntimeInfo = new(CollectRuntimeInfo);
-    private static readonly Lock LockObject = new();
-
-    /// <summary>
-    /// 操作系统平台类型
-    /// </summary>
-    public static OsPlatformType PlatformType => GetRuntimeInfo().PlatformType;
-
-    /// <summary>
-    /// 操作系统名称
-    /// </summary>
-    public static string OperatingSystem => GetRuntimeInfo().OsName;
-
-    /// <summary>
-    /// 是否 Unix 系统
-    /// </summary>
-    public static bool OsIsUnix => GetRuntimeInfo().IsUnixSystem;
-
-    /// <summary>
-    /// 系统描述
-    /// </summary>
-    public static string OsDescription => GetRuntimeInfo().OsDescription;
-
-    /// <summary>
-    /// 系统版本
-    /// </summary>
-    public static string OsVersion => GetRuntimeInfo().OsVersion;
-
-    /// <summary>
-    /// 系统平台
-    /// </summary>
-    public static string Platform => GetRuntimeInfo().OsName;
-
-    /// <summary>
-    /// 系统架构
-    /// </summary>
-    public static string OsArchitecture => GetRuntimeInfo().OsArchitecture;
-
-    /// <summary>
-    /// 系统目录
-    /// </summary>
-    public static string SystemDirectory => GetRuntimeInfo().SystemDirectory;
-
-    /// <summary>
-    /// 交互模式描述
-    /// </summary>
-    public static string InteractiveMode => GetRuntimeInfo().IsInteractive ? "交互运行" : "非交互运行";
-
-    /// <summary>
-    /// 是否 Windows 平台
-    /// </summary>
-    public static bool IsWindows => PlatformType == OsPlatformType.Windows;
-
-    /// <summary>
-    /// 是否 Linux 平台
-    /// </summary>
-    public static bool IsLinux => PlatformType == OsPlatformType.Linux;
-
-    /// <summary>
-    /// 是否 macOS 平台
-    /// </summary>
-    public static bool IsMacOs => PlatformType == OsPlatformType.MacOs;
-
-    /// <summary>
-    /// 是否 FreeBSD 平台
-    /// </summary>
-    public static bool IsFreeBsd => PlatformType == OsPlatformType.FreeBsd;
-
-    /// <summary>
-    /// 是否64位操作系统
-    /// </summary>
-    public static bool Is64BitOperatingSystem => GetRuntimeInfo().Is64BitOperatingSystem;
-
-    /// <summary>
-    /// 是否64位进程
-    /// </summary>
-    public static bool Is64BitProcess => GetRuntimeInfo().Is64BitProcess;
-
-    /// <summary>
-    /// 运行时框架描述
-    /// </summary>
-    public static string FrameworkDescription => GetRuntimeInfo().FrameworkDescription;
-
-    /// <summary>
-    /// 处理器数量
-    /// </summary>
-    public static int ProcessorCount => GetRuntimeInfo().ProcessorCount;
-
-    /// <summary>
-    /// 机器名称
-    /// </summary>
-    public static string MachineName => GetRuntimeInfo().MachineName;
-
-    /// <summary>
-    /// 当前用户名
-    /// </summary>
-    public static string UserName => GetRuntimeInfo().UserName;
-
-    /// <summary>
-    /// 系统运行时间
-    /// </summary>
-    public static TimeSpan SystemUptime => Environment.TickCount64 > 0
-        ? TimeSpan.FromMilliseconds(Environment.TickCount64)
-        : GetRuntimeInfo().SystemUptime;
-
-    /// <summary>
-    /// 进程运行时间
-    /// </summary>
-    public static TimeSpan ProcessUptime => DateTime.Now - GetRuntimeInfo().ProcessStartTime;
-
-    /// <summary>
-    /// 获取运行时信息
-    /// </summary>
-    public static RuntimeInfo GetRuntimeInfo() => RuntimeInfo.Value;
-
-    /// <summary>
-    /// 重新收集运行时信息（刷新缓存）
-    /// </summary>
-    public static RuntimeInfo RefreshRuntimeInfo()
-    {
-        lock (LockObject)
-        {
-            // 由于使用了Lazy<T>，需要重新创建实例来强制刷新
-            var newRuntimeInfo = CollectRuntimeInfo();
-            return newRuntimeInfo;
-        }
-    }
-
-    /// <summary>
-    /// 获取环境变量
-    /// </summary>
-    /// <param name="variableName">变量名</param>
-    /// <param name="target">环境变量目标</param>
-    /// <returns>环境变量值</returns>
-    public static string? GetEnvironmentVariable(string variableName, EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
-    {
-        return Environment.GetEnvironmentVariable(variableName, target);
-    }
-
-    /// <summary>
-    /// 获取所有环境变量
-    /// </summary>
-    /// <param name="target">环境变量目标</param>
-    /// <returns>环境变量字典</returns>
-    public static Dictionary<string, string?> GetAllEnvironmentVariables(EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
-    {
-        var variables = Environment.GetEnvironmentVariables(target);
-        return variables.Cast<DictionaryEntry>()
-            .ToDictionary(entry => entry.Key.ToString()!, entry => entry.Value?.ToString());
-    }
-
-    /// <summary>
-    /// 获取系统性能计数信息摘要
-    /// </summary>
-    /// <returns>性能摘要字符串</returns>
-    public static string GetPerformanceSummary()
-    {
-        var info = GetRuntimeInfo();
-        return $"OS: {info.OsName} {info.OsVersion} ({info.OsArchitecture}), " +
-               $"Framework: {info.FrameworkDescription}, " +
-               $"Process: {info.ProcessName} (PID: {info.ProcessId}), " +
-               $"Memory: {info.WorkingSet / 1024 / 1024} MB, " +
-               $"Processors: {info.ProcessorCount}, " +
-               $"Uptime: {info.SystemUptime:dd\\.hh\\:mm\\:ss}";
-    }
-
-    /// <summary>
-    /// 检查特定的操作系统版本
-    /// </summary>
-    /// <param name="minimumVersion">最小版本要求</param>
-    /// <returns>是否满足版本要求</returns>
-    public static bool CheckOsVersion(Version minimumVersion)
-    {
-        try
-        {
-            return Environment.OSVersion.Version >= minimumVersion;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// 获取.NET运行时位置
-    /// </summary>
-    /// <returns>运行时路径</returns>
-    public static string GetRuntimeLocation()
-    {
-        try
-        {
-            return Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    /// <summary>
-    /// 收集运行时信息
-    /// </summary>
-    private static RuntimeInfo CollectRuntimeInfo()
-    {
-        try
-        {
-            var currentProcess = Process.GetCurrentProcess();
-            var runtimeInfo = new RuntimeInfo
-            {
-                PlatformType = GetPlatformType(),
-                OsName = GetOperatingSystemName(),
-                OsDescription = RuntimeInformation.OSDescription,
-                OsVersion = Environment.OSVersion.Version.ToString(),
-                OsArchitecture = RuntimeInformation.OSArchitecture.ToString(),
-                ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
-                FrameworkDescription = RuntimeInformation.FrameworkDescription,
-                RuntimeVersion = Environment.Version.ToString(),
-                Is64BitOperatingSystem = Environment.Is64BitOperatingSystem,
-                Is64BitProcess = Environment.Is64BitProcess,
-                IsUnixSystem = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-                              RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                              RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD),
-                IsInteractive = Environment.UserInteractive,
-                ProcessorCount = Environment.ProcessorCount,
-                SystemDirectory = Environment.SystemDirectory,
-                CurrentDirectory = Environment.CurrentDirectory,
-                MachineName = Environment.MachineName,
-                UserName = Environment.UserName,
-                UserDomainName = Environment.UserDomainName,
-                WorkingSet = Environment.WorkingSet,
-                SystemStartTime = DateTime.Now - TimeSpan.FromMilliseconds(Environment.TickCount64),
-                SystemUptime = TimeSpan.FromMilliseconds(Environment.TickCount64),
-                ProcessStartTime = currentProcess.StartTime,
-                ProcessUptime = DateTime.Now - currentProcess.StartTime,
-                ProcessId = currentProcess.Id,
-                ProcessName = currentProcess.ProcessName,
-                ClrVersion = Environment.Version.ToString(),
-                EnvironmentVariableCount = Environment.GetEnvironmentVariables().Count,
-                CommandLineArgs = Environment.GetCommandLineArgs(),
-                CollectedAt = DateTime.Now
-            };
-
-            return runtimeInfo;
-        }
-        catch (Exception ex)
-        {
-            // 异常时返回基本信息
-            return new RuntimeInfo
-            {
-                PlatformType = OsPlatformType.Unknown,
-                OsName = "Unknown",
-                OsDescription = $"Error collecting info: {ex.Message}",
-                CollectedAt = DateTime.Now
-            };
-        }
-    }
-
-    /// <summary>
-    /// 获取操作系统平台类型
-    /// </summary>
-    private static OsPlatformType GetPlatformType()
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            return OsPlatformType.Windows;
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            return OsPlatformType.Linux;
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            return OsPlatformType.MacOs;
-        }
-
-        return RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OsPlatformType.FreeBsd : OsPlatformType.Unknown;
-    }
-
-    /// <summary>
-    /// 获取操作系统名称
-    /// </summary>
-    private static string GetOperatingSystemName()
-    {
-        var platformType = GetPlatformType();
-        return platformType switch
-        {
-            OsPlatformType.Windows => "Windows",
-            OsPlatformType.Linux => "Linux",
-            OsPlatformType.MacOs => "macOS",
-            OsPlatformType.FreeBsd => "FreeBSD",
-            _ => "Unknown"
-        };
-    }
 }

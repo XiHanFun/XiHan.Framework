@@ -27,14 +27,14 @@ public class CacheManagerTest
     }
 
     [Fact]
-    public void GetCache_Should_Return_Same_Instance_For_Same_Name()
+    public void GetOrAdd_Should_Return_Same_Instance_For_Same_Name()
     {
         // Arrange
         var cacheName = "TestCache";
 
         // Act
-        var cache1 = CacheManager.Instance.GetCache(cacheName);
-        var cache2 = CacheManager.Instance.GetCache(cacheName);
+        var cache1 = CacheManager.Instance.GetOrAdd(cacheName);
+        var cache2 = CacheManager.Instance.GetOrAdd(cacheName);
 
         // Assert
         Assert.NotNull(cache1);
@@ -43,15 +43,15 @@ public class CacheManagerTest
     }
 
     [Fact]
-    public void GetCache_Should_Return_Different_Instances_For_Different_Names()
+    public void GetOrAdd_Should_Return_Different_Instances_For_Different_Names()
     {
         // Arrange
         var cacheName1 = "TestCache1";
         var cacheName2 = "TestCache2";
 
         // Act
-        var cache1 = CacheManager.Instance.GetCache(cacheName1);
-        var cache2 = CacheManager.Instance.GetCache(cacheName2);
+        var cache1 = CacheManager.Instance.GetOrAdd(cacheName1);
+        var cache2 = CacheManager.Instance.GetOrAdd(cacheName2);
 
         // Assert
         Assert.NotNull(cache1);
@@ -60,20 +60,20 @@ public class CacheManagerTest
     }
 
     [Fact]
-    public void GetCache_With_Empty_Name_Should_Return_DefaultCache()
+    public void GetOrAdd_With_Empty_Name_Should_Return_DefaultCache()
     {
         // Act
-        var cache = CacheManager.Instance.GetCache("");
+        var cache = CacheManager.Instance.GetOrAdd("");
 
         // Assert
         Assert.Same(CacheManager.Instance.DefaultCache, cache);
     }
 
     [Fact]
-    public void GetCache_With_Null_Name_Should_Return_DefaultCache()
+    public void GetOrAdd_With_Null_Name_Should_Return_DefaultCache()
     {
         // Act
-        var cache = CacheManager.Instance.GetCache(null!);
+        var cache = CacheManager.Instance.GetOrAdd(null!);
 
         // Assert
         Assert.Same(CacheManager.Instance.DefaultCache, cache);
@@ -84,7 +84,7 @@ public class CacheManagerTest
     {
         // Arrange
         var cacheName = "RemoveTestCache";
-        _ = CacheManager.Instance.GetCache(cacheName);
+        _ = CacheManager.Instance.GetOrAdd(cacheName);
 
         // Act
         var removeResult = CacheManager.Instance.RemoveCache(cacheName);
@@ -111,7 +111,7 @@ public class CacheManagerTest
     {
         // Arrange
         var defaultCache = CacheManager.Instance.DefaultCache;
-        var testCache = CacheManager.Instance.GetCache("ClearTestCache");
+        var testCache = CacheManager.Instance.GetOrAdd("ClearTestCache");
 
         defaultCache.Set("key1", "value1");
         testCache.Set("key2", "value2");
@@ -129,8 +129,8 @@ public class CacheManagerTest
     {
         // Arrange
         CacheManager.Instance.ClearAllCaches();
-        _ = CacheManager.Instance.GetCache("NameTestCache1");
-        _ = CacheManager.Instance.GetCache("NameTestCache2");
+        _ = CacheManager.Instance.GetOrAdd("NameTestCache1");
+        _ = CacheManager.Instance.GetOrAdd("NameTestCache2");
 
         // Act
         var cacheNames = CacheManager.Instance.GetCacheNames().ToList();
@@ -143,12 +143,12 @@ public class CacheManagerTest
     }
 
     [Fact]
-    public void GetCacheCount_Should_Return_Correct_Count()
+    public void GetOrAddCount_Should_Return_Correct_Count()
     {
         // Arrange
         CacheManager.Instance.ClearAllCaches();
-        _ = CacheManager.Instance.GetCache("CountTestCache1");
-        _ = CacheManager.Instance.GetCache("CountTestCache2");
+        _ = CacheManager.Instance.GetOrAdd("CountTestCache1");
+        _ = CacheManager.Instance.GetOrAdd("CountTestCache2");
 
         // Act
         var count = CacheManager.Instance.GetCacheCount();
@@ -162,7 +162,7 @@ public class CacheManagerTest
     {
         // Arrange
         var cacheName = "ExistsTestCache";
-        _ = CacheManager.Instance.GetCache(cacheName);
+        _ = CacheManager.Instance.GetOrAdd(cacheName);
 
         // Act
         var exists = CacheManager.Instance.CacheExists(cacheName);

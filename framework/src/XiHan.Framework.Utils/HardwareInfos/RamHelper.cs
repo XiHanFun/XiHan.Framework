@@ -13,9 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.HardwareInfos.Abstractions;
-using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Verifications;
@@ -27,48 +26,21 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class RamHelper
 {
-    private static readonly RamInfoProvider Provider = new();
-
     /// <summary>
     /// 内存信息
     /// </summary>
-    /// <returns></returns>
-    public static RamInfo RamInfos => Provider.GetCachedInfo();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static RamInfo RamInfos => CacheManager.Instance.DefaultCache.GetOrAdd("RamInfos", () => GetRamInfos(), TimeSpan.FromMinutes(5));
 
     /// <summary>
     /// 获取内存信息
     /// </summary>
     /// <returns></returns>
-    public static RamInfo GetRamInfos() => Provider.GetInfo();
-
-    /// <summary>
-    /// 异步获取内存信息
-    /// </summary>
-    /// <returns></returns>
-    public static Task<RamInfo> GetRamInfosAsync() => Provider.GetInfoAsync();
-
-    /// <summary>
-    /// 获取缓存的内存信息
-    /// </summary>
-    /// <param name="forceRefresh">是否强制刷新</param>
-    /// <returns></returns>
-    public static RamInfo GetCachedRamInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
-}
-
-/// <summary>
-/// 内存信息提供者
-/// </summary>
-internal class RamInfoProvider : BaseHardwareInfoProvider<RamInfo>
-{
-    protected override TimeSpan CacheExpiry => TimeSpan.FromSeconds(10); // 内存信息更新较快
-
-    protected override RamInfo GetInfoCore()
+    public static RamInfo GetRamInfos()
     {
-        var ramInfo = new RamInfo
-        {
-            Timestamp = DateTime.Now,
-            IsAvailable = true
-        };
+        var ramInfo = new RamInfo();
 
         try
         {
@@ -205,8 +177,6 @@ internal class RamInfoProvider : BaseHardwareInfoProvider<RamInfo>
         }
         catch (Exception ex)
         {
-            ramInfo.IsAvailable = false;
-            ramInfo.ErrorMessage = ex.Message;
             ConsoleLogger.Error("获取内存信息出错，" + ex.Message);
         }
 
@@ -217,23 +187,8 @@ internal class RamInfoProvider : BaseHardwareInfoProvider<RamInfo>
 /// <summary>
 /// 内存信息
 /// </summary>
-public record RamInfo : IHardwareInfo
+public record RamInfo
 {
-    /// <summary>
-    /// 时间戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// 是否可用
-    /// </summary>
-    public bool IsAvailable { get; set; } = true;
-
-    /// <summary>
-    /// 错误信息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
     /// <summary>
     /// 总内存大小（字节）
     /// </summary>
@@ -268,29 +223,4 @@ public record RamInfo : IHardwareInfo
     /// 可用内存占比（%）
     /// </summary>
     public double AvailablePercentage { get; set; }
-
-    /// <summary>
-    /// 总大小（兼容旧版本）
-    /// </summary>
-    public string TotalSpace => TotalBytes.FormatFileSizeToString();
-
-    /// <summary>
-    /// 空闲大小（兼容旧版本）
-    /// </summary>
-    public string FreeSpace => FreeBytes.FormatFileSizeToString();
-
-    /// <summary>
-    /// 已用大小（兼容旧版本）
-    /// </summary>
-    public string UsedSpace => UsedBytes.FormatFileSizeToString();
-
-    /// <summary>
-    /// 可用占比（兼容旧版本）
-    /// </summary>
-    public string AvailableRate => $"{AvailablePercentage:F1}%";
-
-    /// <summary>
-    /// 缓冲区和缓存大小
-    /// </summary>
-    public string BuffersCachedSpace => BuffersCachedBytes.FormatFileSizeToString();
 }

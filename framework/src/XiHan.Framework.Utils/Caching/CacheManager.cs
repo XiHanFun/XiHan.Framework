@@ -58,7 +58,7 @@ public class CacheManager
     /// <param name="enableCleanup">是否启用自动清理</param>
     /// <param name="cleanupIntervalMinutes">清理间隔(分钟)</param>
     /// <returns>内存缓存实例</returns>
-    public MemoryCache GetCache(string name, bool enableCleanup = true, int cleanupIntervalMinutes = 10)
+    public MemoryCache GetOrAdd(string name, bool enableCleanup = true, int cleanupIntervalMinutes = 10)
     {
         if (string.IsNullOrEmpty(name))
         {
