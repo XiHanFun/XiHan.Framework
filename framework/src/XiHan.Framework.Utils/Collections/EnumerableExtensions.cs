@@ -67,4 +67,67 @@ public static class EnumerableExtensions
     {
         return condition ? source.Where(predicate) : source;
     }
+
+    /// <summary>
+    /// 通过考虑对象之间的依赖关系对列表进行拓扑排序
+    /// </summary>
+    /// <typeparam name="T">列表项的类型</typeparam>
+    /// <param name="source">要排序的对象列表</param>
+    /// <param name="getDependencies">用于解析项依赖关系的函数</param>
+    /// <param name="comparer">依赖关系的相等比较器</param>
+    /// <returns>返回按依赖关系排序的新列表</returns>
+    public static List<T> SortByDependencies<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies, IEqualityComparer<T>? comparer = null)
+        where T : notnull
+    {
+        // 初始化排序列表、访问标记字典
+        List<T> sorted = [];
+        Dictionary<T, bool> visited = new(comparer);
+
+        // 遍历源列表中的每个项并进行拓扑排序
+        foreach (var item in source)
+        {
+            SortByDependenciesVisit(item, getDependencies, sorted, visited);
+        }
+
+        return sorted;
+    }
+
+    /// <summary>
+    /// 递归地对项进行拓扑排序，考虑其依赖关系
+    /// </summary>
+    /// <typeparam name="T">项的类型</typeparam>
+    /// <param name="item">要解析的项</param>
+    /// <param name="getDependencies">用于解析项依赖关系的函数</param>
+    /// <param name="sorted">包含排序后项的列表</param>
+    /// <param name="visited">包含已访问项的字典</param>
+    private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
+        where T : notnull
+    {
+        // 检查项是否已经在处理中或已访问过
+        var alreadyVisited = visited.TryGetValue(item, out var inProcess);
+
+        if (alreadyVisited)
+        {
+            if (inProcess)
+            {
+                throw new ArgumentException("发现循环依赖项:" + item);
+            }
+        }
+        else
+        {
+            // 标记为正在处理
+            visited[item] = true;
+
+            var dependencies = getDependencies(item);
+            // 递归地对每个依赖进行拓扑排序
+            foreach (var dependency in dependencies)
+            {
+                SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
+            }
+
+            // 标记为已处理
+            visited[item] = false;
+            sorted.Add(item);
+        }
+    }
 }
