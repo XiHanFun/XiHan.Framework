@@ -24,31 +24,31 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class CpuHelper
 {
-    private static readonly CpuInfoProvider _provider = new();
+    private static readonly CpuInfoProvider Provider = new();
 
     /// <summary>
     /// 处理器信息
     /// </summary>
-    public static CpuInfo CpuInfos => _provider.GetCachedInfo();
+    public static CpuInfo CpuInfos => Provider.GetCachedInfo();
 
     /// <summary>
     /// 获取处理器信息
     /// </summary>
     /// <returns></returns>
-    public static CpuInfo GetCpuInfos() => _provider.GetInfo();
+    public static CpuInfo GetCpuInfos() => Provider.GetInfo();
 
     /// <summary>
     /// 异步获取处理器信息
     /// </summary>
     /// <returns></returns>
-    public static Task<CpuInfo> GetCpuInfosAsync() => _provider.GetInfoAsync();
+    public static Task<CpuInfo> GetCpuInfosAsync() => Provider.GetInfoAsync();
 
     /// <summary>
     /// 获取缓存的处理器信息
     /// </summary>
     /// <param name="forceRefresh">是否强制刷新</param>
     /// <returns></returns>
-    public static CpuInfo GetCachedCpuInfos(bool forceRefresh = false) => _provider.GetCachedInfo(forceRefresh);
+    public static CpuInfo GetCachedCpuInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
 }
 
 /// <summary>

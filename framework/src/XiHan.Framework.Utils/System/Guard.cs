@@ -31,7 +31,7 @@ public static class Guard
     /// <param name="parameterName"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static T NotNull<T>([NotNull] T? value, [NotNull] string parameterName)
+    public static T NotNull<T>([NotNull] T? value, string parameterName)
     {
         return value is null ? throw new ArgumentNullException(parameterName) : value;
     }
@@ -45,7 +45,7 @@ public static class Guard
     /// <param name="message"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static T NotNull<T>([NotNull] T? value, [NotNull] string parameterName, string message)
+    public static T NotNull<T>([NotNull] T? value, string parameterName, string message)
     {
         return value is null ? throw new ArgumentNullException(parameterName, message) : value;
     }
@@ -59,7 +59,7 @@ public static class Guard
     /// <param name="minLength"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static string NotNull([NotNull] string? value, [NotNull] string parameterName, int maxLength = int.MaxValue, int minLength = 0)
+    public static string NotNull([NotNull] string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
         return value is null
             ? throw new ArgumentException($"{parameterName} 不能为空", parameterName)
@@ -79,7 +79,7 @@ public static class Guard
     /// <param name="minLength"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static string NotNullOrWhiteSpace([NotNull] string? value, [NotNull] string parameterName, int maxLength = int.MaxValue, int minLength = 0)
+    public static string NotNullOrWhiteSpace([NotNull] string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
         return string.IsNullOrWhiteSpace(value)
             ? throw new ArgumentException($"{parameterName} 不能为无效、空值或空白", parameterName)
@@ -99,7 +99,7 @@ public static class Guard
     /// <param name="minLength"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static string NotNullOrEmpty([NotNull] string? value, [NotNull] string parameterName, int maxLength = int.MaxValue, int minLength = 0)
+    public static string NotNullOrEmpty([NotNull] string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
     {
         return string.IsNullOrEmpty(value)
             ? throw new ArgumentException($"{parameterName} 不能为无效、空值", parameterName)
@@ -118,7 +118,7 @@ public static class Guard
     /// <param name="parameterName"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static ICollection<T> NotNullOrEmpty<T>([NotNull] ICollection<T>? value, [NotNull] string parameterName)
+    public static ICollection<T> NotNullOrEmpty<T>([NotNull] ICollection<T>? value, string parameterName)
     {
         return value == null || value.Count <= 0
             ? throw new ArgumentException($"{parameterName} 不能为无效、空值", parameterName)
@@ -133,7 +133,7 @@ public static class Guard
     /// <param name="parameterName"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static T NotDefaultOrNull<T>([NotNull] T? value, [NotNull] string parameterName)
+    public static T NotDefaultOrNull<T>([NotNull] T? value, string parameterName)
        where T : struct
     {
         return value == null
@@ -151,7 +151,7 @@ public static class Guard
     /// <param name="parameterName"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static Type AssignableTo<TBaseType>([NotNull] Type type, [NotNull] string parameterName)
+    public static Type AssignableTo<TBaseType>(Type type, string parameterName)
     {
         NotNull(type, parameterName);
 
@@ -169,7 +169,7 @@ public static class Guard
     /// <param name="minLength"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static string? Length(string? value, [NotNull] string parameterName, int maxLength, int minLength = 0)
+    public static string? Length(string? value, string parameterName, int maxLength, int minLength = 0)
     {
         return minLength <= 0
             ? value is not null && value.Length > maxLength
@@ -193,7 +193,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="short.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static short Range(short value, [NotNull] string parameterName, short minimumValue, short maximumValue = short.MaxValue)
+    public static short Range(short value, string parameterName, short minimumValue, short maximumValue = short.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -209,7 +209,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="int.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static int Range(int value, [NotNull] string parameterName, int minimumValue, int maximumValue = int.MaxValue)
+    public static int Range(int value, string parameterName, int minimumValue, int maximumValue = int.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -225,7 +225,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="long.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static long Range(long value, [NotNull] string parameterName, long minimumValue, long maximumValue = long.MaxValue)
+    public static long Range(long value, string parameterName, long minimumValue, long maximumValue = long.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -241,7 +241,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="float.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static float Range(float value, [NotNull] string parameterName, float minimumValue, float maximumValue = float.MaxValue)
+    public static float Range(float value, string parameterName, float minimumValue, float maximumValue = float.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -257,7 +257,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="double.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static double Range(double value, [NotNull] string parameterName, double minimumValue, double maximumValue = double.MaxValue)
+    public static double Range(double value, string parameterName, double minimumValue, double maximumValue = double.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -273,7 +273,7 @@ public static class Guard
     /// <param name="maximumValue">最大值(含，默认为 <see cref="decimal.MaxValue"/>)</param>
     /// <returns>如果验证通过，返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出指定范围时抛出</exception>
-    public static decimal Range(decimal value, [NotNull] string parameterName, decimal minimumValue, decimal maximumValue = decimal.MaxValue)
+    public static decimal Range(decimal value, string parameterName, decimal minimumValue, decimal maximumValue = decimal.MaxValue)
     {
         return value < minimumValue || value > maximumValue
             ? throw new ArgumentException($"{parameterName} 超出范围：最小值 = {minimumValue}，最大值 = {maximumValue}")
@@ -290,7 +290,7 @@ public static class Guard
     /// <param name="maximumValue">允许的最大值(含)</param>
     /// <returns>验证通过时返回原始值</returns>
     /// <exception cref="ArgumentException">当值超出范围时抛出</exception>
-    public static T Range<T>(T value, [NotNull] string parameterName, T minimumValue, T maximumValue)
+    public static T Range<T>(T value, string parameterName, T minimumValue, T maximumValue)
         where T : IComparable<T>
     {
         return value.CompareTo(minimumValue) < 0 || value.CompareTo(maximumValue) > 0

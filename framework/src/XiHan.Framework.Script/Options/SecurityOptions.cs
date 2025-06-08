@@ -27,7 +27,7 @@ public class SecurityOptions
     /// <summary>
     /// 是否启用严格模式
     /// </summary>
-    public bool EnableStrictMode { get; set; } = false;
+    public bool EnableStrictMode { get; set; }
 
     /// <summary>
     /// 是否允许文件系统访问
@@ -47,12 +47,12 @@ public class SecurityOptions
     /// <summary>
     /// 是否允许进程操作
     /// </summary>
-    public bool AllowProcessOperations { get; set; } = false;
+    public bool AllowProcessOperations { get; set; }
 
     /// <summary>
     /// 是否允许注册表访问
     /// </summary>
-    public bool AllowRegistryAccess { get; set; } = false;
+    public bool AllowRegistryAccess { get; set; }
 
     /// <summary>
     /// 是否允许环境变量访问

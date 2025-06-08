@@ -14,7 +14,6 @@
 
 using System.Collections;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
@@ -32,7 +31,7 @@ public static class TypeHelper
     /// <summary>
     /// 浮点数类型集合
     /// </summary>
-    private static readonly HashSet<Type> _floatingTypes =
+    private static readonly HashSet<Type> FloatingTypes =
         [
             typeof(float),
             typeof(double),
@@ -42,7 +41,7 @@ public static class TypeHelper
     /// <summary>
     /// 非可空基元类型集合
     /// </summary>
-    private static readonly HashSet<Type> _nonNullablePrimitiveTypes =
+    private static readonly HashSet<Type> NonNullablePrimitiveTypes =
         [
             typeof(byte),
             typeof(short),
@@ -70,7 +69,7 @@ public static class TypeHelper
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        return type.IsPrimitive || _nonNullablePrimitiveTypes.Contains(type);
+        return type.IsPrimitive || NonNullablePrimitiveTypes.Contains(type);
     }
 
     /// <summary>
@@ -253,7 +252,7 @@ public static class TypeHelper
     /// </summary>
     /// <param name="type">要获取完整名称的类型</param>
     /// <returns>格式化后的类型完整名称</returns>
-    public static string GetFullNameHandlingNullableAndGenerics([NotNull] Type type)
+    public static string GetFullNameHandlingNullableAndGenerics(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
 
@@ -277,7 +276,7 @@ public static class TypeHelper
     /// </summary>
     /// <param name="type">要获取简化名称的类型</param>
     /// <returns>简化后的类型名称</returns>
-    public static string GetSimplifiedName([NotNull] Type type)
+    public static string GetSimplifiedName(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
 
@@ -372,10 +371,10 @@ public static class TypeHelper
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        return _floatingTypes.Contains(type) || (includeNullable &&
+        return FloatingTypes.Contains(type) || (includeNullable &&
             IsNullable(type) &&
             type.GenericTypeArguments.Length > 0 &&
-            _floatingTypes.Contains(type.GenericTypeArguments[0]));
+            FloatingTypes.Contains(type.GenericTypeArguments[0]));
     }
 
     /// <summary>

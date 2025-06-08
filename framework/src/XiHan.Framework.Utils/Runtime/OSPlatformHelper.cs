@@ -26,27 +26,27 @@ public class RuntimeInfo
     /// <summary>
     /// 操作系统平台类型
     /// </summary>
-    public OSPlatformType PlatformType { get; set; }
+    public OsPlatformType PlatformType { get; set; }
 
     /// <summary>
     /// 操作系统名称
     /// </summary>
-    public string OSName { get; set; } = string.Empty;
+    public string OsName { get; set; } = string.Empty;
 
     /// <summary>
     /// 操作系统描述
     /// </summary>
-    public string OSDescription { get; set; } = string.Empty;
+    public string OsDescription { get; set; } = string.Empty;
 
     /// <summary>
     /// 操作系统版本
     /// </summary>
-    public string OSVersion { get; set; } = string.Empty;
+    public string OsVersion { get; set; } = string.Empty;
 
     /// <summary>
     /// 操作系统架构
     /// </summary>
-    public string OSArchitecture { get; set; } = string.Empty;
+    public string OsArchitecture { get; set; } = string.Empty;
 
     /// <summary>
     /// 进程架构
@@ -172,7 +172,7 @@ public class RuntimeInfo
 /// <summary>
 /// 操作系统平台类型枚举
 /// </summary>
-public enum OSPlatformType
+public enum OsPlatformType
 {
     /// <summary>
     /// 未知平台
@@ -192,12 +192,12 @@ public enum OSPlatformType
     /// <summary>
     /// macOS 平台
     /// </summary>
-    MacOS = 3,
+    MacOs = 3,
 
     /// <summary>
     /// FreeBSD 平台
     /// </summary>
-    FreeBSD = 4
+    FreeBsd = 4
 }
 
 /// <summary>
@@ -234,20 +234,20 @@ public enum RuntimeFrameworkType
 /// <summary>
 /// 操作系统平台帮助类
 /// </summary>
-public static class OSPlatformHelper
+public static class OsPlatformHelper
 {
-    private static readonly Lazy<RuntimeInfo> _runtimeInfo = new(CollectRuntimeInfo);
-    private static readonly Lock _lockObject = new();
+    private static readonly Lazy<RuntimeInfo> RuntimeInfo = new(CollectRuntimeInfo);
+    private static readonly Lock LockObject = new();
 
     /// <summary>
     /// 操作系统平台类型
     /// </summary>
-    public static OSPlatformType PlatformType => GetRuntimeInfo().PlatformType;
+    public static OsPlatformType PlatformType => GetRuntimeInfo().PlatformType;
 
     /// <summary>
     /// 操作系统名称
     /// </summary>
-    public static string OperatingSystem => GetRuntimeInfo().OSName;
+    public static string OperatingSystem => GetRuntimeInfo().OsName;
 
     /// <summary>
     /// 是否 Unix 系统
@@ -257,22 +257,22 @@ public static class OSPlatformHelper
     /// <summary>
     /// 系统描述
     /// </summary>
-    public static string OsDescription => GetRuntimeInfo().OSDescription;
+    public static string OsDescription => GetRuntimeInfo().OsDescription;
 
     /// <summary>
     /// 系统版本
     /// </summary>
-    public static string OsVersion => GetRuntimeInfo().OSVersion;
+    public static string OsVersion => GetRuntimeInfo().OsVersion;
 
     /// <summary>
     /// 系统平台
     /// </summary>
-    public static string Platform => GetRuntimeInfo().OSName;
+    public static string Platform => GetRuntimeInfo().OsName;
 
     /// <summary>
     /// 系统架构
     /// </summary>
-    public static string OsArchitecture => GetRuntimeInfo().OSArchitecture;
+    public static string OsArchitecture => GetRuntimeInfo().OsArchitecture;
 
     /// <summary>
     /// 系统目录
@@ -287,22 +287,22 @@ public static class OSPlatformHelper
     /// <summary>
     /// 是否 Windows 平台
     /// </summary>
-    public static bool IsWindows => PlatformType == OSPlatformType.Windows;
+    public static bool IsWindows => PlatformType == OsPlatformType.Windows;
 
     /// <summary>
     /// 是否 Linux 平台
     /// </summary>
-    public static bool IsLinux => PlatformType == OSPlatformType.Linux;
+    public static bool IsLinux => PlatformType == OsPlatformType.Linux;
 
     /// <summary>
     /// 是否 macOS 平台
     /// </summary>
-    public static bool IsMacOS => PlatformType == OSPlatformType.MacOS;
+    public static bool IsMacOs => PlatformType == OsPlatformType.MacOs;
 
     /// <summary>
     /// 是否 FreeBSD 平台
     /// </summary>
-    public static bool IsFreeBSD => PlatformType == OSPlatformType.FreeBSD;
+    public static bool IsFreeBsd => PlatformType == OsPlatformType.FreeBsd;
 
     /// <summary>
     /// 是否64位操作系统
@@ -349,14 +349,14 @@ public static class OSPlatformHelper
     /// <summary>
     /// 获取运行时信息
     /// </summary>
-    public static RuntimeInfo GetRuntimeInfo() => _runtimeInfo.Value;
+    public static RuntimeInfo GetRuntimeInfo() => RuntimeInfo.Value;
 
     /// <summary>
     /// 重新收集运行时信息（刷新缓存）
     /// </summary>
     public static RuntimeInfo RefreshRuntimeInfo()
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
             // 由于使用了Lazy<T>，需要重新创建实例来强制刷新
             var newRuntimeInfo = CollectRuntimeInfo();
@@ -394,7 +394,7 @@ public static class OSPlatformHelper
     public static string GetPerformanceSummary()
     {
         var info = GetRuntimeInfo();
-        return $"OS: {info.OSName} {info.OSVersion} ({info.OSArchitecture}), " +
+        return $"OS: {info.OsName} {info.OsVersion} ({info.OsArchitecture}), " +
                $"Framework: {info.FrameworkDescription}, " +
                $"Process: {info.ProcessName} (PID: {info.ProcessId}), " +
                $"Memory: {info.WorkingSet / 1024 / 1024} MB, " +
@@ -407,7 +407,7 @@ public static class OSPlatformHelper
     /// </summary>
     /// <param name="minimumVersion">最小版本要求</param>
     /// <returns>是否满足版本要求</returns>
-    public static bool CheckOSVersion(Version minimumVersion)
+    public static bool CheckOsVersion(Version minimumVersion)
     {
         try
         {
@@ -446,10 +446,10 @@ public static class OSPlatformHelper
             var runtimeInfo = new RuntimeInfo
             {
                 PlatformType = GetPlatformType(),
-                OSName = GetOperatingSystemName(),
-                OSDescription = RuntimeInformation.OSDescription,
-                OSVersion = Environment.OSVersion.Version.ToString(),
-                OSArchitecture = RuntimeInformation.OSArchitecture.ToString(),
+                OsName = GetOperatingSystemName(),
+                OsDescription = RuntimeInformation.OSDescription,
+                OsVersion = Environment.OSVersion.Version.ToString(),
+                OsArchitecture = RuntimeInformation.OSArchitecture.ToString(),
                 ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
                 FrameworkDescription = RuntimeInformation.FrameworkDescription,
                 RuntimeVersion = Environment.Version.ToString(),
@@ -485,9 +485,9 @@ public static class OSPlatformHelper
             // 异常时返回基本信息
             return new RuntimeInfo
             {
-                PlatformType = OSPlatformType.Unknown,
-                OSName = "Unknown",
-                OSDescription = $"Error collecting info: {ex.Message}",
+                PlatformType = OsPlatformType.Unknown,
+                OsName = "Unknown",
+                OsDescription = $"Error collecting info: {ex.Message}",
                 CollectedAt = DateTime.Now
             };
         }
@@ -496,24 +496,24 @@ public static class OSPlatformHelper
     /// <summary>
     /// 获取操作系统平台类型
     /// </summary>
-    private static OSPlatformType GetPlatformType()
+    private static OsPlatformType GetPlatformType()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return OSPlatformType.Windows;
+            return OsPlatformType.Windows;
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            return OSPlatformType.Linux;
+            return OsPlatformType.Linux;
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            return OSPlatformType.MacOS;
+            return OsPlatformType.MacOs;
         }
 
-        return RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatformType.FreeBSD : OSPlatformType.Unknown;
+        return RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OsPlatformType.FreeBsd : OsPlatformType.Unknown;
     }
 
     /// <summary>
@@ -524,10 +524,10 @@ public static class OSPlatformHelper
         var platformType = GetPlatformType();
         return platformType switch
         {
-            OSPlatformType.Windows => "Windows",
-            OSPlatformType.Linux => "Linux",
-            OSPlatformType.MacOS => "macOS",
-            OSPlatformType.FreeBSD => "FreeBSD",
+            OsPlatformType.Windows => "Windows",
+            OsPlatformType.Linux => "Linux",
+            OsPlatformType.MacOs => "macOS",
+            OsPlatformType.FreeBsd => "FreeBSD",
             _ => "Unknown"
         };
     }

@@ -58,7 +58,7 @@ public abstract class CurrentPrincipalAccessorBase : ICurrentPrincipalAccessor
         var parent = Principal;
         _currentPrincipal.Value = principal;
 
-        return new DisposeAction<(AsyncLocal<ClaimsPrincipal>, ClaimsPrincipal)>(static (state) =>
+        return new DisposeAction<(AsyncLocal<ClaimsPrincipal>, ClaimsPrincipal)>(static state =>
         {
             var (currentPrincipal, parent) = state;
             currentPrincipal.Value = parent;

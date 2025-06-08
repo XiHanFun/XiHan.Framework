@@ -25,7 +25,7 @@ namespace XiHan.Framework.Utils.Configuration;
 public static class DeepMergeHelper
 {
     // 缓存类型属性，提高性能
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = [];
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = [];
 
     /// <summary>
     /// 深度合并多个配置，按优先级返回合并后的配置
@@ -51,10 +51,10 @@ public static class DeepMergeHelper
         var type = typeof(T);
 
         // 从缓存获取属性或添加到缓存
-        if (!_propertyCache.TryGetValue(type, out var properties))
+        if (!PropertyCache.TryGetValue(type, out var properties))
         {
             properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-            _propertyCache[type] = properties;
+            PropertyCache[type] = properties;
         }
 
         // 处理每个属性
@@ -407,10 +407,10 @@ public static class DeepMergeHelper
         }
 
         // 获取或从缓存中检索属性
-        if (!_propertyCache.TryGetValue(type, out var properties))
+        if (!PropertyCache.TryGetValue(type, out var properties))
         {
             properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-            _propertyCache[type] = properties;
+            PropertyCache[type] = properties;
         }
 
         // 依次处理每个属性
@@ -465,13 +465,13 @@ public static class DeepMergeHelper
         return IsSimpleType(type)
             ? obj
             : obj switch
-        {
-            // 处理字典
-            IDictionary dict => CloneDictionary(dict),
-            // 处理列表
-            IList list => CloneList(list),
-            _ => CloneComplexObject(obj)
-        };
+            {
+                // 处理字典
+                IDictionary dict => CloneDictionary(dict),
+                // 处理列表
+                IList list => CloneList(list),
+                _ => CloneComplexObject(obj)
+            };
 
         // 处理复杂对象
     }
@@ -582,10 +582,10 @@ public static class DeepMergeHelper
             var newObj = Activator.CreateInstance(type);
 
             // 获取或从缓存中检索属性
-            if (!_propertyCache.TryGetValue(type, out var properties))
+            if (!PropertyCache.TryGetValue(type, out var properties))
             {
                 properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite)];
-                _propertyCache[type] = properties;
+                PropertyCache[type] = properties;
             }
 
             // 复制所有属性

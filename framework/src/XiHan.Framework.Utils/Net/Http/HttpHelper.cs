@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Net.Http;
 /// </summary>
 public static class HttpHelper
 {
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient HttpClient = new();
 
     /// <summary>
     /// 静态构造函数
@@ -30,7 +30,7 @@ public static class HttpHelper
     static HttpHelper()
     {
         // 设置默认超时时间
-        _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        HttpClient.Timeout = TimeSpan.FromSeconds(30);
     }
 
     #region 公共方法
@@ -47,7 +47,7 @@ public static class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -62,7 +62,7 @@ public static class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseString(response);
     }
 
@@ -77,7 +77,7 @@ public static class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseStream(response);
     }
 
@@ -97,7 +97,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -116,7 +116,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseString(response);
     }
 
@@ -135,7 +135,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseStream(response);
     }
 
@@ -155,7 +155,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -166,7 +166,7 @@ public static class HttpHelper
     /// <param name="data"></param>
     /// <param name="headers"></param>
     /// <returns></returns>
-    public static async Task<string> PutStringAsync<T>(string url, object? data = null, Dictionary<string, string>? headers = null)
+    public static async Task<string> PutStringAsync(string url, object? data = null, Dictionary<string, string>? headers = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Put, url)
         {
@@ -174,7 +174,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseString(response);
     }
 
@@ -193,7 +193,7 @@ public static class HttpHelper
         };
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseStream(response);
     }
 
@@ -209,7 +209,7 @@ public static class HttpHelper
         var request = new HttpRequestMessage(HttpMethod.Delete, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponse<T>(response);
     }
 
@@ -219,12 +219,12 @@ public static class HttpHelper
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <returns></returns>
-    public static async Task<string> DeleteStringAsync<T>(string url, Dictionary<string, string>? headers = null)
+    public static async Task<string> DeleteStringAsync(string url, Dictionary<string, string>? headers = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Delete, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseString(response);
     }
 
@@ -234,12 +234,12 @@ public static class HttpHelper
     /// <param name="url"></param>
     /// <param name="headers"></param>
     /// <returns></returns>
-    public static async Task<Stream> DeleteStreamAsync<T>(string url, Dictionary<string, string>? headers = null)
+    public static async Task<Stream> DeleteStreamAsync(string url, Dictionary<string, string>? headers = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Delete, url);
         AddHeaders(request, headers);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
         return await HandleResponseStream(response);
     }
 

@@ -22,9 +22,9 @@ namespace XiHan.Framework.Utils.System;
 public static class RandomHelper
 {
     // 默认随机数生成器
-    private static readonly Random _rnd = new();
+    private static readonly Random Rnd = new();
 
-    private static readonly Lock _objLock = new();
+    private static readonly Lock ObjLock = new();
 
     /// <summary>
     /// 根据字符源生成随机字符
@@ -39,11 +39,11 @@ public static class RandomHelper
 
         StringBuilder result = new();
 
-        lock (_objLock)
+        lock (ObjLock)
         {
             for (var i = 0; i < length; i++)
             {
-                _ = result.Append(source[_rnd.Next(0, source.Length)]);
+                _ = result.Append(source[Rnd.Next(0, source.Length)]);
             }
         }
 
@@ -58,9 +58,9 @@ public static class RandomHelper
     /// <returns></returns>
     public static int GetRandom(int minValue, int maxValue)
     {
-        lock (_objLock)
+        lock (ObjLock)
         {
-            return _rnd.Next(minValue, maxValue);
+            return Rnd.Next(minValue, maxValue);
         }
     }
 
@@ -74,9 +74,9 @@ public static class RandomHelper
     /// </returns>
     public static int GetRandom(int maxValue)
     {
-        lock (_objLock)
+        lock (ObjLock)
         {
-            return _rnd.Next(maxValue);
+            return Rnd.Next(maxValue);
         }
     }
 
@@ -86,9 +86,9 @@ public static class RandomHelper
     /// <returns>一个 32 位有符号整数，大于或等于零且小于 <see cref="int.MaxValue"/></returns>
     public static int GetRandom()
     {
-        lock (_objLock)
+        lock (ObjLock)
         {
-            return _rnd.Next();
+            return Rnd.Next();
         }
     }
 

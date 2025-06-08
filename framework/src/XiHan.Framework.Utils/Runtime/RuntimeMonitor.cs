@@ -55,17 +55,17 @@ public class PerformanceSnapshot
     /// <summary>
     /// GC代0收集次数
     /// </summary>
-    public int GCGen0Collections { get; set; }
+    public int GcGen0Collections { get; set; }
 
     /// <summary>
     /// GC代1收集次数
     /// </summary>
-    public int GCGen1Collections { get; set; }
+    public int GcGen1Collections { get; set; }
 
     /// <summary>
     /// GC代2收集次数
     /// </summary>
-    public int GCGen2Collections { get; set; }
+    public int GcGen2Collections { get; set; }
 
     /// <summary>
     /// 托管内存使用量（字节）
@@ -172,7 +172,7 @@ public enum PerformanceCounterType
     /// <summary>
     /// GC收集次数
     /// </summary>
-    GCCollections = 3,
+    GcCollections = 3,
 
     /// <summary>
     /// 线程数量
@@ -405,10 +405,10 @@ public class RuntimeMonitor : IDisposable
             var n = values.Count;
             var sumX = Enumerable.Range(0, n).Sum();
             var sumY = values.Sum();
-            var sumXY = values.Select((v, i) => i * v).Sum();
+            var sumXy = values.Select((v, i) => i * v).Sum();
             var sumX2 = Enumerable.Range(0, n).Select(i => i * i).Sum();
 
-            trend.Trend = ((n * sumXY) - (sumX * sumY)) / ((n * sumX2) - (sumX * sumX));
+            trend.Trend = ((n * sumXy) - (sumX * sumY)) / ((n * sumX2) - (sumX * sumX));
         }
 
         return trend;
@@ -435,7 +435,7 @@ public class RuntimeMonitor : IDisposable
         return $"运行时性能摘要:\n" +
                $"  CPU使用率: {current.CpuUsage:F1}% (5分钟平均: {cpuTrend.AverageValue:F1}%)\n" +
                $"  内存使用: {current.MemoryUsage / 1024 / 1024} MB (托管内存: {current.ManagedMemory / 1024 / 1024} MB)\n" +
-               $"  GC收集: Gen0={current.GCGen0Collections}, Gen1={current.GCGen1Collections}, Gen2={current.GCGen2Collections}\n" +
+               $"  GC收集: Gen0={current.GcGen0Collections}, Gen1={current.GcGen1Collections}, Gen2={current.GcGen2Collections}\n" +
                $"  线程数: {current.ThreadCount}, 句柄数: {current.HandleCount}\n" +
                $"  运行时间: {current.ProcessUptime:dd\\.hh\\:mm\\:ss}\n" +
                $"  监控状态: {(IsMonitoring ? "运行中" : "已停止")}, 快照数: {SnapshotCount}";
@@ -472,7 +472,7 @@ public class RuntimeMonitor : IDisposable
         {
             PerformanceCounterType.CpuUsage => snapshot.CpuUsage,
             PerformanceCounterType.MemoryUsage => snapshot.MemoryUsage,
-            PerformanceCounterType.GCCollections => snapshot.GCGen0Collections + snapshot.GCGen1Collections + snapshot.GCGen2Collections,
+            PerformanceCounterType.GcCollections => snapshot.GcGen0Collections + snapshot.GcGen1Collections + snapshot.GcGen2Collections,
             PerformanceCounterType.ThreadCount => snapshot.ThreadCount,
             PerformanceCounterType.HandleCount => snapshot.HandleCount,
             _ => 0
@@ -541,9 +541,9 @@ public class RuntimeMonitor : IDisposable
             PrivateMemorySize = _currentProcess.PrivateMemorySize64,
             VirtualMemorySize = _currentProcess.VirtualMemorySize64,
             WorkingSet = _currentProcess.WorkingSet64,
-            GCGen0Collections = GC.CollectionCount(0),
-            GCGen1Collections = GC.CollectionCount(1),
-            GCGen2Collections = GC.CollectionCount(2),
+            GcGen0Collections = GC.CollectionCount(0),
+            GcGen1Collections = GC.CollectionCount(1),
+            GcGen2Collections = GC.CollectionCount(2),
             ManagedMemory = GC.GetTotalMemory(false),
             ThreadCount = _currentProcess.Threads.Count,
             HandleCount = _currentProcess.HandleCount,

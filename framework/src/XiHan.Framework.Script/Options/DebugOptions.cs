@@ -30,7 +30,7 @@ public class DebugOptions
     /// <summary>
     /// 是否启用调试
     /// </summary>
-    public bool EnableDebugging { get; set; } = false;
+    public bool EnableDebugging { get; set; }
 
     /// <summary>
     /// 是否生成完整的调试信息
@@ -70,7 +70,7 @@ public class DebugOptions
     /// <summary>
     /// 是否启用性能分析
     /// </summary>
-    public bool EnableProfiling { get; set; } = false;
+    public bool EnableProfiling { get; set; }
 
     /// <summary>
     /// 创建详细调试配置

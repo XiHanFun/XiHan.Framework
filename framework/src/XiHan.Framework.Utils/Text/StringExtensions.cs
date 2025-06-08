@@ -622,7 +622,7 @@ public static class StringExtensions
     /// <param name="action">如果字符串不为空或空白，则执行的操作</param>
     public static void IfNotNullOrWhiteSpace(this string? str, Action<string> action)
     {
-        if (!string.IsNullOrWhiteSpace(str) && action != null)
+        if (!string.IsNullOrWhiteSpace(str))
         {
             action(str);
         }

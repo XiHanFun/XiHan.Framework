@@ -26,9 +26,9 @@ namespace XiHan.Framework.Utils.Text.Yaml;
 /// </summary>
 public static partial class YamlHelper
 {
-    private static readonly string[] _separator = ["\r\n", "\n"];
+    private static readonly string[] Separator = ["\r\n", "\n"];
 
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
@@ -202,7 +202,7 @@ public static partial class YamlHelper
         try
         {
             // 先转换为 JSON，再转换为 YAML
-            var json = JsonSerializer.Serialize(obj, _jsonOptions);
+            var json = JsonSerializer.Serialize(obj, JsonOptions);
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
 
             return ConvertJsonElementToYaml(jsonElement, options);
@@ -248,7 +248,7 @@ public static partial class YamlHelper
         {
             // 先转换为 JSON，再反序列化
             var json = ConvertYamlToJson(yaml, options);
-            var result = JsonSerializer.Deserialize<T>(json, _jsonOptions);
+            var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
 
             return result ?? throw new InvalidOperationException("反序列化失败：结果为空");
         }
@@ -292,7 +292,7 @@ public static partial class YamlHelper
         var result = new Dictionary<string, string>();
 
         // 分行处理
-        var lines = yaml.Split(_separator, StringSplitOptions.RemoveEmptyEntries);
+        var lines = yaml.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
             // 跳过注释行和空行
@@ -397,7 +397,7 @@ public static partial class YamlHelper
 
         options ??= new YamlParseOptions();
         var result = new Dictionary<string, string>();
-        var lines = yaml.Split(_separator, StringSplitOptions.None);
+        var lines = yaml.Split(Separator, StringSplitOptions.None);
 
         var currentPrefix = "";
         var indentStack = new Stack<(string Prefix, int Indent)>();
@@ -709,7 +709,7 @@ public static partial class YamlHelper
                     }
                     else
                     {
-                        sb.AppendLine($" {ConvertJsonElementToYaml(property.Value, options, 0).Trim()}");
+                        sb.AppendLine($" {ConvertJsonElementToYaml(property.Value, options).Trim()}");
                     }
                 }
                 break;
@@ -725,7 +725,7 @@ public static partial class YamlHelper
                     }
                     else
                     {
-                        sb.AppendLine(ConvertJsonElementToYaml(item, options, 0).Trim());
+                        sb.AppendLine(ConvertJsonElementToYaml(item, options).Trim());
                     }
                 }
                 break;
@@ -784,7 +784,7 @@ public static partial class YamlHelper
             // 重建嵌套结构
             var nested = BuildNestedStructure(dict, options.KeySeparator);
 
-            return JsonSerializer.Serialize(nested, _jsonOptions);
+            return JsonSerializer.Serialize(nested, JsonOptions);
         }
         catch (Exception ex)
         {

@@ -22,7 +22,7 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 public class SnowflakeIdOptions
 {
     // JSON序列化选项
-    private static readonly JsonSerializerOptions _cachedJsonSerializerOptions = new()
+    private static readonly JsonSerializerOptions CachedJsonSerializerOptions = new()
     {
         WriteIndented = true
     };
@@ -31,13 +31,13 @@ public class SnowflakeIdOptions
     private readonly byte _dataCenterIdBitLength = 5;
 
     // ID生成长度
-    private byte _idLength = 0;
+    private byte _idLength;
 
     // ID前缀
     private string _idPrefix = string.Empty;
 
     // 是否循环使用序列号
-    private bool _loopedSequence = false;
+    private bool _loopedSequence;
 
     // 最大时钟回拨容忍时间(毫秒)
     private int _maxBackwardToleranceMs = 10000;
@@ -52,7 +52,7 @@ public class SnowflakeIdOptions
     private DateTime _baseTime = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     // 工作机器ID
-    private ushort _workerId = 0;
+    private ushort _workerId;
 
     // 工作机器ID位长
     private byte _workerIdBitLength = 6;
@@ -76,7 +76,7 @@ public class SnowflakeIdOptions
     private SnowflakeIdTypes _snowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod;
 
     // 数据中心ID
-    private byte _dataCenterId = 0;
+    private byte _dataCenterId;
 
     /// <summary>
     /// 基础时间(默认为2024-01-01)
@@ -346,7 +346,7 @@ public class SnowflakeIdOptions
     public string GeneratorId
     {
         get => _generatorId;
-        set => _generatorId = value ?? Guid.NewGuid().ToString("N");
+        set => _generatorId = value;
     }
 
     /// <summary>
@@ -475,7 +475,7 @@ public class SnowflakeIdOptions
     /// <returns>JSON字符串</returns>
     public string ToJson()
     {
-        return JsonSerializer.Serialize(this, _cachedJsonSerializerOptions);
+        return JsonSerializer.Serialize(this, CachedJsonSerializerOptions);
     }
 
     /// <summary>

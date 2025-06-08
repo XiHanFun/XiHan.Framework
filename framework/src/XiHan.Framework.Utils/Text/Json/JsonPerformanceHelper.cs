@@ -27,9 +27,9 @@ namespace XiHan.Framework.Utils.Text.Json;
 /// </summary>
 public static class JsonPerformanceHelper
 {
-    private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
-    private static readonly Dictionary<Type, JsonTypeInfo> _typeInfoCache = [];
-    private static readonly Lock _cachelock = new();
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly Dictionary<Type, JsonTypeInfo> TypeInfoCache = [];
+    private static readonly Lock Cachelock = new();
 
     #region 高性能序列化
 
@@ -47,7 +47,7 @@ public static class JsonPerformanceHelper
             return "null";
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         // 预分配缓冲区
         const int BufferSize = 4096;
@@ -76,7 +76,7 @@ public static class JsonPerformanceHelper
             return nullBytes.Length;
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         const int BufferSize = 4096;
         var bufferWriter = new ArrayBufferWriter<byte>(BufferSize);
@@ -104,7 +104,7 @@ public static class JsonPerformanceHelper
             return "null"u8.ToArray();
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
         return JsonSerializer.SerializeToUtf8Bytes(obj, options);
     }
 
@@ -126,7 +126,7 @@ public static class JsonPerformanceHelper
             return default;
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
         return JsonSerializer.Deserialize<T>(utf8Json, options);
     }
 
@@ -144,7 +144,7 @@ public static class JsonPerformanceHelper
             return default;
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
         return JsonSerializer.Deserialize<T>(utf8Json.Span, options);
     }
 
@@ -162,7 +162,7 @@ public static class JsonPerformanceHelper
             return default;
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
         var reader = new Utf8JsonReader(utf8Json);
         return JsonSerializer.Deserialize<T>(ref reader, options);
     }
@@ -181,7 +181,7 @@ public static class JsonPerformanceHelper
     /// <param name="cancellationToken">取消令牌</param>
     public static async Task WriteJsonArrayAsync<T>(Stream stream, IAsyncEnumerable<T> items, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         await using var writer = new Utf8JsonWriter(stream);
 
@@ -207,7 +207,7 @@ public static class JsonPerformanceHelper
     /// <returns>异步枚举的元素</returns>
     public static async IAsyncEnumerable<T?> ReadJsonArrayAsync<T>(Stream stream, JsonSerializerOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
 
@@ -266,7 +266,7 @@ public static class JsonPerformanceHelper
             return "null";
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
@@ -293,12 +293,7 @@ public static class JsonPerformanceHelper
     /// <returns>JSON 字符串数组</returns>
     public static string[] BatchSerialize<T>(IEnumerable<T> objects, JsonSerializerOptions? options = null)
     {
-        if (objects == null)
-        {
-            return [];
-        }
-
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         var objectList = objects.ToList();
         var results = new string[objectList.Count];
@@ -340,18 +335,18 @@ public static class JsonPerformanceHelper
     /// <returns>类型信息</returns>
     public static JsonTypeInfo<T> GetCachedTypeInfo<T>(JsonSerializerOptions? options = null)
     {
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
         var type = typeof(T);
 
-        lock (_cachelock)
+        lock (Cachelock)
         {
-            if (_typeInfoCache.TryGetValue(type, out var cachedInfo))
+            if (TypeInfoCache.TryGetValue(type, out var cachedInfo))
             {
                 return (JsonTypeInfo<T>)cachedInfo;
             }
 
             var typeInfo = JsonTypeInfo.CreateJsonTypeInfo<T>(options);
-            _typeInfoCache[type] = typeInfo;
+            TypeInfoCache[type] = typeInfo;
             return typeInfo;
         }
     }
@@ -397,9 +392,9 @@ public static class JsonPerformanceHelper
     /// </summary>
     public static void ClearTypeInfoCache()
     {
-        lock (_cachelock)
+        lock (Cachelock)
         {
-            _typeInfoCache.Clear();
+            TypeInfoCache.Clear();
         }
     }
 
@@ -422,7 +417,7 @@ public static class JsonPerformanceHelper
             throw new ArgumentNullException(nameof(obj));
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         // 预热
         for (var i = 0; i < 10; i++)
@@ -469,7 +464,7 @@ public static class JsonPerformanceHelper
             throw new ArgumentException("JSON 字符串不能为空", nameof(json));
         }
 
-        options ??= _defaultOptions;
+        options ??= DefaultOptions;
 
         // 预热
         for (var i = 0; i < 10; i++)

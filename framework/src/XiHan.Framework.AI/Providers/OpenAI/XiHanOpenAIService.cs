@@ -29,13 +29,13 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// <summary>
 /// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAIService : IXiHanAIService
+public class XiHanOpenAiService : IXiHanAiService
 {
     private readonly Kernel _kernel;
-    private readonly OpenAIOptions _options;
-    private readonly IChatCompletionService _openAIChatService;
-    private readonly IEmbeddingGenerator<string, Embedding<float>> _openAITextEmbeddingService;
-    private readonly ILogger<XiHanOpenAIService> _logger;
+    private readonly OpenAiOptions _options;
+    private readonly IChatCompletionService _openAiChatService;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _openAiTextEmbeddingService;
+    private readonly ILogger<XiHanOpenAiService> _logger;
 
     private string _currentModel;
 
@@ -45,16 +45,16 @@ public class XiHanOpenAIService : IXiHanAIService
     /// <param name="kernel">Semantic Kernel实例</param>
     /// <param name="options">OpenAI配置选项</param>
     /// <param name="logger">日志记录器</param>
-    public XiHanOpenAIService(
+    public XiHanOpenAiService(
         Kernel kernel,
-        IOptions<OpenAIOptions> options,
-        ILogger<XiHanOpenAIService> logger)
+        IOptions<OpenAiOptions> options,
+        ILogger<XiHanOpenAiService> logger)
     {
         _kernel = kernel;
         _options = options.Value;
         _currentModel = _options.ModelName;
-        _openAIChatService = _kernel.GetRequiredService<IChatCompletionService>(_options.ServiceId);
-        _openAITextEmbeddingService = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>(_options.ServiceId);
+        _openAiChatService = _kernel.GetRequiredService<IChatCompletionService>(_options.ServiceId);
+        _openAiTextEmbeddingService = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>(_options.ServiceId);
         _logger = logger;
     }
 
@@ -109,7 +109,7 @@ public class XiHanOpenAIService : IXiHanAIService
         };
 
         // 发送请求并获取回复
-        var response = await _openAIChatService.GetChatMessageContentAsync(chatHistory, executionSettings, _kernel, cancellationToken);
+        var response = await _openAiChatService.GetChatMessageContentAsync(chatHistory, executionSettings, _kernel, cancellationToken);
 
         stopwatch.Stop();
 
@@ -185,10 +185,10 @@ public class XiHanOpenAIService : IXiHanAIService
         };
 
         // 获取流式响应
-        var response = _openAIChatService.GetStreamingChatMessageContentsAsync(chatHistory, executionSettings, _kernel, cancellationToken);
+        var response = _openAiChatService.GetStreamingChatMessageContentsAsync(chatHistory, executionSettings, _kernel, cancellationToken);
 
         var contentSoFar = string.Empty;
-        await foreach (var content in response.WithCancellation(cancellationToken))
+        await foreach (var content in response)
         {
             contentSoFar += content.Content;
 
@@ -217,7 +217,7 @@ public class XiHanOpenAIService : IXiHanAIService
         try
         {
             // 修正方法调用，将单个字符串放入数组中，并移除不兼容的_kernel参数
-            var result = await _openAITextEmbeddingService.GenerateAsync(
+            var result = await _openAiTextEmbeddingService.GenerateAsync(
                 [text],
                 cancellationToken: cancellationToken);
 

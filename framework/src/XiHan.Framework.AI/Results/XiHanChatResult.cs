@@ -17,12 +17,12 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// 聊天结果
 /// </summary>
-public class XiHanChatResult : XiHanAIResult
+public class XiHanChatResult : XiHanAiResult
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public XiHanChatResult() : base()
+    public XiHanChatResult()
     {
     }
 

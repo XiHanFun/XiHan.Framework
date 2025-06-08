@@ -27,7 +27,7 @@ namespace XiHan.Framework.Utils.Security;
 public static partial class TextWatermarkHelper
 {
     // 用于水印的Unicode不可见字符集
-    private static readonly char[] _watermarkChars = [
+    private static readonly char[] WatermarkChars = [
         '\u200B', // 零宽空格
         '\u200C', // 零宽不连字
         '\u200D', // 零宽连字
@@ -72,7 +72,7 @@ public static partial class TextWatermarkHelper
                 if (endPos < result.Length)
                 {
                     var bit = watermarkBits[index];
-                    var watermarkChar = _watermarkChars[bit % _watermarkChars.Length];
+                    var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
                     result.Insert(endPos, watermarkChar);
                     index++;
                 }
@@ -83,7 +83,7 @@ public static partial class TextWatermarkHelper
         for (var i = index; i < watermarkBits.Length; i++)
         {
             var bit = watermarkBits[i];
-            var watermarkChar = _watermarkChars[bit % _watermarkChars.Length];
+            var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
             var position = (i - index + 1) * text.Length / (watermarkBits.Length - index + 1);
             if (position < result.Length)
             {
@@ -112,7 +112,7 @@ public static partial class TextWatermarkHelper
         }
 
         // 提取水印字符
-        var watermarkCharsPattern = new string(_watermarkChars);
+        var watermarkCharsPattern = new string(WatermarkChars);
         var watermarkRegex = new Regex($"[{Regex.Escape(watermarkCharsPattern)}]");
         var matches = watermarkRegex.Matches(text);
 
@@ -126,7 +126,7 @@ public static partial class TextWatermarkHelper
         foreach (Match match in matches)
         {
             var ch = match.Value[0];
-            var bitIndex = Array.IndexOf(_watermarkChars, ch);
+            var bitIndex = Array.IndexOf(WatermarkChars, ch);
             bits.Append(bitIndex);
         }
 
@@ -149,7 +149,7 @@ public static partial class TextWatermarkHelper
             return false;
         }
 
-        var watermarkCharsPattern = new string(_watermarkChars);
+        var watermarkCharsPattern = new string(WatermarkChars);
         var watermarkRegex = new Regex($"[{Regex.Escape(watermarkCharsPattern)}]");
         return watermarkRegex.IsMatch(text);
     }
@@ -237,7 +237,7 @@ public static partial class TextWatermarkHelper
         {
             var match = matches[i];
             var bit = watermarkBits[i % watermarkBits.Length];
-            var watermarkChar = _watermarkChars[bit % _watermarkChars.Length];
+            var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
 
             // 在>和文本内容之间插入不可见字符
             var position = match.Groups[0].Index + 1 + offset;
@@ -269,7 +269,7 @@ public static partial class TextWatermarkHelper
     /// <returns>包含水印的文本块集合</returns>
     public static List<string> EmbedBatchWatermark(List<string> textBlocks, string identifier, string? key = null)
     {
-        if (textBlocks == null || string.IsNullOrEmpty(identifier))
+        if (string.IsNullOrEmpty(identifier))
         {
             return textBlocks ?? [];
         }

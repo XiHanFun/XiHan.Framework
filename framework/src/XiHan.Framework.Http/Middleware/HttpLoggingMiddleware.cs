@@ -190,26 +190,22 @@ public class HttpLoggingMiddleware : DelegatingHandler
         }
 
         // 记录响应内容
-        var content = string.Empty;
-        if (response.Content != null)
+        if (response.Content.Headers.Any())
         {
-            if (response.Content.Headers.Any())
+            logBuilder.AppendLine("Content Headers:");
+            foreach (var header in response.Content.Headers)
             {
-                logBuilder.AppendLine("Content Headers:");
-                foreach (var header in response.Content.Headers)
-                {
-                    logBuilder.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
-                }
+                logBuilder.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
             }
+        }
 
-            content = await response.Content.ReadAsStringAsync();
-            if (!string.IsNullOrEmpty(content))
-            {
-                var truncatedContent = content.Length > _options.MaxResponseContentLength
-                    ? content[.._options.MaxResponseContentLength] + "... (truncated)"
-                    : content;
-                logBuilder.AppendLine($"Content: {truncatedContent}");
-            }
+        var content = await response.Content.ReadAsStringAsync();
+        if (!string.IsNullOrEmpty(content))
+        {
+            var truncatedContent = content.Length > _options.MaxResponseContentLength
+                ? content[.._options.MaxResponseContentLength] + "... (truncated)"
+                : content;
+            logBuilder.AppendLine($"Content: {truncatedContent}");
         }
 
         var logLevel = response.IsSuccessStatusCode ? LogLevel.Information : LogLevel.Warning;

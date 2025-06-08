@@ -103,7 +103,7 @@ public class DynamicJsonValue : DynamicObject
             JsonValue jsonTimeSpan when jsonTimeSpan.TryGetValue<TimeSpan>(out var timeSpanValue) => timeSpanValue,
             JsonValue jsonGuid when jsonGuid.TryGetValue<Guid>(out var guidValue) => guidValue,
             JsonValue jsonNull when jsonNull.TryGetValue<object>(out var nullValue) => nullValue,
-            _ => jsonValue.ToString(),
+            _ => jsonValue.ToString()
         };
 
         return new DynamicJsonValue(value);
@@ -158,7 +158,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator int(DynamicJsonValue? value)
     {
-        return value?.ToValue<int>(0) ?? 0;
+        return value?.ToValue<int>() ?? 0;
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator long(DynamicJsonValue? value)
     {
-        return value?.ToValue<long>(0) ?? 0;
+        return value?.ToValue<long>() ?? 0;
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator double(DynamicJsonValue? value)
     {
-        return value?.ToValue<double>(0.0) ?? 0.0;
+        return value?.ToValue<double>() ?? 0.0;
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator decimal(DynamicJsonValue? value)
     {
-        return value?.ToValue<decimal>(0m) ?? 0m;
+        return value?.ToValue<decimal>() ?? 0m;
     }
 
     /// <summary>
@@ -194,7 +194,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator DateTime(DynamicJsonValue? value)
     {
-        return value?.ToValue<DateTime>(DateTime.MinValue) ?? DateTime.MinValue;
+        return value?.ToValue(DateTime.MinValue) ?? DateTime.MinValue;
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator Guid(DynamicJsonValue? value)
     {
-        return value?.ToValue<Guid>(Guid.Empty) ?? Guid.Empty;
+        return value?.ToValue(Guid.Empty) ?? Guid.Empty;
     }
 
     /// <summary>

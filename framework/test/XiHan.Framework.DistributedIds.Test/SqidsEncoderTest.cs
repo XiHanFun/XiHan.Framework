@@ -1,6 +1,5 @@
 ﻿using JetBrains.Annotations;
 using XiHan.Framework.DistributedIds.Sqids;
-using XiHan.Framework.Utils.Maths;
 
 namespace XiHan.Framework.DistributedIds.Test;
 

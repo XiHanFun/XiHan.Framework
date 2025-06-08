@@ -232,7 +232,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// 获取所有活动数据库API
     /// </summary>
     /// <returns></returns>
-    public virtual IReadOnlyList<IDatabaseApi> GetAllActiveDatabaseApis()
+    protected virtual IReadOnlyList<IDatabaseApi> GetAllActiveDatabaseApis()
     {
         return [.. _databaseApis.Values];
     }
@@ -241,7 +241,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// 获取所有活动事务API
     /// </summary>
     /// <returns></returns>
-    public virtual IReadOnlyList<ITransactionApi> GetAllActiveTransactionApis()
+    protected virtual IReadOnlyList<ITransactionApi> GetAllActiveTransactionApis()
     {
         return [.. _transactionApis.Values];
     }

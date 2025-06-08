@@ -117,7 +117,7 @@ public class ScriptTemplate
         foreach (var parameter in Parameters.Where(p => p.Required))
         {
             if (!parameters.TryGetValue(parameter.Name, out var value) || value == null ||
-                string.IsNullOrWhiteSpace(value?.ToString()))
+                string.IsNullOrWhiteSpace(value.ToString()))
             {
                 errors.Add($"必需参数 '{parameter.Name}' 未提供");
             }

@@ -82,7 +82,7 @@ public class ScriptOptions
     /// <summary>
     /// 是否允许不安全代码
     /// </summary>
-    public bool AllowUnsafe { get; set; } = false;
+    public bool AllowUnsafe { get; set; }
 
     /// <summary>
     /// 优化等级

@@ -32,7 +32,7 @@ public class ScriptMonitorOptions
     /// <summary>
     /// 是否记录脚本代码
     /// </summary>
-    public bool LogScriptCode { get; set; } = false;
+    public bool LogScriptCode { get; set; }
 
     /// <summary>
     /// 最大日志条目数

@@ -29,7 +29,7 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 public class NanoIdGenerator : IDistributedIdGenerator
 {
     // 使用随机数生成器
-    private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
+    private static readonly RandomNumberGenerator Rng = RandomNumberGenerator.Create();
 
     // 生成器配置
     private readonly NanoIdOptions _options;
@@ -281,7 +281,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
         // 创建适合大小的随机字节数组
         // 为每一位ID字符分配一个随机字节
         var randomBytes = new byte[size];
-        _rng.GetBytes(randomBytes);
+        Rng.GetBytes(randomBytes);
 
         // 计算生成随机数所需的位数
         // 例如: 如果字符集长度是64，需要6位 (2^6=64)
@@ -296,7 +296,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
         {
             // 需要更多随机字节
             randomBytes = new byte[size * 2]; // 保守估计
-            _rng.GetBytes(randomBytes);
+            Rng.GetBytes(randomBytes);
         }
 
         // 为每个位置生成一个随机字符
@@ -308,7 +308,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
             // 使用新的随机字节避免潜在的模式
             if (i > 0 && i % randomBytes.Length == 0)
             {
-                _rng.GetBytes(randomBytes);
+                Rng.GetBytes(randomBytes);
             }
 
             // 映射到字符集范围内

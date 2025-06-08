@@ -34,7 +34,7 @@ public static class ApplicationInitializationContextExtensions
 
         _ = Guard.NotNull(applicationBuilder, nameof(applicationBuilder));
 
-        return applicationBuilder!;
+        return applicationBuilder;
     }
 
     /// <summary>

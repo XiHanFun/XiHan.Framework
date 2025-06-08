@@ -190,7 +190,8 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
                 return id[^_options.IdLength..];
             }
             // 如果实际长度小于指定长度，左侧填充0
-            else if (id.Length < _options.IdLength)
+
+            if (id.Length < _options.IdLength)
             {
                 return id.PadLeft(_options.IdLength, '0');
             }

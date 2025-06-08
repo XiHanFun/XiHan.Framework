@@ -155,7 +155,7 @@ public class HttpRequestBuilder
     /// <returns></returns>
     public HttpRequestBuilder SetJsonBody(object body)
     {
-        return SetBody(body, "application/json");
+        return SetBody(body);
     }
 
     /// <summary>

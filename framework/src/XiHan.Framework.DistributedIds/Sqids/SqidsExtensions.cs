@@ -18,10 +18,10 @@ namespace XiHan.Framework.DistributedIds.Sqids;
 /// </summary>
 public static class SqidsExtensions
 {
-    private static readonly SqidsEncoder<int> _intEncoder = new();
-    private static readonly SqidsEncoder<uint> _uintEncoder = new();
-    private static readonly SqidsEncoder<long> _longEncoder = new();
-    private static readonly SqidsEncoder<ulong> _ulongEncoder = new();
+    private static readonly SqidsEncoder<int> IntEncoder = new();
+    private static readonly SqidsEncoder<uint> UintEncoder = new();
+    private static readonly SqidsEncoder<long> LongEncoder = new();
+    private static readonly SqidsEncoder<ulong> UlongEncoder = new();
 
     /// <summary>
     /// 将整数编码为Sqids格式
@@ -30,7 +30,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this int number)
     {
-        return _intEncoder.Encode(number);
+        return IntEncoder.Encode(number);
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this int[] numbers)
     {
-        return _intEncoder.Encode(numbers);
+        return IntEncoder.Encode(numbers);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this long number)
     {
-        return _longEncoder.Encode(number);
+        return LongEncoder.Encode(number);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this long[] numbers)
     {
-        return _longEncoder.Encode(numbers);
+        return LongEncoder.Encode(numbers);
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this uint number)
     {
-        return _uintEncoder.Encode(number);
+        return UintEncoder.Encode(number);
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public static class SqidsExtensions
     /// <returns>编码后的字符串</returns>
     public static string ToSqid(this ulong number)
     {
-        return _ulongEncoder.Encode(number);
+        return UlongEncoder.Encode(number);
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public static class SqidsExtensions
     /// <returns>解码后的整数</returns>
     public static int FromSqidToInt32(this string sqid)
     {
-        var result = _intEncoder.Decode(sqid);
+        var result = IntEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -101,7 +101,7 @@ public static class SqidsExtensions
     /// <returns>解码后的整数数组</returns>
     public static int[] FromSqidToInt32Array(this string sqid)
     {
-        return _intEncoder.Decode(sqid);
+        return IntEncoder.Decode(sqid);
     }
 
     /// <summary>
@@ -111,7 +111,7 @@ public static class SqidsExtensions
     /// <returns>解码后的长整数</returns>
     public static long FromSqidToInt64(this string sqid)
     {
-        var result = _longEncoder.Decode(sqid);
+        var result = LongEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -122,7 +122,7 @@ public static class SqidsExtensions
     /// <returns>解码后的长整数数组</returns>
     public static long[] FromSqidToInt64Array(this string sqid)
     {
-        return _longEncoder.Decode(sqid);
+        return LongEncoder.Decode(sqid);
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ public static class SqidsExtensions
     /// <returns>解码后的无符号整数</returns>
     public static uint FromSqidToUInt32(this string sqid)
     {
-        var result = _uintEncoder.Decode(sqid);
+        var result = UintEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 
@@ -143,7 +143,7 @@ public static class SqidsExtensions
     /// <returns>解码后的无符号长整数</returns>
     public static ulong FromSqidToUInt64(this string sqid)
     {
-        var result = _ulongEncoder.Decode(sqid);
+        var result = UlongEncoder.Decode(sqid);
         return result.Length > 0 ? result[0] : 0;
     }
 }

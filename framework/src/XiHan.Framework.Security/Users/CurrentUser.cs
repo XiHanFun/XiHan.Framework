@@ -24,8 +24,6 @@ namespace XiHan.Framework.Security.Users;
 /// </summary>
 public class CurrentUser : ICurrentUser, ITransientDependency
 {
-    private static readonly Claim[] _emptyClaimsArray = [];
-
     private readonly ICurrentPrincipalAccessor _principalAccessor;
 
     /// <summary>
@@ -109,7 +107,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] FindClaims(string claimType)
     {
-        return _principalAccessor.Principal.Claims.Where(c => c.Type == claimType).ToArray() ?? _emptyClaimsArray;
+        return _principalAccessor.Principal.Claims.Where(c => c.Type == claimType).ToArray();
     }
 
     /// <summary>
@@ -118,7 +116,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] GetAllClaims()
     {
-        return _principalAccessor.Principal.Claims.ToArray() ?? _emptyClaimsArray;
+        return _principalAccessor.Principal.Claims.ToArray();
     }
 
     /// <summary>

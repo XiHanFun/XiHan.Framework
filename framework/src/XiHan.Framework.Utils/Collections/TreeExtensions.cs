@@ -82,7 +82,7 @@ public static class TreeExtensions
             node.Children.AddRange(lookup[keySelector(node.Value)]);
         }
 
-        return nodes.Where(node => !nodes.Any(n => keySelector(n.Value).Equals(parentKeySelector(node.Value)) == true));
+        return nodes.Where(node => !nodes.Any(n => keySelector(n.Value).Equals(parentKeySelector(node.Value))));
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public static class TreeExtensions
 
         var parentNode = source
                 .DepthFirstTraversal()
-                .FirstOrDefault(node => keySelector(node.Value).Equals(keySelector(parent)) == true)
+                .FirstOrDefault(node => keySelector(node.Value).Equals(keySelector(parent)))
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
         _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));

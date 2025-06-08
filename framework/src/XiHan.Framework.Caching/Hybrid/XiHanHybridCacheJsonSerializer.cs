@@ -56,6 +56,6 @@ public class XiHanHybridCacheJsonSerializer<T> : IHybridCacheSerializer<T>
     public virtual void Serialize(T value, IBufferWriter<byte> target)
     {
         using var writer = new Utf8JsonWriter(target);
-        JsonSerializer.Serialize<T>(writer, value, JsonSerializerOptions);
+        JsonSerializer.Serialize(writer, value, JsonSerializerOptions);
     }
 }

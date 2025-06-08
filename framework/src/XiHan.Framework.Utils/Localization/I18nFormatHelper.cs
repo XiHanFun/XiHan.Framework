@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.Localization;
 /// <summary>
 /// 国际化格式化处理帮助类
 /// </summary>
-public static class I18nFormatHelper
+public static class I18NFormatHelper
 {
     /// <summary>
     /// 格式化日期时间

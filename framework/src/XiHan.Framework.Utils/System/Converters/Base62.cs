@@ -29,13 +29,13 @@ public static class Base62
     // 字符表：62 个字符(0-9A-Za-z)
     private const string Base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-    private static readonly Dictionary<char, int> _charMap = [];
+    private static readonly Dictionary<char, int> CharMap = [];
 
     static Base62()
     {
         for (var i = 0; i < Base62Alphabet.Length; i++)
         {
-            _charMap[Base62Alphabet[i]] = i;
+            CharMap[Base62Alphabet[i]] = i;
         }
     }
 
@@ -63,7 +63,7 @@ public static class Base62
         BigInteger intData = 0;
         foreach (var c in input)
         {
-            intData = (intData * 62) + _charMap[c];
+            intData = (intData * 62) + CharMap[c];
         }
 
         var bytes = intData.ToByteArray();
@@ -102,7 +102,7 @@ public static class Base62
         long result = 0;
         foreach (var c in input)
         {
-            result = (result * 62) + _charMap[c];
+            result = (result * 62) + CharMap[c];
         }
         return result;
     }

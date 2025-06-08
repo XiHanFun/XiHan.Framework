@@ -21,7 +21,7 @@ namespace XiHan.Framework.Ddd.Domain.Aggregates;
 /// <summary>
 /// 聚合根基类
 /// </summary>
-public abstract class AggregateRootBase : EntityBase, IAggregateRoot, IDomainEvents
+public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];
     private readonly ICollection<DomainEventRecord> _localEvents = [];
@@ -83,7 +83,7 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot, IDomainEve
 /// 泛型主键聚合根基类
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
-public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>, IDomainEvents
+public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];

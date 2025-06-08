@@ -222,7 +222,7 @@ public static class LinkedListExtensions
 
         var items = new T[list.Count];
         var index = list.Count - 1;
-        
+
         var current = list.First;
         while (current != null)
         {
@@ -249,7 +249,7 @@ public static class LinkedListExtensions
     public static LinkedListNode<T> GetNodeAt<T>(this LinkedList<T> list, int index)
     {
         ArgumentNullException.ThrowIfNull(list);
-        
+
         if (index < 0 || index >= list.Count)
         {
             throw new ArgumentOutOfRangeException(nameof(index), "索引超出范围");
@@ -257,7 +257,7 @@ public static class LinkedListExtensions
 
         LinkedListNode<T>? current;
         var count = list.Count;
-        
+
         // 根据索引位置选择从头还是从尾开始遍历
         if (index < count / 2)
         {
@@ -290,8 +290,8 @@ public static class LinkedListExtensions
     public static bool TryGetNodeAt<T>(this LinkedList<T> list, int index, out LinkedListNode<T>? node)
     {
         node = null;
-        
-        if (list == null || index < 0 || index >= list.Count)
+
+        if (index < 0 || index >= list.Count)
         {
             return false;
         }
@@ -549,7 +549,7 @@ public static class LinkedListExtensions
     public static void LimitSize<T>(this LinkedList<T> list, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(list);
-        
+
         if (maxSize < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(maxSize), "最大长度不能小于0");
@@ -574,20 +574,20 @@ public static class LinkedListExtensions
     public static T? AddLastWithLimit<T>(this LinkedList<T> list, T item, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(list);
-        
+
         if (maxSize < 1)
         {
             throw new ArgumentOutOfRangeException(nameof(maxSize), "最大长度不能小于1");
         }
 
         T? removedItem = default;
-        
+
         if (list.Count >= maxSize)
         {
             removedItem = list.First!.Value;
             list.RemoveFirst();
         }
-        
+
         list.AddLast(item);
         return removedItem;
     }

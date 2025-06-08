@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Template;
 /// </summary>
 public static class TemplateCache
 {
-    private static readonly ConcurrentDictionary<string, string> _templates = new();
+    private static readonly ConcurrentDictionary<string, string> Templates = new();
 
     /// <summary>
     /// 获取缓存中的模板
@@ -31,7 +31,7 @@ public static class TemplateCache
     /// <returns>模板内容，如果不存在则返回null</returns>
     public static string? GetTemplate(string key)
     {
-        _templates.TryGetValue(key, out var template);
+        Templates.TryGetValue(key, out var template);
         return template;
     }
 
@@ -42,7 +42,7 @@ public static class TemplateCache
     /// <param name="template">模板内容</param>
     public static void SetTemplate(string key, string template)
     {
-        _templates.AddOrUpdate(key, template, (_, _) => template);
+        Templates.AddOrUpdate(key, template, (_, _) => template);
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public static class TemplateCache
     /// <returns>是否成功移除</returns>
     public static bool RemoveTemplate(string key)
     {
-        return _templates.TryRemove(key, out _);
+        return Templates.TryRemove(key, out _);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public static class TemplateCache
     /// </summary>
     public static void ClearTemplates()
     {
-        _templates.Clear();
+        Templates.Clear();
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public static class TemplateCache
     /// <returns>模板内容</returns>
     public static string GetOrLoadTemplate(string key, string templateFilePath, Encoding? encoding = null)
     {
-        if (_templates.TryGetValue(key, out var cachedTemplate))
+        if (Templates.TryGetValue(key, out var cachedTemplate))
         {
             return cachedTemplate;
         }

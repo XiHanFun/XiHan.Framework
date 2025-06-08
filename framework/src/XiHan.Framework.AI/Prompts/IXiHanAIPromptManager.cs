@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Prompts;
 /// <summary>
 /// 提示词管理器接口
 /// </summary>
-public interface IXiHanAIPromptManager
+public interface IXiHanAiPromptManager
 {
     /// <summary>
     /// 获取提示词模板

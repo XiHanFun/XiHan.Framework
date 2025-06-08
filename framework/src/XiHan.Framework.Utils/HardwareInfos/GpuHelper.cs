@@ -25,31 +25,31 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class GpuHelper
 {
-    private static readonly GpuInfoProvider _provider = new();
+    private static readonly GpuInfoProvider Provider = new();
 
     /// <summary>
     /// GPU信息
     /// </summary>
-    public static List<GpuInfo> GpuInfos => _provider.GetCachedInfo();
+    public static List<GpuInfo> GpuInfos => Provider.GetCachedInfo();
 
     /// <summary>
     /// 获取GPU信息
     /// </summary>
     /// <returns></returns>
-    public static List<GpuInfo> GetGpuInfos() => _provider.GetInfo();
+    public static List<GpuInfo> GetGpuInfos() => Provider.GetInfo();
 
     /// <summary>
     /// 异步获取GPU信息
     /// </summary>
     /// <returns></returns>
-    public static Task<List<GpuInfo>> GetGpuInfosAsync() => _provider.GetInfoAsync();
+    public static Task<List<GpuInfo>> GetGpuInfosAsync() => Provider.GetInfoAsync();
 
     /// <summary>
     /// 获取缓存的GPU信息
     /// </summary>
     /// <param name="forceRefresh">是否强制刷新</param>
     /// <returns></returns>
-    public static List<GpuInfo> GetCachedGpuInfos(bool forceRefresh = false) => _provider.GetCachedInfo(forceRefresh);
+    public static List<GpuInfo> GetCachedGpuInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
 }
 
 /// <summary>
@@ -71,7 +71,7 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                GetMacOSGpuInfo(gpuInfos);
+                GetMacOsGpuInfo(gpuInfos);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -243,7 +243,7 @@ internal class GpuInfoProvider : BaseHardwareInfoProvider<List<GpuInfo>>
         }
     }
 
-    private static void GetMacOSGpuInfo(List<GpuInfo> gpuInfos)
+    private static void GetMacOsGpuInfo(List<GpuInfo> gpuInfos)
     {
         try
         {

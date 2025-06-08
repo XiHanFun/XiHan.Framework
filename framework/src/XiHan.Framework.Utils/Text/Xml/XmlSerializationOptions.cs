@@ -53,7 +53,7 @@ public class XmlSerializationOptions
     /// <summary>
     /// 是否省略 XML 声明
     /// </summary>
-    public bool OmitXmlDeclaration { get; set; } = false;
+    public bool OmitXmlDeclaration { get; set; }
 
     /// <summary>
     /// 是否格式化输出（缩进）

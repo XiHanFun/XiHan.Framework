@@ -38,32 +38,32 @@ public static class LunarCalendarHelper
     /// <summary>
     /// 农历基准日期 (1900年1月31日为农历1900年正月初一)
     /// </summary>
-    private static readonly DateTime _baseDate = new(1900, 1, 31);
+    private static readonly DateTime BaseDate = new(1900, 1, 31);
 
     /// <summary>
     /// 天干数组
     /// </summary>
-    private static readonly string[] _tiangan = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+    private static readonly string[] Tiangan = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 
     /// <summary>
     /// 地支数组
     /// </summary>
-    private static readonly string[] _dizhi = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+    private static readonly string[] Dizhi = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
     /// <summary>
     /// 生肖数组
     /// </summary>
-    private static readonly string[] _zodiac = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
+    private static readonly string[] Zodiac = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
 
     /// <summary>
     /// 农历月份名称
     /// </summary>
-    private static readonly string[] _lunarMonths = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月"];
+    private static readonly string[] LunarMonths = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月"];
 
     /// <summary>
     /// 农历日期名称
     /// </summary>
-    private static readonly string[] _lunarDays =
+    private static readonly string[] LunarDays =
     [
         "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
         "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
@@ -73,7 +73,7 @@ public static class LunarCalendarHelper
     /// <summary>
     /// 二十四节气名称
     /// </summary>
-    private static readonly string[] _solarTerms =
+    private static readonly string[] SolarTerms =
     [
         "立春", "雨水", "惊蛰", "春分", "清明", "谷雨", "立夏", "小满", "芒种", "夏至", "小暑", "大暑",
         "立秋", "处暑", "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪", "冬至", "小寒", "大寒"
@@ -89,7 +89,7 @@ public static class LunarCalendarHelper
     /// 第13位表示闰月的大小月
     /// 第14-17位表示闰月月份(0表示无闰月)
     /// </summary>
-    private static readonly int[] _lunarYearData =
+    private static readonly int[] LunarYearData =
     [
         0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
         0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
@@ -131,7 +131,7 @@ public static class LunarCalendarHelper
             throw new ArgumentOutOfRangeException(nameof(date), $"仅支持{MinYear}年至{MaxYear}年的日期转换");
         }
 
-        var daysDiff = (date - _baseDate).Days;
+        var daysDiff = (date - BaseDate).Days;
         var lunarYear = MinYear;
 
         // 计算农历年份
@@ -184,11 +184,11 @@ public static class LunarCalendarHelper
         {
             Year = lunarYear,
             Month = lunarMonth,
-            Day = (int)lunarDay,
+            Day = lunarDay,
             IsLeapMonth = isLeapMonth,
             YearName = GetLunarYearName(lunarYear),
             MonthName = GetLunarMonthName(lunarMonth, isLeapMonth),
-            DayName = GetLunarDayName((int)lunarDay),
+            DayName = GetLunarDayName(lunarDay),
             Zodiac = GetZodiac(lunarYear),
             TianganDizhi = GetTianganDizhi(lunarYear),
             SolarDate = date
@@ -238,7 +238,7 @@ public static class LunarCalendarHelper
         // 加上目标日的天数
         totalDays += lunarDay - 1;
 
-        return _baseDate.AddDays(totalDays);
+        return BaseDate.AddDays(totalDays);
     }
 
     #endregion
@@ -253,7 +253,7 @@ public static class LunarCalendarHelper
     public static string GetZodiac(int year)
     {
         var index = (year - 1900) % 12;
-        return _zodiac[index];
+        return Zodiac[index];
     }
 
     /// <summary>
@@ -265,7 +265,7 @@ public static class LunarCalendarHelper
     {
         var tianganIndex = (year - 1900) % 10;
         var dizhiIndex = (year - 1900) % 12;
-        return _tiangan[tianganIndex] + _dizhi[dizhiIndex];
+        return Tiangan[tianganIndex] + Dizhi[dizhiIndex];
     }
 
     /// <summary>
@@ -280,7 +280,7 @@ public static class LunarCalendarHelper
         var daysDiff = (date - baseDay).Days;
         var tianganIndex = (daysDiff + 6) % 10;  // 1900年1月1日为甲子日，甲为第0位
         var dizhiIndex = (daysDiff + 6) % 12;
-        return _tiangan[tianganIndex] + _dizhi[dizhiIndex];
+        return Tiangan[tianganIndex] + Dizhi[dizhiIndex];
     }
 
     #endregion
@@ -301,7 +301,7 @@ public static class LunarCalendarHelper
             var date = GetSolarTermDate(year, i);
             solarTerms.Add(new SolarTerm
             {
-                Name = _solarTerms[i],
+                Name = SolarTerms[i],
                 Date = date,
                 Order = i + 1
             });
@@ -427,7 +427,7 @@ public static class LunarCalendarHelper
     /// <returns>中文月份名称</returns>
     public static string GetLunarMonthName(int month, bool isLeapMonth = false)
     {
-        var monthName = _lunarMonths[month - 1];
+        var monthName = LunarMonths[month - 1];
         return isLeapMonth ? "闰" + monthName : monthName;
     }
 
@@ -438,7 +438,7 @@ public static class LunarCalendarHelper
     /// <returns>中文日期名称</returns>
     public static string GetLunarDayName(int day)
     {
-        return day is >= 1 and <= 30 ? _lunarDays[day - 1] : day.ToString();
+        return day is >= 1 and <= 30 ? LunarDays[day - 1] : day.ToString();
     }
 
     /// <summary>
@@ -484,7 +484,7 @@ public static class LunarCalendarHelper
     /// <returns>闰月月份，0表示无闰月</returns>
     private static int GetLeapMonth(int year)
     {
-        return year is < MinYear or > MaxYear ? 0 : (_lunarYearData[year - MinYear] & 0xf0000) >> 16;
+        return year is < MinYear or > MaxYear ? 0 : (LunarYearData[year - MinYear] & 0xf0000) >> 16;
     }
 
     /// <summary>
@@ -500,7 +500,7 @@ public static class LunarCalendarHelper
             return 29;
         }
 
-        var monthData = _lunarYearData[year - MinYear] & 0xfff;
+        var monthData = LunarYearData[year - MinYear] & 0xfff;
         return (monthData & (1 << (12 - month))) != 0 ? 30 : 29;
     }
 
@@ -511,7 +511,7 @@ public static class LunarCalendarHelper
     /// <returns>闰月天数</returns>
     private static int GetLeapMonthDays(int year)
     {
-        return !HasLeapMonth(year) ? 0 : (_lunarYearData[year - MinYear] & 0x10000) != 0 ? 30 : 29;
+        return !HasLeapMonth(year) ? 0 : (LunarYearData[year - MinYear] & 0x10000) != 0 ? 30 : 29;
     }
 
     /// <summary>
@@ -668,7 +668,7 @@ public static class LunarCalendarHelper
     private static int GetEstimatedSolarTermDay(int year, int termIndex)
     {
         // 基于统计平均值的估算表（从1月1日开始的天数）
-        var estimatedDays = new int[]
+        var estimatedDays = new[]
         {
             4, 19, 35, 51, 66, 81, 96, 112, 128, 144, 160, 176,
             192, 208, 224, 240, 256, 272, 288, 304, 320, 336, 352, 3

@@ -177,15 +177,13 @@ public class AsyncBarrier : IDisposable
                     await CompletePhaseAsync(phaseNumber, totalCount);
                     return new BarrierPostPhaseInfo(phaseNumber, totalCount);
                 }
-                else
+
+                // 等待其他参与者
+                var completionSource = _currentPhaseCompletion;
+                if (completionSource != null)
                 {
-                    // 等待其他参与者
-                    var completionSource = _currentPhaseCompletion;
-                    if (completionSource != null)
-                    {
-                        await WaitForPhaseCompletionAsync(completionSource, cancellationToken);
-                        return new BarrierPostPhaseInfo(phaseNumber, totalCount);
-                    }
+                    await WaitForPhaseCompletionAsync(completionSource, cancellationToken);
+                    return new BarrierPostPhaseInfo(phaseNumber, totalCount);
                 }
             }
             // 如果CAS失败，重试
