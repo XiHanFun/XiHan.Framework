@@ -229,24 +229,6 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     }
 
     /// <summary>
-    /// 获取所有活动数据库API
-    /// </summary>
-    /// <returns></returns>
-    protected virtual IReadOnlyList<IDatabaseApi> GetAllActiveDatabaseApis()
-    {
-        return [.. _databaseApis.Values];
-    }
-
-    /// <summary>
-    /// 获取所有活动事务API
-    /// </summary>
-    /// <returns></returns>
-    protected virtual IReadOnlyList<ITransactionApi> GetAllActiveTransactionApis()
-    {
-        return [.. _transactionApis.Values];
-    }
-
-    /// <summary>
     /// 完成
     /// </summary>
     /// <param name="cancellationToken"></param>
@@ -474,6 +456,24 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     public override string ToString()
     {
         return $"[UnitOfWork {Id}]";
+    }
+
+    /// <summary>
+    /// 获取所有活动数据库API
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IReadOnlyList<IDatabaseApi> GetAllActiveDatabaseApis()
+    {
+        return [.. _databaseApis.Values];
+    }
+
+    /// <summary>
+    /// 获取所有活动事务API
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IReadOnlyList<ITransactionApi> GetAllActiveTransactionApis()
+    {
+        return [.. _transactionApis.Values];
     }
 
     /// <summary>

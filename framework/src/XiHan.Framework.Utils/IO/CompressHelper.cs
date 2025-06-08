@@ -22,27 +22,6 @@ namespace XiHan.Framework.Utils.IO;
 public static class CompressHelper
 {
     /// <summary>
-    /// 压缩格式
-    /// </summary>
-    public enum CompressionFormat
-    {
-        /// <summary>
-        /// ZIP格式
-        /// </summary>
-        Zip,
-
-        /// <summary>
-        /// GZIP格式
-        /// </summary>
-        GZip,
-
-        /// <summary>
-        /// DEFLATE格式
-        /// </summary>
-        Deflate
-    }
-
-    /// <summary>
     /// 解压文件
     /// </summary>
     /// <param name="archivePath">压缩文件路径</param>
@@ -174,5 +153,26 @@ public static class CompressHelper
         using var deflateStream = new DeflateStream(sourceStream, CompressionMode.Decompress);
         using var destinationStream = File.Create(Path.Combine(extractPath, Path.GetFileNameWithoutExtension(archivePath)));
         deflateStream.CopyTo(destinationStream);
+    }
+
+    /// <summary>
+    /// 压缩格式
+    /// </summary>
+    public enum CompressionFormat
+    {
+        /// <summary>
+        /// ZIP格式
+        /// </summary>
+        Zip,
+
+        /// <summary>
+        /// GZIP格式
+        /// </summary>
+        GZip,
+
+        /// <summary>
+        /// DEFLATE格式
+        /// </summary>
+        Deflate
     }
 }

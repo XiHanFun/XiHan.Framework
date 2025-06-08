@@ -64,6 +64,5 @@ public static class ProxyHelper
 
         var target = UnProxy(obj);
         return target == obj ? obj.GetType().GetTypeInfo().BaseType! : target.GetType();
-
     }
 }

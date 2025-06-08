@@ -184,6 +184,7 @@ public static class DeepMergeHelper
             // 处理集合
             case ICollection collection:
                 return collection.Count == 0;
+
             default:
                 // 其他类型使用默认相等比较
                 try
@@ -374,7 +375,6 @@ public static class DeepMergeHelper
         }
 
         return resultDict;
-
     }
 
     /// <summary>
