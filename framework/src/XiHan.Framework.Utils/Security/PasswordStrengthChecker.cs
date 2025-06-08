@@ -30,9 +30,9 @@ public class PasswordStrengthChecker
     private const string Digits = "0123456789";
 
     private static readonly List<string> WeakPasswords =
-                    [
+        [
         "123456", "password", "123456789", "12345678", "111111", "123123"
-    ];
+        ];
 
     /// <summary>
     /// 检查密码强度

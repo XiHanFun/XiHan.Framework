@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.Runtime;
 using XiHan.Framework.Utils.System;
@@ -29,7 +29,10 @@ public static class DiskHelper
     /// <summary>
     /// 磁盘信息
     /// </summary>
-    public static List<DiskInfo> DiskInfos => GetDiskInfos();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static List<DiskInfo> DiskInfos => CacheManager.Instance.DefaultCache.GetOrAdd("DiskInfos", () => GetDiskInfos(), TimeSpan.FromMinutes(60));
 
     /// <summary>
     /// 获取磁盘信息
@@ -41,7 +44,7 @@ public static class DiskHelper
 
         try
         {
-            if (OsPlatformHelper.OsIsUnix)
+            if (OsPlatformHelper.IsMacOs)
             {
                 var output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
                 var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -55,12 +58,12 @@ public static class DiskHelper
                                        {
                                            DiskName = rootDisk[4].Trim(),
                                            TypeName = rootDisk[0].Trim(),
-                                           TotalSpace = (rootDisk[1].ParseToLong() * 1024).FormatFileSizeToString(),
-                                           UsedSpace = (rootDisk[2].ParseToLong() * 1024).FormatFileSizeToString(),
-                                           FreeSpace = ((rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024).FormatFileSizeToString(),
+                                           TotalSpace = rootDisk[1].ParseToLong() * 1024,
+                                           UsedSpace = rootDisk[2].ParseToLong() * 1024,
+                                           FreeSpace = (rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024,
                                            AvailableRate = rootDisk[1].ParseToLong() == 0
-                                               ? "0%"
-                                               : Math.Round((decimal)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3) + "%"
+                                               ? 0
+                                               : Math.Round((double)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3)
                                        });
                 }
             }
@@ -71,9 +74,9 @@ public static class DiskHelper
                 {
                     DiskName = item.Name,
                     TypeName = item.DriveType.ToString(),
-                    TotalSpace = GetHardDiskTotalSpace(item.Name).FormatFileSizeToString(),
-                    FreeSpace = GetHardDiskFreeSpace(item.Name).FormatFileSizeToString(),
-                    UsedSpace = (GetHardDiskTotalSpace(item.Name) - GetHardDiskFreeSpace(item.Name)).FormatFileSizeToString(),
+                    TotalSpace = GetHardDiskTotalSpace(item.Name),
+                    FreeSpace = GetHardDiskFreeSpace(item.Name),
+                    UsedSpace = GetHardDiskTotalSpace(item.Name) - GetHardDiskFreeSpace(item.Name),
                     AvailableRate = ProportionOfHardDiskFreeSpace(item.Name)
                 }));
             }
@@ -91,11 +94,11 @@ public static class DiskHelper
     /// </summary>
     /// <param name="hardDiskName"></param>
     /// <returns></returns>
-    public static string ProportionOfHardDiskFreeSpace(string hardDiskName)
+    public static double ProportionOfHardDiskFreeSpace(string hardDiskName)
     {
         return GetHardDiskTotalSpace(hardDiskName) == 0
-            ? "0%"
-            : Math.Round((decimal)GetHardDiskFreeSpace(hardDiskName) / GetHardDiskTotalSpace(hardDiskName) * 100, 3) + "%";
+            ? 0
+            : Math.Round((double)GetHardDiskFreeSpace(hardDiskName) / GetHardDiskTotalSpace(hardDiskName) * 100, 3);
     }
 
     /// <summary>
@@ -137,20 +140,20 @@ public record DiskInfo
     /// <summary>
     /// 总大小
     /// </summary>
-    public string TotalSpace { get; set; } = string.Empty;
+    public long TotalSpace { get; set; }
 
     /// <summary>
     /// 空闲大小
     /// </summary>
-    public string FreeSpace { get; set; } = string.Empty;
+    public long FreeSpace { get; set; }
 
     /// <summary>
     /// 已用大小
     /// </summary>
-    public string UsedSpace { get; set; } = string.Empty;
+    public long UsedSpace { get; set; }
 
     /// <summary>
     /// 可用占比
     /// </summary>
-    public string AvailableRate { get; set; } = string.Empty;
+    public double AvailableRate { get; set; }
 }

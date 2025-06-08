@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.Logging;
 
@@ -26,7 +27,10 @@ public static class BoardHelper
     /// <summary>
     /// 主板信息
     /// </summary>
-    public static BoardInfo BoardInfos => GetBoardInfos();
+    /// <remarks>
+    /// 推荐使用，默认有缓存
+    /// </remarks>
+    public static BoardInfo BoardInfos => CacheManager.Instance.DefaultCache.GetOrAdd("BoardInfos", () => GetBoardInfos(), TimeSpan.FromMinutes(100));
 
     /// <summary>
     /// 获取主板信息
