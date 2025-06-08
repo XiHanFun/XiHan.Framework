@@ -25,31 +25,31 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class NetworkHelper
 {
-    private static readonly NetworkInfoProvider _provider = new();
+    private static readonly NetworkInfoProvider Provider = new();
 
     /// <summary>
     /// 网卡信息
     /// </summary>
-    public static List<NetworkInfo> NetworkInfos => _provider.GetCachedInfo();
+    public static List<NetworkInfo> NetworkInfos => Provider.GetCachedInfo();
 
     /// <summary>
     /// 获取网卡信息
     /// </summary>
     /// <returns></returns>
-    public static List<NetworkInfo> GetNetworkInfos() => _provider.GetInfo();
+    public static List<NetworkInfo> GetNetworkInfos() => Provider.GetInfo();
 
     /// <summary>
     /// 异步获取网卡信息
     /// </summary>
     /// <returns></returns>
-    public static Task<List<NetworkInfo>> GetNetworkInfosAsync() => _provider.GetInfoAsync();
+    public static Task<List<NetworkInfo>> GetNetworkInfosAsync() => Provider.GetInfoAsync();
 
     /// <summary>
     /// 获取缓存的网卡信息
     /// </summary>
     /// <param name="forceRefresh">是否强制刷新</param>
     /// <returns></returns>
-    public static List<NetworkInfo> GetCachedNetworkInfos(bool forceRefresh = false) => _provider.GetCachedInfo(forceRefresh);
+    public static List<NetworkInfo> GetCachedNetworkInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
 
     /// <summary>
     /// 获取网络统计信息
@@ -139,7 +139,7 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
 
                     networkInfo.IPv4Addresses = [.. unicastAddresses
                         .Where(addr => addr.Address.AddressFamily == AddressFamily.InterNetwork)
-                        .Select(addr => new IPAddressInfo
+                        .Select(addr => new IpAddressInfo
                         {
                             Address = addr.Address.ToString(),
                             SubnetMask = addr.IPv4Mask?.ToString() ?? "",
@@ -148,7 +148,7 @@ internal class NetworkInfoProvider : BaseHardwareInfoProvider<List<NetworkInfo>>
 
                     networkInfo.IPv6Addresses = [.. unicastAddresses
                         .Where(addr => addr.Address.AddressFamily == AddressFamily.InterNetworkV6)
-                        .Select(addr => new IPAddressInfo
+                        .Select(addr => new IpAddressInfo
                         {
                             Address = addr.Address.ToString(),
                             PrefixLength = addr.PrefixLength
@@ -285,12 +285,12 @@ public record NetworkInfo : IHardwareInfo
     /// <summary>
     /// IPv4 地址详细信息
     /// </summary>
-    public List<IPAddressInfo> IPv4Addresses { get; set; } = [];
+    public List<IpAddressInfo> IPv4Addresses { get; set; } = [];
 
     /// <summary>
     /// IPv6 地址详细信息
     /// </summary>
-    public List<IPAddressInfo> IPv6Addresses { get; set; } = [];
+    public List<IpAddressInfo> IPv6Addresses { get; set; } = [];
 
     /// <summary>
     /// 网络接口统计信息
@@ -301,7 +301,7 @@ public record NetworkInfo : IHardwareInfo
 /// <summary>
 /// IP地址信息
 /// </summary>
-public record IPAddressInfo
+public record IpAddressInfo
 {
     /// <summary>
     /// IP地址

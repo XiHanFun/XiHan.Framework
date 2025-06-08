@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Uow.Abstracts;
 using XiHan.Framework.Uow.Options;
 using XiHan.Framework.Utils.System;
@@ -31,7 +30,7 @@ internal class ChildUnitOfWork : IUnitOfWork
     /// 构造函数，初始化子工作单元并监听父工作单元的事件
     /// </summary>
     /// <param name="parent">父工作单元实例</param>
-    public ChildUnitOfWork([NotNull] IUnitOfWork parent)
+    public ChildUnitOfWork(IUnitOfWork parent)
     {
         Guard.NotNull(parent, nameof(parent));
 

@@ -34,10 +34,10 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 public static class Sm2Helper
 {
     // SM2 椭圆曲线参数
-    private static readonly X9ECParameters _curveParameters = SecNamedCurves.GetByName("sm2p256v1");
+    private static readonly X9ECParameters CurveParameters = SecNamedCurves.GetByName("sm2p256v1");
 
     // SM2 椭圆曲线域参数
-    private static readonly ECDomainParameters _domainParameters = new(_curveParameters.Curve, _curveParameters.G, _curveParameters.N, _curveParameters.H);
+    private static readonly ECDomainParameters DomainParameters = new(CurveParameters.Curve, CurveParameters.G, CurveParameters.N, CurveParameters.H);
 
     /// <summary>
     /// 生成 SM2 密钥对
@@ -67,7 +67,7 @@ public static class Sm2Helper
         var dataBytes = Encoding.UTF8.GetBytes(data);
         var privateKeyBytes = Convert.FromBase64String(privateKey);
 
-        var privateKeyParam = new ECPrivateKeyParameters(new BigInteger(1, privateKeyBytes), _domainParameters);
+        var privateKeyParam = new ECPrivateKeyParameters(new BigInteger(1, privateKeyBytes), DomainParameters);
         var signer = SignerUtilities.GetSigner("SM3WITHSM2");
         signer.Init(true, privateKeyParam);
         signer.BlockUpdate(dataBytes, 0, dataBytes.Length);
@@ -89,8 +89,8 @@ public static class Sm2Helper
         var signatureBytes = Convert.FromBase64String(signature);
         var publicKeyBytes = Convert.FromBase64String(publicKey);
 
-        var q = _curveParameters.Curve.DecodePoint(publicKeyBytes);
-        var publicKeyParam = new ECPublicKeyParameters(q, _domainParameters);
+        var q = CurveParameters.Curve.DecodePoint(publicKeyBytes);
+        var publicKeyParam = new ECPublicKeyParameters(q, DomainParameters);
 
         var verifier = SignerUtilities.GetSigner("SM3WITHSM2");
         verifier.Init(false, publicKeyParam);
@@ -106,7 +106,7 @@ public static class Sm2Helper
     private static AsymmetricCipherKeyPair GenerateKeyPair()
     {
         var keyGen = GeneratorUtilities.GetKeyPairGenerator("EC");
-        keyGen.Init(new ECKeyGenerationParameters(_domainParameters, new SecureRandom()));
+        keyGen.Init(new ECKeyGenerationParameters(DomainParameters, new SecureRandom()));
         return keyGen.GenerateKeyPair();
     }
 }

@@ -33,7 +33,7 @@ public static class Base95
     // 0-31 ASCII 控制字符
     // 32-126 ASCII 字符
     // 127-255 扩展 ASCII 字符
-    private static readonly char[] _alphabet = [.. Enumerable.Range(32, 95).Select(i => (char)i)]; // ASCII 32–126
+    private static readonly char[] Alphabet = [.. Enumerable.Range(32, 95).Select(i => (char)i)]; // ASCII 32–126
 
     /// <summary>
     /// 编码 byte[] 为 Base95 字符串
@@ -45,14 +45,14 @@ public static class Base95
         var value = new BigInteger(data.Concat(new byte[] { 0 }).ToArray());
         if (value == 0)
         {
-            return _alphabet[0].ToString();
+            return Alphabet[0].ToString();
         }
 
         var sb = new StringBuilder();
         while (value > 0)
         {
             var rem = (int)(value % Base);
-            sb.Insert(0, _alphabet[rem]);
+            sb.Insert(0, Alphabet[rem]);
             value /= Base;
         }
 
@@ -61,7 +61,7 @@ public static class Base95
         {
             if (b == 0)
             {
-                sb.Insert(0, _alphabet[0]);
+                sb.Insert(0, Alphabet[0]);
             }
             else
             {
@@ -98,7 +98,7 @@ public static class Base95
             bytes = [.. bytes.Take(bytes.Length - 1)];
         }
 
-        var leadingZeroCount = encoded.TakeWhile(c => c == _alphabet[0]).Count();
+        var leadingZeroCount = encoded.TakeWhile(c => c == Alphabet[0]).Count();
         return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. bytes.Reverse()];
     }
 }

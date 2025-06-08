@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Enums;
 public class EnumThemeAttribute : Attribute
 {
     // 缓存
-    private static readonly ConcurrentDictionary<ThemeType, ThemeColor> _themeColorsCatch = new()
+    private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
     {
         [ThemeType.Default] = new ThemeColor { Theme = "default", Color = "#35495E" },
         [ThemeType.Tertiary] = new ThemeColor { Theme = "tertiary", Color = "#697882" },
@@ -40,7 +40,7 @@ public class EnumThemeAttribute : Attribute
     /// <param name="type"></param>
     public EnumThemeAttribute(ThemeType type)
     {
-        ThemeColor = _themeColorsCatch[type];
+        ThemeColor = ThemeColorsCatch[type];
     }
 
     /// <summary>

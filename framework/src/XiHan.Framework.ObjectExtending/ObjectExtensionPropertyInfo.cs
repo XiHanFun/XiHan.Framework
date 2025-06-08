@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Localization;
 using XiHan.Framework.ObjectExtending.Modularity;
 using XiHan.Framework.Utils.Reflections;
@@ -31,7 +30,7 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
     /// <param name="objectExtension">对象扩展信息</param>
     /// <param name="type">属性类型</param>
     /// <param name="name">属性名称</param>
-    public ObjectExtensionPropertyInfo([NotNull] ObjectExtensionInfo objectExtension, [NotNull] Type type, [NotNull] string name)
+    public ObjectExtensionPropertyInfo(ObjectExtensionInfo objectExtension, Type type, string name)
     {
         ObjectExtension = Guard.NotNull(objectExtension, nameof(objectExtension));
         Type = Guard.NotNull(type, nameof(type));
@@ -44,38 +43,33 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
         Attributes.AddRange(ExtensionPropertyHelper.GetDefaultAttributes(Type));
         DefaultValue = TypeHelper.GetDefaultValue(Type);
         Lookup = new ExtensionPropertyLookupConfiguration();
-        UI = new ExtensionPropertyUI();
+        Ui = new ExtensionPropertyUi();
         Policy = new ExtensionPropertyPolicyConfiguration();
     }
 
     /// <summary>
     /// 对象扩展信息
     /// </summary>
-    [NotNull]
     public ObjectExtensionInfo ObjectExtension { get; }
 
     /// <summary>
     /// 属性名称
     /// </summary>
-    [NotNull]
     public string Name { get; }
 
     /// <summary>
     /// 属性类型
     /// </summary>
-    [NotNull]
     public Type Type { get; }
 
     /// <summary>
     /// 属性特性集合
     /// </summary>
-    [NotNull]
     public List<Attribute> Attributes { get; }
 
     /// <summary>
     /// 验证器集合
     /// </summary>
-    [NotNull]
     public List<Action<ObjectExtensionPropertyValidationContext>> Validators { get; }
 
     /// <summary>
@@ -99,7 +93,6 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
     /// <summary>
     /// 配置字典
     /// </summary>
-    [NotNull]
     public Dictionary<object, object> Configuration { get; }
 
     /// <summary>
@@ -116,13 +109,12 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
     /// <summary>
     /// 查找配置
     /// </summary>
-    [NotNull]
     public ExtensionPropertyLookupConfiguration Lookup { get; set; }
 
     /// <summary>
     /// 用户界面配置
     /// </summary>
-    public ExtensionPropertyUI UI { get; set; }
+    public ExtensionPropertyUi Ui { get; set; }
 
     /// <summary>
     /// 策略配置
@@ -141,14 +133,14 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
     /// <summary>
     /// 扩展属性用户界面配置
     /// </summary>
-    public class ExtensionPropertyUI
+    public class ExtensionPropertyUi
     {
         /// <summary>
         /// 初始化扩展属性用户界面配置
         /// </summary>
-        public ExtensionPropertyUI()
+        public ExtensionPropertyUi()
         {
-            EditModal = new ExtensionPropertyUIEditModal();
+            EditModal = new ExtensionPropertyUiEditModal();
         }
 
         /// <summary>
@@ -159,13 +151,13 @@ public class ObjectExtensionPropertyInfo : IHasNameWithLocalizableDisplayName, I
         /// <summary>
         /// 编辑模态框配置
         /// </summary>
-        public ExtensionPropertyUIEditModal EditModal { get; set; }
+        public ExtensionPropertyUiEditModal EditModal { get; set; }
     }
 
     /// <summary>
     /// 扩展属性用户界面编辑模态框配置
     /// </summary>
-    public class ExtensionPropertyUIEditModal
+    public class ExtensionPropertyUiEditModal
     {
         /// <summary>
         /// 是否只读

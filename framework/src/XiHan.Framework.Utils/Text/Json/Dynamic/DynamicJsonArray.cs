@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Text.Json.Dynamic;
 /// 类似 Newtonsoft.Json 的 JArray 体验
 /// </summary>
 [DebuggerDisplay("Count = {Count}")]
-public class DynamicJsonArray : DynamicObject, IEnumerable<object?>, IList<object?>
+public class DynamicJsonArray : DynamicObject, IList<object?>
 {
     /// <summary>
     /// 内部数据存储

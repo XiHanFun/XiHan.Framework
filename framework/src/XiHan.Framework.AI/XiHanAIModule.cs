@@ -32,7 +32,7 @@ namespace XiHan.Framework.AI;
 [DependsOn(
     typeof(XiHanHttpModule)
     )]
-public class XiHanAIModule : XiHanModule
+public class XiHanAiModule : XiHanModule
 {
     private const string ModuleConfigNode = "XiHan:AI";
 
@@ -46,7 +46,7 @@ public class XiHanAIModule : XiHanModule
         var configuration = services.GetConfiguration();
 
         Configure<OllamaOptions>(configuration.GetSection($"{ModuleConfigNode}:Ollama"));
-        Configure<OpenAIOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
+        Configure<OpenAiOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
 
         // 注册 Semantic Kernel 内核，配置 Ollama、OpenAI 等 Connector
         var kernelBuilder = services.AddKernel();
@@ -62,21 +62,21 @@ public class XiHanAIModule : XiHanModule
                 modelId: ollamaOptions.ModelName,
                 endpoint: new Uri(ollamaOptions.BaseUrl),
                 serviceId: ollamaOptions.ServiceId);
-            services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAiService, XiHanOllamaService>(ollamaOptions.ServiceId);
         });
         // OpenAI
-        PostConfigure<OpenAIOptions>(openAIOptions =>
+        PostConfigure<OpenAiOptions>(openAiOptions =>
         {
             kernelBuilder.AddOpenAIChatCompletion(
-                modelId: openAIOptions.ModelName,
-                endpoint: new Uri(openAIOptions.BaseUrl),
-                apiKey: openAIOptions.ApiKey,
-                serviceId: openAIOptions.ServiceId);
+                modelId: openAiOptions.ModelName,
+                endpoint: new Uri(openAiOptions.BaseUrl),
+                apiKey: openAiOptions.ApiKey,
+                serviceId: openAiOptions.ServiceId);
             kernelBuilder.AddOpenAIEmbeddingGenerator(
-                modelId: openAIOptions.ModelName,
-                apiKey: openAIOptions.ApiKey,
-                serviceId: openAIOptions.ServiceId);
-            services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAIOptions.ServiceId);
+                modelId: openAiOptions.ModelName,
+                apiKey: openAiOptions.ApiKey,
+                serviceId: openAiOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAiService, XiHanOpenAiService>(openAiOptions.ServiceId);
         });
     }
 }

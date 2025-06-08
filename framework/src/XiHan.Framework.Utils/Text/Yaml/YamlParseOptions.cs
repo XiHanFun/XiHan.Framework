@@ -72,7 +72,7 @@ public class YamlParseOptions
     /// <summary>
     /// 是否严格模式（严格按照 YAML 规范解析）
     /// </summary>
-    public bool StrictMode { get; set; } = false;
+    public bool StrictMode { get; set; }
 
     /// <summary>
     /// 最大嵌套深度

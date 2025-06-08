@@ -17,12 +17,12 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// AI结果基类
 /// </summary>
-public class XiHanAIResult
+public class XiHanAiResult
 {
     /// <summary>
     /// 是否成功
     /// </summary>
-    public bool IsSuccess;
+    public readonly bool IsSuccess;
 
     /// <summary>
     /// 错误消息
@@ -42,7 +42,7 @@ public class XiHanAIResult
     /// <summary>
     /// 构造函数
     /// </summary>
-    public XiHanAIResult()
+    public XiHanAiResult()
     {
     }
 
@@ -50,7 +50,7 @@ public class XiHanAIResult
     /// 构造函数
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
-    public XiHanAIResult(bool isSuccess)
+    public XiHanAiResult(bool isSuccess)
     {
         IsSuccess = isSuccess;
     }
@@ -60,7 +60,7 @@ public class XiHanAIResult
     /// </summary>
     /// <param name="isSuccess">是否成功</param>
     /// <param name="errorMessage">错误消息</param>
-    public XiHanAIResult(bool isSuccess, string errorMessage)
+    public XiHanAiResult(bool isSuccess, string errorMessage)
     {
         IsSuccess = isSuccess;
         ErrorMessage = errorMessage;

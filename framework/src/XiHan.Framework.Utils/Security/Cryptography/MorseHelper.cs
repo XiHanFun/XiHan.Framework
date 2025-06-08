@@ -38,7 +38,7 @@ public static class MorseHelper
     /// <summary>
     /// 摩尔斯电码映射表（字符到摩尔斯电码）
     /// </summary>
-    private static readonly Dictionary<char, string> _charToMorse = new()
+    private static readonly Dictionary<char, string> CharToMorse = new()
     {
         // 字母 A-Z
         { 'A', ".-" }, { 'B', "-..." }, { 'C', "-.-." }, { 'D', "-.." },
@@ -65,14 +65,14 @@ public static class MorseHelper
     /// <summary>
     /// 摩尔斯电码映射表（摩尔斯电码到字符）
     /// </summary>
-    private static readonly Dictionary<string, char> _morseToChar;
+    private static readonly Dictionary<string, char> MorseToChar;
 
     /// <summary>
     /// 静态构造函数，初始化反向映射表
     /// </summary>
     static MorseHelper()
     {
-        _morseToChar = _charToMorse.Where(kvp => kvp.Key != ' ')
+        MorseToChar = CharToMorse.Where(kvp => kvp.Key != ' ')
             .ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
     }
 
@@ -111,7 +111,7 @@ public static class MorseHelper
                 continue;
             }
 
-            if (!_charToMorse.TryGetValue(character, out var morseCode))
+            if (!CharToMorse.TryGetValue(character, out var morseCode))
             {
                 throw new ArgumentException($"不支持的字符: '{character}'", nameof(text));
             }
@@ -171,7 +171,7 @@ public static class MorseHelper
                     continue;
                 }
 
-                if (!_morseToChar.TryGetValue(trimmedChar, out var decodedChar))
+                if (!MorseToChar.TryGetValue(trimmedChar, out var decodedChar))
                 {
                     throw new ArgumentException($"无效的摩尔斯电码: '{trimmedChar}'", nameof(morseCode));
                 }
@@ -196,7 +196,7 @@ public static class MorseHelper
     /// <returns>是否支持</returns>
     public static bool IsSupported(char character)
     {
-        return _charToMorse.ContainsKey(char.ToUpperInvariant(character));
+        return CharToMorse.ContainsKey(char.ToUpperInvariant(character));
     }
 
     /// <summary>
@@ -241,7 +241,7 @@ public static class MorseHelper
     /// <returns>支持的字符列表</returns>
     public static IEnumerable<char> GetSupportedCharacters()
     {
-        return _charToMorse.Keys.Where(c => c != ' ').OrderBy(c => c);
+        return CharToMorse.Keys.Where(c => c != ' ').OrderBy(c => c);
     }
 
     /// <summary>
@@ -251,7 +251,7 @@ public static class MorseHelper
     /// <returns>对应的摩尔斯电码，如果不支持则返回 null</returns>
     public static string? GetMorseCode(char character)
     {
-        return _charToMorse.TryGetValue(char.ToUpperInvariant(character), out var morseCode) ? morseCode : null;
+        return CharToMorse.TryGetValue(char.ToUpperInvariant(character), out var morseCode) ? morseCode : null;
     }
 
     /// <summary>
@@ -261,7 +261,7 @@ public static class MorseHelper
     /// <returns>对应的字符，如果无效则返回 null</returns>
     public static char? GetCharacter(string morseCode)
     {
-        return string.IsNullOrEmpty(morseCode) ? null : _morseToChar.TryGetValue(morseCode.Trim(), out var character) ? character : null;
+        return string.IsNullOrEmpty(morseCode) ? null : MorseToChar.TryGetValue(morseCode.Trim(), out var character) ? character : null;
     }
 
     /// <summary>
@@ -376,7 +376,7 @@ public static class MorseHelper
 
         // 字母
         result.AppendLine("字母:");
-        foreach (var kvp in _charToMorse.Where(kvp => char.IsLetter(kvp.Key)).OrderBy(kvp => kvp.Key))
+        foreach (var kvp in CharToMorse.Where(kvp => char.IsLetter(kvp.Key)).OrderBy(kvp => kvp.Key))
         {
             result.AppendLine($"{kvp.Key} : {kvp.Value}");
         }
@@ -385,7 +385,7 @@ public static class MorseHelper
         {
             result.AppendLine();
             result.AppendLine("数字:");
-            foreach (var kvp in _charToMorse.Where(kvp => char.IsDigit(kvp.Key)).OrderBy(kvp => kvp.Key))
+            foreach (var kvp in CharToMorse.Where(kvp => char.IsDigit(kvp.Key)).OrderBy(kvp => kvp.Key))
             {
                 result.AppendLine($"{kvp.Key} : {kvp.Value}");
             }
@@ -395,7 +395,7 @@ public static class MorseHelper
         {
             result.AppendLine();
             result.AppendLine("标点符号:");
-            foreach (var kvp in _charToMorse.Where(kvp => !char.IsLetterOrDigit(kvp.Key) && kvp.Key != ' ').OrderBy(kvp => kvp.Key))
+            foreach (var kvp in CharToMorse.Where(kvp => !char.IsLetterOrDigit(kvp.Key) && kvp.Key != ' ').OrderBy(kvp => kvp.Key))
             {
                 result.AppendLine($"{kvp.Key} : {kvp.Value}");
             }

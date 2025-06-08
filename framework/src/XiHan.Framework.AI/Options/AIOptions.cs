@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// AI服务基础配置
 /// </summary>
-public class AIOptions
+public class AiOptions
 {
     /// <summary>
     /// 默认服务提供商名称

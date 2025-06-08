@@ -35,7 +35,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
     private readonly ConcurrentDictionary<string, Assembly> _assemblyCache = new();
     private readonly EngineStatistics _statistics = new() { StartTime = DateTime.Now };
     private readonly Lock _lockObject = new();
-    private bool _disposed = false;
+    private bool _disposed;
 
     /// <summary>
     /// 执行脚本代码

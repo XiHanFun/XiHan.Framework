@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.ObjectExtending;
@@ -34,8 +33,8 @@ public class ObjectExtensionPropertyValidationContext
     /// <param name="value">要验证的属性值</param>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public ObjectExtensionPropertyValidationContext(
-        [NotNull] ObjectExtensionPropertyInfo objectExtensionPropertyInfo, [NotNull] IHasExtraProperties validatingObject,
-        [NotNull] List<ValidationResult> validationErrors, [NotNull] ValidationContext validationContext, object? value)
+        ObjectExtensionPropertyInfo objectExtensionPropertyInfo, IHasExtraProperties validatingObject,
+        List<ValidationResult> validationErrors, ValidationContext validationContext, object? value)
     {
         ExtensionPropertyInfo = Guard.NotNull(objectExtensionPropertyInfo, nameof(objectExtensionPropertyInfo));
         ValidatingObject = Guard.NotNull(validatingObject, nameof(validatingObject));
@@ -48,28 +47,24 @@ public class ObjectExtensionPropertyValidationContext
     /// 获取相关的扩展属性信息
     /// 包含属性的定义、验证规则和配置信息
     /// </summary>
-    [NotNull]
     public ObjectExtensionPropertyInfo ExtensionPropertyInfo { get; }
 
     /// <summary>
     /// 获取正在验证的对象引用
     /// 该对象实现了 IHasExtraProperties 接口，具有额外属性
     /// </summary>
-    [NotNull]
     public IHasExtraProperties ValidatingObject { get; }
 
     /// <summary>
     /// 获取验证错误集合
     /// 验证过程中发现的错误将添加到此列表中
     /// </summary>
-    [NotNull]
     public List<ValidationResult> ValidationErrors { get; }
 
     /// <summary>
     /// 获取验证上下文
     /// 来自 IValidatableObject.Validate 方法的验证上下文信息
     /// </summary>
-    [NotNull]
     public ValidationContext ValidationContext { get; }
 
     /// <summary>

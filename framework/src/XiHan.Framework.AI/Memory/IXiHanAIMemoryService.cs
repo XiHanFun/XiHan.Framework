@@ -19,7 +19,7 @@ namespace XiHan.Framework.AI.Memory;
 /// <summary>
 /// AI记忆服务接口
 /// </summary>
-public interface IXiHanAIMemoryService
+public interface IXiHanAiMemoryService
 {
     /// <summary>
     /// 添加记忆

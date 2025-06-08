@@ -24,10 +24,10 @@ namespace XiHan.Framework.AI.Memory;
 /// <summary>
 /// 记忆服务实现
 /// </summary>
-public class XiHanAIMemoryService : IXiHanAIMemoryService
+public class XiHanAiMemoryService : IXiHanAiMemoryService
 {
     private readonly IOptions<KernelMemoryOptions> _options;
-    private readonly ILogger<XiHanAIMemoryService> _logger;
+    private readonly ILogger<XiHanAiMemoryService> _logger;
     private readonly IKernelMemory _memory;
     private readonly ConcurrentDictionary<string, DateTime> _memoryTimestamps = new();
 
@@ -36,7 +36,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
     /// </summary>
     /// <param name="options">记忆选项</param>
     /// <param name="logger">日志记录器</param>
-    public XiHanAIMemoryService(IOptions<KernelMemoryOptions> options, ILogger<XiHanAIMemoryService> logger)
+    public XiHanAiMemoryService(IOptions<KernelMemoryOptions> options, ILogger<XiHanAiMemoryService> logger)
     {
         _options = options;
         _logger = logger;
@@ -122,35 +122,32 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
             var results = new List<XiHanMemoryResult>();
 
             // 手动转换，安全访问属性
-            if (searchResults.Results != null)
+            foreach (var result in searchResults.Results)
             {
-                foreach (var result in searchResults.Results)
+                // 从结果中获取分区的第一个元素(如果有)
+                var partition = result.Partitions.Count > 0
+                    ? result.Partitions[0]
+                    : null;
+
+                var memoryResult = new XiHanMemoryResult
                 {
-                    // 从结果中获取分区的第一个元素(如果有)
-                    var partition = result.Partitions != null && result.Partitions.Count > 0
-                        ? result.Partitions[0]
-                        : null;
+                    Id = result.SourceName ?? string.Empty,
+                    // 从分区获取文本和相关性得分
+                    Text = partition != null ? partition.Text ?? string.Empty : string.Empty,
+                    Relevance = partition?.Relevance ?? 0.0,
+                    Metadata = []
+                };
 
-                    var memoryResult = new XiHanMemoryResult
+                // 安全访问分区标签
+                if (partition != null)
+                {
+                    foreach (var key in partition.Tags.Keys)
                     {
-                        Id = result.SourceName ?? string.Empty,
-                        // 从分区获取文本和相关性得分
-                        Text = partition != null ? partition.Text ?? string.Empty : string.Empty,
-                        Relevance = partition != null ? partition.Relevance : 0.0,
-                        Metadata = []
-                    };
-
-                    // 安全访问分区标签
-                    if (partition != null && partition.Tags != null)
-                    {
-                        foreach (var key in partition.Tags.Keys)
-                        {
-                            memoryResult.Metadata[key] = partition.Tags[key];
-                        }
+                        memoryResult.Metadata[key] = partition.Tags[key];
                     }
-
-                    results.Add(memoryResult);
                 }
+
+                results.Add(memoryResult);
             }
 
             _logger.LogInformation("检索记忆: {Collection}, 查询: {Query}, 找到: {Count}条结果", collection, query, results.Count);

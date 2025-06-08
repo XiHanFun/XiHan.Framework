@@ -31,7 +31,7 @@ namespace XiHan.Framework.AI.Providers.Ollama;
 /// <summary>
 /// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
-public class XiHanOllamaService : IXiHanAIService
+public class XiHanOllamaService : IXiHanAiService
 {
     private readonly Kernel _kernel;
     private readonly OllamaOptions _options;
@@ -188,7 +188,7 @@ public class XiHanOllamaService : IXiHanAIService
         var response = _ollamaChatService.GetStreamingChatMessageContentsAsync(chatHistory, executionSettings, _kernel, cancellationToken);
 
         var contentSoFar = string.Empty;
-        await foreach (var content in response.WithCancellation(cancellationToken))
+        await foreach (var content in response)
         {
             contentSoFar += content.Content;
 

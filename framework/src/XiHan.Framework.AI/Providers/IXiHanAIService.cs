@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Providers;
 /// <summary>
 /// 曦寒AI服务接口
 /// </summary>
-public interface IXiHanAIService
+public interface IXiHanAiService
 {
     /// <summary>
     /// 服务提供商名称

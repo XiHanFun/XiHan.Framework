@@ -74,7 +74,7 @@ public class XmlDeserializationOptions
     /// <summary>
     /// 是否验证 XML 格式
     /// </summary>
-    public bool ValidateXml { get; set; } = false;
+    public bool ValidateXml { get; set; }
 
     /// <summary>
     /// 最大字符实体扩展数

@@ -131,7 +131,7 @@ public class SqidsEncoder<T> where T : INumber<T>
             // 提取后缀
             if (chunk.Length > 0)
             {
-                result.Add(SqidsEncoder<T>.ToNumber(chunk, alphabet[1..]));
+                result.Add(ToNumber(chunk, alphabet[1..]));
             }
 
             // 跳过分隔符
@@ -229,7 +229,7 @@ public class SqidsEncoder<T> where T : INumber<T>
             // 编码每个数字
             for (var j = 0; j < numbers.Length; j++)
             {
-                var numStr = SqidsEncoder<T>.ToId(numbers[j], alphabet[1..]);
+                var numStr = ToId(numbers[j], alphabet[1..]);
                 id += numStr + (j < numbers.Length - 1 ? alphabet[0] : "");
             }
 
@@ -252,7 +252,7 @@ public class SqidsEncoder<T> where T : INumber<T>
 
         for (var j = 0; j < numbers.Length; j++)
         {
-            var numStr = SqidsEncoder<T>.ToId(numbers[j], fallbackAlphabet[1..]);
+            var numStr = ToId(numbers[j], fallbackAlphabet[1..]);
             fallbackId += numStr + (j < numbers.Length - 1 ? fallbackAlphabet[0] : "");
         }
 
@@ -314,7 +314,7 @@ public class SqidsEncoder : SqidsEncoder<int>
     /// <summary>
     /// 使用默认选项初始化Sqids编码器
     /// </summary>
-    public SqidsEncoder() : base()
+    public SqidsEncoder()
     {
     }
 

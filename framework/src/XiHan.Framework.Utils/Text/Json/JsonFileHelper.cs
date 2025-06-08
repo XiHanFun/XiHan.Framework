@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Text.Json;
 /// </summary>
 public static class JsonFileHelper
 {
-    private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
 
     #region 基础文件操作
 
@@ -51,7 +51,7 @@ public static class JsonFileHelper
         try
         {
             encoding ??= Encoding.UTF8;
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
 
             var jsonContent = File.ReadAllText(filePath, encoding);
             return JsonSerializer.Deserialize<T>(jsonContent, options);
@@ -86,7 +86,7 @@ public static class JsonFileHelper
         try
         {
             encoding ??= Encoding.UTF8;
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
 
             var jsonContent = await File.ReadAllTextAsync(filePath, encoding, cancellationToken);
             return JsonSerializer.Deserialize<T>(jsonContent, options);
@@ -125,7 +125,7 @@ public static class JsonFileHelper
             }
 
             encoding ??= Encoding.UTF8;
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
 
             var jsonContent = JsonSerializer.Serialize(obj, options);
             File.WriteAllText(filePath, jsonContent, encoding);
@@ -165,7 +165,7 @@ public static class JsonFileHelper
             }
 
             encoding ??= Encoding.UTF8;
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
 
             var jsonContent = JsonSerializer.Serialize(obj, options);
             await File.WriteAllTextAsync(filePath, jsonContent, encoding, cancellationToken);
@@ -241,7 +241,7 @@ public static class JsonFileHelper
 
         try
         {
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
             return await JsonSerializer.DeserializeAsync<T>(stream, options, cancellationToken);
         }
         catch (Exception ex)
@@ -264,7 +264,7 @@ public static class JsonFileHelper
 
         try
         {
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
             await JsonSerializer.SerializeAsync(stream, obj, options, cancellationToken);
         }
         catch (Exception ex)
@@ -352,7 +352,7 @@ public static class JsonFileHelper
                 }
             }
 
-            var updatedJson = rootNode.ToJsonString(_defaultOptions);
+            var updatedJson = rootNode.ToJsonString(DefaultOptions);
             File.WriteAllText(filePath, updatedJson, encoding);
         }
         catch (Exception ex)
@@ -369,7 +369,7 @@ public static class JsonFileHelper
     /// <param name="value">要设置的值</param>
     private static void SetValueByPath(JsonNode rootNode, string path, JsonNode? value)
     {
-        if (rootNode == null || string.IsNullOrWhiteSpace(path))
+        if (string.IsNullOrWhiteSpace(path))
         {
             return;
         }
@@ -437,7 +437,7 @@ public static class JsonFileHelper
             {
                 while (array.Count <= index)
                 {
-                    array.Add((JsonNode?)null);
+                    array.Add(null);
                 }
                 array[index] = value;
             }

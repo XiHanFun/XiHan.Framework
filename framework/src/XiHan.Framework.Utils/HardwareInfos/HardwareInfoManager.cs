@@ -23,12 +23,6 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class HardwareInfoManager
 {
-    // 在类中添加一个静态字段来缓存 JsonSerializerOptions 实例
-    private static readonly JsonSerializerOptions _cachedJsonSerializerOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
 
     /// <summary>
     /// 获取完整的系统硬件信息

@@ -19,8 +19,8 @@ namespace XiHan.Framework.Utils.Logging;
 /// </summary>
 public static class ConsoleLogger
 {
-    private static readonly Lock _objLock = new();
-    private static bool _isWriteToFile = false;
+    private static readonly Lock ObjLock = new();
+    private static bool _isWriteToFile;
 
     /// <summary>
     /// 设置日志文件目录
@@ -113,7 +113,7 @@ public static class ConsoleLogger
     /// <param name="frontColor">前置颜色</param>
     private static void WriteColorLine(string? inputStr, ConsoleColor frontColor)
     {
-        lock (_objLock)
+        lock (ObjLock)
         {
             var currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = frontColor;

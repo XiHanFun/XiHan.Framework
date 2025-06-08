@@ -100,7 +100,7 @@ public static class StackExtensions
     {
         items = [];
 
-        if (stack == null || count < 0 || count > stack.Count)
+        if (count < 0 || count > stack.Count)
         {
             return false;
         }
@@ -159,7 +159,7 @@ public static class StackExtensions
     public static bool TryPeek<T>(this Stack<T> stack, out T? item)
     {
         item = default;
-        if (stack == null || stack.Count == 0)
+        if (stack.Count == 0)
         {
             return false;
         }

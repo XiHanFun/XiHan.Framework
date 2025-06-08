@@ -71,7 +71,7 @@ public class YamlDeserializeOptions
     /// <summary>
     /// 是否允许重复键
     /// </summary>
-    public bool AllowDuplicateKeys { get; set; } = false;
+    public bool AllowDuplicateKeys { get; set; }
 
     /// <summary>
     /// 是否大小写敏感

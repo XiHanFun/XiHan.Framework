@@ -31,7 +31,7 @@ public class SqidsOptions
     /// <summary>
     /// 默认屏蔽词列表
     /// </summary>
-    private static readonly HashSet<string> _defaultBlocklist = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> DefaultBlocklist = new(StringComparer.OrdinalIgnoreCase)
     {
         // 常见的屏蔽词列表
         "0rgasm", "1d10t", "1d1ot", "1di0t", "1diot", "1njun", "4r5e", "5ex", "5h1t", "5hit", "a55", "anal", "anus",
@@ -76,7 +76,7 @@ public class SqidsOptions
         "t1tt1e5", "t1tties", "teets", "teez", "testical", "testicle", "tit", "titfuck", "tits", "titt", "tittie5",
         "tittiefucker", "titties", "tittyfuck", "tittywank", "titwank", "tosser", "turd", "tw4t", "twat", "twathead",
         "twatty", "twunt", "twunter", "v14gra", "v1gra", "vagina", "viagra", "vulva", "w00se", "wang", "wank",
-        "wanker", "wanky", "whoar", "whore", "willies", "willy", "xrated", "xxx",
+        "wanker", "wanky", "whoar", "whore", "willies", "willy", "xrated", "xxx"
     };
 
     /// <summary>
@@ -92,5 +92,5 @@ public class SqidsOptions
     /// <summary>
     /// 屏蔽词列表
     /// </summary>
-    public HashSet<string> BlockList { get; set; } = new HashSet<string>(_defaultBlocklist, StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> BlockList { get; set; } = new HashSet<string>(DefaultBlocklist, StringComparer.OrdinalIgnoreCase);
 }

@@ -24,16 +24,16 @@ namespace XiHan.Framework.Utils.Enums;
 public static class EnumExtensions
 {
     // 枚举类型缓存
-    private static readonly ConcurrentDictionary<Assembly, IEnumerable<Type>> _enumTypesCatch = [];
+    private static readonly ConcurrentDictionary<Assembly, IEnumerable<Type>> EnumTypesCatch = [];
 
     // 枚举信息缓存
-    private static readonly ConcurrentDictionary<Type, IEnumerable<EnumInfo>> _enumInfosCatch = [];
+    private static readonly ConcurrentDictionary<Type, IEnumerable<EnumInfo>> EnumInfosCatch = [];
 
     // 枚举值缓存
-    private static readonly ConcurrentDictionary<Type, Dictionary<string, int>> _enumValuesCatch = [];
+    private static readonly ConcurrentDictionary<Type, Dictionary<string, int>> EnumValuesCatch = [];
 
     // 枚举描述缓存
-    private static readonly ConcurrentDictionary<Type, Dictionary<int, string>> _enumDescriptionsCatch = [];
+    private static readonly ConcurrentDictionary<Type, Dictionary<int, string>> EnumDescriptionsCatch = [];
 
     #region 获取枚举值
 
@@ -247,7 +247,7 @@ public static class EnumExtensions
         }
 
         // 缓存中有则直接返回
-        if (_enumInfosCatch.TryGetValue(enumType, out var enumInfoList))
+        if (EnumInfosCatch.TryGetValue(enumType, out var enumInfoList))
         {
             return enumInfoList;
         }
@@ -264,7 +264,7 @@ public static class EnumExtensions
         }).ToList();
 
         // 加入缓存
-        _enumInfosCatch.TryAdd(enumType, enumInfos);
+        EnumInfosCatch.TryAdd(enumType, enumInfos);
         return enumInfos;
     }
 
@@ -278,7 +278,7 @@ public static class EnumExtensions
         var type = typeof(TEnum);
 
         // 缓存中有则直接返回
-        if (_enumValuesCatch.TryGetValue(type, out var dict))
+        if (EnumValuesCatch.TryGetValue(type, out var dict))
         {
             return dict;
         }
@@ -291,7 +291,7 @@ public static class EnumExtensions
         }
 
         // 加入缓存
-        _enumValuesCatch.TryAdd(type, dict);
+        EnumValuesCatch.TryAdd(type, dict);
         return dict;
     }
 
@@ -305,7 +305,7 @@ public static class EnumExtensions
         var type = typeof(TEnum);
 
         // 缓存中有则直接返回
-        if (_enumDescriptionsCatch.TryGetValue(type, out var dict))
+        if (EnumDescriptionsCatch.TryGetValue(type, out var dict))
         {
             return dict;
         }
@@ -318,7 +318,7 @@ public static class EnumExtensions
         }
 
         // 加入缓存
-        _enumDescriptionsCatch.TryAdd(type, dict);
+        EnumDescriptionsCatch.TryAdd(type, dict);
         return dict;
     }
 
@@ -372,7 +372,7 @@ public static class EnumExtensions
     public static IEnumerable<Type> GetEnumTypes(this Assembly assembly)
     {
         // 缓存中有则直接返回
-        if (_enumTypesCatch.TryGetValue(assembly, out var enumTypeList))
+        if (EnumTypesCatch.TryGetValue(assembly, out var enumTypeList))
         {
             return enumTypeList;
         }
@@ -383,7 +383,7 @@ public static class EnumExtensions
         var enumTypes = typeArray.Where(o => o.IsEnum).ToList();
 
         // 加入缓存
-        _enumTypesCatch.TryAdd(assembly, enumTypes);
+        EnumTypesCatch.TryAdd(assembly, enumTypes);
         return enumTypes;
     }
 

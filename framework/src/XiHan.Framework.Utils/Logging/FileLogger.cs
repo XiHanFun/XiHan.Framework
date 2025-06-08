@@ -21,8 +21,8 @@ namespace XiHan.Framework.Utils.Logging;
 /// </summary>
 public static class FileLogger
 {
-    private static readonly Lock _objLock = new();
-    private static readonly Dictionary<string, int> _logFileCounter = [];
+    private static readonly Lock ObjLock = new();
+    private static readonly Dictionary<string, int> LogFileCounter = [];
     private static string _logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
 
     /// <summary>
@@ -102,7 +102,7 @@ public static class FileLogger
             return;
         }
 
-        lock (_objLock)
+        lock (ObjLock)
         {
             try
             {
@@ -127,13 +127,13 @@ public static class FileLogger
                     if (fileInfo.Length > 10 * 1024 * 1024) // 10MB
                     {
                         // 获取或初始化计数器
-                        if (!_logFileCounter.TryGetValue(logFileName, out var counter))
+                        if (!LogFileCounter.TryGetValue(logFileName, out var counter))
                         {
                             counter = 0;
                         }
 
                         counter++;
-                        _logFileCounter[logFileName] = counter;
+                        LogFileCounter[logFileName] = counter;
 
                         // 创建新的日志文件名，加上序号
                         logFileName = string.IsNullOrWhiteSpace(fileName)
