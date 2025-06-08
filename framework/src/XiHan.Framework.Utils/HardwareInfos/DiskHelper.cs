@@ -41,7 +41,7 @@ public static class DiskHelper
 
         try
         {
-            if (OsPlatformHelper.OsIsUnix)
+            if (OSPlatformHelper.OsIsUnix)
             {
                 var output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
                 var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -49,7 +49,7 @@ public static class DiskHelper
                 {
                     diskInfos.AddRange(from line in lines
                                        select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
-                        into rootDisk
+                                       into rootDisk
                                        where rootDisk.Length >= 5
                                        select new DiskInfo
                                        {

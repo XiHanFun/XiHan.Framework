@@ -309,65 +309,44 @@ public static class ListExtensions
     }
 
     /// <summary>
-    /// 通过考虑对象之间的依赖关系对列表进行拓扑排序
+    /// 从列表中随机获取一个元素
     /// </summary>
-    /// <typeparam name="T">列表项的类型</typeparam>
-    /// <param name="source">要排序的对象列表</param>
-    /// <param name="getDependencies">用于解析项依赖关系的函数</param>
-    /// <param name="comparer">依赖关系的相等比较器</param>
-    /// <returns>返回按依赖关系排序的新列表</returns>
-    public static List<T> SortByDependencies<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies, IEqualityComparer<T>? comparer = null)
-        where T : notnull
+    /// <typeparam name="T">列表中项的类型</typeparam>
+    /// <param name="source">要操作的列表</param>
+    /// <returns>随机选中的元素</returns>
+    /// <exception cref="ArgumentException">当列表为空时抛出异常</exception>
+    public static T GetRandom<T>(this IList<T> source)
     {
-        // 初始化排序列表、访问标记字典
-        List<T> sorted = [];
-        Dictionary<T, bool> visited = new(comparer);
+        _ = Guard.NotNull(source, nameof(source));
 
-        // 遍历源列表中的每个项并进行拓扑排序
-        foreach (var item in source)
+        if (source.Count == 0)
         {
-            SortByDependenciesVisit(item, getDependencies, sorted, visited);
+            throw new ArgumentException("列表不能为空", nameof(source));
         }
 
-        return sorted;
+        var randomIndex = Random.Shared.Next(source.Count);
+        return source[randomIndex];
     }
 
     /// <summary>
-    /// 递归地对项进行拓扑排序，考虑其依赖关系
+    /// 尝试从列表中随机获取一个元素
     /// </summary>
-    /// <typeparam name="T">项的类型</typeparam>
-    /// <param name="item">要解析的项</param>
-    /// <param name="getDependencies">用于解析项依赖关系的函数</param>
-    /// <param name="sorted">包含排序后项的列表</param>
-    /// <param name="visited">包含已访问项的字典</param>
-    private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
-        where T : notnull
+    /// <typeparam name="T">列表中项的类型</typeparam>
+    /// <param name="source">要操作的列表</param>
+    /// <param name="result">输出参数，包含随机选中的元素（如果成功）</param>
+    /// <returns>如果列表不为空则返回 true，否则返回 false</returns>
+    public static bool TryGetRandom<T>(this IList<T> source, out T? result)
     {
-        // 检查项是否已经在处理中或已访问过
-        var alreadyVisited = visited.TryGetValue(item, out var inProcess);
+        _ = Guard.NotNull(source, nameof(source));
 
-        if (alreadyVisited)
+        if (source.Count == 0)
         {
-            if (inProcess)
-            {
-                throw new ArgumentException("发现循环依赖项:" + item);
-            }
+            result = default;
+            return false;
         }
-        else
-        {
-            // 标记为正在处理
-            visited[item] = true;
 
-            var dependencies = getDependencies(item);
-            // 递归地对每个依赖进行拓扑排序
-            foreach (var dependency in dependencies)
-            {
-                SortByDependenciesVisit(dependency, getDependencies, sorted, visited);
-            }
-
-            // 标记为已处理
-            visited[item] = false;
-            sorted.Add(item);
-        }
+        var randomIndex = Random.Shared.Next(source.Count);
+        result = source[randomIndex];
+        return true;
     }
 }

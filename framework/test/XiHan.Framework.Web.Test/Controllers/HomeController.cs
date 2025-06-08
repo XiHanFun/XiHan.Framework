@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using XiHan.Framework.Utils.HardwareInfos;
+using XiHan.Framework.Utils.Text.Json;
 
 namespace XiHan.Framework.Web.Test.Controllers;
 
@@ -14,33 +16,11 @@ public class HomeController : ControllerBase
     /// <summary>
     /// 测试
     /// </summary>
-    /// <param name="collection"></param>
     /// <returns></returns>
-    [HttpPost("Test")]
-    public IActionResult Test(IFormCollection collection)
+    [HttpPost("SystemInfo")]
+    public async Task<IActionResult> SystemInfo()
     {
-        return Ok(collection);
-    }
-
-    /// <summary>
-    /// 测试1
-    /// </summary>
-    /// <param name="collection"></param>
-    /// <returns></returns>
-    [HttpPost("Test1")]
-    public IActionResult Test1(IFormCollection collection)
-    {
-        return Ok(collection);
-    }
-
-    /// <summary>
-    /// 测试2
-    /// </summary>
-    /// <param name="collection"></param>
-    /// <returns></returns>
-    [HttpPost("Test2")]
-    public IActionResult Test2(IFormCollection collection)
-    {
-        return Ok(collection);
+        var systemInfo = await HardwareInfoManager.GetSystemHardwareInfoAsync();
+        return Ok(systemInfo);
     }
 }
