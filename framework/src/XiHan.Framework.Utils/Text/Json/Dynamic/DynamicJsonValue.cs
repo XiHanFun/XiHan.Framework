@@ -149,12 +149,7 @@ public class DynamicJsonValue : DynamicObject
             return !value._value.Equals(Convert.ChangeType(0, value._valueType));
         }
 
-        if (value._value is string stringValue)
-        {
-            return !string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0";
-        }
-
-        return true;
+        return value._value is string stringValue ? !string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0" : true;
     }
 
     /// <summary>

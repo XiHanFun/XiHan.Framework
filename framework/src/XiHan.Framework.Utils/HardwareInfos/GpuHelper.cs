@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:GpuHelper
-// Guid:C3D4E5F6-A7B8-9012-C3D4-E5F6A7B89012
+// Guid:c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreatedTime:2025-01-01 上午 12:00:00
@@ -17,7 +17,6 @@ using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.HardwareInfos.Abstractions;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
 
