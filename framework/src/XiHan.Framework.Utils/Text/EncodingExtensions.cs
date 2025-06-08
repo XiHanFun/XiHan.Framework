@@ -220,7 +220,9 @@ public static class EncodingExtensions
     public static string EscapeString(this string data)
     {
         if (string.IsNullOrEmpty(data))
+        {
             return data;
+        }
 
         return data
             .Replace("\\", "\\\\")  // 反斜杠必须最先处理
@@ -244,7 +246,9 @@ public static class EncodingExtensions
     public static string UnescapeString(this string data)
     {
         if (string.IsNullOrEmpty(data))
+        {
             return data;
+        }
 
         return data
             .Replace("\\\"", "\"")  // 双引号
@@ -268,7 +272,9 @@ public static class EncodingExtensions
     public static string EscapeForCSharp(this string data)
     {
         if (string.IsNullOrEmpty(data))
+        {
             return data;
+        }
 
         var sb = new StringBuilder();
         foreach (var c in data)
@@ -332,7 +338,9 @@ public static class EncodingExtensions
     public static string EscapeForJson(this string data)
     {
         if (string.IsNullOrEmpty(data))
+        {
             return data;
+        }
 
         var sb = new StringBuilder();
         foreach (var c in data)
