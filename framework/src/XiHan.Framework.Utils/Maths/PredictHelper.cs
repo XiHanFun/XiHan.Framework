@@ -49,11 +49,11 @@ public static class PredictHelper
         var n = xValues.Length;
         var sumX = xValues.Sum();
         var sumY = yValues.Sum();
-        var sumXY = xValues.Zip(yValues, (x, y) => x * y).Sum();
-        var sumXX = xValues.Sum(x => x * x);
+        var sumXy = xValues.Zip(yValues, (x, y) => x * y).Sum();
+        var sumXx = xValues.Sum(x => x * x);
 
         // 计算线性回归系数：y = a + b*x
-        var b = ((n * sumXY) - (sumX * sumY)) / ((n * sumXX) - (sumX * sumX));
+        var b = ((n * sumXy) - (sumX * sumY)) / ((n * sumXx) - (sumX * sumX));
         var a = (sumY - (b * sumX)) / n;
 
         return a + (b * predictX);
@@ -83,10 +83,10 @@ public static class PredictHelper
         var n = xValues.Length;
         var sumX = xValues.Sum();
         var sumY = yValues.Sum();
-        var sumXY = xValues.Zip(yValues, (x, y) => x * y).Sum();
-        var sumXX = xValues.Sum(x => x * x);
+        var sumXy = xValues.Zip(yValues, (x, y) => x * y).Sum();
+        var sumXx = xValues.Sum(x => x * x);
 
-        var slope = ((n * sumXY) - (sumX * sumY)) / ((n * sumXX) - (sumX * sumX));
+        var slope = ((n * sumXy) - (sumX * sumY)) / ((n * sumXx) - (sumX * sumX));
         var intercept = (sumY - (slope * sumX)) / n;
 
         return (intercept, slope);
@@ -116,12 +116,12 @@ public static class PredictHelper
         var n = xValues.Length;
         var sumX = xValues.Sum();
         var sumY = yValues.Sum();
-        var sumXY = xValues.Zip(yValues, (x, y) => x * y).Sum();
-        var sumXX = xValues.Sum(x => x * x);
-        var sumYY = yValues.Sum(y => y * y);
+        var sumXy = xValues.Zip(yValues, (x, y) => x * y).Sum();
+        var sumXx = xValues.Sum(x => x * x);
+        var sumYy = yValues.Sum(y => y * y);
 
-        var numerator = (n * sumXY) - (sumX * sumY);
-        var denominator = Math.Sqrt(((n * sumXX) - (sumX * sumX)) * ((n * sumYY) - (sumY * sumY)));
+        var numerator = (n * sumXy) - (sumX * sumY);
+        var denominator = Math.Sqrt(((n * sumXx) - (sumX * sumX)) * ((n * sumYy) - (sumY * sumY)));
 
         return denominator == 0 ? 0 : numerator / denominator;
     }
@@ -390,10 +390,10 @@ public static class PredictHelper
 
         return new AccuracyMetrics
         {
-            MAE = mae,
-            MSE = mse,
-            RMSE = rmse,
-            MAPE = mape
+            Mae = mae,
+            Mse = mse,
+            Rmse = rmse,
+            Mape = mape
         };
     }
 
@@ -986,19 +986,19 @@ public static class PredictHelper
             throw new ArgumentException("时间序列长度必须大于窗口大小");
         }
 
-        var X = new double[numSamples, windowSize];
+        var x = new double[numSamples, windowSize];
         var y = new double[numSamples];
 
         for (var i = 0; i < numSamples; i++)
         {
             for (var j = 0; j < windowSize; j++)
             {
-                X[i, j] = timeSeries[i + j];
+                x[i, j] = timeSeries[i + j];
             }
             y[i] = timeSeries[i + windowSize];
         }
 
-        return (X, y);
+        return (x, y);
     }
 
     #endregion
@@ -1012,22 +1012,22 @@ public class AccuracyMetrics
     /// <summary>
     /// 平均绝对误差 (Mean Absolute Error)
     /// </summary>
-    public double MAE { get; set; }
+    public double Mae { get; set; }
 
     /// <summary>
     /// 均方误差 (Mean Squared Error)
     /// </summary>
-    public double MSE { get; set; }
+    public double Mse { get; set; }
 
     /// <summary>
     /// 均方根误差 (Root Mean Squared Error)
     /// </summary>
-    public double RMSE { get; set; }
+    public double Rmse { get; set; }
 
     /// <summary>
     /// 平均绝对百分比误差 (Mean Absolute Percentage Error)
     /// </summary>
-    public double MAPE { get; set; }
+    public double Mape { get; set; }
 
     /// <summary>
     /// 转换为字符串表示
@@ -1035,7 +1035,7 @@ public class AccuracyMetrics
     /// <returns>格式化的准确性指标</returns>
     public override string ToString()
     {
-        return $"MAE: {MAE:F4}, MSE: {MSE:F4}, RMSE: {RMSE:F4}, MAPE: {MAPE:F2}%";
+        return $"MAE: {Mae:F4}, MSE: {Mse:F4}, RMSE: {Rmse:F4}, MAPE: {Mape:F2}%";
     }
 }
 

@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.HardwareInfos.Abstractions;
 using XiHan.Framework.Utils.IO;
@@ -28,38 +27,32 @@ namespace XiHan.Framework.Utils.HardwareInfos;
 /// </summary>
 public static class RamHelper
 {
-    private static readonly RamInfoProvider _provider = new();
+    private static readonly RamInfoProvider Provider = new();
 
     /// <summary>
     /// 内存信息
     /// </summary>
     /// <returns></returns>
-    public static RamInfo RamInfos => _provider.GetCachedInfo();
+    public static RamInfo RamInfos => Provider.GetCachedInfo();
 
     /// <summary>
     /// 获取内存信息
     /// </summary>
     /// <returns></returns>
-    public static RamInfo GetRamInfos() => _provider.GetInfo();
+    public static RamInfo GetRamInfos() => Provider.GetInfo();
 
     /// <summary>
     /// 异步获取内存信息
     /// </summary>
     /// <returns></returns>
-    public static Task<RamInfo> GetRamInfosAsync() => _provider.GetInfoAsync();
+    public static Task<RamInfo> GetRamInfosAsync() => Provider.GetInfoAsync();
 
     /// <summary>
     /// 获取缓存的内存信息
     /// </summary>
     /// <param name="forceRefresh">是否强制刷新</param>
     /// <returns></returns>
-    public static RamInfo GetCachedRamInfos(bool forceRefresh = false) => _provider.GetCachedInfo(forceRefresh);
-
-    /// <summary>
-    /// 获取内存信息列表（兼容旧版本）
-    /// </summary>
-    /// <returns></returns>
-    public static List<RamInfo> GetRamInfosList() => [GetRamInfos()];
+    public static RamInfo GetCachedRamInfos(bool forceRefresh = false) => Provider.GetCachedInfo(forceRefresh);
 }
 
 /// <summary>

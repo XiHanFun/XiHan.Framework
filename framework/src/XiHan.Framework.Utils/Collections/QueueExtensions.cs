@@ -80,7 +80,7 @@ public static class QueueExtensions
     {
         items = [];
 
-        if (queue == null || count < 0 || count > queue.Count)
+        if (count < 0 || count > queue.Count)
         {
             return false;
         }
@@ -145,7 +145,7 @@ public static class QueueExtensions
     public static bool TryPeek<T>(this Queue<T> queue, out T? item)
     {
         item = default;
-        if (queue == null || queue.Count == 0)
+        if (queue.Count == 0)
         {
             return false;
         }

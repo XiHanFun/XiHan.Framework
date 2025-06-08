@@ -25,7 +25,7 @@ namespace XiHan.Framework.EventBus;
 /// <remarks>
 /// 此类总是创建处理器类型的新瞬时实例，适用于无状态或需要独立实例的事件处理器
 /// </remarks>
-public class TransientEventHandlerFactory<THandler> : TransientEventHandlerFactory, IEventHandlerFactory
+public class TransientEventHandlerFactory<THandler> : TransientEventHandlerFactory
     where THandler : IEventHandler, new()
 {
     /// <summary>

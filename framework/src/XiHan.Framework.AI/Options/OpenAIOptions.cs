@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// OpenAI服务配置
 /// </summary>
-public class OpenAIOptions
+public class OpenAiOptions
 {
     /// <summary>
     /// 服务ID

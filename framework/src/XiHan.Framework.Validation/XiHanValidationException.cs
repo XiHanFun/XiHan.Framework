@@ -116,7 +116,7 @@ public class XiHanValidationException : XiHanException,
         foreach (var validationResult in ValidationErrors)
         {
             var memberNames = "";
-            if (validationResult.MemberNames != null && validationResult.MemberNames.Any())
+            if (validationResult.MemberNames.Any())
             {
                 memberNames = " (" + string.Join(", ", validationResult.MemberNames) + ")";
             }

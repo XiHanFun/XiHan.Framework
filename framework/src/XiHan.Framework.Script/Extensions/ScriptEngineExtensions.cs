@@ -190,16 +190,14 @@ public static class ScriptEngineExtensions
             var tasks = scripts.Select(script => engine.ExecuteAsync(script, options));
             return await Task.WhenAll(tasks);
         }
-        else
+
+        var results = new List<ScriptResult>();
+        foreach (var script in scripts)
         {
-            var results = new List<ScriptResult>();
-            foreach (var script in scripts)
-            {
-                var result = await engine.ExecuteAsync(script, options);
-                results.Add(result);
-            }
-            return results;
+            var result = await engine.ExecuteAsync(script, options);
+            results.Add(result);
         }
+        return results;
     }
 
     /// <summary>

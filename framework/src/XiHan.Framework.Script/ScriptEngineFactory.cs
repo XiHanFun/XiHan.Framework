@@ -23,8 +23,8 @@ namespace XiHan.Framework.Script;
 /// </summary>
 public static class ScriptEngineFactory
 {
-    private static readonly Dictionary<string, IScriptEngine> _engines = [];
-    private static readonly Lock _lockObject = new();
+    private static readonly Dictionary<string, IScriptEngine> Engines = [];
+    private static readonly Lock LockObject = new();
 
     /// <summary>
     /// 创建默认脚本引擎
@@ -66,15 +66,15 @@ public static class ScriptEngineFactory
             throw new ArgumentException("引擎名称不能为空", nameof(name));
         }
 
-        lock (_lockObject)
+        lock (LockObject)
         {
-            if (_engines.TryGetValue(name, out var existingEngine))
+            if (Engines.TryGetValue(name, out var existingEngine))
             {
                 return existingEngine;
             }
 
             var newEngine = Create(configure);
-            _engines[name] = newEngine;
+            Engines[name] = newEngine;
             return newEngine;
         }
     }
@@ -91,15 +91,15 @@ public static class ScriptEngineFactory
             return false;
         }
 
-        lock (_lockObject)
+        lock (LockObject)
         {
-            if (_engines.TryGetValue(name, out var engine))
+            if (Engines.TryGetValue(name, out var engine))
             {
                 if (engine is IDisposable disposable)
                 {
                     disposable.Dispose();
                 }
-                return _engines.Remove(name);
+                return Engines.Remove(name);
             }
         }
 
@@ -111,16 +111,16 @@ public static class ScriptEngineFactory
     /// </summary>
     public static void ReleaseAll()
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            foreach (var engine in _engines.Values)
+            foreach (var engine in Engines.Values)
             {
                 if (engine is IDisposable disposable)
                 {
                     disposable.Dispose();
                 }
             }
-            _engines.Clear();
+            Engines.Clear();
         }
     }
 
@@ -130,9 +130,9 @@ public static class ScriptEngineFactory
     /// <returns>引擎名称集合</returns>
     public static IEnumerable<string> GetEngineNames()
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            return [.. _engines.Keys];
+            return [.. Engines.Keys];
         }
     }
 
@@ -143,9 +143,9 @@ public static class ScriptEngineFactory
     /// <returns>统计信息</returns>
     public static EngineStatistics? GetStatistics(string name)
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            return _engines.TryGetValue(name, out var engine) ? engine.GetStatistics() : null;
+            return Engines.TryGetValue(name, out var engine) ? engine.GetStatistics() : null;
         }
     }
 
@@ -155,9 +155,9 @@ public static class ScriptEngineFactory
     /// <returns>引擎统计信息字典</returns>
     public static Dictionary<string, EngineStatistics> GetAllStatistics()
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            return _engines.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatistics());
+            return Engines.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatistics());
         }
     }
 
@@ -166,9 +166,9 @@ public static class ScriptEngineFactory
     /// </summary>
     public static void ClearAllCaches()
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            foreach (var engine in _engines.Values)
+            foreach (var engine in Engines.Values)
             {
                 engine.ClearCache();
             }
@@ -182,9 +182,9 @@ public static class ScriptEngineFactory
     /// <returns>是否成功清除</returns>
     public static bool ClearCache(string name)
     {
-        lock (_lockObject)
+        lock (LockObject)
         {
-            if (_engines.TryGetValue(name, out var engine))
+            if (Engines.TryGetValue(name, out var engine))
             {
                 engine.ClearCache();
                 return true;

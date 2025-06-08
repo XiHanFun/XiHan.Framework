@@ -73,7 +73,7 @@ public class YamlSerializeOptions
     /// <summary>
     /// 是否包含文档标记（--- 和 ...）
     /// </summary>
-    public bool IncludeDocumentMarkers { get; set; } = false;
+    public bool IncludeDocumentMarkers { get; set; }
 
     /// <summary>
     /// 头部注释
@@ -83,7 +83,7 @@ public class YamlSerializeOptions
     /// <summary>
     /// 是否强制给字符串加引号
     /// </summary>
-    public bool ForceQuoteStrings { get; set; } = false;
+    public bool ForceQuoteStrings { get; set; }
 
     /// <summary>
     /// 是否按键排序
@@ -98,7 +98,7 @@ public class YamlSerializeOptions
     /// <summary>
     /// 是否使用流式样式（紧凑格式）
     /// </summary>
-    public bool UseFlowStyle { get; set; } = false;
+    public bool UseFlowStyle { get; set; }
 
     /// <summary>
     /// 数组项前缀

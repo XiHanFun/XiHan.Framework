@@ -23,20 +23,20 @@ namespace XiHan.Framework.Utils.HardwareInfos.Abstractions;
 /// <typeparam name="T">硬件信息类型</typeparam>
 public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> where T : class, new()
 {
-    private static readonly ConcurrentDictionary<Type, (T info, DateTime cacheTime)> _cache = new();
-    private static readonly TimeSpan _defaultCacheExpiry = TimeSpan.FromMinutes(5);
+    private static readonly ConcurrentDictionary<Type, (T info, DateTime cacheTime)> Cache = new();
+    private static readonly TimeSpan DefaultCacheExpiry = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// 缓存过期时间
     /// </summary>
-    protected virtual TimeSpan CacheExpiry => _defaultCacheExpiry;
+    protected virtual TimeSpan CacheExpiry => DefaultCacheExpiry;
 
     /// <summary>
     /// 清除缓存
     /// </summary>
     public static void ClearCache()
     {
-        _cache.Clear();
+        Cache.Clear();
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> whe
     /// <typeparam name="TInfo">硬件信息类型</typeparam>
     public static void ClearCache<TInfo>() where TInfo : class
     {
-        _cache.TryRemove(typeof(TInfo), out _);
+        Cache.TryRemove(typeof(TInfo), out _);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> whe
     {
         var type = typeof(T);
 
-        if (!forceRefresh && _cache.TryGetValue(type, out var cached))
+        if (!forceRefresh && Cache.TryGetValue(type, out var cached))
         {
             if (DateTime.Now - cached.cacheTime < CacheExpiry)
             {
@@ -100,7 +100,7 @@ public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> whe
         }
 
         var info = GetInfo();
-        _cache.AddOrUpdate(type, (info, DateTime.Now), (_, _) => (info, DateTime.Now));
+        Cache.AddOrUpdate(type, (info, DateTime.Now), (_, _) => (info, DateTime.Now));
         return info;
     }
 
@@ -113,7 +113,7 @@ public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> whe
     {
         var type = typeof(T);
 
-        if (!forceRefresh && _cache.TryGetValue(type, out var cached))
+        if (!forceRefresh && Cache.TryGetValue(type, out var cached))
         {
             if (DateTime.Now - cached.cacheTime < CacheExpiry)
             {
@@ -122,7 +122,7 @@ public abstract class BaseHardwareInfoProvider<T> : IHardwareInfoProvider<T> whe
         }
 
         var info = await GetInfoAsync();
-        _cache.AddOrUpdate(type, (info, DateTime.Now), (_, _) => (info, DateTime.Now));
+        Cache.AddOrUpdate(type, (info, DateTime.Now), (_, _) => (info, DateTime.Now));
         return info;
     }
 

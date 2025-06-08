@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Localization;
 /// </summary>
 public static class LanguageHelper
 {
-    private static readonly Dictionary<string, ResourceManager> _resourceManagers = [];
+    private static readonly Dictionary<string, ResourceManager> ResourceManagers = [];
     private static CultureInfo _currentCulture = CultureInfo.CurrentCulture;
 
     /// <summary>
@@ -50,7 +50,7 @@ public static class LanguageHelper
     /// <param name="resourceManager">资源管理器</param>
     public static void RegisterResourceManager(string name, ResourceManager resourceManager)
     {
-        _resourceManagers[name] = resourceManager;
+        ResourceManagers[name] = resourceManager;
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public static class LanguageHelper
     /// <returns>本地化字符串</returns>
     public static string GetString(string resourceName, string key)
     {
-        return _resourceManagers.TryGetValue(resourceName, out var resourceManager)
+        return ResourceManagers.TryGetValue(resourceName, out var resourceManager)
             ? resourceManager.GetString(key, _currentCulture) ?? key
             : key;
     }

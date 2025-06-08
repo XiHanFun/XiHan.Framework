@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.ObjectExtending.Modularity;
 using XiHan.Framework.Utils.Collections;
@@ -33,7 +32,7 @@ public class ExtensionPropertyPolicyChecker : ITransientDependency
     /// <param name="policy">扩展属性策略配置</param>
     /// <returns>如果策略检查通过返回 true，否则返回 false</returns>
     /// <exception cref="ArgumentNullException">当 policy 为 null 时</exception>
-    public virtual async Task<bool> CheckPolicyAsync([NotNull] ExtensionPropertyPolicyConfiguration policy)
+    public virtual async Task<bool> CheckPolicyAsync(ExtensionPropertyPolicyConfiguration policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
 

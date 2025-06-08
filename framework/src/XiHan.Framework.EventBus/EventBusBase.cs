@@ -344,7 +344,7 @@ public abstract class EventBusBase : IEventBus
     /// <param name="eventType">事件类型</param>
     /// <param name="exceptions">异常列表</param>
     /// <exception cref="AggregateException">当存在多个异常时</exception>
-    protected void ThrowOriginalExceptions(Type eventType, List<Exception> exceptions)
+    protected static void ThrowOriginalExceptions(Type eventType, List<Exception> exceptions)
     {
         if (exceptions.Count == 1)
         {
@@ -475,10 +475,7 @@ public abstract class EventBusBase : IEventBus
         /// 当当前同步上下文为 null 时表示已完成
         /// </summary>
         /// <value>如果当前同步上下文为 null 则返回 true，否则返回 false</value>
-        public bool IsCompleted
-        {
-            get { return SynchronizationContext.Current == null; }
-        }
+        public bool IsCompleted => SynchronizationContext.Current == null;
 
         /// <summary>
         /// 当操作完成时执行延续操作

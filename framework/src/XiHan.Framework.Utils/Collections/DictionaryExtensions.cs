@@ -164,7 +164,7 @@ public static class DictionaryExtensions
     {
         ArgumentNullException.ThrowIfNull(dictionary);
 
-        if (keys == null || keys.Length == 0)
+        if (keys.Length == 0)
         {
             return dictionary;
         }

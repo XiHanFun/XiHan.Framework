@@ -899,8 +899,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
 
                 HandleException(ex);
-                return;
-
             }
         }
 
@@ -955,8 +953,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
 
                 await HandleExceptionAsync(ex);
-                return;
-
             }
         }
 
@@ -1011,8 +1007,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
 
                 HandleException(ex);
-                return;
-
             }
         }
 
@@ -1147,8 +1141,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
 
             await HandleExceptionAsync(ex);
-            return;
-
         }
     }
 
@@ -1243,8 +1235,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
 
                 HandleException(ex);
-                return;
-
             }
         }
 
@@ -1293,8 +1283,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 }
 
                 await HandleExceptionAsync(ex);
-                return;
-
             }
         }
 
@@ -1402,8 +1390,6 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                     }
 
                     await HandleExceptionAsync(ex);
-                    return;
-
                 }
             }
 

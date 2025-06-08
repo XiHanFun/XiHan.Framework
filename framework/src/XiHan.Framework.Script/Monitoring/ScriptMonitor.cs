@@ -25,7 +25,7 @@ namespace XiHan.Framework.Script.Monitoring;
 /// </summary>
 public class ScriptMonitor : IDisposable
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -35,7 +35,7 @@ public class ScriptMonitor : IDisposable
     private readonly ConcurrentDictionary<string, ScriptPerformanceInfo> _performanceCache = new();
     private readonly Timer _cleanupTimer;
     private readonly ScriptMonitorOptions _options;
-    private bool _disposed = false;
+    private bool _disposed;
 
     /// <summary>
     /// 初始化脚本监控器
@@ -229,7 +229,7 @@ public class ScriptMonitor : IDisposable
     /// </summary>
     private static async Task ExportToJsonAsync(ScriptExecutionLog[] logs, string filePath)
     {
-        var json = JsonSerializer.Serialize(logs, _jsonSerializerOptions);
+        var json = JsonSerializer.Serialize(logs, JsonSerializerOptions);
         await File.WriteAllTextAsync(filePath, json);
     }
 

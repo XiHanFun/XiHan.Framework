@@ -28,7 +28,7 @@ public interface IAggregateRoot : IEntityBase, IDomainEvents
 /// 泛型主键聚合根接口
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
-public interface IAggregateRoot<TKey> : IAggregateRoot, IEntityBase<TKey>, IDomainEvents
+public interface IAggregateRoot<TKey> : IAggregateRoot, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
 }

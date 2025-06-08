@@ -14,7 +14,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 namespace XiHan.Framework.ObjectExtending.Extensions;
 
@@ -27,7 +26,7 @@ public static class ObjectExtensionManagerExtensions
     /// <summary>
     /// 空属性列表的不可变集合，用于优化性能避免重复创建
     /// </summary>
-    private static readonly ImmutableList<ObjectExtensionPropertyInfo> _emptyPropertyList = new List<ObjectExtensionPropertyInfo>().ToImmutableList();
+    private static readonly ImmutableList<ObjectExtensionPropertyInfo> EmptyPropertyList = new List<ObjectExtensionPropertyInfo>().ToImmutableList();
 
     /// <summary>
     /// 为多个对象类型添加或更新指定类型的属性
@@ -39,8 +38,8 @@ public static class ObjectExtensionManagerExtensions
     /// <param name="configureAction">属性配置委托，可选</param>
     /// <returns>对象扩展管理器实例，支持链式调用</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
-    public static ObjectExtensionManager AddOrUpdateProperty<TProperty>([NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] Type[] objectTypes, [NotNull] string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
+    public static ObjectExtensionManager AddOrUpdateProperty<TProperty>(this ObjectExtensionManager objectExtensionManager,
+        Type[] objectTypes, string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
     {
         return objectExtensionManager.AddOrUpdateProperty(
             objectTypes,
@@ -59,8 +58,8 @@ public static class ObjectExtensionManagerExtensions
     /// <param name="configureAction">属性配置委托，可选</param>
     /// <returns>对象扩展管理器实例，支持链式调用</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
-    public static ObjectExtensionManager AddOrUpdateProperty<TObject, TProperty>([NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
+    public static ObjectExtensionManager AddOrUpdateProperty<TObject, TProperty>(this ObjectExtensionManager objectExtensionManager,
+        string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
         where TObject : IHasExtraProperties
     {
         return objectExtensionManager.AddOrUpdateProperty(
@@ -81,9 +80,9 @@ public static class ObjectExtensionManagerExtensions
     /// <param name="configureAction">属性配置委托，可选</param>
     /// <returns>对象扩展管理器实例，支持链式调用</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
-    public static ObjectExtensionManager AddOrUpdateProperty([NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] Type[] objectTypes, [NotNull] Type propertyType,
-        [NotNull] string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
+    public static ObjectExtensionManager AddOrUpdateProperty(this ObjectExtensionManager objectExtensionManager,
+        Type[] objectTypes, Type propertyType,
+        string propertyName, Action<ObjectExtensionPropertyInfo>? configureAction = null)
     {
         ArgumentNullException.ThrowIfNull(objectTypes);
 
@@ -110,8 +109,8 @@ public static class ObjectExtensionManagerExtensions
     /// <param name="configureAction">属性配置委托，可选</param>
     /// <returns>对象扩展管理器实例，支持链式调用</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
-    public static ObjectExtensionManager AddOrUpdateProperty([NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] Type objectType, [NotNull] Type propertyType, [NotNull] string propertyName,
+    public static ObjectExtensionManager AddOrUpdateProperty(this ObjectExtensionManager objectExtensionManager,
+        Type objectType, Type propertyType, string propertyName,
         Action<ObjectExtensionPropertyInfo>? configureAction = null)
     {
         ArgumentNullException.ThrowIfNull(objectExtensionManager);
@@ -136,8 +135,8 @@ public static class ObjectExtensionManagerExtensions
     /// <param name="propertyName">属性名称</param>
     /// <returns>对象扩展属性信息，如果不存在则为 null</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
-    public static ObjectExtensionPropertyInfo? GetPropertyOrNull<TObject>([NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] string propertyName)
+    public static ObjectExtensionPropertyInfo? GetPropertyOrNull<TObject>(this ObjectExtensionManager objectExtensionManager,
+        string propertyName)
     {
         return objectExtensionManager.GetPropertyOrNull(
             typeof(TObject),
@@ -154,8 +153,8 @@ public static class ObjectExtensionManagerExtensions
     /// <returns>对象扩展属性信息，如果不存在则为 null</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public static ObjectExtensionPropertyInfo? GetPropertyOrNull(
-        [NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] Type objectType, [NotNull] string propertyName)
+        this ObjectExtensionManager objectExtensionManager,
+        Type objectType, string propertyName)
     {
         ArgumentNullException.ThrowIfNull(objectExtensionManager);
         ArgumentNullException.ThrowIfNull(objectType);
@@ -174,7 +173,7 @@ public static class ObjectExtensionManagerExtensions
     /// <returns>扩展属性信息的不可变列表</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public static ImmutableList<ObjectExtensionPropertyInfo> GetProperties<TObject>(
-        [NotNull] this ObjectExtensionManager objectExtensionManager)
+        this ObjectExtensionManager objectExtensionManager)
     {
         return objectExtensionManager.GetProperties(typeof(TObject));
     }
@@ -187,13 +186,13 @@ public static class ObjectExtensionManagerExtensions
     /// <returns>扩展属性信息的不可变列表，如果没有扩展信息则返回空列表</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public static ImmutableList<ObjectExtensionPropertyInfo> GetProperties(
-        [NotNull] this ObjectExtensionManager objectExtensionManager, [NotNull] Type objectType)
+        this ObjectExtensionManager objectExtensionManager, Type objectType)
     {
         ArgumentNullException.ThrowIfNull(objectExtensionManager);
         ArgumentNullException.ThrowIfNull(objectType);
 
         var extensionInfo = objectExtensionManager.GetOrNull(objectType);
-        return extensionInfo == null ? _emptyPropertyList : extensionInfo.GetProperties();
+        return extensionInfo == null ? EmptyPropertyList : extensionInfo.GetProperties();
     }
 
     /// <summary>
@@ -205,8 +204,8 @@ public static class ObjectExtensionManagerExtensions
     /// <returns>通过策略检查的扩展属性信息不可变列表</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public static Task<ImmutableList<ObjectExtensionPropertyInfo>> GetPropertiesAndCheckPolicyAsync<TObject>(
-        [NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] IServiceProvider serviceProvider)
+        this ObjectExtensionManager objectExtensionManager,
+        IServiceProvider serviceProvider)
     {
         return objectExtensionManager.GetPropertiesAndCheckPolicyAsync(typeof(TObject), serviceProvider);
     }
@@ -221,9 +220,9 @@ public static class ObjectExtensionManagerExtensions
     /// <returns>通过策略检查的扩展属性信息不可变列表</returns>
     /// <exception cref="ArgumentNullException">当必需参数为 null 时</exception>
     public static async Task<ImmutableList<ObjectExtensionPropertyInfo>> GetPropertiesAndCheckPolicyAsync(
-        [NotNull] this ObjectExtensionManager objectExtensionManager,
-        [NotNull] Type objectType,
-        [NotNull] IServiceProvider serviceProvider)
+        this ObjectExtensionManager objectExtensionManager,
+        Type objectType,
+        IServiceProvider serviceProvider)
     {
         ArgumentNullException.ThrowIfNull(objectExtensionManager);
         ArgumentNullException.ThrowIfNull(objectType);

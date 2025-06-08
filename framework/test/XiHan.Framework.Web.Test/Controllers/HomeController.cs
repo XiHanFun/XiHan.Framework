@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Utils.HardwareInfos;
-using XiHan.Framework.Utils.Text.Json;
 
 namespace XiHan.Framework.Web.Test.Controllers;
 

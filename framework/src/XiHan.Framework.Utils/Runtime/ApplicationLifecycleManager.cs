@@ -211,7 +211,7 @@ public class ApplicationLifecycleManager : IDisposable
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
-        if (OSPlatformHelper.IsWindows)
+        if (OsPlatformHelper.IsWindows)
         {
             // Windows 特定事件
             Console.CancelKeyPress += OnCancelKeyPress;
@@ -519,7 +519,7 @@ public class ApplicationLifecycleManager : IDisposable
         RestartAttempts++;
 
         // 先关闭应用程序
-        await ShutdownAsync(ApplicationExitReason.Restart, 0);
+        await ShutdownAsync(ApplicationExitReason.Restart);
 
         // 等待重启延迟
         if (RestartDelay > TimeSpan.Zero)
@@ -620,7 +620,7 @@ public class ApplicationLifecycleManager : IDisposable
             // 如果应用程序还在运行，尝试正常关闭
             if (CurrentState is ApplicationState.Running or ApplicationState.Paused)
             {
-                ShutdownAsync(ApplicationExitReason.Normal).Wait(TimeSpan.FromSeconds(10));
+                ShutdownAsync().Wait(TimeSpan.FromSeconds(10));
             }
         }
         catch
@@ -634,7 +634,7 @@ public class ApplicationLifecycleManager : IDisposable
         AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
         AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
 
-        if (OSPlatformHelper.IsWindows)
+        if (OsPlatformHelper.IsWindows)
         {
             Console.CancelKeyPress -= OnCancelKeyPress;
         }

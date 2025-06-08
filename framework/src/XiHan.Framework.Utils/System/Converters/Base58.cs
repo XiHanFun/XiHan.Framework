@@ -29,18 +29,18 @@ public static class Base58
     // Bitcoin Base58 字符表(不含 0, O, I, l 等易混淆字符)
     private const string Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-    private static readonly int[] _indexes = new int[128];
+    private static readonly int[] Indexes = new int[128];
 
     static Base58()
     {
-        for (var i = 0; i < _indexes.Length; i++)
+        for (var i = 0; i < Indexes.Length; i++)
         {
-            _indexes[i] = -1;
+            Indexes[i] = -1;
         }
 
         for (var i = 0; i < Alphabet.Length; i++)
         {
-            _indexes[Alphabet[i]] = i;
+            Indexes[Alphabet[i]] = i;
         }
     }
 
@@ -86,7 +86,7 @@ public static class Base58
         BigInteger intData = 0;
         foreach (var c in input)
         {
-            var digit = _indexes[c];
+            var digit = Indexes[c];
             if (digit < 0)
             {
                 throw new FormatException($"Invalid Base58 character `{c}`");

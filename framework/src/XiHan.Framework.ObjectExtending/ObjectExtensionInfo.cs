@@ -130,7 +130,7 @@ public class ObjectExtensionInfo
     /// <returns>扩展属性信息的不可变列表</returns>
     public virtual ImmutableList<ObjectExtensionPropertyInfo> GetProperties()
     {
-        return Properties.OrderBy(t => t.Value.UI.Order).Select(t => t.Value)
+        return Properties.OrderBy(t => t.Value.Ui.Order).Select(t => t.Value)
                         .ToImmutableList();
     }
 

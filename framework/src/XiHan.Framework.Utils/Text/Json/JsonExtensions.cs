@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Text.Json;
 /// </summary>
 public static class JsonExtensions
 {
-    private static readonly JsonSerializerOptions _defaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
 
     #region 对象扩展
 
@@ -223,7 +223,7 @@ public static class JsonExtensions
 
         try
         {
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
             return JsonSerializer.Deserialize<T>(node, options);
         }
         catch
@@ -243,7 +243,7 @@ public static class JsonExtensions
     {
         try
         {
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
             return JsonSerializer.Deserialize<T>(jsonNode, options);
         }
         catch
@@ -265,7 +265,7 @@ public static class JsonExtensions
         result = default;
         try
         {
-            options ??= _defaultOptions;
+            options ??= DefaultOptions;
             result = JsonSerializer.Deserialize<T>(jsonNode, options);
             return true;
         }

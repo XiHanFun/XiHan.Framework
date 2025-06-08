@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Localization;
 
 /// <summary>
@@ -26,7 +24,6 @@ public interface IHasNameWithLocalizableDisplayName
     /// 获取对象的标识名称
     /// 通常用作内部标识符，不进行本地化处理
     /// </summary>
-    [NotNull]
     public string Name { get; }
 
     /// <summary>

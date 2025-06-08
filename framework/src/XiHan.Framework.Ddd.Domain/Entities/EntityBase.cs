@@ -47,9 +47,7 @@ public abstract class EntityBase : IEntityBase
     {
         return obj is EntityBase other
             && (ReferenceEquals(this, other)
-                || (RowVersion is not null
-                    && other.RowVersion is not null
-                    && RowVersion.SequenceEqual(other.RowVersion)));
+                || (RowVersion.SequenceEqual(other.RowVersion)));
     }
 
     /// <summary>

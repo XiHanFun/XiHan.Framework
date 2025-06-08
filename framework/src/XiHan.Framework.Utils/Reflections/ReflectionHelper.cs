@@ -18,7 +18,6 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Reflections;
 
@@ -281,7 +280,6 @@ public static class ReflectionHelper
     {
         return GetAllAssemblies()
             .SelectMany(GetAllTypes)
-            .Where(type => type != null)
             .Distinct();
     }
 
@@ -313,7 +311,6 @@ public static class ReflectionHelper
     {
         return GetXiHanAssemblies()
             .SelectMany(GetAllTypes)
-            .Where(type => type != null)
             .Distinct();
     }
 
@@ -325,7 +322,6 @@ public static class ReflectionHelper
     {
         return GetApplicationAssemblies()
             .SelectMany(GetAllTypes)
-            .Where(type => type != null)
             .Distinct();
     }
 
@@ -337,7 +333,6 @@ public static class ReflectionHelper
     {
         return GetXiHanApplicationAssemblies()
             .SelectMany(GetAllTypes)
-            .Where(type => type != null)
             .Distinct();
     }
 
