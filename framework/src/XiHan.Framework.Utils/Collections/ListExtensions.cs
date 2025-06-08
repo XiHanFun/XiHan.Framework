@@ -333,6 +333,48 @@ public static class ListExtensions
     }
 
     /// <summary>
+    /// 从列表中随机获取一个元素
+    /// </summary>
+    /// <typeparam name="T">列表中项的类型</typeparam>
+    /// <param name="source">要操作的列表</param>
+    /// <returns>随机选中的元素</returns>
+    /// <exception cref="ArgumentException">当列表为空时抛出异常</exception>
+    public static T GetRandom<T>(this IList<T> source)
+    {
+        _ = Guard.NotNull(source, nameof(source));
+
+        if (source.Count == 0)
+        {
+            throw new ArgumentException("列表不能为空", nameof(source));
+        }
+
+        var randomIndex = Random.Shared.Next(source.Count);
+        return source[randomIndex];
+    }
+
+    /// <summary>
+    /// 尝试从列表中随机获取一个元素
+    /// </summary>
+    /// <typeparam name="T">列表中项的类型</typeparam>
+    /// <param name="source">要操作的列表</param>
+    /// <param name="result">输出参数，包含随机选中的元素（如果成功）</param>
+    /// <returns>如果列表不为空则返回 true，否则返回 false</returns>
+    public static bool TryGetRandom<T>(this IList<T> source, out T? result)
+    {
+        _ = Guard.NotNull(source, nameof(source));
+
+        if (source.Count == 0)
+        {
+            result = default;
+            return false;
+        }
+
+        var randomIndex = Random.Shared.Next(source.Count);
+        result = source[randomIndex];
+        return true;
+    }
+
+    /// <summary>
     /// 递归地对项进行拓扑排序，考虑其依赖关系
     /// </summary>
     /// <typeparam name="T">项的类型</typeparam>

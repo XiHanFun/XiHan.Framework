@@ -601,7 +601,7 @@ public static class ReflectionHelper
         AddImplementedGenericTypes(result, givenTypeInfo.BaseType, genericType);
     }
 
-    #endregion
+    #endregion 类型
 
     #region 获取包含有某特性的类
 
@@ -772,13 +772,14 @@ public static class ReflectionHelper
     /// <summary>
     /// 获取当前应用程序的 NuGet 程序包依赖项
     /// </summary>
+    /// <param name="prefix">前缀名</param>
     /// <returns>NuGet 包信息列表</returns>
-    public static List<NuGetPackage> GetNuGetPackages()
+    public static List<NuGetPackage> GetNuGetPackages(string prefix)
     {
         var nugetPackages = new Dictionary<string, NuGetPackage>();
 
         // 获取当前应用所有程序集
-        var assemblies = GetXiHanAssemblies();
+        var assemblies = GetEffectivePatchAssemblies(prefix, "dll");
 
         // 查找被引用程序集中的 NuGet 库依赖项
         foreach (var assembly in assemblies)
@@ -787,8 +788,7 @@ public static class ReflectionHelper
             {
                 var referencedAssemblies = assembly.GetReferencedAssemblies()
                     .Where(s => !s.FullName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) &&
-                               !s.FullName.StartsWith("System", StringComparison.OrdinalIgnoreCase) &&
-                               !s.FullName.StartsWith("XiHan", StringComparison.OrdinalIgnoreCase))
+                               !s.FullName.StartsWith("System", StringComparison.OrdinalIgnoreCase))
                     .Where(s => !string.IsNullOrEmpty(s.Name) && s.Version != null);
 
                 foreach (var referencedAssembly in referencedAssemblies)

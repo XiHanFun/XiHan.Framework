@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:BaseHardwareInfoProvider
-// Guid:B2C3D4E5-F6A7-8901-B2C3-D4E5F6A78901
+// Guid:b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreatedTime:2025-01-01 上午 12:00:00
