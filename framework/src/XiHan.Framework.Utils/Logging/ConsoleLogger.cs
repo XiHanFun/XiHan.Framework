@@ -34,76 +34,164 @@ public static class ConsoleLogger
     /// <summary>
     /// 正常信息
     /// </summary>
-    /// <param name="inputStr"></param>
-    /// <param name="frontColor"></param>
-    public static void Info(string? inputStr, ConsoleColor frontColor = ConsoleColor.White)
+    /// <param name="message">消息内容</param>
+    /// <param name="frontColor">前景色</param>
+    public static void Info(string? message, ConsoleColor frontColor = ConsoleColor.White)
     {
-        WriteColorLine(inputStr, frontColor);
+        WriteColorLine(message, frontColor);
         if (!_isWriteToFile)
         {
             return;
         }
-        FileLogger.Info(inputStr);
+        FileLogger.Info(message);
+    }
+
+    /// <summary>
+    /// 正常信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Info(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Info(formattedMessage);
     }
 
     /// <summary>
     /// 成功信息
     /// </summary>
-    /// <param name="inputStr"></param>
-    /// <param name="frontColor"></param>
-    public static void Success(string? inputStr, ConsoleColor frontColor = ConsoleColor.Green)
+    /// <param name="message">消息内容</param>
+    /// <param name="frontColor">前景色</param>
+    public static void Success(string? message, ConsoleColor frontColor = ConsoleColor.Green)
     {
-        WriteColorLine(inputStr, frontColor);
+        WriteColorLine(message, frontColor);
         if (!_isWriteToFile)
         {
             return;
         }
-        FileLogger.Success(inputStr);
+        FileLogger.Success(message);
+    }
+
+    /// <summary>
+    /// 成功信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Success(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Success(formattedMessage);
     }
 
     /// <summary>
     /// 处理、查询信息
     /// </summary>
-    /// <param name="inputStr"></param>
-    /// <param name="frontColor"></param>
-    public static void Handle(string? inputStr, ConsoleColor frontColor = ConsoleColor.Blue)
+    /// <param name="message">消息内容</param>
+    /// <param name="frontColor">前景色</param>
+    public static void Handle(string? message, ConsoleColor frontColor = ConsoleColor.Blue)
     {
-        WriteColorLine(inputStr, frontColor);
+        WriteColorLine(message, frontColor);
         if (!_isWriteToFile)
         {
             return;
         }
-        FileLogger.Handle(inputStr);
+        FileLogger.Handle(message);
+    }
+
+    /// <summary>
+    /// 处理、查询信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Handle(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Handle(formattedMessage);
     }
 
     /// <summary>
     /// 警告、新增、更新信息
     /// </summary>
-    /// <param name="inputStr"></param>
-    /// <param name="frontColor"></param>
-    public static void Warn(string? inputStr, ConsoleColor frontColor = ConsoleColor.Yellow)
+    /// <param name="message">消息内容</param>
+    /// <param name="frontColor">前景色</param>
+    public static void Warn(string? message, ConsoleColor frontColor = ConsoleColor.Yellow)
     {
-        WriteColorLine(inputStr, frontColor);
+        WriteColorLine(message, frontColor);
         if (!_isWriteToFile)
         {
             return;
         }
-        FileLogger.Warn(inputStr);
+        FileLogger.Warn(message);
+    }
+
+    /// <summary>
+    /// 警告、新增、更新信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Warn(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Warn(formattedMessage);
     }
 
     /// <summary>
     /// 错误、删除、危险、异常信息
     /// </summary>
-    /// <param name="inputStr"></param>
-    /// <param name="frontColor"></param>
-    public static void Error(string? inputStr, ConsoleColor frontColor = ConsoleColor.Red)
+    /// <param name="message">消息内容</param>
+    /// <param name="frontColor">前景色</param>
+    public static void Error(string? message, ConsoleColor frontColor = ConsoleColor.Red)
     {
-        WriteColorLine(inputStr, frontColor);
+        WriteColorLine(message, frontColor);
         if (!_isWriteToFile)
         {
             return;
         }
-        FileLogger.Error(inputStr);
+        FileLogger.Error(message);
+    }
+
+    /// <summary>
+    /// 错误、删除、危险、异常信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Error(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Error(formattedMessage);
+    }
+
+    /// <summary>
+    /// 格式化消息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    /// <returns>格式化后的消息</returns>
+    private static string? FormatMessage(string? message, params object[] args)
+    {
+        if (string.IsNullOrEmpty(message))
+            return message;
+
+        try
+        {
+            // 如果没有参数，直接返回原消息
+            if (args == null || args.Length == 0)
+                return message;
+
+            // 使用 string.Format 进行格式化
+            return string.Format(message, args);
+        }
+        catch (FormatException)
+        {
+            // 如果格式化失败，返回原消息并附加参数信息
+            var argStr = string.Join(", ", args?.Select(arg => arg?.ToString() ?? "null") ?? Array.Empty<string>());
+            return $"{message} [Args: {argStr}]";
+        }
+        catch
+        {
+            // 其他异常情况，返回原消息
+            return message;
+        }
     }
 
     /// <summary>
