@@ -1,4 +1,4 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -44,7 +44,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Info(string? inputStr, string? fileName = null)
+    public static void Info(string? inputStr, string? fileName = "info",)
     {
         WriteToFile(inputStr, "INFO", fileName);
     }
@@ -54,7 +54,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Success(string? inputStr, string? fileName = null)
+    public static void Success(string? inputStr, string? fileName = "success")
     {
         WriteToFile(inputStr, "SUCCESS", fileName);
     }
@@ -64,7 +64,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Handle(string? inputStr, string? fileName = null)
+    public static void Handle(string? inputStr, string? fileName = "handle")
     {
         WriteToFile(inputStr, "HANDLE", fileName);
     }
@@ -74,7 +74,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Warn(string? inputStr, string? fileName = null)
+    public static void Warn(string? inputStr, string? fileName = "warn")
     {
         WriteToFile(inputStr, "WARN", fileName);
     }
@@ -84,7 +84,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Error(string? inputStr, string? fileName = null)
+    public static void Error(string? inputStr, string? fileName = "error")
     {
         WriteToFile(inputStr, "ERROR", fileName);
     }
