@@ -44,14 +44,34 @@ public static class BoardHelper
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
+                // 首先尝试使用 dmidecode 获取主板信息
                 var output = ShellHelper.Bash("dmidecode -t baseboard").Trim();
                 var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+
                 if (lines.Length != 0)
                 {
-                    boardInfo.Product = GetParmValue(lines, "Product Name", ':');
-                    boardInfo.Manufacturer = GetParmValue(lines, "Manufacturer", ':');
-                    boardInfo.SerialNumber = GetParmValue(lines, "Serial Number", ':');
-                    boardInfo.Version = GetParmValue(lines, "Version", ':');
+                    boardInfo.Product = GetParmValueSafe(lines, "Product Name", ':');
+                    boardInfo.Manufacturer = GetParmValueSafe(lines, "Manufacturer", ':');
+                    boardInfo.SerialNumber = GetParmValueSafe(lines, "Serial Number", ':');
+                    boardInfo.Version = GetParmValueSafe(lines, "Version", ':');
+                }
+
+                // 如果主板信息为空或无效（常见于虚拟化环境），尝试获取系统信息
+                if (string.IsNullOrWhiteSpace(boardInfo.Product) ||
+                    string.IsNullOrWhiteSpace(boardInfo.Manufacturer) ||
+                    boardInfo.Product.Equals("Not Specified", StringComparison.OrdinalIgnoreCase) ||
+                    boardInfo.Manufacturer.Equals("Not Specified", StringComparison.OrdinalIgnoreCase))
+                {
+                    var systemOutput = ShellHelper.Bash("dmidecode -t system").Trim();
+                    var systemLines = systemOutput.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+
+                    if (systemLines.Length != 0)
+                    {
+                        boardInfo.Product = GetParmValueSafe(systemLines, "Product Name", ':');
+                        boardInfo.Manufacturer = GetParmValueSafe(systemLines, "Manufacturer", ':');
+                        boardInfo.SerialNumber = GetParmValueSafe(systemLines, "Serial Number", ':');
+                        boardInfo.Version = GetParmValueSafe(systemLines, "Version", ':');
+                    }
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -60,10 +80,10 @@ public static class BoardHelper
                 var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
                 if (lines.Length != 0)
                 {
-                    boardInfo.Product = GetParmValue(lines, "Model Identifier", ':');
-                    boardInfo.Manufacturer = GetParmValue(lines, "Chip", ':');
-                    boardInfo.SerialNumber = GetParmValue(lines, "Serial Number (system)", ':');
-                    boardInfo.Version = GetParmValue(lines, "Hardware UUID", ':');
+                    boardInfo.Product = GetParmValueSafe(lines, "Model Identifier", ':');
+                    boardInfo.Manufacturer = GetParmValueSafe(lines, "Chip", ':');
+                    boardInfo.SerialNumber = GetParmValueSafe(lines, "Serial Number (system)", ':');
+                    boardInfo.Version = GetParmValueSafe(lines, "Hardware UUID", ':');
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -72,10 +92,10 @@ public static class BoardHelper
                 var lines = output.Split(Environment.NewLine);
                 if (lines.Length != 0)
                 {
-                    boardInfo.Product = GetParmValue(lines, "Product", '=');
-                    boardInfo.Manufacturer = GetParmValue(lines, "Manufacturer", '=');
-                    boardInfo.SerialNumber = GetParmValue(lines, "SerialNumber", '=');
-                    boardInfo.Version = GetParmValue(lines, "Version", '=');
+                    boardInfo.Product = GetParmValueSafe(lines, "Product", '=');
+                    boardInfo.Manufacturer = GetParmValueSafe(lines, "Manufacturer", '=');
+                    boardInfo.SerialNumber = GetParmValueSafe(lines, "SerialNumber", '=');
+                    boardInfo.Version = GetParmValueSafe(lines, "Version", '=');
                 }
             }
         }
@@ -86,7 +106,24 @@ public static class BoardHelper
 
         return boardInfo;
 
-        string GetParmValue(string[] lines, string parm, char separator) => lines.First(s => s.StartsWith(parm)).Split(separator)[1].Trim();
+        // 安全的参数值获取方法，避免异常
+        string GetParmValueSafe(string[] lines, string parm, char separator)
+        {
+            try
+            {
+                var line = lines.FirstOrDefault(s => s.StartsWith(parm));
+                if (line != null && line.Contains(separator))
+                {
+                    var parts = line.Split(separator);
+                    return parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                }
+                return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
     }
 }
 
