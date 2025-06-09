@@ -20,4 +20,8 @@
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="wwwroot\" />
+	</ItemGroup>
+
 </Project>
