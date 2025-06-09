@@ -24,10 +24,10 @@ public static class TreeExtensions
     /// <summary>
     /// 转为树形结构
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="isChild"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="source">源数据集合</param>
+    /// <param name="isChild">判断父子关系的函数，第一个参数为父级，第二个参数为子级</param>
+    /// <returns>转换后的树形结构根节点集合</returns>
     public static IEnumerable<TreeNode<T>> ToTree<T>(this IEnumerable<T> source, Func<T, T, bool> isChild)
     {
         var nodes = source.Select(value => new TreeNode<T>(value)).ToList();
@@ -67,7 +67,7 @@ public static class TreeExtensions
     /// <summary>
     /// 根据主键和父级主键生成树形结构
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">树节点数据类型</typeparam>
     /// <param name="source">源数据集合</param>
     /// <param name="keySelector">主键选择器</param>
     /// <param name="parentKeySelector">父级主键选择器</param>
@@ -88,9 +88,9 @@ public static class TreeExtensions
     /// <summary>
     /// 添加子节点
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="parent"></param>
-    /// <param name="value"></param>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="parent">父节点</param>
+    /// <param name="value">要添加的子节点值</param>
     /// <exception cref="ArgumentNullException"></exception>
     public static void AddChild<T>(this TreeNode<T> parent, T value)
     {
@@ -102,7 +102,7 @@ public static class TreeExtensions
     /// <summary>
     /// 添加子节点到指定的父节点
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">树节点数据类型</typeparam>
     /// <param name="source">源数据集合</param>
     /// <param name="parent">父节点对象</param>
     /// <param name="child">子节点对象</param>
@@ -132,10 +132,10 @@ public static class TreeExtensions
     /// <summary>
     /// 删除节点
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <param name="value">要删除的节点值</param>
+    /// <returns>如果成功删除节点则返回 true，否则返回 false</returns>
     public static bool RemoveNode<T>(this TreeNode<T>? root, T value)
     {
         if (root is null)
@@ -163,9 +163,9 @@ public static class TreeExtensions
     /// <summary>
     /// 深度优先遍历 (DFS)
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <returns>深度优先遍历的节点序列</returns>
     public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this TreeNode<T>? root)
     {
         if (root is null)
@@ -187,9 +187,9 @@ public static class TreeExtensions
     /// <summary>
     /// 深度优先遍历 (DFS) - 遍历树形结构中所有节点
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="source">树形结构根节点集合</param>
+    /// <returns>深度优先遍历的节点序列</returns>
     public static IEnumerable<TreeNode<T>> DepthFirstTraversal<T>(this IEnumerable<TreeNode<T>>? source)
     {
         if (source is null)
@@ -209,9 +209,9 @@ public static class TreeExtensions
     /// <summary>
     /// 广度优先遍历 (BFS)
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <returns>广度优先遍历的节点序列</returns>
     public static IEnumerable<TreeNode<T>> BreadthFirstTraversal<T>(this TreeNode<T>? root)
     {
         if (root is null)
@@ -237,10 +237,10 @@ public static class TreeExtensions
     /// <summary>
     /// 查找节点 (DFS)
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <param name="value">要查找的节点值</param>
+    /// <returns>找到的节点，如果未找到则返回 null</returns>
     public static TreeNode<T>? FindNode<T>(this TreeNode<T> root, T value)
     {
         return root.DepthFirstTraversal().FirstOrDefault(node => EqualityComparer<T>.Default.Equals(node.Value, value));
@@ -249,10 +249,10 @@ public static class TreeExtensions
     /// <summary>
     /// 获取节点路径
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <param name="value">要获取路径的节点值</param>
+    /// <returns>从根节点到目标节点的路径，如果未找到则返回 null</returns>
     public static List<TreeNode<T>>? GetPath<T>(this TreeNode<T> root, T value)
     {
         var path = new List<TreeNode<T>>();
@@ -262,9 +262,9 @@ public static class TreeExtensions
     /// <summary>
     /// 获取树的高度
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <returns>树的高度，空树返回 0</returns>
     public static int GetHeight<T>(this TreeNode<T>? root)
     {
         return root is null ? 0 : 1 + root.Children.Select(child => child.GetHeight()).DefaultIfEmpty(0).Max();
@@ -273,9 +273,9 @@ public static class TreeExtensions
     /// <summary>
     /// 获取叶子节点
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="root"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="root">根节点</param>
+    /// <returns>所有叶子节点的集合</returns>
     public static IEnumerable<TreeNode<T>> GetLeafNodes<T>(this TreeNode<T> root)
     {
         return root.DepthFirstTraversal().Where(node => node.Children.Count == 0);
@@ -286,11 +286,11 @@ public static class TreeExtensions
     /// <summary>
     /// 查找路径
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="node"></param>
-    /// <param name="value"></param>
-    /// <param name="path"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="node">当前节点</param>
+    /// <param name="value">要查找的节点值</param>
+    /// <param name="path">路径记录</param>
+    /// <returns>如果找到目标节点则返回 true，否则返回 false</returns>
     private static bool FindPath<T>(TreeNode<T>? node, T value, List<TreeNode<T>> path)
     {
         if (node is null)
@@ -329,7 +329,7 @@ public class TreeNode<T>
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="value"></param>
+    /// <param name="value">节点值</param>
     public TreeNode(T value)
     {
         Value = value;
