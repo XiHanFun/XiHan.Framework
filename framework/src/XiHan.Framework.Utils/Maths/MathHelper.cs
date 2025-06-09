@@ -24,9 +24,9 @@ public static class MathHelper
     /// <summary>
     /// 返回两个数中的较大值
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
+    /// <param name="a">第一个数值</param>
+    /// <param name="b">第二个数值</param>
+    /// <returns>两个数值中的较大值</returns>
     public static double Max(double a, double b)
     {
         return Math.Max(a, b);
@@ -35,9 +35,9 @@ public static class MathHelper
     /// <summary>
     /// 返回两个数中的较小值
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
+    /// <param name="a">第一个数值</param>
+    /// <param name="b">第二个数值</param>
+    /// <returns>两个数值中的较小值</returns>
     public static double Min(double a, double b)
     {
         return Math.Min(a, b);
@@ -46,9 +46,9 @@ public static class MathHelper
     /// <summary>
     /// 计算平方根
     /// </summary>
-    /// <param name="number"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="number">要计算平方根的数值（必须为非负数）</param>
+    /// <returns>平方根值</returns>
+    /// <exception cref="ArgumentException">当数值为负数时抛出</exception>
     public static double Sqrt(double number)
     {
         return number < 0 ? throw new ArgumentException("数字不能为负。") : Math.Sqrt(number);
@@ -57,9 +57,9 @@ public static class MathHelper
     /// <summary>
     /// 计算幂
     /// </summary>
-    /// <param name="baseNumber"></param>
-    /// <param name="exponent"></param>
-    /// <returns></returns>
+    /// <param name="baseNumber">底数</param>
+    /// <param name="exponent">指数</param>
+    /// <returns>幂运算结果</returns>
     public static double Pow(double baseNumber, double exponent)
     {
         return Math.Pow(baseNumber, exponent);
@@ -68,8 +68,8 @@ public static class MathHelper
     /// <summary>
     /// 计算绝对值
     /// </summary>
-    /// <param name="number"></param>
-    /// <returns></returns>
+    /// <param name="number">要计算绝对值的数值</param>
+    /// <returns>绝对值</returns>
     public static double Abs(double number)
     {
         return Math.Abs(number);
@@ -78,8 +78,8 @@ public static class MathHelper
     /// <summary>
     /// 三角函数：正弦
     /// </summary>
-    /// <param name="angleInRadians"></param>
-    /// <returns></returns>
+    /// <param name="angleInRadians">角度值（弧度制）</param>
+    /// <returns>正弦值</returns>
     public static double Sin(double angleInRadians)
     {
         return Math.Sin(angleInRadians);
@@ -88,8 +88,8 @@ public static class MathHelper
     /// <summary>
     /// 三角函数：余弦
     /// </summary>
-    /// <param name="angleInRadians"></param>
-    /// <returns></returns>
+    /// <param name="angleInRadians">角度值（弧度制）</param>
+    /// <returns>余弦值</returns>
     public static double Cos(double angleInRadians)
     {
         return Math.Cos(angleInRadians);
@@ -98,8 +98,8 @@ public static class MathHelper
     /// <summary>
     /// 三角函数：正切
     /// </summary>
-    /// <param name="angleInRadians"></param>
-    /// <returns></returns>
+    /// <param name="angleInRadians">角度值（弧度制）</param>
+    /// <returns>正切值</returns>
     public static double Tan(double angleInRadians)
     {
         return Math.Tan(angleInRadians);
@@ -112,9 +112,9 @@ public static class MathHelper
     /// <summary>
     /// 计算圆的面积
     /// </summary>
-    /// <param name="radius"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="radius">圆的半径（必须为非负数）</param>
+    /// <returns>圆的面积</returns>
+    /// <exception cref="ArgumentException">当半径为负数时抛出</exception>
     public static double CircleArea(double radius)
     {
         return radius < 0 ? throw new ArgumentException("半径不能为负。") : Math.PI * radius * radius;
@@ -123,9 +123,9 @@ public static class MathHelper
     /// <summary>
     /// 计算圆的周长
     /// </summary>
-    /// <param name="radius"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="radius">圆的半径（必须为非负数）</param>
+    /// <returns>圆的周长</returns>
+    /// <exception cref="ArgumentException">当半径为负数时抛出</exception>
     public static double CircleCircumference(double radius)
     {
         return radius < 0 ? throw new ArgumentException("半径不能为负。") : 2 * Math.PI * radius;
@@ -134,11 +134,11 @@ public static class MathHelper
     /// <summary>
     /// 计算两点之间的距离
     /// </summary>
-    /// <param name="x1"></param>
-    /// <param name="y1"></param>
-    /// <param name="x2"></param>
-    /// <param name="y2"></param>
-    /// <returns></returns>
+    /// <param name="x1">第一个点的X坐标</param>
+    /// <param name="y1">第一个点的Y坐标</param>
+    /// <param name="x2">第二个点的X坐标</param>
+    /// <param name="y2">第二个点的Y坐标</param>
+    /// <returns>两点之间的欧几里得距离</returns>
     public static double Distance(double x1, double y1, double x2, double y2)
     {
         return Sqrt(Pow(x2 - x1, 2) + Pow(y2 - y1, 2));
@@ -147,11 +147,11 @@ public static class MathHelper
     /// <summary>
     /// 计算三角形的面积(海伦公式)
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <param name="c"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="a">三角形第一条边长</param>
+    /// <param name="b">三角形第二条边长</param>
+    /// <param name="c">三角形第三条边长</param>
+    /// <returns>三角形的面积</returns>
+    /// <exception cref="ArgumentException">当边长无效或不能构成三角形时抛出</exception>
     public static double TriangleArea(double a, double b, double c)
     {
         if (a <= 0 || b <= 0 || c <= 0 || a + b <= c || a + c <= b || b + c <= a)
@@ -170,9 +170,9 @@ public static class MathHelper
     /// <summary>
     /// 计算平均值
     /// </summary>
-    /// <param name="numbers"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="numbers">数值集合</param>
+    /// <returns>数值集合的平均值</returns>
+    /// <exception cref="ArgumentException">当集合为空时抛出</exception>
     public static double Average(IEnumerable<double>? numbers)
     {
         return numbers is null || !numbers.Any() ? throw new ArgumentException("集合不能为空。") : numbers.Average();
@@ -181,9 +181,9 @@ public static class MathHelper
     /// <summary>
     /// 计算中位数
     /// </summary>
-    /// <param name="numbers"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="numbers">数值集合</param>
+    /// <returns>数值集合的中位数</returns>
+    /// <exception cref="ArgumentException">当集合为空时抛出</exception>
     public static double Median(IEnumerable<double> numbers)
     {
         if (numbers is null || !numbers.Any())
@@ -200,9 +200,9 @@ public static class MathHelper
     /// <summary>
     /// 计算方差
     /// </summary>
-    /// <param name="numbers"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="numbers">数值集合</param>
+    /// <returns>数值集合的方差</returns>
+    /// <exception cref="ArgumentException">当集合为空时抛出</exception>
     public static double Variance(IEnumerable<double> numbers)
     {
         if (numbers is null || !numbers.Any())
@@ -217,8 +217,8 @@ public static class MathHelper
     /// <summary>
     /// 计算标准差
     /// </summary>
-    /// <param name="numbers"></param>
-    /// <returns></returns>
+    /// <param name="numbers">数值集合</param>
+    /// <returns>数值集合的标准差</returns>
     public static double StandardDeviation(IEnumerable<double> numbers)
     {
         return Sqrt(Variance(numbers));
@@ -231,8 +231,8 @@ public static class MathHelper
     /// <summary>
     /// 判断是否为素数
     /// </summary>
-    /// <param name="number"></param>
-    /// <returns></returns>
+    /// <param name="number">要判断的整数</param>
+    /// <returns>如果是素数返回true，否则返回false</returns>
     public static bool IsPrime(int number)
     {
         if (number < 2)
@@ -254,9 +254,9 @@ public static class MathHelper
     /// <summary>
     /// 生成斐波那契数列
     /// </summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="count">要生成的斐波那契数列项数（必须为正整数）</param>
+    /// <returns>斐波那契数列</returns>
+    /// <exception cref="ArgumentException">当项数不为正整数时抛出</exception>
     public static List<int> Fibonacci(int count)
     {
         if (count <= 0)
@@ -279,9 +279,9 @@ public static class MathHelper
     /// <summary>
     /// 计算阶乘
     /// </summary>
-    /// <param name="number"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="number">要计算阶乘的非负整数</param>
+    /// <returns>阶乘结果</returns>
+    /// <exception cref="ArgumentException">当数字为负数时抛出</exception>
     public static long Factorial(int number)
     {
         if (number < 0)

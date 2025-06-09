@@ -69,6 +69,10 @@ public static class DeepMergeHelper
     /// <summary>
     /// 处理单个属性的合并
     /// </summary>
+    /// <typeparam name="T">配置对象类型</typeparam>
+    /// <param name="property">要处理的属性信息</param>
+    /// <param name="result">合并结果对象</param>
+    /// <param name="configs">配置对象数组</param>
     private static void ProcessProperty<T>(PropertyInfo property, T result, T[] configs) where T : class
     {
         object? valueToSet = null;
@@ -120,6 +124,9 @@ public static class DeepMergeHelper
     /// <summary>
     /// 检查两个值是否可以合并
     /// </summary>
+    /// <param name="target">目标值（高优先级）</param>
+    /// <param name="source">源值（低优先级）</param>
+    /// <returns>如果可以合并返回true，否则返回false</returns>
     private static bool CanMerge(object? target, object? source)
     {
         return target is not null && source is not null && ((IsMergeableCollection(target) && IsMergeableCollection(source)) ||
@@ -130,6 +137,9 @@ public static class DeepMergeHelper
     /// <summary>
     /// 合并两个值
     /// </summary>
+    /// <param name="target">目标值（高优先级）</param>
+    /// <param name="source">源值（低优先级）</param>
+    /// <returns>合并后的值</returns>
     private static object? MergeValues(object? target, object? source)
     {
         if (IsMergeableCollection(target) && IsMergeableCollection(source))
@@ -153,6 +163,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 判断对象是否需要克隆
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果需要克隆返回true，否则返回false</returns>
     private static bool NeedsCloning(object? value)
     {
         return value is not null && (IsComplexObject(value) || IsCollection(value) || IsDictionary(value));
@@ -161,6 +173,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 判断值是否为空或默认值
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果为空或默认值返回true，否则返回false</returns>
     private static bool IsNullOrDefault(object? value)
     {
         if (value is null)
@@ -202,6 +216,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 是否为可合并的集合类型
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果是可合并的集合类型返回true，否则返回false</returns>
     private static bool IsMergeableCollection(object? value)
     {
         if (value is null)
@@ -222,6 +238,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 是否为字典类型
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果是字典类型返回true，否则返回false</returns>
     private static bool IsDictionary(object? value)
     {
         return value is not null and IDictionary;
@@ -230,6 +248,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 是否为集合类型
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果是集合类型返回true，否则返回false</returns>
     private static bool IsCollection(object? value)
     {
         return value is ICollection;
@@ -238,6 +258,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 是否为复杂对象类型
     /// </summary>
+    /// <param name="value">要判断的值</param>
+    /// <returns>如果是复杂对象类型返回true，否则返回false</returns>
     private static bool IsComplexObject(object? value)
     {
         if (value is null)
@@ -262,6 +284,9 @@ public static class DeepMergeHelper
     /// <summary>
     /// 合并集合
     /// </summary>
+    /// <param name="target">目标集合（高优先级）</param>
+    /// <param name="source">源集合（低优先级）</param>
+    /// <returns>合并后的集合</returns>
     private static object? MergeCollections(object? target, object? source)
     {
         if (target is null || source is null)
@@ -325,6 +350,9 @@ public static class DeepMergeHelper
     /// <summary>
     /// 合并字典
     /// </summary>
+    /// <param name="target">目标字典（高优先级）</param>
+    /// <param name="source">源字典（低优先级）</param>
+    /// <returns>合并后的字典</returns>
     private static object? MergeDictionaries(object? target, object? source)
     {
         if (target is null)
@@ -380,6 +408,9 @@ public static class DeepMergeHelper
     /// <summary>
     /// 合并复杂对象
     /// </summary>
+    /// <param name="target">目标对象（高优先级）</param>
+    /// <param name="source">源对象（低优先级）</param>
+    /// <returns>合并后的对象</returns>
     private static object? MergeComplexObjects(object? target, object? source)
     {
         if (target is null)
@@ -452,6 +483,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 深度克隆对象
     /// </summary>
+    /// <param name="obj">要克隆的对象</param>
+    /// <returns>克隆后的对象</returns>
     private static object? DeepClone(object? obj)
     {
         if (obj is null)
@@ -479,6 +512,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 判断是否为简单类型(不需要深度克隆)
     /// </summary>
+    /// <param name="type">要判断的类型</param>
+    /// <returns>如果是简单类型返回true，否则返回false</returns>
     private static bool IsSimpleType(Type type)
     {
         return type.IsPrimitive ||
@@ -494,6 +529,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 克隆字典
     /// </summary>
+    /// <param name="dict">要克隆的字典</param>
+    /// <returns>克隆后的字典</returns>
     private static object CloneDictionary(IDictionary dict)
     {
         var type = dict.GetType();
@@ -527,6 +564,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 克隆列表
     /// </summary>
+    /// <param name="list">要克隆的列表</param>
+    /// <returns>克隆后的列表</returns>
     private static object CloneList(IList list)
     {
         var type = list.GetType();
@@ -572,6 +611,8 @@ public static class DeepMergeHelper
     /// <summary>
     /// 克隆复杂对象
     /// </summary>
+    /// <param name="obj">要克隆的复杂对象</param>
+    /// <returns>克隆后的对象</returns>
     private static object? CloneComplexObject(object obj)
     {
         var type = obj.GetType();

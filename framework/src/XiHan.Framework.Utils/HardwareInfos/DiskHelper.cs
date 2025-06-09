@@ -16,7 +16,6 @@ using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.Runtime;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.HardwareInfos;
@@ -44,9 +43,32 @@ public static class DiskHelper
 
         try
         {
-            if (OsPlatformHelper.IsMacOs)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var output = ShellHelper.Bash("df -k | awk '{print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
+                var output = ShellHelper.Bash(@"df -mT | awk '/^\/dev\/(sd|vd|xvd|nvme|sda|vda|mapper)/ {print $1,$2,$3,$4,$5,$6}'").Trim();
+                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (lines.Count != 0)
+                {
+                    diskInfos.AddRange(from line in lines
+                                       select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
+                                       into rootDisk
+                                       where rootDisk.Length >= 6
+                                       select new DiskInfo
+                                       {
+                                           DiskName = rootDisk[0].Trim(),
+                                           TypeName = rootDisk[1].Trim(),
+                                           TotalSpace = rootDisk[2].ParseToLong() * 1024 * 1024, // MB转换为字节
+                                           UsedSpace = rootDisk[3].ParseToLong() * 1024 * 1024,
+                                           FreeSpace = rootDisk[4].ParseToLong() * 1024 * 1024,
+                                           AvailableRate = rootDisk[2].ParseToLong() == 0
+                                               ? 0
+                                               : Math.Round((double)rootDisk[4].ParseToLong() / rootDisk[2].ParseToLong() * 100, 3)
+                                       });
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var output = ShellHelper.Bash(@"df -k | awk '/^\/dev\/disk/ {print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
                 var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (lines.Count != 0)
                 {
@@ -56,10 +78,10 @@ public static class DiskHelper
                                        where rootDisk.Length >= 5
                                        select new DiskInfo
                                        {
-                                           DiskName = rootDisk[4].Trim(),
                                            TypeName = rootDisk[0].Trim(),
                                            TotalSpace = rootDisk[1].ParseToLong() * 1024,
                                            UsedSpace = rootDisk[2].ParseToLong() * 1024,
+                                           DiskName = rootDisk[4].Trim(),
                                            FreeSpace = (rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024,
                                            AvailableRate = rootDisk[1].ParseToLong() == 0
                                                ? 0
@@ -74,51 +96,21 @@ public static class DiskHelper
                 {
                     DiskName = item.Name,
                     TypeName = item.DriveType.ToString(),
-                    TotalSpace = GetHardDiskTotalSpace(item.Name),
-                    FreeSpace = GetHardDiskFreeSpace(item.Name),
-                    UsedSpace = GetHardDiskTotalSpace(item.Name) - GetHardDiskFreeSpace(item.Name),
-                    AvailableRate = ProportionOfHardDiskFreeSpace(item.Name)
+                    TotalSpace = item.TotalSize,
+                    FreeSpace = item.TotalFreeSpace,
+                    UsedSpace = item.TotalSize - item.TotalFreeSpace,
+                    AvailableRate = item.TotalSize == 0
+                        ? 0
+                        : Math.Round((double)item.TotalFreeSpace / item.TotalSize * 100, 3)
                 }));
             }
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error("获取处理器信息出错，" + ex.Message);
+            ConsoleLogger.Error("获取磁盘信息出错，" + ex.Message);
         }
 
         return diskInfos;
-    }
-
-    /// <summary>
-    /// 指定驱动器剩余空间大小，与总空间大小占比
-    /// </summary>
-    /// <param name="hardDiskName"></param>
-    /// <returns></returns>
-    public static double ProportionOfHardDiskFreeSpace(string hardDiskName)
-    {
-        return GetHardDiskTotalSpace(hardDiskName) == 0
-            ? 0
-            : Math.Round((double)GetHardDiskFreeSpace(hardDiskName) / GetHardDiskTotalSpace(hardDiskName) * 100, 3);
-    }
-
-    /// <summary>
-    /// 获取指定驱动器剩余空间大小
-    /// </summary>
-    /// <param name="hardDiskName"></param>
-    /// <returns></returns>
-    public static long GetHardDiskFreeSpace(string hardDiskName)
-    {
-        return new DriveInfo(hardDiskName).TotalFreeSpace;
-    }
-
-    /// <summary>
-    /// 获取指定驱动器总空间大小
-    /// </summary>
-    /// <param name="hardDiskName"></param>
-    /// <returns></returns>
-    public static long GetHardDiskTotalSpace(string hardDiskName)
-    {
-        return new DriveInfo(hardDiskName).TotalSize;
     }
 }
 

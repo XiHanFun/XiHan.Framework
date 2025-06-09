@@ -24,8 +24,8 @@ public static class ShellHelper
     /// <summary>
     /// Unix 系统命令
     /// </summary>
-    /// <param name="command"></param>
-    /// <returns></returns>
+    /// <param name="command">要执行的 Unix/Linux 命令</param>
+    /// <returns>命令执行后的标准输出结果</returns>
     public static string Bash(string command)
     {
         var output = string.Empty;
@@ -56,9 +56,9 @@ public static class ShellHelper
     /// <summary>
     /// Windows 系统命令
     /// </summary>
-    /// <param name="fileName"></param>
-    /// <param name="args"></param>
-    /// <returns></returns>
+    /// <param name="fileName">要执行的程序或命令文件名</param>
+    /// <param name="args">传递给程序的命令行参数</param>
+    /// <returns>命令执行后的标准输出结果</returns>
     public static string Cmd(string fileName, string args)
     {
         var output = string.Empty;
