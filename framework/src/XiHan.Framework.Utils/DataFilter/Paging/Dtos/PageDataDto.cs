@@ -30,7 +30,7 @@ public class PageDataDto
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="totalCount"></param>
+    /// <param name="totalCount">数据总数</param>
     public PageDataDto(int totalCount)
     {
         var page = new PageInfoDto();
@@ -42,8 +42,8 @@ public class PageDataDto
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="page"></param>
-    /// <param name="totalCount"></param>
+    /// <param name="page">分页信息</param>
+    /// <param name="totalCount">数据总数</param>
     public PageDataDto(PageInfoDto page, int totalCount)
     {
         PageInfo = page;
