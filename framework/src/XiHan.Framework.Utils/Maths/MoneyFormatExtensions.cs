@@ -24,8 +24,8 @@ public static class MoneyFormatExtensions
     /// <summary>
     /// 格式化金额(由千位转万位，如 12,345,678.90=>1234,5678.90 )
     /// </summary>
-    /// <param name="num"></param>
-    /// <returns></returns>
+    /// <param name="num">需要格式化的金额数值</param>
+    /// <returns>格式化后的金额字符串，以万位为单位进行逗号分隔</returns>
     public static string FormatMoneyToString(this decimal num)
     {
         var numStr = num.ToString(CultureInfo.InvariantCulture).ToLowerInvariant();
@@ -48,8 +48,8 @@ public static class MoneyFormatExtensions
     /// <summary>
     /// 金额字符串加逗号格式化
     /// </summary>
-    /// <param name="numInt"></param>
-    /// <returns></returns>
+    /// <param name="numInt">需要格式化的金额整数部分字符串</param>
+    /// <returns>添加了逗号分隔符的金额字符串</returns>
     private static string FormatMoneyStringComma(string numInt)
     {
         if (numInt.Length <= 4)

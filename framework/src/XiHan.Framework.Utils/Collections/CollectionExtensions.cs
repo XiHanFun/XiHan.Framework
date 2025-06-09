@@ -24,6 +24,9 @@ public static class CollectionExtensions
     /// <summary>
     /// 检查给定的集合对象是否为空或者没有任何项
     /// </summary>
+    /// <typeparam name="T">集合元素类型</typeparam>
+    /// <param name="source">要检查的集合</param>
+    /// <returns>如果集合为null或空则返回true，否则返回false</returns>
     public static bool IsNullOrEmpty<T>(this ICollection<T>? source)
     {
         return source is not { Count: > 0 };
@@ -32,10 +35,10 @@ public static class CollectionExtensions
     /// <summary>
     /// 如果条件成立，添加项
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="value"></param>
-    /// <param name="flag"></param>
+    /// <typeparam name="T">集合元素类型</typeparam>
+    /// <param name="source">要操作的集合</param>
+    /// <param name="value">要添加的值</param>
+    /// <param name="flag">条件标志，为true时添加项</param>
     public static void AddIf<T>(this ICollection<T> source, T value, bool flag)
     {
         _ = Guard.NotNull(source, nameof(source));
@@ -49,10 +52,10 @@ public static class CollectionExtensions
     /// <summary>
     /// 如果条件成立，添加项
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="value"></param>
-    /// <param name="func"></param>
+    /// <typeparam name="T">集合元素类型</typeparam>
+    /// <param name="source">要操作的集合</param>
+    /// <param name="value">要添加的值</param>
+    /// <param name="func">条件函数，返回true时添加项</param>
     public static void AddIf<T>(this ICollection<T> source, T value, Func<bool> func)
     {
         _ = Guard.NotNull(source, nameof(source));
@@ -66,9 +69,9 @@ public static class CollectionExtensions
     /// <summary>
     /// 如果给定的集合对象不为空，则添加一个项
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="value"></param>
+    /// <typeparam name="T">集合元素类型</typeparam>
+    /// <param name="source">要操作的集合</param>
+    /// <param name="value">要添加的值（如果不为null）</param>
     public static void AddIfNotNull<T>(this ICollection<T> source, T value)
     {
         _ = Guard.NotNull(source, nameof(source));
@@ -82,9 +85,9 @@ public static class CollectionExtensions
     /// <summary>
     /// 如果集合中尚未包含该项，则将其添加到集合中
     /// </summary>
+    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <param name="source">集合对象</param>
     /// <param name="item">要检查并添加的项</param>
-    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <returns>如果添加了项，则返回真(True)；如果没有添加(即项已存在)则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, T item)
     {
@@ -102,9 +105,9 @@ public static class CollectionExtensions
     /// <summary>
     /// 向集合中添加尚未包含的项
     /// </summary>
+    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <param name="source">集合对象</param>
     /// <param name="items">要检查并添加的项的集合</param>
-    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <returns>返回添加的项的集合</returns>
     public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
     {
@@ -131,10 +134,10 @@ public static class CollectionExtensions
     /// <summary>
     /// 如果集合中尚未包含满足给定谓词条件的项，则将项添加到集合中
     /// </summary>
+    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <param name="source">集合对象</param>
     /// <param name="predicate">决定项是否已存在于集合中的条件</param>
     /// <param name="itemFactory">返回项的工厂函数</param>
-    /// <typeparam name="T">集合中项的类型</typeparam>
     /// <returns>如果添加了项，则返回真(True)；如果没有添加(即项已存在)则返回假(False)</returns>
     public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
     {
