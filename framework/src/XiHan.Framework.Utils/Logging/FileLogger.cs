@@ -44,7 +44,7 @@ public static class FileLogger
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    public static void Info(string? inputStr, string? fileName = "info",)
+    public static void Info(string? inputStr, string? fileName = "info")
     {
         WriteToFile(inputStr, "INFO", fileName);
     }
