@@ -211,6 +211,8 @@ public static class PredictHelper
     /// <param name="beta">趋势平滑系数</param>
     /// <param name="periodsAhead">预测未来的周期数</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">平滑系数不在有效范围内或数据量不足时抛出</exception>
     public static double DoubleExponentialSmoothing(double[] values, double alpha, double beta, int periodsAhead = 1)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -253,6 +255,8 @@ public static class PredictHelper
     /// <param name="degree">多项式次数</param>
     /// <param name="predictX">要预测的自变量值</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配或多项式次数设置不合理时抛出</exception>
     public static double PolynomialRegression(double[] xValues, double[] yValues, int degree, double predictX)
     {
         ArgumentNullException.ThrowIfNull(xValues);
@@ -285,6 +289,8 @@ public static class PredictHelper
     /// <param name="values">时间序列数据</param>
     /// <param name="seasonLength">季节长度</param>
     /// <returns>分解结果 (趋势, 季节性, 残差)</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">季节长度设置不合理或数据量不足时抛出</exception>
     public static (double[] trend, double[] seasonal, double[] residual) SeasonalDecomposition(double[] values, int seasonLength)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -317,6 +323,8 @@ public static class PredictHelper
     /// <param name="values">历史数据</param>
     /// <param name="periodsAhead">预测未来的周期数</param>
     /// <returns>预测值数组</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">预测周期数设置不合理或数据量不足时抛出</exception>
     public static double[] TrendForecast(double[] values, int periodsAhead)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -349,6 +357,8 @@ public static class PredictHelper
     /// <param name="actual">实际值</param>
     /// <param name="predicted">预测值</param>
     /// <returns>准确性指标 (MAE, MSE, RMSE, MAPE)</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配或数组为空时抛出</exception>
     public static AccuracyMetrics CalculateAccuracy(double[] actual, double[] predicted)
     {
         ArgumentNullException.ThrowIfNull(actual);
@@ -406,6 +416,8 @@ public static class PredictHelper
     /// <param name="k">邻居数量</param>
     /// <param name="distanceType">距离计算类型</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配、特征数量不一致或K值设置不合理时抛出</exception>
     public static double KNearestNeighborsRegression(double[,] trainX, double[] trainY, double[] predictX, int k = 3, DistanceType distanceType = DistanceType.Euclidean)
     {
         ArgumentNullException.ThrowIfNull(trainX);
@@ -455,6 +467,8 @@ public static class PredictHelper
     /// <param name="maxDepth">最大深度</param>
     /// <param name="minSamplesSplit">节点分裂所需的最小样本数</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配或特征数量不一致时抛出</exception>
     public static double DecisionTreeRegression(double[,] trainX, double[] trainY, double[] predictX, int maxDepth = 10, int minSamplesSplit = 2)
     {
         ArgumentNullException.ThrowIfNull(trainX);
@@ -491,6 +505,8 @@ public static class PredictHelper
     /// <param name="maxDepth">每棵树的最大深度</param>
     /// <param name="sampleRatio">每棵树使用的样本比例</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配、特征数量不一致或样本比例设置不合理时抛出</exception>
     public static double RandomForestRegression(double[,] trainX, double[] trainY, double[] predictX, int numTrees = 10, int maxDepth = 10, double sampleRatio = 0.8)
     {
         ArgumentNullException.ThrowIfNull(trainX);
@@ -549,6 +565,8 @@ public static class PredictHelper
     /// <param name="learningRate">学习率</param>
     /// <param name="maxDepth">每棵树的最大深度</param>
     /// <returns>预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">数据长度不匹配、特征数量不一致或学习率设置不合理时抛出</exception>
     public static double GradientBoostingRegression(double[,] trainX, double[] trainY, double[] predictX, int numIterations = 100, double learningRate = 0.1, int maxDepth = 3)
     {
         ArgumentNullException.ThrowIfNull(trainX);
@@ -622,6 +640,8 @@ public static class PredictHelper
     /// <param name="values">历史数据</param>
     /// <param name="testSize">用于测试的数据比例 (0-1)</param>
     /// <returns>最佳预测方法和其预测值</returns>
+    /// <exception cref="ArgumentNullException">输入数据为空时抛出</exception>
+    /// <exception cref="ArgumentException">测试数据比例设置不合理或数据量不足时抛出</exception>
     public static (string method, double prediction, double accuracy) AutoSelectBestMethod(double[] values, double testSize = 0.2)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -712,6 +732,10 @@ public static class PredictHelper
     /// <summary>
     /// 计算多项式系数
     /// </summary>
+    /// <param name="xValues">自变量数据</param>
+    /// <param name="yValues">因变量数据</param>
+    /// <param name="degree">多项式次数</param>
+    /// <returns>多项式系数数组</returns>
     private static double[] CalculatePolynomialCoefficients(double[] xValues, double[] yValues, int degree)
     {
         var n = xValues.Length;
@@ -734,6 +758,9 @@ public static class PredictHelper
     /// <summary>
     /// 求解线性方程组
     /// </summary>
+    /// <param name="matrix">增广矩阵</param>
+    /// <param name="size">方程组大小</param>
+    /// <returns>解向量</returns>
     private static double[] SolveLinearSystem(double[,] matrix, int size)
     {
         // 前向消元
@@ -784,6 +811,9 @@ public static class PredictHelper
     /// <summary>
     /// 计算趋势分量
     /// </summary>
+    /// <param name="values">时间序列数据</param>
+    /// <param name="seasonLength">季节长度</param>
+    /// <returns>趋势分量数组</returns>
     private static double[] CalculateTrend(double[] values, int seasonLength)
     {
         var trend = new double[values.Length];
@@ -802,6 +832,10 @@ public static class PredictHelper
     /// <summary>
     /// 计算季节性分量
     /// </summary>
+    /// <param name="values">时间序列数据</param>
+    /// <param name="trend">趋势分量</param>
+    /// <param name="seasonLength">季节长度</param>
+    /// <returns>季节性分量数组</returns>
     private static double[] CalculateSeasonality(double[] values, double[] trend, int seasonLength)
     {
         var seasonal = new double[values.Length];
@@ -830,6 +864,9 @@ public static class PredictHelper
     /// <summary>
     /// 计算单个预测值的准确性
     /// </summary>
+    /// <param name="actual">实际值</param>
+    /// <param name="predicted">预测值</param>
+    /// <returns>绝对误差</returns>
     private static double CalculateAccuracyForSinglePrediction(double actual, double predicted)
     {
         return Math.Abs(actual - predicted);
@@ -838,6 +875,11 @@ public static class PredictHelper
     /// <summary>
     /// 计算两点间距离
     /// </summary>
+    /// <param name="trainX">训练集特征矩阵</param>
+    /// <param name="predictX">预测点特征向量</param>
+    /// <param name="sampleIndex">训练集样本索引</param>
+    /// <param name="distanceType">距离计算类型</param>
+    /// <returns>距离值</returns>
     private static double CalculateDistance(double[,] trainX, double[] predictX, int sampleIndex, DistanceType distanceType)
     {
         var numFeatures = trainX.GetLength(1);
@@ -876,6 +918,13 @@ public static class PredictHelper
     /// <summary>
     /// 构建决策树
     /// </summary>
+    /// <param name="trainX">训练集特征矩阵</param>
+    /// <param name="trainY">训练集目标值</param>
+    /// <param name="sampleIndices">样本索引数组</param>
+    /// <param name="depth">当前深度</param>
+    /// <param name="maxDepth">最大深度</param>
+    /// <param name="minSamplesSplit">最小分裂样本数</param>
+    /// <returns>决策树节点</returns>
     private static DecisionTreeNode BuildDecisionTree(double[,] trainX, double[] trainY, int[] sampleIndices, int depth, int maxDepth, int minSamplesSplit)
     {
         var node = new DecisionTreeNode();
@@ -951,6 +1000,9 @@ public static class PredictHelper
     /// <summary>
     /// 使用决策树进行预测
     /// </summary>
+    /// <param name="node">决策树节点</param>
+    /// <param name="features">特征向量</param>
+    /// <returns>预测值</returns>
     private static double PredictWithDecisionTree(DecisionTreeNode node, double[] features)
     {
         return node.Left == null && node.Right == null
@@ -963,6 +1015,8 @@ public static class PredictHelper
     /// <summary>
     /// 计算方差
     /// </summary>
+    /// <param name="values">数值数组</param>
+    /// <returns>方差值</returns>
     private static double CalculateVariance(double[] values)
     {
         if (values.Length <= 1)
@@ -978,6 +1032,9 @@ public static class PredictHelper
     /// <summary>
     /// 创建时间序列特征矩阵（滑动窗口方法）
     /// </summary>
+    /// <param name="timeSeries">时间序列数据</param>
+    /// <param name="windowSize">滑动窗口大小</param>
+    /// <returns>特征矩阵和目标值数组</returns>
     private static (double[,] X, double[] y) CreateTimeSeriesFeatures(double[] timeSeries, int windowSize)
     {
         var numSamples = timeSeries.Length - windowSize;
