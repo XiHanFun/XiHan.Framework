@@ -22,30 +22,36 @@ namespace XiHan.Framework.Utils.Security;
 /// </summary>
 public static partial class MaskHelper
 {
+    private static readonly char[] DefaultMaskChars = ['*', '●', '★', '☆', '■', '□'];
+
     /// <summary>
     /// 通用脱敏方法：保留前面 frontCount 个字符和后面 endCount 个字符，其余部分用 maskChar 替换
-    /// 如果待处理字符串的前后保留位数超过字符串长度，则按字符串长度脱敏<see cref="Mask(string, char)"/>"/>
+    /// 如果待处理字符串的前后保留位数超过字符串长度，则按字符串长度脱敏<see cref="Mask(string, char?)"/>"/>
     /// </summary>
     /// <param name="input">原始字符串</param>
     /// <param name="frontCount">保留前面字符数</param>
     /// <param name="endCount">保留后面字符数</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns>脱敏后的字符串</returns>
-    public static string Mask(this string? input, int frontCount, int endCount, char maskChar = '*')
+    public static string Mask(this string? input, int? frontCount = 0, int? endCount = 0, char? maskChar = '*')
     {
-        if (string.IsNullOrWhiteSpace(input?.Trim()))
+        input = input?.Trim();
+        if (string.IsNullOrWhiteSpace(input))
         {
             return string.Empty;
         }
+        var frontCountValue = frontCount ?? 0;
+        var endCountValue = endCount ?? 0;
+        var maskCharValue = maskChar ?? DefaultMaskChars[0];
 
         var length = input.Length;
-        if (frontCount + endCount >= length)
+        if (frontCountValue + endCountValue >= length)
         {
-            return Mask(input);
+            return Mask(input, maskCharValue);
         }
 
-        var maskLength = length - frontCount - endCount;
-        return string.Concat(input.AsSpan(0, frontCount), new string(maskChar, maskLength), input.AsSpan(length - endCount, endCount));
+        var maskLength = length - frontCountValue - endCountValue;
+        return string.Concat(input.AsSpan(0, frontCountValue), new string(maskCharValue, maskLength), input.AsSpan(length - endCountValue, endCountValue));
     }
 
     /// <summary>
@@ -54,15 +60,16 @@ public static partial class MaskHelper
     /// <param name="input">原始字符串</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns></returns>
-    public static string Mask(this string? input, char maskChar = '*')
+    public static string Mask(this string? input, char? maskChar = '*')
     {
-        if (string.IsNullOrWhiteSpace(input?.Trim()))
+        input = input?.Trim();
+        if (string.IsNullOrWhiteSpace(input))
         {
             return string.Empty;
         }
+        var maskCharValue = maskChar ?? DefaultMaskChars[0];
+        var masks = maskCharValue.ToString().PadLeft(4, maskCharValue);
 
-        input = input.Trim();
-        var masks = maskChar.ToString().PadLeft(4, maskChar);
         return input.Length switch
         {
             >= 11 => Regex11().Replace(input, $"$1{masks}$2"),
@@ -83,7 +90,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的手机号</returns>
     public static string MaskPhone(string phone)
     {
-        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? Mask(phone) : Mask(phone, 3, 4);
+        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? Mask(phone, 0, 0) : Mask(phone, 3, 4);
     }
 
     /// <summary>
@@ -94,7 +101,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的身份证号</returns>
     public static string MaskIdCard(string idCard)
     {
-        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? Mask(idCard) : Mask(idCard, 4, 4);
+        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? Mask(idCard, 0, 0) : Mask(idCard, 4, 4);
     }
 
     /// <summary>
@@ -105,7 +112,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的银行卡号</returns>
     public static string MaskBankCard(string bankCard)
     {
-        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? Mask(bankCard) : Mask(bankCard, 4, 4);
+        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? Mask(bankCard, 0, 0) : Mask(bankCard, 4, 4);
     }
 
     /// <summary>
@@ -126,16 +133,8 @@ public static partial class MaskHelper
         var domain = match.Groups[2].Value;
         var suffix = match.Groups[3].Value;
 
-        if (userName.Length <= 3)
-        {
-            userName += new string('*', 3 - userName.Length);
-        }
-        else
-        {
-            userName = userName[..3] + new string('*', userName.Length - 3);
-        }
-
-        domain = domain[..3] + new string('*', domain.Length - 3);
+        userName = userName.Length <= 3 ? Mask(userName, 3 - userName.Length) : Mask(userName, 1, userName.Length - 3);
+        domain = domain.Length <= 3 ? Mask(domain, 3 - domain.Length) : Mask(domain, 1, domain.Length - 3);
 
         return $"{userName}@{domain}.{suffix}";
     }
@@ -159,8 +158,8 @@ public static partial class MaskHelper
         return length switch
         {
             1 => name,
-            2 => string.Concat(name.AsSpan(0, 1), "*"),
-            _ => string.Concat(name.AsSpan(0, 1), new string('*', length - 2), name.AsSpan(length - 1, 1))
+            2 => Mask(name, 1, 0),
+            _ => Mask(name, 1, 1),
         };
     }
 
@@ -190,7 +189,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的密码</returns>
     public static string MaskPassword(string password)
     {
-        return string.IsNullOrEmpty(password) ? password : new string('*', password.Length);
+        return string.IsNullOrEmpty(password) ? password : Mask(password, 0, 0, '*');
     }
 
     /// <summary>
