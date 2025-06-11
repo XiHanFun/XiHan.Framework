@@ -65,6 +65,17 @@ public static class RandomCoder
     }
 
     /// <summary>
+    /// 随机字母
+    /// </summary>
+    /// <param name="length">生成长度 默认6个字符</param>
+    /// <param name="source">自定义字母字符源</param>
+    /// <returns>随机字母字符串</returns>
+    public static string GetLetter(int? length = 6, string? source = null)
+    {
+        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultUpperLetterSource + DefaultLowerLetterSource);
+    }
+
+    /// <summary>
     /// 随机大写字母
     /// </summary>
     /// <param name="length">生成长度 默认6个字符</param>
