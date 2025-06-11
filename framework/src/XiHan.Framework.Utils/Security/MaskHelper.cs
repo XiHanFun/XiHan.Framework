@@ -26,48 +26,45 @@ public static partial class MaskHelper
 
     /// <summary>
     /// 通用脱敏方法：保留前面 frontCount 个字符和后面 endCount 个字符，其余部分用 maskChar 替换
-    /// 如果待处理字符串的前后保留位数超过字符串长度，则按字符串长度脱敏<see cref="Mask(string, char?)"/>"/>
+    /// 如果待处理字符串的前后保留位数超过字符串长度，则按字符串长度脱敏<see cref="Mask(string)"/>"/>
     /// </summary>
     /// <param name="input">原始字符串</param>
     /// <param name="frontCount">保留前面字符数</param>
     /// <param name="endCount">保留后面字符数</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns>脱敏后的字符串</returns>
-    public static string Mask(this string? input, int? frontCount = 0, int? endCount = 0, char? maskChar = '*')
+    public static string Mask(this string input, int frontCount, int endCount, char? maskChar = '*')
     {
-        input = input?.Trim();
+        input = input.Trim();
         if (string.IsNullOrWhiteSpace(input))
         {
             return string.Empty;
         }
-        var frontCountValue = frontCount ?? 0;
-        var endCountValue = endCount ?? 0;
         var maskCharValue = maskChar ?? DefaultMaskChars[0];
 
         var length = input.Length;
-        if (frontCountValue + endCountValue >= length)
+        if (frontCount + endCount >= length)
         {
-            return Mask(input, maskCharValue);
+            return Mask(input);
         }
 
-        var maskLength = length - frontCountValue - endCountValue;
-        return string.Concat(input.AsSpan(0, frontCountValue), new string(maskCharValue, maskLength), input.AsSpan(length - endCountValue, endCountValue));
+        var maskLength = length - frontCount - endCount;
+        return string.Concat(input.AsSpan(0, frontCount), new string(maskCharValue, maskLength), input.AsSpan(length - endCount, endCount));
     }
 
     /// <summary>
     /// 通用脱敏方法: 按字符串长度脱敏
     /// </summary>
     /// <param name="input">原始字符串</param>
-    /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns></returns>
-    public static string Mask(this string? input, char? maskChar = '*')
+    public static string Mask(this string input)
     {
-        input = input?.Trim();
+        input = input.Trim();
         if (string.IsNullOrWhiteSpace(input))
         {
             return string.Empty;
         }
-        var maskCharValue = maskChar ?? DefaultMaskChars[0];
+        var maskCharValue = DefaultMaskChars[0];
         var masks = maskCharValue.ToString().PadLeft(4, maskCharValue);
 
         return input.Length switch
@@ -133,8 +130,8 @@ public static partial class MaskHelper
         var domain = match.Groups[2].Value;
         var suffix = match.Groups[3].Value;
 
-        userName = userName.Length <= 3 ? Mask(userName, 3 - userName.Length) : Mask(userName, 1, userName.Length - 3);
-        domain = domain.Length <= 3 ? Mask(domain, 3 - domain.Length) : Mask(domain, 1, domain.Length - 3);
+        userName = userName.Length <= 3 ? Mask(userName, 3 - userName.Length, 0) : Mask(userName, 1, userName.Length - 3);
+        domain = domain.Length <= 3 ? Mask(domain, 3 - domain.Length, 0) : Mask(domain, 1, domain.Length - 3);
 
         return $"{userName}@{domain}.{suffix}";
     }
@@ -189,7 +186,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的密码</returns>
     public static string MaskPassword(string password)
     {
-        return string.IsNullOrEmpty(password) ? password : Mask(password, 0, 0, '*');
+        return string.IsNullOrEmpty(password) ? password : Mask(password, 0, 0);
     }
 
     /// <summary>
