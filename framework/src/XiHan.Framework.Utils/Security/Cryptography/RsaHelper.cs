@@ -171,7 +171,7 @@ public static class RsaHelper
     /// <returns>返回 Base64 编码的签名</returns>
     /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
     /// <exception cref="CryptographicException">签名过程中发生错误时抛出</exception>
-    public static string SignData(string data, string privateKey, HashAlgorithmName? hashAlgorithm = null)
+    public static string SignData(string data, string privateKey, HashAlgorithmName? hashAlgorithm)
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(privateKey);
@@ -207,7 +207,7 @@ public static class RsaHelper
     /// <returns>返回签名是否有效</returns>
     /// <exception cref="ArgumentNullException">输入参数为空时抛出</exception>
     /// <exception cref="CryptographicException">验证过程中发生错误时抛出</exception>
-    public static bool VerifyData(string data, string signature, string publicKey, HashAlgorithmName? hashAlgorithm = null)
+    public static bool VerifyData(string data, string signature, string publicKey, HashAlgorithmName? hashAlgorithm)
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(signature);
