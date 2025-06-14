@@ -782,8 +782,9 @@ public static class ReflectionHelper
             try
             {
                 var referencedAssemblies = assembly.GetReferencedAssemblies()
-                    .Where(s => !s.FullName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) &&
-                               !s.FullName.StartsWith("System", StringComparison.OrdinalIgnoreCase))
+                    .Where(s => !s.FullName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                        !s.FullName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) &&
+                        !s.FullName.StartsWith("System", StringComparison.OrdinalIgnoreCase))
                     .Where(s => !string.IsNullOrEmpty(s.Name) && s.Version != null);
 
                 foreach (var referencedAssembly in referencedAssemblies)
