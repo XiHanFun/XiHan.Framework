@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Utils.HardwareInfos;
 using XiHan.Framework.Utils.IO;
+using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
 
 namespace XiHan.Framework.Web.Test.Controllers;
@@ -34,6 +35,17 @@ public class HomeController : ControllerBase
     {
         var systemRuntimeInfo = RuntimeInfoManger.GetSystemRuntimeInfo();
         return Ok(systemRuntimeInfo);
+    }
+
+    /// <summary>
+    /// NuGetPackagesInfo
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("NuGetPackagesInfo")]
+    public async Task<IActionResult> NuGetPackagesInfo()
+    {
+        var nuGetPackages = ReflectionHelper.GetNuGetPackages("XiHan.Framework");
+        return Ok(nuGetPackages);
     }
 
     /// <summary>
