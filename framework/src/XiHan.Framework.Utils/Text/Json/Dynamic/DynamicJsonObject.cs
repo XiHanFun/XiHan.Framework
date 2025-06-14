@@ -128,7 +128,27 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     public override bool TryGetMember(GetMemberBinder binder, out object? result)
     {
         var name = binder.Name;
-        return _data.TryGetValue(name, out result);
+        if (_data.TryGetValue(name, out result))
+        {
+            // 如果值是 DynamicJsonObject，直接返回
+            if (result is DynamicJsonObject)
+            {
+                return true;
+            }
+
+            // 如果值是 JsonElement，转换为 DynamicJsonObject
+            if (result is JsonElement jsonElement)
+            {
+                result = JsonHelper.ConvertToDynamic(jsonElement);
+                return true;
+            }
+
+            return true;
+        }
+
+        // 属性不存在时返回 null
+        result = null;
+        return true;
     }
 
     /// <summary>
