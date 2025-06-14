@@ -128,7 +128,12 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     public override bool TryGetMember(GetMemberBinder binder, out object? result)
     {
         var name = binder.Name;
-        return _data.TryGetValue(name, out result);
+        if (_data.TryGetValue(name, out result))
+        {
+            return true;
+        }
+        result = null;
+        return true;
     }
 
     /// <summary>
