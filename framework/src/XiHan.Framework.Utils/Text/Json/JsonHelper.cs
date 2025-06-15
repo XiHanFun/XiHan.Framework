@@ -129,6 +129,26 @@ public static class JsonHelper
     #region 动态 JSON 解析
 
     /// <summary>
+    /// 将 JsonElement 转换为动态对象
+    /// </summary>
+    /// <param name="element">JsonElement</param>
+    /// <returns>动态对象</returns>
+    public static dynamic? ConvertToDynamic(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.Object => ConvertJsonObjectToDynamic(element),
+            JsonValueKind.Array => ConvertJsonArrayToDynamic(element),
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Number => element.GetDecimal(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null,
+            _ => null
+        };
+    }
+
+    /// <summary>
     /// 尝试将 JSON 字符串解析为动态对象
     /// </summary>
     /// <param name="json">JSON 字符串</param>
@@ -199,36 +219,18 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 将 JsonNode 转换为动态对象
+    /// 将 JsonElement 数组转换为动态数组
     /// </summary>
-    /// <param name="node">JsonNode</param>
-    /// <returns>动态对象</returns>
-    private static dynamic? ConvertJsonNodeToDynamic(JsonNode? node)
+    /// <param name="element">JsonElement</param>
+    /// <returns>动态数组</returns>
+    private static dynamic ConvertJsonArrayToDynamic(JsonElement element)
     {
-        return node switch
+        var dynamicJsonArray = new DynamicJsonArray();
+        foreach (var item in element.EnumerateArray())
         {
-            JsonObject jsonObject => ConvertJsonObjectToDynamic(jsonObject),
-            JsonArray jsonArray => ConvertJsonArrayToDynamic(jsonArray),
-            JsonValue jsonValue => ConvertJsonValueToDynamic(jsonValue),
-            _ => null
-        };
-    }
-
-    /// <summary>
-    /// 将 JsonObject 转换为动态对象
-    /// </summary>
-    /// <param name="jsonObject">JsonObject</param>
-    /// <returns>动态对象</returns>
-    private static dynamic ConvertJsonObjectToDynamic(JsonObject jsonObject)
-    {
-        var dynamicJsonObject = new DynamicJsonObject();
-
-        foreach (var kvp in jsonObject)
-        {
-            dynamicJsonObject[kvp.Key] = ConvertJsonNodeToDynamic(kvp.Value);
+            dynamicJsonArray.Add(ConvertToDynamic(item));
         }
-
-        return dynamicJsonObject;
+        return dynamicJsonArray;
     }
 
     /// <summary>
@@ -247,6 +249,22 @@ public static class JsonHelper
     }
 
     /// <summary>
+    /// 将 JsonNode 转换为动态对象
+    /// </summary>
+    /// <param name="node">JsonNode</param>
+    /// <returns>动态对象</returns>
+    private static dynamic? ConvertJsonNodeToDynamic(JsonNode? node)
+    {
+        return node switch
+        {
+            JsonObject jsonObject => ConvertJsonObjectToDynamic(jsonObject),
+            JsonArray jsonArray => ConvertJsonArrayToDynamic(jsonArray),
+            JsonValue jsonValue => ConvertJsonValueToDynamic(jsonValue),
+            _ => null
+        };
+    }
+
+    /// <summary>
     /// 将 JsonValue 转换为对应的动态类型
     /// </summary>
     /// <param name="jsonValue">JsonValue</param>
@@ -254,6 +272,36 @@ public static class JsonHelper
     private static dynamic? ConvertJsonValueToDynamic(JsonValue jsonValue)
     {
         return DynamicJsonValue.FromJsonValue(jsonValue);
+    }
+
+    /// <summary>
+    /// 将 JsonElement 对象转换为动态对象
+    /// </summary>
+    /// <param name="element">JsonElement</param>
+    /// <returns>动态对象</returns>
+    private static dynamic ConvertJsonObjectToDynamic(JsonElement element)
+    {
+        var dynamicJsonObject = new DynamicJsonObject();
+        foreach (var property in element.EnumerateObject())
+        {
+            dynamicJsonObject[property.Name] = ConvertToDynamic(property.Value);
+        }
+        return dynamicJsonObject;
+    }
+
+    /// <summary>
+    /// 将 JsonObject 转换为动态对象
+    /// </summary>
+    /// <param name="jsonObject">JsonObject</param>
+    /// <returns>动态对象</returns>
+    private static dynamic ConvertJsonObjectToDynamic(JsonObject jsonObject)
+    {
+        var dynamicJsonObject = new DynamicJsonObject();
+        foreach (var property in jsonObject)
+        {
+            dynamicJsonObject[property.Key] = ConvertJsonNodeToDynamic(property.Value);
+        }
+        return dynamicJsonObject;
     }
 
     #endregion 动态 JSON 解析
