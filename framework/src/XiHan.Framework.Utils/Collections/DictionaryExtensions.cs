@@ -135,6 +135,23 @@ public static class DictionaryExtensions
     }
 
     /// <summary>
+    /// 将字典转换为查询字符串格式
+    /// </summary>
+    /// <param name="parameters">参数</param>
+    /// <returns>参数字符串</returns>
+    public static string BuildQueryString(this Dictionary<string, string> parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        var sortedParams = parameters
+             .Where(kvp => kvp.Value != null && !string.IsNullOrWhiteSpace(kvp.Value))
+             .OrderBy(kvp => kvp.Key, StringComparer.Ordinal);
+
+        var orderString = string.Join("&", sortedParams.Select(k => $"{k.Key}={k.Value.Trim()}"));
+        return orderString;
+    }
+
+    /// <summary>
     /// 如果字典中存在指定的键，则尝试获取其值
     /// </summary>
     /// <typeparam name="T">值的类型</typeparam>
