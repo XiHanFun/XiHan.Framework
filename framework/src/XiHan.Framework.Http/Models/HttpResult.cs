@@ -38,6 +38,11 @@ public class HttpResult<T>
     public T? Data { get; set; }
 
     /// <summary>
+    /// 原始数据
+    /// </summary>
+    public object? RawData { get; set; }
+
+    /// <summary>
     /// 错误消息
     /// </summary>
     public string? ErrorMessage { get; set; }
