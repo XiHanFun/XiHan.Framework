@@ -520,6 +520,7 @@ public class AdvancedHttpService : IAdvancedHttpService
 
             if (response.IsSuccessStatusCode)
             {
+                result.RawData = await DeserializeResponseAsync<Stream>(response, cancellationToken);
                 result.Data = await DeserializeResponseAsync<T>(response, cancellationToken);
             }
             else
