@@ -38,9 +38,19 @@ public class HttpResult<T>
     public T? Data { get; set; }
 
     /// <summary>
-    /// 原始数据
+    /// 原始数据 string
     /// </summary>
-    public object? RawData { get; set; }
+    public string? RawDataString { get; set; }
+
+    /// <summary>
+    /// 原始数据 byte[]
+    /// </summary>
+    public byte[]? RawDataByte { get; set; }
+
+    /// <summary>
+    /// 原始数据 Steam
+    /// </summary>
+    public Stream? RawDataSteam { get; set; }
 
     /// <summary>
     /// 错误消息
