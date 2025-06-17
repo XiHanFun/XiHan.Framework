@@ -21,8 +21,4 @@
         <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Constants\" />
-    </ItemGroup>
-
 </Project>

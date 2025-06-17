@@ -15,6 +15,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Text.Json.Converters;
 
@@ -28,7 +29,7 @@ public static class JsonSerializerOptionsHelper
     /// <summary>
     /// 公共参数
     /// </summary>
-    public static JsonSerializerOptions DefaultJsonSerializerOptions => GetDefaultJsonSerializerOptions();
+    public static JsonSerializerOptions DefaultJsonSerializerOptions => CacheManager.Instance.DefaultCache.GetOrAdd("JsonSerializerOptions", () => GetDefaultJsonSerializerOptions());
 
     /// <summary>
     /// 获取默认序列化参数
