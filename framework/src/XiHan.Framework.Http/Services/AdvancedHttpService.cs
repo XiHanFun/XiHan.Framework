@@ -467,7 +467,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
-        HttpRequestOptions? options, CancellationToken cancellationToken)
+    HttpRequestOptions? options, CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
@@ -521,6 +521,9 @@ public class AdvancedHttpService : IAdvancedHttpService
             if (response.IsSuccessStatusCode)
             {
                 result.Data = await DeserializeResponseAsync<T>(response, cancellationToken);
+                result.RawDataString = await DeserializeResponseAsync<string>(response, cancellationToken);
+                result.RawDataByte = await DeserializeResponseAsync<byte[]>(response, cancellationToken);
+                result.RawDataSteam = await DeserializeResponseAsync<Stream>(response, cancellationToken);
             }
             else
             {
