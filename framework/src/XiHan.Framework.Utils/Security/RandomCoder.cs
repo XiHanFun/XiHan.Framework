@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
+using XiHan.Framework.Utils.Constants;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Security;
@@ -23,26 +24,6 @@ namespace XiHan.Framework.Utils.Security;
 public static class RandomCoder
 {
     /// <summary>
-    /// 默认特殊符号字符源
-    /// </summary>
-    private static readonly string DefaultSpecialCharSource = "!@#$%^&*()-_=+[]{}|;:,.<>?/";
-
-    /// <summary>
-    /// 默认大写字母字符源
-    /// </summary>
-    private static readonly string DefaultUpperLetterSource = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    /// <summary>
-    /// 默认小写字母字符源
-    /// </summary>
-    private static readonly string DefaultLowerLetterSource = "abcdefghijklmnopqrstuvwxyz";
-
-    /// <summary>
-    /// 默认数字字符源
-    /// </summary>
-    private static readonly string DefaultNumberSource = "0123456789";
-
-    /// <summary>
     /// 随机数字
     /// </summary>
     /// <param name="length">生成长度 默认6个字符</param>
@@ -50,7 +31,7 @@ public static class RandomCoder
     /// <returns>随机数字字符串</returns>
     public static string GetNumber(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultNumberSource);
+        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultConsts.Digits);
     }
 
     /// <summary>
@@ -61,7 +42,7 @@ public static class RandomCoder
     /// <returns>随机特殊符号字符串</returns>
     public static string GetSpecialChars(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultSpecialCharSource);
+        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultConsts.SpecialCharactersWithoutQuotes);
     }
 
     /// <summary>
@@ -72,7 +53,7 @@ public static class RandomCoder
     /// <returns>随机字母字符串</returns>
     public static string GetLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultUpperLetterSource + DefaultLowerLetterSource);
+        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters);
     }
 
     /// <summary>
@@ -83,7 +64,7 @@ public static class RandomCoder
     /// <returns>随机大写字母字符串</returns>
     public static string GetUpperLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source?.ToUpperInvariant() ?? DefaultUpperLetterSource);
+        return RandomHelper.GetRandom(length ?? 6, source?.ToUpperInvariant() ?? DefaultConsts.UppercaseLetters);
     }
 
     /// <summary>
@@ -94,7 +75,7 @@ public static class RandomCoder
     /// <returns>随机小写字母字符串</returns>
     public static string GetLowerLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source?.ToLowerInvariant() ?? DefaultLowerLetterSource);
+        return RandomHelper.GetRandom(length ?? 6, source?.ToLowerInvariant() ?? DefaultConsts.LowercaseLetters);
     }
 
     /// <summary>
@@ -105,7 +86,7 @@ public static class RandomCoder
     /// <returns>随机字母或数字字符串</returns>
     public static string GetNumberOrLetter(int? length = 6, string? source = null)
     {
-        var defaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource;
+        var defaultSource = DefaultConsts.Digits + DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters;
         return RandomHelper.GetRandom(length ?? 6, source ?? defaultSource);
     }
 
@@ -117,7 +98,7 @@ public static class RandomCoder
     /// <returns>随机强密码字符串</returns>
     public static string GetStrongPassword(int? length = 12, string? source = null)
     {
-        var defaultSource = DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource + DefaultSpecialCharSource;
+        var defaultSource = DefaultConsts.Digits + DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters + DefaultConsts.SpecialCharactersWithoutQuotes;
         return RandomHelper.GetRandom(length ?? 12, source ?? defaultSource);
     }
 
@@ -137,28 +118,28 @@ public static class RandomCoder
 
         if (includeNumbers)
         {
-            source.Append(DefaultNumberSource);
+            source.Append(DefaultConsts.Digits);
         }
 
         if (includeUpperLetters)
         {
-            source.Append(DefaultUpperLetterSource);
+            source.Append(DefaultConsts.UppercaseLetters);
         }
 
         if (includeLowerLetters)
         {
-            source.Append(DefaultLowerLetterSource);
+            source.Append(DefaultConsts.LowercaseLetters);
         }
 
         if (includeSpecialChars)
         {
-            source.Append(DefaultSpecialCharSource);
+            source.Append(DefaultConsts.SpecialCharactersWithoutQuotes);
         }
 
         // 如果没有选择任何字符集，默认使用数字和字母
         if (source.Length == 0)
         {
-            source.Append(DefaultNumberSource + DefaultUpperLetterSource + DefaultLowerLetterSource);
+            source.Append(DefaultConsts.Digits + DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters);
         }
 
         return RandomHelper.GetRandom(length, source.ToString());
