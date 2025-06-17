@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
+using XiHan.Framework.Utils.Constants;
 
 namespace XiHan.Framework.Utils.Security;
 
@@ -21,17 +22,9 @@ namespace XiHan.Framework.Utils.Security;
 /// </summary>
 public class PasswordStrengthChecker
 {
-    private const string SpecialCharacters = "!@#$%^&*()-_=+[]{}|;:'\",.<>?/";
-
-    private const string UppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    private const string LowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
-
-    private const string Digits = "0123456789";
-
     private static readonly List<string> WeakPasswords =
         [
-        "123456", "password", "123456789", "12345678", "111111", "123123"
+            "123456", "password", "123456789", "12345678", "111111", "123123"
         ];
 
     /// <summary>
@@ -92,7 +85,7 @@ public class PasswordStrengthChecker
         }
 
         // 检查是否包含特殊字符
-        if (password.Any(SpecialCharacters.Contains))
+        if (password.Any(DefaultConsts.SpecialCharacters.Contains))
         {
             score += 20;
         }
@@ -131,11 +124,11 @@ public class PasswordStrengthChecker
             throw new ArgumentException("密码长度必须大于或等于8位", nameof(length));
         }
 
-        var characterPool = new StringBuilder(UppercaseLetters + LowercaseLetters + Digits);
+        var characterPool = new StringBuilder(DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters + DefaultConsts.Digits);
 
         if (includeSpecialChars)
         {
-            _ = characterPool.Append(SpecialCharacters);
+            _ = characterPool.Append(DefaultConsts.SpecialCharacters);
         }
 
         var random = new Random();
