@@ -32,7 +32,7 @@ namespace XiHan.Framework.AI;
 [DependsOn(
     typeof(XiHanHttpModule)
     )]
-public class XiHanAiModule : XiHanModule
+public class XiHanAIModule : XiHanModule
 {
     private const string ModuleConfigNode = "XiHan:AI";
 
