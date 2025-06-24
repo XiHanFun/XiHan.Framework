@@ -22,7 +22,7 @@ namespace XiHan.Framework.AI.Agents;
 /// <summary>
 /// Agent基础接口
 /// </summary>
-public interface IXiHanAiAgent
+public interface IXiHanAIAgent
 {
     /// <summary>
     /// Agent唯一标识
@@ -37,7 +37,7 @@ public interface IXiHanAiAgent
     /// <summary>
     /// Agent记忆服务
     /// </summary>
-    IXiHanAiMemoryService? Memory { get; }
+    IXiHanAIMemoryService? Memory { get; }
 
     /// <summary>
     /// Agent技能列表

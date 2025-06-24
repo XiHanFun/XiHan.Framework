@@ -26,7 +26,7 @@ namespace XiHan.Framework.AI.Agents;
 /// <summary>
 /// 基础Agent实现
 /// </summary>
-public class BaseAgent : IXiHanAiAgent
+public class BaseAgent : IXiHanAIAgent
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly AgentOptions _options;
@@ -34,9 +34,9 @@ public class BaseAgent : IXiHanAiAgent
     private readonly List<IXiHanSkill> _skills = [];
     private readonly List<(string Role, string Content)> _chatHistory = [];
 
-    private IXiHanAiService? _aiService;
-    private IXiHanAiMemoryService? _memoryService;
-    private IXiHanAiPromptManager? _promptManager;
+    private IXiHanAIService? _aiService;
+    private IXiHanAIMemoryService? _memoryService;
+    private IXiHanAIPromptManager? _promptManager;
     private bool _isInitialized;
 
     /// <summary>
@@ -66,7 +66,7 @@ public class BaseAgent : IXiHanAiAgent
     /// <summary>
     /// Agent记忆服务
     /// </summary>
-    public IXiHanAiMemoryService? Memory => _memoryService;
+    public IXiHanAIMemoryService? Memory => _memoryService;
 
     /// <summary>
     /// Agent技能列表
@@ -86,11 +86,11 @@ public class BaseAgent : IXiHanAiAgent
         // 获取AI服务
         if (_options.ProviderName == "OpenAI")
         {
-            _aiService = _serviceProvider.GetKeyedService<IXiHanAiService>("OpenAI");
+            _aiService = _serviceProvider.GetKeyedService<IXiHanAIService>("OpenAI");
         }
         else if (_options.ProviderName == "Ollama")
         {
-            _aiService = _serviceProvider.GetKeyedService<IXiHanAiService>("Ollama");
+            _aiService = _serviceProvider.GetKeyedService<IXiHanAIService>("Ollama");
         }
         else
         {
@@ -100,11 +100,11 @@ public class BaseAgent : IXiHanAiAgent
         // 初始化记忆服务
         if (_options.EnableMemory)
         {
-            _memoryService = _serviceProvider.GetRequiredService<IXiHanAiMemoryService>();
+            _memoryService = _serviceProvider.GetRequiredService<IXiHanAIMemoryService>();
         }
 
         // 获取提示词管理器
-        _promptManager = _serviceProvider.GetRequiredService<IXiHanAiPromptManager>();
+        _promptManager = _serviceProvider.GetRequiredService<IXiHanAIPromptManager>();
 
         // 加载技能
         var skillRegistry = _serviceProvider.GetRequiredService<ISkillRegistry>();
