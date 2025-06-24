@@ -29,7 +29,7 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// <summary>
 /// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAiService : IXiHanAiService
+public class XiHanOpenAiService : IXiHanAIService
 {
     private readonly Kernel _kernel;
     private readonly OpenAiOptions _options;

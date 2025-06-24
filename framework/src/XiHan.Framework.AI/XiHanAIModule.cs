@@ -62,7 +62,7 @@ public class XiHanAIModule : XiHanModule
                 modelId: ollamaOptions.ModelName,
                 endpoint: new Uri(ollamaOptions.BaseUrl),
                 serviceId: ollamaOptions.ServiceId);
-            services.AddKeyedTransient<IXiHanAiService, XiHanOllamaService>(ollamaOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
         });
         // OpenAI
         PostConfigure<OpenAiOptions>(openAiOptions =>
@@ -76,7 +76,7 @@ public class XiHanAIModule : XiHanModule
                 modelId: openAiOptions.ModelName,
                 apiKey: openAiOptions.ApiKey,
                 serviceId: openAiOptions.ServiceId);
-            services.AddKeyedTransient<IXiHanAiService, XiHanOpenAiService>(openAiOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAIService, XiHanOpenAiService>(openAiOptions.ServiceId);
         });
     }
 }

@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Agents;
 /// <summary>
 /// Agent服务接口
 /// </summary>
-public interface IXiHanAiAgentService
+public interface IXiHanAIAgentService
 {
     /// <summary>
     /// 创建新Agent
@@ -29,7 +29,7 @@ public interface IXiHanAiAgentService
     /// <param name="options">Agent配置选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>新创建的Agent</returns>
-    Task<IXiHanAiAgent> CreateAgentAsync(string agentId, AgentOptions? options = null, CancellationToken cancellationToken = default);
+    Task<IXiHanAIAgent> CreateAgentAsync(string agentId, AgentOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取已存在Agent
@@ -37,7 +37,7 @@ public interface IXiHanAiAgentService
     /// <param name="agentId">Agent唯一标识</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>存在的Agent或null</returns>
-    Task<IXiHanAiAgent?> GetAgentAsync(string agentId, CancellationToken cancellationToken = default);
+    Task<IXiHanAIAgent?> GetAgentAsync(string agentId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除Agent

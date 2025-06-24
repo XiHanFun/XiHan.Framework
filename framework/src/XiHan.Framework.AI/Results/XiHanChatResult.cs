@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// 聊天结果
 /// </summary>
-public class XiHanChatResult : XiHanAiResult
+public class XiHanChatResult : XiHanAIResult
 {
     /// <summary>
     /// 构造函数
