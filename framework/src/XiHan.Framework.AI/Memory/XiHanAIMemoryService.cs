@@ -24,10 +24,10 @@ namespace XiHan.Framework.AI.Memory;
 /// <summary>
 /// 记忆服务实现
 /// </summary>
-public class XiHanAiMemoryService : IXiHanAiMemoryService
+public class XiHanAIMemoryService : IXiHanAIMemoryService
 {
     private readonly IOptions<KernelMemoryOptions> _options;
-    private readonly ILogger<XiHanAiMemoryService> _logger;
+    private readonly ILogger<XiHanAIMemoryService> _logger;
     private readonly IKernelMemory _memory;
     private readonly ConcurrentDictionary<string, DateTime> _memoryTimestamps = new();
 
@@ -36,7 +36,7 @@ public class XiHanAiMemoryService : IXiHanAiMemoryService
     /// </summary>
     /// <param name="options">记忆选项</param>
     /// <param name="logger">日志记录器</param>
-    public XiHanAiMemoryService(IOptions<KernelMemoryOptions> options, ILogger<XiHanAiMemoryService> logger)
+    public XiHanAIMemoryService(IOptions<KernelMemoryOptions> options, ILogger<XiHanAIMemoryService> logger)
     {
         _options = options;
         _logger = logger;
