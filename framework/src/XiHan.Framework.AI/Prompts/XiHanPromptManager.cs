@@ -22,7 +22,7 @@ namespace XiHan.Framework.AI.Prompts;
 /// <summary>
 /// 提示词管理器实现
 /// </summary>
-public class XiHanPromptManager : IXiHanAiPromptManager
+public class XiHanPromptManager : IXiHanAIPromptManager
 {
     private readonly ConcurrentDictionary<string, string> _templates = new();
     private readonly string _templatesDirectory;

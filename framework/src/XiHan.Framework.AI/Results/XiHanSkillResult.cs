@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.Results;
 /// <summary>
 /// 技能执行结果
 /// </summary>
-public class XiHanSkillResult : XiHanAiResult
+public class XiHanSkillResult : XiHanAIResult
 {
     /// <summary>
     /// 构造函数
