@@ -31,7 +31,7 @@ namespace XiHan.Framework.AI.Providers.Ollama;
 /// <summary>
 /// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
-public class XiHanOllamaService : IXiHanAiService
+public class XiHanOllamaService : IXiHanAIService
 {
     private readonly Kernel _kernel;
     private readonly OllamaOptions _options;
