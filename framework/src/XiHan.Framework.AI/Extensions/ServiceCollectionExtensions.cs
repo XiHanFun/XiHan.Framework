@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">服务集合</param>
     /// <param name="configuration">配置</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanAi(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddXiHanAI(this IServiceCollection services, IConfiguration configuration)
     {
         // 注册配置
         services.Configure<AiOptions>(configuration.GetSection("XiHan:AI"));
@@ -42,10 +42,10 @@ public static class ServiceCollectionExtensions
         services.Configure<KernelMemoryOptions>(configuration.GetSection("XiHan:AI:Memory"));
 
         // 注册各种服务
-        services.AddSingleton<IXiHanAiAgentService, XiHanAiAgentManager>();
+        services.AddSingleton<IXiHanAIAgentService, XiHanAIAgentManager>();
         services.AddSingleton<ISkillRegistry, SkillRegistry>();
-        services.AddSingleton<IXiHanAiMemoryService, XiHanAiMemoryService>();
-        services.AddSingleton<IXiHanAiPromptManager, XiHanPromptManager>();
+        services.AddSingleton<IXiHanAIMemoryService, XiHanAIMemoryService>();
+        services.AddSingleton<IXiHanAIPromptManager, XiHanPromptManager>();
 
         return services;
     }

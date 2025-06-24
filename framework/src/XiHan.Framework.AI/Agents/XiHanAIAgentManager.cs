@@ -22,18 +22,18 @@ namespace XiHan.Framework.AI.Agents;
 /// <summary>
 /// Agent管理器
 /// </summary>
-public class XiHanAiAgentManager : IXiHanAiAgentService
+public class XiHanAIAgentManager : IXiHanAIAgentService
 {
-    private readonly ConcurrentDictionary<string, IXiHanAiAgent> _agents = new();
+    private readonly ConcurrentDictionary<string, IXiHanAIAgent> _agents = new();
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<XiHanAiAgentManager> _logger;
+    private readonly ILogger<XiHanAIAgentManager> _logger;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="serviceProvider">服务提供程序</param>
     /// <param name="logger">日志记录器</param>
-    public XiHanAiAgentManager(IServiceProvider serviceProvider, ILogger<XiHanAiAgentManager> logger)
+    public XiHanAIAgentManager(IServiceProvider serviceProvider, ILogger<XiHanAIAgentManager> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -42,7 +42,7 @@ public class XiHanAiAgentManager : IXiHanAiAgentService
     /// <summary>
     /// 创建新Agent
     /// </summary>
-    public async Task<IXiHanAiAgent> CreateAgentAsync(string agentId, AgentOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<IXiHanAIAgent> CreateAgentAsync(string agentId, AgentOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (_agents.TryGetValue(agentId, out var existingAgent))
         {
@@ -69,7 +69,7 @@ public class XiHanAiAgentManager : IXiHanAiAgentService
     /// <summary>
     /// 获取已存在Agent
     /// </summary>
-    public Task<IXiHanAiAgent?> GetAgentAsync(string agentId, CancellationToken cancellationToken = default)
+    public Task<IXiHanAIAgent?> GetAgentAsync(string agentId, CancellationToken cancellationToken = default)
     {
         _agents.TryGetValue(agentId, out var agent);
         return Task.FromResult(agent);
