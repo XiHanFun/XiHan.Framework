@@ -231,7 +231,11 @@ public static class TemplateEngine
         var variableName = condition.Trim();
         return !values.TryGetValue(variableName, out var value)
             ? false
-            : value is bool boolValue ? boolValue : value is string strValue ? !string.IsNullOrEmpty(strValue) : value != null;
+            : value is bool boolValue
+                ? boolValue
+                : value is string strValue
+                    ? !string.IsNullOrEmpty(strValue)
+                    : value != null;
     }
 
     /// <summary>
