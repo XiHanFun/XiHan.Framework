@@ -831,22 +831,13 @@ public static partial class YamlHelper
     /// <returns>转换后的值</returns>
     private static object ConvertStringValue(string value)
     {
-        if (string.IsNullOrEmpty(value) || value == "null")
-        {
-            return null!;
-        }
-
-        if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        if (value.Equals("false", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return int.TryParse(value, out var intValue)
+        return string.IsNullOrEmpty(value) || value == "null"
+            ? null!
+            : value.Equals("true", StringComparison.OrdinalIgnoreCase)
+            ? true
+            : value.Equals("false", StringComparison.OrdinalIgnoreCase)
+            ? false
+            : int.TryParse(value, out var intValue)
             ? intValue
             : double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue) ? doubleValue : value;
     }
