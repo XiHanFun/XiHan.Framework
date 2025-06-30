@@ -170,13 +170,17 @@ public static class ConsoleLogger
     private static string? FormatMessage(string? message, params object[] args)
     {
         if (string.IsNullOrEmpty(message))
+        {
             return message;
+        }
 
         try
         {
             // 如果没有参数，直接返回原消息
             if (args == null || args.Length == 0)
+            {
                 return message;
+            }
 
             // 使用 string.Format 进行格式化
             return string.Format(message, args);
