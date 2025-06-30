@@ -52,9 +52,6 @@ public static class CpuHelper
 
             // 获取CPU详细信息
             GetCpuDetails(cpuInfo);
-
-            // 获取温度信息（如果可用）
-            GetCpuTemperature(cpuInfo);
         }
         catch (Exception ex)
         {
@@ -113,40 +110,6 @@ public static class CpuHelper
                 // 如果WMI失败，使用默认值
                 cpuInfo.UsagePercentage = 0;
             }
-        }
-    }
-
-    /// <summary>
-    /// 获取CPU温度信息（如果可用）
-    /// </summary>
-    /// <param name="cpuInfo"></param>
-    private static void GetCpuTemperature(CpuInfo cpuInfo)
-    {
-        try
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                // 尝试从thermal_zone获取温度
-                var thermalFiles = Directory.GetFiles("/sys/class/thermal", "thermal_zone*");
-                foreach (var file in thermalFiles)
-                {
-                    var tempFile = Path.Combine(file, "temp");
-                    if (File.Exists(tempFile))
-                    {
-                        var tempStr = File.ReadAllText(tempFile).Trim();
-                        if (int.TryParse(tempStr, out var temp))
-                        {
-                            cpuInfo.Temperature = Math.Round(temp / 1000.0, 1);
-                            break;
-                        }
-                    }
-                }
-            }
-            // Windows和macOS的温度获取需要特殊权限或第三方工具，这里暂不实现
-        }
-        catch
-        {
-            // 温度获取失败不影响其他信息
         }
     }
 
@@ -275,9 +238,4 @@ public record CpuInfo
     /// CPU使用率(%)
     /// </summary>
     public double UsagePercentage { get; set; }
-
-    /// <summary>
-    /// CPU温度(°C)
-    /// </summary>
-    public double? Temperature { get; set; }
 }
