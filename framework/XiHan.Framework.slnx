@@ -26,7 +26,6 @@
     <Project Path="src/XiHan.Framework.Ddd.Domain.Shared/XiHan.Framework.Ddd.Domain.Shared.csproj" />
     <Project Path="src/XiHan.Framework.Ddd.Domain/XiHan.Framework.Ddd.Domain.csproj" />
     <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" Id="d864f895-e9e5-4f02-9e57-77d4556df66c" />
-    <Project Path="src/XiHan.Framework.EntityFrameworkCore/XiHan.Framework.EntityFrameworkCore.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
     <Project Path="src/XiHan.Framework.Http.Client/XiHan.Framework.Http.Client.csproj" Id="dad9f394-0ec8-427b-b317-b4a2b2bb38a9" />
@@ -63,12 +62,7 @@
   </Folder>
   <Folder Name="/2.test/" />
   <Folder Name="/2.test/1.Unit/">
-    <Project Path="test/XiHan.Framework.AI.Test/XiHan.Framework.AI.Test.csproj" />
-    <Project Path="test/XiHan.Framework.AspNetCore.Test/XiHan.Framework.AspNetCore.Test.csproj" />
-    <Project Path="test/XiHan.Framework.Core.Test/XiHan.Framework.Core.Test.csproj" />
-    <Project Path="test/XiHan.Framework.DistributedIds.Test/XiHan.Framework.DistributedIds.Test.csproj" Id="70766c03-a5bd-4469-97c2-5db972652bc1" />
     <Project Path="test/XiHan.Framework.Test.Base/XiHan.Framework.Test.Base.csproj" Id="593c35d7-e47a-4fee-b636-d5141c297d3d" />
-    <Project Path="test/XiHan.Framework.Utils.Test/XiHan.Framework.Utils.Test.csproj" />
   </Folder>
   <Folder Name="/2.test/2.Main/">
     <Project Path="test/XiHan.Framework.Console.Test/XiHan.Framework.Console.Test.csproj" Id="a9bf1e73-f515-4d19-a690-4c0b6a625af0" />

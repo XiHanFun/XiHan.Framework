@@ -94,10 +94,6 @@ public static class HardwareInfoManager
             {
                 report.Issues.Add("CPU使用率过高 (>90%)");
             }
-            if (cpuInfo.Temperature.HasValue && cpuInfo.Temperature > 80)
-            {
-                report.Issues.Add($"CPU温度过高 ({cpuInfo.Temperature:F1}°C)");
-            }
 
             // 内存诊断
             if (ramInfo.UsagePercentage > 90)
