@@ -22,7 +22,7 @@ using XiHan.Framework.Utils.System;
 namespace XiHan.Framework.Core.Modularity.PlugIns;
 
 /// <summary>
-/// FolderPlugInSource
+/// 文件夹插件源
 /// </summary>
 public class FolderPlugInSource : IPlugInSource
 {

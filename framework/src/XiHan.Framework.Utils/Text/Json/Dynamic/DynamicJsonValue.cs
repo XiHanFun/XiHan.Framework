@@ -134,22 +134,13 @@ public class DynamicJsonValue : DynamicObject
     /// <param name="value">动态值</param>
     public static implicit operator bool(DynamicJsonValue? value)
     {
-        if (value?._value == null)
-        {
-            return false;
-        }
-
-        if (value._value is bool boolValue)
-        {
-            return boolValue;
-        }
-
-        if (value.IsNumeric)
-        {
-            return !value._value.Equals(Convert.ChangeType(0, value._valueType));
-        }
-
-        return value._value is string stringValue ? !string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0" : true;
+        return value?._value == null
+            ? false
+            : value._value is bool boolValue
+            ? boolValue
+            : value.IsNumeric
+            ? !value._value.Equals(Convert.ChangeType(0, value._valueType))
+            : value._value is string stringValue ? !string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0" : true;
     }
 
     /// <summary>
