@@ -74,7 +74,7 @@ public static class GpuHelper
     /// <param name="gpuInfos"></param>
     private static void GetWindowsGpuInfo(List<GpuInfo> gpuInfos)
     {
-        var output = ShellHelper.Cmd("wmic", "path win32_VideoController get Name,DriverVersion,AdapterRAM,VideoModeDescription,Status /Value").Trim();
+        var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_VideoController | Select-Object Name, DriverVersion, AdapterRAM, VideoModeDescription, Status | Format-List""").Trim();
         var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
 
         GpuInfo? currentGpu = null;
@@ -86,9 +86,9 @@ public static class GpuHelper
                 continue;
             }
 
-            if (line.Contains('='))
+            if (line.Contains(':'))
             {
-                var parts = line.Split('=', 2);
+                var parts = line.Split(':', 2);
                 if (parts.Length != 2)
                 {
                     continue;

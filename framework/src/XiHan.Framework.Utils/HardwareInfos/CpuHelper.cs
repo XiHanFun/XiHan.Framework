@@ -76,7 +76,7 @@ public static class CpuHelper
                 var loadPercentage = lines[3].Trim().Split(' ')[0].Replace("%", "");
                 if (double.TryParse(loadPercentage, out var usage))
                 {
-                    cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); // idle转换为使用率
+                    cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); 
                 }
             }
         }
@@ -85,20 +85,19 @@ public static class CpuHelper
             var output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
             if (double.TryParse(output, out var usage))
             {
-                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); // idle转换为使用率
+                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); 
             }
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            // 使用WMI获取CPU使用率
             try
             {
-                var output = ShellHelper.Cmd("wmic", "cpu get LoadPercentage /Value").Trim();
+                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object LoadPercentage | Format-List""").Trim();
                 var lines = output.Split(Environment.NewLine);
-                var loadLine = lines.FirstOrDefault(s => s.StartsWith("LoadPercentage="));
+                var loadLine = lines.FirstOrDefault(s => s.StartsWith("LoadPercentage"));
                 if (loadLine != null)
                 {
-                    var loadPercentage = loadLine.Split('=')[1].Trim();
+                    var loadPercentage = loadLine.Split(':')[1].Trim();
                     if (double.TryParse(loadPercentage, out var usage))
                     {
                         cpuInfo.UsagePercentage = Math.Round(usage, 2);
@@ -163,32 +162,32 @@ public static class CpuHelper
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var output = ShellHelper.Cmd("wmic", "cpu get Name,NumberOfCores,MaxClockSpeed,L3CacheSize /Value").Trim();
+            var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object Name, NumberOfCores, MaxClockSpeed, L3CacheSize | Format-List""").Trim();
             var lines = output.Split(Environment.NewLine);
 
             foreach (var line in lines)
             {
-                if (line.StartsWith("Name="))
+                if (line.StartsWith("Name"))
                 {
-                    cpuInfo.ProcessorName = line.Split('=')[1].Trim();
+                    cpuInfo.ProcessorName = line.Split(':', 2)[1].Trim();
                 }
-                else if (line.StartsWith("NumberOfCores="))
+                else if (line.StartsWith("NumberOfCores"))
                 {
-                    if (int.TryParse(line.Split('=')[1], out var cores))
+                    if (int.TryParse(line.Split(':', 2)[1], out var cores))
                     {
                         cpuInfo.PhysicalCoreCount = cores;
                     }
                 }
-                else if (line.StartsWith("MaxClockSpeed="))
+                else if (line.StartsWith("MaxClockSpeed"))
                 {
-                    if (double.TryParse(line.Split('=')[1], out var mhz))
+                    if (double.TryParse(line.Split(':', 2)[1], out var mhz))
                     {
                         cpuInfo.BaseClockSpeed = Math.Round(mhz / 1000, 2);
                     }
                 }
-                else if (line.StartsWith("L3CacheSize="))
+                else if (line.StartsWith("L3CacheSize"))
                 {
-                    var cache = line.Split('=')[1].Trim();
+                    var cache = line.Split(':', 2)[1].Trim();
                     if (!string.IsNullOrEmpty(cache) && cache != "0")
                     {
                         cpuInfo.CacheBytes = cache.ParseToLong() * 1024;

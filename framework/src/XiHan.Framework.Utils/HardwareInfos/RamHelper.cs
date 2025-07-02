@@ -149,12 +149,12 @@ public static class RamHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("wmic", "OS get FreePhysicalMemory,TotalVisibleMemorySize /Value").Trim();
+                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize | Format-List""").Trim();
                 var lines = output.Split(Environment.NewLine);
                 if (lines.Length != 0)
                 {
-                    totalMemoryParts = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split('=')[1].ParseToLong() * 1024;
-                    freeMemoryParts = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split('=')[1].ParseToLong() * 1024;
+                    totalMemoryParts = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split(':', 2)[1].ParseToLong() * 1024;
+                    freeMemoryParts = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split(':', 2)[1].ParseToLong() * 1024;
                     usedMemoryParts = totalMemoryParts - freeMemoryParts;
                     availableMemoryParts = freeMemoryParts;
                 }
