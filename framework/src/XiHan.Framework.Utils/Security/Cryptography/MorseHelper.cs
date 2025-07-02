@@ -20,8 +20,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// 摩尔斯电码编码解码辅助类
 /// </summary>
 /// <remarks>
-/// 摩尔斯电码是一种将文本信息通过点（.）和划（-）进行编码的方法，
-/// 广泛应用于电报通信和无线电通信领域
+/// 摩尔斯电码是一种将文本信息通过点（.）和划（-）进行编码的方法，广泛应用于电报通信和无线电通信领域。
 /// </remarks>
 public static class MorseHelper
 {

@@ -14,6 +14,7 @@
 
 using System.Text;
 using XiHan.Framework.Utils.Constants;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Security;
 
@@ -22,6 +23,9 @@ namespace XiHan.Framework.Utils.Security;
 /// </summary>
 public class PasswordStrengthChecker
 {
+    /// <summary>
+    /// 默认的弱密码列表
+    /// </summary>
     private static readonly List<string> WeakPasswords =
         [
             "123456", "password", "123456789", "12345678", "111111", "123123"
@@ -30,8 +34,8 @@ public class PasswordStrengthChecker
     /// <summary>
     /// 检查密码强度
     /// </summary>
-    /// <param name="password"></param>
-    /// <param name="customBlacklist"></param>
+    /// <param name="password">密码</param>
+    /// <param name="customBlacklist">自定义黑名单</param>
     /// <returns></returns>
     public static PasswordStrengthResult CheckPasswordStrength(string password, IEnumerable<string>? customBlacklist = null)
     {
@@ -113,10 +117,10 @@ public class PasswordStrengthChecker
     /// <summary>
     /// 生成随机密码
     /// </summary>
-    /// <param name="length"></param>
-    /// <param name="includeSpecialChars"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="length">密码长度</param>
+    /// <param name="includeSpecialChars">是否包含特殊字符</param>
+    /// <returns>随机密码</returns>
+    /// <exception cref="ArgumentException">密码长度必须大于或等于8位</exception>
     public static string GeneratePassword(int length = 12, bool includeSpecialChars = true)
     {
         if (length < 8)
@@ -131,8 +135,7 @@ public class PasswordStrengthChecker
             _ = characterPool.Append(DefaultConsts.SpecialCharacters);
         }
 
-        var random = new Random();
-        return new string([.. Enumerable.Range(0, length).Select(_ => characterPool[random.Next(characterPool.Length)])]);
+        return new string([.. Enumerable.Range(0, length).Select(_ => characterPool[RandomHelper.GetRandom(characterPool.Length)])]);
     }
 }
 
@@ -144,9 +147,9 @@ public class PasswordStrengthResult
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="isStrong"></param>
-    /// <param name="message"></param>
-    /// <param name="score"></param>
+    /// <param name="isStrong">是否强密码</param>
+    /// <param name="message">检查结果消息</param>
+    /// <param name="score">评分</param>
     public PasswordStrengthResult(bool isStrong, string message, int score)
     {
         IsStrong = isStrong;
@@ -172,7 +175,7 @@ public class PasswordStrengthResult
     /// <summary>
     /// ToString
     /// </summary>
-    /// <returns></returns>
+    /// <returns>字符串表示</returns>
     public override string ToString()
     {
         return $"Strong: {IsStrong}, Message: {Message}, Score: {Score}";

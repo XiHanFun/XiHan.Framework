@@ -271,24 +271,24 @@ public static partial class MaskHelper
         return string.Join("", word.Select(c => $"[{char.ToLower(c)}{char.ToUpper(c)}]"));
     }
 
-    [GeneratedRegex("(.{3}).*(.{4})")]
-    private static partial Regex Regex11();
-
-    [GeneratedRegex("(.{3}).*(.{3})")]
-    private static partial Regex Regex10();
-
-    [GeneratedRegex("(.{2}).*(.{3})")]
-    private static partial Regex Regex9();
-
-    [GeneratedRegex("(.{2}).*(.{2})")]
-    private static partial Regex Regex8();
-
-    [GeneratedRegex("(.{1}).*(.{2})")]
-    private static partial Regex Regex7();
+    [GeneratedRegex("(.{1}).*")]
+    private static partial Regex RegexDefault();
 
     [GeneratedRegex("(.{1}).*(.{1})")]
     private static partial Regex Regex6();
 
-    [GeneratedRegex("(.{1}).*")]
-    private static partial Regex RegexDefault();
+    [GeneratedRegex("(.{1}).*(.{2})")]
+    private static partial Regex Regex7();
+
+    [GeneratedRegex("(.{2}).*(.{2})")]
+    private static partial Regex Regex8();
+
+    [GeneratedRegex("(.{2}).*(.{3})")]
+    private static partial Regex Regex9();
+
+    [GeneratedRegex("(.{3}).*(.{3})")]
+    private static partial Regex Regex10();
+
+    [GeneratedRegex("(.{3}).*(.{4})")]
+    private static partial Regex Regex11();
 }
