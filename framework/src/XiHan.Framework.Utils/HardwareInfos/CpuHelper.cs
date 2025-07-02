@@ -31,7 +31,7 @@ public static class CpuHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static CpuInfo CpuInfos => CacheManager.Instance.DefaultCache.GetOrAdd("CpuInfos", () => GetCpuInfos(), TimeSpan.FromSeconds(5));
+    public static CpuInfo CpuInfos => CacheManager.Instance.DefaultCache.GetOrAdd("CpuInfos", () => GetCpuInfos(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取处理器信息
@@ -76,7 +76,7 @@ public static class CpuHelper
                 var loadPercentage = lines[3].Trim().Split(' ')[0].Replace("%", "");
                 if (double.TryParse(loadPercentage, out var usage))
                 {
-                    cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); 
+                    cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
                 }
             }
         }
@@ -85,7 +85,7 @@ public static class CpuHelper
             var output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
             if (double.TryParse(output, out var usage))
             {
-                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2); 
+                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
             }
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
