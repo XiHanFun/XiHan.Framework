@@ -22,50 +22,50 @@ namespace XiHan.Framework.Utils.System;
 public static class GuidHelper
 {
     /// <summary>
-    /// 生成一个新的 GUID。
+    /// 生成一个新的 GUID
     /// </summary>
-    /// <returns>标准格式的 GUID 字符串。</returns>
+    /// <returns>标准格式的 GUID 字符串</returns>
     public static string GenerateGuid()
     {
         return Guid.NewGuid().ToString();
     }
 
     /// <summary>
-    /// 验证字符串是否是有效的 GUID。
+    /// 验证字符串是否是有效的 GUID
     /// </summary>
-    /// <param name="input">输入字符串。</param>
-    /// <returns>如果是有效 GUID，返回 true；否则返回 false。</returns>
+    /// <param name="input">输入字符串</param>
+    /// <returns>如果是有效 GUID，返回 true；否则返回 false</returns>
     public static bool IsValidGuid(string input)
     {
         return Guid.TryParse(input, out _);
     }
 
     /// <summary>
-    /// 从字符串解析 GUID。
+    /// 从字符串解析 GUID
     /// </summary>
-    /// <param name="input">输入字符串。</param>
-    /// <returns>如果解析成功，返回 GUID；否则返回 Guid.Empty。</returns>
+    /// <param name="input">输入字符串</param>
+    /// <returns>如果解析成功，返回 GUID；否则返回 Guid.Empty</returns>
     public static Guid ParseGuid(string input)
     {
         return Guid.TryParse(input, out var result) ? result : Guid.Empty;
     }
 
     /// <summary>
-    /// 将 GUID 转换为指定的格式。
+    /// 将 GUID 转换为指定的格式
     /// </summary>
-    /// <param name="guid">GUID。</param>
-    /// <param name="format">格式化字符串(N、D、B、P、X)。</param>
-    /// <returns>格式化后的 GUID 字符串。</returns>
+    /// <param name="guid">GUID</param>
+    /// <param name="format">格式化字符串(N、D、B、P、X)</param>
+    /// <returns>格式化后的 GUID 字符串</returns>
     public static string FormatGuid(Guid guid, string format = "D")
     {
         return guid.ToString(format);
     }
 
     /// <summary>
-    /// 根据 GUID 获取唯一的长整型数字序列。
+    /// 根据 GUID 获取唯一的长整型数字序列
     /// </summary>
-    /// <param name="guid">输入的 GUID。</param>
-    /// <returns>长整型数字序列。</returns>
+    /// <param name="guid">输入的 GUID</param>
+    /// <returns>长整型数字序列</returns>
     public static long GetUniqueLong(Guid guid)
     {
         var bytes = guid.ToByteArray();
@@ -74,10 +74,10 @@ public static class GuidHelper
     }
 
     /// <summary>
-    /// 根据 GUID 获取唯一的大数字序列(BigInteger)。
+    /// 根据 GUID 获取唯一的大数字序列(BigInteger)
     /// </summary>
-    /// <param name="guid">输入的 GUID。</param>
-    /// <returns>BigInteger 表示的唯一数字。</returns>
+    /// <param name="guid">输入的 GUID</param>
+    /// <returns>BigInteger 表示的唯一数字</returns>
     public static BigInteger GetUniqueBigInteger(Guid guid)
     {
         var bytes = guid.ToByteArray();
@@ -87,30 +87,30 @@ public static class GuidHelper
     }
 
     /// <summary>
-    /// 比较两个 GUID 是否相等。
+    /// 比较两个 GUID 是否相等
     /// </summary>
-    /// <param name="guid1">第一个 GUID。</param>
-    /// <param name="guid2">第二个 GUID。</param>
-    /// <returns>如果两个 GUID 相等，返回 true；否则返回 false。</returns>
+    /// <param name="guid1">第一个 GUID</param>
+    /// <param name="guid2">第二个 GUID</param>
+    /// <returns>如果两个 GUID 相等，返回 true；否则返回 false</returns>
     public static bool AreEqual(Guid guid1, Guid guid2)
     {
         return guid1.Equals(guid2);
     }
 
     /// <summary>
-    /// 检查 GUID 是否为空(Guid.Empty)。
+    /// 检查 GUID 是否为空(Guid.Empty)
     /// </summary>
-    /// <param name="guid">GUID。</param>
-    /// <returns>如果 GUID 为空，返回 true；否则返回 false。</returns>
+    /// <param name="guid">GUID</param>
+    /// <returns>如果 GUID 为空，返回 true；否则返回 false</returns>
     public static bool IsEmpty(Guid guid)
     {
         return guid == Guid.Empty;
     }
 
     /// <summary>
-    /// 生成一个短 GUID(Base64 编码)。
+    /// 生成一个短 GUID(Base64 编码)
     /// </summary>
-    /// <returns>短 GUID 字符串。</returns>
+    /// <returns>短 GUID 字符串</returns>
     public static string ToShortGuid()
     {
         return Convert.ToBase64String(Guid.NewGuid().ToByteArray())
@@ -120,10 +120,10 @@ public static class GuidHelper
     }
 
     /// <summary>
-    /// 从短 GUID(Base64 编码)转换为标准 GUID。
+    /// 从短 GUID(Base64 编码)转换为标准 GUID
     /// </summary>
-    /// <param name="shortGuid">短 GUID。</param>
-    /// <returns>标准 GUID。如果转换失败，返回 Guid.Empty。</returns>
+    /// <param name="shortGuid">短 GUID</param>
+    /// <returns>标准 GUID，如果转换失败，返回 Guid.Empty</returns>
     public static Guid FromShortGuid(string shortGuid)
     {
         try
