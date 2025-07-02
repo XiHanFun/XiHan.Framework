@@ -26,16 +26,6 @@ public static class FileHelper
     #region 文件操作
 
     /// <summary>
-    /// 读取文件内容到字符串
-    /// </summary>
-    /// <param name="filePath">要读取的文件路径</param>
-    /// <returns>文件内容为字符串</returns>
-    public static string ReadAllText(string filePath)
-    {
-        return File.ReadAllText(filePath);
-    }
-
-    /// <summary>
     /// 打开一个文本文件，读取文件的所有行，然后关闭文件
     /// </summary>
     /// <param name="filePath">要打开以进行读取的文件路径</param>
@@ -104,26 +94,6 @@ public static class FileHelper
     }
 
     /// <summary>
-    /// 将文本内容写入到文件
-    /// </summary>
-    /// <param name="filePath">要写入的文件路径</param>
-    /// <param name="content">要写入的文本内容</param>
-    public static void WriteAllText(string filePath, string content)
-    {
-        File.WriteAllText(filePath, content);
-    }
-
-    /// <summary>
-    /// 将文本内容追加到文件
-    /// </summary>
-    /// <param name="filePath">要追加的文件路径</param>
-    /// <param name="content">要追加的文本内容</param>
-    public static void AppendAllText(string filePath, string content)
-    {
-        File.AppendAllText(filePath, content);
-    }
-
-    /// <summary>
     /// 创建文件，如果文件不存在
     /// </summary>
     /// <param name="filePath">文件路径</param>
@@ -145,27 +115,6 @@ public static class FileHelper
         {
             File.Delete(filePath);
         }
-    }
-
-    /// <summary>
-    /// 移动文件到另一个位置
-    /// </summary>
-    /// <param name="sourcePath">当前文件的路径</param>
-    /// <param name="destinationPath">目标文件的路径</param>
-    public static void Move(string sourcePath, string destinationPath)
-    {
-        File.Move(sourcePath, destinationPath);
-    }
-
-    /// <summary>
-    /// 复制文件到另一个位置
-    /// </summary>
-    /// <param name="sourcePath">当前文件的路径</param>
-    /// <param name="destinationPath">目标文件的路径</param>
-    /// <param name="overwrite">如果目标位置已经存在同名文件，是否覆盖</param>
-    public static void Copy(string sourcePath, string destinationPath, bool overwrite = false)
-    {
-        File.Copy(sourcePath, destinationPath, overwrite);
     }
 
     /// <summary>
@@ -240,17 +189,6 @@ public static class FileHelper
     }
 
     /// <summary>
-    /// 从文件的绝对路径中获取扩展方法名
-    /// 文件扩展方法名是包含点(.)的
-    /// </summary>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
-    public static string GetExtension(string filePath)
-    {
-        return Path.GetExtension(filePath);
-    }
-
-    /// <summary>
     /// 从文件的绝对路径中获取文件名(不包含扩展方法名)
     /// </summary>
     /// <param name="filePath"></param>
@@ -268,7 +206,7 @@ public static class FileHelper
     public static string GetUniqueName(string fileName)
     {
         var fileNameWithoutExtension = GetNameWithoutExtension(fileName);
-        var fileExtension = GetExtension(fileName);
+        var fileExtension = Path.GetExtension(fileName);
         var uniqueFileName = $"{fileNameWithoutExtension}_{GetDateName()}_{GetRandomName()}";
         return uniqueFileName + fileExtension;
     }
@@ -289,16 +227,6 @@ public static class FileHelper
     #endregion 文件信息
 
     #region 文件检查
-
-    /// <summary>
-    /// 检查文件是否存在
-    /// </summary>
-    /// <param name="filePath">要检查的文件路径</param>
-    /// <returns>如果文件存在返回 true，否则返回 false</returns>
-    public static bool Exists(string filePath)
-    {
-        return File.Exists(filePath);
-    }
 
     /// <summary>
     /// 检查文件是否被锁定

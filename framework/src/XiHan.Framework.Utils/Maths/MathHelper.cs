@@ -19,94 +19,6 @@ namespace XiHan.Framework.Utils.Maths;
 /// </summary>
 public static class MathHelper
 {
-    #region 基本运算
-
-    /// <summary>
-    /// 返回两个数中的较大值
-    /// </summary>
-    /// <param name="a">第一个数值</param>
-    /// <param name="b">第二个数值</param>
-    /// <returns>两个数值中的较大值</returns>
-    public static double Max(double a, double b)
-    {
-        return Math.Max(a, b);
-    }
-
-    /// <summary>
-    /// 返回两个数中的较小值
-    /// </summary>
-    /// <param name="a">第一个数值</param>
-    /// <param name="b">第二个数值</param>
-    /// <returns>两个数值中的较小值</returns>
-    public static double Min(double a, double b)
-    {
-        return Math.Min(a, b);
-    }
-
-    /// <summary>
-    /// 计算平方根
-    /// </summary>
-    /// <param name="number">要计算平方根的数值（必须为非负数）</param>
-    /// <returns>平方根值</returns>
-    /// <exception cref="ArgumentException">当数值为负数时抛出</exception>
-    public static double Sqrt(double number)
-    {
-        return number < 0 ? throw new ArgumentException("数字不能为负。") : Math.Sqrt(number);
-    }
-
-    /// <summary>
-    /// 计算幂
-    /// </summary>
-    /// <param name="baseNumber">底数</param>
-    /// <param name="exponent">指数</param>
-    /// <returns>幂运算结果</returns>
-    public static double Pow(double baseNumber, double exponent)
-    {
-        return Math.Pow(baseNumber, exponent);
-    }
-
-    /// <summary>
-    /// 计算绝对值
-    /// </summary>
-    /// <param name="number">要计算绝对值的数值</param>
-    /// <returns>绝对值</returns>
-    public static double Abs(double number)
-    {
-        return Math.Abs(number);
-    }
-
-    /// <summary>
-    /// 三角函数：正弦
-    /// </summary>
-    /// <param name="angleInRadians">角度值（弧度制）</param>
-    /// <returns>正弦值</returns>
-    public static double Sin(double angleInRadians)
-    {
-        return Math.Sin(angleInRadians);
-    }
-
-    /// <summary>
-    /// 三角函数：余弦
-    /// </summary>
-    /// <param name="angleInRadians">角度值（弧度制）</param>
-    /// <returns>余弦值</returns>
-    public static double Cos(double angleInRadians)
-    {
-        return Math.Cos(angleInRadians);
-    }
-
-    /// <summary>
-    /// 三角函数：正切
-    /// </summary>
-    /// <param name="angleInRadians">角度值（弧度制）</param>
-    /// <returns>正切值</returns>
-    public static double Tan(double angleInRadians)
-    {
-        return Math.Tan(angleInRadians);
-    }
-
-    #endregion 基本运算
-
     #region 几何计算
 
     /// <summary>
@@ -141,7 +53,7 @@ public static class MathHelper
     /// <returns>两点之间的欧几里得距离</returns>
     public static double Distance(double x1, double y1, double x2, double y2)
     {
-        return Sqrt(Pow(x2 - x1, 2) + Pow(y2 - y1, 2));
+        return Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
     }
 
     /// <summary>
@@ -160,7 +72,7 @@ public static class MathHelper
         }
 
         var s = (a + b + c) / 2;
-        return Sqrt(s * (s - a) * (s - b) * (s - c));
+        return Math.Sqrt(s * (s - a) * (s - b) * (s - c));
     }
 
     #endregion 几何计算
@@ -211,7 +123,7 @@ public static class MathHelper
         }
 
         var mean = Average(numbers);
-        return numbers.Average(n => Pow(n - mean, 2));
+        return numbers.Average(n => Math.Pow(n - mean, 2));
     }
 
     /// <summary>
@@ -221,7 +133,7 @@ public static class MathHelper
     /// <returns>数值集合的标准差</returns>
     public static double StandardDeviation(IEnumerable<double> numbers)
     {
-        return Sqrt(Variance(numbers));
+        return Math.Sqrt(Variance(numbers));
     }
 
     #endregion 统计运算
@@ -240,7 +152,7 @@ public static class MathHelper
             return false;
         }
 
-        for (var i = 2; i <= Sqrt(number); i++)
+        for (var i = 2; i <= Math.Sqrt(number); i++)
         {
             if (number % i == 0)
             {

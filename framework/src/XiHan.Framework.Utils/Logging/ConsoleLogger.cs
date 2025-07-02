@@ -188,7 +188,7 @@ public static class ConsoleLogger
         catch (FormatException)
         {
             // 如果格式化失败，返回原消息并附加参数信息
-            var argStr = string.Join(", ", args?.Select(arg => arg?.ToString() ?? "null") ?? Array.Empty<string>());
+            var argStr = string.Join(", ", args?.Select(arg => arg?.ToString() ?? "null") ?? []);
             return $"{message} [Args: {argStr}]";
         }
         catch

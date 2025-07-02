@@ -34,7 +34,7 @@ public class XiHanOptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOp
     public XiHanOptionsFactory(
         IEnumerable<IConfigureOptions<TOptions>> setups,
         IEnumerable<IPostConfigureOptions<TOptions>> postConfigures)
-        : this(setups, postConfigures, Array.Empty<IValidateOptions<TOptions>>())
+        : this(setups, postConfigures, [])
     {
     }
 

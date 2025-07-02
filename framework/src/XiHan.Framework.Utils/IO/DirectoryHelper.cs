@@ -64,16 +64,6 @@ public static class DirectoryHelper
     }
 
     /// <summary>
-    /// 移动目录到另一个位置
-    /// </summary>
-    /// <param name="sourcePath">当前目录的路径</param>
-    /// <param name="destinationPath">目标目录的路径</param>
-    public static void Move(string sourcePath, string destinationPath)
-    {
-        Directory.Move(sourcePath, destinationPath);
-    }
-
-    /// <summary>
     /// 复制一个目录到另一个位置
     /// </summary>
     /// <param name="sourcePath">当前目录的路径</param>
@@ -120,16 +110,6 @@ public static class DirectoryHelper
     #region 目录信息
 
     /// <summary>
-    /// 获取当前目录中所有文件的路径
-    /// </summary>
-    /// <param name="directoryPath">目录的路径 </param>
-    /// <returns>包含目录中文件路径的数组 </returns>
-    public static string[] GetFiles(string directoryPath)
-    {
-        return Directory.GetFiles(directoryPath);
-    }
-
-    /// <summary>
     /// 获取目录中所有文件的路径
     /// </summary>
     /// <param name="directoryPath">目录的路径 </param>
@@ -140,16 +120,6 @@ public static class DirectoryHelper
     {
         return Directory.GetFiles(directoryPath, searchPattern,
             isSearchChild ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-    }
-
-    /// <summary>
-    /// 获取当前目录中所有子目录的路径
-    /// </summary>
-    /// <param name="directoryPath">目录的路径 </param>
-    /// <returns>包含目录中所有子目录路径的数组 </returns>
-    public static string[] GetDirectories(string directoryPath)
-    {
-        return Directory.GetDirectories(directoryPath);
     }
 
     /// <summary>
@@ -212,16 +182,6 @@ public static class DirectoryHelper
     #region 目录检查
 
     /// <summary>
-    /// 检查给定路径是否为目录
-    /// </summary>
-    /// <param name="path">要检查的路径</param>
-    /// <returns>true 如果路径是一个目录，否则 false </returns>
-    public static bool Exists(string path)
-    {
-        return Directory.Exists(path);
-    }
-
-    /// <summary>
     /// 检测指定目录中是否存在指定的文件(搜索子目录)
     /// </summary>
     /// <param name="directoryPath">指定目录的绝对路径</param>
@@ -245,14 +205,14 @@ public static class DirectoryHelper
     public static bool IsEmpty(string directoryPath)
     {
         // 判断是否存在文件
-        var fileNames = GetFiles(directoryPath);
+        var fileNames = Directory.GetFiles(directoryPath);
         if (fileNames.Length != 0)
         {
             return false;
         }
 
         // 判断是否存在文件夹
-        var directoryNames = GetDirectories(directoryPath);
+        var directoryNames = Directory.GetDirectories(directoryPath);
         return directoryNames.Length == 0;
     }
 

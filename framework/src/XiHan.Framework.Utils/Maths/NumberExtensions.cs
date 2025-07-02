@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Maths;
 public static class NumberExtensions
 {
     /// <summary>
-    /// 计算 value 对 modulus 的非负余数。
+    /// 计算 value 对 modulus 的非负余数
     /// </summary>
     /// <typeparam name="T">数字类型</typeparam>
     /// <param name="value">被除数</param>
@@ -35,7 +35,7 @@ public static class NumberExtensions
     }
 
     /// <summary>
-    /// 执行整数除法并向下取整。
+    /// 执行整数除法并向下取整
     /// </summary>
     /// <typeparam name="T">数字类型</typeparam>
     /// <param name="value">被除数</param>
@@ -52,7 +52,7 @@ public static class NumberExtensions
     }
 
     /// <summary>
-    /// 计算 value 和 multiplier 的乘积。
+    /// 计算 value 和 multiplier 的乘积
     /// </summary>
     /// <typeparam name="T">数字类型</typeparam>
     /// <param name="value">被乘数</param>
@@ -64,7 +64,7 @@ public static class NumberExtensions
     }
 
     /// <summary>
-    /// 计算 value 和 addend 的和。
+    /// 计算 value 和 addend 的和
     /// </summary>
     /// <typeparam name="T">数字类型</typeparam>
     /// <param name="value">被加数</param>
