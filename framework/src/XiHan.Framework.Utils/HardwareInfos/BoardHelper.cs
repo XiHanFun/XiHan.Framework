@@ -88,14 +88,14 @@ public static class BoardHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("wmic", "baseboard get Product,Manufacturer,SerialNumber,Version /Value").Trim();
+                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_BaseBoard | Select-Object Product, Manufacturer, SerialNumber, Version | Format-List""").Trim();
                 var lines = output.Split(Environment.NewLine);
                 if (lines.Length != 0)
                 {
-                    boardInfo.Product = GetParmValueSafe(lines, "Product", '=');
-                    boardInfo.Manufacturer = GetParmValueSafe(lines, "Manufacturer", '=');
-                    boardInfo.SerialNumber = GetParmValueSafe(lines, "SerialNumber", '=');
-                    boardInfo.Version = GetParmValueSafe(lines, "Version", '=');
+                    boardInfo.Product = GetParmValueSafe(lines, "Product", ':');
+                    boardInfo.Manufacturer = GetParmValueSafe(lines, "Manufacturer", ':');
+                    boardInfo.SerialNumber = GetParmValueSafe(lines, "SerialNumber", ':');
+                    boardInfo.Version = GetParmValueSafe(lines, "Version", ':');
                 }
             }
         }
