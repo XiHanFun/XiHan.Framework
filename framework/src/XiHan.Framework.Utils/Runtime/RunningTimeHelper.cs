@@ -27,12 +27,12 @@ namespace XiHan.Framework.Utils.Runtime;
 public static class RunningTimeHelper
 {
     /// <summary>
-    /// 处理器信息
+    /// 系统运行时间
     /// </summary>
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static string RunningTime => CacheManager.Instance.DefaultCache.GetOrAdd("RunningTime", () => GetRunningTime(), TimeSpan.FromSeconds(5));
+    public static string RunningTime => CacheManager.Instance.DefaultCache.GetOrAdd("RunningTime", () => GetRunningTime(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取系统运行时间
@@ -62,12 +62,17 @@ public static class RunningTimeHelper
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("wmic", "OS get LastBootUpTime /Value").Trim();
-                var outputArr = output.Split('=');
-                if (outputArr.Length != 0)
+                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object LastBootUpTime | Format-List""").Trim();
+                var lines = output.Split(Environment.NewLine);
+                var bootTimeLine = lines.FirstOrDefault(s => s.StartsWith("LastBootUpTime"));
+                if (bootTimeLine != null)
                 {
-                    var timeSpan = DateTime.Now - outputArr[1].Split('.')[0].FormatStringToDate();
-                    runTime = timeSpan.FormatTimeSpanToString();
+                    var bootTimeStr = bootTimeLine.Split(':', 2)[1].Trim();
+                    if (DateTime.TryParse(bootTimeStr, out var bootTime))
+                    {
+                        var timeSpan = DateTime.Now - bootTime;
+                        runTime = timeSpan.FormatTimeSpanToString();
+                    }
                 }
             }
         }

@@ -48,7 +48,7 @@ public static class SerializeExtensions
     /// </summary>
     /// <param name="jsonString"></param>
     /// <returns></returns>
-    public static object? DeserializeTo(this string jsonString)
+    public static object? DeserializeToObject(this string jsonString)
     {
         return JsonSerializer.Deserialize(jsonString.ToStream(),
             JsonTypeInfo.CreateJsonTypeInfo<object>(JsonSerializerOptionsHelper.DefaultJsonSerializerOptions));

@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// RSA 加密算法助手类，提供加密、解密、签名和验证签名的功能
 /// </summary>
 /// <remarks>
-/// RSA 是一种基于大整数因式分解问题的非对称加密算法。本实现提供了安全的加密解密方法和数字签名功能。
+/// 是一种基于大整数因式分解问题的非对称加密算法。本实现提供了安全的加密解密方法和数字签名功能。
 /// </remarks>
 public static class RsaHelper
 {
