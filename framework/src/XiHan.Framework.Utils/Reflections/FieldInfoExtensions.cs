@@ -16,6 +16,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using XiHan.Framework.Utils.Enums;
+using XiHan.Framework.Utils.Themes;
 
 namespace XiHan.Framework.Utils.Reflections;
 
