@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
+using XiHan.Framework.Utils.Caching.Dtos;
 
 namespace XiHan.Framework.Utils.Caching;
 

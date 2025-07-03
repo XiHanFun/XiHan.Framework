@@ -18,12 +18,12 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用分页响应基类
 /// </summary>
 [Serializable]
-public class PageResponseDto
+public class PageResponse
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public PageResponseDto()
+    public PageResponse()
     {
     }
 
@@ -31,7 +31,7 @@ public class PageResponseDto
     /// 构造函数
     /// </summary>
     /// <param name="pageData"></param>
-    public PageResponseDto(PageDataDto pageData)
+    public PageResponse(PageData pageData)
     {
         PageData = pageData;
     }
@@ -39,7 +39,7 @@ public class PageResponseDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageDataDto PageData { get; set; } = new();
+    public PageData PageData { get; set; } = new();
 }
 
 /// <summary>
@@ -47,7 +47,7 @@ public class PageResponseDto
 /// </summary>
 /// <typeparam name="T"></typeparam>
 [Serializable]
-public class PageResponseDto<T> : PageResponseDto
+public class PageResponseDto<T> : PageResponse
     where T : class, new()
 {
     /// <summary>
@@ -61,7 +61,7 @@ public class PageResponseDto<T> : PageResponseDto
     /// 构造函数
     /// </summary>
     /// <param name="pageData"></param>
-    public PageResponseDto(PageDataDto pageData)
+    public PageResponseDto(PageData pageData)
         : base(pageData)
     {
         ResponseData = null;
@@ -73,7 +73,7 @@ public class PageResponseDto<T> : PageResponseDto
     /// </summary>
     /// <param name="pageData"></param>
     /// <param name="responseData"></param>
-    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseData)
+    public PageResponseDto(PageData pageData, IReadOnlyList<T>? responseData)
         : base(pageData)
     {
         ResponseData = responseData;
@@ -86,7 +86,7 @@ public class PageResponseDto<T> : PageResponseDto
     /// <param name="pageData"></param>
     /// <param name="responseData"></param>
     /// <param name="extraData"></param>
-    public PageResponseDto(PageDataDto pageData, IReadOnlyList<T>? responseData, object extraData)
+    public PageResponseDto(PageData pageData, IReadOnlyList<T>? responseData, object extraData)
         : base(pageData)
     {
         ResponseData = responseData;

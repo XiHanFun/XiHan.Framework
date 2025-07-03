@@ -49,6 +49,11 @@ public class CacheManager
     /// <summary>
     /// 默认缓存实例
     /// </summary>
+    public static MemoryCache InstanceDefaultCache => LazyInstance.Value.DefaultCache;
+
+    /// <summary>
+    /// 默认缓存实例
+    /// </summary>
     public MemoryCache DefaultCache => _defaultCache;
 
     /// <summary>

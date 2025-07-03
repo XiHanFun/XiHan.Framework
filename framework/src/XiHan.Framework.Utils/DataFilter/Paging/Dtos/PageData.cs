@@ -18,12 +18,12 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用分页数据响应基类
 /// </summary>
 [Serializable]
-public class PageDataDto
+public class PageData
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public PageDataDto()
+    public PageData()
     {
     }
 
@@ -31,9 +31,9 @@ public class PageDataDto
     /// 构造函数
     /// </summary>
     /// <param name="totalCount">数据总数</param>
-    public PageDataDto(int totalCount)
+    public PageData(int totalCount)
     {
-        var page = new PageInfoDto();
+        var page = new PageInfo();
         PageInfo = page;
         TotalCount = totalCount;
         PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
@@ -44,7 +44,7 @@ public class PageDataDto
     /// </summary>
     /// <param name="page">分页信息</param>
     /// <param name="totalCount">数据总数</param>
-    public PageDataDto(PageInfoDto page, int totalCount)
+    public PageData(PageInfo page, int totalCount)
     {
         PageInfo = page;
         TotalCount = totalCount;
@@ -54,7 +54,7 @@ public class PageDataDto
     /// <summary>
     /// 分页数据
     /// </summary>
-    public PageInfoDto PageInfo { get; set; } = new();
+    public PageInfo PageInfo { get; set; } = new();
 
     /// <summary>
     /// 数据总数

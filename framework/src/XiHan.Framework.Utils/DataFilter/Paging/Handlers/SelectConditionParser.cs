@@ -36,7 +36,7 @@ public static class SelectConditionParser<T>
     /// </summary>
     /// <param name="selectCondition"></param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectConditionDto selectCondition)
+    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectCondition selectCondition)
     {
         return GetSelectConditionParser(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
     }
@@ -58,7 +58,7 @@ public static class SelectConditionParser<T>
     /// <param name="value">比较值</param>
     /// <param name="selectCompare">比较操作</param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> GetSelectConditionParser(string propertyName, object? value, SelectCompareEnum selectCompare)
+    public static Expression<Func<T, bool>> GetSelectConditionParser(string propertyName, object? value, SelectCompare selectCompare)
     {
         var type = typeof(T);
         var key = $"{typeof(T).FullName}.{propertyName}.{selectCompare}";
@@ -90,27 +90,27 @@ public static class SelectConditionParser<T>
     /// <param name="selectCompare">比较操作 </param>
     /// <returns>生成的比较表达式 </returns>
     /// <exception cref="NotSupportedException"></exception>
-    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompareEnum selectCompare)
+    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompare selectCompare)
     {
         var constant = Expression.Constant(value);
 
         return selectCompare switch
         {
             // 单值比较
-            SelectCompareEnum.Equal => Expression.Equal(propertyAccess, constant),
-            SelectCompareEnum.Greater => Expression.GreaterThan(propertyAccess, constant),
-            SelectCompareEnum.GreaterEqual => Expression.GreaterThanOrEqual(propertyAccess, constant),
-            SelectCompareEnum.Less => Expression.LessThan(propertyAccess, constant),
-            SelectCompareEnum.LessEqual => Expression.LessThanOrEqual(propertyAccess, constant),
-            SelectCompareEnum.NotEqual => Expression.NotEqual(propertyAccess, constant),
+            SelectCompare.Equal => Expression.Equal(propertyAccess, constant),
+            SelectCompare.Greater => Expression.GreaterThan(propertyAccess, constant),
+            SelectCompare.GreaterEqual => Expression.GreaterThanOrEqual(propertyAccess, constant),
+            SelectCompare.Less => Expression.LessThan(propertyAccess, constant),
+            SelectCompare.LessEqual => Expression.LessThanOrEqual(propertyAccess, constant),
+            SelectCompare.NotEqual => Expression.NotEqual(propertyAccess, constant),
 
             // 集合比较
-            SelectCompareEnum.Contains => GenerateContainsExpression(propertyAccess, value),
-            SelectCompareEnum.InWithContains => GenerateInWithContainsExpression(propertyAccess, value),
-            SelectCompareEnum.InWithEqual => GenerateInWithEqualExpression(propertyAccess, value),
+            SelectCompare.Contains => GenerateContainsExpression(propertyAccess, value),
+            SelectCompare.InWithContains => GenerateInWithContainsExpression(propertyAccess, value),
+            SelectCompare.InWithEqual => GenerateInWithEqualExpression(propertyAccess, value),
 
             // 区间比较
-            SelectCompareEnum.Between => GenerateBetweenExpression(propertyAccess, value),
+            SelectCompare.Between => GenerateBetweenExpression(propertyAccess, value),
 
             _ => throw new NotSupportedException($"不支持的比较操作：{selectCompare}")
         };

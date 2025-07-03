@@ -15,7 +15,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using XiHan.Framework.Utils.Enums;
 using XiHan.Framework.Utils.Themes;
 
 namespace XiHan.Framework.Utils.Reflections;
@@ -63,7 +62,7 @@ public static class FieldInfoExtensions
     public static ThemeColor GetThemeColorValue(this FieldInfo field)
     {
         var themeColor = new ThemeColor();
-        if (field.GetCustomAttribute(typeof(EnumThemeAttribute), false) is EnumThemeAttribute theme)
+        if (field.GetCustomAttribute(typeof(ThemeAttribute), false) is ThemeAttribute theme)
         {
             themeColor = theme.ThemeColor;
         }
