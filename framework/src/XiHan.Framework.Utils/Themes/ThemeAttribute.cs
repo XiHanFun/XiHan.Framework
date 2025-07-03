@@ -3,25 +3,24 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EnumThemeAttribute
-// Guid:59609904-5a28-41f1-9708-05cb390e885e
+// FileName:ThemeAttribute
+// Guid:c0568958-8810-4302-a07a-839ed705c85a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/5/17 3:30:15
+// CreateTime:2025/7/4 2:49:25
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
-using XiHan.Framework.Utils.Themes;
 
-namespace XiHan.Framework.Utils.Enums;
+namespace XiHan.Framework.Utils.Themes;
 
 /// <summary>
-/// 枚举主题特性
+/// 主题特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-public class EnumThemeAttribute : Attribute
+public class ThemeAttribute : Attribute
 {
     // 预定义主题缓存
     private static readonly ConcurrentDictionary<ThemeType, ThemeColor> ThemeColorsCatch = new()
@@ -46,7 +45,7 @@ public class EnumThemeAttribute : Attribute
     /// 构造函数 - 使用预定义主题类型
     /// </summary>
     /// <param name="type">主题类型</param>
-    public EnumThemeAttribute(ThemeType type)
+    public ThemeAttribute(ThemeType type)
     {
         ThemeColor = ThemeColorsCatch.GetValueOrDefault(type, ThemeColorsCatch[ThemeType.Default]);
     }
@@ -56,7 +55,7 @@ public class EnumThemeAttribute : Attribute
     /// </summary>
     /// <param name="theme">主题名称</param>
     /// <param name="color">颜色值</param>
-    public EnumThemeAttribute(string theme, string color)
+    public ThemeAttribute(string theme, string color)
     {
         ThemeColor = new ThemeColor { Theme = theme, Color = color };
     }
@@ -67,7 +66,7 @@ public class EnumThemeAttribute : Attribute
     /// <param name="theme">主题名称</param>
     /// <param name="color">颜色值</param>
     /// <param name="icon">图标</param>
-    public EnumThemeAttribute(string theme, string color, string icon)
+    public ThemeAttribute(string theme, string color, string icon)
     {
         ThemeColor = new ThemeColor { Theme = theme, Color = color, Icon = icon };
     }
@@ -105,150 +104,4 @@ public class EnumThemeAttribute : Attribute
     {
         return new Dictionary<ThemeType, ThemeColor>(ThemeColorsCatch);
     }
-}
-
-/// <summary>
-/// 枚举状态主题特性
-/// </summary>
-[AttributeUsage(AttributeTargets.Field)]
-public class EnumStatusThemeAttribute : EnumThemeAttribute
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="status">状态</param>
-    public EnumStatusThemeAttribute(StatusType status) : base(GetStatusTheme(status))
-    {
-        Status = status;
-    }
-
-    /// <summary>
-    /// 状态
-    /// </summary>
-    public StatusType Status { get; }
-
-    /// <summary>
-    /// 获取状态主题
-    /// </summary>
-    /// <param name="status">状态</param>
-    /// <returns>主题类型</returns>
-    private static ThemeType GetStatusTheme(StatusType status)
-    {
-        return status switch
-        {
-            StatusType.Active => ThemeType.Success,
-            StatusType.Inactive => ThemeType.Secondary,
-            StatusType.Pending => ThemeType.Warning,
-            StatusType.Disabled => ThemeType.Dark,
-            StatusType.Error => ThemeType.Error,
-            StatusType.Processing => ThemeType.Primary,
-            _ => ThemeType.Default
-        };
-    }
-}
-
-/// <summary>
-/// 枚举优先级主题特性
-/// </summary>
-[AttributeUsage(AttributeTargets.Field)]
-public class EnumPriorityThemeAttribute : EnumThemeAttribute
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="priority">优先级</param>
-    public EnumPriorityThemeAttribute(PriorityType priority) : base(GetPriorityTheme(priority))
-    {
-        Priority = priority;
-    }
-
-    /// <summary>
-    /// 优先级
-    /// </summary>
-    public PriorityType Priority { get; }
-
-    /// <summary>
-    /// 获取优先级主题
-    /// </summary>
-    /// <param name="priority">优先级</param>
-    /// <returns>主题类型</returns>
-    private static ThemeType GetPriorityTheme(PriorityType priority)
-    {
-        return priority switch
-        {
-            PriorityType.Low => ThemeType.Secondary,
-            PriorityType.Normal => ThemeType.Primary,
-            PriorityType.High => ThemeType.Warning,
-            PriorityType.Urgent => ThemeType.Error,
-            PriorityType.Critical => ThemeType.Error,
-            _ => ThemeType.Default
-        };
-    }
-}
-
-/// <summary>
-/// 状态类型
-/// </summary>
-public enum StatusType
-{
-    /// <summary>
-    /// 激活
-    /// </summary>
-    Active,
-
-    /// <summary>
-    /// 非激活
-    /// </summary>
-    Inactive,
-
-    /// <summary>
-    /// 等待中
-    /// </summary>
-    Pending,
-
-    /// <summary>
-    /// 禁用
-    /// </summary>
-    Disabled,
-
-    /// <summary>
-    /// 错误
-    /// </summary>
-    Error,
-
-    /// <summary>
-    /// 处理中
-    /// </summary>
-    Processing
-}
-
-/// <summary>
-/// 优先级类型
-/// </summary>
-public enum PriorityType
-{
-    /// <summary>
-    /// 低
-    /// </summary>
-    Low,
-
-    /// <summary>
-    /// 正常
-    /// </summary>
-    Normal,
-
-    /// <summary>
-    /// 高
-    /// </summary>
-    High,
-
-    /// <summary>
-    /// 紧急
-    /// </summary>
-    Urgent,
-
-    /// <summary>
-    /// 关键
-    /// </summary>
-    Critical
 }

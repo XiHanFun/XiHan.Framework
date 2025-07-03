@@ -22,13 +22,13 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用排序条件基类
 /// </summary>
 [Serializable]
-public class SortConditionDto
+public class SortCondition
 {
     /// <summary>
     /// 构造一个排序字段名称和排序方式的排序条件
     /// </summary>
     /// <param name="sortField">字段名称</param>
-    public SortConditionDto(string sortField)
+    public SortCondition(string sortField)
     {
         SortField = sortField;
     }
@@ -38,7 +38,7 @@ public class SortConditionDto
     /// </summary>
     /// <param name="sortField">字段名称</param>
     /// <param name="sortPriority">排序优先级</param>
-    public SortConditionDto(string sortField, int sortPriority)
+    public SortCondition(string sortField, int sortPriority)
     {
         SortField = sortField;
         SortPriority = sortPriority;
@@ -49,7 +49,7 @@ public class SortConditionDto
     /// </summary>
     /// <param name="sortField">字段名称</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(string sortField, SortDirectionEnum sortDirection)
+    public SortCondition(string sortField, SortDirection sortDirection)
     {
         SortField = sortField;
         SortDirection = sortDirection;
@@ -61,7 +61,7 @@ public class SortConditionDto
     /// <param name="sortField">字段名称</param>
     /// <param name="sortPriority">排序优先级</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(string sortField, int sortPriority, SortDirectionEnum sortDirection)
+    public SortCondition(string sortField, int sortPriority, SortDirection sortDirection)
     {
         SortField = sortField;
         SortPriority = sortPriority;
@@ -81,7 +81,7 @@ public class SortConditionDto
     /// <summary>
     /// 排序方向，默认为升序
     /// </summary>
-    public SortDirectionEnum SortDirection { get; set; } = SortDirectionEnum.Asc;
+    public SortDirection SortDirection { get; set; } = SortDirection.Asc;
 }
 
 /// <summary>
@@ -89,10 +89,10 @@ public class SortConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 [Serializable]
-public class SortConditionDto<T> : SortConditionDto
+public class SortConditionDto<T> : SortCondition
 {
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
     public SortConditionDto(Expression<Func<T, object>> keySelector)
@@ -101,7 +101,7 @@ public class SortConditionDto<T> : SortConditionDto
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
     /// <param name="sortPriority">排序优先级</param>
@@ -111,22 +111,22 @@ public class SortConditionDto<T> : SortConditionDto
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirectionEnum sortDirection)
+    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirection sortDirection)
         : base(keySelector.GetPropertyName(), sortDirection)
     {
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortConditionDto"/>类型的新实例
+    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
     /// </summary>
     /// <param name="keySelector">属性选择器</param>
     /// <param name="sortPriority">排序优先级</param>
     /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority, SortDirectionEnum sortDirection)
+    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority, SortDirection sortDirection)
         : base(keySelector.GetPropertyName(), sortPriority, sortDirection)
     {
     }

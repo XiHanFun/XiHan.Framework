@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Caching;
+namespace XiHan.Framework.Utils.Caching.Dtos;
 
 /// <summary>
 /// 内存缓存项

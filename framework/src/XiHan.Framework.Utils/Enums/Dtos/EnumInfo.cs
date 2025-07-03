@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.Themes;
 
-namespace XiHan.Framework.Utils.Enums;
+namespace XiHan.Framework.Utils.Enums.Dtos;
 
 /// <summary>
 /// 枚举信息
