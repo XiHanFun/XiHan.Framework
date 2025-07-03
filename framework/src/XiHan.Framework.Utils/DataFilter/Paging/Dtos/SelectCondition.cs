@@ -20,14 +20,14 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用选择条件基类
 /// </summary>
 [Serializable]
-public class SelectConditionDto
+public class SelectCondition
 {
     /// <summary>
     /// 构造一个选择字段名称和选择值的选择条件
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
-    public SelectConditionDto(string selectField, object? criteriaValue)
+    public SelectCondition(string selectField, object? criteriaValue)
     {
         SelectField = selectField;
         CriteriaValue = criteriaValue;
@@ -39,7 +39,7 @@ public class SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
+    public SelectCondition(string selectField, object? criteriaValue, SelectCompare selectCompare)
     {
         SelectField = selectField;
         CriteriaValue = criteriaValue;
@@ -53,7 +53,7 @@ public class SelectConditionDto
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
+    public SelectCondition(bool isKeywords, string selectField, object? criteriaValue, SelectCompare selectCompare)
     {
         IsKeywords = isKeywords;
         SelectField = selectField;
@@ -79,7 +79,7 @@ public class SelectConditionDto
     /// <summary>
     /// 选择比较，默认为等于
     /// </summary>
-    public SelectCompareEnum SelectCompare { get; set; } = SelectCompareEnum.Equal;
+    public SelectCompare SelectCompare { get; set; } = SelectCompare.Equal;
 }
 
 /// <summary>
@@ -87,10 +87,10 @@ public class SelectConditionDto
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
 [Serializable]
-public class SelectConditionDto<T> : SelectConditionDto
+public class SelectConditionDto<T> : SelectCondition
 {
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例
+    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
@@ -100,24 +100,24 @@ public class SelectConditionDto<T> : SelectConditionDto
     }
 
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例
+    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
     /// </summary>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompare selectCompare)
         : base(selectField, criteriaValue!, selectCompare)
     {
     }
 
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectConditionDto"/>类型的新实例
+    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
     /// </summary>
     /// <param name="isKeywords">是否关键字</param>
     /// <param name="selectField">字段名称</param>
     /// <param name="criteriaValue">条件值</param>
     /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompareEnum selectCompare)
+    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompare selectCompare)
         : base(isKeywords, selectField, criteriaValue!, selectCompare)
     {
     }

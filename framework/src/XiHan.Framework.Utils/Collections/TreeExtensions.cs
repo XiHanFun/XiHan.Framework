@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Collections.Dtos;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Collections;
@@ -318,30 +319,4 @@ public static class TreeExtensions
     }
 
     #endregion 私有方法
-}
-
-/// <summary>
-/// 树节点数据传输对象
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public class TreeNode<T>
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="value">节点值</param>
-    public TreeNode(T value)
-    {
-        Value = value;
-    }
-
-    /// <summary>
-    /// 节点值
-    /// </summary>
-    public T Value { get; set; }
-
-    /// <summary>
-    /// 子节点
-    /// </summary>
-    public List<TreeNode<T>> Children { get; set; } = [];
 }

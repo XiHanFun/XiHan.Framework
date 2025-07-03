@@ -18,7 +18,7 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用分页信息基类
 /// </summary>
 [Serializable]
-public class PageInfoDto
+public class PageInfo
 {
     #region 默认值
 
@@ -41,7 +41,7 @@ public class PageInfoDto
     /// <summary>
     /// 构造函数
     /// </summary>
-    public PageInfoDto()
+    public PageInfo()
     {
     }
 
@@ -50,7 +50,7 @@ public class PageInfoDto
     /// </summary>
     /// <param name="currentIndex"></param>
     /// <param name="pageSize"></param>
-    public PageInfoDto(int currentIndex, int pageSize)
+    public PageInfo(int currentIndex, int pageSize)
     {
         _currentIndex = currentIndex;
         _pageSize = pageSize;

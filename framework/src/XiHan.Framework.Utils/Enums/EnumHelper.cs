@@ -14,6 +14,7 @@
 
 using System.Collections.Concurrent;
 using System.Reflection;
+using XiHan.Framework.Utils.Enums.Dtos;
 using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Utils.Enums;

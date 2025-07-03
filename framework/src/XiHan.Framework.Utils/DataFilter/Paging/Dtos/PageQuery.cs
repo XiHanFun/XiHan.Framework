@@ -18,7 +18,7 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// 通用分页查询基类
 /// </summary>
 [Serializable]
-public class PageQueryDto
+public class PageQuery
 {
     /// <summary>
     /// 是否查询所有数据
@@ -35,15 +35,15 @@ public class PageQueryDto
     /// <summary>
     /// 分页信息
     /// </summary>
-    public PageInfoDto? PageInfo { get; set; }
+    public PageInfo? PageInfo { get; set; }
 
     /// <summary>
     /// 选择条件集合
     /// </summary>
-    public List<SelectConditionDto>? SelectConditions { get; set; }
+    public List<SelectCondition>? SelectConditions { get; set; }
 
     /// <summary>
     /// 排序条件集合
     /// </summary>
-    public List<SortConditionDto>? SortConditions { get; set; }
+    public List<SortCondition>? SortConditions { get; set; }
 }

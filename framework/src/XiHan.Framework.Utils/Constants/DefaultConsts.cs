@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Utils.Constants;
 
 /// <summary>
-/// DefaultConsts
+/// 默认常量类
 /// </summary>
 public class DefaultConsts
 {

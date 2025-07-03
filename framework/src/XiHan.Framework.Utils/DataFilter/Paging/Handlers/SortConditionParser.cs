@@ -34,7 +34,7 @@ public static class SortConditionParser<T>
     /// </summary>
     /// <param name="sortCondition"></param>
     /// <returns></returns>
-    public static Expression<Func<T, object>> GetSortConditionParser(SortConditionDto sortCondition)
+    public static Expression<Func<T, object>> GetSortConditionParser(SortCondition sortCondition)
     {
         return GetSortConditionParser(sortCondition.SortField);
     }

@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Enums;
 /// <summary>
 /// 排序方向枚举
 /// </summary>
-public enum SortDirectionEnum
+public enum SortDirection
 {
     /// <summary>
     /// 升序
