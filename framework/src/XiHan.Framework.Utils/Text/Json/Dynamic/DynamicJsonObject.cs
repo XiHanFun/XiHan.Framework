@@ -41,11 +41,6 @@ public class DynamicJsonObject : DynamicJsonBase, IEnumerable<KeyValuePair<strin
     }
 
     /// <summary>
-    /// 获取原始值（字典形式）
-    /// </summary>
-    public override object? Value => _data;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="data">初始数据</param>
@@ -53,6 +48,11 @@ public class DynamicJsonObject : DynamicJsonBase, IEnumerable<KeyValuePair<strin
     {
         _data = new Dictionary<string, object?>(data, StringComparer.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// 获取原始值（字典形式）
+    /// </summary>
+    public override object? Value => _data;
 
     /// <summary>
     /// 属性数量
@@ -134,12 +134,12 @@ public class DynamicJsonObject : DynamicJsonBase, IEnumerable<KeyValuePair<strin
     {
         var expando = new ExpandoObject();
         var dictionary = (IDictionary<string, object?>)expando;
-        
+
         foreach (var kvp in obj._data)
         {
             dictionary[kvp.Key] = kvp.Value;
         }
-        
+
         return expando;
     }
 
@@ -486,7 +486,7 @@ public class DynamicJsonObject : DynamicJsonBase, IEnumerable<KeyValuePair<strin
     /// </summary>
     /// <param name="propertyName">属性名</param>
     /// <returns>是否包含</returns>
-    public bool HasProperty(string propertyName)
+    public override bool HasProperty(string propertyName)
     {
         return _data.ContainsKey(propertyName);
     }

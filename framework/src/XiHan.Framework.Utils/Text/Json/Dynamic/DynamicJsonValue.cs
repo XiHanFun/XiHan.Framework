@@ -139,13 +139,11 @@ public class DynamicJsonValue : DynamicJsonBase
     /// <param name="value">动态值</param>
     public static implicit operator bool(DynamicJsonValue? value)
     {
-        return value?._value == null
-            ? false
-            : value._value is bool boolValue
+        return (value?._value) != null && (value._value is bool boolValue
             ? boolValue
             : value.IsNumeric
             ? !value._value.Equals(Convert.ChangeType(0, value._valueType))
-            : value._value is string stringValue ? !string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0" : true;
+            : value._value is not string stringValue || (!string.IsNullOrEmpty(stringValue) && stringValue != "false" && stringValue != "0"));
     }
 
     /// <summary>
@@ -263,57 +261,6 @@ public class DynamicJsonValue : DynamicJsonBase
     }
 
     /// <summary>
-    /// 转换为指定类型
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="defaultValue">默认值</param>
-    /// <returns>转换后的值</returns>
-    public T? ToValue<T>(T? defaultValue = default)
-    {
-        try
-        {
-            if (_value is T directValue)
-            {
-                return directValue;
-            }
-
-            if (_value == null)
-            {
-                return defaultValue;
-            }
-
-            // 尝试类型转换
-            if (typeof(T) == typeof(string))
-            {
-                return (T)(object)_value.ToString()!;
-            }
-
-            if (typeof(T) == typeof(bool) && IsNumeric)
-            {
-                // 数值转布尔：0 为 false，非 0 为 true
-                var isTrue = !_value.Equals(Convert.ChangeType(0, _valueType));
-                return (T)(object)isTrue;
-            }
-
-            // 使用 Convert.ChangeType
-            var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-            if (Convert.GetTypeCode(_value) != TypeCode.Object)
-            {
-                var converted = Convert.ChangeType(_value, targetType, CultureInfo.InvariantCulture);
-                return (T)converted;
-            }
-
-            // 尝试 JSON 序列化/反序列化
-            var json = JsonSerializer.Serialize(_value);
-            return JsonSerializer.Deserialize<T>(json) ?? defaultValue;
-        }
-        catch
-        {
-            return defaultValue;
-        }
-    }
-
-    /// <summary>
     /// 转换为字符串
     /// </summary>
     /// <returns>字符串表示</returns>
@@ -329,7 +276,7 @@ public class DynamicJsonValue : DynamicJsonBase
     /// <returns>字符串值</returns>
     public string AsString(string defaultValue = "")
     {
-        return ToValue(defaultValue);
+        return ToValue(defaultValue) ?? string.Empty;
     }
 
     /// <summary>
@@ -400,16 +347,6 @@ public class DynamicJsonValue : DynamicJsonBase
     public Guid AsGuid(Guid? defaultValue = null)
     {
         return ToValue(defaultValue ?? Guid.Empty);
-    }
-
-    /// <summary>
-    /// 转换为 JSON 字符串
-    /// </summary>
-    /// <param name="options">序列化选项</param>
-    /// <returns>JSON 字符串</returns>
-    public string ToJson(JsonSerializerOptions? options = null)
-    {
-        return JsonSerializer.Serialize(_value, options);
     }
 
     /// <summary>
