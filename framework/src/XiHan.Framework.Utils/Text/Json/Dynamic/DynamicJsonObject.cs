@@ -70,23 +70,6 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     public IEnumerable<object?> Values => _data.Values;
 
     /// <summary>
-    /// 获取属性数量
-    /// </summary>
-    public int PropertyCount => _data.Count;
-
-    /// <summary>
-    /// 获取所有属性名
-    /// </summary>
-    /// <returns>属性名集合</returns>
-    public IEnumerable<string> PropertyNames => _data.Keys;
-
-    /// <summary>
-    /// 获取所有属性值
-    /// </summary>
-    /// <returns>属性值集合</returns>
-    public IEnumerable<object?> PropertyValues => _data.Values;
-
-    /// <summary>
     /// 索引器访问
     /// </summary>
     /// <param name="key">键</param>

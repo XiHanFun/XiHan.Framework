@@ -23,6 +23,7 @@ using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Utils.Text.Json;
+using XiHan.Framework.Utils.Text.Json.Dynamic;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
@@ -286,7 +287,8 @@ public class AdvancedHttpService : IAdvancedHttpService
             Headers = result.Headers,
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
-            RequestMethod = result.RequestMethod
+            RequestMethod = result.RequestMethod,
+            RequestBody = result.RequestBody,
         };
     }
 
@@ -309,7 +311,8 @@ public class AdvancedHttpService : IAdvancedHttpService
             Headers = result.Headers,
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
-            RequestMethod = result.RequestMethod
+            RequestMethod = result.RequestMethod,
+            RequestBody = result.RequestBody,
         };
     }
 
@@ -332,7 +335,8 @@ public class AdvancedHttpService : IAdvancedHttpService
             Headers = result.Headers,
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
-            RequestMethod = result.RequestMethod
+            RequestMethod = result.RequestMethod,
+            RequestBody = result.RequestBody,
         };
     }
 
@@ -501,7 +505,8 @@ public class AdvancedHttpService : IAdvancedHttpService
                 StatusCode = response.StatusCode,
                 ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
                 RequestUrl = fullUrl,
-                RequestMethod = method.Method
+                RequestMethod = method.Method,
+                RequestBody = content?.ReadAsStringAsync(cancellationToken)
             };
 
             // 复制响应头
@@ -620,11 +625,9 @@ public class AdvancedHttpService : IAdvancedHttpService
         if (targetType == typeof(object))
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (!JsonHelper.TryParseJsonDynamic(content, out var dynamicObject))
-            {
-                throw new JsonException("无法将响应内容转换为动态对象");
-            }
-            return (T?)dynamicObject;
+            return !JsonHelper.TryParseJsonDynamic(content, out var dynamicObject)
+                ? throw new JsonException("无法将响应内容转换为动态对象")
+                : (T?)dynamicObject;
         }
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
