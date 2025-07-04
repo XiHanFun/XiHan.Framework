@@ -347,10 +347,10 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = new JsonSerializerOptions(DefaultOptions)
+            var options = JsonSerializerOptionsHelper.GetClonedDefault(opt =>
             {
-                WriteIndented = indented
-            };
+                opt.WriteIndented = indented;
+            });
             return JsonSerializer.Serialize(document.RootElement, options);
         }
         catch
