@@ -24,7 +24,7 @@ namespace XiHan.Framework.Utils.Text.Json.Dynamic;
 /// 类似 Newtonsoft.Json 的 JArray 体验
 /// </summary>
 [DebuggerDisplay("Count = {Count}")]
-public class DynamicJsonArray : DynamicObject, IList<object?>
+public class DynamicJsonArray : DynamicJsonBase, IList<object?>
 {
     /// <summary>
     /// 内部数据存储
@@ -38,6 +38,11 @@ public class DynamicJsonArray : DynamicObject, IList<object?>
     {
         _data = [];
     }
+
+    /// <summary>
+    /// 获取原始值（列表形式）
+    /// </summary>
+    public override object? Value => _data;
 
     /// <summary>
     /// 构造函数
@@ -56,7 +61,7 @@ public class DynamicJsonArray : DynamicObject, IList<object?>
     /// <summary>
     /// 是否为空
     /// </summary>
-    public bool IsEmpty => _data.Count == 0;
+    public override bool IsEmpty => _data.Count == 0;
 
     /// <summary>
     /// 是否只读
@@ -356,7 +361,7 @@ public class DynamicJsonArray : DynamicObject, IList<object?>
     /// </summary>
     /// <param name="options">序列化选项</param>
     /// <returns>JSON 字符串</returns>
-    public string ToJson(JsonSerializerOptions? options = null)
+    public override string ToJson(JsonSerializerOptions? options = null)
     {
         return JsonHelper.Serialize(_data, options);
     }
