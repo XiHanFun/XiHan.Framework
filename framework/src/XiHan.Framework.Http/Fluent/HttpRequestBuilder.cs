@@ -336,9 +336,9 @@ public class HttpRequestBuilder
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<DynamicJsonObject>> GetDynamicAsync(CancellationToken cancellationToken = default)
+    public async Task<HttpResult<dynamic>> GetDynamicAsync(CancellationToken cancellationToken = default)
     {
-        return await _httpService.GetAsync<DynamicJsonObject>(_url, _options, cancellationToken);
+        return await _httpService.GetAsync<dynamic>(_url, _options, cancellationToken);
     }
 
     /// <summary>
@@ -393,9 +393,9 @@ public class HttpRequestBuilder
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<DynamicJsonObject>> PostDynamicAsync(CancellationToken cancellationToken = default)
+    public async Task<HttpResult<dynamic>> PostDynamicAsync(CancellationToken cancellationToken = default)
     {
-        return await PostAsync<DynamicJsonObject>(cancellationToken);
+        return await PostAsync<dynamic>(cancellationToken);
     }
 
     /// <summary>

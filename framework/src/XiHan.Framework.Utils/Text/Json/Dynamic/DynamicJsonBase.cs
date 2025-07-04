@@ -89,15 +89,6 @@ public abstract class DynamicJsonBase : DynamicObject, IDynamicJson
     }
 
     /// <summary>
-    /// 隐式转换为 dynamic
-    /// </summary>
-    /// <param name="obj">动态 JSON 对象</param>
-    public static implicit operator DynamicObject(DynamicJsonBase obj)
-    {
-        return obj;
-    }
-
-    /// <summary>
     /// 转换为字符串
     /// </summary>
     /// <returns>字符串表示</returns>
@@ -114,11 +105,9 @@ public abstract class DynamicJsonBase : DynamicObject, IDynamicJson
     /// <returns>属性值的动态包装</returns>
     public virtual DynamicJsonValue GetProperty(string propertyName)
     {
-        if (this is DynamicJsonObject obj && obj.TryGetValue(propertyName, out var value))
-        {
-            return new DynamicJsonValue(value);
-        }
-        return new DynamicJsonValue(null);
+        return this is DynamicJsonObject obj && obj.TryGetValue(propertyName, out var value)
+            ? new DynamicJsonValue(value)
+            : new DynamicJsonValue(null);
     }
 
     /// <summary>
@@ -142,10 +131,6 @@ public abstract class DynamicJsonBase : DynamicObject, IDynamicJson
     /// <returns>是否包含</returns>
     public virtual bool HasProperty(string propertyName)
     {
-        if (this is DynamicJsonObject obj)
-        {
-            return obj.ContainsKey(propertyName);
-        }
-        return false;
+        return this is DynamicJsonObject obj && obj.ContainsKey(propertyName);
     }
-} 
+}
