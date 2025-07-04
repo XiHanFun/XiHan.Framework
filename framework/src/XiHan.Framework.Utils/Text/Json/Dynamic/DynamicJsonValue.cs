@@ -25,7 +25,7 @@ namespace XiHan.Framework.Utils.Text.Json.Dynamic;
 /// 类似 Newtonsoft.Json 的 JValue 体验
 /// </summary>
 [DebuggerDisplay("{Value} ({ValueType})")]
-public class DynamicJsonValue : DynamicObject
+public class DynamicJsonValue : DynamicJsonBase
 {
     /// <summary>
     /// 内部值
@@ -50,7 +50,7 @@ public class DynamicJsonValue : DynamicObject
     /// <summary>
     /// 原始值
     /// </summary>
-    public object? Value => _value;
+    public override object? Value => _value;
 
     /// <summary>
     /// 值类型
@@ -61,6 +61,11 @@ public class DynamicJsonValue : DynamicObject
     /// 是否为 null
     /// </summary>
     public bool IsNull => _value == null;
+
+    /// <summary>
+    /// 是否为空
+    /// </summary>
+    public override bool IsEmpty => _value == null;
 
     /// <summary>
     /// 是否为数字类型
@@ -315,6 +320,86 @@ public class DynamicJsonValue : DynamicObject
     public override string ToString()
     {
         return _value?.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// 转换为字符串，提供便捷的 API
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>字符串值</returns>
+    public string AsString(string defaultValue = "")
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为整数
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>整数值</returns>
+    public int AsInt(int defaultValue = 0)
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为长整数
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>长整数值</returns>
+    public long AsLong(long defaultValue = 0)
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为布尔值
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>布尔值</returns>
+    public bool AsBool(bool defaultValue = false)
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为双精度浮点数
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>双精度浮点数值</returns>
+    public double AsDouble(double defaultValue = 0.0)
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为十进制数
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>十进制数值</returns>
+    public decimal AsDecimal(decimal defaultValue = 0m)
+    {
+        return ToValue(defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为日期时间
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>日期时间值</returns>
+    public DateTime AsDateTime(DateTime? defaultValue = null)
+    {
+        return ToValue(defaultValue ?? DateTime.MinValue);
+    }
+
+    /// <summary>
+    /// 转换为 GUID
+    /// </summary>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>GUID 值</returns>
+    public Guid AsGuid(Guid? defaultValue = null)
+    {
+        return ToValue(defaultValue ?? Guid.Empty);
     }
 
     /// <summary>

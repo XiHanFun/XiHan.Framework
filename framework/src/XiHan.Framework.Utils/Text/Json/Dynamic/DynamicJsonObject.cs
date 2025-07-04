@@ -25,7 +25,7 @@ namespace XiHan.Framework.Utils.Text.Json.Dynamic;
 /// 类似 Newtonsoft.Json 的 JObject 体验
 /// </summary>
 [DebuggerDisplay("Count = {Count}")]
-public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
+public class DynamicJsonObject : DynamicJsonBase, IEnumerable<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// 内部数据存储
@@ -39,6 +39,11 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     {
         _data = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// 获取原始值（字典形式）
+    /// </summary>
+    public override object? Value => _data;
 
     /// <summary>
     /// 构造函数
@@ -57,7 +62,7 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     /// <summary>
     /// 是否为空
     /// </summary>
-    public bool IsEmpty => _data.Count == 0;
+    public override bool IsEmpty => _data.Count == 0;
 
     /// <summary>
     /// 所有键
@@ -118,6 +123,24 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     public static implicit operator DynamicJsonObject(Dictionary<string, object?> dictionary)
     {
         return new DynamicJsonObject(dictionary);
+    }
+
+    /// <summary>
+    /// 隐式转换为 dynamic，支持直接属性访问
+    /// 使用方式：dynamic obj = (DynamicJsonObject)response.Data;
+    /// </summary>
+    /// <param name="obj">动态 JSON 对象</param>
+    public static implicit operator ExpandoObject(DynamicJsonObject obj)
+    {
+        var expando = new ExpandoObject();
+        var dictionary = (IDictionary<string, object?>)expando;
+        
+        foreach (var kvp in obj._data)
+        {
+            dictionary[kvp.Key] = kvp.Value;
+        }
+        
+        return expando;
     }
 
     /// <summary>
@@ -355,9 +378,33 @@ public class DynamicJsonObject : DynamicObject, IEnumerable<KeyValuePair<string,
     /// </summary>
     /// <param name="options">序列化选项</param>
     /// <returns>JSON 字符串</returns>
-    public string ToJson(JsonSerializerOptions? options = null)
+    public override string ToJson(JsonSerializerOptions? options = null)
     {
         return JsonHelper.Serialize(_data, options);
+    }
+
+    /// <summary>
+    /// 强类型属性访问器，支持链式调用
+    /// 使用方式：var status = obj.Get("status").AsString();
+    /// </summary>
+    /// <param name="propertyName">属性名</param>
+    /// <returns>属性值的动态包装</returns>
+    public DynamicJsonValue Get(string propertyName)
+    {
+        return GetProperty(propertyName);
+    }
+
+    /// <summary>
+    /// 强类型属性设置器
+    /// 使用方式：obj.Set("status", "success");
+    /// </summary>
+    /// <param name="propertyName">属性名</param>
+    /// <param name="value">属性值</param>
+    /// <returns>当前对象（支持链式调用）</returns>
+    public DynamicJsonObject Set(string propertyName, object? value)
+    {
+        SetProperty(propertyName, value);
+        return this;
     }
 
     /// <summary>
