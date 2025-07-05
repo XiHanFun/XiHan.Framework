@@ -23,7 +23,6 @@ using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Utils.Text.Json;
-using XiHan.Framework.Utils.Text.Json.Dynamic;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
@@ -359,7 +358,6 @@ public class AdvancedHttpService : IAdvancedHttpService
         {
             using var client = GetHttpClient(options);
             ConfigureRequest(client, options);
-
             var fullUrl = BuildUrl(url, options);
             using var response = await client.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
@@ -378,15 +376,15 @@ public class AdvancedHttpService : IAdvancedHttpService
 
             var buffer = new byte[8192];
             int bytesRead;
-
             while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
             {
                 await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                 downloadedBytes += bytesRead;
                 progress?.Report(downloadedBytes);
             }
+            var result = HttpResult.Success(response.StatusCode);
 
-            return HttpResult.Success(response.StatusCode);
+            return result;
         }
         catch (Exception ex)
         {
@@ -471,7 +469,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
-    HttpRequestOptions? options, CancellationToken cancellationToken)
+        HttpRequestOptions? options, CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
@@ -527,8 +525,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             {
                 result.Data = await DeserializeResponseAsync<T>(response, cancellationToken);
                 result.RawDataString = await DeserializeResponseAsync<string>(response, cancellationToken);
-                result.RawDataByte = await DeserializeResponseAsync<byte[]>(response, cancellationToken);
-                result.RawDataSteam = await DeserializeResponseAsync<Stream>(response, cancellationToken);
             }
             else
             {

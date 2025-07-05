@@ -27,12 +27,12 @@ namespace XiHan.Framework.Web.Test;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
+    typeof(XiHanHttpModule),
     typeof(XiHanAspNetCoreModule),
     typeof(XiHanAspNetCoreMvcModule),
     typeof(XiHanAspNetCoreSerilogModule),
     typeof(XiHanAspNetCoreSwaggerModule),
-    typeof(XiHanAspNetCoreScalarModule),
-    typeof(XiHanHttpModule)
+    typeof(XiHanAspNetCoreScalarModule)
 )]
 public class XiHanWebTestModule : XiHanModule
 {
