@@ -40,7 +40,7 @@ public interface IXiHanApplication : IModuleContainer, IApplicationInfoAccessor,
     IServiceProvider ServiceProvider { get; }
 
     /// <summary>
-    /// 调用模块的 Pre/Configure/PostServicesAsync 方法
+    /// 调用模块的 Pre/Configure/Post的ServicesAsync 方法
     /// 在使用这个方法之前，必须设置 <see cref="XiHanApplicationCreationOptions.SkipConfigureServices"/> 选项为 true
     /// </summary>
     Task ConfigureServicesAsync();
