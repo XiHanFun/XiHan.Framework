@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.System;
+
 namespace XiHan.Framework.Utils.Collections;
 
 /// <summary>
@@ -66,6 +68,26 @@ public static class EnumerableExtensions
     public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, Func<T, int, bool> predicate)
     {
         return condition ? source.Where(predicate) : source;
+    }
+
+    /// <summary>
+    /// 从列表中随机获取一个元素
+    /// </summary>
+    /// <typeparam name="T">列表中项的类型</typeparam>
+    /// <param name="source">要操作的列表</param>
+    /// <returns>随机选中的元素</returns>
+    /// <exception cref="ArgumentException">当列表为空时抛出异常</exception>
+    public static T GetRandom<T>(this IEnumerable<T> source)
+    {
+        _ = Guard.NotNull(source, nameof(source));
+
+        if (!source.Any())
+        {
+            throw new ArgumentException("列表不能为空", nameof(source));
+        }
+
+        var randomIndex = Random.Shared.Next(source.Count());
+        return source.ElementAt(randomIndex);
     }
 
     /// <summary>
