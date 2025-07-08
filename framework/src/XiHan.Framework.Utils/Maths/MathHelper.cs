@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Runtime.CompilerServices;
+
 namespace XiHan.Framework.Utils.Maths;
 
 /// <summary>
@@ -27,6 +29,7 @@ public static class MathHelper
     /// <param name="radius">圆的半径（必须为非负数）</param>
     /// <returns>圆的面积</returns>
     /// <exception cref="ArgumentException">当半径为负数时抛出</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double CircleArea(double radius)
     {
         return radius < 0 ? throw new ArgumentException("半径不能为负。") : Math.PI * radius * radius;
@@ -38,6 +41,7 @@ public static class MathHelper
     /// <param name="radius">圆的半径（必须为非负数）</param>
     /// <returns>圆的周长</returns>
     /// <exception cref="ArgumentException">当半径为负数时抛出</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double CircleCircumference(double radius)
     {
         return radius < 0 ? throw new ArgumentException("半径不能为负。") : 2 * Math.PI * radius;
@@ -51,6 +55,7 @@ public static class MathHelper
     /// <param name="x2">第二个点的X坐标</param>
     /// <param name="y2">第二个点的Y坐标</param>
     /// <returns>两点之间的欧几里得距离</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Distance(double x1, double y1, double x2, double y2)
     {
         return Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
@@ -131,6 +136,7 @@ public static class MathHelper
     /// </summary>
     /// <param name="numbers">数值集合</param>
     /// <returns>数值集合的标准差</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double StandardDeviation(IEnumerable<double> numbers)
     {
         return Math.Sqrt(Variance(numbers));
