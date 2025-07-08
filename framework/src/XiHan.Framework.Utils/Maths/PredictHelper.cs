@@ -12,6 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Maths.Dtos;
+using XiHan.Framework.Utils.Maths.Enums;
+
 namespace XiHan.Framework.Utils.Maths;
 
 /// <summary>
@@ -1059,96 +1062,4 @@ public static class PredictHelper
     }
 
     #endregion
-}
-
-/// <summary>
-/// 预测准确性指标
-/// </summary>
-public class AccuracyMetrics
-{
-    /// <summary>
-    /// 平均绝对误差 (Mean Absolute Error)
-    /// </summary>
-    public double Mae { get; set; }
-
-    /// <summary>
-    /// 均方误差 (Mean Squared Error)
-    /// </summary>
-    public double Mse { get; set; }
-
-    /// <summary>
-    /// 均方根误差 (Root Mean Squared Error)
-    /// </summary>
-    public double Rmse { get; set; }
-
-    /// <summary>
-    /// 平均绝对百分比误差 (Mean Absolute Percentage Error)
-    /// </summary>
-    public double Mape { get; set; }
-
-    /// <summary>
-    /// 转换为字符串表示
-    /// </summary>
-    /// <returns>格式化的准确性指标</returns>
-    public override string ToString()
-    {
-        return $"MAE: {Mae:F4}, MSE: {Mse:F4}, RMSE: {Rmse:F4}, MAPE: {Mape:F2}%";
-    }
-}
-
-/// <summary>
-/// 距离计算类型枚举
-/// </summary>
-public enum DistanceType
-{
-    /// <summary>
-    /// 欧几里得距离
-    /// </summary>
-    Euclidean,
-
-    /// <summary>
-    /// 曼哈顿距离
-    /// </summary>
-    Manhattan,
-
-    /// <summary>
-    /// 切比雪夫距离
-    /// </summary>
-    Chebyshev
-}
-
-/// <summary>
-/// 决策树节点
-/// </summary>
-public class DecisionTreeNode
-{
-    /// <summary>
-    /// 节点预测值
-    /// </summary>
-    public double Value { get; set; }
-
-    /// <summary>
-    /// 分割特征索引
-    /// </summary>
-    public int FeatureIndex { get; set; } = -1;
-
-    /// <summary>
-    /// 分割阈值
-    /// </summary>
-    public double Threshold { get; set; }
-
-    /// <summary>
-    /// 左子树
-    /// </summary>
-    public DecisionTreeNode? Left { get; set; }
-
-    /// <summary>
-    /// 右子树
-    /// </summary>
-    public DecisionTreeNode? Right { get; set; }
-
-    /// <summary>
-    /// 判断是否为叶子节点
-    /// </summary>
-    public bool IsLeaf => Left == null && Right == null;
 }
