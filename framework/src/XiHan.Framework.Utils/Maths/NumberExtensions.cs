@@ -91,6 +91,7 @@ public static class NumberExtensions
     /// <param name="divisor">除数</param>
     /// <returns>向下取整的商</returns>
     /// <exception cref="ArgumentException">当除数为零时抛出异常</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T FloorDiv<T>(this T value, T divisor) where T : INumber<T>
     {
         if (divisor == T.Zero)

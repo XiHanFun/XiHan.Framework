@@ -180,7 +180,7 @@ public class SqidsEncoder<T> where T : INumber<T>
             var remainder = value.Mod(alphabetLength);
             var index = Convert.ToInt32(remainder);
             id.Insert(0, alphabet[index]);
-            value = value.Div(alphabetLength);
+            value = value.FloorDiv(alphabetLength);
         }
 
         return id.ToString();
@@ -198,7 +198,7 @@ public class SqidsEncoder<T> where T : INumber<T>
         {
             var charIndex = alphabet.IndexOf(c);
             var value = T.CreateChecked(charIndex);
-            num = num.Mul(alphabetLength).Add(value);
+            num = num.Multiply(alphabetLength).Add(value);
         }
 
         return num;
