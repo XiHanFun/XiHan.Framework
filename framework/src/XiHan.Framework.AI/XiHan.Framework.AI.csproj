@@ -16,15 +16,15 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.KernelMemory.MemoryDb.Qdrant" Version="0.98.250508.3" />
         <PackageReference Include="Microsoft.KernelMemory.MemoryDb.Redis" Version="0.98.250508.3" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.59.0-alpha" />
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.59.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.60.0-alpha" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.60.0" />
         <PackageReference Include="Microsoft.KernelMemory.AI.Ollama" Version="0.98.250508.3" />
         <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.98.250508.3" />
-      <PackageReference Include="Microsoft.Extensions.AI" Version="9.6.0" />
+      <PackageReference Include="Microsoft.Extensions.AI" Version="9.7.0" />
       <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.98.250508.3" />
-      <PackageReference Include="Microsoft.SemanticKernel" Version="1.59.0" />
-      <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.59.0" />
-      <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.1" />
+      <PackageReference Include="Microsoft.SemanticKernel" Version="1.60.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.60.0" />
+      <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.2" />
     </ItemGroup>
 
     <ItemGroup>
