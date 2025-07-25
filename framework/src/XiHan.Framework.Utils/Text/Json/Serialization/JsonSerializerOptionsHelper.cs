@@ -39,21 +39,21 @@ public static class JsonSerializerOptionsHelper
     {
         JsonSerializerOptions options = new()
         {
-            // 序列化格式
+            // 格式化输出
             WriteIndented = true,
+            // 属性名称策略，null 为不改变大小写样式
+            PropertyNamingPolicy = null,
             // 忽略循环引用
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
             // 数字类型
             NumberHandling = JsonNumberHandling.Strict,
-            // 允许额外符号
-            AllowTrailingCommas = true,
             // 注释处理，允许在 JSON 输入中使用注释并忽略它们
             ReadCommentHandling = JsonCommentHandling.Skip,
-            // 属性名称不使用不区分大小写的比较
-            PropertyNameCaseInsensitive = false,
-            // 数据格式首字母小写 JsonNamingPolicy.CamelCase 驼峰样式，null 则为不改变大小写
-            PropertyNamingPolicy = null,
-            // 获取或设置要在转义字符串时使用的编码器，不转义字符
+            // 忽略只读属性
+            IgnoreReadOnlyProperties = true,
+            // 允许尾随逗号
+            AllowTrailingCommas = true,
+            // 不转义字符
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
