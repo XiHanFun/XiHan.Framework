@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 
 namespace XiHan.Framework.Utils.Text.Json.Serialization;
 
@@ -26,10 +25,11 @@ public static class SerializeExtensions
     /// 序列化为 Json
     /// </summary>
     /// <param name="item"></param>
+    /// <param name="options"></param>
     /// <returns></returns>
-    public static string SerializeTo(this object item)
+    public static string SerializeTo(this object item, JsonSerializerOptions? options = null)
     {
-        return JsonSerializer.Serialize(item, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        return JsonHelper.Serialize(item, options);
     }
 
     /// <summary>
@@ -37,10 +37,11 @@ public static class SerializeExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="jsonString"></param>
+    /// <param name="options"></param>
     /// <returns></returns>
-    public static T? DeserializeTo<T>(this string jsonString)
+    public static T? DeserializeTo<T>(this string jsonString, JsonSerializerOptions? options = null)
     {
-        return JsonSerializer.Deserialize<T>(jsonString, JsonSerializerOptionsHelper.DefaultJsonSerializerOptions);
+        return JsonHelper.Deserialize<T>(jsonString, options);
     }
 
     /// <summary>
@@ -50,7 +51,6 @@ public static class SerializeExtensions
     /// <returns></returns>
     public static object? DeserializeToObject(this string jsonString)
     {
-        return JsonSerializer.Deserialize(jsonString.ToStream(),
-            JsonTypeInfo.CreateJsonTypeInfo<object>(JsonSerializerOptionsHelper.DefaultJsonSerializerOptions));
+        return JsonHelper.Deserialize<object>(jsonString);
     }
 }
