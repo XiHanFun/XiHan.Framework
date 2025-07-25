@@ -18,7 +18,6 @@ namespace XiHan.Framework.Caching;
 /// 工作单元缓存项
 /// </summary>
 /// <typeparam name="TValue"></typeparam>
-[Serializable]
 public class UnitOfWorkCacheItem<TValue>
     where TValue : class
 {

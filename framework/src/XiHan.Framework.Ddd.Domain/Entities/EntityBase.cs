@@ -20,7 +20,6 @@ namespace XiHan.Framework.Ddd.Domain.Entities;
 /// <summary>
 /// 实体基类
 /// </summary>
-[Serializable]
 public abstract class EntityBase : IEntityBase
 {
     /// <summary>
@@ -63,7 +62,6 @@ public abstract class EntityBase : IEntityBase
 /// 泛型主键实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[Serializable]
 public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {

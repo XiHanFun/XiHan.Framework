@@ -17,7 +17,6 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// <summary>
 /// 通用分页响应基类
 /// </summary>
-[Serializable]
 public class PageResponse
 {
     /// <summary>
@@ -46,7 +45,6 @@ public class PageResponse
 /// 通用分页响应泛型基类
 /// </summary>
 /// <typeparam name="T"></typeparam>
-[Serializable]
 public class PageResponseDto<T> : PageResponse
     where T : class, new()
 {

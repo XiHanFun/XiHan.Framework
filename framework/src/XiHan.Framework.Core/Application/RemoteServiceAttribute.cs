@@ -20,7 +20,6 @@ namespace XiHan.Framework.Core.Application;
 /// <summary>
 /// 远程服务特性
 /// </summary>
-[Serializable]
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Method)]
 public class RemoteServiceAttribute : Attribute
 {

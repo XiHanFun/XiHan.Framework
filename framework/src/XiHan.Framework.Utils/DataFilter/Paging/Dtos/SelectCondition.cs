@@ -19,7 +19,6 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// <summary>
 /// 通用选择条件基类
 /// </summary>
-[Serializable]
 public class SelectCondition
 {
     /// <summary>
@@ -86,7 +85,6 @@ public class SelectCondition
 /// 通用选择条件泛型基类
 /// </summary>
 /// <typeparam name="T">列表元素类型</typeparam>
-[Serializable]
 public class SelectConditionDto<T> : SelectCondition
 {
     /// <summary>
