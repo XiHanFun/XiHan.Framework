@@ -17,7 +17,6 @@ namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
 /// <summary>
 /// 通用分页查询基类
 /// </summary>
-[Serializable]
 public class PageQuery
 {
     /// <summary>

@@ -19,7 +19,6 @@ namespace XiHan.Framework.Settings.Definitions;
 /// <summary>
 /// 设置值
 /// </summary>
-[Serializable]
 public class SettingValue : NameValue<string?>
 {
     /// <summary>

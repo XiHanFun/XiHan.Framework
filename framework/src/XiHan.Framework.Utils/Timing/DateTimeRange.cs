@@ -17,7 +17,6 @@ namespace XiHan.Framework.Utils.Timing;
 /// <summary>
 /// 表示一个时间范围
 /// </summary>
-[Serializable]
 public class DateTimeRange
 {
     /// <summary>

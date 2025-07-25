@@ -18,7 +18,6 @@ namespace XiHan.Framework.ObjectExtending.Data;
 /// 额外属性字典
 /// 用于存储动态属性的可序列化字典，键为字符串，值为任意对象
 /// </summary>
-[Serializable]
 public class ExtraPropertyDictionary : Dictionary<string, object?>
 {
     /// <summary>
