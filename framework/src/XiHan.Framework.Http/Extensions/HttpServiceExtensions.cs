@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Http.Models;
-using XiHan.Framework.Http.Services;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Extensions;

@@ -73,11 +73,6 @@ public class HttpResult<T>
     public string? RequestMethod { get; set; }
 
     /// <summary>
-    /// 请求体
-    /// </summary>
-    public object? RequestBody { get; set; }
-
-    /// <summary>
     /// 创建成功结果
     /// </summary>
     /// <param name="data">响应数据</param>

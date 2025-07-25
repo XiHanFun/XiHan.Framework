@@ -287,7 +287,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
             RequestMethod = result.RequestMethod,
-            RequestBody = result.RequestBody,
         };
     }
 
@@ -311,7 +310,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
             RequestMethod = result.RequestMethod,
-            RequestBody = result.RequestBody,
         };
     }
 
@@ -335,7 +333,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             ElapsedMilliseconds = result.ElapsedMilliseconds,
             RequestUrl = result.RequestUrl,
             RequestMethod = result.RequestMethod,
-            RequestBody = result.RequestBody,
         };
     }
 
@@ -504,7 +501,6 @@ public class AdvancedHttpService : IAdvancedHttpService
                 ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
                 RequestUrl = fullUrl,
                 RequestMethod = method.Method,
-                RequestBody = content?.ReadAsStringAsync(cancellationToken)
             };
 
             // 复制响应头
@@ -521,10 +517,11 @@ public class AdvancedHttpService : IAdvancedHttpService
                 }
             }
 
+            result.RawDataString = await DeserializeResponseAsync<string>(response, cancellationToken);
+
             if (response.IsSuccessStatusCode)
             {
                 result.Data = await DeserializeResponseAsync<T>(response, cancellationToken);
-                result.RawDataString = await DeserializeResponseAsync<string>(response, cancellationToken);
             }
             else
             {
