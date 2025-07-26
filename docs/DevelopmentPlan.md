@@ -1,0 +1,479 @@
+# XiHan.Framework 开发计划
+
+## 核心理念
+
+作为开源的 ASP.NET Core 框架，XiHan.Framework 的首要目标是让开发者能够**快速启动**和**立即体验**。用户下载项目后，应该能运行一个完整的 Web API 项目，并看到交互式的 API 文档。
+
+## 模块开发计划
+
+### 第一阶段：快速启动核心包 (优先级：最高)
+
+#### 目标：让用户能立即运行 Web API 项目
+
+- [x] **XiHan.Framework** - 框架元数据和基础配置
+
+  - 框架版本信息、基础接口定义
+  - 通用枚举、常量定义
+  - 基础配置类、元数据属性
+  - **依赖**: 无（元数据包）
+
+- [ ] **XiHan.Framework.Utils** - 通用工具和扩展方法
+  - 字符串处理、日期时间操作
+  - 加密解密、反射工具
+  - 文件操作、集合扩展
+  - **依赖**: XiHan.Framework（元数据包）
+- [ ] **XiHan.Framework.Core** - 框架核心功能
+
+  - 模块化系统、依赖注入
+  - 配置管理、异常处理
+  - 通用扩展方法、基类
+  - **依赖**: XiHan.Framework（元数据包）
+
+- [ ] **XiHan.Framework.Serialization** - 对象序列化
+  - System.Text.Json 集成
+  - 自定义转换器支持
+  - **依赖**: XiHan.Framework.Core
+- [ ] **XiHan.Framework.Web.Core** - Web 应用基础配置
+
+  - ASP.NET Core WebHost 配置
+  - Kestrel 配置、中间件管道
+  - **依赖**: XiHan.Framework.Core
+
+- [ ] **XiHan.Framework.Web.Api** - RESTful API 开发
+
+  - 控制器基类、路由管理
+  - 模型绑定、API 版本控制
+  - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Serialization
+
+- [ ] **XiHan.Framework.Web.Docs** - API 文档生成
+  - Swashbuckle、Scalar 集成
+  - OpenAPI 文档、客户端代码生成
+  - **依赖**: XiHan.Framework.Web.Api
+- [ ] **XiHan.Framework.Logging** - 统一日志记录
+  - 结构化日志、多目标输出
+  - 文件、控制台日志
+  - Serilog 兼容
+  - **依赖**: XiHan.Framework.Core
+
+**里程碑**: 发布 v0.1.0-alpha，用户可运行基础 Web API 项目
+
+### 第二阶段：完善 Web API 体验 (优先级：高) - 2025 Q1
+
+#### 目标：提供完整的 Web API 开发体验
+
+- [ ] **XiHan.Framework.Validation** - 数据输入验证
+
+  - 数据注解、FluentValidation
+  - 模型验证、自定义规则
+  - **依赖**: XiHan.Framework.Core
+
+- [ ] **XiHan.Framework.Data** - 数据库访问和 ORM
+  - Entity Framework Core 集成
+  - SqlSugar、Dapper 支持
+  - 迁移、仓储模式
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Validation
+- [ ] **XiHan.Framework.Security** - 安全基础功能
+
+  - 加密算法、安全工具
+  - 安全配置、防护机制
+  - **依赖**: XiHan.Framework.Core
+
+- [ ] **XiHan.Framework.Authentication** - 用户身份认证
+  - JWT、OAuth 2.0、OpenID Connect
+  - ASP.NET Core Identity 集成
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Security
+
+**里程碑**: 发布 v0.2.0-beta，提供完整的认证和数据访问功能
+
+### 第三阶段：系统功能和认证授权 (优先级：高) - 2025 Q1-Q2
+
+#### 目标：构建生产级功能
+
+- [ ] **XiHan.Framework.Authorization** - 权限管理
+
+  - 角色、策略、声明授权
+  - 资源保护、权限校验
+  - **依赖**: XiHan.Framework.Authentication
+
+- [ ] **XiHan.Framework.Caching** - 缓存管理
+  - 内存缓存、分布式缓存
+  - Redis 支持、缓存策略
+  - 缓存预热、统计
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+- [ ] **XiHan.Framework.Settings** - 应用配置管理
+
+  - 动态配置、数据库存储
+  - 租户级设置
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data
+
+- [ ] **XiHan.Framework.Threading** - 线程安全工具
+
+  - 锁机制、线程池管理
+  - 异步任务调度
+  - **依赖**: XiHan.Framework.Core
+
+- [ ] **XiHan.Framework.DistributedIds** - 分布式唯一 ID
+  - 雪花算法实现
+  - ID 生成策略
+  - **依赖**: XiHan.Framework.Core
+
+**里程碑**: 发布 v1.0.0-rc，完整的企业级 Web API 框架
+
+### 第四阶段：高级数据和开发工具 (优先级：中) - 2025 Q2
+
+#### 目标：支持复杂业务场景
+
+- [ ] **XiHan.Framework.Uow** - 工作单元模式
+
+  - 数据库事务管理
+  - EF Core 和 Dapper 支持
+  - **依赖**: XiHan.Framework.Data
+
+- [ ] **XiHan.Framework.Ddd** - 领域驱动设计
+
+  - 领域模型、聚合根
+  - 仓储设计、多租户架构
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data
+
+- [ ] **XiHan.Framework.DevTools** - 开发调试工具
+  - xUnit 测试框架
+  - Moq 模拟工具、性能监控
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Logging
+
+**里程碑**: 发布 v1.0.0，稳定的生产版本
+
+### 第五阶段：通信和消息扩展 (优先级：低) - 2025 Q3
+
+#### 目标：支持分布式和实时通信
+
+- [ ] **XiHan.Framework.HttpClient** - HTTP 客户端封装
+
+  - HttpClientFactory 集成
+  - 重试、超时、认证
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+
+- [ ] **XiHan.Framework.Messaging** - 消息队列支持
+
+  - RabbitMQ、Kafka 集成
+  - 发布订阅机制
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+
+- [ ] **XiHan.Framework.EventBus** - 事件总线
+
+  - 本地和分布式事件处理
+  - MediatR、RabbitMQ 支持
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Messaging
+
+- [ ] **XiHan.Framework.Web.RealTime** - 实时 Web 通信
+  - SignalR 集成
+  - 消息推送、双向通信
+  - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Authentication
+
+### 第六阶段：任务和模板扩展 (优先级：低) - 2025 Q3
+
+#### 目标：提供自动化和代码生成能力
+
+- [ ] **XiHan.Framework.BackgroundJobs** - 后台任务管理
+
+  - Hangfire、Quartz.NET 集成
+  - 异步任务队列、定时调度
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Logging
+
+- [ ] **XiHan.Framework.Templating** - 文本模板生成
+
+  - RazorLight、Scriban 集成
+  - 动态模板渲染
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+
+- [ ] **XiHan.Framework.CodeGeneration** - 自动代码生成
+  - T4 模板、Roslyn 集成
+  - 实体、DTO、控制器生成
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Templating
+
+### 第七阶段：存储和搜索扩展 (优先级：低) - 2025 Q4
+
+#### 目标：支持文件存储和全文搜索
+
+- [ ] **XiHan.Framework.FileSystem** - 文件存储管理
+
+  - 本地文件系统、云存储
+  - AWS S3 支持
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Authentication
+
+- [ ] **XiHan.Framework.SearchEngines** - 全文搜索
+  - Elasticsearch 集成
+  - 高效搜索、数据索引
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+
+### 第八阶段：国际化和高级功能 (优先级：低) - 2025 Q4
+
+#### 目标：支持国际化和 AI 功能
+
+- [ ] **XiHan.Framework.Localization** - 国际化与本地化
+
+  - IStringLocalizer 和资源文件支持
+  - 动态语言切换、本地化中间件
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Web.Core
+
+- [ ] **XiHan.Framework.AI** - AI 和机器学习
+  - ML.NET、TensorFlow.NET 集成
+  - 模型训练、推理
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization
+
+### 第九阶段：企业级架构扩展 (优先级：最低) - 2025 Q4
+
+#### 目标：支持复杂企业架构
+
+- [ ] **XiHan.Framework.ApiGateway** - API 网关
+
+  - Ocelot、YARP 集成
+  - 路由、负载均衡
+  - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Authentication
+
+- [ ] **XiHan.Framework.MultiTenancy** - 多租户架构
+  - 租户隔离策略、租户解析中间件
+  - 租户管理 API、数据和配置隔离
+  - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data, XiHan.Framework.Settings, XiHan.Framework.Authentication
+
+## 开发路线图
+
+### 2024 年 Q4 (当前阶段) - 快速启动
+
+**目标**: 让用户立即体验框架
+
+- [x] 完成元数据包开发 (XiHan.Framework)
+- [ ] 完成核心基础包 (XiHan.Framework.Utils, XiHan.Framework.Core, XiHan.Framework.Serialization)
+- [ ] 完成 Web 核心包 (XiHan.Framework.Web.Core, XiHan.Framework.Web.Api, XiHan.Framework.Web.Docs)
+- [ ] 完成日志包 (XiHan.Framework.Logging)
+- [ ] **发布 v0.1.0-alpha** - 基础可运行的 Web API 项目
+
+**用户价值**: 下载即可运行，完整的 API 文档
+
+### 2025 年 Q1 - 完善体验
+
+**目标**: 提供完整的 Web API 开发体验
+
+- [ ] 完成数据验证包 (XiHan.Framework.Validation, XiHan.Framework.Data)
+- [ ] 完成安全认证包 (XiHan.Framework.Security, XiHan.Framework.Authentication)
+- [ ] **发布 v0.2.0-beta** - 具备认证和数据访问的完整 API
+- [ ] 完成系统功能包基础部分 (XiHan.Framework.Authorization, XiHan.Framework.Caching)
+
+**用户价值**: 可以构建真实的业务 API，支持认证和数据库操作
+
+### 2025 年 Q2 - 生产就绪
+
+**目标**: 发布生产级稳定版本
+
+- [ ] 完成剩余系统功能包 (XiHan.Framework.Settings, XiHan.Framework.Threading, XiHan.Framework.DistributedIds)
+- [ ] 完成高级数据包 (XiHan.Framework.Uow, XiHan.Framework.Ddd)
+- [ ] 完成开发工具包 (XiHan.Framework.DevTools)
+- [ ] **发布 v1.0.0-rc** - 企业级框架候选版本
+- [ ] **发布 v1.0.0** - 正式稳定版本
+
+**用户价值**: 生产环境可用，支持复杂业务场景
+
+### 2025 年 Q3 - 分布式扩展
+
+**目标**: 支持微服务和分布式架构
+
+- [ ] 完成通信和消息包 (XiHan.Framework.HttpClient, XiHan.Framework.Messaging, XiHan.Framework.EventBus)
+- [ ] 完成 Web 实时通信 (XiHan.Framework.Web.RealTime)
+- [ ] 完成任务和模板包 (XiHan.Framework.BackgroundJobs, XiHan.Framework.Templating, XiHan.Framework.CodeGeneration)
+- [ ] **发布 v1.1.0** - 分布式和实时通信版本
+
+**用户价值**: 支持微服务架构、实时通信和后台任务
+
+### 2025 年 Q4 - 完整生态
+
+**目标**: 构建完整的开发生态
+
+- [ ] 完成存储和搜索包 (XiHan.Framework.FileSystem, XiHan.Framework.SearchEngines)
+- [ ] 完成国际化和高级功能 (XiHan.Framework.Localization, XiHan.Framework.AI)
+- [ ] 完成企业级架构扩展 (XiHan.Framework.ApiGateway, XiHan.Framework.MultiTenancy)
+- [ ] **发布 v1.2.0** - 完整功能版本
+
+**用户价值**: 支持国际化、AI 集成、多租户等企业级需求
+
+## 快速启动策略
+
+### 示例项目优先级
+
+1. **最小 Web API 示例** (v0.1.0-alpha)
+
+   ```bash
+   dotnet add package XiHan.Framework.Web.Api
+   dotnet add package XiHan.Framework.Web.Docs
+   ```
+
+2. **认证 API 示例** (v0.2.0-beta)
+
+   ```bash
+   dotnet add package XiHan.Framework.Authentication
+   dotnet add package XiHan.Framework.Data
+   ```
+
+3. **完整业务 API 示例** (v1.0.0)
+   ```bash
+   dotnet add package XiHan.Framework.Authorization
+   dotnet add package XiHan.Framework.Caching
+   dotnet add package XiHan.Framework.Validation
+   ```
+
+### 文档策略
+
+- **第一阶段**: 快速开始，运行 API
+- **第二阶段**: 认证和数据库集成教程
+- **第三阶段**: 最佳实践和架构指南
+- **第四阶段**: 扩展包详细文档
+
+## 质量保证计划
+
+### 测试策略 - 按阶段推进
+
+#### 第一阶段测试
+
+- [ ] Web API 核心功能单元测试 > 80%
+- [ ] 基础集成测试（启动、路由、序列化）
+- [ ] 文档生成测试
+
+#### 第二阶段测试
+
+- [ ] 认证授权功能测试
+- [ ] 数据访问层测试
+- [ ] 端到端 API 测试
+
+#### 第三阶段测试
+
+- [ ] 性能基准测试
+- [ ] 安全性测试和漏洞扫描
+- [ ] 兼容性测试 (.NET 9, 不同数据库)
+
+### 代码质量
+
+- [x] 统一编码规范和代码风格
+- [ ] 代码审查流程建立
+- [ ] 静态代码分析工具集成
+- [ ] 技术债务管理和重构
+
+### 文档和示例
+
+- [x] 完善 API 文档和 XML 注释
+- [ ] 编写详细的使用指南
+- [ ] 提供示例项目和最佳实践
+- [ ] 建立知识库和 FAQ
+
+## 发布和部署
+
+### 版本管理
+
+- 采用语义化版本号：`主版本.次版本.修订版本[-预发布标签.编号]`
+- 所有包版本同步管理
+- 支持预发布版本 (如 `1.0.0-beta`)
+
+### 发布流程
+
+- [x] 自动化构建和测试
+- [x] NuGet 包发布到 nuget.org
+- [ ] 支持国内 NuGet 镜像
+- [x] GitHub/Gitee 代码托管
+- [ ] CI/CD 流水线建立
+
+### 部署支持
+
+- [ ] Docker 容器化支持
+- [ ] Kubernetes 编排配置
+- [ ] 云原生部署方案
+- [ ] 监控和诊断工具集成
+
+## 社区和生态
+
+### 开源计划
+
+- [x] 发布到 GitHub 和 Gitee
+- [x] 建立贡献指南和 Issue 模板
+- [x] 设立讨论区和问答社区
+- [x] 定期发布更新和公告
+
+### 生态建设
+
+- [ ] 插件系统和扩展点
+- [ ] 第三方服务集成
+- [ ] 示例项目和模板
+- [x] 最佳实践和设计模式
+
+### 国际化支持
+
+- [ ] 中文文档和示例
+- [ ] 英文文档翻译
+- [ ] 多语言错误消息
+- [ ] 本地化配置支持
+
+## 性能优化计划
+
+### .NET 9 特性利用
+
+- [ ] AOT 编译支持
+- [ ] 高性能集合和算法
+- [ ] 内存优化和 GC 调优
+- [ ] 异步编程最佳实践
+
+### 缓存策略
+
+- [ ] 多级缓存架构
+- [ ] 缓存预热机制
+- [ ] 缓存淘汰策略
+- [ ] 缓存性能监控
+
+### 数据库优化
+
+- [ ] 连接池管理
+- [ ] 查询优化和索引
+- [ ] 读写分离支持
+- [ ] 分库分表方案
+
+## 安全计划
+
+### 认证授权
+
+- [ ] JWT 安全最佳实践
+- [ ] OAuth 2.0 和 OIDC 集成
+- [ ] 多因素认证支持
+- [ ] 权限粒度控制
+
+### 数据安全
+
+- [ ] 敏感数据加密
+- [ ] 数据传输安全 (HTTPS)
+- [ ] SQL 注入防护
+- [ ] XSS 和 CSRF 防护
+
+### 审计和监控
+
+- [ ] 操作日志记录
+- [ ] 安全事件监控
+- [ ] 异常行为检测
+- [ ] 合规性报告
+
+## 成功指标
+
+### 第一阶段成功指标
+
+- [ ] 用户从下载到运行 Web API
+- [ ] GitHub Stars > 100
+- [ ] 基础示例项目完成度 100%
+
+### 第二阶段成功指标
+
+- [ ] 社区反馈积极，Issue 解决率 > 90%
+- [ ] 文档完整性 > 80%
+- [ ] 性能测试达到预期基准
+
+### 长期成功指标
+
+- [ ] 社区贡献者 > 10 人
+- [ ] 企业用户采用案例 > 5 个
+- [ ] 包下载量 > 10,000
+
+---
+
+_本开发计划以用户体验为中心，确保每个版本都能为开发者提供立即可用的价值。_
