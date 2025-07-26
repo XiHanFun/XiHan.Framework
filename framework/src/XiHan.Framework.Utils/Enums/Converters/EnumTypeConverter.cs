@@ -15,7 +15,7 @@
 using System.ComponentModel;
 using System.Globalization;
 
-namespace XiHan.Framework.Utils.Enums.Attributes;
+namespace XiHan.Framework.Utils.Enums.Converters;
 
 /// <summary>
 /// 枚举类型转换器

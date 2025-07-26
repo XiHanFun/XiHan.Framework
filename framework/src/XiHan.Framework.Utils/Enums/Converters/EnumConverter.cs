@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.Enums.Dtos;
 
-namespace XiHan.Framework.Utils.Enums.Attributes;
+namespace XiHan.Framework.Utils.Enums.Converters;
 
 /// <summary>
 /// 枚举转换器
