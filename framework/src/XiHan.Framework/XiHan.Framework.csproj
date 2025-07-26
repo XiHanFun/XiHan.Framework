@@ -9,8 +9,9 @@
         <Title>XiHan.Framework</Title>
         <AssemblyName>XiHan.Framework</AssemblyName>
         <PackageId>XiHan.Framework</PackageId>
-        <Description>曦寒框架库</Description>
+        <Description>曦寒框架元数据包</Description>
         <OutputType>Library</OutputType>
+        <RootNamespace>XiHan.Framework</RootNamespace>
     </PropertyGroup>
 
 </Project>
