@@ -1,0 +1,160 @@
+<Solution>
+  <Folder Name="/1.src/" />
+  <Folder Name="/1.src/1.Framework/" />
+  <Folder Name="/1.src/1.Framework/1.Metadata/">
+    <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/2.Core/" />
+  <Folder Name="/1.src/1.Framework/2.Core/1.Utils/">
+    <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/2.Core/2.Core/">
+    <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/2.Core/3.Serialization/">
+    <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/3.Web/" />
+  <Folder Name="/1.src/1.Framework/3.Web/1.Web.Core/">
+    <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/3.Web/2.Web.Api/">
+    <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/3.Web/3.Web.Docs/">
+    <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/4.Logging/" />
+  <Folder Name="/1.src/1.Framework/4.Logging/1.Logging/">
+    <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/5.Data/" />
+  <Folder Name="/1.src/1.Framework/5.Data/1.Validation/">
+    <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/5.Data/2.Data/">
+    <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/6.Security/" />
+  <Folder Name="/1.src/1.Framework/6.Security/1.Security/">
+    <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/6.Security/2.Authentication/">
+    <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/6.Security/3.Authorization/">
+    <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/7.System/" />
+  <Folder Name="/1.src/1.Framework/7.System/1.Caching/">
+    <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/7.System/2.Settings/">
+    <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/7.System/3.Threading/">
+    <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/7.System/4.DistributedIds/">
+    <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/8.AdvancedData/" />
+  <Folder Name="/1.src/1.Framework/8.AdvancedData/1.Uow/">
+    <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/8.AdvancedData/2.Ddd/">
+    <Project Path="src/XiHan.Framework.Ddd/XiHan.Framework.Ddd.csproj" />
+  </Folder>
+  <Folder Name="/1.src/1.Framework/9.DevTools/" />
+  <Folder Name="/1.src/1.Framework/9.DevTools/1.DevTools/">
+    <Project Path="src/XiHan.Framework.DevTools/XiHan.Framework.DevTools.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/" />
+  <Folder Name="/1.src/2.Extensions/1.Communication/" />
+  <Folder Name="/1.src/2.Extensions/1.Communication/1.HttpClient/">
+    <Project Path="src/XiHan.Framework.HttpClient/XiHan.Framework.HttpClient.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/1.Communication/2.Messaging/">
+    <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/1.Communication/3.EventBus/">
+    <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/2.Tasks/" />
+  <Folder Name="/1.src/2.Extensions/2.Tasks/1.BackgroundJobs/">
+    <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/2.Tasks/2.Templating/">
+    <Project Path="src/XiHan.Framework.Templating/XiHan.Framework.Templating.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/2.Tasks/3.CodeGeneration/">
+    <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/3.Storage/" />
+  <Folder Name="/1.src/2.Extensions/3.Storage/1.FileSystem/">
+    <Project Path="src/XiHan.Framework.FileSystem/XiHan.Framework.FileSystem.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/3.Storage/2.SearchEngines/">
+    <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/4.Advanced/" />
+  <Folder Name="/1.src/2.Extensions/4.Advanced/1.AI/">
+    <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/5.WebExtensions/" />
+  <Folder Name="/1.src/2.Extensions/5.WebExtensions/1.Web.RealTime/">
+    <Project Path="src/XiHan.Framework.Web.RealTime/XiHan.Framework.Web.RealTime.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/5.WebExtensions/2.ApiGateway/">
+    <Project Path="src/XiHan.Framework.ApiGateway/XiHan.Framework.ApiGateway.csproj" />
+  </Folder>
+  <Folder Name="/2.tests/" />
+  <Folder Name="/2.tests/1.UnitTests/">
+    <Project Path="test/XiHan.Framework.Tests.Unit/XiHan.Framework.Tests.Unit.csproj" />
+  </Folder>
+  <Folder Name="/2.tests/2.IntegrationTests/">
+    <Project Path="test/XiHan.Framework.Tests.Integration/XiHan.Framework.Tests.Integration.csproj" />
+  </Folder>
+  <Folder Name="/2.tests/3.WebTests/">
+    <Project Path="test/XiHan.Framework.Tests.Web/XiHan.Framework.Tests.Web.csproj" />
+  </Folder>
+  <Folder Name="/3.samples/" />
+  <Folder Name="/3.samples/1.QuickStart/">
+    <Project Path="samples/XiHan.Framework.Samples.BasicApi/XiHan.Framework.Samples.BasicApi.csproj" />
+  </Folder>
+  <Folder Name="/3.samples/2.Authentication/">
+    <Project Path="samples/XiHan.Framework.Samples.AuthDemo/XiHan.Framework.Samples.AuthDemo.csproj" />
+  </Folder>
+  <Folder Name="/3.samples/3.RealTime/">
+    <Project Path="samples/XiHan.Framework.Samples.RealTimeDemo/XiHan.Framework.Samples.RealTimeDemo.csproj" />
+  </Folder>
+  <Folder Name="/4.others/" />
+  <Folder Name="/4.others/1.Props/">
+    <File Path="props/common.props" />
+    <File Path="props/netcore.props" />
+    <File Path="props/netstandard.props" />
+    <File Path="props/nuget.props" />
+    <File Path="props/version.props" />
+  </Folder>
+  <Folder Name="/4.others/2.Scripts/">
+    <File Path="scripts/editor/Class.cs" />
+    <File Path="scripts/editor/Controller.cs" />
+    <File Path="scripts/editor/CopyFile.ps1" />
+    <File Path="scripts/editor/FilePath.txt" />
+    <File Path="scripts/editor/Interface.cs" />
+    <File Path="scripts/nuget/PushNugetPackages.ps1" />
+    <File Path="scripts/nuget/SaveNugetApiKey.ps1" />
+    <File Path="scripts/nuget/VersionUpgrade.ps1" />
+    <File Path="scripts/project/ClearProjecBinObj.ps1" />
+  </Folder>
+  <Folder Name="/4.others/3.Security/">
+    <File Path="snks/XiHan.Framework.snk" />
+  </Folder>
+  <Folder Name="/4.others/4.Root/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="CodeMaid.config" />
+    <File Path="global.json" />
+  </Folder>
+</Solution>
