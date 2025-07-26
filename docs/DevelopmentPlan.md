@@ -17,19 +17,19 @@
   - 基础配置类、元数据属性
   - **依赖**: 无（元数据包）
 
-- [ ] **XiHan.Framework.Utils** - 通用工具和扩展方法
+- [x] **XiHan.Framework.Utils** - 通用工具和扩展方法
   - 字符串处理、日期时间操作
   - 加密解密、反射工具
   - 文件操作、集合扩展
   - **依赖**: XiHan.Framework（元数据包）
-- [ ] **XiHan.Framework.Core** - 框架核心功能
+- [x] **XiHan.Framework.Core** - 框架核心功能
 
   - 模块化系统、依赖注入
   - 配置管理、异常处理
   - 通用扩展方法、基类
   - **依赖**: XiHan.Framework（元数据包）
 
-- [ ] **XiHan.Framework.Serialization** - 对象序列化
+- [x] **XiHan.Framework.Serialization** - 对象序列化
   - System.Text.Json 集成
   - 自定义转换器支持
   - **依赖**: XiHan.Framework.Core
