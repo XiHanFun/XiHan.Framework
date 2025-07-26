@@ -12,9 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.ObjectExtending.Data;
-
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectExtending.Data;
 
 /// <summary>
 /// 拥有额外属性的接口

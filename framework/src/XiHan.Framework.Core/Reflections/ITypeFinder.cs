@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Core.Reflection;
+namespace XiHan.Framework.Core.Reflections;
 
 /// <summary>
 /// 类型查找器接口

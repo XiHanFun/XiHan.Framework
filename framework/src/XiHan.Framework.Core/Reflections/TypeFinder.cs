@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Core.Reflection;
+namespace XiHan.Framework.Core.Reflections;
 
 /// <summary>
 /// 类型查找器
