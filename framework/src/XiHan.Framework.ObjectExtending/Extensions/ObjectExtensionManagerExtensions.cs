@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Immutable;
+using XiHan.Framework.ObjectExtending.Data;
 
 namespace XiHan.Framework.ObjectExtending.Extensions;
 

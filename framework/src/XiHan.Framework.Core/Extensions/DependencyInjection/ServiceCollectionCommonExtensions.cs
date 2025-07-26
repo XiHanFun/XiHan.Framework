@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Exceptions;
-using XiHan.Framework.Core.Reflection;
+using XiHan.Framework.Core.Reflections;
 using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.Extensions.DependencyInjection;
