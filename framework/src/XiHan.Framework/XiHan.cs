@@ -77,14 +77,9 @@ public static class XiHan
     public const string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
 
     /// <summary>
-    /// 框架标语
-    /// </summary>
-    public const string Tagline = "快速、轻量、高效、用心的开发框架和组件库。基于 .NET 9 构建。";
-
-    /// <summary>
     /// 框架描述
     /// </summary>
-    public const string Description = "专为前后端分离的 ASP.NET Core 应用设计的模块化框架，基于 .NET 9，优先使用原生功能，减少第三方依赖，确保模块化、可扩展和易用性。";
+    public const string Description = "快速、轻量、高效、用心的开发框架和组件库。基于 .NET 9 构建。";
 
     /// <summary>
     /// 框架关键词
@@ -144,8 +139,7 @@ public static class XiHan
     public static string SendWord => @"
 碧落降恩承淑颜，共挚崎缘挽曦寒。
 迁般故事终成忆，谨此葳蕤换思短。
-              —— 致她
-";
+              —— 致她";
 
     /// <summary>
     /// 框架版本
@@ -178,7 +172,14 @@ public static class XiHan
     /// <returns>框架信息摘要</returns>
     public static string GetSummary()
     {
-        return $"{DisplayName} v{Version} - {Tagline}";
+        return $"""
+            {Logo}
+            {DisplayName} v{Version}
+            {Description}
+            {SendWord}
+
+            项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
+            """;
     }
 
     /// <summary>
@@ -188,9 +189,9 @@ public static class XiHan
     public static string GetDetails()
     {
         return $"""
-            欢迎使用{DisplayName} v{Version}
+            {Logo}
+            {DisplayName} v{Version}
             {Description}
-            {Tagline}
             {SendWord}
 
             作者: {Author} ({AuthorEmail})
@@ -199,9 +200,7 @@ public static class XiHan
             文档: {DocumentationUrl}
             许可证: {License} ({LicenseUrl})
 
-            支持的框架: {string.Join(", ", SupportedFrameworks)}
-            支持的平台: {string.Join(", ", SupportedPlatforms)}
-            项目版本:{EntryAssemblyVersion}
+            项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
             """;
     }
 }
