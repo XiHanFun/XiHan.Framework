@@ -173,11 +173,9 @@ public static class XiHan
     public static string GetSummary()
     {
         return $"""
-            {Logo}
             {DisplayName} v{Version}
             {Description}
             {SendWord}
-
             项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
             """;
     }
@@ -189,17 +187,14 @@ public static class XiHan
     public static string GetDetails()
     {
         return $"""
-            {Logo}
             {DisplayName} v{Version}
             {Description}
             {SendWord}
-
             作者: {Author} ({AuthorEmail})
             组织: {Organization} ({OrganizationUrl})
             仓库: {RepositoryUrl}
             文档: {DocumentationUrl}
             许可证: {License} ({LicenseUrl})
-
             项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
             """;
     }
