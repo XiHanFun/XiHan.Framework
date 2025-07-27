@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Text;
+
 namespace XiHan.Framework.Utils.Logging;
 
 /// <summary>
@@ -29,6 +31,31 @@ public static class ConsoleLogger
     public static void SetIsWriteToFile(bool isWriteToFile)
     {
         _isWriteToFile = isWriteToFile;
+    }
+
+    /// <summary>
+    /// 渐变信息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    public static void Rainbow(string? message)
+    {
+        WriteColorLineRainbow(message);
+        if (!_isWriteToFile)
+        {
+            return;
+        }
+        FileLogger.Info(message);
+    }
+
+    /// <summary>
+    /// 渐变信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Rainbow(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Rainbow(formattedMessage);
     }
 
     /// <summary>
@@ -162,6 +189,29 @@ public static class ConsoleLogger
     }
 
     /// <summary>
+    /// 清除控制台内容
+    /// </summary>
+    public static void Clear()
+    {
+        lock (ObjLock)
+        {
+            try
+            {
+                Console.Clear();
+                if (!_isWriteToFile)
+                {
+                    return;
+                }
+                FileLogger.Clear();
+            }
+            catch
+            {
+                // 忽略清除失败的异常，某些环境下可能不支持清除
+            }
+        }
+    }
+
+    /// <summary>
     /// 格式化消息
     /// </summary>
     /// <param name="message">消息模板</param>
@@ -201,16 +251,133 @@ public static class ConsoleLogger
     /// <summary>
     /// 在控制台输出
     /// </summary>
-    /// <param name="inputStr">打印文本</param>
+    /// <param name="message">打印文本</param>
     /// <param name="frontColor">前置颜色</param>
-    private static void WriteColorLine(string? inputStr, ConsoleColor frontColor)
+    private static void WriteColorLine(string? message, ConsoleColor frontColor)
     {
         lock (ObjLock)
         {
             var currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = frontColor;
-            Console.WriteLine(inputStr);
+            Console.WriteLine(message);
             Console.ForegroundColor = currentForeColor;
         }
+    }
+
+    /// <summary>
+    /// 打印彩虹渐变文本（支持单行和多行）
+    /// </summary>
+    /// <param name="message">要打印的文本</param>
+    /// <param name="addNewLine">是否在末尾添加换行符，默认为true</param>
+    private static void WriteColorLineRainbow(string? message, bool addNewLine = true)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        lock (ObjLock)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+
+            var lines = message.Split('\n');
+
+            // 找到最长的行来计算渐变
+            var maxLength = 0;
+            foreach (var line in lines)
+            {
+                if (line.Length > maxLength)
+                {
+                    maxLength = line.Length;
+                }
+            }
+
+            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            {
+                var line = lines[lineIndex];
+
+                if (string.IsNullOrEmpty(line))
+                {
+                    if (lineIndex < lines.Length - 1) // 不是最后一行才换行
+                    {
+                        Console.WriteLine();
+                    }
+
+                    continue;
+                }
+
+                // 为每个字符应用彩虹渐变
+                for (var i = 0; i < line.Length; i++)
+                {
+                    var c = line[i];
+
+                    // 只对非空格字符应用颜色
+                    if (c != ' ')
+                    {
+                        var progress = (double)i / Math.Max(1, maxLength - 1);
+                        var (r, g, b) = GetRainbowColor(progress);
+                        SetConsoleColor(r, g, b);
+                    }
+
+                    Console.Write(c);
+                }
+                Console.ResetColor();
+
+                // 如果不是最后一行，或者需要添加换行符，则换行
+                if (lineIndex < lines.Length - 1 || addNewLine)
+                {
+                    Console.WriteLine();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 获取彩虹渐变颜色
+    /// </summary>
+    /// <param name="progress">进度值 (0.0 - 1.0)</param>
+    /// <returns>RGB颜色值</returns>
+    private static (int r, int g, int b) GetRainbowColor(double progress)
+    {
+        progress = Math.Max(0, Math.Min(1, progress));
+        var hue = progress * 300; // 0-300度，避免回到红色
+        return HsvToRgb((int)hue, 1.0, 1.0);
+    }
+
+    /// <summary>
+    /// HSV颜色空间转RGB
+    /// </summary>
+    /// <param name="hue">色相 (0-360)</param>
+    /// <param name="saturation">饱和度 (0.0-1.0)</param>
+    /// <param name="value">明度 (0.0-1.0)</param>
+    /// <returns>RGB颜色值</returns>
+    private static (int r, int g, int b) HsvToRgb(int hue, double saturation, double value)
+    {
+        var h = hue / 60.0;
+        var c = value * saturation;
+        var x = c * (1 - Math.Abs((h % 2) - 1));
+        var m = value - c;
+
+        double r, g, b;
+
+        if (h is >= 0 and < 1) { r = c; g = x; b = 0; }
+        else if (h is >= 1 and < 2) { r = x; g = c; b = 0; }
+        else if (h is >= 2 and < 3) { r = 0; g = c; b = x; }
+        else if (h is >= 3 and < 4) { r = 0; g = x; b = c; }
+        else if (h is >= 4 and < 5) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+
+        return ((int)((r + m) * 255), (int)((g + m) * 255), (int)((b + m) * 255));
+    }
+
+    /// <summary>
+    /// 设置控制台颜色 (ANSI)
+    /// </summary>
+    /// <param name="r">红色分量 (0-255)</param>
+    /// <param name="g">绿色分量 (0-255)</param>
+    /// <param name="b">蓝色分量 (0-255)</param>
+    private static void SetConsoleColor(int r, int g, int b)
+    {
+        Console.Write($"\x1b[38;2;{r};{g};{b}m");
     }
 }
