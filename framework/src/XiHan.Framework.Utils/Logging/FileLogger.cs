@@ -90,6 +90,142 @@ public static class FileLogger
     }
 
     /// <summary>
+    /// 清除所有日志文件
+    /// </summary>
+    public static void Clear()
+    {
+        lock (ObjLock)
+        {
+            try
+            {
+                if (Directory.Exists(_logDirectory))
+                {
+                    var logFiles = Directory.GetFiles(_logDirectory, "*.log");
+                    foreach (var file in logFiles)
+                    {
+                        File.Delete(file);
+                    }
+                    
+                    // 清除文件计数器
+                    LogFileCounter.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 记录清除失败的错误
+                try
+                {
+                    var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
+                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 日志清除失败: {ex.Message}{Environment.NewLine}";
+                    File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
+                }
+                catch
+                {
+                    // 忽略备用日志记录失败
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 清除指定文件名的日志文件
+    /// </summary>
+    /// <param name="fileName">日志文件名(不含扩展名)</param>
+    public static void Clear(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return;
+        }
+
+        lock (ObjLock)
+        {
+            try
+            {
+                if (Directory.Exists(_logDirectory))
+                {
+                    // 匹配包含指定文件名的所有日志文件
+                    var pattern = $"*{fileName}*.log";
+                    var logFiles = Directory.GetFiles(_logDirectory, pattern);
+                    foreach (var file in logFiles)
+                    {
+                        File.Delete(file);
+                    }
+                    
+                    // 清除相关的文件计数器
+                    var keysToRemove = LogFileCounter.Keys.Where(key => key.Contains(fileName)).ToList();
+                    foreach (var key in keysToRemove)
+                    {
+                        LogFileCounter.Remove(key);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 记录清除失败的错误
+                try
+                {
+                    var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
+                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 清除文件 '{fileName}' 失败: {ex.Message}{Environment.NewLine}";
+                    File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
+                }
+                catch
+                {
+                    // 忽略备用日志记录失败
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 清除指定日期的日志文件
+    /// </summary>
+    /// <param name="date">指定日期</param>
+    public static void Clear(DateTime date)
+    {
+        lock (ObjLock)
+        {
+            try
+            {
+                if (Directory.Exists(_logDirectory))
+                {
+                    var dateStr = date.ToString("yyyy-MM-dd");
+                    var pattern = $"{dateStr}*.log";
+                    var logFiles = Directory.GetFiles(_logDirectory, pattern);
+                    foreach (var file in logFiles)
+                    {
+                        File.Delete(file);
+                    }
+                    
+                    // 清除相关的文件计数器
+                    var keysToRemove = LogFileCounter.Keys.Where(key => key.StartsWith(dateStr)).ToList();
+                    foreach (var key in keysToRemove)
+                    {
+                        LogFileCounter.Remove(key);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 记录清除失败的错误
+                try
+                {
+                    var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
+                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 清除日期 '{date:yyyy-MM-dd}' 的日志失败: {ex.Message}{Environment.NewLine}";
+                    File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
+                }
+                catch
+                {
+                    // 忽略备用日志记录失败
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// 写入文件
     /// </summary>
     /// <param name="inputStr">日志内容</param>
