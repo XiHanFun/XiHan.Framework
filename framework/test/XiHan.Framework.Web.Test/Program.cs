@@ -7,7 +7,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    _ = await builder.Services.AddApplicationAsync<XiHanWebTestModule>();
+    _ = await builder.AddApplicationAsync<XiHanWebTestModule>();
 
     var app = builder.Build();
 
@@ -23,5 +23,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }

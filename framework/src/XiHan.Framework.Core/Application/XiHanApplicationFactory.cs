@@ -53,7 +53,7 @@ public static class XiHanApplicationFactory
         Type startupModuleType,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        XiHanApplicationWithInternalServiceProvider app = new(startupModuleType, options =>
+        var app = new XiHanApplicationWithInternalServiceProvider(startupModuleType, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
@@ -125,7 +125,7 @@ public static class XiHanApplicationFactory
         IServiceCollection services,
         Action<XiHanApplicationCreationOptions>? optionsAction = null)
     {
-        XiHanApplicationWithExternalServiceProvider app = new(startupModuleType, services, options =>
+        var app = new XiHanApplicationWithExternalServiceProvider(startupModuleType, services, options =>
         {
             options.SkipConfigureServices = true;
             optionsAction?.Invoke(options);
