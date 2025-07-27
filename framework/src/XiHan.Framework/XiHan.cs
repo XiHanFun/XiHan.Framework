@@ -119,6 +119,11 @@ public static class XiHan
     ];
 
     /// <summary>
+    /// 入口程序名称
+    /// </summary>
+    public static string EntryAssemblyName => Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+
+    /// <summary>
     /// 入口程序版本
     /// </summary>
     public static string EntryAssemblyVersion => Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
@@ -173,10 +178,11 @@ public static class XiHan
     public static string GetSummary()
     {
         return $"""
-            {DisplayName} v{Version}
+            {Name} {DisplayName} v{Version}
             {Description}
             {SendWord}
-            项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
+
+            {EntryAssemblyName} v{EntryAssemblyVersion}
             """;
     }
 
@@ -187,7 +193,7 @@ public static class XiHan
     public static string GetDetails()
     {
         return $"""
-            {DisplayName} v{Version}
+            {Name} {DisplayName} v{Version}
             {Description}
             {SendWord}
             作者: {Author} ({AuthorEmail})
@@ -195,7 +201,8 @@ public static class XiHan
             仓库: {RepositoryUrl}
             文档: {DocumentationUrl}
             许可证: {License} ({LicenseUrl})
-            项目版本:v{EntryAssemblyVersion}{Environment.NewLine}
+
+            {EntryAssemblyName} v{EntryAssemblyVersion}
             """;
     }
 }
