@@ -33,6 +33,11 @@ public class StructuredLogger : IStructuredLogger
         _logger = logger;
     }
 
+    /// <summary>
+    /// 记录结构化信息日志
+    /// </summary>
+    /// <param name="message">消息</param>
+    /// <param name="data">结构化数据</param>
     public void LogInformation(string message, object data)
     {
         using (Serilog.Context.LogContext.PushProperty("StructuredData", data, true))
@@ -41,6 +46,11 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录结构化警告日志
+    /// </summary>
+    /// <param name="message">消息</param>
+    /// <param name="data">结构化数据</param>
     public void LogWarning(string message, object data)
     {
         using (Serilog.Context.LogContext.PushProperty("StructuredData", data, true))
@@ -49,6 +59,11 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录结构化错误日志
+    /// </summary>
+    /// <param name="message">消息</param>
+    /// <param name="data">结构化数据</param>
     public void LogError(string message, object data)
     {
         using (Serilog.Context.LogContext.PushProperty("StructuredData", data, true))
@@ -57,6 +72,12 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录结构化错误日志
+    /// </summary>
+    /// <param name="exception">异常</param>
+    /// <param name="message">消息</param>
+    /// <param name="data">结构化数据</param>
     public void LogError(Exception exception, string message, object data)
     {
         using (Serilog.Context.LogContext.PushProperty("StructuredData", data, true))
@@ -65,6 +86,12 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录自定义级别的结构化日志
+    /// </summary>
+    /// <param name="level">日志级别</param>
+    /// <param name="message">消息</param>
+    /// <param name="data">结构化数据</param>
     public void Log(LogLevel level, string message, object data)
     {
         using (Serilog.Context.LogContext.PushProperty("StructuredData", data, true))
@@ -73,6 +100,11 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录事件日志
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="eventData">事件数据</param>
     public void LogEvent(string eventName, object eventData)
     {
         using (Serilog.Context.LogContext.PushProperty("EventName", eventName))
@@ -82,6 +114,11 @@ public class StructuredLogger : IStructuredLogger
         }
     }
 
+    /// <summary>
+    /// 记录业务日志
+    /// </summary>
+    /// <param name="businessAction">业务动作</param>
+    /// <param name="businessData">业务数据</param>
     public void LogBusiness(string businessAction, object businessData)
     {
         using (Serilog.Context.LogContext.PushProperty("BusinessAction", businessAction))
