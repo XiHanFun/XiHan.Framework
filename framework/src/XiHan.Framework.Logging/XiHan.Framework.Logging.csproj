@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\..\props\netcore.props" />
     <Import Project="..\..\props\common.props" />
@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.AspNetCore.Serilog</Title>
-        <AssemblyName>XiHan.Framework.AspNetCore.Serilog</AssemblyName>
-        <PackageId>XiHan.Framework.AspNetCore.Serilog</PackageId>
-        <Description>曦寒框架 Web 核心 Serilog 库</Description>
+        <Title>XiHan.Framework.Logging</Title>
+        <AssemblyName>XiHan.Framework.Logging</AssemblyName>
+        <PackageId>XiHan.Framework.Logging</PackageId>
+        <Description>曦寒框架统一日志记录与管理库</Description>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>
@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
+      <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
     </ItemGroup>
 
 </Project>

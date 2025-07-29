@@ -12,18 +12,16 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore.Serilog;
+namespace XiHan.Framework.Logging;
 
 /// <summary>
 /// 曦寒框架 Web 核心 Serilog 模块
 /// </summary>
-[DependsOn(
-    typeof(XiHanAspNetCoreModule)
-    )]
-public class XiHanAspNetCoreSerilogModule : XiHanModule
+public class XiHanLoggingModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
