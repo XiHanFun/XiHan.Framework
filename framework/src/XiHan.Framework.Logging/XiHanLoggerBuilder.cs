@@ -12,9 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 
-namespace XiHan.Framework.AspNetCore.Serilog;
+namespace XiHan.Framework.Logging;
 
 /// <summary>
 /// 曦寒日志构建器

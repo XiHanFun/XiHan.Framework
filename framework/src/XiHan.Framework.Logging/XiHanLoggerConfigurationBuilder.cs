@@ -12,12 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using System.Text;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.AspNetCore.Serilog;
+namespace XiHan.Framework.Logging;
 
 /// <summary>
 /// 曦寒日志配置构建器
