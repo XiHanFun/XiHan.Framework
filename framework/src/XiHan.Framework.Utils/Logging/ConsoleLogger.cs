@@ -25,37 +25,12 @@ public static class ConsoleLogger
     private static bool _isWriteToFile;
 
     /// <summary>
-    /// 设置日志文件目录
+    /// 设置是否写入文件
     /// </summary>
     /// <param name="isWriteToFile">是否写入文件</param>
     public static void SetIsWriteToFile(bool isWriteToFile)
     {
         _isWriteToFile = isWriteToFile;
-    }
-
-    /// <summary>
-    /// 渐变信息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    public static void Rainbow(string? message)
-    {
-        WriteColorLineRainbow(message);
-        if (!_isWriteToFile)
-        {
-            return;
-        }
-        FileLogger.Info(message);
-    }
-
-    /// <summary>
-    /// 渐变信息
-    /// </summary>
-    /// <param name="message">消息模板</param>
-    /// <param name="args">格式化参数</param>
-    public static void Rainbow(string? message, params object[] args)
-    {
-        var formattedMessage = FormatMessage(message, args);
-        Rainbow(formattedMessage);
     }
 
     /// <summary>
@@ -65,12 +40,11 @@ public static class ConsoleLogger
     /// <param name="frontColor">前景色</param>
     public static void Info(string? message, ConsoleColor frontColor = ConsoleColor.White)
     {
-        WriteColorLine(message, frontColor);
-        if (!_isWriteToFile)
+        WriteColorLine(message, "INFO", frontColor);
+        if (_isWriteToFile)
         {
-            return;
+            FileLogger.Info(message);
         }
-        FileLogger.Info(message);
     }
 
     /// <summary>
@@ -91,12 +65,11 @@ public static class ConsoleLogger
     /// <param name="frontColor">前景色</param>
     public static void Success(string? message, ConsoleColor frontColor = ConsoleColor.Green)
     {
-        WriteColorLine(message, frontColor);
-        if (!_isWriteToFile)
+        WriteColorLine(message, "SUCCESS", frontColor);
+        if (_isWriteToFile)
         {
-            return;
+            FileLogger.Success(message);
         }
-        FileLogger.Success(message);
     }
 
     /// <summary>
@@ -117,12 +90,11 @@ public static class ConsoleLogger
     /// <param name="frontColor">前景色</param>
     public static void Handle(string? message, ConsoleColor frontColor = ConsoleColor.Blue)
     {
-        WriteColorLine(message, frontColor);
-        if (!_isWriteToFile)
+        WriteColorLine(message, "HANDLE", frontColor);
+        if (_isWriteToFile)
         {
-            return;
+            FileLogger.Handle(message);
         }
-        FileLogger.Handle(message);
     }
 
     /// <summary>
@@ -143,12 +115,11 @@ public static class ConsoleLogger
     /// <param name="frontColor">前景色</param>
     public static void Warn(string? message, ConsoleColor frontColor = ConsoleColor.Yellow)
     {
-        WriteColorLine(message, frontColor);
-        if (!_isWriteToFile)
+        WriteColorLine(message, "WARN", frontColor);
+        if (_isWriteToFile)
         {
-            return;
+            FileLogger.Warn(message);
         }
-        FileLogger.Warn(message);
     }
 
     /// <summary>
@@ -166,15 +137,26 @@ public static class ConsoleLogger
     /// 错误、删除、危险、异常信息
     /// </summary>
     /// <param name="message">消息内容</param>
+    /// <param name="ex"></param>
     /// <param name="frontColor">前景色</param>
     public static void Error(string? message, ConsoleColor frontColor = ConsoleColor.Red)
     {
-        WriteColorLine(message, frontColor);
-        if (!_isWriteToFile)
+        WriteColorLine(message, "ERROR", frontColor);
+        if (_isWriteToFile)
         {
-            return;
+            FileLogger.Error(message);
         }
-        FileLogger.Error(message);
+    }
+
+    /// <summary>
+    /// 错误、删除、危险、异常信息
+    /// </summary>
+    /// <param name="message">消息模板</param>
+    /// <param name="ex">异常</param>
+    public static void Error(string? message, Exception ex)
+    {
+        var errorMessage = $"{message} {ex}";
+        Error(errorMessage);
     }
 
     /// <summary>
@@ -189,6 +171,32 @@ public static class ConsoleLogger
     }
 
     /// <summary>
+    /// 渐变信息
+    /// </summary>
+    /// <remarks>
+    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志
+    /// </remarks>
+    /// <param name="message">消息内容</param>
+    public static void Rainbow(string? message)
+    {
+        WriteColorLineRainbow(message);
+    }
+
+    /// <summary>
+    /// 渐变信息
+    /// </summary>
+    /// <remarks>
+    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志
+    /// </remarks>
+    /// <param name="message">消息模板</param>
+    /// <param name="args">格式化参数</param>
+    public static void Rainbow(string? message, params object[] args)
+    {
+        var formattedMessage = FormatMessage(message, args);
+        Rainbow(formattedMessage);
+    }
+
+    /// <summary>
     /// 清除控制台内容
     /// </summary>
     public static void Clear()
@@ -198,11 +206,10 @@ public static class ConsoleLogger
             try
             {
                 Console.Clear();
-                if (!_isWriteToFile)
+                if (_isWriteToFile)
                 {
-                    return;
+                    FileLogger.Clear();
                 }
-                FileLogger.Clear();
             }
             catch
             {
@@ -210,6 +217,8 @@ public static class ConsoleLogger
             }
         }
     }
+
+    #region 内部方法
 
     /// <summary>
     /// 格式化消息
@@ -252,14 +261,19 @@ public static class ConsoleLogger
     /// 在控制台输出
     /// </summary>
     /// <param name="message">打印文本</param>
+    /// <param name="logType">日志类型</param>
     /// <param name="frontColor">前置颜色</param>
-    private static void WriteColorLine(string? message, ConsoleColor frontColor)
+    private static void WriteColorLine(string? message, string logType, ConsoleColor frontColor)
     {
+        // 格式化日志内容
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logLine = $"[{timestamp}] [{logType}] {message}";
+
         lock (ObjLock)
         {
             var currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = frontColor;
-            Console.WriteLine(message);
+            Console.WriteLine(logLine);
             Console.ForegroundColor = currentForeColor;
         }
     }
@@ -380,4 +394,6 @@ public static class ConsoleLogger
     {
         Console.Write($"\x1b[38;2;{r};{g};{b}m");
     }
+
+    #endregion 内部方法
 }
