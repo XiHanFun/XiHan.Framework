@@ -23,6 +23,7 @@ public static class ConsoleLogger
 {
     private static readonly Lock ObjLock = new();
     private static bool _isWriteToFile;
+    private static bool _isDisplayHeader;
 
     /// <summary>
     /// 设置是否写入文件
@@ -31,6 +32,15 @@ public static class ConsoleLogger
     public static void SetIsWriteToFile(bool isWriteToFile)
     {
         _isWriteToFile = isWriteToFile;
+    }
+
+    /// <summary>
+    /// 设置是否显示日志头
+    /// </summary>
+    /// <param name="isDisplayHeader">是否显示日志头</param>
+    public static void SetIsDisplayHeader(bool isDisplayHeader)
+    {
+        _isDisplayHeader = isDisplayHeader;
     }
 
     /// <summary>
@@ -174,7 +184,7 @@ public static class ConsoleLogger
     /// 渐变信息
     /// </summary>
     /// <remarks>
-    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志
+    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志，不显示日志头
     /// </remarks>
     /// <param name="message">消息内容</param>
     public static void Rainbow(string? message)
@@ -186,7 +196,7 @@ public static class ConsoleLogger
     /// 渐变信息
     /// </summary>
     /// <remarks>
-    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志
+    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志，不显示日志头
     /// </remarks>
     /// <param name="message">消息模板</param>
     /// <param name="args">格式化参数</param>
@@ -267,7 +277,7 @@ public static class ConsoleLogger
     {
         // 格式化日志内容
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = $"[{timestamp}] [{logType}] {message}";
+        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
 
         lock (ObjLock)
         {
