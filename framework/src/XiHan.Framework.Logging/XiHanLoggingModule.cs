@@ -17,7 +17,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
-using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Logging.Extensions;
@@ -76,16 +75,6 @@ public class XiHanLoggingModule : XiHanModule
                     fileSizeLimitBytes: loggingOptions.FileSizeLimitBytes,
                     rollOnFileSizeLimit: loggingOptions.RollOnFileSizeLimit));
         });
-    }
-
-    /// <summary>
-    /// 应用初始化
-    /// </summary>
-    /// <param name="context"></param>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        var logger = context.ServiceProvider.GetRequiredService<ILogger<XiHanLoggingModule>>();
-        logger.LogInformation("XiHan.Framework.Logging module initialized successfully");
     }
 
     /// <summary>
