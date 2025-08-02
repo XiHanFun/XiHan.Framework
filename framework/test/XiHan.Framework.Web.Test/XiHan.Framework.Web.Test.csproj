@@ -18,6 +18,7 @@
 	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore\XiHan.Framework.AspNetCore.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
+	  <ProjectReference Include="..\..\src\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

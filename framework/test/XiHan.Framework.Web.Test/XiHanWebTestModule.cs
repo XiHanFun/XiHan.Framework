@@ -19,6 +19,7 @@ using XiHan.Framework.AspNetCore.Swagger;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Http;
+using XiHan.Framework.Logging;
 
 namespace XiHan.Framework.Web.Test;
 
@@ -29,6 +30,7 @@ namespace XiHan.Framework.Web.Test;
     typeof(XiHanHttpModule),
     typeof(XiHanAspNetCoreModule),
     typeof(XiHanAspNetCoreMvcModule),
+    typeof(XiHanLoggingModule),
     typeof(XiHanAspNetCoreSwaggerModule),
     typeof(XiHanAspNetCoreScalarModule)
 )]
