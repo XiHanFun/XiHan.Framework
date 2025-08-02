@@ -22,11 +22,11 @@ namespace XiHan.Framework.Utils.Logging;
 public static class ConsoleLogger
 {
     private static readonly Lock ObjLock = new();
-    private static bool _isWriteToFile;
-    private static bool _isDisplayHeader;
+    private static bool _isWriteToFile = false;
+    private static bool _isDisplayHeader = true;
 
     /// <summary>
-    /// 设置是否写入文件
+    /// 设置是否写入文件,默认不写入
     /// </summary>
     /// <param name="isWriteToFile">是否写入文件</param>
     public static void SetIsWriteToFile(bool isWriteToFile)
@@ -35,7 +35,7 @@ public static class ConsoleLogger
     }
 
     /// <summary>
-    /// 设置是否显示日志头
+    /// 设置是否显示日志头，默认显示
     /// </summary>
     /// <param name="isDisplayHeader">是否显示日志头</param>
     public static void SetIsDisplayHeader(bool isDisplayHeader)
