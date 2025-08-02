@@ -105,7 +105,7 @@ public static class FileLogger
                     {
                         File.Delete(file);
                     }
-                    
+
                     // 清除文件计数器
                     LogFileCounter.Clear();
                 }
@@ -152,7 +152,7 @@ public static class FileLogger
                     {
                         File.Delete(file);
                     }
-                    
+
                     // 清除相关的文件计数器
                     var keysToRemove = LogFileCounter.Keys.Where(key => key.Contains(fileName)).ToList();
                     foreach (var key in keysToRemove)
@@ -198,7 +198,7 @@ public static class FileLogger
                     {
                         File.Delete(file);
                     }
-                    
+
                     // 清除相关的文件计数器
                     var keysToRemove = LogFileCounter.Keys.Where(key => key.StartsWith(dateStr)).ToList();
                     foreach (var key in keysToRemove)
