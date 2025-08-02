@@ -117,7 +117,7 @@ public static class FileLogger
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 日志清除失败: {ex.Message}{Environment.NewLine}";
+                    var errorMessage = $"[{timestamp} CLEAR_ERROR] 日志清除失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
                 catch
@@ -168,7 +168,7 @@ public static class FileLogger
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 清除文件 '{fileName}' 失败: {ex.Message}{Environment.NewLine}";
+                    var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除文件 '{fileName}' 失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
                 catch
@@ -214,7 +214,7 @@ public static class FileLogger
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var errorMessage = $"[{timestamp}] [CLEAR_ERROR] 清除日期 '{date:yyyy-MM-dd}' 的日志失败: {ex.Message}{Environment.NewLine}";
+                    var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除日期 '{date:yyyy-MM-dd}' 的日志失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
                 catch
@@ -282,7 +282,7 @@ public static class FileLogger
 
                 // 格式化日志内容
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                var logLine = $"[{timestamp}] [{logType}] {inputStr}{Environment.NewLine}";
+                var logLine = $"[{timestamp} {logType}] {inputStr}{Environment.NewLine}";
 
                 // 写入日志文件
                 File.AppendAllText(logFilePath, logLine, Encoding.UTF8);
@@ -294,7 +294,7 @@ public static class FileLogger
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "error_logger.log");
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var errorMessage = $"[{timestamp}] [LOGGER_ERROR] 日志写入失败: {ex.Message}{Environment.NewLine}";
+                    var errorMessage = $"[{timestamp} LOGGER_ERROR] 日志写入失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
                 catch
