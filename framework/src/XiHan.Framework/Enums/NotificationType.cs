@@ -37,15 +37,5 @@ public enum NotificationType
     /// <summary>
     /// 站内信
     /// </summary>
-    InApp = 3,
-
-    /// <summary>
-    /// 微信
-    /// </summary>
-    WeChat = 4,
-
-    /// <summary>
-    /// 钉钉
-    /// </summary>
-    DingTalk = 5
+    InApp = 3
 }
