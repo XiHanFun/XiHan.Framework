@@ -71,8 +71,8 @@
   </Folder>
   <Folder Name="/1.src/2.Extensions/" />
   <Folder Name="/1.src/2.Extensions/1.Communication/" />
-  <Folder Name="/1.src/2.Extensions/1.Communication/1.HttpClient/">
-    <Project Path="src/XiHan.Framework.HttpClient/XiHan.Framework.HttpClient.csproj" />
+  <Folder Name="/1.src/2.Extensions/1.Communication/1.Http/">
+    <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/1.Communication/2.Messaging/">
     <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />

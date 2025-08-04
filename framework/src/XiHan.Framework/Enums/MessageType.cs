@@ -32,7 +32,7 @@ public enum MessageType
     /// <summary>
     /// 警告
     /// </summary>
-    Warning = 2,
+    Warn = 2,
 
     /// <summary>
     /// 错误
