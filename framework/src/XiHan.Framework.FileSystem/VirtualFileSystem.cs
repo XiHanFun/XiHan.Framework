@@ -18,15 +18,15 @@ using Microsoft.Extensions.Primitives;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Threading;
-using XiHan.Framework.VirtualFileSystem.Events;
-using XiHan.Framework.VirtualFileSystem.Options;
-using XiHan.Framework.VirtualFileSystem.Providers;
-using XiHan.Framework.VirtualFileSystem.Providers.Composite;
-using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
-using XiHan.Framework.VirtualFileSystem.Providers.Physical;
-using XiHan.Framework.VirtualFileSystem.Utilities;
+using XiHan.Framework.FileSystem.Events;
+using XiHan.Framework.FileSystem.Options;
+using XiHan.Framework.FileSystem.Providers;
+using XiHan.Framework.FileSystem.Providers.Composite;
+using XiHan.Framework.FileSystem.Providers.Embedded;
+using XiHan.Framework.FileSystem.Providers.Physical;
+using XiHan.Framework.FileSystem.Utilities;
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.FileSystem;
 
 /// <summary>
 /// 虚拟文件系统核心实现

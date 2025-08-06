@@ -15,7 +15,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.FileSystem\XiHan.Framework.FileSystem.csproj" />
     </ItemGroup>
 
 </Project>

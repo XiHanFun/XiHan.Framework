@@ -15,7 +15,7 @@
 using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.Utils.Security.Cryptography;
 
-namespace XiHan.Framework.VirtualFileSystem.Models;
+namespace XiHan.Framework.FileSystem.Models;
 
 /// <summary>
 /// 文件版本信息

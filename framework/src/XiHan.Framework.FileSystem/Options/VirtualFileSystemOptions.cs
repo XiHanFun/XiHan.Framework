@@ -13,11 +13,11 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
-using XiHan.Framework.VirtualFileSystem.Providers;
-using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
-using XiHan.Framework.VirtualFileSystem.Providers.Physical;
+using XiHan.Framework.FileSystem.Providers;
+using XiHan.Framework.FileSystem.Providers.Embedded;
+using XiHan.Framework.FileSystem.Providers.Physical;
 
-namespace XiHan.Framework.VirtualFileSystem.Options;
+namespace XiHan.Framework.FileSystem.Options;
 
 /// <summary>
 /// 虚拟文件系统配置选项

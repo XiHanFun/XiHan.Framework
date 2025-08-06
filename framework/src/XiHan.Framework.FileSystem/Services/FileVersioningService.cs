@@ -14,9 +14,9 @@
 
 using Microsoft.Extensions.FileProviders;
 using System.Collections.Concurrent;
-using XiHan.Framework.VirtualFileSystem.Models;
+using XiHan.Framework.FileSystem.Models;
 
-namespace XiHan.Framework.VirtualFileSystem.Services;
+namespace XiHan.Framework.FileSystem.Services;
 
 /// <summary>
 /// 文件版本控制服务
