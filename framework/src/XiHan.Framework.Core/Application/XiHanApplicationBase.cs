@@ -45,7 +45,7 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
         _ = Guard.NotNull(services, nameof(services));
-
+        ConsoleLogger.SetIsDisplayHeader(false);
         ConsoleLogger.Rainbow(XiHan.Logo);
         ConsoleLogger.Info(XiHan.GetSummary());
 
@@ -83,6 +83,7 @@ public class XiHanApplicationBase : IXiHanApplication
         {
             ConfigureServices();
         }
+        ConsoleLogger.SetIsDisplayHeader(true);
     }
 
     /// <summary>
