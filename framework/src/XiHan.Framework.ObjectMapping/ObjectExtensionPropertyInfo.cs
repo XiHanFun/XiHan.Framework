@@ -13,11 +13,11 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Localization;
-using XiHan.Framework.ObjectExtending.Modularity;
+using XiHan.Framework.ObjectMapping.Modularity;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 对象扩展属性信息

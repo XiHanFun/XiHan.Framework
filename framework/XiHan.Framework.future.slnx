@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/1.src/1.Framework/2.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>

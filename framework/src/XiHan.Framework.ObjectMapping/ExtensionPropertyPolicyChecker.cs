@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-using XiHan.Framework.ObjectExtending.Modularity;
+using XiHan.Framework.ObjectMapping.Modularity;
 using XiHan.Framework.Utils.Collections;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 扩展属性策略检查器

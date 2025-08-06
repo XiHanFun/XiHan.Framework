@@ -20,10 +20,18 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
 元数据包提供框架的基础信息和配置，是其他所有包的基础。
 
 1. **XiHan.Framework**
+
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 框架元数据和基础配置。
    - **详细描述**: 包含框架版本信息等，为所有其他包提供基础支持。
    - **依赖**: 无（元数据包）。
+
+   **基本功能：**
+
+   - 框架版本信息 (`XiHanFrameworkVersion`)
+   - 基础配置类 (`XiHanFrameworkOptions`)
+   - 框架常量定义 (`XiHanFrameworkConstants`)
+   - 基础接口定义 (`IXiHanFramework`)
 
 ## 核心基础包
 
@@ -35,269 +43,624 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
    - **简要功能**: 提供通用工具和扩展方法。
    - **详细描述**: 包含字符串处理、日期时间操作、加密解密、反射工具等实用方法，简化日常开发任务。
    - **依赖**: XiHan.Framework（元数据包）。
+
+   **基本功能：**
+
+   - 字符串扩展方法 (`StringExtensions`)
+   - 日期时间工具 (`DateTimeUtils`, `TimeSpanExtensions`)
+   - 加密解密工具 (`EncryptionUtils`, `HashUtils`)
+   - 反射工具 (`ReflectionUtils`, `TypeExtensions`)
+   - 集合扩展方法 (`CollectionExtensions`, `EnumerableExtensions`)
+   - 文件操作工具 (`FileUtils`, `PathUtils`)
+   - 随机数生成器 (`RandomUtils`)
+   - 验证工具 (`ValidationUtils`)
+
 3. **XiHan.Framework.Core**
 
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 提供框架核心工具、依赖注入、模块化支持。
    - **详细描述**: 包含通用扩展方法、基类和配置管理工具，集成 .NET 9 内置 DI，支持服务注册与解析，模块化设计，提升开发效率。
    - **依赖**: XiHan.Framework（元数据包）。
+
+   **基本功能：**
+
+   - 依赖注入扩展 (`ServiceCollectionExtensions`)
+   - 模块化系统 (`IModule`, `ModuleBase`, `ModuleManager`)
+   - 配置管理 (`IConfigurationManager`, `AppSettings`)
+   - 基础异常类 (`XiHanException`, `BusinessException`)
+   - 通用结果类 (`Result<T>`, `PagedResult<T>`)
+   - 基础接口 (`IEntity`, `IAuditedEntity`)
+   - 服务定位器 (`IServiceLocator`)
+   - 应用生命周期管理 (`IApplicationLifecycle`)
+
 4. **XiHan.Framework.Serialization**
+
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 支持对象序列化和反序列化。
    - **详细描述**: 基于 System.Text.Json 提供高效 JSON 序列化，支持自定义转换器，兼容 Newtonsoft.Json。
    - **依赖**: XiHan.Framework.Core。
 
+   **基本功能：**
+
+   - JSON 序列化服务 (`IJsonSerializer`, `SystemTextJsonSerializer`)
+   - 自定义转换器 (`DateTimeJsonConverter`, `EnumJsonConverter`)
+   - 序列化配置 (`SerializationOptions`)
+   - 二进制序列化 (`IBinarySerializer`)
+   - XML 序列化 (`IXmlSerializer`)
+   - 序列化扩展方法 (`SerializationExtensions`)
+
+5. **XiHan.Framework.ObjectMapping**
+
+   - **SDK**: Microsoft.NET.Sdk
+   - **简要功能**: 提供对象映射和转换功能。
+   - **详细描述**: 支持 Entity ↔ DTO 转换，集成 Mapster 或 AutoMapper，提供高性能对象映射，支持自定义映射规则和配置。
+   - **依赖**: XiHan.Framework.Core。
+
+   **基本功能：**
+
+   - 对象映射服务 (`IObjectMapper`, `ObjectMapper`)
+   - 映射配置 (`MappingConfiguration`, `TypeAdapterConfig`)
+   - 映射扩展 (`ObjectMapperExtensions`)
+   - 自动映射 (`IAutoMapper`, `AutoMapperService`)
+   - 映射验证 (`IMappingValidator`, `MappingValidator`)
+   - 映射缓存 (`IMappingCache`, `MappingCache`)
+   - 映射监控 (`IMappingMonitor`, `MappingMonitor`)
+   - 映射工具 (`MappingUtils`, `TypeAdapter`)
+
 ## Web 核心包
 
 确保用户能快速启动 Web API 项目，立即体验框架功能。
 
-5. **XiHan.Framework.Web.Core**
+6. **XiHan.Framework.Web.Core**
 
    - **SDK**: Microsoft.NET.Sdk.Web
    - **简要功能**: 支持 Web 应用的基础配置和运行时环境。
    - **详细描述**: 提供 ASP.NET Core 的 WebHost 和 Kestrel 配置，简化中间件管道设置，适用于快速搭建 Web 项目。
    - **依赖**: XiHan.Framework.Core。
 
-   **应该包含：**
+   **基本功能：**
 
-   - ASP.NET Core WebHost 配置
-   - Kestrel 服务器配置
-   - 中间件管道配置
-   - 基础Web应用启动逻辑
-   - 通用Web中间件
+   - ASP.NET Core WebHost 配置 (`WebHostBuilderExtensions`)
+   - Kestrel 服务器配置 (`KestrelOptions`)
+   - 中间件管道配置 (`MiddlewareExtensions`)
+   - 基础 Web 应用启动逻辑 (`WebApplicationExtensions`)
+   - 通用 Web 中间件 (`ExceptionHandlingMiddleware`, `RequestLoggingMiddleware`)
+   - 健康检查 (`HealthCheckExtensions`)
+   - 跨域配置 (`CorsExtensions`)
 
-6. **XiHan.Framework.Web.Api**
+7. **XiHan.Framework.Web.Api**
 
    - **SDK**: Microsoft.NET.Sdk.Web
    - **简要功能**: 助力 RESTful API 开发与管理。
    - **详细描述**: 提供控制器基类、路由管理和模型绑定，支持 OpenAPI、System.Text.Json、API 版本控制，优化 API 开发体验。
    - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Serialization。
 
-   **应该包含：**
+   **基本功能：**
 
-   - 控制器基类 (`XiHanController`)
-   - API路由管理
-   - 模型绑定配置
-   - API版本控制
-   - RESTful API最佳实践
-   - API响应格式化
-   - 错误处理中间件
+   - 控制器基类 (`XiHanController`, `ApiControllerBase`)
+   - API 路由管理 (`RouteExtensions`, `ApiRouteBuilder`)
+   - 模型绑定配置 (`ModelBindingExtensions`)
+   - API 版本控制 (`ApiVersioningExtensions`, `VersionedApiController`)
+   - RESTful API 最佳实践 (`ApiResponse<T>`, `ApiResult`)
+   - API 响应格式化 (`ResponseFormatter`, `ApiResponseFormatter`)
+   - 错误处理中间件 (`ApiExceptionMiddleware`, `GlobalExceptionHandler`)
+   - 请求验证 (`RequestValidationMiddleware`)
 
-7. **XiHan.Framework.Web.Docs**
+8. **XiHan.Framework.Web.Docs**
+
    - **SDK**: Microsoft.NET.Sdk.Web
    - **简要功能**: 生成 API 文档和客户端代码。
    - **详细描述**: 集成 Swashbuckle 和 Scalar，支持交互式 OpenAPI 文档生成和客户端代码（如 TypeScript SDK）输出，方便开发与集成。
    - **依赖**: XiHan.Framework.Web.Api。
-   
-   **应该包含：**
-   
-   - Swagger/OpenAPI集成
-   - API文档生成
-   - 客户端代码生成
-   - API测试工具
+
+   **基本功能：**
+
+   - Swagger/OpenAPI 集成 (`SwaggerExtensions`, `OpenApiExtensions`)
+   - API 文档生成 (`DocumentationGenerator`, `ApiDocumentationService`)
+   - 客户端代码生成 (`ClientCodeGenerator`, `TypeScriptGenerator`)
+   - API 测试工具 (`ApiTestClient`, `ApiTestExtensions`)
+   - 文档配置 (`SwaggerOptions`, `OpenApiOptions`)
 
 ## 日志包
 
 为开发和调试提供必要的日志支持，确保开发体验。
 
-8. **XiHan.Framework.Logging**
+9. **XiHan.Framework.Logging**
+
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 统一日志记录与管理。
    - **详细描述**: 基于 .NET 9 日志框架，支持结构化日志、多目标输出（如文件、控制台），兼容 Serilog 等扩展库。
    - **依赖**: XiHan.Framework.Core。
 
+   **基本功能：**
+
+   - 日志配置 (`LoggingExtensions`, `LoggingOptions`)
+   - 结构化日志 (`StructuredLogger`, `ILoggerExtensions`)
+   - 日志中间件 (`RequestLoggingMiddleware`, `PerformanceLoggingMiddleware`)
+   - 日志格式化 (`LogFormatter`, `JsonLogFormatter`)
+   - 日志级别管理 (`LogLevelManager`)
+   - 日志上下文 (`LogContext`, `CorrelationIdMiddleware`)
+   - 日志过滤器 (`LogFilter`, `LogFilterExtensions`)
+
 ## 数据验证包
 
 支持 API 数据验证，提供完整的 Web API 体验。
 
-9. **XiHan.Framework.Validation**
+10. **XiHan.Framework.Validation**
 
-   - **SDK**: Microsoft.NET.Sdk
-   - **简要功能**: 支持数据输入验证。
-   - **详细描述**: 基于数据注解和 FluentValidation，提供模型验证和自定义规则，保障输入数据的可靠性。
-   - **依赖**: XiHan.Framework.Core。
+    - **SDK**: Microsoft.NET.Sdk
+    - **简要功能**: 支持数据输入验证。
+    - **详细描述**: 基于数据注解和 FluentValidation，提供模型验证和自定义规则，保障输入数据的可靠性。
+    - **依赖**: XiHan.Framework.Core。
 
-10. **XiHan.Framework.Data**
+    **基本功能：**
+
+    - 验证扩展 (`ValidationExtensions`, `ModelValidationExtensions`)
+    - 自定义验证特性 (`CustomValidationAttribute`, `RequiredIfAttribute`)
+    - FluentValidation 集成 (`FluentValidationExtensions`)
+    - 验证结果 (`ValidationResult`, `ValidationError`)
+    - 验证中间件 (`ValidationMiddleware`)
+    - 验证规则 (`IValidationRule`, `ValidationRuleBase`)
+    - 验证配置 (`ValidationOptions`)
+
+11. **XiHan.Framework.Data**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供数据库访问和 ORM 工具。
     - **详细描述**: 集成 Entity Framework Core、SqlSugar 和 Dapper，支持迁移、仓储模式和数据操作，适用于多种数据库场景。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Validation。
 
+    **基本功能：**
+
+    - 数据库上下文 (`IDbContext`, `XiHanDbContext`)
+    - 仓储模式 (`IRepository<T>`, `Repository<T>`)
+    - 数据迁移 (`IMigrationService`, `MigrationExtensions`)
+    - 查询构建器 (`IQueryBuilder`, `QueryBuilder`)
+    - 数据过滤器 (`IDataFilter`, `DataFilterExtensions`)
+    - 数据库配置 (`DatabaseOptions`, `ConnectionStringManager`)
+    - 数据审计 (`IAuditService`, `AuditExtensions`)
+    - 数据种子 (`IDataSeeder`, `DataSeederExtensions`)
+
 ## 安全认证包
 
 提供完整的认证授权解决方案。
 
-11. **XiHan.Framework.Security**
+12. **XiHan.Framework.Security**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供安全相关的基础功能。
     - **详细描述**: 包含加密解密、哈希算法、数字签名等安全工具，为认证授权提供基础支持。
     - **依赖**: XiHan.Framework.Core。
 
-12. **XiHan.Framework.Authentication**
+    **基本功能：**
+
+    - 加密服务 (`IEncryptionService`, `AesEncryptionService`)
+    - 哈希服务 (`IHashService`, `Sha256HashService`)
+    - 数字签名 (`IDigitalSignatureService`)
+    - 安全工具 (`SecurityUtils`, `PasswordUtils`)
+    - 安全配置 (`SecurityOptions`)
+    - 安全中间件 (`SecurityMiddleware`)
+    - 安全扩展 (`SecurityExtensions`)
+
+13. **XiHan.Framework.Authentication**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 实现用户身份认证功能。
     - **详细描述**: 支持 JWT、OAuth 2.0 和 OpenID Connect，集成 ASP.NET Core Identity，提供登录、令牌生成与验证功能。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Security。
-    
-13. **XiHan.Framework.Authorization**
+
+    **基本功能：**
+
+    - JWT 服务 (`IJwtService`, `JwtService`)
+    - 认证服务 (`IAuthenticationService`, `AuthenticationService`)
+    - 用户管理 (`IUserService`, `UserManager`)
+    - 令牌管理 (`ITokenService`, `TokenManager`)
+    - 认证中间件 (`AuthenticationMiddleware`)
+    - 认证配置 (`AuthenticationOptions`, `JwtOptions`)
+    - 认证扩展 (`AuthenticationExtensions`)
+    - 登录处理 (`ILoginService`, `LoginService`)
+
+14. **XiHan.Framework.Authorization**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供权限管理和访问控制。
     - **详细描述**: 支持角色、策略和声明的授权方式，与认证模块无缝协作，实现资源保护和权限校验。
     - **依赖**: XiHan.Framework.Authentication。
 
+    **基本功能：**
+
+    - 授权服务 (`IAuthorizationService`, `AuthorizationService`)
+    - 角色管理 (`IRoleService`, `RoleManager`)
+    - 权限管理 (`IPermissionService`, `PermissionManager`)
+    - 策略管理 (`IPolicyService`, `PolicyManager`)
+    - 授权中间件 (`AuthorizationMiddleware`)
+    - 授权特性 (`AuthorizeAttribute`, `PermissionAttribute`)
+    - 授权配置 (`AuthorizationOptions`)
+    - 授权扩展 (`AuthorizationExtensions`)
+
 ## 系统功能包
 
 提供缓存、配置等系统级功能。
 
-14. **XiHan.Framework.Caching**
+15. **XiHan.Framework.Caching**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 优化应用缓存管理。
     - **详细描述**: 支持内存缓存和分布式缓存（如 Redis），支持分级缓存、缓存优先级、缓存统计、缓存策略、缓存淘汰策略、缓存预热，提升性能和响应速度。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
 
-15. **XiHan.Framework.Settings**
+    **基本功能：**
+
+    - 缓存服务 (`ICacheService`, `MemoryCacheService`)
+    - 分布式缓存 (`IDistributedCacheService`, `RedisCacheService`)
+    - 缓存管理器 (`ICacheManager`, `CacheManager`)
+    - 缓存配置 (`CacheOptions`, `RedisOptions`)
+    - 缓存中间件 (`CacheMiddleware`)
+    - 缓存扩展 (`CacheExtensions`)
+    - 缓存统计 (`ICacheStatistics`, `CacheStatistics`)
+    - 缓存预热 (`ICacheWarmup`, `CacheWarmupService`)
+
+16. **XiHan.Framework.Settings**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 管理应用配置和设置。
     - **详细描述**: 支持动态配置、数据库存储配置、租户级设置等，灵活控制应用行为。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data。
 
-16. **XiHan.Framework.Threading**
+    **基本功能：**
+
+    - 设置服务 (`ISettingService`, `SettingService`)
+    - 设置管理器 (`ISettingManager`, `SettingManager`)
+    - 动态配置 (`IDynamicConfiguration`, `DynamicConfiguration`)
+    - 设置存储 (`ISettingStore`, `DatabaseSettingStore`)
+    - 设置配置 (`SettingOptions`)
+    - 设置扩展 (`SettingExtensions`)
+    - 设置验证 (`ISettingValidator`, `SettingValidator`)
+    - 设置缓存 (`ISettingCache`, `SettingCache`)
+
+17. **XiHan.Framework.Threading**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供线程安全和异步编程工具。
     - **详细描述**: 包含锁机制、线程池管理、异步任务调度等功能，优化多线程应用开发。
     - **依赖**: XiHan.Framework.Core。
 
-17. **XiHan.Framework.DistributedIds**
+    **基本功能：**
+
+    - 异步锁 (`IAsyncLock`, `AsyncLock`)
+    - 线程池管理 (`IThreadPoolManager`, `ThreadPoolManager`)
+    - 异步任务调度 (`IAsyncTaskScheduler`, `AsyncTaskScheduler`)
+    - 并发控制 (`IConcurrencyControl`, `ConcurrencyControl`)
+    - 线程安全工具 (`ThreadSafeUtils`, `AtomicOperations`)
+    - 异步扩展 (`AsyncExtensions`)
+    - 任务管理 (`ITaskManager`, `TaskManager`)
+    - 性能监控 (`IPerformanceMonitor`, `PerformanceMonitor`)
+
+18. **XiHan.Framework.DistributedIds**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 生成分布式唯一 ID。
     - **详细描述**: 实现雪花算法（Snowflake）或其他 ID 生成策略，确保分布式系统中 ID 唯一性。
     - **依赖**: XiHan.Framework.Core。
 
+    **基本功能：**
+
+    - ID 生成器接口 (`IIdGenerator`, `IDistributedIdGenerator`)
+    - 雪花算法 (`ISnowflakeIdGenerator`, `SnowflakeIdGenerator`)
+    - UUID 生成器 (`IUuidGenerator`, `UuidGenerator`)
+    - ID 配置 (`IdGeneratorOptions`, `SnowflakeOptions`)
+    - ID 扩展 (`IdGeneratorExtensions`)
+    - ID 验证 (`IIdValidator`, `IdValidator`)
+    - ID 格式化 (`IIdFormatter`, `IdFormatter`)
+    - ID 服务 (`IIdService`, `IdService`)
+
 ## 高级数据包
 
-18. **XiHan.Framework.Uow**
+19. **XiHan.Framework.Uow**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 实现工作单元模式。
     - **详细描述**: 管理数据库事务，确保数据操作一致性，支持 EF Core 和 Dapper。
     - **依赖**: XiHan.Framework.Data。
 
-19. **XiHan.Framework.Ddd**
+    **基本功能：**
+
+    - 工作单元接口 (`IUnitOfWork`, `UnitOfWork`)
+    - 事务管理 (`ITransactionManager`, `TransactionManager`)
+    - 事务配置 (`TransactionOptions`)
+    - 事务扩展 (`TransactionExtensions`)
+    - 事务中间件 (`TransactionMiddleware`)
+    - 事务装饰器 (`ITransactionDecorator`, `TransactionDecorator`)
+    - 事务监控 (`ITransactionMonitor`, `TransactionMonitor`)
+    - 事务日志 (`ITransactionLogger`, `TransactionLogger`)
+
+20. **XiHan.Framework.Ddd**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持领域驱动设计实现。
     - **详细描述**: 提供领域模型、聚合根和仓储设计，适用于复杂业务系统。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data。
 
+    **基本功能：**
+
+    - 聚合根 (`IAggregateRoot`, `AggregateRoot`)
+    - 领域实体 (`IDomainEntity`, `DomainEntity`)
+    - 领域服务 (`IDomainService`, `DomainService`)
+    - 领域事件 (`IDomainEvent`, `DomainEvent`)
+    - 领域仓储 (`IDomainRepository<T>`, `DomainRepository<T>`)
+    - 领域配置 (`DddOptions`)
+    - 领域扩展 (`DddExtensions`)
+    - 领域验证 (`IDomainValidator`, `DomainValidator`)
+
 ## 开发工具包
 
-20. **XiHan.Framework.DevTools**
+21. **XiHan.Framework.DevTools**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供开发与调试工具集。
     - **详细描述**: 包含 xUnit 测试框架、Moq 模拟工具和性能监控功能，助力开发、测试和问题排查。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Logging。
 
+    **基本功能：**
+
+    - 测试基类 (`TestBase`, `IntegrationTestBase`)
+    - 模拟工具 (`MockExtensions`, `TestDataBuilder`)
+    - 性能监控 (`IPerformanceMonitor`, `PerformanceMonitor`)
+    - 调试工具 (`IDebugService`, `DebugService`)
+    - 开发配置 (`DevToolsOptions`)
+    - 测试扩展 (`TestExtensions`)
+    - 性能分析 (`IPerformanceAnalyzer`, `PerformanceAnalyzer`)
+    - 代码覆盖率 (`ICodeCoverage`, `CodeCoverage`)
+
 ## 扩展功能包
 
 ### 通信和消息
 
-21. **XiHan.Framework.Http**
+22. **XiHan.Framework.Http**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 封装 HTTP 客户端。
     - **详细描述**: 基于 HttpClientFactory，提供重试、超时、认证等功能，简化外部 API 调用。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
-    
-22. **XiHan.Framework.Messaging**
+
+    **基本功能：**
+
+    - HTTP 客户端 (`IHttpClient`, `XiHanHttpClient`)
+    - HTTP 配置 (`HttpOptions`, `HttpClientOptions`)
+    - 重试策略 (`IRetryPolicy`, `RetryPolicy`)
+    - HTTP 中间件 (`HttpMiddleware`, `HttpLoggingMiddleware`)
+    - HTTP 扩展 (`HttpExtensions`)
+    - 请求构建器 (`IHttpRequestBuilder`, `HttpRequestBuilder`)
+    - 响应处理器 (`IHttpResponseHandler`, `HttpResponseHandler`)
+    - HTTP 监控 (`IHttpMonitor`, `HttpMonitor`)
+
+23. **XiHan.Framework.Messaging**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持消息队列与事件驱动开发。
     - **详细描述**: 兼容 RabbitMQ 和 Kafka，提供消息发布与订阅机制，助力构建高扩展性事件驱动系统。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
 
-23. **XiHan.Framework.EventBus**
+    **基本功能：**
+
+    - 消息服务 (`IMessageService`, `MessageService`)
+    - 消息发布者 (`IMessagePublisher`, `MessagePublisher`)
+    - 消息订阅者 (`IMessageSubscriber`, `MessageSubscriber`)
+    - 消息配置 (`MessageOptions`, `RabbitMQOptions`, `KafkaOptions`)
+    - 消息中间件 (`MessageMiddleware`)
+    - 消息扩展 (`MessageExtensions`)
+    - 消息序列化 (`IMessageSerializer`, `MessageSerializer`)
+    - 消息监控 (`IMessageMonitor`, `MessageMonitor`)
+
+24. **XiHan.Framework.EventBus**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持事件总线和发布/订阅模式。
     - **详细描述**: 提供本地和分布式事件处理，支持 MediatR、RabbitMQ，解耦业务逻辑。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Messaging。
 
+    **基本功能：**
+
+    - 事件总线 (`IEventBus`, `EventBus`)
+    - 事件发布者 (`IEventPublisher`, `EventPublisher`)
+    - 事件订阅者 (`IEventSubscriber`, `EventSubscriber`)
+    - 事件处理器 (`IEventHandler<T>`, `EventHandler<T>`)
+    - 事件配置 (`EventBusOptions`)
+    - 事件扩展 (`EventBusExtensions`)
+    - 事件中间件 (`EventBusMiddleware`)
+    - 事件监控 (`IEventMonitor`, `EventMonitor`)
+
 ### 任务和模板
 
-24. **XiHan.Framework.BackgroundJobs**
+25. **XiHan.Framework.BackgroundJobs**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 管理后台任务和定时作业。
     - **详细描述**: 集成 Hangfire 或 Quartz.NET，支持异步任务队列和定时调度，提供任务监控和管理功能。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Logging。
 
-25. **XiHan.Framework.Templating**
+    **基本功能：**
+
+    - 后台任务服务 (`IBackgroundJobService`, `BackgroundJobService`)
+    - 任务调度器 (`IJobScheduler`, `JobScheduler`)
+    - 任务配置 (`BackgroundJobOptions`, `HangfireOptions`, `QuartzOptions`)
+    - 任务中间件 (`BackgroundJobMiddleware`)
+    - 任务扩展 (`BackgroundJobExtensions`)
+    - 任务监控 (`IJobMonitor`, `JobMonitor`)
+    - 任务存储 (`IJobStorage`, `JobStorage`)
+    - 任务队列 (`IJobQueue`, `JobQueue`)
+
+26. **XiHan.Framework.Templating**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持文本模板生成。
     - **详细描述**: 集成 RazorLight 或 Scriban，提供动态模板渲染，用于邮件、报告和代码生成。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
 
-26. **XiHan.Framework.CodeGeneration**
+    **基本功能：**
+
+    - 模板引擎 (`ITemplateEngine`, `RazorTemplateEngine`, `ScribanTemplateEngine`)
+    - 模板服务 (`ITemplateService`, `TemplateService`)
+    - 模板配置 (`TemplateOptions`, `RazorOptions`, `ScribanOptions`)
+    - 模板扩展 (`TemplateExtensions`)
+    - 模板缓存 (`ITemplateCache`, `TemplateCache`)
+    - 模板编译 (`ITemplateCompiler`, `TemplateCompiler`)
+    - 模板监控 (`ITemplateMonitor`, `TemplateMonitor`)
+    - 模板验证 (`ITemplateValidator`, `TemplateValidator`)
+
+27. **XiHan.Framework.CodeGeneration**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 自动生成代码。
     - **详细描述**: 基于 T4 模板或 Roslyn，生成实体、DTO、控制器等代码，减少重复劳动。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Templating。
 
+    **基本功能：**
+
+    - 代码生成器 (`ICodeGenerator`, `CodeGenerator`)
+    - 代码模板 (`ICodeTemplate`, `CodeTemplate`)
+    - 代码配置 (`CodeGenerationOptions`)
+    - 代码扩展 (`CodeGenerationExtensions`)
+    - 代码分析 (`ICodeAnalyzer`, `CodeAnalyzer`)
+    - 代码格式化 (`ICodeFormatter`, `CodeFormatter`)
+    - 代码验证 (`ICodeValidator`, `CodeValidator`)
+    - 代码监控 (`ICodeMonitor`, `CodeMonitor`)
+
 ### 存储和搜索
 
-27. **XiHan.Framework.FileSystem**
+28. **XiHan.Framework.FileSystem**
 
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 管理文件存储和访问。
     - **详细描述**: 支持本地文件系统、云存储（如 AWS S3），提供文件上传、下载和权限控制。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Authentication。
 
-28. **XiHan.Framework.SearchEngines**
+    **基本功能：**
+
+    - 文件系统服务 (`IFileSystemService`, `FileSystemService`)
+    - 文件存储提供者 (`IFileStorageProvider`, `LocalFileStorageProvider`, `S3FileStorageProvider`)
+    - 文件配置 (`FileSystemOptions`, `StorageOptions`)
+    - 文件扩展 (`FileSystemExtensions`)
+    - 文件上传 (`IFileUploadService`, `FileUploadService`)
+    - 文件下载 (`IFileDownloadService`, `FileDownloadService`)
+    - 文件权限 (`IFilePermissionService`, `FilePermissionService`)
+    - 文件监控 (`IFileMonitor`, `FileMonitor`)
+
+29. **XiHan.Framework.SearchEngines**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供全文搜索和索引功能。
     - **详细描述**: 集成 Elasticsearch，支持高效搜索、数据索引和查询优化，适用于搜索密集型应用。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
 
+    **基本功能：**
+
+    - 搜索引擎服务 (`ISearchEngineService`, `ElasticsearchService`)
+    - 索引管理 (`IIndexManager`, `IndexManager`)
+    - 搜索配置 (`SearchOptions`, `ElasticsearchOptions`)
+    - 搜索扩展 (`SearchExtensions`)
+    - 查询构建器 (`IQueryBuilder`, `SearchQueryBuilder`)
+    - 搜索结果 (`ISearchResult<T>`, `SearchResult<T>`)
+    - 搜索监控 (`ISearchMonitor`, `SearchMonitor`)
+    - 搜索缓存 (`ISearchCache`, `SearchCache`)
+
 ### 国际化和本地化
 
-29. **XiHan.Framework.Localization**
+30. **XiHan.Framework.Localization**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持国际化与本地化。
     - **详细描述**: 基于 .NET 9 的 `IStringLocalizer` 和资源文件（`.resx`）实现多语言支持，支持动态语言切换和本地化中间件，适用于多语言应用。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Web.Core。
 
+    **基本功能：**
+
+    - 本地化服务 (`ILocalizationService`, `LocalizationService`)
+    - 字符串本地化器 (`IStringLocalizer`, `StringLocalizer`)
+    - 本地化配置 (`LocalizationOptions`)
+    - 本地化中间件 (`LocalizationMiddleware`)
+    - 本地化扩展 (`LocalizationExtensions`)
+    - 资源管理器 (`IResourceManager`, `ResourceManager`)
+    - 文化信息 (`ICultureService`, `CultureService`)
+    - 本地化缓存 (`ILocalizationCache`, `LocalizationCache`)
+
 ### 高级功能
 
-30. **XiHan.Framework.AI**
+31. **XiHan.Framework.AI**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 集成 AI 和机器学习功能。
     - **详细描述**: 提供 ML.NET 或 TensorFlow.NET 集成，支持模型训练、推理和智能推荐。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
 
+    **基本功能：**
+
+    - AI 服务 (`IAIService`, `AIService`)
+    - 机器学习模型 (`IMLModel`, `MLModel`)
+    - AI 配置 (`AIOptions`, `MLNetOptions`)
+    - AI 扩展 (`AIExtensions`)
+    - 模型训练 (`IModelTrainer`, `ModelTrainer`)
+    - 模型推理 (`IModelInference`, `ModelInference`)
+    - 智能推荐 (`IRecommendationService`, `RecommendationService`)
+    - AI 监控 (`IAIMonitor`, `AIMonitor`)
+
 ### Web 扩展
 
-31. **XiHan.Framework.Web.RealTime**
+32. **XiHan.Framework.Web.RealTime**
 
     - **SDK**: Microsoft.NET.Sdk.Web
     - **简要功能**: 实现实时 Web 通信。
     - **详细描述**: 基于 ASP.NET Core SignalR，支持消息推送、实时通知和双向通信，适用于聊天、动态更新等场景。
     - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Authentication。
 
-32. **XiHan.Framework.ApiGateway**
+    **基本功能：**
+
+    - SignalR 服务 (`ISignalRService`, `SignalRService`)
+    - 实时通信配置 (`RealTimeOptions`, `SignalROptions`)
+    - 实时通信中间件 (`RealTimeMiddleware`)
+    - 实时通信扩展 (`RealTimeExtensions`)
+    - 消息推送 (`IMessagePushService`, `MessagePushService`)
+    - 实时通知 (`IRealTimeNotificationService`, `RealTimeNotificationService`)
+    - 连接管理 (`IConnectionManager`, `ConnectionManager`)
+    - 实时监控 (`IRealTimeMonitor`, `RealTimeMonitor`)
+
+33. **XiHan.Framework.ApiGateway**
+
     - **SDK**: Microsoft.NET.Sdk.Web
     - **简要功能**: 实现 API 网关。
     - **详细描述**: 基于 Ocelot 或 YARP，提供路由、负载均衡、认证等功能，管理微服务 API（可选模块）。
     - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Authentication。
 
+    **基本功能：**
+
+    - 网关服务 (`IGatewayService`, `GatewayService`)
+    - 路由管理 (`IRouteManager`, `RouteManager`)
+    - 负载均衡 (`ILoadBalancer`, `LoadBalancer`)
+    - 网关配置 (`GatewayOptions`, `OcelotOptions`, `YarpOptions`)
+    - 网关中间件 (`GatewayMiddleware`)
+    - 网关扩展 (`GatewayExtensions`)
+    - 服务发现 (`IServiceDiscovery`, `ServiceDiscovery`)
+    - 网关监控 (`IGatewayMonitor`, `GatewayMonitor`)
+
 ### 复杂架构模式
 
-33. **XiHan.Framework.MultiTenancy**
+34. **XiHan.Framework.MultiTenancy**
+
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 支持多租户架构。
     - **详细描述**: 提供租户隔离策略、租户解析中间件和租户管理 API，支持数据和配置的租户级隔离，适用于 SaaS 应用。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Data, XiHan.Framework.Settings, XiHan.Framework.Authentication。
+
+    **基本功能：**
+
+    - 租户服务 (`ITenantService`, `TenantService`)
+    - 租户解析器 (`ITenantResolver`, `TenantResolver`)
+    - 租户中间件 (`TenancyMiddleware`)
+    - 租户配置 (`MultiTenancyOptions`)
+    - 租户扩展 (`MultiTenancyExtensions`)
+    - 租户隔离 (`ITenantIsolation`, `TenantIsolation`)
+    - 租户管理 (`ITenantManager`, `TenantManager`)
+    - 租户监控 (`ITenantMonitor`, `TenantMonitor`)
 
 ## 前后端分离支持
 
@@ -363,6 +726,7 @@ dotnet add package XiHan.Framework.Authentication
 dotnet add package XiHan.Framework.Data
 dotnet add package XiHan.Framework.Caching
 dotnet add package XiHan.Framework.Validation
+dotnet add package XiHan.Framework.ObjectMapping
 ```
 
 ### 扩展功能（按需添加）

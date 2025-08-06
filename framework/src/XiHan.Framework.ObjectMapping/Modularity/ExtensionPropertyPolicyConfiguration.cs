@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.ObjectExtending.Modularity;
+namespace XiHan.Framework.ObjectMapping.Modularity;
 
 /// <summary>
 /// 扩展属性策略配置

@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.ObjectExtending.Data;
+namespace XiHan.Framework.ObjectMapping.Data;
 
 /// <summary>
 /// ExtraPropertyDictionary 扩展方法类

@@ -15,11 +15,11 @@
 using System.ComponentModel;
 using System.Globalization;
 using XiHan.Framework.Core.Exceptions;
-using XiHan.Framework.ObjectExtending.Extensions;
+using XiHan.Framework.ObjectMapping.Extensions;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.ObjectExtending.Data;
+namespace XiHan.Framework.ObjectMapping.Data;
 
 /// <summary>
 /// IHasExtraProperties 接口扩展方法类

@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
-using XiHan.Framework.ObjectExtending.Data;
+using XiHan.Framework.ObjectMapping.Data;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 对象扩展验证上下文类

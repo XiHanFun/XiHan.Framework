@@ -15,7 +15,7 @@
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 扩展属性帮助器
