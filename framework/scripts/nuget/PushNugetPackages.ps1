@@ -82,6 +82,8 @@ foreach ($file in $nupkgFiles) {
     else {
         Write-Output "推送失败：$($file.Name)"
     }
+    # 打印空行
+    Write-Output "==="
     # 延迟确保释放资源
     Start-Sleep -Milliseconds 100
 }
