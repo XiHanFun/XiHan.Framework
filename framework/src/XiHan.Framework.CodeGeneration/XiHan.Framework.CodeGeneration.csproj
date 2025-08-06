@@ -14,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.AI\XiHan.Framework.AI.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.FileSystem\XiHan.Framework.FileSystem.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Templating\XiHan.Framework.Templating.csproj" />
     </ItemGroup>
 

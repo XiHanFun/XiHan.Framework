@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.Bot</Title>
-        <AssemblyName>XiHan.Framework.Bot</AssemblyName>
-        <PackageId>XiHan.Framework.Bot</PackageId>
-        <Description>曦寒框架自动程序库</Description>
+        <Title>XiHan.Framework.Messaging</Title>
+        <AssemblyName>XiHan.Framework.Messaging</AssemblyName>
+        <PackageId>XiHan.Framework.Messaging</PackageId>
+        <Description>曦寒框架消息库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 

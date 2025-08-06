@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.ObjectExtending.Data;
+using XiHan.Framework.ObjectMapping.Data;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.System;
 

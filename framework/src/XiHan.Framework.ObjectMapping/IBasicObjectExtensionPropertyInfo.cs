@@ -12,21 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IBasicObjectExtensionPropertyInfo
-// Guid:2e6aaf42-aea7-40aa-b702-2fd2c2ca5342
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/6/5 6:31:24
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
-
 using XiHan.Framework.Localization;
 
 namespace XiHan.Framework.ObjectMapping;

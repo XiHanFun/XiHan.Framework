@@ -15,6 +15,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\XiHan.Framework.ObjectExtending\XiHan.Framework.ObjectExtending.csproj" />
+		<ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj" />
 	</ItemGroup>

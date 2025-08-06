@@ -14,7 +14,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Core.DynamicProxy;
-using XiHan.Framework.ObjectExtending;
 using XiHan.Framework.ObjectMapping.Data;
 using XiHan.Framework.ObjectMapping.Extensions;
 using XiHan.Framework.Validation;

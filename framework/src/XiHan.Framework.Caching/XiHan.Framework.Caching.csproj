@@ -20,6 +20,7 @@
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
     </ItemGroup>
