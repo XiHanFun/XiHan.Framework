@@ -21,10 +21,6 @@
     <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" Id="c88e3b35-9699-4d63-8bbb-c1b822d260cb" />
     <Project Path="src/XiHan.Framework.DataFiltering/XiHan.Framework.DataFiltering.csproj" Id="1b4ee4ea-54f6-4a8b-832c-ca58a570a014" />
-    <Project Path="src/XiHan.Framework.Ddd.Application.Contracts/XiHan.Framework.Ddd.Application.Contracts.csproj" />
-    <Project Path="src/XiHan.Framework.Ddd.Application/XiHan.Framework.Ddd.Application.csproj" />
-    <Project Path="src/XiHan.Framework.Ddd.Domain.Shared/XiHan.Framework.Ddd.Domain.Shared.csproj" />
-    <Project Path="src/XiHan.Framework.Ddd.Domain/XiHan.Framework.Ddd.Domain.csproj" />
     <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" Id="d864f895-e9e5-4f02-9e57-77d4556df66c" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
@@ -41,20 +37,16 @@
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" Id="d3fa9dfb-37e6-4752-8263-f67c03be75b9" />
     <Project Path="src/XiHan.Framework.SqlSugarCore/XiHan.Framework.SqlSugarCore.csproj" Id="0a256952-f954-4768-9302-4838b28c468c" />
-    <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.TextTemplating.csproj" />
+    <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.Templating.csproj" />
     <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" Id="5a1a058e-e622-4f06-938e-ae8431e541d8" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
   <Folder Name="/1.src/5.AspNetCore/">
-    <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
   </Folder>
   <Folder Name="/1.src/6.AspNetCoreLibraries/">
-    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OAuth/XiHan.Framework.AspNetCore.Authentication.OAuth.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect/XiHan.Framework.AspNetCore.Authentication.OpenIdConnect.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
     <Project Path="src/XiHan.Framework.AspNetCore.SignalR/XiHan.Framework.AspNetCore.SignalR.csproj" />
   </Folder>

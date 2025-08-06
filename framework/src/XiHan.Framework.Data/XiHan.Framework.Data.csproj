@@ -19,4 +19,8 @@
 		<ProjectReference Include="..\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.198" />
+	</ItemGroup>
+
 </Project>

@@ -135,12 +135,11 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
     - **依赖**: XiHan.Framework.Core。
 
 12. **XiHan.Framework.Authentication**
-
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 实现用户身份认证功能。
     - **详细描述**: 支持 JWT、OAuth 2.0 和 OpenID Connect，集成 ASP.NET Core Identity，提供登录、令牌生成与验证功能。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Security。
-
+    
 13. **XiHan.Framework.Authorization**
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 提供权限管理和访问控制。
@@ -205,13 +204,12 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
 
 ### 通信和消息
 
-21. **XiHan.Framework.HttpClient**
-
+21. **XiHan.Framework.Http**
     - **SDK**: Microsoft.NET.Sdk
     - **简要功能**: 封装 HTTP 客户端。
     - **详细描述**: 基于 HttpClientFactory，提供重试、超时、认证等功能，简化外部 API 调用。
     - **依赖**: XiHan.Framework.Core, XiHan.Framework.Serialization。
-
+    
 22. **XiHan.Framework.Messaging**
 
     - **SDK**: Microsoft.NET.Sdk

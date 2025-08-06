@@ -14,7 +14,7 @@
 
 using SqlSugar;
 
-namespace XiHan.Framework.SqlSugarCore.Options;
+namespace XiHan.Framework.Data.SqlSugar.Options;
 
 /// <summary>
 /// SqlSugar连接配置

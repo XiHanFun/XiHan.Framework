@@ -15,7 +15,7 @@
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.VirtualFileSystem;
 
-namespace XiHan.Framework.TextTemplating;
+namespace XiHan.Framework.Templating;
 
 /// <summary>
 /// 曦寒框架文本模板模块

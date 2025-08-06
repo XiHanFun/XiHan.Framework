@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.TextTemplating;
+using XiHan.Framework.Templating;
 
 namespace XiHan.Framework.CodeGeneration;
 

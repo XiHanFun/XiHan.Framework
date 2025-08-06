@@ -15,7 +15,7 @@
 using SqlSugar;
 using XiHan.Framework.Uow.Abstracts;
 
-namespace XiHan.Framework.SqlSugarCore;
+namespace XiHan.Framework.Data.SqlSugar;
 
 /// <summary>
 /// SqlSugar数据库上下文接口

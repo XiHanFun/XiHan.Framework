@@ -16,7 +16,7 @@ using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
-namespace XiHan.Framework.SqlSugarCore.Repository;
+namespace XiHan.Framework.Data.SqlSugar.Repository;
 
 /// <summary>
 /// SqlSugar仓储接口
