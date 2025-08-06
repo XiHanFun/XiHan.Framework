@@ -6,7 +6,6 @@
   </Folder>
   <Folder Name="/1.src/1.Framework/2.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
-    <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>
@@ -20,6 +19,7 @@
   </Folder>
   <Folder Name="/1.src/1.Framework/5.Data/">
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
     <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/6.Security/">
@@ -57,6 +57,8 @@
   </Folder>
   <Folder Name="/1.src/2.Extensions/4.Advanced/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/5.WebExtensions/">
     <Project Path="src/XiHan.Framework.ApiGateway/XiHan.Framework.ApiGateway.csproj" />

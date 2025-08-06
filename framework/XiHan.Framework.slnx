@@ -13,9 +13,8 @@
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" Id="26e1247d-951c-4668-a817-ef74010e7777" />
     <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
-    <Project Path="src/XiHan.Framework.BackgroundWorkers/XiHan.Framework.BackgroundWorkers.csproj" />
     <Project Path="src/XiHan.Framework.BlobStoring/XiHan.Framework.BlobStoring.csproj" />
-    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
+    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Messaging.csproj" />
     <Project Path="src/XiHan.Framework.Caching.StackExchangeRedis/XiHan.Framework.Caching.StackExchangeRedis.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
     <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
@@ -24,13 +23,10 @@
     <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" Id="d864f895-e9e5-4f02-9e57-77d4556df66c" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
-    <Project Path="src/XiHan.Framework.Http.Client/XiHan.Framework.Http.Client.csproj" Id="dad9f394-0ec8-427b-b317-b4a2b2bb38a9" />
     <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
     <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
-    <Project Path="src/XiHan.Framework.ObjectExtending/XiHan.Framework.ObjectExtending.csproj" Id="3c4e1603-6746-41e0-b3ef-258bcb04836a" />
-    <Project Path="src/XiHan.Framework.ObjectMapping.Mapster/XiHan.Framework.ObjectMapping.csproj" Id="739a42c8-c5bb-4578-a3c3-8ef0d9ec60ab" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" Id="7d9f570d-c251-4093-a29e-d5c8f08a419d" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" Id="2a971048-9a03-4279-b5b3-e8ffe7f28111" />
@@ -45,7 +41,7 @@
   </Folder>
   <Folder Name="/1.src/6.AspNetCoreLibraries/">
     <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.SignalR/XiHan.Framework.AspNetCore.SignalR.csproj" />
+    <Project Path="src/XiHan.Framework.AspNetCore.SignalR/XiHan.Framework.Web.RealTime.csproj" />
   </Folder>
   <Folder Name="/2.test/" />
   <Folder Name="/2.test/1.Unit/">

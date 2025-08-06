@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.BackgroundWorkers;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.DistributedIds;
@@ -29,8 +28,7 @@ namespace XiHan.Framework.EventBus;
 /// </summary>
 [DependsOn(
     typeof(XiHanMultiTenancyModule),
-    typeof(XiHanDistributedIdsModule),
-    typeof(XiHanBackgroundWorkersModule)
+    typeof(XiHanDistributedIdsModule)
     )]
 public class XiHanEventBusModule : XiHanModule
 {

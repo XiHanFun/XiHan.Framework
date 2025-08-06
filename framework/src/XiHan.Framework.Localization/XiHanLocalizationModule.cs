@@ -23,7 +23,7 @@ namespace XiHan.Framework.Localization;
 /// 曦寒框架本地化模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanVirtualFileSystemModule),
+    typeof(XiHanFileSystemModule),
     typeof(XiHanThreadingModule),
     typeof(XiHanSettingsModule)
 )]

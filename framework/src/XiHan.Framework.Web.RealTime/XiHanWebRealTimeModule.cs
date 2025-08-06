@@ -3,23 +3,29 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanBotModule
-// Guid:50344073-bd0e-4c14-957c-d38988f00876
+// FileName:XiHanWebRealTimeModule
+// Guid:2c8a0444-ea76-40c1-8f80-8e066469952d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/6 3:29:13
+// CreateTime:2024/12/6 3:50:55
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Authentication;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Web.Core;
 
-namespace XiHan.Framework.Bot;
+namespace XiHan.Framework.Web.RealTime;
 
 /// <summary>
-/// 曦寒框架自动程序模块
+/// 曦寒框架 Web 核心实时通信模块
 /// </summary>
-public class XiHanBotModule : XiHanModule
+[DependsOn(
+    typeof(XiHanWebCoreModule),
+    typeof(XiHanAuthenticationModule)
+    )]
+public class XiHanWebRealTimeModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
