@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Security.Claims;
 
-namespace XiHan.Framework.AspNetCore.Security.Claims;
+namespace XiHan.Framework.Web.Core.Security.Claims;
 
 /// <summary>
 /// 曦寒框架声明映射选项

@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using Scalar.AspNetCore;
-using XiHan.Framework.AspNetCore.Extensions;
-using XiHan.Framework.AspNetCore.Scalar;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Web.Api;
+using XiHan.Framework.Web.Core.Extensions;
 
 namespace XiHan.Framework.Web.Docs;
 

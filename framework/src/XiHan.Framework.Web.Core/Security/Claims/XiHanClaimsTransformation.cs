@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
-namespace XiHan.Framework.AspNetCore.Security.Claims;
+namespace XiHan.Framework.Web.Core.Security.Claims;
 
 /// <summary>
 /// 曦寒框架声明转换

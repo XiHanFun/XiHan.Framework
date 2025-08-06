@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
     </ItemGroup>
 
 </Project>
