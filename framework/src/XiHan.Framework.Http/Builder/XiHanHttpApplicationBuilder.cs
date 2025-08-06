@@ -12,9 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Http.Extensions;
-using XiHan.Framework.Http.Services;
 
 namespace XiHan.Framework.Http.Builder;
 
@@ -29,8 +27,6 @@ public static class XiHanHttpApplicationBuilder
     /// <param name="serviceProvider">服务提供者</param>
     public static void InitializeXiHanHttpModule(IServiceProvider serviceProvider)
     {
-        // 初始化字符串扩展的HTTP服务
-        var httpService = serviceProvider.GetRequiredService<IAdvancedHttpService>();
-        StringHttpExtensions.SetHttpService(httpService);
+        StringHttpExtensions.SetHttpService(serviceProvider);
     }
 }
