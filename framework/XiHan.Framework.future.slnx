@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/1.src/1.Framework/2.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>
@@ -19,7 +20,6 @@
   </Folder>
   <Folder Name="/1.src/1.Framework/5.Data/">
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
-    <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
     <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/6.Security/">
@@ -38,7 +38,7 @@
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/9.DevTools/">
-    <Project Path="src/XiHan.Framework.DevTools/XiHan.Framework.DevTools.csproj" />
+    <Project Path="src/XiHan.Framework.DevTools/XiHan.Framework.DevTools.csproj" Id="368a4e06-cb61-4cbe-92fa-32eac5b80cd4" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/" />
   <Folder Name="/1.src/2.Extensions/1.Communication/">
@@ -55,14 +55,16 @@
     <Project Path="src/XiHan.Framework.FileSystem/XiHan.Framework.FileSystem.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
   </Folder>
-  <Folder Name="/1.src/2.Extensions/4.Advanced/">
-    <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+  <Folder Name="/1.src/2.Extensions/4.Localization/">
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
-    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/5.WebExtensions/">
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
     <Project Path="src/XiHan.Framework.Web.RealTime/XiHan.Framework.Web.RealTime.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Extensions/6.Advanced/">
+    <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
   <Folder Name="/2.tests/1.UnitTests/">

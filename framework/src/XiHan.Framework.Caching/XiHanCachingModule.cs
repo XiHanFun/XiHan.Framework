@@ -12,9 +12,14 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.StackExchangeRedis;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Caching;
 
@@ -44,5 +49,24 @@ public class XiHanCachingModule : XiHanModule
         {
             cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
         });
+
+        var configuration = context.Services.GetConfiguration();
+
+        var redisEnabled = configuration["Redis:IsEnabled"];
+        if (!string.IsNullOrEmpty(redisEnabled) && !bool.Parse(redisEnabled))
+        {
+            return;
+        }
+
+        _ = context.Services.AddStackExchangeRedisCache(options =>
+        {
+            var redisConfiguration = configuration["Redis:Configuration"];
+            if (!redisConfiguration.IsNullOrEmpty())
+            {
+                options.Configuration = redisConfiguration;
+            }
+        });
+
+        _ = context.Services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
     }
 }
