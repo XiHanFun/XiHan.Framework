@@ -14,7 +14,7 @@
 
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace XiHan.Framework.AspNetCore.Swagger.Extensions.DependencyInjection;
+namespace XiHan.Framework.Web.Docs.Extensions.DependencyInjection;
 
 /// <summary>
 /// XiHanSwaggerGenServiceCollectionExtensions
