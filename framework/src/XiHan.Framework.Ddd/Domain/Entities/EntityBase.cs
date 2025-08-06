@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
-using XiHan.Framework.Ddd.Domain.Shared.Entities;
 
 namespace XiHan.Framework.Ddd.Domain.Entities;
 
