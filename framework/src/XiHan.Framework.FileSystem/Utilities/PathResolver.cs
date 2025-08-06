@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.Verifications;
 
-namespace XiHan.Framework.VirtualFileSystem.Utilities;
+namespace XiHan.Framework.FileSystem.Utilities;
 
 /// <summary>
 /// 路径解析服务

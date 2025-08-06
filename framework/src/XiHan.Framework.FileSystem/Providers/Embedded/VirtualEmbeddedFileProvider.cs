@@ -1,39 +1,37 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:VirtualPhysicalFileProvider
-// Guid:93ff7273-9ef4-46c8-8d39-acbbce3b41dc
+// FileName:VirtualEmbeddedFileProvider
+// Guid:6d0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/23 6:25:36
+// CreateTime:2025/2/23 6:30:36
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
+using System.Reflection;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.VirtualFileSystem.Providers.Physical;
+namespace XiHan.Framework.FileSystem.Providers.Embedded;
 
 /// <summary>
-/// 带优先级的物理文件提供程序
+/// 带优先级的嵌入式文件提供程序
 /// </summary>
-public class VirtualPhysicalFileProvider : PhysicalFileProvider
+public class VirtualEmbeddedFileProvider : EmbeddedFileProvider
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public VirtualPhysicalFileProvider(string root, int priority = 100) : base(root)
+    public VirtualEmbeddedFileProvider(Assembly assembly, int priority = 50)
+        : base(assembly)
     {
-        _ = Guard.NotNull(root, nameof(root));
+        _ = Guard.NotNull(assembly, nameof(assembly));
 
-        if (!Path.IsPathRooted(root))
-        {
-            throw new ArgumentException("必须提供绝对路径", nameof(root));
-        }
-
+        Assembly = assembly;
         Priority = priority;
     }
 
@@ -41,6 +39,11 @@ public class VirtualPhysicalFileProvider : PhysicalFileProvider
     /// 提供程序优先级
     /// </summary>
     public int Priority { get; }
+
+    /// <summary>
+    /// 程序集
+    /// </summary>
+    public Assembly Assembly { get; }
 
     /// <summary>
     /// 获取带优先级的文件信息

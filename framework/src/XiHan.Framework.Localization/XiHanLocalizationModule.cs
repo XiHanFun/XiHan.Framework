@@ -15,7 +15,7 @@
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
-using XiHan.Framework.VirtualFileSystem;
+using XiHan.Framework.FileSystem;
 
 namespace XiHan.Framework.Localization;
 
