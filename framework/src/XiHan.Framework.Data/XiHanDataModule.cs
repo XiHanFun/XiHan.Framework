@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Data.SqlSugar;
+using XiHan.Framework.Data.SqlSugar.Options;
 
 namespace XiHan.Framework.Data;
 
@@ -27,5 +30,10 @@ public class XiHanDataModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 注册SqlSugar选项
+        context.Services.AddOptions<XiHanSqlSugarCoreOptions>();
+
+        // 注册SqlSugar数据库上下文
+        context.Services.AddTransient<ISqlSugarDbContext, SqlSugarDbContext>();
     }
 }

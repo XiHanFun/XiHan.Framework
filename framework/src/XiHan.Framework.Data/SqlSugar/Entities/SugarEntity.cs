@@ -14,7 +14,7 @@
 
 using SqlSugar;
 
-namespace XiHan.Framework.SqlSugarCore.Entities;
+namespace XiHan.Framework.Data.SqlSugar.Entities;
 
 /// <summary>
 /// SqlSugar实体基类

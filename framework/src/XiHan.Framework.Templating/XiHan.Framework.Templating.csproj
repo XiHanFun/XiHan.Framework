@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.TextTemplating</Title>
-        <AssemblyName>XiHan.Framework.TextTemplating</AssemblyName>
-        <PackageId>XiHan.Framework.TextTemplating</PackageId>
-        <Description>曦寒框架文本模板库</Description>
+        <Title>XiHan.Framework.Templating</Title>
+        <AssemblyName>XiHan.Framework.Templating</AssemblyName>
+        <PackageId>XiHan.Framework.Templating</PackageId>
+        <Description>曦寒框架模板库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
