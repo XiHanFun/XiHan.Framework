@@ -39,17 +39,13 @@
   <Folder Name="/1.src/5.AspNetCore/">
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
   </Folder>
-  <Folder Name="/1.src/6.AspNetCoreLibraries/">
-    <Project Path="src/XiHan.Framework.AspNetCore.Refit/XiHan.Framework.AspNetCore.Refit.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore.SignalR/XiHan.Framework.Web.RealTime.csproj" />
-  </Folder>
   <Folder Name="/2.test/" />
   <Folder Name="/2.test/1.Unit/">
     <Project Path="test/XiHan.Framework.Test.Base/XiHan.Framework.Test.Base.csproj" Id="593c35d7-e47a-4fee-b636-d5141c297d3d" />
   </Folder>
   <Folder Name="/2.test/2.Main/">
     <Project Path="test/XiHan.Framework.Console.Test/XiHan.Framework.Console.Test.csproj" Id="a9bf1e73-f515-4d19-a690-4c0b6a625af0" />
-    <Project Path="test/XiHan.Framework.Web.Test/XiHan.Framework.Web.Test.csproj" Id="7c879f46-8797-4721-a1d7-37d2c1b8e94c" />
+    <Project Path="test/XiHan.Framework.Web.Test/XiHan.Framework.Tests.Web.csproj" Id="7c879f46-8797-4721-a1d7-37d2c1b8e94c" />
   </Folder>
   <Folder Name="/3.others/">
     <File Path=".editorconfig" />

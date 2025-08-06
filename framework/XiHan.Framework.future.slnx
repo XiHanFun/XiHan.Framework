@@ -61,7 +61,7 @@
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/5.WebExtensions/">
-    <Project Path="src/XiHan.Framework.ApiGateway/XiHan.Framework.ApiGateway.csproj" />
+    <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
     <Project Path="src/XiHan.Framework.Web.RealTime/XiHan.Framework.Web.RealTime.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
