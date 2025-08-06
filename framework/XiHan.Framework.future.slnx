@@ -22,7 +22,7 @@
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
   </Folder>
   <Folder Name="/1.src/1.Framework/3.Web/3.Web.Docs/">
-    <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" />
+    <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" Id="e8a1d021-4093-4e09-b9da-027db1eb90ae" />
   </Folder>
   <Folder Name="/1.src/1.Framework/4.Logging/" />
   <Folder Name="/1.src/1.Framework/4.Logging/1.Logging/">
