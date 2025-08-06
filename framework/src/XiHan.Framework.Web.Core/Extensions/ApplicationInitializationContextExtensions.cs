@@ -16,7 +16,7 @@ using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.AspNetCore.Extensions;
+namespace XiHan.Framework.Web.Core.Extensions;
 
 /// <summary>
 /// 应用程序初始化上下文扩展

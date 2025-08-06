@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
+namespace XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
 /// <summary>
 /// 空主机环境
