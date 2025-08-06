@@ -35,14 +35,12 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
    - **简要功能**: 提供通用工具和扩展方法。
    - **详细描述**: 包含字符串处理、日期时间操作、加密解密、反射工具等实用方法，简化日常开发任务。
    - **依赖**: XiHan.Framework（元数据包）。
-
 3. **XiHan.Framework.Core**
 
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 提供框架核心工具、依赖注入、模块化支持。
    - **详细描述**: 包含通用扩展方法、基类和配置管理工具，集成 .NET 9 内置 DI，支持服务注册与解析，模块化设计，提升开发效率。
    - **依赖**: XiHan.Framework（元数据包）。
-
 4. **XiHan.Framework.Serialization**
    - **SDK**: Microsoft.NET.Sdk
    - **简要功能**: 支持对象序列化和反序列化。
@@ -60,6 +58,14 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
    - **详细描述**: 提供 ASP.NET Core 的 WebHost 和 Kestrel 配置，简化中间件管道设置，适用于快速搭建 Web 项目。
    - **依赖**: XiHan.Framework.Core。
 
+   **应该包含：**
+
+   - ASP.NET Core WebHost 配置
+   - Kestrel 服务器配置
+   - 中间件管道配置
+   - 基础Web应用启动逻辑
+   - 通用Web中间件
+
 6. **XiHan.Framework.Web.Api**
 
    - **SDK**: Microsoft.NET.Sdk.Web
@@ -67,11 +73,28 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
    - **详细描述**: 提供控制器基类、路由管理和模型绑定，支持 OpenAPI、System.Text.Json、API 版本控制，优化 API 开发体验。
    - **依赖**: XiHan.Framework.Web.Core, XiHan.Framework.Serialization。
 
+   **应该包含：**
+
+   - 控制器基类 (`XiHanController`)
+   - API路由管理
+   - 模型绑定配置
+   - API版本控制
+   - RESTful API最佳实践
+   - API响应格式化
+   - 错误处理中间件
+
 7. **XiHan.Framework.Web.Docs**
    - **SDK**: Microsoft.NET.Sdk.Web
    - **简要功能**: 生成 API 文档和客户端代码。
    - **详细描述**: 集成 Swashbuckle 和 Scalar，支持交互式 OpenAPI 文档生成和客户端代码（如 TypeScript SDK）输出，方便开发与集成。
    - **依赖**: XiHan.Framework.Web.Api。
+   
+   **应该包含：**
+   
+   - Swagger/OpenAPI集成
+   - API文档生成
+   - 客户端代码生成
+   - API测试工具
 
 ## 日志包
 

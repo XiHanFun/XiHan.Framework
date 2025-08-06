@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Core.Aspects;
 using XiHan.Framework.Core.DependencyInjection;
 
-namespace XiHan.Framework.AspNetCore.Mvc;
+namespace XiHan.Framework.Web.Api;
 
 /// <summary>
 /// XiHanController
