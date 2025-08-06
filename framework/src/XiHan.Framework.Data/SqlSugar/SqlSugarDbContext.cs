@@ -17,10 +17,10 @@ using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-using XiHan.Framework.SqlSugarCore.Options;
+using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Uow.Abstracts;
 
-namespace XiHan.Framework.SqlSugarCore;
+namespace XiHan.Framework.Data.SqlSugar;
 
 /// <summary>
 /// SqlSugar数据库上下文

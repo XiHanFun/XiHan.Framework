@@ -11,7 +11,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore.Mvc\XiHan.Framework.AspNetCore.Mvc.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore\XiHan.Framework.Web.Core.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
