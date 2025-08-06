@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem;
+using XiHan.Framework.FileSystem;
 
 namespace XiHan.Framework.Templating;
 
@@ -21,7 +21,7 @@ namespace XiHan.Framework.Templating;
 /// 曦寒框架文本模板模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanVirtualFileSystemModule)
+    typeof(XiHanFileSystemModule)
 )]
 public class XiHanTextTemplatingModule : XiHanModule
 {
