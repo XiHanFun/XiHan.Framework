@@ -48,8 +48,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Core", "fra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Data", "framework\src\XiHan.Framework.Data\XiHan.Framework.Data.csproj", "{5F8F9E9B-4BC9-59C9-6347-C3455267BA8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.DataFiltering", "framework\src\XiHan.Framework.DataFiltering\XiHan.Framework.DataFiltering.csproj", "{A389F52C-73D8-2445-9B30-1535EF5C23AB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Application", "framework\src\XiHan.Framework.Ddd.Application\XiHan.Framework.Ddd.Application.csproj", "{A0E47F3A-FC76-552B-8629-5D0BAA8AB6FB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Ddd.Application.Contracts", "framework\src\XiHan.Framework.Ddd.Application.Contracts\XiHan.Framework.Ddd.Application.Contracts.csproj", "{62887277-752B-FB98-33AF-E9051C239855}"
@@ -99,8 +97,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Utils", "framework\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj", "{229443B3-CC73-F599-9D98-0230BD28E135}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Validation", "framework\src\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj", "{4636B974-5C7C-58D6-BA14-8BCDED4ACF80}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.VirtualFileSystem", "framework\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj", "{70E0F257-FF0A-7307-3D6B-C7E2BE773BDD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XiHan.Framework.Web.Api", "framework\src\XiHan.Framework.Web.Api\XiHan.Framework.Web.Api.csproj", "{F3AEE646-B41F-C8C5-2B6A-F93E87562583}"
 EndProject
