@@ -6,9 +6,9 @@
     <Import Project="..\..\props\nuget.props" />
 
 	<PropertyGroup>
-		<Title>XiHan.Framework.ObjectMapping.Mapster</Title>
-		<AssemblyName>XiHan.Framework.ObjectMapping.Mapster</AssemblyName>
-		<PackageId>XiHan.Framework.ObjectMapping.Mapster</PackageId>
+		<Title>XiHan.Framework.ObjectMapping</Title>
+		<AssemblyName>XiHan.Framework.ObjectMapping</AssemblyName>
+		<PackageId>XiHan.Framework.ObjectMapping</PackageId>
 		<Description>曦寒框架对象映射库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
