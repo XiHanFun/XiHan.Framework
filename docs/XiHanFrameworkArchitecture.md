@@ -624,7 +624,7 @@ XiHan.Framework 的包架构，专为前后端分离的 ASP.NET Core 应用设�
     - 连接管理 (`IConnectionManager`, `ConnectionManager`)
     - 实时监控 (`IRealTimeMonitor`, `RealTimeMonitor`)
 
-33. **XiHan.Framework.ApiGateway**
+33. **XiHan.Framework.Gateway**
 
     - **SDK**: Microsoft.NET.Sdk.Web
     - **简要功能**: 实现 API 网关。
