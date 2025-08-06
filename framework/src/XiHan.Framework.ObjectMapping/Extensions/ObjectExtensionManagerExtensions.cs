@@ -14,9 +14,10 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Immutable;
-using XiHan.Framework.ObjectExtending.Data;
+using XiHan.Framework.ObjectMapping;
+using XiHan.Framework.ObjectMapping.Data;
 
-namespace XiHan.Framework.ObjectExtending.Extensions;
+namespace XiHan.Framework.ObjectMapping.Extensions;
 
 /// <summary>
 /// 对象扩展管理器扩展方法类

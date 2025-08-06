@@ -14,11 +14,12 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Core.DynamicProxy;
-using XiHan.Framework.ObjectExtending.Data;
-using XiHan.Framework.ObjectExtending.Extensions;
+using XiHan.Framework.ObjectExtending;
+using XiHan.Framework.ObjectMapping.Data;
+using XiHan.Framework.ObjectMapping.Extensions;
 using XiHan.Framework.Validation;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 可扩展对象验证器

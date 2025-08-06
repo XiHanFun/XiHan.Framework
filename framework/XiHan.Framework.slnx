@@ -30,17 +30,15 @@
     <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
     <Project Path="src/XiHan.Framework.ObjectExtending/XiHan.Framework.ObjectExtending.csproj" Id="3c4e1603-6746-41e0-b3ef-258bcb04836a" />
-    <Project Path="src/XiHan.Framework.ObjectMapping.Mapster/XiHan.Framework.ObjectMapping.Mapster.csproj" Id="739a42c8-c5bb-4578-a3c3-8ef0d9ec60ab" />
+    <Project Path="src/XiHan.Framework.ObjectMapping.Mapster/XiHan.Framework.ObjectMapping.csproj" Id="739a42c8-c5bb-4578-a3c3-8ef0d9ec60ab" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" Id="7d9f570d-c251-4093-a29e-d5c8f08a419d" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" Id="2a971048-9a03-4279-b5b3-e8ffe7f28111" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" Id="d3fa9dfb-37e6-4752-8263-f67c03be75b9" />
-    <Project Path="src/XiHan.Framework.TextTemplating/XiHan.Framework.Templating.csproj" />
     <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" Id="5a1a058e-e622-4f06-938e-ae8431e541d8" />
-    <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.FileSystem.csproj" />
   </Folder>
   <Folder Name="/1.src/5.AspNetCore/">
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />

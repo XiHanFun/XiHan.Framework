@@ -16,7 +16,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using XiHan.Framework.Utils.Collections;
 
-namespace XiHan.Framework.ObjectExtending;
+namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 对象扩展信息类
