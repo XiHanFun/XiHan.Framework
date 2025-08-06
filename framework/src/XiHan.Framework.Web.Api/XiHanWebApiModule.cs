@@ -37,6 +37,28 @@ public class XiHanWebApiModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var aspNetCoreMvcOptions = new XiHanAspNetCoreMvcOptions();
+
+        _ = services.AddControllers(options =>
+        {
+            options = aspNetCoreMvcOptions.MvcOptions;
+        }).ConfigureApiBehaviorOptions(options =>
+        {
+            options = aspNetCoreMvcOptions.ApiBehaviorOptions;
+        }).AddJsonOptions(options =>
+        {
+            options = aspNetCoreMvcOptions.JsonOptions;
+        }).AddFormatterMappings(options =>
+        {
+            options = aspNetCoreMvcOptions.FormatterOptions;
+        });
+
+        _ = services.AddCors(options =>
+        {
+            options = aspNetCoreMvcOptions.CorsOptions;
+        });
+
+        _ = services.AddOpenApi();
     }
 
     /// <summary>
@@ -47,6 +69,15 @@ public class XiHanWebApiModule : XiHanModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+
+        _ = app.UseRouting();
+        _ = app.UseCors();
+        _ = app.UseEndpoints(endpoints =>
+        {
+            // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由
+            _ = endpoints.MapControllers();
+            _ = endpoints.MapOpenApi();
+        });
 
         _ = app.UseEndpoints(endpoints =>
         {

@@ -20,7 +20,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.Text.Json.Converters;
 
-namespace XiHan.Framework.AspNetCore.Mvc;
+namespace XiHan.Framework.Web.Api;
 
 /// <summary>
 /// XiHanAspNetCoreMvcOptions
