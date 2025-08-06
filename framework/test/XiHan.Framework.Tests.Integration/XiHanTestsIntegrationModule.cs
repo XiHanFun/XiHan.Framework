@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanWebTestModule
+// FileName:XiHanTestsIntegrationModule
 // Guid:c9bf348b-8c2f-4e2a-9f36-cc2edafe551e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,29 +12,15 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.AspNetCore;
-using XiHan.Framework.AspNetCore.Mvc;
-using XiHan.Framework.AspNetCore.Scalar;
-using XiHan.Framework.AspNetCore.Swagger;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Http;
-using XiHan.Framework.Logging;
 
-namespace XiHan.Framework.Web.Test;
+namespace XiHan.Framework.Console.Test;
 
 /// <summary>
-/// 曦寒测试应用 Web 主机
+/// 曦寒测试应用集成主机
 /// </summary>
-[DependsOn(
-    typeof(XiHanHttpModule),
-    typeof(XiHanAspNetCoreModule),
-    typeof(XiHanAspNetCoreMvcModule),
-    typeof(XiHanLoggingModule),
-    typeof(XiHanAspNetCoreSwaggerModule),
-    typeof(XiHanAspNetCoreScalarModule)
-)]
-public class XiHanWebTestModule : XiHanModule
+public class XiHanTestsIntegrationModule : XiHanModule
 {
     /// <summary>
     /// 服务配置

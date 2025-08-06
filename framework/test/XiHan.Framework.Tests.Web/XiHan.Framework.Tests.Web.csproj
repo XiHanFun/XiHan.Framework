@@ -11,10 +11,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\src\XiHan.Framework.AspNetCore\XiHan.Framework.Web.Core.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
+	  <ProjectReference Include="..\..\src\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
+	  <ProjectReference Include="..\..\src\XiHan.Framework.Web.Docs\XiHan.Framework.Web.Docs.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
