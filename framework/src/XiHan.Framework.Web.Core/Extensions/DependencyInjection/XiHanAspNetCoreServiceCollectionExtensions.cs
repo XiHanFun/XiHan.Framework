@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Authentication;
-using XiHan.Framework.AspNetCore.Security.Claims;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Core.Security.Claims;
 
-namespace XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
+namespace XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
 /// <summary>
 /// 曦寒框架 AspNetCore 服务集合扩展

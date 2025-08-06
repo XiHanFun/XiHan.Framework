@@ -22,6 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
 	</ItemGroup>
 

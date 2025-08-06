@@ -17,7 +17,7 @@ using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Threading;
 
-namespace XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
+namespace XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
 /// <summary>
 /// 曦寒应用程序构建器扩展

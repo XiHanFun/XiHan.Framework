@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.AspNetCore.Authentication.JwtBearer;
+namespace XiHan.Framework.Authentication;
 
 /// <summary>
 /// 曦寒框架 Web 核心鉴权 Jwt 模块
@@ -28,7 +28,5 @@ public class XiHanAuthenticationModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-
-        _ = services.AddAuthorization();
     }
 }

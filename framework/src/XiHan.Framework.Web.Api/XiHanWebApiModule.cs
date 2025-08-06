@@ -13,14 +13,20 @@
 #endregion <<版权版本注释>>
 
 using Scalar.AspNetCore;
+using XiHan.Framework.Core.Application;
+using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Serialization;
+using XiHan.Framework.Web.Core;
+using XiHan.Framework.Web.Core.Extensions;
 
-namespace XiHan.Framework.AspNetCore.Scalar;
+namespace XiHan.Framework.Web.Api;
 
 /// <summary>
 /// 曦寒框架 Web 核心文档模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanAspNetCoreMvcModule)
+    typeof(XiHanWebCoreModule),
+    typeof(XiHanSerializationModule)
 )]
 public class XiHanWebApiModule : XiHanModule
 {

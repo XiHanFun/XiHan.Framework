@@ -12,13 +12,13 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
-namespace XiHan.Framework.AspNetCore;
+namespace XiHan.Framework.Web.Core;
 
 /// <summary>
 /// 曦寒框架 Web 核心模块

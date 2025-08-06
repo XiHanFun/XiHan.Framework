@@ -147,7 +147,6 @@ public static class ConsoleLogger
     /// 错误、删除、危险、异常信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="ex"></param>
     /// <param name="frontColor">前景色</param>
     public static void Error(string? message, ConsoleColor frontColor = ConsoleColor.Red)
     {
