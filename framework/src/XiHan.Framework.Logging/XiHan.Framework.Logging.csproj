@@ -9,7 +9,7 @@
         <Title>XiHan.Framework.Logging</Title>
         <AssemblyName>XiHan.Framework.Logging</AssemblyName>
         <PackageId>XiHan.Framework.Logging</PackageId>
-        <Description>曦寒框架统一日志记录与管理库</Description>
+        <Description>曦寒框架日志库</Description>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     </PropertyGroup>
