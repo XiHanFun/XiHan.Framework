@@ -1,13 +1,13 @@
 ﻿using Serilog;
-using XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Test;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    _ = await builder.AddApplicationAsync<XiHanWebTestModule>();
+    _ = await builder.AddApplicationAsync<XiHanTestsWebModule>();
 
     var app = builder.Build();
 

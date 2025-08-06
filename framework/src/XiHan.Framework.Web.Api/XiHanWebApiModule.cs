@@ -37,7 +37,7 @@ public class XiHanWebApiModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var aspNetCoreMvcOptions = new XiHanAspNetCoreMvcOptions();
+        var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions();
 
         _ = services.AddControllers(options =>
         {
