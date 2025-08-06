@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Ddd.Domain.Entities;
 using XiHan.Framework.Ddd.Domain.Events;
-using XiHan.Framework.Ddd.Domain.Shared.Entities;
 
 namespace XiHan.Framework.Ddd.Domain.Aggregates;
 

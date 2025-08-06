@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\nuget.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Ddd</Title>
+		<AssemblyName>XiHan.Framework.Ddd</AssemblyName>
+		<PackageId>XiHan.Framework.Ddd</PackageId>
+		<Description>曦寒框架领域驱动设计库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+	</ItemGroup>
+
+</Project>

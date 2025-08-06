@@ -63,7 +63,7 @@
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/8.AdvancedData/2.Ddd/">
-    <Project Path="src/XiHan.Framework.Ddd/XiHan.Framework.Ddd.csproj" />
+    <Project Path="src/XiHan.Framework.Ddd/XiHan.Framework.Ddd.csproj" Id="e91d75ea-f0cc-4486-b13d-d6da985ef669" />
   </Folder>
   <Folder Name="/1.src/1.Framework/9.DevTools/" />
   <Folder Name="/1.src/1.Framework/9.DevTools/1.DevTools/">
