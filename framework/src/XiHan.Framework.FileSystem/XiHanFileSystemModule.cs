@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanVirtualFileSystemModule
+// FileName:XiHanFileSystemModule
 // Guid:8543c204-0497-4b7a-be6b-6d06c7c3053b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,14 +14,14 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem.Services;
+using XiHan.Framework.FileSystem.Services;
 
-namespace XiHan.Framework.VirtualFileSystem;
+namespace XiHan.Framework.FileSystem;
 
 /// <summary>
-/// 曦寒虚拟文件系统模块
+/// 曦寒文件系统模块
 /// </summary>
-public class XiHanVirtualFileSystemModule : XiHanModule
+public class XiHanFileSystemModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
