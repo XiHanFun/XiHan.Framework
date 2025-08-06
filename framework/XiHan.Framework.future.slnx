@@ -19,7 +19,7 @@
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/3.Web/2.Web.Api/">
-    <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" />
+    <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
   </Folder>
   <Folder Name="/1.src/1.Framework/3.Web/3.Web.Docs/">
     <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" />
@@ -40,7 +40,7 @@
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
   </Folder>
   <Folder Name="/1.src/1.Framework/6.Security/2.Authentication/">
-    <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" />
+    <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
   </Folder>
   <Folder Name="/1.src/1.Framework/6.Security/3.Authorization/">
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />

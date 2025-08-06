@@ -49,7 +49,7 @@
   </Folder>
   <Folder Name="/1.src/5.AspNetCore/">
     <Project Path="src/XiHan.Framework.AspNetCore.Mvc/XiHan.Framework.AspNetCore.Mvc.csproj" />
-    <Project Path="src/XiHan.Framework.AspNetCore/XiHan.Framework.AspNetCore.csproj" />
+    <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
   </Folder>
   <Folder Name="/1.src/6.AspNetCoreLibraries/">
     <Project Path="src/XiHan.Framework.AspNetCore.Authentication.JwtBearer/XiHan.Framework.AspNetCore.Authentication.JwtBearer.csproj" />

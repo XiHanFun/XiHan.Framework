@@ -6,9 +6,9 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.AspNetCore</Title>
-        <AssemblyName>XiHan.Framework.AspNetCore</AssemblyName>
-        <PackageId>XiHan.Framework.AspNetCore</PackageId>
+        <Title>XiHan.Framework.Web.Core</Title>
+        <AssemblyName>XiHan.Framework.Web.Core</AssemblyName>
+        <PackageId>XiHan.Framework.Web.Core</PackageId>
         <Description>曦寒框架 Web 核心库</Description>
         <OutputType>Library</OutputType>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
@@ -16,10 +16,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
     </ItemGroup>
 
 </Project>

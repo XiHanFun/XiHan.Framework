@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAspNetCoreModule
+// FileName:XiHanWebCoreModule
 // Guid:e188b74b-8725-46e3-b520-c6757cfe0f6f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,24 +16,14 @@ using XiHan.Framework.AspNetCore.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Http;
-using XiHan.Framework.Security;
-using XiHan.Framework.Uow;
 using XiHan.Framework.Utils.Text;
-using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.AspNetCore;
 
 /// <summary>
 /// 曦寒框架 Web 核心模块
 /// </summary>
-[DependsOn(
-    typeof(XiHanSecurityModule),
-    typeof(XiHanVirtualFileSystemModule),
-    typeof(XiHanUowModule),
-    typeof(XiHanHttpModule)
-    )]
-public class XiHanAspNetCoreModule : XiHanModule
+public class XiHanWebCoreModule : XiHanModule
 {
     /// <summary>
     /// 服务配置前

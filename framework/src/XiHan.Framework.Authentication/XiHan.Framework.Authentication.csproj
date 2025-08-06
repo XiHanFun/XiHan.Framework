@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\nuget.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Authentication</Title>
+		<AssemblyName>XiHan.Framework.Authentication</AssemblyName>
+		<PackageId>XiHan.Framework.Authentication</PackageId>
+		<Description>曦寒框架鉴权库</Description>
+		<OutputType>Library</OutputType>
+		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+		<ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
+	</ItemGroup>
+
+</Project>
