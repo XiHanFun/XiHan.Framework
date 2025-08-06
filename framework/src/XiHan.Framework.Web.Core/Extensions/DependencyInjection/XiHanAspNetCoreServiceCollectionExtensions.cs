@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAspNetCoreServiceCollectionExtensions
+// FileName:XiHanWebCoreServiceCollectionExtensions
 // Guid:b38bad27-b763-4184-b535-10917dfc8689
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -21,7 +21,7 @@ namespace XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 /// <summary>
 /// 曦寒框架 AspNetCore 服务集合扩展
 /// </summary>
-public static class XiHanAspNetCoreServiceCollectionExtensions
+public static class XiHanWebCoreServiceCollectionExtensions
 {
     /// <summary>
     /// 获取主机环境

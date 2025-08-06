@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAspNetCoreMvcOptions
+// FileName:XiHanWebCoreMvcOptions
 // Guid:680e435e-92b7-49bd-bdb2-39981206a474
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -23,14 +23,14 @@ using XiHan.Framework.Utils.Text.Json.Converters;
 namespace XiHan.Framework.Web.Api;
 
 /// <summary>
-/// XiHanAspNetCoreMvcOptions
+/// XiHanWebCoreMvcOptions
 /// </summary>
-public class XiHanAspNetCoreMvcOptions
+public class XiHanWebCoreMvcOptions
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    public XiHanAspNetCoreMvcOptions()
+    public XiHanWebCoreMvcOptions()
     {
         MvcOptions = new MvcOptions();
         ApiBehaviorOptions = new ApiBehaviorOptions();
@@ -69,7 +69,7 @@ public class XiHanAspNetCoreMvcOptions
     /// </summary>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureMvcOptions(Action<MvcOptions> configure)
+    public XiHanWebCoreMvcOptions ConfigureMvcOptions(Action<MvcOptions> configure)
     {
         configure(MvcOptions);
         return this;
@@ -80,7 +80,7 @@ public class XiHanAspNetCoreMvcOptions
     /// </summary>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureApiBehaviorOptions(Action<ApiBehaviorOptions> configure)
+    public XiHanWebCoreMvcOptions ConfigureApiBehaviorOptions(Action<ApiBehaviorOptions> configure)
     {
         configure(ApiBehaviorOptions);
         return this;
@@ -91,7 +91,7 @@ public class XiHanAspNetCoreMvcOptions
     /// </summary>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureJsonOptions(Action<JsonOptions> configure)
+    public XiHanWebCoreMvcOptions ConfigureJsonOptions(Action<JsonOptions> configure)
     {
         configure(JsonOptions);
         return this;
@@ -101,7 +101,7 @@ public class XiHanAspNetCoreMvcOptions
     /// 配置默认 JsonOptions
     /// </summary>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureJsonOptionsDefault()
+    public XiHanWebCoreMvcOptions ConfigureJsonOptionsDefault()
     {
         // 序列化格式
         JsonOptions.JsonSerializerOptions.WriteIndented = true;
@@ -153,7 +153,7 @@ public class XiHanAspNetCoreMvcOptions
     /// </summary>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureFormatterOptions(Action<FormatterMappings> configure)
+    public XiHanWebCoreMvcOptions ConfigureFormatterOptions(Action<FormatterMappings> configure)
     {
         configure(FormatterOptions);
         return this;
@@ -164,7 +164,7 @@ public class XiHanAspNetCoreMvcOptions
     /// </summary>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public XiHanAspNetCoreMvcOptions ConfigureCorsOptions(Action<CorsOptions> configure)
+    public XiHanWebCoreMvcOptions ConfigureCorsOptions(Action<CorsOptions> configure)
     {
         configure(CorsOptions);
         return this;

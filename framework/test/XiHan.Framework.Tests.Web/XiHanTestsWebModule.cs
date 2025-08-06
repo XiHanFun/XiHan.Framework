@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanConsoleTestModule
+// FileName:XiHanTestsWebModule
 // Guid:c9bf348b-8c2f-4e2a-9f36-cc2edafe551e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,13 +14,25 @@
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Http;
+using XiHan.Framework.Logging;
+using XiHan.Framework.Web.Api;
+using XiHan.Framework.Web.Core;
+using XiHan.Framework.Web.Docs;
 
-namespace XiHan.Framework.Console.Test;
+namespace XiHan.Framework.Web.Test;
 
 /// <summary>
-/// 曦寒测试应用控制台主机
+/// 曦寒测试应用 Web 主机
 /// </summary>
-public class XiHanConsoleTestModule : XiHanModule
+[DependsOn(
+    typeof(XiHanHttpModule),
+    typeof(XiHanWebCoreModule),
+    typeof(XiHanWebApiModule),
+    typeof(XiHanLoggingModule),
+    typeof(XiHanWebDocsModule)
+)]
+public class XiHanTestsWebModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
