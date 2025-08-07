@@ -15,11 +15,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Verifications;
 
-namespace XiHan.Framework.Utils.Text;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 字符串扩展方法
@@ -790,7 +791,7 @@ public static class StringExtensions
         {
             for (var j = 1; j <= m; j++)
             {
-                var cost = (other[j - 1] == str[i - 1]) ? 0 : 1;
+                var cost = other[j - 1] == str[i - 1] ? 0 : 1;
                 d[i, j] = Math.Min(
                     Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
                     d[i - 1, j - 1] + cost);

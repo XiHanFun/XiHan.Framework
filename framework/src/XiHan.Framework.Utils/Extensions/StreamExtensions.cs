@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.IO;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 文件流扩展方法
