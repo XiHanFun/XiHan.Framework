@@ -20,7 +20,7 @@ using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Docs;
 
-namespace XiHan.Framework.Web.Test;
+namespace XiHan.Framework.Tests.Web;
 
 /// <summary>
 /// 曦寒测试应用 Web 主机

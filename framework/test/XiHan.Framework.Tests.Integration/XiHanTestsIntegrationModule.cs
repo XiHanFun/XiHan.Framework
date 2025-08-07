@@ -15,7 +15,7 @@
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.Console.Test;
+namespace XiHan.Framework.Tests.Integration;
 
 /// <summary>
 /// 曦寒测试应用集成主机

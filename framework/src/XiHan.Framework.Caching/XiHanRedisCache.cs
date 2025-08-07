@@ -22,7 +22,7 @@ using System.Text;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Caching.StackExchangeRedis;
+namespace XiHan.Framework.Caching;
 
 /// <summary>
 /// 曦寒 Redis 缓存

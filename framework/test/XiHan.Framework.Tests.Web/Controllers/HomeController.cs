@@ -4,7 +4,7 @@ using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
 
-namespace XiHan.Framework.Web.Test.Controllers;
+namespace XiHan.Framework.Tests.Web.Controllers;
 
 /// <summary>
 /// HomeController
@@ -78,11 +78,11 @@ public class HomeController : ControllerBase
         Console.WriteLine($"CPU使用趋势: {(cpuTrend.Trend > 0 ? "上升" : "下降")}");
         return Ok(new
         {
-            CpuUsage = snapshot.CpuUsage,
+            snapshot.CpuUsage,
             MemoryUsage = snapshot.MemoryUsage.FormatFileSizeToString(),
             CpuTrend = new
             {
-                AverageValue = cpuTrend.AverageValue,
+                cpuTrend.AverageValue,
                 Trend = cpuTrend.Trend > 0 ? "上升" : "下降"
             }
         });
