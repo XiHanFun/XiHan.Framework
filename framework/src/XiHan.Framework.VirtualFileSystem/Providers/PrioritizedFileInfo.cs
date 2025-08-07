@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.FileSystem.Providers;
+namespace XiHan.Framework.VirtualFileSystem.Providers;
 
 /// <summary>
 /// 优先级文件信息包装器

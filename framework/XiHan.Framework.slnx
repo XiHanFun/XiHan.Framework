@@ -52,8 +52,8 @@
     <Project Path="src/XiHan.Framework.Templating/XiHan.Framework.Templating.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/3.Storage/">
-    <Project Path="src/XiHan.Framework.FileSystem/XiHan.Framework.FileSystem.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
+    <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
   <Folder Name="/1.src/2.Extensions/4.Localization/">
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanTextTemplatingModule
+// FileName:XiHanTemplatingModule
 // Guid:957b2815-e1a0-4f9e-8023-1e5d68482316
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -13,17 +13,17 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.FileSystem;
+using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.Templating;
 
 /// <summary>
-/// 曦寒框架文本模板模块
+/// 曦寒框架模板模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanFileSystemModule)
+    typeof(XiHanVirtualFileSystemModule)
 )]
-public class XiHanTextTemplatingModule : XiHanModule
+public class XiHanTemplatingModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
