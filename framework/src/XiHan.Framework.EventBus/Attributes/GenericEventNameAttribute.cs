@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.EventBus.Abstractions;
-using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.EventBus.Attributes;
 

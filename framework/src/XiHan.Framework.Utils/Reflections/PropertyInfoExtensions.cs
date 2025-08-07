@@ -14,7 +14,7 @@
 
 using System.Linq.Expressions;
 using System.Reflection;
-using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Reflections;
 

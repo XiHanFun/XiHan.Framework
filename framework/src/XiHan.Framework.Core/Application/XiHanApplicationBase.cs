@@ -22,9 +22,9 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
 using XiHan.Framework.Core.Logging;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Utils.System;
-using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Core.Application;
 

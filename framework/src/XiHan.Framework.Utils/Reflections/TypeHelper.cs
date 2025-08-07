@@ -17,8 +17,8 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Localization;
-using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Utils.Reflections;
 
