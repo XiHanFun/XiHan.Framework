@@ -19,6 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
     </ItemGroup>
 
 </Project>

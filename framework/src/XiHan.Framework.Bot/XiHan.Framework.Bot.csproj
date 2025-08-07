@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Bot</Title>
+        <AssemblyName>XiHan.Framework.Bot</AssemblyName>
+        <PackageId>XiHan.Framework.Bot</PackageId>
+        <Description>曦寒框架机器人库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\XiHan.Framework.Templating\XiHan.Framework.Templating.csproj" />
+    </ItemGroup>
+
+</Project>
