@@ -156,6 +156,8 @@ try {
                 Write-Warning "    错误信息: $result"
                 $failCount++
             }
+           # 打印空行
+           Write-Output "==="
         }
         catch {
             Write-Warning "  异常: $packageName $version"
