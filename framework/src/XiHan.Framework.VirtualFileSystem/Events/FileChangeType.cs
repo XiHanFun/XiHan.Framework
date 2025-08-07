@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.FileSystem.Events;
+namespace XiHan.Framework.VirtualFileSystem.Events;
 
 /// <summary>
 /// 文件变化类型

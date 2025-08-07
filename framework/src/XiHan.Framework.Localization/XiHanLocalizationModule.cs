@@ -15,7 +15,7 @@
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
-using XiHan.Framework.FileSystem;
+using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.Localization;
 
@@ -23,7 +23,7 @@ namespace XiHan.Framework.Localization;
 /// 曦寒框架本地化模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanFileSystemModule),
+    typeof(XiHanVirtualFileSystemModule),
     typeof(XiHanThreadingModule),
     typeof(XiHanSettingsModule)
 )]

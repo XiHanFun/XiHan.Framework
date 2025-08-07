@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.FileSystem.Providers;
+namespace XiHan.Framework.VirtualFileSystem.Providers;
 
 /// <summary>
 /// 带优先级的文件提供程序封装

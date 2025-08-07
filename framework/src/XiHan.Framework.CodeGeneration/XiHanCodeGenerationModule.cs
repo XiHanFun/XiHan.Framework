@@ -21,7 +21,7 @@ namespace XiHan.Framework.CodeGeneration;
 /// 曦寒框架代码生成模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanTextTemplatingModule)
+    typeof(XiHanTemplatingModule)
 )]
 public class XiHanCodeGenerationModule : XiHanModule
 {

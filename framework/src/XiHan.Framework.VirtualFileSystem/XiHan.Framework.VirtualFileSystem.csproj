@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.FileSystem</Title>
-        <AssemblyName>XiHan.Framework.FileSystem</AssemblyName>
-        <PackageId>XiHan.Framework.FileSystem</PackageId>
-        <Description>曦寒框架文件系统库</Description>
+        <Title>XiHan.Framework.VirtualFileSystem</Title>
+        <AssemblyName>XiHan.Framework.VirtualFileSystem</AssemblyName>
+        <PackageId>XiHan.Framework.VirtualFileSystem</PackageId>
+        <Description>曦寒框架虚拟文件系统库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 

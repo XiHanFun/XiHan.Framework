@@ -16,7 +16,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.FileProviders.Composite;
 using Microsoft.Extensions.Primitives;
 
-namespace XiHan.Framework.FileSystem.Providers.Composite;
+namespace XiHan.Framework.VirtualFileSystem.Providers.Composite;
 
 /// <summary>
 /// 带优先级的组合文件提供程序
