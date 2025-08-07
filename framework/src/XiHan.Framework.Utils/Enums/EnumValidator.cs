@@ -14,6 +14,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Enums;
 

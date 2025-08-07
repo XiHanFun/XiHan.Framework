@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Globalization;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.System;
-using XiHan.Framework.Utils.Text;
 using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Utils.Localization;

@@ -12,10 +12,11 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Enums;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Themes;
 
-namespace XiHan.Framework.Utils.Enums;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 枚举扩展方法
@@ -160,7 +161,7 @@ public static class EnumExtensions
     /// <exception cref="InvalidCastException">无法转换时抛出异常</exception>
     public static TEnum ConvertTo<TEnum>(this Enum enumValue) where TEnum : struct, Enum
     {
-        return TryConvertTo<TEnum>(enumValue, out var result)
+        return enumValue.TryConvertTo<TEnum>(out var result)
             ? result
             : throw new InvalidCastException($"无法将枚举 {enumValue.GetType().Name}.{enumValue} 转换为 {typeof(TEnum).Name}");
     }

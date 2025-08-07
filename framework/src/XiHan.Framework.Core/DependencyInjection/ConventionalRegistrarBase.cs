@@ -16,8 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Reflections;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 

@@ -19,7 +19,7 @@ using System.Web;
 using XiHan.Framework.Utils.System.Converters;
 using XiHan.Framework.Utils.Verifications;
 
-namespace XiHan.Framework.Utils.Text;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 编码扩展方法

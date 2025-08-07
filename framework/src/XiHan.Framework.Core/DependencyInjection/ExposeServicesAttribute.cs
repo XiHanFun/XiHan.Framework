@@ -14,7 +14,7 @@
 
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 

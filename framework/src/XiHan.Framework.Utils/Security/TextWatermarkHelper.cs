@@ -14,8 +14,8 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Security.Cryptography;
-using XiHan.Framework.Utils.Text;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 using XiHan.Framework.Utils.Verifications;
 

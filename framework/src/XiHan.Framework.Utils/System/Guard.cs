@@ -14,7 +14,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.System;
 

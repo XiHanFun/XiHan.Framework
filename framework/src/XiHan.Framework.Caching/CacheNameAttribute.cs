@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.System;
-using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Caching;
 

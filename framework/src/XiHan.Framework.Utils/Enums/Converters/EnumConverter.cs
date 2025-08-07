@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Enums.Dtos;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Enums.Converters;
 

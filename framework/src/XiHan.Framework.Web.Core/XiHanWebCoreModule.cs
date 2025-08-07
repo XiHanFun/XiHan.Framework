@@ -15,7 +15,7 @@
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Utils.Text;
+using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Core;

@@ -16,8 +16,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using XiHan.Framework.Utils.Extensions;
 
-namespace XiHan.Framework.Utils.System;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 对象扩展方法

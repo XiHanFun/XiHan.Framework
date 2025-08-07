@@ -19,7 +19,7 @@ using XiHan.Framework.DistributedIds;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
 using XiHan.Framework.MultiTenancy;
-using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.EventBus;
 
