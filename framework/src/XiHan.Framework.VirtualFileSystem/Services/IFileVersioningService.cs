@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.FileProviders;
 
-namespace XiHan.Framework.FileSystem.Services;
+namespace XiHan.Framework.VirtualFileSystem.Services;
 
 /// <summary>
 /// 文件版本控制服务

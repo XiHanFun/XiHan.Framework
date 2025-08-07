@@ -14,9 +14,9 @@
 
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
-using XiHan.Framework.FileSystem.Events;
+using XiHan.Framework.VirtualFileSystem.Events;
 
-namespace XiHan.Framework.FileSystem;
+namespace XiHan.Framework.VirtualFileSystem;
 
 /// <summary>
 /// 统一虚拟文件系统接口
