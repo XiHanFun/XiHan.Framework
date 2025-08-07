@@ -65,6 +65,7 @@
   <Folder Name="/1.src/2.Extensions/6.Advanced/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
   <Folder Name="/2.tests/1.UnitTests/">
