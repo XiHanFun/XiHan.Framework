@@ -11,7 +11,10 @@
         <PackageId>XiHan.Framework.Web.Core</PackageId>
         <Description>曦寒框架 Web 核心库</Description>
         <OutputType>Library</OutputType>
-        <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
+		<OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
     </PropertyGroup>
 
     <ItemGroup>
