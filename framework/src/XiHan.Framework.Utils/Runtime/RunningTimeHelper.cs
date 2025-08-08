@@ -17,7 +17,6 @@ using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Utils.Runtime;
 

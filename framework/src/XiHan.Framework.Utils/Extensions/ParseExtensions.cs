@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Collections;
-using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.System;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 对象转换扩展方法
@@ -484,9 +484,9 @@ public static class ParseExtensions
         {
             // 找到所有的没有此特性、或有此特性但忽略字段的属性
             var item = (objDynamic as object).GetType().GetProperties()
-                .Where(prop => !prop.HasAttribute<TAttribute>() || (prop.HasAttribute<TAttribute>() &&
+                .Where(prop => !prop.HasAttribute<TAttribute>() || prop.HasAttribute<TAttribute>() &&
                     !(Attribute.GetCustomAttribute(prop, typeof(TAttribute)) as TAttribute)!
-                        .GetPropertyValue<TAttribute, bool>("IsIgnore")))
+                        .GetPropertyValue<TAttribute, bool>("IsIgnore"))
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(objDynamic, null));
 
             yield return item;

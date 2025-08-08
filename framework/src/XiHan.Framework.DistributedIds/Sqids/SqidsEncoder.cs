@@ -13,7 +13,7 @@
 
 using System.Numerics;
 using System.Text;
-using XiHan.Framework.Utils.Maths;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.DistributedIds.Sqids;
 
