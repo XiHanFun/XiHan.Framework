@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanBotModule
+// FileName:XiHanMessagingModule
 // Guid:50344073-bd0e-4c14-957c-d38988f00876
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,9 +17,9 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Messaging;
 
 /// <summary>
-/// 曦寒框架自动程序模块
+/// 曦寒框架消息模块
 /// </summary>
-public class XiHanBotModule : XiHanModule
+public class XiHanMessagingModule : XiHanModule
 {
     /// <summary>
     /// 服务配置
