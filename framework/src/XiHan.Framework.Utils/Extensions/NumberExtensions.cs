@@ -15,7 +15,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace XiHan.Framework.Utils.Maths;
+namespace XiHan.Framework.Utils.Extensions;
 
 /// <summary>
 /// 扩展 INumber 接口实现基本数学运算
@@ -100,7 +100,7 @@ public static class NumberExtensions
         }
 
         var result = value / divisor;
-        if ((value < T.Zero) != (divisor < T.Zero) && result * divisor != value)
+        if (value < T.Zero != divisor < T.Zero && result * divisor != value)
         {
             result -= T.One;
         }

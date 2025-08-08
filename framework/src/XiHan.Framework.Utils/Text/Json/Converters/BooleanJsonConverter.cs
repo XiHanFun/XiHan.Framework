@@ -14,7 +14,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Text.Json.Converters;
 
