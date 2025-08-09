@@ -61,19 +61,20 @@
   </Folder>
   <Folder Name="/1.src/2.Extensions/6.Advanced/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
     <Project Path="src/XiHan.Framework.Gateway/XiHan.Framework.Gateway.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
-    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
-  <Folder Name="/2.tests/1.UnitTests/">
+  <Folder Name="/2.tests/1.Base/">
+    <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
+  </Folder>
+  <Folder Name="/2.tests/2.UnitTests/">
     <Project Path="test/XiHan.Framework.Tests.Unit/XiHan.Framework.Tests.Unit.csproj" />
   </Folder>
-  <Folder Name="/2.tests/2.IntegrationTests/">
+  <Folder Name="/2.tests/3.Main/">
     <Project Path="test/XiHan.Framework.Tests.Integration/XiHan.Framework.Tests.Integration.csproj" />
-  </Folder>
-  <Folder Name="/2.tests/3.WebTests/">
     <Project Path="test/XiHan.Framework.Tests.Web/XiHan.Framework.Tests.Web.csproj" />
   </Folder>
   <Folder Name="/3.others/" />
@@ -82,16 +83,14 @@
     <File Path="props/netcore.props" />
     <File Path="props/netstandard.props" />
     <File Path="props/nuget.props" />
+    <File Path="props/test.props" />
     <File Path="props/version.props" />
   </Folder>
   <Folder Name="/3.others/2.Scripts/">
-    <File Path="scripts/editor/Class.cs" />
-    <File Path="scripts/editor/Controller.cs" />
     <File Path="scripts/editor/CopyFile.ps1" />
-    <File Path="scripts/editor/FilePath.txt" />
-    <File Path="scripts/editor/Interface.cs" />
     <File Path="scripts/nuget/PushNugetPackages.ps1" />
     <File Path="scripts/nuget/SaveNugetApiKey.ps1" />
+    <File Path="scripts/nuget/UnlistNugetPackages.ps1" />
     <File Path="scripts/nuget/VersionUpgrade.ps1" />
     <File Path="scripts/project/ClearProjecBinObj.ps1" />
   </Folder>
@@ -103,6 +102,7 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CodeMaid.config" />
+    <File Path="Directory.Build.props" />
     <File Path="global.json" />
   </Folder>
 </Solution>

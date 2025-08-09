@@ -3,6 +3,7 @@
 	<Import Project="..\..\props\netcore.props" />
 	<Import Project="..\..\props\common.props" />
 	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\test.props" />
 
 	<PropertyGroup>
 		<IsPackable>false</IsPackable>

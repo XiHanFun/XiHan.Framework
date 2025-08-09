@@ -9,7 +9,7 @@
 		<Title>XiHan.Framework.Authentication</Title>
 		<AssemblyName>XiHan.Framework.Authentication</AssemblyName>
 		<PackageId>XiHan.Framework.Authentication</PackageId>
-		<Description>曦寒框架鉴权库</Description>
+		<Description>曦寒框架认证库</Description>
 		<OutputType>Library</OutputType>
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
 	</PropertyGroup>
