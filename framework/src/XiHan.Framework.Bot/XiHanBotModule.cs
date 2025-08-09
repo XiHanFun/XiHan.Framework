@@ -20,9 +20,6 @@ namespace XiHan.Framework.Bot;
 /// <summary>
 /// 曦寒机器人模板模块
 /// </summary>
-[DependsOn(
-    typeof(XiHanVirtualFileSystemModule)
-)]
 public class XiHanBotModule : XiHanModule
 {
     /// <summary>

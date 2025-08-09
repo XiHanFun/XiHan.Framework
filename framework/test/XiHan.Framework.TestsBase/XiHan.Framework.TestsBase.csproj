@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\nuget.props" />
+	<Import Project="..\..\props\test.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.TestsBase</Title>
+		<AssemblyName>XiHan.Framework.TestsBase</AssemblyName>
+		<PackageId>XiHan.Framework.TestsBase</PackageId>
+		<Description>曦寒框架测试基础库</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
