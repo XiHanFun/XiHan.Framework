@@ -14,12 +14,16 @@
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Logging;
 
 namespace XiHan.Framework.Tests.Integration;
 
 /// <summary>
 /// 曦寒测试应用集成主机
 /// </summary>
+[DependsOn(
+    typeof(XiHanLoggingModule)
+    )]
 public class XiHanTestsIntegrationModule : XiHanModule
 {
     /// <summary>
