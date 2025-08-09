@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Security.Cryptography;
 using System.Text;
-using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Text;
 
 namespace XiHan.Framework.Utils.IO;
@@ -145,8 +145,9 @@ public static class FileHelper
     /// <returns>文件的哈希值</returns>
     public static string GetHash(string filePath)
     {
-        using var stream = File.OpenRead(filePath);
-        return HashHelper.StreamMd5(stream);
+        using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var hashBytes = MD5.HashData(stream);
+        return Convert.ToHexString(hashBytes);
     }
 
     /// <summary>

@@ -14,10 +14,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
     </ItemGroup>
 
