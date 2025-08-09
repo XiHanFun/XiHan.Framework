@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Authentication;
 
 /// <summary>
-/// 曦寒框架 Web 核心鉴权 Jwt 模块
+/// 曦寒框架 Web 认证模块
 /// </summary>
 public class XiHanAuthenticationModule : XiHanModule
 {

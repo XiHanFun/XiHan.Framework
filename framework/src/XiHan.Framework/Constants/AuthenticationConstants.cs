@@ -40,6 +40,11 @@ public static class AuthenticationConstants
     public const string DefaultRoleName = "User";
 
     /// <summary>
+    /// 超级管理员角色名称
+    /// </summary>
+    public const string SuperAdminRoleName = "SuperAdmin";
+
+    /// <summary>
     /// 管理员角色名称
     /// </summary>
     public const string AdminRoleName = "Admin";

@@ -32,7 +32,7 @@ public static class SecurityConstants
     /// <summary>
     /// 默认用户名最小长度
     /// </summary>
-    public const int DefaultUsernameMinLength = 3;
+    public const int DefaultUsernameMinLength = 6;
 
     /// <summary>
     /// 默认用户名最大长度
