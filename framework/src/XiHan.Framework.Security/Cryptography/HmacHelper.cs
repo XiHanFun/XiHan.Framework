@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security.Cryptography;
+namespace XiHan.Framework.Security.Cryptography;
 
 /// <summary>
 /// HMAC 辅助类

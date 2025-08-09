@@ -16,7 +16,7 @@ using System.Text;
 using XiHan.Framework.Utils.Constants;
 using XiHan.Framework.Utils.System;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Security;
 
 /// <summary>
 /// 密码强度检测器

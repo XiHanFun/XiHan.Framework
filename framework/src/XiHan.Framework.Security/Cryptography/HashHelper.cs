@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security.Cryptography;
+namespace XiHan.Framework.Security.Cryptography;
 
 /// <summary>
 /// 哈希生成辅助类
