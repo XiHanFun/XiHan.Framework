@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Http;
 using XiHan.Framework.Logging;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core;
@@ -26,10 +25,9 @@ namespace XiHan.Framework.Tests.Web;
 /// 曦寒测试应用 Web 主机
 /// </summary>
 [DependsOn(
-    typeof(XiHanHttpModule),
+    typeof(XiHanLoggingModule),
     typeof(XiHanWebCoreModule),
     typeof(XiHanWebApiModule),
-    typeof(XiHanLoggingModule),
     typeof(XiHanWebDocsModule)
 )]
 public class XiHanTestsWebModule : XiHanModule
