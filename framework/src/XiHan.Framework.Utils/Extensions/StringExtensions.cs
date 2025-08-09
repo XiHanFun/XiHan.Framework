@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.System;
 using XiHan.Framework.Utils.Verifications;
 
@@ -405,7 +405,8 @@ public static class StringExtensions
     /// <returns></returns>
     public static string ToMd5(this string str)
     {
-        return HashHelper.Md5(str);
+        var hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(str));
+        return Convert.ToHexString(hashBytes);
     }
 
     /// <summary>

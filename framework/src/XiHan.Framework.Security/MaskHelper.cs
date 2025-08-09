@@ -15,7 +15,7 @@
 using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Verifications;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Security;
 
 /// <summary>
 /// 脱敏帮助类，提供常用敏感信息的脱敏处理方法
@@ -45,7 +45,7 @@ public static partial class MaskHelper
         var length = input.Length;
         if (frontCount + endCount >= length)
         {
-            return Mask(input);
+            return input.Mask();
         }
 
         var maskLength = length - frontCount - endCount;
@@ -87,7 +87,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的手机号</returns>
     public static string MaskPhone(string phone)
     {
-        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? Mask(phone, 0, 0) : Mask(phone, 3, 4);
+        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? phone.Mask(0, 0) : phone.Mask(3, 4);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的身份证号</returns>
     public static string MaskIdCard(string idCard)
     {
-        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? Mask(idCard, 0, 0) : Mask(idCard, 4, 4);
+        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? idCard.Mask(0, 0) : idCard.Mask(4, 4);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的银行卡号</returns>
     public static string MaskBankCard(string bankCard)
     {
-        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? Mask(bankCard, 0, 0) : Mask(bankCard, 4, 4);
+        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? bankCard.Mask(0, 0) : bankCard.Mask(4, 4);
     }
 
     /// <summary>
@@ -130,8 +130,8 @@ public static partial class MaskHelper
         var domain = match.Groups[2].Value;
         var suffix = match.Groups[3].Value;
 
-        userName = userName.Length <= 3 ? Mask(userName, 3 - userName.Length, 0) : Mask(userName, 1, userName.Length - 3);
-        domain = domain.Length <= 3 ? Mask(domain, 3 - domain.Length, 0) : Mask(domain, 1, domain.Length - 3);
+        userName = userName.Length <= 3 ? userName.Mask(3 - userName.Length, 0) : userName.Mask(1, userName.Length - 3);
+        domain = domain.Length <= 3 ? domain.Mask(3 - domain.Length, 0) : domain.Mask(1, domain.Length - 3);
 
         return $"{userName}@{domain}.{suffix}";
     }
@@ -155,8 +155,8 @@ public static partial class MaskHelper
         return length switch
         {
             1 => name,
-            2 => Mask(name, 1, 0),
-            _ => Mask(name, 1, 1),
+            2 => name.Mask(1, 0),
+            _ => name.Mask(1, 1),
         };
     }
 
@@ -175,7 +175,7 @@ public static partial class MaskHelper
         }
 
         var length = address.Length;
-        return length <= 8 ? address : Mask(address, 6, 2);
+        return length <= 8 ? address : address.Mask(6, 2);
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public static partial class MaskHelper
     /// <returns>脱敏后的密码</returns>
     public static string MaskPassword(string password)
     {
-        return string.IsNullOrEmpty(password) ? password : Mask(password, 0, 0);
+        return string.IsNullOrEmpty(password) ? password : password.Mask(0, 0);
     }
 
     /// <summary>
@@ -196,7 +196,7 @@ public static partial class MaskHelper
     /// <returns></returns>
     public static string MaskLicensePlate(string plate)
     {
-        return string.IsNullOrEmpty(plate) ? plate : plate.Length < 2 ? plate : Mask(plate, 2, 1);
+        return string.IsNullOrEmpty(plate) ? plate : plate.Length < 2 ? plate : plate.Mask(2, 1);
     }
 
     /// <summary>

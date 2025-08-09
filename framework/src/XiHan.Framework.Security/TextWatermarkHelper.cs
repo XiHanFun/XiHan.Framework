@@ -14,12 +14,12 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Security.Cryptography;
 using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Text.Json.Serialization;
 using XiHan.Framework.Utils.Verifications;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Security;
 
 /// <summary>
 /// Unicode文本水印帮助类，提供在文本中嵌入不可见水印的功能

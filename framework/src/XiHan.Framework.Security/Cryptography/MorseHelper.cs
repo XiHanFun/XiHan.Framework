@@ -14,7 +14,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security.Cryptography;
+namespace XiHan.Framework.Security.Cryptography;
 
 /// <summary>
 /// 摩尔斯电码编码解码辅助类
@@ -451,11 +451,11 @@ public static class MorseHelper
 
         const double BasicTimeUnit = 0.1; // 假设基本时间单位为0.1秒
 
-        var totalUnits = (dotCount * 1) +           // 点
-                        (dashCount * 3) +           // 划
-                        ((dotCount + dashCount - characterCount) * 1) + // 字符内间隔
-                        ((characterCount - wordCount) * 3) +    // 字符间间隔
-                        ((wordCount - 1) * 7);                 // 单词间间隔
+        var totalUnits = dotCount * 1 +           // 点
+                        dashCount * 3 +           // 划
+                        (dotCount + dashCount - characterCount) * 1 + // 字符内间隔
+                        (characterCount - wordCount) * 3 +    // 字符间间隔
+                        (wordCount - 1) * 7;                 // 单词间间隔
 
         return totalUnits * BasicTimeUnit;
     }

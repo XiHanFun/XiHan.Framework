@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security.Cryptography;
+namespace XiHan.Framework.Security.Cryptography;
 
 /// <summary>
 /// DES 加密解密
