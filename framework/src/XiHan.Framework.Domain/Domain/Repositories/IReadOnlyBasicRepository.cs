@@ -3,22 +3,20 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDomainService
-// Guid:6b27cbb6-af0c-47e6-9cb2-5242c9c3dddf
+// FileName:IReadOnlyBasicRepository
+// Guid:08ae7e59-f747-4d17-843d-b88f8e19654d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/6/2 5:54:03
+// CreateTime:2025/6/2 6:24:49
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-
-namespace XiHan.Framework.Ddd.Domain.Services;
+namespace XiHan.Framework.Domain.Domain.Repositories;
 
 /// <summary>
-/// 领域服务接口
+/// IReadOnlyBasicRepository
 /// </summary>
-public interface IDomainService : ITransientDependency
+public interface IReadOnlyBasicRepository
 {
 }

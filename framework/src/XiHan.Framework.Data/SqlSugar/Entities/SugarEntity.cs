@@ -26,7 +26,7 @@ public abstract class SugarEntity<TKey> where TKey : struct
     /// 主键
     /// </summary>
     [SugarColumn(IsPrimaryKey = true)]
-    public virtual TKey Id { get; set; }
+    public virtual TKey BaseId { get; set; }
 }
 
 /// <summary>
@@ -39,7 +39,7 @@ public abstract class SugarEntityWithIdentity<TKey> where TKey : struct
     /// 主键(自增)
     /// </summary>
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
-    public virtual TKey Id { get; set; }
+    public virtual TKey BaseId { get; set; }
 }
 
 /// <summary>
@@ -52,25 +52,25 @@ public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey 
     /// 创建时间
     /// </summary>
     [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTime CreationTime { get; set; } = DateTime.Now;
+    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.Now;
 
     /// <summary>
     /// 创建者ID
     /// </summary>
     [SugarColumn(ColumnDescription = "创建者ID", IsNullable = true)]
-    public virtual Guid? CreatorId { get; set; }
+    public virtual TKey? CreatorId { get; set; }
 
     /// <summary>
-    /// 最后修改时间
+    /// 修改时间
     /// </summary>
-    [SugarColumn(ColumnDescription = "最后修改时间", IsNullable = true)]
-    public virtual DateTime? LastModificationTime { get; set; }
+    [SugarColumn(ColumnDescription = "修改时间", IsNullable = true)]
+    public virtual DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 最后修改者ID
+    /// 修改者ID
     /// </summary>
-    [SugarColumn(ColumnDescription = "最后修改者ID", IsNullable = true)]
-    public virtual Guid? LastModifierId { get; set; }
+    [SugarColumn(ColumnDescription = "修改者ID", IsNullable = true)]
+    public virtual TKey? ModifierId { get; set; }
 
     /// <summary>
     /// 软删除标记
@@ -82,13 +82,13 @@ public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey 
     /// 删除时间
     /// </summary>
     [SugarColumn(ColumnDescription = "删除时间", IsNullable = true)]
-    public virtual DateTime? DeletionTime { get; set; }
+    public virtual DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
     /// 删除者ID
     /// </summary>
     [SugarColumn(ColumnDescription = "删除者ID", IsNullable = true)]
-    public virtual Guid? DeleterId { get; set; }
+    public virtual TKey? DeleterId { get; set; }
 }
 
 /// <summary>
@@ -101,25 +101,25 @@ public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIde
     /// 创建时间
     /// </summary>
     [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTime CreationTime { get; set; } = DateTime.Now;
+    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.Now;
 
     /// <summary>
     /// 创建者ID
     /// </summary>
     [SugarColumn(ColumnDescription = "创建者ID", IsNullable = true)]
-    public virtual Guid? CreatorId { get; set; }
+    public virtual TKey? CreatorId { get; set; }
 
     /// <summary>
-    /// 最后修改时间
+    /// 修改时间
     /// </summary>
-    [SugarColumn(ColumnDescription = "最后修改时间", IsNullable = true)]
-    public virtual DateTime? LastModificationTime { get; set; }
+    [SugarColumn(ColumnDescription = "修改时间", IsNullable = true)]
+    public virtual DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 最后修改者ID
+    /// 修改者ID
     /// </summary>
-    [SugarColumn(ColumnDescription = "最后修改者ID", IsNullable = true)]
-    public virtual Guid? LastModifierId { get; set; }
+    [SugarColumn(ColumnDescription = "修改者ID", IsNullable = true)]
+    public virtual TKey? ModifierId { get; set; }
 
     /// <summary>
     /// 软删除标记
@@ -131,11 +131,11 @@ public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIde
     /// 删除时间
     /// </summary>
     [SugarColumn(ColumnDescription = "删除时间", IsNullable = true)]
-    public virtual DateTime? DeletionTime { get; set; }
+    public virtual DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
     /// 删除者ID
     /// </summary>
     [SugarColumn(ColumnDescription = "删除者ID", IsNullable = true)]
-    public virtual Guid? DeleterId { get; set; }
+    public virtual TKey? DeleterId { get; set; }
 }

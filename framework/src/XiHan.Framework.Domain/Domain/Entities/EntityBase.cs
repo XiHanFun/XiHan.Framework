@@ -14,7 +14,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace XiHan.Framework.Ddd.Domain.Entities;
+namespace XiHan.Framework.Domain.Domain.Entities;
 
 /// <summary>
 /// 实体基类
