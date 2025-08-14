@@ -3,33 +3,41 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IEntityBase
-// Guid:34b2a763-dc44-4fbd-a625-b650baf5d5d7
+// FileName:AggregateRoot
+// Guid:aaa45b10-aa93-4958-9af0-063ac97ffb26
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/20 2:48:11
+// CreateTime:2025/2/20 4:35:56
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Ddd.Domain.Entities;
+namespace XiHan.Framework.Domain.Domain.Aggregates;
 
 /// <summary>
-/// 实体基类接口
+/// 聚合根
 /// </summary>
-public interface IEntityBase
+public abstract class AggregateRoot : AggregateRootBase
 {
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    protected AggregateRoot()
+    {
+    }
 }
 
 /// <summary>
-/// 泛型主键实体基类接口
+/// 泛型主键聚合根
 /// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public interface IEntityBase<TKey> : IEntityBase
+/// <typeparam name="TKey"></typeparam>
+public abstract class AggregateRoot<TKey> : AggregateRootBase<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 主键
+    /// 构造函数
     /// </summary>
-    TKey BasicId { get; }
+    protected AggregateRoot()
+    {
+    }
 }

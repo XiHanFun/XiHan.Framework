@@ -19,7 +19,7 @@ using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.MultiTenancy.Abstractions;
 
-namespace XiHan.Framework.Ddd.Domain.Services;
+namespace XiHan.Framework.Domain.Domain.Services;
 
 /// <summary>
 /// 领域服务基类

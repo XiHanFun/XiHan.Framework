@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Ddd.Domain.Events;
+namespace XiHan.Framework.Domain.Domain.Events;
 
 /// <summary>
 /// 领域事件接口
