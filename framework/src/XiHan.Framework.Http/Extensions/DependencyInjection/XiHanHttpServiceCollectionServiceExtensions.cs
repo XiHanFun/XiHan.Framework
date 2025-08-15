@@ -255,11 +255,24 @@ public static class XiHanHttpServiceCollectionServiceExtensions
                     durationOfBreak: TimeSpan.FromSeconds(options.CircuitBreakerDurationOfBreakSeconds),
                     onBreak: (exception, duration) =>
                     {
-                        // 可以在这里记录熔断器打开的日志
+                        // 记录熔断器打开的日志
+                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
+                        logger?.LogWarning("断路器已打开 - 失败阈值: {FailureThreshold}, 断开持续时间: {Duration}秒. 异常: {Exception}", 
+                            options.CircuitBreakerFailureThreshold, 
+                            duration.TotalSeconds, 
+                            exception?.Exception?.Message ?? "N/A");
                     },
                     onReset: () =>
                     {
-                        // 可以在这里记录熔断器重置的日志
+                        // 记录熔断器重置的日志
+                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
+                        logger?.LogInformation("断路器已重置 - 允许新的请求通过");
+                    },
+                    onHalfOpen: () =>
+                    {
+                        // 记录熔断器半开状态的日志
+                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
+                        logger?.LogInformation("断路器进入半开状态 - 正在测试服务可用性");
                     });
 
             clientBuilder.AddPolicyHandler(circuitBreakerPolicy);
