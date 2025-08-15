@@ -223,10 +223,8 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     private static void ConfigurePollyPolicies(IHttpClientBuilder clientBuilder, HttpClientOptions options,
         HttpClientConfiguration? clientConfig = null)
     {
-        var enableRetry = clientConfig?.EnableRetry ?? true;
-        var enableCircuitBreaker = clientConfig?.EnableCircuitBreaker ?? true;
-
         // 重试策略
+        var enableRetry = clientConfig?.EnableRetry ?? true;
         if (enableRetry)
         {
             var retryDelays = options.RetryDelaySeconds.Select(s => TimeSpan.FromSeconds(s)).ToArray();
@@ -247,6 +245,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
         clientBuilder.AddPolicyHandler(timeoutPolicy);
 
         // 熔断器策略
+        var enableCircuitBreaker = clientConfig?.EnableCircuitBreaker ?? true;
         if (enableCircuitBreaker)
         {
             var circuitBreakerPolicy = HttpPolicyExtensions

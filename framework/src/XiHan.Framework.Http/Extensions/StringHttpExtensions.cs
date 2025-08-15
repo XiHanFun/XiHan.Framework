@@ -278,6 +278,6 @@ public static class StringHttpExtensions
     private static IAdvancedHttpService GetHttpService()
     {
         return _httpService ?? throw new InvalidOperationException(
-            "HTTP服务未初始化。请在应用启动时调用 StringHttpExtensions.SetHttpService() 方法。");
+            "HTTP服务未初始化。请在应用启动时调用  XiHanHttpApplicationBuilder.InitializeXiHanHttpModule(context.ServiceProvider); 方法。");
     }
 }
