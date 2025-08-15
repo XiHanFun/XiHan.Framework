@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.CircuitBreaker;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
@@ -383,6 +384,17 @@ public class AdvancedHttpService : IAdvancedHttpService
 
             return result;
         }
+        catch (BrokenCircuitException ex)
+        {
+            stopwatch.Stop();
+            var errorMessage = $"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
+            
+            _logger.LogWarning(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求ID: {RequestId}, " +
+                "断路器将在 {DurationSeconds} 秒后重置", 
+                url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
+
+            return HttpResult.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex);
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();
@@ -537,6 +549,19 @@ public class AdvancedHttpService : IAdvancedHttpService
             }
 
             return result;
+        }
+        catch (BrokenCircuitException ex)
+        {
+            stopwatch.Stop();
+            var errorMessage = $"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
+            
+            _logger.LogWarning(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求ID: {RequestId}, " +
+                "断路器将在 {DurationSeconds} 秒后重置", 
+                method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
+
+            return HttpResult<T>.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
         }
         catch (Exception ex)
         {
