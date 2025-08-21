@@ -28,7 +28,7 @@ public static class AsyncExtensions
     /// <param name="method">要检查的方法</param>
     public static bool IsAsync(this MethodInfo method)
     {
-        _ = Guard.NotNull(method, nameof(method));
+        ArgumentNullException.ThrowIfNull(method, nameof(method));
 
         return method.ReturnType.IsTaskOrTaskOfT();
     }

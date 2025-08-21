@@ -74,55 +74,6 @@ public static class HardwareInfoManager
             return new SystemHardwareSummary();
         }
     }
-
-    /// <summary>
-    /// 获取硬件信息诊断报告
-    /// </summary>
-    /// <returns>诊断报告</returns>
-    public static HardwareDiagnosticReport GetDiagnosticReport()
-    {
-        var report = new HardwareDiagnosticReport();
-
-        try
-        {
-            var cpuInfo = CpuHelper.CpuInfos;
-            var ramInfo = RamHelper.RamInfos;
-            var diskInfos = DiskHelper.DiskInfos;
-
-            // CPU诊断
-            if (cpuInfo.UsagePercentage > 90)
-            {
-                report.Issues.Add("CPU使用率过高 (>90%)");
-            }
-
-            // 内存诊断
-            if (ramInfo.UsagePercentage > 90)
-            {
-                report.Issues.Add("内存使用率过高 (>90%)");
-            }
-            if (ramInfo.AvailablePercentage < 5)
-            {
-                report.Issues.Add("可用内存不足 (<5%)");
-            }
-
-            // 磁盘诊断
-            foreach (var disk in diskInfos)
-            {
-                if (disk.AvailableRate < 10)
-                {
-                    report.Issues.Add($"磁盘 {disk.DiskName} 可用空间不足 (<10%)");
-                }
-            }
-
-            report.Status = report.Issues.Count == 0 ? "正常" : "发现问题";
-        }
-        catch (Exception)
-        {
-            report.Status = "诊断失败";
-        }
-
-        return report;
-    }
 }
 
 /// <summary>
@@ -210,25 +161,4 @@ public record SystemHardwareSummary
     /// 主要GPU
     /// </summary>
     public string PrimaryGpu { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// 硬件诊断报告
-/// </summary>
-public record HardwareDiagnosticReport
-{
-    /// <summary>
-    /// 诊断状态
-    /// </summary>
-    public string Status { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 发现的问题列表
-    /// </summary>
-    public List<string> Issues { get; set; } = [];
-
-    /// <summary>
-    /// 建议列表
-    /// </summary>
-    public List<string> Recommendations { get; set; } = [];
 }

@@ -26,7 +26,7 @@ public static class AsyncHelper
     /// </summary>
     public static Type UnwrapTask(Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return type == typeof(Task) ? typeof(void) : type.IsTaskOfT() ? type.GenericTypeArguments[0] : type;
     }

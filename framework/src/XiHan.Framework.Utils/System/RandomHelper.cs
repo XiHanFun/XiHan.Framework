@@ -35,7 +35,7 @@ public static class RandomHelper
     public static string GetRandom(int length, string source)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
-        _ = Guard.NotNullOrEmpty(source, nameof(source));
+        ArgumentNullException.ThrowIfNullOrEmpty(source, nameof(source));
 
         StringBuilder result = new();
 
@@ -100,7 +100,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static T GetRandomOf<T>(params T[] objs)
     {
-        _ = Guard.NotNullOrEmpty(objs, nameof(objs));
+        Guard.NotNullOrEmpty(objs, nameof(objs));
 
         return objs[GetRandom(0, objs.Length)];
     }
@@ -113,7 +113,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static T GetRandomOfList<T>(IList<T> list)
     {
-        _ = Guard.NotNullOrEmpty(list, nameof(list));
+        Guard.NotNullOrEmpty(list, nameof(list));
 
         return list[GetRandom(0, list.Count)];
     }
