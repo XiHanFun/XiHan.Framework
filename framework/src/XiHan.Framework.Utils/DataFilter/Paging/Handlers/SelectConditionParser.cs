@@ -29,7 +29,7 @@ public static class SelectConditionParser<T>
     /// <summary>
     /// 键选择器缓存
     /// </summary>
-    private static readonly ConcurrentDictionary<string, MemberExpression> _selectConditionMemberParserCache = new();
+    private static readonly ConcurrentDictionary<string, MemberExpression> SelectConditionMemberParserCache = new();
 
     /// <summary>
     /// 获取选择条件解析器
@@ -65,12 +65,12 @@ public static class SelectConditionParser<T>
 
         var param = Expression.Parameter(type);
 
-        if (!_selectConditionMemberParserCache.TryGetValue(key, out var propertyAccess))
+        if (!SelectConditionMemberParserCache.TryGetValue(key, out var propertyAccess))
         {
             var property = type.GetPropertyInfo(propertyName);
             propertyAccess = Expression.MakeMemberAccess(param, property);
 
-            _ = _selectConditionMemberParserCache.TryAdd(key, propertyAccess);
+            _ = SelectConditionMemberParserCache.TryAdd(key, propertyAccess);
         }
 
         // 生成比较表达式
