@@ -31,7 +31,7 @@ public static class DiskHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static List<DiskInfo> DiskInfos => CacheManager.Instance.DefaultCache.GetOrAdd("DiskInfos", () => GetDiskInfos(), TimeSpan.FromMinutes(1));
+    public static List<DiskInfo> DiskInfos => CacheHelper.GetOrAdd("DiskInfos", () => GetDiskInfos(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取磁盘信息

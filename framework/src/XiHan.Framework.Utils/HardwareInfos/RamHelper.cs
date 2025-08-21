@@ -32,7 +32,7 @@ public static class RamHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static RamInfo RamInfos => CacheManager.Instance.DefaultCache.GetOrAdd("RamInfos", () => GetRamInfos(), TimeSpan.FromMinutes(1));
+    public static RamInfo RamInfos => CacheHelper.GetOrAdd("RamInfos", () => GetRamInfos(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取内存信息

@@ -37,7 +37,7 @@ public static class CultureHelper
     /// <returns></returns>
     public static IDisposable Use(string culture, string? uiCulture = null)
     {
-        _ = Guard.NotNull(culture, nameof(culture));
+        ArgumentNullException.ThrowIfNull(culture, nameof(culture));
 
         return Use(
             new CultureInfo(culture),
@@ -55,7 +55,7 @@ public static class CultureHelper
     /// <returns></returns>
     public static IDisposable Use(CultureInfo culture, CultureInfo? uiCulture = null)
     {
-        _ = Guard.NotNull(culture, nameof(culture));
+        ArgumentNullException.ThrowIfNull(culture, nameof(culture));
 
         var currentCulture = CultureInfo.CurrentCulture;
         var currentUiCulture = CultureInfo.CurrentUICulture;

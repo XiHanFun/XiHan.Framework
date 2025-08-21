@@ -54,7 +54,7 @@ public static class TypeExtensions
     /// <returns>是返回 True，不是返回 False</returns>
     public static bool IsEnumerable(this Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type);
     }
@@ -68,7 +68,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static bool IsAssignableTo<TBaseType>(this Type type, bool canAbstract = false)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return type.IsAssignableTo(typeof(TBaseType), canAbstract);
     }
@@ -82,7 +82,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static bool IsAssignableTo(this Type type, Type baseType, bool canAbstract = false)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return type.IsClass && (canAbstract || !type.IsAbstract) && type.IsAssignableFrom(baseType);
     }
@@ -96,8 +96,8 @@ public static class TypeExtensions
     /// <exception cref="ArgumentException">当 genericType 不是泛型类型时抛出</exception>
     public static bool IsAssignableToGeneric(this Type type, Type genericType)
     {
-        _ = Guard.NotNull(type, nameof(type));
-        _ = Guard.NotNull(genericType, nameof(genericType));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(genericType, nameof(genericType));
 
         if (!genericType.IsGenericType)
         {
@@ -162,7 +162,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static bool IsAssignableFrom(this Type type, Type baseType)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return baseType.IsGenericTypeDefinition
             ? baseType.IsAssignableFromGeneric(type)
@@ -177,7 +177,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static bool IsAssignableFrom<TBaseType>(this Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         var baseType = typeof(TBaseType);
         return type.IsAssignableFrom(baseType);
@@ -192,7 +192,7 @@ public static class TypeExtensions
     /// <exception cref="ArgumentException"></exception>
     public static bool IsAssignableFromGeneric(this Type genericType, Type baseType)
     {
-        _ = Guard.NotNull(genericType, nameof(genericType));
+        ArgumentNullException.ThrowIfNull(genericType, nameof(genericType));
 
         if (!genericType.IsGenericType)
         {
@@ -253,7 +253,7 @@ public static class TypeExtensions
     /// <param name="includeObject">如果为 true，则在返回结果中包含标准的 <see cref="object"/> 类型</param>
     public static Type[] GetBaseClasses(this Type type, bool includeObject = true)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         var types = new List<Type>();
         AddTypeAndBaseTypesRecursively(types, type.BaseType, includeObject);
@@ -268,7 +268,7 @@ public static class TypeExtensions
     /// <param name="includeObject">如果为 true，则在返回结果中包含标准的 <see cref="object"/> 类型</param>
     public static Type[] GetBaseClasses(this Type type, Type stoppingType, bool includeObject = true)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         var types = new List<Type>();
         AddTypeAndBaseTypesRecursively(types, type.BaseType, includeObject, stoppingType);
@@ -317,7 +317,7 @@ public static class TypeExtensions
     /// <returns>返回 Description 特性描述信息，如不存在则返回类型的全名</returns>
     public static string GetDescription(this Type type, bool inherit = true)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         var result = string.Empty;
         var fullName = type.FullName ?? result;
@@ -346,7 +346,7 @@ public static class TypeExtensions
     /// <returns></returns>
     public static string GetFullNameWithAssemblyName(this Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return $"{type.FullName},{type.Assembly.GetName().Name}";
     }
@@ -356,7 +356,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetFullNameWithModule(this Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return $"{type.FullName},{type.Module.Name.Replace(".dll", string.Empty).Replace(".exe", string.Empty)}";
     }
@@ -366,7 +366,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetShortDisplayName(this Type type)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         return type.GetDisplayName(false);
     }
@@ -376,7 +376,7 @@ public static class TypeExtensions
     /// </summary>
     public static string GetDisplayName(this Type type, bool fullName = true)
     {
-        _ = Guard.NotNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
 
         StringBuilder sb = new();
         ProcessType(sb, type, fullName);

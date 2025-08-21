@@ -191,7 +191,36 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, int expireSeconds = 3600)
     {
-        return GetOrAdd(key, factory, DateTimeOffset.Now.AddSeconds(expireSeconds));
+        var value = Get<T>(key);
+        if (value != null)
+        {
+            return value;
+        }
+
+        value = factory();
+        Set(key, value, expireSeconds);
+        return value;
+    }
+
+    /// <summary>
+    /// 获取或添加缓存
+    /// </summary>
+    /// <typeparam name="T">缓存值类型</typeparam>
+    /// <param name="key">缓存键</param>
+    /// <param name="factory">创建缓存值的工厂方法</param>
+    /// <param name="expireSpan">过期时间间隔</param>
+    /// <returns>缓存值</returns>
+    public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expireSpan)
+    {
+        var value = Get<T>(key);
+        if (value != null)
+        {
+            return value;
+        }
+
+        value = factory();
+        Set(key, value, expireSpan);
+        return value;
     }
 
     /// <summary>

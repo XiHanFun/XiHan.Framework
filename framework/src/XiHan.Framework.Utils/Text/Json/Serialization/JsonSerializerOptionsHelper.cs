@@ -29,7 +29,7 @@ public static class JsonSerializerOptionsHelper
     /// <summary>
     /// 公共参数
     /// </summary>
-    public static JsonSerializerOptions DefaultJsonSerializerOptions => CacheManager.Instance.DefaultCache.GetOrAdd("JsonSerializerOptions", () => GetDefaultJsonSerializerOptions());
+    public static JsonSerializerOptions DefaultJsonSerializerOptions => CacheHelper.GetOrAdd("JsonSerializerOptions", () => GetDefaultJsonSerializerOptions());
 
     /// <summary>
     /// 获取默认序列化参数

@@ -79,7 +79,7 @@ public static class EnumerableExtensions
     /// <exception cref="ArgumentException">当列表为空时抛出异常</exception>
     public static T GetRandom<T>(this IEnumerable<T> source)
     {
-        _ = Guard.NotNull(source, nameof(source));
+        ArgumentNullException.ThrowIfNull(source, nameof(source));
 
         if (!source.Any())
         {

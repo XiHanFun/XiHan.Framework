@@ -31,7 +31,7 @@ public static class RunningTimeHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static string RunningTime => CacheManager.Instance.DefaultCache.GetOrAdd("RunningTime", () => GetRunningTime(), TimeSpan.FromMinutes(1));
+    public static string RunningTime => CacheHelper.GetOrAdd("RunningTime", () => GetRunningTime(), TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取系统运行时间

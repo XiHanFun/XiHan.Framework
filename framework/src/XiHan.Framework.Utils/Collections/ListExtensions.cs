@@ -293,7 +293,7 @@ public static class ListExtensions
     /// <returns>返回找到的项或新添加的项</returns>
     public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory)
     {
-        _ = Guard.NotNull(source, nameof(source));
+        ArgumentNullException.ThrowIfNull(source, nameof(source));
 
         var item = source.FirstOrDefault(selector);
 
@@ -317,7 +317,7 @@ public static class ListExtensions
     /// <exception cref="ArgumentException">当列表为空时抛出异常</exception>
     public static T GetRandom<T>(this IList<T> source)
     {
-        _ = Guard.NotNull(source, nameof(source));
+        ArgumentNullException.ThrowIfNull(source, nameof(source));
 
         if (source.Count == 0)
         {
@@ -337,7 +337,7 @@ public static class ListExtensions
     /// <returns>如果列表不为空则返回 true，否则返回 false</returns>
     public static bool TryGetRandom<T>(this IList<T> source, out T? result)
     {
-        _ = Guard.NotNull(source, nameof(source));
+        ArgumentNullException.ThrowIfNull(source, nameof(source));
 
         if (source.Count == 0)
         {
