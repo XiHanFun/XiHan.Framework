@@ -29,7 +29,7 @@ public class DisposeAction : IDisposable
     /// <param name="action">此对象被处理时所执行的动作</param>
     public DisposeAction(Action action)
     {
-        _ = Guard.NotNull(action, nameof(action));
+        ArgumentNullException.ThrowIfNull(action, nameof(action));
 
         _action = action;
     }
@@ -61,7 +61,7 @@ public class DisposeAction<T> : IDisposable
     /// <param name="parameter">动作的参数</param>
     public DisposeAction(Action<T> action, T parameter)
     {
-        _ = Guard.NotNull(action, nameof(action));
+        ArgumentNullException.ThrowIfNull(action, nameof(action));
 
         _action = action;
         _parameter = parameter;
