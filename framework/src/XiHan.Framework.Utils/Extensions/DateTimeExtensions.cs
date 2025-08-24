@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DateTimeFormatExtensions
+// FileName:DateTimeExtensions
 // Guid:a054878b-e7e1-4460-84fd-4bb856d375ff
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.Extensions;
 /// <summary>
 /// DateTime 扩展方法
 /// </summary>
-public static class DateTimeFormatExtensions
+public static class DateTimeExtensions
 {
     /// <summary>
     /// 获取当前时间的时间戳

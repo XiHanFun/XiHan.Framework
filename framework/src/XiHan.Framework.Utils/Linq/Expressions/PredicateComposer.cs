@@ -356,11 +356,11 @@ public static class PredicateComposer
         Func<Expression, Expression, BinaryExpression> merge)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
-        
+
         // 替换参数
         var firstBody = new ParameterReplacer(first.Parameters[0], parameter).Visit(first.Body);
         var secondBody = new ParameterReplacer(second.Parameters[0], parameter).Visit(second.Body);
-        
+
         var body = merge(firstBody!, secondBody!);
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }

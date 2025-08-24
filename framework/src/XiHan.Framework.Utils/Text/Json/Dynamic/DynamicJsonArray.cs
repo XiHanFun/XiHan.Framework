@@ -40,11 +40,6 @@ public class DynamicJsonArray : DynamicJsonBase, IList<object?>
     }
 
     /// <summary>
-    /// 获取原始值（列表形式）
-    /// </summary>
-    public override object? Value => _data;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="data">初始数据</param>
@@ -52,6 +47,11 @@ public class DynamicJsonArray : DynamicJsonBase, IList<object?>
     {
         _data = [.. data];
     }
+
+    /// <summary>
+    /// 获取原始值（列表形式）
+    /// </summary>
+    public override object? Value => _data;
 
     /// <summary>
     /// 元素数量

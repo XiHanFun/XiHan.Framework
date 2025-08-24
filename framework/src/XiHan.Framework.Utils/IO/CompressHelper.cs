@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.IO.Compression;
-using XiHan.Framework.Utils.IO.Enums;
 
 namespace XiHan.Framework.Utils.IO;
 
@@ -155,4 +154,25 @@ public static class CompressHelper
         using var destinationStream = File.Create(Path.Combine(extractPath, Path.GetFileNameWithoutExtension(archivePath)));
         deflateStream.CopyTo(destinationStream);
     }
+}
+
+/// <summary>
+/// 压缩格式
+/// </summary>
+public enum CompressionFormat
+{
+    /// <summary>
+    /// ZIP格式
+    /// </summary>
+    Zip,
+
+    /// <summary>
+    /// GZIP格式
+    /// </summary>
+    GZip,
+
+    /// <summary>
+    /// DEFLATE格式
+    /// </summary>
+    Deflate
 }
