@@ -51,4 +51,4 @@ public interface IDynamicJson
     /// </summary>
     /// <returns>动态对象</returns>
     dynamic AsDynamic();
-} 
+}

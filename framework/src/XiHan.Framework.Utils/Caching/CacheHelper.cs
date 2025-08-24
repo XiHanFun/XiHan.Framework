@@ -93,7 +93,7 @@ public static class CacheHelper
     /// <typeparam name="T">缓存值类型</typeparam>
     /// <param name="key">缓存键</param>
     /// <param name="value">缓存值</param>
-    /// <param name="expireSeconds">过期秒数</param>
+    /// <param name="expireSeconds">过期秒数，默认 3600</param>
     public static void Set<T>(string key, T value, int expireSeconds = 3600)
     {
         Set(key, value, DateTimeOffset.Now.AddSeconds(expireSeconds));
@@ -295,7 +295,7 @@ public static class CacheHelper
     /// </summary>
     /// <typeparam name="T">缓存值类型</typeparam>
     /// <param name="items">键值对集合</param>
-    /// <param name="expireSeconds">过期秒数</param>
+    /// <param name="expireSeconds">过期秒数，默认 3600</param>
     public static void SetAll<T>(IEnumerable<KeyValuePair<string, T>> items, int expireSeconds = 3600)
     {
         var expireTime = DateTimeOffset.Now.AddSeconds(expireSeconds);
