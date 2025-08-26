@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
+using XiHan.Framework.Utils.Objects;
 
 namespace XiHan.Framework.Uow.Extensions;
 

@@ -14,8 +14,8 @@
 
 using XiHan.Framework.Localization;
 using XiHan.Framework.ObjectMapping.Modularity;
+using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Reflections;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.ObjectMapping;
 

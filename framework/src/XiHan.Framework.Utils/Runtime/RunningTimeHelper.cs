@@ -77,7 +77,7 @@ public static class RunningTimeHelper
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error("获取系统运行时间出错，" + ex.Message);
+            LogHelper.Error("获取系统运行时间出错，" + ex.Message);
         }
 
         return runTime;
