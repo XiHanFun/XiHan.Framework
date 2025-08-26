@@ -28,7 +28,7 @@ public class CustomException : Exception
     /// </summary>
     public CustomException() : base(DefaultMessage)
     {
-        ConsoleLogger.Error(DefaultMessage);
+        LogHelper.Error(DefaultMessage);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class CustomException : Exception
     /// <param name="message"></param>
     public CustomException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleLogger.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 
     /// <summary>
@@ -47,6 +47,6 @@ public class CustomException : Exception
     /// <param name="exception"></param>
     public CustomException(string? message, Exception? exception) : base(DefaultMessage + message, exception)
     {
-        ConsoleLogger.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 }

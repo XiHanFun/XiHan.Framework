@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Threading;

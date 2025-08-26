@@ -32,7 +32,7 @@ using XiHan.Framework.Threading.Extensions;
 using XiHan.Framework.Uow;
 using XiHan.Framework.Uow.Extensions;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Extensions;
+using XiHan.Framework.Utils.Objects;
 
 namespace XiHan.Framework.Caching.Hybrid;
 

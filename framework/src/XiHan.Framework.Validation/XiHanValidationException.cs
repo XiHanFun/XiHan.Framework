@@ -19,7 +19,7 @@ using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Abstracts;
 using XiHan.Framework.Core.Extensions.Logging;
 using XiHan.Framework.Core.Logging;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Validation;
 

@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Collections;
 using XiHan.Framework.Core.DynamicProxy;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.DependencyInjection;
 

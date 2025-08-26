@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Enums;
+using XiHan.Framework.Utils.Conversions;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Themes;
 

@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using XiHan.Framework.Utils.HardwareInfos;
+using XiHan.Framework.Utils.Diagnostics.HardwareInfos;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;

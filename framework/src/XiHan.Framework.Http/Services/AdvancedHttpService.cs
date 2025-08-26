@@ -23,7 +23,7 @@ using System.Text.Json;
 using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
-using XiHan.Framework.Utils.Text.Json;
+using XiHan.Framework.Utils.Serialization.Json;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;

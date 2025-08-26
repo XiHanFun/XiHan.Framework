@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions.Abstracts;
 using XiHan.Framework.Core.Extensions.Logging;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.Exceptions.Handling;
 

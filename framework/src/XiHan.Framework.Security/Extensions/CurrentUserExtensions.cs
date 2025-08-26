@@ -16,6 +16,7 @@ using System.Diagnostics;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Utils.Extensions;
+using XiHan.Framework.Utils.Objects;
 
 namespace XiHan.Framework.Security.Extensions;
 
