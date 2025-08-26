@@ -17,7 +17,7 @@ using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Uow.Extensions;
 using XiHan.Framework.Uow.Options;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Uow;
 

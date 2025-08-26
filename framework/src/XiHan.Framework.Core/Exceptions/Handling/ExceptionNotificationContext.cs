@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Core.Extensions.Exceptions;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.Exceptions.Handling;
 

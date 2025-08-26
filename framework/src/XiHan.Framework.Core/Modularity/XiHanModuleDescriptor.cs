@@ -14,7 +14,7 @@
 
 using System.Reflection;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.Modularity;
 

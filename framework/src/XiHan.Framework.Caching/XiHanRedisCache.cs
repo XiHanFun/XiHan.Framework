@@ -20,8 +20,8 @@ using System.Buffers;
 using System.Reflection;
 using System.Text;
 using XiHan.Framework.Core.DependencyInjection;
-using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
+using XiHan.Framework.Utils.Objects;
 
 namespace XiHan.Framework.Caching;
 

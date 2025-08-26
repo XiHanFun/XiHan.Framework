@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Core.Application;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.Extensions.Hosting;
 

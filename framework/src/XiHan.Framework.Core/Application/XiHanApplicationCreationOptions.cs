@@ -15,7 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Configuration;
 using XiHan.Framework.Core.Modularity.PlugIns;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Core.Application;
 

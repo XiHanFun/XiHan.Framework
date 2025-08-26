@@ -14,7 +14,7 @@
 
 using XiHan.Framework.ObjectMapping.Data;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.EventBus.Abstractions.Distributed;
 

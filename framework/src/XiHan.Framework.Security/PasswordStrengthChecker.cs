@@ -14,7 +14,7 @@
 
 using System.Text;
 using XiHan.Framework.Utils.Constants;
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.Security;
 

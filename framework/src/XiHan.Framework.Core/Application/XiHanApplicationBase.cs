@@ -22,9 +22,9 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
 using XiHan.Framework.Core.Logging;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.System;
 
 namespace XiHan.Framework.Core.Application;
 
@@ -45,9 +45,9 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
         _ = Guard.NotNull(services, nameof(services));
-        ConsoleLogger.SetIsDisplayHeader(false);
-        ConsoleLogger.Rainbow(XiHan.Logo);
-        ConsoleLogger.Info(XiHan.GetSummary());
+        LogHelper.SetIsDisplayHeader(false);
+        LogHelper.Rainbow(XiHan.Logo);
+        LogHelper.Info(XiHan.GetSummary());
 
         // 设置启动模块
         StartupModuleType = startupModuleType;
@@ -83,7 +83,7 @@ public class XiHanApplicationBase : IXiHanApplication
         {
             ConfigureServices();
         }
-        ConsoleLogger.SetIsDisplayHeader(true);
+        LogHelper.SetIsDisplayHeader(true);
     }
 
     /// <summary>
