@@ -12,21 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:YamlExtensions
-// Guid:3e0d9f34-1771-4b90-bf9b-6ce71dc6d808
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/6 8:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
-
 using XiHan.Framework.Utils.Text.Yaml;
 
 namespace XiHan.Framework.Utils.Serialization.Yaml;

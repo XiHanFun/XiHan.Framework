@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Serialization.Json;
 /// </summary>
 public static class JsonFileHelper
 {
-    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializeOptions.DefaultJsonSerializeOptions;
 
     #region 基础文件操作
 

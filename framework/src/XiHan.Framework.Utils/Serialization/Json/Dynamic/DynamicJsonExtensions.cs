@@ -15,7 +15,7 @@
 using System.Dynamic;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 扩展方法

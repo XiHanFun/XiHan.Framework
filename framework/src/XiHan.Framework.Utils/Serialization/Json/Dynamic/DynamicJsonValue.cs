@@ -18,7 +18,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 值，支持各种类型的转换和动态操作

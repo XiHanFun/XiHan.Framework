@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XmlDeserializationOptions
+// FileName:XmlDeserializeOptions
 // Guid:984689b5-7ba5-4a1a-b85e-07aadcd06c72
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,19 +17,19 @@ namespace XiHan.Framework.Utils.Serialization.Xml;
 /// <summary>
 /// XML 反序列化选项
 /// </summary>
-public class XmlDeserializationOptions
+public class XmlDeserializeOptions
 {
     /// <summary>
     /// 创建默认选项
     /// </summary>
     /// <returns>默认反序列化选项</returns>
-    public static XmlDeserializationOptions Default => new();
+    public static XmlDeserializeOptions Default => new();
 
     /// <summary>
     /// 创建严格模式选项（不忽略任何内容，启用验证）
     /// </summary>
     /// <returns>严格模式选项</returns>
-    public static XmlDeserializationOptions Strict => new()
+    public static XmlDeserializeOptions Strict => new()
     {
         IgnoreWhitespace = false,
         IgnoreComments = false,
@@ -42,7 +42,7 @@ public class XmlDeserializationOptions
     /// 创建宽松模式选项（忽略所有非必要内容）
     /// </summary>
     /// <returns>宽松模式选项</returns>
-    public static XmlDeserializationOptions Lenient => new()
+    public static XmlDeserializeOptions Lenient => new()
     {
         IgnoreWhitespace = true,
         IgnoreComments = true,
