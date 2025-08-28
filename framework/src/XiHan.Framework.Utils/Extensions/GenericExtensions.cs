@@ -239,7 +239,7 @@ public static class GenericExtensions
                 s.After
             })
         };
-        return enumerable.SerializeTo();
+        return enumerable.ToJson();
     }
 
     #endregion 属性信息
