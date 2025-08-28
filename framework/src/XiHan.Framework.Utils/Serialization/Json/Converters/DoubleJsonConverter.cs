@@ -1,13 +1,13 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IntJsonConverter
-// Guid:b7dc3b41-c151-4ed0-a5ee-92325a1e2be7
+// FileName:DoubleJsonConverter
+// Guid:3f5a8b2c-9d4e-4f1a-8c7b-6e5d4c3b2a19
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreatedTime:2023-04-25 下午 11:04:00
+// CreatedTime:2025-01-06 下午 02:30:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -18,9 +18,9 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 
 /// <summary>
-/// IntJsonConverter
+/// DoubleJsonConverter
 /// </summary>
-public class IntJsonConverter : JsonConverter<int>
+public class DoubleJsonConverter : JsonConverter<double>
 {
     /// <summary>
     /// 读
@@ -29,13 +29,13 @@ public class IntJsonConverter : JsonConverter<int>
     /// <param name="typeToConvert"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
-            JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String when int.TryParse(reader.GetString(), out var value) => value,
-            _ => 0
+            JsonTokenType.Number => reader.GetDouble(),
+            JsonTokenType.String when double.TryParse(reader.GetString(), out var value) => value,
+            _ => 0.0
         };
     }
 
@@ -45,16 +45,16 @@ public class IntJsonConverter : JsonConverter<int>
     /// <param name="writer"></param>
     /// <param name="value"></param>
     /// <param name="options"></param>
-    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
     {
         writer.WriteNumberValue(value);
     }
 }
 
 /// <summary>
-/// IntNullableConverter
+/// DoubleNullableConverter
 /// </summary>
-public class IntNullableConverter : JsonConverter<int?>
+public class DoubleNullableConverter : JsonConverter<double?>
 {
     /// <summary>
     /// 读
@@ -63,12 +63,12 @@ public class IntNullableConverter : JsonConverter<int?>
     /// <param name="typeToConvert"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
-            JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String when int.TryParse(reader.GetString(), out var value) => value,
+            JsonTokenType.Number => reader.GetDouble(),
+            JsonTokenType.String when double.TryParse(reader.GetString(), out var value) => value,
             JsonTokenType.Null => null,
             _ => null
         };
@@ -80,7 +80,7 @@ public class IntNullableConverter : JsonConverter<int?>
     /// <param name="writer"></param>
     /// <param name="value"></param>
     /// <param name="options"></param>
-    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options)
     {
         switch (value.HasValue)
         {

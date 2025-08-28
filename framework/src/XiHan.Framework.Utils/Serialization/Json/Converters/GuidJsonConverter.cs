@@ -1,13 +1,13 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IntJsonConverter
-// Guid:b7dc3b41-c151-4ed0-a5ee-92325a1e2be7
+// FileName:GuidJsonConverter
+// Guid:4a094827-1c6b-0b5a-9948-3d2c1b0a9876
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreatedTime:2023-04-25 下午 11:04:00
+// CreatedTime:2025-01-06 下午 03:20:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -18,9 +18,9 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 
 /// <summary>
-/// IntJsonConverter
+/// GuidJsonConverter
 /// </summary>
-public class IntJsonConverter : JsonConverter<int>
+public class GuidJsonConverter : JsonConverter<Guid>
 {
     /// <summary>
     /// 读
@@ -29,13 +29,12 @@ public class IntJsonConverter : JsonConverter<int>
     /// <param name="typeToConvert"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
-            JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String when int.TryParse(reader.GetString(), out var value) => value,
-            _ => 0
+            JsonTokenType.String when Guid.TryParse(reader.GetString(), out var value) => value,
+            _ => Guid.Empty
         };
     }
 
@@ -45,16 +44,16 @@ public class IntJsonConverter : JsonConverter<int>
     /// <param name="writer"></param>
     /// <param name="value"></param>
     /// <param name="options"></param>
-    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
     {
-        writer.WriteNumberValue(value);
+        writer.WriteStringValue(value.ToString());
     }
 }
 
 /// <summary>
-/// IntNullableConverter
+/// GuidNullableConverter
 /// </summary>
-public class IntNullableConverter : JsonConverter<int?>
+public class GuidNullableConverter : JsonConverter<Guid?>
 {
     /// <summary>
     /// 读
@@ -63,12 +62,11 @@ public class IntNullableConverter : JsonConverter<int?>
     /// <param name="typeToConvert"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override Guid? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
-            JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String when int.TryParse(reader.GetString(), out var value) => value,
+            JsonTokenType.String when Guid.TryParse(reader.GetString(), out var value) => value,
             JsonTokenType.Null => null,
             _ => null
         };
@@ -80,12 +78,12 @@ public class IntNullableConverter : JsonConverter<int?>
     /// <param name="writer"></param>
     /// <param name="value"></param>
     /// <param name="options"></param>
-    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, Guid? value, JsonSerializerOptions options)
     {
         switch (value.HasValue)
         {
             case true:
-                writer.WriteNumberValue(value.Value);
+                writer.WriteStringValue(value.Value.ToString());
                 break;
 
             case false:

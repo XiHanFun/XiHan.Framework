@@ -68,7 +68,8 @@ public class JsonDeserializeOptions
         ReadCommentHandling = true,
         IgnoreUnknownProperties = true,
         UseDefaultValues = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        CustomConverters = JsonConverterFactory.GetAllConverters()
     };
 
     /// <summary>

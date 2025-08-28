@@ -50,7 +50,11 @@ public class TimeOnlyJsonConverter : JsonConverter<TimeOnly>
     /// <returns></returns>
     public override TimeOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String ? default : TimeOnly.TryParse(reader.GetString(), out var time) ? time : default;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when TimeOnly.TryParse(reader.GetString(), out var value) => value,
+            _ => default
+        };
     }
 
     /// <summary>
@@ -98,7 +102,12 @@ public class TimeOnlyNullableConverter : JsonConverter<TimeOnly?>
     /// <returns></returns>
     public override TimeOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String ? null : TimeOnly.TryParse(reader.GetString(), out var time) ? time : null;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when TimeOnly.TryParse(reader.GetString(), out var value) => value,
+            JsonTokenType.Null => null,
+            _ => null
+        };
     }
 
     /// <summary>
@@ -109,6 +118,15 @@ public class TimeOnlyNullableConverter : JsonConverter<TimeOnly?>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, TimeOnly? value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value?.ToString(_dateFormatString));
+        switch (value.HasValue)
+        {
+            case true:
+                writer.WriteStringValue(value.Value.ToString(_dateFormatString));
+                break;
+
+            case false:
+                writer.WriteNullValue();
+                break;
+        }
     }
 }
