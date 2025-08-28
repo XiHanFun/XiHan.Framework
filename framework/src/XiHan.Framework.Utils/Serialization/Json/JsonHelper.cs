@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -562,37 +563,14 @@ public static class JsonHelper
         {
             // 先格式化为标准格式，再计算哈希
             var normalized = CompressJson(json);
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
             var bytes = Encoding.UTF8.GetBytes(normalized);
-            var hash = sha256.ComputeHash(bytes);
+            var hash = SHA256.HashData(bytes);
             return Convert.ToHexString(hash);
         }
         catch
         {
             return string.Empty;
         }
-    }
-
-    /// <summary>
-    /// 获取 JSON 的基本统计信息
-    /// </summary>
-    /// <param name="json">JSON 字符串</param>
-    /// <returns>统计信息</returns>
-    public static JsonStatistics GetStatistics(string json)
-    {
-        var stats = new JsonStatistics();
-
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-            AnalyzeJsonElement(document.RootElement, stats, 0);
-        }
-        catch
-        {
-            // 解析失败时返回空统计
-        }
-
-        return stats;
     }
 
     /// <summary>
@@ -928,108 +906,5 @@ public static class JsonHelper
         return true;
     }
 
-    /// <summary>
-    /// 分析 JSON 元素统计信息
-    /// </summary>
-    private static void AnalyzeJsonElement(JsonElement element, JsonStatistics stats, int depth)
-    {
-        stats.MaxDepth = Math.Max(stats.MaxDepth, depth);
-
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                stats.ObjectCount++;
-                foreach (var property in element.EnumerateObject())
-                {
-                    stats.PropertyCount++;
-                    AnalyzeJsonElement(property.Value, stats, depth + 1);
-                }
-                break;
-
-            case JsonValueKind.Array:
-                stats.ArrayCount++;
-                var arrayLength = element.GetArrayLength();
-                stats.ArrayElementCount += arrayLength;
-                foreach (var item in element.EnumerateArray())
-                {
-                    AnalyzeJsonElement(item, stats, depth + 1);
-                }
-                break;
-
-            case JsonValueKind.String:
-                stats.StringCount++;
-                break;
-
-            case JsonValueKind.Number:
-                stats.NumberCount++;
-                break;
-
-            case JsonValueKind.True:
-            case JsonValueKind.False:
-                stats.BooleanCount++;
-                break;
-
-            case JsonValueKind.Null:
-                stats.NullCount++;
-                break;
-        }
-    }
-
     #endregion 私有辅助方法
-}
-
-/// <summary>
-/// JSON 统计信息
-/// </summary>
-public class JsonStatistics
-{
-    /// <summary>
-    /// 对象数量
-    /// </summary>
-    public int ObjectCount { get; set; }
-
-    /// <summary>
-    /// 数组数量
-    /// </summary>
-    public int ArrayCount { get; set; }
-
-    /// <summary>
-    /// 属性数量
-    /// </summary>
-    public int PropertyCount { get; set; }
-
-    /// <summary>
-    /// 数组元素总数
-    /// </summary>
-    public int ArrayElementCount { get; set; }
-
-    /// <summary>
-    /// 字符串值数量
-    /// </summary>
-    public int StringCount { get; set; }
-
-    /// <summary>
-    /// 数字值数量
-    /// </summary>
-    public int NumberCount { get; set; }
-
-    /// <summary>
-    /// 布尔值数量
-    /// </summary>
-    public int BooleanCount { get; set; }
-
-    /// <summary>
-    /// null 值数量
-    /// </summary>
-    public int NullCount { get; set; }
-
-    /// <summary>
-    /// 最大嵌套深度
-    /// </summary>
-    public int MaxDepth { get; set; }
-
-    /// <summary>
-    /// 总节点数
-    /// </summary>
-    public int TotalNodes => ObjectCount + ArrayCount + StringCount + NumberCount + BooleanCount + NullCount;
 }

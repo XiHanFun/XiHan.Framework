@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
+using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
@@ -695,43 +696,59 @@ public static class XmlHelper
     {
         try
         {
-            var doc = XDocument.Parse(xml);
             var dict = XmlToDictionary(xml);
-
-            // 这里可以使用 System.Text.Json 或 Newtonsoft.Json 进行转换
-            // 为了保持独立性，这里提供一个简单的实现
-            var json = new StringBuilder();
-            json.Append('{');
-
-            var first = true;
-            foreach (var kvp in dict)
+            var options = new JsonSerializerOptions
             {
-                if (!first)
-                {
-                    json.Append(',');
-                }
+                WriteIndented = indent,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
 
-                if (indent)
-                {
-                    json.AppendLine();
-                }
-
-                json.Append($"\"{kvp.Key}\":\"{kvp.Value.Replace("\"", "\\\"")}\"");
-                first = false;
-            }
-
-            if (indent)
-            {
-                json.AppendLine();
-            }
-
-            json.Append('}');
-
-            return json.ToString();
+            return JsonSerializer.Serialize(dict, options);
         }
         catch
         {
             return "{}";
+        }
+    }
+
+    /// <summary>
+    /// JSON 转 XML 字符串
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="rootElementName">根元素名称</param>
+    /// <param name="indent">是否格式化 XML</param>
+    /// <returns>XML 字符串</returns>
+    public static string JsonToXml(string json, string rootElementName = "root", bool indent = true)
+    {
+        try
+        {
+            // 反序列化 JSON 为字典
+            var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            if (dict == null || dict.Count == 0)
+            {
+                return $"<{rootElementName}></{rootElementName}>";
+            }
+
+            // 创建 XML 文档
+            var doc = new XDocument();
+            var rootElement = new XElement(rootElementName);
+
+            // 将字典转换为 XML 结构
+            BuildXmlFromDictionary(dict, rootElement);
+
+            doc.Add(rootElement);
+
+            // 格式化输出
+            if (indent)
+            {
+                return FormatXml(doc.ToString());
+            }
+
+            return doc.ToString();
+        }
+        catch
+        {
+            return $"<{rootElementName}></{rootElementName}>";
         }
     }
 
@@ -770,6 +787,150 @@ public static class XmlHelper
             // 叶子节点，添加值
             result[currentPath] = element.Value;
         }
+    }
+
+    /// <summary>
+    /// 从字典构建 XML 结构
+    /// </summary>
+    /// <param name="dict">字典数据</param>
+    /// <param name="parentElement">父 XML 元素</param>
+    private static void BuildXmlFromDictionary(Dictionary<string, object> dict, XElement parentElement)
+    {
+        foreach (var kvp in dict)
+        {
+            var key = kvp.Key;
+            var value = kvp.Value;
+
+            if (value is JsonElement jsonElement)
+            {
+                BuildXmlFromJsonElement(key, jsonElement, parentElement);
+            }
+            else if (value is Dictionary<string, object> nestedDict)
+            {
+                var childElement = new XElement(SanitizeXmlName(key));
+                BuildXmlFromDictionary(nestedDict, childElement);
+                parentElement.Add(childElement);
+            }
+            else if (value is IEnumerable<object> array && value is not string)
+            {
+                foreach (var item in array)
+                {
+                    var childElement = new XElement(SanitizeXmlName(key));
+                    if (item is Dictionary<string, object> itemDict)
+                    {
+                        BuildXmlFromDictionary(itemDict, childElement);
+                    }
+                    else
+                    {
+                        childElement.Value = item?.ToString() ?? string.Empty;
+                    }
+                    parentElement.Add(childElement);
+                }
+            }
+            else
+            {
+                var element = new XElement(SanitizeXmlName(key), value?.ToString() ?? string.Empty);
+                parentElement.Add(element);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 从 JsonElement 构建 XML 元素
+    /// </summary>
+    /// <param name="elementName">元素名</param>
+    /// <param name="jsonElement">JSON 元素</param>
+    /// <param name="parentElement">父 XML 元素</param>
+    private static void BuildXmlFromJsonElement(string elementName, JsonElement jsonElement, XElement parentElement)
+    {
+        switch (jsonElement.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var objElement = new XElement(SanitizeXmlName(elementName));
+                foreach (var property in jsonElement.EnumerateObject())
+                {
+                    BuildXmlFromJsonElement(property.Name, property.Value, objElement);
+                }
+                parentElement.Add(objElement);
+                break;
+
+            case JsonValueKind.Array:
+                foreach (var item in jsonElement.EnumerateArray())
+                {
+                    var arrayElement = new XElement(SanitizeXmlName(elementName));
+                    if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var property in item.EnumerateObject())
+                        {
+                            BuildXmlFromJsonElement(property.Name, property.Value, arrayElement);
+                        }
+                    }
+                    else
+                    {
+                        arrayElement.Value = item.ToString();
+                    }
+                    parentElement.Add(arrayElement);
+                }
+                break;
+
+            case JsonValueKind.String:
+                parentElement.Add(new XElement(SanitizeXmlName(elementName), jsonElement.GetString() ?? string.Empty));
+                break;
+
+            case JsonValueKind.Number:
+                parentElement.Add(new XElement(SanitizeXmlName(elementName), jsonElement.ToString()));
+                break;
+
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                parentElement.Add(new XElement(SanitizeXmlName(elementName), jsonElement.GetBoolean().ToString().ToLower()));
+                break;
+
+            case JsonValueKind.Null:
+                parentElement.Add(new XElement(SanitizeXmlName(elementName)));
+                break;
+
+            default:
+                parentElement.Add(new XElement(SanitizeXmlName(elementName), jsonElement.ToString()));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 清理 XML 元素名称，确保符合 XML 命名规范
+    /// </summary>
+    /// <param name="name">原始名称</param>
+    /// <returns>清理后的名称</returns>
+    private static string SanitizeXmlName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "item";
+        }
+
+        // 移除非法字符，只保留字母、数字、下划线、连字符和点号
+        var sanitized = new StringBuilder();
+        foreach (var c in name)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.')
+            {
+                sanitized.Append(c);
+            }
+            else if (c == ' ')
+            {
+                sanitized.Append('_');
+            }
+        }
+
+        var result = sanitized.ToString();
+
+        // 确保以字母或下划线开头
+        if (result.Length == 0 || (!char.IsLetter(result[0]) && result[0] != '_'))
+        {
+            result = "_" + result;
+        }
+
+        return result;
     }
 
     #endregion 辅助功能
