@@ -45,64 +45,15 @@ public static class DiskHelper
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var output = ShellHelper.Bash(@"df -mT | awk '/^\/dev\/(sd|vd|xvd|nvme|sda|vda|mapper)/ {print $1,$2,$3,$4,$5,$6}'").Trim();
-                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-                if (lines.Count != 0)
-                {
-                    diskInfos.AddRange(from line in lines
-                                       select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
-                                       into rootDisk
-                                       where rootDisk.Length >= 6
-                                       select new DiskInfo
-                                       {
-                                           DiskName = rootDisk[0].Trim(),
-                                           TypeName = rootDisk[1].Trim(),
-                                           TotalSpace = rootDisk[2].ParseToLong() * 1024 * 1024, // MB转换为字节
-                                           UsedSpace = rootDisk[3].ParseToLong() * 1024 * 1024,
-                                           FreeSpace = rootDisk[4].ParseToLong() * 1024 * 1024,
-                                           AvailableRate = rootDisk[2].ParseToLong() == 0
-                                               ? 0
-                                               : Math.Round((double)rootDisk[4].ParseToLong() / rootDisk[2].ParseToLong() * 100, 3)
-                                       });
-                }
+                GetLinuxDiskInfo(diskInfos);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                var output = ShellHelper.Bash(@"df -k | awk '/^\/dev\/disk/ {print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
-                var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-                if (lines.Count != 0)
-                {
-                    diskInfos.AddRange(from line in lines
-                                       select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
-                                       into rootDisk
-                                       where rootDisk.Length >= 5
-                                       select new DiskInfo
-                                       {
-                                           TypeName = rootDisk[0].Trim(),
-                                           TotalSpace = rootDisk[1].ParseToLong() * 1024,
-                                           UsedSpace = rootDisk[2].ParseToLong() * 1024,
-                                           DiskName = rootDisk[4].Trim(),
-                                           FreeSpace = (rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024,
-                                           AvailableRate = rootDisk[1].ParseToLong() == 0
-                                               ? 0
-                                               : Math.Round((double)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3)
-                                       });
-                }
+                GetMacOsDiskInfo(diskInfos);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
-                diskInfos.AddRange(drives.Select(item => new DiskInfo
-                {
-                    DiskName = item.Name,
-                    TypeName = item.DriveType.ToString(),
-                    TotalSpace = item.TotalSize,
-                    FreeSpace = item.TotalFreeSpace,
-                    UsedSpace = item.TotalSize - item.TotalFreeSpace,
-                    AvailableRate = item.TotalSize == 0
-                        ? 0
-                        : Math.Round((double)item.TotalFreeSpace / item.TotalSize * 100, 3)
-                }));
+                GetWindowsDiskInfo(diskInfos);
             }
         }
         catch (Exception ex)
@@ -111,6 +62,82 @@ public static class DiskHelper
         }
 
         return diskInfos;
+    }
+
+    /// <summary>
+    /// 获取Windows磁盘信息
+    /// </summary>
+    /// <param name="diskInfos"></param>
+    private static void GetWindowsDiskInfo(List<DiskInfo> diskInfos)
+    {
+        var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
+        diskInfos.AddRange(drives.Select(item => new DiskInfo
+        {
+            DiskName = item.Name,
+            TypeName = item.DriveType.ToString(),
+            TotalSpace = item.TotalSize,
+            FreeSpace = item.TotalFreeSpace,
+            UsedSpace = item.TotalSize - item.TotalFreeSpace,
+            AvailableRate = item.TotalSize == 0
+                ? 0
+                : Math.Round((double)item.TotalFreeSpace / item.TotalSize * 100, 3)
+        }));
+    }
+
+    /// <summary>
+    /// 获取Linux磁盘信息
+    /// </summary>
+    /// <param name="diskInfos"></param>
+    private static void GetLinuxDiskInfo(List<DiskInfo> diskInfos)
+    {
+        var output = ShellHelper.Bash(@"df -mT | awk '/^\/dev\/(sd|vd|xvd|nvme|sda|vda|mapper)/ {print $1,$2,$3,$4,$5,$6}'").Trim();
+        var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (lines.Count != 0)
+        {
+            diskInfos.AddRange(from line in lines
+                               select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
+                               into rootDisk
+                               where rootDisk.Length >= 6
+                               select new DiskInfo
+                               {
+                                   DiskName = rootDisk[0].Trim(),
+                                   TypeName = rootDisk[1].Trim(),
+                                   TotalSpace = rootDisk[2].ParseToLong() * 1024 * 1024, // MB转换为字节
+                                   UsedSpace = rootDisk[3].ParseToLong() * 1024 * 1024,
+                                   FreeSpace = rootDisk[4].ParseToLong() * 1024 * 1024,
+                                   AvailableRate = rootDisk[2].ParseToLong() == 0
+                                       ? 0
+                                       : Math.Round((double)rootDisk[4].ParseToLong() / rootDisk[2].ParseToLong() * 100, 3)
+                               });
+        }
+    }
+
+    /// <summary>
+    /// 获取macOS磁盘信息
+    /// </summary>
+    /// <param name="diskInfos"></param>
+    private static void GetMacOsDiskInfo(List<DiskInfo> diskInfos)
+    {
+        var output = ShellHelper.Bash(@"df -k | awk '/^\/dev\/disk/ {print $1,$2,$3,$4,$6}' | tail -n +2").Trim();
+        var lines = output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (lines.Count != 0)
+        {
+            diskInfos.AddRange(from line in lines
+                               select line.Split(' ', (char)StringSplitOptions.RemoveEmptyEntries)
+                               into rootDisk
+                               where rootDisk.Length >= 5
+                               select new DiskInfo
+                               {
+                                   TypeName = rootDisk[0].Trim(),
+                                   TotalSpace = rootDisk[1].ParseToLong() * 1024,
+                                   UsedSpace = rootDisk[2].ParseToLong() * 1024,
+                                   DiskName = rootDisk[4].Trim(),
+                                   FreeSpace = (rootDisk[1].ParseToLong() - rootDisk[2].ParseToLong()) * 1024,
+                                   AvailableRate = rootDisk[1].ParseToLong() == 0
+                                       ? 0
+                                       : Math.Round((double)rootDisk[3].ParseToLong() / rootDisk[1].ParseToLong() * 100, 3)
+                               });
+        }
     }
 }
 

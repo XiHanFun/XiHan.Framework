@@ -47,11 +47,18 @@ public static class CpuHelper
 
         try
         {
-            // 获取CPU使用率
-            GetCpuUsage(cpuInfo);
-
-            // 获取CPU详细信息
-            GetCpuDetails(cpuInfo);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                GetLinuxCpuInfo(cpuInfo);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                GetMacOsCpuInfo(cpuInfo);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                GetWindowsCpuInfo(cpuInfo);
+            }
         }
         catch (Exception ex)
         {
@@ -62,138 +69,137 @@ public static class CpuHelper
     }
 
     /// <summary>
-    /// 获取CPU使用率
+    /// 获取Windows CPU信息
     /// </summary>
     /// <param name="cpuInfo"></param>
-    private static void GetCpuUsage(CpuInfo cpuInfo)
+    private static void GetWindowsCpuInfo(CpuInfo cpuInfo)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        try
         {
-            var output = ShellHelper.Bash(@"top -b -n1 | grep ""Cpu(s)""").Trim();
-            var lines = output.Split(',');
-            if (lines.Length > 3)
+            // 获取CPU使用率
+            var usageOutput = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object LoadPercentage | Format-List""").Trim();
+            var usageLines = usageOutput.Split(Environment.NewLine);
+            var loadLine = usageLines.FirstOrDefault(s => s.StartsWith("LoadPercentage"));
+            if (loadLine != null)
             {
-                var loadPercentage = lines[3].Trim().Split(' ')[0].Replace("%", "");
+                var loadPercentage = loadLine.Split(':')[1].Trim();
                 if (double.TryParse(loadPercentage, out var usage))
                 {
-                    cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
+                    cpuInfo.UsagePercentage = Math.Round(usage, 2);
                 }
             }
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        catch
         {
-            var output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
-            if (double.TryParse(output, out var usage))
-            {
-                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
-            }
+            // 如果WMI失败，使用默认值
+            cpuInfo.UsagePercentage = 0;
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+
+        // 获取CPU详细信息
+        var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object Name, NumberOfCores, MaxClockSpeed, L3CacheSize | Format-List""").Trim();
+        var lines = output.Split(Environment.NewLine);
+
+        foreach (var line in lines)
         {
-            try
+            if (line.StartsWith("Name"))
             {
-                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object LoadPercentage | Format-List""").Trim();
-                var lines = output.Split(Environment.NewLine);
-                var loadLine = lines.FirstOrDefault(s => s.StartsWith("LoadPercentage"));
-                if (loadLine != null)
+                cpuInfo.ProcessorName = line.Split(':', 2)[1].Trim();
+            }
+            else if (line.StartsWith("NumberOfCores"))
+            {
+                if (int.TryParse(line.Split(':', 2)[1], out var cores))
                 {
-                    var loadPercentage = loadLine.Split(':')[1].Trim();
-                    if (double.TryParse(loadPercentage, out var usage))
-                    {
-                        cpuInfo.UsagePercentage = Math.Round(usage, 2);
-                    }
+                    cpuInfo.PhysicalCoreCount = cores;
                 }
             }
-            catch
+            else if (line.StartsWith("MaxClockSpeed"))
             {
-                // 如果WMI失败，使用默认值
-                cpuInfo.UsagePercentage = 0;
+                if (double.TryParse(line.Split(':', 2)[1], out var mhz))
+                {
+                    cpuInfo.BaseClockSpeed = Math.Round(mhz / 1000, 2);
+                }
+            }
+            else if (line.StartsWith("L3CacheSize"))
+            {
+                var cache = line.Split(':', 2)[1].Trim();
+                if (!string.IsNullOrEmpty(cache) && cache != "0")
+                {
+                    cpuInfo.CacheBytes = cache.ParseToLong() * 1024;
+                }
             }
         }
     }
 
     /// <summary>
-    /// 获取CPU详细信息
+    /// 获取Linux CPU信息
     /// </summary>
     /// <param name="cpuInfo"></param>
-    private static void GetCpuDetails(CpuInfo cpuInfo)
+    private static void GetLinuxCpuInfo(CpuInfo cpuInfo)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        // 获取CPU使用率
+        var output = ShellHelper.Bash(@"top -b -n1 | grep ""Cpu(s)""").Trim();
+        var lines = output.Split(',');
+        if (lines.Length > 3)
         {
-            var cpuInfoOutput = ShellHelper.Bash("cat /proc/cpuinfo").Trim();
-            var lines = cpuInfoOutput.Split('\n');
-
-            foreach (var line in lines)
+            var loadPercentage = lines[3].Trim().Split(' ')[0].Replace("%", "");
+            if (double.TryParse(loadPercentage, out var usage))
             {
-                if (line.StartsWith("model name"))
+                cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
+            }
+        }
+
+        // 获取CPU详细信息
+        var cpuInfoOutput = ShellHelper.Bash("cat /proc/cpuinfo").Trim();
+        var cpuInfoLines = cpuInfoOutput.Split('\n');
+
+        foreach (var line in cpuInfoLines)
+        {
+            if (line.StartsWith("model name"))
+            {
+                cpuInfo.ProcessorName = line.Split(':')[1].Trim();
+            }
+            else if (line.StartsWith("cpu MHz"))
+            {
+                if (double.TryParse(line.Split(':')[1].Trim(), out var mhz))
                 {
-                    cpuInfo.ProcessorName = line.Split(':')[1].Trim();
+                    cpuInfo.BaseClockSpeed = Math.Round(mhz / 1000, 2);
                 }
-                else if (line.StartsWith("cpu MHz"))
+            }
+            else if (line.StartsWith("cache size"))
+            {
+                cpuInfo.CacheBytes = line.Split(':')[1].Trim().ParseToLong();
+            }
+            else if (line.StartsWith("cpu cores"))
+            {
+                if (int.TryParse(line.Split(':')[1].Trim(), out var cores))
                 {
-                    if (double.TryParse(line.Split(':')[1].Trim(), out var mhz))
-                    {
-                        cpuInfo.BaseClockSpeed = Math.Round(mhz / 1000, 2);
-                    }
-                }
-                else if (line.StartsWith("cache size"))
-                {
-                    cpuInfo.CacheBytes = line.Split(':')[1].Trim().ParseToLong();
-                }
-                else if (line.StartsWith("cpu cores"))
-                {
-                    if (int.TryParse(line.Split(':')[1].Trim(), out var cores))
-                    {
-                        cpuInfo.PhysicalCoreCount = cores;
-                    }
+                    cpuInfo.PhysicalCoreCount = cores;
                 }
             }
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            var nameOutput = ShellHelper.Bash("sysctl -n machdep.cpu.brand_string").Trim();
-            cpuInfo.ProcessorName = nameOutput;
+    }
 
-            var coreOutput = ShellHelper.Bash("sysctl -n hw.physicalcpu").Trim();
-            if (int.TryParse(coreOutput, out var cores))
-            {
-                cpuInfo.PhysicalCoreCount = cores;
-            }
+    /// <summary>
+    /// 获取macOS CPU信息
+    /// </summary>
+    /// <param name="cpuInfo"></param>
+    private static void GetMacOsCpuInfo(CpuInfo cpuInfo)
+    {
+        // 获取CPU使用率
+        var output = ShellHelper.Bash(@"top -l 1 -F | awk '/CPU usage/ {gsub(""%"", """"); print $7}'").Trim();
+        if (double.TryParse(output, out var usage))
+        {
+            cpuInfo.UsagePercentage = Math.Round(100 - usage, 2);
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_Processor | Select-Object Name, NumberOfCores, MaxClockSpeed, L3CacheSize | Format-List""").Trim();
-            var lines = output.Split(Environment.NewLine);
 
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("Name"))
-                {
-                    cpuInfo.ProcessorName = line.Split(':', 2)[1].Trim();
-                }
-                else if (line.StartsWith("NumberOfCores"))
-                {
-                    if (int.TryParse(line.Split(':', 2)[1], out var cores))
-                    {
-                        cpuInfo.PhysicalCoreCount = cores;
-                    }
-                }
-                else if (line.StartsWith("MaxClockSpeed"))
-                {
-                    if (double.TryParse(line.Split(':', 2)[1], out var mhz))
-                    {
-                        cpuInfo.BaseClockSpeed = Math.Round(mhz / 1000, 2);
-                    }
-                }
-                else if (line.StartsWith("L3CacheSize"))
-                {
-                    var cache = line.Split(':', 2)[1].Trim();
-                    if (!string.IsNullOrEmpty(cache) && cache != "0")
-                    {
-                        cpuInfo.CacheBytes = cache.ParseToLong() * 1024;
-                    }
-                }
-            }
+        // 获取CPU详细信息
+        var nameOutput = ShellHelper.Bash("sysctl -n machdep.cpu.brand_string").Trim();
+        cpuInfo.ProcessorName = nameOutput;
+
+        var coreOutput = ShellHelper.Bash("sysctl -n hw.physicalcpu").Trim();
+        if (int.TryParse(coreOutput, out var cores))
+        {
+            cpuInfo.PhysicalCoreCount = cores;
         }
     }
 }
