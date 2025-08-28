@@ -50,7 +50,11 @@ public class DateOnlyJsonConverter : JsonConverter<DateOnly>
     /// <returns></returns>
     public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String ? default : DateOnly.TryParse(reader.GetString(), out var date) ? date : default;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when DateOnly.TryParse(reader.GetString(), out var value) => value,
+            _ => default
+        };
     }
 
     /// <summary>
@@ -98,7 +102,12 @@ public class DateOnlyNullableConverter : JsonConverter<DateOnly?>
     /// <returns></returns>
     public override DateOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String ? null : DateOnly.TryParse(reader.GetString(), out var date) ? date : null;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when DateOnly.TryParse(reader.GetString(), out var value) => value,
+            JsonTokenType.Null => null,
+            _ => null
+        };
     }
 
     /// <summary>
@@ -109,13 +118,15 @@ public class DateOnlyNullableConverter : JsonConverter<DateOnly?>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, DateOnly? value, JsonSerializerOptions options)
     {
-        if (value.HasValue)
+        switch (value.HasValue)
         {
-            writer.WriteStringValue(value.Value.ToString(_dateFormatString));
-        }
-        else
-        {
-            writer.WriteNullValue();
+            case true:
+                writer.WriteStringValue(value.Value.ToString(_dateFormatString));
+                break;
+
+            case false:
+                writer.WriteNullValue();
+                break;
         }
     }
 }

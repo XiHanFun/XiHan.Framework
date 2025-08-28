@@ -54,9 +54,11 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <returns></returns>
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String
-            ? default
-            : DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : default;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when DateTime.TryParse(reader.GetString(), out var value) => _isUtc ? value.ToUniversalTime() : value,
+            _ => default
+        };
     }
 
     /// <summary>
@@ -108,9 +110,12 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     /// <returns></returns>
     public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType != JsonTokenType.String
-            ? null
-            : DateTime.TryParse(reader.GetString(), out var time) ? _isUtc ? time.ToUniversalTime() : time : null;
+        return reader.TokenType switch
+        {
+            JsonTokenType.String when DateTime.TryParse(reader.GetString(), out var value) => _isUtc ? value.ToUniversalTime() : value,
+            JsonTokenType.Null => null,
+            _ => null
+        };
     }
 
     /// <summary>
@@ -121,13 +126,15 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     /// <param name="options"></param>
     public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
     {
-        if (value.HasValue)
+        switch (value.HasValue)
         {
-            writer.WriteStringValue(_isUtc ? value.Value.ToUniversalTime().ToString(_dateFormatString) : value.Value.ToString(_dateFormatString));
-        }
-        else
-        {
-            writer.WriteNullValue();
+            case true:
+                writer.WriteStringValue(_isUtc ? value.Value.ToUniversalTime().ToString(_dateFormatString) : value.Value.ToString(_dateFormatString));
+                break;
+
+            case false:
+                writer.WriteNullValue();
+                break;
         }
     }
 }
