@@ -1,30 +1,29 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:JsonHelper
-// Guid:227522db-7512-4a80-972c-bbedb715da02
+// Guid:92776f67-afff-44e9-a428-2b15a53a412c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreatedTime:2022-11-21 上午 01:06:17
+// CreateTime:2025/8/29 5:43:06
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 namespace XiHan.Framework.Utils.Serialization.Json;
 
 /// <summary>
 /// JSON 操作帮助类
+/// 提供 JSON 序列化、反序列化、节点操作、验证等功能
 /// </summary>
 public static class JsonHelper
 {
-    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializeOptions.DefaultJsonSerializeOptions;
-
     #region 序列化与反序列化
 
     /// <summary>
@@ -34,295 +33,354 @@ public static class JsonHelper
     /// <param name="obj">要序列化的对象</param>
     /// <param name="options">序列化选项</param>
     /// <returns>JSON 字符串</returns>
-    public static string Serialize<T>(T obj, JsonSerializerOptions? options = null)
+    /// <exception cref="ArgumentNullException">当对象为空时抛出</exception>
+    /// <exception cref="InvalidOperationException">当序列化失败时抛出</exception>
+    public static string Serialize<T>(T obj, JsonSerializeOptions? options = null)
     {
-        if (obj == null)
-        {
-            return "null";
-        }
-
-        options ??= DefaultOptions;
-        return JsonSerializer.Serialize(obj, options);
-    }
-
-    /// <summary>
-    /// 将对象序列化为 JSON 字符串(非泛型版本)
-    /// </summary>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="type">对象类型</param>
-    /// <param name="options">序列化选项</param>
-    /// <returns>JSON 字符串</returns>
-    public static string Serialize(object obj, Type type, JsonSerializerOptions? options = null)
-    {
-        options ??= DefaultOptions;
-        return JsonSerializer.Serialize(obj, type, options);
-    }
-
-    /// <summary>
-    /// 将 JSON 字符串反序列化为指定类型的对象
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <returns>反序列化后的对象</returns>
-    public static T? Deserialize<T>(string json, JsonSerializerOptions? options = null)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return default;
-        }
-
-        options ??= DefaultOptions;
-        return JsonSerializer.Deserialize<T>(json, options);
-    }
-
-    /// <summary>
-    /// 将 JSON 字符串反序列化为指定类型的对象(非泛型版本)
-    /// </summary>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="type">目标类型</param>
-    /// <param name="options">反序列化选项</param>
-    /// <returns>反序列化后的对象</returns>
-    public static object? Deserialize(string json, Type type, JsonSerializerOptions? options = null)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        options ??= DefaultOptions;
-        return JsonSerializer.Deserialize(json, type, options);
-    }
-
-    /// <summary>
-    /// 尝试将 JSON 字符串反序列化为指定类型的对象
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="result">反序列化结果</param>
-    /// <param name="options">反序列化选项</param>
-    /// <returns>是否成功反序列化</returns>
-    public static bool TryDeserialize<T>(string json, out T? result, JsonSerializerOptions? options = null)
-    {
-        result = default;
+        ArgumentNullException.ThrowIfNull(obj);
+        options ??= new JsonSerializeOptions();
 
         try
         {
-            if (string.IsNullOrWhiteSpace(json))
+            var systemOptions = options.ToSystemOptions();
+            return JsonSerializer.Serialize(obj, systemOptions);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"序列化失败：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 异步将对象序列化为 JSON 字符串
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="options">序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>JSON 字符串</returns>
+    public static async Task<string> SerializeAsync<T>(T obj, JsonSerializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => Serialize(obj, options), cancellationToken);
+    }
+
+    /// <summary>
+    /// 从 JSON 字符串反序列化为对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>反序列化的对象</returns>
+    /// <exception cref="ArgumentException">当 JSON 字符串为空时抛出</exception>
+    /// <exception cref="InvalidOperationException">当反序列化失败时抛出</exception>
+    public static T Deserialize<T>(string json, JsonDeserializeOptions? options = null)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            throw new ArgumentException("JSON 字符串不能为空", nameof(json));
+        }
+
+        options ??= new JsonDeserializeOptions();
+
+        try
+        {
+            if (options.ValidateJson && !IsValidJson(json))
             {
-                return false;
+                throw new JsonException("无效的 JSON 格式");
             }
 
-            options ??= DefaultOptions;
-            result = JsonSerializer.Deserialize<T>(json, options);
-            return true;
+            var systemOptions = options.ToSystemOptions();
+            var result = JsonSerializer.Deserialize<T>(json, systemOptions);
+
+            return result ?? (options.ErrorHandling == JsonErrorHandling.UseDefault
+                ? default!
+                : throw new InvalidOperationException("反序列化失败：结果为空"));
         }
-        catch
+        catch (Exception ex) when (ex is not (ArgumentException or InvalidOperationException))
         {
-            return false;
+            return options.ErrorHandling switch
+            {
+                JsonErrorHandling.UseDefault => default!,
+                JsonErrorHandling.Ignore => default!,
+                JsonErrorHandling.Log => default!, // 这里可以添加日志记录
+                _ => throw new InvalidOperationException($"反序列化失败：{ex.Message}", ex)
+            };
         }
+    }
+
+    /// <summary>
+    /// 异步从 JSON 字符串反序列化为对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="options">反序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>反序列化的对象</returns>
+    public static async Task<T> DeserializeAsync<T>(string json, JsonDeserializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => Deserialize<T>(json, options), cancellationToken);
+    }
+
+    /// <summary>
+    /// 从文件反序列化对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>反序列化的对象</returns>
+    public static T DeserializeFromFile<T>(string filePath, JsonDeserializeOptions? options = null)
+    {
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"文件不存在：{filePath}");
+        }
+
+        var json = File.ReadAllText(filePath, Encoding.UTF8);
+        return Deserialize<T>(json, options);
+    }
+
+    /// <summary>
+    /// 异步从文件反序列化对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">反序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>反序列化的对象</returns>
+    public static async Task<T> DeserializeFromFileAsync<T>(string filePath, JsonDeserializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"文件不存在：{filePath}");
+        }
+
+        var json = await File.ReadAllTextAsync(filePath, Encoding.UTF8, cancellationToken);
+        return await DeserializeAsync<T>(json, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// 将对象序列化并保存到文件
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">序列化选项</param>
+    public static void SerializeToFile<T>(T obj, string filePath, JsonSerializeOptions? options = null)
+    {
+        var json = Serialize(obj, options);
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        File.WriteAllText(filePath, json, options?.Encoding ?? Encoding.UTF8);
+    }
+
+    /// <summary>
+    /// 异步将对象序列化并保存到文件
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public static async Task SerializeToFileAsync<T>(T obj, string filePath, JsonSerializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var json = await SerializeAsync(obj, options, cancellationToken);
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        await File.WriteAllTextAsync(filePath, json, options?.Encoding ?? Encoding.UTF8, cancellationToken);
     }
 
     #endregion 序列化与反序列化
 
-    #region 动态 JSON 解析
+    #region JSON 节点操作
 
     /// <summary>
-    /// 将 JsonElement 转换为动态对象
-    /// </summary>
-    /// <param name="element">JsonElement</param>
-    /// <returns>动态对象</returns>
-    public static dynamic? ConvertToDynamic(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Object => ConvertJsonObjectToDynamic(element),
-            JsonValueKind.Array => ConvertJsonArrayToDynamic(element),
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number => element.GetDecimal(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            _ => null
-        };
-    }
-
-    /// <summary>
-    /// 尝试将 JSON 字符串解析为动态对象
+    /// 查询 JSON 节点值
     /// </summary>
     /// <param name="json">JSON 字符串</param>
-    /// <param name="jsonObject">解析结果</param>
-    /// <returns>是否解析成功</returns>
-    public static bool TryParseJsonDynamic(string json, out dynamic? jsonObject)
+    /// <param name="jsonPath">JSON 路径表达式（如 "$.user.name"）</param>
+    /// <returns>节点值，如果未找到则返回 null</returns>
+    public static string? QueryNode(string json, string jsonPath)
     {
-        jsonObject = null;
+        if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(jsonPath))
+        {
+            return null;
+        }
 
         try
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return false;
-            }
-            var jsonNode = JsonNode.Parse(json);
-            jsonObject = ConvertJsonNodeToDynamic(jsonNode);
-            return true;
+            var node = JsonNode.Parse(json);
+            return QueryNodeRecursive(node, jsonPath.TrimStart('$', '.'));
         }
         catch
         {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 查询 JSON 节点集合
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="jsonPath">JSON 路径表达式</param>
+    /// <returns>节点值列表</returns>
+    public static List<string> QueryNodes(string json, string jsonPath)
+    {
+        if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(jsonPath))
+        {
+            return [];
+        }
+
+        try
+        {
+            var result = new List<string>();
+            var node = JsonNode.Parse(json);
+            QueryNodesRecursive(node, jsonPath.TrimStart('$', '.'), result);
+            return result;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 设置 JSON 节点值
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="jsonPath">JSON 路径表达式</param>
+    /// <param name="value">新值</param>
+    /// <returns>修改后的 JSON 字符串</returns>
+    /// <exception cref="InvalidOperationException">当找不到节点时抛出</exception>
+    public static string SetNode(string json, string jsonPath, object value)
+    {
+        try
+        {
+            var node = JsonNode.Parse(json) ?? throw new InvalidOperationException("无效的 JSON");
+            SetNodeRecursive(node, jsonPath.TrimStart('$', '.'), value);
+            return node.ToJsonString();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"设置节点失败：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 添加 JSON 节点
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="parentPath">父节点路径</param>
+    /// <param name="key">新节点键</param>
+    /// <param name="value">新节点值</param>
+    /// <returns>修改后的 JSON 字符串</returns>
+    public static string AddNode(string json, string parentPath, string key, object value)
+    {
+        try
+        {
+            var node = JsonNode.Parse(json) ?? throw new InvalidOperationException("无效的 JSON");
+            var parentNode = GetNodeByPath(node, parentPath.TrimStart('$', '.'));
+
+            if (parentNode is JsonObject jsonObject)
+            {
+                jsonObject[key] = JsonValue.Create(value);
+            }
+            else if (parentNode is JsonArray jsonArray)
+            {
+                jsonArray.Add(JsonValue.Create(value));
+            }
+            else
+            {
+                throw new InvalidOperationException($"父节点不是对象或数组：{parentPath}");
+            }
+
+            return node.ToJsonString();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"添加节点失败：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 删除 JSON 节点
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="jsonPath">节点路径</param>
+    /// <returns>修改后的 JSON 字符串</returns>
+    public static string RemoveNode(string json, string jsonPath)
+    {
+        try
+        {
+            var node = JsonNode.Parse(json) ?? throw new InvalidOperationException("无效的 JSON");
+            RemoveNodeRecursive(node, jsonPath.TrimStart('$', '.'));
+            return node.ToJsonString();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"删除节点失败：{ex.Message}", ex);
+        }
+    }
+
+    #endregion JSON 节点操作
+
+    #region 验证功能
+
+    /// <summary>
+    /// 检查 JSON 是否有效
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="errorMessage">错误信息</param>
+    /// <returns>是否有效</returns>
+    public static bool IsValidJson(string json, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            errorMessage = "JSON 字符串为空";
+            return false;
+        }
+
+        try
+        {
+            JsonDocument.Parse(json);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
             return false;
         }
     }
 
     /// <summary>
-    /// 将 JSON 字符串解析为 JsonNode
-    /// </summary>
-    /// <param name="json">JSON 字符串</param>
-    /// <returns>JsonNode 对象</returns>
-    public static JsonNode? ParseToJsonNode(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonNode.Parse(json);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 将 JSON 字符串解析为 JsonDocument
-    /// </summary>
-    /// <param name="json">JSON 字符串</param>
-    /// <returns>JsonDocument 对象</returns>
-    public static JsonDocument? ParseToJsonDocument(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonDocument.Parse(json);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 将 JsonElement 数组转换为动态数组
-    /// </summary>
-    /// <param name="element">JsonElement</param>
-    /// <returns>动态数组</returns>
-    private static dynamic ConvertJsonArrayToDynamic(JsonElement element)
-    {
-        var dynamicJsonArray = new DynamicJsonArray();
-        foreach (var item in element.EnumerateArray())
-        {
-            dynamicJsonArray.Add(ConvertToDynamic(item));
-        }
-        return dynamicJsonArray;
-    }
-
-    /// <summary>
-    /// 将 JsonArray 转换为动态数组
-    /// </summary>
-    /// <param name="jsonArray">JsonArray</param>
-    /// <returns>动态数组</returns>
-    private static dynamic ConvertJsonArrayToDynamic(JsonArray jsonArray)
-    {
-        var dynamicJsonArray = new DynamicJsonArray();
-        for (var i = 0; i < jsonArray.Count; i++)
-        {
-            dynamicJsonArray.Add(ConvertJsonNodeToDynamic(jsonArray[i]));
-        }
-        return dynamicJsonArray;
-    }
-
-    /// <summary>
-    /// 将 JsonNode 转换为动态对象
-    /// </summary>
-    /// <param name="node">JsonNode</param>
-    /// <returns>动态对象</returns>
-    private static dynamic? ConvertJsonNodeToDynamic(JsonNode? node)
-    {
-        return node switch
-        {
-            JsonObject jsonObject => ConvertJsonObjectToDynamic(jsonObject),
-            JsonArray jsonArray => ConvertJsonArrayToDynamic(jsonArray),
-            JsonValue jsonValue => ConvertJsonValueToDynamic(jsonValue),
-            _ => null
-        };
-    }
-
-    /// <summary>
-    /// 将 JsonValue 转换为对应的动态类型
-    /// </summary>
-    /// <param name="jsonValue">JsonValue</param>
-    /// <returns>动态值对象</returns>
-    private static dynamic? ConvertJsonValueToDynamic(JsonValue jsonValue)
-    {
-        return DynamicJsonValue.FromJsonValue(jsonValue);
-    }
-
-    /// <summary>
-    /// 将 JsonElement 对象转换为动态对象
-    /// </summary>
-    /// <param name="element">JsonElement</param>
-    /// <returns>动态对象</returns>
-    private static dynamic ConvertJsonObjectToDynamic(JsonElement element)
-    {
-        var dynamicJsonObject = new DynamicJsonObject();
-        foreach (var property in element.EnumerateObject())
-        {
-            dynamicJsonObject[property.Name] = ConvertToDynamic(property.Value);
-        }
-        return dynamicJsonObject;
-    }
-
-    /// <summary>
-    /// 将 JsonObject 转换为动态对象
-    /// </summary>
-    /// <param name="jsonObject">JsonObject</param>
-    /// <returns>动态对象</returns>
-    private static dynamic ConvertJsonObjectToDynamic(JsonObject jsonObject)
-    {
-        var dynamicJsonObject = new DynamicJsonObject();
-        foreach (var property in jsonObject)
-        {
-            dynamicJsonObject[property.Key] = ConvertJsonNodeToDynamic(property.Value);
-        }
-        return dynamicJsonObject;
-    }
-
-    #endregion 动态 JSON 解析
-
-    #region JSON 验证与格式化
-
-    /// <summary>
-    /// 验证 JSON 字符串是否有效
+    /// 检查 JSON 是否有效（简化版本）
     /// </summary>
     /// <param name="json">JSON 字符串</param>
     /// <returns>是否有效</returns>
     public static bool IsValidJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return false;
-        }
+        return IsValidJson(json, out _);
+    }
 
+    /// <summary>
+    /// 验证 JSON 结构是否符合指定格式
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="expectedType">期望的根类型</param>
+    /// <returns>是否符合</returns>
+    public static bool ValidateStructure(string json, JsonValueKind expectedType)
+    {
         try
         {
             using var document = JsonDocument.Parse(json);
-            return true;
+            return document.RootElement.ValueKind == expectedType;
         }
         catch
         {
@@ -331,25 +389,74 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 格式化 JSON 字符串(美化输出)
+    /// 验证 JSON 是否包含必需的属性
     /// </summary>
     /// <param name="json">JSON 字符串</param>
-    /// <param name="indented">是否缩进</param>
-    /// <returns>格式化后的 JSON 字符串</returns>
-    public static string FormatJson(string json, bool indented = true)
+    /// <param name="requiredProperties">必需的属性列表</param>
+    /// <returns>验证结果和缺失的属性</returns>
+    public static (bool IsValid, List<string> MissingProperties) ValidateRequiredProperties(string json, IEnumerable<string> requiredProperties)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return string.Empty;
-        }
+        var missingProperties = new List<string>();
 
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = JsonSerializeOptions.GetClonedDefault(opt =>
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                opt.WriteIndented = indented;
-            });
+                return (false, requiredProperties.ToList());
+            }
+
+            foreach (var property in requiredProperties)
+            {
+                if (!document.RootElement.TryGetProperty(property, out _))
+                {
+                    missingProperties.Add(property);
+                }
+            }
+
+            return (missingProperties.Count == 0, missingProperties);
+        }
+        catch
+        {
+            return (false, requiredProperties.ToList());
+        }
+    }
+
+    #endregion 验证功能
+
+    #region 辅助功能
+
+    /// <summary>
+    /// 格式化 JSON 字符串
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="indent">是否缩进</param>
+    /// <returns>格式化后的 JSON 字符串</returns>
+    public static string FormatJson(string json, bool indent = true)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var options = new JsonSerializerOptions { WriteIndented = indent };
+            return JsonSerializer.Serialize(document.RootElement, options);
+        }
+        catch
+        {
+            return json; // 如果格式化失败，返回原始字符串
+        }
+    }
+
+    /// <summary>
+    /// 压缩 JSON 字符串（移除空白字符）
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <returns>压缩后的 JSON 字符串</returns>
+    public static string CompressJson(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var options = new JsonSerializerOptions { WriteIndented = false };
             return JsonSerializer.Serialize(document.RootElement, options);
         }
         catch
@@ -359,189 +466,84 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 压缩 JSON 字符串(移除空白字符)
+    /// 转换 JSON 为字典
     /// </summary>
     /// <param name="json">JSON 字符串</param>
-    /// <returns>压缩后的 JSON 字符串</returns>
-    public static string CompressJson(string json)
+    /// <param name="separator">层级分隔符</param>
+    /// <returns>扁平化的键值对字典</returns>
+    public static Dictionary<string, string> JsonToDictionary(string json, string separator = ".")
     {
-        return FormatJson(json, false);
-    }
-
-    #endregion JSON 验证与格式化
-
-    #region JSON 路径操作
-
-    /// <summary>
-    /// 根据路径获取 JSON 值并转换为指定类型
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="path">JSON 路径</param>
-    /// <param name="options">反序列化选项</param>
-    /// <returns>转换后的值</returns>
-    public static T? GetValueByPath<T>(string json, string path, JsonSerializerOptions? options = null)
-    {
-        var node = GetValueByPath(json, path);
-        if (node == null)
-        {
-            return default;
-        }
+        var result = new Dictionary<string, string>();
 
         try
         {
-            options ??= DefaultOptions;
-            return node.Deserialize<T>(options);
+            using var document = JsonDocument.Parse(json);
+            FlattenJsonElement(document.RootElement, string.Empty, result, separator);
         }
         catch
         {
-            return default;
+            // 解析失败时返回空字典
         }
+
+        return result;
     }
 
     /// <summary>
-    /// 根据 JSON 路径获取值
+    /// 从字典创建 JSON 字符串
     /// </summary>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="path">JSON 路径(如：$.user.name)</param>
-    /// <returns>路径对应的值</returns>
-    public static JsonNode? GetValueByPath(string json, string path)
+    /// <param name="dictionary">字典</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>JSON 字符串</returns>
+    public static string DictionaryToJson(Dictionary<string, object> dictionary, JsonSerializeOptions? options = null)
     {
-        if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(path))
-        {
-            return null;
-        }
-
-        try
-        {
-            var jsonNode = JsonNode.Parse(json);
-            return GetValueByPath(jsonNode, path);
-        }
-        catch
-        {
-            return null;
-        }
+        return Serialize(dictionary, options);
     }
 
     /// <summary>
-    /// 根据 JSON 路径获取值
+    /// 合并两个 JSON 字符串
     /// </summary>
-    /// <param name="jsonNode">JsonNode 对象</param>
-    /// <param name="path">JSON 路径</param>
-    /// <returns>路径对应的值</returns>
-    public static JsonNode? GetValueByPath(JsonNode? jsonNode, string path)
-    {
-        if (jsonNode == null || string.IsNullOrWhiteSpace(path))
-        {
-            return null;
-        }
-
-        try
-        {
-            // 简单的路径解析实现(支持 $.property 和 $.array[index] 格式)
-            var segments = path.TrimStart('$', '.').Split('.');
-            var current = jsonNode;
-
-            foreach (var segment in segments)
-            {
-                if (current == null)
-                {
-                    return null;
-                }
-
-                if (segment.Contains('[') && segment.Contains(']'))
-                {
-                    // 处理数组索引
-                    var propertyName = segment[..segment.IndexOf('[')];
-                    var indexStr = segment.Substring(segment.IndexOf('[') + 1, segment.IndexOf(']') - segment.IndexOf('[') - 1);
-
-                    if (!string.IsNullOrEmpty(propertyName))
-                    {
-                        current = current[propertyName];
-                    }
-
-                    if (int.TryParse(indexStr, out var index) && current is JsonArray array)
-                    {
-                        current = index < array.Count ? array[index] : null;
-                    }
-                }
-                else
-                {
-                    // 处理普通属性
-                    current = current[segment];
-                }
-            }
-
-            return current;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    #endregion JSON 路径操作
-
-    #region JSON 合并与比较
-
-    /// <summary>
-    /// 合并两个 JSON 对象
-    /// </summary>
-    /// <param name="json1">第一个 JSON 字符串</param>
-    /// <param name="json2">第二个 JSON 字符串</param>
-    /// <param name="overwriteExisting">是否覆盖已存在的属性</param>
+    /// <param name="json1">第一个 JSON</param>
+    /// <param name="json2">第二个 JSON</param>
+    /// <param name="overwrite">是否覆盖重复键</param>
     /// <returns>合并后的 JSON 字符串</returns>
-    public static string MergeJson(string json1, string json2, bool overwriteExisting = true)
+    public static string MergeJson(string json1, string json2, bool overwrite = true)
     {
         try
         {
-            var node1 = JsonNode.Parse(json1);
-            var node2 = JsonNode.Parse(json2);
+            var dict1 = JsonToDictionary(json1);
+            var dict2 = JsonToDictionary(json2);
 
-            if (node1 is JsonObject obj1 && node2 is JsonObject obj2)
+            foreach (var kvp in dict2)
             {
-                var merged = MergeJsonObjects(obj1, obj2, overwriteExisting);
-                return merged.ToJsonString();
+                if (overwrite || !dict1.ContainsKey(kvp.Key))
+                {
+                    dict1[kvp.Key] = kvp.Value;
+                }
             }
 
-            return overwriteExisting ? json2 : json1;
+            // 重建嵌套结构
+            var merged = BuildNestedStructure(dict1);
+            return Serialize(merged);
         }
-        catch
+        catch (Exception ex)
         {
-            return json1;
+            throw new InvalidOperationException($"合并 JSON 失败：{ex.Message}", ex);
         }
     }
 
     /// <summary>
-    /// 比较两个 JSON 字符串是否相等
+    /// 比较两个 JSON 字符串是否相等（结构化比较）
     /// </summary>
-    /// <param name="json1">第一个 JSON 字符串</param>
-    /// <param name="json2">第二个 JSON 字符串</param>
-    /// <param name="ignoreOrder">是否忽略属性顺序</param>
+    /// <param name="json1">第一个 JSON</param>
+    /// <param name="json2">第二个 JSON</param>
     /// <returns>是否相等</returns>
-    public static bool JsonEquals(string json1, string json2, bool ignoreOrder = true)
+    public static bool CompareJson(string json1, string json2)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(json1) && string.IsNullOrWhiteSpace(json2))
-            {
-                return true;
-            }
-
-            if (string.IsNullOrWhiteSpace(json1) || string.IsNullOrWhiteSpace(json2))
-            {
-                return false;
-            }
-
-            if (ignoreOrder)
-            {
-                // 通过序列化和反序列化来标准化 JSON 格式
-                var normalized1 = FormatJson(json1, false);
-                var normalized2 = FormatJson(json2, false);
-                return normalized1 == normalized2;
-            }
-
-            return json1.Trim() == json2.Trim();
+            using var doc1 = JsonDocument.Parse(json1);
+            using var doc2 = JsonDocument.Parse(json2);
+            return JsonElementEquals(doc1.RootElement, doc2.RootElement);
         }
         catch
         {
@@ -550,122 +552,484 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 合并两个 JsonObject
+    /// 计算 JSON 的哈希值
     /// </summary>
-    /// <param name="obj1">第一个 JsonObject</param>
-    /// <param name="obj2">第二个 JsonObject</param>
-    /// <param name="overwriteExisting">是否覆盖已存在的属性</param>
-    /// <returns>合并后的 JsonObject</returns>
-    private static JsonObject MergeJsonObjects(JsonObject obj1, JsonObject obj2, bool overwriteExisting)
+    /// <param name="json">JSON 字符串</param>
+    /// <returns>哈希值</returns>
+    public static string ComputeHash(string json)
     {
-        var result = new JsonObject();
-
-        // 复制第一个对象的所有属性
-        foreach (var kvp in obj1)
+        try
         {
-            result[kvp.Key] = kvp.Value?.DeepClone();
+            // 先格式化为标准格式，再计算哈希
+            var normalized = CompressJson(json);
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(normalized);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToHexString(hash);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// 获取 JSON 的基本统计信息
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <returns>统计信息</returns>
+    public static JsonStatistics GetStatistics(string json)
+    {
+        var stats = new JsonStatistics();
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            AnalyzeJsonElement(document.RootElement, stats, 0);
+        }
+        catch
+        {
+            // 解析失败时返回空统计
         }
 
-        // 合并第二个对象的属性
-        foreach (var kvp in obj2)
+        return stats;
+    }
+
+    /// <summary>
+    /// 克隆 JSON 对象（深拷贝）
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <returns>克隆的 JSON 字符串</returns>
+    public static string CloneJson(string json)
+    {
+        try
         {
-            if (result.ContainsKey(kvp.Key))
-            {
-                if (overwriteExisting)
+            using var document = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(document.RootElement);
+        }
+        catch
+        {
+            return json;
+        }
+    }
+
+    #endregion 辅助功能
+
+    #region 私有辅助方法
+
+    /// <summary>
+    /// 递归查询节点
+    /// </summary>
+    private static string? QueryNodeRecursive(JsonNode? node, string path)
+    {
+        if (node == null || string.IsNullOrEmpty(path))
+        {
+            return node?.ToString();
+        }
+
+        var parts = path.Split('.', 2);
+        var currentKey = parts[0];
+        var remainingPath = parts.Length > 1 ? parts[1] : string.Empty;
+
+        return node switch
+        {
+            JsonObject jsonObject when jsonObject.ContainsKey(currentKey) =>
+                QueryNodeRecursive(jsonObject[currentKey], remainingPath),
+            JsonArray jsonArray when int.TryParse(currentKey, out var index) && index < jsonArray.Count =>
+                QueryNodeRecursive(jsonArray[index], remainingPath),
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// 递归查询多个节点
+    /// </summary>
+    private static void QueryNodesRecursive(JsonNode? node, string path, List<string> result)
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(path))
+        {
+            result.Add(node.ToString());
+            return;
+        }
+
+        var parts = path.Split('.', 2);
+        var currentKey = parts[0];
+        var remainingPath = parts.Length > 1 ? parts[1] : string.Empty;
+
+        switch (node)
+        {
+            case JsonObject jsonObject:
+                if (currentKey == "*")
                 {
-                    result[kvp.Key] = result[kvp.Key] is JsonObject existingObj && kvp.Value is JsonObject newObj
-                        ? MergeJsonObjects(existingObj, newObj, overwriteExisting)
-                        : (kvp.Value?.DeepClone());
+                    foreach (var prop in jsonObject)
+                    {
+                        QueryNodesRecursive(prop.Value, remainingPath, result);
+                    }
+                }
+                else if (jsonObject.ContainsKey(currentKey))
+                {
+                    QueryNodesRecursive(jsonObject[currentKey], remainingPath, result);
+                }
+                break;
+
+            case JsonArray jsonArray:
+                if (currentKey == "*")
+                {
+                    foreach (var item in jsonArray)
+                    {
+                        QueryNodesRecursive(item, remainingPath, result);
+                    }
+                }
+                else if (int.TryParse(currentKey, out var index) && index < jsonArray.Count)
+                {
+                    QueryNodesRecursive(jsonArray[index], remainingPath, result);
+                }
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 递归设置节点值
+    /// </summary>
+    private static void SetNodeRecursive(JsonNode node, string path, object value)
+    {
+        var parts = path.Split('.', 2);
+        var currentKey = parts[0];
+        var remainingPath = parts.Length > 1 ? parts[1] : string.Empty;
+
+        if (string.IsNullOrEmpty(remainingPath))
+        {
+            // 到达目标节点
+            if (node is JsonObject jsonObject)
+            {
+                jsonObject[currentKey] = JsonValue.Create(value);
+            }
+            else if (node is JsonArray jsonArray && int.TryParse(currentKey, out var index))
+            {
+                if (index < jsonArray.Count)
+                {
+                    jsonArray[index] = JsonValue.Create(value);
                 }
             }
-            else
+        }
+        else
+        {
+            // 继续递归
+            JsonNode? childNode = null;
+            if (node is JsonObject jsonObject && jsonObject.ContainsKey(currentKey))
             {
-                result[kvp.Key] = kvp.Value?.DeepClone();
+                childNode = jsonObject[currentKey];
             }
+            else if (node is JsonArray jsonArray && int.TryParse(currentKey, out var index) && index < jsonArray.Count)
+            {
+                childNode = jsonArray[index];
+            }
+
+            if (childNode != null)
+            {
+                SetNodeRecursive(childNode, remainingPath, value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 根据路径获取节点
+    /// </summary>
+    private static JsonNode? GetNodeByPath(JsonNode node, string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return node;
+        }
+
+        var parts = path.Split('.', 2);
+        var currentKey = parts[0];
+        var remainingPath = parts.Length > 1 ? parts[1] : string.Empty;
+
+        JsonNode? childNode = null;
+        if (node is JsonObject jsonObject && jsonObject.ContainsKey(currentKey))
+        {
+            childNode = jsonObject[currentKey];
+        }
+        else if (node is JsonArray jsonArray && int.TryParse(currentKey, out var index) && index < jsonArray.Count)
+        {
+            childNode = jsonArray[index];
+        }
+
+        return childNode != null ? GetNodeByPath(childNode, remainingPath) : null;
+    }
+
+    /// <summary>
+    /// 递归删除节点
+    /// </summary>
+    private static void RemoveNodeRecursive(JsonNode node, string path)
+    {
+        var parts = path.Split('.', 2);
+        var currentKey = parts[0];
+        var remainingPath = parts.Length > 1 ? parts[1] : string.Empty;
+
+        if (string.IsNullOrEmpty(remainingPath))
+        {
+            // 删除目标节点
+            if (node is JsonObject jsonObject)
+            {
+                jsonObject.Remove(currentKey);
+            }
+            else if (node is JsonArray jsonArray && int.TryParse(currentKey, out var index) && index < jsonArray.Count)
+            {
+                jsonArray.RemoveAt(index);
+            }
+        }
+        else
+        {
+            // 继续递归
+            JsonNode? childNode = null;
+            if (node is JsonObject jsonObject && jsonObject.ContainsKey(currentKey))
+            {
+                childNode = jsonObject[currentKey];
+            }
+            else if (node is JsonArray jsonArray && int.TryParse(currentKey, out var index) && index < jsonArray.Count)
+            {
+                childNode = jsonArray[index];
+            }
+
+            if (childNode != null)
+            {
+                RemoveNodeRecursive(childNode, remainingPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 递归扁平化 JSON 元素
+    /// </summary>
+    private static void FlattenJsonElement(JsonElement element, string prefix, Dictionary<string, string> result, string separator)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    var key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}{separator}{property.Name}";
+                    FlattenJsonElement(property.Value, key, result, separator);
+                }
+                break;
+
+            case JsonValueKind.Array:
+                for (var i = 0; i < element.GetArrayLength(); i++)
+                {
+                    var key = string.IsNullOrEmpty(prefix) ? i.ToString() : $"{prefix}{separator}{i}";
+                    FlattenJsonElement(element[i], key, result, separator);
+                }
+                break;
+
+            default:
+                result[prefix] = element.ToString();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 从扁平化字典重建嵌套结构
+    /// </summary>
+    private static object BuildNestedStructure(Dictionary<string, string> flatDict, string separator = ".")
+    {
+        var result = new Dictionary<string, object>();
+
+        foreach (var kvp in flatDict)
+        {
+            var keys = kvp.Key.Split(separator);
+            var current = result;
+
+            for (var i = 0; i < keys.Length - 1; i++)
+            {
+                if (!current.ContainsKey(keys[i]))
+                {
+                    current[keys[i]] = new Dictionary<string, object>();
+                }
+                current = (Dictionary<string, object>)current[keys[i]];
+            }
+
+            current[keys[^1]] = kvp.Value;
         }
 
         return result;
     }
 
-    #endregion JSON 合并与比较
-
-    #region 类型转换辅助
-
     /// <summary>
-    /// 将对象转换为指定类型
+    /// 比较两个 JsonElement 是否相等
     /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="obj">源对象</param>
-    /// <returns>转换后的对象</returns>
-    public static T? ConvertTo<T>(object obj)
+    private static bool JsonElementEquals(JsonElement element1, JsonElement element2)
     {
-        try
+        if (element1.ValueKind != element2.ValueKind)
         {
-            var json = Serialize(obj);
-            return Deserialize<T>(json);
+            return false;
         }
-        catch
+
+        return element1.ValueKind switch
         {
-            return default;
-        }
+            JsonValueKind.Object => CompareJsonObjects(element1, element2),
+            JsonValueKind.Array => CompareJsonArrays(element1, element2),
+            _ => element1.GetRawText() == element2.GetRawText()
+        };
     }
 
     /// <summary>
-    /// 深度克隆对象
+    /// 比较两个 JSON 对象
     /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要克隆的对象</param>
-    /// <returns>克隆后的对象</returns>
-    public static T? DeepClone<T>(T obj)
+    private static bool CompareJsonObjects(JsonElement obj1, JsonElement obj2)
     {
-        if (obj == null)
+        var props1 = obj1.EnumerateObject().ToList();
+        var props2 = obj2.EnumerateObject().ToList();
+
+        if (props1.Count != props2.Count)
         {
-            return default;
+            return false;
         }
 
-        try
+        foreach (var prop1 in props1)
         {
-            var json = Serialize(obj);
-            return Deserialize<T>(json);
+            if (!obj2.TryGetProperty(prop1.Name, out var prop2Value) ||
+                !JsonElementEquals(prop1.Value, prop2Value))
+            {
+                return false;
+            }
         }
-        catch
-        {
-            return default;
-        }
-    }
 
-    #endregion 类型转换辅助
-
-    #region 异步操作
-
-    /// <summary>
-    /// 异步序列化对象到流
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="stream">目标流</param>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>异步任务</returns>
-    public static async Task SerializeAsync<T>(Stream stream, T obj, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        options ??= DefaultOptions;
-        await JsonSerializer.SerializeAsync(stream, obj, options, cancellationToken);
+        return true;
     }
 
     /// <summary>
-    /// 异步从流反序列化对象
+    /// 比较两个 JSON 数组
     /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="stream">源流</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化后的对象</returns>
-    public static async Task<T?> DeserializeAsync<T>(Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    private static bool CompareJsonArrays(JsonElement arr1, JsonElement arr2)
     {
-        options ??= DefaultOptions;
-        return await JsonSerializer.DeserializeAsync<T>(stream, options, cancellationToken);
+        if (arr1.GetArrayLength() != arr2.GetArrayLength())
+        {
+            return false;
+        }
+
+        var items1 = arr1.EnumerateArray().ToList();
+        var items2 = arr2.EnumerateArray().ToList();
+
+        for (var i = 0; i < items1.Count; i++)
+        {
+            if (!JsonElementEquals(items1[i], items2[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    #endregion 异步操作
+    /// <summary>
+    /// 分析 JSON 元素统计信息
+    /// </summary>
+    private static void AnalyzeJsonElement(JsonElement element, JsonStatistics stats, int depth)
+    {
+        stats.MaxDepth = Math.Max(stats.MaxDepth, depth);
+
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                stats.ObjectCount++;
+                foreach (var property in element.EnumerateObject())
+                {
+                    stats.PropertyCount++;
+                    AnalyzeJsonElement(property.Value, stats, depth + 1);
+                }
+                break;
+
+            case JsonValueKind.Array:
+                stats.ArrayCount++;
+                var arrayLength = element.GetArrayLength();
+                stats.ArrayElementCount += arrayLength;
+                foreach (var item in element.EnumerateArray())
+                {
+                    AnalyzeJsonElement(item, stats, depth + 1);
+                }
+                break;
+
+            case JsonValueKind.String:
+                stats.StringCount++;
+                break;
+
+            case JsonValueKind.Number:
+                stats.NumberCount++;
+                break;
+
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                stats.BooleanCount++;
+                break;
+
+            case JsonValueKind.Null:
+                stats.NullCount++;
+                break;
+        }
+    }
+
+    #endregion 私有辅助方法
+}
+
+/// <summary>
+/// JSON 统计信息
+/// </summary>
+public class JsonStatistics
+{
+    /// <summary>
+    /// 对象数量
+    /// </summary>
+    public int ObjectCount { get; set; }
+
+    /// <summary>
+    /// 数组数量
+    /// </summary>
+    public int ArrayCount { get; set; }
+
+    /// <summary>
+    /// 属性数量
+    /// </summary>
+    public int PropertyCount { get; set; }
+
+    /// <summary>
+    /// 数组元素总数
+    /// </summary>
+    public int ArrayElementCount { get; set; }
+
+    /// <summary>
+    /// 字符串值数量
+    /// </summary>
+    public int StringCount { get; set; }
+
+    /// <summary>
+    /// 数字值数量
+    /// </summary>
+    public int NumberCount { get; set; }
+
+    /// <summary>
+    /// 布尔值数量
+    /// </summary>
+    public int BooleanCount { get; set; }
+
+    /// <summary>
+    /// null 值数量
+    /// </summary>
+    public int NullCount { get; set; }
+
+    /// <summary>
+    /// 最大嵌套深度
+    /// </summary>
+    public int MaxDepth { get; set; }
+
+    /// <summary>
+    /// 总节点数
+    /// </summary>
+    public int TotalNodes => ObjectCount + ArrayCount + StringCount + NumberCount + BooleanCount + NullCount;
 }

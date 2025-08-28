@@ -36,6 +36,96 @@ public static partial class YamlHelper
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    #region 对象序列化与反序列化
+
+    /// <summary>
+    /// 将对象序列化为 YAML 字符串
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>YAML 字符串</returns>
+    /// <exception cref="ArgumentNullException">当对象为空时抛出</exception>
+    public static string Serialize<T>(T obj, YamlSerializeOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(obj);
+
+        options ??= new YamlSerializeOptions();
+
+        try
+        {
+            // 先转换为 JSON，再转换为 YAML
+            var json = JsonSerializer.Serialize(obj, JsonOptions);
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
+
+            return ConvertJsonElementToYaml(jsonElement, options);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"序列化失败：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 异步将对象序列化为 YAML 字符串
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="options">序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>YAML 字符串</returns>
+    public static async Task<string> SerializeAsync<T>(T obj, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => Serialize(obj, options), cancellationToken);
+    }
+
+    /// <summary>
+    /// 从 YAML 字符串反序列化为对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="yaml">YAML 字符串</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>反序列化的对象</returns>
+    /// <exception cref="ArgumentException">当 YAML 字符串为空时抛出</exception>
+    /// <exception cref="InvalidOperationException">当反序列化失败时抛出</exception>
+    public static T Deserialize<T>(string yaml, YamlDeserializeOptions? options = null)
+    {
+        if (string.IsNullOrWhiteSpace(yaml))
+        {
+            throw new ArgumentException("YAML 字符串不能为空", nameof(yaml));
+        }
+
+        options ??= new YamlDeserializeOptions();
+
+        try
+        {
+            // 先转换为 JSON，再反序列化
+            var json = ConvertYamlToJson(yaml, options);
+            var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
+
+            return result ?? throw new InvalidOperationException("反序列化失败：结果为空");
+        }
+        catch (Exception ex) when (ex is not (ArgumentException or InvalidOperationException))
+        {
+            throw new InvalidOperationException($"反序列化失败：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 异步从 YAML 字符串反序列化为对象
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="yaml">YAML 字符串</param>
+    /// <param name="options">反序列化选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>反序列化的对象</returns>
+    public static async Task<T> DeserializeAsync<T>(string yaml, YamlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => Deserialize<T>(yaml, options), cancellationToken);
+    }
+
+    #endregion 对象序列化与反序列化
+
     #region 文件操作
 
     /// <summary>
@@ -183,96 +273,6 @@ public static partial class YamlHelper
     }
 
     #endregion 文件操作
-
-    #region 对象序列化与反序列化
-
-    /// <summary>
-    /// 将对象序列化为 YAML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <returns>YAML 字符串</returns>
-    /// <exception cref="ArgumentNullException">当对象为空时抛出</exception>
-    public static string Serialize<T>(T obj, YamlSerializeOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(obj);
-
-        options ??= new YamlSerializeOptions();
-
-        try
-        {
-            // 先转换为 JSON，再转换为 YAML
-            var json = JsonSerializer.Serialize(obj, JsonOptions);
-            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
-
-            return ConvertJsonElementToYaml(jsonElement, options);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"序列化失败：{ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// 异步将对象序列化为 YAML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>YAML 字符串</returns>
-    public static async Task<string> SerializeAsync<T>(T obj, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Serialize(obj, options), cancellationToken);
-    }
-
-    /// <summary>
-    /// 从 YAML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="yaml">YAML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <returns>反序列化的对象</returns>
-    /// <exception cref="ArgumentException">当 YAML 字符串为空时抛出</exception>
-    /// <exception cref="InvalidOperationException">当反序列化失败时抛出</exception>
-    public static T Deserialize<T>(string yaml, YamlDeserializeOptions? options = null)
-    {
-        if (string.IsNullOrWhiteSpace(yaml))
-        {
-            throw new ArgumentException("YAML 字符串不能为空", nameof(yaml));
-        }
-
-        options ??= new YamlDeserializeOptions();
-
-        try
-        {
-            // 先转换为 JSON，再反序列化
-            var json = ConvertYamlToJson(yaml, options);
-            var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
-
-            return result ?? throw new InvalidOperationException("反序列化失败：结果为空");
-        }
-        catch (Exception ex) when (ex is not (ArgumentException or InvalidOperationException))
-        {
-            throw new InvalidOperationException($"反序列化失败：{ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// 异步从 YAML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="yaml">YAML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeAsync<T>(string yaml, YamlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Deserialize<T>(yaml, options), cancellationToken);
-    }
-
-    #endregion 对象序列化与反序列化
 
     #region 字典操作
 
