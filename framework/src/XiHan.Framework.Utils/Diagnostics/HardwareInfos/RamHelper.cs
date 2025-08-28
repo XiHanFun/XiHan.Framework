@@ -44,136 +44,25 @@ public static class RamHelper
 
         try
         {
-            // 单位是 Byte
-            var totalMemoryParts = 0L;
-            var usedMemoryParts = 0L;
-            var freeMemoryParts = 0L;
-            var availableMemoryParts = 0L;
-            var buffersCached = 0L;
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                // 使用更详细的内存信息获取
-                var output = ShellHelper.Bash("cat /proc/meminfo").Trim();
-                var lines = output.Split('\n');
-
-                foreach (var line in lines)
-                {
-                    var parts = line.Split(':', StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length >= 2)
-                    {
-                        var key = parts[0].Trim();
-                        var valueStr = parts[1].Trim().Replace(" kB", "");
-                        if (long.TryParse(valueStr, out var value))
-                        {
-                            var bytes = value * 1024;
-                            switch (key)
-                            {
-                                case "MemTotal":
-                                    totalMemoryParts = bytes;
-                                    break;
-
-                                case "MemFree":
-                                    freeMemoryParts = bytes;
-                                    break;
-
-                                case "MemAvailable":
-                                    availableMemoryParts = bytes;
-                                    break;
-
-                                case "Buffers":
-                                    buffersCached += bytes;
-                                    break;
-
-                                case "Cached":
-                                    buffersCached += bytes;
-                                    break;
-                            }
-                        }
-                    }
-                }
-
-                usedMemoryParts = totalMemoryParts - freeMemoryParts - buffersCached;
-                if (availableMemoryParts == 0)
-                {
-                    availableMemoryParts = freeMemoryParts;
-                }
+                GetLinuxRamInfo(ramInfo);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // 获取总内存
-                var totalOutput = ShellHelper.Bash("sysctl -n hw.memsize").Trim();
-                if (long.TryParse(totalOutput, out totalMemoryParts))
-                {
-                    // 获取内存压力信息
-                    var vmStatOutput = ShellHelper.Bash("vm_stat").Trim();
-                    var lines = vmStatOutput.Split('\n');
-
-                    long pageSize = 4096; // 默认页面大小
-                    var pageSizeOutput = ShellHelper.Bash("sysctl -n hw.pagesize").Trim();
-                    if (long.TryParse(pageSizeOutput, out var ps))
-                    {
-                        pageSize = ps;
-                    }
-
-                    long freePages = 0, wiredPages = 0, activePages = 0, inactivePages = 0;
-
-                    foreach (var line in lines)
-                    {
-                        if (line.Contains("Pages free:"))
-                        {
-                            var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
-                            if (match.Success && long.TryParse(match.Value, out freePages)) { }
-                        }
-                        else if (line.Contains("Pages wired down:"))
-                        {
-                            var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
-                            if (match.Success && long.TryParse(match.Value, out wiredPages)) { }
-                        }
-                        else if (line.Contains("Pages active:"))
-                        {
-                            var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
-                            if (match.Success && long.TryParse(match.Value, out activePages)) { }
-                        }
-                        else if (line.Contains("Pages inactive:"))
-                        {
-                            var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
-                            if (match.Success && long.TryParse(match.Value, out inactivePages)) { }
-                        }
-                    }
-
-                    freeMemoryParts = freePages * pageSize;
-                    usedMemoryParts = (wiredPages + activePages) * pageSize;
-                    availableMemoryParts = (freePages + inactivePages) * pageSize;
-                }
+                GetMacOsRamInfo(ramInfo);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize | Format-List""").Trim();
-                var lines = output.Split(Environment.NewLine);
-                if (lines.Length != 0)
-                {
-                    totalMemoryParts = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split(':', 2)[1].ParseToLong() * 1024;
-                    freeMemoryParts = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split(':', 2)[1].ParseToLong() * 1024;
-                    usedMemoryParts = totalMemoryParts - freeMemoryParts;
-                    availableMemoryParts = freeMemoryParts;
-                }
+                GetWindowsRamInfo(ramInfo);
             }
 
-            // 设置内存信息
-            ramInfo.TotalBytes = totalMemoryParts;
-            ramInfo.UsedBytes = usedMemoryParts;
-            ramInfo.FreeBytes = freeMemoryParts;
-            ramInfo.AvailableBytes = availableMemoryParts;
-            ramInfo.BuffersCachedBytes = buffersCached;
-
-            ramInfo.UsagePercentage = totalMemoryParts > 0
-                ? Math.Round((double)usedMemoryParts / totalMemoryParts * 100, 2)
-                : 0;
-
-            ramInfo.AvailablePercentage = totalMemoryParts > 0
-                ? Math.Round((double)availableMemoryParts / totalMemoryParts * 100, 2)
-                : 0;
+            // 计算百分比
+            if (ramInfo.TotalBytes > 0)
+            {
+                ramInfo.UsagePercentage = Math.Round((double)ramInfo.UsedBytes / ramInfo.TotalBytes * 100, 2);
+                ramInfo.AvailablePercentage = Math.Round((double)ramInfo.AvailableBytes / ramInfo.TotalBytes * 100, 2);
+            }
         }
         catch (Exception ex)
         {
@@ -181,6 +70,131 @@ public static class RamHelper
         }
 
         return ramInfo;
+    }
+
+    /// <summary>
+    /// 获取Windows内存信息
+    /// </summary>
+    /// <param name="ramInfo"></param>
+    private static void GetWindowsRamInfo(RamInfo ramInfo)
+    {
+        var output = ShellHelper.Cmd("powershell", @"-Command ""Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize | Format-List""").Trim();
+        var lines = output.Split(Environment.NewLine);
+        if (lines.Length != 0)
+        {
+            ramInfo.TotalBytes = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split(':', 2)[1].ParseToLong() * 1024;
+            ramInfo.FreeBytes = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split(':', 2)[1].ParseToLong() * 1024;
+            ramInfo.UsedBytes = ramInfo.TotalBytes - ramInfo.FreeBytes;
+            ramInfo.AvailableBytes = ramInfo.FreeBytes;
+        }
+    }
+
+    /// <summary>
+    /// 获取Linux内存信息
+    /// </summary>
+    /// <param name="ramInfo"></param>
+    private static void GetLinuxRamInfo(RamInfo ramInfo)
+    {
+        // 使用更详细的内存信息获取
+        var output = ShellHelper.Bash("cat /proc/meminfo").Trim();
+        var lines = output.Split('\n');
+
+        foreach (var line in lines)
+        {
+            var parts = line.Split(':', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                var key = parts[0].Trim();
+                var valueStr = parts[1].Trim().Replace(" kB", "");
+                if (long.TryParse(valueStr, out var value))
+                {
+                    var bytes = value * 1024;
+                    switch (key)
+                    {
+                        case "MemTotal":
+                            ramInfo.TotalBytes = bytes;
+                            break;
+
+                        case "MemFree":
+                            ramInfo.FreeBytes = bytes;
+                            break;
+
+                        case "MemAvailable":
+                            ramInfo.AvailableBytes = bytes;
+                            break;
+
+                        case "Buffers":
+                            ramInfo.BuffersCachedBytes += bytes;
+                            break;
+
+                        case "Cached":
+                            ramInfo.BuffersCachedBytes += bytes;
+                            break;
+                    }
+                }
+            }
+        }
+
+        ramInfo.UsedBytes = ramInfo.TotalBytes - ramInfo.FreeBytes - ramInfo.BuffersCachedBytes;
+        if (ramInfo.AvailableBytes == 0)
+        {
+            ramInfo.AvailableBytes = ramInfo.FreeBytes;
+        }
+    }
+
+    /// <summary>
+    /// 获取macOS内存信息
+    /// </summary>
+    /// <param name="ramInfo"></param>
+    private static void GetMacOsRamInfo(RamInfo ramInfo)
+    {
+        // 获取总内存
+        var totalOutput = ShellHelper.Bash("sysctl -n hw.memsize").Trim();
+        if (long.TryParse(totalOutput, out var totalMemory))
+        {
+            ramInfo.TotalBytes = totalMemory;
+
+            // 获取内存压力信息
+            var vmStatOutput = ShellHelper.Bash("vm_stat").Trim();
+            var lines = vmStatOutput.Split('\n');
+
+            long pageSize = 4096; // 默认页面大小
+            var pageSizeOutput = ShellHelper.Bash("sysctl -n hw.pagesize").Trim();
+            if (long.TryParse(pageSizeOutput, out var ps))
+            {
+                pageSize = ps;
+            }
+
+            long freePages = 0, wiredPages = 0, activePages = 0, inactivePages = 0;
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("Pages free:"))
+                {
+                    var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
+                    if (match.Success && long.TryParse(match.Value, out freePages)) { }
+                }
+                else if (line.Contains("Pages wired down:"))
+                {
+                    var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
+                    if (match.Success && long.TryParse(match.Value, out wiredPages)) { }
+                }
+                else if (line.Contains("Pages active:"))
+                {
+                    var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
+                    if (match.Success && long.TryParse(match.Value, out activePages)) { }
+                }
+                else if (line.Contains("Pages inactive:"))
+                {
+                    var match = RegexHelper.OneOrMoreNumbersRegex().Match(line);
+                    if (match.Success && long.TryParse(match.Value, out inactivePages)) { }
+                }
+            }
+
+            ramInfo.FreeBytes = freePages * pageSize;
+            ramInfo.UsedBytes = (wiredPages + activePages) * pageSize;
+            ramInfo.AvailableBytes = (freePages + inactivePages) * pageSize;
+        }
     }
 }
 
