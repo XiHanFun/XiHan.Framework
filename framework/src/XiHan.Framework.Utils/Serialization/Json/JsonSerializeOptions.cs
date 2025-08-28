@@ -1,122 +1,182 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:JsonSerializeOptions
-// Guid:86f5669e-8854-4105-8073-6147be5d7b7e
+// Guid:b8f3d421-9c7e-4a2d-8f6b-1e4c2d3a4b5c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/4/22 3:05:40
+// CreateTime:2025/1/6 8:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Utils.Caching;
-using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Serialization.Json.Converters;
 
 namespace XiHan.Framework.Utils.Serialization.Json;
 
 /// <summary>
-/// 序列化参数帮助类
+/// JSON 序列化选项
 /// </summary>
-public static class JsonSerializeOptions
+public class JsonSerializeOptions
 {
     /// <summary>
-    /// 公共参数
+    /// 创建默认选项
     /// </summary>
-    public static JsonSerializerOptions DefaultJsonSerializeOptions => CacheHelper.GetOrAdd("JsonSerializeOptions", () => GetDefaultJsonSerializeOptions());
+    /// <returns>默认序列化选项</returns>
+    public static JsonSerializeOptions Default => new();
 
     /// <summary>
-    /// 获取默认序列化参数
+    /// 创建紧凑格式选项（无缩进、驼峰命名）
     /// </summary>
-    /// <returns></returns>
-    public static JsonSerializerOptions GetDefaultJsonSerializeOptions()
+    /// <returns>紧凑格式选项</returns>
+    public static JsonSerializeOptions Compact => new()
     {
-        JsonSerializerOptions options = new()
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        IgnoreNullValues = true,
+        IgnoreReadOnlyProperties = true
+    };
+
+    /// <summary>
+    /// 创建格式化选项（带缩进、易读格式）
+    /// </summary>
+    /// <returns>格式化选项</returns>
+    public static JsonSerializeOptions Formatted => new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        IgnoreNullValues = false,
+        IgnoreReadOnlyProperties = false,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    /// <summary>
+    /// 创建严格格式选项（保持原始命名、包含所有属性）
+    /// </summary>
+    /// <returns>严格格式选项</returns>
+    public static JsonSerializeOptions Strict => new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = null,
+        IgnoreNullValues = false,
+        IgnoreReadOnlyProperties = false,
+        PropertyNameCaseInsensitive = false,
+        AllowTrailingCommas = false
+    };
+
+    /// <summary>
+    /// 创建 Web API 兼容选项
+    /// </summary>
+    /// <returns>Web API 选项</returns>
+    public static JsonSerializeOptions WebApi => new()
+    {
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        IgnoreNullValues = true,
+        IgnoreReadOnlyProperties = false,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        PropertyNameCaseInsensitive = true
+    };
+
+    /// <summary>
+    /// 是否格式化输出（缩进）
+    /// </summary>
+    public bool WriteIndented { get; set; } = true;
+
+    /// <summary>
+    /// 属性命名策略
+    /// </summary>
+    public JsonNamingPolicy? PropertyNamingPolicy { get; set; } = JsonNamingPolicy.CamelCase;
+
+    /// <summary>
+    /// 是否忽略 null 值
+    /// </summary>
+    public bool IgnoreNullValues { get; set; }
+
+    /// <summary>
+    /// 是否忽略只读属性
+    /// </summary>
+    public bool IgnoreReadOnlyProperties { get; set; }
+
+    /// <summary>
+    /// 属性名是否大小写不敏感
+    /// </summary>
+    public bool PropertyNameCaseInsensitive { get; set; } = true;
+
+    /// <summary>
+    /// 是否允许尾随逗号
+    /// </summary>
+    public bool AllowTrailingCommas { get; set; } = true;
+
+    /// <summary>
+    /// 是否允许注释
+    /// </summary>
+    public bool ReadCommentHandling { get; set; } = true;
+
+    /// <summary>
+    /// 编码器
+    /// </summary>
+    public JavaScriptEncoder? Encoder { get; set; } = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+    /// <summary>
+    /// 最大嵌套深度
+    /// </summary>
+    public int MaxDepth { get; set; } = 64;
+
+    /// <summary>
+    /// 数字处理方式
+    /// </summary>
+    public JsonNumberHandling NumberHandling { get; set; } = JsonNumberHandling.AllowReadingFromString;
+
+    /// <summary>
+    /// 默认忽略条件
+    /// </summary>
+    public JsonIgnoreCondition DefaultIgnoreCondition { get; set; } = JsonIgnoreCondition.Never;
+
+    /// <summary>
+    /// 字符串编码
+    /// </summary>
+    public Encoding Encoding { get; set; } = Encoding.UTF8;
+
+    /// <summary>
+    /// 自定义转换器
+    /// </summary>
+    public List<JsonConverter>? CustomConverters { get; set; }
+
+    /// <summary>
+    /// 转换为 JsonSerializerOptions
+    /// </summary>
+    /// <returns>系统的 JsonSerializerOptions</returns>
+    public JsonSerializerOptions ToSystemOptions()
+    {
+        var options = new JsonSerializerOptions
         {
-            // 格式化输出
-            WriteIndented = true,
-            // 属性名称策略，null 为不改变大小写样式
-            PropertyNamingPolicy = null,
-            // 忽略循环引用
-            ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            // 数字类型
-            NumberHandling = JsonNumberHandling.Strict,
-            // 注释处理，允许在 JSON 输入中使用注释并忽略它们
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            // 忽略只读属性
-            IgnoreReadOnlyProperties = true,
-            // 允许尾随逗号
-            AllowTrailingCommas = true,
-            // 不转义字符
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            WriteIndented = WriteIndented,
+            PropertyNamingPolicy = PropertyNamingPolicy,
+            PropertyNameCaseInsensitive = PropertyNameCaseInsensitive,
+            AllowTrailingCommas = AllowTrailingCommas,
+            ReadCommentHandling = ReadCommentHandling ? JsonCommentHandling.Skip : JsonCommentHandling.Disallow,
+            Encoder = Encoder,
+            MaxDepth = MaxDepth,
+            NumberHandling = NumberHandling,
+            DefaultIgnoreCondition = DefaultIgnoreCondition,
+            IgnoreReadOnlyProperties = IgnoreReadOnlyProperties
         };
 
-        // 布尔类型
-        options.Converters.Add(new BooleanJsonConverter());
+        // 添加自定义转换器
+        if (CustomConverters?.Count > 0)
+        {
+            foreach (var converter in CustomConverters)
+            {
+                options.Converters.Add(converter);
+            }
+        }
 
-        // 数字类型
-        options.Converters.Add(new IntJsonConverter());
-        options.Converters.Add(new LongJsonConverter());
-        options.Converters.Add(new DecimalJsonConverter());
-
-        // 日期类型
-        options.Converters.Add(new DateTimeOffsetJsonConverter("yyyy-MM-dd HH:mm:ss", false));
-        options.Converters.Add(new DateTimeOffsetNullableConverter("yyyy-MM-dd HH:mm:ss", false));
-
-        options.Converters.Add(new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false));
-        options.Converters.Add(new DateTimeNullableConverter("yyyy-MM-dd HH:mm:ss", false));
-
-        options.Converters.Add(new DateOnlyJsonConverter("yyyy-MM-dd"));
-        options.Converters.Add(new DateOnlyNullableConverter("yyyy-MM-dd"));
-
-        options.Converters.Add(new TimeOnlyJsonConverter("HH:mm:ss"));
-        options.Converters.Add(new TimeOnlyNullableConverter("HH:mm:ss"));
-
-        return options;
-    }
-
-    /// <summary>
-    /// 获取默认配置的副本（可安全修改）
-    /// </summary>
-    /// <param name="configure">可选配置委托</param>
-    /// <returns>JsonSerializerOptions 副本</returns>
-    public static JsonSerializerOptions GetClonedDefault(Action<JsonSerializerOptions>? configure = null)
-    {
-        var clone = new JsonSerializerOptions(DefaultJsonSerializeOptions);
-        configure?.Invoke(clone);
-        return clone;
-    }
-
-    /// <summary>
-    /// 使用 baseOptions 作为基础，移除 removeConverter，并添加 addConverters 中的转换器(如果它们尚不存在)
-    /// </summary>
-    /// <param name="baseOptions"></param>
-    /// <param name="removeConverter"></param>
-    /// <param name="addConverters"></param>
-    /// <returns></returns>
-    public static JsonSerializerOptions Create(JsonSerializerOptions baseOptions, JsonConverter removeConverter, params JsonConverter[] addConverters)
-    {
-        return Create(baseOptions, x => x == removeConverter, addConverters);
-    }
-
-    /// <summary>
-    /// 使用 baseOptions 作为基础，移除匹配 removeConverterPredicate 谓词的转换器，并添加 addConverters 中的转换器(如果它们尚不存在)
-    /// </summary>
-    /// <param name="baseOptions"></param>
-    /// <param name="removeConverterPredicate"></param>
-    /// <param name="addConverters"></param>
-    /// <returns></returns>
-    public static JsonSerializerOptions Create(JsonSerializerOptions baseOptions, Func<JsonConverter, bool> removeConverterPredicate, params JsonConverter[] addConverters)
-    {
-        JsonSerializerOptions options = new(baseOptions);
-        _ = options.Converters.RemoveAllWhere(removeConverterPredicate);
-        _ = options.Converters.AddIfNotContains(addConverters);
         return options;
     }
 }
