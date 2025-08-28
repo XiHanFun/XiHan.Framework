@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Serialization.Json;
 /// </summary>
 public static class JsonExtensions
 {
-    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializeOptions.DefaultJsonSerializeOptions;
 
     #region 对象扩展
 

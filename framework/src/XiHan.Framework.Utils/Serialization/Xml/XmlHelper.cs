@@ -37,11 +37,11 @@ public static class XmlHelper
     /// <returns>XML 字符串</returns>
     /// <exception cref="ArgumentNullException">当对象为空时抛出</exception>
     /// <exception cref="InvalidOperationException">当序列化失败时抛出</exception>
-    public static string Serialize<T>(T obj, XmlSerializationOptions? options = null)
+    public static string Serialize<T>(T obj, XmlSerializeOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(obj);
 
-        options ??= new XmlSerializationOptions();
+        options ??= new XmlSerializeOptions();
 
         var settings = new XmlWriterSettings
         {
@@ -83,7 +83,7 @@ public static class XmlHelper
     /// <param name="options">序列化选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>XML 字符串</returns>
-    public static async Task<string> SerializeAsync<T>(T obj, XmlSerializationOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task<string> SerializeAsync<T>(T obj, XmlSerializeOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => Serialize(obj, options), cancellationToken);
     }
@@ -97,14 +97,14 @@ public static class XmlHelper
     /// <returns>反序列化的对象</returns>
     /// <exception cref="ArgumentException">当 XML 字符串为空时抛出</exception>
     /// <exception cref="InvalidOperationException">当反序列化失败时抛出</exception>
-    public static T Deserialize<T>(string xml, XmlDeserializationOptions? options = null)
+    public static T Deserialize<T>(string xml, XmlDeserializeOptions? options = null)
     {
         if (string.IsNullOrWhiteSpace(xml))
         {
             throw new ArgumentException("XML 字符串不能为空", nameof(xml));
         }
 
-        options ??= new XmlDeserializationOptions();
+        options ??= new XmlDeserializeOptions();
 
         try
         {
@@ -136,7 +136,7 @@ public static class XmlHelper
     /// <param name="options">反序列化选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeAsync<T>(string xml, XmlDeserializationOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task<T> DeserializeAsync<T>(string xml, XmlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => Deserialize<T>(xml, options), cancellationToken);
     }
@@ -148,7 +148,7 @@ public static class XmlHelper
     /// <param name="filePath">文件路径</param>
     /// <param name="options">反序列化选项</param>
     /// <returns>反序列化的对象</returns>
-    public static T DeserializeFromFile<T>(string filePath, XmlDeserializationOptions? options = null)
+    public static T DeserializeFromFile<T>(string filePath, XmlDeserializeOptions? options = null)
     {
         if (!File.Exists(filePath))
         {
@@ -167,7 +167,7 @@ public static class XmlHelper
     /// <param name="options">反序列化选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeFromFileAsync<T>(string filePath, XmlDeserializationOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task<T> DeserializeFromFileAsync<T>(string filePath, XmlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(filePath))
         {
@@ -185,7 +185,7 @@ public static class XmlHelper
     /// <param name="obj">要序列化的对象</param>
     /// <param name="filePath">文件路径</param>
     /// <param name="options">序列化选项</param>
-    public static void SerializeToFile<T>(T obj, string filePath, XmlSerializationOptions? options = null)
+    public static void SerializeToFile<T>(T obj, string filePath, XmlSerializeOptions? options = null)
     {
         var xml = Serialize(obj, options);
         var directory = Path.GetDirectoryName(filePath);
@@ -204,7 +204,7 @@ public static class XmlHelper
     /// <param name="filePath">文件路径</param>
     /// <param name="options">序列化选项</param>
     /// <param name="cancellationToken">取消令牌</param>
-    public static async Task SerializeToFileAsync<T>(T obj, string filePath, XmlSerializationOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task SerializeToFileAsync<T>(T obj, string filePath, XmlSerializeOptions? options = null, CancellationToken cancellationToken = default)
     {
         var xml = await SerializeAsync(obj, options, cancellationToken);
         var directory = Path.GetDirectoryName(filePath);

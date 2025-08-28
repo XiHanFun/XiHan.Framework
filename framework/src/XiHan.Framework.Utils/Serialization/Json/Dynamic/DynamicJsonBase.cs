@@ -16,12 +16,12 @@ using System.Dynamic;
 using System.Text.Json;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 基类，提供共同的实现和扩展方法
 /// </summary>
-public abstract class DynamicJsonBase : DynamicObject, IDynamicJson
+public abstract class DynamicJsonBase : DynamicObject
 {
     /// <summary>
     /// 获取原始值

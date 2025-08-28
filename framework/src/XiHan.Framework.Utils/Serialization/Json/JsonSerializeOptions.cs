@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JsonSerializerOptionsHelper
+// FileName:JsonSerializeOptions
 // Guid:86f5669e-8854-4105-8073-6147be5d7b7e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -24,18 +24,18 @@ namespace XiHan.Framework.Utils.Serialization.Json;
 /// <summary>
 /// 序列化参数帮助类
 /// </summary>
-public static class JsonSerializerOptionsHelper
+public static class JsonSerializeOptions
 {
     /// <summary>
     /// 公共参数
     /// </summary>
-    public static JsonSerializerOptions DefaultJsonSerializerOptions => CacheHelper.GetOrAdd("JsonSerializerOptions", () => GetDefaultJsonSerializerOptions());
+    public static JsonSerializerOptions DefaultJsonSerializeOptions => CacheHelper.GetOrAdd("JsonSerializeOptions", () => GetDefaultJsonSerializeOptions());
 
     /// <summary>
     /// 获取默认序列化参数
     /// </summary>
     /// <returns></returns>
-    public static JsonSerializerOptions GetDefaultJsonSerializerOptions()
+    public static JsonSerializerOptions GetDefaultJsonSerializeOptions()
     {
         JsonSerializerOptions options = new()
         {
@@ -88,7 +88,7 @@ public static class JsonSerializerOptionsHelper
     /// <returns>JsonSerializerOptions 副本</returns>
     public static JsonSerializerOptions GetClonedDefault(Action<JsonSerializerOptions>? configure = null)
     {
-        var clone = new JsonSerializerOptions(DefaultJsonSerializerOptions);
+        var clone = new JsonSerializerOptions(DefaultJsonSerializeOptions);
         configure?.Invoke(clone);
         return clone;
     }

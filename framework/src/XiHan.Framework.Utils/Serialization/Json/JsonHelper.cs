@@ -14,7 +14,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using XiHan.Framework.Utils.Serialization.Dynamic;
+using XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 namespace XiHan.Framework.Utils.Serialization.Json;
 
@@ -23,7 +23,7 @@ namespace XiHan.Framework.Utils.Serialization.Json;
 /// </summary>
 public static class JsonHelper
 {
-    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializerOptionsHelper.DefaultJsonSerializerOptions;
+    private static readonly JsonSerializerOptions DefaultOptions = JsonSerializeOptions.DefaultJsonSerializeOptions;
 
     #region 序列化与反序列化
 
@@ -346,7 +346,7 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = JsonSerializerOptionsHelper.GetClonedDefault(opt =>
+            var options = JsonSerializeOptions.GetClonedDefault(opt =>
             {
                 opt.WriteIndented = indented;
             });
