@@ -80,7 +80,8 @@ public class JsonSerializeOptions
         IgnoreNullValues = true,
         IgnoreReadOnlyProperties = false,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        CustomConverters = JsonConverterFactory.GetAllConverters()
     };
 
     /// <summary>
