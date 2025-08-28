@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XmlSerializationOptions
+// FileName:XmlSerializeOptions
 // Guid:93bf8224-ecd0-4554-beb8-af313aa2319a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,19 +19,19 @@ namespace XiHan.Framework.Utils.Serialization.Xml;
 /// <summary>
 /// XML 序列化选项
 /// </summary>
-public class XmlSerializationOptions
+public class XmlSerializeOptions
 {
     /// <summary>
     /// 创建默认选项
     /// </summary>
     /// <returns>默认序列化选项</returns>
-    public static XmlSerializationOptions Default => new();
+    public static XmlSerializeOptions Default => new();
 
     /// <summary>
     /// 创建紧凑格式选项（无缩进、无声明）
     /// </summary>
     /// <returns>紧凑格式选项</returns>
-    public static XmlSerializationOptions Compact => new()
+    public static XmlSerializeOptions Compact => new()
     {
         OmitXmlDeclaration = true,
         Indent = false,
@@ -42,7 +42,7 @@ public class XmlSerializationOptions
     /// 创建格式化选项（带缩进、带声明）
     /// </summary>
     /// <returns>格式化选项</returns>
-    public static XmlSerializationOptions Formatted => new()
+    public static XmlSerializeOptions Formatted => new()
     {
         OmitXmlDeclaration = false,
         Indent = true,

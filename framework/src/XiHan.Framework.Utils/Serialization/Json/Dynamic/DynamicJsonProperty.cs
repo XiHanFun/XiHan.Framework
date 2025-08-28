@@ -15,7 +15,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 属性，类似 Newtonsoft.Json 的 JProperty

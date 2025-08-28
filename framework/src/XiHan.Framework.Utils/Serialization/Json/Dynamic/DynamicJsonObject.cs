@@ -19,7 +19,7 @@ using System.Reflection;
 using System.Text.Json;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 对象，支持点语法访问属性

@@ -18,7 +18,7 @@ using System.Dynamic;
 using System.Text.Json;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Utils.Serialization.Dynamic;
+namespace XiHan.Framework.Utils.Serialization.Json.Dynamic;
 
 /// <summary>
 /// 动态 JSON 数组，支持索引访问和 dynamic 操作
