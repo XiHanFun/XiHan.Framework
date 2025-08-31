@@ -3,34 +3,38 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DistanceType
-// Guid:d06fa815-d63e-48ca-ac57-7f45f33ecd73
+// FileName:NullDisposable
+// Guid:257546a7-6db3-4fc5-b7be-d143816958f1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/7/8 17:06:49
+// CreateTime:2024/10/27 2:14:31
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Maths.Enums;
+namespace XiHan.Framework.Utils.Threading;
 
 /// <summary>
-/// 距离计算类型枚举
+/// 空可释放对象
 /// </summary>
-public enum DistanceType
+public sealed class NullDisposable : IDisposable
 {
     /// <summary>
-    /// 欧几里得距离
+    /// 构造函数
     /// </summary>
-    Euclidean,
+    private NullDisposable()
+    {
+    }
 
     /// <summary>
-    /// 曼哈顿距离
+    /// 实例
     /// </summary>
-    Manhattan,
+    public static NullDisposable Instance { get; } = new();
 
     /// <summary>
-    /// 切比雪夫距离
+    /// 释放资源
     /// </summary>
-    Chebyshev
+    public void Dispose()
+    {
+    }
 }

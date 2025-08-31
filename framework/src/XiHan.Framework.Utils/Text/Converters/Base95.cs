@@ -89,7 +89,7 @@ public static class Base95
                 throw new ArgumentException($"非法 Base95 字符: {c}");
             }
 
-            value = value * Base + index;
+            value = (value * Base) + index;
         }
 
         var bytes = value.ToByteArray();

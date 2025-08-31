@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Security.Cryptography;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// Ecies 椭圆曲线加密解密

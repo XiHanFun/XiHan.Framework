@@ -483,7 +483,7 @@ public static class CronHelper
             }
         }
 
-        result.Values = values.Distinct().OrderBy(v => v).ToList();
+        result.Values = [.. values.Distinct().OrderBy(v => v)];
         return result;
     }
 

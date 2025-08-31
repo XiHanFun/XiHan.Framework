@@ -63,7 +63,7 @@ public static class Base62
         BigInteger intData = 0;
         foreach (var c in input)
         {
-            intData = intData * 62 + CharMap[c];
+            intData = (intData * 62) + CharMap[c];
         }
 
         var bytes = intData.ToByteArray();
@@ -102,7 +102,7 @@ public static class Base62
         long result = 0;
         foreach (var c in input)
         {
-            result = result * 62 + CharMap[c];
+            result = (result * 62) + CharMap[c];
         }
         return result;
     }

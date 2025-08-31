@@ -19,8 +19,9 @@ using System.Reflection;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Localization;
+using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Utils.Reflections;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 类型辅助工具类

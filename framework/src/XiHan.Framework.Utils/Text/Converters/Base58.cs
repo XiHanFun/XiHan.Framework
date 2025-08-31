@@ -92,7 +92,7 @@ public static class Base58
                 throw new FormatException($"Invalid Base58 character `{c}`");
             }
 
-            intData = intData * 58 + digit;
+            intData = (intData * 58) + digit;
         }
 
         // 转换成 byte[]

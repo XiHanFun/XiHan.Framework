@@ -15,7 +15,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using XiHan.Framework.Utils.Themes;
 
 namespace XiHan.Framework.Utils.Reflections;
 
@@ -32,7 +31,7 @@ public static class FieldInfoExtensions
     public static string GetDescriptionValue(this FieldInfo field)
     {
         var descValue = field.Name;
-        if (field.GetCustomAttribute(typeof(DescriptionAttribute), false) is DescriptionAttribute description)
+        if (field.GetCustomAttribute<DescriptionAttribute>(false) is DescriptionAttribute description)
         {
             descValue = description.Description;
         }
@@ -47,25 +46,10 @@ public static class FieldInfoExtensions
     public static string GetDisplayValue(this FieldInfo field)
     {
         var displayValue = field.Name;
-        if (field.GetCustomAttribute(typeof(DisplayAttribute), false) is DisplayAttribute display)
+        if (field.GetCustomAttribute<DisplayAttribute>(false) is DisplayAttribute display)
         {
             displayValue = display.Description ?? displayValue;
         }
         return displayValue;
-    }
-
-    /// <summary>
-    /// 获取字段主题特性的值
-    /// </summary>
-    /// <param name="field"></param>
-    /// <returns></returns>
-    public static ThemeColor GetThemeColorValue(this FieldInfo field)
-    {
-        var themeColor = new ThemeColor();
-        if (field.GetCustomAttribute(typeof(ThemeAttribute), false) is ThemeAttribute theme)
-        {
-            themeColor = theme.ThemeColor;
-        }
-        return themeColor;
     }
 }

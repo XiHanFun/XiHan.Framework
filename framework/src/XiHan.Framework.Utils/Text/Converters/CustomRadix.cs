@@ -106,7 +106,7 @@ public class CustomRadix
                 throw new ArgumentException($"非法字符: {c}");
             }
 
-            value = value * radix + valueChar;
+            value = (value * radix) + valueChar;
         }
 
         var bytes = value.ToByteArray();

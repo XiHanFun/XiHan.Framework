@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Security.Cryptography;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// RSA 加密算法助手类，提供加密、解密、签名和验证签名的功能

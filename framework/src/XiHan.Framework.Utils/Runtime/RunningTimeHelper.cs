@@ -45,7 +45,7 @@ public static class RunningTimeHelper
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 var output = ShellHelper.Bash("uptime -s").Trim();
-                var timeSpan = DateTime.Now - output.Trim().ParseToDateTime();
+                var timeSpan = DateTime.Now - output.Trim().ToDateTime();
                 runTime = timeSpan.FormatTimeSpanToString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

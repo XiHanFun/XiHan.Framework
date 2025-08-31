@@ -157,7 +157,7 @@ public static class PredicateComposer
         }
 
         var result = predicateList.First();
-        for (int i = 1; i < predicateList.Count; i++)
+        for (var i = 1; i < predicateList.Count; i++)
         {
             result = result.And(predicateList[i]);
         }
@@ -191,7 +191,7 @@ public static class PredicateComposer
         }
 
         var result = predicateList.First();
-        for (int i = 1; i < predicateList.Count; i++)
+        for (var i = 1; i < predicateList.Count; i++)
         {
             result = result.Or(predicateList[i]);
         }

@@ -15,7 +15,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Utils.Text;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 字符串帮助类

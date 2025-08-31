@@ -14,7 +14,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace XiHan.Framework.Utils.Maths;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 数学运算辅助类

@@ -159,7 +159,7 @@ public static class GenericExtensions
         {
             PropertyName = info.Name,
             PropertyType = info.PropertyType.Name,
-            PropertyValue = info.GetValue(entity).ParseToString()
+            PropertyValue = info.GetValue(entity)?.ToString()
         })];
     }
 
@@ -180,8 +180,8 @@ public static class GenericExtensions
         foreach (var variance in propertyInfo)
         {
             var type = variance.PropertyType;
-            var before = variance.GetValue(oldEntity, null).CastTo(type);
-            var after = variance.GetValue(newEntity, null).CastTo(type);
+            var before = variance.GetValue(oldEntity, null).ConvertTo(type);
+            var after = variance.GetValue(newEntity, null).ConvertTo(type);
 
             // 使用 Equals 进行值比较，处理值类型和引用类型
             if (before is not null && after is not null)

@@ -14,12 +14,12 @@
 
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Utils.Verifications;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 数据验证器
 /// </summary>
-public static class DataChecker
+public static class ValidateHelper
 {
     #region 验证输入字符串是否与模式字符串匹配
 
