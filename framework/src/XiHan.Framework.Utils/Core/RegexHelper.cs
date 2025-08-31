@@ -14,7 +14,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Utils.Verifications;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 字符验证帮助类

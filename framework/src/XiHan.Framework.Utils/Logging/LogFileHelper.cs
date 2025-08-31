@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FileLogHelper
+// FileName:LogFileHelper
 // Guid:24e38f75-3d64-4a8c-b21e-cdf5b0ba1ed3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,7 +19,7 @@ namespace XiHan.Framework.Utils.Logging;
 /// <summary>
 /// 简单的文件日志输出类
 /// </summary>
-public static class FileLogHelper
+public static class LogFileHelper
 {
     private static readonly Lock ObjLock = new();
     private static readonly Dictionary<string, int> LogFileCounter = [];

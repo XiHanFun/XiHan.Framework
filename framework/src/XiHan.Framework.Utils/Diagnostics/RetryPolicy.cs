@@ -55,7 +55,7 @@ public class RetryPolicy
         Action<RetryResult>? onFailureCallback = null)
     {
         Guard.Range(maxRetries, nameof(maxRetries), 0, 100);
-        
+
         _maxRetries = maxRetries;
         _retryStrategy = retryStrategy ?? new FixedDelayStrategy(TimeSpan.FromSeconds(1));
         _retryCondition = retryCondition ?? new DefaultRetryCondition();
@@ -463,7 +463,7 @@ public class ExponentialBackoffStrategy : IRetryStrategy
     public TimeSpan GetDelay(int retryCount)
     {
         var delay = TimeSpan.FromTicks((long)(_baseDelay.Ticks * Math.Pow(_backoffMultiplier, retryCount - 1)));
-        
+
         if (_maxDelay.HasValue && delay > _maxDelay.Value)
         {
             delay = _maxDelay.Value;
@@ -547,7 +547,7 @@ public class JitteredStrategy : IRetryStrategy
     public TimeSpan GetDelay(int retryCount)
     {
         var baseDelay = _baseStrategy.GetDelay(retryCount);
-        var jitter = _random.NextDouble() * _jitterPercentage * 2 - _jitterPercentage; // -jitterPercentage 到 +jitterPercentage
+        var jitter = (_random.NextDouble() * _jitterPercentage * 2) - _jitterPercentage; // -jitterPercentage 到 +jitterPercentage
         var adjustedTicks = (long)(baseDelay.Ticks * (1 + jitter));
         return TimeSpan.FromTicks(Math.Max(0, adjustedTicks));
     }
@@ -728,13 +728,13 @@ public class RetryResult
     /// <summary>
     /// 是否超时
     /// </summary>
-    public bool IsTimeout => !IsSuccess && Attempts.Any();
+    public bool IsTimeout => !IsSuccess && Attempts.Count != 0;
 
     /// <summary>
     /// 平均每次尝试的耗时
     /// </summary>
-    public TimeSpan AverageAttemptTime => TotalAttempts > 0 
-        ? TimeSpan.FromTicks(TotalElapsedTime.Ticks / TotalAttempts) 
+    public TimeSpan AverageAttemptTime => TotalAttempts > 0
+        ? TimeSpan.FromTicks(TotalElapsedTime.Ticks / TotalAttempts)
         : TimeSpan.Zero;
 }
 

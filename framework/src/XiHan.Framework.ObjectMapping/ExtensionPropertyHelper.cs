@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
-using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.ObjectMapping;
 

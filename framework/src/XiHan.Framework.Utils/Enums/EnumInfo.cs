@@ -3,54 +3,49 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ApplicationExitReason
-// Guid:c5c66d91-17a9-4618-b681-bf69f41cab19
+// FileName:EnumInfo
+// Guid:ee068353-ab88-4140-b766-a2b961ab67c3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/7/4 3:42:47
+// CreateTime:2025/9/1 5:10:59
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Runtime.Enums;
+namespace XiHan.Framework.Utils.Enums;
 
 /// <summary>
-/// 应用程序退出原因枚举
+/// 枚举信息
 /// </summary>
-public enum ApplicationExitReason
+public record EnumInfo
 {
     /// <summary>
-    /// 正常退出
+    /// 枚举类型
     /// </summary>
-    Normal = 0,
+    public Type Type { get; set; } = null!;
 
     /// <summary>
-    /// 用户请求退出
+    /// 底层类型
     /// </summary>
-    UserRequested = 1,
+    public Type UnderlyingType { get; set; } = null!;
 
     /// <summary>
-    /// 系统关闭
+    /// 描述
     /// </summary>
-    SystemShutdown = 2,
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// 异常退出
+    /// 是否为标志枚举
     /// </summary>
-    Exception = 3,
+    public bool IsFlags { get; set; }
 
     /// <summary>
-    /// 强制退出
+    /// 所有值
     /// </summary>
-    Forced = 4,
+    public object[] Values { get; set; } = [];
 
     /// <summary>
-    /// 内存不足
+    /// 所有名称
     /// </summary>
-    OutOfMemory = 5,
-
-    /// <summary>
-    /// 重启
-    /// </summary>
-    Restart = 6
+    public string[] Names { get; set; } = [];
 }

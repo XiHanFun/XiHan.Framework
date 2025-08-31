@@ -124,7 +124,7 @@ public static class CpuHelper
                 var cache = line.Split(':', 2)[1].Trim();
                 if (!string.IsNullOrEmpty(cache) && cache != "0")
                 {
-                    cpuInfo.CacheBytes = cache.ParseToLong() * 1024;
+                    cpuInfo.CacheBytes = cache.ToLong() * 1024;
                 }
             }
         }
@@ -167,7 +167,7 @@ public static class CpuHelper
             }
             else if (line.StartsWith("cache size"))
             {
-                cpuInfo.CacheBytes = line.Split(':')[1].Trim().ParseToLong();
+                cpuInfo.CacheBytes = line.Split(':')[1].Trim().ToLong();
             }
             else if (line.StartsWith("cpu cores"))
             {

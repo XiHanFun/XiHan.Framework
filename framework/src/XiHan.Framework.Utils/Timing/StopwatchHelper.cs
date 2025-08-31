@@ -175,10 +175,7 @@ public static class StopwatchHelper
     /// <exception cref="ArgumentNullException">操作为null时抛出</exception>
     public static TimeSpan Measure(Action action)
     {
-        if (action == null)
-        {
-            throw new ArgumentNullException(nameof(action));
-        }
+        ArgumentNullException.ThrowIfNull(action);
 
         var stopwatch = Stopwatch.StartNew();
         action();
@@ -194,10 +191,7 @@ public static class StopwatchHelper
     /// <exception cref="ArgumentNullException">操作为null时抛出</exception>
     public static async Task<TimeSpan> MeasureAsync(Func<Task> asyncAction)
     {
-        if (asyncAction == null)
-        {
-            throw new ArgumentNullException(nameof(asyncAction));
-        }
+        ArgumentNullException.ThrowIfNull(asyncAction);
 
         var stopwatch = Stopwatch.StartNew();
         await asyncAction();
@@ -214,10 +208,7 @@ public static class StopwatchHelper
     /// <exception cref="ArgumentNullException">函数为null时抛出</exception>
     public static (T Result, TimeSpan Elapsed) MeasureWithResult<T>(Func<T> func)
     {
-        if (func == null)
-        {
-            throw new ArgumentNullException(nameof(func));
-        }
+        ArgumentNullException.ThrowIfNull(func);
 
         var stopwatch = Stopwatch.StartNew();
         var result = func();
@@ -234,10 +225,7 @@ public static class StopwatchHelper
     /// <exception cref="ArgumentNullException">函数为null时抛出</exception>
     public static async Task<(T Result, TimeSpan Elapsed)> MeasureWithResultAsync<T>(Func<Task<T>> asyncFunc)
     {
-        if (asyncFunc == null)
-        {
-            throw new ArgumentNullException(nameof(asyncFunc));
-        }
+        ArgumentNullException.ThrowIfNull(asyncFunc);
 
         var stopwatch = Stopwatch.StartNew();
         var result = await asyncFunc();
@@ -461,10 +449,7 @@ public static class StopwatchHelper
             throw new ArgumentException("操作名称不能为空", nameof(operationName));
         }
 
-        if (action == null)
-        {
-            throw new ArgumentNullException(nameof(action));
-        }
+        ArgumentNullException.ThrowIfNull(action);
 
         if (iterations <= 0)
         {
@@ -493,37 +478,6 @@ public static class StopwatchHelper
     }
 
     #endregion
-}
-
-/// <summary>
-/// 时间精度枚举
-/// </summary>
-public enum TimePrecision
-{
-    /// <summary>
-    /// 纳秒
-    /// </summary>
-    Nanoseconds,
-
-    /// <summary>
-    /// 微秒
-    /// </summary>
-    Microseconds,
-
-    /// <summary>
-    /// 毫秒
-    /// </summary>
-    Milliseconds,
-
-    /// <summary>
-    /// 秒
-    /// </summary>
-    Seconds,
-
-    /// <summary>
-    /// 自动选择最合适的精度
-    /// </summary>
-    Auto
 }
 
 /// <summary>
@@ -595,7 +549,11 @@ public class TimingStatistics
         {
             lock (_lock)
             {
-                if (_timings.Count == 0) return TimeSpan.Zero;
+                if (_timings.Count == 0)
+                {
+                    return TimeSpan.Zero;
+                }
+
                 return TimeSpan.FromTicks(TotalTime.Ticks / _timings.Count);
             }
         }
@@ -649,7 +607,10 @@ public class TimingStatistics
     {
         lock (_lock)
         {
-            if (_timings.Count <= 1) return TimeSpan.Zero;
+            if (_timings.Count <= 1)
+            {
+                return TimeSpan.Zero;
+            }
 
             var avgTicks = AverageTime.Ticks;
             var sumSquaredDiffs = _timings.Sum(t => Math.Pow(t.Ticks - avgTicks, 2));
@@ -674,7 +635,10 @@ public class TimingStatistics
 
         lock (_lock)
         {
-            if (_timings.Count == 0) return TimeSpan.Zero;
+            if (_timings.Count == 0)
+            {
+                return TimeSpan.Zero;
+            }
 
             var sortedTimings = _timings.OrderBy(t => t).ToList();
             var index = (int)Math.Ceiling(percentile / 100.0 * sortedTimings.Count) - 1;
@@ -709,6 +673,37 @@ public class TimingStatistics
     {
         return $"{OperationName}: {ExecutionCount}次, 平均{StopwatchHelper.FormatElapsed(AverageTime)}, 总计{StopwatchHelper.FormatElapsed(TotalTime)}";
     }
+}
+
+/// <summary>
+/// 时间精度枚举
+/// </summary>
+public enum TimePrecision
+{
+    /// <summary>
+    /// 纳秒
+    /// </summary>
+    Nanoseconds,
+
+    /// <summary>
+    /// 微秒
+    /// </summary>
+    Microseconds,
+
+    /// <summary>
+    /// 毫秒
+    /// </summary>
+    Milliseconds,
+
+    /// <summary>
+    /// 秒
+    /// </summary>
+    Seconds,
+
+    /// <summary>
+    /// 自动选择最合适的精度
+    /// </summary>
+    Auto
 }
 
 /// <summary>

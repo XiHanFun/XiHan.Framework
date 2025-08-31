@@ -17,7 +17,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using XiHan.Framework.Utils.Logging;
 
-namespace XiHan.Framework.Utils.Configuration;
+namespace XiHan.Framework.Utils.Objects;
 
 /// <summary>
 /// 深度合并帮助类，用于合并多个对象配置，保留优先级最高的非空值，同时合并集合和字典
@@ -129,9 +129,9 @@ public static class DeepMergeHelper
     /// <returns>如果可以合并返回true，否则返回false</returns>
     private static bool CanMerge(object? target, object? source)
     {
-        return target is not null && source is not null && ((IsMergeableCollection(target) && IsMergeableCollection(source)) ||
-               (IsDictionary(target) && IsDictionary(source)) ||
-               (IsComplexObject(target) && IsComplexObject(source) && target.GetType() == source.GetType()));
+        return target is not null && source is not null && (IsMergeableCollection(target) && IsMergeableCollection(source) ||
+               IsDictionary(target) && IsDictionary(source) ||
+               IsComplexObject(target) && IsComplexObject(source) && target.GetType() == source.GetType());
     }
 
     /// <summary>
@@ -228,11 +228,11 @@ public static class DeepMergeHelper
         var type = value.GetType();
 
         // 数组或实现了泛型集合接口的类型
-        return type.IsArray || (type.IsGenericType && (
+        return type.IsArray || type.IsGenericType && (
             typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
             typeof(ICollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
             typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition())
-        ));
+        );
     }
 
     /// <summary>

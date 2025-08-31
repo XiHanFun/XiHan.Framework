@@ -14,7 +14,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.Security.Cryptography;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// 摩尔斯电码编码解码辅助类

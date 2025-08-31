@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Utils.Core;
+using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Core.Logging;
 

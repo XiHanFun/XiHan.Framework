@@ -57,10 +57,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static byte[] ReadAllBytes(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (stream is MemoryStream memoryStream)
         {
@@ -81,10 +78,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static async Task<byte[]> ReadAllBytesAsync(Stream stream, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (stream is MemoryStream memoryStream)
         {
@@ -105,10 +99,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static string ReadAllText(Stream stream, Encoding? encoding = null)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         encoding ??= DefaultEncoding;
         using var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
@@ -125,10 +116,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static async Task<string> ReadAllTextAsync(Stream stream, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         encoding ??= DefaultEncoding;
         using var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
@@ -144,10 +132,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static string[] ReadAllLines(Stream stream, Encoding? encoding = null)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         encoding ??= DefaultEncoding;
         var lines = new List<string>();
@@ -172,10 +157,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static async Task<string[]> ReadAllLinesAsync(Stream stream, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         encoding ??= DefaultEncoding;
         var lines = new List<string>();
@@ -198,15 +180,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static void WriteAllBytes(Stream stream, byte[] buffer)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (buffer == null)
-        {
-            throw new ArgumentNullException(nameof(buffer));
-        }
+        ArgumentNullException.ThrowIfNull(buffer);
 
         stream.Write(buffer, 0, buffer.Length);
     }
@@ -220,15 +196,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task WriteAllBytesAsync(Stream stream, byte[] buffer, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (buffer == null)
-        {
-            throw new ArgumentNullException(nameof(buffer));
-        }
+        ArgumentNullException.ThrowIfNull(buffer);
 
         await stream.WriteAsync(buffer, 0, buffer.Length, cancellationToken);
     }
@@ -242,15 +212,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static void WriteAllText(Stream stream, string text, Encoding? encoding = null)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (text == null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
+        ArgumentNullException.ThrowIfNull(text);
 
         encoding ??= DefaultEncoding;
         using var writer = new StreamWriter(stream, encoding, leaveOpen: true);
@@ -268,15 +232,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task WriteAllTextAsync(Stream stream, string text, Encoding? encoding = null, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (text == null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
+        ArgumentNullException.ThrowIfNull(text);
 
         encoding ??= DefaultEncoding;
         using var writer = new StreamWriter(stream, encoding, leaveOpen: true);
@@ -298,15 +256,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static long CopyTo(Stream source, Stream destination, int bufferSize = DefaultBufferSize)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         var buffer = new byte[bufferSize];
         long totalBytes = 0;
@@ -332,15 +284,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task<long> CopyToAsync(Stream source, Stream destination, int bufferSize = DefaultBufferSize, CancellationToken cancellationToken = default)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         var buffer = new byte[bufferSize];
         long totalBytes = 0;
@@ -372,19 +318,13 @@ public static class StreamHelper
         int bufferSize = DefaultBufferSize,
         CancellationToken cancellationToken = default)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         var buffer = new byte[bufferSize];
         long totalBytes = 0;
-        long totalLength = source.CanSeek ? source.Length : -1;
+        var totalLength = source.CanSeek ? source.Length : -1;
         var stopwatch = Stopwatch.StartNew();
         int bytesRead;
 
@@ -419,10 +359,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">字节数组为null时抛出</exception>
     public static MemoryStream CreateMemoryStream(byte[] buffer, bool writable = true)
     {
-        if (buffer == null)
-        {
-            throw new ArgumentNullException(nameof(buffer));
-        }
+        ArgumentNullException.ThrowIfNull(buffer);
 
         return new MemoryStream(buffer, writable);
     }
@@ -436,10 +373,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">文本为null时抛出</exception>
     public static MemoryStream CreateMemoryStreamFromText(string text, Encoding? encoding = null)
     {
-        if (text == null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
+        ArgumentNullException.ThrowIfNull(text);
 
         encoding ??= DefaultEncoding;
         var bytes = encoding.GetBytes(text);
@@ -454,10 +388,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static byte[] ToByteArray(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (stream is MemoryStream memoryStream)
         {
@@ -491,10 +422,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static string ToBase64String(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         var bytes = ToByteArray(stream);
         return Convert.ToBase64String(bytes);
@@ -508,10 +436,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">字符串为null时抛出</exception>
     public static MemoryStream FromBase64String(string base64String)
     {
-        if (base64String == null)
-        {
-            throw new ArgumentNullException(nameof(base64String));
-        }
+        ArgumentNullException.ThrowIfNull(base64String);
 
         var bytes = Convert.FromBase64String(base64String);
         return new MemoryStream(bytes);
@@ -530,15 +455,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static void CompressGZip(Stream source, Stream destination, CompressionLevel level = CompressionLevel.Optimal)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         using var gzipStream = new GZipStream(destination, level, leaveOpen: true);
         source.CopyTo(gzipStream);
@@ -554,15 +473,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task CompressGZipAsync(Stream source, Stream destination, CompressionLevel level = CompressionLevel.Optimal, CancellationToken cancellationToken = default)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         using var gzipStream = new GZipStream(destination, level, leaveOpen: true);
         await source.CopyToAsync(gzipStream, cancellationToken);
@@ -576,15 +489,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static void DecompressGZip(Stream source, Stream destination)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         using var gzipStream = new GZipStream(source, CompressionMode.Decompress, leaveOpen: true);
         gzipStream.CopyTo(destination);
@@ -599,15 +506,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task DecompressGZipAsync(Stream source, Stream destination, CancellationToken cancellationToken = default)
     {
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (destination == null)
-        {
-            throw new ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         using var gzipStream = new GZipStream(source, CompressionMode.Decompress, leaveOpen: true);
         await gzipStream.CopyToAsync(destination, cancellationToken);
@@ -622,10 +523,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">数据为null时抛出</exception>
     public static byte[] CompressBytes(byte[] data, CompressionLevel level = CompressionLevel.Optimal)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
+        ArgumentNullException.ThrowIfNull(data);
 
         using var sourceStream = new MemoryStream(data);
         using var destinationStream = new MemoryStream();
@@ -641,10 +539,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">数据为null时抛出</exception>
     public static byte[] DecompressBytes(byte[] compressedData)
     {
-        if (compressedData == null)
-        {
-            throw new ArgumentNullException(nameof(compressedData));
-        }
+        ArgumentNullException.ThrowIfNull(compressedData);
 
         using var sourceStream = new MemoryStream(compressedData);
         using var destinationStream = new MemoryStream();
@@ -665,15 +560,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static string ComputeHash(Stream stream, HashAlgorithm algorithm)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        if (algorithm == null)
-        {
-            throw new ArgumentNullException(nameof(algorithm));
-        }
+        ArgumentNullException.ThrowIfNull(algorithm);
 
         var originalPosition = stream.CanSeek ? stream.Position : 0;
         try
@@ -703,10 +592,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static string ComputeMD5Hash(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         using var md5 = MD5.Create();
         return ComputeHash(stream, md5);
@@ -720,10 +606,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static string ComputeSHA256Hash(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         using var sha256 = SHA256.Create();
         return ComputeHash(stream, sha256);
@@ -739,15 +622,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static bool CompareStreams(Stream stream1, Stream stream2, int bufferSize = DefaultBufferSize)
     {
-        if (stream1 == null)
-        {
-            throw new ArgumentNullException(nameof(stream1));
-        }
+        ArgumentNullException.ThrowIfNull(stream1);
 
-        if (stream2 == null)
-        {
-            throw new ArgumentNullException(nameof(stream2));
-        }
+        ArgumentNullException.ThrowIfNull(stream2);
 
         if (stream1.CanSeek && stream2.CanSeek && stream1.Length != stream2.Length)
         {
@@ -793,15 +670,9 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">参数为null时抛出</exception>
     public static async Task<bool> CompareStreamsAsync(Stream stream1, Stream stream2, int bufferSize = DefaultBufferSize, CancellationToken cancellationToken = default)
     {
-        if (stream1 == null)
-        {
-            throw new ArgumentNullException(nameof(stream1));
-        }
+        ArgumentNullException.ThrowIfNull(stream1);
 
-        if (stream2 == null)
-        {
-            throw new ArgumentNullException(nameof(stream2));
-        }
+        ArgumentNullException.ThrowIfNull(stream2);
 
         if (stream1.CanSeek && stream2.CanSeek && stream1.Length != stream2.Length)
         {
@@ -844,10 +715,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static StreamInfo GetStreamInfo(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         return new StreamInfo
         {
@@ -913,10 +781,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentException">文件路径为空时抛出</exception>
     public static void SaveToFile(Stream stream, string filePath, int bufferSize = DefaultBufferSize)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -938,10 +803,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentException">文件路径为空时抛出</exception>
     public static async Task SaveToFileAsync(Stream stream, string filePath, int bufferSize = DefaultBufferSize, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -980,10 +842,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static bool IsEmpty(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (stream.CanSeek)
         {
@@ -1013,10 +872,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static bool TrySeekToBeginning(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         if (!stream.CanSeek)
         {
@@ -1042,10 +898,7 @@ public static class StreamHelper
     /// <exception cref="ArgumentNullException">流为null时抛出</exception>
     public static Stream CreateReadOnlyWrapper(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
         return new ReadOnlyStreamWrapper(stream);
     }
