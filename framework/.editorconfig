@@ -300,3 +300,7 @@ dotnet_naming_style.underscore_prefix.capitalization = camel_case
 
 # IDE0290: 使用主构造函数
 csharp_style_prefer_primary_constructors = false
+
+# IDE0046: Convert to conditional expression
+dotnet_diagnostic.IDE0046.severity = none
+

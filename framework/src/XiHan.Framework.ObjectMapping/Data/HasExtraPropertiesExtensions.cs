@@ -17,7 +17,7 @@ using System.Globalization;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.ObjectMapping.Extensions;
 using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Reflections;
+using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.ObjectMapping.Data;
 

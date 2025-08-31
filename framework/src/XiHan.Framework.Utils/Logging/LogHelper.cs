@@ -53,7 +53,7 @@ public static class LogHelper
         WriteColorLine(message, "INFO", frontColor);
         if (_isWriteToFile)
         {
-            FileLogHelper.Info(message);
+            LogFileHelper.Info(message);
         }
     }
 
@@ -78,7 +78,7 @@ public static class LogHelper
         WriteColorLine(message, "SUCCESS", frontColor);
         if (_isWriteToFile)
         {
-            FileLogHelper.Success(message);
+            LogFileHelper.Success(message);
         }
     }
 
@@ -103,7 +103,7 @@ public static class LogHelper
         WriteColorLine(message, "HANDLE", frontColor);
         if (_isWriteToFile)
         {
-            FileLogHelper.Handle(message);
+            LogFileHelper.Handle(message);
         }
     }
 
@@ -128,7 +128,7 @@ public static class LogHelper
         WriteColorLine(message, "WARN", frontColor);
         if (_isWriteToFile)
         {
-            FileLogHelper.Warn(message);
+            LogFileHelper.Warn(message);
         }
     }
 
@@ -153,7 +153,7 @@ public static class LogHelper
         WriteColorLine(message, "ERROR", frontColor);
         if (_isWriteToFile)
         {
-            FileLogHelper.Error(message);
+            LogFileHelper.Error(message);
         }
     }
 
@@ -217,7 +217,7 @@ public static class LogHelper
                 Console.Clear();
                 if (_isWriteToFile)
                 {
-                    FileLogHelper.Clear();
+                    LogFileHelper.Clear();
                 }
             }
             catch

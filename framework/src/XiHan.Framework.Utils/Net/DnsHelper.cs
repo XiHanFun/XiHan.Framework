@@ -40,15 +40,15 @@ public static class DnsHelper
     /// <summary>
     /// 默认 DNS 服务器列表
     /// </summary>
-    private static readonly List<IPAddress> DefaultDnsServers = new()
-    {
+    private static readonly List<IPAddress> DefaultDnsServers =
+    [
         IPAddress.Parse("8.8.8.8"),     // Google DNS
         IPAddress.Parse("8.8.4.4"),     // Google DNS 备用
         IPAddress.Parse("1.1.1.1"),     // Cloudflare DNS
         IPAddress.Parse("1.0.0.1"),     // Cloudflare DNS 备用
         IPAddress.Parse("114.114.114.114"), // 114 DNS
         IPAddress.Parse("223.5.5.5")    // 阿里 DNS
-    };
+    ];
 
     /// <summary>
     /// 域名验证正则表达式
@@ -102,7 +102,7 @@ public static class DnsHelper
     {
         if (dnsServers?.Length > 0)
         {
-            _currentDnsServers = new List<IPAddress>(dnsServers);
+            _currentDnsServers = [.. dnsServers];
         }
     }
 
@@ -142,7 +142,7 @@ public static class DnsHelper
     /// </summary>
     public static void ResetToDefaultDnsServers()
     {
-        _currentDnsServers = new List<IPAddress>(DefaultDnsServers);
+        _currentDnsServers = [.. DefaultDnsServers];
     }
 
     #endregion
@@ -240,10 +240,7 @@ public static class DnsHelper
     /// <returns>主机名</returns>
     public static async Task<string> ReverseLookupAsync(IPAddress ipAddress, bool useCache = true, TimeSpan? timeout = null)
     {
-        if (ipAddress == null)
-        {
-            throw new ArgumentNullException(nameof(ipAddress));
-        }
+        ArgumentNullException.ThrowIfNull(ipAddress);
 
         var cacheKey = $"PTR_{ipAddress}";
 
@@ -360,17 +357,17 @@ public static class DnsHelper
         var tasks = new List<Task>
         {
             ResolveAsync(domain, useCache, timeout).ContinueWith(t =>
-                result.ARecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<IPAddress>()),
+                result.ARecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<IPAddress>()),
             ResolveIPv6Async(domain, useCache, timeout).ContinueWith(t =>
-                result.AAAARecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<IPAddress>()),
+                result.AAAARecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<IPAddress>()),
             QueryMxRecordsAsync(domain, useCache, timeout).ContinueWith(t =>
-                result.MXRecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<DnsRecord>()),
+                result.MXRecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<DnsRecord>()),
             QueryNsRecordsAsync(domain, useCache, timeout).ContinueWith(t =>
-                result.NSRecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<DnsRecord>()),
+                result.NSRecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<DnsRecord>()),
             QueryTxtRecordsAsync(domain, useCache, timeout).ContinueWith(t =>
-                result.TXTRecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<DnsRecord>()),
+                result.TXTRecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<DnsRecord>()),
             QueryCnameRecordsAsync(domain, useCache, timeout).ContinueWith(t =>
-                result.CNAMERecords = t.IsCompletedSuccessfully ? t.Result.ToList() : new List<DnsRecord>())
+                result.CNAMERecords = t.IsCompletedSuccessfully ? [.. t.Result] : new List<DnsRecord>())
         };
 
         await Task.WhenAll(tasks);
@@ -408,7 +405,7 @@ public static class DnsHelper
             }
             catch
             {
-                results[hostname] = new List<IPAddress>();
+                results[hostname] = [];
             }
             finally
             {
@@ -601,10 +598,10 @@ public static class DnsHelper
         catch
         {
             // 获取系统 DNS 失败时使用默认 DNS
-            return new List<IPAddress>(DefaultDnsServers);
+            return [.. DefaultDnsServers];
         }
 
-        return dnsServers.Distinct().ToList();
+        return [.. dnsServers.Distinct()];
     }
 
     /// <summary>
@@ -728,7 +725,7 @@ public static class DnsHelper
             RecordType = recordType,
             Addresses = addresses,
             HostName = hostname,
-            Records = records ?? new List<DnsRecord>(),
+            Records = records ?? [],
             CachedAt = DateTime.UtcNow,
             Ttl = _defaultCacheTtl
         };
@@ -752,32 +749,32 @@ public class DnsQueryResult
     /// <summary>
     /// A 记录（IPv4 地址）
     /// </summary>
-    public IList<IPAddress> ARecords { get; set; } = new List<IPAddress>();
+    public IList<IPAddress> ARecords { get; set; } = [];
 
     /// <summary>
     /// AAAA 记录（IPv6 地址）
     /// </summary>
-    public IList<IPAddress> AAAARecords { get; set; } = new List<IPAddress>();
+    public IList<IPAddress> AAAARecords { get; set; } = [];
 
     /// <summary>
     /// MX 记录
     /// </summary>
-    public IList<DnsRecord> MXRecords { get; set; } = new List<DnsRecord>();
+    public IList<DnsRecord> MXRecords { get; set; } = [];
 
     /// <summary>
     /// NS 记录
     /// </summary>
-    public IList<DnsRecord> NSRecords { get; set; } = new List<DnsRecord>();
+    public IList<DnsRecord> NSRecords { get; set; } = [];
 
     /// <summary>
     /// TXT 记录
     /// </summary>
-    public IList<DnsRecord> TXTRecords { get; set; } = new List<DnsRecord>();
+    public IList<DnsRecord> TXTRecords { get; set; } = [];
 
     /// <summary>
     /// CNAME 记录
     /// </summary>
-    public IList<DnsRecord> CNAMERecords { get; set; } = new List<DnsRecord>();
+    public IList<DnsRecord> CNAMERecords { get; set; } = [];
 
     /// <summary>
     /// 查询时间
@@ -824,7 +821,7 @@ internal class DnsCacheEntry
     /// <summary>
     /// IP 地址列表
     /// </summary>
-    public IList<IPAddress> Addresses { get; set; } = new List<IPAddress>();
+    public IList<IPAddress> Addresses { get; set; } = [];
 
     /// <summary>
     /// 主机名
@@ -834,7 +831,7 @@ internal class DnsCacheEntry
     /// <summary>
     /// DNS 记录列表
     /// </summary>
-    public IList<DnsRecord> Records { get; set; } = new List<DnsRecord>();
+    public IList<DnsRecord> Records { get; set; } = [];
 
     /// <summary>
     /// 缓存时间

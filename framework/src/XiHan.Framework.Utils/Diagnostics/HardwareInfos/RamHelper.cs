@@ -15,9 +15,9 @@
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.Caching;
 using XiHan.Framework.Utils.CommandLine;
+using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.Verifications;
 
 namespace XiHan.Framework.Utils.Diagnostics.HardwareInfos;
 
@@ -82,8 +82,8 @@ public static class RamHelper
         var lines = output.Split(Environment.NewLine);
         if (lines.Length != 0)
         {
-            ramInfo.TotalBytes = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split(':', 2)[1].ParseToLong() * 1024;
-            ramInfo.FreeBytes = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split(':', 2)[1].ParseToLong() * 1024;
+            ramInfo.TotalBytes = lines.First(s => s.StartsWith("TotalVisibleMemorySize")).Split(':', 2)[1].ToLong() * 1024;
+            ramInfo.FreeBytes = lines.First(s => s.StartsWith("FreePhysicalMemory")).Split(':', 2)[1].ToLong() * 1024;
             ramInfo.UsedBytes = ramInfo.TotalBytes - ramInfo.FreeBytes;
             ramInfo.AvailableBytes = ramInfo.FreeBytes;
         }

@@ -82,7 +82,7 @@ public static class Base36
                 throw new ArgumentException($"非法 Base36 字符: {c}");
             }
 
-            value = value * 36 + index;
+            value = (value * 36) + index;
         }
 
         var bytes = value.ToByteArray();

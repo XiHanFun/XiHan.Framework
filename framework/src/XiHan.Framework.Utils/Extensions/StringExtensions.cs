@@ -16,8 +16,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Verifications;
 
 namespace XiHan.Framework.Utils.Extensions;
 

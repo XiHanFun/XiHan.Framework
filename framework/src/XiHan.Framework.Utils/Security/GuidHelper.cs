@@ -16,7 +16,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Security.Cryptography;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// Guid 生成和操作辅助类
@@ -60,9 +60,9 @@ public static class GuidHelper
         rng.GetBytes(bytes);
         
         // 设置版本为4（随机生成）
-        bytes[7] = (byte)((bytes[7] & 0x0F) | 0x40);
+        bytes[7] = (byte)(bytes[7] & 0x0F | 0x40);
         // 设置变体
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+        bytes[8] = (byte)(bytes[8] & 0x3F | 0x80);
         
         return new Guid(bytes);
     }
@@ -88,9 +88,9 @@ public static class GuidHelper
         Array.Copy(randomBytes, 0, guidBytes, 8, 8);
         
         // 设置版本为1（时间基础）
-        guidBytes[7] = (byte)((guidBytes[7] & 0x0F) | 0x10);
+        guidBytes[7] = (byte)(guidBytes[7] & 0x0F | 0x10);
         // 设置变体
-        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
+        guidBytes[8] = (byte)(guidBytes[8] & 0x3F | 0x80);
         
         return new Guid(guidBytes);
     }
@@ -122,9 +122,9 @@ public static class GuidHelper
         Array.Copy(hashBytes, 0, guidBytes, 0, 16);
         
         // 设置版本为5（基于名称的SHA1）
-        guidBytes[6] = (byte)((guidBytes[6] & 0x0F) | 0x50);
+        guidBytes[6] = (byte)(guidBytes[6] & 0x0F | 0x50);
         // 设置变体
-        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
+        guidBytes[8] = (byte)(guidBytes[8] & 0x3F | 0x80);
         
         return new Guid(guidBytes);
     }
@@ -152,9 +152,9 @@ public static class GuidHelper
         var hashBytes = MD5.HashData(combinedBytes);
         
         // 设置版本为3（基于名称的MD5）
-        hashBytes[6] = (byte)((hashBytes[6] & 0x0F) | 0x30);
+        hashBytes[6] = (byte)(hashBytes[6] & 0x0F | 0x30);
         // 设置变体
-        hashBytes[8] = (byte)((hashBytes[8] & 0x3F) | 0x80);
+        hashBytes[8] = (byte)(hashBytes[8] & 0x3F | 0x80);
         
         return new Guid(hashBytes);
     }
