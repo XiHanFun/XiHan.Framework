@@ -12,10 +12,11 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.Diagnostics.HardwareInfos;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Logging;
 
-namespace XiHan.Framework.Utils.Diagnostics.HardwareInfos;
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 硬件信息管理器

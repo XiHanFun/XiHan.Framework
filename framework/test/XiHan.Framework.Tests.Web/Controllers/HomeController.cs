@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using XiHan.Framework.Utils.Diagnostics.HardwareInfos;
+using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
@@ -33,7 +33,7 @@ public class HomeController : ControllerBase
     [HttpPost("RuntimeInfo")]
     public IActionResult RuntimeInfo()
     {
-        var systemRuntimeInfo = RuntimeInfoManger.GetSystemRuntimeInfo();
+        var systemRuntimeInfo = RuntimeInfoManager.GetSystemRuntimeInfo();
         return Ok(systemRuntimeInfo);
     }
 

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RuntimeInfoManger
+// FileName:RuntimeInfoManager
 // Guid:36df3b7c-eaa6-46b7-b7de-9623ea769fad
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,12 +12,14 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Runtime;
+using XiHan.Framework.Utils.Runtime;
+
+namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 运行时信息管理器
 /// </summary>
-public static class RuntimeInfoManger
+public static class RuntimeInfoManager
 {
     /// <summary>
     /// 获取当前运行时信息
