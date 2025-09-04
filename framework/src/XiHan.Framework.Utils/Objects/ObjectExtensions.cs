@@ -33,7 +33,6 @@ public static class ObjectExtensions
     /// <typeparam name="T">要转换的类型</typeparam>
     /// <param name="obj">要转换的对象</param>
     /// <returns>转换后的对象</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T As<T>(this object obj)
         where T : class
     {

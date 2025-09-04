@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.Verifications;
+using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.VirtualFileSystem.Utilities;
 
