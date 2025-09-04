@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Net;
+using System.Net.Mail;
+using System.Text.Json;
 
 namespace XiHan.Framework.Utils.Core;
 
@@ -21,23 +24,6 @@ namespace XiHan.Framework.Utils.Core;
 /// </summary>
 public static class ValidateHelper
 {
-    #region 验证输入字符串是否与模式字符串匹配
-
-    /// <summary>
-    /// 验证输入字符串是否与模式字符串匹配，匹配返回 true
-    /// </summary>
-    /// <param name="input">输入的字符串</param>
-    /// <param name="pattern">模式字符串</param>
-    /// <param name="options">筛选条件</param>
-    public static bool IsMatch(string input, string pattern, RegexOptions options = RegexOptions.IgnoreCase)
-    {
-        return Regex.IsMatch(input, pattern, options);
-    }
-
-    #endregion 验证输入字符串是否与模式字符串匹配
-
-    #region 是否 Guid
-
     /// <summary>
     /// Guid 格式验证(a480500f-a181-4d3d-8ada-461f69eecfdd)
     /// </summary>
@@ -45,26 +31,482 @@ public static class ValidateHelper
     /// <returns></returns>
     public static bool IsGuid(string checkValue)
     {
-        return RegexHelper.GuidRegex().IsMatch(checkValue);
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return Guid.TryParse(checkValue, out _);
     }
 
-    #endregion 是否 Guid
-
-    #region 是否中国电话
-
     /// <summary>
-    /// 电话号码(正确格式为:xxxxxxxxxx 或 xxxxxxxxxxxx)
+    /// Email 地址
     /// </summary>
     /// <param name="checkValue"></param>
     /// <returns></returns>
-    public static bool IsNumberTel(string checkValue)
+    public static bool IsEmail(string checkValue)
     {
-        return RegexHelper.NumberTelRegex().IsMatch(checkValue);
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        try
+        {
+            var mailAddress = new MailAddress(checkValue);
+            return mailAddress.Address == checkValue;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
-    #endregion 是否中国电话
+    /// <summary>
+    /// 数字
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsNumber(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
 
-    #region 是否身份证
+        return checkValue.All(char.IsDigit);
+    }
+
+    /// <summary>
+    /// 是不是 Int 型
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public static bool IsInt(string source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return false;
+        }
+
+        return int.TryParse(source, out _);
+    }
+
+    /// <summary>
+    /// 整数或者小数
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsNumberIntOrDouble(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return double.TryParse(checkValue, NumberStyles.Number, CultureInfo.InvariantCulture, out _);
+    }
+
+    /// <summary>
+    /// 非零的正整数
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsNumberPositiveIntNotZero(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return int.TryParse(checkValue, out var result) && result > 0;
+    }
+
+    /// <summary>
+    /// 非零的负整数
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsNumberNegativeIntNotZero(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return int.TryParse(checkValue, out var result) && result < 0;
+    }
+
+    /// <summary>
+    /// 字母
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsLetter(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return checkValue.All(char.IsLetter);
+    }
+
+    /// <summary>
+    /// 大写字母
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsLetterCapital(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return checkValue.All(char.IsUpper);
+    }
+
+    /// <summary>
+    /// 小写字母
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsLetterLower(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return checkValue.All(char.IsLower);
+    }
+
+    /// <summary>
+    /// 数字或英文字母
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsNumberOrLetter(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return checkValue.All(char.IsLetterOrDigit);
+    }
+
+    /// <summary>
+    /// 验证字符串长度是否在限定范围内
+    /// </summary>
+    /// <param name="checkValue">要验证的字符串</param>
+    /// <param name="minLength">最小长度</param>
+    /// <param name="maxLength">最大长度</param>
+    /// <returns>是否符合要求</returns>
+    public static bool IsLengthInRange(string? checkValue, int minLength, int maxLength)
+    {
+        if (checkValue is null)
+        {
+            return false;
+        }
+
+        if (minLength < 0 || maxLength < minLength)
+        {
+            return false;
+        }
+
+        var length = checkValue.Length;
+        return length >= minLength && length <= maxLength;
+    }
+
+    /// <summary>
+    /// 是否网址
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsUrl(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return Uri.TryCreate(checkValue, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    /// <summary>
+    /// 是否有效的URI（包括文件、FTP等协议）
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsUri(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return Uri.TryCreate(checkValue, UriKind.Absolute, out _);
+    }
+
+    /// <summary>
+    /// 验证日期
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsDateTime(string checkValue)
+    {
+        try
+        {
+            return DateTime.TryParse(checkValue, out _);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 是否 IP 地址（支持 IPv4 和 IPv6）
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsIp(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return IPAddress.TryParse(checkValue, out _);
+    }
+
+    /// <summary>
+    /// 是否 IPv4 地址
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsIpv4(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return IPAddress.TryParse(checkValue, out var address) &&
+               address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+    }
+
+    /// <summary>
+    /// 是否 IPv6 地址
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsIpv6(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return IPAddress.TryParse(checkValue, out var address) &&
+               address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+    }
+
+    /// <summary>
+    /// 验证是否为有效的Base64字符串
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsBase64(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        try
+        {
+            Convert.FromBase64String(checkValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 验证是否为MAC地址
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsMacAddress(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        var parts = checkValue.Split(':', '-');
+        if (parts.Length != 6)
+        {
+            return false;
+        }
+
+        return parts.All(part => part.Length == 2 &&
+                                int.TryParse(part, NumberStyles.HexNumber, null, out _));
+    }
+
+    /// <summary>
+    /// 验证是否为端口号（1-65535）
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsPort(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        return int.TryParse(checkValue, out var port) &&
+               port >= 1 && port <= 65535;
+    }
+
+    /// <summary>
+    /// 验证是否为十六进制颜色代码
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsHexColor(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        if (!checkValue.StartsWith('#'))
+        {
+            return false;
+        }
+
+        var hex = checkValue[1..];
+        if (hex.Length is not 3 and not 6)
+        {
+            return false;
+        }
+
+        return hex.All(c => char.IsDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'));
+    }
+
+    /// <summary>
+    /// 验证是否为有效的文件名
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsValidFileName(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        return !checkValue.Any(c => invalidChars.Contains(c));
+    }
+
+    /// <summary>
+    /// 验证是否为有效的文件路径
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsValidFilePath(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        try
+        {
+            Path.GetFullPath(checkValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 验证是否为JSON格式字符串
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsJson(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        try
+        {
+            JsonDocument.Parse(checkValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 验证是否为信用卡号（使用Luhn算法）
+    /// </summary>
+    /// <param name="checkValue"></param>
+    /// <returns></returns>
+    public static bool IsCreditCard(string checkValue)
+    {
+        if (string.IsNullOrWhiteSpace(checkValue))
+        {
+            return false;
+        }
+
+        // 移除所有非数字字符
+        var digits = checkValue.Where(char.IsDigit).ToArray();
+
+        if (digits.Length is < 13 or > 19)
+        {
+            return false;
+        }
+
+        // Luhn算法验证
+        var sum = 0;
+        var alternate = false;
+
+        for (var i = digits.Length - 1; i >= 0; i--)
+        {
+            var n = int.Parse(digits[i].ToString());
+
+            if (alternate)
+            {
+                n *= 2;
+                if (n > 9)
+                {
+                    n = (n % 10) + 1;
+                }
+            }
+
+            sum += n;
+            alternate = !alternate;
+        }
+
+        return sum % 10 == 0;
+    }
 
     /// <summary>
     /// 验证身份证是否有效
@@ -157,380 +599,4 @@ public static class ValidateHelper
         var birth = checkValue.Substring(6, 6).Insert(4, "-").Insert(2, "-");
         return DateTime.TryParse(birth, out _);
     }
-
-    #endregion 是否身份证
-
-    #region 是否邮箱
-
-    /// <summary>
-    /// Email 地址
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsEmail(string checkValue)
-    {
-        return RegexHelper.EmailRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否邮箱
-
-    #region 是否数字
-
-    /// <summary>
-    /// 数字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumber(string checkValue)
-    {
-        return RegexHelper.NumberRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 是不是 Int 型
-    /// </summary>
-    /// <param name="source"></param>
-    /// <returns></returns>
-    public static bool IsInt(string source)
-    {
-        return RegexHelper.IntRegex().Match(source).Success && long.Parse(source) is <= 0x7fffffffL and >= -2147483648L;
-    }
-
-    /// <summary>
-    /// 整数或者小数
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberIntOrDouble(string checkValue)
-    {
-        return RegexHelper.NumberIntOrDoubleRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// N 位的数字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberSeveralN(string checkValue)
-    {
-        return RegexHelper.NumberSeveralNRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 至少 N 位的数字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberSeveralAtLeastN(string checkValue)
-    {
-        return RegexHelper.NumberSeveralAtLeastNRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// M 至 N 位的数字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberSeveralMn(string checkValue)
-    {
-        return RegexHelper.NumberSeveralMnRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 零和非零开头的数字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberBeginZeroOrNotZero(string checkValue)
-    {
-        return RegexHelper.NumberBeginZeroOrNotZeroRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 2位小数的正实数
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberPositiveRealTwoDouble(string checkValue)
-    {
-        return RegexHelper.NumberPositiveRealTwoDoubleRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 有1-3位小数的正实数
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberPositiveRealOneOrThreeDouble(string checkValue)
-    {
-        return RegexHelper.NumberPositiveRealOneOrThreeDoubleRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 非零的正整数
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberPositiveIntNotZero(string checkValue)
-    {
-        return RegexHelper.NumberPositiveIntNotZeroRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 非零的负整数
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberNegativeIntNotZero(string checkValue)
-    {
-        return RegexHelper.NumberNegativeIntNotZeroRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否数字
-
-    #region 是否字母
-
-    /// <summary>
-    /// 字母
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsLetter(string checkValue)
-    {
-        return RegexHelper.LetterRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 大写字母
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsLetterCapital(string checkValue)
-    {
-        return RegexHelper.LetterCapitalRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 小写字母
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsLetterLower(string checkValue)
-    {
-        return RegexHelper.LetterLowerRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否字母
-
-    #region 是否数字或英文字母
-
-    /// <summary>
-    /// 数字或英文字母
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsNumberOrLetter(string checkValue)
-    {
-        return RegexHelper.NumberOrLetterRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否数字或英文字母
-
-    #region 字符串长度限定
-
-    /// <summary>
-    /// 看字符串的长度是不是在限定数之间 一个中文为两个字符
-    /// </summary>
-    /// <param name="source">字符串</param>
-    /// <param name="begin">大于等于</param>
-    /// <param name="end">小于等于</param>
-    /// <returns></returns>
-    public static bool IsLengthStr(string source, int begin, int end)
-    {
-        var length = RegexHelper.LengthStrRegex().Replace(source, "OK").Length;
-        return length > begin || length < end;
-    }
-
-    /// <summary>
-    /// 长度为3的字符
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsCharThree(string checkValue)
-    {
-        return RegexHelper.CharThreeRegex().IsMatch(checkValue);
-    }
-
-    #endregion 字符串长度限定
-
-    #region 是否邮政编码
-
-    /// <summary>
-    /// 邮政编码 6个数字
-    /// </summary>
-    /// <param name="source"></param>
-    /// <returns></returns>
-    public static bool IsPostCode(string source)
-    {
-        return RegexHelper.PostCodeRegex().IsMatch(source);
-    }
-
-    #endregion 是否邮政编码
-
-    #region 是否特殊字符
-
-    /// <summary>
-    /// 是否含有=，。:等特殊字符
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsCharSpecial(string checkValue)
-    {
-        return RegexHelper.CharSpecialRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否特殊字符
-
-    #region 是否汉字
-
-    /// <summary>
-    /// 包含汉字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsContainChinese(string checkValue)
-    {
-        return RegexHelper.ContainChineseRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 全部汉字
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsChinese(string checkValue)
-    {
-        return RegexHelper.ChineseRegex().Matches(checkValue).Count == checkValue.Length;
-    }
-
-    #endregion 是否汉字
-
-    #region 是否网址
-
-    /// <summary>
-    /// 是否网址
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsUrl(string checkValue)
-    {
-        return RegexHelper.UrlRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否网址
-
-    #region 是否日期
-
-    /// <summary>
-    /// 验证日期
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsDateTime(string checkValue)
-    {
-        try
-        {
-            return DateTime.TryParse(checkValue, out _);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// 一年的12个月(正确格式为:"01"～"09"和"1"～"12")
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsMonth(string checkValue)
-    {
-        return RegexHelper.MonthRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 一月的31天(正确格式为:"01"～"09"和"1"～"31")
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsDay(string checkValue)
-    {
-        return RegexHelper.DayRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否日期
-
-    #region 是否 Ip 地址
-
-    /// <summary>
-    /// 是否 Ip 地址
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsIpRegex(string checkValue)
-    {
-        return RegexHelper.IpRegex().IsMatch(checkValue);
-    }
-
-    /// <summary>
-    /// 是否 Ip 地址
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsIp(string checkValue)
-    {
-        var result = false;
-        try
-        {
-            var checkValueArg = checkValue.Split('.');
-            if (string.Empty != checkValue && checkValue.Length < 16 && checkValueArg.Length == 4)
-            {
-                for (var i = 0; i < 4; i++)
-                {
-                    int intCheckValue = Convert.ToInt16(checkValueArg[i]);
-                    if (intCheckValue <= 255)
-                    {
-                        continue;
-                    }
-
-                    result = false;
-                    return result;
-                }
-
-                result = true;
-            }
-        }
-        catch
-        {
-            return result;
-        }
-
-        return result;
-    }
-
-    #endregion 是否 Ip 地址
-
-    #region 是否 Cron 表达式
-
-    /// <summary>
-    /// 是否 Cron 表达式
-    /// </summary>
-    /// <param name="checkValue"></param>
-    /// <returns></returns>
-    public static bool IsCron(string checkValue)
-    {
-        return RegexHelper.CronRegex().IsMatch(checkValue);
-    }
-
-    #endregion 是否 Cron 表达式
 }

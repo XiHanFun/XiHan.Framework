@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Collections;
 using System.Globalization;
 using System.Text.Json;
 
@@ -520,7 +521,7 @@ public static class ConvertHelper
             return [.. enumerable];
         }
 
-        if (value is System.Collections.IEnumerable nonGenericEnumerable)
+        if (value is IEnumerable nonGenericEnumerable)
         {
             var list = new List<T>();
             foreach (var item in nonGenericEnumerable)

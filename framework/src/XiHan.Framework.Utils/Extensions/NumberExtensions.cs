@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Numerics;
-using System.Runtime.CompilerServices;
 
 namespace XiHan.Framework.Utils.Extensions;
 
@@ -39,7 +38,6 @@ public static class NumberExtensions
     /// int result2 = positive.EnsureNonNegative(); // 返回 10
     /// </code>
     /// </example>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T EnsureNonNegative<T>(this T value) where T : INumber<T>
     {
         return value < T.Zero ? T.Zero : value;
@@ -51,7 +49,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>正数值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T EnsurePositive<T>(this T value) where T : INumber<T>
     {
         return value <= T.Zero ? T.One : value;
@@ -71,7 +68,6 @@ public static class NumberExtensions
     /// int result2 = 7.Mod(3);    // 返回 1
     /// </code>
     /// </example>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Mod<T>(this T value, T modulus) where T : INumber<T>
     {
         if (modulus == T.Zero)
@@ -91,7 +87,6 @@ public static class NumberExtensions
     /// <param name="divisor">除数</param>
     /// <returns>向下取整的商</returns>
     /// <exception cref="ArgumentException">当除数为零时抛出异常</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T FloorDiv<T>(this T value, T divisor) where T : INumber<T>
     {
         if (divisor == T.Zero)
@@ -114,7 +109,6 @@ public static class NumberExtensions
     /// <param name="value">被乘数</param>
     /// <param name="multiplier">乘数</param>
     /// <returns>乘积</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Multiply<T>(this T value, T multiplier) where T : INumber<T>
     {
         return value * multiplier;
@@ -127,7 +121,6 @@ public static class NumberExtensions
     /// <param name="value">被加数</param>
     /// <param name="addend">加数</param>
     /// <returns>和</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Add<T>(this T value, T addend) where T : INumber<T>
     {
         return value + addend;
@@ -140,7 +133,6 @@ public static class NumberExtensions
     /// <param name="value">被减数</param>
     /// <param name="subtrahend">减数</param>
     /// <returns>差</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Subtract<T>(this T value, T subtrahend) where T : INumber<T>
     {
         return value - subtrahend;
@@ -152,7 +144,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">输入数值</param>
     /// <returns>绝对值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Abs<T>(this T value) where T : INumber<T>
     {
         return value < T.Zero ? -value : value;
@@ -164,7 +155,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">输入数值</param>
     /// <returns>相反数</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Negate<T>(this T value) where T : INumber<T>
     {
         return -value;
@@ -183,7 +173,6 @@ public static class NumberExtensions
     /// <param name="max">最大值</param>
     /// <returns>限制在范围内的数值</returns>
     /// <exception cref="ArgumentException">当最小值大于最大值时抛出异常</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Clamp<T>(this T value, T min, T max) where T : INumber<T>
     {
         return min > max
@@ -201,7 +190,6 @@ public static class NumberExtensions
     /// <param name="min">最小值</param>
     /// <param name="max">最大值</param>
     /// <returns>如果在范围内返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsInRange<T>(this T value, T min, T max) where T : INumber<T>
     {
         return value >= min && value <= max;
@@ -215,7 +203,6 @@ public static class NumberExtensions
     /// <param name="min">最小值</param>
     /// <param name="max">最大值</param>
     /// <returns>如果在范围内返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsBetween<T>(this T value, T min, T max) where T : INumber<T>
     {
         return value > min && value < max;
@@ -227,7 +214,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为零返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsZero<T>(this T value) where T : INumber<T>
     {
         return value == T.Zero;
@@ -239,7 +225,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为正数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPositive<T>(this T value) where T : INumber<T>
     {
         return value > T.Zero;
@@ -251,7 +236,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为负数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNegative<T>(this T value) where T : INumber<T>
     {
         return value < T.Zero;
@@ -263,7 +247,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为非负数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNonNegative<T>(this T value) where T : INumber<T>
     {
         return value >= T.Zero;
@@ -275,7 +258,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为非正数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNonPositive<T>(this T value) where T : INumber<T>
     {
         return value <= T.Zero;
@@ -292,7 +274,6 @@ public static class NumberExtensions
     /// <param name="value">第一个数值</param>
     /// <param name="other">第二个数值</param>
     /// <returns>较大的数值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Max<T>(this T value, T other) where T : INumber<T>
     {
         return value > other ? value : other;
@@ -305,7 +286,6 @@ public static class NumberExtensions
     /// <param name="value">第一个数值</param>
     /// <param name="other">第二个数值</param>
     /// <returns>较小的数值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Min<T>(this T value, T other) where T : INumber<T>
     {
         return value < other ? value : other;
@@ -318,7 +298,6 @@ public static class NumberExtensions
     /// <param name="value">第一个数值</param>
     /// <param name="other">第二个数值</param>
     /// <returns>-1表示小于，0表示等于，1表示大于</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareTo<T>(this T value, T other) where T : INumber<T>
     {
         return value < other ? -1 : value > other ? 1 : 0;
@@ -334,7 +313,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">输入数值</param>
     /// <returns>平方值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Square<T>(this T value) where T : INumber<T>
     {
         return value * value;
@@ -346,7 +324,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">输入数值</param>
     /// <returns>立方值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Cube<T>(this T value) where T : INumber<T>
     {
         return value * value * value;
@@ -409,7 +386,6 @@ public static class NumberExtensions
     /// <param name="a">第一个数</param>
     /// <param name="b">第二个数</param>
     /// <returns>最小公倍数</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Lcm<T>(this T a, T b) where T : INumber<T>
     {
         return a == T.Zero || b == T.Zero ? T.Zero : (a * b).Abs() / a.Gcd(b);
@@ -421,7 +397,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为偶数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEven<T>(this T value) where T : INumber<T>
     {
         return value % (T.One + T.One) == T.Zero;
@@ -433,7 +408,6 @@ public static class NumberExtensions
     /// <typeparam name="T">数字类型，必须实现INumber接口</typeparam>
     /// <param name="value">要检查的数值</param>
     /// <returns>如果为奇数返回true，否则返回false</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsOdd<T>(this T value) where T : INumber<T>
     {
         return value % (T.One + T.One) != T.Zero;
@@ -450,7 +424,6 @@ public static class NumberExtensions
     /// <typeparam name="TTarget">目标数字类型</typeparam>
     /// <param name="value">要转换的数值</param>
     /// <returns>转换后的数值</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TTarget ConvertTo<TSource, TTarget>(this TSource value)
         where TSource : INumber<TSource>
         where TTarget : INumber<TTarget>
@@ -494,7 +467,6 @@ public static class NumberExtensions
     /// <param name="right">右操作数</param>
     /// <returns>安全加法结果</returns>
     /// <exception cref="OverflowException">当发生溢出时抛出异常</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T SafeAdd<T>(this T left, T right) where T : INumber<T>
     {
         return checked(left + right);
@@ -508,7 +480,6 @@ public static class NumberExtensions
     /// <param name="right">右操作数</param>
     /// <returns>安全减法结果</returns>
     /// <exception cref="OverflowException">当发生溢出时抛出异常</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T SafeSubtract<T>(this T left, T right) where T : INumber<T>
     {
         return checked(left - right);
@@ -522,7 +493,6 @@ public static class NumberExtensions
     /// <param name="right">右操作数</param>
     /// <returns>安全乘法结果</returns>
     /// <exception cref="OverflowException">当发生溢出时抛出异常</exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T SafeMultiply<T>(this T left, T right) where T : INumber<T>
     {
         return checked(left * right);

@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text.RegularExpressions;
-using XiHan.Framework.Utils.Verifications;
+using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.Security;
 
