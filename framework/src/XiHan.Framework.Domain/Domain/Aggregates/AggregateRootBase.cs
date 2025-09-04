@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Domain.Domain.Entities;
 using XiHan.Framework.Domain.Domain.Events;
-using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Domain.Domain.Aggregates;
 

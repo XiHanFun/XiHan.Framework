@@ -14,10 +14,10 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Security;
 using XiHan.Framework.Utils.Serialization.Json;
-using XiHan.Framework.Utils.Verifications;
 
 namespace XiHan.Framework.Security;
 
@@ -169,7 +169,7 @@ public static partial class TextWatermarkHelper
         }
 
         // 将元数据序列化为JSON
-        var json = metadata.SerializeTo();
+        var json = metadata.ToJson();
 
         // 嵌入水印
         return EmbedWatermark(text, json, key);
@@ -192,7 +192,7 @@ public static partial class TextWatermarkHelper
 
         try
         {
-            return json.DeserializeTo<T>();
+            return json.FromJson<T>();
         }
         catch
         {
