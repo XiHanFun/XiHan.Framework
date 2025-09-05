@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.System;
+namespace XiHan.Framework.Core;
 
 /// <summary>
 /// 可用于存储名称/值(或键/值)对

@@ -22,7 +22,7 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using System.Text;
 
-namespace XiHan.Framework.Security.Cryptography;
+namespace XiHan.Framework.Security;
 
 /// <summary>
 /// 国密 SM2 算法辅助类
