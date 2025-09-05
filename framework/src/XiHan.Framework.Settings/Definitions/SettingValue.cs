@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.System;
+using XiHan.Framework.Core;
 
 namespace XiHan.Framework.Settings.Definitions;
 
