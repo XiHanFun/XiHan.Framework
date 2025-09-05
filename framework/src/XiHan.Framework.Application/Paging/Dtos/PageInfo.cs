@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.DataFilter.Paging.Dtos;
+namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
 /// 通用分页信息基类

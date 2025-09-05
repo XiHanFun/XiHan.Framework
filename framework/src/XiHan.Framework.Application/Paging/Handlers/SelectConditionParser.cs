@@ -14,11 +14,11 @@
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using XiHan.Framework.Utils.DataFilter.Paging.Dtos;
-using XiHan.Framework.Utils.DataFilter.Paging.Enums;
+using XiHan.Framework.Application.Paging.Dtos;
+using XiHan.Framework.Application.Paging.Enums;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Utils.DataFilter.Paging.Handlers;
+namespace XiHan.Framework.Application.Paging.Handlers;
 
 /// <summary>
 /// 选择条件解析器

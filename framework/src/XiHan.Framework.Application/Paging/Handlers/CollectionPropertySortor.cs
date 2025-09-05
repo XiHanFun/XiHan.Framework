@@ -12,10 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Paging.Dtos;
-using XiHan.Framework.Utils.DataFilter.Paging.Enums;
+using XiHan.Framework.Application.Paging.Dtos;
+using XiHan.Framework.Application.Paging.Enums;
 
-namespace XiHan.Framework.Utils.DataFilter.Paging.Handlers;
+namespace XiHan.Framework.Application.Paging.Handlers;
 
 /// <summary>
 /// 集合属性排序器
