@@ -265,7 +265,7 @@ public static class ListExtensions
     public static void MoveItem<T>(this List<T> source, Predicate<T> selector, int targetIndex)
     {
         // 检查目标索引是否在有效范围内
-        if (!targetIndex.IsBetween(0, source.Count - 1))
+        if (!targetIndex.IsInRange(0, source.Count - 1))
         {
             throw new IndexOutOfRangeException("目标索引应在 0 到 " + (source.Count - 1) + " 之间");
         }

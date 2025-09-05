@@ -14,10 +14,10 @@
 
 using System.Numerics;
 
-namespace XiHan.Framework.Utils.Extensions;
+namespace XiHan.Framework.Utils.Maths;
 
 /// <summary>
-/// 扩展 INumber 接口实现基本数学运算
+/// INumber 扩展方法
 /// </summary>
 public static class NumberExtensions
 {
