@@ -32,7 +32,7 @@ public static class ServiceProviderKeyedServiceExtensions
     /// <exception cref="InvalidOperationException"></exception>
     public static object? GetKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)
     {
-        _ = Guard.NotNull(provider, nameof(provider));
+        Guard.NotNull(provider, nameof(provider));
 
         return provider is IKeyedServiceProvider keyedServiceProvider
             ? keyedServiceProvider.GetKeyedService(serviceType, serviceKey)

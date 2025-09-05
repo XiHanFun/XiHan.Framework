@@ -35,9 +35,9 @@ public class ModuleLoader : IModuleLoader
     /// <returns></returns>
     public IModuleDescriptor[] LoadModules(IServiceCollection services, Type startupModuleType, PlugInSourceList plugInSources)
     {
-        _ = Guard.NotNull(services, nameof(services));
-        _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
-        _ = Guard.NotNull(plugInSources, nameof(plugInSources));
+        Guard.NotNull(services, nameof(services));
+        Guard.NotNull(startupModuleType, nameof(startupModuleType));
+        Guard.NotNull(plugInSources, nameof(plugInSources));
 
         var modules = GetDescriptors(services, startupModuleType, plugInSources);
 
@@ -58,7 +58,8 @@ public class ModuleLoader : IModuleLoader
         var logger = services.GetInitLogger<XiHanApplicationBase>();
 
         // 所有从启动模块开始的模块
-        modules.AddRange(XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger).Select(moduleType => CreateModuleDescriptor(services, moduleType)));
+        modules.AddRange(XiHanModuleHelper.FindAllModuleTypes(startupModuleType, logger)
+            .Select(moduleType => CreateModuleDescriptor(services, moduleType)));
 
         // 插件模块
         foreach (var moduleType in plugInSources.GetAllModules(logger))

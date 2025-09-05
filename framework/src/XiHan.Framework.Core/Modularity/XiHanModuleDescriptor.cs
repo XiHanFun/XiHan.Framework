@@ -34,8 +34,8 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// <exception cref="ArgumentException"></exception>
     public XiHanModuleDescriptor(Type type, IXiHanModule instance, bool isLoadedAsPlugIn)
     {
-        _ = Guard.NotNull(type, nameof(type));
-        _ = Guard.NotNull(instance, nameof(instance));
+        Guard.NotNull(type, nameof(type));
+        Guard.NotNull(instance, nameof(instance));
         XiHanModuleHelper.CheckXiHanModuleType(type);
 
         if (!type.GetTypeInfo().IsInstanceOfType(instance))

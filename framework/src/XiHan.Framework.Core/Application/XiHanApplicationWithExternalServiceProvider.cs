@@ -39,7 +39,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     void IXiHanApplicationWithExternalServiceProvider.SetServiceProvider(IServiceProvider serviceProvider)
     {
-        _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
+        Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
         if (ServiceProvider != null)
         {
@@ -59,7 +59,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     public async Task InitializeAsync(IServiceProvider serviceProvider)
     {
-        _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
+        Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
         SetServiceProvider(serviceProvider);
 
@@ -72,7 +72,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     /// </summary>
     public void Initialize(IServiceProvider serviceProvider)
     {
-        _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
+        Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
         SetServiceProvider(serviceProvider);
 

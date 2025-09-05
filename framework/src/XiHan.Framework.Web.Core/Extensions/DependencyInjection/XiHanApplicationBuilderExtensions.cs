@@ -31,7 +31,7 @@ public static class XiHanApplicationBuilderExtensions
     /// <returns></returns>
     public static async Task InitializeApplicationAsync(this IApplicationBuilder app)
     {
-        _ = Guard.NotNull(app, nameof(app));
+        Guard.NotNull(app, nameof(app));
 
         app.ApplicationServices.GetRequiredService<ObjectAccessor<IApplicationBuilder>>().Value = app;
         var application = app.ApplicationServices.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
@@ -52,7 +52,7 @@ public static class XiHanApplicationBuilderExtensions
     /// <param name="app"></param>
     public static void InitializeApplication(this IApplicationBuilder app)
     {
-        _ = Guard.NotNull(app, nameof(app));
+        Guard.NotNull(app, nameof(app));
 
         app.ApplicationServices.GetRequiredService<ObjectAccessor<IApplicationBuilder>>().Value = app;
         var application = app.ApplicationServices.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
