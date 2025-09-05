@@ -23,6 +23,7 @@ using System.Text.Json;
 using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
+using XiHan.Framework.Serialization.Dynamic;
 using XiHan.Framework.Utils.Serialization.Json;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
@@ -388,9 +389,9 @@ public class AdvancedHttpService : IAdvancedHttpService
         {
             stopwatch.Stop();
             var errorMessage = $"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
-            
+
             _logger.LogWarning(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求ID: {RequestId}, " +
-                "断路器将在 {DurationSeconds} 秒后重置", 
+                "断路器将在 {DurationSeconds} 秒后重置",
                 url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
             return HttpResult.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex);
@@ -554,9 +555,9 @@ public class AdvancedHttpService : IAdvancedHttpService
         {
             stopwatch.Stop();
             var errorMessage = $"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
-            
+
             _logger.LogWarning(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求ID: {RequestId}, " +
-                "断路器将在 {DurationSeconds} 秒后重置", 
+                "断路器将在 {DurationSeconds} 秒后重置",
                 method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
             return HttpResult<T>.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex)
@@ -643,7 +644,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         if (targetType == typeof(object))
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            return !JsonHelper.TryParseJsonDynamic(content, out var dynamicObject)
+            return !DynamicJsonHelper.TryDeserialize(content, out var dynamicObject)
                 ? throw new JsonException("无法将响应内容转换为动态对象")
                 : (T?)dynamicObject;
         }
