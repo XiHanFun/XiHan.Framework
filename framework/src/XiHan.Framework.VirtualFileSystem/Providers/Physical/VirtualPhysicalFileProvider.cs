@@ -27,7 +27,7 @@ public class VirtualPhysicalFileProvider : PhysicalFileProvider
     /// </summary>
     public VirtualPhysicalFileProvider(string root, int priority = 100) : base(root)
     {
-        _ = Guard.NotNull(root, nameof(root));
+        Guard.NotNull(root, nameof(root));
 
         if (!Path.IsPathRooted(root))
         {

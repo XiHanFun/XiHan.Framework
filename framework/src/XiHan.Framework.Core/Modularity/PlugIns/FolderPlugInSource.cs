@@ -33,7 +33,7 @@ public class FolderPlugInSource : IPlugInSource
     /// <param name="searchOption"></param>
     public FolderPlugInSource(string folder, SearchOption searchOption = SearchOption.TopDirectoryOnly)
     {
-        _ = Guard.NotNull(folder, nameof(folder));
+        Guard.NotNull(folder, nameof(folder));
 
         Folder = folder;
         SearchOption = searchOption;

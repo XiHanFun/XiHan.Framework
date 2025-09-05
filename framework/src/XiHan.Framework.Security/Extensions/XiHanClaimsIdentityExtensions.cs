@@ -32,7 +32,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindUserId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var userIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.UserId);
         return userIdOrNull is null || userIdOrNull.Value.IsNullOrWhiteSpace()
@@ -47,7 +47,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindUserId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -64,7 +64,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindTenantId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var tenantIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.TenantId);
         return tenantIdOrNull is null || tenantIdOrNull.Value.IsNullOrWhiteSpace()
@@ -79,7 +79,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindTenantId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -96,7 +96,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static string? FindClientId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var clientIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ClientId);
         return clientIdOrNull is null || clientIdOrNull.Value.IsNullOrWhiteSpace() ? null : clientIdOrNull.Value;
@@ -109,7 +109,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static string? FindClientId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -124,7 +124,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindEditionId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var editionIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.EditionId);
         return editionIdOrNull is null || editionIdOrNull.Value.IsNullOrWhiteSpace()
@@ -139,7 +139,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindEditionId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -156,7 +156,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindImpersonatorTenantId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var impersonatorTenantIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorTenantId);
         return impersonatorTenantIdOrNull is null || impersonatorTenantIdOrNull.Value.IsNullOrWhiteSpace()
@@ -171,7 +171,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindImpersonatorTenantId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -188,7 +188,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindImpersonatorUserId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var impersonatorUserIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorUserId);
         return impersonatorUserIdOrNull is null || impersonatorUserIdOrNull.Value.IsNullOrWhiteSpace()
@@ -203,7 +203,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static Guid? FindImpersonatorUserId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -221,7 +221,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static ClaimsIdentity AddIfNotContains(this ClaimsIdentity claimsIdentity, Claim claim)
     {
-        _ = Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
+        Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
 
         if (!claimsIdentity.Claims.Any(x => string.Equals(x.Type, claim.Type, StringComparison.OrdinalIgnoreCase)))
         {
@@ -239,7 +239,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static ClaimsIdentity RemoveAll(this ClaimsIdentity claimsIdentity, string claimType)
     {
-        _ = Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
+        Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
 
         foreach (var x in claimsIdentity.FindAll(claimType).ToList())
         {
@@ -257,7 +257,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static ClaimsIdentity AddOrReplace(this ClaimsIdentity claimsIdentity, Claim claim)
     {
-        _ = Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
+        Guard.NotNull(claimsIdentity, nameof(claimsIdentity));
 
         foreach (var x in claimsIdentity.FindAll(claim.Type).ToList())
         {
@@ -277,7 +277,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static ClaimsPrincipal AddIdentityIfNotContains(this ClaimsPrincipal principal, ClaimsIdentity identity)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         if (!principal.Identities.Any(x => string.Equals(x.AuthenticationType, identity.AuthenticationType, StringComparison.OrdinalIgnoreCase)))
         {
@@ -294,7 +294,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static string? FindSessionId(this IIdentity identity)
     {
-        _ = Guard.NotNull(identity, nameof(identity));
+        Guard.NotNull(identity, nameof(identity));
 
         var claimsIdentity = identity as ClaimsIdentity;
 
@@ -309,7 +309,7 @@ public static class XiHanClaimsIdentityExtensions
     /// <returns></returns>
     public static string? FindSessionId(this ClaimsPrincipal principal)
     {
-        _ = Guard.NotNull(principal, nameof(principal));
+        Guard.NotNull(principal, nameof(principal));
 
         var sessionIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.SessionId);
         return sessionIdOrNull is null || sessionIdOrNull.Value.IsNullOrWhiteSpace() ? null : sessionIdOrNull.Value;

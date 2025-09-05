@@ -43,8 +43,8 @@ public class XiHanApplicationBase : IXiHanApplication
     /// <param name="optionsAction"></param>
     internal XiHanApplicationBase(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
     {
-        _ = Guard.NotNull(startupModuleType, nameof(startupModuleType));
-        _ = Guard.NotNull(services, nameof(services));
+        Guard.NotNull(startupModuleType, nameof(startupModuleType));
+        Guard.NotNull(services, nameof(services));
         LogHelper.SetIsDisplayHeader(false);
         LogHelper.Rainbow(XiHan.Logo);
         LogHelper.Info(XiHan.GetSummary());
