@@ -28,7 +28,7 @@ public class ApplicationInitializationContext : IServiceProviderAccessor
     /// <param name="serviceProvider"></param>
     public ApplicationInitializationContext(IServiceProvider serviceProvider)
     {
-        _ = Guard.NotNull(serviceProvider, nameof(serviceProvider));
+        Guard.NotNull(serviceProvider, nameof(serviceProvider));
 
         ServiceProvider = serviceProvider;
     }

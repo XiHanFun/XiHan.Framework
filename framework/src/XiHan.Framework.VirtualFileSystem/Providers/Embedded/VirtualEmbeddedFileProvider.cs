@@ -29,7 +29,7 @@ public class VirtualEmbeddedFileProvider : EmbeddedFileProvider
     public VirtualEmbeddedFileProvider(Assembly assembly, int priority = 50)
         : base(assembly)
     {
-        _ = Guard.NotNull(assembly, nameof(assembly));
+        Guard.NotNull(assembly, nameof(assembly));
 
         Assembly = assembly;
         Priority = priority;
