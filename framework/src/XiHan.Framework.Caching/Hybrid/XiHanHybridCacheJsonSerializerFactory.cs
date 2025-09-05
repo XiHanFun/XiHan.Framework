@@ -15,7 +15,7 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
-using XiHan.Framework.Serialization.Options;
+using System.Text.Json;
 
 namespace XiHan.Framework.Caching.Hybrid;
 
@@ -28,7 +28,7 @@ public class XiHanHybridCacheJsonSerializerFactory : IHybridCacheSerializerFacto
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
-    public XiHanHybridCacheJsonSerializerFactory(IOptions<XiHanSystemTextJsonSerializerOptions> options)
+    public XiHanHybridCacheJsonSerializerFactory(IOptions<JsonSerializerOptions> options)
     {
         Options = options;
     }
@@ -36,7 +36,7 @@ public class XiHanHybridCacheJsonSerializerFactory : IHybridCacheSerializerFacto
     /// <summary>
     /// System.Text.Json序列化器选项
     /// </summary>
-    protected IOptions<XiHanSystemTextJsonSerializerOptions> Options { get; }
+    protected IOptions<JsonSerializerOptions> Options { get; }
 
     /// <summary>
     /// 尝试创建序列化器
@@ -52,7 +52,7 @@ public class XiHanHybridCacheJsonSerializerFactory : IHybridCacheSerializerFacto
             return false;
         }
 
-        serializer = new XiHanHybridCacheJsonSerializer<T>(Options.Value.JsonSerializerOptions);
+        serializer = new XiHanHybridCacheJsonSerializer<T>(Options.Value);
         return true;
     }
 }
