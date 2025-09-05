@@ -12,20 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SecurityValidationResult
-// Guid:e55f8af4-fa95-4feb-8fe5-b8f1e57fac52
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/6/1 6:21:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
-
 using XiHan.Framework.Script.Enums;
 
 namespace XiHan.Framework.Script.Extensions;
