@@ -16,7 +16,7 @@ using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Utils.Text.Template;
+namespace XiHan.Framework.Templating;
 
 /// <summary>
 /// 模板引擎
@@ -229,13 +229,11 @@ public static class TemplateEngine
 
         // 简单的变量存在性检查
         var variableName = condition.Trim();
-        return !values.TryGetValue(variableName, out var value)
-            ? false
-            : value is bool boolValue
+        return values.TryGetValue(variableName, out var value) && (value is bool boolValue
                 ? boolValue
                 : value is string strValue
                     ? !string.IsNullOrEmpty(strValue)
-                    : value != null;
+                    : value != null);
     }
 
     /// <summary>
