@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Utils.Text.Json.Converters;
+using XiHan.Framework.Utils.Serialization.Json;
 
 namespace XiHan.Framework.Web.Api;
 
@@ -128,22 +128,7 @@ public class XiHanWebCoreMvcOptions
 
         // 枚举类型
         JsonOptions.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // 布尔类型
-        JsonOptions.JsonSerializerOptions.Converters.Add(new BooleanJsonConverter());
-        // 数字类型
-        JsonOptions.JsonSerializerOptions.Converters.Add(new IntJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new LongJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DecimalJsonConverter());
-        // 时间类型
-        JsonOptions.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new TimeOnlyNullableConverter());
-        // 日期类型
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateOnlyNullableConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeNullableConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeOffsetJsonConverter());
-        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeOffsetNullableConverter());
+        JsonOptions.JsonSerializerOptions.ConfigureConverters();
 
         return this;
     }
