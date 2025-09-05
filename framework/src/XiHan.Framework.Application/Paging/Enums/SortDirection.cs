@@ -14,7 +14,7 @@
 
 using System.ComponentModel;
 
-namespace XiHan.Framework.Utils.DataFilter.Paging.Enums;
+namespace XiHan.Framework.Application.Paging.Enums;
 
 /// <summary>
 /// 排序方向枚举

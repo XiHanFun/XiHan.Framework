@@ -12,11 +12,11 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.DataFilter.Paging.Dtos;
-using XiHan.Framework.Utils.DataFilter.Paging.Enums;
-using XiHan.Framework.Utils.DataFilter.Paging.Handlers;
+using XiHan.Framework.Application.Paging.Dtos;
+using XiHan.Framework.Application.Paging.Enums;
+using XiHan.Framework.Application.Paging.Handlers;
 
-namespace XiHan.Framework.Utils.DataFilter.Paging;
+namespace XiHan.Framework.Application.Paging;
 
 /// <summary>
 /// 分页扩展方法
