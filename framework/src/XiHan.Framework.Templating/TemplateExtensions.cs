@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.Text.Template;
+namespace XiHan.Framework.Templating;
 
 /// <summary>
 /// 模板引擎扩展方法
