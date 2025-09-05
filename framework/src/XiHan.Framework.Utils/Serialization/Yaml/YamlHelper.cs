@@ -272,6 +272,167 @@ public static partial class YamlHelper
         await File.WriteAllTextAsync(filePath, yaml, Encoding.UTF8, cancellationToken);
     }
 
+    #region Try 方法
+
+    /// <summary>
+    /// 尝试将对象序列化为 YAML 字符串（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="result">序列化结果，失败时为 null</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>是否序列化成功</returns>
+    public static bool TrySerialize<T>(T obj, out string? result, YamlSerializeOptions? options = null)
+    {
+        result = null;
+
+        if (obj == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            result = Serialize(obj, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试从 YAML 字符串反序列化为对象（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="yaml">YAML 字符串</param>
+    /// <param name="result">反序列化结果，失败时为 default(T)</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>是否反序列化成功</returns>
+    public static bool TryDeserialize<T>(string yaml, out T? result, YamlDeserializeOptions? options = null)
+    {
+        result = default;
+
+        if (string.IsNullOrWhiteSpace(yaml))
+        {
+            return false;
+        }
+
+        try
+        {
+            result = Deserialize<T>(yaml, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试从 YAML 文件反序列化对象（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="result">反序列化结果，失败时为 default(T)</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>是否反序列化成功</returns>
+    public static bool TryDeserializeFromFile<T>(string filePath, out T? result, YamlDeserializeOptions? options = null)
+    {
+        result = default;
+
+        if (!File.Exists(filePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            result = DeserializeFromFile<T>(filePath, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试将对象序列化并保存到 YAML 文件（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>是否保存成功</returns>
+    public static bool TrySerializeToFile<T>(T obj, string filePath, YamlSerializeOptions? options = null)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            SerializeToFile(obj, filePath, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试从 YAML 文件加载字典（不抛出异常）
+    /// </summary>
+    /// <param name="filePath">YAML 文件路径</param>
+    /// <param name="result">加载结果，失败时为空字典</param>
+    /// <param name="options">解析选项</param>
+    /// <returns>是否加载成功</returns>
+    public static bool TryLoadFromFile(string filePath, out Dictionary<string, string> result, YamlParseOptions? options = null)
+    {
+        result = [];
+
+        if (!File.Exists(filePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            result = LoadFromFile(filePath, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试保存字典到 YAML 文件（不抛出异常）
+    /// </summary>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="data">要保存的数据</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>是否保存成功</returns>
+    public static bool TrySaveToFile(string filePath, Dictionary<string, string> data, YamlSerializeOptions? options = null)
+    {
+        try
+        {
+            SaveToFile(filePath, data, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion Try 方法
+
     #endregion 文件操作
 
     #region 字典操作

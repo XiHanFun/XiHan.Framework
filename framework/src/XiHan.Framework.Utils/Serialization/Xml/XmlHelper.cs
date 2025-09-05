@@ -216,6 +216,120 @@ public static class XmlHelper
         await File.WriteAllTextAsync(filePath, xml, Encoding.UTF8, cancellationToken);
     }
 
+    #region Try 方法
+
+    /// <summary>
+    /// 尝试将对象序列化为 XML 字符串（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="result">序列化结果，失败时为 null</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>是否序列化成功</returns>
+    public static bool TrySerialize<T>(T obj, out string? result, XmlSerializeOptions? options = null)
+    {
+        result = null;
+
+        if (obj == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            result = Serialize(obj, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试从 XML 字符串反序列化为对象（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="xml">XML 字符串</param>
+    /// <param name="result">反序列化结果，失败时为 default(T)</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>是否反序列化成功</returns>
+    public static bool TryDeserialize<T>(string xml, out T? result, XmlDeserializeOptions? options = null)
+    {
+        result = default;
+
+        if (string.IsNullOrWhiteSpace(xml))
+        {
+            return false;
+        }
+
+        try
+        {
+            result = Deserialize<T>(xml, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试从文件反序列化对象（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="result">反序列化结果，失败时为 default(T)</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>是否反序列化成功</returns>
+    public static bool TryDeserializeFromFile<T>(string filePath, out T? result, XmlDeserializeOptions? options = null)
+    {
+        result = default;
+
+        if (!File.Exists(filePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            result = DeserializeFromFile<T>(filePath, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试将对象序列化并保存到文件（不抛出异常）
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
+    /// <param name="obj">要序列化的对象</param>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>是否保存成功</returns>
+    public static bool TrySerializeToFile<T>(T obj, string filePath, XmlSerializeOptions? options = null)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            SerializeToFile(obj, filePath, options);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion Try 方法
+
     #endregion 序列化与反序列化
 
     #region XML 节点操作
