@@ -149,7 +149,12 @@ public static class XiHan
     /// <summary>
     /// 框架版本
     /// </summary>
-    public static string Version => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString() ?? "0.0.0";
+    public static string Version => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString() ?? new Version(0, 0, 0).ToString();
+
+    /// <summary>
+    /// 框架完整版本信息
+    /// </summary>
+    public static Version FullVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version ?? new Version(0, 0, 0);
 
     /// <summary>
     /// 框架主要版本
@@ -165,11 +170,6 @@ public static class XiHan
     /// 框架修订版本
     /// </summary>
     public static int PatchVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.Build ?? 0;
-
-    /// <summary>
-    /// 框架完整版本信息
-    /// </summary>
-    public static Version FullVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version ?? new Version(0, 0, 0);
 
     /// <summary>
     /// 获取框架信息摘要
