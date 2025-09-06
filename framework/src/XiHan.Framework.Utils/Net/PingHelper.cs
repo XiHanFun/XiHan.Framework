@@ -46,7 +46,7 @@ public static class PingHelper
         var options = new PingOptions(ttl, true);
 
         var result = new StringBuilder();
-        _ = result.AppendLine($"开始 Ping {host}，共 {pingCount} 次：");
+        result.AppendLine($"开始 Ping {host}，共 {pingCount} 次：");
 
         for (var i = 1; i <= pingCount; i++)
         {
@@ -59,15 +59,15 @@ public static class PingHelper
             }
             catch (PingException ex)
             {
-                _ = result.AppendLine($"第 {i} 次：Ping 异常，错误信息：{ex.Message}");
+                result.AppendLine($"第 {i} 次：Ping 异常，错误信息：{ex.Message}");
             }
             catch (Exception ex)
             {
-                _ = result.AppendLine($"第 {i} 次：未知错误，错误信息：{ex.Message}");
+                result.AppendLine($"第 {i} 次：未知错误，错误信息：{ex.Message}");
             }
         }
 
-        _ = result.AppendLine("Ping 操作结束。");
+        result.AppendLine("Ping 操作结束。");
         return result.ToString();
     }
 

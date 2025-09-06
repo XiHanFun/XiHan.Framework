@@ -115,7 +115,7 @@ public static class ReflectionHelper
         {
             if (IsValid(rootAssembly))
             {
-                _ = returnAssemblies.Add(rootAssembly);
+                returnAssemblies.Add(rootAssembly);
             }
         }
 
@@ -136,10 +136,10 @@ public static class ReflectionHelper
                 }
 
                 assembliesToCheck.Enqueue(assembly);
-                _ = loadedAssemblies.Add(reference.FullName);
+                loadedAssemblies.Add(reference.FullName);
                 if (IsValid(assembly))
                 {
-                    _ = returnAssemblies.Add(assembly);
+                    returnAssemblies.Add(assembly);
                 }
             }
         }
@@ -184,7 +184,7 @@ public static class ReflectionHelper
                 continue;
             }
 
-            _ = returnAssemblies.Add(asm);
+            returnAssemblies.Add(asm);
         }
 
         return [.. returnAssemblies];
@@ -886,8 +886,8 @@ public static class ReflectionHelper
 
         try
         {
-            _ = assembly.GetTypes();
-            _ = assembly.DefinedTypes.ToList();
+            assembly.GetTypes();
+            assembly.DefinedTypes.ToList();
             return true;
         }
         catch (ReflectionTypeLoadException)

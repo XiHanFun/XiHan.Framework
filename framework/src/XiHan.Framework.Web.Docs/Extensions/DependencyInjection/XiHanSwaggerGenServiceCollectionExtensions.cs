@@ -30,7 +30,7 @@ public static class XiHanSwaggerGenServiceCollectionExtensions
     public static IServiceCollection AddXiHanSwagger(this IServiceCollection services, Action<SwaggerGenOptions>? setupAction = null)
     {
         // 配置Swagger，从路由、控制器和模型构建对象
-        _ = services.AddSwaggerGen(options =>
+        services.AddSwaggerGen(options =>
         {
             //TODO: 配置Swagger
 

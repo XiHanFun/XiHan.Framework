@@ -124,7 +124,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         _changeDebouncer.Debounce(() =>
         {
             // 注册回调以触发事件
-            _ = originalToken.RegisterChangeCallback(o =>
+            originalToken.RegisterChangeCallback(o =>
             {
                 // 获取变化的文件列表
                 var changedFiles = GetChangedFiles(filter);
@@ -167,7 +167,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
                 return false;
             }
 
-            _ = _providers.Remove(item);
+            _providers.Remove(item);
             RebuildCompositeProvider();
             return true;
         }
@@ -242,7 +242,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             foreach (var file in deletedFiles)
             {
                 changedFiles.Add((file, FileChangeType.Deleted));
-                _ = _fileStateCache.Remove(file, out _);
+                _fileStateCache.Remove(file, out _);
             }
         }
 
@@ -273,7 +273,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             foreach (var resource in deletedResources)
             {
                 changedFiles.Add((resource, FileChangeType.Deleted));
-                _ = _fileStateCache.Remove(resource, out _);
+                _fileStateCache.Remove(resource, out _);
             }
         }
 

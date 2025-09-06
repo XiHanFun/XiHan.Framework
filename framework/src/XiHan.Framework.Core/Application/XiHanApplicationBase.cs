@@ -54,7 +54,7 @@ public class XiHanApplicationBase : IXiHanApplication
         Services = services;
 
         // 添加一个空的对象访问器，该访问器的值会在初始化的时候被赋值
-        _ = services.TryAddObjectAccessor<IServiceProvider>();
+        services.TryAddObjectAccessor<IServiceProvider>();
 
         // 调用用户传入的配置委托
         XiHanApplicationCreationOptions options = new(services);
@@ -63,10 +63,10 @@ public class XiHanApplicationBase : IXiHanApplication
         ApplicationName = GetApplicationName(options);
 
         // 注册自己
-        _ = services.AddSingleton<IXiHanApplication>(this);
-        _ = services.AddSingleton<IApplicationInfoAccessor>(this);
-        _ = services.AddSingleton<IModuleContainer>(this);
-        _ = services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment
+        services.AddSingleton<IXiHanApplication>(this);
+        services.AddSingleton<IApplicationInfoAccessor>(this);
+        services.AddSingleton<IModuleContainer>(this);
+        services.AddSingleton<IXiHanHostEnvironment>(new XiHanHostEnvironment
         {
             EnvironmentName = options.Environment
         });
@@ -233,7 +233,7 @@ public class XiHanApplicationBase : IXiHanApplication
         CheckMultipleConfigureServices();
 
         ServiceConfigurationContext context = new(Services);
-        _ = Services.AddSingleton(context);
+        Services.AddSingleton(context);
 
         foreach (var module in Modules)
         {
@@ -270,8 +270,8 @@ public class XiHanApplicationBase : IXiHanApplication
                         continue;
                     }
 
-                    _ = Services.AddAssembly(assembly);
-                    _ = assemblies.Add(assembly);
+                    Services.AddAssembly(assembly);
+                    assemblies.Add(assembly);
                 }
             }
 
@@ -320,7 +320,7 @@ public class XiHanApplicationBase : IXiHanApplication
         CheckMultipleConfigureServices();
 
         ServiceConfigurationContext context = new(Services);
-        _ = Services.AddSingleton(context);
+        Services.AddSingleton(context);
 
         foreach (var module in Modules)
         {
@@ -357,8 +357,8 @@ public class XiHanApplicationBase : IXiHanApplication
                         continue;
                     }
 
-                    _ = Services.AddAssembly(assembly);
-                    _ = assemblies.Add(assembly);
+                    Services.AddAssembly(assembly);
+                    assemblies.Add(assembly);
                 }
             }
 

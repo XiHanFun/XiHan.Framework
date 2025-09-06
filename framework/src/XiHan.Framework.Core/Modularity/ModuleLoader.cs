@@ -119,7 +119,7 @@ public class ModuleLoader : IModuleLoader
     protected virtual IXiHanModule CreateAndRegisterModule(IServiceCollection services, Type moduleType)
     {
         var module = (IXiHanModule)Activator.CreateInstance(moduleType)!;
-        _ = services.AddSingleton(moduleType, module);
+        services.AddSingleton(moduleType, module);
         return module;
     }
 

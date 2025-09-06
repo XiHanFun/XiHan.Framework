@@ -287,7 +287,7 @@ public class AsyncBarrier : IDisposable
                 // 检查是否需要触发阶段完成
                 if (newTotalCount > 0 && currentCount >= newTotalCount)
                 {
-                    _ = Task.Run(async () => await CompletePhaseAsync(phaseNumber, newTotalCount));
+                    Task.Run(async () => await CompletePhaseAsync(phaseNumber, newTotalCount));
                 }
 
                 return phaseNumber;
@@ -376,7 +376,7 @@ public class AsyncBarrier : IDisposable
                 if (newCount >= totalCount)
                 {
                     var phaseNumber = originalState >> 32;
-                    _ = Task.Run(async () => await CompletePhaseAsync(phaseNumber, totalCount));
+                    Task.Run(async () => await CompletePhaseAsync(phaseNumber, totalCount));
                     return true;
                 }
                 return false;

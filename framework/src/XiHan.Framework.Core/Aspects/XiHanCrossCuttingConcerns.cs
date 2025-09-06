@@ -58,7 +58,7 @@ public class XiHanCrossCuttingConcerns
 
         foreach (var concern in concerns)
         {
-            _ = crossCuttingEnabledObj.AppliedCrossCuttingConcerns.RemoveAll(c => c == concern);
+            crossCuttingEnabledObj.AppliedCrossCuttingConcerns.RemoveAll(c => c == concern);
         }
     }
 

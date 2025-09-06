@@ -261,7 +261,7 @@ public static class HttpClientHelper
 
         foreach (var header in headers)
         {
-            _ = request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
     }
 

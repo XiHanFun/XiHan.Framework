@@ -160,7 +160,7 @@ public static class RandomCoder
         {
             var area = RandomHelper.GetRandom(16, 88);
             var code = area == 55 ? RandomHelper.GetRandom(1, 90) : RandomHelper.GetRandom(1, 94);
-            _ = strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
+            strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
         }
 
         return strtem.ToString();

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Scalar.AspNetCore;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Serialization;
@@ -39,7 +38,7 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions();
 
-        _ = services.AddControllers(options =>
+        services.AddControllers(options =>
         {
             options = aspNetCoreMvcOptions.MvcOptions;
         }).ConfigureApiBehaviorOptions(options =>
@@ -53,12 +52,12 @@ public class XiHanWebApiModule : XiHanModule
             options = aspNetCoreMvcOptions.FormatterOptions;
         });
 
-        _ = services.AddCors(options =>
+        services.AddCors(options =>
         {
             options = aspNetCoreMvcOptions.CorsOptions;
         });
 
-        _ = services.AddOpenApi();
+        services.AddOpenApi();
     }
 
     /// <summary>
@@ -70,18 +69,13 @@ public class XiHanWebApiModule : XiHanModule
     {
         var app = context.GetApplicationBuilder();
 
-        _ = app.UseRouting();
-        _ = app.UseCors();
-        _ = app.UseEndpoints(endpoints =>
+        app.UseRouting();
+        app.UseCors();
+        app.UseEndpoints(endpoints =>
         {
             // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由
-            _ = endpoints.MapControllers();
-            _ = endpoints.MapOpenApi();
-        });
-
-        _ = app.UseEndpoints(endpoints =>
-        {
-            _ = endpoints.MapScalarApiReference();
+            endpoints.MapControllers();
+            endpoints.MapOpenApi();
         });
     }
 }
