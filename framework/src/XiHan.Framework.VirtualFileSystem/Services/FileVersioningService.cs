@@ -55,7 +55,7 @@ public class FileVersioningService : IFileVersioningService
 
         while (steps-- > 0 && versions.Count > 0)
         {
-            _ = versions.Pop();
+            versions.Pop();
         }
         return true;
     }

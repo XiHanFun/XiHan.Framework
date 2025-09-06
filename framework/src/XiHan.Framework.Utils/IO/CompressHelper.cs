@@ -38,7 +38,7 @@ public static class CompressHelper
 
         if (!Directory.Exists(extractPath))
         {
-            _ = Directory.CreateDirectory(extractPath);
+            Directory.CreateDirectory(extractPath);
         }
 
         switch (format)

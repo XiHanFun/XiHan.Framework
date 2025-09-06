@@ -32,8 +32,8 @@ public class XiHanVirtualFileSystemModule : XiHanModule
         var services = context.Services;
 
         // 注册核心服务
-        _ = services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
+        services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
         // 注册附加服务
-        _ = services.AddSingleton<IFileVersioningService, FileVersioningService>();
+        services.AddSingleton<IFileVersioningService, FileVersioningService>();
     }
 }

@@ -77,7 +77,7 @@ public static class ServiceCollectionRegistrationActionExtensions
         }
 
         actionList = [];
-        _ = services.AddObjectAccessor(actionList);
+        services.AddObjectAccessor(actionList);
 
         return actionList;
     }
@@ -120,7 +120,7 @@ public static class ServiceCollectionRegistrationActionExtensions
         }
 
         actionList = [];
-        _ = services.AddObjectAccessor(actionList);
+        services.AddObjectAccessor(actionList);
 
         return actionList;
     }

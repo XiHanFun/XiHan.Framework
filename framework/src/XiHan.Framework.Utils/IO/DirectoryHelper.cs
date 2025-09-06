@@ -29,7 +29,7 @@ public static class DirectoryHelper
     {
         if (!Directory.Exists(directoryPath))
         {
-            _ = Directory.CreateDirectory(directoryPath);
+            Directory.CreateDirectory(directoryPath);
         }
     }
 
@@ -83,13 +83,13 @@ public static class DirectoryHelper
             DirectoryInfo sourceDir = new(sourcePath);
             if (!Directory.Exists(destinationPath))
             {
-                _ = Directory.CreateDirectory(destinationPath);
+                Directory.CreateDirectory(destinationPath);
             }
 
             var files = sourceDir.GetFiles();
             foreach (var file in files)
             {
-                _ = file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
+                file.CopyTo(Path.Combine(destinationPath, file.Name), overwrite);
             }
 
             var dirs = sourceDir.GetDirectories();

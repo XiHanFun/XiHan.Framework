@@ -121,7 +121,7 @@ public class WebSocketClient : IDisposable
             OnOpen?.Invoke(this, EventArgs.Empty);
 
             // 启动接收任务
-            _ = Task.Run(ReceiveLoop);
+            Task.Run(ReceiveLoop);
 
             return true;
         }

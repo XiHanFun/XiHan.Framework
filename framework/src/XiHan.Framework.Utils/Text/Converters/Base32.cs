@@ -55,7 +55,7 @@ public static class Base32
             {
                 const int Mask = 0x1f;
                 var currentBase32Value = accumulatedBits & Mask;
-                _ = sb.Append(Base32Alphabet[currentBase32Value]);
+                sb.Append(Base32Alphabet[currentBase32Value]);
                 accumulatedBits >>= 5;
                 bitCount -= 5;
             }
@@ -69,7 +69,7 @@ public static class Base32
         {
             const int Mask = 0x1f;
             var currentBase32Value = accumulatedBits & Mask;
-            _ = sb.Append(Base32Alphabet[currentBase32Value]);
+            sb.Append(Base32Alphabet[currentBase32Value]);
         }
 
         return sb.ToString();

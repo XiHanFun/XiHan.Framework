@@ -120,7 +120,7 @@ public static class EncodingExtensions
         StringBuilder sb = new();
         foreach (var t in data)
         {
-            _ = sb.Append($@"\u{(int)t:x4}");
+            sb.Append($@"\u{(int)t:x4}");
         }
 
         return sb.ToString();

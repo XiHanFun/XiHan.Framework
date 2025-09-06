@@ -70,7 +70,7 @@ public static class SelectConditionParser<T>
             var property = type.GetPropertyInfo(propertyName);
             propertyAccess = Expression.MakeMemberAccess(param, property);
 
-            _ = SelectConditionMemberParserCache.TryAdd(key, propertyAccess);
+            SelectConditionMemberParserCache.TryAdd(key, propertyAccess);
         }
 
         // 生成比较表达式

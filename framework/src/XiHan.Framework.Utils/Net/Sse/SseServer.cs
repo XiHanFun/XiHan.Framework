@@ -116,7 +116,7 @@ public class SseServer
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (_options.KeepAliveInterval > TimeSpan.Zero)
         {
-            _ = StartKeepAliveTimerAsync(stream, linkedCts.Token);
+            StartKeepAliveTimerAsync(stream, linkedCts.Token);
         }
 
         try

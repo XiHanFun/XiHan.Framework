@@ -51,7 +51,7 @@ public static class TreeExtensions
                     throw new InvalidOperationException("转为树形结构时，循环依赖检测到");
                 }
 
-                _ = visited.Add(current.Value);
+                visited.Add(current.Value);
 
                 foreach (var child in nodes.Where(child => isChild(current.Value, child.Value)))
                 {
@@ -125,7 +125,7 @@ public static class TreeExtensions
                 .FirstOrDefault(node => keySelector(node.Value).Equals(keySelector(parent)))
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
-        _ = parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
+        parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
         parentNode.Children.Add(new TreeNode<T>(child));
     }
 
@@ -147,7 +147,7 @@ public static class TreeExtensions
         {
             if (EqualityComparer<T>.Default.Equals(child.Value, value))
             {
-                _ = root.Children.Remove(child);
+                root.Children.Remove(child);
                 return true;
             }
 

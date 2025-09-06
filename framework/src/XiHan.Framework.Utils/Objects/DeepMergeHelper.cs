@@ -329,7 +329,7 @@ public static class DeepMergeHelper
         {
             if (addedItems.Add(item))
             {
-                _ = resultList.Add(DeepClone(item));
+                resultList.Add(DeepClone(item));
             }
         }
 
@@ -338,7 +338,7 @@ public static class DeepMergeHelper
         {
             if (addedItems.Add(item))
             {
-                _ = resultList.Add(DeepClone(item));
+                resultList.Add(DeepClone(item));
             }
         }
 
@@ -592,7 +592,7 @@ public static class DeepMergeHelper
 
             foreach (var item in list)
             {
-                _ = newList.Add(DeepClone(item));
+                newList.Add(DeepClone(item));
             }
 
             return newList;
@@ -602,7 +602,7 @@ public static class DeepMergeHelper
         var genericList = new ArrayList();
         foreach (var item in list)
         {
-            _ = genericList.Add(DeepClone(item));
+            genericList.Add(DeepClone(item));
         }
 
         return genericList;

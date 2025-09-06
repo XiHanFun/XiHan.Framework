@@ -31,7 +31,7 @@ internal class XiHanApplicationWithExternalServiceProvider : XiHanApplicationBas
     public XiHanApplicationWithExternalServiceProvider(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
         : base(startupModuleType, services, optionsAction)
     {
-        _ = services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
+        services.AddSingleton<IXiHanApplicationWithExternalServiceProvider>(this);
     }
 
     /// <summary>

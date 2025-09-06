@@ -105,7 +105,7 @@ public static class BlowfishHelper
         // 处理数据
         var outputBytes = new byte[cipher.GetOutputSize(inputBytes.Length)];
         var length = cipher.ProcessBytes(inputBytes, 0, inputBytes.Length, outputBytes, 0);
-        _ = cipher.DoFinal(outputBytes, length);
+        cipher.DoFinal(outputBytes, length);
         return outputBytes;
     }
 }

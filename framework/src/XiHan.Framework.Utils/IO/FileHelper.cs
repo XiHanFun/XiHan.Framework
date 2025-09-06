@@ -45,7 +45,7 @@ public static class FileHelper
     {
         await using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var result = new byte[stream.Length];
-        _ = await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
+        await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
         return result;
     }
 
@@ -101,7 +101,7 @@ public static class FileHelper
     {
         if (!File.Exists(filePath))
         {
-            _ = File.Create(filePath);
+            File.Create(filePath);
         }
     }
 
@@ -131,7 +131,7 @@ public static class FileHelper
         // 删除文件
         File.Delete(filePath);
         // 重新创建该文件
-        _ = File.Create(filePath);
+        File.Create(filePath);
     }
 
     #endregion 文件操作

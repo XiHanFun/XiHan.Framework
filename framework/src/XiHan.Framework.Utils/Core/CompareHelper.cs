@@ -410,7 +410,7 @@ public static class CompareHelper
             return false;
         }
 
-        _ = keyComparer ?? EqualityComparer<TKey>.Default;
+        keyComparer ??= EqualityComparer<TKey>.Default;
         valueComparer ??= EqualityComparer<TValue>.Default;
 
         foreach (var kvp in dict1)

@@ -36,7 +36,7 @@ public class XiHanWebDocsModule : XiHanModule
     {
         var services = context.Services;
 
-        _ = services.AddSwaggerGen();
+        services.AddSwaggerGen();
     }
 
     /// <summary>
@@ -47,11 +47,11 @@ public class XiHanWebDocsModule : XiHanModule
     {
         var app = context.GetApplicationBuilder();
 
-        _ = app.UseSwagger();
-        _ = app.UseSwaggerUI();
-        _ = app.UseEndpoints(endpoints =>
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        app.UseEndpoints(endpoints =>
         {
-            _ = endpoints.MapScalarApiReference();
+            endpoints.MapScalarApiReference();
         });
     }
 }

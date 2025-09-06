@@ -48,7 +48,7 @@ public class AsyncReaderWriterLock
         }
         finally
         {
-            _ = _readerSemaphore.Release();
+            _readerSemaphore.Release();
         }
 
         return new Releaser(this, false);
@@ -79,7 +79,7 @@ public class AsyncReaderWriterLock
         }
         finally
         {
-            _ = _readerSemaphore.Release();
+            _readerSemaphore.Release();
         }
 
         return new Releaser(this, false);
@@ -121,18 +121,18 @@ public class AsyncReaderWriterLock
         {
             if (--_readerCount == 0)
             {
-                _ = _writerSemaphore.Release();
+                _writerSemaphore.Release();
             }
         }
         finally
         {
-            _ = _readerSemaphore.Release();
+            _readerSemaphore.Release();
         }
     }
 
     private void ReleaseWriteLock()
     {
-        _ = _writerSemaphore.Release();
+        _writerSemaphore.Release();
     }
 
     private class Releaser : IDisposable

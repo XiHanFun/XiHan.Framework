@@ -52,7 +52,7 @@ public static class CurrencyHelper
     /// <returns>格式化后的字符串</returns>
     public static string FormatCurrency(decimal amount, string currencyCode, CultureInfo culture)
     {
-        _ = GetCurrencyInfo(currencyCode); // Validate currency code exists
+        GetCurrencyInfo(currencyCode); // Validate currency code exists
         return amount.ToString("C", culture);
     }
 

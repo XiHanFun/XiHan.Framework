@@ -91,6 +91,6 @@ public static class UnitOfWorkExtensions
     {
         Guard.NotNull(unitOfWork, nameof(unitOfWork));
 
-        _ = unitOfWork.Items.RemoveAllWhere(x => x.Key == key);
+        unitOfWork.Items.RemoveAllWhere(x => x.Key == key);
     }
 }
