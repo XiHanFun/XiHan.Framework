@@ -146,7 +146,7 @@ public class TypeList<TBaseType> : ITypeList<TBaseType>
     /// <typeparam name="T"></typeparam>
     public void Remove<T>() where T : TBaseType
     {
-        _ = _typeList.Remove(typeof(T));
+        _typeList.Remove(typeof(T));
     }
 
     /// <summary>

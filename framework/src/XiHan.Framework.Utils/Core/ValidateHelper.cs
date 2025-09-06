@@ -570,7 +570,7 @@ public static class ValidateHelper
             sum += int.Parse(wi[i]) * int.Parse(ai[i].ToString());
         }
 
-        _ = Math.DivRem(sum, 11, out var y);
+        Math.DivRem(sum, 11, out var y);
         return arrVerifyCode[y].Equals(checkValue.Substring(17, 1), StringComparison.InvariantCultureIgnoreCase);
         // 符合 GB11643-1999标准
     }

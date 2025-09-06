@@ -37,11 +37,11 @@ public static class XiHanApplicationBuilderExtensions
         var application = app.ApplicationServices.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
         var applicationLifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
 
-        _ = applicationLifetime.ApplicationStopping.Register(() =>
+        applicationLifetime.ApplicationStopping.Register(() =>
         {
             AsyncHelper.RunSync(() => application.ShutdownAsync());
         });
-        _ = applicationLifetime.ApplicationStopped.Register(application.Dispose);
+        applicationLifetime.ApplicationStopped.Register(application.Dispose);
 
         await application.InitializeAsync(app.ApplicationServices);
     }
@@ -58,8 +58,8 @@ public static class XiHanApplicationBuilderExtensions
         var application = app.ApplicationServices.GetRequiredService<IXiHanApplicationWithExternalServiceProvider>();
         var applicationLifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
 
-        _ = applicationLifetime.ApplicationStopping.Register(application.Shutdown);
-        _ = applicationLifetime.ApplicationStopped.Register(application.Dispose);
+        applicationLifetime.ApplicationStopping.Register(application.Shutdown);
+        applicationLifetime.ApplicationStopped.Register(application.Dispose);
 
         application.Initialize(app.ApplicationServices);
     }

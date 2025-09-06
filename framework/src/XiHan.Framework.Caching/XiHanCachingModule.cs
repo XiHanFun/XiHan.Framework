@@ -35,14 +35,14 @@ public class XiHanCachingModule : XiHanModule
     {
         var services = context.Services;
 
-        _ = services.AddMemoryCache();
-        _ = services.AddDistributedMemoryCache();
-        _ = services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
-        _ = services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
+        services.AddMemoryCache();
+        services.AddDistributedMemoryCache();
+        services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
+        services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
 
-        _ = services.AddHybridCache();
-        _ = services.AddSingleton(typeof(IHybridCache<>), typeof(XiHanHybridCache<>));
-        _ = services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
+        services.AddHybridCache();
+        services.AddSingleton(typeof(IHybridCache<>), typeof(XiHanHybridCache<>));
+        services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
 
         services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
         {
@@ -57,7 +57,7 @@ public class XiHanCachingModule : XiHanModule
             return;
         }
 
-        _ = context.Services.AddStackExchangeRedisCache(options =>
+        context.Services.AddStackExchangeRedisCache(options =>
         {
             var redisConfiguration = configuration["Redis:Configuration"];
             if (!redisConfiguration.IsNullOrEmpty())
@@ -66,6 +66,6 @@ public class XiHanCachingModule : XiHanModule
             }
         });
 
-        _ = context.Services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
+        context.Services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
     }
 }

@@ -129,7 +129,7 @@ public static class ServiceCollectionConventionalRegistrationExtensions
         }
 
         conventionalRegistrars = [new DefaultConventionalRegistrar()];
-        _ = services.AddObjectAccessor(conventionalRegistrars);
+        services.AddObjectAccessor(conventionalRegistrars);
 
         return conventionalRegistrars;
     }

@@ -237,7 +237,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     {
         keys = Guard.NotNull(keys, nameof(keys));
 
-        _ = GetAndRefreshMany(keys, false);
+        GetAndRefreshMany(keys, false);
     }
 
     /// <summary>
@@ -250,7 +250,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     {
         keys = Guard.NotNull(keys, nameof(keys));
 
-        _ = await GetAndRefreshManyAsync(keys, false, token);
+        await GetAndRefreshManyAsync(keys, false, token);
     }
 
     /// <summary>
@@ -323,7 +323,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <param name="lease"></param>
     protected virtual void Recycle(byte[]? lease)
     {
-        _ = RecycleMethodInfo.Invoke(this, [lease!]);
+        RecycleMethodInfo.Invoke(this, [lease!]);
     }
 
     /// <summary>
@@ -491,7 +491,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
         {
             results, null, null
         };
-        _ = MapMetadataMethod.Invoke(this, parameters);
+        MapMetadataMethod.Invoke(this, parameters);
 
         absoluteExpiration = (DateTimeOffset?)parameters[1];
         slidingExpiration = (TimeSpan?)parameters[2];
@@ -527,7 +527,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <param name="cache"></param>
     protected virtual void OnRedisError(Exception ex, IDatabase cache)
     {
-        _ = OnRedisErrorMethod.Invoke(this, [ex, cache]);
+        OnRedisErrorMethod.Invoke(this, [ex, cache]);
     }
 
     /// <summary>

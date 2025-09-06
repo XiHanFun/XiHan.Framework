@@ -76,7 +76,7 @@ public static class ServiceCollectionPreConfigureExtensions
         }
 
         actionList = [];
-        _ = services.AddObjectAccessor(actionList);
+        services.AddObjectAccessor(actionList);
 
         return actionList;
     }

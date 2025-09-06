@@ -63,17 +63,17 @@ public class ExposeServicesAttribute : Attribute, IExposedServiceTypesProvider
         {
             foreach (var type in GetDefaultServices(targetType))
             {
-                _ = serviceList.AddIfNotContains(type);
+                serviceList.AddIfNotContains(type);
             }
 
             if (IncludeSelf)
             {
-                _ = serviceList.AddIfNotContains(targetType);
+                serviceList.AddIfNotContains(targetType);
             }
         }
         else if (IncludeSelf)
         {
-            _ = serviceList.AddIfNotContains(targetType);
+            serviceList.AddIfNotContains(targetType);
         }
 
         return [.. serviceList];

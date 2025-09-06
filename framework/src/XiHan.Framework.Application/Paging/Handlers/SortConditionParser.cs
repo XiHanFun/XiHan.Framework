@@ -73,7 +73,7 @@ public static class SortConditionParser<T>
         var converted = Expression.Convert(propertyAccess, typeof(object));
         sortConditionParser = Expression.Lambda<Func<T, object>>(converted, param);
 
-        _ = SortConditionParserCache.TryAdd(key, sortConditionParser);
+        SortConditionParserCache.TryAdd(key, sortConditionParser);
 
         return (Expression<Func<T, object>>)sortConditionParser;
     }

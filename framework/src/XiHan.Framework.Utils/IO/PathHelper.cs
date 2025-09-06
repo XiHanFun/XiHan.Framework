@@ -90,7 +90,7 @@ public static class PathHelper
             }
 
             // 尝试获取完整路径来验证格式
-            _ = Path.GetFullPath(path);
+            Path.GetFullPath(path);
             return true;
         }
         catch

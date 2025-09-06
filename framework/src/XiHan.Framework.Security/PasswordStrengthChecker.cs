@@ -132,7 +132,7 @@ public class PasswordStrengthChecker
 
         if (includeSpecialChars)
         {
-            _ = characterPool.Append(DefaultConsts.SpecialCharacters);
+            characterPool.Append(DefaultConsts.SpecialCharacters);
         }
 
         return new string([.. Enumerable.Range(0, length).Select(_ => characterPool[RandomHelper.GetRandom(characterPool.Length)])]);

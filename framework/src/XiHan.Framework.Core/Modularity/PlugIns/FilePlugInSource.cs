@@ -56,7 +56,7 @@ public class FilePlugInSource : IPlugInSource
                 {
                     if (XiHanModuleHelper.IsXiHanModule(type))
                     {
-                        _ = modules.AddIfNotContains(type);
+                        modules.AddIfNotContains(type);
                     }
                 }
             }

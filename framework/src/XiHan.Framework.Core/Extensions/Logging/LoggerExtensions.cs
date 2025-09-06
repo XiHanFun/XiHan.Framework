@@ -154,10 +154,10 @@ public static class LoggerExtensions
         }
 
         StringBuilder exceptionData = new();
-        _ = exceptionData.AppendLine("---------- 异常数据 ----------");
+        exceptionData.AppendLine("---------- 异常数据 ----------");
         foreach (var key in exception.Data.Keys)
         {
-            _ = exceptionData.AppendLine($"{key} = {exception.Data[key]}");
+            exceptionData.AppendLine($"{key} = {exception.Data[key]}");
         }
 
         logger.LogWithLevel(logLevel, exceptionData.ToString());
@@ -189,7 +189,7 @@ public static class LoggerExtensions
                     {
                         if (innerException is IExceptionWithSelfLogging withSelfLogging)
                         {
-                            _ = loggingExceptions.AddIfNotContains(withSelfLogging);
+                            loggingExceptions.AddIfNotContains(withSelfLogging);
                         }
                     }
 

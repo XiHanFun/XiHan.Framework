@@ -56,7 +56,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder MinimumLevel(LogEventLevel level)
     {
-        _ = _loggerConfiguration.MinimumLevel.Is(level);
+        _loggerConfiguration.MinimumLevel.Is(level);
         return this;
     }
 
@@ -68,9 +68,9 @@ public class XiHanLoggerConfigurationBuilder
     {
 #if DEBUG
         // 最小记录级别
-        _ = _loggerConfiguration.MinimumLevel.Debug();
+        _loggerConfiguration.MinimumLevel.Debug();
 #endif
-        _ = _loggerConfiguration.MinimumLevel.Information();
+        _loggerConfiguration.MinimumLevel.Information();
         return this;
     }
 
@@ -82,7 +82,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder Override(string source, LogEventLevel level)
     {
-        _ = _loggerConfiguration.MinimumLevel.Override(source, level);
+        _loggerConfiguration.MinimumLevel.Override(source, level);
         return this;
     }
 
@@ -92,8 +92,8 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder OverrideDefault()
     {
-        _ = Override("Microsoft", LogEventLevel.Warning);
-        _ = Override("System", LogEventLevel.Warning);
+        Override("Microsoft", LogEventLevel.Warning);
+        Override("System", LogEventLevel.Warning);
         return this;
     }
 
@@ -106,7 +106,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichWithProperty(string propertyName, object? value, bool destructureObjects = false)
     {
-        _ = _loggerConfiguration.Enrich.WithProperty(propertyName, value, destructureObjects);
+        _loggerConfiguration.Enrich.WithProperty(propertyName, value, destructureObjects);
         return this;
     }
 
@@ -116,8 +116,8 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichWithPropertyDefault()
     {
-        _ = EnrichWithProperty("Application", ReflectionHelper.GetEntryAssemblyName());
-        _ = EnrichWithProperty("Version", ReflectionHelper.GetEntryAssemblyVersion());
+        EnrichWithProperty("Application", ReflectionHelper.GetEntryAssemblyName());
+        EnrichWithProperty("Version", ReflectionHelper.GetEntryAssemblyVersion());
         return this;
     }
 
@@ -127,7 +127,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichFromLogContext()
     {
-        _ = _loggerConfiguration.Enrich.FromLogContext();
+        _loggerConfiguration.Enrich.FromLogContext();
         return this;
     }
 
@@ -137,7 +137,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder EnrichFromLogContextDefault()
     {
-        _ = EnrichFromLogContext();
+        EnrichFromLogContext();
         return this;
     }
 
@@ -149,7 +149,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder WriteToConsole(LogEventLevel level, string outputTemplate)
     {
-        _ = _loggerConfiguration.WriteTo.Logger(log => log.Filter.ByIncludingOnly(lev => lev.Level == level)
+        _loggerConfiguration.WriteTo.Logger(log => log.Filter.ByIncludingOnly(lev => lev.Level == level)
             .WriteTo.Console(outputTemplate: outputTemplate));
         return this;
     }
@@ -161,12 +161,12 @@ public class XiHanLoggerConfigurationBuilder
     public XiHanLoggerConfigurationBuilder WriteToConsoleDefault()
     {
 #if DEBUG
-        _ = WriteToConsole(LogEventLevel.Debug, _infoTemplate);
+        WriteToConsole(LogEventLevel.Debug, _infoTemplate);
 #endif
-        _ = WriteToConsole(LogEventLevel.Information, _infoTemplate);
-        _ = WriteToConsole(LogEventLevel.Warning, _warnTemplate);
-        _ = WriteToConsole(LogEventLevel.Error, _errorTemplate);
-        _ = WriteToConsole(LogEventLevel.Fatal, _errorTemplate);
+        WriteToConsole(LogEventLevel.Information, _infoTemplate);
+        WriteToConsole(LogEventLevel.Warning, _warnTemplate);
+        WriteToConsole(LogEventLevel.Error, _errorTemplate);
+        WriteToConsole(LogEventLevel.Fatal, _errorTemplate);
         return this;
     }
 
@@ -179,7 +179,7 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder WriteToFile(LogEventLevel level, string path, string outputTemplate)
     {
-        _ = _loggerConfiguration.WriteTo.Logger(log => log.Filter.ByIncludingOnly(lev => lev.Level == level)
+        _loggerConfiguration.WriteTo.Logger(log => log.Filter.ByIncludingOnly(lev => lev.Level == level)
             // 异步输出到文件
             .WriteTo.Async(newConfig => newConfig.File(
                 // 配置日志输出到文件，文件输出到当前项目的 logs 目录下，linux 中大写会出错
@@ -214,12 +214,12 @@ public class XiHanLoggerConfigurationBuilder
         const string FatalPath = @"Logs/Fatal/.log";
 
 #if DEBUG
-        _ = WriteToFile(LogEventLevel.Debug, DebugPath, _infoTemplate);
+        WriteToFile(LogEventLevel.Debug, DebugPath, _infoTemplate);
 #endif
-        _ = WriteToFile(LogEventLevel.Information, InfoPath, _infoTemplate);
-        _ = WriteToFile(LogEventLevel.Warning, WaringPath, _warnTemplate);
-        _ = WriteToFile(LogEventLevel.Error, ErrorPath, _errorTemplate);
-        _ = WriteToFile(LogEventLevel.Fatal, FatalPath, _errorTemplate);
+        WriteToFile(LogEventLevel.Information, InfoPath, _infoTemplate);
+        WriteToFile(LogEventLevel.Warning, WaringPath, _warnTemplate);
+        WriteToFile(LogEventLevel.Error, ErrorPath, _errorTemplate);
+        WriteToFile(LogEventLevel.Fatal, FatalPath, _errorTemplate);
 
         return this;
     }

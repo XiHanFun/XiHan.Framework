@@ -41,7 +41,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     private XiHanApplicationWithInternalServiceProvider(Type startupModuleType, IServiceCollection services, Action<XiHanApplicationCreationOptions>? optionsAction)
         : base(startupModuleType, services, optionsAction)
     {
-        _ = Services.AddSingleton<IXiHanApplicationWithInternalServiceProvider>(this);
+        Services.AddSingleton<IXiHanApplicationWithInternalServiceProvider>(this);
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// </summary>
     public async Task InitializeAsync()
     {
-        _ = CreateServiceProvider();
+        CreateServiceProvider();
         await InitializeModulesAsync();
     }
 
@@ -81,7 +81,7 @@ public class XiHanApplicationWithInternalServiceProvider : XiHanApplicationBase,
     /// </summary>
     public void Initialize()
     {
-        _ = CreateServiceProvider();
+        CreateServiceProvider();
         InitializeModules();
     }
 

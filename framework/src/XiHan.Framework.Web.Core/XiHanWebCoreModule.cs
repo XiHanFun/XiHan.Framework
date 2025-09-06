@@ -59,7 +59,7 @@ public class XiHanWebCoreModule : XiHanModule
         //});
 
         //AddAspNetServices(context.Services);
-        _ = services.AddObjectAccessor<IApplicationBuilder>();
+        services.AddObjectAccessor<IApplicationBuilder>();
         //context.Services.AddXiHanDynamicOptions<RequestLocalizationOptions, XiHanRequestLocalizationOptionsManager>();
     }
 }

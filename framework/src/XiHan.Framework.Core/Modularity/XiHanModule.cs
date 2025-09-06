@@ -199,7 +199,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void Configure<TOptions>(Action<TOptions> configureOptions)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.Configure(configureOptions);
+        ServiceConfigurationContext.Services.Configure(configureOptions);
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void Configure<TOptions>(string name, Action<TOptions> configureOptions)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.Configure(name, configureOptions);
+        ServiceConfigurationContext.Services.Configure(name, configureOptions);
     }
 
     /// <summary>
@@ -222,7 +222,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void Configure<TOptions>(IConfiguration configuration)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.Configure<TOptions>(configuration);
+        ServiceConfigurationContext.Services.Configure<TOptions>(configuration);
     }
 
     /// <summary>
@@ -234,7 +234,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void Configure<TOptions>(IConfiguration configuration, Action<BinderOptions> configureBinder)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.Configure<TOptions>(configuration, configureBinder);
+        ServiceConfigurationContext.Services.Configure<TOptions>(configuration, configureBinder);
     }
 
     /// <summary>
@@ -246,7 +246,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void Configure<TOptions>(string name, IConfiguration configuration)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.Configure<TOptions>(name, configuration);
+        ServiceConfigurationContext.Services.Configure<TOptions>(name, configuration);
     }
 
     /// <summary>
@@ -257,7 +257,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void PreConfigure<TOptions>(Action<TOptions> configureOptions)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.PreConfigure(configureOptions);
+        ServiceConfigurationContext.Services.PreConfigure(configureOptions);
     }
 
     /// <summary>
@@ -268,7 +268,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void PostConfigure<TOptions>(Action<TOptions> configureOptions)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.PostConfigure(configureOptions);
+        ServiceConfigurationContext.Services.PostConfigure(configureOptions);
     }
 
     /// <summary>
@@ -279,7 +279,7 @@ public abstract class XiHanModule : IPreConfigureServices, IXiHanModule, IPostCo
     protected void PostConfigureAll<TOptions>(Action<TOptions> configureOptions)
         where TOptions : class
     {
-        _ = ServiceConfigurationContext.Services.PostConfigureAll(configureOptions);
+        ServiceConfigurationContext.Services.PostConfigureAll(configureOptions);
     }
 
     #endregion 配置选项

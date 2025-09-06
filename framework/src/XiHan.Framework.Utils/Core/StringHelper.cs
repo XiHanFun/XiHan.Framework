@@ -136,12 +136,12 @@ public static class StringHelper
         {
             if (item == enumerable.LastOrDefault())
             {
-                _ = sb.Append(item);
+                sb.Append(item);
             }
             else
             {
-                _ = sb.Append(item);
-                _ = sb.Append(sepeater);
+                sb.Append(item);
+                sb.Append(sepeater);
             }
         }
 
@@ -217,7 +217,7 @@ public static class StringHelper
                     {
                         if (newStyle.Substring(i, 1) == splitString)
                         {
-                            _ = newStr.Append(i + ",");
+                            newStr.Append(i + ",");
                         }
                     }
                 }
@@ -359,7 +359,7 @@ public static class StringHelper
 
             try
             {
-                _ = sb.Append(inputString.AsSpan(i, 1));
+                sb.Append(inputString.AsSpan(i, 1));
             }
             catch
             {
@@ -375,7 +375,7 @@ public static class StringHelper
         var myByte = Encoding.Default.GetBytes(inputString);
         if (isShowFix && myByte.Length > len)
         {
-            _ = sb.Append('…');
+            sb.Append('…');
         }
 
         return sb.ToString();
@@ -472,14 +472,14 @@ public static class StringHelper
                 break;
             }
 
-            _ = strBuffer.Append(content[end..start]);
-            _ = strBuffer.Append(newStr);
+            strBuffer.Append(content[end..start]);
+            strBuffer.Append(newStr);
             start += oldStr.Length;
             end = start;
         }
 
         // 查找到最后一个位置之后，把剩下的字符串拼接进去
-        _ = strBuffer.Append(content[end..]);
+        strBuffer.Append(content[end..]);
         return strBuffer.ToString();
     }
 

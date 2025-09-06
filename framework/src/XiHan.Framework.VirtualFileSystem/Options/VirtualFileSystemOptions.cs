@@ -42,7 +42,7 @@ public class VirtualFileSystemOptions
         // 自动创建不存在的目录
         if (!Directory.Exists(fullPath))
         {
-            _ = Directory.CreateDirectory(fullPath);
+            Directory.CreateDirectory(fullPath);
         }
 
         var provider = new VirtualPhysicalFileProvider(fullPath, priority);

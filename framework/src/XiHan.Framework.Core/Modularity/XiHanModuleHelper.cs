@@ -62,7 +62,7 @@ public static class XiHanModuleHelper
         {
             foreach (var dependedModuleType in descriptor.GetDependedTypes())
             {
-                _ = dependencies.AddIfNotContains(dependedModuleType);
+                dependencies.AddIfNotContains(dependedModuleType);
             }
         }
 
@@ -85,7 +85,7 @@ public static class XiHanModuleHelper
         {
             foreach (var assembly in descriptor.GetAssemblies())
             {
-                _ = assemblies.AddIfNotContains(assembly);
+                assemblies.AddIfNotContains(assembly);
             }
         }
 

@@ -626,7 +626,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 var uowCache = GetUnitOfWorkCache();
                 if (uowCache.TryGetValue(key, out var item))
                 {
-                    _ = item.SetValue(value);
+                    item.SetValue(value);
                 }
                 else
                 {
@@ -673,7 +673,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 var uowCache = GetUnitOfWorkCache();
                 if (uowCache.TryGetValue(key, out var item))
                 {
-                    _ = item.SetValue(value);
+                    item.SetValue(value);
                 }
                 else
                 {
@@ -901,7 +901,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             var uowCache = GetUnitOfWorkCache();
             if (uowCache.TryGetValue(key, out _))
             {
-                _ = uowCache[key].SetValue(value);
+                uowCache[key].SetValue(value);
             }
             else
             {
@@ -955,7 +955,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             var uowCache = GetUnitOfWorkCache();
             if (uowCache.TryGetValue(key, out _))
             {
-                _ = uowCache[key].SetValue(value);
+                uowCache[key].SetValue(value);
             }
             else
             {
@@ -1011,7 +1011,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             {
                 if (uowCache.TryGetValue(pair.Key, out _))
                 {
-                    _ = uowCache[pair.Key].SetValue(pair.Value);
+                    uowCache[pair.Key].SetValue(pair.Value);
                 }
                 else
                 {
@@ -1074,7 +1074,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             {
                 if (uowCache.TryGetValue(pair.Key, out _))
                 {
-                    _ = uowCache[pair.Key].SetValue(pair.Value);
+                    uowCache[pair.Key].SetValue(pair.Value);
                 }
                 else
                 {
@@ -1237,7 +1237,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             var uowCache = GetUnitOfWorkCache();
             if (uowCache.TryGetValue(key, out _))
             {
-                _ = uowCache[key].RemoveValue();
+                uowCache[key].RemoveValue();
             }
 
             UnitOfWorkManager.Current?.OnCompleted(() =>
@@ -1285,7 +1285,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             var uowCache = GetUnitOfWorkCache();
             if (uowCache.TryGetValue(key, out _))
             {
-                _ = uowCache[key].RemoveValue();
+                uowCache[key].RemoveValue();
             }
 
             UnitOfWorkManager.Current?.OnCompleted(RemoveRealCache);
@@ -1332,7 +1332,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 {
                     if (uowCache.TryGetValue(key, out _))
                     {
-                        _ = uowCache[key].RemoveValue();
+                        uowCache[key].RemoveValue();
                     }
                 }
 
@@ -1394,7 +1394,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 {
                     if (uowCache.TryGetValue(key, out _))
                     {
-                        _ = uowCache[key].RemoveValue();
+                        uowCache[key].RemoveValue();
                     }
                 }
 
@@ -1579,7 +1579,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="ex"></param>
     protected virtual void HandleException(Exception ex)
     {
-        _ = HandleExceptionAsync(ex);
+        HandleExceptionAsync(ex);
     }
 
     /// <summary>

@@ -88,7 +88,7 @@ public class AsyncLock : IDisposable
 
         public void Dispose()
         {
-            _ = _lock._semaphore.Release();
+            _lock._semaphore.Release();
         }
     }
 }

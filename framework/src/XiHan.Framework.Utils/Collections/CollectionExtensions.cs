@@ -165,7 +165,7 @@ public static class CollectionExtensions
 
         foreach (var item in items)
         {
-            _ = source.Remove(item);
+            source.Remove(item);
         }
 
         return items;
@@ -185,7 +185,7 @@ public static class CollectionExtensions
 
         foreach (var item in enumerable)
         {
-            _ = source.Remove(item);
+            source.Remove(item);
         }
     }
 }

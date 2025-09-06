@@ -179,7 +179,7 @@ public static class SemaphoreSlimExtensions
     {
         return new DisposeAction<SemaphoreSlim>(static semaphoreSlim =>
         {
-            _ = semaphoreSlim.Release();
+            semaphoreSlim.Release();
         }, semaphoreSlim);
     }
 }

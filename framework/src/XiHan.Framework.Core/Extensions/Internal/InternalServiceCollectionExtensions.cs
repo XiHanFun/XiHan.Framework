@@ -37,9 +37,9 @@ internal static class InternalServiceCollectionExtensions
     /// <param name="services"></param>
     internal static void AddCoreServices(this IServiceCollection services)
     {
-        _ = services.AddOptions();
-        _ = services.AddLogging();
-        _ = services.AddLocalization();
+        services.AddOptions();
+        services.AddLogging();
+        services.AddLocalization();
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ internal static class InternalServiceCollectionExtensions
 
         if (!services.IsAdded<IConfiguration>())
         {
-            _ = services.ReplaceConfiguration(ConfigurationHelper.BuildConfiguration(applicationCreationOptions.Configuration));
+            services.ReplaceConfiguration(ConfigurationHelper.BuildConfiguration(applicationCreationOptions.Configuration));
         }
 
         services.TryAddSingleton<IAssemblyFinder>(assemblyFinder);
@@ -65,13 +65,13 @@ internal static class InternalServiceCollectionExtensions
         services.TryAddSingleton<IModuleLoader>(moduleLoader);
 
         // 属性或字段自动注入服务
-        _ = services.AddSingleton<AutowiredServiceHandler>();
+        services.AddSingleton<AutowiredServiceHandler>();
 
-        _ = services.AddAssemblyOf<IXiHanApplication>();
+        services.AddAssemblyOf<IXiHanApplication>();
 
-        _ = services.AddTransient(typeof(ISimpleStateCheckerManager<>), typeof(SimpleStateCheckerManager<>));
+        services.AddTransient(typeof(ISimpleStateCheckerManager<>), typeof(SimpleStateCheckerManager<>));
 
-        _ = services.Configure<XiHanModuleLifecycleOptions>(options =>
+        services.Configure<XiHanModuleLifecycleOptions>(options =>
         {
             options.Contributors.Add<OnPreApplicationInitializationModuleLifecycleContributor>();
             options.Contributors.Add<OnApplicationInitializationModuleLifecycleContributor>();

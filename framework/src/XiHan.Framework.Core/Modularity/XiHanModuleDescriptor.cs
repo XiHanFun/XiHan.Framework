@@ -90,7 +90,7 @@ public class XiHanModuleDescriptor : IModuleDescriptor
     /// <param name="descriptor"></param>
     public void AddDependency(IModuleDescriptor descriptor)
     {
-        _ = _dependencies.AddIfNotContains(descriptor);
+        _dependencies.AddIfNotContains(descriptor);
     }
 
     /// <summary>

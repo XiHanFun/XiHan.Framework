@@ -82,7 +82,7 @@ public class AmbientDataContextAmbientScopeProvider<T> : IAmbientScopeProvider<T
         {
             var (scopeDictionary, item, dataContext, contextKey) = state;
 
-            _ = scopeDictionary.TryRemove(item.Id, out item);
+            scopeDictionary.TryRemove(item.Id, out item);
 
             if (item is null)
             {

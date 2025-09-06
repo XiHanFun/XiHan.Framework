@@ -28,7 +28,7 @@ public class XiHanThreadingModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        _ = context.Services.AddSingleton<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
-        _ = context.Services.AddSingleton(typeof(IAmbientScopeProvider<>), typeof(AmbientDataContextAmbientScopeProvider<>));
+        context.Services.AddSingleton<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
+        context.Services.AddSingleton(typeof(IAmbientScopeProvider<>), typeof(AmbientDataContextAmbientScopeProvider<>));
     }
 }

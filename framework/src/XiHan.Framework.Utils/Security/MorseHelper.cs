@@ -225,7 +225,7 @@ public static class MorseHelper
         try
         {
             // 尝试解码，如果成功则格式有效
-            _ = Decode(morseCode, characterSeparator, wordSeparator);
+            Decode(morseCode, characterSeparator, wordSeparator);
             return true;
         }
         catch
