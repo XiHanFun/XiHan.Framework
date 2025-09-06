@@ -22,26 +22,6 @@ namespace XiHan.Framework.Utils.Logging;
 public static class LogHelper
 {
     private static readonly Lock ObjLock = new();
-    private static bool _isWriteToFile = false;
-    private static bool _isDisplayHeader = true;
-
-    /// <summary>
-    /// 设置是否写入文件,默认不写入
-    /// </summary>
-    /// <param name="isWriteToFile">是否写入文件</param>
-    public static void SetIsWriteToFile(bool isWriteToFile)
-    {
-        _isWriteToFile = isWriteToFile;
-    }
-
-    /// <summary>
-    /// 设置是否显示日志头，默认显示
-    /// </summary>
-    /// <param name="isDisplayHeader">是否显示日志头</param>
-    public static void SetIsDisplayHeader(bool isDisplayHeader)
-    {
-        _isDisplayHeader = isDisplayHeader;
-    }
 
     /// <summary>
     /// 正常信息
@@ -51,10 +31,6 @@ public static class LogHelper
     public static void Info(string? message, ConsoleColor frontColor = ConsoleColor.White)
     {
         WriteColorLine(message, "INFO", frontColor);
-        if (_isWriteToFile)
-        {
-            LogFileHelper.Info(message);
-        }
     }
 
     /// <summary>
@@ -76,10 +52,6 @@ public static class LogHelper
     public static void Success(string? message, ConsoleColor frontColor = ConsoleColor.Green)
     {
         WriteColorLine(message, "SUCCESS", frontColor);
-        if (_isWriteToFile)
-        {
-            LogFileHelper.Success(message);
-        }
     }
 
     /// <summary>
@@ -101,10 +73,6 @@ public static class LogHelper
     public static void Handle(string? message, ConsoleColor frontColor = ConsoleColor.Blue)
     {
         WriteColorLine(message, "HANDLE", frontColor);
-        if (_isWriteToFile)
-        {
-            LogFileHelper.Handle(message);
-        }
     }
 
     /// <summary>
@@ -126,10 +94,6 @@ public static class LogHelper
     public static void Warn(string? message, ConsoleColor frontColor = ConsoleColor.Yellow)
     {
         WriteColorLine(message, "WARN", frontColor);
-        if (_isWriteToFile)
-        {
-            LogFileHelper.Warn(message);
-        }
     }
 
     /// <summary>
@@ -151,10 +115,6 @@ public static class LogHelper
     public static void Error(string? message, ConsoleColor frontColor = ConsoleColor.Red)
     {
         WriteColorLine(message, "ERROR", frontColor);
-        if (_isWriteToFile)
-        {
-            LogFileHelper.Error(message);
-        }
     }
 
     /// <summary>
@@ -215,10 +175,6 @@ public static class LogHelper
             try
             {
                 Console.Clear();
-                if (_isWriteToFile)
-                {
-                    LogFileHelper.Clear();
-                }
             }
             catch
             {
@@ -276,7 +232,7 @@ public static class LogHelper
     {
         // 格式化日志内容
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
+        var logLine = $"[{timestamp} {logType}] {message}";
 
         lock (ObjLock)
         {
