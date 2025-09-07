@@ -22,6 +22,23 @@ namespace XiHan.Framework.Utils.Logging;
 public static class LogHelper
 {
     private static readonly Lock ObjLock = new();
+    private static bool _isDisplayHeader = true;
+
+    /// <summary>
+    /// 设置是否显示日志头，默认显示
+    /// </summary>
+    public static void EnableDisplayHeader()
+    {
+        _isDisplayHeader = true;
+    }
+
+    /// <summary>
+    /// 设置是否显示日志头，默认显示
+    /// </summary>
+    public static void DisableDisplayHeader()
+    {
+        _isDisplayHeader = false;
+    }
 
     /// <summary>
     /// 正常信息
@@ -232,7 +249,7 @@ public static class LogHelper
     {
         // 格式化日志内容
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = $"[{timestamp} {logType}] {message}";
+        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
 
         lock (ObjLock)
         {

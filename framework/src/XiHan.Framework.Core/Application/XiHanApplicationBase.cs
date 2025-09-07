@@ -45,7 +45,7 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         Guard.NotNull(startupModuleType, nameof(startupModuleType));
         Guard.NotNull(services, nameof(services));
-        LogHelper.SetIsDisplayHeader(false);
+        LogHelper.DisableDisplayHeader();
         LogHelper.Rainbow(XiHan.Logo);
         LogHelper.Info(XiHan.GetSummary());
 
@@ -83,7 +83,7 @@ public class XiHanApplicationBase : IXiHanApplication
         {
             ConfigureServices();
         }
-        LogHelper.SetIsDisplayHeader(true);
+        LogHelper.EnableDisplayHeader();
     }
 
     /// <summary>
