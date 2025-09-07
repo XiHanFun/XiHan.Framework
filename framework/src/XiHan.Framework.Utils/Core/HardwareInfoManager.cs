@@ -71,7 +71,7 @@ public static class HardwareInfoManager
         }
         catch (Exception ex)
         {
-            LogHelper.Error($"获取系统硬件摘要失败: {ex.Message}");
+            ConsoleLogger.Error($"获取系统硬件摘要失败: {ex.Message}");
             return new SystemHardwareSummary();
         }
     }
