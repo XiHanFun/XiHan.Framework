@@ -15,7 +15,8 @@
 namespace XiHan.Framework.Core.DependencyInjection;
 
 /// <summary>
-/// AutowiredServiceAttribute
+/// 自动注入服务特性
+/// 用于标记需要自动注入的服务属性或字段。一般推荐构造函数注入，属性或字段注入仅在特殊情况下使用。
 /// <example>
 /// 调用示例：
 /// <code>

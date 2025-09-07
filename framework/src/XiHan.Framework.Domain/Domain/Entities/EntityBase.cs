@@ -44,8 +44,7 @@ public abstract class EntityBase : IEntityBase
     public override bool Equals(object? obj)
     {
         return obj is EntityBase other
-            && (ReferenceEquals(this, other)
-                || (RowVersion.SequenceEqual(other.RowVersion)));
+            && (ReferenceEquals(this, other) || RowVersion.SequenceEqual(other.RowVersion));
     }
 
     /// <summary>
