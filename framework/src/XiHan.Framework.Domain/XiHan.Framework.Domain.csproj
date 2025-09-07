@@ -6,9 +6,9 @@
 	<Import Project="..\..\props\nuget.props" />
 
 	<PropertyGroup>
-		<Title>XiHan.Framework.Ddd</Title>
-		<AssemblyName>XiHan.Framework.Ddd</AssemblyName>
-		<PackageId>XiHan.Framework.Ddd</PackageId>
+		<Title>XiHan.Framework.Domain</Title>
+		<AssemblyName>XiHan.Framework.Domain</AssemblyName>
+		<PackageId>XiHan.Framework.Domain</PackageId>
 		<Description>曦寒框架领域驱动设计库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
