@@ -117,7 +117,7 @@ public static class DeepMergeHelper
         catch (Exception ex) when (ex is ArgumentException or TargetInvocationException)
         {
             // 记录或处理属性设置失败的情况
-            LogHelper.Error($"无法设置属性 {property.Name}: {ex.Message}");
+            ConsoleLogger.Error($"无法设置属性 {property.Name}: {ex.Message}");
         }
     }
 
@@ -652,7 +652,7 @@ public static class DeepMergeHelper
         {
             // 如果对象克隆失败，返回原对象
             // 在生产环境中可能需要记录此错误
-            LogHelper.Error($"无法克隆类型 {type.FullName} 的对象");
+            ConsoleLogger.Error($"无法克隆类型 {type.FullName} 的对象");
             return obj;
         }
     }

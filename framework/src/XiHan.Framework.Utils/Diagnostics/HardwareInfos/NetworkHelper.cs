@@ -116,7 +116,7 @@ public static class NetworkHelper
                 catch (Exception ex)
                 {
                     // 如果获取IP属性失败，记录错误信息
-                    LogHelper.Error($"获取网卡 {ni.Name} 的IP属性出错，{ex.Message}");
+                    ConsoleLogger.Error($"获取网卡 {ni.Name} 的IP属性出错，{ex.Message}");
                 }
 
                 if (networkInfo.DhcpServerAddresses.Count == 0 && networkInfo.DnsAddresses.Count == 0 &&
@@ -132,7 +132,7 @@ public static class NetworkHelper
         catch (Exception ex)
         {
             // 如果完全失败，返回包含错误信息的空列表
-            LogHelper.Error("获取网卡信息出错，" + ex.Message);
+            ConsoleLogger.Error("获取网卡信息出错，" + ex.Message);
             networkInfos.Add(new NetworkInfo
             {
                 Name = "Error",
