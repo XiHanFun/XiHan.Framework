@@ -59,6 +59,7 @@ internal static class InternalServiceCollectionExtensions
             services.ReplaceConfiguration(ConfigurationHelper.BuildConfiguration(applicationCreationOptions.Configuration));
         }
 
+        // 模块基础服务
         services.TryAddSingleton<IAssemblyFinder>(assemblyFinder);
         services.TryAddSingleton<ITypeFinder>(typeFinder);
         services.TryAddSingleton<IInitLoggerFactory>(new DefaultInitLoggerFactory());
@@ -67,10 +68,13 @@ internal static class InternalServiceCollectionExtensions
         // 属性或字段自动注入服务
         services.AddSingleton<AutowiredServiceHandler>();
 
+        // 核心应用服务
         services.AddAssemblyOf<IXiHanApplication>();
 
+        // 状态检查服务
         services.AddTransient(typeof(ISimpleStateCheckerManager<>), typeof(SimpleStateCheckerManager<>));
 
+        // 模块生命周期
         services.Configure<XiHanModuleLifecycleOptions>(options =>
         {
             options.Contributors.Add<OnPreApplicationInitializationModuleLifecycleContributor>();
