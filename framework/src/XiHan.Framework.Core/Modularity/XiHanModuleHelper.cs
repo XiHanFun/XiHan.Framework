@@ -34,12 +34,10 @@ public static class XiHanModuleHelper
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
         List<Type> moduleTypes = [];
-        LogHelper.SetIsDisplayHeader(false);
         LogHelper.Handle("加载曦寒模块:");
         //logger?.LogInformation("加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         LogHelper.Handle("已初始化所有模块。");
-        LogHelper.SetIsDisplayHeader(true);
         //logger?.LogInformation("已初始化所有模块。");
         return moduleTypes;
     }
