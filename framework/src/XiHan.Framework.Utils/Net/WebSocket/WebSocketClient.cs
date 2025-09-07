@@ -94,6 +94,7 @@ public class WebSocketClient : IDisposable
         _webSocket.Options.HttpVersion = HttpVersion.Version11;
         _webSocket.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
         _webSocket.Options.DangerousDeflateOptions = null;
+        _webSocket.Options.KeepAliveTimeout = TimeSpan.FromSeconds(timeout);
     }
 
     /// <summary>
@@ -121,7 +122,7 @@ public class WebSocketClient : IDisposable
             OnOpen?.Invoke(this, EventArgs.Empty);
 
             // 启动接收任务
-            Task.Run(ReceiveLoop);
+            await Task.Run(ReceiveLoop);
 
             return true;
         }
