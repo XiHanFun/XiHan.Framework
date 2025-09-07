@@ -28,8 +28,4 @@
         <ProjectReference Include="..\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="System\" />
-    </ItemGroup>
-
 </Project>
