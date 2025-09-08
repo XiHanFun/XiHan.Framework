@@ -44,7 +44,7 @@ public static class JsonHelper
         try
         {
             var systemOptions = options.ToSystemOptions();
-            return JsonSerializer.Serialize(obj, systemOptions);
+            return JsonSerializer.Serialize<T>(obj, systemOptions);
         }
         catch (Exception ex)
         {
@@ -62,7 +62,7 @@ public static class JsonHelper
     /// <returns>JSON 字符串</returns>
     public static async Task<string> SerializeAsync<T>(T obj, JsonSerializeOptions? options = null, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => Serialize(obj, options), cancellationToken);
+        return await Task.Run(() => Serialize<T>(obj, options), cancellationToken);
     }
 
     /// <summary>

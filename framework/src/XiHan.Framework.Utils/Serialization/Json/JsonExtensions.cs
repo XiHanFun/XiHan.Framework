@@ -26,6 +26,17 @@ public static class JsonExtensions
     /// <summary>
     /// 将对象转换为 JSON 字符串
     /// </summary>
+    /// <param name="obj">要转换的对象</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>JSON 字符串</returns>
+    public static string ToJson(this object obj, JsonSerializeOptions? options = null)
+    {
+        return JsonHelper.Serialize(obj, options);
+    }
+
+    /// <summary>
+    /// 将对象转换为 JSON 字符串
+    /// </summary>
     /// <typeparam name="T">对象类型</typeparam>
     /// <param name="obj">要转换的对象</param>
     /// <param name="options">序列化选项</param>
@@ -51,6 +62,17 @@ public static class JsonExtensions
     #endregion 对象扩展
 
     #region 字符串扩展
+
+    /// <summary>
+    /// 从 JSON 字符串反序列化为对象
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>反序列化的对象</returns>
+    public static object FromJson(this string json, JsonDeserializeOptions? options = null)
+    {
+        return JsonHelper.Deserialize<object>(json, options);
+    }
 
     /// <summary>
     /// 从 JSON 字符串反序列化为对象
