@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
 /// Dsa 签名算法辅助类

@@ -24,22 +24,8 @@ namespace XiHan.Framework.Utils.Security;
 /// <remarks>
 /// 提供各种格式的全局唯一标识符生成、验证、转换和解析功能，支持标准Guid、时间戳Guid、确定性Guid等。
 /// </remarks>
-public static class GuidHelper
+public static partial class GuidHelper
 {
-    /// <summary>
-    /// Guid 格式的正则表达式
-    /// </summary>
-    private static readonly Regex GuidRegex = new(
-        @"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-        RegexOptions.Compiled);
-
-    /// <summary>
-    /// 无连字符的Guid格式正则表达式
-    /// </summary>
-    private static readonly Regex GuidNoDashRegex = new(
-        @"^[0-9a-fA-F]{32}$",
-        RegexOptions.Compiled);
-
     /// <summary>
     /// 生成标准的随机 Guid
     /// </summary>
@@ -58,12 +44,12 @@ public static class GuidHelper
         using var rng = RandomNumberGenerator.Create();
         var bytes = new byte[16];
         rng.GetBytes(bytes);
-        
+
         // 设置版本为4（随机生成）
-        bytes[7] = (byte)(bytes[7] & 0x0F | 0x40);
+        bytes[7] = (byte)((bytes[7] & 0x0F) | 0x40);
         // 设置变体
-        bytes[8] = (byte)(bytes[8] & 0x3F | 0x80);
-        
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+
         return new Guid(bytes);
     }
 
@@ -76,22 +62,22 @@ public static class GuidHelper
         // 获取当前时间的 ticks
         var ticks = DateTime.UtcNow.Ticks;
         var ticksBytes = BitConverter.GetBytes(ticks);
-        
+
         // 生成随机字节填充剩余部分
         using var rng = RandomNumberGenerator.Create();
         var randomBytes = new byte[8];
         rng.GetBytes(randomBytes);
-        
+
         // 组合时间戳和随机字节
         var guidBytes = new byte[16];
         Array.Copy(ticksBytes, 0, guidBytes, 0, 8);
         Array.Copy(randomBytes, 0, guidBytes, 8, 8);
-        
+
         // 设置版本为1（时间基础）
-        guidBytes[7] = (byte)(guidBytes[7] & 0x0F | 0x10);
+        guidBytes[7] = (byte)((guidBytes[7] & 0x0F) | 0x10);
         // 设置变体
-        guidBytes[8] = (byte)(guidBytes[8] & 0x3F | 0x80);
-        
+        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
+
         return new Guid(guidBytes);
     }
 
@@ -104,28 +90,28 @@ public static class GuidHelper
     public static Guid NewDeterministicGuid(string input, Guid? namespaceGuid = null)
     {
         ArgumentNullException.ThrowIfNull(input);
-        
+
         var ns = namespaceGuid ?? Guid.Empty;
         var namespaceBytes = ns.ToByteArray();
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        
+
         // 组合命名空间和输入
         var combinedBytes = new byte[namespaceBytes.Length + inputBytes.Length];
         Array.Copy(namespaceBytes, 0, combinedBytes, 0, namespaceBytes.Length);
         Array.Copy(inputBytes, 0, combinedBytes, namespaceBytes.Length, inputBytes.Length);
-        
+
         // 使用 SHA1 哈希生成
         var hashBytes = SHA1.HashData(combinedBytes);
-        
+
         // 取前16字节作为 Guid
         var guidBytes = new byte[16];
         Array.Copy(hashBytes, 0, guidBytes, 0, 16);
-        
+
         // 设置版本为5（基于名称的SHA1）
-        guidBytes[6] = (byte)(guidBytes[6] & 0x0F | 0x50);
+        guidBytes[6] = (byte)((guidBytes[6] & 0x0F) | 0x50);
         // 设置变体
-        guidBytes[8] = (byte)(guidBytes[8] & 0x3F | 0x80);
-        
+        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
+
         return new Guid(guidBytes);
     }
 
@@ -138,24 +124,24 @@ public static class GuidHelper
     public static Guid NewDeterministicGuidMd5(string input, Guid? namespaceGuid = null)
     {
         ArgumentNullException.ThrowIfNull(input);
-        
+
         var ns = namespaceGuid ?? Guid.Empty;
         var namespaceBytes = ns.ToByteArray();
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        
+
         // 组合命名空间和输入
         var combinedBytes = new byte[namespaceBytes.Length + inputBytes.Length];
         Array.Copy(namespaceBytes, 0, combinedBytes, 0, namespaceBytes.Length);
         Array.Copy(inputBytes, 0, combinedBytes, namespaceBytes.Length, inputBytes.Length);
-        
+
         // 使用 MD5 哈希生成
         var hashBytes = MD5.HashData(combinedBytes);
-        
+
         // 设置版本为3（基于名称的MD5）
-        hashBytes[6] = (byte)(hashBytes[6] & 0x0F | 0x30);
+        hashBytes[6] = (byte)((hashBytes[6] & 0x0F) | 0x30);
         // 设置变体
-        hashBytes[8] = (byte)(hashBytes[8] & 0x3F | 0x80);
-        
+        hashBytes[8] = (byte)((hashBytes[8] & 0x3F) | 0x80);
+
         return new Guid(hashBytes);
     }
 
@@ -170,7 +156,7 @@ public static class GuidHelper
         {
             return false;
         }
-        
+
         return Guid.TryParse(guidString, out _);
     }
 
@@ -185,8 +171,8 @@ public static class GuidHelper
         {
             return false;
         }
-        
-        return GuidRegex.IsMatch(guidString);
+
+        return GuidRegex().IsMatch(guidString);
     }
 
     /// <summary>
@@ -200,8 +186,8 @@ public static class GuidHelper
         {
             return false;
         }
-        
-        return GuidNoDashRegex.IsMatch(guidString);
+
+        return GuidNoDashRegex().IsMatch(guidString);
     }
 
     /// <summary>
@@ -283,7 +269,7 @@ public static class GuidHelper
         {
             throw new ArgumentException("输入不是有效的无连字符 Guid 格式", nameof(guidNoDash));
         }
-        
+
         var guid = Guid.Parse(guidNoDash);
         return guid.ToString("D");
     }
@@ -300,7 +286,7 @@ public static class GuidHelper
         {
             throw new ArgumentException("输入不是有效的标准 Guid 格式", nameof(standardGuid));
         }
-        
+
         var guid = Guid.Parse(standardGuid);
         return guid.ToString("N");
     }
@@ -324,12 +310,12 @@ public static class GuidHelper
     public static Guid FromByteArray(byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(bytes);
-        
+
         if (bytes.Length != 16)
         {
             throw new ArgumentException("字节数组长度必须为16", nameof(bytes));
         }
-        
+
         return new Guid(bytes);
     }
 
@@ -388,14 +374,14 @@ public static class GuidHelper
         {
             throw new ArgumentException("数量不能小于0", nameof(count));
         }
-        
+
         var guids = new List<Guid>(count);
-        
+
         for (var i = 0; i < count; i++)
         {
             guids.Add(useCrypto ? NewCryptoGuid() : NewGuid());
         }
-        
+
         return guids;
     }
 
@@ -439,7 +425,7 @@ public static class GuidHelper
     public static Guid FromBase64String(string base64String)
     {
         ArgumentNullException.ThrowIfNull(base64String);
-        
+
         try
         {
             var bytes = Convert.FromBase64String(base64String);
@@ -459,7 +445,7 @@ public static class GuidHelper
     public static Dictionary<string, string> GetFormatExamples(Guid? guid = null)
     {
         var exampleGuid = guid ?? NewGuid();
-        
+
         return new Dictionary<string, string>
         {
             { "N", exampleGuid.ToString("N") },
@@ -470,4 +456,10 @@ public static class GuidHelper
             { "Base64", ToBase64String(exampleGuid) }
         };
     }
+
+    [GeneratedRegex(@"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", RegexOptions.Compiled)]
+    private static partial Regex GuidRegex();
+
+    [GeneratedRegex(@"^[0-9a-fA-F]{32}$", RegexOptions.Compiled)]
+    private static partial Regex GuidNoDashRegex();
 }

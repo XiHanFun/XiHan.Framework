@@ -16,7 +16,7 @@ using System.Text;
 using XiHan.Framework.Utils.Constants;
 using XiHan.Framework.Utils.Core;
 
-namespace XiHan.Framework.Security;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// 随机码生成器

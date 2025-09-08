@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
 /// Ecdsa 签名算法，只能用于签名和验证签名，无法用于数据加密和解密
