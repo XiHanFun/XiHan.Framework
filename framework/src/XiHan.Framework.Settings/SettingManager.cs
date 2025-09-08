@@ -19,7 +19,7 @@ using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
 using XiHan.Framework.Settings.Stores;
-using XiHan.Framework.Utils.Security;
+using XiHan.Framework.Utils.Security.Cryptography;
 
 namespace XiHan.Framework.Settings;
 

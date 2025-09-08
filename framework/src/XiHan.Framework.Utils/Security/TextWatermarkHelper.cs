@@ -16,10 +16,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
-using XiHan.Framework.Utils.Security;
+using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Security;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// Unicode文本水印帮助类，提供在文本中嵌入不可见水印的功能

@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
 /// RSA 加密算法助手类，提供加密、解密、签名和验证签名的功能
@@ -319,7 +319,7 @@ public static class RsaHelper
             .AppendLine($"-----BEGIN {keyType}-----")
             .AppendLine(string.Join(Environment.NewLine,
                 Enumerable.Range(0, (base64String.Length + 63) / 64)
-                    .Select(i => base64String.Substring(i * 64, Math.Min(64, base64String.Length - i * 64)))))
+                    .Select(i => base64String.Substring(i * 64, Math.Min(64, base64String.Length - (i * 64))))))
             .AppendLine($"-----END {keyType}-----")
             .ToString();
     }

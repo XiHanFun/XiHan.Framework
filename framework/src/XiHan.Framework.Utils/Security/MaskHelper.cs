@@ -15,7 +15,7 @@
 using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Core;
 
-namespace XiHan.Framework.Security;
+namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
 /// 脱敏帮助类，提供常用敏感信息的脱敏处理方法
