@@ -155,7 +155,7 @@ public class JitteredStrategy : IRetryStrategy
     public TimeSpan GetDelay(int retryCount)
     {
         var baseDelay = _baseStrategy.GetDelay(retryCount);
-        var jitter = _random.NextDouble() * _jitterPercentage * 2 - _jitterPercentage; // -jitterPercentage 到 +jitterPercentage
+        var jitter = (_random.NextDouble() * _jitterPercentage * 2) - _jitterPercentage; // -jitterPercentage 到 +jitterPercentage
         var adjustedTicks = (long)(baseDelay.Ticks * (1 + jitter));
         return TimeSpan.FromTicks(Math.Max(0, adjustedTicks));
     }

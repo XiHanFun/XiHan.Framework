@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
-using XiHan.Framework.Utils.Security;
+using XiHan.Framework.Utils.Security.Cryptography;
 
 namespace XiHan.Framework.VirtualFileSystem.Models;
 

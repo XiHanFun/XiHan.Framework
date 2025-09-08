@@ -15,7 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Security;
+namespace XiHan.Framework.Utils.Security.Cryptography;
 
 /// <summary>
 /// Aes 加密解密
