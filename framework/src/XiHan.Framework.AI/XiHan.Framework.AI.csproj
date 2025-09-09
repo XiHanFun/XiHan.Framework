@@ -9,7 +9,7 @@
         <Title>XiHan.Framework.AI</Title>
         <AssemblyName>XiHan.Framework.AI</AssemblyName>
         <PackageId>XiHan.Framework.AI</PackageId>
-        <Description>曦寒框架人工智能库</Description>
+        <Description>曦寒框架 AI 扩展库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 

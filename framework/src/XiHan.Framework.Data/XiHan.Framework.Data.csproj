@@ -14,14 +14,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\XiHan.Framework.ObjectMapping\XiHan.Framework.ObjectMapping.csproj" />
-		<ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
-		<ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
-		<ProjectReference Include="..\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.202" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.202" />
+	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />
 	</ItemGroup>
 
 </Project>

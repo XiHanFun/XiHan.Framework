@@ -3,33 +3,30 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IEntityBase
-// Guid:34b2a763-dc44-4fbd-a625-b650baf5d5d7
+// FileName:EventOrderGenerator
+// Guid:68cb449d-661b-4f3e-bde9-388ea791198c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/20 2:48:11
+// CreateTime:2025/9/10 5:45:33
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Domain.Domain.Entities;
+namespace XiHan.Framework.Domain.Events;
 
 /// <summary>
-/// 实体基类接口
+/// 事件顺序生成器
 /// </summary>
-public interface IEntityBase
+public static class EventOrderGenerator
 {
-}
+    private static long _lastOrder;
 
-/// <summary>
-/// 泛型主键实体基类接口
-/// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public interface IEntityBase<TKey> : IEntityBase
-    where TKey : IEquatable<TKey>
-{
     /// <summary>
-    /// 主键
+    /// 获取下一个事件顺序
     /// </summary>
-    TKey BasicId { get; }
+    /// <returns></returns>
+    public static long GetNext()
+    {
+        return Interlocked.Increment(ref _lastOrder);
+    }
 }

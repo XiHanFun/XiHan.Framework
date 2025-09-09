@@ -14,7 +14,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace XiHan.Framework.Domain.Domain.Entities;
+namespace XiHan.Framework.Domain.Entities;
 
 /// <summary>
 /// 实体基类
@@ -92,7 +92,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// <returns></returns>
     public static bool operator ==(EntityBase<TKey>? a, EntityBase<TKey>? b)
     {
-        return ReferenceEquals(a, b) || (a is not null && b is not null && a.Equals(b));
+        return ReferenceEquals(a, b) || a is not null && b is not null && a.Equals(b);
     }
 
     /// <summary>

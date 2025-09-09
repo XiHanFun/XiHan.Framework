@@ -27,7 +27,7 @@ namespace XiHan.Framework.AI;
 #pragma warning disable SKEXP0070,SKEXP0010,SKEXP0001
 
 /// <summary>
-/// 曦寒框架人工智能模块
+/// 曦寒框架 AI 扩展模块
 /// </summary>
 [DependsOn(
     typeof(XiHanHttpModule)
