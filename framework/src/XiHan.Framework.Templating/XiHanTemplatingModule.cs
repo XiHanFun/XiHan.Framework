@@ -18,7 +18,7 @@ using XiHan.Framework.VirtualFileSystem;
 namespace XiHan.Framework.Templating;
 
 /// <summary>
-/// 曦寒框架模板模块
+/// 曦寒框架模板引擎模块
 /// </summary>
 [DependsOn(
     typeof(XiHanVirtualFileSystemModule)

@@ -9,7 +9,7 @@
         <Title>XiHan.Framework.Templating</Title>
         <AssemblyName>XiHan.Framework.Templating</AssemblyName>
         <PackageId>XiHan.Framework.Templating</PackageId>
-        <Description>曦寒框架模板库</Description>
+        <Description>曦寒框架模板引擎库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 

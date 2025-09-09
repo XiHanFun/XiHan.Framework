@@ -216,57 +216,11 @@ public static partial class MaskHelper
     }
 
     /// <summary>
-    /// 脱敏JSON
-    /// </summary>
-    /// <param name="json"></param>
-    /// <returns></returns>
-    public static string MaskJson(string json)
-    {
-        if (string.IsNullOrEmpty(json))
-        {
-            return json;
-        }
-
-        var patterns = new (string pattern, string replacement)[]
-        {
-            // 个人信息相关
-            ($@"\""{GenerateCaseInsensitivePattern("name")}\""\s*:\s*\""([^\""]+)\""", $"\"name\": \"{MaskChineseName("$1")}\""),
-            ($@"\""{GenerateCaseInsensitivePattern("phone")}\""\s*:\s*\""([^\""]+)\""", $"\"phone\": \"{MaskPhone("$1")}\""),
-            ($@"\""{GenerateCaseInsensitivePattern("idCard")}\""\s*:\s*\""([^\""]+)\""", $"\"idCard\": \"{MaskIdCard("$1")}\""),
-            ($@"\""{GenerateCaseInsensitivePattern("email")}\""\s*:\s*\""([^\""]+)\""", $"\"email\": \"{MaskEmail("$1")}\""),
-
-            // 金融信息相关
-            ($@"\""{GenerateCaseInsensitivePattern("bankCard")}\""\s*:\s*\""([^\""]+)\""", $"\"bankCard\": \"{MaskBankCard("$1")}\""),
-
-            // 安全凭证相关
-            ($@"\""{GenerateCaseInsensitivePattern("password")}\""\s*:\s*\""([^\""]+)\""", $"\"password\": \"{MaskPassword("$1")}\""),
-            ($@"\""{GenerateCaseInsensitivePattern("otp")}\""\s*:\s*\""([^\""]+)\""", "\"otp\": \"******\""),
-            ($@"\""{GenerateCaseInsensitivePattern("authorization")}\""\s*:\s*\""([^\""]+)\""", "\"authorization\": \"******\""),
-            ($@"\""{GenerateCaseInsensitivePattern("token")}\""\s*:\s*\""([^\""]+)\""", "\"token\": \"******\""),
-
-            // 地址和位置信息相关
-            ($@"\""{GenerateCaseInsensitivePattern("address")}\""\s*:\s*\""([^\""]+)\""", $"\"address\": \"{MaskAddress("$1")}\""),
-            ($@"\""{GenerateCaseInsensitivePattern("licensePlate")}\""\s*:\s*\""([^\""]+)\""", $"\"licensePlate\": \"{MaskLicensePlate("$1")}\""),
-
-            // URL相关
-            ($@"\""{GenerateCaseInsensitivePattern("url")}\""\s*:\s*\""([^\""]+)\""", $"\"url\": \"{MaskUrlParams("$1")}\"")
-        };
-
-        foreach (var (pattern, replacement) in patterns)
-        {
-            var regex = new Regex(pattern, RegexOptions.IgnoreCase);
-            json = regex.Replace(json, replacement);
-        }
-
-        return json;
-    }
-
-    /// <summary>
     /// 生成大小写不敏感的正则表达式模式
     /// </summary>
     /// <param name="word">要生成模式的单词</param>
     /// <returns>大小写不敏感的正则表达式模式</returns>
-    private static string GenerateCaseInsensitivePattern(string word)
+    public static string GenerateCaseInsensitivePattern(string word)
     {
         return string.Join("", word.Select(c => $"[{char.ToLower(c)}{char.ToUpper(c)}]"));
     }
