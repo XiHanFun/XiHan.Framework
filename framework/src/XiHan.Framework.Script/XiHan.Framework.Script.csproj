@@ -9,7 +9,7 @@
 		<Title>XiHan.Framework.Script</Title>
 		<AssemblyName>XiHan.Framework.Script</AssemblyName>
 		<PackageId>XiHan.Framework.Script</PackageId>
-		<Description>曦寒框架动态脚本库</Description>
+		<Description>曦寒框架脚本引擎库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 

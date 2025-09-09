@@ -12,11 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Domain.Domain.Entities;
-using XiHan.Framework.Domain.Domain.Events;
-using XiHan.Framework.Uow;
+using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Events;
 
-namespace XiHan.Framework.Domain.Domain.Aggregates;
+namespace XiHan.Framework.Domain.Aggregates;
 
 /// <summary>
 /// 聚合根基类

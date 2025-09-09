@@ -42,7 +42,6 @@ public class ObjectExtensionManager
     /// 配置字典
     /// 用于存储各种配置信息的线程安全字典
     /// </summary>
-
     public ConcurrentDictionary<object, object> Configuration { get; }
 
     /// <summary>

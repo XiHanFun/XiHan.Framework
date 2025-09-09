@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.Script;
 
 /// <summary>
-/// 曦寒框架动态脚本模块
+/// 曦寒框架脚本引擎模块
 /// </summary>
 public class XiHanScriptModule : XiHanModule
 {

@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
-namespace XiHan.Framework.Domain.Domain.Services;
+namespace XiHan.Framework.Domain.Services;
 
 /// <summary>
 /// 领域服务接口
