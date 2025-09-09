@@ -21,7 +21,7 @@ using XiHan.Framework.Web.Core.Extensions;
 namespace XiHan.Framework.Web.Docs;
 
 /// <summary>
-/// 曦寒框架 Web 核心 Swagger 文档模块
+/// 曦寒框架 Web 核心文档模块
 /// </summary>
 [DependsOn(
     typeof(XiHanWebApiModule)

@@ -9,7 +9,7 @@
 		<Title>XiHan.Framework.Web.Api</Title>
 		<AssemblyName>XiHan.Framework.Web.Api</AssemblyName>
 		<PackageId>XiHan.Framework.Web.Api</PackageId>
-		<Description>曦寒框架 Web 核心文档库</Description>
+		<Description>曦寒框架 Web REST API 接口库</Description>
 		<OutputType>Library</OutputType>
 		<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>

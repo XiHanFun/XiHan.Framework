@@ -21,7 +21,7 @@ using XiHan.Framework.Web.Core.Extensions;
 namespace XiHan.Framework.Web.Api;
 
 /// <summary>
-/// 曦寒框架 Web 核心文档模块
+/// 曦寒框架 Web REST API 接口模块
 /// </summary>
 [DependsOn(
     typeof(XiHanWebCoreModule),
