@@ -19,8 +19,13 @@ namespace XiHan.Framework.Utils.Caching;
 /// 封装缓存的值和过期信息，支持绝对过期和滑动过期两种模式
 /// </summary>
 /// <typeparam name="T">缓存值的类型</typeparam>
-public class CacheItem<T>
+public class CacheItem<T> : ICacheItem
 {
+    /// <summary>
+    /// 使用 UTC ticks 存储最后访问时间，原子读写
+    /// </summary>
+    private long _lastAccessedUtcTicks;
+
     /// <summary>
     /// 构造函数
     /// </summary>
@@ -28,7 +33,7 @@ public class CacheItem<T>
     public CacheItem(T value)
     {
         Value = value;
-        LastAccessed = DateTimeOffset.Now;
+        _lastAccessedUtcTicks = DateTime.UtcNow.Ticks;
     }
 
     /// <summary>
@@ -49,10 +54,18 @@ public class CacheItem<T>
     public TimeSpan? SlidingExpiration { get; set; }
 
     /// <summary>
-    /// 最后访问时间
+    /// 最后访问时间（UTC）
     /// 用于计算滑动过期时间
     /// </summary>
-    public DateTimeOffset LastAccessed { get; set; }
+    public DateTimeOffset LastAccessed
+    {
+        get
+        {
+            var ticks = Interlocked.Read(ref _lastAccessedUtcTicks);
+            var utc = DateTime.SpecifyKind(new DateTime(ticks), DateTimeKind.Utc);
+            return new DateTimeOffset(utc);
+        }
+    }
 
     /// <summary>
     /// 检查缓存项是否已过期
@@ -62,7 +75,7 @@ public class CacheItem<T>
     {
         get
         {
-            var now = DateTimeOffset.Now;
+            var now = DateTimeOffset.UtcNow;
 
             // 检查绝对过期时间
             if (AbsoluteExpiration.HasValue && now > AbsoluteExpiration.Value)
@@ -86,6 +99,6 @@ public class CacheItem<T>
     /// </summary>
     public void UpdateLastAccessed()
     {
-        LastAccessed = DateTimeOffset.Now;
+        Interlocked.Exchange(ref _lastAccessedUtcTicks, DateTime.UtcNow.Ticks);
     }
 }
