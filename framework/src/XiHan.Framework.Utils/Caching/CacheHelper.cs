@@ -23,15 +23,24 @@ namespace XiHan.Framework.Utils.Caching;
 /// </summary>
 public static class CacheHelper
 {
+    /// <summary>
+    /// 定时清理器，用于定期清理过期的缓存项
+    /// </summary>
     private static readonly Timer CleanupTimer;
 
-    // 主缓存存储
+    /// <summary>
+    /// 主缓存存储，用于存储所有缓存项
+    /// </summary>
     private static readonly ConcurrentDictionary<string, object> Cache = new();
 
-    // 键级锁，保证同键的初始化/写入是原子的
+    /// <summary>
+    /// 键级锁，保证同键的初始化/写入是原子的
+    /// </summary>
     private static readonly ConcurrentDictionary<string, object> KeyLocks = new();
 
-    // 异步键级锁
+    /// <summary>
+    /// 异步键级锁，用于异步操作的并发控制
+    /// </summary>
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> AsyncKeyLocks = new();
 
     /// <summary>
@@ -174,17 +183,24 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, DateTimeOffset expireTime)
     {
-        var lazy = (Lazy<CacheItem<T>>)Cache.GetOrAdd(key, _ => new Lazy<CacheItem<T>>(
-            () => new CacheItem<T>(factory()) { AbsoluteExpiration = expireTime },
+        var lazy = (Lazy<CacheItem<T>>)Cache.GetOrAdd(key, _ =>
+            new Lazy<CacheItem<T>>(() =>
+            new CacheItem<T>(factory())
+            {
+                AbsoluteExpiration = expireTime
+            },
             LazyThreadSafetyMode.ExecutionAndPublication));
 
         var item = lazy.Value;
         if (item.IsExpired)
         {
             // 替换过期条目
-            var replacement = new Lazy<CacheItem<T>>(
-                () => new CacheItem<T>(factory()) { AbsoluteExpiration = expireTime },
-                LazyThreadSafetyMode.ExecutionAndPublication);
+            var replacement = new Lazy<CacheItem<T>>(() =>
+            new CacheItem<T>(factory())
+            {
+                AbsoluteExpiration = expireTime
+            },
+            LazyThreadSafetyMode.ExecutionAndPublication);
             Cache.AddOrUpdate(key, replacement, (_, existing) => replacement);
             item = ((Lazy<CacheItem<T>>)Cache[key]).Value;
         }
@@ -444,16 +460,22 @@ public static class CacheHelper
         }
     }
 
-    private static object GetKeyLock(string key)
-    {
-        return KeyLocks.GetOrAdd(key, _ => new object());
-    }
-
+    /// <summary>
+    /// 获取指定键的异步锁
+    /// </summary>
+    /// <param name="key">缓存键</param>
+    /// <returns>异步信号量锁</returns>
     private static SemaphoreSlim GetAsyncKeyLock(string key)
     {
         return AsyncKeyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
     }
 
+    /// <summary>
+    /// 尝试从缓存对象中获取缓存项
+    /// </summary>
+    /// <param name="cacheObject">缓存对象</param>
+    /// <param name="item">输出的缓存项</param>
+    /// <returns>如果获取成功返回 true，否则返回 false</returns>
     private static bool TryGetCacheItem(object cacheObject, out ICacheItem item)
     {
         item = null!;
@@ -462,9 +484,11 @@ public static class CacheHelper
             case ICacheItem direct:
                 item = direct;
                 return true;
+
             case Lazy<ICacheItem> lazyInterface:
                 item = lazyInterface.Value;
                 return true;
+
             default:
                 {
                     var type = cacheObject.GetType();
@@ -489,6 +513,13 @@ public static class CacheHelper
         return false;
     }
 
+    /// <summary>
+    /// 尝试从缓存对象中获取指定类型的缓存项
+    /// </summary>
+    /// <typeparam name="T">缓存值类型</typeparam>
+    /// <param name="cacheObject">缓存对象</param>
+    /// <param name="cacheItem">输出的类型化缓存项</param>
+    /// <returns>如果获取成功返回 true，否则返回 false</returns>
     private static bool TryGetTypedCacheItem<T>(object cacheObject, out CacheItem<T>? cacheItem)
     {
         cacheItem = null;
@@ -497,9 +528,11 @@ public static class CacheHelper
             case CacheItem<T> direct:
                 cacheItem = direct;
                 return true;
+
             case Lazy<CacheItem<T>> lazyTyped:
                 cacheItem = lazyTyped.Value;
                 return true;
+
             default:
                 return false;
         }
