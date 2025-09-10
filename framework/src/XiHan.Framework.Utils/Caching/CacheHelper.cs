@@ -23,8 +23,16 @@ namespace XiHan.Framework.Utils.Caching;
 /// </summary>
 public static class CacheHelper
 {
-    private static readonly ConcurrentDictionary<string, object> Cache = new();
     private static readonly Timer CleanupTimer;
+
+    // 主缓存存储
+    private static readonly ConcurrentDictionary<string, object> Cache = new();
+
+    // 键级锁，保证同键的初始化/写入是原子的
+    private static readonly ConcurrentDictionary<string, object> KeyLocks = new();
+
+    // 异步键级锁
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> AsyncKeyLocks = new();
 
     /// <summary>
     /// 静态构造函数，初始化清理定时器
@@ -50,7 +58,7 @@ public static class CacheHelper
             return default;
         }
 
-        if (Cache.TryGetValue(key, out var cacheObject) && cacheObject is CacheItem<T> cacheItem)
+        if (Cache.TryGetValue(key, out var cacheObject) && TryGetTypedCacheItem(cacheObject, out CacheItem<T>? cacheItem) && cacheItem != null)
         {
             if (cacheItem.IsExpired)
             {
@@ -123,6 +131,11 @@ public static class CacheHelper
         }
 
         Cache.TryRemove(key, out _);
+        KeyLocks.TryRemove(key, out _);
+        if (AsyncKeyLocks.TryRemove(key, out var sem))
+        {
+            sem.Dispose();
+        }
     }
 
     /// <summary>
@@ -137,24 +150,15 @@ public static class CacheHelper
             return false;
         }
 
-        if (Cache.TryGetValue(key, out var cacheObject))
+        if (Cache.TryGetValue(key, out var cacheObject) && cacheObject is ICacheItem item)
         {
-            // 检查是否是泛型缓存项且未过期
-            if (cacheObject.GetType().IsGenericType &&
-                cacheObject.GetType().GetGenericTypeDefinition() == typeof(CacheItem<>))
+            if (item.IsExpired)
             {
-                // 通过反射获取 IsExpired 属性
-                var isExpiredProperty = cacheObject.GetType().GetProperty("IsExpired");
-                if (isExpiredProperty?.GetValue(cacheObject) is bool isExpired)
-                {
-                    if (isExpired)
-                    {
-                        Cache.TryRemove(key, out _);
-                        return false;
-                    }
-                    return true;
-                }
+                Cache.TryRemove(key, out _);
+                KeyLocks.TryRemove(key, out _);
+                return false;
             }
+            return true;
         }
 
         return false;
@@ -170,15 +174,22 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, DateTimeOffset expireTime)
     {
-        var value = Get<T>(key);
-        if (value != null)
-        {
-            return value;
-        }
+        var lazy = (Lazy<CacheItem<T>>)Cache.GetOrAdd(key, _ => new Lazy<CacheItem<T>>(
+            () => new CacheItem<T>(factory()) { AbsoluteExpiration = expireTime },
+            LazyThreadSafetyMode.ExecutionAndPublication));
 
-        value = factory();
-        Set(key, value, expireTime);
-        return value;
+        var item = lazy.Value;
+        if (item.IsExpired)
+        {
+            // 替换过期条目
+            var replacement = new Lazy<CacheItem<T>>(
+                () => new CacheItem<T>(factory()) { AbsoluteExpiration = expireTime },
+                LazyThreadSafetyMode.ExecutionAndPublication);
+            Cache.AddOrUpdate(key, replacement, (_, existing) => replacement);
+            item = ((Lazy<CacheItem<T>>)Cache[key]).Value;
+        }
+        item.UpdateLastAccessed();
+        return item.Value;
     }
 
     /// <summary>
@@ -191,15 +202,7 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, int expireSeconds = 3600)
     {
-        var value = Get<T>(key);
-        if (value != null)
-        {
-            return value;
-        }
-
-        value = factory();
-        Set(key, value, expireSeconds);
-        return value;
+        return GetOrAdd(key, factory, DateTimeOffset.Now.AddSeconds(expireSeconds));
     }
 
     /// <summary>
@@ -212,15 +215,7 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expireSpan)
     {
-        var value = Get<T>(key);
-        if (value != null)
-        {
-            return value;
-        }
-
-        value = factory();
-        Set(key, value, expireSpan);
-        return value;
+        return GetOrAdd(key, factory, DateTimeOffset.Now.Add(expireSpan));
     }
 
     /// <summary>
@@ -249,6 +244,63 @@ public static class CacheHelper
 
     #endregion
 
+    #region 异步 API
+
+    /// <summary>
+    /// 异步获取或添加缓存
+    /// </summary>
+    /// <typeparam name="T">缓存值类型</typeparam>
+    /// <param name="key">缓存键</param>
+    /// <param name="factory">创建缓存值的工厂方法</param>
+    /// <param name="expireTime">过期时间（使用 DateTimeOffset）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>缓存值</returns>
+    public static async Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, DateTimeOffset expireTime, CancellationToken cancellationToken = default)
+    {
+        var existing = Get<T>(key);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var sem = GetAsyncKeyLock(key);
+        await sem.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var doubleChecked = Get<T>(key);
+            if (doubleChecked != null)
+            {
+                return doubleChecked;
+            }
+
+            var created = await factory(cancellationToken).ConfigureAwait(false);
+            Set(key, created, expireTime);
+            return created;
+        }
+        finally
+        {
+            sem.Release();
+        }
+    }
+
+    /// <summary>
+    /// 异步获取或添加缓存
+    /// </summary>
+    public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, int expireSeconds = 3600, CancellationToken cancellationToken = default)
+    {
+        return GetOrAddAsync(key, factory, DateTimeOffset.Now.AddSeconds(expireSeconds), cancellationToken);
+    }
+
+    /// <summary>
+    /// 异步获取或添加缓存
+    /// </summary>
+    public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expireSpan, CancellationToken cancellationToken = default)
+    {
+        return GetOrAddAsync(key, factory, DateTimeOffset.Now.Add(expireSpan), cancellationToken);
+    }
+
+    #endregion
+
     #region 便利方法
 
     /// <summary>
@@ -266,16 +318,27 @@ public static class CacheHelper
     /// <returns>如果获取成功返回 true，否则返回 false</returns>
     public static bool TryGetValue<T>(string key, out T? value)
     {
-        try
+        value = default;
+        if (string.IsNullOrEmpty(key))
         {
-            value = Get<T>(key);
-            return value != null;
-        }
-        catch
-        {
-            value = default;
             return false;
         }
+
+        if (Cache.TryGetValue(key, out var cacheObject) && TryGetTypedCacheItem(cacheObject, out CacheItem<T>? cacheItem) && cacheItem != null)
+        {
+            if (cacheItem.IsExpired)
+            {
+                Cache.TryRemove(key, out _);
+                KeyLocks.TryRemove(key, out _);
+                return false;
+            }
+
+            cacheItem.UpdateLastAccessed();
+            value = cacheItem.Value;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -334,6 +397,12 @@ public static class CacheHelper
     public static void Clear()
     {
         Cache.Clear();
+        KeyLocks.Clear();
+        foreach (var pair in AsyncKeyLocks)
+        {
+            pair.Value.Dispose();
+        }
+        AsyncKeyLocks.Clear();
     }
 
     /// <summary>
@@ -358,21 +427,81 @@ public static class CacheHelper
 
         foreach (var kvp in Cache)
         {
-            // 检查是否是泛型缓存项且已过期
-            if (kvp.Value.GetType().IsGenericType &&
-                kvp.Value.GetType().GetGenericTypeDefinition() == typeof(CacheItem<>))
+            if (TryGetCacheItem(kvp.Value, out var item) && item.IsExpired)
             {
-                var isExpiredProperty = kvp.Value.GetType().GetProperty("IsExpired");
-                if (isExpiredProperty?.GetValue(kvp.Value) is bool isExpired && isExpired)
-                {
-                    expiredKeys.Add(kvp.Key);
-                }
+                expiredKeys.Add(kvp.Key);
             }
         }
 
         foreach (var key in expiredKeys)
         {
             Cache.TryRemove(key, out _);
+            KeyLocks.TryRemove(key, out _);
+            if (AsyncKeyLocks.TryRemove(key, out var sem))
+            {
+                sem.Dispose();
+            }
+        }
+    }
+
+    private static object GetKeyLock(string key)
+    {
+        return KeyLocks.GetOrAdd(key, _ => new object());
+    }
+
+    private static SemaphoreSlim GetAsyncKeyLock(string key)
+    {
+        return AsyncKeyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+    }
+
+    private static bool TryGetCacheItem(object cacheObject, out ICacheItem item)
+    {
+        item = null!;
+        switch (cacheObject)
+        {
+            case ICacheItem direct:
+                item = direct;
+                return true;
+            case Lazy<ICacheItem> lazyInterface:
+                item = lazyInterface.Value;
+                return true;
+            default:
+                {
+                    var type = cacheObject.GetType();
+                    if (type.IsGenericType)
+                    {
+                        var genDef = type.GetGenericTypeDefinition();
+                        if (genDef == typeof(Lazy<>))
+                        {
+                            // 处理 Lazy<CacheItem<T>>
+                            var valueProp = type.GetProperty("Value");
+                            var valueObj = valueProp?.GetValue(cacheObject);
+                            if (valueObj is ICacheItem asItem)
+                            {
+                                item = asItem;
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+        return false;
+    }
+
+    private static bool TryGetTypedCacheItem<T>(object cacheObject, out CacheItem<T>? cacheItem)
+    {
+        cacheItem = null;
+        switch (cacheObject)
+        {
+            case CacheItem<T> direct:
+                cacheItem = direct;
+                return true;
+            case Lazy<CacheItem<T>> lazyTyped:
+                cacheItem = lazyTyped.Value;
+                return true;
+            default:
+                return false;
         }
     }
 
