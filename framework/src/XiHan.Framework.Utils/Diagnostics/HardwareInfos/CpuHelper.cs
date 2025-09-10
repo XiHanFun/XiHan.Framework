@@ -31,7 +31,7 @@ public static class CpuHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static CpuInfo CpuInfos => CacheHelper.GetOrAdd("CpuInfos", () => GetCpuInfos(), TimeSpan.FromMinutes(1));
+    public static CpuInfo CpuInfos => CacheHelper.GetOrAdd("CpuInfos", GetCpuInfos, TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取处理器信息

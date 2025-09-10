@@ -60,7 +60,7 @@ public static class OsPlatformHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static RuntimeInfo RuntimeInfos => CacheHelper.GetOrAdd("RuntimeInfos", () => GetRuntimeInfo(), TimeSpan.FromMinutes(60));
+    public static RuntimeInfo RuntimeInfos => CacheHelper.GetOrAdd("RuntimeInfos", GetRuntimeInfo, TimeSpan.FromMinutes(60));
 
     /// <summary>
     /// 收集运行时信息
@@ -202,14 +202,7 @@ public static class OsPlatformHelper
     private static string GetOperatingSystemName()
     {
         var platformType = GetPlatformType();
-        return platformType.ToString() switch
-        {
-            "Windows" => "Windows",
-            "Linux" => "Linux",
-            "OSX" => "MacOS",
-            "FreeBSD" => "FreeBSD",
-            _ => "Unknown"
-        };
+        return platformType.ToString();
     }
 }
 

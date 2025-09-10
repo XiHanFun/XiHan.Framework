@@ -44,7 +44,7 @@ public static class SseExtensions
 
         if (closedHandler != null)
         {
-            client.OnClosed += exception => closedHandler.Invoke(exception);
+            client.OnClosed += closedHandler.Invoke;
         }
 
         // 连接到服务器

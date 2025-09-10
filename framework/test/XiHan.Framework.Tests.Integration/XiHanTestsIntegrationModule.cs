@@ -15,6 +15,9 @@
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Logging;
+using XiHan.Framework.Utils.Core;
+using XiHan.Framework.Utils.Logging;
+using XiHan.Framework.Utils.Serialization.Json;
 
 namespace XiHan.Framework.Tests.Integration;
 
@@ -40,5 +43,8 @@ public class XiHanTestsIntegrationModule : XiHanModule
     /// <param name="context"></param>
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        var systemInfo = SystemInfoManager.GetSystemInfo();
+
+        ConsoleLogger.Info(systemInfo.ToJson());
     }
 }

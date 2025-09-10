@@ -30,7 +30,7 @@ public static class GpuHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static List<GpuInfo> GpuInfos => CacheHelper.GetOrAdd("GpuInfos", () => GetGpuInfos(), TimeSpan.FromMinutes(1));
+    public static List<GpuInfo> GpuInfos => CacheHelper.GetOrAdd("GpuInfos", GetGpuInfos, TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// 获取GPU信息

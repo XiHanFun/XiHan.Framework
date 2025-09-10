@@ -16,25 +16,14 @@ namespace XiHan.Framework.Tests.Web.Controllers;
 public class HomeController : ControllerBase
 {
     /// <summary>
-    /// HardwareInfo
+    /// SystemInfo
     /// </summary>
     /// <returns></returns>
-    [HttpPost("HardwareInfo")]
-    public IActionResult HardwareInfo()
+    [HttpPost("SystemInfo")]
+    public IActionResult SystemInfo()
     {
-        var hardwareInfo = HardwareInfoManager.GetSystemHardwareInfo();
-        return Ok(hardwareInfo);
-    }
-
-    /// <summary>
-    /// RuntimeInfo
-    /// </summary>
-    /// <returns></returns>
-    [HttpPost("RuntimeInfo")]
-    public IActionResult RuntimeInfo()
-    {
-        var systemRuntimeInfo = RuntimeInfoManager.GetSystemRuntimeInfo();
-        return Ok(systemRuntimeInfo);
+        var systemInfo = SystemInfoManager.GetSystemInfo();
+        return Ok(systemInfo);
     }
 
     /// <summary>
