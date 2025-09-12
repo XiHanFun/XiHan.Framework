@@ -36,12 +36,12 @@ internal class AndSpecification<T> : Specification<T>
         var leftExpression = _left.ToExpression();
         var rightExpression = _right.ToExpression();
 
-        var paramExpr = Expression.Parameter(typeof(T));
-        var exprBody = Expression.AndAlso(leftExpression.Body, rightExpression.Body);
-        exprBody = (BinaryExpression)new ParameterReplacer(paramExpr).Visit(exprBody);
-        var finalExpr = Expression.Lambda<Func<T, bool>>(exprBody, paramExpr);
+        var parameter = Expression.Parameter(typeof(T), "x");
+        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter).Visit(leftExpression.Body);
+        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter).Visit(rightExpression.Body);
 
-        return finalExpr;
+        var andExpression = Expression.AndAlso(leftBody, rightBody);
+        return Expression.Lambda<Func<T, bool>>(andExpression, parameter);
     }
 }
 
@@ -65,12 +65,12 @@ internal class OrSpecification<T> : Specification<T>
         var leftExpression = _left.ToExpression();
         var rightExpression = _right.ToExpression();
 
-        var paramExpr = Expression.Parameter(typeof(T));
-        var exprBody = Expression.OrElse(leftExpression.Body, rightExpression.Body);
-        exprBody = (BinaryExpression)new ParameterReplacer(paramExpr).Visit(exprBody);
-        var finalExpr = Expression.Lambda<Func<T, bool>>(exprBody, paramExpr);
+        var parameter = Expression.Parameter(typeof(T), "x");
+        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter).Visit(leftExpression.Body);
+        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter).Visit(rightExpression.Body);
 
-        return finalExpr;
+        var orExpression = Expression.OrElse(leftBody, rightBody);
+        return Expression.Lambda<Func<T, bool>>(orExpression, parameter);
     }
 }
 
@@ -90,25 +90,9 @@ internal class NotSpecification<T> : Specification<T>
     public override Expression<Func<T, bool>> ToExpression()
     {
         var expression = _specification.ToExpression();
+        var parameter = expression.Parameters[0];
         var notExpression = Expression.Not(expression.Body);
 
-        return Expression.Lambda<Func<T, bool>>(notExpression, expression.Parameters.Single());
-    }
-}
-
-/// <summary>
-/// 参数替换器
-/// 用于处理表达式树中的参数替换
-/// </summary>
-internal class ParameterReplacer : ExpressionVisitor
-{
-    private readonly ParameterExpression _parameter;
-
-    protected override Expression VisitParameter(ParameterExpression node)
-        => base.VisitParameter(_parameter);
-
-    internal ParameterReplacer(ParameterExpression parameter)
-    {
-        _parameter = parameter;
+        return Expression.Lambda<Func<T, bool>>(notExpression, parameter);
     }
 }

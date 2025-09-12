@@ -29,6 +29,7 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
     /// <summary>
     /// 相等性比较
+    /// 优化了性能，支持延迟求值和早期退出
     /// </summary>
     /// <param name="other">另一个值对象</param>
     /// <returns>如果相等返回 true，否则返回 false</returns>
@@ -49,7 +50,33 @@ public abstract class ValueObject : IEquatable<ValueObject>
             return false;
         }
 
-        return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
+        // 使用延迟求值和早期退出来提高性能
+        using var thisEnumerator = GetEqualityComponents().GetEnumerator();
+        using var otherEnumerator = other.GetEqualityComponents().GetEnumerator();
+
+        while (true)
+        {
+            var thisHasNext = thisEnumerator.MoveNext();
+            var otherHasNext = otherEnumerator.MoveNext();
+
+            // 如果两者都没有更多元素，则相等
+            if (!thisHasNext && !otherHasNext)
+            {
+                return true;
+            }
+
+            // 如果只有一个有更多元素，则不相等
+            if (thisHasNext != otherHasNext)
+            {
+                return false;
+            }
+
+            // 比较当前元素
+            if (!Equals(thisEnumerator.Current, otherEnumerator.Current))
+            {
+                return false;
+            }
+        }
     }
 
     /// <summary>
@@ -64,13 +91,17 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
     /// <summary>
     /// 重写 GetHashCode 方法
+    /// 使用 HashCode.Combine 提供更好的哈希分布和性能
     /// </summary>
     /// <returns>哈希码</returns>
     public override int GetHashCode()
     {
-        return GetEqualityComponents()
-            .Where(x => x != null)
-            .Aggregate(1, (current, obj) => current * 23 + obj!.GetHashCode());
+        var hashCode = new HashCode();
+        foreach (var component in GetEqualityComponents())
+        {
+            hashCode.Add(component);
+        }
+        return hashCode.ToHashCode();
     }
 
     /// <summary>
@@ -107,17 +138,32 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
     /// <summary>
     /// 重写 ToString 方法
+    /// 使用 StringBuilder 提高性能，支持更好的格式化
     /// </summary>
     /// <returns>字符串表示</returns>
     public override string ToString()
     {
         var typeName = GetType().Name;
-        var properties = GetEqualityComponents()
-            .Select((value, index) => $"Property{index}: {value ?? "null"}")
-            .ToList();
+        var components = GetEqualityComponents().ToList();
+        
+        if (components.Count == 0)
+        {
+            return typeName;
+        }
 
-        return properties.Count == 0 
-            ? typeName 
-            : $"{typeName} {{ {string.Join(", ", properties)} }}";
+        var sb = new System.Text.StringBuilder(typeName);
+        sb.Append(" { ");
+        
+        for (var i = 0; i < components.Count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(", ");
+            }
+            sb.Append($"Property{i}: {components[i] ?? "null"}");
+        }
+        
+        sb.Append(" }");
+        return sb.ToString();
     }
 }
