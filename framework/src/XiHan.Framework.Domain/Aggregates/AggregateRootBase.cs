@@ -12,8 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Events;
+using XiHan.Framework.Domain.Events.Abstracts;
 
 namespace XiHan.Framework.Domain.Aggregates;
 

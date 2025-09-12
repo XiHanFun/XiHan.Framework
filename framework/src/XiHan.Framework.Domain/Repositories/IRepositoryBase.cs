@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IBasicRepository
+// FileName:IRepositoryBase
 // Guid:3b5f56c2-6a67-447b-ad9c-d4f004f2c40f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,16 +12,16 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Entities.Abstracts;
 
 namespace XiHan.Framework.Domain.Repositories;
 
 /// <summary>
-/// 基础仓储接口
+/// 仓储接口基类
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public interface IBasicRepository<TEntity, TKey> : IReadOnlyBasicRepository<TEntity, TKey>
+public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntity, TKey>
     where TEntity : class, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {

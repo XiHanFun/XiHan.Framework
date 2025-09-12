@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
+using XiHan.Framework.Domain.Entities.Abstracts;
 
 namespace XiHan.Framework.Domain.Entities;
 
