@@ -12,11 +12,80 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Domain.Entities;
+
 namespace XiHan.Framework.Domain.Repositories;
 
 /// <summary>
-/// IBasicRepository
+/// 基础仓储接口
 /// </summary>
-public interface IBasicRepository
+/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TKey">主键类型</typeparam>
+public interface IBasicRepository<TEntity, TKey> : IReadOnlyBasicRepository<TEntity, TKey>
+    where TEntity : class, IEntityBase<TKey>
+    where TKey : IEquatable<TKey>
 {
+    /// <summary>
+    /// 添加实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>添加的实体</returns>
+    Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量添加实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>添加的实体集合</returns>
+    Task<IEnumerable<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 更新实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新的实体</returns>
+    Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量更新实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新的实体集合</returns>
+    Task<IEnumerable<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 删除实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
+    Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据主键删除实体
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
+    Task DeleteAsync(TKey id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量删除实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
+    Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量删除实体（根据主键）
+    /// </summary>
+    /// <param name="ids">主键集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
+    Task DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 }

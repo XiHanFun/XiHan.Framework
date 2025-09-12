@@ -41,7 +41,7 @@ public abstract class EntityBase : IEntityBase
 /// 泛型主键实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
+public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>, IEquatable<EntityBase<TKey>>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
@@ -54,7 +54,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">实体主键</param>
     protected EntityBase(TKey id)
     {
         BasicId = id;
@@ -64,4 +64,102 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// 主键
     /// </summary>
     public virtual TKey BasicId { get; protected set; } = default!;
+
+    /// <summary>
+    /// 相等运算符重载
+    /// </summary>
+    /// <param name="left">左操作数</param>
+    /// <param name="right">右操作数</param>
+    /// <returns>如果相等返回 true，否则返回 false</returns>
+    public static bool operator ==(EntityBase<TKey>? left, EntityBase<TKey>? right)
+    {
+        if (left is null && right is null)
+        {
+            return true;
+        }
+
+        if (left is null || right is null)
+        {
+            return false;
+        }
+
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// 不等运算符重载
+    /// </summary>
+    /// <param name="left">左操作数</param>
+    /// <param name="right">右操作数</param>
+    /// <returns>如果不等返回 true，否则返回 false</returns>
+    public static bool operator !=(EntityBase<TKey>? left, EntityBase<TKey>? right)
+    {
+        return !(left == right);
+    }
+
+    /// <summary>
+    /// 实体相等性比较
+    /// </summary>
+    /// <param name="other">另一个实体</param>
+    /// <returns>如果相等返回 true，否则返回 false</returns>
+    public virtual bool Equals(EntityBase<TKey>? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (GetType() != other.GetType())
+        {
+            return false;
+        }
+
+        // 如果任一实体的 ID 为默认值，则认为不相等（临时实体）
+        if (EqualityComparer<TKey>.Default.Equals(BasicId, default!) ||
+            EqualityComparer<TKey>.Default.Equals(other.BasicId, default!))
+        {
+            return false;
+        }
+
+        return BasicId.Equals(other.BasicId);
+    }
+
+    /// <summary>
+    /// 重写 Equals 方法
+    /// </summary>
+    /// <param name="obj">比较对象</param>
+    /// <returns>如果相等返回 true，否则返回 false</returns>
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as EntityBase<TKey>);
+    }
+
+    /// <summary>
+    /// 重写 GetHashCode 方法
+    /// </summary>
+    /// <returns>哈希码</returns>
+    public override int GetHashCode()
+    {
+        // 如果 ID 为默认值，使用基类的 GetHashCode
+        if (EqualityComparer<TKey>.Default.Equals(BasicId, default!))
+        {
+            return base.GetHashCode();
+        }
+
+        return BasicId.GetHashCode();
+    }
+
+    /// <summary>
+    /// 检查实体是否为临时实体（尚未持久化）
+    /// </summary>
+    /// <returns>如果是临时实体返回 true，否则返回 false</returns>
+    public virtual bool IsTransient()
+    {
+        return EqualityComparer<TKey>.Default.Equals(BasicId, default!);
+    }
 }

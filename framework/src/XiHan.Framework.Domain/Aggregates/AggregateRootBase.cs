@@ -62,8 +62,8 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
     /// <summary>
     /// 添加本地事件
     /// </summary>
-    /// <param name="eventData"></param>
-    protected virtual void AddLocalEvent(object eventData)
+    /// <param name="eventData">事件数据</param>
+    protected virtual void AddLocalEvent(IDomainEvent eventData)
     {
         _localEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
     }
@@ -71,8 +71,8 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
     /// <summary>
     /// 添加分布式事件
     /// </summary>
-    /// <param name="eventData"></param>
-    protected virtual void AddDistributedEvent(object eventData)
+    /// <param name="eventData">事件数据</param>
+    protected virtual void AddDistributedEvent(IDomainEvent eventData)
     {
         _distributedEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
     }
@@ -141,8 +141,8 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 添加本地事件
     /// </summary>
-    /// <param name="eventData"></param>
-    protected virtual void AddLocalEvent(object eventData)
+    /// <param name="eventData">事件数据</param>
+    protected virtual void AddLocalEvent(IDomainEvent eventData)
     {
         _localEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
     }
@@ -150,8 +150,8 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 添加分布式事件
     /// </summary>
-    /// <param name="eventData"></param>
-    protected virtual void AddDistributedEvent(object eventData)
+    /// <param name="eventData">事件数据</param>
+    protected virtual void AddDistributedEvent(IDomainEvent eventData)
     {
         _distributedEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
     }

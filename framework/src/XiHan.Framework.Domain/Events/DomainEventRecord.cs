@@ -22,9 +22,9 @@ public class DomainEventRecord
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="eventData"></param>
-    /// <param name="eventOrder"></param>
-    public DomainEventRecord(object eventData, long eventOrder)
+    /// <param name="eventData">事件数据</param>
+    /// <param name="eventOrder">事件顺序</param>
+    public DomainEventRecord(IDomainEvent eventData, long eventOrder)
     {
         EventData = eventData;
         EventOrder = eventOrder;
@@ -33,7 +33,7 @@ public class DomainEventRecord
     /// <summary>
     /// 事件数据
     /// </summary>
-    public object EventData { get; }
+    public IDomainEvent EventData { get; }
 
     /// <summary>
     /// 事件顺序
