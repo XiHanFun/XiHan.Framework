@@ -72,6 +72,6 @@ public class SseMessage
     /// <returns>消息字符串</returns>
     public override string ToString()
     {
-        return $"[{Event}] {(string.IsNullOrEmpty(Id) ? "" : $"ID: {Id}, ")}Data: {Data}";
+        return $"[{Event}] {(string.IsNullOrEmpty(Id) ? "" : $"Id: {Id}, ")}Data: {Data}";
     }
 }

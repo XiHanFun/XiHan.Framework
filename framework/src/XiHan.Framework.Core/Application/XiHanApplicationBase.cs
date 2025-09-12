@@ -112,7 +112,7 @@ public class XiHanApplicationBase : IXiHanApplication
     public string? ApplicationName { get; }
 
     /// <summary>
-    /// 实例 ID
+    /// 实例 Id
     /// </summary>
     public string InstanceId { get; } = Guid.NewGuid().ToString();
 

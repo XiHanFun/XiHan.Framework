@@ -85,7 +85,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     /// <returns></returns>
     private static string GetRequestId(HttpRequestMessage request)
     {
-        return request.Headers.TryGetValues("X-Request-ID", out var values)
+        return request.Headers.TryGetValues("X-Request-Id", out var values)
             ? values.FirstOrDefault() ?? Guid.NewGuid().ToString("N")[..8]
             : Guid.NewGuid().ToString("N")[..8];
     }

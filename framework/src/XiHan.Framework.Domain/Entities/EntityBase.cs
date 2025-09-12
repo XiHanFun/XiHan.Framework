@@ -120,7 +120,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>, IEquatab
             return false;
         }
 
-        // 如果任一实体的 ID 为默认值，则认为不相等（临时实体）
+        // 如果任一实体的 Id 为默认值，则认为不相等（临时实体）
         if (EqualityComparer<TKey>.Default.Equals(BasicId, default!) ||
             EqualityComparer<TKey>.Default.Equals(other.BasicId, default!))
         {
@@ -146,7 +146,7 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>, IEquatab
     /// <returns>哈希码</returns>
     public override int GetHashCode()
     {
-        // 如果 ID 为默认值，使用基类的 GetHashCode
+        // 如果 Id 为默认值，使用基类的 GetHashCode
         if (EqualityComparer<TKey>.Default.Equals(BasicId, default!))
         {
             return base.GetHashCode();
