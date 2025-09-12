@@ -35,25 +35,6 @@ public abstract class EntityBase : IEntityBase
     [ConcurrencyCheck]
     [Timestamp]
     public virtual byte[] RowVersion { get; set; }
-
-    /// <summary>
-    /// 重写实体相等性判断
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object? obj)
-    {
-        return obj is EntityBase other
-            && (ReferenceEquals(this, other) || RowVersion.SequenceEqual(other.RowVersion));
-    }
-
-    /// <summary>
-    /// 重写哈希码生成逻辑
-    /// </summary>
-    public override int GetHashCode()
-    {
-        return RowVersion is null ? 0 : RowVersion.GetHashCode();
-    }
 }
 
 /// <summary>
@@ -83,74 +64,4 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>
     /// 主键
     /// </summary>
     public virtual TKey BasicId { get; protected set; } = default!;
-
-    /// <summary>
-    /// 重载 == 运算符
-    /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    public static bool operator ==(EntityBase<TKey>? a, EntityBase<TKey>? b)
-    {
-        return ReferenceEquals(a, b) || a is not null && b is not null && a.Equals(b);
-    }
-
-    /// <summary>
-    /// 重载 != 运算符
-    /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    public static bool operator !=(EntityBase<TKey> a, EntityBase<TKey> b)
-    {
-        return !(a == b);
-    }
-
-    /// <summary>
-    /// 重写 Equals 方法，基于主键比较两个实体
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object? obj)
-    {
-        if (obj is not EntityBase<TKey> other)
-        {
-            return false;
-        }
-
-        // 先检查引用相等
-        if (ReferenceEquals(this, other))
-        {
-            return true;
-        }
-
-        // 检查基类相等(RowVersion比较)
-        if (base.Equals(other))
-        {
-            return true;
-        }
-
-        // 最后检查ID相等
-        return !EqualityComparer<TKey>.Default.Equals(BasicId, default) &&
-               !EqualityComparer<TKey>.Default.Equals(other.BasicId, default) &&
-               EqualityComparer<TKey>.Default.Equals(BasicId, other.BasicId);
-    }
-
-    /// <summary>
-    /// 根据主键生成哈希码
-    /// </summary>
-    /// <returns></returns>
-    public override int GetHashCode()
-    {
-        return EqualityComparer<TKey>.Default.Equals(BasicId, default) ? 0 : BasicId.GetHashCode();
-    }
-
-    /// <summary>
-    /// 重载 ToString 方法
-    /// </summary>
-    /// <returns></returns>
-    public override string ToString()
-    {
-        return $"{GetType().Name}({BasicId})({RowVersion})";
-    }
 }

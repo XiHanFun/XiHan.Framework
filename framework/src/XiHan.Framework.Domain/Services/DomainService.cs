@@ -16,8 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Core.DependencyInjection;
-using XiHan.Framework.DistributedIds;
-using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Domain.Services;
 
@@ -30,20 +28,6 @@ public abstract class DomainService : IDomainService
     /// 领域服务提供者
     /// </summary>
     public ITransientCachedServiceProvider TransientCachedServiceProvider { get; set; } = default!;
-
-    //protected IClock Clock => TransientCachedServiceProvider.GetRequiredService<IClock>();
-
-    /// <summary>
-    /// 分布式ID生成器
-    /// </summary>
-    protected IDistributedIdGenerator DistributedIdGenerator => TransientCachedServiceProvider.GetService<IDistributedIdGenerator>(provider => IdGeneratorFactory.CreateSnowflakeIdGenerator_HighWorkload());
-
-    /// <summary>
-    /// 当前租户
-    /// </summary>
-    protected ICurrentTenant CurrentTenant => TransientCachedServiceProvider.GetRequiredService<ICurrentTenant>();
-
-    //protected IAsyncQueryableExecuter AsyncExecuter => TransientCachedServiceProvider.GetRequiredService<IAsyncQueryableExecuter>();
 
     /// <summary>
     /// 日志工厂
