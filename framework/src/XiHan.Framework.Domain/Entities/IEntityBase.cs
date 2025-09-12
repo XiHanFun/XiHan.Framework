@@ -19,6 +19,10 @@ namespace XiHan.Framework.Domain.Entities;
 /// </summary>
 public interface IEntityBase
 {
+    /// <summary>
+    /// 版本控制标识，用于处理并发
+    /// </summary>
+    byte[] RowVersion { get; set; }
 }
 
 /// <summary>
