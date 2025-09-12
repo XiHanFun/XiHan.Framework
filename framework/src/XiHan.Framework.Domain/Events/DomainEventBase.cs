@@ -31,14 +31,14 @@ public abstract class DomainEventBase : IDomainEvent
     }
 
     /// <summary>
-    /// 事件发生时间
-    /// </summary>
-    public DateTimeOffset OccurredOn { get; }
-
-    /// <summary>
     /// 事件唯一标识
     /// </summary>
     public Guid EventId { get; }
+
+    /// <summary>
+    /// 事件发生时间
+    /// </summary>
+    public DateTimeOffset OccurredOn { get; }
 
     /// <summary>
     /// 重写 ToString 方法

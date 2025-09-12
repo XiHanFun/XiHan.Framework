@@ -86,17 +86,17 @@ public class DomainException : Exception
     public override string ToString()
     {
         var result = base.ToString();
-        
+
         if (!string.IsNullOrEmpty(Code))
         {
             result = $"Code: {Code}\n{result}";
         }
-        
+
         if (!string.IsNullOrEmpty(Details))
         {
             result = $"{result}\nDetails: {Details}";
         }
-        
+
         return result;
     }
 }

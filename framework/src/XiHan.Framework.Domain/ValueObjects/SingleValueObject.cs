@@ -38,12 +38,13 @@ public abstract class SingleValueObject<T> : ValueObject
     public T Value { get; }
 
     /// <summary>
-    /// 获取相等性比较的属性值
+    /// 隐式转换到基础类型
     /// </summary>
-    /// <returns>用于相等性比较的属性值集合</returns>
-    protected override IEnumerable<object?> GetEqualityComponents()
+    /// <param name="singleValueObject">单一值对象</param>
+    /// <returns>基础值</returns>
+    public static implicit operator T(SingleValueObject<T> singleValueObject)
     {
-        yield return Value;
+        return singleValueObject.Value;
     }
 
     /// <summary>
@@ -56,12 +57,11 @@ public abstract class SingleValueObject<T> : ValueObject
     }
 
     /// <summary>
-    /// 隐式转换到基础类型
+    /// 获取相等性比较的属性值
     /// </summary>
-    /// <param name="singleValueObject">单一值对象</param>
-    /// <returns>基础值</returns>
-    public static implicit operator T(SingleValueObject<T> singleValueObject)
+    /// <returns>用于相等性比较的属性值集合</returns>
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
-        return singleValueObject.Value;
+        yield return Value;
     }
 }

@@ -31,7 +31,7 @@ public static class BusinessRuleExtensions
     public static void CheckRule(this IBusinessRule rule)
     {
         ArgumentNullException.ThrowIfNull(rule);
-        
+
         if (rule.IsBroken())
         {
             throw new BusinessRuleValidationException(rule);
@@ -47,9 +47,9 @@ public static class BusinessRuleExtensions
     public static void CheckRules(this IEnumerable<IBusinessRule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        
+
         var brokenRules = rules.Where(rule => rule.IsBroken()).ToList();
-        
+
         if (brokenRules.Count != 0)
         {
             var messages = brokenRules.Select(rule => rule.Message);
@@ -91,8 +91,8 @@ public static class BusinessRuleExtensions
     public static BusinessRuleValidationResult Validate(this IBusinessRule rule)
     {
         ArgumentNullException.ThrowIfNull(rule);
-        
-        return rule.IsBroken() 
+
+        return rule.IsBroken()
             ? BusinessRuleValidationResult.Failure(rule.Message)
             : BusinessRuleValidationResult.Success();
     }
@@ -106,10 +106,10 @@ public static class BusinessRuleExtensions
     public static BusinessRuleValidationResult ValidateAll(this IEnumerable<IBusinessRule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        
+
         var brokenRules = rules.Where(rule => rule.IsBroken()).ToList();
-        
-        return brokenRules.Count == 0 
+
+        return brokenRules.Count == 0
             ? BusinessRuleValidationResult.Success()
             : BusinessRuleValidationResult.Failure(brokenRules.Select(rule => rule.Message));
     }
@@ -171,8 +171,8 @@ public class BusinessRuleValidationResult
     /// <returns>字符串表示</returns>
     public override string ToString()
     {
-        return IsValid 
-            ? "Validation successful" 
+        return IsValid
+            ? "Validation successful"
             : $"Validation failed: {string.Join("; ", Errors)}";
     }
 }

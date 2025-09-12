@@ -26,7 +26,7 @@ public class BusinessRuleValidationException : DomainException
     /// 构造函数
     /// </summary>
     /// <param name="brokenRule">被违反的业务规则</param>
-    public BusinessRuleValidationException(IBusinessRule brokenRule) 
+    public BusinessRuleValidationException(IBusinessRule brokenRule)
         : base(brokenRule.Message)
     {
         BrokenRule = brokenRule;
@@ -38,7 +38,7 @@ public class BusinessRuleValidationException : DomainException
     /// </summary>
     /// <param name="brokenRule">被违反的业务规则</param>
     /// <param name="message">自定义异常消息</param>
-    public BusinessRuleValidationException(IBusinessRule brokenRule, string message) 
+    public BusinessRuleValidationException(IBusinessRule brokenRule, string message)
         : base(message)
     {
         BrokenRule = brokenRule;
@@ -49,7 +49,7 @@ public class BusinessRuleValidationException : DomainException
     /// 构造函数
     /// </summary>
     /// <param name="message">异常消息</param>
-    public BusinessRuleValidationException(string message) 
+    public BusinessRuleValidationException(string message)
         : base(message)
     {
         BrokenRule = null!;
@@ -67,7 +67,7 @@ public class BusinessRuleValidationException : DomainException
     /// <returns>异常的字符串表示</returns>
     public override string ToString()
     {
-        return BrokenRule is not null 
+        return BrokenRule is not null
             ? $"Business Rule Broken: {BrokenRule.GetType().Name}\n{base.ToString()}"
             : $"Business Rule Validation Failed\n{base.ToString()}";
     }
