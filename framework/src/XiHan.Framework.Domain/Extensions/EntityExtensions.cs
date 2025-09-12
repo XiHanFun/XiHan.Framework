@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Exceptions;
 using XiHan.Framework.Domain.Rules;
 
