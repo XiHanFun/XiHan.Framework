@@ -24,71 +24,63 @@ namespace XiHan.Framework.Domain.Aggregates;
 /// </summary>
 public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 {
-    private readonly ICollection<DomainEventRecord> _distributedEvents = [];
-    private readonly ICollection<DomainEventRecord> _localEvents = [];
+    private readonly DomainEventManager _eventManager = new();
 
     /// <summary>
     /// 获取本地事件
     /// </summary>
-    /// <returns></returns>
-    public virtual IEnumerable<DomainEventRecord> GetLocalEvents()
-    {
-        return _localEvents;
-    }
+    /// <returns>本地事件集合</returns>
+    public virtual IEnumerable<DomainEventRecord> GetLocalEvents() => _eventManager.GetLocalEvents();
 
     /// <summary>
     /// 获取分布式事件
     /// </summary>
-    /// <returns></returns>
-    public virtual IEnumerable<DomainEventRecord> GetDistributedEvents()
-    {
-        return _distributedEvents;
-    }
+    /// <returns>分布式事件集合</returns>
+    public virtual IEnumerable<DomainEventRecord> GetDistributedEvents() => _eventManager.GetDistributedEvents();
 
     /// <summary>
     /// 清空本地事件
     /// </summary>
-    public virtual void ClearLocalEvents()
-    {
-        _localEvents.Clear();
-    }
+    public virtual void ClearLocalEvents() => _eventManager.ClearLocalEvents();
 
     /// <summary>
     /// 清空分布式事件
     /// </summary>
-    public virtual void ClearDistributedEvents()
-    {
-        _distributedEvents.Clear();
-    }
+    public virtual void ClearDistributedEvents() => _eventManager.ClearDistributedEvents();
 
     /// <summary>
     /// 添加本地事件
     /// </summary>
     /// <param name="eventData">事件数据</param>
-    protected virtual void AddLocalEvent(IDomainEvent eventData)
-    {
-        _localEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
-    }
+    protected virtual void AddLocalEvent(IDomainEvent eventData) => _eventManager.AddLocalEvent(eventData);
 
     /// <summary>
     /// 添加分布式事件
     /// </summary>
     /// <param name="eventData">事件数据</param>
-    protected virtual void AddDistributedEvent(IDomainEvent eventData)
-    {
-        _distributedEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
-    }
+    protected virtual void AddDistributedEvent(IDomainEvent eventData) => _eventManager.AddDistributedEvent(eventData);
+
+    /// <summary>
+    /// 获取所有事件数量
+    /// </summary>
+    /// <returns>事件总数</returns>
+    protected virtual int GetTotalEventCount() => _eventManager.GetTotalEventCount();
+
+    /// <summary>
+    /// 检查是否有待处理的事件
+    /// </summary>
+    /// <returns>如果有待处理事件返回 true，否则返回 false</returns>
+    protected virtual bool HasPendingEvents() => _eventManager.HasPendingEvents();
 }
 
 /// <summary>
 /// 泛型主键聚合根基类
 /// </summary>
-/// <typeparam name="TKey"></typeparam>
+/// <typeparam name="TKey">主键类型</typeparam>
 public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
-    private readonly ICollection<DomainEventRecord> _distributedEvents = [];
-    private readonly ICollection<DomainEventRecord> _localEvents = [];
+    private readonly DomainEventManager _eventManager = new();
 
     /// <summary>
     /// 构造函数
@@ -100,7 +92,7 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="basicId"></param>
+    /// <param name="basicId">聚合根主键</param>
     protected AggregateRootBase(TKey basicId)
         : base(basicId)
     {
@@ -109,52 +101,46 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 获取本地事件
     /// </summary>
-    /// <returns></returns>
-    public virtual IEnumerable<DomainEventRecord> GetLocalEvents()
-    {
-        return _localEvents;
-    }
+    /// <returns>本地事件集合</returns>
+    public virtual IEnumerable<DomainEventRecord> GetLocalEvents() => _eventManager.GetLocalEvents();
 
     /// <summary>
     /// 获取分布式事件
     /// </summary>
-    /// <returns></returns>
-    public virtual IEnumerable<DomainEventRecord> GetDistributedEvents()
-    {
-        return _distributedEvents;
-    }
+    /// <returns>分布式事件集合</returns>
+    public virtual IEnumerable<DomainEventRecord> GetDistributedEvents() => _eventManager.GetDistributedEvents();
 
     /// <summary>
     /// 清空本地事件
     /// </summary>
-    public virtual void ClearLocalEvents()
-    {
-        _localEvents.Clear();
-    }
+    public virtual void ClearLocalEvents() => _eventManager.ClearLocalEvents();
 
     /// <summary>
     /// 清空分布式事件
     /// </summary>
-    public virtual void ClearDistributedEvents()
-    {
-        _distributedEvents.Clear();
-    }
+    public virtual void ClearDistributedEvents() => _eventManager.ClearDistributedEvents();
 
     /// <summary>
     /// 添加本地事件
     /// </summary>
     /// <param name="eventData">事件数据</param>
-    protected virtual void AddLocalEvent(IDomainEvent eventData)
-    {
-        _localEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
-    }
+    protected virtual void AddLocalEvent(IDomainEvent eventData) => _eventManager.AddLocalEvent(eventData);
 
     /// <summary>
     /// 添加分布式事件
     /// </summary>
     /// <param name="eventData">事件数据</param>
-    protected virtual void AddDistributedEvent(IDomainEvent eventData)
-    {
-        _distributedEvents.Add(new DomainEventRecord(eventData, EventOrderGenerator.GetNext()));
-    }
+    protected virtual void AddDistributedEvent(IDomainEvent eventData) => _eventManager.AddDistributedEvent(eventData);
+
+    /// <summary>
+    /// 获取所有事件数量
+    /// </summary>
+    /// <returns>事件总数</returns>
+    protected virtual int GetTotalEventCount() => _eventManager.GetTotalEventCount();
+
+    /// <summary>
+    /// 检查是否有待处理的事件
+    /// </summary>
+    /// <returns>如果有待处理事件返回 true，否则返回 false</returns>
+    protected virtual bool HasPendingEvents() => _eventManager.HasPendingEvents();
 }

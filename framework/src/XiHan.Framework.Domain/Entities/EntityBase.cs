@@ -142,17 +142,19 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>, IEquatab
 
     /// <summary>
     /// 重写 GetHashCode 方法
+    /// 优化了临时实体的哈希码计算
     /// </summary>
     /// <returns>哈希码</returns>
     public override int GetHashCode()
     {
         // 如果 Id 为默认值，使用基类的 GetHashCode
-        if (EqualityComparer<TKey>.Default.Equals(BasicId, default!))
+        if (IsTransient())
         {
             return base.GetHashCode();
         }
 
-        return BasicId.GetHashCode();
+        // 使用 HashCode.Combine 提供更好的哈希分布
+        return HashCode.Combine(GetType(), BasicId);
     }
 
     /// <summary>
