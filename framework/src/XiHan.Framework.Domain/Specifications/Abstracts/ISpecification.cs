@@ -14,7 +14,7 @@
 
 using System.Linq.Expressions;
 
-namespace XiHan.Framework.Domain.Specifications;
+namespace XiHan.Framework.Domain.Specifications.Abstracts;
 
 /// <summary>
 /// 规约接口

@@ -21,11 +21,36 @@ namespace XiHan.Framework.Domain.ValueObjects;
 public abstract class ValueObject : IEquatable<ValueObject>
 {
     /// <summary>
-    /// 获取相等性比较的属性值
-    /// 子类必须实现此方法，返回用于相等性比较的所有属性值
+    /// 相等运算符重载
     /// </summary>
-    /// <returns>用于相等性比较的属性值集合</returns>
-    protected abstract IEnumerable<object?> GetEqualityComponents();
+    /// <param name="left">左操作数</param>
+    /// <param name="right">右操作数</param>
+    /// <returns>如果相等返回 true，否则返回 false</returns>
+    public static bool operator ==(ValueObject? left, ValueObject? right)
+    {
+        if (left is null && right is null)
+        {
+            return true;
+        }
+
+        if (left is null || right is null)
+        {
+            return false;
+        }
+
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// 不等运算符重载
+    /// </summary>
+    /// <param name="left">左操作数</param>
+    /// <param name="right">右操作数</param>
+    /// <returns>如果不等返回 true，否则返回 false</returns>
+    public static bool operator !=(ValueObject? left, ValueObject? right)
+    {
+        return !(left == right);
+    }
 
     /// <summary>
     /// 相等性比较
@@ -105,38 +130,6 @@ public abstract class ValueObject : IEquatable<ValueObject>
     }
 
     /// <summary>
-    /// 相等运算符重载
-    /// </summary>
-    /// <param name="left">左操作数</param>
-    /// <param name="right">右操作数</param>
-    /// <returns>如果相等返回 true，否则返回 false</returns>
-    public static bool operator ==(ValueObject? left, ValueObject? right)
-    {
-        if (left is null && right is null)
-        {
-            return true;
-        }
-
-        if (left is null || right is null)
-        {
-            return false;
-        }
-
-        return left.Equals(right);
-    }
-
-    /// <summary>
-    /// 不等运算符重载
-    /// </summary>
-    /// <param name="left">左操作数</param>
-    /// <param name="right">右操作数</param>
-    /// <returns>如果不等返回 true，否则返回 false</returns>
-    public static bool operator !=(ValueObject? left, ValueObject? right)
-    {
-        return !(left == right);
-    }
-
-    /// <summary>
     /// 重写 ToString 方法
     /// 使用 StringBuilder 提高性能，支持更好的格式化
     /// </summary>
@@ -145,7 +138,7 @@ public abstract class ValueObject : IEquatable<ValueObject>
     {
         var typeName = GetType().Name;
         var components = GetEqualityComponents().ToList();
-        
+
         if (components.Count == 0)
         {
             return typeName;
@@ -153,7 +146,7 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
         var sb = new System.Text.StringBuilder(typeName);
         sb.Append(" { ");
-        
+
         for (var i = 0; i < components.Count; i++)
         {
             if (i > 0)
@@ -162,8 +155,15 @@ public abstract class ValueObject : IEquatable<ValueObject>
             }
             sb.Append($"Property{i}: {components[i] ?? "null"}");
         }
-        
+
         sb.Append(" }");
         return sb.ToString();
     }
+
+    /// <summary>
+    /// 获取相等性比较的属性值
+    /// 子类必须实现此方法，返回用于相等性比较的所有属性值
+    /// </summary>
+    /// <returns>用于相等性比较的属性值集合</returns>
+    protected abstract IEnumerable<object?> GetEqualityComponents();
 }

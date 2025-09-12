@@ -21,12 +21,12 @@ namespace XiHan.Framework.Domain.Events.Abstracts;
 public interface IDomainEvent
 {
     /// <summary>
-    /// 事件发生时间
-    /// </summary>
-    DateTimeOffset OccurredOn { get; }
-
-    /// <summary>
     /// 事件唯一标识
     /// </summary>
     Guid EventId { get; }
+
+    /// <summary>
+    /// 事件发生时间
+    /// </summary>
+    DateTimeOffset OccurredOn { get; }
 }

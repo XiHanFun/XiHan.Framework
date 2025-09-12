@@ -22,8 +22,8 @@ namespace XiHan.Framework.Domain.Events;
 /// </summary>
 public class DomainEventManager : IDomainEvents
 {
-    private readonly ConcurrentQueue<DomainEventRecord> _distributedEvents = new();
     private readonly ConcurrentQueue<DomainEventRecord> _localEvents = new();
+    private readonly ConcurrentQueue<DomainEventRecord> _distributedEvents = new();
 
     /// <summary>
     /// 获取本地事件
@@ -31,7 +31,7 @@ public class DomainEventManager : IDomainEvents
     /// <returns>本地事件集合</returns>
     public virtual IEnumerable<DomainEventRecord> GetLocalEvents()
     {
-        return _localEvents.ToArray();
+        return [.. _localEvents];
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public class DomainEventManager : IDomainEvents
     /// <returns>分布式事件集合</returns>
     public virtual IEnumerable<DomainEventRecord> GetDistributedEvents()
     {
-        return _distributedEvents.ToArray();
+        return [.. _distributedEvents];
     }
 
     /// <summary>
