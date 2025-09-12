@@ -25,7 +25,7 @@ public class SkillContext
     public string SessionId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 关联的Agent ID
+    /// 关联的Agent Id
     /// </summary>
     public string? AgentId { get; set; }
 

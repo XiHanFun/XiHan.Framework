@@ -502,7 +502,7 @@ public class AdvancedHttpService : IAdvancedHttpService
             }
 
             // 添加请求ID
-            request.Headers.TryAddWithoutValidation("X-Request-ID", requestId);
+            request.Headers.TryAddWithoutValidation("X-Request-Id", requestId);
 
             using var response = await client.SendAsync(request, cancellationToken);
             stopwatch.Stop();

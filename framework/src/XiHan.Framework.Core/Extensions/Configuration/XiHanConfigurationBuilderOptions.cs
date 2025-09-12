@@ -22,13 +22,13 @@ namespace XiHan.Framework.Core.Extensions.Configuration;
 public class XiHanConfigurationBuilderOptions
 {
     /// <summary>
-    /// 用于设置获取应用程序用户密钥 ID 的程序集
+    /// 用于设置获取应用程序用户密钥 Id 的程序集
     /// 可以使用此属性或 <see cref="UserSecretsId"/>(优先级更高)
     /// </summary>
     public Assembly? UserSecretsAssembly { get; set; }
 
     /// <summary>
-    /// 用于设置应用程序的用户密钥 ID
+    /// 用于设置应用程序的用户密钥 Id
     /// 可以使用此属性或<see cref="UserSecretsAssembly"/>(优先级更高)
     /// </summary>
     public string? UserSecretsId { get; set; }

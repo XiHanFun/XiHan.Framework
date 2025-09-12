@@ -83,7 +83,7 @@ public class IncomingEventInfo : IIncomingEventInfo
     /// <summary>
     /// 获取事件的唯一标识符
     /// </summary>
-    /// <value>事件的全局唯一 ID</value>
+    /// <value>事件的全局唯一 Id</value>
     public Guid Id { get; }
 
     /// <summary>

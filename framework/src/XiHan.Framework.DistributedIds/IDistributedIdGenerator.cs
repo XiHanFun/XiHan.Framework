@@ -74,28 +74,28 @@ public interface IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取时间戳
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
     DateTime ExtractTime(long id);
 
     /// <summary>
     /// 从ID中提取工作机器ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>工作机器ID</returns>
     int ExtractWorkerId(long id);
 
     /// <summary>
     /// 从ID中提取序列号
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>序列号</returns>
     int ExtractSequence(long id);
 
     /// <summary>
     /// 从ID中提取数据中心ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>数据中心ID</returns>
     int ExtractDataCenterId(long id);
 

@@ -104,7 +104,7 @@ public class SseServer
     /// 处理SSE请求
     /// </summary>
     /// <param name="stream">输出流</param>
-    /// <param name="lastEventId">客户端发送的Last-Event-ID</param>
+    /// <param name="lastEventId">客户端发送的Last-Event-Id</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>异步任务</returns>
     public async Task ProcessRequestAsync(Stream stream, string? lastEventId, CancellationToken cancellationToken = default)

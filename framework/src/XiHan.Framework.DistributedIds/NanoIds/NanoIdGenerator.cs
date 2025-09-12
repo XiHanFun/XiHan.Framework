@@ -18,7 +18,7 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 
 /// <summary>
 /// NanoID生成器
-/// 用于生成安全、URL友好、随机的唯一标识符(ID)
+/// 用于生成安全、URL友好、随机的唯一标识符(Id)
 /// 通常用于需要较短ID但又不想暴露顺序信息的场景，如API标识符、数据库关联ID、短链接等
 /// 主要特点：
 /// 安全性(Security)：使用加密安全的随机数生成，保证ID的不可预测性和抗冲突性。
@@ -184,7 +184,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取时间戳
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
     public DateTime ExtractTime(long id)
     {
@@ -198,7 +198,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取工作机器ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>工作机器ID</returns>
     public int ExtractWorkerId(long id)
     {
@@ -209,7 +209,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取序列号
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>序列号</returns>
     public int ExtractSequence(long id)
     {
@@ -220,7 +220,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取数据中心ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>数据中心ID</returns>
     public int ExtractDataCenterId(long id)
     {
