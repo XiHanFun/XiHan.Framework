@@ -45,7 +45,7 @@ public static class FileHelper
     {
         await using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var result = new byte[stream.Length];
-        await stream.ReadAsync(result.AsMemory(0, (int)stream.Length));
+        await stream.ReadExactlyAsync(result.AsMemory(0, (int)stream.Length));
         return result;
     }
 
