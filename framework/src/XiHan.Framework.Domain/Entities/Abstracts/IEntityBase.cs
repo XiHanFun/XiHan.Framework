@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Domain.Entities;
+namespace XiHan.Framework.Domain.Entities.Abstracts;
 
 /// <summary>
 /// 实体基类接口

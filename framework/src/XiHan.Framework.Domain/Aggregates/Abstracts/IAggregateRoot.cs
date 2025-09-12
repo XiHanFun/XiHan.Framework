@@ -3,41 +3,32 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AggregateRoot
-// Guid:aaa45b10-aa93-4958-9af0-063ac97ffb26
+// FileName:IAggregateRoot
+// Guid:85a10cca-e110-4207-ab0a-2c1a68bb7b4b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/20 4:35:56
+// CreateTime:2025/2/20 4:24:03
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Domain.Aggregates;
+using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Events.Abstracts;
+
+namespace XiHan.Framework.Domain.Aggregates.Abstracts;
 
 /// <summary>
-/// 聚合根
+/// 聚合根接口
 /// </summary>
-public abstract class AggregateRoot : AggregateRootBase
+public interface IAggregateRoot : IEntityBase, IDomainEvents
 {
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    protected AggregateRoot()
-    {
-    }
 }
 
 /// <summary>
-/// 泛型主键聚合根
+/// 泛型主键聚合根接口
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
-public abstract class AggregateRoot<TKey> : AggregateRootBase<TKey>
+public interface IAggregateRoot<TKey> : IAggregateRoot, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    protected AggregateRoot()
-    {
-    }
 }

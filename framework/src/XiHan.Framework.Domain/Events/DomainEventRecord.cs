@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Domain.Events.Abstracts;
+
 namespace XiHan.Framework.Domain.Events;
 
 /// <summary>

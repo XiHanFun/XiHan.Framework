@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Domain.Events;
+namespace XiHan.Framework.Domain.Events.Abstracts;
 
 /// <summary>
 /// 领域事件接口

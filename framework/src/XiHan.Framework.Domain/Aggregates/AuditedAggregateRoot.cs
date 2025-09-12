@@ -1,13 +1,13 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AggregateRootBase
-// Guid:375aea3a-e307-440c-b710-52af97f44ecf
+// FileName:AuditedAggregateRoot
+// Guid:yza12345-1234-1234-1234-123456789yza
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/20 5:17:14
+// CreateTime:2025/9/12 16:46:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -20,12 +20,28 @@ using XiHan.Framework.Domain.Events.Abstracts;
 namespace XiHan.Framework.Domain.Aggregates;
 
 /// <summary>
-/// 聚合根基类
+/// 审计聚合根基类
 /// </summary>
-public abstract class AggregateRootBase : EntityBase, IAggregateRoot
+public abstract class AuditedAggregateRoot : AuditedEntityBase<Guid>, IAggregateRoot
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];
     private readonly ICollection<DomainEventRecord> _localEvents = [];
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    protected AuditedAggregateRoot()
+    {
+        BasicId = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="id">聚合根ID</param>
+    protected AuditedAggregateRoot(Guid id) : base(id)
+    {
+    }
 
     /// <summary>
     /// 获取本地事件
@@ -81,11 +97,11 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 }
 
 /// <summary>
-/// 泛型主键聚合根基类
+/// 审计聚合根基类（带用户）
 /// </summary>
-/// <typeparam name="TKey"></typeparam>
-public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>
-    where TKey : IEquatable<TKey>
+/// <typeparam name="TUserKey">用户主键类型</typeparam>
+public abstract class AuditedAggregateRoot<TUserKey> : AuditedEntityBase<Guid, TUserKey>, IAggregateRoot
+    where TUserKey : IEquatable<TUserKey>
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];
     private readonly ICollection<DomainEventRecord> _localEvents = [];
@@ -93,16 +109,16 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected AggregateRootBase()
+    protected AuditedAggregateRoot()
     {
+        BasicId = Guid.NewGuid();
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="basicId"></param>
-    protected AggregateRootBase(TKey basicId)
-        : base(basicId)
+    /// <param name="id">聚合根ID</param>
+    protected AuditedAggregateRoot(Guid id) : base(id)
     {
     }
 

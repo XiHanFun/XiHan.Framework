@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Domain.Aggregates;
+using XiHan.Framework.Domain.Aggregates.Abstracts;
 
 namespace XiHan.Framework.Domain.Repositories;
 
@@ -21,7 +21,7 @@ namespace XiHan.Framework.Domain.Repositories;
 /// </summary>
 /// <typeparam name="TAggregateRoot">聚合根类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public interface IRepository<TAggregateRoot, TKey> : IBasicRepository<TAggregateRoot, TKey>
+public interface IRepository<TAggregateRoot, TKey> : IRepositoryBase<TAggregateRoot, TKey>
     where TAggregateRoot : class, IAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
@@ -30,24 +30,4 @@ public interface IRepository<TAggregateRoot, TKey> : IBasicRepository<TAggregate
     /// 用于事务控制和领域事件的统一提交
     /// </summary>
     IUnitOfWork UnitOfWork { get; }
-}
-
-/// <summary>
-/// 工作单元接口
-/// </summary>
-public interface IUnitOfWork : IDisposable
-{
-    /// <summary>
-    /// 保存更改
-    /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>影响的行数</returns>
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 保存实体并发布领域事件
-    /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>影响的行数</returns>
-    Task<int> SaveEntitiesAsync(CancellationToken cancellationToken = default);
 }

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IReadOnlyBasicRepository
+// FileName:IReadOnlyRepositoryBase
 // Guid:08ae7e59-f747-4d17-843d-b88f8e19654d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -13,17 +13,17 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Specifications;
 
 namespace XiHan.Framework.Domain.Repositories;
 
 /// <summary>
-/// 只读仓储基础接口
+/// 只读仓储接口基类
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public interface IReadOnlyBasicRepository<TEntity, TKey> 
+public interface IReadOnlyRepositoryBase<TEntity, TKey>
     where TEntity : class, IEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
