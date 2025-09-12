@@ -46,9 +46,20 @@ public class BusinessRuleValidationException : DomainException
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="message">异常消息</param>
+    public BusinessRuleValidationException(string message) 
+        : base(message)
+    {
+        BrokenRule = null!;
+        Details = message;
+    }
+
+    /// <summary>
     /// 被违反的业务规则
     /// </summary>
-    public IBusinessRule BrokenRule { get; }
+    public IBusinessRule? BrokenRule { get; }
 
     /// <summary>
     /// 重写 ToString 方法
@@ -56,6 +67,8 @@ public class BusinessRuleValidationException : DomainException
     /// <returns>异常的字符串表示</returns>
     public override string ToString()
     {
-        return $"Business Rule Broken: {BrokenRule.GetType().Name}\n{base.ToString()}";
+        return BrokenRule is not null 
+            ? $"Business Rule Broken: {BrokenRule.GetType().Name}\n{base.ToString()}"
+            : $"Business Rule Validation Failed\n{base.ToString()}";
     }
 }
