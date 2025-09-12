@@ -33,7 +33,7 @@ public static class AggregateRootExtensions
     public static IEnumerable<DomainEventRecord> GetAllEvents(this IAggregateRoot aggregateRoot)
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         return aggregateRoot.GetLocalEvents()
             .Concat(aggregateRoot.GetDistributedEvents())
             .OrderBy(e => e.EventOrder);
@@ -47,7 +47,7 @@ public static class AggregateRootExtensions
     public static void ClearAllEvents(this IAggregateRoot aggregateRoot)
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         aggregateRoot.ClearLocalEvents();
         aggregateRoot.ClearDistributedEvents();
     }
@@ -63,7 +63,7 @@ public static class AggregateRootExtensions
         where TEvent : class, IDomainEvent
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         return aggregateRoot.GetAllEvents()
             .Select(record => record.EventData)
             .OfType<TEvent>();
@@ -80,7 +80,7 @@ public static class AggregateRootExtensions
         where TEvent : class, IDomainEvent
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         return aggregateRoot.GetEventsOfType<TEvent>().Any();
     }
 
@@ -93,10 +93,10 @@ public static class AggregateRootExtensions
     public static EventStatistics GetEventStatistics(this IAggregateRoot aggregateRoot)
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         var localEvents = aggregateRoot.GetLocalEvents().ToList();
         var distributedEvents = aggregateRoot.GetDistributedEvents().ToList();
-        
+
         return new EventStatistics
         {
             LocalEventCount = localEvents.Count,
@@ -124,9 +124,9 @@ public static class AggregateRootExtensions
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
         ArgumentNullException.ThrowIfNull(eventHandler);
-        
+
         var events = aggregateRoot.GetAllEvents();
-        
+
         foreach (var eventRecord in events)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -143,7 +143,7 @@ public static class AggregateRootExtensions
     public static AggregateSnapshot CreateSnapshot(this IAggregateRoot aggregateRoot)
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
-        
+
         return new AggregateSnapshot
         {
             AggregateType = aggregateRoot.GetType().Name,

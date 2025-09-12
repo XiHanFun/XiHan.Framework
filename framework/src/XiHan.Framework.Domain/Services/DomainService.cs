@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Domain.Rules;
+using XiHan.Framework.Domain.Services.Abstracts;
 
 namespace XiHan.Framework.Domain.Services;
 
@@ -54,12 +55,12 @@ public abstract class DomainService : IDomainService
         try
         {
             rule.CheckRule();
-            Logger.LogDebug("Business rule validated successfully: {RuleType} {Context}", 
+            Logger.LogDebug("Business rule validated successfully: {RuleType} {Context}",
                 rule.GetType().Name, context ?? string.Empty);
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Business rule validation failed: {RuleType} {Context} - {Message}", 
+            Logger.LogWarning(ex, "Business rule validation failed: {RuleType} {Context} - {Message}",
                 rule.GetType().Name, context ?? string.Empty, rule.Message);
             throw;
         }
@@ -76,7 +77,7 @@ public abstract class DomainService : IDomainService
         ArgumentNullException.ThrowIfNull(rules);
 
         var ruleList = rules.ToList();
-        Logger.LogDebug("Validating {RuleCount} business rules {Context}", 
+        Logger.LogDebug("Validating {RuleCount} business rules {Context}",
             ruleList.Count, context ?? string.Empty);
 
         try
@@ -100,8 +101,8 @@ public abstract class DomainService : IDomainService
     /// <returns>检查任务</returns>
     /// <exception cref="ArgumentNullException">当规则为空时抛出</exception>
     protected virtual async Task CheckBusinessRuleAsync(
-        IBusinessRule rule, 
-        string? context = null, 
+        IBusinessRule rule,
+        string? context = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rule);
@@ -110,12 +111,12 @@ public abstract class DomainService : IDomainService
         try
         {
             await rule.CheckRuleAsync();
-            Logger.LogDebug("Business rule validated successfully: {RuleType} {Context}", 
+            Logger.LogDebug("Business rule validated successfully: {RuleType} {Context}",
                 rule.GetType().Name, context ?? string.Empty);
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Business rule validation failed: {RuleType} {Context} - {Message}", 
+            Logger.LogWarning(ex, "Business rule validation failed: {RuleType} {Context} - {Message}",
                 rule.GetType().Name, context ?? string.Empty, rule.Message);
             throw;
         }
@@ -130,15 +131,15 @@ public abstract class DomainService : IDomainService
     /// <returns>检查任务</returns>
     /// <exception cref="ArgumentNullException">当规则集合为空时抛出</exception>
     protected virtual async Task CheckBusinessRulesAsync(
-        IEnumerable<IBusinessRule> rules, 
-        string? context = null, 
+        IEnumerable<IBusinessRule> rules,
+        string? context = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rules);
         cancellationToken.ThrowIfCancellationRequested();
 
         var ruleList = rules.ToList();
-        Logger.LogDebug("Validating {RuleCount} business rules {Context}", 
+        Logger.LogDebug("Validating {RuleCount} business rules {Context}",
             ruleList.Count, context ?? string.Empty);
 
         try
@@ -166,7 +167,7 @@ public abstract class DomainService : IDomainService
         }
         else
         {
-            Logger.LogInformation("Domain service operation: {Operation} with parameters: {@Parameters}", 
+            Logger.LogInformation("Domain service operation: {Operation} with parameters: {@Parameters}",
                 operation, parameters);
         }
     }
@@ -181,12 +182,12 @@ public abstract class DomainService : IDomainService
     {
         if (result is null)
         {
-            Logger.LogInformation("Domain service operation completed: {Operation} in {Duration}ms", 
+            Logger.LogInformation("Domain service operation completed: {Operation} in {Duration}ms",
                 operation, duration.TotalMilliseconds);
         }
         else
         {
-            Logger.LogInformation("Domain service operation completed: {Operation} in {Duration}ms with result: {@Result}", 
+            Logger.LogInformation("Domain service operation completed: {Operation} in {Duration}ms with result: {@Result}",
                 operation, duration.TotalMilliseconds, result);
         }
     }
@@ -200,7 +201,7 @@ public abstract class DomainService : IDomainService
     protected virtual void ExecuteWithPerformanceMonitoring(string operation, Action action, object? parameters = null)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             LogDomainOperation(operation, parameters);
@@ -211,7 +212,7 @@ public abstract class DomainService : IDomainService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms", 
+            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms",
                 operation, stopwatch.Elapsed.TotalMilliseconds);
             throw;
         }
@@ -228,7 +229,7 @@ public abstract class DomainService : IDomainService
     protected virtual T ExecuteWithPerformanceMonitoring<T>(string operation, Func<T> func, object? parameters = null)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             LogDomainOperation(operation, parameters);
@@ -240,7 +241,7 @@ public abstract class DomainService : IDomainService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms", 
+            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms",
                 operation, stopwatch.Elapsed.TotalMilliseconds);
             throw;
         }
@@ -255,13 +256,13 @@ public abstract class DomainService : IDomainService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>操作任务</returns>
     protected virtual async Task ExecuteWithPerformanceMonitoringAsync(
-        string operation, 
-        Func<CancellationToken, Task> func, 
+        string operation,
+        Func<CancellationToken, Task> func,
         object? parameters = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             LogDomainOperation(operation, parameters);
@@ -272,7 +273,7 @@ public abstract class DomainService : IDomainService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms", 
+            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms",
                 operation, stopwatch.Elapsed.TotalMilliseconds);
             throw;
         }
@@ -288,13 +289,13 @@ public abstract class DomainService : IDomainService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>操作结果</returns>
     protected virtual async Task<T> ExecuteWithPerformanceMonitoringAsync<T>(
-        string operation, 
-        Func<CancellationToken, Task<T>> func, 
+        string operation,
+        Func<CancellationToken, Task<T>> func,
         object? parameters = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             LogDomainOperation(operation, parameters);
@@ -306,7 +307,7 @@ public abstract class DomainService : IDomainService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms", 
+            Logger.LogError(ex, "Domain service operation failed: {Operation} after {Duration}ms",
                 operation, stopwatch.Elapsed.TotalMilliseconds);
             throw;
         }

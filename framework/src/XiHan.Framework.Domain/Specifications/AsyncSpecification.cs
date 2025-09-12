@@ -13,44 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
+using XiHan.Framework.Domain.Specifications.Abstracts;
 
 namespace XiHan.Framework.Domain.Specifications;
-
-/// <summary>
-/// 异步规约接口
-/// 支持异步验证逻辑的规约模式
-/// </summary>
-/// <typeparam name="T">实体类型</typeparam>
-public interface IAsyncSpecification<T> : ISpecification<T>
-{
-    /// <summary>
-    /// 异步检查实体是否满足规约
-    /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>如果满足返回 true，否则返回 false</returns>
-    Task<bool> IsSatisfiedByAsync(T entity, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 异步与运算
-    /// </summary>
-    /// <param name="specification">另一个规约</param>
-    /// <returns>组合后的异步规约</returns>
-    IAsyncSpecification<T> AndAsync(IAsyncSpecification<T> specification);
-
-    /// <summary>
-    /// 异步或运算
-    /// </summary>
-    /// <param name="specification">另一个规约</param>
-    /// <returns>组合后的异步规约</returns>
-    IAsyncSpecification<T> OrAsync(IAsyncSpecification<T> specification);
-
-    /// <summary>
-    /// 异步非运算
-    /// </summary>
-    /// <returns>取反后的异步规约</returns>
-    IAsyncSpecification<T> NotAsync();
-}
 
 /// <summary>
 /// 异步规约基类
@@ -127,10 +92,8 @@ internal class AsyncAndSpecification<T> : AsyncSpecification<T>
         var rightExpression = _right.ToExpression();
 
         var parameter = Expression.Parameter(typeof(T), "x");
-        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter)
-            .Visit(leftExpression.Body);
-        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter)
-            .Visit(rightExpression.Body);
+        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter).Visit(leftExpression.Body);
+        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter).Visit(rightExpression.Body);
 
         var andExpression = Expression.AndAlso(leftBody!, rightBody!);
         return Expression.Lambda<Func<T, bool>>(andExpression, parameter);
@@ -139,7 +102,10 @@ internal class AsyncAndSpecification<T> : AsyncSpecification<T>
     public override async Task<bool> IsSatisfiedByAsync(T entity, CancellationToken cancellationToken = default)
     {
         var leftResult = await _left.IsSatisfiedByAsync(entity, cancellationToken);
-        if (!leftResult) return false; // 短路求值
+        if (!leftResult)
+        {
+            return false; // 短路求值
+        }
 
         return await _right.IsSatisfiedByAsync(entity, cancellationToken);
     }
@@ -166,10 +132,8 @@ internal class AsyncOrSpecification<T> : AsyncSpecification<T>
         var rightExpression = _right.ToExpression();
 
         var parameter = Expression.Parameter(typeof(T), "x");
-        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter)
-            .Visit(leftExpression.Body);
-        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter)
-            .Visit(rightExpression.Body);
+        var leftBody = new ParameterReplacer(leftExpression.Parameters[0], parameter).Visit(leftExpression.Body);
+        var rightBody = new ParameterReplacer(rightExpression.Parameters[0], parameter).Visit(rightExpression.Body);
 
         var orExpression = Expression.OrElse(leftBody!, rightBody!);
         return Expression.Lambda<Func<T, bool>>(orExpression, parameter);
@@ -178,7 +142,10 @@ internal class AsyncOrSpecification<T> : AsyncSpecification<T>
     public override async Task<bool> IsSatisfiedByAsync(T entity, CancellationToken cancellationToken = default)
     {
         var leftResult = await _left.IsSatisfiedByAsync(entity, cancellationToken);
-        if (leftResult) return true; // 短路求值
+        if (leftResult)
+        {
+            return true; // 短路求值
+        }
 
         return await _right.IsSatisfiedByAsync(entity, cancellationToken);
     }

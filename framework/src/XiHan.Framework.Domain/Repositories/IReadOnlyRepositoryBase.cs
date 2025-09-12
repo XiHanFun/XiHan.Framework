@@ -14,7 +14,7 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;
-using XiHan.Framework.Domain.Specifications;
+using XiHan.Framework.Domain.Specifications.Abstracts;
 
 namespace XiHan.Framework.Domain.Repositories;
 
