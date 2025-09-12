@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：比 Base16 更短，但不如 Base62/Base64 紧凑，人类可识别，适合数字与字母组合使用，不包含特殊符号，适合用户手输
-/// 常见用途：邀请码、用户标识、订单号、编号编码、短链接 ID、数字压缩显示等
+/// 常见用途：邀请码、用户标识、订单号、编号编码、短链接 Id、数字压缩显示等
 /// </remarks>
 public static class Base36
 {

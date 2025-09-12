@@ -122,7 +122,7 @@ public static class HttpServiceExtensions
     public static HttpRequestOptions WithCorrelationId(this HttpRequestOptions options, string? correlationId = null)
     {
         correlationId ??= Guid.NewGuid().ToString();
-        return options.AddHeader("X-Correlation-ID", correlationId);
+        return options.AddHeader("X-Correlation-Id", correlationId);
     }
 
     /// <summary>

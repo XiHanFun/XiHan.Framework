@@ -16,7 +16,7 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
 /// 雪花漂移算法ID生成器
-/// 用于生成高性能、有序、分布式的长整型唯一标识符(ID)
+/// 用于生成高性能、有序、分布式的长整型唯一标识符(Id)
 /// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息ID等
 /// 主要特点：
 /// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个ID，无需数据库访问。
@@ -203,7 +203,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取时间戳
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
     public DateTime ExtractTime(long id)
     {
@@ -216,7 +216,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取工作机器ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>工作机器ID</returns>
     public int ExtractWorkerId(long id)
     {
@@ -226,7 +226,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取序列号
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>序列号</returns>
     public int ExtractSequence(long id)
     {
@@ -236,7 +236,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 从ID中提取数据中心ID
     /// </summary>
-    /// <param name="id">ID</param>
+    /// <param name="id">Id</param>
     /// <returns>数据中心ID</returns>
     public int ExtractDataCenterId(long id)
     {

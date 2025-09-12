@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：支持自定义字符集和进制，编码长度灵活可控
-/// 常见用途：ID 生成器、自定义短码、emoji 编码等
+/// 常见用途：Id 生成器、自定义短码、emoji 编码等
 /// </remarks>
 public class CustomRadix
 {
