@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using System.Linq.Expressions;
-using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
