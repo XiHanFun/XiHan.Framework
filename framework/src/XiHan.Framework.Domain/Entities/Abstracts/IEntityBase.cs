@@ -36,4 +36,10 @@ public interface IEntityBase<TKey> : IEntityBase
     /// 主键
     /// </summary>
     TKey BasicId { get; }
+
+    /// <summary>
+    /// 检查实体是否为临时实体（尚未持久化）
+    /// </summary>
+    /// <returns>如果是临时实体返回 true，否则返回 false</returns>
+    bool IsTransient();
 }
