@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
+using XiHan.Framework.Utils.ConsoleTools;
 
 namespace XiHan.Framework.Utils.Logging;
 
@@ -62,6 +63,16 @@ public static class ConsoleLogger
     }
 
     /// <summary>
+    /// 输出信息级别的表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="frontColor">前景色</param>
+    public static void InfoTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.White)
+    {
+        WriteTableLine(table, "INFO", frontColor);
+    }
+
+    /// <summary>
     /// 成功信息
     /// </summary>
     /// <param name="message">消息内容</param>
@@ -80,6 +91,16 @@ public static class ConsoleLogger
     {
         var formattedMessage = FormatMessage(message, args);
         Success(formattedMessage);
+    }
+
+    /// <summary>
+    /// 输出成功级别的表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="frontColor">前景色</param>
+    public static void SuccessTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Green)
+    {
+        WriteTableLine(table, "SUCCESS", frontColor);
     }
 
     /// <summary>
@@ -104,6 +125,16 @@ public static class ConsoleLogger
     }
 
     /// <summary>
+    /// 输出处理级别的表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="frontColor">前景色</param>
+    public static void HandleTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Blue)
+    {
+        WriteTableLine(table, "HANDLE", frontColor);
+    }
+
+    /// <summary>
     /// 警告、新增、更新信息
     /// </summary>
     /// <param name="message">消息内容</param>
@@ -122,6 +153,16 @@ public static class ConsoleLogger
     {
         var formattedMessage = FormatMessage(message, args);
         Warn(formattedMessage);
+    }
+
+    /// <summary>
+    /// 输出警告级别的表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="frontColor">前景色</param>
+    public static void WarnTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Yellow)
+    {
+        WriteTableLine(table, "WARN", frontColor);
     }
 
     /// <summary>
@@ -157,10 +198,20 @@ public static class ConsoleLogger
     }
 
     /// <summary>
+    /// 输出错误级别的表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="frontColor">前景色</param>
+    public static void ErrorTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Red)
+    {
+        WriteTableLine(table, "ERROR", frontColor);
+    }
+
+    /// <summary>
     /// 渐变信息
     /// </summary>
     /// <remarks>
-    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志，不显示日志头
+    /// 一般为展示项目信息(如LOGO)使用，不显示日志头
     /// </remarks>
     /// <param name="message">消息内容</param>
     public static void Rainbow(string? message)
@@ -172,7 +223,7 @@ public static class ConsoleLogger
     /// 渐变信息
     /// </summary>
     /// <remarks>
-    /// 一般为展示项目信息(如LOGO)使用，不记录文件日志，不显示日志头
+    /// 一般为展示项目信息(如LOGO)使用，不显示日志头
     /// </remarks>
     /// <param name="message">消息模板</param>
     /// <param name="args">格式化参数</param>
@@ -201,6 +252,49 @@ public static class ConsoleLogger
     }
 
     #region 内部方法
+
+    /// <summary>
+    /// 在控制台输出单色文本行
+    /// </summary>
+    /// <param name="message">打印文本</param>
+    /// <param name="logType">日志类型</param>
+    /// <param name="frontColor">前置颜色</param>
+    private static void WriteColorLine(string? message, string logType, ConsoleColor frontColor)
+    {
+        // 格式化日志内容
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
+
+        lock (ObjLock)
+        {
+            var currentForeColor = Console.ForegroundColor;
+            Console.ForegroundColor = frontColor;
+            Console.WriteLine(logLine);
+            Console.ForegroundColor = currentForeColor;
+        }
+    }
+
+    /// <summary>
+    /// 在控制台输出表格
+    /// </summary>
+    /// <param name="table">控制台表格</param>
+    /// <param name="logType">日志类型</param>
+    /// <param name="frontColor">前置颜色</param>
+    private static void WriteTableLine(ConsoleTable table, string logType, ConsoleColor frontColor)
+    {
+        // 格式化日志内容
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var message = table.ToString();
+        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] \n{message}" : message;
+
+        lock (ObjLock)
+        {
+            var currentForeColor = Console.ForegroundColor;
+            Console.ForegroundColor = frontColor;
+            Console.WriteLine(logLine);
+            Console.ForegroundColor = currentForeColor;
+        }
+    }
 
     /// <summary>
     /// 格式化消息
@@ -240,28 +334,7 @@ public static class ConsoleLogger
     }
 
     /// <summary>
-    /// 在控制台输出
-    /// </summary>
-    /// <param name="message">打印文本</param>
-    /// <param name="logType">日志类型</param>
-    /// <param name="frontColor">前置颜色</param>
-    private static void WriteColorLine(string? message, string logType, ConsoleColor frontColor)
-    {
-        // 格式化日志内容
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
-
-        lock (ObjLock)
-        {
-            var currentForeColor = Console.ForegroundColor;
-            Console.ForegroundColor = frontColor;
-            Console.WriteLine(logLine);
-            Console.ForegroundColor = currentForeColor;
-        }
-    }
-
-    /// <summary>
-    /// 打印彩虹渐变文本（支持单行和多行）
+    /// 在控制台输出彩虹渐变文本（支持单行和多行）
     /// </summary>
     /// <param name="message">要打印的文本</param>
     /// <param name="addNewLine">是否在末尾添加换行符，默认为true</param>
