@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.ConsoleTools;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.Tests.ConsoleTools;
 
@@ -199,8 +200,8 @@ public static class ConsoleTableUsageExample
                    .AddRow("Redis", "正常", "5ms", "0%")
                    .AddRow("API网关", "异常", "500ms", "15%");
 
-        // 使用 ConsoleLogger 输出
-        ConsoleLogger.InfoTable(statusTable);
+        // 使用 LogHelper 输出
+        LogHelper.InfoTable(statusTable);
 
         // 创建错误统计表格
         var errorTable = new ConsoleTable("错误类型", "次数", "最后发生时间")
@@ -212,7 +213,7 @@ public static class ConsoleTableUsageExample
                   .AddRow("API调用失败", 12, DateTime.Now.AddMinutes(-2))
                   .AddRow("内存不足", 1, DateTime.Now.AddHours(-1));
 
-        ConsoleLogger.ErrorTable(errorTable);
+        LogHelper.ErrorTable(errorTable);
     }
 
     /// <summary>

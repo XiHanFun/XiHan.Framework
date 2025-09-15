@@ -28,7 +28,7 @@ public class ShutdownException : Exception
     /// </summary>
     public ShutdownException() : base(DefaultMessage)
     {
-        ConsoleLogger.Error(DefaultMessage);
+        LogHelper.Error(DefaultMessage);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class ShutdownException : Exception
     /// <param name="message"></param>
     public ShutdownException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleLogger.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 
     /// <summary>
@@ -47,6 +47,6 @@ public class ShutdownException : Exception
     /// <param name="innerException"></param>
     public ShutdownException(string? message, Exception? innerException) : base(DefaultMessage + message, innerException)
     {
-        ConsoleLogger.Error(DefaultMessage + message);
+        LogHelper.Error(DefaultMessage + message);
     }
 }

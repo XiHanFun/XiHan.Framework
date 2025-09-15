@@ -138,7 +138,7 @@ table.Print(); // 输出带颜色的表格到控制台
 
 ## 与日志系统集成
 
-### 使用 ConsoleLogger
+### 使用 LogHelper
 
 ```csharp
 using XiHan.Framework.Utils.Logging;
@@ -149,12 +149,12 @@ var table = new ConsoleTable("时间", "事件", "状态")
     .AddRow(DateTime.Now, "数据库连接", "成功");
 
 // 输出为不同级别的日志
-ConsoleLoggerTableExtensions.InfoTable(table);
-ConsoleLoggerTableExtensions.WarnTable(table, ConsoleColor.Yellow);
-ConsoleLoggerTableExtensions.ErrorTable(table, ConsoleColor.Red);
+LogHelperTableExtensions.InfoTable(table);
+LogHelperTableExtensions.WarnTable(table, ConsoleColor.Yellow);
+LogHelperTableExtensions.ErrorTable(table, ConsoleColor.Red);
 
 // 快速表格
-ConsoleLoggerTableExtensions.QuickTable(
+LogHelperTableExtensions.QuickTable(
     ["用户", "操作", "结果"],
     [
         ["admin", "登录", "成功"],
@@ -202,7 +202,7 @@ public class User
 var user = new User();
 
 // 自动生成对象属性表格
-ConsoleLoggerTableExtensions.ObjectTable(user, style: TableBorderStyle.Rounded);
+LogHelperTableExtensions.ObjectTable(user, style: TableBorderStyle.Rounded);
 ```
 
 ### 2. 自定义列宽和换行

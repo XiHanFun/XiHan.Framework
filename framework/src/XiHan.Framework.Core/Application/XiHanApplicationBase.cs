@@ -45,9 +45,9 @@ public class XiHanApplicationBase : IXiHanApplication
     {
         Guard.NotNull(startupModuleType, nameof(startupModuleType));
         Guard.NotNull(services, nameof(services));
-        ConsoleLogger.DisableDisplayHeader();
-        ConsoleLogger.Rainbow(XiHan.Logo);
-        ConsoleLogger.Info(XiHan.GetSummary());
+        LogHelper.DisableDisplayHeader();
+        LogHelper.Rainbow(XiHan.Logo);
+        LogHelper.Info(XiHan.GetSummary());
 
         // 设置启动模块
         StartupModuleType = startupModuleType;
@@ -83,7 +83,7 @@ public class XiHanApplicationBase : IXiHanApplication
         {
             ConfigureServices();
         }
-        ConsoleLogger.EnableDisplayHeader();
+        LogHelper.EnableDisplayHeader();
     }
 
     /// <summary>

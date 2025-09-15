@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ConsoleLogger
+// FileName:LogHelper
 // Guid:824ca05d-f5be-49a9-96f9-8a6502e5b064
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using XiHan.Framework.Utils.ConsoleTools;
 namespace XiHan.Framework.Utils.Logging;
 
 /// <summary>
-/// 简单的控制台日志输出类
+/// 简单日志输出类
 /// </summary>
-public static class ConsoleLogger
+public static class LogHelper
 {
     private static readonly Lock ObjLock = new();
     private static bool _isDisplayHeader = true;
