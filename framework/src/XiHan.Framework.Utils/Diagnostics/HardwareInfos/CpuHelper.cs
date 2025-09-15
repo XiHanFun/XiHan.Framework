@@ -62,7 +62,7 @@ public static class CpuHelper
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error("获取处理器信息出错，" + ex.Message);
+            LogHelper.Error("获取处理器信息出错，" + ex.Message);
         }
 
         return cpuInfo;

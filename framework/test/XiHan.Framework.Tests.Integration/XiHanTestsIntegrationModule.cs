@@ -45,6 +45,6 @@ public class XiHanTestsIntegrationModule : XiHanModule
     {
         var systemInfo = SystemInfoManager.GetSystemInfo();
 
-        ConsoleLogger.Info(systemInfo.ToJson());
+        LogHelper.Info(systemInfo.ToJson());
     }
 }

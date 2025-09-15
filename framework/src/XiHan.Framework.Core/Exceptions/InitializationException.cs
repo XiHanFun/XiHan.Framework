@@ -28,7 +28,7 @@ public class InitializationException : Exception
     /// </summary>
     public InitializationException() : base(DefaultMessage)
     {
-        ConsoleLogger.Error(DefaultMessage);
+        LogHelper.Error(DefaultMessage);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class InitializationException : Exception
     /// <param name="message"></param>
     public InitializationException(string? message) : base(DefaultMessage + message)
     {
-        ConsoleLogger.Error(DefaultMessage + Environment.NewLine + message);
+        LogHelper.Error(DefaultMessage + Environment.NewLine + message);
     }
 
     /// <summary>
@@ -47,6 +47,6 @@ public class InitializationException : Exception
     /// <param name="innerException"></param>
     public InitializationException(string? message, Exception? innerException) : base(DefaultMessage + message, innerException)
     {
-        ConsoleLogger.Error(DefaultMessage + Environment.NewLine + message + Environment.NewLine + innerException?.StackTrace);
+        LogHelper.Error(DefaultMessage + Environment.NewLine + message + Environment.NewLine + innerException?.StackTrace);
     }
 }
