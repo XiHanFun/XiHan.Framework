@@ -286,9 +286,21 @@ public static class ComparableExtensions
     /// <returns>比较结果</returns>
     public static int CompareToNullSafe<T>(this T? value, T? other) where T : class, IComparable<T>
     {
-        if (value == null && other == null) return 0;
-        if (value == null) return -1;
-        if (other == null) return 1;
+        if (value == null && other == null)
+        {
+            return 0;
+        }
+
+        if (value == null)
+        {
+            return -1;
+        }
+
+        if (other == null)
+        {
+            return 1;
+        }
+
         return value.CompareTo(other);
     }
 
@@ -301,9 +313,21 @@ public static class ComparableExtensions
     /// <returns>比较结果</returns>
     public static int CompareToNullSafe<T>(this T? value, T? other) where T : struct, IComparable<T>
     {
-        if (!value.HasValue && !other.HasValue) return 0;
-        if (!value.HasValue) return -1;
-        if (!other.HasValue) return 1;
+        if (!value.HasValue && !other.HasValue)
+        {
+            return 0;
+        }
+
+        if (!value.HasValue)
+        {
+            return -1;
+        }
+
+        if (!other.HasValue)
+        {
+            return 1;
+        }
+
         return value.Value.CompareTo(other.Value);
     }
 
@@ -316,8 +340,16 @@ public static class ComparableExtensions
     /// <returns>较大的值，如果都为 null 则返回 null</returns>
     public static T? MaxNullSafe<T>(this T? value, T? other) where T : class, IComparable<T>
     {
-        if (value == null) return other;
-        if (other == null) return value;
+        if (value == null)
+        {
+            return other;
+        }
+
+        if (other == null)
+        {
+            return value;
+        }
+
         return value.CompareTo(other) >= 0 ? value : other;
     }
 
@@ -330,8 +362,16 @@ public static class ComparableExtensions
     /// <returns>较小的值，如果都为 null 则返回 null</returns>
     public static T? MinNullSafe<T>(this T? value, T? other) where T : class, IComparable<T>
     {
-        if (value == null) return other;
-        if (other == null) return value;
+        if (value == null)
+        {
+            return other;
+        }
+
+        if (other == null)
+        {
+            return value;
+        }
+
         return value.CompareTo(other) <= 0 ? value : other;
     }
 
