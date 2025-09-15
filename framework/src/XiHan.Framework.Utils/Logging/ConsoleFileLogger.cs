@@ -231,7 +231,7 @@ public static class ConsoleFileLogger
     /// <param name="inputStr">日志内容</param>
     /// <param name="logType">日志类型</param>
     /// <param name="fileName">日志文件名(不含扩展名)</param>
-    private static void WriteToFile(string? inputStr, string logType, string? fileName = null)
+    public static void WriteToFile(string? inputStr, string logType, string? fileName = null)
     {
         if (inputStr == null)
         {
