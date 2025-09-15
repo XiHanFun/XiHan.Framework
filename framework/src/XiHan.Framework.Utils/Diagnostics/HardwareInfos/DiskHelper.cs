@@ -58,7 +58,7 @@ public static class DiskHelper
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error("获取磁盘信息出错，" + ex.Message);
+            LogHelper.Error("获取磁盘信息出错，" + ex.Message);
         }
 
         return diskInfos;

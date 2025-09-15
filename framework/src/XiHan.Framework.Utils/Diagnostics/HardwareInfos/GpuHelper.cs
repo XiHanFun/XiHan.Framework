@@ -57,7 +57,7 @@ public static class GpuHelper
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error("获取GPU信息出错，" + ex.Message);
+            LogHelper.Error("获取GPU信息出错，" + ex.Message);
             gpuInfos.Add(new GpuInfo
             {
                 Name = "Error",
