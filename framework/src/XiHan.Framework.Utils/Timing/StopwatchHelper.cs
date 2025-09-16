@@ -486,7 +486,7 @@ public static class StopwatchHelper
 public class TimingStatistics
 {
     private readonly List<TimeSpan> _timings = [];
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     /// <summary>
     /// 初始化计时统计信息
