@@ -486,8 +486,10 @@ public class ExpressionBuilder<T>
     /// <returns>表达式构建器实例</returns>
     public static ExpressionBuilder<T> FromExpression(Expression<Func<T, bool>> expression)
     {
-        var builder = new ExpressionBuilder<T>();
-        builder._body = expression.Body;
+        var builder = new ExpressionBuilder<T>
+        {
+            _body = expression.Body
+        };
         return builder;
     }
 
