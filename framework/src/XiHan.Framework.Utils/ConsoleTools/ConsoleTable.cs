@@ -744,7 +744,7 @@ public class ConsoleTable
         for (var col = 0; col < _columnWidths.Count; col++)
         {
             // 列内容区域
-            var lineLength = _columnWidths[col] + Padding * 2;
+            var lineLength = _columnWidths[col] + (Padding * 2);
             sb.Append(new string(borderChars.Horizontal, lineLength));
 
             // 列分隔符
