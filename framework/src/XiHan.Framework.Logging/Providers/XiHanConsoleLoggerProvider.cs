@@ -59,7 +59,7 @@ public class XiHanConsoleLoggerProvider : ILoggerProvider
 /// </summary>
 internal class XiHanConsoleLogger : ILogger
 {
-    private static readonly object LockObj = new();
+    private static readonly Lock LockObj = new();
     private readonly string _categoryName;
     private readonly XiHanConsoleLoggerOptions _options;
 
