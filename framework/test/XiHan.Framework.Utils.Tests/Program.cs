@@ -1,5 +1,5 @@
 ﻿using XiHan.Framework.Utils.Tests.ConsoleTools;
 
-Examples.ColorWriterExample();
+Examples.ProgressBarExample();
 
 Console.ReadKey();

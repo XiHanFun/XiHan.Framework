@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Utils.CommandLine.Attributes;
 using XiHan.Framework.Utils.CommandLine.Commands;
+using XiHan.Framework.Utils.CommandLine.Models;
 using XiHan.Framework.Utils.ConsoleTools;
 
 namespace XiHan.Framework.Utils.CommandLine.Examples;
@@ -77,13 +78,13 @@ public static class UsageExample
     {
         // 方式1：解析为字典
         var parsedArgs = CommandLine.Parse(args);
-        
+
         Console.WriteLine("选项:");
         foreach (var option in parsedArgs.Options)
         {
             Console.WriteLine($"  {option.Key}: {string.Join(", ", option.Value)}");
         }
-        
+
         Console.WriteLine("参数:");
         for (var i = 0; i < parsedArgs.Arguments.Count; i++)
         {
@@ -171,7 +172,7 @@ public class BuildCommand : ICommand
     public bool Clean { get; set; }
 
     [Option("parallel", "j", Description = "并行构建数", DefaultValue = 1)]
-    [Range(1, Environment.ProcessorCount)]
+    [Range(1, 5)]
     public int ParallelCount { get; set; } = 1;
 
     [Option("defines", "D", Description = "预处理器定义", AllowMultiple = true)]
@@ -198,7 +199,7 @@ public class BuildCommand : ICommand
 
         // 模拟构建过程
         ConsoleColorWriter.WriteInfo($"使用 {ParallelCount} 个并行任务构建...");
-        
+
         using var multiProgress = new ConsoleMultiProgressBar();
         var tasks = new List<Task>();
 
@@ -207,12 +208,12 @@ public class BuildCommand : ICommand
             var taskId = $"task{i + 1}";
             var taskName = $"构建任务 {i + 1}";
             multiProgress.AddTask(taskId, 100, taskName);
-            
+
             tasks.Add(SimulateBuildTask(taskId, multiProgress));
         }
 
         await Task.WhenAll(tasks);
-        
+
         ConsoleColorWriter.WriteSuccess("构建完成！");
         return 0;
     }
@@ -237,7 +238,7 @@ public class EmailValidator : IValidator
     public ValidationResult Validate(object? value, object[]? parameters = null)
     {
         if (value == null) return ValidationResult.Success;
-        
+
         var email = value.ToString();
         if (string.IsNullOrWhiteSpace(email))
             return ValidationResult.Success;
