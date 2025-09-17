@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Options;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices;
+namespace XiHan.Framework.Tasks.BackgroundServices;
 
 /// <summary>
 /// 动态服务配置实现

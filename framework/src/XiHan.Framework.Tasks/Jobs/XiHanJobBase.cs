@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.BackgroundJobs.Jobs;
+namespace XiHan.Framework.Tasks.Jobs;
 
 /// <summary>
 /// XiHanJobBase

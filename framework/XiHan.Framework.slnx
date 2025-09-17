@@ -28,10 +28,10 @@
     <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
-    <Project Path="src/XiHan.Framework.BackgroundJobs/XiHan.Framework.BackgroundJobs.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
   </Folder>
   <Folder Name="/1.src/5.Extensions/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
@@ -55,7 +55,7 @@
     <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
   </Folder>
   <Folder Name="/2.tests/2.UnitTests/">
-    <Project Path="test/XiHan.Framework.BackgroundJobs.Tests/XiHan.Framework.BackgroundJobs.Tests.csproj" Id="f96e4ca9-2aca-4258-95be-76555bfe3d2a" />
+    <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
   </Folder>
   <Folder Name="/2.tests/3.Main/">

@@ -14,13 +14,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.BackgroundJobs\XiHan.Framework.BackgroundJobs.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
         <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Messaging\XiHan.Framework.Messaging.csproj" />
         <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
         <ProjectReference Include="..\XiHan.Framework.ObjectMapping\XiHan.Framework.ObjectMapping.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Tasks\XiHan.Framework.Tasks.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
     </ItemGroup>
 
