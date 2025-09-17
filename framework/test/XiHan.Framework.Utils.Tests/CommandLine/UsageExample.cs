@@ -237,19 +237,28 @@ public class EmailValidator : IValidator
 {
     public ValidationResult Validate(object? value, object[]? parameters = null)
     {
-        if (value == null) return ValidationResult.Success;
+        if (value == null)
+        {
+            return ValidationResult.Success;
+        }
 
         var email = value.ToString();
         if (string.IsNullOrWhiteSpace(email))
+        {
             return ValidationResult.Success;
+        }
 
         // 简单的邮箱格式验证
         if (!email.Contains('@') || !email.Contains('.'))
+        {
             return ValidationResult.Error("邮箱格式无效");
+        }
 
         var parts = email.Split('@');
         if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]) || string.IsNullOrEmpty(parts[1]))
+        {
             return ValidationResult.Error("邮箱格式无效");
+        }
 
         return ValidationResult.Success;
     }
