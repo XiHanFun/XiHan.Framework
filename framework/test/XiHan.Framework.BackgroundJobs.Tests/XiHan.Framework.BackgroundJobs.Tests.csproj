@@ -28,8 +28,4 @@
         <PackageReference Update="coverlet.collector" Version="6.0.4" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="BackgroundServices\" />
-    </ItemGroup>
-
 </Project>
