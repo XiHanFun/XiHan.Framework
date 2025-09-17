@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices.Examples;
+using XiHan.Framework.Tasks.BackgroundServices;
+
+namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
 
 /// <summary>
 /// 邮件发送任务项示例

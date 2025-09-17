@@ -6,10 +6,10 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework.BackgroundJobs</Title>
-        <AssemblyName>XiHan.Framework.BackgroundJobs</AssemblyName>
-        <PackageId>XiHan.Framework.BackgroundJobs</PackageId>
-        <Description>曦寒框架后台任务库</Description>
+        <Title>XiHan.Framework.Tasks</Title>
+        <AssemblyName>XiHan.Framework.Tasks</AssemblyName>
+        <PackageId>XiHan.Framework.Tasks</PackageId>
+        <Description>曦寒框架任务库</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 

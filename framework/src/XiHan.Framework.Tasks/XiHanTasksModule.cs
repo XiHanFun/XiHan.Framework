@@ -14,12 +14,12 @@
 
 using XiHan.Framework.Core.Modularity;
 
-namespace XiHan.Framework.BackgroundJobs;
+namespace XiHan.Framework.Tasks;
 
 /// <summary>
-/// 曦寒框架后台任务模块
+/// 曦寒框架任务模块
 /// </summary>
-public class XiHanBackgroundJobsModule : XiHanModule
+public class XiHanTasksModule : XiHanModule
 {
     /// <summary>
     /// 服务配置

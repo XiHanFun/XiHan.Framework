@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices;
+namespace XiHan.Framework.Tasks.BackgroundServices;
 
 /// <summary>
 /// 后台服务基类

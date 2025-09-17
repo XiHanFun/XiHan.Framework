@@ -16,9 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Tasks.BackgroundServices;
 using XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices.Examples;
+namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
 
 /// <summary>
 /// 后台服务使用示例
@@ -87,7 +88,7 @@ public class BackgroundServiceUsageExample
 
         // 10. 获取服务实例并添加一些邮件到队列
         var emailService = serviceProvider.GetRequiredService<EmailSendingService>();
-        
+
         emailService.QueueEmail("customer@example.com", "订单确认", "您的订单已确认。", EmailPriority.High);
         emailService.QueueEmail("user@example.com", "新功能通知", "我们推出了新功能！", EmailPriority.Normal);
         emailService.QueueEmail("newsletter@example.com", "周报", "本周系统运行报告。", EmailPriority.Low);
@@ -200,11 +201,11 @@ public class BackgroundServiceUsageExample
         var mockEmailSender = serviceProvider.GetRequiredService<IEmailSender>() as MockEmailSender;
 
         // 添加邮件到队列
-        for (int i = 1; i <= 10; i++)
+        for (var i = 1; i <= 10; i++)
         {
-            var priority = i <= 3 ? EmailPriority.High : 
+            var priority = i <= 3 ? EmailPriority.High :
                           i <= 7 ? EmailPriority.Normal : EmailPriority.Low;
-            
+
             emailService.QueueEmail($"user{i}@example.com", $"邮件 #{i}", $"这是第 {i} 封测试邮件", priority);
         }
 
@@ -212,30 +213,30 @@ public class BackgroundServiceUsageExample
 
         // 演示动态配置调整
         var dynamicConfig = emailService.GetDynamicConfig();
-        
+
         Console.WriteLine("\n=== 动态配置演示 ===");
-        
+
         // 等待一段时间
         await Task.Delay(5000);
-        
+
         // 增加并发数
         Console.WriteLine("调整最大并发数从 2 增加到 5...");
         dynamicConfig.UpdateMaxConcurrentTasks(5);
-        
+
         await Task.Delay(3000);
-        
+
         // 暂停任务处理
         Console.WriteLine("暂停任务处理...");
         dynamicConfig.SetTaskProcessingEnabled(false);
-        
+
         await Task.Delay(3000);
-        
+
         // 恢复任务处理
         Console.WriteLine("恢复任务处理...");
         dynamicConfig.SetTaskProcessingEnabled(true);
-        
+
         await Task.Delay(3000);
-        
+
         // 调整空闲延迟
         Console.WriteLine("调整空闲延迟从 1000ms 减少到 500ms...");
         dynamicConfig.UpdateIdleDelay(500);
@@ -243,10 +244,10 @@ public class BackgroundServiceUsageExample
         // 显示统计信息
         Console.WriteLine("\n=== 服务统计信息 ===");
         await Task.Delay(5000);
-        
+
         var statistics = emailService.GetStatistics();
         var status = emailService.GetServiceStatus();
-        
+
         Console.WriteLine($"服务名称: {status.ServiceName}");
         Console.WriteLine($"任务处理启用: {status.IsTaskProcessingEnabled}");
         Console.WriteLine($"最大并发数: {status.MaxConcurrentTasks}");
