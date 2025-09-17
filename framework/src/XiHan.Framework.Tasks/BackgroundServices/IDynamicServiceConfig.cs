@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices;
+namespace XiHan.Framework.Tasks.BackgroundServices;
 
 /// <summary>
 /// 动态服务配置接口

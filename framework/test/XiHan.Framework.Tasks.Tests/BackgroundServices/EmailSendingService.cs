@@ -15,9 +15,10 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Tasks.BackgroundServices;
 using XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices.Examples;
+namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
 
 /// <summary>
 /// 邮件发送后台服务示例
@@ -82,7 +83,7 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
         var result = new List<IBackgroundTaskItem>();
 
         // 从内存队列获取邮件任务（实际应用中可能从 Redis、RabbitMQ、数据库等获取）
-        for (int i = 0; i < maxCount && _emailQueue.TryDequeue(out var emailTask); i++)
+        for (var i = 0; i < maxCount && _emailQueue.TryDequeue(out var emailTask); i++)
         {
             result.Add(emailTask);
         }

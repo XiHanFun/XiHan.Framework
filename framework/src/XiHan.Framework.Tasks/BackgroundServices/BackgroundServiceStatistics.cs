@@ -14,7 +14,7 @@
 
 using System.Collections.Concurrent;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices;
+namespace XiHan.Framework.Tasks.BackgroundServices;
 
 /// <summary>
 /// 后台服务统计信息

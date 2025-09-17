@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace XiHan.Framework.BackgroundJobs.BackgroundServices.Examples;
+namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
 
 /// <summary>
 /// 模拟邮件发送器实现
