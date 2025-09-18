@@ -333,7 +333,7 @@ public static class LogHelper
         {
             LogLevel.Error => ConsoleColor.Red,
             LogLevel.Warn => ConsoleColor.Yellow,
-            LogLevel.Handle => ConsoleColor.Gray,
+            LogLevel.Handle => ConsoleColor.Cyan,
             LogLevel.Success => ConsoleColor.Green,
             LogLevel.Info => ConsoleColor.White,
             _ => ConsoleColor.White,
