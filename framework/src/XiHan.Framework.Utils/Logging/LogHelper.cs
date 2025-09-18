@@ -17,16 +17,20 @@ using XiHan.Framework.Utils.ConsoleTools;
 namespace XiHan.Framework.Utils.Logging;
 
 /// <summary>
-/// 简单日志输出类
+/// 主要日志输出类（同时支持控制台和文件输出）
+/// 推荐作为首选日志接口使用
 /// </summary>
 public static class LogHelper
 {
     private static readonly Lock ObjLock = new();
     private static bool _isDisplayHeader = true;
     private static volatile LogLevel _minimumLevel = LogLevel.Info;
+    private static volatile bool _enableFileOutput = false;
+    private static volatile bool _enableConsoleOutput = true;
 
     /// <summary>
     /// 设置最小日志等级（小于该等级的日志将被忽略）
+    /// 例：设置为 Warn，则只输出 Warn 和 Error 级别的日志
     /// </summary>
     /// <param name="level">日志等级</param>
     public static void SetMinimumLevel(LogLevel level)
@@ -37,6 +41,61 @@ public static class LogHelper
         }
 
         _minimumLevel = level;
+
+        // 同步设置到文件输出
+        if (_enableFileOutput)
+        {
+            LogFileHelper.SetMinimumLevel(level);
+        }
+    }
+
+    /// <summary>
+    /// 设置是否启用文件输出
+    /// </summary>
+    /// <param name="enable">是否启用文件输出</param>
+    public static void SetFileOutputEnabled(bool enable)
+    {
+        _enableFileOutput = enable;
+        if (enable)
+        {
+            LogFileHelper.SetMinimumLevel(_minimumLevel);
+        }
+    }
+
+    /// <summary>
+    /// 设置是否启用控制台输出
+    /// </summary>
+    /// <param name="enable">是否启用控制台输出</param>
+    public static void SetConsoleOutputEnabled(bool enable)
+    {
+        _enableConsoleOutput = enable;
+    }
+
+    /// <summary>
+    /// 设置文件输出目录
+    /// </summary>
+    /// <param name="directoryPath">日志文件目录</param>
+    public static void SetLogDirectory(string directoryPath)
+    {
+        LogFileHelper.SetLogDirectory(directoryPath);
+    }
+
+    /// <summary>
+    /// 设置文件最大大小
+    /// </summary>
+    /// <param name="maxSizeBytes">最大文件大小（字节）</param>
+    public static void SetMaxFileSize(long maxSizeBytes)
+    {
+        LogFileHelper.SetMaxFileSize(maxSizeBytes);
+    }
+
+    /// <summary>
+    /// 获取当前配置信息
+    /// </summary>
+    /// <returns>配置信息</returns>
+    public static (LogLevel MinLevel, bool FileOutput, bool ConsoleOutput, bool DisplayHeader) GetConfiguration()
+    {
+        return (_minimumLevel, _enableFileOutput, _enableConsoleOutput, _isDisplayHeader);
     }
 
     /// <summary>
@@ -273,16 +332,61 @@ public static class LogHelper
         }
     }
 
+    /// <summary>
+    /// 清除所有日志文件
+    /// </summary>
+    public static void ClearLogFiles()
+    {
+        if (_enableFileOutput)
+        {
+            LogFileHelper.Clear();
+        }
+    }
+
+    /// <summary>
+    /// 清除指定日期的日志文件
+    /// </summary>
+    /// <param name="date">指定日期</param>
+    public static void ClearLogFiles(DateTime date)
+    {
+        if (_enableFileOutput)
+        {
+            LogFileHelper.Clear(date);
+        }
+    }
+
+    /// <summary>
+    /// 立即刷新所有待处理日志到文件
+    /// </summary>
+    public static void FlushToFile()
+    {
+        if (_enableFileOutput)
+        {
+            LogFileHelper.Flush();
+        }
+    }
+
+    /// <summary>
+    /// 优雅关闭日志系统
+    /// </summary>
+    public static void Shutdown()
+    {
+        if (_enableFileOutput)
+        {
+            LogFileHelper.Shutdown();
+        }
+    }
+
     #region 内部方法
 
     /// <summary>
-    /// 是否启用日志
+    /// 是否启用日志,大于等于最小级别才输出
     /// </summary>
-    /// <param name="level"></param>
-    /// <returns></returns>
+    /// <param name="level">日志级别</param>
+    /// <returns>是否启用</returns>
     private static bool IsEnabled(LogLevel level)
     {
-        return _minimumLevel != LogLevel.None && level <= _minimumLevel;
+        return _minimumLevel != LogLevel.None && level >= _minimumLevel;
     }
 
     /// <summary>
@@ -341,7 +445,7 @@ public static class LogHelper
     }
 
     /// <summary>
-    /// 在控制台输出
+    /// 输出日志（同时输出到控制台和文件）
     /// </summary>
     /// <param name="message">消息内容</param>
     /// <param name="logLevel">日志等级</param>
@@ -352,13 +456,33 @@ public static class LogHelper
             return;
         }
 
+        // 输出到控制台
+        if (_enableConsoleOutput)
+        {
+            WriteToConsole(message, logLevel);
+        }
+
+        // 输出到文件
+        if (_enableFileOutput)
+        {
+            WriteToFile(message, logLevel);
+        }
+    }
+
+    /// <summary>
+    /// 输出到控制台
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="logLevel">日志等级</param>
+    private static void WriteToConsole(string? message, LogLevel logLevel)
+    {
         lock (ObjLock)
         {
             try
             {
                 var frontColor = GetLogLevelColor(logLevel);
                 var logType = logLevel.ToString();
-                ConsoleColorWriter.WriteLog(message, logType, frontColor, _isDisplayHeader);
+                ConsoleColorWriter.WriteLog(message ?? "", logType, frontColor, _isDisplayHeader);
             }
             catch (Exception ex)
             {
@@ -370,12 +494,54 @@ public static class LogHelper
     }
 
     /// <summary>
+    /// 输出到文件
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="logLevel">日志等级</param>
+    private static void WriteToFile(string? message, LogLevel logLevel)
+    {
+        try
+        {
+            switch (logLevel)
+            {
+                case LogLevel.Info:
+                    LogFileHelper.Info(message);
+                    break;
+
+                case LogLevel.Success:
+                    LogFileHelper.Success(message);
+                    break;
+
+                case LogLevel.Handle:
+                    LogFileHelper.Handle(message);
+                    break;
+
+                case LogLevel.Warn:
+                    LogFileHelper.Warn(message);
+                    break;
+
+                case LogLevel.Error:
+                    LogFileHelper.Error(message);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            // 文件输出失败时，在控制台显示警告
+            if (_enableConsoleOutput)
+            {
+                Console.WriteLine($"[文件输出失败] {ex.Message}: {message}");
+            }
+        }
+    }
+
+    /// <summary>
     /// 在控制台输出彩虹渐变文本
     /// </summary>
     /// <param name="message">消息内容</param>
     private static void WriteColorLineRainbow(string? message)
     {
-        if (string.IsNullOrEmpty(message))
+        if (string.IsNullOrEmpty(message) || !_enableConsoleOutput)
         {
             return;
         }
