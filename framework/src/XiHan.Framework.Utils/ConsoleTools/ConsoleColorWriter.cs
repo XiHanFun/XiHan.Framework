@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace XiHan.Framework.Utils.ConsoleTools;
@@ -21,55 +22,8 @@ namespace XiHan.Framework.Utils.ConsoleTools;
 /// </summary>
 public static class ConsoleColorWriter
 {
-    /// <summary>
-    /// 写成功消息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    /// <param name="newLine">是否换行</param>
-    public static void WriteSuccess(string message, bool newLine = true)
-    {
-        WriteColoredMessage(message, ConsoleColor.Green, newLine);
-    }
-
-    /// <summary>
-    /// 写错误消息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    /// <param name="newLine">是否换行</param>
-    public static void WriteError(string message, bool newLine = true)
-    {
-        WriteColoredMessage(message, ConsoleColor.Red, newLine);
-    }
-
-    /// <summary>
-    /// 写警告消息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    /// <param name="newLine">是否换行</param>
-    public static void WriteWarning(string message, bool newLine = true)
-    {
-        WriteColoredMessage(message, ConsoleColor.Yellow, newLine);
-    }
-
-    /// <summary>
-    /// 写信息消息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    /// <param name="newLine">是否换行</param>
-    public static void WriteInfo(string message, bool newLine = true)
-    {
-        WriteColoredMessage(message, ConsoleColor.Cyan, newLine);
-    }
-
-    /// <summary>
-    /// 写调试消息
-    /// </summary>
-    /// <param name="message">消息内容</param>
-    /// <param name="newLine">是否换行</param>
-    public static void WriteDebug(string message, bool newLine = true)
-    {
-        WriteColoredMessage(message, ConsoleColor.Gray, newLine);
-    }
+    private static ConsoleColor? _lastForegroundColor;
+    private static ConsoleColor? _lastBackgroundColor;
 
     /// <summary>
     /// 写带颜色的消息
@@ -85,11 +39,7 @@ public static class ConsoleColorWriter
 
         try
         {
-            Console.ForegroundColor = color;
-            if (backgroundColor.HasValue)
-            {
-                Console.BackgroundColor = backgroundColor.Value;
-            }
+            SetConsoleColorOptimized(color, backgroundColor);
 
             if (newLine)
             {
@@ -102,8 +52,7 @@ public static class ConsoleColorWriter
         }
         finally
         {
-            Console.ForegroundColor = originalForegroundColor;
-            Console.BackgroundColor = originalBackgroundColor;
+            RestoreOriginalColors(originalForegroundColor, originalBackgroundColor);
         }
     }
 
@@ -177,8 +126,18 @@ public static class ConsoleColorWriter
     /// <param name="highlightColor">高亮颜色</param>
     /// <param name="ignoreCase">是否忽略大小写</param>
     /// <param name="newLine">是否换行</param>
-    public static void WriteWithHighlight(string message, string[] keywords, ConsoleColor highlightColor = ConsoleColor.Yellow, bool ignoreCase = true, bool newLine = true)
+    public static void WriteWithHighlightMessage(string message, string[] keywords, ConsoleColor highlightColor = ConsoleColor.Yellow, bool ignoreCase = true, bool newLine = true)
     {
+        if (string.IsNullOrEmpty(message))
+        {
+            if (newLine)
+            {
+                Console.WriteLine();
+            }
+
+            return;
+        }
+
         if (keywords == null || keywords.Length == 0)
         {
             if (newLine)
@@ -193,108 +152,51 @@ public static class ConsoleColorWriter
         }
 
         var originalColor = Console.ForegroundColor;
-        var segments = new List<(string text, bool isHighlight)>();
-        var remainingText = message;
 
-        // 查找并标记所有关键字
-        foreach (var keyword in keywords.Where(k => !string.IsNullOrEmpty(k)))
-        {
-            var tempSegments = new List<(string text, bool isHighlight)>();
-
-            foreach (var segment in segments.DefaultIfEmpty((text: remainingText, isHighlight: false)))
-            {
-                if (segment.isHighlight)
-                {
-                    tempSegments.Add(segment);
-                    continue;
-                }
-
-                // 简化的字符串分割方法
-                var parts = new List<string>();
-                var text = segment.text;
-                var keywordToFind = ignoreCase ? keyword.ToLower() : keyword;
-                var textToSearch = ignoreCase ? text.ToLower() : text;
-
-                var startIndex = 0;
-                int foundIndex;
-
-                while ((foundIndex = textToSearch.IndexOf(keywordToFind, startIndex)) >= 0)
-                {
-                    // 添加关键字前的文本
-                    if (foundIndex > startIndex)
-                    {
-                        parts.Add(text[startIndex..foundIndex]);
-                    }
-                    else
-                    {
-                        parts.Add("");
-                    }
-
-                    startIndex = foundIndex + keyword.Length;
-                }
-
-                // 添加最后的文本
-                if (startIndex < text.Length)
-                {
-                    parts.Add(text[startIndex..]);
-                }
-                else if (startIndex == text.Length && parts.Count > 0)
-                {
-                    parts.Add("");
-                }
-
-                // 如果没有找到关键字，添加整个文本
-                if (parts.Count == 0)
-                {
-                    parts.Add(text);
-                }
-
-                var partsArray = parts.ToArray();
-
-                for (var i = 0; i < partsArray.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(partsArray[i]))
-                    {
-                        tempSegments.Add((partsArray[i], false));
-                    }
-
-                    if (i < partsArray.Length - 1)
-                    {
-                        tempSegments.Add((keyword, true));
-                    }
-                }
-            }
-
-            segments = tempSegments;
-            if (segments.Count == 0 && !string.IsNullOrEmpty(remainingText))
-            {
-                segments.Add((remainingText, false));
-            }
-            remainingText = "";
-        }
-
-        // 如果没有找到任何关键字，添加原始文本
-        if (segments.Count == 0)
-        {
-            segments.Add((message, false));
-        }
-
-        // 输出分段文本
         try
         {
-            foreach (var (text, isHighlight) in segments)
+            // 过滤有效关键字并转义正则表达式特殊字符
+            var validKeywords = keywords
+                .Where(k => !string.IsNullOrEmpty(k))
+                .Select(k => Regex.Escape(k))
+                .ToArray();
+
+            if (validKeywords.Length == 0)
             {
-                if (isHighlight)
+                if (newLine)
                 {
-                    Console.ForegroundColor = highlightColor;
-                    Console.Write(text);
-                    Console.ForegroundColor = originalColor;
+                    Console.WriteLine(message);
                 }
                 else
                 {
-                    Console.Write(text);
+                    Console.Write(message);
                 }
+                return;
             }
+
+            // 构建正则表达式模式
+            var pattern = string.Join("|", validKeywords);
+            var regexOptions = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            var regex = new Regex($"({pattern})", regexOptions);
+
+            // 分割文本并批量输出
+            var parts = regex.Split(message);
+            var segments = new List<(string text, bool isHighlight)>();
+
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i]))
+                {
+                    continue;
+                }
+
+                // 检查是否为关键字（奇数索引为匹配的关键字）
+                var isKeyword = i % 2 == 1;
+                segments.Add((parts[i], isKeyword));
+            }
+
+            // 批量输出，减少颜色切换次数
+            WriteBatchSegments(segments, highlightColor, originalColor);
 
             if (newLine)
             {
@@ -308,29 +210,100 @@ public static class ConsoleColorWriter
     }
 
     /// <summary>
-    /// 写日志级别消息
+    /// 在控制台输出彩虹渐变文本
     /// </summary>
-    /// <param name="level">日志级别</param>
-    /// <param name="message">消息内容</param>
-    /// <param name="timestamp">是否显示时间戳</param>
-    public static void WriteLog(LogLevel level, string message, bool timestamp = true)
+    /// <param name="message">要打印的文本</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteColoredRainbowMessage(string? message, bool newLine = true)
     {
-        var prefix = timestamp ? $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " : "";
-
-        var (levelText, color) = level switch
+        if (string.IsNullOrEmpty(message))
         {
-            LogLevel.Trace => ("TRACE", ConsoleColor.DarkGray),
-            LogLevel.Debug => ("DEBUG", ConsoleColor.Gray),
-            LogLevel.Information => ("INFO", ConsoleColor.White),
-            LogLevel.Warning => ("WARN", ConsoleColor.Yellow),
-            LogLevel.Error => ("ERROR", ConsoleColor.Red),
-            LogLevel.Critical => ("FATAL", ConsoleColor.Magenta),
-            _ => ("INFO", ConsoleColor.White)
-        };
+            return;
+        }
 
-        Console.Write(prefix);
-        WriteColoredMessage($"[{levelText}]", color, false);
-        Console.WriteLine($" {message}");
+        Console.OutputEncoding = Encoding.UTF8;
+
+        var lines = message.Split('\n');
+
+        // 找到最长的行来计算渐变
+        var maxLength = 0;
+        foreach (var line in lines)
+        {
+            if (line.Length > maxLength)
+            {
+                maxLength = line.Length;
+            }
+        }
+
+        for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            var line = lines[lineIndex];
+
+            if (string.IsNullOrEmpty(line))
+            {
+                if (lineIndex < lines.Length - 1) // 不是最后一行才换行
+                {
+                    Console.WriteLine();
+                }
+
+                continue;
+            }
+
+            // 批量处理彩虹渐变，减少频繁的颜色切换
+            var lastColorHash = -1;
+            var colorBuffer = new StringBuilder();
+
+            for (var i = 0; i < line.Length; i++)
+            {
+                var c = line[i];
+                var currentColorHash = -1;
+
+                // 只对非空格字符应用颜色
+                if (c != ' ')
+                {
+                    var progress = (double)i / Math.Max(1, maxLength - 1);
+                    var (r, g, b) = GetRainbowColor(progress);
+                    currentColorHash = HashCode.Combine(r, g, b);
+
+                    // 颜色变化时，输出缓冲区内容并切换颜色
+                    if (currentColorHash != lastColorHash)
+                    {
+                        if (colorBuffer.Length > 0)
+                        {
+                            Console.Write(colorBuffer.ToString());
+                            colorBuffer.Clear();
+                        }
+                        SetConsoleColor(r, g, b);
+                        lastColorHash = currentColorHash;
+                    }
+                }
+                else
+                {
+                    // 空格字符，如果颜色状态发生变化，先输出缓冲区
+                    if (currentColorHash != lastColorHash && colorBuffer.Length > 0)
+                    {
+                        Console.Write(colorBuffer.ToString());
+                        colorBuffer.Clear();
+                    }
+                    lastColorHash = currentColorHash;
+                }
+
+                colorBuffer.Append(c);
+            }
+
+            // 输出最后的缓冲区内容
+            if (colorBuffer.Length > 0)
+            {
+                Console.Write(colorBuffer.ToString());
+            }
+            Console.ResetColor();
+
+            // 如果不是最后一行，或者需要添加换行符，则换行
+            if (lineIndex < lines.Length - 1 || newLine)
+            {
+                Console.WriteLine();
+            }
+        }
     }
 
     /// <summary>
@@ -356,6 +329,163 @@ public static class ConsoleColorWriter
     }
 
     /// <summary>
+    /// 写成功消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteSuccess(string message, bool newLine = true)
+    {
+        WriteColoredMessage(message, ConsoleColor.Green, newLine);
+    }
+
+    /// <summary>
+    /// 写错误消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteError(string message, bool newLine = true)
+    {
+        WriteColoredMessage(message, ConsoleColor.Red, newLine);
+    }
+
+    /// <summary>
+    /// 写警告消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteWarning(string message, bool newLine = true)
+    {
+        WriteColoredMessage(message, ConsoleColor.Yellow, newLine);
+    }
+
+    /// <summary>
+    /// 写信息消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteInfo(string message, bool newLine = true)
+    {
+        WriteColoredMessage(message, ConsoleColor.White, newLine);
+    }
+
+    /// <summary>
+    /// 写处理消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="newLine">是否换行</param>
+    public static void WriteHandle(string message, bool newLine = true)
+    {
+        WriteColoredMessage(message, ConsoleColor.Gray, newLine);
+    }
+
+    /// <summary>
+    /// 写带时间戳的日志消息
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="logLevel">日志级别</param>
+    /// <param name="color">日志颜色</param>
+    /// <param name="showTimestamp">是否显示时间戳</param>
+    public static void WriteLog(string message, string logLevel, ConsoleColor color, bool showTimestamp = true)
+    {
+        if (string.IsNullOrEmpty(message)) return;
+
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logLine = showTimestamp ? $"[{timestamp} {logLevel.ToUpperInvariant()}]\n{message}" : message;
+        
+        WriteColoredMessage(logLine, color);
+    }
+
+    #region 内部方法
+
+    /// <summary>
+    /// 重置颜色缓存状态
+    /// </summary>
+    public static void ResetColorCache()
+    {
+        _lastForegroundColor = null;
+        _lastBackgroundColor = null;
+    }
+
+    /// <summary>
+    /// 优化的颜色设置方法，避免重复设置相同颜色
+    /// </summary>
+    /// <param name="foregroundColor">前景色</param>
+    /// <param name="backgroundColor">背景色</param>
+    private static void SetConsoleColorOptimized(ConsoleColor foregroundColor, ConsoleColor? backgroundColor = null)
+    {
+        if (_lastForegroundColor != foregroundColor)
+        {
+            Console.ForegroundColor = foregroundColor;
+            _lastForegroundColor = foregroundColor;
+        }
+
+        if (backgroundColor.HasValue && _lastBackgroundColor != backgroundColor.Value)
+        {
+            Console.BackgroundColor = backgroundColor.Value;
+            _lastBackgroundColor = backgroundColor.Value;
+        }
+    }
+
+    /// <summary>
+    /// 恢复原始颜色
+    /// </summary>
+    /// <param name="originalForegroundColor">原始前景色</param>
+    /// <param name="originalBackgroundColor">原始背景色</param>
+    private static void RestoreOriginalColors(ConsoleColor originalForegroundColor, ConsoleColor originalBackgroundColor)
+    {
+        if (_lastForegroundColor != originalForegroundColor)
+        {
+            Console.ForegroundColor = originalForegroundColor;
+            _lastForegroundColor = originalForegroundColor;
+        }
+
+        if (_lastBackgroundColor != originalBackgroundColor)
+        {
+            Console.BackgroundColor = originalBackgroundColor;
+            _lastBackgroundColor = originalBackgroundColor;
+        }
+    }
+
+    /// <summary>
+    /// 批量输出文本段，减少颜色切换次数
+    /// </summary>
+    /// <param name="segments">文本段列表</param>
+    /// <param name="highlightColor">高亮颜色</param>
+    /// <param name="normalColor">正常颜色</param>
+    private static void WriteBatchSegments(List<(string text, bool isHighlight)> segments, ConsoleColor highlightColor, ConsoleColor normalColor)
+    {
+        var currentColor = normalColor;
+        var textBuffer = new StringBuilder();
+
+        foreach (var (text, isHighlight) in segments)
+        {
+            var targetColor = isHighlight ? highlightColor : normalColor;
+
+            if (targetColor != currentColor)
+            {
+                // 输出缓冲区内容
+                if (textBuffer.Length > 0)
+                {
+                    Console.Write(textBuffer.ToString());
+                    textBuffer.Clear();
+                }
+
+                // 切换颜色
+                SetConsoleColorOptimized(targetColor);
+                currentColor = targetColor;
+            }
+
+            textBuffer.Append(text);
+        }
+
+        // 输出最后的缓冲区内容
+        if (textBuffer.Length > 0)
+        {
+            Console.Write(textBuffer.ToString());
+        }
+    }
+
+    /// <summary>
     /// 解析颜色名称
     /// </summary>
     /// <param name="colorName">颜色名称</param>
@@ -375,151 +505,58 @@ public static class ConsoleColorWriter
                    "white" => (color = ConsoleColor.White) == ConsoleColor.White,
                    "black" => (color = ConsoleColor.Black) == ConsoleColor.Black,
                    "gray" => (color = ConsoleColor.Gray) == ConsoleColor.Gray,
-                   "grey" => (color = ConsoleColor.Gray) == ConsoleColor.Gray,
-                   _ => (color = ConsoleColor.White) == ConsoleColor.Black // 永远为false
+                   _ => false // 未知颜色返回false
                };
     }
 
     /// <summary>
-    /// 日志级别枚举
+    /// 获取彩虹渐变颜色
     /// </summary>
-    public enum LogLevel
+    /// <param name="progress">进度值 (0.0 - 1.0)</param>
+    /// <returns>RGB颜色值</returns>
+    private static (int r, int g, int b) GetRainbowColor(double progress)
     {
-        /// <summary>
-        ///
-        /// </summary>
-        Trace,
-
-        /// <summary>
-        ///
-        /// </summary>
-        Debug,
-
-        /// <summary>
-        ///
-        /// </summary>
-        Information,
-
-        /// <summary>
-        ///
-        /// </summary>
-        Warning,
-
-        /// <summary>
-        ///
-        /// </summary>
-        Error,
-
-        /// <summary>
-        ///
-        /// </summary>
-        Critical
-    }
-}
-
-/// <summary>
-/// 彩色文本构建器
-/// </summary>
-public class ColoredTextBuilder
-{
-    private readonly List<(string text, ConsoleColor? foreground, ConsoleColor? background)> _segments = [];
-
-    /// <summary>
-    /// 添加文本段
-    /// </summary>
-    /// <param name="text">文本</param>
-    /// <param name="foreground">前景色</param>
-    /// <param name="background">背景色</param>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Add(string text, ConsoleColor? foreground = null, ConsoleColor? background = null)
-    {
-        _segments.Add((text, foreground, background));
-        return this;
+        progress = Math.Max(0, Math.Min(1, progress));
+        var hue = progress * 300; // 0-300度，避免回到红色
+        return HsvToRgb((int)hue, 1.0, 1.0);
     }
 
     /// <summary>
-    /// 添加成功文本
+    /// HSV颜色空间转RGB
     /// </summary>
-    /// <param name="text">文本</param>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Success(string text) => Add(text, ConsoleColor.Green);
-
-    /// <summary>
-    /// 添加错误文本
-    /// </summary>
-    /// <param name="text">文本</param>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Error(string text) => Add(text, ConsoleColor.Red);
-
-    /// <summary>
-    /// 添加警告文本
-    /// </summary>
-    /// <param name="text">文本</param>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Warning(string text) => Add(text, ConsoleColor.Yellow);
-
-    /// <summary>
-    /// 添加信息文本
-    /// </summary>
-    /// <param name="text">文本</param>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Info(string text) => Add(text, ConsoleColor.Cyan);
-
-    /// <summary>
-    /// 输出所有文本段
-    /// </summary>
-    /// <param name="newLine">是否换行</param>
-    public void Write(bool newLine = true)
+    /// <param name="hue">色相 (0-360)</param>
+    /// <param name="saturation">饱和度 (0.0-1.0)</param>
+    /// <param name="value">明度 (0.0-1.0)</param>
+    /// <returns>RGB颜色值</returns>
+    private static (int r, int g, int b) HsvToRgb(int hue, double saturation, double value)
     {
-        var originalForeground = Console.ForegroundColor;
-        var originalBackground = Console.BackgroundColor;
+        var h = hue / 60.0;
+        var c = value * saturation;
+        var x = c * (1 - Math.Abs((h % 2) - 1));
+        var m = value - c;
 
-        try
-        {
-            foreach (var (text, foreground, background) in _segments)
-            {
-                if (foreground.HasValue)
-                {
-                    Console.ForegroundColor = foreground.Value;
-                }
+        double r, g, b;
 
-                if (background.HasValue)
-                {
-                    Console.BackgroundColor = background.Value;
-                }
+        if (h is >= 0 and < 1) { r = c; g = x; b = 0; }
+        else if (h is >= 1 and < 2) { r = x; g = c; b = 0; }
+        else if (h is >= 2 and < 3) { r = 0; g = c; b = x; }
+        else if (h is >= 3 and < 4) { r = 0; g = x; b = c; }
+        else if (h is >= 4 and < 5) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
 
-                Console.Write(text);
-
-                if (foreground.HasValue)
-                {
-                    Console.ForegroundColor = originalForeground;
-                }
-
-                if (background.HasValue)
-                {
-                    Console.BackgroundColor = originalBackground;
-                }
-            }
-
-            if (newLine)
-            {
-                Console.WriteLine();
-            }
-        }
-        finally
-        {
-            Console.ForegroundColor = originalForeground;
-            Console.BackgroundColor = originalBackground;
-        }
+        return ((int)((r + m) * 255), (int)((g + m) * 255), (int)((b + m) * 255));
     }
 
     /// <summary>
-    /// 清空所有文本段
+    /// 设置控制台颜色 (ANSI)
     /// </summary>
-    /// <returns>构建器实例</returns>
-    public ColoredTextBuilder Clear()
+    /// <param name="r">红色分量 (0-255)</param>
+    /// <param name="g">绿色分量 (0-255)</param>
+    /// <param name="b">蓝色分量 (0-255)</param>
+    private static void SetConsoleColor(int r, int g, int b)
     {
-        _segments.Clear();
-        return this;
+        Console.Write($"\x1b[38;2;{r};{g};{b}m");
     }
+
+    #endregion 内部方法
 }
