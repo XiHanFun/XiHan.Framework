@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text;
 using XiHan.Framework.Utils.ConsoleTools;
 
 namespace XiHan.Framework.Utils.Logging;
@@ -24,187 +23,208 @@ public static class LogHelper
 {
     private static readonly Lock ObjLock = new();
     private static bool _isDisplayHeader = true;
+    private static volatile LogLevel _minimumLevel = LogLevel.Info;
 
     /// <summary>
-    /// 设置是否显示日志头，默认显示
+    /// 设置最小日志等级（小于该等级的日志将被忽略）
     /// </summary>
-    public static void EnableDisplayHeader()
+    /// <param name="level">日志等级</param>
+    public static void SetMinimumLevel(LogLevel level)
     {
-        _isDisplayHeader = true;
+        if (!Enum.IsDefined(level))
+        {
+            throw new ArgumentException($"无效的日志等级: {level}", nameof(level));
+        }
+
+        _minimumLevel = level;
     }
 
     /// <summary>
     /// 设置是否显示日志头，默认显示
     /// </summary>
-    public static void DisableDisplayHeader()
+    /// <param name="isDisplayHeader">是否显示头部信息</param>
+    public static void SetIsDisplayHeader(bool isDisplayHeader)
     {
-        _isDisplayHeader = false;
+        _isDisplayHeader = isDisplayHeader;
+    }
+
+    /// <summary>
+    /// 获取当前最小日志等级
+    /// </summary>
+    /// <returns>当前最小日志等级</returns>
+    public static LogLevel GetMinimumLevel()
+    {
+        return _minimumLevel;
+    }
+
+    /// <summary>
+    /// 获取是否显示日志头的设置
+    /// </summary>
+    /// <returns>是否显示日志头</returns>
+    public static bool GetIsDisplayHeader()
+    {
+        return _isDisplayHeader;
     }
 
     /// <summary>
     /// 正常信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="frontColor">前景色</param>
-    public static void Info(string? message, ConsoleColor frontColor = ConsoleColor.White)
+    public static void Info(string? message)
     {
-        WriteColorLine(message, "INFO", frontColor);
+        WriteColorLine(message, LogLevel.Info);
     }
 
     /// <summary>
     /// 正常信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Info(string? message, params object[] args)
+    public static void Info(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Info(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLine(message, LogLevel.Info);
     }
 
     /// <summary>
     /// 输出信息级别的表格
     /// </summary>
     /// <param name="table">控制台表格</param>
-    /// <param name="frontColor">前景色</param>
-    public static void InfoTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.White)
+    public static void InfoTable(ConsoleTable table)
     {
-        WriteTableLine(table, "INFO", frontColor);
+        var message = table.ToString();
+        WriteColorLine(message, LogLevel.Info);
     }
 
     /// <summary>
     /// 成功信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="frontColor">前景色</param>
-    public static void Success(string? message, ConsoleColor frontColor = ConsoleColor.Green)
+    public static void Success(string? message)
     {
-        WriteColorLine(message, "SUCCESS", frontColor);
+        WriteColorLine(message, LogLevel.Success);
     }
 
     /// <summary>
     /// 成功信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Success(string? message, params object[] args)
+    public static void Success(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Success(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLine(message, LogLevel.Success);
     }
 
     /// <summary>
     /// 输出成功级别的表格
     /// </summary>
     /// <param name="table">控制台表格</param>
-    /// <param name="frontColor">前景色</param>
-    public static void SuccessTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Green)
+    public static void SuccessTable(ConsoleTable table)
     {
-        WriteTableLine(table, "SUCCESS", frontColor);
+        var message = table.ToString();
+        WriteColorLine(message, LogLevel.Success);
     }
 
     /// <summary>
     /// 处理、查询信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="frontColor">前景色</param>
-    public static void Handle(string? message, ConsoleColor frontColor = ConsoleColor.Blue)
+    public static void Handle(string? message)
     {
-        WriteColorLine(message, "HANDLE", frontColor);
+        WriteColorLine(message, LogLevel.Handle);
     }
 
     /// <summary>
     /// 处理、查询信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Handle(string? message, params object[] args)
+    public static void Handle(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Handle(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLine(message, LogLevel.Handle);
     }
 
     /// <summary>
     /// 输出处理级别的表格
     /// </summary>
     /// <param name="table">控制台表格</param>
-    /// <param name="frontColor">前景色</param>
-    public static void HandleTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Blue)
+    public static void HandleTable(ConsoleTable table)
     {
-        WriteTableLine(table, "HANDLE", frontColor);
+        var message = table.ToString();
+        WriteColorLine(message, LogLevel.Handle);
     }
 
     /// <summary>
     /// 警告、新增、更新信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="frontColor">前景色</param>
-    public static void Warn(string? message, ConsoleColor frontColor = ConsoleColor.Yellow)
+    public static void Warn(string? message)
     {
-        WriteColorLine(message, "WARN", frontColor);
+        WriteColorLine(message, LogLevel.Warn);
     }
 
     /// <summary>
     /// 警告、新增、更新信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Warn(string? message, params object[] args)
+    public static void Warn(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Warn(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLine(message, LogLevel.Warn);
     }
 
     /// <summary>
     /// 输出警告级别的表格
     /// </summary>
     /// <param name="table">控制台表格</param>
-    /// <param name="frontColor">前景色</param>
-    public static void WarnTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Yellow)
+    public static void WarnTable(ConsoleTable table)
     {
-        WriteTableLine(table, "WARN", frontColor);
+        var message = table.ToString();
+        WriteColorLine(message, LogLevel.Warn);
     }
 
     /// <summary>
     /// 错误、删除、危险、异常信息
     /// </summary>
     /// <param name="message">消息内容</param>
-    /// <param name="frontColor">前景色</param>
-    public static void Error(string? message, ConsoleColor frontColor = ConsoleColor.Red)
+    public static void Error(string? message)
     {
-        WriteColorLine(message, "ERROR", frontColor);
+        WriteColorLine(message, LogLevel.Error);
     }
 
     /// <summary>
     /// 错误、删除、危险、异常信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="errorMessage">消息模板</param>
     /// <param name="ex">异常</param>
-    public static void Error(string? message, Exception ex)
+    public static void Error(string? errorMessage, Exception ex)
     {
-        var errorMessage = $"{message} {ex}";
-        Error(errorMessage);
+        var message = $"{errorMessage} {ex}";
+        WriteColorLine(message, LogLevel.Error);
     }
 
     /// <summary>
     /// 错误、删除、危险、异常信息
     /// </summary>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Error(string? message, params object[] args)
+    public static void Error(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Error(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLine(message, LogLevel.Error);
     }
 
     /// <summary>
     /// 输出错误级别的表格
     /// </summary>
     /// <param name="table">控制台表格</param>
-    /// <param name="frontColor">前景色</param>
-    public static void ErrorTable(ConsoleTable table, ConsoleColor frontColor = ConsoleColor.Red)
+    public static void ErrorTable(ConsoleTable table)
     {
-        WriteTableLine(table, "ERROR", frontColor);
+        var message = table.ToString();
+        WriteColorLine(message, LogLevel.Error);
     }
 
     /// <summary>
@@ -225,12 +245,12 @@ public static class LogHelper
     /// <remarks>
     /// 一般为展示项目信息(如LOGO)使用，不显示日志头
     /// </remarks>
-    /// <param name="message">消息模板</param>
+    /// <param name="formattedMessage">消息模板</param>
     /// <param name="args">格式化参数</param>
-    public static void Rainbow(string? message, params object[] args)
+    public static void Rainbow(string? formattedMessage, params object[] args)
     {
-        var formattedMessage = FormatMessage(message, args);
-        Rainbow(formattedMessage);
+        var message = FormatMessage(formattedMessage, args);
+        WriteColorLineRainbow(message);
     }
 
     /// <summary>
@@ -243,6 +263,8 @@ public static class LogHelper
             try
             {
                 Console.Clear();
+                // 重置颜色缓存状态
+                ConsoleColorWriter.ResetColorCache();
             }
             catch
             {
@@ -254,46 +276,13 @@ public static class LogHelper
     #region 内部方法
 
     /// <summary>
-    /// 在控制台输出单色文本行
+    /// 是否启用日志
     /// </summary>
-    /// <param name="message">打印文本</param>
-    /// <param name="logType">日志类型</param>
-    /// <param name="frontColor">前置颜色</param>
-    private static void WriteColorLine(string? message, string logType, ConsoleColor frontColor)
+    /// <param name="level"></param>
+    /// <returns></returns>
+    private static bool IsEnabled(LogLevel level)
     {
-        // 格式化日志内容
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] {message}" : message;
-
-        lock (ObjLock)
-        {
-            var currentForeColor = Console.ForegroundColor;
-            Console.ForegroundColor = frontColor;
-            Console.WriteLine(logLine);
-            Console.ForegroundColor = currentForeColor;
-        }
-    }
-
-    /// <summary>
-    /// 在控制台输出表格
-    /// </summary>
-    /// <param name="table">控制台表格</param>
-    /// <param name="logType">日志类型</param>
-    /// <param name="frontColor">前置颜色</param>
-    private static void WriteTableLine(ConsoleTable table, string logType, ConsoleColor frontColor)
-    {
-        // 格式化日志内容
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var message = table.ToString();
-        var logLine = _isDisplayHeader ? $"[{timestamp} {logType}] \n{message}" : message;
-
-        lock (ObjLock)
-        {
-            var currentForeColor = Console.ForegroundColor;
-            Console.ForegroundColor = frontColor;
-            Console.WriteLine(logLine);
-            Console.ForegroundColor = currentForeColor;
-        }
+        return _minimumLevel != LogLevel.None && level <= _minimumLevel;
     }
 
     /// <summary>
@@ -334,11 +323,57 @@ public static class LogHelper
     }
 
     /// <summary>
-    /// 在控制台输出彩虹渐变文本（支持单行和多行）
+    /// 获取日志类型对应的颜色
     /// </summary>
-    /// <param name="message">要打印的文本</param>
-    /// <param name="addNewLine">是否在末尾添加换行符，默认为true</param>
-    private static void WriteColorLineRainbow(string? message, bool addNewLine = true)
+    /// <param name="logLevel">日志等级</param>
+    /// <returns>日志类型</returns>
+    private static ConsoleColor GetLogLevelColor(LogLevel logLevel)
+    {
+        return logLevel switch
+        {
+            LogLevel.Error => ConsoleColor.Red,
+            LogLevel.Warn => ConsoleColor.Yellow,
+            LogLevel.Handle => ConsoleColor.Gray,
+            LogLevel.Success => ConsoleColor.Green,
+            LogLevel.Info => ConsoleColor.White,
+            _ => ConsoleColor.White,
+        };
+    }
+
+    /// <summary>
+    /// 在控制台输出
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    /// <param name="logLevel">日志等级</param>
+    private static void WriteColorLine(string? message, LogLevel logLevel)
+    {
+        if (!IsEnabled(logLevel) || string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        lock (ObjLock)
+        {
+            try
+            {
+                var frontColor = GetLogLevelColor(logLevel);
+                var logType = logLevel.ToString();
+                ConsoleColorWriter.WriteLog(message, logType, frontColor, _isDisplayHeader);
+            }
+            catch (Exception ex)
+            {
+                // 出现异常时使用备用输出方法
+                Console.WriteLine($"日志输出异常: {ex.Message}");
+                Console.WriteLine($"原始消息: {message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 在控制台输出彩虹渐变文本
+    /// </summary>
+    /// <param name="message">消息内容</param>
+    private static void WriteColorLineRainbow(string? message)
     {
         if (string.IsNullOrEmpty(message))
         {
@@ -347,107 +382,17 @@ public static class LogHelper
 
         lock (ObjLock)
         {
-            Console.OutputEncoding = Encoding.UTF8;
-
-            var lines = message.Split('\n');
-
-            // 找到最长的行来计算渐变
-            var maxLength = 0;
-            foreach (var line in lines)
+            try
             {
-                if (line.Length > maxLength)
-                {
-                    maxLength = line.Length;
-                }
+                ConsoleColorWriter.WriteColoredRainbowMessage(message);
             }
-
-            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            catch (Exception ex)
             {
-                var line = lines[lineIndex];
-
-                if (string.IsNullOrEmpty(line))
-                {
-                    if (lineIndex < lines.Length - 1) // 不是最后一行才换行
-                    {
-                        Console.WriteLine();
-                    }
-
-                    continue;
-                }
-
-                // 为每个字符应用彩虹渐变
-                for (var i = 0; i < line.Length; i++)
-                {
-                    var c = line[i];
-
-                    // 只对非空格字符应用颜色
-                    if (c != ' ')
-                    {
-                        var progress = (double)i / Math.Max(1, maxLength - 1);
-                        var (r, g, b) = GetRainbowColor(progress);
-                        SetConsoleColor(r, g, b);
-                    }
-
-                    Console.Write(c);
-                }
-                Console.ResetColor();
-
-                // 如果不是最后一行，或者需要添加换行符，则换行
-                if (lineIndex < lines.Length - 1 || addNewLine)
-                {
-                    Console.WriteLine();
-                }
+                // 出现异常时使用普通输出
+                Console.WriteLine($"彩虹输出异常: {ex.Message}");
+                Console.WriteLine($"原始消息: {message}");
             }
         }
-    }
-
-    /// <summary>
-    /// 获取彩虹渐变颜色
-    /// </summary>
-    /// <param name="progress">进度值 (0.0 - 1.0)</param>
-    /// <returns>RGB颜色值</returns>
-    private static (int r, int g, int b) GetRainbowColor(double progress)
-    {
-        progress = Math.Max(0, Math.Min(1, progress));
-        var hue = progress * 300; // 0-300度，避免回到红色
-        return HsvToRgb((int)hue, 1.0, 1.0);
-    }
-
-    /// <summary>
-    /// HSV颜色空间转RGB
-    /// </summary>
-    /// <param name="hue">色相 (0-360)</param>
-    /// <param name="saturation">饱和度 (0.0-1.0)</param>
-    /// <param name="value">明度 (0.0-1.0)</param>
-    /// <returns>RGB颜色值</returns>
-    private static (int r, int g, int b) HsvToRgb(int hue, double saturation, double value)
-    {
-        var h = hue / 60.0;
-        var c = value * saturation;
-        var x = c * (1 - Math.Abs((h % 2) - 1));
-        var m = value - c;
-
-        double r, g, b;
-
-        if (h is >= 0 and < 1) { r = c; g = x; b = 0; }
-        else if (h is >= 1 and < 2) { r = x; g = c; b = 0; }
-        else if (h is >= 2 and < 3) { r = 0; g = c; b = x; }
-        else if (h is >= 3 and < 4) { r = 0; g = x; b = c; }
-        else if (h is >= 4 and < 5) { r = x; g = 0; b = c; }
-        else { r = c; g = 0; b = x; }
-
-        return ((int)((r + m) * 255), (int)((g + m) * 255), (int)((b + m) * 255));
-    }
-
-    /// <summary>
-    /// 设置控制台颜色 (ANSI)
-    /// </summary>
-    /// <param name="r">红色分量 (0-255)</param>
-    /// <param name="g">绿色分量 (0-255)</param>
-    /// <param name="b">蓝色分量 (0-255)</param>
-    private static void SetConsoleColor(int r, int g, int b)
-    {
-        Console.Write($"\x1b[38;2;{r};{g};{b}m");
     }
 
     #endregion 内部方法
