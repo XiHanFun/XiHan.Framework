@@ -3,6 +3,7 @@ using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Hosting;
 using XiHan.Framework.Tests.Integration;
+using XiHan.Framework.Utils.Logging;
 
 try
 {

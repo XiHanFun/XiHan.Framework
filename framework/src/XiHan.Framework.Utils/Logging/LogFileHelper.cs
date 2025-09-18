@@ -26,12 +26,13 @@ public static class LogFileHelper
     private static readonly Dictionary<string, int> LogFileCounter = [];
     private static readonly ConcurrentDictionary<string, List<string>> LogBuffers = new();
     private static readonly ConcurrentDictionary<string, long> FileSizeCache = new();
+    private static readonly ConcurrentDictionary<string, string> CurrentLogFiles = new(); // 跟踪当前使用的日志文件
     private static readonly Timer FlushTimer;
 
     private static string _logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
     private static volatile LogLevel _minimumLevel = LogLevel.Info;
     private static volatile int _bufferSize = 100; // 缓冲区大小
-    private static volatile int _flushInterval = 5000; // 刷新间隔（毫秒）
+    private static volatile int _flushInterval = 2000; // 刷新间隔（毫秒）
     private static volatile bool _enableAsyncWrite = true; // 是否启用异步写入
     private static long _maxFileSize = 10 * 1024 * 1024; // 最大文件大小（10MB）
 
@@ -383,15 +384,16 @@ public static class LogFileHelper
             var logDate = DateTime.Now.ToString("yyyy-MM-dd");
             var baseLogFileName = $"{logDate}_{fileName}.log";
 
-            // 检查文件大小并获取实际文件名
-            var actualLogFileName = GetActualLogFileName(baseLogFileName);
-
             // 格式化日志内容
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var logLine = $"[{timestamp} {logType}] {inputStr}{Environment.NewLine}";
+            var logLineSize = Encoding.UTF8.GetByteCount(logLine);
+
+            // 获取当前应该写入的文件名（考虑文件大小限制）
+            var actualLogFileName = GetOrCreateLogFileName(baseLogFileName, logLineSize);
 
             // 添加到缓冲区
-            AddToBuffer(actualLogFileName, logLine);
+            AddToBuffer(actualLogFileName, logLine, logLineSize);
         }
         catch (Exception ex)
         {
@@ -415,7 +417,8 @@ public static class LogFileHelper
     /// </summary>
     /// <param name="fileName">文件名</param>
     /// <param name="logLine">日志行</param>
-    private static void AddToBuffer(string fileName, string logLine)
+    /// <param name="logLineSize">日志行字节大小</param>
+    private static void AddToBuffer(string fileName, string logLine, int logLineSize)
     {
         var buffer = LogBuffers.GetOrAdd(fileName, _ => []);
         var shouldFlush = false;
@@ -423,6 +426,10 @@ public static class LogFileHelper
         lock (buffer)
         {
             buffer.Add(logLine);
+            // 预更新文件大小缓存
+            var filePath = Path.Combine(_logDirectory, fileName);
+            FileSizeCache.AddOrUpdate(filePath, logLineSize, (key, existingSize) => existingSize + logLineSize);
+            
             if (buffer.Count >= _bufferSize)
             {
                 shouldFlush = true;
@@ -444,62 +451,106 @@ public static class LogFileHelper
     }
 
     /// <summary>
-    /// 获取实际的日志文件名（考虑文件大小限制）
+    /// 获取或创建适合的日志文件名（考虑文件大小限制）
     /// </summary>
     /// <param name="baseFileName">基础文件名</param>
+    /// <param name="expectedSize">预期写入的大小</param>
     /// <returns>实际文件名</returns>
-    private static string GetActualLogFileName(string baseFileName)
+    private static string GetOrCreateLogFileName(string baseFileName, int expectedSize)
     {
-        var logFilePath = Path.Combine(_logDirectory, baseFileName);
-
-        // 使用缓存的文件大小信息，减少IO操作
-        if (!FileSizeCache.TryGetValue(logFilePath, out var cachedSize))
-        {
-            if (File.Exists(logFilePath))
-            {
-                var fileInfo = new FileInfo(logFilePath);
-                cachedSize = fileInfo.Length;
-                FileSizeCache[logFilePath] = cachedSize;
-            }
-            else
-            {
-                cachedSize = 0;
-                FileSizeCache[logFilePath] = cachedSize;
-            }
-        }
-
-        // 如果文件大小超过限制，创建新文件
         var maxFileSize = Interlocked.Read(ref _maxFileSize);
-        if (cachedSize > maxFileSize)
+        
+        lock (ObjLock)
         {
-            lock (ObjLock)
+            // 检查是否已有当前活跃的文件
+            if (CurrentLogFiles.TryGetValue(baseFileName, out var currentFileName))
             {
-                // 双重检查，避免并发问题
-                if (FileSizeCache.TryGetValue(logFilePath, out var size) && size > Interlocked.Read(ref _maxFileSize))
+                var currentFilePath = Path.Combine(_logDirectory, currentFileName);
+                
+                // 获取当前文件大小
+                var currentSize = GetFileSize(currentFilePath);
+                
+                // 如果当前文件加上新内容不会超过限制，继续使用
+                if (currentSize + expectedSize <= maxFileSize)
                 {
-                    // 获取或初始化计数器
-                    if (!LogFileCounter.TryGetValue(baseFileName, out var counter))
-                    {
-                        counter = 0;
-                    }
-
-                    counter++;
-                    LogFileCounter[baseFileName] = counter;
-
-                    // 创建新的日志文件名
-                    var fileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
-                    var extension = Path.GetExtension(baseFileName);
-                    var newFileName = $"{fileNameWithoutExt}_{counter}{extension}";
-
-                    var newFilePath = Path.Combine(_logDirectory, newFileName);
-                    FileSizeCache[newFilePath] = 0; // 新文件初始大小为0
-
-                    return newFileName;
+                    return currentFileName;
                 }
             }
+            
+            // 需要创建新文件或这是第一次写入
+            var fileName = GetNextAvailableFileName(baseFileName, expectedSize, maxFileSize);
+            CurrentLogFiles[baseFileName] = fileName;
+            
+            return fileName;
         }
-
-        return baseFileName;
+    }
+    
+    /// <summary>
+    /// 获取下一个可用的文件名
+    /// </summary>
+    /// <param name="baseFileName">基础文件名</param>
+    /// <param name="expectedSize">预期大小</param>
+    /// <param name="maxFileSize">最大文件大小</param>
+    /// <returns>可用的文件名</returns>
+    private static string GetNextAvailableFileName(string baseFileName, int expectedSize, long maxFileSize)
+    {
+        // 先检查基础文件名
+        var baseFilePath = Path.Combine(_logDirectory, baseFileName);
+        var baseFileSize = GetFileSize(baseFilePath);
+        
+        if (baseFileSize + expectedSize <= maxFileSize)
+        {
+            return baseFileName;
+        }
+        
+        // 需要创建新的编号文件
+        var counter = LogFileCounter.GetValueOrDefault(baseFileName, 0);
+        string newFileName;
+        string newFilePath;
+        
+        do
+        {
+            counter++;
+            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
+            var extension = Path.GetExtension(baseFileName);
+            newFileName = $"{fileNameWithoutExt}_{counter}{extension}";
+            newFilePath = Path.Combine(_logDirectory, newFileName);
+            
+            var newFileSize = GetFileSize(newFilePath);
+            if (newFileSize + expectedSize <= maxFileSize)
+            {
+                LogFileCounter[baseFileName] = counter;
+                return newFileName;
+            }
+        } while (counter < 10000); // 防止无限循环
+        
+        // 如果无法找到合适的文件，返回一个新的文件名
+        LogFileCounter[baseFileName] = counter;
+        return newFileName;
+    }
+    
+    /// <summary>
+    /// 获取文件大小（使用缓存）
+    /// </summary>
+    /// <param name="filePath">文件路径</param>
+    /// <returns>文件大小</returns>
+    private static long GetFileSize(string filePath)
+    {
+        if (FileSizeCache.TryGetValue(filePath, out var cachedSize))
+        {
+            return cachedSize;
+        }
+        
+        if (File.Exists(filePath))
+        {
+            var fileInfo = new FileInfo(filePath);
+            var size = fileInfo.Length;
+            FileSizeCache[filePath] = size;
+            return size;
+        }
+        
+        FileSizeCache[filePath] = 0;
+        return 0;
     }
 
     /// <summary>
@@ -533,11 +584,11 @@ public static class LogFileHelper
             var allLines = string.Join("", linesToWrite);
             File.AppendAllText(logFilePath, allLines, Encoding.UTF8);
 
-            // 更新文件大小缓存
-            if (FileSizeCache.TryGetValue(logFilePath, out var currentSize))
+            // 更新文件大小缓存 - 从实际文件获取准确大小
+            if (File.Exists(logFilePath))
             {
-                var newSize = currentSize + Encoding.UTF8.GetByteCount(allLines);
-                FileSizeCache[logFilePath] = newSize;
+                var fileInfo = new FileInfo(logFilePath);
+                FileSizeCache[logFilePath] = fileInfo.Length;
             }
         }
         catch (Exception ex)
