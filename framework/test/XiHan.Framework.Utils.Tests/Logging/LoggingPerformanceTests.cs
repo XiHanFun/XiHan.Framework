@@ -32,7 +32,6 @@ public class LoggingPerformanceTests : IDisposable
         // 设置测试配置
         LogFileHelper.SetLogDirectory(_testLogDirectory);
         LogFileHelper.SetBufferSize(100);
-        LogFileHelper.SetFlushInterval(2000);
         LogFileHelper.SetMaxFileSize(5 * 1024 * 1024); // 5MB
         LogFileHelper.SetAsyncWriteEnabled(true);
     }
