@@ -18,33 +18,58 @@ using System.Text;
 namespace XiHan.Framework.Utils.Logging;
 
 /// <summary>
-/// 简单文件日志输出类（支持高性能批量写入）
+/// 高性能文件日志输出类（支持高并发批量写入）
+/// 结合缓冲机制和后台线程队列，适用于企业级高并发场景
 /// </summary>
 public static class LogFileHelper
 {
-    private static readonly Lock ObjLock = new();
-    private static readonly Dictionary<string, int> LogFileCounter = [];
-    private static readonly ConcurrentDictionary<string, List<string>> LogBuffers = new();
-    private static readonly ConcurrentDictionary<string, long> FileSizeCache = new();
-    private static readonly ConcurrentDictionary<string, string> CurrentLogFiles = new(); // 跟踪当前使用的日志文件
-    private static readonly Timer FlushTimer;
+    #region 常量定义
 
-    private static string _logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+    private const int DEFAULT_QUEUE_CAPACITY = 10000;
+    private const int DEFAULT_BATCH_SIZE = 50;
+    private const int SHUTDOWN_TIMEOUT_MS = 3000;
+    private const int MAX_FALLBACK_SIZE = 100 * 1024 * 1024; // 100MB
+
+    #endregion
+
+    #region 私有字段
+
+    private static readonly Lock ConfigLock = new();
+    private static readonly Dictionary<string, int> LogFileCounter = [];
+    private static readonly ConcurrentDictionary<string, long> FileSizeCache = new();
+    private static readonly ConcurrentDictionary<string, string> CurrentLogFiles = new();
+
+    private static BlockingCollection<LogEntry>? _logQueue;
+    private static Thread? _workerThread;
+    private static string _logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+    private static long _maxFileSize = 10 * 1024 * 1024; // 10MB
+
+    private static volatile bool _isShutdownRequested = false;
+    private static volatile bool _isWorkerStarted = false;
     private static volatile LogLevel _minimumLevel = LogLevel.Info;
-    private static volatile int _bufferSize = 100; // 缓冲区大小
-    private static volatile int _flushInterval = 2000; // 刷新间隔（毫秒）
-    private static volatile bool _enableAsyncWrite = true; // 是否启用异步写入
-    private static long _maxFileSize = 10 * 1024 * 1024; // 最大文件大小（10MB）
+    private static volatile int _queueCapacity = DEFAULT_QUEUE_CAPACITY;
+    private static volatile int _batchSize = DEFAULT_BATCH_SIZE;
+    private static volatile bool _enableAsyncWrite = true;
+
+    #endregion
+
+    #region 静态构造函数
 
     static LogFileHelper()
     {
-        // 初始化定时器，定期刷新缓冲区
-        FlushTimer = new Timer(FlushAllBuffers, null, _flushInterval, _flushInterval);
-
-        // 注册应用程序退出事件，确保所有日志都被写入
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => FlushAllBuffers(null);
-        AppDomain.CurrentDomain.DomainUnload += (_, _) => FlushAllBuffers(null);
+        // 注册应用程序退出事件，确保优雅关闭
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => Shutdown();
+        AppDomain.CurrentDomain.DomainUnload += (_, _) => Shutdown();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            Shutdown();
+        };
     }
+
+    #endregion
+
+    #region 内部类型
 
     /// <summary>
     /// 设置最小日志等级（小于该等级的日志将被忽略）
@@ -79,24 +104,43 @@ public static class LogFileHelper
             throw new ArgumentException("缓冲区大小必须大于0", nameof(bufferSize));
         }
 
-        _bufferSize = bufferSize;
+        _batchSize = bufferSize; // 使用批处理大小替代缓冲区大小
     }
 
     /// <summary>
-    /// 设置刷新间隔
+    /// 设置队列容量
     /// </summary>
-    /// <param name="intervalMs">刷新间隔（毫秒），默认5000毫秒</param>
-    public static void SetFlushInterval(int intervalMs)
+    /// <param name="capacity">队列容量，默认10000</param>
+    public static void SetQueueCapacity(int capacity)
     {
-        if (intervalMs <= 0)
+        if (capacity <= 0)
         {
-            throw new ArgumentException("刷新间隔必须大于0", nameof(intervalMs));
+            throw new ArgumentException("队列容量必须大于0", nameof(capacity));
         }
 
-        _flushInterval = intervalMs;
+        lock (ConfigLock)
+        {
+            _queueCapacity = capacity;
+            // 如果已启动，需要重启worker来应用新配置
+            if (_isWorkerStarted && !_isShutdownRequested)
+            {
+                RestartWorker();
+            }
+        }
+    }
 
-        // 重新设置定时器
-        FlushTimer?.Change(intervalMs, intervalMs);
+    /// <summary>
+    /// 设置批处理大小
+    /// </summary>
+    /// <param name="batchSize">批处理大小，默认50</param>
+    public static void SetBatchSize(int batchSize)
+    {
+        if (batchSize <= 0)
+        {
+            throw new ArgumentException("批处理大小必须大于0", nameof(batchSize));
+        }
+
+        _batchSize = batchSize;
     }
 
     /// <summary>
@@ -126,9 +170,18 @@ public static class LogFileHelper
     /// 获取当前配置信息
     /// </summary>
     /// <returns>配置信息</returns>
-    public static (int BufferSize, int FlushInterval, long MaxFileSize, bool AsyncWrite) GetConfiguration()
+    public static (int QueueCapacity, int BatchSize, long MaxFileSize, bool AsyncWrite) GetConfiguration()
     {
-        return (_bufferSize, _flushInterval, Interlocked.Read(ref _maxFileSize), _enableAsyncWrite);
+        return (_queueCapacity, _batchSize, Interlocked.Read(ref _maxFileSize), _enableAsyncWrite);
+    }
+
+    /// <summary>
+    /// 获取当前队列状态
+    /// </summary>
+    /// <returns>队列状态信息</returns>
+    public static (int QueueCount, bool IsWorkerActive, bool IsShutdown) GetQueueStatus()
+    {
+        return (_logQueue?.Count ?? 0, _isWorkerStarted && !_isShutdownRequested, _isShutdownRequested);
     }
 
     /// <summary>
@@ -177,11 +230,66 @@ public static class LogFileHelper
     }
 
     /// <summary>
-    /// 立即刷新所有缓冲区到文件
+    /// 立即刷新所有待处理日志到文件
     /// </summary>
     public static void Flush()
     {
-        FlushAllBuffers(null);
+        if (_isShutdownRequested || _logQueue == null)
+        {
+            return;
+        }
+
+        // 等待队列处理完当前所有日志
+        var startTime = DateTimeOffset.UtcNow;
+        while (_logQueue.Count > 0 && (DateTimeOffset.UtcNow - startTime).TotalMilliseconds < 5000)
+        {
+            Thread.Sleep(10);
+        }
+    }
+
+    /// <summary>
+    /// 优雅关闭日志系统
+    /// </summary>
+    public static void Shutdown()
+    {
+        if (_isShutdownRequested)
+        {
+            return;
+        }
+
+        lock (ConfigLock)
+        {
+            if (_isShutdownRequested)
+            {
+                return;
+            }
+
+            _isShutdownRequested = true;
+
+            try
+            {
+                if (_logQueue != null)
+                {
+                    _logQueue.CompleteAdding();
+
+                    // 等待工作线程完成
+                    if (_workerThread != null && _workerThread.IsAlive)
+                    {
+                        _workerThread.Join(SHUTDOWN_TIMEOUT_MS);
+                    }
+
+                    _logQueue.Dispose();
+                    _logQueue = null;
+                }
+
+                _workerThread = null;
+                _isWorkerStarted = false;
+            }
+            catch
+            {
+                // 静默失败，由 LogHelper 负责控制台输出
+            }
+        }
     }
 
     /// <summary>
@@ -189,10 +297,10 @@ public static class LogFileHelper
     /// </summary>
     public static void Clear()
     {
-        // 先刷新所有缓冲区
-        FlushAllBuffers(null);
+        // 先刷新所有待处理日志
+        Flush();
 
-        lock (ObjLock)
+        lock (ConfigLock)
         {
             try
             {
@@ -206,7 +314,6 @@ public static class LogFileHelper
 
                     // 清除相关缓存
                     LogFileCounter.Clear();
-                    LogBuffers.Clear();
                     FileSizeCache.Clear();
                 }
             }
@@ -216,7 +323,7 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     var errorMessage = $"[{timestamp} CLEAR_ERROR] 日志清除失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
@@ -239,10 +346,10 @@ public static class LogFileHelper
             return;
         }
 
-        // 先刷新相关缓冲区
-        FlushBuffersForPattern(fileName);
+        // 先刷新所有待处理日志
+        Flush();
 
-        lock (ObjLock)
+        lock (ConfigLock)
         {
             try
             {
@@ -263,13 +370,7 @@ public static class LogFileHelper
                         LogFileCounter.Remove(key);
                     }
 
-                    // 清除相关缓冲区和文件大小缓存
-                    var bufferKeysToRemove = LogBuffers.Keys.Where(key => key.Contains(fileName)).ToList();
-                    foreach (var key in bufferKeysToRemove)
-                    {
-                        LogBuffers.TryRemove(key, out _);
-                    }
-
+                    // 清除文件大小缓存，队列模型下不需要清除缓冲区
                     var sizeKeysToRemove = FileSizeCache.Keys.Where(key => key.Contains(fileName)).ToList();
                     foreach (var key in sizeKeysToRemove)
                     {
@@ -283,7 +384,7 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除文件 '{fileName}' 失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
@@ -299,14 +400,14 @@ public static class LogFileHelper
     /// 清除指定日期的日志文件
     /// </summary>
     /// <param name="date">指定日期</param>
-    public static void Clear(DateTime date)
+    public static void Clear(DateTimeOffset date)
     {
-        var dateStr = date.ToString("yyyy-MM-dd");
+        var dateStr = date.ToString("yyyyMMdd");
 
-        // 先刷新相关缓冲区
-        FlushBuffersForPattern(dateStr);
+        // 先刷新所有待处理日志
+        Flush();
 
-        lock (ObjLock)
+        lock (ConfigLock)
         {
             try
             {
@@ -326,13 +427,7 @@ public static class LogFileHelper
                         LogFileCounter.Remove(key);
                     }
 
-                    // 清除相关缓冲区和文件大小缓存
-                    var bufferKeysToRemove = LogBuffers.Keys.Where(key => key.StartsWith(dateStr)).ToList();
-                    foreach (var key in bufferKeysToRemove)
-                    {
-                        LogBuffers.TryRemove(key, out _);
-                    }
-
+                    // 清除文件大小缓存，队列模型下不需要清除缓冲区
                     var sizeKeysToRemove = FileSizeCache.Keys.Where(key => key.StartsWith(dateStr)).ToList();
                     foreach (var key in sizeKeysToRemove)
                     {
@@ -346,8 +441,8 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除日期 '{date:yyyy-MM-dd}' 的日志失败: {ex.Message}{Environment.NewLine}";
+                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除日期 '{date:yyyyMMdd}' 的日志失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
                 catch
@@ -359,7 +454,7 @@ public static class LogFileHelper
     }
 
     /// <summary>
-    /// 写入文件（支持高性能缓冲）
+    /// 写入文件（支持高性能队列批量写入）
     /// </summary>
     /// <param name="inputStr">日志内容</param>
     /// <param name="logLevel">日志等级</param>
@@ -370,30 +465,47 @@ public static class LogFileHelper
             return;
         }
 
+        if (_isShutdownRequested)
+        {
+            // 系统关闭中，静默忽略
+            return;
+        }
+
         try
         {
-            // 确保日志目录存在
-            if (!Directory.Exists(_logDirectory))
-            {
-                Directory.CreateDirectory(_logDirectory);
-            }
-
-            // 确定日志文件名
+            var timestamp = DateTimeOffset.Now;
             var fileName = logLevel.ToString().ToLowerInvariant();
             var logType = logLevel.ToString().ToUpperInvariant();
-            var logDate = DateTime.Now.ToString("yyyy-MM-dd");
+            var logDate = timestamp.ToString("yyyyMMdd");
             var baseLogFileName = $"{logDate}_{fileName}.log";
 
             // 格式化日志内容
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            var logLine = $"[{timestamp} {logType}] {inputStr}{Environment.NewLine}";
-            var logLineSize = Encoding.UTF8.GetByteCount(logLine);
+            var formattedMessage = $"[{timestamp:yyyy-MM-dd HH:mm:ss.fff} {logType}] {inputStr}";
 
-            // 获取当前应该写入的文件名（考虑文件大小限制）
+            // 获取实际文件名（考虑文件大小限制）
+            var logLineSize = Encoding.UTF8.GetByteCount(formattedMessage + Environment.NewLine);
             var actualLogFileName = GetOrCreateLogFileName(baseLogFileName, logLineSize);
 
-            // 添加到缓冲区
-            AddToBuffer(actualLogFileName, logLine, logLineSize);
+            // 创建日志条目
+            var logEntry = new LogEntry(timestamp, logLevel, inputStr, formattedMessage, actualLogFileName);
+
+            // 确保工作线程已启动
+            EnsureWorkerStarted();
+
+            // 尝试加入队列
+            if (_logQueue != null && !_logQueue.TryAdd(logEntry, 0))
+            {
+                // 队列满了，根据级别处理
+                if (logLevel >= LogLevel.Warn)
+                {
+                    // 警告和错误级别直接同步写入
+                    WriteSingleLogSync(logEntry);
+                }
+                else
+                {
+                    // 低级别日志丢弃（静默）
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -403,50 +515,260 @@ public static class LogFileHelper
     }
 
     /// <summary>
-    /// 是否启用日志
+    /// 同步写入单条日志（用于紧急情况）
     /// </summary>
-    /// <param name="level"></param>
-    /// <returns></returns>
-    private static bool IsEnabled(LogLevel level)
+    /// <param name="logEntry">日志条目</param>
+    private static void WriteSingleLogSync(LogEntry logEntry)
     {
-        return _minimumLevel != LogLevel.None && level <= _minimumLevel;
+        try
+        {
+            var filePath = Path.Combine(_logDirectory, logEntry.FileName);
+            var content = logEntry.FormattedMessage + Environment.NewLine;
+
+            File.AppendAllText(filePath, content, Encoding.UTF8);
+
+            // 更新文件大小缓存
+            var contentSize = Encoding.UTF8.GetByteCount(content);
+            FileSizeCache.AddOrUpdate(filePath, contentSize, (key, existing) => existing + contentSize);
+        }
+        catch (Exception)
+        {
+            WriteToFallbackFile(logEntry.FileName, [logEntry]);
+        }
     }
 
     /// <summary>
-    /// 添加日志到缓冲区
+    /// 是否启用日志，大于等于最小级别才输出
     /// </summary>
-    /// <param name="fileName">文件名</param>
-    /// <param name="logLine">日志行</param>
-    /// <param name="logLineSize">日志行字节大小</param>
-    private static void AddToBuffer(string fileName, string logLine, int logLineSize)
+    /// <param name="level">日志级别</param>
+    /// <returns>是否启用</returns>
+    private static bool IsEnabled(LogLevel level)
     {
-        var buffer = LogBuffers.GetOrAdd(fileName, _ => []);
-        var shouldFlush = false;
+        return _minimumLevel != LogLevel.None && level >= _minimumLevel;
+    }
 
-        lock (buffer)
+    /// <summary>
+    /// 确保工作线程已启动
+    /// </summary>
+    private static void EnsureWorkerStarted()
+    {
+        if (_isWorkerStarted || _isShutdownRequested)
         {
-            buffer.Add(logLine);
-            // 预更新文件大小缓存
-            var filePath = Path.Combine(_logDirectory, fileName);
-            FileSizeCache.AddOrUpdate(filePath, logLineSize, (key, existingSize) => existingSize + logLineSize);
-            
-            if (buffer.Count >= _bufferSize)
-            {
-                shouldFlush = true;
-            }
+            return;
         }
 
-        // 如果缓冲区满了，触发刷新
-        if (shouldFlush)
+        lock (ConfigLock)
         {
-            if (_enableAsyncWrite)
+            if (_isWorkerStarted || _isShutdownRequested)
             {
-                Task.Run(() => FlushBuffer(fileName));
+                return;
             }
-            else
+
+            try
             {
-                FlushBuffer(fileName);
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+
+                _logQueue = new BlockingCollection<LogEntry>(_queueCapacity);
+                _workerThread = new Thread(WorkerLoop)
+                {
+                    Name = "LogFileHelper-Worker",
+                    IsBackground = true
+                };
+
+                _workerThread.Start();
+                _isWorkerStarted = true;
             }
+            catch
+            {
+                // 静默失败，由 LogHelper 负责控制台输出
+            }
+        }
+    }
+
+    /// <summary>
+    /// 重启工作线程（用于应用新配置）
+    /// </summary>
+    private static void RestartWorker()
+    {
+        if (!_isWorkerStarted)
+        {
+            return;
+        }
+
+        var oldShutdownState = _isShutdownRequested;
+        _isShutdownRequested = true;
+
+        try
+        {
+            _logQueue?.CompleteAdding();
+            _workerThread?.Join(1000);
+        }
+        catch { }
+
+        _isShutdownRequested = oldShutdownState;
+        _isWorkerStarted = false;
+
+        if (!_isShutdownRequested)
+        {
+            EnsureWorkerStarted();
+        }
+    }
+
+    /// <summary>
+    /// 工作线程主循环
+    /// </summary>
+    private static void WorkerLoop()
+    {
+        var batch = new List<LogEntry>(_batchSize);
+
+        try
+        {
+            while (!_isShutdownRequested)
+            {
+                try
+                {
+                    // 获取第一个日志条目（阻塞等待）
+                    if (!_logQueue!.TryTake(out var firstEntry, 100))
+                    {
+                        continue;
+                    }
+
+                    batch.Clear();
+                    batch.Add(firstEntry);
+
+                    // 批量获取更多条目（非阻塞）
+                    while (batch.Count < _batchSize && _logQueue.TryTake(out var entry, 0))
+                    {
+                        batch.Add(entry);
+                    }
+
+                    // 批量处理
+                    ProcessLogBatch(batch);
+                }
+                catch (InvalidOperationException)
+                {
+                    // 队列已关闭
+                    break;
+                }
+                catch
+                {
+                    // 静默失败，由 LogHelper 负责控制台输出
+                    Thread.Sleep(100); // 避免错误循环
+                }
+            }
+
+            // 处理剩余的日志条目
+            while (_logQueue!.TryTake(out var remainingEntry, 0))
+            {
+                batch.Clear();
+                batch.Add(remainingEntry);
+
+                while (batch.Count < _batchSize && _logQueue.TryTake(out var entry, 0))
+                {
+                    batch.Add(entry);
+                }
+
+                ProcessLogBatch(batch);
+            }
+        }
+        catch
+        {
+            // 静默失败，由 LogHelper 负责控制台输出
+        }
+    }
+
+    /// <summary>
+    /// 处理日志批次
+    /// </summary>
+    /// <param name="batch">日志批次</param>
+    private static void ProcessLogBatch(List<LogEntry> batch)
+    {
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        // 按文件名分组
+        var groups = new Dictionary<string, List<LogEntry>>();
+        foreach (var entry in batch)
+        {
+            if (!groups.TryGetValue(entry.FileName, out var list))
+            {
+                list = [];
+                groups[entry.FileName] = list;
+            }
+            list.Add(entry);
+        }
+
+        // 分组写入文件
+        foreach (var group in groups)
+        {
+            WriteLogGroup(group.Key, group.Value);
+        }
+    }
+
+    /// <summary>
+    /// 写入日志组到文件
+    /// </summary>
+    /// <param name="fileName">文件名</param>
+    /// <param name="entries">日志条目列表</param>
+    private static void WriteLogGroup(string fileName, List<LogEntry> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var filePath = Path.Combine(_logDirectory, fileName);
+            var content = string.Join(Environment.NewLine, entries.Select(e => e.FormattedMessage)) + Environment.NewLine;
+
+            File.AppendAllText(filePath, content, Encoding.UTF8);
+
+            // 更新文件大小缓存
+            var contentSize = Encoding.UTF8.GetByteCount(content);
+            FileSizeCache.AddOrUpdate(filePath, contentSize, (key, existing) => existing + contentSize);
+        }
+        catch (Exception)
+        {
+            // 写入失败，尝试备用文件
+            WriteToFallbackFile(fileName, entries);
+        }
+    }
+
+    /// <summary>
+    /// 写入到备用文件
+    /// </summary>
+    /// <param name="originalFileName">原始文件名</param>
+    /// <param name="entries">日志条目</param>
+    private static void WriteToFallbackFile(string originalFileName, List<LogEntry> entries)
+    {
+        try
+        {
+            var fallbackFileName = $"fallback_{originalFileName}";
+            var fallbackPath = Path.Combine(_logDirectory, fallbackFileName);
+
+            // 检查备用文件大小
+            if (File.Exists(fallbackPath))
+            {
+                var fallbackInfo = new FileInfo(fallbackPath);
+                if (fallbackInfo.Length > MAX_FALLBACK_SIZE)
+                {
+                    // 备用文件太大，静默丢弃，由 LogHelper 负责控制台输出
+                    return;
+                }
+            }
+
+            var content = string.Join(Environment.NewLine, entries.Select(e => e.FormattedMessage)) + Environment.NewLine;
+            File.AppendAllText(fallbackPath, content, Encoding.UTF8);
+        }
+        catch
+        {
+            // 备用文件也失败，静默失败，由 LogHelper 负责控制台输出
         }
     }
 
@@ -459,32 +781,32 @@ public static class LogFileHelper
     private static string GetOrCreateLogFileName(string baseFileName, int expectedSize)
     {
         var maxFileSize = Interlocked.Read(ref _maxFileSize);
-        
-        lock (ObjLock)
+
+        lock (ConfigLock)
         {
             // 检查是否已有当前活跃的文件
             if (CurrentLogFiles.TryGetValue(baseFileName, out var currentFileName))
             {
                 var currentFilePath = Path.Combine(_logDirectory, currentFileName);
-                
+
                 // 获取当前文件大小
                 var currentSize = GetFileSize(currentFilePath);
-                
+
                 // 如果当前文件加上新内容不会超过限制，继续使用
                 if (currentSize + expectedSize <= maxFileSize)
                 {
                     return currentFileName;
                 }
             }
-            
+
             // 需要创建新文件或这是第一次写入
             var fileName = GetNextAvailableFileName(baseFileName, expectedSize, maxFileSize);
             CurrentLogFiles[baseFileName] = fileName;
-            
+
             return fileName;
         }
     }
-    
+
     /// <summary>
     /// 获取下一个可用的文件名
     /// </summary>
@@ -497,17 +819,17 @@ public static class LogFileHelper
         // 先检查基础文件名
         var baseFilePath = Path.Combine(_logDirectory, baseFileName);
         var baseFileSize = GetFileSize(baseFilePath);
-        
+
         if (baseFileSize + expectedSize <= maxFileSize)
         {
             return baseFileName;
         }
-        
+
         // 需要创建新的编号文件
         var counter = LogFileCounter.GetValueOrDefault(baseFileName, 0);
         string newFileName;
         string newFilePath;
-        
+
         do
         {
             counter++;
@@ -515,7 +837,7 @@ public static class LogFileHelper
             var extension = Path.GetExtension(baseFileName);
             newFileName = $"{fileNameWithoutExt}_{counter}{extension}";
             newFilePath = Path.Combine(_logDirectory, newFileName);
-            
+
             var newFileSize = GetFileSize(newFilePath);
             if (newFileSize + expectedSize <= maxFileSize)
             {
@@ -523,12 +845,12 @@ public static class LogFileHelper
                 return newFileName;
             }
         } while (counter < 10000); // 防止无限循环
-        
+
         // 如果无法找到合适的文件，返回一个新的文件名
         LogFileCounter[baseFileName] = counter;
         return newFileName;
     }
-    
+
     /// <summary>
     /// 获取文件大小（使用缓存）
     /// </summary>
@@ -540,7 +862,7 @@ public static class LogFileHelper
         {
             return cachedSize;
         }
-        
+
         if (File.Exists(filePath))
         {
             var fileInfo = new FileInfo(filePath);
@@ -548,84 +870,9 @@ public static class LogFileHelper
             FileSizeCache[filePath] = size;
             return size;
         }
-        
+
         FileSizeCache[filePath] = 0;
         return 0;
-    }
-
-    /// <summary>
-    /// 刷新指定文件的缓冲区
-    /// </summary>
-    /// <param name="fileName">文件名</param>
-    private static void FlushBuffer(string fileName)
-    {
-        if (!LogBuffers.TryGetValue(fileName, out var buffer))
-        {
-            return;
-        }
-
-        List<string> linesToWrite;
-        lock (buffer)
-        {
-            if (buffer.Count == 0)
-            {
-                return;
-            }
-
-            linesToWrite = [.. buffer];
-            buffer.Clear();
-        }
-
-        try
-        {
-            var logFilePath = Path.Combine(_logDirectory, fileName);
-
-            // 批量写入，减少IO操作
-            var allLines = string.Join("", linesToWrite);
-            File.AppendAllText(logFilePath, allLines, Encoding.UTF8);
-
-            // 更新文件大小缓存 - 从实际文件获取准确大小
-            if (File.Exists(logFilePath))
-            {
-                var fileInfo = new FileInfo(logFilePath);
-                FileSizeCache[logFilePath] = fileInfo.Length;
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteErrorLogDirectly(ex, $"刷新缓冲区失败，文件: {fileName}");
-
-            // 将失败的日志重新加入缓冲区
-            lock (buffer)
-            {
-                buffer.InsertRange(0, linesToWrite);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 刷新所有缓冲区
-    /// </summary>
-    /// <param name="state">定时器状态</param>
-    private static void FlushAllBuffers(object? state)
-    {
-        foreach (var fileName in LogBuffers.Keys.ToList())
-        {
-            FlushBuffer(fileName);
-        }
-    }
-
-    /// <summary>
-    /// 刷新匹配指定模式的缓冲区
-    /// </summary>
-    /// <param name="pattern">文件名模式</param>
-    private static void FlushBuffersForPattern(string pattern)
-    {
-        var matchingFiles = LogBuffers.Keys.Where(key => key.Contains(pattern)).ToList();
-        foreach (var fileName in matchingFiles)
-        {
-            FlushBuffer(fileName);
-        }
     }
 
     /// <summary>
@@ -638,7 +885,7 @@ public static class LogFileHelper
         try
         {
             var errorLogPath = Path.Combine(_logDirectory, "error_logger.log");
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var errorMessage = $"[{timestamp} LOGGER_ERROR] 日志写入失败: {ex.Message}";
             if (!string.IsNullOrEmpty(originalMessage))
             {
@@ -650,7 +897,30 @@ public static class LogFileHelper
         }
         catch
         {
-            // 如果连错误日志都写不了，只能忽略了
+            // 如果连错误日志都写不了，只能忽略
         }
     }
+
+    /// <summary>
+    /// 日志条目
+    /// </summary>
+    private readonly struct LogEntry
+    {
+        public readonly DateTimeOffset Timestamp;
+        public readonly LogLevel Level;
+        public readonly string Message;
+        public readonly string FormattedMessage;
+        public readonly string FileName;
+
+        public LogEntry(DateTimeOffset timestamp, LogLevel level, string message, string formattedMessage, string fileName)
+        {
+            Timestamp = timestamp;
+            Level = level;
+            Message = message;
+            FormattedMessage = formattedMessage;
+            FileName = fileName;
+        }
+    }
+
+    #endregion 私有方法
 }
