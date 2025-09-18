@@ -300,13 +300,13 @@ public static class ConsolePrompt
                         }
                         else
                         {
-                            ConsoleColorWriter.WriteWarning($"已达到最大选择数量 {maxSelections.Value}");
+                            ConsoleColorWriter.WriteWarn($"已达到最大选择数量 {maxSelections.Value}");
                         }
                     }
                 }
                 else
                 {
-                    ConsoleColorWriter.WriteWarning($"无效选择: {choice}");
+                    ConsoleColorWriter.WriteWarn($"无效选择: {choice}");
                 }
             }
         }
