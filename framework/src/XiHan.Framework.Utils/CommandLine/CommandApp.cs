@@ -355,7 +355,7 @@ public class CommandApp
         }
         else
         {
-            ConsoleColorWriter.WriteWarning("版本信息不可用");
+            ConsoleColorWriter.WriteWarn("版本信息不可用");
         }
     }
 }

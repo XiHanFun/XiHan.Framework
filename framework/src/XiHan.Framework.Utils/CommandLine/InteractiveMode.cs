@@ -232,7 +232,7 @@ public class InteractiveMode
         var commands = _app.GetVisibleCommands();
         if (commands.Count == 0)
         {
-            ConsoleColorWriter.WriteWarning("没有可用的命令。");
+            ConsoleColorWriter.WriteWarn("没有可用的命令。");
             return true;
         }
 

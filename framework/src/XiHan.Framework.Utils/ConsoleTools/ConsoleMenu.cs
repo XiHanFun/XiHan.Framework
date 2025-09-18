@@ -494,7 +494,7 @@ public static class QuickMenu
     {
         if (items == null || items.Count == 0)
         {
-            ConsoleColorWriter.WriteWarning("没有可选择的项目");
+            ConsoleColorWriter.WriteWarn("没有可选择的项目");
             return default;
         }
 

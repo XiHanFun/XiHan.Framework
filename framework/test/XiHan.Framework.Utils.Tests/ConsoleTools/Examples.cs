@@ -114,9 +114,8 @@ public static class Examples
         Console.WriteLine("1. 基本彩色输出:");
         ConsoleColorWriter.WriteSuccess("这是成功消息");
         ConsoleColorWriter.WriteError("这是错误消息");
-        ConsoleColorWriter.WriteWarning("这是警告消息");
+        ConsoleColorWriter.WriteWarn("这是警告消息");
         ConsoleColorWriter.WriteInfo("这是信息消息");
-        ConsoleColorWriter.WriteDebug("这是调试消息");
 
         // 多彩消息
         Console.WriteLine("\n2. 多彩消息:");
@@ -126,33 +125,15 @@ public static class Examples
         // 关键字高亮
         Console.WriteLine("\n3. 关键字高亮:");
         var logMessage = "2024-01-01 ERROR: Failed to connect to database at localhost:5432, retrying...";
-        ConsoleColorWriter.WriteWithHighlight(
+        ConsoleColorWriter.WriteWithHighlightMessage(
             logMessage,
             new[] { "ERROR", "database", "localhost" },
             ConsoleColor.Red);
-
-        // 日志级别
-        Console.WriteLine("\n4. 日志级别:");
-        foreach (var level in Enum.GetValues<ConsoleColorWriter.LogLevel>())
-        {
-            ConsoleColorWriter.WriteLog(level, $"这是 {level} 级别的日志消息");
-        }
 
         // 标签消息
         Console.WriteLine("\n5. 标签消息:");
         ConsoleColorWriter.WriteTaggedMessage("API", "接口调用成功", ConsoleColor.Blue, ConsoleColor.Green);
         ConsoleColorWriter.WriteTaggedMessage("DB", "数据库连接失败", ConsoleColor.Magenta, ConsoleColor.Red);
-
-        // 彩色文本构建器
-        Console.WriteLine("\n6. 文本构建器:");
-        new ColoredTextBuilder()
-            .Add("状态: ")
-            .Success("在线")
-            .Add(" | 错误: ")
-            .Error("3")
-            .Add(" | 警告: ")
-            .Warning("12")
-            .Write();
     }
 
     /// <summary>
@@ -174,7 +155,7 @@ public static class Examples
         var confirmed = ConsolePrompt.Confirm("是否继续?", true);
         if (!confirmed)
         {
-            ConsoleColorWriter.WriteWarning("操作已取消");
+            ConsoleColorWriter.WriteWarn("操作已取消");
             return;
         }
 
@@ -250,7 +231,7 @@ public static class Examples
         var actions = new Dictionary<string, Action>
         {
             ["查看状态"] = () => ConsoleColorWriter.WriteInfo("系统状态: 正常"),
-            ["重启服务"] = () => ConsoleColorWriter.WriteWarning("服务正在重启..."),
+            ["重启服务"] = () => ConsoleColorWriter.WriteWarn("服务正在重启..."),
             ["清理缓存"] = () => ConsoleColorWriter.WriteSuccess("缓存已清理"),
             ["检查更新"] = () => ConsoleColorWriter.WriteInfo("检查更新中...")
         };
@@ -270,7 +251,7 @@ public static class Examples
         };
 
         userMenu.AddItem("添加用户", () => ConsoleColorWriter.WriteSuccess("添加用户功能"))
-               .AddItem("删除用户", () => ConsoleColorWriter.WriteWarning("删除用户功能"))
+               .AddItem("删除用户", () => ConsoleColorWriter.WriteWarn("删除用户功能"))
                .AddItem("修改权限", () => ConsoleColorWriter.WriteInfo("修改权限功能"))
                .AddItem("用户列表", () => ShowUserList());
 
