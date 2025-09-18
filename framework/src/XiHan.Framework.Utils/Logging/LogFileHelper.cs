@@ -32,8 +32,8 @@ public static class LogFileHelper
     private static volatile LogLevel _minimumLevel = LogLevel.Info;
     private static volatile int _bufferSize = 100; // 缓冲区大小
     private static volatile int _flushInterval = 5000; // 刷新间隔（毫秒）
-    private static long _maxFileSize = 10 * 1024 * 1024; // 最大文件大小（10MB）
     private static volatile bool _enableAsyncWrite = true; // 是否启用异步写入
+    private static long _maxFileSize = 10 * 1024 * 1024; // 最大文件大小（10MB）
 
     static LogFileHelper()
     {
@@ -417,8 +417,8 @@ public static class LogFileHelper
     /// <param name="logLine">日志行</param>
     private static void AddToBuffer(string fileName, string logLine)
     {
-        var buffer = LogBuffers.GetOrAdd(fileName, _ => new List<string>());
-        bool shouldFlush = false;
+        var buffer = LogBuffers.GetOrAdd(fileName, _ => []);
+        var shouldFlush = false;
 
         lock (buffer)
         {
@@ -521,7 +521,7 @@ public static class LogFileHelper
                 return;
             }
 
-            linesToWrite = new List<string>(buffer);
+            linesToWrite = [.. buffer];
             buffer.Clear();
         }
 
