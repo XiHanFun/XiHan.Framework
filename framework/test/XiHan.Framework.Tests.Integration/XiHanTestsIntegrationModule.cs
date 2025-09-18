@@ -45,9 +45,10 @@ public class XiHanTestsIntegrationModule : XiHanModule
     {
         //var systemInfo = SystemInfoManager.GetSystemInfo();
         //LogHelper.Info(systemInfo.ToJson());
-        for (var i = 0; i < 1000000; i++)
-        {
-            LogFileHelper.Handle($"应用启动中...{i + 1}/1000000");
-        }
+        //LogHelper.SetFileOutputEnabled(true);
+        //for (var i = 0; i < 1000000; i++)
+        //{
+        //    LogHelper.Handle($"应用启动中...{i + 1}/1000000");
+        //}
     }
 }

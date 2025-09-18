@@ -37,7 +37,6 @@ public class LogFileHelperConcurrencyTests : IDisposable
         // 设置测试配置
         LogFileHelper.SetLogDirectory(_testLogDirectory);
         LogFileHelper.SetBufferSize(50); // 较小的缓冲区便于测试
-        LogFileHelper.SetFlushInterval(1000); // 1秒刷新
         LogFileHelper.SetMaxFileSize(1024 * 1024); // 1MB文件大小
         LogFileHelper.SetAsyncWriteEnabled(true);
     }
@@ -330,7 +329,6 @@ public class LogFileHelperConcurrencyTests : IDisposable
     public async Task LongRunning_ShouldMaintainStability()
     {
         // Arrange
-        LogFileHelper.SetFlushInterval(500);
         const int durationSeconds = 10;
         const int messagesPerSecond = 100;
         var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(durationSeconds));
@@ -457,7 +455,6 @@ public class LogFileHelperConcurrencyTests : IDisposable
         // 恢复原始配置
         LogFileHelper.SetLogDirectory(_originalLogDirectory);
         LogFileHelper.SetBufferSize(100);
-        LogFileHelper.SetFlushInterval(5000);
         LogFileHelper.SetMaxFileSize(10 * 1024 * 1024);
         LogFileHelper.SetAsyncWriteEnabled(true);
     }

@@ -32,7 +32,6 @@ public class LoggingStressTests : IDisposable
 
         LogFileHelper.SetLogDirectory(_testLogDirectory);
         LogFileHelper.SetBufferSize(200);
-        LogFileHelper.SetFlushInterval(1000);
         LogFileHelper.SetMaxFileSize(2 * 1024 * 1024); // 2MB
         LogFileHelper.SetAsyncWriteEnabled(true);
     }
