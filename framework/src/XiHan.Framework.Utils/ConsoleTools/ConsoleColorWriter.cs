@@ -393,7 +393,7 @@ public static class ConsoleColorWriter
         }
 
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logLine = showTimestamp ? $"[{timestamp} {logLevel.ToUpperInvariant()}]\n{message}" : message;
+        var logLine = showTimestamp ? $"[{timestamp} {logLevel.ToUpperInvariant()}] {message}" : message;
 
         WriteColoredMessage(logLine, color);
     }
