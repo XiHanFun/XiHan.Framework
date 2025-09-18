@@ -353,7 +353,7 @@ public static class ConsoleColorWriter
     /// </summary>
     /// <param name="message">消息内容</param>
     /// <param name="newLine">是否换行</param>
-    public static void WriteWarning(string message, bool newLine = true)
+    public static void WriteWarn(string message, bool newLine = true)
     {
         WriteColoredMessage(message, ConsoleColor.Yellow, newLine);
     }
@@ -387,11 +387,14 @@ public static class ConsoleColorWriter
     /// <param name="showTimestamp">是否显示时间戳</param>
     public static void WriteLog(string message, string logLevel, ConsoleColor color, bool showTimestamp = true)
     {
-        if (string.IsNullOrEmpty(message)) return;
+        if (string.IsNullOrEmpty(message))
+        {
+            return;
+        }
 
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logLine = showTimestamp ? $"[{timestamp} {logLevel.ToUpperInvariant()}]\n{message}" : message;
-        
+
         WriteColoredMessage(logLine, color);
     }
 

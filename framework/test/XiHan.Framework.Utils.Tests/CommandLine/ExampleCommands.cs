@@ -77,7 +77,7 @@ public class CopyCommand : ICommand
                 var confirm = ConsolePrompt.Confirm($"目标文件 '{Destination}' 已存在，是否覆盖？");
                 if (!confirm)
                 {
-                    ConsoleColorWriter.WriteWarning("操作已取消");
+                    ConsoleColorWriter.WriteWarn("操作已取消");
                     return 1;
                 }
             }
@@ -85,7 +85,7 @@ public class CopyCommand : ICommand
             // 使用进度条显示复制进度
             var fileInfo = new FileInfo(Source);
             using var progress = new ConsoleProgressBar(fileInfo.Length, 40);
-            
+
             const int bufferSize = 81920; // 80KB buffer
             var buffer = new byte[bufferSize];
             long totalRead = 0;
@@ -131,7 +131,7 @@ public class DeleteCommand : ICommand
     public async Task<int> ExecuteAsync(CommandContext context)
     {
         await Task.CompletedTask; // 占位符，避免编译警告
-        
+
         if (Files.Length == 0)
         {
             ConsoleColorWriter.WriteError("请指定要删除的文件");
@@ -159,7 +159,7 @@ public class DeleteCommand : ICommand
                         var confirm = ConsolePrompt.Confirm($"确定要删除目录 '{file}' 及其所有内容吗？");
                         if (!confirm)
                         {
-                            ConsoleColorWriter.WriteWarning($"跳过删除: {file}");
+                            ConsoleColorWriter.WriteWarn($"跳过删除: {file}");
                             continue;
                         }
                     }
@@ -174,7 +174,7 @@ public class DeleteCommand : ICommand
                         var confirm = ConsolePrompt.Confirm($"确定要删除文件 '{file}' 吗？");
                         if (!confirm)
                         {
-                            ConsoleColorWriter.WriteWarning($"跳过删除: {file}");
+                            ConsoleColorWriter.WriteWarn($"跳过删除: {file}");
                             continue;
                         }
                     }
@@ -184,7 +184,7 @@ public class DeleteCommand : ICommand
                 }
                 else
                 {
-                    ConsoleColorWriter.WriteWarning($"文件或目录不存在: {file}");
+                    ConsoleColorWriter.WriteWarn($"文件或目录不存在: {file}");
                     failCount++;
                     continue;
                 }
@@ -244,10 +244,25 @@ public class ListCommand : ICommand
         }
     }
 
+    private static string FormatFileSize(long bytes)
+    {
+        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
+        var size = (double)bytes;
+        var suffixIndex = 0;
+
+        while (size >= 1024 && suffixIndex < suffixes.Length - 1)
+        {
+            size /= 1024;
+            suffixIndex++;
+        }
+
+        return $"{size:F1} {suffixes[suffixIndex]}";
+    }
+
     private async Task ListDirectoryAsync(string path, int depth)
     {
         var indent = new string(' ', depth * 2);
-        
+
         if (depth == 0)
         {
             ConsoleColorWriter.WriteInfo($"目录: {System.IO.Path.GetFullPath(path)}");
@@ -264,12 +279,12 @@ public class ListCommand : ICommand
             if (LongFormat)
             {
                 var table = new ConsoleTable("类型", "名称", "大小", "修改时间");
-                
+
                 foreach (var entry in entries)
                 {
                     var name = System.IO.Path.GetFileName(entry);
                     var fullPath = System.IO.Path.Combine(path, name);
-                    
+
                     if (Directory.Exists(fullPath))
                     {
                         var dirInfo = new DirectoryInfo(fullPath);
@@ -282,7 +297,7 @@ public class ListCommand : ICommand
                         table.AddRow("文件", indent + name, size, fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm"));
                     }
                 }
-                
+
                 table.Print();
             }
             else
@@ -291,7 +306,7 @@ public class ListCommand : ICommand
                 {
                     var name = System.IO.Path.GetFileName(entry);
                     var fullPath = System.IO.Path.Combine(path, name);
-                    
+
                     if (Directory.Exists(fullPath))
                     {
                         ConsoleColorWriter.WriteColoredMessage($"{indent}{name}/", ConsoleColor.Blue);
@@ -318,23 +333,8 @@ public class ListCommand : ICommand
         }
         catch (UnauthorizedAccessException)
         {
-            ConsoleColorWriter.WriteWarning($"{indent}权限不足，无法访问目录");
+            ConsoleColorWriter.WriteWarn($"{indent}权限不足，无法访问目录");
         }
-    }
-
-    private static string FormatFileSize(long bytes)
-    {
-        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
-        var size = (double)bytes;
-        var suffixIndex = 0;
-
-        while (size >= 1024 && suffixIndex < suffixes.Length - 1)
-        {
-            size /= 1024;
-            suffixIndex++;
-        }
-
-        return $"{size:F1} {suffixes[suffixIndex]}";
     }
 }
 
@@ -393,7 +393,7 @@ public class ConfigCommand : ICommand
     private async Task<Dictionary<string, string>> LoadConfigAsync()
     {
         var config = new Dictionary<string, string>();
-        
+
         if (File.Exists(ConfigFile))
         {
             var lines = await File.ReadAllLinesAsync(ConfigFile);
@@ -436,18 +436,18 @@ public class ConfigCommand : ICommand
     {
         if (config.Count == 0)
         {
-            ConsoleColorWriter.WriteWarning("没有配置项");
+            ConsoleColorWriter.WriteWarn("没有配置项");
             return;
         }
 
         ConsoleColorWriter.WriteInfo($"配置文件: {ConfigFile}");
         var table = new ConsoleTable("键", "值");
-        
+
         foreach (var kvp in config.OrderBy(x => x.Key))
         {
             table.AddRow(kvp.Key, kvp.Value);
         }
-        
+
         table.Print();
     }
 
@@ -459,7 +459,7 @@ public class ConfigCommand : ICommand
         }
         else
         {
-            ConsoleColorWriter.WriteWarning($"配置项 '{key}' 不存在");
+            ConsoleColorWriter.WriteWarn($"配置项 '{key}' 不存在");
         }
     }
 
@@ -477,7 +477,7 @@ public class ConfigCommand : ICommand
             }
             else
             {
-                ConsoleColorWriter.WriteWarning($"无效的配置格式: {setValue}");
+                ConsoleColorWriter.WriteWarn($"无效的配置格式: {setValue}");
             }
         }
     }
