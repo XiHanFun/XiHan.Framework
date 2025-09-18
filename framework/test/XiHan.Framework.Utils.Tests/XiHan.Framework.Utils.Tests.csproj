@@ -27,4 +27,9 @@
         <PackageReference Update="coverlet.collector" Version="6.0.4" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="CommandLine\" />
+      <Folder Include="Logging\" />
+    </ItemGroup>
+
 </Project>

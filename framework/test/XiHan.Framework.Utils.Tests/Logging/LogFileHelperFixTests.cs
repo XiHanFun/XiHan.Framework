@@ -27,12 +27,11 @@ public class LogFileHelperFixTests : IDisposable
     {
         _testLogDirectory = Path.Combine(Path.GetTempPath(), "XiHanTests", "Fix", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testLogDirectory);
-        
+
         // 设置测试配置
         LogFileHelper.SetLogDirectory(_testLogDirectory);
         LogFileHelper.SetMaxFileSize(1024 * 50); // 50KB文件大小便于测试
         LogFileHelper.SetBufferSize(10); // 小缓冲区便于快速刷新
-        LogFileHelper.SetFlushInterval(500);
         LogFileHelper.SetAsyncWriteEnabled(false); // 同步写入便于测试验证
     }
 
@@ -50,7 +49,7 @@ public class LogFileHelperFixTests : IDisposable
         for (var i = 0; i < messageCount; i++)
         {
             LogFileHelper.Handle($"应用启动中...{i + 1}/{messageCount}");
-            
+
             // 每1000条强制刷新一次
             if (i % 1000 == 0)
             {
@@ -64,7 +63,7 @@ public class LogFileHelperFixTests : IDisposable
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*handle*.log");
-        
+
         Console.WriteLine($"Created {logFiles.Length} handle log files for {messageCount} messages");
         foreach (var file in logFiles.Take(10)) // 显示前10个文件信息
         {
@@ -73,7 +72,7 @@ public class LogFileHelperFixTests : IDisposable
         }
 
         // 验证文件数量在合理范围内
-        Assert.True(logFiles.Length <= expectedMaxFiles, 
+        Assert.True(logFiles.Length <= expectedMaxFiles,
             $"Created {logFiles.Length} files, expected max {expectedMaxFiles}");
 
         // 验证所有消息都被写入
@@ -109,12 +108,12 @@ public class LogFileHelperFixTests : IDisposable
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*info*.log");
-        
+
         Console.WriteLine($"File size control test: {logFiles.Length} files created");
-        
+
         // 应该创建多个文件
         Assert.True(logFiles.Length > 1, "Should create multiple files due to size limit");
-        
+
         // 检查每个文件大小（除最后一个外都应该接近1KB）
         foreach (var file in logFiles.Take(logFiles.Length - 1))
         {
@@ -167,13 +166,13 @@ public class LogFileHelperFixTests : IDisposable
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*warn*.log");
-        
+
         Console.WriteLine($"Concurrent test: {logFiles.Length} files, {totalMessages} total messages");
-        
+
         // 验证消息完整性
         var actualMessages = 0;
         var allContent = new List<string>();
-        
+
         foreach (var file in logFiles)
         {
             var lines = File.ReadAllLines(file);
@@ -182,7 +181,7 @@ public class LogFileHelperFixTests : IDisposable
         }
 
         Assert.Equal(totalMessages, actualMessages);
-        
+
         // 验证没有重复的消息
         var duplicates = allContent.GroupBy(x => x).Where(g => g.Count() > 1).ToList();
         Assert.Empty(duplicates);
@@ -222,14 +221,14 @@ public class LogFileHelperFixTests : IDisposable
         {
             var levelFiles = allLogFiles.Where(f => Path.GetFileName(f).Contains(level)).ToArray();
             Assert.NotEmpty(levelFiles);
-            
+
             var totalLines = 0;
             foreach (var file in levelFiles)
             {
                 var lines = File.ReadAllLines(file);
                 totalLines += lines.Length;
             }
-            
+
             Assert.Equal(messagesPerLevel, totalLines);
             Console.WriteLine($"  {level}: {levelFiles.Length} files, {totalLines} messages");
         }
@@ -268,7 +267,7 @@ public class LogFileHelperFixTests : IDisposable
 
         // 验证文件命名规律
         Assert.Contains(logFiles, f => f.Contains("error.log")); // 基础文件
-        
+
         if (logFiles.Length > 1)
         {
             // 验证编号文件命名正确
@@ -292,19 +291,19 @@ public class LogFileHelperFixTests : IDisposable
 
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         for (var i = 0; i < messageCount; i++)
         {
             LogFileHelper.Success($"{message} #{i:D4}");
         }
-        
+
         LogFileHelper.Flush();
         stopwatch.Stop();
 
         // Assert
         var throughput = messageCount / stopwatch.Elapsed.TotalSeconds;
         var logFiles = Directory.GetFiles(_testLogDirectory, "*success*.log");
-        
+
         Console.WriteLine($"Performance test:");
         Console.WriteLine($"  Messages: {messageCount}");
         Console.WriteLine($"  Time: {stopwatch.Elapsed.TotalMilliseconds:F2} ms");
@@ -313,7 +312,7 @@ public class LogFileHelperFixTests : IDisposable
 
         // 性能应该保持良好
         Assert.True(throughput > 500, $"Throughput too low: {throughput:F0} msg/s");
-        
+
         // 文件数量应该合理
         Assert.True(logFiles.Length < 10, $"Too many files created: {logFiles.Length}");
     }
@@ -338,7 +337,6 @@ public class LogFileHelperFixTests : IDisposable
         // 恢复默认配置
         LogFileHelper.SetMaxFileSize(10 * 1024 * 1024); // 10MB
         LogFileHelper.SetBufferSize(100);
-        LogFileHelper.SetFlushInterval(2000);
         LogFileHelper.SetAsyncWriteEnabled(true);
     }
 }
