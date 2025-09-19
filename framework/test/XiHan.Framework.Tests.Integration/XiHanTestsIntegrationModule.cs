@@ -43,12 +43,7 @@ public class XiHanTestsIntegrationModule : XiHanModule
     /// <param name="context"></param>
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        //var systemInfo = SystemInfoManager.GetSystemInfo();
-        //LogHelper.Info(systemInfo.ToJson());
-        //LogHelper.SetFileOutputEnabled(true);
-        //for (var i = 0; i < 1000000; i++)
-        //{
-        //    LogHelper.Handle($"应用启动中...{i + 1}/1000000");
-        //}
+        var systemInfo = SystemInfoManager.GetSystemInfo();
+        LogHelper.Info(systemInfo.ToJson());
     }
 }
