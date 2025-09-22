@@ -16,7 +16,7 @@ using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace XiHan.Framework.Templating;
+namespace XiHan.Framework.Templating.Simple;
 
 /// <summary>
 /// 模板引擎
@@ -247,8 +247,8 @@ public static class TemplateEngine
         expression = expression.Trim();
 
         // 检查是否是字符串字面量
-        if ((expression.Length > 1 && expression.StartsWith('"') && expression.EndsWith('"')) ||
-            (expression.Length > 1 && expression.StartsWith('\'') && expression.EndsWith('\'')))
+        if (expression.Length > 1 && expression.StartsWith('"') && expression.EndsWith('"') ||
+            expression.Length > 1 && expression.StartsWith('\'') && expression.EndsWith('\''))
         {
             return expression[1..^1];
         }

@@ -12,8 +12,15 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Scriban;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem;
+using XiHan.Framework.Serialization;
+using XiHan.Framework.Templating.Abstractions;
+using XiHan.Framework.Templating.Implementations;
+using XiHan.Framework.Templating.Services;
 
 namespace XiHan.Framework.Templating;
 
@@ -21,7 +28,7 @@ namespace XiHan.Framework.Templating;
 /// 曦寒框架模板引擎模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanVirtualFileSystemModule)
+    typeof(XiHanSerializationModule)
 )]
 public class XiHanTemplatingModule : XiHanModule
 {
@@ -31,5 +38,59 @@ public class XiHanTemplatingModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        // 注册核心服务
+        services.TryAddSingleton<ITemplateEngineRegistry, TemplateEngineRegistry>();
+        services.TryAddSingleton<ITemplateContextFactory, TemplateContextFactory>();
+        services.TryAddTransient<ITemplateVariableResolver, TemplateVariableResolver>();
+
+        // 注册模板引擎
+        services.TryAddTransient<ITemplateEngine<Template>, ScribanTemplateEngine>();
+        services.TryAddTransient<ITemplateEngine<string>, StringTemplateEngine>();
+
+        // 注册上下文访问器
+        services.TryAddScoped<ITemplateContextAccessor, TemplateContextAccessor>();
+
+        // 注册模板服务
+        services.TryAddScoped<ITemplateService, TemplateService>();
+
+        // 注册模板管理服务
+        services.TryAddSingleton<ITemplateInheritanceManager, TemplateInheritanceManager>();
+        services.TryAddSingleton<ITemplatePartialManager, TemplatePartialManager>();
+
+        // 注册安全服务
+        services.TryAddSingleton<ITemplateSecurityAnalyzer, TemplateSecurityAnalyzer>();
+        services.TryAddSingleton<ITemplateSecurityChecker, TemplateSecurityChecker>();
+
+        // 配置默认模板引擎
+        services.AddOptions<TemplatingOptions>()
+            .Configure(options =>
+            {
+                options.DefaultEngine = "Scriban";
+                options.EnableCaching = true;
+                options.CacheExpiration = TimeSpan.FromMinutes(30);
+            });
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context"></param>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var serviceProvider = context.ServiceProvider;
+        var registry = serviceProvider.GetRequiredService<ITemplateEngineRegistry>();
+
+        // 注册默认引擎
+        var scribanEngine = serviceProvider.GetRequiredService<ITemplateEngine<Template>>();
+        var stringEngine = serviceProvider.GetRequiredService<ITemplateEngine<string>>();
+
+        registry.RegisterEngine("Scriban", scribanEngine);
+        registry.RegisterEngine("String", stringEngine);
+
+        // 设置默认引擎
+        registry.SetDefaultEngine<Template>("Scriban");
+        registry.SetDefaultEngine<string>("String");
     }
 }

@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem;
 
 namespace XiHan.Framework.Bot;
 

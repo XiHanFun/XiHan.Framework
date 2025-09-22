@@ -14,7 +14,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.Templating;
+namespace XiHan.Framework.Templating.Simple;
 
 /// <summary>
 /// 文件模板帮助类
