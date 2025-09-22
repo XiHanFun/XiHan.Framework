@@ -12,6 +12,21 @@
 
 #endregion <<版权版本注释>>
 
+
+#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:ITemplatePartialManager
+// Guid:8f3h7h2d-6g9i-7e2f-3h8h-7d2g9i6f3h8h
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2024/12/16 3:42:14
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
 using XiHan.Framework.Templating.Contexts;
 
 namespace XiHan.Framework.Templating.Inheritances;
