@@ -14,12 +14,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Scriban" Version="6.3.0" />
+        <PackageReference Include="Scriban" Version="6.4.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
     </ItemGroup>
 
 </Project>
