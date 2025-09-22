@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Templating.Compilers;
 
 /// <summary>
-/// 模板预编译器
+/// 模板预编译器接口
 /// </summary>
 public interface ITemplatePrecompiler
 {
