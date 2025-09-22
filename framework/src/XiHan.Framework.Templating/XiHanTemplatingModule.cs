@@ -50,7 +50,7 @@ public class XiHanTemplatingModule : XiHanModule
 
         // 注册模板引擎
         services.TryAddTransient<ITemplateEngine<Template>, ScribanTemplateEngine>();
-        services.TryAddTransient<ITemplateEngine<string>, StringTemplateEngine>();
+        services.TryAddTransient<ITemplateEngine<string>, DefaultTemplateEngine>();
 
         // 注册上下文访问器
         services.TryAddScoped<ITemplateContextAccessor, TemplateContextAccessor>();
