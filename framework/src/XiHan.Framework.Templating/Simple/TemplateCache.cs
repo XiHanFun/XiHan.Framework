@@ -15,7 +15,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace XiHan.Framework.Templating;
+namespace XiHan.Framework.Templating.Simple;
 
 /// <summary>
 /// 模板缓存

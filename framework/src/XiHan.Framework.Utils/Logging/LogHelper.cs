@@ -151,7 +151,7 @@ public static class LogHelper
     /// <param name="table">控制台表格</param>
     public static void InfoTable(ConsoleTable table)
     {
-        var message = table.ToString();
+        var message = Environment.NewLine + table.ToString();
         WriteColorLine(message, LogLevel.Info);
     }
 
@@ -181,7 +181,7 @@ public static class LogHelper
     /// <param name="table">控制台表格</param>
     public static void SuccessTable(ConsoleTable table)
     {
-        var message = table.ToString();
+        var message = Environment.NewLine + table.ToString();
         WriteColorLine(message, LogLevel.Success);
     }
 
@@ -211,7 +211,7 @@ public static class LogHelper
     /// <param name="table">控制台表格</param>
     public static void HandleTable(ConsoleTable table)
     {
-        var message = table.ToString();
+        var message = Environment.NewLine + table.ToString();
         WriteColorLine(message, LogLevel.Handle);
     }
 
@@ -241,7 +241,7 @@ public static class LogHelper
     /// <param name="table">控制台表格</param>
     public static void WarnTable(ConsoleTable table)
     {
-        var message = table.ToString();
+        var message = Environment.NewLine + table.ToString();
         WriteColorLine(message, LogLevel.Warn);
     }
 
@@ -282,7 +282,7 @@ public static class LogHelper
     /// <param name="table">控制台表格</param>
     public static void ErrorTable(ConsoleTable table)
     {
-        var message = table.ToString();
+        var message = Environment.NewLine + table.ToString();
         WriteColorLine(message, LogLevel.Error);
     }
 
