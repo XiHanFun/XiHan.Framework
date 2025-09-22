@@ -13,7 +13,8 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Templating.Abstractions;
+using XiHan.Framework.Templating.Contexts;
+using XiHan.Framework.Templating.Engines;
 using XiHan.Framework.Templating.Services;
 
 namespace XiHan.Framework.Templating.Extensions;
