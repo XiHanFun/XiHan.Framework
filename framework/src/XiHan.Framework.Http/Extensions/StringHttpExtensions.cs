@@ -39,7 +39,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 创建HTTP请求构建器
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <returns></returns>
     public static HttpRequestBuilder AsHttp(this string url)
     {
@@ -49,7 +49,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置请求头
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="name">头名称</param>
     /// <param name="value">头值</param>
     /// <returns></returns>
@@ -61,7 +61,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置多个请求头
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="headers">请求头字典</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetHeaders(this string url, Dictionary<string, string> headers)
@@ -72,7 +72,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置授权头
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="token">令牌</param>
     /// <param name="scheme">认证方案</param>
     /// <returns></returns>
@@ -84,7 +84,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置基本认证
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="username">用户名</param>
     /// <param name="password">密码</param>
     /// <returns></returns>
@@ -96,7 +96,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置查询参数
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="name">参数名</param>
     /// <param name="value">参数值</param>
     /// <returns></returns>
@@ -108,7 +108,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置多个查询参数
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="parameters">查询参数字典</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetQueries(this string url, Dictionary<string, string> parameters)
@@ -119,7 +119,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置请求体
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="body">请求体对象</param>
     /// <param name="contentType">内容类型</param>
     /// <returns></returns>
@@ -131,7 +131,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置JSON请求体
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="body">请求体对象</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetJsonBody(this string url, object body)
@@ -142,7 +142,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置表单数据
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="formData">表单数据</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetFormData(this string url, Dictionary<string, string> formData)
@@ -153,7 +153,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置超时时间
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="timeout">超时时间</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetTimeout(this string url, TimeSpan timeout)
@@ -164,7 +164,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 设置超时时间(秒)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="seconds">超时秒数</param>
     /// <returns></returns>
     public static HttpRequestBuilder SetTimeout(this string url, int seconds)
@@ -175,7 +175,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 使用指定的HTTP客户端
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="clientName">客户端名称</param>
     /// <returns></returns>
     public static HttpRequestBuilder UseClient(this string url, string clientName)
@@ -187,7 +187,7 @@ public static class StringHttpExtensions
     /// 快速GET请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public static async Task<HttpResult<T>> GetAsync<T>(this string url, CancellationToken cancellationToken = default)
@@ -198,7 +198,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 快速GET请求(返回字符串)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public static async Task<HttpResult<string>> GetStringAsync(this string url, CancellationToken cancellationToken = default)
@@ -210,7 +210,7 @@ public static class StringHttpExtensions
     /// 快速POST请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="body">请求体</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -228,7 +228,7 @@ public static class StringHttpExtensions
     /// 快速PUT请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="body">请求体</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -240,7 +240,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 快速DELETE请求
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public static async Task<HttpResult> DeleteAsync(this string url, CancellationToken cancellationToken = default)
@@ -251,7 +251,7 @@ public static class StringHttpExtensions
     /// <summary>
     /// 下载文件
     /// </summary>
-    /// <param name="url">文件URL</param>
+    /// <param name="url">文件Url</param>
     /// <param name="destinationPath">目标路径</param>
     /// <param name="progress">进度回调</param>
     /// <param name="cancellationToken">取消令牌</param>

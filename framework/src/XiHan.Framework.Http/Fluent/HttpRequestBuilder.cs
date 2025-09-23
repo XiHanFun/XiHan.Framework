@@ -36,7 +36,7 @@ public class HttpRequestBuilder
     /// 构造函数
     /// </summary>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     internal HttpRequestBuilder(IAdvancedHttpService httpService, string url)
     {
         _httpService = httpService;
