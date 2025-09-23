@@ -30,7 +30,7 @@ public class SseMessage
     /// </summary>
     /// <param name="data">消息数据</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">消息ID</param>
+    /// <param name="id">消息Id</param>
     public SseMessage(string data, string? eventType = null, string? id = null)
     {
         Data = data;
@@ -42,7 +42,7 @@ public class SseMessage
     }
 
     /// <summary>
-    /// 获取或设置消息ID
+    /// 获取或设置消息Id
     /// </summary>
     public string? Id { get; set; }
 
@@ -64,7 +64,7 @@ public class SseMessage
     /// <summary>
     /// 获取或设置消息接收时间
     /// </summary>
-    public DateTimeOffset ReceivedAt { get; set; } = DateTimeOffset.Now;
+    public DateTimeOffset ReceivedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
     /// 返回消息的字符串表示

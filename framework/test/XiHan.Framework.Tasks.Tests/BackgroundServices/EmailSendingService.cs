@@ -185,7 +185,7 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
     /// <param name="subject">邮件主题</param>
     /// <param name="body">邮件内容</param>
     /// <param name="priority">邮件优先级</param>
-    /// <returns>任务ID</returns>
+    /// <returns>任务Id</returns>
     public string QueueEmail(string to, string subject, string body, EmailPriority priority = EmailPriority.Normal)
     {
         var emailTask = new EmailTaskItem(to, subject, body)

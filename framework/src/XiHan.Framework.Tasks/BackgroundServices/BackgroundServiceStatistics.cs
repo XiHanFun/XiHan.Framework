@@ -105,7 +105,7 @@ public class BackgroundServiceStatistics
     /// <summary>
     /// 记录任务完成
     /// </summary>
-    /// <param name="taskId">任务ID</param>
+    /// <param name="taskId">任务Id</param>
     /// <param name="processingTimeMs">处理时间（毫秒）</param>
     /// <param name="success">是否成功</param>
     public void RecordTaskCompleted(string taskId, long processingTimeMs, bool success)

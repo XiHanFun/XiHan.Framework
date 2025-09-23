@@ -323,7 +323,7 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     var errorMessage = $"[{timestamp} CLEAR_ERROR] 日志清除失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
@@ -384,7 +384,7 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除文件 '{fileName}' 失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
@@ -441,7 +441,7 @@ public static class LogFileHelper
                 try
                 {
                     var errorLogPath = Path.Combine(_logDirectory, "clear_error.log");
-                    var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     var errorMessage = $"[{timestamp} CLEAR_ERROR] 清除日期 '{date:yyyyMMdd}' 的日志失败: {ex.Message}{Environment.NewLine}";
                     File.AppendAllText(errorLogPath, errorMessage, Encoding.UTF8);
                 }
@@ -473,7 +473,7 @@ public static class LogFileHelper
 
         try
         {
-            var timestamp = DateTimeOffset.Now;
+            var timestamp = DateTimeOffset.UtcNow;
             var fileName = logLevel.ToString().ToLowerInvariant();
             var logType = logLevel.ToString().ToUpperInvariant();
             var logDate = timestamp.ToString("yyyyMMdd");
@@ -885,7 +885,7 @@ public static class LogFileHelper
         try
         {
             var errorLogPath = Path.Combine(_logDirectory, "error_logger.log");
-            var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var errorMessage = $"[{timestamp} LOGGER_ERROR] 日志写入失败: {ex.Message}";
             if (!string.IsNullOrEmpty(originalMessage))
             {

@@ -80,7 +80,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     }
 
     /// <summary>
-    /// 获取请求ID
+    /// 获取请求Id
     /// </summary>
     /// <param name="request">HTTP请求</param>
     /// <returns></returns>
@@ -115,7 +115,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     /// 记录请求日志
     /// </summary>
     /// <param name="request">HTTP请求</param>
-    /// <param name="requestId">请求ID</param>
+    /// <param name="requestId">请求Id</param>
     private async Task LogRequestAsync(HttpRequestMessage request, string requestId)
     {
         var logBuilder = new StringBuilder();
@@ -169,7 +169,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     /// 记录响应日志
     /// </summary>
     /// <param name="response">HTTP响应</param>
-    /// <param name="requestId">请求ID</param>
+    /// <param name="requestId">请求Id</param>
     /// <param name="elapsedMilliseconds">耗时</param>
     private async Task LogResponseAsync(HttpResponseMessage response, string requestId, long elapsedMilliseconds)
     {
@@ -217,7 +217,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     /// </summary>
     /// <param name="exception">异常</param>
     /// <param name="request">HTTP请求</param>
-    /// <param name="requestId">请求ID</param>
+    /// <param name="requestId">请求Id</param>
     /// <param name="elapsedMilliseconds">耗时</param>
     private void LogException(Exception exception, HttpRequestMessage request, string requestId, long elapsedMilliseconds)
     {

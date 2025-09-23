@@ -112,7 +112,7 @@ public class MockEmailSender : IEmailSender
 public class SentEmail
 {
     /// <summary>
-    /// 任务ID
+    /// 任务Id
     /// </summary>
     public string TaskId { get; set; } = string.Empty;
 

@@ -469,11 +469,11 @@ public static class ConvertHelper
     }
 
     /// <summary>
-    /// 转换为 GUID
+    /// 转换为 GUId
     /// </summary>
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
-    /// <returns>GUID 值</returns>
+    /// <returns>GUId 值</returns>
     public static Guid ToGuid(object? value, Guid defaultValue = default)
     {
         if (value == null)

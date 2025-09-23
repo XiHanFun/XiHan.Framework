@@ -190,9 +190,9 @@ public static class DynamicJsonFactory
     }
 
     /// <summary>
-    /// 创建 GUID 值
+    /// 创建 GUId 值
     /// </summary>
-    /// <param name="value">GUID 值</param>
+    /// <param name="value">GUId 值</param>
     /// <returns>动态 JSON 值</returns>
     public static DynamicJsonValue CreateGuid(Guid value)
     {

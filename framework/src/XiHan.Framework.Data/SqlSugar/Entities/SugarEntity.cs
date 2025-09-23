@@ -52,12 +52,12 @@ public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey 
     /// 创建时间
     /// </summary>
     [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.Now;
+    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// 创建者ID
+    /// 创建者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "创建者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "创建者Id", IsNullable = true)]
     public virtual TKey? CreatorId { get; set; }
 
     /// <summary>
@@ -67,9 +67,9 @@ public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey 
     public virtual DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 修改者ID
+    /// 修改者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "修改者Id", IsNullable = true)]
     public virtual TKey? ModifierId { get; set; }
 
     /// <summary>
@@ -85,9 +85,9 @@ public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey 
     public virtual DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
-    /// 删除者ID
+    /// 删除者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "删除者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "删除者Id", IsNullable = true)]
     public virtual TKey? DeleterId { get; set; }
 }
 
@@ -101,12 +101,12 @@ public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIde
     /// 创建时间
     /// </summary>
     [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.Now;
+    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// 创建者ID
+    /// 创建者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "创建者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "创建者Id", IsNullable = true)]
     public virtual TKey? CreatorId { get; set; }
 
     /// <summary>
@@ -116,9 +116,9 @@ public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIde
     public virtual DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 修改者ID
+    /// 修改者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "修改者Id", IsNullable = true)]
     public virtual TKey? ModifierId { get; set; }
 
     /// <summary>
@@ -134,8 +134,8 @@ public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIde
     public virtual DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
-    /// 删除者ID
+    /// 删除者Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "删除者ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "删除者Id", IsNullable = true)]
     public virtual TKey? DeleterId { get; set; }
 }

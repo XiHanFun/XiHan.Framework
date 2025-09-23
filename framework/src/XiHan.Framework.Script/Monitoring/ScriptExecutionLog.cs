@@ -20,7 +20,7 @@ namespace XiHan.Framework.Script.Monitoring;
 public class ScriptExecutionLog
 {
     /// <summary>
-    /// 日志ID
+    /// 日志Id
     /// </summary>
     public Guid Id { get; set; }
 

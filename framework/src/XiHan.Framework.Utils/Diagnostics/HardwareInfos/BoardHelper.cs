@@ -130,7 +130,7 @@ public static class BoardHelper
             boardInfo.Product = GetParmValueSafe(lines, "Model Identifier", ':');
             boardInfo.Manufacturer = GetParmValueSafe(lines, "Chip", ':');
             boardInfo.SerialNumber = GetParmValueSafe(lines, "Serial Number (system)", ':');
-            boardInfo.Version = GetParmValueSafe(lines, "Hardware UUID", ':');
+            boardInfo.Version = GetParmValueSafe(lines, "Hardware UUId", ':');
         }
     }
 

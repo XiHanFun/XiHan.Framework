@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Results;
 public class XiHanMemoryResult
 {
     /// <summary>
-    /// 记忆ID
+    /// 记忆Id
     /// </summary>
     public string Id { get; set; } = string.Empty;
 

@@ -65,7 +65,7 @@ public class XiHanAIMemoryService : IXiHanAIMemoryService
     {
         try
         {
-            // 生成唯一ID
+            // 生成唯一Id
             var id = Guid.NewGuid().ToString();
 
             // 元数据作为标签字典

@@ -82,7 +82,7 @@ public class XiHanChatResult : XiHanAIResult
 public class ToolCallResult
 {
     /// <summary>
-    /// 工具ID
+    /// 工具Id
     /// </summary>
     public string Id { get; set; } = string.Empty;
 

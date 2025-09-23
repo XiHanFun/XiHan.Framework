@@ -35,7 +35,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建雪花漂移算法ID生成器，适用于低并发场景
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
+    /// <param name="workerId">工作机器Id</param>
     /// <returns>雪花漂移算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_LowWorkload(ushort workerId = 1)
     {
@@ -45,7 +45,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建雪花漂移算法ID生成器，适用于中等并发场景
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
+    /// <param name="workerId">工作机器Id</param>
     /// <returns>雪花漂移算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_MediumWorkload(ushort workerId = 1)
     {
@@ -55,7 +55,7 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建雪花漂移算法ID生成器，适用于高并发场景
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
+    /// <param name="workerId">工作机器Id</param>
     /// <returns>雪花漂移算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_HighWorkload(ushort workerId = 1)
     {
@@ -63,9 +63,9 @@ public static class IdGeneratorFactory
     }
 
     /// <summary>
-    /// 创建短ID生成器(适合URL友好的短ID)
+    /// 创建短ID生成器(适合URL友好的短Id)
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
+    /// <param name="workerId">工作机器Id</param>
     /// <returns>雪花漂移算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_ShortId(ushort workerId = 1)
     {
@@ -76,7 +76,7 @@ public static class IdGeneratorFactory
     /// 创建有前缀的ID生成器
     /// </summary>
     /// <param name="prefix">ID前缀</param>
-    /// <param name="workerId">工作机器ID</param>
+    /// <param name="workerId">工作机器Id</param>
     /// <returns>雪花漂移算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_PrefixedId(string prefix, ushort workerId = 1)
     {
@@ -86,8 +86,8 @@ public static class IdGeneratorFactory
     /// <summary>
     /// 创建经典雪花算法ID生成器(Twitter Snowflake兼容)
     /// </summary>
-    /// <param name="workerId">工作机器ID</param>
-    /// <param name="dataCenterId">数据中心ID</param>
+    /// <param name="workerId">工作机器Id</param>
+    /// <param name="dataCenterId">数据中心Id</param>
     /// <returns>经典雪花算法ID生成器</returns>
     public static IDistributedIdGenerator CreateSnowflakeIdGenerator_Classic(ushort workerId = 1, byte dataCenterId = 1)
     {
