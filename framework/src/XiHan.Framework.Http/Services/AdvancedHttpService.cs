@@ -360,11 +360,11 @@ public class AdvancedHttpService : IAdvancedHttpService
 
         try
         {
-            using var client = GetHttpClient(options);
+            var client = GetHttpClient(options);
             ConfigureRequest(client, options);
 
             var fullUrl = BuildUrl(url, options);
-            using var response = await client.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            using var response = await client.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -493,7 +493,7 @@ public class AdvancedHttpService : IAdvancedHttpService
 
         try
         {
-            using var client = GetHttpClient(options);
+            var client = GetHttpClient(options);
 
             ConfigureRequest(client, options);
 
@@ -502,7 +502,7 @@ public class AdvancedHttpService : IAdvancedHttpService
 
             AddHeaders(request, options, requestId);
 
-            using var response = await client.SendAsync(request, cancellationToken);
+            using var response = await client.SendAsync(request, effectiveToken);
 
             var result = new HttpResult<T>
             {
@@ -542,7 +542,7 @@ public class AdvancedHttpService : IAdvancedHttpService
                     if (!string.IsNullOrEmpty(errorContent))
                     {
                         // 限制错误内容长度，避免刷爆日志
-                        result.ErrorMessage += errorContent.Truncate(_options.MaxResponseContentLength);
+                        result.ErrorMessage += $": {errorContent.Truncate(_options.MaxResponseContentLength)}";
                     }
                 }
             }
