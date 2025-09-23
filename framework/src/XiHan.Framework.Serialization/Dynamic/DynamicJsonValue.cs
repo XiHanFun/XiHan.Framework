@@ -239,10 +239,10 @@ public class DynamicJsonValue : DynamicObject, IEquatable<DynamicJsonValue>
     /// <summary>隐式转换：可空带时区的日期时间 → DynamicJsonValue</summary>
     public static implicit operator DynamicJsonValue(DateTimeOffset? value) => new(value);
 
-    /// <summary>隐式转换：GUID → DynamicJsonValue</summary>
+    /// <summary>隐式转换：GUId → DynamicJsonValue</summary>
     public static implicit operator DynamicJsonValue(Guid value) => new(value);
 
-    /// <summary>隐式转换：可空GUID → DynamicJsonValue</summary>
+    /// <summary>隐式转换：可空GUId → DynamicJsonValue</summary>
     public static implicit operator DynamicJsonValue(Guid? value) => new(value);
 
     // 反向转换
@@ -333,10 +333,10 @@ public class DynamicJsonValue : DynamicObject, IEquatable<DynamicJsonValue>
     /// <summary>显式转换：DynamicJsonValue → 可空带时区的日期时间</summary>
     public static explicit operator DateTimeOffset?(DynamicJsonValue value) => value._value?.GetValue<DateTimeOffset?>();
 
-    /// <summary>显式转换：DynamicJsonValue → GUID</summary>
+    /// <summary>显式转换：DynamicJsonValue → GUId</summary>
     public static explicit operator Guid(DynamicJsonValue value) => value._value?.GetValue<Guid>() ?? default;
 
-    /// <summary>显式转换：DynamicJsonValue → 可空GUID</summary>
+    /// <summary>显式转换：DynamicJsonValue → 可空GUId</summary>
     public static explicit operator Guid?(DynamicJsonValue value) => value._value?.GetValue<Guid?>();
 
     #endregion 隐式转换操作符

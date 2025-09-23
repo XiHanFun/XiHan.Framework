@@ -193,9 +193,9 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置请求ID
+    /// 设置请求Id
     /// </summary>
-    /// <param name="requestId">请求ID</param>
+    /// <param name="requestId">请求Id</param>
     /// <returns></returns>
     public HttpRequestBuilder SetRequestId(string requestId)
     {
@@ -204,9 +204,9 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置关联ID
+    /// 设置关联Id
     /// </summary>
-    /// <param name="correlationId">关联ID</param>
+    /// <param name="correlationId">关联Id</param>
     /// <returns></returns>
     public HttpRequestBuilder SetCorrelationId(string? correlationId = null)
     {

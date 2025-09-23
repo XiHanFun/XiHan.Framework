@@ -115,10 +115,10 @@ public static class HttpServiceExtensions
     }
 
     /// <summary>
-    /// 添加关联ID
+    /// 添加关联Id
     /// </summary>
     /// <param name="options">请求选项</param>
-    /// <param name="correlationId">关联ID</param>
+    /// <param name="correlationId">关联Id</param>
     /// <returns></returns>
     public static HttpRequestOptions WithCorrelationId(this HttpRequestOptions options, string? correlationId = null)
     {

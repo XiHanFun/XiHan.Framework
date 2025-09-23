@@ -113,7 +113,7 @@ public static class CacheHelper
     /// <param name="expireSeconds">过期秒数，默认 3600</param>
     public static void Set<T>(string key, T value, int expireSeconds = 3600)
     {
-        Set(key, value, DateTimeOffset.Now.AddSeconds(expireSeconds));
+        Set(key, value, DateTimeOffset.UtcNow.AddSeconds(expireSeconds));
     }
 
     /// <summary>
@@ -125,7 +125,7 @@ public static class CacheHelper
     /// <param name="expireSpan">过期时间间隔</param>
     public static void Set<T>(string key, T value, TimeSpan expireSpan)
     {
-        Set(key, value, DateTimeOffset.Now.Add(expireSpan));
+        Set(key, value, DateTimeOffset.UtcNow.Add(expireSpan));
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, int expireSeconds = 3600)
     {
-        return GetOrAdd(key, factory, DateTimeOffset.Now.AddSeconds(expireSeconds));
+        return GetOrAdd(key, factory, DateTimeOffset.UtcNow.AddSeconds(expireSeconds));
     }
 
     /// <summary>
@@ -231,7 +231,7 @@ public static class CacheHelper
     /// <returns>缓存值</returns>
     public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expireSpan)
     {
-        return GetOrAdd(key, factory, DateTimeOffset.Now.Add(expireSpan));
+        return GetOrAdd(key, factory, DateTimeOffset.UtcNow.Add(expireSpan));
     }
 
     /// <summary>
@@ -304,7 +304,7 @@ public static class CacheHelper
     /// </summary>
     public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, int expireSeconds = 3600, CancellationToken cancellationToken = default)
     {
-        return GetOrAddAsync(key, factory, DateTimeOffset.Now.AddSeconds(expireSeconds), cancellationToken);
+        return GetOrAddAsync(key, factory, DateTimeOffset.UtcNow.AddSeconds(expireSeconds), cancellationToken);
     }
 
     /// <summary>
@@ -312,7 +312,7 @@ public static class CacheHelper
     /// </summary>
     public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expireSpan, CancellationToken cancellationToken = default)
     {
-        return GetOrAddAsync(key, factory, DateTimeOffset.Now.Add(expireSpan), cancellationToken);
+        return GetOrAddAsync(key, factory, DateTimeOffset.UtcNow.Add(expireSpan), cancellationToken);
     }
 
     #endregion
@@ -377,7 +377,7 @@ public static class CacheHelper
     /// <param name="expireSeconds">过期秒数，默认 3600</param>
     public static void SetAll<T>(IEnumerable<KeyValuePair<string, T>> items, int expireSeconds = 3600)
     {
-        var expireTime = DateTimeOffset.Now.AddSeconds(expireSeconds);
+        var expireTime = DateTimeOffset.UtcNow.AddSeconds(expireSeconds);
         foreach (var item in items)
         {
             Set(item.Key, item.Value, expireTime);

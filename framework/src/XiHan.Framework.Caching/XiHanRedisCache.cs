@@ -420,7 +420,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
 
                     if (absExpr.HasValue)
                     {
-                        var relExpr = absExpr.Value - DateTimeOffset.Now;
+                        var relExpr = absExpr.Value - DateTimeOffset.UtcNow;
                         expr = relExpr <= sldExpr.Value ? relExpr : sldExpr;
                     }
                     else

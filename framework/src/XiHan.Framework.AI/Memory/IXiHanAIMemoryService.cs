@@ -28,7 +28,7 @@ public interface IXiHanAIMemoryService
     /// <param name="text">文本内容</param>
     /// <param name="metadata">元数据</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>记忆ID</returns>
+    /// <returns>记忆Id</returns>
     Task<string> AddAsync(string collection, string text, IDictionary<string, object>? metadata = null, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -46,7 +46,7 @@ public interface IXiHanAIMemoryService
     /// 删除记忆
     /// </summary>
     /// <param name="collection">集合名称</param>
-    /// <param name="id">记忆ID</param>
+    /// <param name="id">记忆Id</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>删除结果</returns>
     Task<bool> DeleteAsync(string collection, string id, CancellationToken cancellationToken = default);

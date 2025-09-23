@@ -34,7 +34,7 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     event EventHandler<UnitOfWorkEventArgs> Disposed;
 
     /// <summary>
-    /// 工作单元ID
+    /// 工作单元Id
     /// </summary>
     Guid Id { get; }
 

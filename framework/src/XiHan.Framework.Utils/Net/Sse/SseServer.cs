@@ -43,7 +43,7 @@ public class SseServer
     {
         var messageBuilder = new StringBuilder();
 
-        // 添加事件ID
+        // 添加事件Id
         if (!string.IsNullOrEmpty(message.Id))
         {
             messageBuilder.AppendLine($"id: {message.Id}");
@@ -81,7 +81,7 @@ public class SseServer
     /// <param name="stream">输出流</param>
     /// <param name="data">数据内容</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">事件ID</param>
+    /// <param name="id">事件Id</param>
     /// <returns>异步任务</returns>
     public static Task SendEventAsync(Stream stream, string data, string? eventType = null, string? id = null)
     {
