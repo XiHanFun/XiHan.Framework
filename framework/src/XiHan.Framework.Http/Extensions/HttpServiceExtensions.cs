@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Text;
 using XiHan.Framework.Http.Models;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
@@ -43,7 +44,7 @@ public static class HttpServiceExtensions
     /// <returns></returns>
     public static HttpRequestOptions WithBasicAuth(this HttpRequestOptions options, string username, string password)
     {
-        var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
+        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         return options.AddHeader("Authorization", $"Basic {credentials}");
     }
 
