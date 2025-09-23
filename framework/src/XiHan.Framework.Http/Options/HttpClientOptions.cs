@@ -106,7 +106,7 @@ public class HttpClientOptions
     public Dictionary<string, string> DefaultHeaders { get; set; } = new()
     {
         ["Accept"] = "application/json",
-        ["User-Agent"] = "XiHan.Framework.Http/1.0"
+        ["User-Agent"] = $"XiHan.Framework.Http/{XiHan.Version}"
     };
 
     /// <summary>

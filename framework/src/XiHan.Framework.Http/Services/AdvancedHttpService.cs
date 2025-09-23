@@ -24,6 +24,7 @@ using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Serialization.Dynamic;
+using XiHan.Framework.Utils.Extensions;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
@@ -365,8 +366,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             var fullUrl = BuildUrl(url, options);
             using var response = await client.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-            stopwatch.Stop();
-
             if (!response.IsSuccessStatusCode)
             {
                 return HttpResult.Failure($"HTTP {(int)response.StatusCode} {response.StatusCode}", response.StatusCode);
@@ -390,26 +389,26 @@ public class AdvancedHttpService : IAdvancedHttpService
 
             return result;
         }
-        catch (BrokenCircuitException ex)
-        {
-            _logger.LogError(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
-                url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
-
-            return HttpResult.Failure($"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex);
-        }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(ex, "文件下载超时。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "文件下载超时。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure($"文件下载超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex);
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogError(ex, "文件下载被取消。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "文件下载被取消。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure("文件下载被取消", HttpStatusCode.RequestTimeout, ex);
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+                url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
+
+            return HttpResult.Failure($"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -504,7 +503,6 @@ public class AdvancedHttpService : IAdvancedHttpService
             AddHeaders(request, options, requestId);
 
             using var response = await client.SendAsync(request, cancellationToken);
-            stopwatch.Stop();
 
             var result = new HttpResult<T>
             {
@@ -543,25 +541,17 @@ public class AdvancedHttpService : IAdvancedHttpService
                     var errorContent = await response.Content.ReadAsStringAsync(effectiveToken);
                     if (!string.IsNullOrEmpty(errorContent))
                     {
-                        result.ErrorMessage += $": {errorContent}";
+                        // 限制错误内容长度，避免刷爆日志
+                        result.ErrorMessage += errorContent.Truncate(_options.MaxResponseContentLength);
                     }
                 }
             }
 
             return result;
         }
-        catch (BrokenCircuitException ex)
-        {
-            _logger.LogError(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
-                method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
-
-            return HttpResult<T>.Failure($"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex)
-                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
-                .SetRequestInfo(method.Method, url);
-        }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(ex, "HTTP请求超时。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "HTTP请求超时。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure($"请求超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex)
@@ -570,10 +560,19 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogError(ex, "HTTP请求被取消。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "HTTP请求被取消。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure("请求被取消", HttpStatusCode.RequestTimeout, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+                method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
+
+            return HttpResult<T>.Failure($"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex)
                 .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
                 .SetRequestInfo(method.Method, url);
         }

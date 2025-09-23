@@ -21,7 +21,7 @@ namespace XiHan.Framework.Http.Extensions;
 /// <summary>
 /// HTTP 服务便捷方法
 /// </summary>
-public static class HttpServiceConvenience
+public static class HttpServiceConvenienceExtensions
 {
     /// <summary>
     /// 快速GET请求

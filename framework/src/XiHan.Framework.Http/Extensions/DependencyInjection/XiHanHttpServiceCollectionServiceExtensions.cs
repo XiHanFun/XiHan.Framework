@@ -48,6 +48,10 @@ public static class XiHanHttpServiceCollectionServiceExtensions
         // 配置HTTP客户端
         ConfigureHttpClients(services, configuration);
 
+        // 初始化字符串扩展
+        using var serviceProvider = services.BuildServiceProvider();
+        StringHttpExtensions.Initialize(serviceProvider);
+
         return services;
     }
 
@@ -85,6 +89,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
             // 添加默认请求头
             foreach (var header in options.DefaultHeaders)
             {
+                client.DefaultRequestHeaders.Remove(header.Key);
                 client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
             }
         });
@@ -132,6 +137,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
             // 添加默认请求头
             foreach (var header in options.DefaultHeaders)
             {
+                client.DefaultRequestHeaders.Remove(header.Key);
                 client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
             }
         });
@@ -172,12 +178,14 @@ public static class XiHanHttpServiceCollectionServiceExtensions
                 // 添加默认请求头
                 foreach (var header in options.DefaultHeaders)
                 {
+                    client.DefaultRequestHeaders.Remove(header.Key);
                     client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
                 }
 
                 // 添加自定义请求头
                 foreach (var header in clientConfig.Value.Headers)
                 {
+                    client.DefaultRequestHeaders.Remove(header.Key);
                     client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
                 }
             });
@@ -233,7 +241,6 @@ public static class XiHanHttpServiceCollectionServiceExtensions
                 .Or<TimeoutRejectedException>()
                 .WaitAndRetryAsync(retryDelays, onRetry: (outcome, timespan, retryCount, context) =>
                 {
-                    // 注意：这里移除了日志记录，因为在静态方法中无法直接访问日志记录器
                     // 如果需要日志记录，可以在HTTP中间件中处理
                 });
 
@@ -241,7 +248,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
         }
 
         // 超时策略
-        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(options.DefaultTimeoutSeconds);
+        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(2 * options.DefaultTimeoutSeconds);
         clientBuilder.AddPolicyHandler(timeoutPolicy);
 
         // 熔断器策略
@@ -256,23 +263,14 @@ public static class XiHanHttpServiceCollectionServiceExtensions
                     onBreak: (exception, duration) =>
                     {
                         // 记录熔断器打开的日志
-                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
-                        logger?.LogWarning("断路器已打开 - 失败阈值: {FailureThreshold}, 断开持续时间: {Duration}秒. 异常: {Exception}", 
-                            options.CircuitBreakerFailureThreshold, 
-                            duration.TotalSeconds, 
-                            exception?.Exception?.Message ?? "N/A");
                     },
                     onReset: () =>
                     {
                         // 记录熔断器重置的日志
-                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
-                        logger?.LogInformation("断路器已重置 - 允许新的请求通过");
                     },
                     onHalfOpen: () =>
                     {
                         // 记录熔断器半开状态的日志
-                        var logger = clientBuilder.Services.BuildServiceProvider().GetService<ILogger<HttpLoggingMiddleware>>();
-                        logger?.LogInformation("断路器进入半开状态 - 正在测试服务可用性");
                     });
 
             clientBuilder.AddPolicyHandler(circuitBreakerPolicy);

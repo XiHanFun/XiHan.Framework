@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text;
 using XiHan.Framework.Http.Options;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Http.Middleware;
 
@@ -120,7 +121,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
         var logBuilder = new StringBuilder();
         logBuilder.AppendLine($"HTTP Request [{requestId}]");
         logBuilder.AppendLine($"Method: {request.Method}");
-        logBuilder.AppendLine($"URL: {request.RequestUri}");
+        logBuilder.AppendLine($"Url: {request.RequestUri}");
         logBuilder.AppendLine($"Version: {request.Version}");
 
         // 记录请求头
@@ -160,7 +161,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
             }
         }
 
-        _logger.LogInformation("HTTP Request [{RequestId}]\nMethod: {Method}\nURL: {Url}\nVersion: {Version}\nHeaders: {Headers}\nContent: {Content}",
+        _logger.LogInformation("HTTP Request [{RequestId}]\nMethod: {Method}\nUrl: {Url}\nVersion: {Version}\nHeaders: {Headers}\nContent: {Content}",
             requestId, request.Method, request.RequestUri, request.Version, headers.ToString(), content);
     }
 
@@ -202,9 +203,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
         var content = await response.Content.ReadAsStringAsync();
         if (!string.IsNullOrEmpty(content))
         {
-            var truncatedContent = content.Length > _options.MaxResponseContentLength
-                ? content[.._options.MaxResponseContentLength] + "... (truncated)"
-                : content;
+            var truncatedContent = content.Truncate(_options.MaxResponseContentLength);
             logBuilder.AppendLine($"Content: {truncatedContent}");
         }
 
@@ -223,7 +222,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
     private void LogException(Exception exception, HttpRequestMessage request, string requestId, long elapsedMilliseconds)
     {
         _logger.LogError(exception,
-            "HTTP Request [{RequestId}] failed after {ElapsedMilliseconds}ms. Method: {Method}, URL: {Url}",
+            "HTTP Request [{RequestId}] failed after {ElapsedMilliseconds}ms. Method: {Method}, Url: {Url}",
             requestId, elapsedMilliseconds, request.Method, request.RequestUri);
     }
 }
