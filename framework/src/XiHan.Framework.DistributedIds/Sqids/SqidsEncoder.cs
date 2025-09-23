@@ -23,7 +23,7 @@ namespace XiHan.Framework.DistributedIds.Sqids;
 /// 通常用于替代自增数字 Id(如数据库主键)在 URL、公开接口中的暴露，防止泄露数据的真实顺序或数量
 /// 主要特点：
 /// 可逆性(Bidirectional)：Sqids 能把一个或多个数字编码成一个短字符串，也可以从字符串中解码出原始数字。
-/// 短小的编码结果：与 UUID 相比，Sqids 生成的 Id 更短、更易于阅读和分享。
+/// 短小的编码结果：与 UUId 相比，Sqids 生成的 Id 更短、更易于阅读和分享。
 /// 顺序混淆：即使输入是递增的数字，输出的字符串也不会体现递增顺序，防止用户推测系统数据量。
 /// </summary>
 /// <typeparam name="T">数字类型</typeparam>
@@ -205,7 +205,7 @@ public class SqidsEncoder<T> where T : INumber<T>
     }
 
     /// <summary>
-    /// 生成ID
+    /// 生成Id
     /// </summary>
     private string GenerateId(T[] numbers)
     {
@@ -218,7 +218,7 @@ public class SqidsEncoder<T> where T : INumber<T>
         // 计算最小ID长度
         var minLength = Math.Max(_options.MinLength, numbers.Length);
 
-        // 尝试生成不在屏蔽列表中的ID
+        // 尝试生成不在屏蔽列表中的Id
         for (var i = 0; i < _alphabet.Length; i++)
         {
             // 为每次尝试创建新的字母表

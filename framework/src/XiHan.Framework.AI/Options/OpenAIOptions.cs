@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Options;
 public class OpenAiOptions
 {
     /// <summary>
-    /// 服务ID
+    /// 服务Id
     /// </summary>
     public string ServiceId { get; set; } = "OpenAI";
 
@@ -30,7 +30,7 @@ public class OpenAiOptions
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// 组织ID(可选)
+    /// 组织Id(可选)
     /// </summary>
     public string? OrganizationId { get; set; }
 

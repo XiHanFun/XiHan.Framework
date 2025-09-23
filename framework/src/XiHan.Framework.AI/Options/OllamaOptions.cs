@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Options;
 public class OllamaOptions
 {
     /// <summary>
-    /// 服务ID
+    /// 服务Id
     /// </summary>
     public string ServiceId { get; set; } = "Ollama";
 

@@ -99,7 +99,7 @@ internal class XiHanFileLogger : ILogger
     /// </summary>
     /// <typeparam name="TState">状态类型</typeparam>
     /// <param name="logLevel">日志级别</param>
-    /// <param name="eventId">事件ID</param>
+    /// <param name="eventId">事件Id</param>
     /// <param name="state">状态</param>
     /// <param name="exception">异常</param>
     /// <param name="formatter">格式化器</param>

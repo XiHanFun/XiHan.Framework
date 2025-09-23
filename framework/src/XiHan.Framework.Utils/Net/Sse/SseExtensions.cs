@@ -60,7 +60,7 @@ public static class SseExtensions
     /// <param name="context">SSE事件上下文</param>
     /// <param name="data">要发送的数据</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">事件ID</param>
+    /// <param name="id">事件Id</param>
     /// <param name="options">JSON序列化选项</param>
     /// <returns>异步任务</returns>
     public static Task SendJsonEventAsync<T>(
@@ -80,7 +80,7 @@ public static class SseExtensions
     /// <typeparam name="T">数据类型</typeparam>
     /// <param name="data">要序列化的数据</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">事件ID</param>
+    /// <param name="id">事件Id</param>
     /// <param name="options">JSON序列化选项</param>
     /// <returns>SSE消息</returns>
     public static SseMessage ToJsonSseMessage<T>(

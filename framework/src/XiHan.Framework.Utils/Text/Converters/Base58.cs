@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：排除易混字符(0/O/I/l)，高可读性，编码长度较短
-/// 常见用途：比特币地址、钱包ID、邀请码
+/// 常见用途：比特币地址、钱包Id、邀请码
 /// </remarks>
 public static class Base58
 {

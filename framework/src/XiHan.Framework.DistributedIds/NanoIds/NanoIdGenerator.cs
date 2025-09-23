@@ -19,7 +19,7 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 /// <summary>
 /// NanoID生成器
 /// 用于生成安全、URL友好、随机的唯一标识符(Id)
-/// 通常用于需要较短ID但又不想暴露顺序信息的场景，如API标识符、数据库关联ID、短链接等
+/// 通常用于需要较短ID但又不想暴露顺序信息的场景，如API标识符、数据库关联Id、短链接等
 /// 主要特点：
 /// 安全性(Security)：使用加密安全的随机数生成，保证ID的不可预测性和抗冲突性。
 /// 紧凑长度(Compact)：比UUID更短，默认21个字符，但可根据需求调整长度。
@@ -66,9 +66,9 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个ID
+    /// 获取下一个Id
     /// </summary>
-    /// <returns>生成的ID</returns>
+    /// <returns>生成的Id</returns>
     public long NextId()
     {
         lock (_lock)
@@ -88,14 +88,14 @@ public class NanoIdGenerator : IDistributedIdGenerator
                 _lastTimestamp = timestamp;
             }
 
-            // 合并时间戳和序列号生成数值型ID
+            // 合并时间戳和序列号生成数值型Id
             var id = (timestamp << 22) | (_sequence & 0x3FFFFF);
             return id;
         }
     }
 
     /// <summary>
-    /// 获取下一个ID(字符串形式)
+    /// 获取下一个Id(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public string NextIdString()
@@ -104,7 +104,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取ID
+    /// 批量获取Id
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID数组</returns>
@@ -124,7 +124,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取ID(字符串形式)
+    /// 批量获取Id(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -144,16 +144,16 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步获取下一个ID
+    /// 异步获取下一个Id
     /// </summary>
-    /// <returns>生成的ID</returns>
+    /// <returns>生成的Id</returns>
     public Task<long> NextIdAsync()
     {
         return Task.FromResult(NextId());
     }
 
     /// <summary>
-    /// 异步获取下一个ID(字符串形式)
+    /// 异步获取下一个Id(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     public Task<string> NextIdStringAsync()
@@ -162,7 +162,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取ID
+    /// 异步批量获取Id
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID数组</returns>
@@ -172,7 +172,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取ID(字符串形式)
+    /// 异步批量获取Id(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -196,10 +196,10 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取工作机器ID
+    /// 从ID中提取工作机器Id
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>工作机器ID</returns>
+    /// <returns>工作机器Id</returns>
     public int ExtractWorkerId(long id)
     {
         // NanoID不使用WorkerId，返回0
@@ -218,10 +218,10 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取数据中心ID
+    /// 从ID中提取数据中心Id
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>数据中心ID</returns>
+    /// <returns>数据中心Id</returns>
     public int ExtractDataCenterId(long id)
     {
         // NanoID不使用DataCenterId，返回0
@@ -257,11 +257,11 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 生成NanoID
+    /// 生成NanoId
     /// </summary>
     /// <param name="size">ID长度</param>
     /// <param name="alphabet">字符集</param>
-    /// <returns>生成的ID</returns>
+    /// <returns>生成的Id</returns>
     private static string GenerateNanoId(int size, string alphabet)
     {
         if (size <= 0)

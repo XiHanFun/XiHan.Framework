@@ -20,52 +20,52 @@ namespace XiHan.Framework.DistributedIds;
 public interface IDistributedIdGenerator
 {
     /// <summary>
-    /// 获取下一个ID
+    /// 获取下一个Id
     /// </summary>
-    /// <returns>生成的ID</returns>
+    /// <returns>生成的Id</returns>
     long NextId();
 
     /// <summary>
-    /// 获取下一个ID(字符串形式)
+    /// 获取下一个Id(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     string NextIdString();
 
     /// <summary>
-    /// 批量获取ID
+    /// 批量获取Id
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID数组</returns>
     long[] NextIds(int count);
 
     /// <summary>
-    /// 批量获取ID(字符串形式)
+    /// 批量获取Id(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
     string[] NextIdStrings(int count);
 
     /// <summary>
-    /// 异步获取下一个ID
+    /// 异步获取下一个Id
     /// </summary>
-    /// <returns>生成的ID</returns>
+    /// <returns>生成的Id</returns>
     Task<long> NextIdAsync();
 
     /// <summary>
-    /// 异步获取下一个ID(字符串形式)
+    /// 异步获取下一个Id(字符串形式)
     /// </summary>
     /// <returns>生成的ID字符串</returns>
     Task<string> NextIdStringAsync();
 
     /// <summary>
-    /// 异步批量获取ID
+    /// 异步批量获取Id
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID数组</returns>
     Task<long[]> NextIdsAsync(int count);
 
     /// <summary>
-    /// 异步批量获取ID(字符串形式)
+    /// 异步批量获取Id(字符串形式)
     /// </summary>
     /// <param name="count">需要获取的ID数量</param>
     /// <returns>ID字符串数组</returns>
@@ -79,10 +79,10 @@ public interface IDistributedIdGenerator
     DateTime ExtractTime(long id);
 
     /// <summary>
-    /// 从ID中提取工作机器ID
+    /// 从ID中提取工作机器Id
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>工作机器ID</returns>
+    /// <returns>工作机器Id</returns>
     int ExtractWorkerId(long id);
 
     /// <summary>
@@ -93,10 +93,10 @@ public interface IDistributedIdGenerator
     int ExtractSequence(long id);
 
     /// <summary>
-    /// 从ID中提取数据中心ID
+    /// 从ID中提取数据中心Id
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>数据中心ID</returns>
+    /// <returns>数据中心Id</returns>
     int ExtractDataCenterId(long id);
 
     /// <summary>

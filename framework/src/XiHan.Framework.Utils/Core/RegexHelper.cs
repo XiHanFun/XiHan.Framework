@@ -47,7 +47,7 @@ public static partial class RegexHelper
     public static partial Regex EmojiRegex();
 
     /// <summary>
-    /// 验证是否为UUID（包括带连字符和不带连字符的格式）
+    /// 验证是否为UUId（包括带连字符和不带连字符的格式）
     /// </summary>
     [GeneratedRegex(@"^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$", RegexOptions.Compiled)]
     public static partial Regex UuidRegex();

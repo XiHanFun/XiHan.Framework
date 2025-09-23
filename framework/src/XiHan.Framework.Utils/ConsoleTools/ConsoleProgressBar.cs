@@ -232,7 +232,7 @@ public class ConsoleMultiProgressBar : IDisposable
     /// <summary>
     /// 添加任务
     /// </summary>
-    /// <param name="taskId">任务ID</param>
+    /// <param name="taskId">任务Id</param>
     /// <param name="total">总数量</param>
     /// <param name="description">任务描述</param>
     /// <param name="width">进度条宽度</param>
@@ -268,7 +268,7 @@ public class ConsoleMultiProgressBar : IDisposable
     /// <summary>
     /// 更新任务进度
     /// </summary>
-    /// <param name="taskId">任务ID</param>
+    /// <param name="taskId">任务Id</param>
     /// <param name="current">当前进度</param>
     /// <param name="message">附加消息</param>
     public void UpdateTask(string taskId, long current, string? message = null)
@@ -291,7 +291,7 @@ public class ConsoleMultiProgressBar : IDisposable
     /// <summary>
     /// 增加任务进度
     /// </summary>
-    /// <param name="taskId">任务ID</param>
+    /// <param name="taskId">任务Id</param>
     /// <param name="increment">增量</param>
     /// <param name="message">附加消息</param>
     public void IncrementTask(string taskId, long increment = 1, string? message = null)
@@ -314,7 +314,7 @@ public class ConsoleMultiProgressBar : IDisposable
     /// <summary>
     /// 完成任务
     /// </summary>
-    /// <param name="taskId">任务ID</param>
+    /// <param name="taskId">任务Id</param>
     /// <param name="message">完成消息</param>
     public void CompleteTask(string taskId, string? message = null)
     {

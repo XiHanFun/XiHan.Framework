@@ -49,9 +49,9 @@ internal class SseMessageBuilder
     }
 
     /// <summary>
-    /// 设置事件ID
+    /// 设置事件Id
     /// </summary>
-    /// <param name="id">事件ID</param>
+    /// <param name="id">事件Id</param>
     public void SetId(string id)
     {
         _id = id;

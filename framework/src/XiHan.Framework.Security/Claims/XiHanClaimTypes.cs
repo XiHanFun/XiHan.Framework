@@ -20,7 +20,7 @@ namespace XiHan.Framework.Security.Claims;
 /// 曦寒身份声明类型
 /// </summary>
 /// <remarks>
-/// 模仿者(Impersonator)，通常指的是在多租户(Multi-Tenant)系统中，进行身份冒充(Impersonation)操作时，用于标识发起冒充行为的租户ID。
+/// 模仿者(Impersonator)，通常指的是在多租户(Multi-Tenant)系统中，进行身份冒充(Impersonation)操作时，用于标识发起冒充行为的租户Id。
 /// 在一些系统中，用户(或管理员)可能会以其他用户的身份执行操作，这种行为称为“冒充”或“假冒”。
 /// 为了保证安全性和审计的完整性，系统会记录下真正发起冒充操作的租户标识。
 /// 这样可以区分操作的实际发起者和被冒充的用户，并帮助系统进行权限管理和日志记录。

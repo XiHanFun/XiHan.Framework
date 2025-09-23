@@ -64,7 +64,7 @@ public class LoggingStressTests : IDisposable
                 {
                     for (var j = 0; j < messagesPerThread; j++)
                     {
-                        LogFileHelper.Info($"EXTREME Thread-{threadId:D3} Message-{j:D3} PID-{Environment.ProcessId}");
+                        LogFileHelper.Info($"EXTREME Thread-{threadId:D3} Message-{j:D3} PId-{Environment.ProcessId}");
 
                         // 随机小延迟模拟不同的写入模式
                         if (Random.Shared.Next(100) < 5) // 5% 概率

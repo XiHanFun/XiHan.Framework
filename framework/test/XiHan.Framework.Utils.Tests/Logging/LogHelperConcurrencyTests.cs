@@ -178,7 +178,7 @@ public class LogHelperConcurrencyTests
             {
                 try
                 {
-                    var table = new ConsoleTable("ID", "Name", "Value", "Timestamp");
+                    var table = new ConsoleTable("Id", "Name", "Value", "Timestamp");
                     for (var row = 0; row < 5; row++)
                     {
                         table.AddRow(
