@@ -63,7 +63,7 @@ public class HttpResult<T>
     public long ElapsedMilliseconds { get; set; }
 
     /// <summary>
-    /// 请求URL
+    /// 请求Url
     /// </summary>
     public string? RequestUrl { get; set; }
 

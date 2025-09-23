@@ -64,7 +64,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 发送 GET 请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -76,7 +76,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回字符串)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -88,7 +88,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回字节数组)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -100,7 +100,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回流)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -114,7 +114,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -133,7 +133,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 发送 POST 请求(JSON)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="jsonContent">JSON内容</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -148,7 +148,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 发送 POST 请求(表单数据)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="formData">表单数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -163,7 +163,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 上传文件
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="fileStream">文件流</param>
     /// <param name="fileName">文件名</param>
     /// <param name="fieldName">字段名</param>
@@ -182,7 +182,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 上传多个文件
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="files">文件信息</param>
     /// <param name="additionalData">附加数据</param>
     /// <param name="options">请求选项</param>
@@ -221,7 +221,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -241,7 +241,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -260,7 +260,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// 发送 DELETE 请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -272,7 +272,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 DELETE 请求(无响应内容)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -295,7 +295,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 HEAD 请求
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -318,7 +318,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 发送 OPTIONS 请求
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -341,7 +341,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 下载文件
     /// </summary>
-    /// <param name="url">文件URL</param>
+    /// <param name="url">文件Url</param>
     /// <param name="destinationPath">目标路径</param>
     /// <param name="progress">进度回调</param>
     /// <param name="options">请求选项</param>
@@ -391,42 +391,42 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "文件下载超时。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "文件下载超时。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure($"文件下载超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex);
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogWarning(ex, "文件下载被取消。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "文件下载被取消。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure("文件下载被取消", HttpStatusCode.RequestTimeout, ex);
         }
         catch (BrokenCircuitException ex)
         {
-            _logger.LogError(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+            _logger.LogError(ex, "断路器阻止了文件下载。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
                 url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
             return HttpResult.Failure($"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex);
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogError(ex, "文件访问权限错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogError(ex, "文件访问权限错误。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure("文件访问权限错误", HttpStatusCode.Forbidden, ex);
         }
         catch (IOException ex)
         {
-            _logger.LogError(ex, "文件IO错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogError(ex, "文件IO错误。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure("文件IO错误", HttpStatusCode.InternalServerError, ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "下载文件失败。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+            _logger.LogError(ex, "下载文件失败。Url: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure(ex.Message, HttpStatusCode.InternalServerError, ex);
@@ -475,7 +475,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
     /// <param name="method">HTTP方法</param>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="content">请求内容</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -551,7 +551,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "HTTP请求超时。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "HTTP请求超时。方法: {Method}, Url: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure($"请求超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex)
@@ -560,7 +560,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogWarning(ex, "HTTP请求被取消。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+            _logger.LogWarning(ex, "HTTP请求被取消。方法: {Method}, Url: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure("请求被取消", HttpStatusCode.RequestTimeout, ex)
@@ -569,7 +569,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (BrokenCircuitException ex)
         {
-            _logger.LogError(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+            _logger.LogError(ex, "断路器阻止了HTTP请求。方法: {Method}, Url: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
                 method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
             return HttpResult<T>.Failure($"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex)
@@ -578,7 +578,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, Url: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure(ex.Message, HttpStatusCode.InternalServerError, ex)
@@ -607,9 +607,9 @@ public class AdvancedHttpService : IAdvancedHttpService
     }
 
     /// <summary>
-    /// 构建完整URL
+    /// 构建完整Url
     /// </summary>
-    /// <param name="url">基础URL</param>
+    /// <param name="url">基础Url</param>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
     private static string BuildUrl(string url, HttpRequestOptions? options)
@@ -653,7 +653,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         // 默认使用远程客户端
         var clientName = HttpGroupEnum.Remote.ToString();
 
-        // 可以根据URL或其他条件选择不同的客户端
+        // 可以根据Url或其他条件选择不同的客户端
         if (options?.Tags.ContainsKey("ClientName") == true)
         {
             clientName = options.Tags["ClientName"].ToString() ?? clientName;

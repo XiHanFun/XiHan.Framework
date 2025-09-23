@@ -26,7 +26,7 @@ public interface IAdvancedHttpService
     /// 发送 GET 请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -35,7 +35,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回字符串)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -44,7 +44,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回字节数组)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -53,7 +53,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 GET 请求(返回流)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -64,7 +64,7 @@ public interface IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -75,7 +75,7 @@ public interface IAdvancedHttpService
     /// 发送 POST 请求(JSON)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="jsonContent">JSON内容</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -86,7 +86,7 @@ public interface IAdvancedHttpService
     /// 发送 POST 请求(表单数据)
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="formData">表单数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -97,7 +97,7 @@ public interface IAdvancedHttpService
     /// 上传文件
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="fileStream">文件流</param>
     /// <param name="fileName">文件名</param>
     /// <param name="fieldName">字段名</param>
@@ -112,7 +112,7 @@ public interface IAdvancedHttpService
     /// 上传多个文件
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="files">文件信息</param>
     /// <param name="additionalData">附加数据</param>
     /// <param name="options">请求选项</param>
@@ -126,7 +126,7 @@ public interface IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -138,7 +138,7 @@ public interface IAdvancedHttpService
     /// </summary>
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -149,7 +149,7 @@ public interface IAdvancedHttpService
     /// 发送 DELETE 请求
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -158,7 +158,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 DELETE 请求(无响应内容)
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -167,7 +167,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 HEAD 请求
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -176,7 +176,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 发送 OPTIONS 请求
     /// </summary>
-    /// <param name="url">请求URL</param>
+    /// <param name="url">请求Url</param>
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -185,7 +185,7 @@ public interface IAdvancedHttpService
     /// <summary>
     /// 下载文件
     /// </summary>
-    /// <param name="url">文件URL</param>
+    /// <param name="url">文件Url</param>
     /// <param name="destinationPath">目标路径</param>
     /// <param name="progress">进度回调</param>
     /// <param name="options">请求选项</param>

@@ -27,7 +27,7 @@ public class BatchRequestInfo
     public HttpMethod Method { get; set; } = HttpMethod.Get;
 
     /// <summary>
-    /// 请求URL
+    /// 请求Url
     /// </summary>
     public string Url { get; set; } = null!;
 

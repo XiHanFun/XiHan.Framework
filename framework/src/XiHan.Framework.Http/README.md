@@ -310,7 +310,7 @@ else if (result.IsServerError())
 
 ## 链式调用 API 参考
 
-### URL 扩展方法
+### Url 扩展方法
 
 ```csharp
 // 基础设置
