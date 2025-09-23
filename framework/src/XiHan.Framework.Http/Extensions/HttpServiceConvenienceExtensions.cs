@@ -28,7 +28,7 @@ public static class HttpServiceConvenienceExtensions
     /// </summary>
     /// <typeparam name="T">响应类型</typeparam>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">URL</param>
+    /// <param name="url">Url</param>
     /// <param name="token">授权令牌</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -54,7 +54,7 @@ public static class HttpServiceConvenienceExtensions
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">URL</param>
+    /// <param name="url">Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="token">授权令牌</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -82,7 +82,7 @@ public static class HttpServiceConvenienceExtensions
     /// <typeparam name="TRequest">请求类型</typeparam>
     /// <typeparam name="TResponse">响应类型</typeparam>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">URL</param>
+    /// <param name="url">Url</param>
     /// <param name="request">请求数据</param>
     /// <param name="token">授权令牌</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -108,7 +108,7 @@ public static class HttpServiceConvenienceExtensions
     /// 快速DELETE请求
     /// </summary>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">URL</param>
+    /// <param name="url">Url</param>
     /// <param name="token">授权令牌</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
@@ -133,7 +133,7 @@ public static class HttpServiceConvenienceExtensions
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
     /// <param name="httpService">HTTP服务</param>
-    /// <param name="url">URL</param>
+    /// <param name="url">Url</param>
     /// <param name="page">页码</param>
     /// <param name="size">页大小</param>
     /// <param name="token">授权令牌</param>
