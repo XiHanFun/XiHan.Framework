@@ -413,7 +413,7 @@ public static class StringExtensions
     /// </summary>
     public static string? Truncate(this string? str, int maxLength)
     {
-        return str is null ? null : str.Length <= maxLength ? str : str.Left(maxLength);
+        return str is null ? null : str.Length <= maxLength ? str : str.Left(maxLength) + "... (truncated)";
     }
 
     /// <summary>
@@ -421,7 +421,7 @@ public static class StringExtensions
     /// </summary>
     public static string? TruncateFromBeginning(this string? str, int maxLength)
     {
-        return str is null ? null : str.Length <= maxLength ? str : str.Right(maxLength);
+        return str is null ? null : str.Length <= maxLength ? str : "(truncated) ..." + str.Right(maxLength);
     }
 
     /// <summary>
