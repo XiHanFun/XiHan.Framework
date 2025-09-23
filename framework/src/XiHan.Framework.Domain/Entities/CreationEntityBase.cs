@@ -19,25 +19,14 @@ namespace XiHan.Framework.Domain.Entities;
 /// <summary>
 /// 创建审计实体基类
 /// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public abstract class CreationEntityBase<TKey> : EntityBase<TKey>, ICreationEntity
-    where TKey : IEquatable<TKey>
+public abstract class CreationEntityBase : ICreationEntity
 {
     /// <summary>
     /// 构造函数
     /// </summary>
     protected CreationEntityBase()
     {
-        CreationTime = DateTimeOffset.Now;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="id">实体主键</param>
-    protected CreationEntityBase(TKey id) : base(id)
-    {
-        CreationTime = DateTimeOffset.Now;
+        CreationTime = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -50,28 +39,23 @@ public abstract class CreationEntityBase<TKey> : EntityBase<TKey>, ICreationEnti
 /// 创建审计实体基类（带创建者）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public abstract class CreationEntityBase<TKey, TUserKey> : CreationEntityBase<TKey>, ICreationEntity<TUserKey>
+public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEntity<TKey>
     where TKey : IEquatable<TKey>
-    where TUserKey : IEquatable<TUserKey>
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected CreationEntityBase()
+    protected CreationEntityBase() : base()
     {
     }
 
     /// <summary>
-    /// 构造函数
+    /// 创建者Id
     /// </summary>
-    /// <param name="id">实体主键</param>
-    protected CreationEntityBase(TKey id) : base(id)
-    {
-    }
+    public virtual TKey? CreatorId { get; set; }
 
     /// <summary>
-    /// 创建者ID
+    /// 创建人
     /// </summary>
-    public virtual TUserKey? CreatorId { get; set; }
+    public virtual string? Creator { get; set; }
 }

@@ -24,12 +24,10 @@ public interface IFullAuditedEntity : IEntityBase, ICreationEntity, IModificatio
 
 /// <summary>
 /// 完整审计接口（带用户）
-/// 包含创建、修改、删除的所有审计信息和对应的用户ID
+/// 包含创建、修改、删除的所有审计信息和对应的用户Id
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public interface IFullAuditedEntity<TKey, TUserKey> : IEntityBase<TKey>, ICreationEntity<TUserKey>, IModificationEntity<TUserKey>, IDeletionEntity<TUserKey>
+public interface IFullAuditedEntity<TKey> : IEntityBase<TKey>, ICreationEntity<TKey>, IModificationEntity<TKey>, IDeletionEntity<TKey>
     where TKey : IEquatable<TKey>
-    where TUserKey : IEquatable<TUserKey>
 {
 }
