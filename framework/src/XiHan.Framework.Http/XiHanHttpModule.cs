@@ -12,12 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Http.Builder;
-using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Http.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Http;
@@ -38,15 +34,5 @@ public class XiHanHttpModule : XiHanModule
 
         // 使用扩展方法添加服务
         services.AddXiHanHttpModule(configuration);
-    }
-
-    /// <summary>
-    /// 应用初始化
-    /// </summary>
-    /// <param name="context"></param>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        // 使用构建器初始化应用
-        XiHanHttpApplicationBuilder.InitializeXiHanHttpModule(context.ServiceProvider);
     }
 }

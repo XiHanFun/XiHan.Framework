@@ -27,20 +27,12 @@ public static class StringHttpExtensions
     private static IAdvancedHttpService? _httpService;
 
     /// <summary>
-    /// 设置HTTP服务(通常在应用启动时调用)
+    /// 初始化服务提供者
     /// </summary>
-    /// <param name="httpService">HTTP服务实例</param>
-    public static void SetHttpService(IAdvancedHttpService httpService)
+    /// <param name="serviceProvider"></param>
+    public static void Initialize(IServiceProvider serviceProvider)
     {
-        _httpService = httpService;
-    }
-
-    /// <summary>
-    /// 从服务提供者获取HTTP服务
-    /// </summary>
-    /// <param name="serviceProvider">服务提供者</param>
-    public static void SetHttpService(IServiceProvider serviceProvider)
-    {
+        XiHanHttpGlobal.ServiceProvider = serviceProvider;
         _httpService = serviceProvider.GetRequiredService<IAdvancedHttpService>();
     }
 
@@ -277,7 +269,17 @@ public static class StringHttpExtensions
     /// <exception cref="InvalidOperationException">HTTP服务未初始化时抛出</exception>
     private static IAdvancedHttpService GetHttpService()
     {
-        return _httpService ?? throw new InvalidOperationException(
-            "HTTP服务未初始化。请在应用启动时调用  XiHanHttpApplicationBuilder.InitializeXiHanHttpModule(context.ServiceProvider); 方法。");
+        if (_httpService != null)
+        {
+            return _httpService;
+        }
+
+        if (XiHanHttpGlobal.ServiceProvider == null)
+        {
+            throw new InvalidOperationException("HTTP 服务未初始化，请在启动时调用 services.AddXiHanHttpModule();");
+        }
+
+        _httpService = XiHanHttpGlobal.ServiceProvider.GetRequiredService<IAdvancedHttpService>();
+        return _httpService;
     }
 }
