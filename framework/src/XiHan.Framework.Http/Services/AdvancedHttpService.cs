@@ -24,7 +24,6 @@ using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Serialization.Dynamic;
-using XiHan.Framework.Utils.Serialization.Json;
 using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
@@ -350,6 +349,11 @@ public class AdvancedHttpService : IAdvancedHttpService
     public async Task<HttpResult> DownloadFileAsync(string url, string destinationPath, IProgress<long>? progress = null,
         HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
+        // 设置默认超时时间
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+        var effectiveToken = linkedCts.Token;
+
         var stopwatch = Stopwatch.StartNew();
         var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
 
@@ -357,6 +361,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         {
             using var client = GetHttpClient(options);
             ConfigureRequest(client, options);
+
             var fullUrl = BuildUrl(url, options);
             using var response = await client.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
@@ -370,14 +375,14 @@ public class AdvancedHttpService : IAdvancedHttpService
             var totalBytes = response.Content.Headers.ContentLength ?? 0;
             var downloadedBytes = 0L;
 
-            using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var contentStream = await response.Content.ReadAsStreamAsync(effectiveToken);
             using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
 
             var buffer = new byte[8192];
             int bytesRead;
-            while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+            while ((bytesRead = await contentStream.ReadAsync(buffer, effectiveToken)) > 0)
             {
-                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), effectiveToken);
                 downloadedBytes += bytesRead;
                 progress?.Report(downloadedBytes);
             }
@@ -388,19 +393,55 @@ public class AdvancedHttpService : IAdvancedHttpService
         catch (BrokenCircuitException ex)
         {
             stopwatch.Stop();
-            var errorMessage = $"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
 
-            _logger.LogWarning(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求ID: {RequestId}, " +
-                "断路器将在 {DurationSeconds} 秒后重置",
+            _logger.LogWarning(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
                 url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
-            return HttpResult.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex);
+            return HttpResult.Failure($"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex);
+        }
+        catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "文件下载超时。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+                url, destinationPath, requestId);
+
+            return HttpResult.Failure($"文件下载超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "文件下载被取消。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+                url, destinationPath, requestId);
+
+            return HttpResult.Failure("文件下载被取消", HttpStatusCode.RequestTimeout, ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "文件访问权限错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+                url, destinationPath, requestId);
+
+            return HttpResult.Failure("文件访问权限错误", HttpStatusCode.Forbidden, ex);
+        }
+        catch (IOException ex)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "文件IO错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
+                url, destinationPath, requestId);
+
+            return HttpResult.Failure("文件IO错误", HttpStatusCode.InternalServerError, ex);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "下载文件失败。URL: {Url}, 目标路径: {DestinationPath}, 请求ID: {RequestId}",
+
+            _logger.LogError(ex, "下载文件失败。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
+
             return HttpResult.Failure(ex.Message, HttpStatusCode.InternalServerError, ex);
         }
     }
@@ -439,6 +480,134 @@ public class AdvancedHttpService : IAdvancedHttpService
     }
 
     /// <summary>
+    /// 发送HTTP请求的核心方法
+    /// </summary>
+    /// <typeparam name="T">响应类型</typeparam>
+    /// <param name="method">HTTP方法</param>
+    /// <param name="url">请求URL</param>
+    /// <param name="content">请求内容</param>
+    /// <param name="options">请求选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
+        HttpRequestOptions? options, CancellationToken cancellationToken)
+    {
+        // 设置默认超时时间
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+        var effectiveToken = linkedCts.Token;
+
+        var stopwatch = Stopwatch.StartNew();
+        var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
+
+        try
+        {
+            using var client = GetHttpClient(options);
+
+            ConfigureRequest(client, options);
+
+            var fullUrl = BuildUrl(url, options);
+            using var request = new HttpRequestMessage(method, fullUrl) { Content = content };
+
+            AddHeaders(request, options, requestId);
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+
+            var result = new HttpResult<T>
+            {
+                IsSuccess = response.IsSuccessStatusCode,
+                StatusCode = response.StatusCode,
+                ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
+                RequestUrl = fullUrl,
+                RequestMethod = method.Method,
+            };
+
+            // 复制响应头
+            foreach (var header in response.Headers)
+            {
+                result.Headers[header.Key] = header.Value;
+            }
+
+            if (response.Content?.Headers != null)
+            {
+                foreach (var header in response.Content.Headers)
+                {
+                    result.Headers[header.Key] = header.Value;
+                }
+            }
+
+            result.RawDataString = await DeserializeResponseAsync<string>(response, effectiveToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                result.Data = await DeserializeResponseAsync<T>(response, effectiveToken);
+            }
+            else
+            {
+                result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.StatusCode}";
+                if (response.Content != null)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(effectiveToken);
+                    if (!string.IsNullOrEmpty(errorContent))
+                    {
+                        result.ErrorMessage += $": {errorContent}";
+                    }
+                }
+            }
+
+            return result;
+        }
+        catch (BrokenCircuitException ex)
+        {
+            stopwatch.Stop();
+            var errorMessage = $"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
+
+            _logger.LogWarning(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+                method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
+
+            return HttpResult<T>.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
+        }
+        catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "HTTP请求超时。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+                method.Method, url, requestId);
+
+            return HttpResult<T>.Failure($"请求超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
+        }
+        catch (TaskCanceledException ex)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "HTTP请求被取消。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+                method.Method, url, requestId);
+
+            return HttpResult<T>.Failure("请求被取消", HttpStatusCode.RequestTimeout, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+
+            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
+                method.Method, url, requestId);
+
+            return HttpResult<T>.Failure(ex.Message, HttpStatusCode.InternalServerError, ex)
+                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
+                .SetRequestInfo(method.Method, url);
+        }
+    }
+
+    #region 内部方法
+
+    /// <summary>
     /// 配置请求
     /// </summary>
     /// <param name="client">HTTP客户端</param>
@@ -469,111 +638,23 @@ public class AdvancedHttpService : IAdvancedHttpService
     }
 
     /// <summary>
-    /// 发送HTTP请求的核心方法
+    /// 添加请求头
     /// </summary>
-    /// <typeparam name="T">响应类型</typeparam>
-    /// <param name="method">HTTP方法</param>
-    /// <param name="url">请求URL</param>
-    /// <param name="content">请求内容</param>
+    /// <param name="request">HTTP请求消息</param>
     /// <param name="options">请求选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns></returns>
-    private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
-        HttpRequestOptions? options, CancellationToken cancellationToken)
+    /// <param name="requestId">请求Id</param>
+    private static void AddHeaders(HttpRequestMessage request, HttpRequestOptions? options, string requestId)
     {
-        var stopwatch = Stopwatch.StartNew();
-        var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
-
-        try
+        // 添加请求头
+        if (options?.Headers != null)
         {
-            using var client = GetHttpClient(options);
-            ConfigureRequest(client, options);
-
-            var fullUrl = BuildUrl(url, options);
-            using var request = new HttpRequestMessage(method, fullUrl) { Content = content };
-
-            // 添加请求头
-            if (options?.Headers != null)
+            foreach (var header in options.Headers)
             {
-                foreach (var header in options.Headers)
-                {
-                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                }
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
-
-            // 添加请求ID
-            request.Headers.TryAddWithoutValidation("X-Request-Id", requestId);
-
-            using var response = await client.SendAsync(request, cancellationToken);
-            stopwatch.Stop();
-
-            var result = new HttpResult<T>
-            {
-                IsSuccess = response.IsSuccessStatusCode,
-                StatusCode = response.StatusCode,
-                ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
-                RequestUrl = fullUrl,
-                RequestMethod = method.Method,
-            };
-
-            // 复制响应头
-            foreach (var header in response.Headers)
-            {
-                result.Headers[header.Key] = header.Value;
-            }
-
-            if (response.Content?.Headers != null)
-            {
-                foreach (var header in response.Content.Headers)
-                {
-                    result.Headers[header.Key] = header.Value;
-                }
-            }
-
-            result.RawDataString = await DeserializeResponseAsync<string>(response, cancellationToken);
-
-            if (response.IsSuccessStatusCode)
-            {
-                result.Data = await DeserializeResponseAsync<T>(response, cancellationToken);
-            }
-            else
-            {
-                result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.StatusCode}";
-                if (response.Content != null)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                    if (!string.IsNullOrEmpty(errorContent))
-                    {
-                        result.ErrorMessage += $": {errorContent}";
-                    }
-                }
-            }
-
-            return result;
         }
-        catch (BrokenCircuitException ex)
-        {
-            stopwatch.Stop();
-            var errorMessage = $"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
-
-            _logger.LogWarning(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求ID: {RequestId}, " +
-                "断路器将在 {DurationSeconds} 秒后重置",
-                method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
-
-            return HttpResult<T>.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex)
-                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
-                .SetRequestInfo(method.Method, url);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, URL: {Url}, 请求ID: {RequestId}",
-                method.Method, url, requestId);
-
-            return HttpResult<T>.Failure(ex.Message, HttpStatusCode.InternalServerError, ex)
-                .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
-                .SetRequestInfo(method.Method, url);
-        }
+        // 添加请求Id
+        request.Headers.TryAddWithoutValidation("X-Request-Id", requestId);
     }
 
     /// <summary>
@@ -652,6 +733,8 @@ public class AdvancedHttpService : IAdvancedHttpService
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, cancellationToken);
     }
+
+    #endregion 内部方法
 }
 
 /// <summary>
