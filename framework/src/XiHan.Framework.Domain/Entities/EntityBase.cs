@@ -48,17 +48,17 @@ public abstract class EntityBase<TKey> : EntityBase, IEntityBase<TKey>, IEquatab
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected EntityBase()
+    protected EntityBase() : base()
     {
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="id">实体主键</param>
-    protected EntityBase(TKey id)
+    /// <param name="basicId">实体主键</param>
+    protected EntityBase(TKey basicId) : base()
     {
-        BasicId = id;
+        BasicId = basicId;
     }
 
     /// <summary>

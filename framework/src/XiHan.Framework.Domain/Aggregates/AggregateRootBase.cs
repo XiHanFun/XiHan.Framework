@@ -24,7 +24,14 @@ namespace XiHan.Framework.Domain.Aggregates;
 /// </summary>
 public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 {
-    private readonly DomainEventManager _eventManager = new();
+    private readonly DomainEventsManagerBase _eventManager = new();
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    protected AggregateRootBase() : base()
+    {
+    }
 
     /// <summary>
     /// 获取本地事件
@@ -71,6 +78,11 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
     /// </summary>
     /// <returns>如果有待处理事件返回 true，否则返回 false</returns>
     protected virtual bool HasPendingEvents() => _eventManager.HasPendingEvents();
+
+    /// <summary>
+    /// 标记事件为已提交
+    /// </summary>
+    protected virtual void MarkEventsAsCommitted() => _eventManager.MarkEventsAsCommitted();
 }
 
 /// <summary>
@@ -80,7 +92,7 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
-    private readonly DomainEventManager _eventManager = new();
+    private readonly DomainEventsManagerBase _eventManager = new();
 
     /// <summary>
     /// 构造函数
@@ -143,4 +155,9 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// </summary>
     /// <returns>如果有待处理事件返回 true，否则返回 false</returns>
     protected virtual bool HasPendingEvents() => _eventManager.HasPendingEvents();
+
+    /// <summary>
+    /// 标记事件为已提交
+    /// </summary>
+    protected virtual void MarkEventsAsCommitted() => _eventManager.MarkEventsAsCommitted();
 }

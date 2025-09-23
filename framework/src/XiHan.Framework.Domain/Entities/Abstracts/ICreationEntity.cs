@@ -30,12 +30,17 @@ public interface ICreationEntity
 /// 创建审计接口（带创建者）
 /// 用于记录实体的创建时间和创建者
 /// </summary>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public interface ICreationEntity<TUserKey> : ICreationEntity
-    where TUserKey : IEquatable<TUserKey>
+/// <typeparam name="TKey">用户主键类型</typeparam>
+public interface ICreationEntity<TKey> : ICreationEntity
+    where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 创建者ID
+    /// 创建者Id
     /// </summary>
-    TUserKey? CreatorId { get; set; }
+    TKey? CreatorId { get; set; }
+
+    /// <summary>
+    /// 创建人
+    /// </summary>
+    string? Creator { get; set; }
 }

@@ -20,7 +20,7 @@ namespace XiHan.Framework.Domain.Aggregates.Abstracts;
 /// <summary>
 /// 聚合根接口
 /// </summary>
-public interface IAggregateRoot : IEntityBase, IDomainEvents
+public interface IAggregateRoot : IEntityBase, IDomainEventsManager
 {
 }
 
