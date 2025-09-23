@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DomainEventManager
+// FileName:DomainEventsManagerBase
 // Guid:a60e271e-6353-43f9-980f-1d6019d355f8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using XiHan.Framework.Domain.Events.Abstracts;
 namespace XiHan.Framework.Domain.Events;
 
 /// <summary>
-/// 领域事件管理器 - 提取公共的事件处理逻辑
+/// 领域事件管理器基类
 /// </summary>
-public class DomainEventManager : IDomainEvents
+public class DomainEventsManagerBase : IDomainEventsManager
 {
     private readonly ConcurrentQueue<DomainEventRecord> _localEvents = new();
     private readonly ConcurrentQueue<DomainEventRecord> _distributedEvents = new();
@@ -97,5 +97,14 @@ public class DomainEventManager : IDomainEvents
     public virtual bool HasPendingEvents()
     {
         return !_localEvents.IsEmpty || !_distributedEvents.IsEmpty;
+    }
+
+    /// <summary>
+    /// 标记事件为已提交
+    /// </summary>
+    public virtual void MarkEventsAsCommitted()
+    {
+        while (_localEvents.TryDequeue(out _)) { }
+        while (_distributedEvents.TryDequeue(out _)) { }
     }
 }

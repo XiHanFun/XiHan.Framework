@@ -27,7 +27,7 @@ public abstract class DomainEventBase : IDomainEvent
     protected DomainEventBase()
     {
         EventId = Guid.NewGuid();
-        OccurredOn = DateTimeOffset.Now;
+        OccurredOn = DateTimeOffset.UtcNow;
     }
 
     /// <summary>

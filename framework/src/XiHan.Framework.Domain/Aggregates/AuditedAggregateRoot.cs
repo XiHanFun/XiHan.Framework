@@ -22,7 +22,7 @@ namespace XiHan.Framework.Domain.Aggregates;
 /// <summary>
 /// 审计聚合根基类
 /// </summary>
-public abstract class AuditedAggregateRoot : AuditedEntityBase<Guid>, IAggregateRoot
+public abstract class AuditedAggregateRoot : FullAuditedEntityBase, IAggregateRoot
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];
     private readonly ICollection<DomainEventRecord> _localEvents = [];
@@ -30,16 +30,7 @@ public abstract class AuditedAggregateRoot : AuditedEntityBase<Guid>, IAggregate
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected AuditedAggregateRoot()
-    {
-        BasicId = Guid.NewGuid();
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="id">聚合根ID</param>
-    protected AuditedAggregateRoot(Guid id) : base(id)
+    protected AuditedAggregateRoot() : base()
     {
     }
 
@@ -99,9 +90,9 @@ public abstract class AuditedAggregateRoot : AuditedEntityBase<Guid>, IAggregate
 /// <summary>
 /// 审计聚合根基类（带用户）
 /// </summary>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public abstract class AuditedAggregateRoot<TUserKey> : AuditedEntityBase<Guid, TUserKey>, IAggregateRoot
-    where TUserKey : IEquatable<TUserKey>
+/// <typeparam name="TKey">用户主键类型</typeparam>
+public abstract class AuditedAggregateRoot<TKey> : FullAuditedEntityBase<TKey>, IAggregateRoot<TKey>
+    where TKey : IEquatable<TKey>
 {
     private readonly ICollection<DomainEventRecord> _distributedEvents = [];
     private readonly ICollection<DomainEventRecord> _localEvents = [];
@@ -109,16 +100,8 @@ public abstract class AuditedAggregateRoot<TUserKey> : AuditedEntityBase<Guid, T
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected AuditedAggregateRoot()
-    {
-        BasicId = Guid.NewGuid();
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="id">聚合根ID</param>
-    protected AuditedAggregateRoot(Guid id) : base(id)
+    /// <param name="basicId"></param>
+    protected AuditedAggregateRoot(TKey basicId) : base(basicId)
     {
     }
 

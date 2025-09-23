@@ -147,7 +147,7 @@ public static class AggregateRootExtensions
         return new AggregateSnapshot
         {
             AggregateType = aggregateRoot.GetType().Name,
-            SnapshotTime = DateTimeOffset.Now,
+            SnapshotTime = DateTimeOffset.UtcNow,
             EventStatistics = aggregateRoot.GetEventStatistics(),
             RecentEvents = aggregateRoot.GetAllEvents()
                 .OrderByDescending(e => e.EventOrder)
@@ -236,7 +236,7 @@ public class EventSnapshot
     public string EventType { get; set; } = string.Empty;
 
     /// <summary>
-    /// 事件ID
+    /// 事件Id
     /// </summary>
     public Guid EventId { get; set; }
 

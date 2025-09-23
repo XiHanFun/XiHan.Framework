@@ -42,12 +42,17 @@ public interface IDeletionEntity : ISoftDelete
 /// 删除审计接口（带删除者）
 /// 用于记录实体的删除时间和删除者
 /// </summary>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public interface IDeletionEntity<TUserKey> : IDeletionEntity
-    where TUserKey : IEquatable<TUserKey>
+/// <typeparam name="TKey">用户主键类型</typeparam>
+public interface IDeletionEntity<TKey> : IDeletionEntity
+    where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 删除者ID
+    /// 删除者Id
     /// </summary>
-    TUserKey? DeleterId { get; set; }
+    TKey? DeleterId { get; set; }
+
+    /// <summary>
+    /// 删除者
+    /// </summary>
+    string? Deleter { get; set; }
 }

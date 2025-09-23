@@ -19,22 +19,12 @@ namespace XiHan.Framework.Domain.Entities;
 /// <summary>
 /// 修改审计实体基类
 /// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public abstract class ModificationEntityBase<TKey> : CreationEntityBase<TKey>, IModificationEntity
-    where TKey : IEquatable<TKey>
+public abstract class ModificationEntityBase : IModificationEntity
 {
     /// <summary>
     /// 构造函数
     /// </summary>
     protected ModificationEntityBase()
-    {
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="id">实体主键</param>
-    protected ModificationEntityBase(TKey id) : base(id)
     {
     }
 
@@ -48,33 +38,23 @@ public abstract class ModificationEntityBase<TKey> : CreationEntityBase<TKey>, I
 /// 修改审计实体基类（带修改者）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TUserKey">用户主键类型</typeparam>
-public abstract class ModificationEntityBase<TKey, TUserKey> : CreationEntityBase<TKey, TUserKey>, IModificationEntity<TUserKey>
+public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IModificationEntity<TKey>
     where TKey : IEquatable<TKey>
-    where TUserKey : IEquatable<TUserKey>
 {
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected ModificationEntityBase()
+    protected ModificationEntityBase() : base()
     {
     }
 
     /// <summary>
-    /// 构造函数
+    /// 修改者Id
     /// </summary>
-    /// <param name="id">实体主键</param>
-    protected ModificationEntityBase(TKey id) : base(id)
-    {
-    }
+    public virtual TKey? ModifierId { get; set; }
 
     /// <summary>
-    /// 修改时间
+    /// 修改人
     /// </summary>
-    public virtual DateTimeOffset? ModificationTime { get; set; }
-
-    /// <summary>
-    /// 修改者ID
-    /// </summary>
-    public virtual TUserKey? ModifierId { get; set; }
+    public virtual string? Modifier { get; set; }
 }
