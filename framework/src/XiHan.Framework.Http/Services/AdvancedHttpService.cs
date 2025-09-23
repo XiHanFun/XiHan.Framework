@@ -392,17 +392,13 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (BrokenCircuitException ex)
         {
-            stopwatch.Stop();
-
-            _logger.LogWarning(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+            _logger.LogError(ex, "断路器阻止了文件下载。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
                 url, destinationPath, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
             return HttpResult.Failure($"断路器已打开，文件下载被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex);
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "文件下载超时。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
@@ -410,8 +406,6 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "文件下载被取消。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
@@ -419,8 +413,6 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (UnauthorizedAccessException ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "文件访问权限错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
@@ -428,8 +420,6 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (IOException ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "文件IO错误。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
@@ -437,12 +427,14 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (Exception ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "下载文件失败。URL: {Url}, 目标路径: {DestinationPath}, 请求Id: {RequestId}",
                 url, destinationPath, requestId);
 
             return HttpResult.Failure(ex.Message, HttpStatusCode.InternalServerError, ex);
+        }
+        finally
+        {
+            stopwatch.Stop();
         }
     }
 
@@ -560,20 +552,15 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (BrokenCircuitException ex)
         {
-            stopwatch.Stop();
-            var errorMessage = $"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试";
-
-            _logger.LogWarning(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
+            _logger.LogError(ex, "断路器阻止了HTTP请求。方法: {Method}, URL: {Url}, 请求Id: {RequestId}, 断路器将在 {DurationSeconds} 秒后重置",
                 method.Method, url, requestId, _options.CircuitBreakerDurationOfBreakSeconds);
 
-            return HttpResult<T>.Failure(errorMessage, HttpStatusCode.ServiceUnavailable, ex)
+            return HttpResult<T>.Failure($"断路器已打开，请求被阻止。请等待约 {_options.CircuitBreakerDurationOfBreakSeconds} 秒后重试", HttpStatusCode.ServiceUnavailable, ex)
                 .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
                 .SetRequestInfo(method.Method, url);
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "HTTP请求超时。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
@@ -583,8 +570,6 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "HTTP请求被取消。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
@@ -594,14 +579,16 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (Exception ex)
         {
-            stopwatch.Stop();
-
             _logger.LogError(ex, "HTTP请求失败。方法: {Method}, URL: {Url}, 请求Id: {RequestId}",
                 method.Method, url, requestId);
 
             return HttpResult<T>.Failure(ex.Message, HttpStatusCode.InternalServerError, ex)
                 .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
                 .SetRequestInfo(method.Method, url);
+        }
+        finally
+        {
+            stopwatch.Stop();
         }
     }
 
