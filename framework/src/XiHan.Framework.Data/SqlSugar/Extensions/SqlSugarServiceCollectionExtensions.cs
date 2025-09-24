@@ -18,6 +18,7 @@ using XiHan.Framework.Data.Core;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Repositories;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
 
@@ -45,7 +46,7 @@ public static class SqlSugarServiceCollectionExtensions
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IDataRepository<,>), typeof(SqlSugarDataRepository<,>));
-        services.TryAddScoped(typeof(IAggregateRepository<,>), typeof(SqlSugarAggregateRepository<,>));
+        services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
 
         return services;
     }
@@ -76,7 +77,7 @@ public static class SqlSugarServiceCollectionExtensions
         where TAggregateRoot : class, IAggregateRoot<TKey>, new()
         where TKey : IEquatable<TKey>
     {
-        services.TryAddScoped<IAggregateRepository<TAggregateRoot, TKey>, SqlSugarAggregateRepository<TAggregateRoot, TKey>>();
+        services.TryAddScoped<IAggregateRootRepository<TAggregateRoot, TKey>, SqlSugarAggregateRepository<TAggregateRoot, TKey>>();
         return services;
     }
 

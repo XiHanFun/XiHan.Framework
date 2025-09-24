@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
+using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.Core;
@@ -24,7 +25,7 @@ namespace XiHan.Framework.Data.Core;
 /// </summary>
 /// <typeparam name="TAggregateRoot">聚合根类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarDataRepository<TAggregateRoot, TKey>, IAggregateRepository<TAggregateRoot, TKey>, IScopedDependency
+public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarDataRepository<TAggregateRoot, TKey>, IAggregateRootRepository<TAggregateRoot, TKey>, IScopedDependency
     where TAggregateRoot : class, IAggregateRoot<TKey>, new()
     where TKey : IEquatable<TKey>
 {

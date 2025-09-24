@@ -20,6 +20,7 @@ using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data;
@@ -51,6 +52,6 @@ public class XiHanDataModule : XiHanModule
 
         // 注册核心数据访问服务
         context.Services.AddScoped(typeof(IDataRepository<,>), typeof(SqlSugarDataRepository<,>));
-        context.Services.AddScoped(typeof(IAggregateRepository<,>), typeof(SqlSugarAggregateRepository<,>));
+        context.Services.AddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
     }
 }

@@ -13,129 +13,47 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
+using System.ComponentModel.DataAnnotations;
+using XiHan.Framework.Domain.Entities;
 
 namespace XiHan.Framework.Data.SqlSugar.Entities;
 
 /// <summary>
-/// SqlSugar实体基类
+/// SqlSugar 实体基类（泛型主键）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class SugarEntity<TKey> where TKey : struct
+public abstract class SugarEntity<TKey> : EntityBase<TKey>
+    where TKey : IEquatable<TKey>
 {
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    protected SugarEntity()
+    {
+        RowVersion = [];
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">实体主键</param>
+    protected SugarEntity(TKey basicId)
+    {
+        RowVersion = [];
+        BasicId = basicId;
+    }
+
+    /// <summary>
+    /// 版本控制标识，用于处理并发
+    /// </summary>
+    [ConcurrencyCheck]
+    [Timestamp]
+    [SugarColumn(IsOnlyIgnoreUpdate = true)]
+    public override byte[] RowVersion { get; set; }
+
     /// <summary>
     /// 主键
     /// </summary>
     [SugarColumn(IsPrimaryKey = true)]
-    public virtual TKey BaseId { get; set; }
-}
-
-/// <summary>
-/// SqlSugar实体基类(自增主键)
-/// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public abstract class SugarEntityWithIdentity<TKey> where TKey : struct
-{
-    /// <summary>
-    /// 主键(自增)
-    /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
-    public virtual TKey BaseId { get; set; }
-}
-
-/// <summary>
-/// SqlSugar全功能审计实体基类
-/// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public abstract class SugarEntityWithAudit<TKey> : SugarEntity<TKey> where TKey : struct
-{
-    /// <summary>
-    /// 创建时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
-
-    /// <summary>
-    /// 创建者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "创建者Id", IsNullable = true)]
-    public virtual TKey? CreatorId { get; set; }
-
-    /// <summary>
-    /// 修改时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "修改时间", IsNullable = true)]
-    public virtual DateTimeOffset? ModificationTime { get; set; }
-
-    /// <summary>
-    /// 修改者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "修改者Id", IsNullable = true)]
-    public virtual TKey? ModifierId { get; set; }
-
-    /// <summary>
-    /// 软删除标记
-    /// </summary>
-    [SugarColumn(ColumnDescription = "软删除标记")]
-    public virtual bool IsDeleted { get; set; }
-
-    /// <summary>
-    /// 删除时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "删除时间", IsNullable = true)]
-    public virtual DateTimeOffset? DeletionTime { get; set; }
-
-    /// <summary>
-    /// 删除者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "删除者Id", IsNullable = true)]
-    public virtual TKey? DeleterId { get; set; }
-}
-
-/// <summary>
-/// SqlSugar全功能审计实体基类(自增主键)
-/// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-public abstract class SugarEntityWithIdentityAndAudit<TKey> : SugarEntityWithIdentity<TKey> where TKey : struct
-{
-    /// <summary>
-    /// 创建时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "创建时间")]
-    public virtual DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
-
-    /// <summary>
-    /// 创建者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "创建者Id", IsNullable = true)]
-    public virtual TKey? CreatorId { get; set; }
-
-    /// <summary>
-    /// 修改时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "修改时间", IsNullable = true)]
-    public virtual DateTimeOffset? ModificationTime { get; set; }
-
-    /// <summary>
-    /// 修改者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "修改者Id", IsNullable = true)]
-    public virtual TKey? ModifierId { get; set; }
-
-    /// <summary>
-    /// 软删除标记
-    /// </summary>
-    [SugarColumn(ColumnDescription = "软删除标记")]
-    public virtual bool IsDeleted { get; set; }
-
-    /// <summary>
-    /// 删除时间
-    /// </summary>
-    [SugarColumn(ColumnDescription = "删除时间", IsNullable = true)]
-    public virtual DateTimeOffset? DeletionTime { get; set; }
-
-    /// <summary>
-    /// 删除者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "删除者Id", IsNullable = true)]
-    public virtual TKey? DeleterId { get; set; }
+    public override TKey BasicId { get; protected set; } = default!;
 }
