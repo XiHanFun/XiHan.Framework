@@ -14,10 +14,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.Data.Core;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
-using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
@@ -45,24 +44,8 @@ public static class SqlSugarServiceCollectionExtensions
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
 
         // 注册仓储服务
-        services.TryAddScoped(typeof(IDataRepository<,>), typeof(SqlSugarDataRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
 
-        return services;
-    }
-
-    /// <summary>
-    /// 添加实体仓储
-    /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <typeparam name="TKey">主键类型</typeparam>
-    /// <param name="services">服务集合</param>
-    /// <returns>服务集合</returns>
-    public static IServiceCollection AddRepository<TEntity, TKey>(this IServiceCollection services)
-        where TEntity : class, IEntityBase<TKey>, new()
-        where TKey : IEquatable<TKey>
-    {
-        services.TryAddScoped<IDataRepository<TEntity, TKey>, SqlSugarDataRepository<TEntity, TKey>>();
         return services;
     }
 
