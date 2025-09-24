@@ -12,12 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 
 namespace XiHan.Framework.Domain.Repositories;
 
 /// <summary>
-/// 仓储接口基类
+/// 仓储接口基类，在只读操作的基础上提供增删改能力
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
@@ -28,64 +29,72 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <summary>
     /// 添加实体
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>添加的实体</returns>
+    /// <param name="entity">待添加的实体实例</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>已持久化的实体实例</returns>
     Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量添加实体
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>添加的实体集合</returns>
+    /// <param name="entities">待添加的实体集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>已持久化的实体集合</returns>
     Task<IEnumerable<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 更新实体
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>更新的实体</returns>
+    /// <param name="entity">待更新的实体实例</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>更新后的实体实例</returns>
     Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量更新实体
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>更新的实体集合</returns>
+    /// <param name="entities">待更新的实体集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>更新后的实体集合</returns>
     Task<IEnumerable<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除实体
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>任务</returns>
+    /// <param name="entity">待删除的实体实例</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步删除操作的任务</returns>
     Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据主键删除实体
     /// </summary>
-    /// <param name="id">主键</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>任务</returns>
+    /// <param name="id">实体主键</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步删除操作的任务</returns>
     Task DeleteAsync(TKey id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>任务</returns>
+    /// <param name="entities">待删除的实体集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步删除操作的任务</returns>
     Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体（根据主键）
     /// </summary>
-    /// <param name="ids">主键集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>任务</returns>
+    /// <param name="ids">需要删除的实体主键集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步删除操作的任务</returns>
     Task DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据条件删除实体
+    /// </summary>
+    /// <param name="predicate">用于筛选待删除实体的条件表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步删除操作的任务</returns>
+    Task DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 }
