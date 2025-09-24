@@ -97,7 +97,7 @@ public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected AggregateRootBase()
+    protected AggregateRootBase() : base()
     {
     }
 

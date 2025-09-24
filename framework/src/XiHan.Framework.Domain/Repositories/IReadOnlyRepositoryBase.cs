@@ -19,7 +19,7 @@ using XiHan.Framework.Domain.Specifications.Abstracts;
 namespace XiHan.Framework.Domain.Repositories;
 
 /// <summary>
-/// 只读仓储接口基类
+/// 只读仓储接口基类，提供查询相关的通用操作
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
@@ -30,86 +30,94 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <summary>
     /// 根据主键查找实体
     /// </summary>
-    /// <param name="id">主键</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体</returns>
+    /// <param name="id">实体主键</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
     Task<TEntity?> FindByIdAsync(TKey id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据主键集合批量查找实体
+    /// </summary>
+    /// <param name="ids">实体主键集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>与主键集合匹配的实体集合</returns>
+    Task<IReadOnlyList<TEntity>> FindByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件查找单个实体
     /// </summary>
-    /// <param name="predicate">查询条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体</returns>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
     Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约查找单个实体
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体</returns>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
     Task<TEntity?> FindAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取所有实体
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>符合条件的实体集合</returns>
     Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
     /// </summary>
-    /// <param name="predicate">查询条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>符合条件的实体集合</returns>
     Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约获取实体集合
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>符合条件的实体集合</returns>
     Task<IEnumerable<TEntity>> GetAllAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取总数
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体总数</returns>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>当前仓储中的实体数量</returns>
     Task<long> CountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取总数
     /// </summary>
-    /// <param name="predicate">查询条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>满足条件的实体总数</returns>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>满足条件的实体数量</returns>
     Task<long> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约获取总数
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>满足规约的实体总数</returns>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>满足规约的实体数量</returns>
     Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 检查是否存在满足条件的实体
     /// </summary>
-    /// <param name="predicate">查询条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>如果存在返回 true，否则返回 false</returns>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>如果存在满足条件的实体则返回 <c>true</c>，否则返回 <c>false</c></returns>
     Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 检查是否存在满足规约的实体
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>如果存在返回 true，否则返回 false</returns>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>如果存在满足规约的实体则返回 <c>true</c>，否则返回 <c>false</c></returns>
     Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 }
