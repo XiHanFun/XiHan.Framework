@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Data.Core;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
@@ -47,11 +46,7 @@ public class XiHanDataModule : XiHanModule
         // 添加SqlSugar数据访问服务
         context.Services.AddSqlSugarData();
 
-        // 注册传统SqlSugar仓储（向后兼容）
-        context.Services.AddTransient(typeof(ISqlSugarRepository<>), typeof(SqlSugarRepository<>));
-
         // 注册核心数据访问服务
-        context.Services.AddScoped(typeof(IDataRepository<,>), typeof(SqlSugarDataRepository<,>));
         context.Services.AddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
     }
 }
