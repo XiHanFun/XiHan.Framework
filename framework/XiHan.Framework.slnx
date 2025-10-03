@@ -90,7 +90,6 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CodeMaid.config" />
-    <File Path="Directory.Build.props" />
     <File Path="global.json" />
   </Folder>
 </Solution>
