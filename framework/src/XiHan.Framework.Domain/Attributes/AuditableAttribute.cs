@@ -53,6 +53,6 @@ public class NoAuditAttribute : Attribute
 /// 标记属性在审计比较时忽略的特性
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class AuditIgnoreAttribute : Attribute
+public class IgnoreAuditAttribute : Attribute
 {
 }
