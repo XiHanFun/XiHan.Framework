@@ -18,7 +18,7 @@ using XiHan.Framework.Utils.Core;
 namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
-/// 扩展属性帮助器
+/// 扩展属性帮助类
 /// 提供扩展属性的默认特性和默认值处理的静态方法集合
 /// </summary>
 public static class ExtensionPropertyHelper
