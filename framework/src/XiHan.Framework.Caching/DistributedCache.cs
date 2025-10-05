@@ -1579,7 +1579,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="ex"></param>
     protected virtual void HandleException(Exception ex)
     {
-        HandleExceptionAsync(ex);
+        HandleExceptionAsync(ex).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     /// <summary>
