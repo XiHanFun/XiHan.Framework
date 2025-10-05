@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Mapster;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.ObjectMapping.Extensions;
 
 namespace XiHan.Framework.ObjectMapping;
 
@@ -30,6 +30,6 @@ public class XiHanObjectMappingModule : XiHanModule
     {
         var services = context.Services;
 
-        services.AddMapster();
+        services.AddXiHanMapster();
     }
 }
