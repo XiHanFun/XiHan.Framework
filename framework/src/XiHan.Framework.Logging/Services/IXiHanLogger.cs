@@ -40,14 +40,14 @@ public interface IXiHanLogger
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    void LogInformation(string message, params object[] args);
+    void LogInfo(string message, params object[] args);
 
     /// <summary>
     /// 记录警告日志
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    void LogWarning(string message, params object[] args);
+    void LogWarn(string message, params object[] args);
 
     /// <summary>
     /// 记录错误日志
@@ -108,7 +108,7 @@ public interface IXiHanLogger
     /// <typeparam name="TState">状态类型</typeparam>
     /// <param name="state">状态</param>
     /// <returns></returns>
-    IDisposable BeginScope<TState>(TState state) where TState : notnull;
+    IDisposable? BeginScope<TState>(TState state) where TState : notnull;
 }
 
 /// <summary>

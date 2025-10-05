@@ -32,7 +32,7 @@ public static class SqlSugarServiceCollectionExtensions
     /// <param name="services">服务集合</param>
     /// <param name="configureOptions">配置选项</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddSqlSugarData(this IServiceCollection services, Action<XiHanSqlSugarCoreOptions>? configureOptions = null)
+    public static IServiceCollection AddXiHanDataSqlSugar(this IServiceCollection services, Action<XiHanSqlSugarCoreOptions>? configureOptions = null)
     {
         // 配置选项
         if (configureOptions != null)
@@ -56,7 +56,7 @@ public static class SqlSugarServiceCollectionExtensions
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddAggregateRepository<TAggregateRoot, TKey>(this IServiceCollection services)
+    public static IServiceCollection AddXiHanAggregateRepository<TAggregateRoot, TKey>(this IServiceCollection services)
         where TAggregateRoot : class, IAggregateRoot<TKey>, new()
         where TKey : IEquatable<TKey>
     {
@@ -72,7 +72,7 @@ public static class SqlSugarServiceCollectionExtensions
     /// <param name="services">服务集合</param>
     /// <param name="lifetime">服务生命周期</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddCustomRepository<TInterface, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped)
+    public static IServiceCollection AddXiHanCustomRepository<TInterface, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped)
         where TInterface : class
         where TImplementation : class, TInterface
     {

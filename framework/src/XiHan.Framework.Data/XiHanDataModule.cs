@@ -40,13 +40,12 @@ public class XiHanDataModule : XiHanModule
     /// <param name="context">服务配置上下文</param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
         // 配置SqlSugar选项
-        Configure<XiHanSqlSugarCoreOptions>(context.Services.GetConfiguration());
+        Configure<XiHanSqlSugarCoreOptions>(services.GetConfiguration());
 
         // 添加SqlSugar数据访问服务
-        context.Services.AddSqlSugarData();
-
-        // 注册核心数据访问服务
-        context.Services.AddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
+        services.AddXiHanDataSqlSugar();
     }
 }
