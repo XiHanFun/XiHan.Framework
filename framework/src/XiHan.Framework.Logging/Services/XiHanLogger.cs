@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using XiHan.Framework.Logging.Options;
 
 namespace XiHan.Framework.Logging.Services;
@@ -30,7 +31,7 @@ public class XiHanLogger : IXiHanLogger
     /// </summary>
     /// <param name="logger">日志器</param>
     /// <param name="options">日志配置选项</param>
-    public XiHanLogger(ILogger<XiHanLogger> logger, Microsoft.Extensions.Options.IOptions<XiHanLoggingOptions> options)
+    public XiHanLogger(ILogger<XiHanLogger> logger, IOptions<XiHanLoggingOptions> options)
     {
         _logger = logger;
         _options = options.Value;
@@ -48,7 +49,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogTrace(message, args);
+        _logger.LogTrace("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -63,7 +64,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogDebug(message, args);
+        _logger.LogDebug("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -71,14 +72,14 @@ public class XiHanLogger : IXiHanLogger
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    public void LogInformation(string message, params object[] args)
+    public void LogInfo(string message, params object[] args)
     {
         if (!_options.IsEnabled)
         {
             return;
         }
 
-        _logger.LogInformation(message, args);
+        _logger.LogInformation("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -86,14 +87,14 @@ public class XiHanLogger : IXiHanLogger
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    public void LogWarning(string message, params object[] args)
+    public void LogWarn(string message, params object[] args)
     {
         if (!_options.IsEnabled)
         {
             return;
         }
 
-        _logger.LogWarning(message, args);
+        _logger.LogWarning("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -108,7 +109,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogError(message, args);
+        _logger.LogError("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -124,7 +125,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogError(exception, message, args);
+        _logger.LogError(exception, "{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -139,7 +140,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogCritical(message, args);
+        _logger.LogCritical("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -155,7 +156,7 @@ public class XiHanLogger : IXiHanLogger
             return;
         }
 
-        _logger.LogCritical(exception, message, args);
+        _logger.LogCritical(exception, "{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -173,7 +174,7 @@ public class XiHanLogger : IXiHanLogger
 
         using (Serilog.Context.LogContext.PushProperty("StructuredData", properties, true))
         {
-            _logger.Log(level, message);
+            _logger.Log(level, "{Message}", message);
         }
     }
 
@@ -199,7 +200,7 @@ public class XiHanLogger : IXiHanLogger
 
         using (Serilog.Context.LogContext.PushProperty("PerformanceData", performanceData, true))
         {
-            _logger.LogInformation("Performance: {OperationName} completed in {Duration}ms", operationName, duration.TotalMilliseconds);
+            _logger.LogInformation("Performance: {OperationName} completed in {TotalMilliseconds}ms", operationName, duration.TotalMilliseconds);
         }
     }
 
@@ -219,7 +220,7 @@ public class XiHanLogger : IXiHanLogger
     /// <typeparam name="TState">状态类型</typeparam>
     /// <param name="state">状态</param>
     /// <returns></returns>
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
         return _logger.BeginScope(state);
     }
@@ -239,7 +240,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
     /// </summary>
     /// <param name="logger">日志器</param>
     /// <param name="options">日志配置选项</param>
-    public XiHanLogger(ILogger<T> logger, Microsoft.Extensions.Options.IOptions<XiHanLoggingOptions> options)
+    public XiHanLogger(ILogger<T> logger, IOptions<XiHanLoggingOptions> options)
     {
         _logger = logger;
         _options = options.Value;
@@ -257,7 +258,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogTrace(message, args);
+        _logger.LogTrace("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -272,7 +273,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogDebug(message, args);
+        _logger.LogDebug("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -280,14 +281,14 @@ public class XiHanLogger<T> : IXiHanLogger<T>
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    public void LogInformation(string message, params object[] args)
+    public void LogInfo(string message, params object[] args)
     {
         if (!_options.IsEnabled)
         {
             return;
         }
 
-        _logger.LogInformation(message, args);
+        _logger.LogInformation("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -295,14 +296,14 @@ public class XiHanLogger<T> : IXiHanLogger<T>
     /// </summary>
     /// <param name="message">消息</param>
     /// <param name="args">参数</param>
-    public void LogWarning(string message, params object[] args)
+    public void LogWarn(string message, params object[] args)
     {
         if (!_options.IsEnabled)
         {
             return;
         }
 
-        _logger.LogWarning(message, args);
+        _logger.LogWarning("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -317,7 +318,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogError(message, args);
+        _logger.LogError("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -333,7 +334,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogError(exception, message, args);
+        _logger.LogError(exception, "{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -348,7 +349,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogCritical(message, args);
+        _logger.LogCritical("{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -364,7 +365,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
             return;
         }
 
-        _logger.LogCritical(exception, message, args);
+        _logger.LogCritical(exception, "{Message}{Args}", message, args);
     }
 
     /// <summary>
@@ -382,7 +383,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
 
         using (Serilog.Context.LogContext.PushProperty("StructuredData", properties, true))
         {
-            _logger.Log(level, message);
+            _logger.Log(level, "{Message}", message);
         }
     }
 
@@ -408,7 +409,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
 
         using (Serilog.Context.LogContext.PushProperty("PerformanceData", performanceData, true))
         {
-            _logger.LogInformation("Performance: {OperationName} completed in {Duration}ms", operationName, duration.TotalMilliseconds);
+            _logger.LogInformation("Performance: {OperationName} completed in {TotalMilliseconds}ms", operationName, duration.TotalMilliseconds);
         }
     }
 
@@ -428,7 +429,7 @@ public class XiHanLogger<T> : IXiHanLogger<T>
     /// <typeparam name="TState">状态类型</typeparam>
     /// <param name="state">状态</param>
     /// <returns></returns>
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
         return _logger.BeginScope(state);
     }

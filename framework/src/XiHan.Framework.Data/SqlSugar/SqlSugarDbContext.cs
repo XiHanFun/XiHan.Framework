@@ -210,8 +210,7 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
                 var lambda = Expression.Lambda(funcType, filterCall, parameter);
 
                 // 使用反射调用AddTableFilter方法
-                var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")
-                    ?.MakeGenericMethod(entityType);
+                var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
                 methodInfo?.Invoke(db.QueryFilter, [lambda]);
             }
 

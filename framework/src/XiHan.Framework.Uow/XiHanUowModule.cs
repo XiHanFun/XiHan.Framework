@@ -28,7 +28,8 @@ public class XiHanUowModule : XiHanModule
     /// <param name="context"></param>
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.OnRegistered(UnitOfWorkInterceptorRegistrar.RegisterIfNeeded);
+        var services = context.Services;
+        services.OnRegistered(UnitOfWorkInterceptorRegistrar.RegisterIfNeeded);
     }
 
     /// <summary>
