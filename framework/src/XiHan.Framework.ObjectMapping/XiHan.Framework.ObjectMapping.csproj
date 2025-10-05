@@ -14,7 +14,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Mapster.DependencyInjection" Version="1.0.3-pre02" />
+	  <PackageReference Include="Mapster" Version="9.0.0-pre01" />
 	</ItemGroup>
 	
 	<ItemGroup>
