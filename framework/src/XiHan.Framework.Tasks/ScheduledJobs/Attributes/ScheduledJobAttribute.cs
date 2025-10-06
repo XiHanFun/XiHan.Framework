@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Tasks.ScheduledJobs;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Attributes;
 
 /// <summary>
 /// 调度任务特性

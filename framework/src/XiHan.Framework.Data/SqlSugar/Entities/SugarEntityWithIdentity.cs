@@ -48,12 +48,12 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     /// </summary>
     [ConcurrencyCheck]
     [Timestamp]
-    [SugarColumn(IsOnlyIgnoreUpdate = true)]
+    [SugarColumn(IsOnlyIgnoreUpdate = true, ColumnDescription = "版本控制标识，用于处理并发")]
     public override byte[] RowVersion { get; set; }
 
     /// <summary>
     /// 主键（自增）
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
+    [SugarColumn(IsPrimaryKey = true, IsIdentity = true, ColumnDescription = "主键（自增）")]
     public override TKey BasicId { get; protected set; } = default!;
 }

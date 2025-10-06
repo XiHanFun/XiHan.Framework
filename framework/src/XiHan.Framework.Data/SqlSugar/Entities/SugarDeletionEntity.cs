@@ -35,24 +35,24 @@ public abstract class SugarDeletionEntity<TKey> : DeletionEntityBase<TKey>
     /// <summary>
     /// 软删除标记
     /// </summary>
-    [SugarColumn(ColumnDescription = "软删除标记")]
+    [SugarColumn(IsNullable = false,ColumnDescription = "软删除标记")]
     public override bool IsDeleted { get; set; }
 
     /// <summary>
     /// 删除时间
     /// </summary>
-    [SugarColumn(ColumnDescription = "删除时间", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "删除时间")]
     public override DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
     /// 删除者 Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "删除者Id", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "删除者Id")]
     public override TKey? DeleterId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
-    [SugarColumn(ColumnDescription = "删除者", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "删除者")]
     public override string? Deleter { get; set; }
 }
