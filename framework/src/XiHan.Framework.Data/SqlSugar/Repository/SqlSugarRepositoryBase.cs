@@ -41,7 +41,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     public SqlSugarRepositoryBase(ISqlSugarDbContext dbContext)
     {
         _dbContext = dbContext;
-        _dbClient = dbContext.GetClient();
+        _dbClient = _dbContext.GetClient();
         _simpleClient = _dbClient.GetSimpleClient<TEntity>();
     }
 
@@ -50,85 +50,134 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <inheritdoc />
     public async Task<TEntity?> FindByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         return await _simpleClient.GetByIdAsync(id, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<TEntity>> FindByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(ids);
+
         var idList = ids.ToArray();
         if (idList.Length == 0)
         {
             return [];
         }
 
-        var result = await _dbClient.Queryable<TEntity>()
-            .Where(entity => idList.Contains(entity.BasicId))
-            .ToListAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = await _simpleClient.GetListAsync(it => idList.Contains(it.BasicId), cancellationToken);
         return result;
     }
 
     /// <inheritdoc />
     public async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _simpleClient.GetSingleAsync(predicate, cancellationToken);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _simpleClient.GetFirstAsync(predicate, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<TEntity?> FindAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
         return await query.FirstAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _simpleClient.GetListAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _simpleClient.GetListAsync(predicate, cancellationToken);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .Where(predicate)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(orderBy);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .Where(predicate)
+            .OrderBy(orderBy)
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetAllAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
         return await query.ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().CountAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .CountAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<long> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().Where(predicate).CountAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .Where(predicate)
+            .CountAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
         return await query.CountAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().Where(predicate).AnyAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await _dbClient.Queryable<TEntity>()
+            .Where(predicate)
+            .AnyAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
         return await query.AnyAsync(cancellationToken);
     }
 
@@ -140,9 +189,23 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await _dbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        var result = await _dbClient.Insertable(entity)
+            .ExecuteReturnEntityAsync();
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<TKey> AddReturnIdAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = await _dbClient.Insertable(entity)
+            .ExecuteReturnEntityAsync();
+
+        return result.BasicId;
     }
 
     /// <inheritdoc />
@@ -156,7 +219,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             return [];
         }
 
-        await _dbClient.Insertable(entityArray).ExecuteCommandAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _dbClient.Insertable(entityArray)
+            .ExecuteCommandAsync(cancellationToken);
         return entityArray;
     }
 
@@ -165,8 +231,26 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        await _dbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _dbClient.Updateable(entity)
+            .ExecuteCommandAsync(cancellationToken);
         return entity;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateAsync(Expression<Func<TEntity, TEntity>> columns, Expression<Func<TEntity, bool>> whereExpression, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(columns);
+        ArgumentNullException.ThrowIfNull(whereExpression);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _dbClient.Updateable<TEntity>()
+            .SetColumns(columns)
+            .Where(whereExpression)
+            .ExecuteCommandAsync(cancellationToken);
+        return true;
     }
 
     /// <inheritdoc />
@@ -180,72 +264,161 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             return [];
         }
 
-        await _dbClient.Updateable(entityArray).ExecuteCommandAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _dbClient.Updateable(entityArray)
+            .ExecuteCommandAsync(cancellationToken);
         return entityArray;
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public async Task<bool> AddOrUpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Deleteable(entity).ExecuteCommandAsync(cancellationToken);
+        if (entity.IsTransient())
+        {
+            var insertedRows = await _dbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
+            return insertedRows > 0;
+        }
+
+        var affectedRows = await _dbClient.Updateable(entity)
+            .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
-    {
-        await _dbClient.Deleteable<TEntity>().In(id).ExecuteCommandAsync(cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public async Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         var entityArray = entities.ToArray();
         if (entityArray.Length == 0)
         {
-            return;
+            return false;
         }
 
-        var idArray = entityArray
-            .Select(entity => entity.BasicId)
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var addEntities = entityArray.Where(entity => entity.IsTransient()).ToArray();
+        var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
+
+        if (addEntities.Length == 0 && updateEntities.Length == 0)
+        {
+            return false;
+        }
+
+        var hasChanges = false;
+
+        if (addEntities.Length > 0)
+        {
+            var insertedRows = await _dbClient.Insertable(addEntities)
+                .ExecuteCommandAsync(cancellationToken);
+            hasChanges |= insertedRows > 0;
+        }
+
+        if (updateEntities.Length > 0)
+        {
+            var updatedRows = await _dbClient.Updateable(updateEntities)
+                .ExecuteCommandAsync(cancellationToken);
+            hasChanges |= updatedRows > 0;
+        }
+
+        return hasChanges;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var affectedRows = await _dbClient.Deleteable(entity)
+            .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var affectedRows = await _dbClient.Deleteable<TEntity>()
+            .In(id)
+            .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var entityArray = entities.ToArray();
+        if (entityArray.Length == 0)
+        {
+            return false;
+        }
+
+        var idArray = entityArray.Select(entity => entity.BasicId)
             .Where(id => id is not null)
             .ToArray();
 
         if (idArray.Length == 0)
         {
-            return;
+            return false;
         }
 
-        await _dbClient.Deleteable<TEntity>()
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var affectedRows = await _dbClient.Deleteable<TEntity>()
             .In(idArray)
             .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
     }
 
     /// <inheritdoc />
-    public async Task DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(ids);
+
         var idArray = ids.ToArray();
         if (idArray.Length == 0)
         {
-            return;
+            return false;
         }
 
-        await _dbClient.Deleteable<TEntity>().In(idArray).ExecuteCommandAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var affectedRows = await _dbClient.Deleteable<TEntity>()
+            .In(idArray)
+            .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        await _dbClient.Deleteable<TEntity>().Where(predicate).ExecuteCommandAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var affectedRows = await _dbClient.Deleteable<TEntity>()
+            .Where(predicate)
+            .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
     }
 
     #endregion 增删改
 
     #region 规约支持
 
+    /// <summary>
+    /// 应用规约
+    /// </summary>
+    /// <param name="query">查询表达式</param>
+    /// <param name="specification">规约</param>
+    /// <returns>应用规约后的查询表达式</returns>
     private static ISugarQueryable<TEntity> ApplySpecification(ISugarQueryable<TEntity> query, ISpecification<TEntity> specification)
     {
         ArgumentNullException.ThrowIfNull(specification);

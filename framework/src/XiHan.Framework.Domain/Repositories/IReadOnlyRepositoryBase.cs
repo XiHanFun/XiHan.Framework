@@ -75,6 +75,15 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 根据条件获取实体集合
+    /// </summary>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="orderBy">用于排序实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>符合条件的实体集合</returns>
+    Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 根据规约获取实体集合
     /// </summary>
     /// <param name="specification">定义查询条件的规约</param>
