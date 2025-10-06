@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanBackgroundJobsModule
+// FileName:XiHanTasksModule
 // Guid:d48648fc-a480-49be-8c28-3d5b486f8614
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Tasks.ScheduledJobs.Extensions;
 
 namespace XiHan.Framework.Tasks;
 
@@ -27,5 +28,13 @@ public class XiHanTasksModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 添加调度任务服务
+        context.Services.AddScheduledJobs(options =>
+        {
+            options.Enabled = true;
+            options.SchedulerName = "XiHanScheduler";
+            options.ThreadPoolSize = 10;
+            options.AllowConcurrentExecution = false;
+        });
     }
 }
