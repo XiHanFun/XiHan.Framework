@@ -15,6 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Quartz;
+using XiHan.Framework.Tasks.ScheduledJobs.Attributes;
 
 namespace XiHan.Framework.Tasks.ScheduledJobs.Extensions;
 
