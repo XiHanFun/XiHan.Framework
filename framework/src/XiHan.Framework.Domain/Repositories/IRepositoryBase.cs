@@ -35,6 +35,14 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 添加实体并返回主键
+    /// </summary>
+    /// <param name="entity">待添加的实体实例</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>已持久化的实体主键</returns>
+    Task<TKey> AddReturnIdAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 批量添加实体
     /// </summary>
     /// <param name="entities">待添加的实体集合</param>
@@ -51,6 +59,15 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 更新实体某列数据
+    /// </summary>
+    /// <param name="columns">待更新的实体实例</param>
+    /// <param name="whereExpression">用于筛选待更新实体的条件表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步更新操作的任务</returns>
+    Task<bool> UpdateAsync(Expression<Func<TEntity, TEntity>> columns, Expression<Func<TEntity, bool>> whereExpression, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 批量更新实体
     /// </summary>
     /// <param name="entities">待更新的实体集合</param>
@@ -59,12 +76,28 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     Task<IEnumerable<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 新增或更新实体
+    /// </summary>
+    /// <param name="entity">待新增或更新的实体实例</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步新增或更新操作的任务</returns>
+    Task<bool> AddOrUpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量新增或更新实体
+    /// </summary>
+    /// <param name="entities">待新增或更新的实体集合</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步新增或更新操作的任务</returns>
+    Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 删除实体
     /// </summary>
     /// <param name="entity">待删除的实体实例</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据主键删除实体
@@ -72,7 +105,7 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="id">实体主键</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task DeleteAsync(TKey id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体
@@ -80,7 +113,7 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="entities">待删除的实体集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体（根据主键）
@@ -88,7 +121,7 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="ids">需要删除的实体主键集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+    Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件删除实体
@@ -96,5 +129,5 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="predicate">用于筛选待删除实体的条件表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 }

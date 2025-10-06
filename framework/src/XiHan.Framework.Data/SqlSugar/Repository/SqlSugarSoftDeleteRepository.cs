@@ -48,13 +48,15 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     public async Task SoftDeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
+
         entity.IsDeleted = true;
         if (entity is IDeletionEntity deletionEntity)
         {
             deletionEntity.DeletionTime = DateTimeOffset.UtcNow;
         }
 
-        await _dbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
+        await _dbClient.Updateable(entity)
+            .ExecuteCommandAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -89,7 +91,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await _dbClient.Updateable(entityArray).ExecuteCommandAsync(cancellationToken);
+        await _dbClient.Updateable(entityArray)
+            .ExecuteCommandAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -137,7 +140,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             deletionEntity.DeletionTime = null;
         }
 
-        await _dbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
+        await _dbClient.Updateable(entity)
+            .ExecuteCommandAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -172,7 +176,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await _dbClient.Updateable(entityArray).ExecuteCommandAsync(cancellationToken);
+        await _dbClient.Updateable(entityArray)
+            .ExecuteCommandAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -215,26 +220,34 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().ToListAsync(cancellationToken);
+        return await _dbClient.Queryable<TEntity>()
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().Where(entity => entity.IsDeleted).ToListAsync(cancellationToken);
+        return await _dbClient.Queryable<TEntity>()
+            .Where(entity => entity.IsDeleted)
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>().Where(entity => entity.IsDeleted).Where(predicate).ToListAsync(cancellationToken);
+        return await _dbClient.Queryable<TEntity>()
+            .Where(entity => entity.IsDeleted)
+            .Where(predicate)
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = _dbClient.Queryable<TEntity>().Where(entity => entity.IsDeleted).ApplySpecification(specification);
-        return await query.ToListAsync(cancellationToken);
+        return await _dbClient.Queryable<TEntity>()
+            .Where(entity => entity.IsDeleted)
+            .ApplySpecification(specification)
+            .ToListAsync(cancellationToken);
     }
 
     #endregion 查询软删除记录
