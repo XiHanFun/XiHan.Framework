@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
       <ProjectReference Include="..\..\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
     </ItemGroup>
 
