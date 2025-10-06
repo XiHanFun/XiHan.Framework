@@ -34,18 +34,18 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     /// <summary>
     /// 修改时间
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改时间", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "修改时间")]
     public override DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
     /// 修改者 Id
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改者Id", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "修改者Id")]
     public override TKey? ModifierId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改人", IsNullable = true)]
+    [SugarColumn(IsNullable = true,ColumnDescription = "修改人")]
     public override string? Modifier { get; set; }
 }
