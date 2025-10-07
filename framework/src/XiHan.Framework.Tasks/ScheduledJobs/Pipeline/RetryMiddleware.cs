@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RetryMiddleware.cs
+// FileName:RetryMiddleware
 // Guid:3764d541-105a-4ba3-b237-2d712d06f11b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 
 /// <summary>
 /// 重试中间件

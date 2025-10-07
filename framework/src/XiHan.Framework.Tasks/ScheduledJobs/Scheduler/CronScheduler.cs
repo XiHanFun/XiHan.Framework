@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CronScheduler.cs
+// FileName:CronScheduler
 // Guid:f9fcde39-b447-433b-88b8-9ecb9ab85d70
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,10 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Tasks.Crons;
+using XiHan.Framework.Tasks.ScheduledJobs.Crons;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 
 /// <summary>
 /// Cron 调度器

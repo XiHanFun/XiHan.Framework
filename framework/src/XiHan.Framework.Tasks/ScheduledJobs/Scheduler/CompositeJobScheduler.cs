@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CompositeJobScheduler.cs
+// FileName:CompositeJobScheduler
 // Guid:74ea6dfb-4244-4c30-b623-44962dd6dd0f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 
 /// <summary>
 /// 复合任务调度器（支持多种触发方式）

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobPriority.cs
+// FileName:JobPriority
 // Guid:f26e9fbf-10e3-405c-9649-2219de460274
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

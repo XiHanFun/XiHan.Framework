@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobRetryPolicy.cs
+// FileName:JobRetryPolicy
 // Guid:175a6436-418a-45c0-96a5-e6e1e5e0eda2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

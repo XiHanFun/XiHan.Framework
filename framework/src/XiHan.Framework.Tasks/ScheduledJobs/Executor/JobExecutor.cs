@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobExecutor.cs
+// FileName:JobExecutor
 // Guid:8c1e0f1f-501d-4030-a705-5f6a6031fadc
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,7 +18,7 @@ using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 using XiHan.Framework.Utils.Serialization.Json;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Executor;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Executor;
 
 /// <summary>
 /// 任务执行器实现

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobExecutionContext.cs
+// FileName:JobExecutionContext
 // Guid:28347e45-fdd1-4f4a-b014-4d4a996af9c8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,7 +15,7 @@
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Executor;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Executor;
 
 /// <summary>
 /// 任务执行上下文实现

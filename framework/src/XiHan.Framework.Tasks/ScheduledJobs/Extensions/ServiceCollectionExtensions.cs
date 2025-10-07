@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ServiceCollectionExtensions.cs
+// FileName:ServiceCollectionExtensions
 // Guid:5ee4588e-3755-4527-88cf-40471dc706bb
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,13 +16,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Configuration;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Executor;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Locking;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Monitoring;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
-using XiHan.Framework.Tasks.ScheduledJobs.Core.Store;
+using XiHan.Framework.Tasks.ScheduledJobs.Executor;
 using XiHan.Framework.Tasks.ScheduledJobs.Hosting;
+using XiHan.Framework.Tasks.ScheduledJobs.Locking;
+using XiHan.Framework.Tasks.ScheduledJobs.Monitoring;
+using XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
+using XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
+using XiHan.Framework.Tasks.ScheduledJobs.Store;
 
 namespace XiHan.Framework.Tasks.ScheduledJobs.Extensions;
 

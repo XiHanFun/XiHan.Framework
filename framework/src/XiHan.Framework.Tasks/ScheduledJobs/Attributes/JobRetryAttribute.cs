@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobRetryAttribute.cs
+// FileName:JobRetryAttribute
 // Guid:34a84936-bd82-4002-88ae-65a859a575e9
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

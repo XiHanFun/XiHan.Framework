@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Monitoring;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Monitoring;
 
 /// <summary>
 /// 默认任务事件发布者（空实现）

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobMetricsProvider.cs
+// FileName:JobMetricsProvider
 // Guid:8b44fc66-a394-41ac-9b3c-b7803601fdbc
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,7 +15,7 @@
 using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Monitoring;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Monitoring;
 
 /// <summary>
 /// 任务度量提供者
@@ -48,7 +48,7 @@ public class JobMetricsProvider
             }
 
             // 计算平均耗时
-            metrics.AverageDurationMs = ((metrics.AverageDurationMs * (metrics.TotalExecutions - 1)) + durationMs) / metrics.TotalExecutions;
+            metrics.AverageDurationMs = (metrics.AverageDurationMs * (metrics.TotalExecutions - 1) + durationMs) / metrics.TotalExecutions;
 
             switch (status)
             {

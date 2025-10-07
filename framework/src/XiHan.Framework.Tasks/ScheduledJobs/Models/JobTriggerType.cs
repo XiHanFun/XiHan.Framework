@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobTriggerType.cs
+// FileName:JobTriggerType
 // Guid:7d9973f2-7241-4589-b6c8-49e02caa8fd7
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

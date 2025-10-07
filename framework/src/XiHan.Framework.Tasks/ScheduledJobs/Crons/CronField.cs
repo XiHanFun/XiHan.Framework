@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Tasks.Crons;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Crons;
 
 /// <summary>
 /// Cron 字段对象

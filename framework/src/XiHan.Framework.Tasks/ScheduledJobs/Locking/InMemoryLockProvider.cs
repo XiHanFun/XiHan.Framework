@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryLockProvider.cs
+// FileName:InMemoryLockProvider
 // Guid:82c72445-7344-4f99-b355-4d06e4585069
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,7 +15,7 @@
 using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Locking;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Locking;
 
 /// <summary>
 /// 内存锁提供者（单机环境）
@@ -40,9 +40,9 @@ public class InMemoryLockProvider : IJobLockProvider
 
         // 尝试添加或更新锁
         var acquired = _locks.TryAdd(resourceKey, entry) ||
-                      (_locks.TryGetValue(resourceKey, out var existing) &&
+                      _locks.TryGetValue(resourceKey, out var existing) &&
                        existing.IsExpired() &&
-                       _locks.TryUpdate(resourceKey, entry, existing));
+                       _locks.TryUpdate(resourceKey, entry, existing);
 
         if (acquired)
         {

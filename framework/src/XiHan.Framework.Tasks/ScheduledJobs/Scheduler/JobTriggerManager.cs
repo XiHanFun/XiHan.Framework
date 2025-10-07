@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobTriggerManager.cs
+// FileName:JobTriggerManager
 // Guid:0553b225-5b98-4135-b99a-70dadba21054
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,7 +14,7 @@
 
 using System.Collections.Concurrent;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 
 /// <summary>
 /// 任务触发管理器

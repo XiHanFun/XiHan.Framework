@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJobExecutor.cs
+// FileName:IJobExecutor
 // Guid:2fcb82fa-b05a-4e02-945a-7bb8daf41574
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

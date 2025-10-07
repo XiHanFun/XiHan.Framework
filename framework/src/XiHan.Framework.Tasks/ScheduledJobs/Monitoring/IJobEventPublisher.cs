@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJobEventPublisher.cs
+// FileName:IJobEventPublisher
 // Guid:6411452e-210d-4a94-8394-5fe9968dcc40
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Monitoring;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Monitoring;
 
 /// <summary>
 /// 任务事件发布者接口

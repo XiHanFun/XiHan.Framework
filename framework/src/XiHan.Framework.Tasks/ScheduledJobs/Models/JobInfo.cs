@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobInfo.cs
+// FileName:JobInfo
 // Guid:1ab32ead-b84b-4e83-8144-5e559873e7fe
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

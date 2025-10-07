@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobRegistry.cs
+// FileName:JobRegistry
 // Guid:970f2bac-e482-4859-a210-13e5fde92c15
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,7 +15,7 @@
 using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 
 /// <summary>
 /// 任务注册表
