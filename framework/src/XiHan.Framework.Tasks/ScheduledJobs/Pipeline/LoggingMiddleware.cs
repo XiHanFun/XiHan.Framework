@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LoggingMiddleware.cs
+// FileName:LoggingMiddleware
 // Guid:d0d202ca-cc16-43fd-874a-ca46efb179c8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 
 /// <summary>
 /// 日志中间件

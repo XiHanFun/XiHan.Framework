@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LockMiddleware.cs
+// FileName:LockMiddleware
 // Guid:1e38ccbe-0590-4fa2-8d18-b30a72af242c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 
 /// <summary>
 /// 分布式锁中间件

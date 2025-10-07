@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TimeoutMiddleware.cs
+// FileName:TimeoutMiddleware
 // Guid:d7cbf532-b684-46f4-9d20-15327eb09146
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 
 /// <summary>
 /// 超时控制中间件

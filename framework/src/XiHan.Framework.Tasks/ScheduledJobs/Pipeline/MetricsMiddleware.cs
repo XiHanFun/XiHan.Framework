@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MetricsMiddleware.cs
+// FileName:MetricsMiddleware
 // Guid:c85dbf9b-436c-4048-b512-a521fa9e9a7c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,7 +17,7 @@ using System.Diagnostics;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Pipeline;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 
 /// <summary>
 /// 度量统计中间件

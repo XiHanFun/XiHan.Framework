@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Locking;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Locking;
 
 /// <summary>
 /// 内存锁令牌

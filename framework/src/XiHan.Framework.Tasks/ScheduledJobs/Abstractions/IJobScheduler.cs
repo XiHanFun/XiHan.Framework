@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJobScheduler.cs
+// FileName:IJobScheduler
 // Guid:1e4fa96d-d4b8-4167-a896-4ad58e363927
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

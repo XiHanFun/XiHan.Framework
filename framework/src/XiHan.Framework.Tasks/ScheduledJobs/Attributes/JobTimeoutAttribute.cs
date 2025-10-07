@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobTimeoutAttribute.cs
+// FileName:JobTimeoutAttribute
 // Guid:afbfac42-54a6-45b3-b46c-ab23e59d1f59
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

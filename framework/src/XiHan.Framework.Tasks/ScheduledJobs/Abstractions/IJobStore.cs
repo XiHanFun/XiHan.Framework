@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJobStore.cs
+// FileName:IJobStore
 // Guid:8726538f-4902-4e12-b4ec-c3e711db4f31
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
