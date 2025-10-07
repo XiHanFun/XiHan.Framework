@@ -2,8 +2,8 @@
 using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Hosting;
+using XiHan.Framework.Integration.Tests;
 using XiHan.Framework.Tests.Integration;
-using XiHan.Framework.Utils.Logging;
 
 try
 {
@@ -14,6 +14,8 @@ try
     var host = builder.Build();
 
     await host.InitializeAsync();
+
+    Region.Main();
 
     await host.RunAsync();
 
