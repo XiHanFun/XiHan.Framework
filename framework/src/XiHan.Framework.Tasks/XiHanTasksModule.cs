@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Tasks.ScheduledJobs.Extensions;
 
 namespace XiHan.Framework.Tasks;
 
@@ -28,13 +27,5 @@ public class XiHanTasksModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // 添加调度任务服务
-        context.Services.AddScheduledJobs(options =>
-        {
-            options.Enabled = true;
-            options.SchedulerName = "XiHanScheduler";
-            options.ThreadPoolSize = 10;
-            options.AllowConcurrentExecution = false;
-        });
     }
 }
