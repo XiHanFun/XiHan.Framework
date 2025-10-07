@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobConcurrentAttribute.cs
+// FileName:JobConcurrentAttribute
 // Guid:65644c80-a18a-414f-8799-0b98078f9ff3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

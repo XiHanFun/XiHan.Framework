@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IntervalScheduler.cs
+// FileName:IntervalScheduler
 // Guid:55eefa6e-00a5-4f72-91c0-79e21a066c37
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Scheduler;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 
 /// <summary>
 /// 固定间隔调度器

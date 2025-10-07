@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanJobOptions.cs
+// FileName:XiHanJobOptions
 // Guid:218f1eaf-2e25-41d7-a28f-e15a7c8aaa7a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

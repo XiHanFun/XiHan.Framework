@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryJobStore.cs
+// FileName:InMemoryJobStore
 // Guid:46d2f81d-26c7-45b3-a54c-91242e9f0b06
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -16,7 +16,7 @@ using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Core.Store;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Store;
 
 /// <summary>
 /// 内存任务存储（默认实现）

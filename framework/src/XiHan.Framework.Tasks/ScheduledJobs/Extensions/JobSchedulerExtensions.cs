@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobSchedulerExtensions.cs
+// FileName:JobSchedulerExtensions
 // Guid:ea2f227a-2888-4cbb-b1b4-0493f9a2ebd6
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
