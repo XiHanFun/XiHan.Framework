@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Tasks.ScheduledJobs.Extensions;
 
 namespace XiHan.Framework.Tasks;
 
@@ -27,5 +29,13 @@ public class XiHanTasksModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 注册任务调度服务
+        context.Services.AddXiHanJobs(options =>
+        {
+            // 默认配置
+            options.Enabled = true;
+            options.AutoDiscoverJobs = true;
+            options.EnableMetrics = true;
+        });
     }
 }

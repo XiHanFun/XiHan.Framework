@@ -17,8 +17,4 @@
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="ScheduledJobs\" />
-    </ItemGroup>
-
 </Project>
