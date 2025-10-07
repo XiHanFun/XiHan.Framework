@@ -417,7 +417,7 @@ public static class CronHelper
         field = field.Trim();
 
         // 处理特殊符号
-        if (field == "*" || field == "?")
+        if (field is "*" or "?")
         {
             return new CronField { IsWildcard = true };
         }
