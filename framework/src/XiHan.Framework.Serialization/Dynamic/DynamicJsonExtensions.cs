@@ -66,27 +66,24 @@ public static class DynamicJsonExtensions
     }
 
     /// <summary>
-    /// 将 JSON 字符串转换为动态 JSON（自动判断类型）
+    /// 将 JSON 字符串转换为动态对象（自动判断类型）
     /// </summary>
     /// <param name="json">JSON 字符串</param>
-    /// <returns>动态 JSON 对象</returns>
-    public static dynamic? ToDynamicJson(this string json)
+    /// <returns>动态对象</returns>
+    public static dynamic? ToDynamic(this string json)
     {
-        try
-        {
-            var node = JsonNode.Parse(json);
-            return node switch
-            {
-                JsonObject jsonObj => new DynamicJsonObject(jsonObj),
-                JsonArray jsonArray => new DynamicJsonArray(jsonArray),
-                JsonValue jsonValue => new DynamicJsonValue(jsonValue),
-                _ => null
-            };
-        }
-        catch
-        {
-            return null;
-        }
+        return DynamicJsonHelper.Deserialize(json);
+    }
+
+    /// <summary>
+    /// 将 JSON 字符串转换为动态对象（自动判断类型）
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="result">动态对象</param>
+    /// <returns>是否转换成功</returns>
+    public static bool TryToDynamic(this string json, out dynamic? result)
+    {
+        return DynamicJsonHelper.TryDeserialize(json, out result);
     }
 
     #endregion 字符串扩展
