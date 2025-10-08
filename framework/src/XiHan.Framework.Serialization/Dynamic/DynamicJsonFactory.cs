@@ -301,7 +301,7 @@ public static class DynamicJsonFactory
     /// <returns>动态对象</returns>
     public static dynamic? Parse(string json)
     {
-        return json.ToDynamicJson();
+        return json.ToDynamic();
     }
 
     /// <summary>
