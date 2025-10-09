@@ -34,16 +34,6 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     }
 
     /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="basicId">实体主键</param>
-    protected SugarEntityWithIdentity(TKey basicId)
-    {
-        RowVersion = [];
-        BasicId = basicId;
-    }
-
-    /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
     [ConcurrencyCheck]

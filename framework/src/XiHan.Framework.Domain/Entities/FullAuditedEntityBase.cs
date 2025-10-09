@@ -72,6 +72,13 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     /// <summary>
     /// 构造函数
     /// </summary>
+    protected FullAuditedEntityBase() : base()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     protected FullAuditedEntityBase(TKey basicId) : base()
     {
         BasicId = basicId;
