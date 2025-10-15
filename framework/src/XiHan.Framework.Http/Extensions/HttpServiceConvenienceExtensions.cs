@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Http.Models;
+using XiHan.Framework.Http.Options;
 using XiHan.Framework.Http.Services;
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Extensions;
 
@@ -38,7 +38,7 @@ public static class HttpServiceConvenienceExtensions
         string? token = null,
         CancellationToken cancellationToken = default)
     {
-        var options = new HttpRequestOptions();
+        var options = new XiHanHttpRequestOptions();
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -66,7 +66,7 @@ public static class HttpServiceConvenienceExtensions
         string? token = null,
         CancellationToken cancellationToken = default)
     {
-        var options = new HttpRequestOptions().AsJson();
+        var options = new XiHanHttpRequestOptions().AsJson();
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -94,7 +94,7 @@ public static class HttpServiceConvenienceExtensions
         string? token = null,
         CancellationToken cancellationToken = default)
     {
-        var options = new HttpRequestOptions().AsJson();
+        var options = new XiHanHttpRequestOptions().AsJson();
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -118,7 +118,7 @@ public static class HttpServiceConvenienceExtensions
         string? token = null,
         CancellationToken cancellationToken = default)
     {
-        var options = new HttpRequestOptions();
+        var options = new XiHanHttpRequestOptions();
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -147,7 +147,7 @@ public static class HttpServiceConvenienceExtensions
         string? token = null,
         CancellationToken cancellationToken = default)
     {
-        var options = new HttpRequestOptions()
+        var options = new XiHanHttpRequestOptions()
             .AddQueryParameter("page", page.ToString())
             .AddQueryParameter("size", size.ToString());
 

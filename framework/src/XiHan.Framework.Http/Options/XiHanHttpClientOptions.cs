@@ -20,7 +20,7 @@ namespace XiHan.Framework.Http.Options;
 /// <summary>
 /// HTTP 客户端配置选项
 /// </summary>
-public class HttpClientOptions
+public class XiHanHttpClientOptions
 {
     /// <summary>
     /// 配置节名称

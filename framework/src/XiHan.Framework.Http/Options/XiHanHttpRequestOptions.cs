@@ -19,7 +19,7 @@ namespace XiHan.Framework.Http.Options;
 /// <summary>
 /// HTTP 请求选项
 /// </summary>
-public class HttpRequestOptions
+public class XiHanHttpRequestOptions
 {
     /// <summary>
     /// 请求头
@@ -87,7 +87,7 @@ public class HttpRequestOptions
     /// <param name="name">头名称</param>
     /// <param name="value">头值</param>
     /// <returns></returns>
-    public HttpRequestOptions AddHeader(string name, string value)
+    public XiHanHttpRequestOptions AddHeader(string name, string value)
     {
         Headers[name] = value;
         return this;
@@ -99,7 +99,7 @@ public class HttpRequestOptions
     /// <param name="name">参数名</param>
     /// <param name="value">参数值</param>
     /// <returns></returns>
-    public HttpRequestOptions AddQueryParameter(string name, string value)
+    public XiHanHttpRequestOptions AddQueryParameter(string name, string value)
     {
         QueryParameters[name] = value;
         return this;
@@ -111,7 +111,7 @@ public class HttpRequestOptions
     /// <param name="key">标签键</param>
     /// <param name="value">标签值</param>
     /// <returns></returns>
-    public HttpRequestOptions AddTag(string key, object value)
+    public XiHanHttpRequestOptions AddTag(string key, object value)
     {
         Tags[key] = value;
         return this;
@@ -122,7 +122,7 @@ public class HttpRequestOptions
     /// </summary>
     /// <param name="timeout">超时时间</param>
     /// <returns></returns>
-    public HttpRequestOptions SetTimeout(TimeSpan timeout)
+    public XiHanHttpRequestOptions SetTimeout(TimeSpan timeout)
     {
         Timeout = timeout;
         return this;
@@ -133,7 +133,7 @@ public class HttpRequestOptions
     /// </summary>
     /// <param name="requestId">请求标识</param>
     /// <returns></returns>
-    public HttpRequestOptions SetRequestId(string requestId)
+    public XiHanHttpRequestOptions SetRequestId(string requestId)
     {
         RequestId = requestId;
         return this;
