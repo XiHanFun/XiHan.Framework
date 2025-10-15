@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Http.Models;
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
+using XiHanHttpRequestOptions = XiHan.Framework.Http.Options.XiHanHttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
 
@@ -30,7 +30,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<T>> GetAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<T>> GetAsync<T>(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 GET 请求(返回字符串)
@@ -39,7 +39,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<string>> GetStringAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<string>> GetStringAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 GET 请求(返回字节数组)
@@ -48,7 +48,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<byte[]>> GetBytesAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<byte[]>> GetBytesAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 GET 请求(返回流)
@@ -57,7 +57,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<Stream>> GetStreamAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<Stream>> GetStreamAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 POST 请求
@@ -69,7 +69,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<TResponse>> PostAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<TResponse>> PostAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 POST 请求(JSON)
@@ -80,7 +80,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<T>> PostJsonAsync<T>(string url, string jsonContent, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<T>> PostJsonAsync<T>(string url, string jsonContent, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 POST 请求(表单数据)
@@ -91,7 +91,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<T>> PostFormAsync<T>(string url, Dictionary<string, string> formData, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<T>> PostFormAsync<T>(string url, Dictionary<string, string> formData, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 上传文件
@@ -106,7 +106,7 @@ public interface IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     Task<HttpResult<T>> UploadFileAsync<T>(string url, Stream fileStream, string fileName, string fieldName = "file",
-        Dictionary<string, string>? additionalData = null, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+        Dictionary<string, string>? additionalData = null, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 上传多个文件
@@ -119,7 +119,7 @@ public interface IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     Task<HttpResult<T>> UploadFilesAsync<T>(string url, IEnumerable<FileUploadInfo> files,
-        Dictionary<string, string>? additionalData = null, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+        Dictionary<string, string>? additionalData = null, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 PUT 请求
@@ -131,7 +131,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<TResponse>> PutAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<TResponse>> PutAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 PATCH 请求
@@ -143,7 +143,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<TResponse>> PatchAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<TResponse>> PatchAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 DELETE 请求
@@ -153,7 +153,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult<T>> DeleteAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult<T>> DeleteAsync<T>(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 DELETE 请求(无响应内容)
@@ -162,7 +162,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult> DeleteAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult> DeleteAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 HEAD 请求
@@ -171,7 +171,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult> HeadAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult> HeadAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 发送 OPTIONS 请求
@@ -180,7 +180,7 @@ public interface IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task<HttpResult> OptionsAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+    Task<HttpResult> OptionsAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 下载文件
@@ -192,7 +192,7 @@ public interface IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     Task<HttpResult> DownloadFileAsync(string url, string destinationPath, IProgress<long>? progress = null,
-        HttpRequestOptions? options = null, CancellationToken cancellationToken = default);
+        XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量请求

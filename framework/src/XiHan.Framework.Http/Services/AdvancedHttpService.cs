@@ -25,7 +25,7 @@ using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Serialization.Dynamic;
 using XiHan.Framework.Utils.Extensions;
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
+using XiHanHttpRequestOptions = XiHan.Framework.Http.Options.XiHanHttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
 
@@ -36,7 +36,7 @@ public class AdvancedHttpService : IAdvancedHttpService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<AdvancedHttpService> _logger;
-    private readonly HttpClientOptions _options;
+    private readonly XiHanHttpClientOptions _options;
     private readonly JsonSerializerOptions _jsonOptions;
 
     /// <summary>
@@ -48,7 +48,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     public AdvancedHttpService(
         IHttpClientFactory httpClientFactory,
         ILogger<AdvancedHttpService> logger,
-        IOptions<HttpClientOptions> options)
+        IOptions<XiHanHttpClientOptions> options)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
@@ -68,7 +68,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<T>> GetAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<T>> GetAsync<T>(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await SendRequestAsync<T>(HttpMethod.Get, url, null, options, cancellationToken);
     }
@@ -80,7 +80,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<string>> GetStringAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<string>> GetStringAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await SendRequestAsync<string>(HttpMethod.Get, url, null, options, cancellationToken);
     }
@@ -92,7 +92,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<byte[]>> GetBytesAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<byte[]>> GetBytesAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await SendRequestAsync<byte[]>(HttpMethod.Get, url, null, options, cancellationToken);
     }
@@ -104,7 +104,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<Stream>> GetStreamAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<Stream>> GetStreamAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await SendRequestAsync<Stream>(HttpMethod.Get, url, null, options, cancellationToken);
     }
@@ -119,7 +119,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<TResponse>> PostAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<TResponse>> PostAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (request == null)
         {
@@ -138,7 +138,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<T>> PostJsonAsync<T>(string url, string jsonContent, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<T>> PostJsonAsync<T>(string url, string jsonContent, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new StringContent(jsonContent, options?.Encoding ?? Encoding.UTF8, options?.ContentType ?? "application/json");
         return await SendRequestAsync<T>(HttpMethod.Post, url, content, options, cancellationToken);
@@ -153,7 +153,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<T>> PostFormAsync<T>(string url, Dictionary<string, string> formData, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<T>> PostFormAsync<T>(string url, Dictionary<string, string> formData, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var content = new FormUrlEncodedContent(formData);
         return await SendRequestAsync<T>(HttpMethod.Post, url, content, options, cancellationToken);
@@ -172,7 +172,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public async Task<HttpResult<T>> UploadFileAsync<T>(string url, Stream fileStream, string fileName, string fieldName = "file",
-        Dictionary<string, string>? additionalData = null, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+        Dictionary<string, string>? additionalData = null, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var files = new[] { new FileUploadInfo { FileStream = fileStream, FileName = fileName, FieldName = fieldName } };
         return await UploadFilesAsync<T>(url, files, additionalData, options, cancellationToken);
@@ -189,7 +189,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public async Task<HttpResult<T>> UploadFilesAsync<T>(string url, IEnumerable<FileUploadInfo> files,
-        Dictionary<string, string>? additionalData = null, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+        Dictionary<string, string>? additionalData = null, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
 
@@ -226,7 +226,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<TResponse>> PutAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<TResponse>> PutAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (request == null)
         {
@@ -246,7 +246,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<TResponse>> PatchAsync<TRequest, TResponse>(string url, TRequest request, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<TResponse>> PatchAsync<TRequest, TResponse>(string url, TRequest request, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (request == null)
         {
@@ -264,7 +264,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult<T>> DeleteAsync<T>(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult<T>> DeleteAsync<T>(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await SendRequestAsync<T>(HttpMethod.Delete, url, null, options, cancellationToken);
     }
@@ -276,7 +276,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult> DeleteAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult> DeleteAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var result = await SendRequestAsync<object>(HttpMethod.Delete, url, null, options, cancellationToken);
         return new HttpResult
@@ -299,7 +299,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult> HeadAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult> HeadAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var result = await SendRequestAsync<object>(HttpMethod.Head, url, null, options, cancellationToken);
         return new HttpResult
@@ -322,7 +322,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="options">请求选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<HttpResult> OptionsAsync(string url, HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<HttpResult> OptionsAsync(string url, XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         var result = await SendRequestAsync<object>(HttpMethod.Options, url, null, options, cancellationToken);
         return new HttpResult
@@ -348,7 +348,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     public async Task<HttpResult> DownloadFileAsync(string url, string destinationPath, IProgress<long>? progress = null,
-        HttpRequestOptions? options = null, CancellationToken cancellationToken = default)
+        XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
         // 设置默认超时时间
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
@@ -481,7 +481,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
     private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
-        HttpRequestOptions? options, CancellationToken cancellationToken)
+        XiHanHttpRequestOptions? options, CancellationToken cancellationToken)
     {
         // 设置默认超时时间
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
@@ -598,7 +598,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <param name="client">HTTP客户端</param>
     /// <param name="options">请求选项</param>
-    private static void ConfigureRequest(HttpClient client, HttpRequestOptions? options)
+    private static void ConfigureRequest(HttpClient client, XiHanHttpRequestOptions? options)
     {
         if (options?.Timeout.HasValue == true)
         {
@@ -612,7 +612,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="url">基础Url</param>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    private static string BuildUrl(string url, HttpRequestOptions? options)
+    private static string BuildUrl(string url, XiHanHttpRequestOptions? options)
     {
         if (options?.QueryParameters == null || options.QueryParameters.Count == 0)
         {
@@ -629,7 +629,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="request">HTTP请求消息</param>
     /// <param name="options">请求选项</param>
     /// <param name="requestId">请求Id</param>
-    private static void AddHeaders(HttpRequestMessage request, HttpRequestOptions? options, string requestId)
+    private static void AddHeaders(HttpRequestMessage request, XiHanHttpRequestOptions? options, string requestId)
     {
         // 添加请求头
         if (options?.Headers != null)
@@ -648,7 +648,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    private HttpClient GetHttpClient(HttpRequestOptions? options)
+    private HttpClient GetHttpClient(XiHanHttpRequestOptions? options)
     {
         // 默认使用远程客户端
         var clientName = HttpGroupEnum.Remote.ToString();
@@ -668,7 +668,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="data">数据</param>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    private StringContent CreateJsonContent(object data, HttpRequestOptions? options)
+    private StringContent CreateJsonContent(object data, XiHanHttpRequestOptions? options)
     {
         if (data == null)
         {

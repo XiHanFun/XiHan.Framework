@@ -276,7 +276,7 @@ public static class StringHttpExtensions
 
         if (XiHanHttpGlobal.ServiceProvider == null)
         {
-            throw new InvalidOperationException("HTTP 服务未初始化，请在启动时调用 services.AddXiHanHttpModule();");
+            throw new InvalidOperationException("HTTP 服务扩展未初始化，请在启动时调用 StringHttpExtensions.Initialize(context.ServiceProvider);");
         }
 
         _httpService = XiHanHttpGlobal.ServiceProvider.GetRequiredService<IAdvancedHttpService>();

@@ -15,8 +15,8 @@
 using System.Text.Json;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Http.Models;
+using XiHan.Framework.Http.Options;
 using XiHan.Framework.Http.Services;
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
 
 namespace XiHan.Framework.Http.Fluent;
 
@@ -26,8 +26,8 @@ namespace XiHan.Framework.Http.Fluent;
 public class HttpRequestBuilder
 {
     private readonly IAdvancedHttpService _httpService;
+    private readonly XiHanHttpRequestOptions _options;
     private readonly string _url;
-    private readonly HttpRequestOptions _options;
     private object? _body;
     private string? _bodyContent;
     private string? _contentType;
@@ -41,7 +41,7 @@ public class HttpRequestBuilder
     {
         _httpService = httpService;
         _url = url;
-        _options = new HttpRequestOptions();
+        _options = new XiHanHttpRequestOptions();
     }
 
     /// <summary>

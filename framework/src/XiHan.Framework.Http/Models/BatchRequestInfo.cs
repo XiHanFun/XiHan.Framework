@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
+using XiHan.Framework.Http.Options;
 
 namespace XiHan.Framework.Http.Models;
 
@@ -39,7 +39,7 @@ public class BatchRequestInfo
     /// <summary>
     /// 请求选项
     /// </summary>
-    public HttpRequestOptions? Options { get; set; }
+    public XiHanHttpRequestOptions? Options { get; set; }
 
     /// <summary>
     /// 请求标识
