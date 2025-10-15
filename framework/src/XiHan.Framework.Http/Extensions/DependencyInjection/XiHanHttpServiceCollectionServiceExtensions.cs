@@ -40,17 +40,13 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     public static IServiceCollection AddXiHanHttpModule(this IServiceCollection services, IConfiguration configuration)
     {
         // 配置选项
-        services.Configure<HttpClientOptions>(configuration.GetSection(HttpClientOptions.SectionName));
+        services.Configure<XiHanHttpClientOptions>(configuration.GetSection(XiHanHttpClientOptions.SectionName));
 
         // 注册服务
         services.AddScoped<IAdvancedHttpService, AdvancedHttpService>();
 
         // 配置HTTP客户端
         ConfigureHttpClients(services, configuration);
-
-        // 初始化字符串扩展
-        using var serviceProvider = services.BuildServiceProvider();
-        StringHttpExtensions.Initialize(serviceProvider);
 
         return services;
     }
@@ -62,8 +58,8 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// <param name="configuration">配置</param>
     private static void ConfigureHttpClients(IServiceCollection services, IConfiguration configuration)
     {
-        var httpOptions = new HttpClientOptions();
-        configuration.GetSection(HttpClientOptions.SectionName).Bind(httpOptions);
+        var httpOptions = new XiHanHttpClientOptions();
+        configuration.GetSection(XiHanHttpClientOptions.SectionName).Bind(httpOptions);
 
         // 配置远程请求客户端
         ConfigureRemoteHttpClient(services, httpOptions);
@@ -80,7 +76,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <param name="options">HTTP选项</param>
-    private static void ConfigureRemoteHttpClient(IServiceCollection services, HttpClientOptions options)
+    private static void ConfigureRemoteHttpClient(IServiceCollection services, XiHanHttpClientOptions options)
     {
         var clientBuilder = services.AddHttpClient(HttpGroupEnum.Remote.ToString(), client =>
         {
@@ -126,7 +122,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <param name="options">HTTP选项</param>
-    private static void ConfigureLocalHttpClient(IServiceCollection services, HttpClientOptions options)
+    private static void ConfigureLocalHttpClient(IServiceCollection services, XiHanHttpClientOptions options)
     {
         var clientBuilder = services.AddHttpClient(HttpGroupEnum.Local.ToString(), client =>
         {
@@ -161,7 +157,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <param name="options">HTTP选项</param>
-    private static void ConfigureCustomHttpClients(IServiceCollection services, HttpClientOptions options)
+    private static void ConfigureCustomHttpClients(IServiceCollection services, XiHanHttpClientOptions options)
     {
         foreach (var clientConfig in options.Clients)
         {
@@ -228,7 +224,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// <param name="clientBuilder">HTTP客户端构建器</param>
     /// <param name="options">HTTP选项</param>
     /// <param name="clientConfig">客户端配置</param>
-    private static void ConfigurePollyPolicies(IHttpClientBuilder clientBuilder, HttpClientOptions options,
+    private static void ConfigurePollyPolicies(IHttpClientBuilder clientBuilder, XiHanHttpClientOptions options,
         HttpClientConfiguration? clientConfig = null)
     {
         // 重试策略

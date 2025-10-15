@@ -14,7 +14,7 @@
 
 using System.Text;
 using XiHan.Framework.Http.Models;
-using HttpRequestOptions = XiHan.Framework.Http.Options.HttpRequestOptions;
+using XiHan.Framework.Http.Options;
 
 namespace XiHan.Framework.Http.Extensions;
 
@@ -30,7 +30,7 @@ public static class HttpServiceExtensions
     /// <param name="token">令牌</param>
     /// <param name="scheme">认证方案</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithAuthorization(this HttpRequestOptions options, string token, string scheme = "Bearer")
+    public static XiHanHttpRequestOptions WithAuthorization(this XiHanHttpRequestOptions options, string token, string scheme = "Bearer")
     {
         return options.AddHeader("Authorization", $"{scheme} {token}");
     }
@@ -42,7 +42,7 @@ public static class HttpServiceExtensions
     /// <param name="username">用户名</param>
     /// <param name="password">密码</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithBasicAuth(this HttpRequestOptions options, string username, string password)
+    public static XiHanHttpRequestOptions WithBasicAuth(this XiHanHttpRequestOptions options, string username, string password)
     {
         var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         return options.AddHeader("Authorization", $"Basic {credentials}");
@@ -53,7 +53,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions AsJson(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions AsJson(this XiHanHttpRequestOptions options)
     {
         options.ContentType = "application/json";
         return options;
@@ -64,7 +64,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions AsXml(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions AsXml(this XiHanHttpRequestOptions options)
     {
         options.ContentType = "application/xml";
         return options;
@@ -75,7 +75,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions AsForm(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions AsForm(this XiHanHttpRequestOptions options)
     {
         options.ContentType = "application/x-www-form-urlencoded";
         return options;
@@ -86,7 +86,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithoutRetry(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions WithoutRetry(this XiHanHttpRequestOptions options)
     {
         options.EnableRetry = false;
         return options;
@@ -97,7 +97,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithoutCircuitBreaker(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions WithoutCircuitBreaker(this XiHanHttpRequestOptions options)
     {
         options.EnableCircuitBreaker = false;
         return options;
@@ -109,7 +109,7 @@ public static class HttpServiceExtensions
     /// <param name="options">请求选项</param>
     /// <param name="userAgent">用户代理</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithUserAgent(this HttpRequestOptions options, string userAgent)
+    public static XiHanHttpRequestOptions WithUserAgent(this XiHanHttpRequestOptions options, string userAgent)
     {
         return options.AddHeader("User-Agent", userAgent);
     }
@@ -120,7 +120,7 @@ public static class HttpServiceExtensions
     /// <param name="options">请求选项</param>
     /// <param name="correlationId">关联Id</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithCorrelationId(this HttpRequestOptions options, string? correlationId = null)
+    public static XiHanHttpRequestOptions WithCorrelationId(this XiHanHttpRequestOptions options, string? correlationId = null)
     {
         correlationId ??= Guid.NewGuid().ToString();
         return options.AddHeader("X-Correlation-Id", correlationId);
@@ -132,7 +132,7 @@ public static class HttpServiceExtensions
     /// <param name="options">请求选项</param>
     /// <param name="language">语言代码</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithLanguage(this HttpRequestOptions options, string language)
+    public static XiHanHttpRequestOptions WithLanguage(this XiHanHttpRequestOptions options, string language)
     {
         return options.AddHeader("Accept-Language", language);
     }
@@ -143,7 +143,7 @@ public static class HttpServiceExtensions
     /// <param name="options">请求选项</param>
     /// <param name="cacheControl">缓存控制</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithCacheControl(this HttpRequestOptions options, string cacheControl)
+    public static XiHanHttpRequestOptions WithCacheControl(this XiHanHttpRequestOptions options, string cacheControl)
     {
         return options.AddHeader("Cache-Control", cacheControl);
     }
@@ -153,7 +153,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithoutCache(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions WithoutCache(this XiHanHttpRequestOptions options)
     {
         return options.WithCacheControl("no-cache, no-store, must-revalidate");
     }
@@ -164,7 +164,7 @@ public static class HttpServiceExtensions
     /// <param name="options">请求选项</param>
     /// <param name="clientName">客户端名称</param>
     /// <returns></returns>
-    public static HttpRequestOptions UseClient(this HttpRequestOptions options, string clientName)
+    public static XiHanHttpRequestOptions UseClient(this XiHanHttpRequestOptions options, string clientName)
     {
         return options.AddTag("ClientName", clientName);
     }
@@ -174,7 +174,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithVerboseLogging(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions WithVerboseLogging(this XiHanHttpRequestOptions options)
     {
         options.LogRequest = true;
         options.LogResponse = true;
@@ -186,7 +186,7 @@ public static class HttpServiceExtensions
     /// </summary>
     /// <param name="options">请求选项</param>
     /// <returns></returns>
-    public static HttpRequestOptions WithoutLogging(this HttpRequestOptions options)
+    public static XiHanHttpRequestOptions WithoutLogging(this XiHanHttpRequestOptions options)
     {
         options.LogRequest = false;
         options.LogResponse = false;

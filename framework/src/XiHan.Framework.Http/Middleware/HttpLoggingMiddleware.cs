@@ -26,14 +26,14 @@ namespace XiHan.Framework.Http.Middleware;
 public class HttpLoggingMiddleware : DelegatingHandler
 {
     private readonly ILogger<HttpLoggingMiddleware> _logger;
-    private readonly HttpClientOptions _options;
+    private readonly XiHanHttpClientOptions _options;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="logger">日志记录器</param>
     /// <param name="options">HTTP客户端选项</param>
-    public HttpLoggingMiddleware(ILogger<HttpLoggingMiddleware> logger, HttpClientOptions options)
+    public HttpLoggingMiddleware(ILogger<HttpLoggingMiddleware> logger, XiHanHttpClientOptions options)
     {
         _logger = logger;
         _options = options;
