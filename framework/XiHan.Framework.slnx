@@ -57,6 +57,7 @@
     <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
   </Folder>
   <Folder Name="/2.tests/2.UnitTests/">
+    <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
     <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
   </Folder>

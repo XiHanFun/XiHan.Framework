@@ -52,12 +52,12 @@ public static class ConsoleTableUsageExample
 
         var styles = new[]
         {
-            (TableBorderStyle.Simple, "简单边框"),
-            (TableBorderStyle.Rounded, "圆角边框"),
-            (TableBorderStyle.Double, "双线边框"),
-            (TableBorderStyle.Bold, "粗体边框"),
-            (TableBorderStyle.Markdown, "Markdown 样式"),
-            (TableBorderStyle.None, "无边框")
+            (ConsoleTableBorderStyle.Simple, "简单边框"),
+            (ConsoleTableBorderStyle.Rounded, "圆角边框"),
+            (ConsoleTableBorderStyle.Double, "双线边框"),
+            (ConsoleTableBorderStyle.Bold, "粗体边框"),
+            (ConsoleTableBorderStyle.Markdown, "Markdown 样式"),
+            (ConsoleTableBorderStyle.None, "无边框")
         };
 
         foreach (var (style, description) in styles)
@@ -84,7 +84,7 @@ public static class ConsoleTableUsageExample
 
         var table = new ConsoleTable()
         {
-            BorderStyle = TableBorderStyle.Double,
+            BorderStyle = ConsoleTableBorderStyle.Double,
             DefaultHeaderColor = ConsoleColor.Cyan,
             DefaultTextColor = ConsoleColor.White
         };
@@ -132,7 +132,7 @@ public static class ConsoleTableUsageExample
 
         var table = new ConsoleTable("短列", "中等长度的列名", "很长的列名测试自适应")
         {
-            BorderStyle = TableBorderStyle.Rounded,
+            BorderStyle = ConsoleTableBorderStyle.Rounded,
             MaxColumnWidth = 25, // 限制最大列宽
             Padding = 1
         };
@@ -154,7 +154,7 @@ public static class ConsoleTableUsageExample
 
         var table = new ConsoleTable("功能模块", "详细描述", "当前状态")
         {
-            BorderStyle = TableBorderStyle.Bold,
+            BorderStyle = ConsoleTableBorderStyle.Bold,
             MaxColumnWidth = 20,
             ShowRowSeparators = false
         };
@@ -170,7 +170,7 @@ public static class ConsoleTableUsageExample
 
         var tableWithSeparators = new ConsoleTable("功能模块", "详细描述", "当前状态")
         {
-            BorderStyle = TableBorderStyle.Bold,
+            BorderStyle = ConsoleTableBorderStyle.Bold,
             MaxColumnWidth = 20,
             ShowRowSeparators = true  // 启用行分隔线
         };
@@ -193,7 +193,7 @@ public static class ConsoleTableUsageExample
         // 创建系统状态表格
         var statusTable = new ConsoleTable("服务", "状态", "响应时间", "错误率")
         {
-            BorderStyle = TableBorderStyle.Simple
+            BorderStyle = ConsoleTableBorderStyle.Simple
         };
 
         statusTable.AddRow("数据库", "正常", "15ms", "0%")
@@ -206,7 +206,7 @@ public static class ConsoleTableUsageExample
         // 创建错误统计表格
         var errorTable = new ConsoleTable("错误类型", "次数", "最后发生时间")
         {
-            BorderStyle = TableBorderStyle.Double
+            BorderStyle = ConsoleTableBorderStyle.Double
         };
 
         errorTable.AddRow("数据库连接超时", 5, DateTime.Now.AddMinutes(-10))
@@ -225,7 +225,7 @@ public static class ConsoleTableUsageExample
 
         var perfTable = new ConsoleTable()
         {
-            BorderStyle = TableBorderStyle.Rounded,
+            BorderStyle = ConsoleTableBorderStyle.Rounded,
             DefaultHeaderColor = ConsoleColor.Cyan
         };
 

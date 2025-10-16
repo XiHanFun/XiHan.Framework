@@ -13,9 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
-using XiHan.Framework.Utils.CommandLine.Attributes;
+using XiHan.Framework.DevTools.CommandLine.Attributes;
 
-namespace XiHan.Framework.Utils.CommandLine.Commands;
+namespace XiHan.Framework.DevTools.CommandLine.Commands;
 
 /// <summary>
 /// 命令描述符
@@ -177,14 +177,14 @@ public class CommandDescriptor
         foreach (var member in members)
         {
             // 解析选项
-            var optionAttr = member.GetCustomAttribute<OptionAttribute>();
+            var optionAttr = member.GetCustomAttribute<CommandOptionAttribute>();
             if (optionAttr != null)
             {
                 Options.Add(new OptionDescriptor(member, optionAttr));
             }
 
             // 解析参数
-            var argumentAttr = member.GetCustomAttribute<ArgumentAttribute>();
+            var argumentAttr = member.GetCustomAttribute<CommandArgumentAttribute>();
             if (argumentAttr != null)
             {
                 Arguments.Add(new ArgumentDescriptor(member, argumentAttr));
@@ -205,199 +205,4 @@ public class CommandDescriptor
         // 按位置排序参数
         Arguments.Sort((a, b) => a.Position.CompareTo(b.Position));
     }
-}
-
-/// <summary>
-/// 选项描述符
-/// </summary>
-public class OptionDescriptor
-{
-    /// <summary>
-    /// 创建选项描述符
-    /// </summary>
-    /// <param name="member">成员信息</param>
-    /// <param name="optionAttr">选项属性</param>
-    public OptionDescriptor(MemberInfo member, OptionAttribute optionAttr)
-    {
-        Member = member ?? throw new ArgumentNullException(nameof(member));
-
-        LongName = optionAttr.LongName;
-        ShortName = optionAttr.ShortName;
-        Description = optionAttr.Description;
-        Required = optionAttr.Required;
-        DefaultValue = optionAttr.DefaultValue;
-        IsSwitch = optionAttr.IsSwitch;
-        AllowMultiple = optionAttr.AllowMultiple;
-        MetaName = optionAttr.MetaName ?? GetDefaultMetaName();
-
-        MemberType = member switch
-        {
-            PropertyInfo prop => prop.PropertyType,
-            FieldInfo field => field.FieldType,
-            _ => throw new ArgumentException("成员必须是属性或字段")
-        };
-
-        // 自动检测布尔类型
-        if (MemberType == typeof(bool) || MemberType == typeof(bool?))
-        {
-            IsSwitch = true;
-        }
-    }
-
-    /// <summary>
-    /// 长选项名称
-    /// </summary>
-    public string LongName { get; }
-
-    /// <summary>
-    /// 短选项名称
-    /// </summary>
-    public string? ShortName { get; }
-
-    /// <summary>
-    /// 选项描述
-    /// </summary>
-    public string? Description { get; }
-
-    /// <summary>
-    /// 是否必填
-    /// </summary>
-    public bool Required { get; }
-
-    /// <summary>
-    /// 默认值
-    /// </summary>
-    public object? DefaultValue { get; }
-
-    /// <summary>
-    /// 是否为布尔开关
-    /// </summary>
-    public bool IsSwitch { get; }
-
-    /// <summary>
-    /// 是否支持多值
-    /// </summary>
-    public bool AllowMultiple { get; }
-
-    /// <summary>
-    /// 参数名称（用于帮助显示）
-    /// </summary>
-    public string? MetaName { get; }
-
-    /// <summary>
-    /// 成员信息
-    /// </summary>
-    public MemberInfo Member { get; }
-
-    /// <summary>
-    /// 成员类型
-    /// </summary>
-    public Type MemberType { get; }
-
-    /// <summary>
-    /// 获取选项名称列表（包含长名称和短名称）
-    /// </summary>
-    /// <returns>选项名称列表</returns>
-    public List<string> GetNames()
-    {
-        var names = new List<string> { LongName };
-        if (!string.IsNullOrEmpty(ShortName))
-        {
-            names.Add(ShortName);
-        }
-        return names;
-    }
-
-    /// <summary>
-    /// 获取默认的参数名称
-    /// </summary>
-    /// <returns>参数名称</returns>
-    private string GetDefaultMetaName()
-    {
-        if (IsSwitch)
-        {
-            return "";
-        }
-
-        var typeName = MemberType.Name.ToLowerInvariant();
-        return typeName switch
-        {
-            "string" => "VALUE",
-            "int32" or "int64" or "int16" => "NUMBER",
-            "double" or "single" or "decimal" => "NUMBER",
-            "datetime" => "DATE",
-            "boolean" => "",
-            _ => "VALUE"
-        };
-    }
-}
-
-/// <summary>
-/// 参数描述符
-/// </summary>
-public class ArgumentDescriptor
-{
-    /// <summary>
-    /// 创建参数描述符
-    /// </summary>
-    /// <param name="member">成员信息</param>
-    /// <param name="argumentAttr">参数属性</param>
-    public ArgumentDescriptor(MemberInfo member, ArgumentAttribute argumentAttr)
-    {
-        Member = member ?? throw new ArgumentNullException(nameof(member));
-
-        Position = argumentAttr.Position;
-        Name = argumentAttr.Name;
-        Description = argumentAttr.Description;
-        Required = argumentAttr.Required;
-        DefaultValue = argumentAttr.DefaultValue;
-        AllowMultiple = argumentAttr.AllowMultiple;
-
-        MemberType = member switch
-        {
-            PropertyInfo prop => prop.PropertyType,
-            FieldInfo field => field.FieldType,
-            _ => throw new ArgumentException("成员必须是属性或字段")
-        };
-    }
-
-    /// <summary>
-    /// 参数位置
-    /// </summary>
-    public int Position { get; }
-
-    /// <summary>
-    /// 参数名称
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
-    /// 参数描述
-    /// </summary>
-    public string? Description { get; }
-
-    /// <summary>
-    /// 是否必填
-    /// </summary>
-    public bool Required { get; }
-
-    /// <summary>
-    /// 默认值
-    /// </summary>
-    public object? DefaultValue { get; }
-
-    /// <summary>
-    /// 是否支持多值
-    /// </summary>
-    public bool AllowMultiple { get; }
-
-    /// <summary>
-    /// 成员信息
-    /// </summary>
-    public MemberInfo Member { get; }
-
-    /// <summary>
-    /// 成员类型
-    /// </summary>
-    public Type MemberType { get; }
 }

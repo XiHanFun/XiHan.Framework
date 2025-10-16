@@ -46,7 +46,7 @@ public class ConsoleTable
     /// <summary>
     /// 边框样式，默认为简单样式
     /// </summary>
-    public TableBorderStyle BorderStyle { get; set; } = TableBorderStyle.Simple;
+    public ConsoleTableBorderStyle BorderStyle { get; set; } = ConsoleTableBorderStyle.Simple;
 
     /// <summary>
     /// 是否显示表头
@@ -221,10 +221,10 @@ public class ConsoleTable
             return;
         }
 
-        var borderChars = TableBorderChars.GetBorderChars(BorderStyle);
+        var borderChars = ConsoleTableBorderChars.GetBorderChars(BorderStyle);
 
         // 绘制顶部边框
-        if (BorderStyle != TableBorderStyle.None)
+        if (BorderStyle != ConsoleTableBorderStyle.None)
         {
             Console.WriteLine(BuildHorizontalLine(borderChars, true, false));
         }
@@ -235,7 +235,7 @@ public class ConsoleTable
             PrintRowLines(_headers, _headerColors, borderChars);
 
             // 绘制表头分隔线
-            if (BorderStyle != TableBorderStyle.None)
+            if (BorderStyle != ConsoleTableBorderStyle.None)
             {
                 Console.WriteLine(BuildHorizontalLine(borderChars, false, false));
             }
@@ -247,14 +247,14 @@ public class ConsoleTable
             PrintRowLines(_rows[i], _rowColors[i], borderChars);
 
             // 在行之间添加分隔线（如果启用且不是最后一行）
-            if (ShowRowSeparators && BorderStyle != TableBorderStyle.None && i < _rows.Count - 1)
+            if (ShowRowSeparators && BorderStyle != ConsoleTableBorderStyle.None && i < _rows.Count - 1)
             {
                 Console.WriteLine(BuildHorizontalLine(borderChars, false, false));
             }
         }
 
         // 绘制底部边框
-        if (BorderStyle != TableBorderStyle.None)
+        if (BorderStyle != ConsoleTableBorderStyle.None)
         {
             Console.WriteLine(BuildHorizontalLine(borderChars, false, true));
         }
@@ -289,7 +289,7 @@ public class ConsoleTable
     public static ConsoleTable QuickTable(
         string[] headers,
         object[][] rows,
-        TableBorderStyle style = TableBorderStyle.Simple)
+        ConsoleTableBorderStyle style = ConsoleTableBorderStyle.Simple)
     {
         var table = new ConsoleTable(headers)
         {
@@ -315,7 +315,7 @@ public class ConsoleTable
         IDictionary<string, object> data,
         string keyHeader = "Key",
         string valueHeader = "Value",
-        TableBorderStyle style = TableBorderStyle.Simple)
+        ConsoleTableBorderStyle style = ConsoleTableBorderStyle.Simple)
     {
         var table = new ConsoleTable(keyHeader, valueHeader)
         {
@@ -341,7 +341,7 @@ public class ConsoleTable
         object obj,
         string propertyHeader = "Property",
         string valueHeader = "Value",
-        TableBorderStyle style = TableBorderStyle.Simple)
+        ConsoleTableBorderStyle style = ConsoleTableBorderStyle.Simple)
     {
         ArgumentNullException.ThrowIfNull(obj);
 
@@ -627,10 +627,10 @@ public class ConsoleTable
         }
 
         var sb = new StringBuilder();
-        var borderChars = TableBorderChars.GetBorderChars(BorderStyle);
+        var borderChars = ConsoleTableBorderChars.GetBorderChars(BorderStyle);
 
         // 绘制顶部边框
-        if (BorderStyle != TableBorderStyle.None)
+        if (BorderStyle != ConsoleTableBorderStyle.None)
         {
             sb.AppendLine(BuildHorizontalLine(borderChars, true, false));
         }
@@ -641,7 +641,7 @@ public class ConsoleTable
             BuildRowLines(_headers, sb, borderChars);
 
             // 绘制表头分隔线
-            if (BorderStyle != TableBorderStyle.None)
+            if (BorderStyle != ConsoleTableBorderStyle.None)
             {
                 sb.AppendLine(BuildHorizontalLine(borderChars, false, false));
             }
@@ -653,14 +653,14 @@ public class ConsoleTable
             BuildRowLines(_rows[i], sb, borderChars);
 
             // 在行之间添加分隔线（如果启用且不是最后一行）
-            if (ShowRowSeparators && BorderStyle != TableBorderStyle.None && i < _rows.Count - 1)
+            if (ShowRowSeparators && BorderStyle != ConsoleTableBorderStyle.None && i < _rows.Count - 1)
             {
                 sb.AppendLine(BuildHorizontalLine(borderChars, false, false));
             }
         }
 
         // 绘制底部边框
-        if (BorderStyle != TableBorderStyle.None)
+        if (BorderStyle != ConsoleTableBorderStyle.None)
         {
             sb.AppendLine(BuildHorizontalLine(borderChars, false, true));
         }
@@ -674,7 +674,7 @@ public class ConsoleTable
     /// <param name="rowData">行数据</param>
     /// <param name="sb">字符串构建器</param>
     /// <param name="borderChars">边框字符集</param>
-    private void BuildRowLines(List<string> rowData, StringBuilder sb, BorderCharSet borderChars)
+    private void BuildRowLines(List<string> rowData, StringBuilder sb, ConsoleTableBorderCharSet borderChars)
     {
         // 将每列的内容分割成多行
         var columnLines = new List<List<string>>();
@@ -691,7 +691,7 @@ public class ConsoleTable
         // 输出每一行
         for (var lineIndex = 0; lineIndex < maxLines; lineIndex++)
         {
-            if (BorderStyle != TableBorderStyle.None)
+            if (BorderStyle != ConsoleTableBorderStyle.None)
             {
                 sb.Append(borderChars.Vertical);
             }
@@ -706,7 +706,7 @@ public class ConsoleTable
                 sb.Append(paddedContent);
                 sb.Append(new string(' ', Padding));
 
-                if (BorderStyle != TableBorderStyle.None)
+                if (BorderStyle != ConsoleTableBorderStyle.None)
                 {
                     sb.Append(borderChars.Vertical);
                 }
@@ -723,7 +723,7 @@ public class ConsoleTable
     /// <param name="isTop">是否是顶部</param>
     /// <param name="isBottom">是否是底部</param>
     /// <returns>水平分隔线</returns>
-    private string BuildHorizontalLine(BorderCharSet borderChars, bool isTop, bool isBottom)
+    private string BuildHorizontalLine(ConsoleTableBorderCharSet borderChars, bool isTop, bool isBottom)
     {
         var sb = new StringBuilder();
 
@@ -833,7 +833,7 @@ public class ConsoleTable
     /// <param name="rowData">行数据</param>
     /// <param name="colors">颜色</param>
     /// <param name="borderChars">边框字符集</param>
-    private void PrintRowLines(List<string> rowData, List<ConsoleColor?> colors, BorderCharSet borderChars)
+    private void PrintRowLines(List<string> rowData, List<ConsoleColor?> colors, ConsoleTableBorderCharSet borderChars)
     {
         // 将每列的内容分割成多行
         var columnLines = new List<List<string>>();
@@ -851,7 +851,7 @@ public class ConsoleTable
         for (var lineIndex = 0; lineIndex < maxLines; lineIndex++)
         {
             // 输出左边框
-            if (BorderStyle != TableBorderStyle.None)
+            if (BorderStyle != ConsoleTableBorderStyle.None)
             {
                 Console.Write(borderChars.Vertical);
             }
@@ -885,7 +885,7 @@ public class ConsoleTable
                 Console.Write(new string(' ', Padding));
 
                 // 输出右边框
-                if (BorderStyle != TableBorderStyle.None)
+                if (BorderStyle != ConsoleTableBorderStyle.None)
                 {
                     Console.Write(borderChars.Vertical);
                 }
@@ -896,204 +896,4 @@ public class ConsoleTable
     }
 
     #endregion
-}
-
-/// <summary>
-/// 表格边框字符集
-/// </summary>
-internal static class TableBorderChars
-{
-    /// <summary>
-    /// 获取指定样式的边框字符集
-    /// </summary>
-    /// <param name="style">边框样式</param>
-    /// <returns>边框字符集</returns>
-    public static BorderCharSet GetBorderChars(TableBorderStyle style)
-    {
-        return style switch
-        {
-            TableBorderStyle.None => new BorderCharSet
-            {
-                TopLeft = ' ',
-                TopRight = ' ',
-                BottomLeft = ' ',
-                BottomRight = ' ',
-                TopCenter = ' ',
-                BottomCenter = ' ',
-                LeftCenter = ' ',
-                RightCenter = ' ',
-                Cross = ' ',
-                Horizontal = ' ',
-                Vertical = ' '
-            },
-            TableBorderStyle.Simple => new BorderCharSet
-            {
-                TopLeft = '+',
-                TopRight = '+',
-                BottomLeft = '+',
-                BottomRight = '+',
-                TopCenter = '+',
-                BottomCenter = '+',
-                LeftCenter = '+',
-                RightCenter = '+',
-                Cross = '+',
-                Horizontal = '-',
-                Vertical = '|'
-            },
-            TableBorderStyle.Rounded => new BorderCharSet
-            {
-                TopLeft = '╭',
-                TopRight = '╮',
-                BottomLeft = '╰',
-                BottomRight = '╯',
-                TopCenter = '┬',
-                BottomCenter = '┴',
-                LeftCenter = '├',
-                RightCenter = '┤',
-                Cross = '┼',
-                Horizontal = '─',
-                Vertical = '│'
-            },
-            TableBorderStyle.Double => new BorderCharSet
-            {
-                TopLeft = '╔',
-                TopRight = '╗',
-                BottomLeft = '╚',
-                BottomRight = '╝',
-                TopCenter = '╦',
-                BottomCenter = '╩',
-                LeftCenter = '╠',
-                RightCenter = '╣',
-                Cross = '╬',
-                Horizontal = '═',
-                Vertical = '║'
-            },
-            TableBorderStyle.Bold => new BorderCharSet
-            {
-                TopLeft = '┏',
-                TopRight = '┓',
-                BottomLeft = '┗',
-                BottomRight = '┛',
-                TopCenter = '┳',
-                BottomCenter = '┻',
-                LeftCenter = '┣',
-                RightCenter = '┫',
-                Cross = '╋',
-                Horizontal = '━',
-                Vertical = '┃'
-            },
-            TableBorderStyle.Markdown => new BorderCharSet
-            {
-                TopLeft = '|',
-                TopRight = '|',
-                BottomLeft = '|',
-                BottomRight = '|',
-                TopCenter = '|',
-                BottomCenter = '|',
-                LeftCenter = '|',
-                RightCenter = '|',
-                Cross = '|',
-                Horizontal = '-',
-                Vertical = '|'
-            },
-            _ => GetBorderChars(TableBorderStyle.Simple)
-        };
-    }
-}
-
-/// <summary>
-/// 表格边框样式
-/// </summary>
-public enum TableBorderStyle
-{
-    /// <summary>
-    /// 无边框
-    /// </summary>
-    None,
-
-    /// <summary>
-    /// 简单边框（使用 ASCII 字符）
-    /// </summary>
-    Simple,
-
-    /// <summary>
-    /// 圆角边框
-    /// </summary>
-    Rounded,
-
-    /// <summary>
-    /// 双线边框
-    /// </summary>
-    Double,
-
-    /// <summary>
-    /// 粗体边框
-    /// </summary>
-    Bold,
-
-    /// <summary>
-    /// Markdown 样式
-    /// </summary>
-    Markdown
-}
-
-/// <summary>
-/// 边框字符集
-/// </summary>
-internal class BorderCharSet
-{
-    /// <summary>
-    /// 左上角
-    /// </summary>
-    public char TopLeft { get; set; }
-
-    /// <summary>
-    /// 右上角
-    /// </summary>
-    public char TopRight { get; set; }
-
-    /// <summary>
-    /// 左下角
-    /// </summary>
-    public char BottomLeft { get; set; }
-
-    /// <summary>
-    /// 右下角
-    /// </summary>
-    public char BottomRight { get; set; }
-
-    /// <summary>
-    /// 上中
-    /// </summary>
-    public char TopCenter { get; set; }
-
-    /// <summary>
-    /// 下中
-    /// </summary>
-    public char BottomCenter { get; set; }
-
-    /// <summary>
-    /// 左中
-    /// </summary>
-    public char LeftCenter { get; set; }
-
-    /// <summary>
-    /// 右中
-    /// </summary>
-    public char RightCenter { get; set; }
-
-    /// <summary>
-    /// 交叉
-    /// </summary>
-    public char Cross { get; set; }
-
-    /// <summary>
-    /// 水平
-    /// </summary>
-    public char Horizontal { get; set; }
-
-    /// <summary>
-    /// 垂直
-    /// </summary>
-    public char Vertical { get; set; }
 }

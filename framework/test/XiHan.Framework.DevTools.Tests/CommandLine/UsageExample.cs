@@ -12,13 +12,14 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.CommandLine.Attributes;
-using XiHan.Framework.Utils.CommandLine.Commands;
-using XiHan.Framework.Utils.CommandLine.Models;
+using XiHan.Framework.DevTools.CommandLine;
+using XiHan.Framework.DevTools.CommandLine.Arguments;
+using XiHan.Framework.DevTools.CommandLine.Attributes;
+using XiHan.Framework.DevTools.CommandLine.Commands;
+using XiHan.Framework.DevTools.CommandLine.Validators;
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.Tests.CommandLine;
+namespace XiHan.Framework.DevTools.Tests.CommandLine;
 
 /// <summary>
 /// 命令行框架使用示例
@@ -78,7 +79,7 @@ public static class UsageExample
     public static void DirectParsingExample(string[] args)
     {
         // 方式1：解析为字典
-        var parsedArgs = CommandLine.Parse(args);
+        var parsedArgs = CommandLineParserFactory.Parse(args);
 
         Console.WriteLine("选项:");
         foreach (var option in parsedArgs.Options)
@@ -93,7 +94,7 @@ public static class UsageExample
         }
 
         // 方式2：解析为强类型对象
-        var options = CommandLine.Parse<MyOptions>(args);
+        var options = CommandLineParserFactory.Parse<MyOptions>(args);
         Console.WriteLine($"Name: {options.Name}");
         Console.WriteLine($"Verbose: {options.Verbose}");
         Console.WriteLine($"Files: {string.Join(", ", options.Files)}");
@@ -107,7 +108,7 @@ public static class UsageExample
     {
         try
         {
-            var options = CommandLine.Parse<ValidatedOptions>(args);
+            var options = CommandLineParserFactory.Parse<ValidatedOptions>(args);
             Console.WriteLine("验证通过");
         }
         catch (ArgumentParseException ex)
@@ -122,16 +123,16 @@ public static class UsageExample
 /// </summary>
 public class MyOptions
 {
-    [Option("name", "n", Description = "用户名称", Required = true)]
+    [CommandOption("name", "n", Description = "用户名称", Required = true)]
     public string Name { get; set; } = "";
 
-    [Option("verbose", "v", Description = "详细输出", IsSwitch = true)]
+    [CommandOption("verbose", "v", Description = "详细输出", IsSwitch = true)]
     public bool Verbose { get; set; }
 
-    [Option("files", "f", Description = "文件列表", AllowMultiple = true)]
+    [CommandOption("files", "f", Description = "文件列表", AllowMultiple = true)]
     public string[] Files { get; set; } = [];
 
-    [Option("count", "c", Description = "数量", DefaultValue = 10)]
+    [CommandOption("count", "c", Description = "数量", DefaultValue = 10)]
     public int Count { get; set; }
 }
 
@@ -140,19 +141,19 @@ public class MyOptions
 /// </summary>
 public class ValidatedOptions
 {
-    [Option("port", "p", Description = "端口号")]
+    [CommandOption("port", "p", Description = "端口号")]
     [Range(1, 65535)]
     public int Port { get; set; } = 8080;
 
-    [Option("input", "i", Description = "输入文件")]
+    [CommandOption("input", "i", Description = "输入文件")]
     [FileExists]
     public string? InputFile { get; set; }
 
-    [Option("output", "o", Description = "输出目录")]
+    [CommandOption("output", "o", Description = "输出目录")]
     [DirectoryExists]
     public string? OutputDirectory { get; set; }
 
-    [Option("email", Description = "邮箱地址")]
+    [CommandOption("email", Description = "邮箱地址")]
     [Validation(typeof(EmailValidator))]
     public string? Email { get; set; }
 }
@@ -163,20 +164,20 @@ public class ValidatedOptions
 [Command("build", Description = "构建项目", Usage = "build --configuration Release --output ./bin")]
 public class BuildCommand : ICommand
 {
-    [Option("configuration", "c", Description = "构建配置", DefaultValue = "Debug")]
+    [CommandOption("configuration", "c", Description = "构建配置", DefaultValue = "Debug")]
     public string Configuration { get; set; } = "Debug";
 
-    [Option("output", "o", Description = "输出目录", DefaultValue = "./bin")]
+    [CommandOption("output", "o", Description = "输出目录", DefaultValue = "./bin")]
     public string OutputDirectory { get; set; } = "./bin";
 
-    [Option("clean", Description = "构建前清理", IsSwitch = true)]
+    [CommandOption("clean", Description = "构建前清理", IsSwitch = true)]
     public bool Clean { get; set; }
 
-    [Option("parallel", "j", Description = "并行构建数", DefaultValue = 1)]
+    [CommandOption("parallel", "j", Description = "并行构建数", DefaultValue = 1)]
     [Range(1, 5)]
     public int ParallelCount { get; set; } = 1;
 
-    [Option("defines", "D", Description = "预处理器定义", AllowMultiple = true)]
+    [CommandOption("defines", "D", Description = "预处理器定义", AllowMultiple = true)]
     public string[] Defines { get; set; } = [];
 
     public async Task<int> ExecuteAsync(CommandContext context)

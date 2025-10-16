@@ -1,44 +1,20 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ICommand
-// Guid:k7l8m902-j4l1-3728-hm6k-i8fd84c18144
+// FileName:CommandContext
+// Guid:4e142c60-0630-4948-90e2-3342ea77cb58
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/16 0:00:00
+// CreateTime:2025/10/17 5:01:23
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Utils.CommandLine.Commands;
+using XiHan.Framework.DevTools.CommandLine.Arguments;
 
-/// <summary>
-/// 命令接口
-/// </summary>
-public interface ICommand
-{
-    /// <summary>
-    /// 执行命令
-    /// </summary>
-    /// <param name="context">执行上下文</param>
-    /// <returns>退出代码</returns>
-    Task<int> ExecuteAsync(CommandContext context);
-}
-
-/// <summary>
-/// 同步命令接口
-/// </summary>
-public interface ISyncCommand
-{
-    /// <summary>
-    /// 执行命令
-    /// </summary>
-    /// <param name="context">执行上下文</param>
-    /// <returns>退出代码</returns>
-    int Execute(CommandContext context);
-}
+namespace XiHan.Framework.DevTools.CommandLine.Commands;
 
 /// <summary>
 /// 命令执行上下文
@@ -57,7 +33,7 @@ public class CommandContext
     /// <param name="cancellationToken">取消令牌</param>
     public CommandContext(
         string[] arguments,
-        Models.ParsedArguments parsedArguments,
+        ParsedArguments parsedArguments,
         CommandDescriptor commandDescriptor,
         TextWriter? output = null,
         TextWriter? error = null,
@@ -96,7 +72,7 @@ public class CommandContext
     /// <summary>
     /// 解析后的参数
     /// </summary>
-    public Models.ParsedArguments ParsedArguments { get; }
+    public ParsedArguments ParsedArguments { get; }
 
     /// <summary>
     /// 命令描述符
