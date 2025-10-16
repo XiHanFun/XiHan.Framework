@@ -1,7 +1,7 @@
 ﻿using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
-using XiHan.Framework.Tests.Web;
 using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Tests;
 
 try
 {
