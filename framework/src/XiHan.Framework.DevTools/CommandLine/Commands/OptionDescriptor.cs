@@ -38,7 +38,6 @@ public class OptionDescriptor
         DefaultValue = optionAttr.DefaultValue;
         IsSwitch = optionAttr.IsSwitch;
         AllowMultiple = optionAttr.AllowMultiple;
-        MetaName = optionAttr.MetaName ?? GetDefaultMetaName();
 
         MemberType = member switch
         {
@@ -52,6 +51,8 @@ public class OptionDescriptor
         {
             IsSwitch = true;
         }
+
+        MetaName = optionAttr.MetaName ?? GetDefaultMetaName();
     }
 
     /// <summary>
