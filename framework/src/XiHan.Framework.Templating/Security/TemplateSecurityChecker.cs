@@ -14,9 +14,8 @@
 
 using System.Diagnostics;
 using XiHan.Framework.Templating.Contexts;
-using XiHan.Framework.Templating.Security;
 
-namespace XiHan.Framework.Templating.Implementations;
+namespace XiHan.Framework.Templating.Security;
 
 /// <summary>
 /// 模板安全检查器实现

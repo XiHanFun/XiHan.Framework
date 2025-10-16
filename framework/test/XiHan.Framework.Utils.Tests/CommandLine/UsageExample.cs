@@ -12,12 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Utils.CommandLine;
 using XiHan.Framework.Utils.CommandLine.Attributes;
 using XiHan.Framework.Utils.CommandLine.Commands;
 using XiHan.Framework.Utils.CommandLine.Models;
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.CommandLine.Examples;
+namespace XiHan.Framework.Utils.Tests.CommandLine;
 
 /// <summary>
 /// 命令行框架使用示例

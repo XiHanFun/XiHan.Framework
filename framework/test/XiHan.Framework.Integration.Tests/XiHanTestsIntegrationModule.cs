@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Http;
 using XiHan.Framework.Logging;
 
-namespace XiHan.Framework.Tests.Integration;
+namespace XiHan.Framework.Integration.Tests;
 
 /// <summary>
 /// 曦寒测试应用集成主机
