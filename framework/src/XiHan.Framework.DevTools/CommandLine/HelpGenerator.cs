@@ -13,10 +13,10 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
-using XiHan.Framework.Utils.CommandLine.Commands;
+using XiHan.Framework.DevTools.CommandLine.Commands;
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.CommandLine;
+namespace XiHan.Framework.DevTools.CommandLine;
 
 /// <summary>
 /// 帮助文档生成器

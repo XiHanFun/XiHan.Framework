@@ -13,11 +13,11 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
-using XiHan.Framework.Utils.CommandLine.Commands;
-using XiHan.Framework.Utils.CommandLine.Models;
+using XiHan.Framework.DevTools.CommandLine.Arguments;
+using XiHan.Framework.DevTools.CommandLine.Commands;
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.CommandLine;
+namespace XiHan.Framework.DevTools.CommandLine;
 
 /// <summary>
 /// 命令行应用程序
@@ -361,21 +361,31 @@ public class CommandApp
 }
 
 /// <summary>
-/// 命令行绑定器扩展
+/// 命令行应用程序交互式扩展
 /// </summary>
-public static class CommandLineBinderExtensions
+public static class CommandAppInteractiveExtensions
 {
     /// <summary>
-    /// 绑定到指定类型
+    /// 启动交互式模式
     /// </summary>
-    /// <param name="binder">绑定器</param>
-    /// <param name="type">目标类型</param>
-    /// <param name="parsedArgs">解析结果</param>
-    /// <returns>绑定后的对象</returns>
-    public static object Bind(this CommandLineBinder binder, Type type, ParsedArguments parsedArgs)
+    /// <param name="app">命令应用程序</param>
+    /// <param name="prompt">提示符</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>退出代码</returns>
+    public static async Task<int> RunInteractiveAsync(this CommandApp app, string prompt = "> ", CancellationToken cancellationToken = default)
     {
-        var method = typeof(CommandLineBinder).GetMethod("Bind")!;
-        var genericMethod = method.MakeGenericMethod(type);
-        return genericMethod.Invoke(binder, [parsedArgs])!;
+        var interactive = new InteractiveMode(app, prompt);
+        return await interactive.RunAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// 同步启动交互式模式
+    /// </summary>
+    /// <param name="app">命令应用程序</param>
+    /// <param name="prompt">提示符</param>
+    /// <returns>退出代码</returns>
+    public static int RunInteractive(this CommandApp app, string prompt = "> ")
+    {
+        return app.RunInteractiveAsync(prompt).GetAwaiter().GetResult();
     }
 }

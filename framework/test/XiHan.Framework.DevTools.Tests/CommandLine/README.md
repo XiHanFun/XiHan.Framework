@@ -1,4 +1,4 @@
-# XiHan.Framework.Utils.CommandLine
+# iHan.Framework.DevTools.CommandLine
 
 强大且易用的 .NET 命令行解析框架，支持现代命令行应用程序开发的各种需求。
 
@@ -37,7 +37,7 @@
 ### 1. 基本用法
 
 ```csharp
-using XiHan.Framework.Utils.CommandLine;
+using iHan.Framework.DevTools.CommandLine;
 
 // 创建应用程序
 var app = new CommandApp
@@ -60,17 +60,17 @@ await app.RunAsync(args);
 [Command("copy", Description = "复制文件")]
 public class CopyCommand : ICommand
 {
-    [Argument(0, "source", Description = "源文件")]
+    [CommandArgument(0, "source", Description = "源文件")]
     [FileExists]
     public string Source { get; set; } = "";
 
-    [Argument(1, "destination", Description = "目标文件")]
+    [CommandArgument(1, "destination", Description = "目标文件")]
     public string Destination { get; set; } = "";
 
-    [Option("force", "f", Description = "强制覆盖", IsSwitch = true)]
+    [CommandOption("force", "f", Description = "强制覆盖", IsSwitch = true)]
     public bool Force { get; set; }
 
-    [Option("verbose", "v", Description = "详细输出", IsSwitch = true)]
+    [CommandOption("verbose", "v", Description = "详细输出", IsSwitch = true)]
     public bool Verbose { get; set; }
 
     public async Task<int> ExecuteAsync(CommandContext context)
@@ -109,7 +109,7 @@ public class GitCommand : ICommand
 [Command("commit", Description = "提交更改")]
 public class CommitCommand : ICommand
 {
-    [Option("message", "m", Description = "提交消息", Required = true)]
+    [CommandOption("message", "m", Description = "提交消息", Required = true)]
     public string Message { get; set; } = "";
 
     public async Task<int> ExecuteAsync(CommandContext context)
@@ -130,13 +130,13 @@ var verboseMode = parsed.HasOption("verbose");
 // 解析为强类型对象
 public class Options
 {
-    [Option("name", "n", Required = true)]
+    [CommandOption("name", "n", Required = true)]
     public string Name { get; set; } = "";
 
-    [Option("count", "c", DefaultValue = 10)]
+    [CommandOption("count", "c", DefaultValue = 10)]
     public int Count { get; set; }
 
-    [Option("files", AllowMultiple = true)]
+    [CommandOption("files", AllowMultiple = true)]
     public string[] Files { get; set; } = [];
 }
 
@@ -158,7 +158,7 @@ await app.RunInteractiveAsync("MyApp> ");
 ### Option 属性
 
 ```csharp
-[Option("name", "n",
+[CommandOption("name", "n",
     Description = "选项描述",
     Required = true,
     DefaultValue = "默认值",
@@ -170,7 +170,7 @@ await app.RunInteractiveAsync("MyApp> ");
 ### Argument 属性
 
 ```csharp
-[Argument(0, "filename",
+[CommandArgument(0, "filename",
     Description = "文件名参数",
     Required = true,
     DefaultValue = null,
@@ -183,7 +183,7 @@ await app.RunInteractiveAsync("MyApp> ");
 [Command("commandname",
     Aliases = new[] { "alias1", "alias2" },
     Description = "命令描述",
-    Usage = "command [options] <args>",
+    Usage = "command [CommandOptions] <args>",
     IsDefault = false,
     Hidden = false)]
 ```
@@ -314,7 +314,7 @@ public class EmailValidator : IValidator
 }
 
 // 使用
-[Option("email")]
+[CommandOption("email")]
 [Validation(typeof(EmailValidator))]
 public string Email { get; set; } = "";
 ```

@@ -12,12 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.CommandLine;
-using XiHan.Framework.Utils.CommandLine.Attributes;
-using XiHan.Framework.Utils.CommandLine.Commands;
+using XiHan.Framework.DevTools.CommandLine;
+using XiHan.Framework.DevTools.CommandLine.Attributes;
+using XiHan.Framework.DevTools.CommandLine.Commands;
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.Tests.CommandLine;
+namespace XiHan.Framework.DevTools.Tests.CommandLine;
 
 /// <summary>
 /// 示例：文件操作命令
@@ -50,17 +50,17 @@ public class FileCommand : ICommand
 [Command("copy", Description = "复制文件")]
 public class CopyCommand : ICommand
 {
-    [Argument(0, "source", Description = "源文件路径")]
+    [CommandArgument(0, "source", Description = "源文件路径")]
     [FileExists]
     public string Source { get; set; } = "";
 
-    [Argument(1, "destination", Description = "目标文件路径")]
+    [CommandArgument(1, "destination", Description = "目标文件路径")]
     public string Destination { get; set; } = "";
 
-    [Option("force", "f", Description = "强制覆盖", IsSwitch = true)]
+    [CommandOption("force", "f", Description = "强制覆盖", IsSwitch = true)]
     public bool Force { get; set; }
 
-    [Option("verbose", "v", Description = "详细输出", IsSwitch = true)]
+    [CommandOption("verbose", "v", Description = "详细输出", IsSwitch = true)]
     public bool Verbose { get; set; }
 
     public async Task<int> ExecuteAsync(CommandContext context)
@@ -87,17 +87,17 @@ public class CopyCommand : ICommand
             var fileInfo = new FileInfo(Source);
             using var progress = new ConsoleProgressBar(fileInfo.Length, 40);
 
-            const int bufferSize = 81920; // 80KB buffer
-            var buffer = new byte[bufferSize];
+            const int BufferSize = 81920; // 80KB buffer
+            var buffer = new byte[BufferSize];
             long totalRead = 0;
 
             using var sourceStream = File.OpenRead(Source);
             using var destStream = File.Create(Destination);
 
             int bytesRead;
-            while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            while ((bytesRead = await sourceStream.ReadAsync(buffer)) > 0)
             {
-                await destStream.WriteAsync(buffer, 0, bytesRead);
+                await destStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                 totalRead += bytesRead;
                 progress.Update(totalRead, $"已复制 {totalRead / 1024:N0} KB");
             }
@@ -120,13 +120,13 @@ public class CopyCommand : ICommand
 [Command("delete", Aliases = ["del", "rm"], Description = "删除文件")]
 public class DeleteCommand : ICommand
 {
-    [Argument(0, "files", Description = "要删除的文件", AllowMultiple = true)]
+    [CommandArgument(0, "files", Description = "要删除的文件", AllowMultiple = true)]
     public string[] Files { get; set; } = [];
 
-    [Option("recursive", "r", Description = "递归删除目录", IsSwitch = true)]
+    [CommandOption("recursive", "r", Description = "递归删除目录", IsSwitch = true)]
     public bool Recursive { get; set; }
 
-    [Option("force", "f", Description = "强制删除，不提示确认", IsSwitch = true)]
+    [CommandOption("force", "f", Description = "强制删除，不提示确认", IsSwitch = true)]
     public bool Force { get; set; }
 
     public async Task<int> ExecuteAsync(CommandContext context)
@@ -210,32 +210,32 @@ public class DeleteCommand : ICommand
 [Command("list", Aliases = ["ls", "dir"], Description = "列出文件和目录")]
 public class ListCommand : ICommand
 {
-    [Argument(0, "path", Description = "要列出的路径", Required = false, DefaultValue = ".")]
-    public string Path { get; set; } = ".";
+    [CommandArgument(0, "path", Description = "要列出的路径", Required = false, DefaultValue = ".")]
+    public string FilePath { get; set; } = ".";
 
-    [Option("all", "a", Description = "显示隐藏文件", IsSwitch = true)]
+    [CommandOption("all", "a", Description = "显示隐藏文件", IsSwitch = true)]
     public bool ShowHidden { get; set; }
 
-    [Option("long", "l", Description = "详细格式", IsSwitch = true)]
+    [CommandOption("long", "l", Description = "详细格式", IsSwitch = true)]
     public bool LongFormat { get; set; }
 
-    [Option("recursive", "r", Description = "递归列出子目录", IsSwitch = true)]
+    [CommandOption("recursive", "r", Description = "递归列出子目录", IsSwitch = true)]
     public bool Recursive { get; set; }
 
-    [Option("filter", Description = "文件过滤器 (*.txt, *.cs 等)")]
+    [CommandOption("filter", Description = "文件过滤器 (*.txt, *.cs 等)")]
     public string? Filter { get; set; }
 
     public async Task<int> ExecuteAsync(CommandContext context)
     {
         try
         {
-            if (!Directory.Exists(Path))
+            if (!Directory.Exists(FilePath))
             {
-                ConsoleColorWriter.WriteError($"目录不存在: {Path}");
+                ConsoleColorWriter.WriteError($"目录不存在: {FilePath}");
                 return 1;
             }
 
-            await ListDirectoryAsync(Path, 0);
+            await ListDirectoryAsync(FilePath, 0);
             return 0;
         }
         catch (Exception ex)
@@ -266,16 +266,16 @@ public class ListCommand : ICommand
 
         if (depth == 0)
         {
-            ConsoleColorWriter.WriteInfo($"目录: {System.IO.Path.GetFullPath(path)}");
+            ConsoleColorWriter.WriteInfo($"目录: {Path.GetFullPath(path)}");
             Console.WriteLine();
         }
 
         try
         {
             var entries = Directory.GetFileSystemEntries(path, Filter ?? "*")
-                .Where(entry => ShowHidden || !System.IO.Path.GetFileName(entry).StartsWith('.'))
+                .Where(entry => ShowHidden || !Path.GetFileName(entry).StartsWith('.'))
                 .OrderBy(entry => Directory.Exists(entry) ? 0 : 1) // 目录优先
-                .ThenBy(entry => System.IO.Path.GetFileName(entry));
+                .ThenBy(entry => Path.GetFileName(entry));
 
             if (LongFormat)
             {
@@ -283,8 +283,8 @@ public class ListCommand : ICommand
 
                 foreach (var entry in entries)
                 {
-                    var name = System.IO.Path.GetFileName(entry);
-                    var fullPath = System.IO.Path.Combine(path, name);
+                    var name = Path.GetFileName(entry);
+                    var fullPath = Path.Combine(path, name);
 
                     if (Directory.Exists(fullPath))
                     {
@@ -305,8 +305,8 @@ public class ListCommand : ICommand
             {
                 foreach (var entry in entries)
                 {
-                    var name = System.IO.Path.GetFileName(entry);
-                    var fullPath = System.IO.Path.Combine(path, name);
+                    var name = Path.GetFileName(entry);
+                    var fullPath = Path.Combine(path, name);
 
                     if (Directory.Exists(fullPath))
                     {
@@ -323,7 +323,7 @@ public class ListCommand : ICommand
             if (Recursive)
             {
                 var subDirs = Directory.GetDirectories(path)
-                    .Where(dir => ShowHidden || !System.IO.Path.GetFileName(dir).StartsWith('.'));
+                    .Where(dir => ShowHidden || !Path.GetFileName(dir).StartsWith('.'));
 
                 foreach (var subDir in subDirs)
                 {
@@ -345,16 +345,16 @@ public class ListCommand : ICommand
 [Command("config", Description = "应用程序配置管理")]
 public class ConfigCommand : ICommand
 {
-    [Option("set", Description = "设置配置项 key=value", AllowMultiple = true)]
+    [CommandOption("set", Description = "设置配置项 key=value", AllowMultiple = true)]
     public string[] SetValues { get; set; } = [];
 
-    [Option("get", Description = "获取配置项")]
+    [CommandOption("get", Description = "获取配置项")]
     public string? GetKey { get; set; }
 
-    [Option("list", "l", Description = "列出所有配置", IsSwitch = true)]
+    [CommandOption("list", "l", Description = "列出所有配置", IsSwitch = true)]
     public bool ListAll { get; set; }
 
-    [Option("file", Description = "配置文件路径", DefaultValue = "app.config")]
+    [CommandOption("file", Description = "配置文件路径", DefaultValue = "app.config")]
     public string ConfigFile { get; set; } = "app.config";
 
     public async Task<int> ExecuteAsync(CommandContext context)
@@ -388,6 +388,37 @@ public class ConfigCommand : ICommand
         {
             ConsoleColorWriter.WriteError($"配置操作失败: {ex.Message}");
             return 1;
+        }
+    }
+
+    private static void ShowConfigValue(Dictionary<string, string> config, string key)
+    {
+        if (config.TryGetValue(key, out var value))
+        {
+            ConsoleColorWriter.WriteSuccess($"{key} = {value}");
+        }
+        else
+        {
+            ConsoleColorWriter.WriteWarn($"配置项 '{key}' 不存在");
+        }
+    }
+
+    private static void SetConfigValues(Dictionary<string, string> config, string[] setValues)
+    {
+        foreach (var setValue in setValues)
+        {
+            var parts = setValue.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+                config[key] = value;
+                ConsoleColorWriter.WriteInfo($"设置: {key} = {value}");
+            }
+            else
+            {
+                ConsoleColorWriter.WriteWarn($"无效的配置格式: {setValue}");
+            }
         }
     }
 
@@ -450,36 +481,5 @@ public class ConfigCommand : ICommand
         }
 
         table.Print();
-    }
-
-    private void ShowConfigValue(Dictionary<string, string> config, string key)
-    {
-        if (config.TryGetValue(key, out var value))
-        {
-            ConsoleColorWriter.WriteSuccess($"{key} = {value}");
-        }
-        else
-        {
-            ConsoleColorWriter.WriteWarn($"配置项 '{key}' 不存在");
-        }
-    }
-
-    private void SetConfigValues(Dictionary<string, string> config, string[] setValues)
-    {
-        foreach (var setValue in setValues)
-        {
-            var parts = setValue.Split('=', 2);
-            if (parts.Length == 2)
-            {
-                var key = parts[0].Trim();
-                var value = parts[1].Trim();
-                config[key] = value;
-                ConsoleColorWriter.WriteInfo($"设置: {key} = {value}");
-            }
-            else
-            {
-                ConsoleColorWriter.WriteWarn($"无效的配置格式: {setValue}");
-            }
-        }
     }
 }

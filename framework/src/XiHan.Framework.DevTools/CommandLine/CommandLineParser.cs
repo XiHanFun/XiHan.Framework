@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Utils.CommandLine.Models;
+using XiHan.Framework.DevTools.CommandLine.Arguments;
 
-namespace XiHan.Framework.Utils.CommandLine;
+namespace XiHan.Framework.DevTools.CommandLine;
 
 /// <summary>
 /// 命令行参数解析器
@@ -339,84 +339,5 @@ public class CommandLineParser
         }
 
         return position + 1;
-    }
-}
-
-/// <summary>
-/// 静态解析器工厂
-/// </summary>
-public static class CommandLine
-{
-    /// <summary>
-    /// 使用默认配置解析参数
-    /// </summary>
-    /// <param name="args">命令行参数</param>
-    /// <returns>解析结果</returns>
-    public static ParsedArguments Parse(string[] args)
-    {
-        var parser = new CommandLineParser();
-        return parser.Parse(args);
-    }
-
-    /// <summary>
-    /// 解析为强类型对象
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="args">命令行参数</param>
-    /// <returns>解析结果</returns>
-    public static T Parse<T>(string[] args) where T : new()
-    {
-        var parser = new CommandLineParser();
-        return parser.Parse<T>(args);
-    }
-
-    /// <summary>
-    /// 使用自定义配置解析参数
-    /// </summary>
-    /// <param name="args">命令行参数</param>
-    /// <param name="options">解析配置</param>
-    /// <returns>解析结果</returns>
-    public static ParsedArguments Parse(string[] args, ParseOptions options)
-    {
-        var parser = new CommandLineParser(options);
-        return parser.Parse(args);
-    }
-
-    /// <summary>
-    /// 使用自定义配置解析为强类型对象
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="args">命令行参数</param>
-    /// <param name="options">解析配置</param>
-    /// <returns>解析结果</returns>
-    public static T Parse<T>(string[] args, ParseOptions options) where T : new()
-    {
-        var parser = new CommandLineParser(options);
-        return parser.Parse<T>(args);
-    }
-
-    /// <summary>
-    /// 尝试解析参数
-    /// </summary>
-    /// <param name="args">命令行参数</param>
-    /// <param name="result">解析结果</param>
-    /// <returns>是否解析成功</returns>
-    public static bool TryParse(string[] args, out ParsedArguments result)
-    {
-        var parser = new CommandLineParser();
-        return parser.TryParse(args, out result);
-    }
-
-    /// <summary>
-    /// 尝试解析为强类型对象
-    /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="args">命令行参数</param>
-    /// <param name="result">解析结果</param>
-    /// <returns>是否解析成功</returns>
-    public static bool TryParse<T>(string[] args, out T result) where T : new()
-    {
-        var parser = new CommandLineParser();
-        return parser.TryParse(args, out result);
     }
 }
