@@ -265,21 +265,3 @@ public class EmailValidator : IValidator
         return ValidationResult.Success;
     }
 }
-
-/// <summary>
-/// 程序入口点示例
-/// </summary>
-public class ProgramExample
-{
-    public static async Task<int> Main(string[] args)
-    {
-        // 检查是否启动交互模式
-        if (args.Length == 1 && args[0] == "--interactive")
-        {
-            return await UsageExample.InteractiveModeExample();
-        }
-
-        // 正常命令行模式
-        return await UsageExample.BasicUsageAsync(args);
-    }
-}
