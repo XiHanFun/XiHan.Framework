@@ -2,6 +2,7 @@
 using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Hosting;
+using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Tests.Integration;
 
 try
@@ -13,6 +14,9 @@ try
     var host = builder.Build();
 
     await host.InitializeAsync();
+
+    var url = $"https://www.google.com";
+    var httpResult = await url.AsHttp().GetStringAsync();
 
     await host.RunAsync();
 

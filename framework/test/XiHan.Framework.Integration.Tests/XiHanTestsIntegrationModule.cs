@@ -14,10 +14,8 @@
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Http;
 using XiHan.Framework.Logging;
-using XiHan.Framework.Utils.Core;
-using XiHan.Framework.Utils.Logging;
-using XiHan.Framework.Utils.Serialization.Json;
 
 namespace XiHan.Framework.Tests.Integration;
 
@@ -25,6 +23,7 @@ namespace XiHan.Framework.Tests.Integration;
 /// 曦寒测试应用集成主机
 /// </summary>
 [DependsOn(
+    typeof(XiHanHttpModule),
     typeof(XiHanLoggingModule)
     )]
 public class XiHanTestsIntegrationModule : XiHanModule
