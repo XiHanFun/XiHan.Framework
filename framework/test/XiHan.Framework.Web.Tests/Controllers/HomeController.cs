@@ -4,7 +4,7 @@ using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
 
-namespace XiHan.Framework.Tests.Web.Controllers;
+namespace XiHan.Framework.Web.Tests.Controllers;
 
 /// <summary>
 /// HomeController
