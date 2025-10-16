@@ -14,10 +14,11 @@
 
 using System.ComponentModel;
 using System.Reflection;
-using XiHan.Framework.Utils.CommandLine.Attributes;
-using XiHan.Framework.Utils.CommandLine.Models;
+using XiHan.Framework.DevTools.CommandLine.Arguments;
+using XiHan.Framework.DevTools.CommandLine.Attributes;
+using XiHan.Framework.DevTools.CommandLine.Validators;
 
-namespace XiHan.Framework.Utils.CommandLine;
+namespace XiHan.Framework.DevTools.CommandLine;
 
 /// <summary>
 /// 命令行参数绑定器
@@ -83,7 +84,7 @@ public class CommandLineBinder
     {
         foreach (var member in members)
         {
-            var optionAttr = member.GetCustomAttribute<OptionAttribute>();
+            var optionAttr = member.GetCustomAttribute<CommandOptionAttribute>();
             if (optionAttr == null)
             {
                 continue;
@@ -131,14 +132,14 @@ public class CommandLineBinder
     private static void BindArguments(object instance, List<MemberInfo> members, ParsedArguments parsedArgs)
     {
         var argumentMembers = members
-            .Where(m => m.GetCustomAttribute<ArgumentAttribute>() != null)
-            .OrderBy(m => m.GetCustomAttribute<ArgumentAttribute>()!.Position)
+            .Where(m => m.GetCustomAttribute<CommandArgumentAttribute>() != null)
+            .OrderBy(m => m.GetCustomAttribute<CommandArgumentAttribute>()!.Position)
             .ToList();
 
         for (var i = 0; i < argumentMembers.Count; i++)
         {
             var member = argumentMembers[i];
-            var argAttr = member.GetCustomAttribute<ArgumentAttribute>()!;
+            var argAttr = member.GetCustomAttribute<CommandArgumentAttribute>()!;
 
             if (argAttr.AllowMultiple && i == argumentMembers.Count - 1)
             {
@@ -176,7 +177,7 @@ public class CommandLineBinder
     /// <param name="instance">目标对象</param>
     /// <param name="values">值列表</param>
     /// <param name="optionAttr">选项属性</param>
-    private static void SetMemberValue(MemberInfo member, object instance, List<string> values, OptionAttribute? optionAttr)
+    private static void SetMemberValue(MemberInfo member, object instance, List<string> values, CommandOptionAttribute? optionAttr)
     {
         var memberType = GetMemberType(member);
 
@@ -382,8 +383,8 @@ public class CommandLineBinder
     {
         foreach (var member in members)
         {
-            var optionAttr = member.GetCustomAttribute<OptionAttribute>();
-            var argumentAttr = member.GetCustomAttribute<ArgumentAttribute>();
+            var optionAttr = member.GetCustomAttribute<CommandOptionAttribute>();
+            var argumentAttr = member.GetCustomAttribute<CommandArgumentAttribute>();
 
             var isRequired = optionAttr?.Required == true || argumentAttr?.Required == true;
             if (!isRequired)
@@ -476,5 +477,25 @@ public class CommandLineBinder
         }
 
         return false;
+    }
+}
+
+/// <summary>
+/// 命令行绑定器扩展
+/// </summary>
+public static class CommandLineBinderExtensions
+{
+    /// <summary>
+    /// 绑定到指定类型
+    /// </summary>
+    /// <param name="binder">绑定器</param>
+    /// <param name="type">目标类型</param>
+    /// <param name="parsedArgs">解析结果</param>
+    /// <returns>绑定后的对象</returns>
+    public static object Bind(this CommandLineBinder binder, Type type, ParsedArguments parsedArgs)
+    {
+        var method = typeof(CommandLineBinder).GetMethod("Bind")!;
+        var genericMethod = method.MakeGenericMethod(type);
+        return genericMethod.Invoke(binder, [parsedArgs])!;
     }
 }

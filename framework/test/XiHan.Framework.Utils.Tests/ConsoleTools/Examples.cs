@@ -80,9 +80,9 @@ public static class Examples
         Console.WriteLine("\n2. 不同样式:");
         var styles = new[]
         {
-            ("点式", ConsoleSpinner.Styles.Dots),
-            ("箭头", ConsoleSpinner.Styles.Arrow),
-            ("方块", ConsoleSpinner.Styles.Block)
+            ("点式", ConsoleSpinnerStyles.Dots),
+            ("箭头", ConsoleSpinnerStyles.Arrow),
+            ("方块", ConsoleSpinnerStyles.Block)
         };
 
         foreach (var (name, style) in styles)
@@ -98,7 +98,7 @@ public static class Examples
         var result = await LoadingIndicator.ShowAsync(
             SimulateAsyncWork(),
             "执行异步任务",
-            ConsoleSpinner.Styles.Clock);
+            ConsoleSpinnerStyles.Clock);
 
         ConsoleColorWriter.WriteSuccess($"任务结果: {result}");
     }
@@ -127,7 +127,7 @@ public static class Examples
         var logMessage = "2024-01-01 ERROR: Failed to connect to database at localhost:5432, retrying...";
         ConsoleColorWriter.WriteWithHighlightMessage(
             logMessage,
-            new[] { "ERROR", "database", "localhost" },
+            ["ERROR", "database", "localhost"],
             ConsoleColor.Red);
 
         // 标签消息

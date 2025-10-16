@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Utils.ConsoleTools;
 
-namespace XiHan.Framework.Utils.CommandLine;
+namespace XiHan.Framework.DevTools.CommandLine;
 
 /// <summary>
 /// 交互式命令行模式
@@ -246,35 +246,5 @@ public class InteractiveMode
         table.Print();
 
         return true;
-    }
-}
-
-/// <summary>
-/// 命令行应用程序交互式扩展
-/// </summary>
-public static class CommandAppInteractiveExtensions
-{
-    /// <summary>
-    /// 启动交互式模式
-    /// </summary>
-    /// <param name="app">命令应用程序</param>
-    /// <param name="prompt">提示符</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>退出代码</returns>
-    public static async Task<int> RunInteractiveAsync(this CommandApp app, string prompt = "> ", CancellationToken cancellationToken = default)
-    {
-        var interactive = new InteractiveMode(app, prompt);
-        return await interactive.RunAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// 同步启动交互式模式
-    /// </summary>
-    /// <param name="app">命令应用程序</param>
-    /// <param name="prompt">提示符</param>
-    /// <returns>退出代码</returns>
-    public static int RunInteractive(this CommandApp app, string prompt = "> ")
-    {
-        return app.RunInteractiveAsync(prompt).GetAwaiter().GetResult();
     }
 }
