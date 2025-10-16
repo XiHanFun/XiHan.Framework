@@ -17,7 +17,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.Tasks\XiHan.Framework.Tasks.csproj" />
-        <ProjectReference Include="..\..\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
     </ItemGroup>
 
     <ItemGroup>
