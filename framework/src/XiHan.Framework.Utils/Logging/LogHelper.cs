@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.ConsoleTools;
+using XiHan.Framework.Utils.Logging.Formatters;
 
 namespace XiHan.Framework.Utils.Logging;
 
@@ -22,89 +23,49 @@ namespace XiHan.Framework.Utils.Logging;
 /// </summary>
 public static class LogHelper
 {
-    private static readonly Lock ObjLock = new();
-    private static bool _isDisplayHeader = true;
-    private static volatile LogLevel _minimumLevel = LogLevel.Info;
-    private static volatile bool _enableFileOutput = false;
-    private static volatile bool _enableConsoleOutput = true;
+    private static readonly Lock LogLock = new();
+    private static readonly Lock ConfigLock = new();
+    private static readonly LogOptions Options = new();
+    private static readonly LogStatistics Statistics = new();
+    private static ILogFormatter _formatter = new TextLogFormatter();
 
     /// <summary>
-    /// 设置最小日志等级（小于该等级的日志将被忽略）
-    /// 例：设置为 Warn，则只输出 Warn 和 Error 级别的日志
+    /// 配置日志选项
     /// </summary>
-    /// <param name="level">日志等级</param>
-    public static void SetMinimumLevel(LogLevel level)
+    /// <param name="configure">配置操作</param>
+    public static void Configure(Action<LogOptions> configure)
     {
-        if (!Enum.IsDefined(level))
+        lock (ConfigLock)
         {
-            throw new ArgumentException($"无效的日志等级: {level}", nameof(level));
+            configure?.Invoke(Options);
+            ApplyConfiguration();
         }
-
-        _minimumLevel = level;
-
-        // 同步设置到文件输出
-        if (_enableFileOutput)
-        {
-            LogFileHelper.SetMinimumLevel(level);
-        }
-    }
-
-    /// <summary>
-    /// 设置是否启用文件输出
-    /// </summary>
-    /// <param name="enable">是否启用文件输出</param>
-    public static void SetFileOutputEnabled(bool enable)
-    {
-        _enableFileOutput = enable;
-        if (enable)
-        {
-            LogFileHelper.SetMinimumLevel(_minimumLevel);
-        }
-    }
-
-    /// <summary>
-    /// 设置是否启用控制台输出
-    /// </summary>
-    /// <param name="enable">是否启用控制台输出</param>
-    public static void SetConsoleOutputEnabled(bool enable)
-    {
-        _enableConsoleOutput = enable;
-    }
-
-    /// <summary>
-    /// 设置文件输出目录
-    /// </summary>
-    /// <param name="directoryPath">日志文件目录</param>
-    public static void SetLogDirectory(string directoryPath)
-    {
-        LogFileHelper.SetLogDirectory(directoryPath);
-    }
-
-    /// <summary>
-    /// 设置文件最大大小
-    /// </summary>
-    /// <param name="maxSizeBytes">最大文件大小（字节）</param>
-    public static void SetMaxFileSize(long maxSizeBytes)
-    {
-        LogFileHelper.SetMaxFileSize(maxSizeBytes);
     }
 
     /// <summary>
     /// 获取当前配置信息
     /// </summary>
-    /// <returns>配置信息</returns>
-    public static (LogLevel MinLevel, bool FileOutput, bool ConsoleOutput, bool DisplayHeader) GetConfiguration()
+    /// <returns>配置选项对象</returns>
+    public static LogOptions GetConfiguration()
     {
-        return (_minimumLevel, _enableFileOutput, _enableConsoleOutput, _isDisplayHeader);
+        return Options;
     }
 
     /// <summary>
-    /// 设置是否显示日志头，默认显示
+    /// 获取日志统计信息
     /// </summary>
-    /// <param name="isDisplayHeader">是否显示头部信息</param>
-    public static void SetIsDisplayHeader(bool isDisplayHeader)
+    /// <returns>日志统计信息</returns>
+    public static LogStatistics GetStatistics()
     {
-        _isDisplayHeader = isDisplayHeader;
+        return Statistics;
+    }
+
+    /// <summary>
+    /// 重置统计信息
+    /// </summary>
+    public static void ResetStatistics()
+    {
+        Statistics.Reset();
     }
 
     /// <summary>
@@ -113,7 +74,7 @@ public static class LogHelper
     /// <returns>当前最小日志等级</returns>
     public static LogLevel GetMinimumLevel()
     {
-        return _minimumLevel;
+        return Options.MinimumLevel;
     }
 
     /// <summary>
@@ -122,7 +83,96 @@ public static class LogHelper
     /// <returns>是否显示日志头</returns>
     public static bool GetIsDisplayHeader()
     {
-        return _isDisplayHeader;
+        return Options.DisplayHeader;
+    }
+
+    /// <summary>
+    /// 设置最小日志等级（小于该等级的日志将被忽略）
+    /// </summary>
+    /// <param name="level">日志等级，默认 Info</param>
+    public static void SetMinimumLevel(LogLevel level)
+    {
+        if (!Enum.IsDefined(level))
+        {
+            throw new ArgumentException($"无效的日志等级: {level}", nameof(level));
+        }
+
+        lock (ConfigLock)
+        {
+            Options.MinimumLevel = level;
+
+            // 同步设置到文件输出
+            if (Options.EnableFileOutput)
+            {
+                LogFileHelper.SetMinimumLevel(level);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 设置是否启用文件输出
+    /// </summary>
+    /// <param name="enable">是否启用文件输出，默认不启用</param>
+    public static void SetFileOutputEnabled(bool enable)
+    {
+        lock (ConfigLock)
+        {
+            Options.EnableFileOutput = enable;
+            if (enable)
+            {
+                ApplyConfiguration();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 设置是否启用控制台输出
+    /// </summary>
+    /// <param name="enable">是否启用控制台输出，默认启用</param>
+    public static void SetConsoleOutputEnabled(bool enable)
+    {
+        lock (ConfigLock)
+        {
+            Options.EnableConsoleOutput = enable;
+        }
+    }
+
+    /// <summary>
+    /// 设置文件输出目录
+    /// </summary>
+    /// <param name="directoryPath">日志文件目录</param>
+    public static void SetLogDirectory(string directoryPath)
+    {
+        lock (ConfigLock)
+        {
+            Options.LogDirectory = directoryPath;
+            LogFileHelper.SetLogDirectory(directoryPath);
+        }
+    }
+
+    /// <summary>
+    /// 设置文件最大大小
+    /// </summary>
+    /// <param name="maxSizeBytes">最大文件大小（字节）</param>
+    public static void SetMaxFileSize(long maxSizeBytes)
+    {
+        lock (ConfigLock)
+        {
+            Options.MaxFileSize = maxSizeBytes;
+            LogFileHelper.SetMaxFileSize(maxSizeBytes);
+        }
+    }
+
+    /// <summary>
+    /// 设置是否显示日志头
+    /// </summary>
+    /// <param name="isDisplayHeader">是否显示头部信息，默认显示</param>
+    public static void SetIsDisplayHeader(bool isDisplayHeader)
+    {
+        lock (ConfigLock)
+        {
+            Options.DisplayHeader = isDisplayHeader;
+        }
     }
 
     /// <summary>
@@ -261,7 +311,7 @@ public static class LogHelper
     /// <param name="ex">异常</param>
     public static void Error(string? errorMessage, Exception ex)
     {
-        var message = $"{errorMessage} {ex}";
+        var message = $"{errorMessage}{Environment.NewLine}{ex}";
         WriteColorLine(message, LogLevel.Error);
     }
 
@@ -317,7 +367,7 @@ public static class LogHelper
     /// </summary>
     public static void Clear()
     {
-        lock (ObjLock)
+        lock (LogLock)
         {
             try
             {
@@ -337,7 +387,7 @@ public static class LogHelper
     /// </summary>
     public static void ClearLogFiles()
     {
-        if (_enableFileOutput)
+        if (Options.EnableFileOutput)
         {
             LogFileHelper.Clear();
         }
@@ -349,7 +399,7 @@ public static class LogHelper
     /// <param name="date">指定日期</param>
     public static void ClearLogFiles(DateTime date)
     {
-        if (_enableFileOutput)
+        if (Options.EnableFileOutput)
         {
             LogFileHelper.Clear(date);
         }
@@ -360,7 +410,7 @@ public static class LogHelper
     /// </summary>
     public static void FlushToFile()
     {
-        if (_enableFileOutput)
+        if (Options.EnableFileOutput)
         {
             LogFileHelper.Flush();
         }
@@ -371,7 +421,7 @@ public static class LogHelper
     /// </summary>
     public static void Shutdown()
     {
-        if (_enableFileOutput)
+        if (Options.EnableFileOutput)
         {
             LogFileHelper.Shutdown();
         }
@@ -386,7 +436,7 @@ public static class LogHelper
     /// <returns>是否启用</returns>
     private static bool IsEnabled(LogLevel level)
     {
-        return _minimumLevel != LogLevel.None && level >= _minimumLevel;
+        return Options.MinimumLevel != LogLevel.None && level >= Options.MinimumLevel;
     }
 
     /// <summary>
@@ -445,6 +495,32 @@ public static class LogHelper
     }
 
     /// <summary>
+    /// 应用配置
+    /// </summary>
+    private static void ApplyConfiguration()
+    {
+        // 应用格式化器
+        _formatter = Options.LogFormat switch
+        {
+            LogFormat.Json => new JsonLogFormatter(),
+            LogFormat.Structured => new StructuredLogFormatter(),
+            _ => new TextLogFormatter()
+        };
+
+        // 同步到文件助手
+        if (Options.EnableFileOutput)
+        {
+            LogFileHelper.SetMinimumLevel(Options.MinimumLevel);
+            LogFileHelper.SetLogDirectory(Options.LogDirectory);
+            LogFileHelper.SetMaxFileSize(Options.MaxFileSize);
+            LogFileHelper.SetQueueCapacity(Options.QueueCapacity);
+            LogFileHelper.SetBatchSize(Options.BatchSize);
+            LogFileHelper.SetAsyncWriteEnabled(Options.EnableAsyncWrite);
+            LogFileHelper.SetStatisticsEnabled(Options.EnableStatistics);
+        }
+    }
+
+    /// <summary>
     /// 输出日志（同时输出到控制台和文件）
     /// </summary>
     /// <param name="message">消息内容</param>
@@ -456,16 +532,30 @@ public static class LogHelper
             return;
         }
 
+        // 记录统计
+        if (Options.EnableStatistics)
+        {
+            Statistics.RecordLogWritten(logLevel);
+        }
+
         // 输出到控制台
-        if (_enableConsoleOutput)
+        if (Options.EnableConsoleOutput)
         {
             WriteToConsole(message, logLevel);
+            if (Options.EnableStatistics)
+            {
+                Statistics.RecordConsoleWrite();
+            }
         }
 
         // 输出到文件
-        if (_enableFileOutput)
+        if (Options.EnableFileOutput)
         {
             WriteToFile(message, logLevel);
+            if (Options.EnableStatistics)
+            {
+                Statistics.RecordFileWrite();
+            }
         }
     }
 
@@ -476,13 +566,24 @@ public static class LogHelper
     /// <param name="logLevel">日志等级</param>
     private static void WriteToConsole(string? message, LogLevel logLevel)
     {
-        lock (ObjLock)
+        lock (LogLock)
         {
             try
             {
-                var frontColor = GetLogLevelColor(logLevel);
-                var logType = logLevel.ToString();
-                ConsoleColorWriter.WriteLog(message ?? "", logType, frontColor, _isDisplayHeader);
+                // 根据格式化器类型决定输出方式
+                if (_formatter is TextLogFormatter)
+                {
+                    // 文本格式使用彩色控制台输出
+                    var frontColor = GetLogLevelColor(logLevel);
+                    var logType = logLevel.ToString();
+                    ConsoleColorWriter.WriteLog(message ?? "", logType, frontColor, Options.DisplayHeader);
+                }
+                else
+                {
+                    // JSON 或结构化格式直接输出格式化后的结果
+                    var formattedMessage = _formatter.Format(DateTimeOffset.UtcNow, logLevel, message ?? string.Empty, null);
+                    Console.WriteLine(formattedMessage);
+                }
             }
             catch (Exception ex)
             {
@@ -527,8 +628,14 @@ public static class LogHelper
         }
         catch (Exception ex)
         {
+            // 记录写入错误
+            if (Options.EnableStatistics)
+            {
+                Statistics.RecordWriteError();
+            }
+
             // 文件输出失败时，在控制台显示警告
-            if (_enableConsoleOutput)
+            if (Options.EnableConsoleOutput)
             {
                 Console.WriteLine($"[文件输出失败] {ex.Message}: {message}");
             }
@@ -541,12 +648,12 @@ public static class LogHelper
     /// <param name="message">消息内容</param>
     private static void WriteColorLineRainbow(string? message)
     {
-        if (string.IsNullOrEmpty(message) || !_enableConsoleOutput)
+        if (string.IsNullOrEmpty(message) || !Options.EnableConsoleOutput)
         {
             return;
         }
 
-        lock (ObjLock)
+        lock (LogLock)
         {
             try
             {
