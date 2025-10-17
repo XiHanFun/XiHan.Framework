@@ -102,10 +102,9 @@ public static class AggregateRootExtensions
             LocalEventCount = localEvents.Count,
             DistributedEventCount = distributedEvents.Count,
             TotalEventCount = localEvents.Count + distributedEvents.Count,
-            EventTypes = localEvents.Concat(distributedEvents)
+            EventTypes = [.. localEvents.Concat(distributedEvents)
                 .Select(e => e.EventData.GetType().Name)
-                .Distinct()
-                .ToList()
+                .Distinct()]
         };
     }
 
@@ -149,7 +148,7 @@ public static class AggregateRootExtensions
             AggregateType = aggregateRoot.GetType().Name,
             SnapshotTime = DateTimeOffset.UtcNow,
             EventStatistics = aggregateRoot.GetEventStatistics(),
-            RecentEvents = aggregateRoot.GetAllEvents()
+            RecentEvents = [.. aggregateRoot.GetAllEvents()
                 .OrderByDescending(e => e.EventOrder)
                 .Take(10)
                 .Select(e => new EventSnapshot
@@ -158,8 +157,7 @@ public static class AggregateRootExtensions
                     EventId = e.EventData.EventId,
                     OccurredOn = e.EventData.OccurredOn,
                     EventOrder = e.EventOrder
-                })
-                .ToList()
+                })]
         };
     }
 }

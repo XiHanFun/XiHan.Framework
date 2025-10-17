@@ -126,6 +126,6 @@ public class ObjectExtensionManager
     /// <returns>包含所有扩展信息的不可变列表</returns>
     public virtual ImmutableList<ObjectExtensionInfo> GetExtendedObjects()
     {
-        return ObjectsExtensions.Values.ToImmutableList();
+        return [.. ObjectsExtensions.Values];
     }
 }
