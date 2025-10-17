@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace XiHan.Framework.Utils.Caching;
 
@@ -20,14 +21,11 @@ namespace XiHan.Framework.Utils.Caching;
 /// 缓存帮助类
 /// 提供简单易用的内存缓存操作方法，支持国际化的 DateTimeOffset
 /// 可直接使用，无需初始化或依赖注入，支持泛型缓存项
+/// 采用惰性清理 + 队列机制，在读取操作时自动清理过期项
+/// 支持 LRU/LFU/FIFO 淘汰策略、统计信息和事件通知
 /// </summary>
 public static class CacheHelper
 {
-    /// <summary>
-    /// 定时清理器，用于定期清理过期的缓存项
-    /// </summary>
-    private static readonly Timer CleanupTimer;
-
     /// <summary>
     /// 主缓存存储，用于存储所有缓存项
     /// </summary>
@@ -44,13 +42,59 @@ public static class CacheHelper
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> AsyncKeyLocks = new();
 
     /// <summary>
-    /// 静态构造函数，初始化清理定时器
+    /// 维护需要检查过期状态的键队列
     /// </summary>
-    static CacheHelper()
+    private static readonly ConcurrentQueue<string> ExpirationQueue = new();
+
+    /// <summary>
+    /// 缓存统计信息
+    /// </summary>
+    private static readonly CacheStatistics Statistics = new();
+
+    /// <summary>
+    /// 缓存配置选项
+    /// </summary>
+    private static readonly CacheOptions Options = new();
+
+    /// <summary>
+    /// 缓存事件
+    /// </summary>
+    public static event EventHandler<CacheEventArgs>? CacheEvent;
+
+    /// <summary>
+    /// 惰性清理默认批次大小
+    /// </summary>
+    private static int CleanupBatchSize => Options.CleanupBatchSize;
+
+    #region 配置和统计
+
+    /// <summary>
+    /// 配置缓存选项
+    /// </summary>
+    /// <param name="configure">配置操作</param>
+    public static void Configure(Action<CacheOptions> configure)
     {
-        // 每分钟清理一次过期的缓存项
-        CleanupTimer = new Timer(CleanupExpiredItems, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+        configure?.Invoke(Options);
     }
+
+    /// <summary>
+    /// 获取缓存统计信息
+    /// </summary>
+    /// <returns>缓存统计信息</returns>
+    public static CacheStatistics GetStatistics()
+    {
+        return Statistics;
+    }
+
+    /// <summary>
+    /// 重置统计信息
+    /// </summary>
+    public static void ResetStatistics()
+    {
+        Statistics.Reset();
+    }
+
+    #endregion
 
     #region 基础缓存操作
 
@@ -62,8 +106,15 @@ public static class CacheHelper
     /// <returns>缓存值，如果不存在则返回 default(T)</returns>
     public static T? Get<T>(string key)
     {
+        // 惰性清理：在读取时触发
+        LazyCleanupExpiredItems();
+
         if (string.IsNullOrEmpty(key))
         {
+            if (Options.EnableStatistics)
+            {
+                Statistics.RecordMiss();
+            }
             return default;
         }
 
@@ -72,13 +123,27 @@ public static class CacheHelper
             if (cacheItem.IsExpired)
             {
                 Cache.TryRemove(key, out _);
+                if (Options.EnableStatistics)
+                {
+                    Statistics.RecordMiss();
+                    Statistics.RecordExpired();
+                }
+                RaiseEvent(key, CacheEventType.Expired);
                 return default;
             }
 
             cacheItem.UpdateLastAccessed();
+            if (Options.EnableStatistics)
+            {
+                Statistics.RecordHit();
+            }
             return cacheItem.Value;
         }
 
+        if (Options.EnableStatistics)
+        {
+            Statistics.RecordMiss();
+        }
         return default;
     }
 
@@ -96,12 +161,19 @@ public static class CacheHelper
             return;
         }
 
+        // 检查缓存容量，必要时进行淘汰
+        EnsureCacheCapacity();
+
         var cacheItem = new CacheItem<T>(value)
         {
             AbsoluteExpiration = expireTime
         };
 
+        var isNew = !Cache.ContainsKey(key);
         Cache.AddOrUpdate(key, cacheItem, (_, _) => cacheItem);
+        ScheduleExpirationCheck(key);
+
+        RaiseEvent(key, isNew ? CacheEventType.Added : CacheEventType.Updated);
     }
 
     /// <summary>
@@ -139,11 +211,14 @@ public static class CacheHelper
             return;
         }
 
-        Cache.TryRemove(key, out _);
-        KeyLocks.TryRemove(key, out _);
-        if (AsyncKeyLocks.TryRemove(key, out var sem))
+        if (Cache.TryRemove(key, out _))
         {
-            sem.Dispose();
+            KeyLocks.TryRemove(key, out _);
+            if (AsyncKeyLocks.TryRemove(key, out var sem))
+            {
+                sem.Dispose();
+            }
+            RaiseEvent(key, CacheEventType.Removed);
         }
     }
 
@@ -185,9 +260,13 @@ public static class CacheHelper
     {
         var lazy = (Lazy<CacheItem<T>>)Cache.GetOrAdd(key, _ =>
             new Lazy<CacheItem<T>>(() =>
-            new CacheItem<T>(factory())
             {
-                AbsoluteExpiration = expireTime
+                var created = new CacheItem<T>(factory())
+                {
+                    AbsoluteExpiration = expireTime
+                };
+                ScheduleExpirationCheck(key);
+                return created;
             },
             LazyThreadSafetyMode.ExecutionAndPublication));
 
@@ -196,13 +275,17 @@ public static class CacheHelper
         {
             // 替换过期条目
             var replacement = new Lazy<CacheItem<T>>(() =>
-            new CacheItem<T>(factory())
             {
-                AbsoluteExpiration = expireTime
+                var created = new CacheItem<T>(factory())
+                {
+                    AbsoluteExpiration = expireTime
+                };
+                return created;
             },
             LazyThreadSafetyMode.ExecutionAndPublication);
             Cache.AddOrUpdate(key, replacement, (_, existing) => replacement);
             item = ((Lazy<CacheItem<T>>)Cache[key]).Value;
+            ScheduleExpirationCheck(key);
         }
         item.UpdateLastAccessed();
         return item.Value;
@@ -256,6 +339,7 @@ public static class CacheHelper
         };
 
         Cache.AddOrUpdate(key, cacheItem, (_, _) => cacheItem);
+        ScheduleExpirationCheck(key);
     }
 
     #endregion
@@ -271,7 +355,8 @@ public static class CacheHelper
     /// <param name="expireTime">过期时间（使用 DateTimeOffset）</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>缓存值</returns>
-    public static async Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, DateTimeOffset expireTime, CancellationToken cancellationToken = default)
+    public static async Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory,
+        DateTimeOffset expireTime, CancellationToken cancellationToken = default)
     {
         var existing = Get<T>(key);
         if (existing != null)
@@ -408,6 +493,58 @@ public static class CacheHelper
     }
 
     /// <summary>
+    /// 根据模式查询缓存键
+    /// </summary>
+    /// <param name="pattern">模式字符串，支持通配符 * 和 ?</param>
+    /// <returns>匹配的缓存键集合</returns>
+    public static IEnumerable<string> GetKeysByPattern(string pattern)
+    {
+        if (string.IsNullOrEmpty(pattern))
+        {
+            return [];
+        }
+
+        var regexPattern = "^" + Regex.Escape(pattern)
+            .Replace("\\*", ".*")
+            .Replace("\\?", ".") + "$";
+
+        var regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
+        return [.. Cache.Keys.Where(key => regex.IsMatch(key))];
+    }
+
+    /// <summary>
+    /// 根据前缀查询缓存键
+    /// </summary>
+    /// <param name="prefix">前缀</param>
+    /// <returns>匹配的缓存键集合</returns>
+    public static IEnumerable<string> GetKeysByPrefix(string prefix)
+    {
+        if (string.IsNullOrEmpty(prefix))
+        {
+            return [];
+        }
+
+        return [.. Cache.Keys.Where(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))];
+    }
+
+    /// <summary>
+    /// 根据前缀移除缓存
+    /// </summary>
+    /// <param name="prefix">前缀</param>
+    /// <returns>移除的缓存项数量</returns>
+    public static int RemoveByPrefix(string prefix)
+    {
+        var keys = GetKeysByPrefix(prefix);
+        var count = 0;
+        foreach (var key in keys)
+        {
+            Remove(key);
+            count++;
+        }
+        return count;
+    }
+
+    /// <summary>
     /// 清除所有缓存
     /// </summary>
     public static void Clear()
@@ -419,14 +556,17 @@ public static class CacheHelper
             pair.Value.Dispose();
         }
         AsyncKeyLocks.Clear();
+
+        // 清空过期队列
+        while (ExpirationQueue.TryDequeue(out _)) { }
     }
 
     /// <summary>
-    /// 手动清理过期的缓存项
+    /// 手动清理过期的缓存项（全量扫描）
     /// </summary>
     public static void CleanupExpired()
     {
-        CleanupExpiredItems(null);
+        CleanupExpiredItems();
     }
 
     #endregion
@@ -434,10 +574,145 @@ public static class CacheHelper
     #region 私有方法
 
     /// <summary>
-    /// 清理过期的缓存项
+    /// 触发缓存事件
     /// </summary>
-    /// <param name="state">定时器状态</param>
-    private static void CleanupExpiredItems(object? state)
+    /// <param name="key">缓存键</param>
+    /// <param name="eventType">事件类型</param>
+    private static void RaiseEvent(string key, CacheEventType eventType)
+    {
+        if (Options.EnableEvents && CacheEvent != null)
+        {
+            var args = new CacheEventArgs
+            {
+                Key = key,
+                EventType = eventType,
+                Timestamp = DateTimeOffset.UtcNow
+            };
+            CacheEvent.Invoke(null, args);
+        }
+    }
+
+    /// <summary>
+    /// 确保缓存容量不超过限制
+    /// </summary>
+    private static void EnsureCacheCapacity()
+    {
+        if (Options.MaxCacheSize <= 0 || Cache.Count < Options.MaxCacheSize)
+        {
+            return;
+        }
+
+        // 需要淘汰一些缓存项
+        var evictCount = Math.Max(1, Cache.Count - Options.MaxCacheSize + 10); // 多淘汰10个，减少频繁淘汰
+        EvictItems(evictCount);
+    }
+
+    /// <summary>
+    /// 根据策略淘汰缓存项
+    /// </summary>
+    /// <param name="count">淘汰数量</param>
+    private static void EvictItems(int count)
+    {
+        var items = new List<KeyValuePair<string, ICacheItem>>();
+
+        // 收集所有有效的缓存项
+        foreach (var kvp in Cache)
+        {
+            if (TryGetCacheItem(kvp.Value, out var item) && !item.IsExpired)
+            {
+                items.Add(new KeyValuePair<string, ICacheItem>(kvp.Key, item));
+            }
+        }
+
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        // 根据淘汰策略排序
+        var itemsToEvict = Options.EvictionPolicy switch
+        {
+            CacheEvictionPolicy.Lru => items.OrderBy(x => x.Value.LastAccessed).Take(count),
+            CacheEvictionPolicy.Lfu => items.OrderBy(x => x.Value.AccessCount).Take(count),
+            CacheEvictionPolicy.Fifo => items.OrderBy(x => x.Value.CreatedAt).Take(count),
+            _ => items.OrderBy(x => x.Value.LastAccessed).Take(count)
+        };
+
+        // 执行淘汰
+        foreach (var item in itemsToEvict)
+        {
+            if (Cache.TryRemove(item.Key, out _))
+            {
+                KeyLocks.TryRemove(item.Key, out _);
+                if (AsyncKeyLocks.TryRemove(item.Key, out var sem))
+                {
+                    sem.Dispose();
+                }
+
+                if (Options.EnableStatistics)
+                {
+                    Statistics.RecordEviction();
+                }
+                RaiseEvent(item.Key, CacheEventType.Evicted);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 将缓存键加入过期检查队列
+    /// </summary>
+    /// <param name="key">缓存键</param>
+    private static void ScheduleExpirationCheck(string key)
+    {
+        ExpirationQueue.Enqueue(key);
+    }
+
+    /// <summary>
+    /// 惰性清理过期的缓存项（从队列中批量处理）
+    /// </summary>
+    private static void LazyCleanupExpiredItems()
+    {
+        var processed = 0;
+        while (processed < CleanupBatchSize && ExpirationQueue.TryDequeue(out var key))
+        {
+            processed++;
+
+            // 检查缓存项是否过期
+            if (Cache.TryGetValue(key, out var cacheObject) && TryGetCacheItem(cacheObject, out var item))
+            {
+                if (item.IsExpired)
+                {
+                    // 移除过期项
+                    Cache.TryRemove(key, out _);
+                    KeyLocks.TryRemove(key, out _);
+                    if (AsyncKeyLocks.TryRemove(key, out var sem))
+                    {
+                        sem.Dispose();
+                    }
+
+                    if (Options.EnableStatistics)
+                    {
+                        Statistics.RecordExpired();
+                    }
+                    RaiseEvent(key, CacheEventType.Expired);
+                }
+                else
+                {
+                    // 如果还未过期，重新安排检查（根据下一个过期时间）
+                    if (item.NextExpiration.HasValue)
+                    {
+                        ExpirationQueue.Enqueue(key);
+                    }
+                }
+            }
+            // 如果缓存项不存在，则无需处理
+        }
+    }
+
+    /// <summary>
+    /// 清理过期的缓存项（全量扫描，用于手动调用）
+    /// </summary>
+    private static void CleanupExpiredItems()
     {
         var expiredKeys = new List<string>();
 

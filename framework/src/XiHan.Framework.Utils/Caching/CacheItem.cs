@@ -22,9 +22,19 @@ namespace XiHan.Framework.Utils.Caching;
 public class CacheItem<T> : ICacheItem
 {
     /// <summary>
+    /// 创建时间
+    /// </summary>
+    private readonly DateTimeOffset _createdAt;
+
+    /// <summary>
     /// 使用 UTC ticks 存储最后访问时间，原子读写
     /// </summary>
     private long _lastAccessedUtcTicks;
+
+    /// <summary>
+    /// 访问次数（用于 LFU 策略）
+    /// </summary>
+    private long _accessCount;
 
     /// <summary>
     /// 构造函数
@@ -33,13 +43,25 @@ public class CacheItem<T> : ICacheItem
     public CacheItem(T value)
     {
         Value = value;
+        _createdAt = DateTimeOffset.UtcNow;
         _lastAccessedUtcTicks = DateTime.UtcNow.Ticks;
+        _accessCount = 0;
     }
 
     /// <summary>
     /// 缓存的值
     /// </summary>
     public T Value { get; set; } = default!;
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    public DateTimeOffset CreatedAt => _createdAt;
+
+    /// <summary>
+    /// 访问次数
+    /// </summary>
+    public long AccessCount => Interlocked.Read(ref _accessCount);
 
     /// <summary>
     /// 绝对过期时间
@@ -94,11 +116,33 @@ public class CacheItem<T> : ICacheItem
     }
 
     /// <summary>
+    /// 下一个过期时间（绝对或滑动）
+    /// </summary>
+    public DateTimeOffset? NextExpiration
+    {
+        get
+        {
+            var next = AbsoluteExpiration;
+            if (SlidingExpiration.HasValue)
+            {
+                var slidingExpiration = LastAccessed.Add(SlidingExpiration.Value);
+                if (!next.HasValue || slidingExpiration < next.Value)
+                {
+                    next = slidingExpiration;
+                }
+            }
+
+            return next;
+        }
+    }
+
+    /// <summary>
     /// 更新最后访问时间为当前时间
     /// 用于滑动过期时间的计算
     /// </summary>
     public void UpdateLastAccessed()
     {
         Interlocked.Exchange(ref _lastAccessedUtcTicks, DateTime.UtcNow.Ticks);
+        Interlocked.Increment(ref _accessCount);
     }
 }
