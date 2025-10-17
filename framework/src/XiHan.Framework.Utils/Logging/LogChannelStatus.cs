@@ -55,14 +55,34 @@ public class LogChannelStatus
     public bool IsNearFull => UsageRate >= 0.8;
 
     /// <summary>
+    /// 上次清理时间
+    /// </summary>
+    public DateTimeOffset LastCleanupTime { get; init; }
+
+    /// <summary>
+    /// 日志保留天数（0表示永久保留）
+    /// </summary>
+    public int RetentionDays { get; init; }
+
+    /// <summary>
+    /// 是否启用自动清理
+    /// </summary>
+    public bool IsAutoCleanupEnabled => RetentionDays > 0;
+
+    /// <summary>
     /// 获取状态摘要
     /// </summary>
     /// <returns>状态摘要字符串</returns>
     public string GetSummary()
     {
+        var status = IsShutdown ? "已关闭" : IsNearFull ? "接近满载" : "正常";
+        var cleanup = IsAutoCleanupEnabled
+            ? $"自动清理: 启用({RetentionDays}天), 上次: {LastCleanupTime:yyyy-MM-dd HH:mm}"
+            : "自动清理: 禁用";
+
         return $"通道状态 - 待处理: {ChannelCount}/{QueueCapacity} ({UsageRate:P0}), " +
                $"工作任务: {(IsWorkerActive ? "活跃" : "停止")}, " +
                $"批次大小: {BatchSize}, " +
-               $"状态: {(IsShutdown ? "已关闭" : IsNearFull ? "接近满载" : "正常")}";
+               $"状态: {status}, {cleanup}";
     }
 }

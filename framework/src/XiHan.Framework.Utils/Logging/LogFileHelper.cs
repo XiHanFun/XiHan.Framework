@@ -30,6 +30,7 @@ public static class LogFileHelper
 
     private const int SHUTDOWN_TIMEOUT_MS = 3000;
     private const int MAX_FALLBACK_SIZE = 100 * 1024 * 1024; // 100MB
+    private const int CLEANUP_CHECK_INTERVAL_MS = 3600000; // 1小时检查一次
 
     #endregion
 
@@ -43,11 +44,13 @@ public static class LogFileHelper
     private static readonly LogStatistics Statistics = new();
     private static Channel<LogEntry>? _logChannel;
     private static Task? _workerTask;
+    private static Task? _cleanupTask;
     private static CancellationTokenSource? _cancellationTokenSource;
     private static ILogFormatter _formatter = new TextLogFormatter();
 
     private static volatile bool _isShutdownRequested = false;
     private static volatile bool _isWorkerStarted = false;
+    private static DateTimeOffset _lastCleanupTime = DateTimeOffset.UtcNow;
 
     #endregion
 
@@ -117,7 +120,9 @@ public static class LogFileHelper
             IsWorkerActive = _isWorkerStarted && !_isShutdownRequested,
             IsShutdown = _isShutdownRequested,
             QueueCapacity = Options.QueueCapacity,
-            BatchSize = Options.BatchSize
+            BatchSize = Options.BatchSize,
+            LastCleanupTime = _lastCleanupTime,
+            RetentionDays = Options.RetentionDays
         };
     }
 
@@ -327,9 +332,16 @@ public static class LogFileHelper
                     _logChannel = null;
                 }
 
+                // 等待清理任务完成
+                if (_cleanupTask != null && !_cleanupTask.IsCompleted)
+                {
+                    _cleanupTask.Wait(1000);
+                }
+
                 _cancellationTokenSource?.Dispose();
                 _cancellationTokenSource = null;
                 _workerTask = null;
+                _cleanupTask = null;
                 _isWorkerStarted = false;
             }
             catch
@@ -522,8 +534,7 @@ public static class LogFileHelper
         {
             var timestamp = DateTimeOffset.UtcNow;
             var fileName = logLevel.ToString().ToLowerInvariant();
-            var logDate = timestamp.ToString("yyyyMMdd");
-            var baseLogFileName = $"{logDate}_{fileName}.log";
+            var baseLogFileName = GetBaseLogFileName(timestamp, fileName);
 
             // 使用格式化器格式化日志内容
             var formattedMessage = _formatter.Format(timestamp, logLevel, inputStr ?? string.Empty, null);
@@ -541,20 +552,8 @@ public static class LogFileHelper
             // 尝试写入通道
             if (_logChannel != null && !_logChannel.Writer.TryWrite(logEntry))
             {
-                // 通道满了，根据级别处理
-                if (logLevel >= LogLevel.Warn)
-                {
-                    // 警告和错误级别直接同步写入
-                    WriteSingleLogSync(logEntry);
-                }
-                else
-                {
-                    // 低级别日志丢弃（静默）
-                    if (Options.EnableStatistics)
-                    {
-                        Statistics.RecordLogDropped();
-                    }
-                }
+                // 通道满了，根据溢出策略处理
+                HandleChannelOverflow(logEntry, logLevel);
             }
             else if (Options.EnableStatistics)
             {
@@ -573,6 +572,77 @@ public static class LogFileHelper
 
             // 如果出错，尝试直接写入错误日志
             WriteErrorLogDirectly(ex, inputStr);
+        }
+    }
+
+    /// <summary>
+    /// 处理通道溢出
+    /// </summary>
+    /// <param name="logEntry">日志条目</param>
+    /// <param name="logLevel">日志级别</param>
+    private static void HandleChannelOverflow(LogEntry logEntry, LogLevel logLevel)
+    {
+        switch (Options.OverflowPolicy)
+        {
+            case QueueOverflowPolicy.DropLowPriority:
+                // 默认策略：低优先级丢弃，高优先级同步写入
+                if (logLevel >= LogLevel.Warn)
+                {
+                    WriteSingleLogSync(logEntry);
+                }
+                else
+                {
+                    if (Options.EnableStatistics)
+                    {
+                        Statistics.RecordLogDropped();
+                    }
+                }
+                break;
+
+            case QueueOverflowPolicy.Block:
+                // 阻塞等待（可能影响性能）
+                try
+                {
+                    _logChannel?.Writer.WriteAsync(logEntry).AsTask().Wait(1000);
+                    if (Options.EnableStatistics)
+                    {
+                        Statistics.RecordLogWritten(logLevel);
+                        Statistics.RecordFileWrite();
+                    }
+                }
+                catch
+                {
+                    WriteSingleLogSync(logEntry);
+                }
+                break;
+
+            case QueueOverflowPolicy.DropOldest:
+                // 丢弃最旧的（Channel 不直接支持，降级为同步写入高优先级）
+                if (logLevel >= LogLevel.Warn)
+                {
+                    WriteSingleLogSync(logEntry);
+                }
+                else
+                {
+                    if (Options.EnableStatistics)
+                    {
+                        Statistics.RecordLogDropped();
+                    }
+                }
+                break;
+
+            case QueueOverflowPolicy.Expand:
+                // 扩容（临时同步写入）
+                WriteSingleLogSync(logEntry);
+                break;
+
+            default:
+                // 默认丢弃
+                if (Options.EnableStatistics)
+                {
+                    Statistics.RecordLogDropped();
+                }
+                break;
         }
     }
 
@@ -662,6 +732,12 @@ public static class LogFileHelper
                 // 启动异步工作任务
                 _workerTask = Task.Run(() => WorkerLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
 
+                // 启动清理任务（如果配置了保留天数）
+                if (Options.RetentionDays > 0)
+                {
+                    _cleanupTask = Task.Run(() => CleanupLoopAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+                }
+
                 _isWorkerStarted = true;
             }
             catch
@@ -689,12 +765,14 @@ public static class LogFileHelper
             _cancellationTokenSource?.Cancel();
             _logChannel?.Writer.Complete();
             _workerTask?.Wait(1000);
+            _cleanupTask?.Wait(500);
         }
         catch { }
 
         _cancellationTokenSource?.Dispose();
         _cancellationTokenSource = null;
         _workerTask = null;
+        _cleanupTask = null;
         _logChannel = null;
 
         _isShutdownRequested = oldShutdownState;
@@ -703,6 +781,82 @@ public static class LogFileHelper
         if (!_isShutdownRequested)
         {
             EnsureWorkerStarted();
+        }
+    }
+
+    /// <summary>
+    /// 异步清理循环（清理过期日志）
+    /// </summary>
+    private static async Task CleanupLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    // 等待清理间隔
+                    await Task.Delay(CLEANUP_CHECK_INTERVAL_MS, cancellationToken);
+
+                    // 执行清理
+                    CleanupOldLogs();
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch
+                {
+                    // 静默失败，由 LogHelper 负责控制台输出
+                    await Task.Delay(60000, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+        catch
+        {
+            // 静默失败，由 LogHelper 负责控制台输出
+        }
+    }
+
+    /// <summary>
+    /// 清理过期日志文件
+    /// </summary>
+    private static void CleanupOldLogs()
+    {
+        if (Options.RetentionDays <= 0 || !Directory.Exists(Options.LogDirectory))
+        {
+            return;
+        }
+
+        try
+        {
+            var cutoffDate = DateTimeOffset.UtcNow.AddDays(-Options.RetentionDays);
+            var logFiles = Directory.GetFiles(Options.LogDirectory, "*.log");
+
+            foreach (var file in logFiles)
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(file);
+                    if (fileInfo.LastWriteTimeUtc < cutoffDate.UtcDateTime)
+                    {
+                        File.Delete(file);
+
+                        // 清除相关缓存
+                        FileSizeCache.TryRemove(file, out _);
+                    }
+                }
+                catch
+                {
+                    // 单个文件删除失败，继续处理其他文件
+                }
+            }
+
+            _lastCleanupTime = DateTimeOffset.UtcNow;
+        }
+        catch
+        {
+            // 静默失败，由 LogHelper 负责控制台输出
         }
     }
 
@@ -865,6 +1019,24 @@ public static class LogFileHelper
         {
             // 备用文件也失败，静默失败，由 LogHelper 负责控制台输出
         }
+    }
+
+    /// <summary>
+    /// 根据轮转策略获取基础日志文件名
+    /// </summary>
+    /// <param name="timestamp">时间戳</param>
+    /// <param name="levelName">日志级别名称</param>
+    /// <returns>基础文件名</returns>
+    private static string GetBaseLogFileName(DateTimeOffset timestamp, string levelName)
+    {
+        return Options.RotationPolicy switch
+        {
+            LogRotationPolicy.Daily => $"{timestamp:yyyyMMdd}_{levelName}.log",
+            LogRotationPolicy.Hourly => $"{timestamp:yyyyMMddHH}_{levelName}.log",
+            LogRotationPolicy.Size => $"{timestamp:yyyyMMdd}_{levelName}.log",
+            LogRotationPolicy.Hybrid => $"{timestamp:yyyyMMdd}_{levelName}.log",
+            _ => $"{timestamp:yyyyMMdd}_{levelName}.log"
+        };
     }
 
     /// <summary>
