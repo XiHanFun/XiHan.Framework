@@ -106,12 +106,12 @@ public class XiHanLoggingOptions
     /// 请求日志排除路径
     /// </summary>
     public string[] RequestLoggingExcludePaths { get; set; } =
-    {
+    [
         "/health",
         "/metrics",
         "/favicon.ico",
         "/swagger"
-    };
+    ];
 
     /// <summary>
     /// 日志过滤器配置

@@ -46,8 +46,8 @@ public static class ConsoleTableUsageExample
         var data = new[]
         {
             new object[] { "产品A", 100, "$9.99" },
-            new object[] { "产品B", 50, "$19.99" },
-            new object[] { "产品C", 200, "$5.99" }
+            ["产品B", 50, "$19.99"],
+            ["产品C", 200, "$5.99"]
         };
 
         var styles = new[]
