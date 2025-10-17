@@ -28,7 +28,7 @@ public static class ObjectExtensionManagerExtensions
     /// <summary>
     /// 空属性列表的不可变集合，用于优化性能避免重复创建
     /// </summary>
-    private static readonly ImmutableList<ObjectExtensionPropertyInfo> EmptyPropertyList = new List<ObjectExtensionPropertyInfo>().ToImmutableList();
+    private static readonly ImmutableList<ObjectExtensionPropertyInfo> EmptyPropertyList = [];
 
     /// <summary>
     /// 为多个对象类型添加或更新指定类型的属性
@@ -240,6 +240,6 @@ public static class ObjectExtensionManagerExtensions
             }
         }
 
-        return properties.ToImmutableList();
+        return [.. properties];
     }
 }

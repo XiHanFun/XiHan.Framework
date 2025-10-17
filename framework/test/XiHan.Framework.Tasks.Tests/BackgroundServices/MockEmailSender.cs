@@ -78,7 +78,7 @@ public class MockEmailSender : IEmailSender
     {
         lock (_lock)
         {
-            return _sentEmails.ToList();
+            return [.. _sentEmails];
         }
     }
 

@@ -107,7 +107,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] FindClaims(string claimType)
     {
-        return _principalAccessor.Principal.Claims.Where(c => c.Type == claimType).ToArray();
+        return [.. _principalAccessor.Principal.Claims.Where(c => c.Type == claimType)];
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <returns></returns>
     public virtual Claim[] GetAllClaims()
     {
-        return _principalAccessor.Principal.Claims.ToArray();
+        return [.. _principalAccessor.Principal.Claims];
     }
 
     /// <summary>
