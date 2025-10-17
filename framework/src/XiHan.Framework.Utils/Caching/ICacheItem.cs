@@ -25,9 +25,27 @@ public interface ICacheItem
     bool IsExpired { get; }
 
     /// <summary>
+    /// 下一个过期时间，如果返回 null 表示不过期
+    /// </summary>
+    DateTimeOffset? NextExpiration { get; }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    DateTimeOffset CreatedAt { get; }
+
+    /// <summary>
+    /// 最后访问时间
+    /// </summary>
+    DateTimeOffset LastAccessed { get; }
+
+    /// <summary>
+    /// 访问次数
+    /// </summary>
+    long AccessCount { get; }
+
+    /// <summary>
     /// 更新访问时间（用于滑动过期）
     /// </summary>
     void UpdateLastAccessed();
 }
-
-
