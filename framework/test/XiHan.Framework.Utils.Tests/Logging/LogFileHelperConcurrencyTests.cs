@@ -48,21 +48,21 @@ public class LogFileHelperConcurrencyTests : IDisposable
     public async Task ConcurrentWrites_ShouldBeThreadSafe()
     {
         // Arrange
-        const int threadCount = 50;
-        const int messagesPerThread = 100;
+        const int ThreadCount = 50;
+        const int MessagesPerThread = 100;
         var threads = new List<Task>();
         var writtenMessages = new ConcurrentBag<string>();
-        var barrier = new Barrier(threadCount);
+        var barrier = new Barrier(ThreadCount);
 
         // Act
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
                 barrier.SignalAndWait(); // 确保所有线程同时开始
 
-                for (var j = 0; j < messagesPerThread; j++)
+                for (var j = 0; j < MessagesPerThread; j++)
                 {
                     var message = $"Thread-{threadId:D2}-Message-{j:D3}";
                     writtenMessages.Add(message);
@@ -95,7 +95,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         }
 
         // 验证总消息数量
-        var expectedMessageCount = threadCount * messagesPerThread;
+        var expectedMessageCount = ThreadCount * MessagesPerThread;
         var actualMessageCount = writtenMessages.Count;
         Assert.Equal(expectedMessageCount, actualMessageCount);
     }
@@ -108,11 +108,11 @@ public class LogFileHelperConcurrencyTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetBufferSize(10); // 很小的缓冲区
-        const int messageCount = 1000;
+        const int MessageCount = 1000;
         var tasks = new List<Task>();
 
         // Act
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             var messageIndex = i;
             var task = Task.Run(() =>
@@ -137,7 +137,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
             totalLines += lines.Length;
         }
 
-        Assert.Equal(messageCount, totalLines);
+        Assert.Equal(MessageCount, totalLines);
     }
 
     /// <summary>
@@ -148,18 +148,18 @@ public class LogFileHelperConcurrencyTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(1024); // 1KB 文件大小，强制滚动
-        const int threadCount = 10;
-        const int messagesPerThread = 50;
+        const int ThreadCount = 10;
+        const int MessagesPerThread = 50;
         var longMessage = new string('X', 100); // 100字符的长消息
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(async () =>
             {
-                for (var j = 0; j < messagesPerThread; j++)
+                for (var j = 0; j < MessagesPerThread; j++)
                 {
                     LogFileHelper.Error($"Thread-{threadId:D2}-LongMessage-{j:D3}: {longMessage}");
                     await Task.Delay(1); // 小延迟以模拟真实场景
@@ -187,7 +187,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
             totalMessages += lines.Length;
         }
 
-        Assert.Equal(threadCount * messagesPerThread, totalMessages);
+        Assert.Equal(ThreadCount * MessagesPerThread, totalMessages);
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
     public async Task MixedLogLevels_ConcurrentWrites_ShouldBeHandledCorrectly()
     {
         // Arrange
-        const int iterationCount = 200;
+        const int IterationCount = 200;
         var logLevels = new[] { LogLevel.Info, LogLevel.Warn, LogLevel.Error, LogLevel.Success, LogLevel.Handle };
         var expectedCounts = new ConcurrentDictionary<LogLevel, int>();
 
@@ -210,7 +210,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var tasks = new List<Task>();
         var random = new Random();
 
-        for (var i = 0; i < iterationCount; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             var iteration = i;
             var task = Task.Run(() =>
@@ -254,7 +254,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
 
         foreach (var level in logLevels)
         {
-            var levelFiles = logFiles.Where(f => Path.GetFileName(f).Contains(level.ToString().ToLower())).ToArray();
+            var levelFiles = logFiles.Where(f => Path.GetFileName(f).Contains(level.ToString(), StringComparison.CurrentCultureIgnoreCase)).ToArray();
 
             if (expectedCounts[level] > 0)
             {
@@ -281,13 +281,13 @@ public class LogFileHelperConcurrencyTests : IDisposable
         // Arrange
         LogFileHelper.SetAsyncWriteEnabled(true);
         LogFileHelper.SetBufferSize(100);
-        const int messageCount = 5000;
+        const int MessageCount = 5000;
 
         // Act
         var stopwatch = Stopwatch.StartNew();
 
         var tasks = new List<Task>();
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             var messageIndex = i;
             var task = Task.Run(() =>
@@ -315,10 +315,10 @@ public class LogFileHelperConcurrencyTests : IDisposable
             totalMessages += lines.Length;
         }
 
-        Assert.Equal(messageCount, totalMessages);
+        Assert.Equal(MessageCount, totalMessages);
 
         // 性能断言：写入应该在合理时间内完成
-        var averageTimePerMessage = writeTime.TotalMilliseconds / messageCount;
+        var averageTimePerMessage = writeTime.TotalMilliseconds / MessageCount;
         Assert.True(averageTimePerMessage < 5, $"Average time per message ({averageTimePerMessage:F2}ms) should be less than 5ms");
     }
 
@@ -329,9 +329,9 @@ public class LogFileHelperConcurrencyTests : IDisposable
     public async Task LongRunning_ShouldMaintainStability()
     {
         // Arrange
-        const int durationSeconds = 10;
-        const int messagesPerSecond = 100;
-        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(durationSeconds));
+        const int DurationSeconds = 10;
+        const int MessagesPerSecond = 100;
+        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(DurationSeconds));
         var messageCount = 0;
 
         // Act
@@ -346,7 +346,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
                 while (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     LogFileHelper.Handle($"LongRunning-Task-{taskId}-Message-{Interlocked.Increment(ref messageCount)}");
-                    await Task.Delay(1000 / messagesPerSecond, cancellationTokenSource.Token);
+                    await Task.Delay(1000 / MessagesPerSecond, cancellationTokenSource.Token);
                 }
             }, cancellationTokenSource.Token);
             tasks.Add(task);
@@ -376,7 +376,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         }
 
         // 验证消息数量在合理范围内
-        var expectedMinMessages = durationSeconds * messagesPerSecond * 5 * 0.8; // 80%的预期量
+        var expectedMinMessages = DurationSeconds * MessagesPerSecond * 5 * 0.8; // 80%的预期量
         Assert.True(totalLines >= expectedMinMessages, $"Expected at least {expectedMinMessages} messages, but got {totalLines}");
     }
 
@@ -388,19 +388,19 @@ public class LogFileHelperConcurrencyTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetBufferSize(500);
-        const int batchCount = 20;
-        const int messagesPerBatch = 100;
+        const int BatchCount = 20;
+        const int MessagesPerBatch = 100;
         var batches = new List<Task>();
 
         // Act
-        for (var batch = 0; batch < batchCount; batch++)
+        for (var batch = 0; batch < BatchCount; batch++)
         {
             var batchId = batch;
-            var batchTask = Task.Run(async () =>
+            var batchTask = Task.Run(() =>
             {
                 var largeDat = new string('M', 1000); // 1KB 数据
 
-                for (var i = 0; i < messagesPerBatch; i++)
+                for (var i = 0; i < MessagesPerBatch; i++)
                 {
                     LogFileHelper.Success($"Batch-{batchId:D2}-Message-{i:D3}: {largeDat}");
 
@@ -431,7 +431,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
             totalMessages += lines.Length;
         }
 
-        Assert.Equal(batchCount * messagesPerBatch, totalMessages);
+        Assert.Equal(BatchCount * MessagesPerBatch, totalMessages);
     }
 
     public void Dispose()
