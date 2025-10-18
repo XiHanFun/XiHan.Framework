@@ -14,8 +14,8 @@
 
 //using Microsoft.Extensions.DependencyInjection;
 //using Microsoft.Extensions.Options;
-//using System.Threading;
 //using XiHan.Framework.Core.Tracing;
+//using XiHan.Framework.DistributedIds.Guids;
 //using XiHan.Framework.EventBus.Abstractions;
 //using XiHan.Framework.EventBus.Abstractions.Distributed;
 //using XiHan.Framework.EventBus.Abstractions.Local;
