@@ -19,10 +19,40 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-	  <ProjectReference Include="..\..\src\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
-	  <ProjectReference Include="..\..\src\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
-	  <ProjectReference Include="..\..\src\XiHan.Framework.Web.Docs\XiHan.Framework.Web.Docs.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.AI\XiHan.Framework.AI.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Application\XiHan.Framework.Application.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Authentication\XiHan.Framework.Authentication.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Authorization\XiHan.Framework.Authorization.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.CodeGeneration\XiHan.Framework.CodeGeneration.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Messaging\XiHan.Framework.Messaging.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.ObjectMapping\XiHan.Framework.ObjectMapping.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Script\XiHan.Framework.Script.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Tasks\XiHan.Framework.Tasks.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Templating\XiHan.Framework.Templating.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Validation\XiHan.Framework.Validation.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.Api\XiHan.Framework.Web.Api.csproj" /> 
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.Docs\XiHan.Framework.Web.Docs.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.Gateway\XiHan.Framework.Web.Gateway.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.RealTime\XiHan.Framework.Web.RealTime.csproj" />
 	</ItemGroup>
 
 </Project>
