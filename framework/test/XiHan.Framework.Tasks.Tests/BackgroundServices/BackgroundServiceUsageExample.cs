@@ -198,7 +198,6 @@ public class BackgroundServiceUsageExample
 
         // 获取服务实例
         var emailService = serviceProvider.GetRequiredService<EmailSendingService>();
-        var mockEmailSender = serviceProvider.GetRequiredService<IEmailSender>() as MockEmailSender;
 
         // 添加邮件到队列
         for (var i = 1; i <= 10; i++)
@@ -261,7 +260,7 @@ public class BackgroundServiceUsageExample
         Console.WriteLine($"成功率: {statistics.SuccessRate:F2}%");
         Console.WriteLine($"平均处理时间: {statistics.AverageProcessingTimeMs:F2}ms");
 
-        if (mockEmailSender != null)
+        if (serviceProvider.GetRequiredService<IEmailSender>() is MockEmailSender mockEmailSender)
         {
             Console.WriteLine($"实际发送邮件数: {mockEmailSender.GetSentEmailCount()}");
         }
@@ -295,7 +294,6 @@ public class BackgroundServiceUsageExample
         services.AddLogging(builder =>
         {
             builder.AddConsole();
-            builder.AddEventLog(); // Windows 事件日志
             // builder.AddSerilog(); // 可以添加 Serilog
             builder.SetMinimumLevel(LogLevel.Information);
         });
