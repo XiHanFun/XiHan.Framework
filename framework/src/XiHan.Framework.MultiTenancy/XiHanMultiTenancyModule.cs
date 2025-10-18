@@ -12,9 +12,16 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Data;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.ConfigurationStore;
 using XiHan.Framework.Security;
 using XiHan.Framework.Settings;
+using XiHan.Framework.Settings.Options;
+using XiHan.Framework.Utils.Collections;
 
 namespace XiHan.Framework.MultiTenancy;
 
@@ -22,6 +29,7 @@ namespace XiHan.Framework.MultiTenancy;
 /// 曦寒多租户模块
 /// </summary>
 [DependsOn(
+    typeof(XiHanDataModule),
     typeof(XiHanSettingsModule),
     typeof(XiHanSecurityModule)
 )]
@@ -33,5 +41,19 @@ public class XiHanMultiTenancyModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        context.Services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
+
+        var configuration = context.Services.GetConfiguration();
+        Configure<XiHanDefaultTenantStoreOptions>(configuration);
+
+        Configure<XiHanSettingOptions>(options =>
+        {
+            options.ValueProviders.InsertAfter(t => t == typeof(GlobalSettingValueProvider), typeof(TenantSettingValueProvider));
+        });
+
+        Configure<XiHanTenantResolveOptions>(options =>
+        {
+            options.TenantResolvers.Insert(0, new CurrentUserTenantResolveContributor());
+        });
     }
 }

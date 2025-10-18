@@ -53,7 +53,7 @@ public abstract class CurrentPrincipalAccessorBase : ICurrentPrincipalAccessor
     /// </summary>
     /// <param name="principal">要设置的新 ClaimsPrincipal</param>
     /// <returns>一个 DisposeAction，用于恢复原始的 Principal 状态</returns>
-    private DisposeAction<(AsyncLocal<ClaimsPrincipal>, ClaimsPrincipal)> SetCurrent(ClaimsPrincipal principal)
+    private IDisposable SetCurrent(ClaimsPrincipal principal)
     {
         var parent = Principal;
         _currentPrincipal.Value = principal;
