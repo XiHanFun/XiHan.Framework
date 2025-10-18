@@ -71,7 +71,7 @@ public sealed class NullLocalEventBus : ILocalEventBus
     /// 订阅事件
     /// </summary>
     /// <typeparam name="TEvent">事件类型</typeparam>
-    /// <typeparam name="THandler">事件处理器类型</param>
+    /// <typeparam name="THandler">事件处理器类型</typeparam>
     /// <returns>返回一个可释放的对象，用于取消订阅</returns>
     public IDisposable Subscribe<TEvent, THandler>() where TEvent : class where THandler : IEventHandler, new()
     {
