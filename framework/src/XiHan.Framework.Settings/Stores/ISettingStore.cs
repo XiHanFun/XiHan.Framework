@@ -38,14 +38,4 @@ public interface ISettingStore
     /// <param name="providerKey">提供者键</param>
     /// <returns>设置值列表</returns>
     Task<List<SettingValue>> GetAllAsync(string[] names, string? providerName, string? providerKey);
-
-    /// <summary>
-    /// 设置值
-    /// </summary>
-    /// <param name="name">设置名称</param>
-    /// <param name="value">设置值</param>
-    /// <param name="providerName">提供者名称</param>
-    /// <param name="providerKey">提供者键</param>
-    /// <returns>任务</returns>
-    Task SetValueAsync(string name, string? value, string? providerName, string? providerKey);
 }
