@@ -154,8 +154,6 @@ public class SettingManager : ISettingManager, ISingletonDependency
             value = EncryptValue(value);
         }
 
-        await _settingStore.SetValueAsync(name, value, definition.Name, null);
-
         // 触发变更事件
         OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(name, scope, value));
     }
