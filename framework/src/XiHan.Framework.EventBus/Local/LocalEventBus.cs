@@ -190,7 +190,7 @@ public class LocalEventBus : EventBusBase, ILocalEventBus, ISingletonDependency
     /// <returns>事件类型与事件处理器工厂的列表</returns>
     public virtual List<EventTypeWithEventHandlerFactories> GetEventHandlerFactories(Type eventType)
     {
-        return GetHandlerFactories(eventType).ToList();
+        return [.. GetHandlerFactories(eventType)];
     }
 
     /// <summary>
@@ -270,6 +270,6 @@ public class LocalEventBus : EventBusBase, ILocalEventBus, ISingletonDependency
     /// <returns>事件处理器工厂列表</returns>
     private List<IEventHandlerFactory> GetOrCreateHandlerFactories(Type eventType)
     {
-        return HandlerFactories.GetOrAdd(eventType, (type) => new List<IEventHandlerFactory>());
+        return HandlerFactories.GetOrAdd(eventType, (type) => []);
     }
 }

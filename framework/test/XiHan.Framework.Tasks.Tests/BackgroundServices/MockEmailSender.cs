@@ -23,7 +23,7 @@ namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
 public class MockEmailSender : IEmailSender
 {
     private readonly ILogger<MockEmailSender> _logger;
-    private readonly List<SentEmail> _sentEmails = new();
+    private readonly List<SentEmail> _sentEmails = [];
     private readonly object _lock = new();
 
     /// <summary>
