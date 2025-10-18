@@ -165,7 +165,7 @@ public class TemplateBuilder
 {
     private readonly string _template;
     private readonly DefaultTemplateEngine _engine;
-    private readonly Dictionary<string, object?> _variables = new();
+    private readonly Dictionary<string, object?> _variables = [];
 
     internal TemplateBuilder(string template, DefaultTemplateEngine engine)
     {
