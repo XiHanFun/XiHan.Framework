@@ -156,6 +156,7 @@ public class SettingManager : ISettingManager, ISingletonDependency
 
         // 触发变更事件
         OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(name, scope, value));
+        await Task.CompletedTask;
     }
 
     /// <summary>
