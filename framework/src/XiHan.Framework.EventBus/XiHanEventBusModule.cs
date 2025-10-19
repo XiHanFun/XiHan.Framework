@@ -13,12 +13,17 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
+using XiHan.Framework.EventBus.Distributed;
+using XiHan.Framework.EventBus.Local;
 using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.Tasks;
+using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.EventBus;
@@ -28,7 +33,8 @@ namespace XiHan.Framework.EventBus;
 /// </summary>
 [DependsOn(
     typeof(XiHanMultiTenancyModule),
-    typeof(XiHanDistributedIdsModule)
+    typeof(XiHanDistributedIdsModule),
+    typeof(XiHanTasksModule)
     )]
 public class XiHanEventBusModule : XiHanModule
 {
@@ -47,6 +53,17 @@ public class XiHanEventBusModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+    }
+
+    /// <summary>
+    /// 应用初始化，异步
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    public override async Task OnApplicationInitializationAsync(ApplicationInitializationContext context)
+    {
+        //await context.AddBackgroundWorkerAsync<OutboxSenderManager>();
+        //await context.AddBackgroundWorkerAsync<InboxProcessManager>();
     }
 
     /// <summary>
@@ -71,14 +88,14 @@ public class XiHanEventBusModule : XiHanModule
             }
         });
 
-        //services.Configure<XiHanLocalEventBusOptions>(options =>
-        //{
-        //    options.Handlers.AddIfNotContains(localHandlers);
-        //});
+        services.Configure<XiHanLocalEventBusOptions>(options =>
+        {
+            options.Handlers.AddIfNotContains(localHandlers);
+        });
 
-        //services.Configure<XiHanDistributedEventBusOptions>(options =>
-        //{
-        //    options.Handlers.AddIfNotContains(distributedHandlers);
-        //});
+        services.Configure<XiHanDistributedEventBusOptions>(options =>
+        {
+            options.Handlers.AddIfNotContains(distributedHandlers);
+        });
     }
 }
