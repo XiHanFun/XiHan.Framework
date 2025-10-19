@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Collections;
+using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Providers;
-using XiHan.Framework.Settings.Stores;
 
 namespace XiHan.Framework.Settings.Options;
 
@@ -28,26 +28,29 @@ public class XiHanSettingOptions
     /// </summary>
     public XiHanSettingOptions()
     {
+        DefinitionProviders = new TypeList<ISettingDefinitionProvider>();
         ValueProviders = new TypeList<ISettingValueProvider>();
+        DeletedSettings = [];
+        ReturnOriginalValueIfDecryptFailed = true;
     }
 
     /// <summary>
-    /// 默认作用域
+    /// 设置定义提供者
     /// </summary>
-    public SettingScope DefaultScope { get; set; } = SettingScope.Application;
+    public ITypeList<ISettingDefinitionProvider> DefinitionProviders { get; }
 
     /// <summary>
-    /// 值提供者
+    /// 设置值提供者
     /// </summary>
     public ITypeList<ISettingValueProvider> ValueProviders { get; }
 
     /// <summary>
-    /// 自动加载预定义设置
+    /// 已删除的设置
     /// </summary>
-    public bool AutoLoadDefinitions { get; set; } = true;
+    public HashSet<string> DeletedSettings { get; }
 
     /// <summary>
-    /// 加密选项
+    /// 解密失败时是否返回原始值
     /// </summary>
-    public XiHanAesOptions Encryption { get; set; } = new();
+    public bool ReturnOriginalValueIfDecryptFailed { get; set; }
 }
