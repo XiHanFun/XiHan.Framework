@@ -12,17 +12,36 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Data;
+using XiHan.Framework.Security;
+using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Options;
 using XiHan.Framework.Settings.Providers;
+using XiHan.Framework.Utils.Collections;
 
 namespace XiHan.Framework.Settings;
 
 /// <summary>
 /// 曦寒框架设置模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanSecurityModule),
+    typeof(XiHanDataModule)
+)]
 public class XiHanSettingsModule : XiHanModule
 {
+    /// <summary>
+    /// 预配置服务
+    /// </summary>
+    /// <param name="context"></param>
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        AutoAddDefinitionProviders(context.Services);
+    }
+
     /// <summary>
     /// 服务配置
     /// </summary>
@@ -35,6 +54,24 @@ public class XiHanSettingsModule : XiHanModule
             options.ValueProviders.Add<ConfigurationSettingValueProvider>();
             options.ValueProviders.Add<GlobalSettingValueProvider>();
             options.ValueProviders.Add<UserSettingValueProvider>();
+        });
+    }
+
+    private static void AutoAddDefinitionProviders(IServiceCollection services)
+    {
+        var definitionProviders = new List<Type>();
+
+        services.OnRegistered(context =>
+        {
+            if (typeof(ISettingDefinitionProvider).IsAssignableFrom(context.ImplementationType))
+            {
+                definitionProviders.Add(context.ImplementationType);
+            }
+        });
+
+        services.Configure<XiHanSettingOptions>(options =>
+        {
+            options.DefinitionProviders.AddIfNotContains(definitionProviders);
         });
     }
 }
