@@ -27,7 +27,6 @@ using XiHan.Framework.Http.Options;
 using XiHan.Framework.Http.Proxy;
 using XiHan.Framework.Serialization.Dynamic;
 using XiHan.Framework.Utils.Extensions;
-using XiHanHttpRequestOptions = XiHan.Framework.Http.Options.XiHanHttpRequestOptions;
 
 namespace XiHan.Framework.Http.Services;
 
