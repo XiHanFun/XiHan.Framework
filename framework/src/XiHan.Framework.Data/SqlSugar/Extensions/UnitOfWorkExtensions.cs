@@ -33,7 +33,7 @@ public static class UnitOfWorkExtensions
     {
         return (ISqlSugarDbContext)unitOfWork.GetOrAddDatabaseApi(
             "SqlSugarDbContext",
-            () => serviceProvider.GetRequiredService<ISqlSugarDbContext>());
+            serviceProvider.GetRequiredService<ISqlSugarDbContext>);
     }
 
     /// <summary>

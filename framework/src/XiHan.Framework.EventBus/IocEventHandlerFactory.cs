@@ -66,7 +66,7 @@ public class IocEventHandlerFactory : IEventHandlerFactory, IDisposable
             var handler = (IEventHandler)scope.ServiceProvider.GetRequiredService(HandlerType);
             return new EventHandlerDisposeWrapper(
                 handler,
-                () => scope.Dispose()
+                scope.Dispose
             );
         }
         catch (Exception ex)
