@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Text;
+using XiHan.Framework.Http.Configuration;
 
 namespace XiHan.Framework.Http.Options;
 
@@ -82,6 +83,16 @@ public class XiHanHttpRequestOptions
     public bool? LogResponse { get; set; }
 
     /// <summary>
+    /// 代理配置(如果设置,将使用指定的代理)
+    /// </summary>
+    public ProxyConfiguration? Proxy { get; set; }
+
+    /// <summary>
+    /// 是否使用代理池(如果为true且未设置Proxy,将从代理池中获取代理)
+    /// </summary>
+    public bool UseProxyPool { get; set; } = false;
+
+    /// <summary>
     /// 添加请求头
     /// </summary>
     /// <param name="name">头名称</param>
@@ -136,6 +147,27 @@ public class XiHanHttpRequestOptions
     public XiHanHttpRequestOptions SetRequestId(string requestId)
     {
         RequestId = requestId;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置代理
+    /// </summary>
+    /// <param name="proxy">代理配置</param>
+    /// <returns></returns>
+    public XiHanHttpRequestOptions SetProxy(ProxyConfiguration proxy)
+    {
+        Proxy = proxy;
+        return this;
+    }
+
+    /// <summary>
+    /// 启用代理池
+    /// </summary>
+    /// <returns></returns>
+    public XiHanHttpRequestOptions EnableProxyPool()
+    {
+        UseProxyPool = true;
         return this;
     }
 
