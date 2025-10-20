@@ -20,9 +20,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Http.Configuration;
 using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
+using XiHan.Framework.Http.Proxy;
 using XiHan.Framework.Serialization.Dynamic;
 using XiHan.Framework.Utils.Extensions;
 using XiHanHttpRequestOptions = XiHan.Framework.Http.Options.XiHanHttpRequestOptions;
@@ -38,6 +40,7 @@ public class AdvancedHttpService : IAdvancedHttpService
     private readonly ILogger<AdvancedHttpService> _logger;
     private readonly XiHanHttpClientOptions _options;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IProxyPoolManager? _proxyPoolManager;
 
     /// <summary>
     /// 构造函数
@@ -45,14 +48,17 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <param name="httpClientFactory">HTTP客户端工厂</param>
     /// <param name="logger">日志记录器</param>
     /// <param name="options">HTTP客户端选项</param>
+    /// <param name="proxyPoolManager">代理池管理器(可选)</param>
     public AdvancedHttpService(
         IHttpClientFactory httpClientFactory,
         ILogger<AdvancedHttpService> logger,
-        IOptions<XiHanHttpClientOptions> options)
+        IOptions<XiHanHttpClientOptions> options,
+        IProxyPoolManager? proxyPoolManager = null)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _options = options.Value;
+        _proxyPoolManager = proxyPoolManager;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -491,63 +497,114 @@ public class AdvancedHttpService : IAdvancedHttpService
         var stopwatch = Stopwatch.StartNew();
         var requestId = options?.RequestId ?? Guid.NewGuid().ToString("N")[..8];
 
+        // 确定要使用的代理
+        ProxyConfiguration? proxyToUse = null;
+        if (options?.Proxy != null)
+        {
+            proxyToUse = options.Proxy;
+        }
+        else if (options?.UseProxyPool == true && _proxyPoolManager != null)
+        {
+            proxyToUse = _proxyPoolManager.GetNextProxy();
+            if (proxyToUse == null)
+            {
+                _logger.LogWarning("代理池已启用但没有可用的代理,请求将不使用代理");
+            }
+        }
+
         try
         {
-            var client = GetHttpClient(options);
+            HttpClient client;
+            HttpMessageHandler? handler = null;
 
-            ConfigureRequest(client, options);
-
-            var fullUrl = BuildUrl(url, options);
-            using var request = new HttpRequestMessage(method, fullUrl) { Content = content };
-
-            AddHeaders(request, options, requestId);
-
-            using var response = await client.SendAsync(request, effectiveToken);
-
-            var result = new HttpResult<T>
+            // 如果需要使用代理,创建带代理的客户端
+            if (proxyToUse != null)
             {
-                IsSuccess = response.IsSuccessStatusCode,
-                StatusCode = response.StatusCode,
-                ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
-                RequestUrl = fullUrl,
-                RequestMethod = method.Method,
-            };
-
-            // 复制响应头
-            foreach (var header in response.Headers)
-            {
-                result.Headers[header.Key] = header.Value;
-            }
-
-            if (response.Content?.Headers != null)
-            {
-                foreach (var header in response.Content.Headers)
+                handler = CreateProxyHandler(proxyToUse, _options.IgnoreSslErrors);
+                client = new HttpClient(handler)
                 {
-                    result.Headers[header.Key] = header.Value;
-                }
-            }
-
-            result.RawDataString = await DeserializeResponseAsync<string>(response, effectiveToken);
-
-            if (response.IsSuccessStatusCode)
-            {
-                result.Data = await DeserializeResponseAsync<T>(response, effectiveToken);
+                    // 应用超时设置
+                    Timeout = options?.Timeout.HasValue == true ? options.Timeout.Value : TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds)
+                };
             }
             else
             {
-                result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.StatusCode}";
-                if (response.Content != null)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync(effectiveToken);
-                    if (!string.IsNullOrEmpty(errorContent))
-                    {
-                        // 限制错误内容长度，避免刷爆日志
-                        result.ErrorMessage += $": {errorContent.Truncate(_options.MaxResponseContentLength)}";
-                    }
-                }
+                client = GetHttpClient(options);
+                ConfigureRequest(client, options);
             }
 
-            return result;
+            try
+            {
+                var fullUrl = BuildUrl(url, options);
+                using var request = new HttpRequestMessage(method, fullUrl) { Content = content };
+
+                AddHeaders(request, options, requestId);
+
+                using var response = await client.SendAsync(request, effectiveToken);
+
+                var result = new HttpResult<T>
+                {
+                    IsSuccess = response.IsSuccessStatusCode,
+                    StatusCode = response.StatusCode,
+                    ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
+                    RequestUrl = fullUrl,
+                    RequestMethod = method.Method,
+                };
+
+                // 复制响应头
+                foreach (var header in response.Headers)
+                {
+                    result.Headers[header.Key] = header.Value;
+                }
+
+                if (response.Content?.Headers != null)
+                {
+                    foreach (var header in response.Content.Headers)
+                    {
+                        result.Headers[header.Key] = header.Value;
+                    }
+                }
+
+                result.RawDataString = await DeserializeResponseAsync<string>(response, effectiveToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    result.Data = await DeserializeResponseAsync<T>(response, effectiveToken);
+                }
+                else
+                {
+                    result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.StatusCode}";
+                    if (response.Content != null)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync(effectiveToken);
+                        if (!string.IsNullOrEmpty(errorContent))
+                        {
+                            // 限制错误内容长度，避免刷爆日志
+                            result.ErrorMessage += $": {errorContent.Truncate(_options.MaxResponseContentLength)}";
+                        }
+                    }
+                }
+
+                // 如果使用了代理池,记录结果
+                if (proxyToUse != null && options?.UseProxyPool == true && _proxyPoolManager != null)
+                {
+                    _proxyPoolManager.RecordProxyResult(
+                        proxyToUse.GetProxyAddress(),
+                        response.IsSuccessStatusCode,
+                        stopwatch.ElapsedMilliseconds);
+                }
+
+                return result;
+            }
+            finally
+            {
+                // 如果创建了临时客户端,需要释放
+                if (handler != null)
+                {
+                    client.Dispose();
+                    handler.Dispose();
+                }
+            }
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
@@ -578,8 +635,17 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, Url: {Url}, 请求Id: {RequestId}",
-                method.Method, url, requestId);
+            // 如果使用了代理池,记录失败
+            if (proxyToUse != null && options?.UseProxyPool == true && _proxyPoolManager != null)
+            {
+                _proxyPoolManager.RecordProxyResult(
+                    proxyToUse.GetProxyAddress(),
+                    false,
+                    stopwatch.ElapsedMilliseconds);
+            }
+
+            _logger.LogError(ex, "HTTP请求失败。方法: {Method}, Url: {Url}, 请求Id: {RequestId}, 代理: {Proxy}",
+                method.Method, url, requestId, proxyToUse?.GetProxyAddress() ?? "无");
 
             return HttpResult<T>.Failure(ex.Message, HttpStatusCode.InternalServerError, ex)
                 .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
@@ -641,6 +707,57 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         // 添加请求Id
         request.Headers.TryAddWithoutValidation("X-Request-Id", requestId);
+    }
+
+    /// <summary>
+    /// 创建代理处理器
+    /// </summary>
+    /// <param name="proxy">代理配置</param>
+    /// <param name="ignoreSslErrors">是否忽略SSL错误</param>
+    /// <returns></returns>
+    private static HttpClientHandler CreateProxyHandler(ProxyConfiguration proxy, bool ignoreSslErrors)
+    {
+        var handler = new HttpClientHandler();
+
+        var scheme = proxy.Type switch
+        {
+            ProxyType.Http => "http",
+            ProxyType.Https => "https",
+            ProxyType.Socks4 => "socks4",
+            ProxyType.Socks4A => "socks4a",
+            ProxyType.Socks5 => "socks5",
+            _ => "http"
+        };
+
+        var webProxy = new WebProxy
+        {
+            Address = new Uri($"{scheme}://{proxy.Host}:{proxy.Port}"),
+            BypassProxyOnLocal = !proxy.UseProxyForLocalAddress,
+            UseDefaultCredentials = false
+        };
+
+        // 设置绕过列表
+        if (proxy.BypassList.Count > 0)
+        {
+            webProxy.BypassList = [.. proxy.BypassList];
+        }
+
+        // 设置认证
+        if (!string.IsNullOrEmpty(proxy.Username) && !string.IsNullOrEmpty(proxy.Password))
+        {
+            webProxy.Credentials = new NetworkCredential(proxy.Username, proxy.Password);
+        }
+
+        handler.Proxy = webProxy;
+        handler.UseProxy = true;
+
+        // 设置SSL证书验证
+        if (ignoreSslErrors)
+        {
+            handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+        }
+
+        return handler;
     }
 
     /// <summary>
