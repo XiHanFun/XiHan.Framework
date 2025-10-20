@@ -158,7 +158,7 @@ public static class ConsoleColorWriter
             // 过滤有效关键字并转义正则表达式特殊字符
             var validKeywords = keywords
                 .Where(k => !string.IsNullOrEmpty(k))
-                .Select(k => Regex.Escape(k))
+                .Select(Regex.Escape)
                 .ToArray();
 
             if (validKeywords.Length == 0)

@@ -106,7 +106,7 @@ public class CacheHelperLazyCleanupTests
 
         // 由于惰性清理是批量的（默认64个），第一次Get可能不会清理所有过期项
         // 需要多次触发
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             CacheHelper.Get<string>($"trigger_{i}");
             await Task.Delay(100);
@@ -140,7 +140,7 @@ public class CacheHelperLazyCleanupTests
         _output.WriteLine($"✓ 设置滑动过期缓存项: {key}");
 
         // Act - 每隔1秒访问一次，保持缓存活跃
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             await Task.Delay(1000);
             var result = CacheHelper.Get<string>(key);
@@ -200,7 +200,7 @@ public class CacheHelperLazyCleanupTests
     public async Task TestManualCleanup()
     {
         // Arrange - 创建一些即将过期的缓存项
-        for (int i = 0; i < 50; i++)
+        for (var i = 0; i < 50; i++)
         {
             CacheHelper.Set($"manual_test_{i}", $"value_{i}", 1);
         }
@@ -230,7 +230,7 @@ public class CacheHelperLazyCleanupTests
         // Arrange - 创建大量缓存项
         var tasks = new List<Task>();
         
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             var index = i;
             tasks.Add(Task.Run(() =>
@@ -247,7 +247,7 @@ public class CacheHelperLazyCleanupTests
 
         // Act - 并发触发惰性清理
         var readTasks = new List<Task>();
-        for (int i = 0; i < 50; i++)
+        for (var i = 0; i < 50; i++)
         {
             var index = i;
             readTasks.Add(Task.Run(() =>

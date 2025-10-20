@@ -604,7 +604,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
 
         // 检查文件路径是否包含危险字符
         var dangerousChars = new[] { "..", "~", "$" };
-        if (dangerousChars.Any(dc => scriptFilePath.Contains(dc)))
+        if (dangerousChars.Any(scriptFilePath.Contains))
         {
             throw new ScriptSecurityException("脚本文件路径包含危险字符", "DangerousPath");
         }
@@ -675,7 +675,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
                     {
                         // 这里可以添加更详细的方法体分析
                         // 目前简单检查方法名是否包含危险操作
-                        if (securityOptions.DangerousKeywords.Any(keyword => method.Name.Contains(keyword)))
+                        if (securityOptions.DangerousKeywords.Any(method.Name.Contains))
                         {
                             throw new ScriptSecurityException($"脚本包含危险方法调用: {method.Name}", "DangerousMethodCall");
                         }

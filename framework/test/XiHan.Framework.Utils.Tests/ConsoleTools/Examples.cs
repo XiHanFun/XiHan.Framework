@@ -193,7 +193,7 @@ public static class Examples
         mainMenu.AddItem("用户管理", UserManagementMenu)
               .AddItem("系统设置", () => ConsoleColorWriter.WriteInfo("打开系统设置..."))
               .AddSeparator("─── 工具 ───")
-              .AddItem("数据备份", () => BackupData())
+              .AddItem("数据备份", BackupData)
               .AddItem("日志查看", () => ConsoleColorWriter.WriteInfo("查看系统日志..."))
               .AddItem("关于系统", ShowAbout);
 
@@ -253,7 +253,7 @@ public static class Examples
         userMenu.AddItem("添加用户", () => ConsoleColorWriter.WriteSuccess("添加用户功能"))
                .AddItem("删除用户", () => ConsoleColorWriter.WriteWarn("删除用户功能"))
                .AddItem("修改权限", () => ConsoleColorWriter.WriteInfo("修改权限功能"))
-               .AddItem("用户列表", () => ShowUserList());
+               .AddItem("用户列表", ShowUserList);
 
         userMenu.ShowAndExecute();
     }

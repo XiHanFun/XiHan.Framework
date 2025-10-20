@@ -80,7 +80,7 @@ public class CacheHelperAdvancedTests : IDisposable
         });
 
         // Act - 添加超过容量的缓存项
-        for (int i = 0; i < 15; i++)
+        for (var i = 0; i < 15; i++)
         {
             CacheHelper.Set($"key{i}", $"value{i}", 3600);
         }
@@ -167,11 +167,11 @@ public class CacheHelperAdvancedTests : IDisposable
     {
         // Arrange
         CacheHelper.Clear();
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             CacheHelper.Set($"session:{i}", $"session{i}", 60);
         }
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             CacheHelper.Set($"temp:{i}", $"temp{i}", 60);
         }
@@ -207,7 +207,7 @@ public class CacheHelperAdvancedTests : IDisposable
         });
 
         // Act - 按顺序添加缓存项
-        for (int i = 0; i < 8; i++)
+        for (var i = 0; i < 8; i++)
         {
             CacheHelper.Set($"key{i}", $"value{i}", 3600);
             await Task.Delay(10); // 确保创建时间有差异
@@ -237,12 +237,12 @@ public class CacheHelperAdvancedTests : IDisposable
 
         // Act - 添加缓存项并访问不同次数
         CacheHelper.Set("frequent", "value", 3600);
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             CacheHelper.Get<string>("frequent"); // 频繁访问
         }
 
-        for (int i = 0; i < 7; i++)
+        for (var i = 0; i < 7; i++)
         {
             CacheHelper.Set($"key{i}", $"value{i}", 3600);
         }
@@ -301,7 +301,7 @@ public class CacheHelperAdvancedTests : IDisposable
         });
 
         // Assert - 通过实际使用来验证配置生效
-        for (int i = 0; i < 150; i++)
+        for (var i = 0; i < 150; i++)
         {
             CacheHelper.Set($"key{i}", $"value{i}", 60);
         }
