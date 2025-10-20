@@ -764,7 +764,7 @@ public static class DynamicJsonHelper
     {
         return dynamicJson switch
         {
-            DynamicJsonObject obj => obj.Properties.Sum(p => CalculateSize(p)),
+            DynamicJsonObject obj => obj.Properties.Sum(CalculateSize),
             DynamicJsonArray array => array.Count,
             DynamicJsonProperty property => property.Name.Length + CalculateSize(property.Value),
             DynamicJsonValue value => value.ToString().Length,

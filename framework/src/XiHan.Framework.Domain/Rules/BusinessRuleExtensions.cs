@@ -67,7 +67,7 @@ public static class BusinessRuleExtensions
     /// <exception cref="BusinessRuleValidationException">当业务规则被违反时抛出</exception>
     public static Task CheckRuleAsync(this IBusinessRule rule)
     {
-        return Task.Run(() => rule.CheckRule());
+        return Task.Run(rule.CheckRule);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public static class BusinessRuleExtensions
     /// <exception cref="BusinessRuleValidationException">当任何业务规则被违反时抛出</exception>
     public static Task CheckRulesAsync(this IEnumerable<IBusinessRule> rules)
     {
-        return Task.Run(() => rules.CheckRules());
+        return Task.Run(rules.CheckRules);
     }
 
     /// <summary>

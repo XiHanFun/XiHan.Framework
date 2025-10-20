@@ -24,7 +24,7 @@ namespace XiHan.Framework.Script;
 /// </summary>
 public static class XiHanScript
 {
-    private static readonly Lazy<IScriptEngine> DefaultEngine = new(() => ScriptEngineFactory.CreateDefault());
+    private static readonly Lazy<IScriptEngine> DefaultEngine = new(ScriptEngineFactory.CreateDefault);
 
     /// <summary>
     /// 默认脚本引擎

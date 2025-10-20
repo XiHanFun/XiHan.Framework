@@ -123,7 +123,7 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
 
         try
         {
-            await Task.Run(() => _sqlSugarScope.Ado.CommitTranAsync(), cancellationToken);
+            await Task.Run(_sqlSugarScope.Ado.CommitTranAsync, cancellationToken);
         }
         finally
         {
@@ -144,7 +144,7 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
 
         try
         {
-            await Task.Run(() => _sqlSugarScope.Ado.RollbackTranAsync(), cancellationToken);
+            await Task.Run(_sqlSugarScope.Ado.RollbackTranAsync, cancellationToken);
         }
         finally
         {
