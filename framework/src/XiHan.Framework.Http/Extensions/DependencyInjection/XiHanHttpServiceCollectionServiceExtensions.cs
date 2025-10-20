@@ -22,6 +22,7 @@ using XiHan.Framework.Http.Configuration;
 using XiHan.Framework.Http.Enums;
 using XiHan.Framework.Http.Middleware;
 using XiHan.Framework.Http.Options;
+using XiHan.Framework.Http.Proxy;
 using XiHan.Framework.Http.Services;
 
 namespace XiHan.Framework.Http.Extensions.DependencyInjection;
@@ -41,14 +42,39 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     {
         // 配置选项
         services.Configure<XiHanHttpClientOptions>(configuration.GetSection(XiHanHttpClientOptions.SectionName));
+        services.Configure<ProxyPoolOptions>(configuration.GetSection(ProxyPoolOptions.SectionName));
 
-        // 注册服务
+        // 注册代理相关服务
+        services.AddSingleton<IProxyValidator, ProxyValidator>();
+        services.AddSingleton<IProxyPoolManager, ProxyPoolManager>();
+
+        // 注册HTTP服务
         services.AddScoped<IAdvancedHttpService, AdvancedHttpService>();
 
         // 配置HTTP客户端
         ConfigureHttpClients(services, configuration);
 
+        // 启动代理池健康检查
+        ConfigureProxyPool(services, configuration);
+
         return services;
+    }
+
+    /// <summary>
+    /// 配置代理池
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">配置</param>
+    private static void ConfigureProxyPool(IServiceCollection services, IConfiguration configuration)
+    {
+        var proxyPoolOptions = new ProxyPoolOptions();
+        configuration.GetSection(ProxyPoolOptions.SectionName).Bind(proxyPoolOptions);
+
+        if (proxyPoolOptions.Enabled && proxyPoolOptions.EnableHealthCheck)
+        {
+            // 添加后台服务来管理代理池健康检查
+            services.AddHostedService<ProxyPoolHealthCheckService>();
+        }
     }
 
     /// <summary>
