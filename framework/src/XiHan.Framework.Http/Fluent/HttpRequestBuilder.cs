@@ -17,6 +17,7 @@ using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Http.Models;
 using XiHan.Framework.Http.Options;
 using XiHan.Framework.Http.Services;
+using XiHan.Framework.Serialization.Dynamic;
 
 namespace XiHan.Framework.Http.Fluent;
 
@@ -369,12 +370,10 @@ public class HttpRequestBuilder
             {
                 return await _httpService.PostFormAsync<T>(_url, formData, _options, cancellationToken);
             }
-
-            var json = JsonSerializer.Serialize(_body);
-            return await _httpService.PostJsonAsync<T>(_url, json, _options, cancellationToken);
+            return await _httpService.PostAsync<object, T>(_url, _body, _options, cancellationToken);
         }
 
-        return await _httpService.PostJsonAsync<T>(_url, "{}", _options, cancellationToken);
+        return await _httpService.PostAsync<object, T>(_url, "{}", _options, cancellationToken);
     }
 
     /// <summary>

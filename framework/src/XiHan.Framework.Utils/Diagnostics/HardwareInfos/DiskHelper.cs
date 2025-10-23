@@ -102,12 +102,12 @@ public static class DiskHelper
                                {
                                    DiskName = rootDisk[0].Trim(),
                                    TypeName = rootDisk[1].Trim(),
-                                   TotalSpace = rootDisk[2].ToLong() * 1024 * 1024, // MB转换为字节
-                                   UsedSpace = rootDisk[3].ToLong() * 1024 * 1024,
-                                   FreeSpace = rootDisk[4].ToLong() * 1024 * 1024,
-                                   AvailableRate = rootDisk[2].ToLong() == 0
+                                   TotalSpace = rootDisk[2].ConvertToLong() * 1024 * 1024, // MB转换为字节
+                                   UsedSpace = rootDisk[3].ConvertToLong() * 1024 * 1024,
+                                   FreeSpace = rootDisk[4].ConvertToLong() * 1024 * 1024,
+                                   AvailableRate = rootDisk[2].ConvertToLong() == 0
                                        ? 0
-                                       : Math.Round((double)rootDisk[4].ToLong() / rootDisk[2].ToLong() * 100, 3)
+                                       : Math.Round((double)rootDisk[4].ConvertToLong() / rootDisk[2].ConvertToLong() * 100, 3)
                                });
         }
     }
@@ -129,13 +129,13 @@ public static class DiskHelper
                                select new DiskInfo
                                {
                                    TypeName = rootDisk[0].Trim(),
-                                   TotalSpace = rootDisk[1].ToLong() * 1024,
-                                   UsedSpace = rootDisk[2].ToLong() * 1024,
+                                   TotalSpace = rootDisk[1].ConvertToLong() * 1024,
+                                   UsedSpace = rootDisk[2].ConvertToLong() * 1024,
                                    DiskName = rootDisk[4].Trim(),
-                                   FreeSpace = (rootDisk[1].ToLong() - rootDisk[2].ToLong()) * 1024,
-                                   AvailableRate = rootDisk[1].ToLong() == 0
+                                   FreeSpace = (rootDisk[1].ConvertToLong() - rootDisk[2].ConvertToLong()) * 1024,
+                                   AvailableRate = rootDisk[1].ConvertToLong() == 0
                                        ? 0
-                                       : Math.Round((double)rootDisk[3].ToLong() / rootDisk[1].ToLong() * 100, 3)
+                                       : Math.Round((double)rootDisk[3].ConvertToLong() / rootDisk[1].ConvertToLong() * 100, 3)
                                });
         }
     }
