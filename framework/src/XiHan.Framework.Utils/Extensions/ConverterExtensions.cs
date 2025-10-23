@@ -54,7 +54,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>布尔值</returns>
-    public static bool ToBool(this object? value, bool defaultValue = false)
+    public static bool ConvertToBool(this object? value, bool defaultValue = false)
     {
         return ConvertHelper.ToBool(value, defaultValue);
     }
@@ -65,7 +65,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>整数值</returns>
-    public static int ToInt(this object? value, int defaultValue = 0)
+    public static int ConvertToInt(this object? value, int defaultValue = 0)
     {
         return ConvertHelper.ToInt(value, defaultValue);
     }
@@ -76,7 +76,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>长整数值</returns>
-    public static long ToLong(this object? value, long defaultValue = 0)
+    public static long ConvertToLong(this object? value, long defaultValue = 0)
     {
         return ConvertHelper.ToLong(value, defaultValue);
     }
@@ -87,7 +87,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>双精度浮点数值</returns>
-    public static double ToDouble(this object? value, double defaultValue = 0.0)
+    public static double ConvertToDouble(this object? value, double defaultValue = 0.0)
     {
         return ConvertHelper.ToDouble(value, defaultValue);
     }
@@ -98,7 +98,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>十进制数值</returns>
-    public static decimal ToDecimal(this object? value, decimal defaultValue = 0m)
+    public static decimal ConvertToDecimal(this object? value, decimal defaultValue = 0m)
     {
         return ConvertHelper.ToDecimal(value, defaultValue);
     }
@@ -109,7 +109,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>日期时间值</returns>
-    public static DateTime ToDateTime(this object? value, DateTime defaultValue = default)
+    public static DateTime ConvertToDateTime(this object? value, DateTime defaultValue = default)
     {
         return ConvertHelper.ToDateTime(value, defaultValue);
     }
@@ -120,7 +120,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>GUId 值</returns>
-    public static Guid ToGuid(this object? value, Guid defaultValue = default)
+    public static Guid ConvertToGuid(this object? value, Guid defaultValue = default)
     {
         return ConvertHelper.ToGuid(value, defaultValue);
     }
@@ -132,7 +132,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>枚举值</returns>
-    public static TEnum ToEnum<TEnum>(this object? value, TEnum defaultValue = default!)
+    public static TEnum ConvertToEnum<TEnum>(this object? value, TEnum defaultValue = default!)
         where TEnum : struct, Enum
     {
         if (value == null)
@@ -154,7 +154,7 @@ public static class ConverterExtensions
     /// <typeparam name="T">元素类型</typeparam>
     /// <param name="value">要转换的值</param>
     /// <returns>数组</returns>
-    public static T[] ToArray<T>(this object? value)
+    public static T[] ConvertToArray<T>(this object? value)
     {
         return ConvertHelper.ToArray<T>(value);
     }
@@ -165,7 +165,7 @@ public static class ConverterExtensions
     /// <typeparam name="T">元素类型</typeparam>
     /// <param name="value">要转换的值</param>
     /// <returns>列表</returns>
-    public static List<T> ToList<T>(this object? value)
+    public static List<T> ConvertToList<T>(this object? value)
     {
         return ConvertHelper.ToList<T>(value);
     }
@@ -180,7 +180,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>转换结果</returns>
-    public static int ToIntSafe(this object? value, int defaultValue = 0)
+    public static int ConvertToIntSafe(this object? value, int defaultValue = 0)
     {
         try
         {
@@ -198,7 +198,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>转换结果</returns>
-    public static long ToLongSafe(this object? value, long defaultValue = 0)
+    public static long ConvertToLongSafe(this object? value, long defaultValue = 0)
     {
         try
         {
@@ -216,7 +216,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>转换结果</returns>
-    public static double ToDoubleSafe(this object? value, double defaultValue = 0.0)
+    public static double ConvertToDoubleSafe(this object? value, double defaultValue = 0.0)
     {
         try
         {
@@ -234,7 +234,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>转换结果</returns>
-    public static decimal ToDecimalSafe(this object? value, decimal defaultValue = 0m)
+    public static decimal ConvertToDecimalSafe(this object? value, decimal defaultValue = 0m)
     {
         try
         {
@@ -252,7 +252,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>转换结果</returns>
-    public static DateTime ToDateTimeSafe(this object? value, DateTime defaultValue = default)
+    public static DateTime ConvertToDateTimeSafe(this object? value, DateTime defaultValue = default)
     {
         try
         {
@@ -275,7 +275,7 @@ public static class ConverterExtensions
     /// <param name="format">格式字符串</param>
     /// <param name="provider">格式提供程序</param>
     /// <returns>格式化字符串</returns>
-    public static string ToFormattedString(this object? value, string? format = null, IFormatProvider? provider = null)
+    public static string ConvertToFormattedString(this object? value, string? format = null, IFormatProvider? provider = null)
     {
         if (value == null)
         {
@@ -297,9 +297,9 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="format">格式字符串</param>
     /// <returns>格式化字符串</returns>
-    public static string ToInvariantString(this object? value, string? format = null)
+    public static string ConvertToInvariantString(this object? value, string? format = null)
     {
-        return value.ToFormattedString(format, CultureInfo.InvariantCulture);
+        return value.ConvertToFormattedString(format, CultureInfo.InvariantCulture);
     }
 
     #endregion
@@ -312,7 +312,7 @@ public static class ConverterExtensions
     /// <param name="value">要转换的值</param>
     /// <param name="defaultValue">默认值</param>
     /// <returns>非空字符串</returns>
-    public static string ToNonNullString(this object? value, string defaultValue = "")
+    public static string ConvertToNonNullString(this object? value, string defaultValue = "")
     {
         return value?.ToString() ?? defaultValue;
     }
@@ -323,7 +323,7 @@ public static class ConverterExtensions
     /// <typeparam name="T">目标类型</typeparam>
     /// <param name="value">要转换的值</param>
     /// <returns>可空类型值</returns>
-    public static T? ToNullable<T>(this object? value) where T : struct
+    public static T? ConvertToNullable<T>(this object? value) where T : struct
     {
         if (value == null)
         {
