@@ -193,7 +193,7 @@ public sealed class NullDistributedEventBus : IDistributedEventBus
     /// <typeparam name="TEvent">事件类型</typeparam>
     /// <param name="eventData">事件数据</param>
     /// <param name="onUnitOfWorkComplete">是否在单元工作完成后发布</param>
-    /// <param name="useOutbox">是否使用 Outbox 模式进行事件持久化与可靠投递</param>
+    /// <param name="useOutbox">是否使用收件箱模式进行事件持久化与可靠投递</param>
     /// <returns></returns>
     public Task PublishAsync<TEvent>(TEvent eventData, bool onUnitOfWorkComplete = true, bool useOutbox = true) where TEvent : class
     {
@@ -206,7 +206,7 @@ public sealed class NullDistributedEventBus : IDistributedEventBus
     /// <param name="eventType">事件类型</param>
     /// <param name="eventData">事件数据</param>
     /// <param name="onUnitOfWorkComplete">是否在单元工作完成后发布</param>
-    /// <param name="useOutbox">是否使用 Outbox 模式进行事件持久化与可靠投递</param>
+    /// <param name="useOutbox">是否使用收件箱模式进行事件持久化与可靠投递</param>
     /// <returns></returns>
     public Task PublishAsync(Type eventType, object eventData, bool onUnitOfWorkComplete = true, bool useOutbox = true)
     {

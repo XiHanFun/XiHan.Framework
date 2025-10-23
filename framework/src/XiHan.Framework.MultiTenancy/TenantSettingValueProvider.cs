@@ -67,6 +67,6 @@ public class TenantSettingValueProvider : SettingValueProvider
     /// <returns>设置值</returns>
     public override async Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
-        return await SettingStore.GetAllAsync(settings.Select(x => x.Name).ToArray(), Name, CurrentTenant.Id?.ToString());
+        return await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, CurrentTenant.Id?.ToString());
     }
 }
