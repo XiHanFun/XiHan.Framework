@@ -24,7 +24,7 @@ using XiHan.Framework.Http;
 
 namespace XiHan.Framework.AI;
 
-#pragma warning disable SKEXP0070,SKEXP0010,SKEXP0001
+#pragma warning disable SKEXP0010
 
 /// <summary>
 /// 曦寒框架 AI 扩展模块
@@ -81,4 +81,4 @@ public class XiHanAIModule : XiHanModule
     }
 }
 
-#pragma warning restore SKEXP0070, SKEXP0010, SKEXP0001
+#pragma warning restore SKEXP0010

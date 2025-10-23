@@ -26,8 +26,6 @@ using XiHan.Framework.AI.Results;
 
 namespace XiHan.Framework.AI.Providers.Ollama;
 
-#pragma warning disable SKEXP0070,SKEXP0010,SKEXP0001
-
 /// <summary>
 /// 基于本地 Ollama 的曦寒 AI 服务
 /// </summary>
@@ -254,5 +252,3 @@ public class XiHanOllamaService : IXiHanAIService
         }
     }
 }
-
-#pragma warning restore SKEXP0070, SKEXP0010, SKEXP0001
