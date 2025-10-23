@@ -19,7 +19,7 @@ namespace XiHan.Framework.EventBus.Abstractions;
 /// <summary>
 /// 支持事件盒接口
 /// 用于声明某个对象(通常是实体)支持事件盒(Event Boxes)机制，
-/// 实现可靠的事件发布与处理能力(支持出站事件 Outbox 和入站事件 Inbox)
+/// 实现可靠的事件发布与处理能力(支持出站事件收件箱和入站事件 Inbox)
 /// </summary>
 public interface ISupportsEventBoxes
 {

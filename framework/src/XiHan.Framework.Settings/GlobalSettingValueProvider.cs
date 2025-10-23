@@ -59,6 +59,6 @@ public class GlobalSettingValueProvider : SettingValueProvider
     /// <returns>设置值</returns>
     public override Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
-        return SettingStore.GetAllAsync(settings.Select(x => x.Name).ToArray(), Name, null);
+        return SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, null);
     }
 }
