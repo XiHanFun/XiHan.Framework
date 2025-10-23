@@ -40,9 +40,9 @@ public class InMemoryLockProvider : IJobLockProvider
 
         // 尝试添加或更新锁
         var acquired = _locks.TryAdd(resourceKey, entry) ||
-                      _locks.TryGetValue(resourceKey, out var existing) &&
+                      (_locks.TryGetValue(resourceKey, out var existing) &&
                        existing.IsExpired() &&
-                       _locks.TryUpdate(resourceKey, entry, existing);
+                       _locks.TryUpdate(resourceKey, entry, existing));
 
         if (acquired)
         {
