@@ -20,7 +20,7 @@ namespace XiHan.Framework.Core.Application;
 public interface IXiHanApplicationWithInternalServiceProvider : IXiHanApplication
 {
     /// <summary>
-    /// 创建服务提供器，但不初始化模块。
+    /// 创建服务提供器，但不初始化模块
     /// 多次调用将返回相同的服务提供器，而不会再次创建
     /// </summary>
     IServiceProvider CreateServiceProvider();

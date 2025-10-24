@@ -18,9 +18,9 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Crons;
 /// Cron 表达式辅助工具类
 /// </summary>
 /// <remarks>
-/// 提供 Cron 表达式的解析、验证、下次执行时间计算等功能。
-/// 支持标准的 5 位格式（分 时 日 月 周）和 6 位格式（秒 分 时 日 月 周）。
-/// 支持特殊符号：* - , / ? L W # 等。
+/// 提供 Cron 表达式的解析、验证、下次执行时间计算等功能
+/// 支持标准的 5 位格式（分 时 日 月 周）和 6 位格式（秒 分 时 日 月 周）
+/// 支持特殊符号：* - , / ? L W # 等
 /// </remarks>
 public static class CronHelper
 {

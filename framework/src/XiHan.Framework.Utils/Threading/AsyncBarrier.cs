@@ -18,7 +18,7 @@ namespace XiHan.Framework.Utils.Threading;
 /// 异步屏障
 /// </summary>
 /// <remarks>
-/// 基于无锁编程技术实现的高性能异步屏障，允许多个异步操作在某个点上等待，直到所有操作都到达该点后才能继续执行。
+/// 基于无锁编程技术实现的高性能异步屏障，允许多个异步操作在某个点上等待，直到所有操作都到达该点后才能继续执行
 /// 使用原子操作避免锁竞争，支持动态参与者管理、取消令牌、完成回调等高级功能
 /// </remarks>
 public class AsyncBarrier : IDisposable

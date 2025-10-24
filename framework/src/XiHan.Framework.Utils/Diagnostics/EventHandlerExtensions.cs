@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.Diagnostics;
 public static class EventHandlerExtensions
 {
     /// <summary>
-    /// 使用给定的参数安全地引发给定的事件。
+    /// 使用给定的参数安全地引发给定的事件
     /// </summary>
     /// <param name="eventHandler">事件处理程序</param>
     /// <param name="sender">事件来源</param>
@@ -30,7 +30,7 @@ public static class EventHandlerExtensions
     }
 
     /// <summary>
-    /// 使用给定的参数安全地引发给定的事件。
+    /// 使用给定的参数安全地引发给定的事件
     /// </summary>
     /// <param name="eventHandler">事件处理程序</param>
     /// <param name="sender">事件来源</param>
@@ -41,7 +41,7 @@ public static class EventHandlerExtensions
     }
 
     /// <summary>
-    /// 使用给定的参数安全地引发给定的事件。
+    /// 使用给定的参数安全地引发给定的事件
     /// </summary>
     /// <typeparam name="TEventArgs"><see cref="EventArgs"/></typeparam> 的类型
     /// <param name="eventHandler">事件处理程序</param>

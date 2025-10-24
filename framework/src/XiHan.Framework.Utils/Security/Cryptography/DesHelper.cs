@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// DES 加密解密
 /// </summary>
 /// <remarks>
-/// 是一种对称密钥加密算法，已不推荐使用。
+/// 是一种对称密钥加密算法，已不推荐使用
 /// </remarks>
 public static class DesHelper
 {

@@ -28,8 +28,8 @@ namespace XiHan.Framework.Security.Cryptography;
 /// 国密 SM2 算法辅助类
 /// </summary>
 /// <remarks>
-/// 是一种基于椭圆曲线的公钥密码算法，适用于加密、签名等场景。
-/// 本实现基于 BouncyCastle 提供的支持。
+/// 是一种基于椭圆曲线的公钥密码算法，适用于加密、签名等场景
+/// 本实现基于 BouncyCastle 提供的支持
 /// </remarks>
 public static class Sm2Helper
 {

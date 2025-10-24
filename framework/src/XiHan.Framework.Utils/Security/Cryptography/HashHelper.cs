@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// 哈希生成辅助类
 /// </summary>
 /// <remarks>
-/// 是一系列加密哈希函数，主要用于生成数据的固定长度散列值，以确保数据完整性和安全性。
+/// 是一系列加密哈希函数，主要用于生成数据的固定长度散列值，以确保数据完整性和安全性
 /// </remarks>
 public static class HashHelper
 {

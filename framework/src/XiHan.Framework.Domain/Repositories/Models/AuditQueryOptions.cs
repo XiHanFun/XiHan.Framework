@@ -67,14 +67,14 @@ public sealed class AuditQueryOptions<TKey>
     public DateTimeOffset? DeletedTimeEnd { get; init; }
 
     /// <summary>
-    /// 是否包含软删除实体。
-    /// 默认 <c>false</c> 表示仅返回未删除实体。
+    /// 是否包含软删除实体
+    /// 默认 <c>false</c> 表示仅返回未删除实体
     /// </summary>
     public bool IncludeSoftDeleted { get; init; }
 
     /// <summary>
-    /// 是否只返回软删除实体。
-    /// 当 <see cref="OnlySoftDeleted"/> 为 <c>true</c> 时，<see cref="IncludeSoftDeleted"/> 将被忽略。
+    /// 是否只返回软删除实体
+    /// 当 <see cref="OnlySoftDeleted"/> 为 <c>true</c> 时，<see cref="IncludeSoftDeleted"/> 将被忽略
     /// </summary>
     public bool OnlySoftDeleted { get; init; }
 }
