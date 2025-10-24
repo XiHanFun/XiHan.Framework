@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Text.Converters;
 /// </summary>
 /// <remarks>
 /// 主要特点：包含数字+大小写字母，较紧凑，编码长度更短
-/// 常见用途：短链接、邀请码、用户ID编码等
+/// 常见用途：短链接、邀请码、用户唯一标识编码等
 /// </remarks>
 public static class Base62
 {

@@ -30,7 +30,7 @@ public interface IJobStore
     /// <summary>
     /// 更新任务实例状态
     /// </summary>
-    /// <param name="instanceId">实例ID</param>
+    /// <param name="instanceId">实例唯一标识</param>
     /// <param name="status">状态</param>
     Task UpdateJobStatusAsync(string instanceId, JobStatus status);
 
@@ -43,7 +43,7 @@ public interface IJobStore
     /// <summary>
     /// 获取任务实例
     /// </summary>
-    /// <param name="instanceId">实例ID</param>
+    /// <param name="instanceId">实例唯一标识</param>
     /// <returns>任务实例</returns>
     Task<JobInstance?> GetJobInstanceAsync(string instanceId);
 

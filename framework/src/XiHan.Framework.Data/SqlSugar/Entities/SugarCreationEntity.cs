@@ -35,18 +35,18 @@ public abstract class SugarCreationEntity<TKey> : CreationEntityBase<TKey>
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IsNullable = false,ColumnDescription = "创建时间")]
+    [SugarColumn(IsNullable = false, ColumnDescription = "创建时间")]
     public override DateTimeOffset CreationTime { get; set; }
 
     /// <summary>
-    /// 创建者 Id
+    /// 创建者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true,ColumnDescription = "创建者Id")]
+    [SugarColumn(IsNullable = true, ColumnDescription = "创建者唯一标识")]
     public override TKey? CreatorId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    [SugarColumn(IsNullable = true,ColumnDescription = "创建人")]
+    [SugarColumn(IsNullable = true, ColumnDescription = "创建人")]
     public override string? Creator { get; set; }
 }

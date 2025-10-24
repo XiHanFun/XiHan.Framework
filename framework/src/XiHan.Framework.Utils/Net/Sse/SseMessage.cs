@@ -30,7 +30,7 @@ public class SseMessage
     /// </summary>
     /// <param name="data">消息数据</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">消息Id</param>
+    /// <param name="id">消息唯一标识</param>
     public SseMessage(string data, string? eventType = null, string? id = null)
     {
         Data = data;
@@ -42,7 +42,7 @@ public class SseMessage
     }
 
     /// <summary>
-    /// 获取或设置消息Id
+    /// 获取或设置消息唯一标识
     /// </summary>
     public string? Id { get; set; }
 

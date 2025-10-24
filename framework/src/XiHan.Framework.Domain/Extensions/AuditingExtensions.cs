@@ -38,7 +38,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entity">实体</param>
-    /// <param name="creatorId">创建者Id</param>
+    /// <param name="creatorId">创建者唯一标识</param>
     /// <param name="creator">创建人</param>
     /// <param name="creationTime">创建时间</param>
     /// <returns>创建审计实体</returns>
@@ -60,7 +60,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entities">实体集合</param>
-    /// <param name="creatorId">创建者Id</param>
+    /// <param name="creatorId">创建者唯一标识</param>
     /// <param name="creator">创建人</param>
     /// <param name="creationTime">创建时间</param>
     /// <returns>创建审计实体集合</returns>
@@ -97,7 +97,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entity">实体</param>
-    /// <param name="modifierId">修改者Id</param>
+    /// <param name="modifierId">修改者唯一标识</param>
     /// <param name="modifier">修改人</param>
     /// <param name="modificationTime">修改时间</param>
     /// <returns>修改审计实体</returns>
@@ -119,7 +119,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entities">实体集合</param>
-    /// <param name="modifierId">修改者Id</param>
+    /// <param name="modifierId">修改者唯一标识</param>
     /// <param name="modifier">修改人</param>
     /// <param name="modificationTime">修改时间</param>
     /// <returns>修改审计实体集合</returns>
@@ -157,7 +157,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entity">实体</param>
-    /// <param name="deleterId">删除者Id</param>
+    /// <param name="deleterId">删除者唯一标识</param>
     /// <param name="deleter">删除人</param>
     /// <param name="deletionTime">删除时间</param>
     public static IDeletionEntity<TKey> SetDeletionAuditInfo<TKey>(
@@ -179,7 +179,7 @@ public static class AuditingExtensions
     /// </summary>
     /// <typeparam name="TKey">主键类型</typeparam>
     /// <param name="entitys">实体集合</param>
-    /// <param name="deleterId">删除者Id</param>
+    /// <param name="deleterId">删除者唯一标识</param>
     /// <param name="deleter">删除人</param>
     /// <param name="deletionTime">删除时间</param>
     /// <returns>删除审计实体集合</returns>

@@ -23,7 +23,7 @@ public class SseEventContext
     /// 初始化SSE事件上下文
     /// </summary>
     /// <param name="stream">输出流</param>
-    /// <param name="lastEventId">最后事件Id</param>
+    /// <param name="lastEventId">最后事件唯一标识</param>
     /// <param name="server">服务器实例</param>
     public SseEventContext(Stream stream, string? lastEventId, SseServer server)
     {
@@ -38,7 +38,7 @@ public class SseEventContext
     public Stream Stream { get; }
 
     /// <summary>
-    /// 最后事件Id
+    /// 最后事件唯一标识
     /// </summary>
     public string? LastEventId { get; }
 
@@ -52,7 +52,7 @@ public class SseEventContext
     /// </summary>
     /// <param name="data">数据内容</param>
     /// <param name="eventType">事件类型</param>
-    /// <param name="id">事件Id</param>
+    /// <param name="id">事件唯一标识</param>
     /// <returns>异步任务</returns>
     public Task SendEventAsync(string data, string? eventType = null, string? id = null)
     {

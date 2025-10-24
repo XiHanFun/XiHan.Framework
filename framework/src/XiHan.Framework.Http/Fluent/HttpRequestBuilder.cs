@@ -194,9 +194,9 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置请求Id
+    /// 设置请求唯一标识
     /// </summary>
-    /// <param name="requestId">请求Id</param>
+    /// <param name="requestId">请求唯一标识</param>
     /// <returns></returns>
     public HttpRequestBuilder SetRequestId(string requestId)
     {
@@ -205,9 +205,9 @@ public class HttpRequestBuilder
     }
 
     /// <summary>
-    /// 设置关联Id
+    /// 设置关联唯一标识
     /// </summary>
-    /// <param name="correlationId">关联Id</param>
+    /// <param name="correlationId">关联唯一标识</param>
     /// <returns></returns>
     public HttpRequestBuilder SetCorrelationId(string? correlationId = null)
     {

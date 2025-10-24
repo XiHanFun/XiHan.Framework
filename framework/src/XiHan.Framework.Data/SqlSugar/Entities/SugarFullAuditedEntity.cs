@@ -68,9 +68,9 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     public override DateTimeOffset CreationTime { get; set; }
 
     /// <summary>
-    /// 创建者 Id
+    /// 创建者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "创建者Id")]
+    [SugarColumn(IsNullable = true, ColumnDescription = "创建者唯一标识")]
     public override TKey? CreatorId { get; set; }
 
     /// <summary>
@@ -86,9 +86,9 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     public override DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 修改者 Id
+    /// 修改者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改者Id")]
+    [SugarColumn(IsNullable = true, ColumnDescription = "修改者唯一标识")]
     public override TKey? ModifierId { get; set; }
 
     /// <summary>
@@ -110,9 +110,9 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     public override DateTimeOffset? DeletionTime { get; set; }
 
     /// <summary>
-    /// 删除者 Id
+    /// 删除者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "删除者Id")]
+    [SugarColumn(IsNullable = true, ColumnDescription = "删除者唯一标识")]
     public override TKey? DeleterId { get; set; }
 
     /// <summary>

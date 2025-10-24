@@ -49,7 +49,7 @@ public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IMo
     }
 
     /// <summary>
-    /// 修改者Id
+    /// 修改者唯一标识
     /// </summary>
     public virtual TKey? ModifierId { get; set; }
 

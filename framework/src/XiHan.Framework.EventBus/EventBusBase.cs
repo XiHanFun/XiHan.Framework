@@ -446,11 +446,11 @@ public abstract class EventBusBase : IEventBus
     }
 
     /// <summary>
-    /// 获取事件数据的租户 Id
+    /// 获取事件数据的租户唯一标识
     /// 从事件数据中提取租户信息，支持多租户事件处理
     /// </summary>
     /// <param name="eventData">事件数据</param>
-    /// <returns>租户 Id，如果不是多租户事件则返回当前租户 Id</returns>
+    /// <returns>租户唯一标识，如果不是多租户事件则返回当前租户唯一标识</returns>
     protected virtual Guid? GetEventDataTenantId(object eventData)
     {
         return eventData switch

@@ -42,7 +42,7 @@ public class LoggingMiddleware : IJobMiddleware
         var instanceId = context.JobInstance.InstanceId;
         var traceId = context.TraceId;
 
-        _logger.LogInformation("开始执行任务: {JobName} (实例ID: {InstanceId}, 追踪ID: {TraceId})",
+        _logger.LogInformation("开始执行任务: {JobName} (实例唯一标识: {InstanceId}, 追踪唯一标识: {TraceId})",
             jobName, instanceId, traceId);
 
         var startTime = DateTimeOffset.UtcNow;
@@ -55,12 +55,12 @@ public class LoggingMiddleware : IJobMiddleware
 
             if (result.IsSuccess)
             {
-                _logger.LogInformation("任务执行成功: {JobName} (实例ID: {InstanceId}, 耗时: {Duration}ms)",
+                _logger.LogInformation("任务执行成功: {JobName} (实例唯一标识: {InstanceId}, 耗时: {Duration}ms)",
                     jobName, instanceId, duration);
             }
             else
             {
-                _logger.LogWarning("任务执行失败: {JobName} (实例ID: {InstanceId}, 耗时: {Duration}ms, 错误: {ErrorMessage})",
+                _logger.LogWarning("任务执行失败: {JobName} (实例唯一标识: {InstanceId}, 耗时: {Duration}ms, 错误: {ErrorMessage})",
                     jobName, instanceId, duration, result.ErrorMessage);
             }
 
@@ -70,7 +70,7 @@ public class LoggingMiddleware : IJobMiddleware
         {
             var duration = (DateTimeOffset.UtcNow - startTime).TotalMilliseconds;
             _logger.LogError(ex,
-                "任务执行异常: {JobName} (实例ID: {InstanceId}, 耗时: {Duration}ms)",
+                "任务执行异常: {JobName} (实例唯一标识: {InstanceId}, 耗时: {Duration}ms)",
                 jobName, instanceId, duration);
             throw;
         }

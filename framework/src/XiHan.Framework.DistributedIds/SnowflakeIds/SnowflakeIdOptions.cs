@@ -17,7 +17,7 @@ using System.Text.Json;
 namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
-/// 雪花Id生成器选项
+/// 雪花唯一标识生成器选项
 /// </summary>
 public class SnowflakeIdOptions
 {
@@ -27,7 +27,7 @@ public class SnowflakeIdOptions
         WriteIndented = true
     };
 
-    // 数据中心Id位长
+    // 数据中心唯一标识位长
     private readonly byte _dataCenterIdBitLength = 5;
 
     // Id生成长度
@@ -51,10 +51,10 @@ public class SnowflakeIdOptions
     // 基础时间(纪元时间)
     private DateTime _baseTime = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    // 工作机器Id
+    // 工作机器唯一标识
     private ushort _workerId;
 
-    // 工作机器Id位长
+    // 工作机器唯一标识位长
     private byte _workerIdBitLength = 6;
 
     // 序列号位长
@@ -75,7 +75,7 @@ public class SnowflakeIdOptions
     // 算法类型(1雪花漂移/2传统雪花)
     private SnowflakeIdTypes _snowflakeIdType = SnowflakeIdTypes.SnowFlakeMethod;
 
-    // 数据中心Id
+    // 数据中心唯一标识
     private byte _dataCenterId;
 
     /// <summary>
@@ -110,7 +110,7 @@ public class SnowflakeIdOptions
             var maxWorkerId = ~(-1L << _workerIdBitLength);
             if (value > maxWorkerId)
             {
-                throw new ArgumentException($"工作机器Id必须在0-{maxWorkerId}之间");
+                throw new ArgumentException($"工作机器唯一标识必须在0-{maxWorkerId}之间");
             }
             _workerId = value;
         }
@@ -251,8 +251,8 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 数据中心Id(0-31)
-    /// 传统雪花算法的数据中心Id，默认0
+    /// 数据中心唯一标识(0-31)
+    /// 传统雪花算法的数据中心唯一标识，默认0
     /// </summary>
     public byte DataCenterId
     {
@@ -262,14 +262,14 @@ public class SnowflakeIdOptions
             var maxDataCenterId = ~(-1L << _dataCenterIdBitLength);
             if (value > maxDataCenterId)
             {
-                throw new ArgumentException($"数据中心Id必须在0-{maxDataCenterId}之间");
+                throw new ArgumentException($"数据中心唯一标识必须在0-{maxDataCenterId}之间");
             }
             _dataCenterId = value;
         }
     }
 
     /// <summary>
-    /// 数据中心Id位长(默认值5)
+    /// 数据中心唯一标识位长(默认值5)
     /// 范围：1-10
     /// </summary>
     public byte DataCenterIdBitLength { get; set; } = 5;
@@ -277,7 +277,7 @@ public class SnowflakeIdOptions
     /// <summary>
     /// Id生成长度(默认值0表示使用默认长度)
     /// 范围：0或10-20，0表示使用默认长度
-    /// 注意：设置了此值后，生成的Id会被截断或填充到指定长度
+    /// 注意：设置了此值后，生成的唯一标识会被截断或填充到指定长度
     /// </summary>
     public byte IdLength
     {
@@ -352,7 +352,7 @@ public class SnowflakeIdOptions
     /// <summary>
     /// 低负载模式
     /// </summary>
-    /// <param name="workerId">工作机器Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions LowWorkload(ushort workerId = 1)
     {
@@ -367,7 +367,7 @@ public class SnowflakeIdOptions
     /// <summary>
     /// 中负载模式
     /// </summary>
-    /// <param name="workerId">工作机器Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions MediumWorkload(ushort workerId = 1)
     {
@@ -382,7 +382,7 @@ public class SnowflakeIdOptions
     /// <summary>
     /// 高负载模式
     /// </summary>
-    /// <param name="workerId">工作机器Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions HighWorkload(ushort workerId = 1)
     {
@@ -395,9 +395,9 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 短Id模式
+    /// 短唯一标识模式
     /// </summary>
-    /// <param name="workerId">工作机器Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions ShortId(ushort workerId = 1)
     {
@@ -411,10 +411,10 @@ public class SnowflakeIdOptions
     }
 
     /// <summary>
-    /// 带前缀的Id模式
+    /// 带前缀的唯一标识模式
     /// </summary>
     /// <param name="prefix">前缀</param>
-    /// <param name="workerId">工作机器Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions PrefixedId(string prefix, ushort workerId = 1)
     {
@@ -430,8 +430,8 @@ public class SnowflakeIdOptions
     /// <summary>
     /// 经典雪花算法模式
     /// </summary>
-    /// <param name="workerId">工作机器Id</param>
-    /// <param name="dataCenterId">数据中心Id</param>
+    /// <param name="workerId">工作机器唯一标识</param>
+    /// <param name="dataCenterId">数据中心唯一标识</param>
     /// <returns>配置对象</returns>
     public static SnowflakeIdOptions Classic(ushort workerId = 1, byte dataCenterId = 1)
     {
@@ -461,7 +461,7 @@ public class SnowflakeIdOptions
         try
         {
             return JsonSerializer.Deserialize<SnowflakeIdOptions>(json)
-                ?? throw new InvalidOperationException("无法反序列化JSON到IdGeneratorOptions");
+                ?? throw new InvalidOperationException("无法反序列化JSON到唯一标识GeneratorOptions");
         }
         catch (Exception ex)
         {

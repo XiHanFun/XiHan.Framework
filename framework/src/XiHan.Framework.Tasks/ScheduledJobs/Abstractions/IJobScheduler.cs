@@ -50,7 +50,7 @@ public interface IJobScheduler
     /// </summary>
     /// <param name="jobName">任务名称</param>
     /// <param name="parameters">参数</param>
-    /// <returns>任务实例ID</returns>
+    /// <returns>任务实例唯一标识</returns>
     Task<string> TriggerJobAsync(string jobName, IDictionary<string, object?>? parameters = null);
 
     /// <summary>

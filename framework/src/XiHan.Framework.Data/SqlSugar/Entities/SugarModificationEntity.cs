@@ -38,9 +38,9 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     public override DateTimeOffset? ModificationTime { get; set; }
 
     /// <summary>
-    /// 修改者 Id
+    /// 修改者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true,ColumnDescription = "修改者Id")]
+    [SugarColumn(IsNullable = true,ColumnDescription = "修改者唯一标识")]
     public override TKey? ModifierId { get; set; }
 
     /// <summary>

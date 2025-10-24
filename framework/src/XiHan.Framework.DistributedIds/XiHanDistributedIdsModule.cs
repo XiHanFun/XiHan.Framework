@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 namespace XiHan.Framework.DistributedIds;
 
 /// <summary>
-/// 曦寒框架分布式 Id 生成模块
+/// 曦寒框架分布式唯一标识生成模块
 /// </summary>
 public class XiHanDistributedIdsModule : XiHanModule
 {
