@@ -62,6 +62,7 @@
     <Project Path="test/XiHan.Framework.Serialization.Tests/XiHan.Framework.Serialization.Tests.csproj" Id="b4569bd6-5e7d-45bf-9135-17b2c6265439" />
     <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
+    <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
   </Folder>
   <Folder Name="/2.tests/3.Main/">
     <Project Path="test/XiHan.Framework.Integration.Tests/XiHan.Framework.Integration.Tests.csproj" />
