@@ -43,7 +43,12 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarReposit
     /// </summary>
     protected IUnitOfWork UnitOfWork => _unitOfWorkManager.Current ?? throw new InvalidOperationException("当前没有活动的工作单元");
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 添加聚合根并触发聚合根上的领域事件
+    /// </summary>
+    /// <param name="aggregate">聚合根实例</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已持久化的聚合根实例</returns>
     public new async Task<TAggregateRoot> AddAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.AddAsync(aggregate, cancellationToken);
@@ -51,7 +56,12 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarReposit
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新聚合根并触发聚合根上的领域事件
+    /// </summary>
+    /// <param name="aggregate">聚合根实例</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新后的聚合根实例</returns>
     public new async Task<TAggregateRoot> UpdateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.UpdateAsync(aggregate, cancellationToken);
@@ -59,14 +69,24 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarReposit
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除聚合根并触发聚合根上的领域事件
+    /// </summary>
+    /// <param name="aggregate">聚合根实例</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>表示删除操作的任务</returns>
     public new async Task DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         await base.DeleteAsync(aggregate, cancellationToken);
         await PublishDomainEventsAsync(aggregate);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 保存聚合根变更（包括事件处理）
+    /// </summary>
+    /// <param name="aggregate">需要持久化的聚合根实例</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>表示保存操作的任务</returns>
     public async Task SaveAggregateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         if (aggregate.IsTransient())
@@ -79,19 +99,34 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarReposit
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取聚合根及其相关实体
+    /// </summary>
+    /// <param name="id">聚合根主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>聚合根实例，如果不存在则返回 <c>null</c></returns>
     public Task<TAggregateRoot?> GetAggregateAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        return FindByIdAsync(id, cancellationToken);
+        return GetByIdAsync(id, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取包含领域事件的聚合根
+    /// </summary>
+    /// <param name="id">聚合根主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>包含未发布领域事件的聚合根实例，如果不存在则返回 <c>null</c></returns>
     public async Task<TAggregateRoot?> GetWithEventsAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var aggregate = await FindByIdAsync(id, cancellationToken);
+        var aggregate = await GetByIdAsync(id, cancellationToken);
         return aggregate;
     }
 
+    /// <summary>
+    /// 发布领域事件
+    /// </summary>
+    /// <param name="aggregate">聚合根实例</param>
+    /// <returns>表示发布操作的任务</returns>
     private Task PublishDomainEventsAsync(TAggregateRoot aggregate)
     {
         ArgumentNullException.ThrowIfNull(aggregate);

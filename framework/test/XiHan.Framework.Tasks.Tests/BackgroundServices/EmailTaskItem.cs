@@ -37,16 +37,24 @@ public class EmailTaskItem : IBackgroundTaskItem
         RetryCount = 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 任务唯一标识
+    /// </summary>
     public string TaskId { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 任务数据
+    /// </summary>
     public object? Data => this;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 任务创建时间
+    /// </summary>
     public DateTimeOffset CreatedAt { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 已重试次数
+    /// </summary>
     public int RetryCount { get; set; }
 
     /// <summary>
