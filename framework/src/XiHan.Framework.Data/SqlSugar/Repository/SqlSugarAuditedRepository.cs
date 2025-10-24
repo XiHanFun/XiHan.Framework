@@ -40,7 +40,12 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
         _dbClient = dbContext.GetClient();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据创建者获取实体
+    /// </summary>
+    /// <param name="creatorId">创建者主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey creatorId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -48,7 +53,12 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据修改者获取实体
+    /// </summary>
+    /// <param name="modifierId">修改者主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifierId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -56,7 +66,12 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据删除者获取实体
+    /// </summary>
+    /// <param name="deleterId">删除者主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deleterId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -64,7 +79,13 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据创建时间范围获取实体
+    /// </summary>
+    /// <param name="startTime">开始时间</param>
+    /// <param name="endTime">结束时间</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -72,7 +93,13 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据修改时间范围获取实体
+    /// </summary>
+    /// <param name="startTime">开始时间</param>
+    /// <param name="endTime">结束时间</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -80,7 +107,13 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据删除时间范围获取实体
+    /// </summary>
+    /// <param name="startTime">开始时间</param>
+    /// <param name="endTime">结束时间</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -88,7 +121,12 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据审计查询选项获取实体
+    /// </summary>
+    /// <param name="options">审计查询选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>符合条件的实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
