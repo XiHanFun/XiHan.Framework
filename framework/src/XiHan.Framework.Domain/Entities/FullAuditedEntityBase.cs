@@ -63,7 +63,7 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
 
 /// <summary>
 /// 完整审计实体基类（带用户）
-/// 包含创建、修改、删除的所有审计信息和对应的用户Id
+/// 包含创建、修改、删除的所有审计信息和对应的用户唯一标识
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
 public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFullAuditedEntity<TKey>
@@ -90,7 +90,7 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     public virtual TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
-    /// 创建者Id
+    /// 创建者唯一标识
     /// </summary>
     public virtual TKey? CreatorId { get; set; }
 
@@ -100,7 +100,7 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     public virtual string? Creator { get; set; }
 
     /// <summary>
-    /// 修改者Id
+    /// 修改者唯一标识
     /// </summary>
     public virtual TKey? ModifierId { get; set; }
 
@@ -110,7 +110,7 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     public virtual string? Modifier { get; set; }
 
     /// <summary>
-    /// 删除者Id
+    /// 删除者唯一标识
     /// </summary>
     public virtual TKey? DeleterId { get; set; }
 

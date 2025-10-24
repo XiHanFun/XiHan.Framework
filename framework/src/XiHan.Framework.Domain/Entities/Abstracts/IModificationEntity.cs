@@ -35,7 +35,7 @@ public interface IModificationEntity<TKey> : IModificationEntity
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 修改者Id
+    /// 修改者唯一标识
     /// </summary>
     TKey? ModifierId { get; set; }
 

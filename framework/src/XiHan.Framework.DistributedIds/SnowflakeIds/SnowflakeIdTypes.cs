@@ -15,7 +15,7 @@
 namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
-/// 雪花ID类型
+/// 雪花唯一标识类型
 /// </summary>
 public enum SnowflakeIdTypes
 {

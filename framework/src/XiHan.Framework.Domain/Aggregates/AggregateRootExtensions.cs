@@ -234,7 +234,7 @@ public class EventSnapshot
     public string EventType { get; set; } = string.Empty;
 
     /// <summary>
-    /// 事件Id
+    /// 事件唯一标识
     /// </summary>
     public Guid EventId { get; set; }
 

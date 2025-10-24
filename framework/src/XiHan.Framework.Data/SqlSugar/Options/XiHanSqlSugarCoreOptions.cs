@@ -22,7 +22,7 @@ namespace XiHan.Framework.Data.SqlSugar.Options;
 public class SqlSugarConnectionConfig
 {
     /// <summary>
-    /// 配置Id
+    /// 配置唯一标识
     /// </summary>
     public string ConfigId { get; set; } = "Default";
 

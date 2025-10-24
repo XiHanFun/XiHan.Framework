@@ -20,7 +20,7 @@ namespace XiHan.Framework.AI.Skills;
 public class SkillContext
 {
     /// <summary>
-    /// 会话Id
+    /// 会话唯一标识
     /// </summary>
     public string SessionId { get; set; } = string.Empty;
 

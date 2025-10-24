@@ -26,7 +26,7 @@ public interface IMultiTenant
     /// 用于标识该实体所属的租户，实现数据隔离
     /// </summary>
     /// <value>
-    /// 租户的全局唯一 Id，如果为 null 则表示该实体属于宿主（Host）或公共数据
+    /// 租户的全局唯一唯一标识，如果为 null 则表示该实体属于宿主（Host）或公共数据
     /// </value>
     /// <remarks>
     /// 在多租户系统中，此属性用于：

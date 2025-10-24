@@ -9,7 +9,7 @@
 		<Title>XiHan.Framework.DistributedIds</Title>
 		<AssemblyName>XiHan.Framework.DistributedIds</AssemblyName>
 		<PackageId>XiHan.Framework.DistributedIds</PackageId>
-		<Description>曦寒框架分布式 ID 生成库</Description>
+		<Description>曦寒框架分布式唯一标识生成库</Description>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 

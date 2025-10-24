@@ -20,7 +20,7 @@ namespace XiHan.Framework.Logging.Services;
 public interface ILogContext
 {
     /// <summary>
-    /// 用户 Id
+    /// 用户唯一标识
     /// </summary>
     string? UserId { get; set; }
 
@@ -30,22 +30,22 @@ public interface ILogContext
     string? UserName { get; set; }
 
     /// <summary>
-    /// 租户 Id
+    /// 租户唯一标识
     /// </summary>
     string? TenantId { get; set; }
 
     /// <summary>
-    /// 请求 Id
+    /// 请求唯一标识
     /// </summary>
     string? RequestId { get; set; }
 
     /// <summary>
-    /// 跟踪 Id
+    /// 跟踪唯一标识
     /// </summary>
     string? TraceId { get; set; }
 
     /// <summary>
-    /// 会话 Id
+    /// 会话唯一标识
     /// </summary>
     string? SessionId { get; set; }
 

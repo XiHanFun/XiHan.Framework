@@ -19,12 +19,12 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 /// <summary>
 /// NanoID生成器
 /// 用于生成安全、URL友好、随机的唯一标识符(Id)
-/// 通常用于需要较短ID但又不想暴露顺序信息的场景，如API标识符、数据库关联Id、短链接等
+/// 通常用于需要较短唯一标识但又不想暴露顺序信息的场景，如API标识符、数据库关联唯一标识、短链接等
 /// 主要特点：
-/// 安全性(Security)：使用加密安全的随机数生成，保证ID的不可预测性和抗冲突性。
+/// 安全性(Security)：使用加密安全的随机数生成，保证唯一标识的不可预测性和抗冲突性。
 /// 紧凑长度(Compact)：比UUID更短，默认21个字符，但可根据需求调整长度。
 /// 字符友好(URL-Safe)：仅使用URL安全字符(A-Za-z0-9_-)，避免转义问题，适合各类系统。
-/// 时间可提取(Time-Extractable)：支持从生成的ID中提取创建时间，便于分析和调试。
+/// 时间可提取(Time-Extractable)：支持从生成的唯一标识中提取创建时间，便于分析和调试。
 /// </summary>
 public class NanoIdGenerator : IDistributedIdGenerator
 {
@@ -43,7 +43,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     // 当前序列号
     private long _sequence;
 
-    // 上次生成ID的时间戳
+    // 上次生成唯一标识的时间戳
     private long _lastTimestamp;
 
     /// <summary>
@@ -66,9 +66,9 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个Id
+    /// 获取下一个唯一标识
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     public long NextId()
     {
         lock (_lock)
@@ -88,31 +88,31 @@ public class NanoIdGenerator : IDistributedIdGenerator
                 _lastTimestamp = timestamp;
             }
 
-            // 合并时间戳和序列号生成数值型Id
+            // 合并时间戳和序列号生成数值型唯一标识
             var id = (timestamp << 22) | (_sequence & 0x3FFFFF);
             return id;
         }
     }
 
     /// <summary>
-    /// 获取下一个Id(字符串形式)
+    /// 获取下一个唯一标识(字符串形式)
     /// </summary>
-    /// <returns>生成的ID字符串</returns>
+    /// <returns>生成的唯一标识字符串</returns>
     public string NextIdString()
     {
         return GenerateNanoId(_options.Size, _options.Alphabet);
     }
 
     /// <summary>
-    /// 批量获取Id
+    /// 批量获取唯一标识
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
     public long[] NextIds(int count)
     {
         if (count <= 0)
         {
-            throw new ArgumentException("批量生成ID的数量必须大于0");
+            throw new ArgumentException("批量生成唯一标识的数量必须大于0");
         }
 
         var ids = new long[count];
@@ -124,15 +124,15 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取Id(字符串形式)
+    /// 批量获取唯一标识(字符串形式)
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID字符串数组</returns>
     public string[] NextIdStrings(int count)
     {
         if (count <= 0)
         {
-            throw new ArgumentException("批量生成ID的数量必须大于0");
+            throw new ArgumentException("批量生成唯一标识的数量必须大于0");
         }
 
         var idStrings = new string[count];
@@ -144,27 +144,27 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步获取下一个Id
+    /// 异步获取下一个唯一标识
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     public Task<long> NextIdAsync()
     {
         return Task.FromResult(NextId());
     }
 
     /// <summary>
-    /// 异步获取下一个Id(字符串形式)
+    /// 异步获取下一个唯一标识(字符串形式)
     /// </summary>
-    /// <returns>生成的ID字符串</returns>
+    /// <returns>生成的唯一标识字符串</returns>
     public Task<string> NextIdStringAsync()
     {
         return Task.FromResult(NextIdString());
     }
 
     /// <summary>
-    /// 异步批量获取Id
+    /// 异步批量获取唯一标识
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
     public Task<long[]> NextIdsAsync(int count)
     {
@@ -172,9 +172,9 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取Id(字符串形式)
+    /// 异步批量获取唯一标识(字符串形式)
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID字符串数组</returns>
     public Task<string[]> NextIdStringsAsync(int count)
     {
@@ -182,7 +182,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取时间戳
+    /// 从唯一标识中提取时间戳
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
@@ -196,10 +196,10 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取工作机器Id
+    /// 从唯一标识中提取工作机器唯一标识
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>工作机器Id</returns>
+    /// <returns>工作机器唯一标识</returns>
     public int ExtractWorkerId(long id)
     {
         // NanoID不使用WorkerId，返回0
@@ -207,7 +207,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取序列号
+    /// 从唯一标识中提取序列号
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>序列号</returns>
@@ -218,10 +218,10 @@ public class NanoIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取数据中心Id
+    /// 从唯一标识中提取数据中心唯一标识
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>数据中心Id</returns>
+    /// <returns>数据中心唯一标识</returns>
     public int ExtractDataCenterId(long id)
     {
         // NanoID不使用DataCenterId，返回0
@@ -261,7 +261,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
     /// </summary>
     /// <param name="size">ID长度</param>
     /// <param name="alphabet">字符集</param>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     private static string GenerateNanoId(int size, string alphabet)
     {
         if (size <= 0)
@@ -279,7 +279,7 @@ public class NanoIdGenerator : IDistributedIdGenerator
         var alphabetLength = alphabet.Length;
 
         // 创建适合大小的随机字节数组
-        // 为每一位ID字符分配一个随机字节
+        // 为每一位唯一标识字符分配一个随机字节
         var randomBytes = new byte[size];
         Rng.GetBytes(randomBytes);
 

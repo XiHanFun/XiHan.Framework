@@ -20,10 +20,10 @@ namespace XiHan.Framework.DistributedIds.Sqids;
 /// <summary>
 /// Sqids编码器
 /// 用于生成短、小写、无歧义的唯一标识符(Id)
-/// 通常用于替代自增数字 Id(如数据库主键)在 URL、公开接口中的暴露，防止泄露数据的真实顺序或数量
+/// 通常用于替代自增数字唯一标识(如数据库主键)在 URL、公开接口中的暴露，防止泄露数据的真实顺序或数量
 /// 主要特点：
 /// 可逆性(Bidirectional)：Sqids 能把一个或多个数字编码成一个短字符串，也可以从字符串中解码出原始数字。
-/// 短小的编码结果：与 UUId 相比，Sqids 生成的 Id 更短、更易于阅读和分享。
+/// 短小的编码结果：与 UUId 相比，Sqids 生成的唯一标识更短、更易于阅读和分享。
 /// 顺序混淆：即使输入是递增的数字，输出的字符串也不会体现递增顺序，防止用户推测系统数据量。
 /// </summary>
 /// <typeparam name="T">数字类型</typeparam>
@@ -142,7 +142,7 @@ public class SqidsEncoder<T> where T : INumber<T>
     }
 
     /// <summary>
-    /// 填充ID至指定长度
+    /// 填充唯一标识至指定长度
     /// </summary>
     private static string PadId(string id, int minLength, string alphabet)
     {
@@ -162,7 +162,7 @@ public class SqidsEncoder<T> where T : INumber<T>
     }
 
     /// <summary>
-    /// 将数字转换为ID片段
+    /// 将数字转换为唯一标识片段
     /// </summary>
     private static string ToId(T num, string alphabet)
     {
@@ -187,7 +187,7 @@ public class SqidsEncoder<T> where T : INumber<T>
     }
 
     /// <summary>
-    /// 将ID片段转换为数字
+    /// 将唯一标识片段转换为数字
     /// </summary>
     private static T ToNumber(string id, string alphabet)
     {
@@ -205,7 +205,7 @@ public class SqidsEncoder<T> where T : INumber<T>
     }
 
     /// <summary>
-    /// 生成Id
+    /// 生成唯一标识
     /// </summary>
     private string GenerateId(T[] numbers)
     {
@@ -215,10 +215,10 @@ public class SqidsEncoder<T> where T : INumber<T>
             return string.Empty;
         }
 
-        // 计算最小ID长度
+        // 计算最小唯一标识长度
         var minLength = Math.Max(_options.MinLength, numbers.Length);
 
-        // 尝试生成不在屏蔽列表中的Id
+        // 尝试生成不在屏蔽列表中的唯一标识
         for (var i = 0; i < _alphabet.Length; i++)
         {
             // 为每次尝试创建新的字母表
@@ -233,7 +233,7 @@ public class SqidsEncoder<T> where T : INumber<T>
                 id += numStr + (j < numbers.Length - 1 ? alphabet[0] : "");
             }
 
-            // 如果ID长度不够，使用填充字符填充
+            // 如果唯一标识长度不够，使用填充字符填充
             if (id.Length < minLength)
             {
                 id = PadId(id, minLength, alphabet);

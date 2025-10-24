@@ -16,7 +16,7 @@ namespace XiHan.Framework.Domain.ValueObjects;
 
 /// <summary>
 /// 单一值对象基类
-/// 适用于只包含一个值的值对象，如 Id、Name 等
+/// 适用于只包含一个值的值对象，如唯一标识、Name 等
 /// </summary>
 /// <typeparam name="T">值的类型</typeparam>
 public abstract class SingleValueObject<T> : ValueObject

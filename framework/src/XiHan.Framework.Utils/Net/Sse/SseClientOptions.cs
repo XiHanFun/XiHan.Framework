@@ -55,7 +55,7 @@ public class SseClientOptions
     public bool UseExponentialBackoff { get; set; } = true;
 
     /// <summary>
-    /// 获取或设置重连时是否携带上次收到的事件Id (Last-Event-Id)
+    /// 获取或设置重连时是否携带上次收到的事件唯一标识 (Last-Event-Id)
     /// </summary>
     public bool IncludeLastEventIdOnReconnect { get; set; } = true;
 }
