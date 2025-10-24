@@ -20,12 +20,12 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Models;
 public class JobHistory
 {
     /// <summary>
-    /// 历史记录ID
+    /// 历史记录唯一标识
     /// </summary>
     public string HistoryId { get; set; } = Guid.NewGuid().ToString("N");
 
     /// <summary>
-    /// 实例ID
+    /// 实例唯一标识
     /// </summary>
     public string InstanceId { get; set; } = string.Empty;
 
@@ -85,7 +85,7 @@ public class JobHistory
     public string? ExecutionNode { get; set; }
 
     /// <summary>
-    /// 追踪ID
+    /// 追踪唯一标识
     /// </summary>
     public string? TraceId { get; set; }
 

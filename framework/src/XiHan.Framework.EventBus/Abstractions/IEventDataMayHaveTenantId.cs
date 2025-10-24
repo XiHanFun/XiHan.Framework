@@ -25,13 +25,13 @@ namespace XiHan.Framework.EventBus.Abstractions;
 public interface IEventDataMayHaveTenantId
 {
     /// <summary>
-    /// 如果此事件数据具有租户 Id 信息，则返回 true。
+    /// 如果此事件数据具有租户唯一标识信息，则返回 true。
     /// 如果是这样，它应该设置 <paramref name="tenantId"/> 参数。
     /// 否则，<paramref name="tenantId"/> 参数值不应该是有意义的
-    /// （它将如预期那样为 null，但不表示具有 null 租户 Id 的租户）。
+    /// （它将如预期那样为 null，但不表示具有 null 租户唯一标识的租户）。
     /// </summary>
     /// <param name="tenantId">
-    /// 如果此方法返回 true，则设置的租户 Id。
+    /// 如果此方法返回 true，则设置的租户唯一标识。
     /// </param>
     bool IsMultiTenant(out Guid? tenantId);
 }

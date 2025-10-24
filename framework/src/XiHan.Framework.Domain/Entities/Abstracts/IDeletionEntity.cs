@@ -47,7 +47,7 @@ public interface IDeletionEntity<TKey> : IDeletionEntity
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 删除者Id
+    /// 删除者唯一标识
     /// </summary>
     TKey? DeleterId { get; set; }
 

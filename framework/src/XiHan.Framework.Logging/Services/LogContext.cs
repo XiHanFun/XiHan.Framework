@@ -24,7 +24,7 @@ public class LogContext : ILogContext
     private readonly ConcurrentDictionary<string, object> _properties = new();
 
     /// <summary>
-    /// 用户 Id
+    /// 用户唯一标识
     /// </summary>
     public string? UserId { get; set; }
 
@@ -34,22 +34,22 @@ public class LogContext : ILogContext
     public string? UserName { get; set; }
 
     /// <summary>
-    /// 租户 Id
+    /// 租户唯一标识
     /// </summary>
     public string? TenantId { get; set; }
 
     /// <summary>
-    /// 请求 Id
+    /// 请求唯一标识
     /// </summary>
     public string? RequestId { get; set; }
 
     /// <summary>
-    /// 跟踪 Id
+    /// 跟踪唯一标识
     /// </summary>
     public string? TraceId { get; set; }
 
     /// <summary>
-    /// 会话 Id
+    /// 会话唯一标识
     /// </summary>
     public string? SessionId { get; set; }
 

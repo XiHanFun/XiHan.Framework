@@ -20,7 +20,7 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Models;
 public class JobInstance
 {
     /// <summary>
-    /// 实例ID（唯一标识）
+    /// 实例唯一标识（唯一标识）
     /// </summary>
     public string InstanceId { get; set; } = Guid.NewGuid().ToString("N");
 
@@ -90,7 +90,7 @@ public class JobInstance
     public string? ExecutionNode { get; set; }
 
     /// <summary>
-    /// 追踪ID
+    /// 追踪唯一标识
     /// </summary>
     public string? TraceId { get; set; }
 }

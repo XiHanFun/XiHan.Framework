@@ -15,14 +15,14 @@
 namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 
 /// <summary>
-/// 雪花漂移算法ID生成器
+/// 雪花漂移算法唯一标识生成器
 /// 用于生成高性能、有序、分布式的长整型唯一标识符(Id)
-/// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息ID等
+/// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息唯一标识等
 /// 主要特点：
-/// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个Id，无需数据库访问。
+/// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个唯一标识，无需数据库访问。
 /// 有序性(Ordered)：ID中包含时间戳，天然有序，便于索引和分区。
-/// 分布式(Distributed)：通过工作机器ID和数据中心ID区分不同节点，避免冲突。
-/// 信息丰富(Informative)：可从ID中提取生成时间、工作机器Id、数据中心ID和序列号。
+/// 分布式(Distributed)：通过工作机器唯一标识和数据中心唯一标识区分不同节点，避免冲突。
+/// 信息丰富(Informative)：可从唯一标识中提取生成时间、工作机器唯一标识、数据中心唯一标识和序列号。
 /// 算法可选(Versatile)：支持经典雪花算法和雪花漂移算法，满足不同场景需求。
 /// </summary>
 public class SnowflakeIdGenerator : IDistributedIdGenerator
@@ -33,7 +33,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     // 生成器类型
     private readonly SnowflakeIdTypes _snowflakeIdTypes;
 
-    // 数据中心ID位数
+    // 数据中心唯一标识位数
     private readonly byte _dataCenterIdBitLength;
 
     // 机器码位长
@@ -45,10 +45,10 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     // 时间戳位长
     private readonly byte _timestampBitLength;
 
-    // 存储数据中心Id
+    // 存储数据中心唯一标识
     private readonly long _dataCenterId;
 
-    // 存储工作进程Id
+    // 存储工作进程唯一标识
     private readonly long _workerId;
 
     // 机器码左移位数
@@ -156,9 +156,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个Id
+    /// 获取下一个唯一标识
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     public long NextId()
     {
         lock (_lock)
@@ -168,9 +168,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 获取下一个Id(字符串形式)
+    /// 获取下一个唯一标识(字符串形式)
     /// </summary>
-    /// <returns>生成的ID字符串</returns>
+    /// <returns>生成的唯一标识字符串</returns>
     public string NextIdString()
     {
         var id = NextId().ToString();
@@ -181,7 +181,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
             id = _options.IdPrefix + id;
         }
 
-        // 如果设置了IdLength且不为0
+        // 如果设置了唯一标识Length且不为0
         if (_options.IdLength > 0)
         {
             // 如果实际长度大于指定长度，截断
@@ -201,7 +201,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取时间戳
+    /// 从唯一标识中提取时间戳
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
@@ -214,17 +214,17 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取工作机器Id
+    /// 从唯一标识中提取工作机器唯一标识
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>工作机器Id</returns>
+    /// <returns>工作机器唯一标识</returns>
     public int ExtractWorkerId(long id)
     {
         return (int)((id >> _workerIdShift) & ~(-1L << _workerIdBitLength));
     }
 
     /// <summary>
-    /// 从ID中提取序列号
+    /// 从唯一标识中提取序列号
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>序列号</returns>
@@ -234,10 +234,10 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 从ID中提取数据中心Id
+    /// 从唯一标识中提取数据中心唯一标识
     /// </summary>
     /// <param name="id">Id</param>
-    /// <returns>数据中心Id</returns>
+    /// <returns>数据中心唯一标识</returns>
     public int ExtractDataCenterId(long id)
     {
         return (int)((id >> _dataCenterIdShift) & ~(-1L << _dataCenterIdBitLength));
@@ -274,15 +274,15 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取Id
+    /// 批量获取唯一标识
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
     public long[] NextIds(int count)
     {
         if (count <= 0)
         {
-            throw new ArgumentException("批量生成ID的数量必须大于0");
+            throw new ArgumentException("批量生成唯一标识的数量必须大于0");
         }
 
         var ids = new long[count];
@@ -294,15 +294,15 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 批量获取Id(字符串形式)
+    /// 批量获取唯一标识(字符串形式)
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID字符串数组</returns>
     public string[] NextIdStrings(int count)
     {
         if (count <= 0)
         {
-            throw new ArgumentException("批量生成ID的数量必须大于0");
+            throw new ArgumentException("批量生成唯一标识的数量必须大于0");
         }
 
         var idStrings = new string[count];
@@ -314,27 +314,27 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步获取下一个Id
+    /// 异步获取下一个唯一标识
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     public Task<long> NextIdAsync()
     {
         return Task.FromResult(NextId());
     }
 
     /// <summary>
-    /// 异步获取下一个Id(字符串形式)
+    /// 异步获取下一个唯一标识(字符串形式)
     /// </summary>
-    /// <returns>生成的ID字符串</returns>
+    /// <returns>生成的唯一标识字符串</returns>
     public Task<string> NextIdStringAsync()
     {
         return Task.FromResult(NextIdString());
     }
 
     /// <summary>
-    /// 异步批量获取Id
+    /// 异步批量获取唯一标识
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
     public Task<long[]> NextIdsAsync(int count)
     {
@@ -342,9 +342,9 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     }
 
     /// <summary>
-    /// 异步批量获取Id(字符串形式)
+    /// 异步批量获取唯一标识(字符串形式)
     /// </summary>
-    /// <param name="count">需要获取的ID数量</param>
+    /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID字符串数组</returns>
     public Task<string[]> NextIdStringsAsync(int count)
     {
@@ -388,7 +388,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 雪花漂移算法
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     private long NextSnowflakeId()
     {
         var currentTimestamp = GetCurrentTimestamp();
@@ -441,7 +441,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 记录最后时间戳
         _lastTimestamp = currentTimestamp;
 
-        // 生成Id
+        // 生成唯一标识
         var result = (((currentTimestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
                     (_dataCenterId << _dataCenterIdShift) |
                     (_workerId << _workerIdShift) |
@@ -453,7 +453,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// 处理时钟回拨情况
     /// </summary>
     /// <param name="currentTimestamp">当前时间戳</param>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     private long HandleClockBackwards(long currentTimestamp)
     {
         // 计算回拨的时间
@@ -485,7 +485,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// 处理序列号溢出情况
     /// </summary>
     /// <param name="currentTimestamp">当前时间戳</param>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     private long HandleSequenceOverflow(long currentTimestamp)
     {
         // 如果开启了循环序列
@@ -503,7 +503,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 记录最后时间戳
         _lastTimestamp = currentTimestamp;
 
-        // 生成Id
+        // 生成唯一标识
         return (((currentTimestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
                (_dataCenterId << _dataCenterIdShift) |
                (_workerId << _workerIdShift) |
@@ -513,7 +513,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
     /// <summary>
     /// 经典雪花算法
     /// </summary>
-    /// <returns>生成的Id</returns>
+    /// <returns>生成的唯一标识</returns>
     private long NextClassicId()
     {
         // 获取当前时间戳
@@ -522,7 +522,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 如果当前时间小于上次时间戳，说明系统时钟回拨
         if (timestamp < _lastTimestamp)
         {
-            throw new Exception($"时钟回拨，拒绝生成Id: {_lastTimestamp - timestamp}ms");
+            throw new Exception($"时钟回拨，拒绝生成唯一标识: {_lastTimestamp - timestamp}ms");
         }
 
         // 如果是同一时间戳，则增加序列号
@@ -545,7 +545,7 @@ public class SnowflakeIdGenerator : IDistributedIdGenerator
         // 记录最后时间戳
         _lastTimestamp = timestamp;
 
-        // 生成Id
+        // 生成唯一标识
         return (((timestamp - _baseTimestamp) & _timestampMask) << _timestampShift) |
                (_dataCenterId << _dataCenterIdShift) |
                (_workerId << _workerIdShift) |

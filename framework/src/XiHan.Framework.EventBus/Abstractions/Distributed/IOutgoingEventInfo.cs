@@ -26,7 +26,7 @@ public interface IOutgoingEventInfo : IHasExtraProperties
     /// <summary>
     /// 获取事件的唯一标识符
     /// </summary>
-    /// <value>事件的全局唯一 Id</value>
+    /// <value>事件的全局唯一唯一标识</value>
     Guid Id { get; }
 
     /// <summary>

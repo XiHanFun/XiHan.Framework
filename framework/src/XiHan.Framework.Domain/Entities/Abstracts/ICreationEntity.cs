@@ -35,7 +35,7 @@ public interface ICreationEntity<TKey> : ICreationEntity
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 创建者Id
+    /// 创建者唯一标识
     /// </summary>
     TKey? CreatorId { get; set; }
 

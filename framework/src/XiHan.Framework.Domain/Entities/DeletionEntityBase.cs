@@ -68,7 +68,7 @@ public abstract class DeletionEntityBase<TKey> : DeletionEntityBase, IDeletionEn
     }
 
     /// <summary>
-    /// 删除者Id
+    /// 删除者唯一标识
     /// </summary>
     public virtual TKey? DeleterId { get; set; }
 

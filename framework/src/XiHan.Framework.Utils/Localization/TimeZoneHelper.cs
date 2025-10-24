@@ -33,7 +33,7 @@ public static class TimeZoneHelper
     /// <summary>
     /// 获取时区信息
     /// </summary>
-    /// <param name="timeZoneId">时区Id</param>
+    /// <param name="timeZoneId">时区唯一标识</param>
     /// <returns>时区信息</returns>
     public static TimeZoneInfo GetTimeZone(string timeZoneId)
     {
@@ -87,7 +87,7 @@ public static class TimeZoneHelper
     /// <summary>
     /// 检查时区是否存在
     /// </summary>
-    /// <param name="timeZoneId">时区Id</param>
+    /// <param name="timeZoneId">时区唯一标识</param>
     /// <returns>是否存在</returns>
     public static bool IsTimeZoneExists(string timeZoneId)
     {

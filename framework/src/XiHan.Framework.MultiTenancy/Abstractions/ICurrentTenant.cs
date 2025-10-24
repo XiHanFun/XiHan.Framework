@@ -31,7 +31,7 @@ public interface ICurrentTenant
     /// <summary>
     /// 获取当前租户的唯一标识符
     /// </summary>
-    /// <value>租户的全局唯一 Id，如果当前没有租户则为 null</value>
+    /// <value>租户的全局唯一唯一标识，如果当前没有租户则为 null</value>
     Guid? Id { get; }
 
     /// <summary>
@@ -45,7 +45,7 @@ public interface ICurrentTenant
     /// 创建一个作用域，在该作用域内临时切换到指定的租户上下文
     /// 当返回的 IDisposable 对象被释放时，租户上下文将恢复到之前的状态
     /// </summary>
-    /// <param name="id">要切换到的租户 Id，传入 null 表示切换到无租户状态</param>
+    /// <param name="id">要切换到的租户唯一标识，传入 null 表示切换到无租户状态</param>
     /// <param name="name">租户名称，可选参数</param>
     /// <returns>用于恢复租户上下文的释放器对象</returns>
     /// <remarks>

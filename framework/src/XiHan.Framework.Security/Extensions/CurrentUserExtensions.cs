@@ -57,7 +57,7 @@ public static class CurrentUserExtensions
     /// <returns></returns>
     public static Guid GetId(this ICurrentUser currentUser)
     {
-        Debug.Assert(currentUser.Id is not null, "当前用户Id不为空");
+        Debug.Assert(currentUser.Id is not null, "当前用户唯一标识不为空");
 
         return currentUser.Id!.Value;
     }

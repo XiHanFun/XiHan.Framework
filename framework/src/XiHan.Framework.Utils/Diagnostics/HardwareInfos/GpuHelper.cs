@@ -314,7 +314,7 @@ public record GpuInfo
     public string Vendor { get; set; } = string.Empty;
 
     /// <summary>
-    /// 设备Id
+    /// 设备唯一标识
     /// </summary>
     public string DeviceId { get; set; } = string.Empty;
 

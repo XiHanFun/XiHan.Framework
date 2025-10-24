@@ -45,7 +45,7 @@ public class AgentOptions
     public bool EnableMemory { get; set; } = true;
 
     /// <summary>
-    /// 技能ID列表
+    /// 技能唯一标识列表
     /// </summary>
     public List<string> SkillIds { get; set; } = [];
 }

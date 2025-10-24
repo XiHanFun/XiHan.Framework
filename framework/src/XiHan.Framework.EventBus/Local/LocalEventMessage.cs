@@ -33,7 +33,7 @@ public class LocalEventMessage
     }
 
     /// <summary>
-    /// 消息Id
+    /// 消息唯一标识
     /// </summary>
     public Guid MessageId { get; }
 

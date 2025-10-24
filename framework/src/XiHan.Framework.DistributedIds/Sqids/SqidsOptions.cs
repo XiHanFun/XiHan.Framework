@@ -85,7 +85,7 @@ public class SqidsOptions
     public string Alphabet { get; set; } = DefaultAlphabet;
 
     /// <summary>
-    /// 生成ID的最小长度
+    /// 生成唯一标识的最小长度
     /// </summary>
     public int MinLength { get; set; } = DefaultMinLength;
 

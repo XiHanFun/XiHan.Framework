@@ -94,7 +94,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     public static bool EnableObsoleteDbContextCreationWarning { get; } = false;
 
     /// <summary>
-    /// 工作单元Id
+    /// 工作单元唯一标识
     /// </summary>
     public Guid Id { get; } = Guid.NewGuid();
 

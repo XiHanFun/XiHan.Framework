@@ -115,10 +115,10 @@ public static class HttpServiceExtensions
     }
 
     /// <summary>
-    /// 添加关联Id
+    /// 添加关联唯一标识
     /// </summary>
     /// <param name="options">请求选项</param>
-    /// <param name="correlationId">关联Id</param>
+    /// <param name="correlationId">关联唯一标识</param>
     /// <returns></returns>
     public static XiHanHttpRequestOptions WithCorrelationId(this XiHanHttpRequestOptions options, string? correlationId = null)
     {

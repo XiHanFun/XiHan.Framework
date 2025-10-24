@@ -116,7 +116,7 @@ public class DynamicServiceConfig : IDynamicServiceConfig
     /// 此方法是线程安全的，调整后会立即生效并触发 <see cref="ConfigChanged"/> 事件
     /// </summary>
     /// <param name="idleDelayMilliseconds">新的空闲延迟时间（毫秒），不能为负数</param>
-    /// <exception cref="ArgumentException">当 idleDelayMilliseconds 小于 0 时抛出</exception>
+    /// <exception cref="ArgumentException">当唯一标识leDelayMilliseconds 小于 0 时抛出</exception>
     /// <remarks>
     /// 空闲延迟时间影响服务在无任务或达到最大并发时的等待间隔，
     /// 较小的值会提高响应速度但增加 CPU 消耗，较大的值则相反

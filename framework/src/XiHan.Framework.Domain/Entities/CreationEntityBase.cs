@@ -50,7 +50,7 @@ public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEn
     }
 
     /// <summary>
-    /// 创建者Id
+    /// 创建者唯一标识
     /// </summary>
     public virtual TKey? CreatorId { get; set; }
 

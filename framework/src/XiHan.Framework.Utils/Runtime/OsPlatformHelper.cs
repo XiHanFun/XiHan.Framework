@@ -322,7 +322,7 @@ public record RuntimeInfo
     public TimeSpan ProcessUptime { get; set; }
 
     /// <summary>
-    /// 进程Id
+    /// 进程唯一标识
     /// </summary>
     public int ProcessId { get; set; }
 

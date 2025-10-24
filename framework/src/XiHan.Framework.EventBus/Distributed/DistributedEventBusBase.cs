@@ -299,11 +299,11 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
     /// <summary>
     /// 添加到入站事件盒
     /// </summary>
-    /// <param name="messageId">消息 ID</param>
+    /// <param name="messageId">消息唯一标识</param>
     /// <param name="eventName">事件名称</param>
     /// <param name="eventType">事件类型</param>
     /// <param name="eventData">事件数据</param>
-    /// <param name="correlationId">关联 ID</param>
+    /// <param name="correlationId">关联唯一标识</param>
     /// <returns>是否添加到入站事件盒</returns>
     protected async Task<bool> AddToInboxAsync(
         string? messageId,
