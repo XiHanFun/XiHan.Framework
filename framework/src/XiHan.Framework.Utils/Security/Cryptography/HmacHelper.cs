@@ -21,8 +21,8 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// HMAC 辅助类
 /// </summary>
 /// <remarks>
-/// 是基于哈希函数的消息认证码，用于验证消息的完整性和真实性。
-/// HMAC 算法结合了一个密钥和一个哈希函数，生成消息的认证码(MAC)，从而提供一种安全机制来防止消息被篡改。
+/// 是基于哈希函数的消息认证码，用于验证消息的完整性和真实性
+/// HMAC 算法结合了一个密钥和一个哈希函数，生成消息的认证码(MAC)，从而提供一种安全机制来防止消息被篡改
 /// </remarks>
 public static class HmacHelper
 {

@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// Dsa 签名算法辅助类
 /// </summary>
 /// <remarks>
-/// 是一种基于离散对数问题的数字签名算法，主要用于签名和验证签名，而非加密数据。
+/// 是一种基于离散对数问题的数字签名算法，主要用于签名和验证签名，而非加密数据
 /// </remarks>
 public static class DsaHelper
 {

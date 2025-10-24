@@ -20,7 +20,7 @@ namespace XiHan.Framework.Utils.Threading;
 public static class AsyncHelper
 {
     /// <summary>
-    /// 如果给定类型是 Task，则返回 void。如果给定类型是 Task{T}，则返回 T。否则返回给定类型。
+    /// 如果给定类型是 Task，则返回 void。如果给定类型是 Task{T}，则返回 T。否则返回给定类型
     /// </summary>
     public static Type UnwrapTask(Type type)
     {

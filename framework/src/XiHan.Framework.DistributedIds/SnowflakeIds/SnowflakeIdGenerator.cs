@@ -19,11 +19,11 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 /// 用于生成高性能、有序、分布式的长整型唯一标识符(Id)
 /// 通常用于分布式系统、微服务架构中需要全局唯一且包含时间顺序信息的场景，如订单号、消息唯一标识等
 /// 主要特点：
-/// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个唯一标识，无需数据库访问。
-/// 有序性(Ordered)：ID中包含时间戳，天然有序，便于索引和分区。
-/// 分布式(Distributed)：通过工作机器唯一标识和数据中心唯一标识区分不同节点，避免冲突。
-/// 信息丰富(Informative)：可从唯一标识中提取生成时间、工作机器唯一标识、数据中心唯一标识和序列号。
-/// 算法可选(Versatile)：支持经典雪花算法和雪花漂移算法，满足不同场景需求。
+/// 高性能(High-Performance)：纯内存操作，每秒可生成数百万个唯一标识，无需数据库访问
+/// 有序性(Ordered)：ID中包含时间戳，天然有序，便于索引和分区
+/// 分布式(Distributed)：通过工作机器唯一标识和数据中心唯一标识区分不同节点，避免冲突
+/// 信息丰富(Informative)：可从唯一标识中提取生成时间、工作机器唯一标识、数据中心唯一标识和序列号
+/// 算法可选(Versatile)：支持经典雪花算法和雪花漂移算法，满足不同场景需求
 /// </summary>
 public class SnowflakeIdGenerator : IDistributedIdGenerator
 {

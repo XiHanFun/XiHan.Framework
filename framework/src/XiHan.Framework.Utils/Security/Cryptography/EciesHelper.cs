@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// Ecies 椭圆曲线加密解密
 /// </summary>
 /// <remarks>
-/// 结合了 ECC 的密钥交换和对称加密算法(如 AES)来实现安全的加密通信。
+/// 结合了 ECC 的密钥交换和对称加密算法(如 AES)来实现安全的加密通信
 /// </remarks>
 public static class EciesHelper
 {
