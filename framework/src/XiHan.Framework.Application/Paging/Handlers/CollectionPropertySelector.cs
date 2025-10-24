@@ -56,7 +56,7 @@ public static class CollectionPropertySelector<T>
     /// <param name="source">原始数据源</param>
     /// <param name="selectCondition">选择条件</param>
     /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where(IEnumerable<T> source, SelectConditionDto<T> selectCondition)
+    public static IEnumerable<T> Where(IEnumerable<T> source, SelectCondition<T> selectCondition)
     {
         var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate.Compile());
@@ -85,7 +85,7 @@ public static class CollectionPropertySelector<T>
     /// <param name="source">原始数据源</param>
     /// <param name="selectConditions">多选择条件</param>
     /// <returns>排序后的数据</returns>
-    public static IEnumerable<T> Where(IEnumerable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
+    public static IEnumerable<T> Where(IEnumerable<T> source, IEnumerable<SelectCondition<T>> selectConditions)
     {
         foreach (var selectCondition in selectConditions)
         {
@@ -132,7 +132,7 @@ public static class CollectionPropertySelector<T>
     /// <param name="source">原始数据源</param>
     /// <param name="selectCondition">选择条件</param>
     /// <returns>选择后的数据</returns>
-    public static IQueryable<T> Where(IQueryable<T> source, SelectConditionDto<T> selectCondition)
+    public static IQueryable<T> Where(IQueryable<T> source, SelectCondition<T> selectCondition)
     {
         var predicate = SelectConditionParser<T>.GetSelectConditionParser(selectCondition);
         return source.Where(predicate);
@@ -161,7 +161,7 @@ public static class CollectionPropertySelector<T>
     /// <param name="source">原始数据源</param>
     /// <param name="selectConditions">多选择条件</param>
     /// <returns>排序后的数据</returns>
-    public static IQueryable<T> Where(IQueryable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
+    public static IQueryable<T> Where(IQueryable<T> source, IEnumerable<SelectCondition<T>> selectConditions)
     {
         foreach (var selectCondition in selectConditions)
         {

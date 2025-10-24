@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageResponseDto
+// FileName:PageResponse
 // Guid:373148b9-8be2-41a0-b971-82ef6750800d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,89 +15,56 @@
 namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
-/// 通用分页响应基类
+/// 分页响应
 /// </summary>
-public class PageResponse
+/// <typeparam name="T">数据类型</typeparam>
+public class PageResponse<T>
 {
     /// <summary>
     /// 构造函数
     /// </summary>
     public PageResponse()
     {
+        Items = [];
+        PageData = new PageData();
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="pageData"></param>
-    public PageResponse(PageData pageData)
+    /// <param name="items">数据项</param>
+    /// <param name="pageIndex">页码</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="totalCount">总记录数</param>
+    public PageResponse(IReadOnlyList<T> items, int pageIndex, int pageSize, int totalCount)
     {
+        Items = items;
+        PageData = new PageData(pageIndex, pageSize, totalCount);
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="items">数据项</param>
+    /// <param name="pageData">分页元数据</param>
+    public PageResponse(IReadOnlyList<T> items, PageData pageData)
+    {
+        Items = items;
         PageData = pageData;
     }
 
     /// <summary>
-    /// 分页数据
+    /// 数据项列表
     /// </summary>
-    public PageData PageData { get; set; } = new();
-}
-
-/// <summary>
-/// 通用分页响应泛型基类
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public class PageResponseDto<T> : PageResponse
-    where T : class, new()
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public PageResponseDto()
-    {
-    }
+    public IReadOnlyList<T> Items { get; set; }
 
     /// <summary>
-    /// 构造函数
+    /// 分页元数据
     /// </summary>
-    /// <param name="pageData"></param>
-    public PageResponseDto(PageData pageData)
-        : base(pageData)
-    {
-        ResponseData = null;
-        ExtraData = null;
-    }
+    public PageData PageData { get; set; }
 
     /// <summary>
-    /// 构造函数
+    /// 扩展数据（可选）
     /// </summary>
-    /// <param name="pageData"></param>
-    /// <param name="responseData"></param>
-    public PageResponseDto(PageData pageData, IReadOnlyList<T>? responseData)
-        : base(pageData)
-    {
-        ResponseData = responseData;
-        ExtraData = null;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="pageData"></param>
-    /// <param name="responseData"></param>
-    /// <param name="extraData"></param>
-    public PageResponseDto(PageData pageData, IReadOnlyList<T>? responseData, object extraData)
-        : base(pageData)
-    {
-        ResponseData = responseData;
-        ExtraData = extraData;
-    }
-
-    /// <summary>
-    /// 数据列表(只读)
-    /// </summary>
-    public IReadOnlyList<T>? ResponseData { get; set; }
-
-    /// <summary>
-    /// 扩展数据(只读)
-    /// </summary>
-    public object? ExtraData { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
 }

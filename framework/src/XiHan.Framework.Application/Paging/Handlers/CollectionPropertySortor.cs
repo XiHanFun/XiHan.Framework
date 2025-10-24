@@ -48,8 +48,8 @@ public static class CollectionPropertySortor<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, SortCondition sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return OrderBy(source, sortField, sortDirection);
     }
 
@@ -59,10 +59,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, SortConditionDto<T> sortCondition)
+    public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, SortCondition<T> sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return OrderBy(source, sortField, sortDirection);
     }
 
@@ -90,8 +90,8 @@ public static class CollectionPropertySortor<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, SortCondition sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return ThenBy(source, sortField, sortDirection);
     }
 
@@ -101,10 +101,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, SortConditionDto<T> sortCondition)
+    public static IOrderedEnumerable<T> ThenBy(IOrderedEnumerable<T> source, SortCondition<T> sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return ThenBy(source, sortField, sortDirection);
     }
 
@@ -117,7 +117,7 @@ public static class CollectionPropertySortor<T>
     public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, IEnumerable<SortCondition> sortConditions)
     {
         // 按优先级升序排列排序条件
-        sortConditions = sortConditions.OrderBy(x => x.SortPriority);
+        sortConditions = sortConditions.OrderBy(x => x.Priority);
 
         // 按优先级依次应用排序
         var firstCondition = sortConditions.First();
@@ -132,10 +132,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortConditions">多排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
+    public static IOrderedEnumerable<T> OrderBy(IEnumerable<T> source, IEnumerable<SortCondition<T>> sortConditions)
     {
         // 按优先级升序排列排序条件
-        sortConditions = sortConditions.OrderBy(x => x.SortPriority);
+        sortConditions = sortConditions.OrderBy(x => x.Priority);
 
         // 按优先级依次应用排序
         var firstCondition = sortConditions.First();
@@ -172,8 +172,8 @@ public static class CollectionPropertySortor<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, SortCondition sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return OrderBy(source, sortField, sortDirection);
     }
 
@@ -183,10 +183,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, SortConditionDto<T> sortCondition)
+    public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, SortCondition<T> sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return OrderBy(source, sortField, sortDirection);
     }
 
@@ -214,8 +214,8 @@ public static class CollectionPropertySortor<T>
     /// <returns>排序后的数据</returns>
     public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, SortCondition sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return ThenBy(source, sortField, sortDirection);
     }
 
@@ -225,10 +225,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortCondition">排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, SortConditionDto<T> sortCondition)
+    public static IOrderedQueryable<T> ThenBy(IOrderedQueryable<T> source, SortCondition<T> sortCondition)
     {
-        var sortField = sortCondition.SortField;
-        var sortDirection = sortCondition.SortDirection;
+        var sortField = sortCondition.Field;
+        var sortDirection = sortCondition.Direction;
         return ThenBy(source, sortField, sortDirection);
     }
 
@@ -241,7 +241,7 @@ public static class CollectionPropertySortor<T>
     public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, IEnumerable<SortCondition> sortConditions)
     {
         // 按优先级升序排列排序条件
-        sortConditions = sortConditions.OrderBy(x => x.SortPriority);
+        sortConditions = sortConditions.OrderBy(x => x.Priority);
 
         // 按优先级依次应用排序
         var firstCondition = sortConditions.First();
@@ -256,10 +256,10 @@ public static class CollectionPropertySortor<T>
     /// <param name="source">原始数据源</param>
     /// <param name="sortConditions">多排序条件</param>
     /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
+    public static IOrderedQueryable<T> OrderBy(IQueryable<T> source, IEnumerable<SortCondition<T>> sortConditions)
     {
         // 按优先级升序排列排序条件
-        sortConditions = sortConditions.OrderBy(x => x.SortPriority);
+        sortConditions = sortConditions.OrderBy(x => x.Priority);
 
         // 按优先级依次应用排序
         var firstCondition = sortConditions.First();

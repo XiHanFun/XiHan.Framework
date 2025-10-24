@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Paging.Dtos;
-using XiHan.Framework.Application.Paging.Enums;
 using XiHan.Framework.Application.Paging.Handlers;
 
 namespace XiHan.Framework.Application.Paging;
@@ -23,644 +22,259 @@ namespace XiHan.Framework.Application.Paging;
 /// </summary>
 public static class PageExtensions
 {
-    #region IEnumerable
-
-    #region 选择
+    #region IQueryable 扩展
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行选择
+    /// 应用过滤条件
     /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectField">查询字段</param>
-    /// <param name="criteriaValue">查询值</param>
-    /// <param name="selectCompare">查询比较</param>
-    /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, string selectField, object? criteriaValue, SelectCompare selectCompare = SelectCompare.Equal)
+    public static IQueryable<T> WhereIf<T>(this IQueryable<T> source, bool condition, SelectCondition filter)
     {
-        return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
+        return condition ? source.Where(filter) : source;
     }
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行选择
+    /// 应用过滤条件
     /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectCondition">查询条件</param>
-    /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectCondition selectCondition)
+    public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectCondition filter)
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition);
+        return CollectionPropertySelector<T>.Where(source, filter);
     }
 
     /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行选择
+    /// 应用多个过滤条件
     /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectCondition">查询条件</param>
-    /// <returns>选择后的数据</returns>
-    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectConditionDto<T> selectCondition)
-        where T : class
+    public static IQueryable<T> Where<T>(this IQueryable<T> source, IEnumerable<SelectCondition>? filters)
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行多条件选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectConditions">查询条件</param>
-    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
-    public static IEnumerable<T> WhereMultiple<T>(this IEnumerable<T> source, IEnumerable<SelectCondition> selectConditions)
-    {
-        return CollectionPropertySelector<T>.Where(source, selectConditions);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行多条件选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectConditions">查询条件</param>
-    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
-    public static IEnumerable<T> WhereMultiple<T>(this IEnumerable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
-        where T : class
-    {
-        return CollectionPropertySelector<T>.Where(source, selectConditions);
-    }
-
-    #endregion 选择
-
-    #region 排序
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortField">排序字段</param>
-    /// <param name="sortDirection">排序方向</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, string sortField, SortDirection sortDirection)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortField, sortDirection);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortCondition sortCondition)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortConditionDto<T> sortCondition)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortField">排序字段</param>
-    /// <param name="sortDirection">排序方向</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, string sortField, SortDirection sortDirection)
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortField, sortDirection);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortCondition sortCondition)
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> ThenBy<T>(this IOrderedEnumerable<T> source, SortConditionDto<T> sortCondition)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行多条件排序
-    /// </summary>
-    /// <typeparam name="T">集合中的元素类型</typeparam>
-    /// <param name="source">要排序的集合</param>
-    /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortCondition> sortConditions)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IEnumerable{T}"/> 进行多条件排序
-    /// </summary>
-    /// <typeparam name="T">集合中的元素类型</typeparam>
-    /// <param name="source">要排序的集合</param>
-    /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedEnumerable<T> OrderByMultiple<T>(this IEnumerable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
-    }
-
-    #endregion 排序
-
-    #region 分页
-
-    /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// </summary>
-    /// <typeparam name="T">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的 List 数据</returns>
-    public static List<T> ToPageList<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
-        where T : class, new()
-    {
-        return [.. entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize)];
-    }
-
-    /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// </summary>
-    /// <typeparam name="T">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的 List 数据</returns>
-    public static List<T> ToPageList<T>(this IEnumerable<T> entities, PageInfo pageInfo, int defaultFirstIndex = 1)
-        where T : class, new()
-    {
-        return [.. entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)];
-    }
-
-    /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// 只返回分页信息
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <returns>分页数据</returns>
-    public static PageData ToPageData<T>(this IEnumerable<T> entities, int currentIndex, int pageSize)
-        where T : class, new()
-    {
-        var pageData = new PageData(new PageInfo(currentIndex, pageSize), entities.Count());
-        return pageData;
-    }
-
-    /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// 只返回分页信息
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <returns>分页数据</returns>
-    public static PageData ToPageData<T>(this IEnumerable<T> entities, PageInfo pageInfo)
-        where T : class, new()
-    {
-        var pageData = new PageData(pageInfo, entities.Count());
-        return pageData;
-    }
-
-    /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// 返回分页信息和数据
-    /// </summary>
-    /// <typeparam name="T">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="isOnlyPage">是否只返回分页信息</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
-        where T : class, new()
-    {
-        var enumerable = entities as T[] ?? [.. entities];
-        var pageDta = enumerable.ToPageData(currentIndex, pageSize);
-
-        if (isOnlyPage)
+        if (filters == null)
         {
-            return new PageResponseDto<T>(pageDta);
+            return source;
         }
 
-        var responseData = enumerable.ToPageList(currentIndex, pageSize);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
-        return pageResponse;
+        return CollectionPropertySelector<T>.Where(source, filters);
     }
 
     /// <summary>
-    /// 获取 IEnumerable 分页数据
-    /// 返回分页信息和数据
+    /// 应用排序条件
     /// </summary>
-    /// <typeparam name="T">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <param name="isOnlyPage">是否只返回分页信息</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> entities, PageInfo pageInfo, bool isOnlyPage = false)
-        where T : class, new()
+    public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortCondition sort)
     {
-        var enumerable = entities as T[] ?? [.. entities];
-        var pageDta = enumerable.ToPageData(pageInfo);
+        return CollectionPropertySortor<T>.OrderBy(source, sort);
+    }
 
-        if (isOnlyPage)
+    /// <summary>
+    /// 应用多个排序条件
+    /// </summary>
+    public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, IEnumerable<SortCondition>? sorts)
+    {
+        if (sorts == null || !sorts.Any())
         {
-            return new PageResponseDto<T>(pageDta);
+            return source.OrderBy(x => 1); // 默认排序
         }
 
-        var responseData = enumerable.ToPageList(pageInfo);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
-        return pageResponse;
+        return CollectionPropertySortor<T>.OrderBy(source, sorts);
     }
 
     /// <summary>
-    /// 获取 IEnumerable 分页数据
+    /// 应用分页查询
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source">数据源</param>
-    /// <param name="queryDto">分页查询</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IEnumerable<T> source, PageQuery queryDto)
-        where T : class, new()
+    public static async Task<PageResponse<T>> ToPageResponseAsync<T>(this IQueryable<T> source, PageQuery query, CancellationToken cancellationToken = default)
     {
-        var isQueryAll = queryDto.IsQueryAll ?? false;
-        var isOnlyPage = queryDto.IsOnlyPage ?? false;
-        var pageInfo = queryDto.PageInfo ?? new PageInfo();
-
-        // 处理查询所有数据的情况
-        if (isQueryAll)
+        // 应用过滤
+        if (query.Filters != null && query.Filters.Count != 0)
         {
-            return source.ToPageResponse(pageInfo, isOnlyPage);
+            source = source.Where(query.Filters);
         }
 
-        // 处理选择条件
-        if (queryDto.SelectConditions is not null)
+        // 应用排序
+        if (query.Sorts != null && query.Sorts.Count != 0)
         {
-            source = source.WhereMultiple(queryDto.SelectConditions);
+            source = source.OrderBy(query.Sorts);
         }
 
-        // 处理排序条件
-        if (queryDto.SortConditions is not null)
+        // 禁用分页时返回所有数据
+        if (query.DisablePaging)
         {
-            source = source.OrderByMultiple(queryDto.SortConditions);
+            var allItems = await Task.Run(() => source.ToList(), cancellationToken);
+            return new PageResponse<T>(allItems, 1, allItems.Count, allItems.Count);
         }
 
-        return source.ToPageResponse(pageInfo, isOnlyPage);
-    }
+        // 计算总数
+        var totalCount = await Task.Run(() => source.Count(), cancellationToken);
 
-    #endregion 分页
+        // 应用分页
+        var items = await Task.Run(() =>
+            source.Skip(query.ToPageInfo().Skip).Take(query.ToPageInfo().Take).ToList(),
+            cancellationToken);
 
-    #endregion IEnumerable
-
-    #region IQueryable
-
-    #region 选择
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectField">查询字段</param>
-    /// <param name="criteriaValue">查询值</param>
-    /// <param name="selectCompare">查询比较</param>
-    /// <returns>选择后的数据</returns>
-    public static IQueryable<T> Where<T>(this IQueryable<T> source, string selectField, object? criteriaValue, SelectCompare selectCompare = SelectCompare.Equal)
-    {
-        return CollectionPropertySelector<T>.Where(source, selectField, criteriaValue, selectCompare);
+        return new PageResponse<T>(items, query.PageIndex, query.PageSize, totalCount);
     }
 
     /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行选择
+    /// 应用分页查询（同步版本）
     /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectCondition">查询条件</param>
-    /// <returns>选择后的数据</returns>
-    public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectCondition selectCondition)
+    public static PageResponse<T> ToPageResponse<T>(this IQueryable<T> source, PageQuery query)
     {
-        return CollectionPropertySelector<T>.Where(source, selectCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectCondition">查询条件</param>
-    /// <returns>选择后的数据</returns>
-    public static IQueryable<T> Where<T>(this IQueryable<T> source, SelectConditionDto<T> selectCondition)
-        where T : class
-    {
-        return CollectionPropertySelector<T>.Where(source, selectCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行多条件选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectConditions">查询条件</param>
-    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
-    public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectCondition> selectConditions)
-    {
-        return CollectionPropertySelector<T>.Where(source, selectConditions);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行多条件选择
-    /// </summary>
-    /// <param name="source">要应用选择的查询对象</param>
-    /// <param name="selectConditions">查询条件</param>
-    /// <returns>基于 <paramref name="selectConditions"/> 的选择或未选择的查询对象</returns>
-    public static IQueryable<T> WhereMultiple<T>(this IQueryable<T> source, IEnumerable<SelectConditionDto<T>> selectConditions)
-        where T : class
-    {
-        return CollectionPropertySelector<T>.Where(source, selectConditions);
-    }
-
-    #endregion 选择
-
-    #region 排序
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortField">排序字段</param>
-    /// <param name="sortDirection">排序方向</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, string sortField, SortDirection sortDirection)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortField, sortDirection);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortCondition sortCondition)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">原始数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, SortConditionDto<T> sortCondition)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">已排序的数据源</param>
-    /// <param name="sortField">排序字段</param>
-    /// <param name="sortDirection">排序方向</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, string sortField, SortDirection sortDirection)
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortField, sortDirection);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">已排序的数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, SortCondition sortCondition)
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行后续排序
-    /// </summary>
-    /// <typeparam name="T">集合元素类型</typeparam>
-    /// <param name="source">已排序的数据源</param>
-    /// <param name="sortCondition">排序条件</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> ThenBy<T>(this IOrderedQueryable<T> source, SortConditionDto<T> sortCondition)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.ThenBy(source, sortCondition);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行多条件排序
-    /// </summary>
-    /// <typeparam name="T">集合中的元素类型</typeparam>
-    /// <param name="source">要排序的集合</param>
-    /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortCondition> sortConditions)
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
-    }
-
-    /// <summary>
-    /// 对 <see cref="IQueryable{T}"/> 进行多条件排序
-    /// </summary>
-    /// <typeparam name="T">集合中的元素类型</typeparam>
-    /// <param name="source">要排序的集合</param>
-    /// <param name="sortConditions">排序条件集合</param>
-    /// <returns>排序后的数据</returns>
-    public static IOrderedQueryable<T> OrderByMultiple<T>(this IQueryable<T> source, IEnumerable<SortConditionDto<T>> sortConditions)
-        where T : class
-    {
-        return CollectionPropertySortor<T>.OrderBy(source, sortConditions);
-    }
-
-    #endregion 排序
-
-    #region 分页
-
-    /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    /// <returns>分页后的 List 数据</returns>
-    public static List<T> ToPageList<T>(this IQueryable<T> entities, int currentIndex, int pageSize, int defaultFirstIndex = 1)
-        where T : class, new()
-    {
-        return [.. entities.Skip((currentIndex - defaultFirstIndex) * pageSize).Take(pageSize)];
-    }
-
-    /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// </summary>
-    /// <typeparam name="T">数据源类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <param name="defaultFirstIndex">默认起始下标</param>
-    public static List<T> ToPageList<T>(this IQueryable<T> entities, PageInfo pageInfo, int defaultFirstIndex = 1)
-        where T : class, new()
-    {
-        return [.. entities.Skip((pageInfo.CurrentIndex - defaultFirstIndex) * pageInfo.PageSize).Take(pageInfo.PageSize)];
-    }
-
-    /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// 只返回分页信息
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <returns>分页数据</returns>
-    public static PageData ToPageData<T>(this IQueryable<T> entities, int currentIndex, int pageSize)
-        where T : class, new()
-    {
-        var pageData = new PageData(new PageInfo(currentIndex, pageSize), entities.Count());
-        return pageData;
-    }
-
-    /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// 只返回分页信息
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <returns>分页数据</returns>
-    public static PageData ToPageData<T>(this IQueryable<T> entities, PageInfo pageInfo)
-        where T : class, new()
-    {
-        var pageData = new PageData(pageInfo, entities.Count());
-        return pageData;
-    }
-
-    /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// 返回分页信息和数据
-    /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="currentIndex">当前页标</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="isOnlyPage">是否只返回分页信息</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> entities, int currentIndex, int pageSize, bool isOnlyPage = false)
-        where T : class, new()
-    {
-        var pageDta = entities.ToPageData(currentIndex, pageSize);
-
-        if (isOnlyPage)
+        // 应用过滤
+        if (query.Filters != null && query.Filters.Count != 0)
         {
-            return new PageResponseDto<T>(pageDta);
+            source = source.Where(query.Filters);
         }
 
-        var responseData = entities.ToPageList(currentIndex, pageSize);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
-        return pageResponse;
+        // 应用排序
+        if (query.Sorts != null && query.Sorts.Count != 0)
+        {
+            source = source.OrderBy(query.Sorts);
+        }
+
+        // 禁用分页时返回所有数据
+        if (query.DisablePaging)
+        {
+            var allItems = source.ToList();
+            return new PageResponse<T>(allItems, 1, allItems.Count, allItems.Count);
+        }
+
+        // 计算总数
+        var totalCount = source.Count();
+
+        // 应用分页
+        var items = source.Skip(query.ToPageInfo().Skip).Take(query.ToPageInfo().Take).ToList();
+
+        return new PageResponse<T>(items, query.PageIndex, query.PageSize, totalCount);
     }
 
     /// <summary>
-    /// 获取 IQueryable 分页数据
-    /// 返回分页信息和数据
+    /// 简单分页
     /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    /// <param name="entities">数据源</param>
-    /// <param name="pageInfo">分页信息</param>
-    /// <param name="isOnlyPage">是否只返回分页信息</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> entities, PageInfo pageInfo, bool isOnlyPage = false)
-        where T : class, new()
+    public static PageResponse<T> ToPageResponse<T>(this IQueryable<T> source, int pageIndex, int pageSize)
     {
-        var pageDta = entities.ToPageData(pageInfo);
+        var totalCount = source.Count();
+        var skip = (pageIndex - 1) * pageSize;
+        var items = source.Skip(skip).Take(pageSize).ToList();
+        return new PageResponse<T>(items, pageIndex, pageSize, totalCount);
+    }
 
-        if (isOnlyPage)
-        {
-            return new PageResponseDto<T>(pageDta);
-        }
+    #endregion
 
-        var responseData = entities.ToPageList(pageInfo);
-        var pageResponse = new PageResponseDto<T>(pageDta, responseData);
-        return pageResponse;
+    #region IEnumerable 扩展
+
+    /// <summary>
+    /// 应用过滤条件
+    /// </summary>
+    public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> source, bool condition, SelectCondition filter)
+    {
+        return condition ? source.Where(filter) : source;
     }
 
     /// <summary>
-    /// 获取 IQueryable 分页数据
+    /// 应用过滤条件
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source">数据源</param>
-    /// <param name="queryDto">分页查询</param>
-    /// <returns>分页后的分页信息和数据</returns>
-    public static PageResponseDto<T> ToPageResponse<T>(this IQueryable<T> source, PageQuery queryDto)
-        where T : class, new()
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, SelectCondition filter)
     {
-        var isQueryAll = queryDto.IsQueryAll ?? false;
-        var isOnlyPage = queryDto.IsOnlyPage ?? false;
-        var pageInfo = queryDto.PageInfo ?? new PageInfo();
-
-        // 处理查询所有数据的情况
-        if (isQueryAll)
-        {
-            return source.ToPageResponse(pageInfo, isOnlyPage);
-        }
-
-        // 处理选择条件
-        if (queryDto.SelectConditions is not null)
-        {
-            source = source.WhereMultiple(queryDto.SelectConditions);
-        }
-
-        // 处理排序条件
-        if (queryDto.SortConditions is not null)
-        {
-            source = source.OrderByMultiple(queryDto.SortConditions);
-        }
-
-        return source.ToPageResponse(pageInfo, isOnlyPage);
+        return CollectionPropertySelector<T>.Where(source, filter);
     }
 
-    #endregion 分页
+    /// <summary>
+    /// 应用多个过滤条件
+    /// </summary>
+    public static IEnumerable<T> Where<T>(this IEnumerable<T> source, IEnumerable<SelectCondition>? filters)
+    {
+        if (filters == null)
+        {
+            return source;
+        }
 
-    #endregion IQueryable
+        return CollectionPropertySelector<T>.Where(source, filters);
+    }
+
+    /// <summary>
+    /// 应用排序条件
+    /// </summary>
+    public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, SortCondition sort)
+    {
+        return CollectionPropertySortor<T>.OrderBy(source, sort);
+    }
+
+    /// <summary>
+    /// 应用多个排序条件
+    /// </summary>
+    public static IOrderedEnumerable<T> OrderBy<T>(this IEnumerable<T> source, IEnumerable<SortCondition>? sorts)
+    {
+        if (sorts == null || !sorts.Any())
+        {
+            return source.OrderBy(x => 1); // 默认排序
+        }
+
+        return CollectionPropertySortor<T>.OrderBy(source, sorts);
+    }
+
+    /// <summary>
+    /// 应用分页查询
+    /// </summary>
+    public static PageResponse<T> ToPageResponse<T>(this IEnumerable<T> source, PageQuery query)
+    {
+        var list = source.ToList();
+
+        // 应用过滤
+        IEnumerable<T> filtered = list;
+        if (query.Filters != null && query.Filters.Count != 0)
+        {
+            filtered = filtered.Where(query.Filters);
+        }
+
+        // 应用排序
+        if (query.Sorts != null && query.Sorts.Count != 0)
+        {
+            filtered = filtered.OrderBy(query.Sorts);
+        }
+
+        var filteredList = filtered.ToList();
+
+        // 禁用分页时返回所有数据
+        if (query.DisablePaging)
+        {
+            return new PageResponse<T>(filteredList, 1, filteredList.Count, filteredList.Count);
+        }
+
+        // 计算总数
+        var totalCount = filteredList.Count;
+
+        // 应用分页
+        var items = filteredList.Skip(query.ToPageInfo().Skip).Take(query.ToPageInfo().Take).ToList();
+
+        return new PageResponse<T>(items, query.PageIndex, query.PageSize, totalCount);
+    }
+
+    /// <summary>
+    /// 简单分页
+    /// </summary>
+    public static PageResponse<T> ToPageResponse<T>(this IEnumerable<T> source, int pageIndex, int pageSize)
+    {
+        var list = source.ToList();
+        var totalCount = list.Count;
+        var skip = (pageIndex - 1) * pageSize;
+        var items = list.Skip(skip).Take(pageSize).ToList();
+        return new PageResponse<T>(items, pageIndex, pageSize, totalCount);
+    }
+
+    #endregion
+
+    #region List 扩展
+
+    /// <summary>
+    /// 转换为分页响应
+    /// </summary>
+    public static PageResponse<T> ToPageResponse<T>(this List<T> items, int pageIndex, int pageSize, int totalCount)
+    {
+        return new PageResponse<T>(items, pageIndex, pageSize, totalCount);
+    }
+
+    /// <summary>
+    /// 转换为分页响应
+    /// </summary>
+    public static PageResponse<T> ToPageResponse<T>(this List<T> items, PageData pageData)
+    {
+        return new PageResponse<T>(items, pageData);
+    }
+
+    #endregion
 }

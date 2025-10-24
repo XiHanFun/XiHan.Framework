@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SelectConditionDto
+// FileName:SelectCondition
 // Guid:67b10bd1-1623-4f95-af56-19a45b4390c2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,111 +12,174 @@
 
 #endregion <<版权版本注释>>
 
+using System.Linq.Expressions;
 using XiHan.Framework.Application.Paging.Enums;
 
 namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
-/// 通用选择条件基类
+/// 选择条件（过滤条件）
 /// </summary>
 public class SelectCondition
 {
     /// <summary>
-    /// 构造一个选择字段名称和选择值的选择条件
+    /// 构造函数
     /// </summary>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    public SelectCondition(string selectField, object? criteriaValue)
+    public SelectCondition()
     {
-        SelectField = selectField;
-        CriteriaValue = criteriaValue;
+        Field = string.Empty;
     }
 
     /// <summary>
-    /// 构造一个选择字段名称和选择值的选择条件
+    /// 构造函数
     /// </summary>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    /// <param name="selectCompare">选择比较</param>
-    public SelectCondition(string selectField, object? criteriaValue, SelectCompare selectCompare)
+    /// <param name="field">字段名称</param>
+    /// <param name="value">条件值</param>
+    /// <param name="operator">比较操作符</param>
+    public SelectCondition(string field, object? value, SelectCompare @operator = SelectCompare.Equal)
     {
-        SelectField = selectField;
-        CriteriaValue = criteriaValue;
-        SelectCompare = selectCompare;
+        Field = field;
+        Value = value;
+        Operator = @operator;
     }
 
     /// <summary>
-    /// 构造一个选择字段名称和选择值的选择条件
+    /// 字段名称
     /// </summary>
-    /// <param name="isKeywords">是否关键字</param>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    /// <param name="selectCompare">选择比较</param>
-    public SelectCondition(bool isKeywords, string selectField, object? criteriaValue, SelectCompare selectCompare)
-    {
-        IsKeywords = isKeywords;
-        SelectField = selectField;
-        CriteriaValue = criteriaValue;
-        SelectCompare = selectCompare;
-    }
-
-    /// <summary>
-    /// 是否关键字
-    /// </summary>
-    public bool IsKeywords { get; set; }
-
-    /// <summary>
-    /// 选择字段
-    /// </summary>
-    public string SelectField { get; set; }
+    public string Field { get; set; }
 
     /// <summary>
     /// 条件值
     /// </summary>
-    public object? CriteriaValue { get; set; }
+    public object? Value { get; set; }
 
     /// <summary>
-    /// 选择比较，默认为等于
+    /// 比较操作符，默认为等于
     /// </summary>
-    public SelectCompare SelectCompare { get; set; } = SelectCompare.Equal;
+    public SelectCompare Operator { get; set; } = SelectCompare.Equal;
+
+    /// <summary>
+    /// 创建等于条件
+    /// </summary>
+    public static SelectCondition Equal(string field, object? value) =>
+        new(field, value, SelectCompare.Equal);
+
+    /// <summary>
+    /// 创建不等于条件
+    /// </summary>
+    public static SelectCondition NotEqual(string field, object? value) =>
+        new(field, value, SelectCompare.NotEqual);
+
+    /// <summary>
+    /// 创建大于条件
+    /// </summary>
+    public static SelectCondition GreaterThan(string field, object? value) =>
+        new(field, value, SelectCompare.Greater);
+
+    /// <summary>
+    /// 创建大于等于条件
+    /// </summary>
+    public static SelectCondition GreaterThanOrEqual(string field, object? value) =>
+        new(field, value, SelectCompare.GreaterEqual);
+
+    /// <summary>
+    /// 创建小于条件
+    /// </summary>
+    public static SelectCondition LessThan(string field, object? value) =>
+        new(field, value, SelectCompare.Less);
+
+    /// <summary>
+    /// 创建小于等于条件
+    /// </summary>
+    public static SelectCondition LessThanOrEqual(string field, object? value) =>
+        new(field, value, SelectCompare.LessEqual);
+
+    /// <summary>
+    /// 创建包含条件（字符串）
+    /// </summary>
+    public static SelectCondition Contains(string field, string value) =>
+        new(field, value, SelectCompare.Contains);
+
+    /// <summary>
+    /// 创建在集合中条件
+    /// </summary>
+    public static SelectCondition In(string field, IEnumerable<object> values) =>
+        new(field, values, SelectCompare.InWithEqual);
+
+    /// <summary>
+    /// 创建在区间内条件
+    /// </summary>
+    public static SelectCondition Between(string field, object minValue, object maxValue) =>
+        new(field, new Tuple<object, object>(minValue, maxValue), SelectCompare.Between);
 }
 
 /// <summary>
-/// 通用选择条件泛型基类
+/// 泛型选择条件（支持 Lambda 表达式）
 /// </summary>
-/// <typeparam name="T">列表元素类型</typeparam>
-public class SelectConditionDto<T> : SelectCondition
+/// <typeparam name="T">实体类型</typeparam>
+public class SelectCondition<T> : SelectCondition
 {
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
+    /// 构造函数
     /// </summary>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    public SelectConditionDto(string selectField, object? criteriaValue)
-        : base(selectField, criteriaValue!)
+    public SelectCondition() : base()
     {
     }
 
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
+    /// 构造函数
     /// </summary>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(string selectField, object? criteriaValue, SelectCompare selectCompare)
-        : base(selectField, criteriaValue!, selectCompare)
+    /// <param name="field">字段名称</param>
+    /// <param name="value">条件值</param>
+    /// <param name="operator">比较操作符</param>
+    public SelectCondition(string field, object? value, SelectCompare @operator = SelectCompare.Equal)
+        : base(field, value, @operator)
     {
     }
 
     /// <summary>
-    /// 使用选择字段名称和选择值，初始化一个<see cref="SelectCondition"/>类型的新实例
+    /// 构造函数（使用 Lambda 表达式）
     /// </summary>
-    /// <param name="isKeywords">是否关键字</param>
-    /// <param name="selectField">字段名称</param>
-    /// <param name="criteriaValue">条件值</param>
-    /// <param name="selectCompare">选择比较</param>
-    public SelectConditionDto(bool isKeywords, string selectField, object? criteriaValue, SelectCompare selectCompare)
-        : base(isKeywords, selectField, criteriaValue!, selectCompare)
+    /// <param name="selector">属性选择器</param>
+    /// <param name="value">条件值</param>
+    /// <param name="operator">比较操作符</param>
+    public SelectCondition(Expression<Func<T, object>> selector, object? value, SelectCompare @operator = SelectCompare.Equal)
     {
+        Field = GetPropertyName(selector);
+        Value = value;
+        Operator = @operator;
+    }
+
+    /// <summary>
+    /// 创建等于条件
+    /// </summary>
+    public static SelectCondition<T> Equal(Expression<Func<T, object>> selector, object? value) =>
+        new(selector, value, SelectCompare.Equal);
+
+    /// <summary>
+    /// 创建包含条件
+    /// </summary>
+    public static SelectCondition<T> Contains(Expression<Func<T, object>> selector, string value) =>
+        new(selector, value, SelectCompare.Contains);
+
+    /// <summary>
+    /// 获取属性名称
+    /// </summary>
+    /// <param name="selector">属性选择器</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    private static string GetPropertyName(Expression<Func<T, object>> selector)
+    {
+        if (selector.Body is MemberExpression member)
+        {
+            return member.Member.Name;
+        }
+
+        if (selector.Body is UnaryExpression { Operand: MemberExpression unaryMember })
+        {
+            return unaryMember.Member.Name;
+        }
+
+        throw new ArgumentException("Invalid property selector", nameof(selector));
     }
 }

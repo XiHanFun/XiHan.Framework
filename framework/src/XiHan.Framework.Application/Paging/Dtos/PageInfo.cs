@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageInfoDto
+// FileName:PageInfo
 // Guid:96c7c379-cafa-4826-a6ba-9dc0b6c33ca8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,27 +15,33 @@
 namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
-/// 通用分页信息基类
+/// 分页请求信息
+/// 用于接收分页查询参数
 /// </summary>
 public class PageInfo
 {
-    #region 默认值
+    /// <summary>
+    /// 默认页码
+    /// </summary>
+    public const int DefaultPageIndex = 1;
 
     /// <summary>
-    /// 默认当前页(防止非安全性传参)
+    /// 默认每页大小
     /// </summary>
-    private const int DefaultIndex = 1;
+    public const int DefaultPageSize = 20;
 
     /// <summary>
-    /// 默认每页大小(防止非安全性传参)
+    /// 最小每页大小
     /// </summary>
-    private const int DefaultPageSize = 20;
+    public const int MinPageSize = 1;
 
-    #endregion 默认值
+    /// <summary>
+    /// 最大每页大小
+    /// </summary>
+    public const int MaxPageSize = 500;
 
-    private readonly int _currentIndex = DefaultIndex;
-    private readonly int _pageSize = DefaultPageSize;
-    private readonly int[] _defaultPageSizeArray = [10, 20, 50, 100, 200, 500];
+    private int _pageIndex = DefaultPageIndex;
+    private int _pageSize = DefaultPageSize;
 
     /// <summary>
     /// 构造函数
@@ -47,29 +53,21 @@ public class PageInfo
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="currentIndex"></param>
-    /// <param name="pageSize"></param>
-    public PageInfo(int currentIndex, int pageSize)
+    /// <param name="pageIndex">页码</param>
+    /// <param name="pageSize">每页大小</param>
+    public PageInfo(int pageIndex, int pageSize)
     {
-        _currentIndex = currentIndex;
-        _pageSize = pageSize;
+        PageIndex = pageIndex;
+        PageSize = pageSize;
     }
 
     /// <summary>
-    /// 当前页标
+    /// 页码（从1开始）
     /// </summary>
-    public int CurrentIndex
+    public int PageIndex
     {
-        get => _currentIndex;
-        init
-        {
-            if (value < DefaultIndex)
-            {
-                value = DefaultIndex;
-            }
-
-            _currentIndex = value;
-        }
+        get => _pageIndex;
+        set => _pageIndex = value < DefaultPageIndex ? DefaultPageIndex : value;
     }
 
     /// <summary>
@@ -78,20 +76,21 @@ public class PageInfo
     public int PageSize
     {
         get => _pageSize;
-        init
+        set => _pageSize = value switch
         {
-            var defaultMaxPageSize = _defaultPageSizeArray.Max();
-            var defaultMinPageSize = _defaultPageSizeArray.Min();
-
-            value = value switch
-            {
-                _ when value > defaultMaxPageSize => defaultMaxPageSize,
-                _ when value < defaultMinPageSize => defaultMinPageSize,
-                // 不在默认每页大小数组中的值，取最接近的默认值
-                _ => _defaultPageSizeArray.OrderBy(p => Math.Abs(p - value)).First()
-            };
-
-            _pageSize = value;
-        }
+            < MinPageSize => DefaultPageSize,
+            > MaxPageSize => MaxPageSize,
+            _ => value
+        };
     }
+
+    /// <summary>
+    /// 计算跳过的记录数
+    /// </summary>
+    public int Skip => (PageIndex - 1) * PageSize;
+
+    /// <summary>
+    /// 获取数量
+    /// </summary>
+    public int Take => PageSize;
 }

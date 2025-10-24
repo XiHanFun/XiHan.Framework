@@ -32,41 +32,31 @@ public static class SortConditionParser<T>
     /// <summary>
     /// 获取排序条件解析器
     /// </summary>
-    /// <param name="sortCondition"></param>
+    /// <param name="condition">排序条件</param>
     /// <returns></returns>
-    public static Expression<Func<T, object>> GetSortConditionParser(SortCondition sortCondition)
+    public static Expression<Func<T, object>> GetSortConditionParser(SortCondition condition)
     {
-        return GetSortConditionParser(sortCondition.SortField);
+        return GetSortConditionParser(condition.Field);
     }
 
     /// <summary>
     /// 获取排序条件解析器
     /// </summary>
-    /// <param name="sortCondition"></param>
-    /// <returns></returns>
-    public static Expression<Func<T, object>> GetSortConditionParser(SortConditionDto<T> sortCondition)
-    {
-        return GetSortConditionParser(sortCondition.SortField);
-    }
-
-    /// <summary>
-    /// 获取排序条件解析器
-    /// </summary>
-    /// <param name="propertyName">属性名称</param>s
+    /// <param name="field">字段名称</param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static Expression<Func<T, object>> GetSortConditionParser(string propertyName)
+    public static Expression<Func<T, object>> GetSortConditionParser(string field)
     {
         var type = typeof(T);
-        var key = $"{type.FullName}.{propertyName}";
+        var key = $"{type.FullName}.{field}";
         if (SortConditionParserCache.TryGetValue(key, out var sortConditionParser))
         {
             return (Expression<Func<T, object>>)sortConditionParser;
         }
 
         var param = Expression.Parameter(type);
-        var property = type.GetPropertyInfo(propertyName);
+        var property = type.GetPropertyInfo(field);
         var propertyAccess = Expression.MakeMemberAccess(param, property);
 
         // 将属性访问转换为 object 类型
