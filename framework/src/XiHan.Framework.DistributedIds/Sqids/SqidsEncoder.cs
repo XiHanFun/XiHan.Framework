@@ -22,9 +22,9 @@ namespace XiHan.Framework.DistributedIds.Sqids;
 /// 用于生成短、小写、无歧义的唯一标识符(Id)
 /// 通常用于替代自增数字唯一标识(如数据库主键)在 URL、公开接口中的暴露，防止泄露数据的真实顺序或数量
 /// 主要特点：
-/// 可逆性(Bidirectional)：Sqids 能把一个或多个数字编码成一个短字符串，也可以从字符串中解码出原始数字。
-/// 短小的编码结果：与 UUId 相比，Sqids 生成的唯一标识更短、更易于阅读和分享。
-/// 顺序混淆：即使输入是递增的数字，输出的字符串也不会体现递增顺序，防止用户推测系统数据量。
+/// 可逆性(Bidirectional)：Sqids 能把一个或多个数字编码成一个短字符串，也可以从字符串中解码出原始数字
+/// 短小的编码结果：与 UUId 相比，Sqids 生成的唯一标识更短、更易于阅读和分享
+/// 顺序混淆：即使输入是递增的数字，输出的字符串也不会体现递增顺序，防止用户推测系统数据量
 /// </summary>
 /// <typeparam name="T">数字类型</typeparam>
 public class SqidsEncoder<T> where T : INumber<T>

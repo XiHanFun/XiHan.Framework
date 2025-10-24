@@ -22,7 +22,7 @@ namespace XiHan.Framework.Utils.Security;
 /// Guid 生成和操作辅助类
 /// </summary>
 /// <remarks>
-/// 提供各种格式的全局唯一标识符生成、验证、转换和解析功能，支持标准Guid、时间戳Guid、确定性Guid等。
+/// 提供各种格式的全局唯一标识符生成、验证、转换和解析功能，支持标准Guid、时间戳Guid、确定性Guid等
 /// </remarks>
 public static partial class GuidHelper
 {

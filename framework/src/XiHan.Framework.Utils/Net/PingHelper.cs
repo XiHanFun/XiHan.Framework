@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Net;
 /// Ping 辅助类
 /// </summary>
 /// <remarks>
-/// 提供对 IP 或域名的 Ping 操作，支持自定义超时、缓冲区大小、TTL 等参数。
+/// 提供对 IP 或域名的 Ping 操作，支持自定义超时、缓冲区大小、TTL 等参数
 /// </remarks>
 public static class PingHelper
 {

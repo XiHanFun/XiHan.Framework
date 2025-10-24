@@ -16,16 +16,16 @@ namespace XiHan.Framework.EventBus.Abstractions;
 
 /// <summary>
 /// 具有单个泛型参数且该参数将用于继承的事件数据类
-/// 必须实现此接口。
+/// 必须实现此接口
 ///
 /// 例如；
 /// 假设 Student 继承自 Person。当触发 EntityCreatedEventData{Student} 时，
-/// 如果 EntityCreatedEventData 实现此接口，EntityCreatedEventData{Person} 也会被触发。
+/// 如果 EntityCreatedEventData 实现此接口，EntityCreatedEventData{Person} 也会被触发
 /// </summary>
 public interface IEventDataWithInheritableGenericArgument
 {
     /// <summary>
-    /// 获取创建此类的参数，因为将创建此类的新实例。
+    /// 获取创建此类的参数，因为将创建此类的新实例
     /// </summary>
     /// <returns>构造函数参数</returns>
     object[] GetConstructorArgs();

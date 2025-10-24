@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// Ecdsa 签名算法，只能用于签名和验证签名，无法用于数据加密和解密
 /// </summary>
 /// <remarks>
-/// 是一种基于椭圆曲线离散对数问题的非对称加密算法，ECC 的具体应用之一，其安全性依赖于在椭圆曲线上的离散对数问题(Elliptic Curve Discrete Logarithm Problem, ECDLP)的计算难度。
+/// 是一种基于椭圆曲线离散对数问题的非对称加密算法，ECC 的具体应用之一，其安全性依赖于在椭圆曲线上的离散对数问题(Elliptic Curve Discrete Logarithm Problem, ECDLP)的计算难度
 /// </remarks>
 public static class EcdsaHelper
 {

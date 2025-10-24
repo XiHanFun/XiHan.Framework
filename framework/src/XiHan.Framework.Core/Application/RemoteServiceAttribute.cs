@@ -44,9 +44,9 @@ public class RemoteServiceAttribute : Attribute
     public bool IsMetadataEnabled { get; set; }
 
     /// <summary>
-    /// 远程服务的组名。
-    /// 一个模块的所有服务的组名预计应相同。
-    /// 此名称也用于区分该组的服务端点。
+    /// 远程服务的组名
+    /// 一个模块的所有服务的组名预计应相同
+    /// 此名称也用于区分该组的服务端点
     /// </summary>
     public string Name { get; set; } = null!;
 

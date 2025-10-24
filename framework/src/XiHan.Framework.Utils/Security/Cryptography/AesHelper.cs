@@ -21,7 +21,7 @@ namespace XiHan.Framework.Utils.Security.Cryptography;
 /// Aes 加密解密
 /// </summary>
 /// <remarks>
-/// 是一种对称密钥加密算法，广泛用于数据加密和保护。
+/// 是一种对称密钥加密算法，广泛用于数据加密和保护
 /// </remarks>
 public static class AesHelper
 {

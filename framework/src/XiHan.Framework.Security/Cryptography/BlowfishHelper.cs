@@ -24,8 +24,8 @@ namespace XiHan.Framework.Security.Cryptography;
 /// Blowfish 加密算法辅助类，用于数据的加密和解密
 /// </summary>
 /// <remarks>
-/// 是一种对称加密算法，支持从 32 位到 448 位的可变密钥长度。
-/// 此实现依赖 BouncyCastle.Cryptography 库。
+/// 是一种对称加密算法，支持从 32 位到 448 位的可变密钥长度
+/// 此实现依赖 BouncyCastle.Cryptography 库
 /// </remarks>
 public static class BlowfishHelper
 {

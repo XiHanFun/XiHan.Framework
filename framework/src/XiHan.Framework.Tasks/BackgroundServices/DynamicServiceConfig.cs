@@ -145,8 +145,8 @@ public class DynamicServiceConfig : IDynamicServiceConfig
     /// </summary>
     /// <param name="enabled">true 表示启用任务处理，false 表示暂停任务处理</param>
     /// <remarks>
-    /// 当设置为 false 时，服务将停止获取新任务，但已经在运行的任务会继续执行到完成。
-    /// 这可用于优雅地暂停服务或进行维护操作。
+    /// 当设置为 false 时，服务将停止获取新任务，但已经在运行的任务会继续执行到完成
+    /// 这可用于优雅地暂停服务或进行维护操作
     /// </remarks>
     public void SetTaskProcessingEnabled(bool enabled)
     {
