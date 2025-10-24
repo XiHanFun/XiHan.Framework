@@ -44,7 +44,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
 
     #region 软删除
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 软删除实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -59,10 +64,15 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 软删除实体（根据主键）
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var entity = await FindByIdAsync(id, cancellationToken);
+        var entity = await GetByIdAsync(id, cancellationToken);
         if (entity == null)
         {
             return;
@@ -71,7 +81,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await SoftDeleteAsync(entity, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量软删除实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -95,7 +110,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量软删除实体（根据主键）
+    /// </summary>
+    /// <param name="ids">主键集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         var idArray = ids.ToArray();
@@ -111,7 +131,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件批量软删除实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         await _dbClient.Updateable<TEntity>()
@@ -121,7 +146,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约批量软删除实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = _dbClient.Queryable<TEntity>().ApplySpecification(specification);
@@ -129,7 +159,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await SoftDeleteRangeAsync(entities, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -144,10 +179,15 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复实体（根据主键）
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var entity = await FindByIdAsync(id, cancellationToken);
+        var entity = await GetByIdAsync(id, cancellationToken);
         if (entity == null)
         {
             return;
@@ -156,7 +196,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await RestoreAsync(entity, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量恢复实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -180,7 +225,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量恢复实体（根据主键）
+    /// </summary>
+    /// <param name="ids">主键集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         var idArray = ids.ToArray();
@@ -196,7 +246,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件批量恢复实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         await _dbClient.Updateable<TEntity>()
@@ -205,7 +260,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ExecuteCommandAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约批量恢复实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = _dbClient.Queryable<TEntity>().ApplySpecification(specification);
@@ -217,14 +277,22 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
 
     #region 查询软删除记录
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取所有软删除实体
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取所有软删除实体
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -232,7 +300,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件获取软删除实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
@@ -241,7 +314,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约获取软删除实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()

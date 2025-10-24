@@ -47,16 +47,26 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
 
     #region 查询
 
-    /// <inheritdoc />
-    public async Task<TEntity?> FindByIdAsync(TKey id, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 根据主键获取实体
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
+    public async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return await _simpleClient.GetByIdAsync(id, cancellationToken);
     }
 
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<TEntity>> FindByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 根据主键集合获取实体
+    /// </summary>
+    /// <param name="ids">主键集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
@@ -72,8 +82,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return result;
     }
 
-    /// <inheritdoc />
-    public async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 根据条件获取实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
+    public async Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -81,8 +96,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return await _simpleClient.GetFirstAsync(predicate, cancellationToken);
     }
 
-    /// <inheritdoc />
-    public async Task<TEntity?> FindAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 根据规约获取实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
+    public async Task<TEntity?> GetAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
         cancellationToken.ThrowIfCancellationRequested();
@@ -90,7 +110,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return await query.FirstAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取所有实体
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -99,7 +123,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件获取所有实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -110,7 +139,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件和排序获取所有实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="orderBy">排序</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -123,7 +158,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约获取所有实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体集合</returns>
     public async Task<IEnumerable<TEntity>> GetAllAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
@@ -132,7 +172,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return await query.ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取实体总数
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -141,7 +185,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .CountAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件获取实体总数
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -152,7 +201,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .CountAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约获取实体总数
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
@@ -161,7 +215,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return await query.CountAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件判断是否存在实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在实体</returns>
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -172,7 +231,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
             .AnyAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据规约判断是否存在实体
+    /// </summary>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在实体</returns>
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
@@ -185,7 +249,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
 
     #region 增删改
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 添加实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已添加的实体</returns>
     public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -196,7 +265,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 添加实体并返回主键
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>主键</returns>
     public async Task<TKey> AddReturnIdAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -208,7 +282,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return result.BasicId;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 添加实体集合
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已添加的实体集合</returns>
     public async Task<IEnumerable<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -226,7 +305,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return entityArray;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已更新的实体</returns>
     public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -238,7 +322,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return entity;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新实体
+    /// </summary>
+    /// <param name="columns">更新列</param>
+    /// <param name="whereExpression">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> UpdateAsync(Expression<Func<TEntity, TEntity>> columns, Expression<Func<TEntity, bool>> whereExpression, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(columns);
@@ -253,7 +343,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return true;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新实体集合
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已更新的实体集合</returns>
     public async Task<IEnumerable<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -271,7 +366,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return entityArray;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 新增或更新实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> AddOrUpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -288,7 +388,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量新增或更新实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -328,7 +433,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return hasChanges;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除实体
+    /// </summary>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -339,7 +449,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据主键删除实体
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -350,7 +465,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量删除实体
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -378,7 +498,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量删除实体
+    /// </summary>
+    /// <param name="ids">主键集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
@@ -397,7 +522,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据条件删除实体
+    /// </summary>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);

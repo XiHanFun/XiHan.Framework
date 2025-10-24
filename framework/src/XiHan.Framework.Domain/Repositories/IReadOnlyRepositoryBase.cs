@@ -28,36 +28,36 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 根据主键查找实体
+    /// 根据主键获取实体
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
-    Task<TEntity?> FindByIdAsync(TKey id, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 根据主键集合批量查找实体
+    /// 根据主键集合批量获取实体
     /// </summary>
     /// <param name="ids">实体主键集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>与主键集合匹配的实体集合</returns>
-    Task<IReadOnlyList<TEntity>> FindByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 根据条件查找单个实体
+    /// 根据条件获取单个实体
     /// </summary>
     /// <param name="predicate">用于过滤实体的表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
-    Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 根据规约查找单个实体
+    /// 根据规约获取单个实体
     /// </summary>
     /// <param name="specification">定义查询条件的规约</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>匹配的实体，如果不存在则返回 <c>null</c></returns>
-    Task<TEntity?> FindAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取所有实体
