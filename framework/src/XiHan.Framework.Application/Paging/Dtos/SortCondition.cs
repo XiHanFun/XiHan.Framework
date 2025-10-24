@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SortConditionDto
+// FileName:SortCondition
 // Guid:e449e1d2-457a-432e-a0f7-5f79cf12c2da
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,118 +14,130 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Application.Paging.Enums;
-using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
-/// 通用排序条件基类
+/// 排序条件
 /// </summary>
 public class SortCondition
 {
     /// <summary>
-    /// 构造一个排序字段名称和排序方式的排序条件
+    /// 构造函数
     /// </summary>
-    /// <param name="sortField">字段名称</param>
-    public SortCondition(string sortField)
+    public SortCondition()
     {
-        SortField = sortField;
+        Field = string.Empty;
     }
 
     /// <summary>
-    /// 构造一个排序字段名称和排序方式的排序条件
+    /// 构造函数
     /// </summary>
-    /// <param name="sortField">字段名称</param>
-    /// <param name="sortPriority">排序优先级</param>
-    public SortCondition(string sortField, int sortPriority)
+    /// <param name="field">字段名称</param>
+    /// <param name="direction">排序方向</param>
+    /// <param name="priority">排序优先级（数值越小优先级越高）</param>
+    public SortCondition(string field, SortDirection direction = SortDirection.Asc, int priority = 0)
     {
-        SortField = sortField;
-        SortPriority = sortPriority;
+        Field = field;
+        Direction = direction;
+        Priority = priority;
     }
 
     /// <summary>
-    /// 构造一个排序字段名称和排序方式的排序条件
+    /// 字段名称
     /// </summary>
-    /// <param name="sortField">字段名称</param>
-    /// <param name="sortDirection">排序方式</param>
-    public SortCondition(string sortField, SortDirection sortDirection)
-    {
-        SortField = sortField;
-        SortDirection = sortDirection;
-    }
-
-    /// <summary>
-    /// 构造一个排序字段名称和排序方式的排序条件
-    /// </summary>
-    /// <param name="sortField">字段名称</param>
-    /// <param name="sortPriority">排序优先级</param>
-    /// <param name="sortDirection">排序方式</param>
-    public SortCondition(string sortField, int sortPriority, SortDirection sortDirection)
-    {
-        SortField = sortField;
-        SortPriority = sortPriority;
-        SortDirection = sortDirection;
-    }
-
-    /// <summary>
-    /// 排序字段名称
-    /// </summary>
-    public string SortField { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 排序优先级，数值越小优先级越高，默认为0，即最高优先级
-    /// </summary>
-    public int SortPriority { get; set; }
+    public string Field { get; set; }
 
     /// <summary>
     /// 排序方向，默认为升序
     /// </summary>
-    public SortDirection SortDirection { get; set; } = SortDirection.Asc;
+    public SortDirection Direction { get; set; } = SortDirection.Asc;
+
+    /// <summary>
+    /// 排序优先级，数值越小优先级越高，默认为0
+    /// </summary>
+    public int Priority { get; set; }
+
+    /// <summary>
+    /// 创建升序排序条件
+    /// </summary>
+    public static SortCondition Ascending(string field, int priority = 0) =>
+        new(field, SortDirection.Asc, priority);
+
+    /// <summary>
+    /// 创建降序排序条件
+    /// </summary>
+    public static SortCondition Descending(string field, int priority = 0) =>
+        new(field, SortDirection.Desc, priority);
 }
 
 /// <summary>
-/// 通用排序条件泛型基类
+/// 泛型排序条件（支持 Lambda 表达式）
 /// </summary>
-/// <typeparam name="T">列表元素类型</typeparam>
-public class SortConditionDto<T> : SortCondition
+/// <typeparam name="T">实体类型</typeparam>
+public class SortCondition<T> : SortCondition
 {
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
+    /// 构造函数
     /// </summary>
-    /// <param name="keySelector">属性选择器</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector)
-        : base(keySelector.GetPropertyName())
+    public SortCondition() : base()
     {
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
+    /// 构造函数
     /// </summary>
-    /// <param name="keySelector">属性选择器</param>
-    /// <param name="sortPriority">排序优先级</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority)
-        : base(keySelector.GetPropertyName(), sortPriority)
+    /// <param name="field">字段名称</param>
+    /// <param name="direction">排序方向</param>
+    /// <param name="priority">排序优先级</param>
+    public SortCondition(string field, SortDirection direction = SortDirection.Asc, int priority = 0)
+        : base(field, direction, priority)
     {
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
+    /// 构造函数（使用 Lambda 表达式）
     /// </summary>
-    /// <param name="keySelector">属性选择器</param>
-    /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, SortDirection sortDirection)
-        : base(keySelector.GetPropertyName(), sortDirection)
+    /// <param name="selector">属性选择器</param>
+    /// <param name="direction">排序方向</param>
+    /// <param name="priority">排序优先级</param>
+    public SortCondition(Expression<Func<T, object>> selector, SortDirection direction = SortDirection.Asc, int priority = 0)
     {
+        Field = GetPropertyName(selector);
+        Direction = direction;
+        Priority = priority;
     }
 
     /// <summary>
-    /// 使用排序字段与排序方式，初始化一个<see cref="SortCondition"/>类型的新实例
+    /// 创建升序排序条件
     /// </summary>
-    /// <param name="keySelector">属性选择器</param>
-    /// <param name="sortPriority">排序优先级</param>
-    /// <param name="sortDirection">排序方式</param>
-    public SortConditionDto(Expression<Func<T, object>> keySelector, int sortPriority, SortDirection sortDirection)
-        : base(keySelector.GetPropertyName(), sortPriority, sortDirection)
+    public static SortCondition<T> Ascending(Expression<Func<T, object>> selector, int priority = 0) =>
+        new(selector, SortDirection.Asc, priority);
+
+    /// <summary>
+    /// 创建降序排序条件
+    /// </summary>
+    public static SortCondition<T> Descending(Expression<Func<T, object>> selector, int priority = 0) =>
+        new(selector, SortDirection.Desc, priority);
+
+    /// <summary>
+    /// 获取属性名称
+    /// </summary>
+    /// <param name="selector">属性选择器</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    private static string GetPropertyName(Expression<Func<T, object>> selector)
     {
+        if (selector.Body is MemberExpression member)
+        {
+            return member.Member.Name;
+        }
+
+        if (selector.Body is UnaryExpression { Operand: MemberExpression unaryMember })
+        {
+            return unaryMember.Member.Name;
+        }
+
+        throw new ArgumentException("Invalid property selector", nameof(selector));
     }
 }

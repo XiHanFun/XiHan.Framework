@@ -34,47 +34,37 @@ public static class SelectConditionParser<T>
     /// <summary>
     /// 获取选择条件解析器
     /// </summary>
-    /// <param name="selectCondition"></param>
+    /// <param name="condition">选择条件</param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectCondition selectCondition)
+    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectCondition condition)
     {
-        return GetSelectConditionParser(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
+        return GetSelectConditionParser(condition.Field, condition.Value, condition.Operator);
     }
 
     /// <summary>
     /// 获取选择条件解析器
     /// </summary>
-    /// <param name="selectCondition"></param>
-    /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> GetSelectConditionParser(SelectConditionDto<T> selectCondition)
-    {
-        return GetSelectConditionParser(selectCondition.SelectField, selectCondition.CriteriaValue, selectCondition.SelectCompare);
-    }
-
-    /// <summary>
-    /// 获取选择条件解析器
-    /// </summary>
-    /// <param name="propertyName">属性名称</param>
+    /// <param name="field">字段名称</param>
     /// <param name="value">比较值</param>
-    /// <param name="selectCompare">比较操作</param>
+    /// <param name="operator">比较操作符</param>
     /// <returns>生成的 Lambda 表达式</returns>
-    public static Expression<Func<T, bool>> GetSelectConditionParser(string propertyName, object? value, SelectCompare selectCompare)
+    public static Expression<Func<T, bool>> GetSelectConditionParser(string field, object? value, SelectCompare @operator)
     {
         var type = typeof(T);
-        var key = $"{typeof(T).FullName}.{propertyName}.{selectCompare}";
+        var key = $"{typeof(T).FullName}.{field}.{@operator}";
 
         var param = Expression.Parameter(type);
 
         if (!SelectConditionMemberParserCache.TryGetValue(key, out var propertyAccess))
         {
-            var property = type.GetPropertyInfo(propertyName);
+            var property = type.GetPropertyInfo(field);
             propertyAccess = Expression.MakeMemberAccess(param, property);
 
             SelectConditionMemberParserCache.TryAdd(key, propertyAccess);
         }
 
         // 生成比较表达式
-        var comparison = GenerateComparison(propertyAccess, value, selectCompare);
+        var comparison = GenerateComparison(propertyAccess, value, @operator);
         var expressionParser = Expression.Lambda<Func<T, bool>>(comparison, param);
 
         return expressionParser;
@@ -86,15 +76,15 @@ public static class SelectConditionParser<T>
     /// 生成具体的比较表达式
     /// </summary>
     /// <param name="propertyAccess">属性访问表达式</param>
-    /// <param name="value">比较值 </param>
-    /// <param name="selectCompare">比较操作 </param>
-    /// <returns>生成的比较表达式 </returns>
+    /// <param name="value">比较值</param>
+    /// <param name="operator">比较操作符</param>
+    /// <returns>生成的比较表达式</returns>
     /// <exception cref="NotSupportedException"></exception>
-    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompare selectCompare)
+    private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompare @operator)
     {
         var constant = Expression.Constant(value);
 
-        return selectCompare switch
+        return @operator switch
         {
             // 单值比较
             SelectCompare.Equal => Expression.Equal(propertyAccess, constant),
@@ -112,7 +102,7 @@ public static class SelectConditionParser<T>
             // 区间比较
             SelectCompare.Between => GenerateBetweenExpression(propertyAccess, value),
 
-            _ => throw new NotSupportedException($"不支持的比较操作：{selectCompare}")
+            _ => throw new NotSupportedException($"不支持的比较操作：{@operator}")
         };
     }
 

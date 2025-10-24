@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageDataDto
+// FileName:PageData
 // Guid:373148b9-8be2-41a0-b971-82ef6750800d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,7 +15,8 @@
 namespace XiHan.Framework.Application.Paging.Dtos;
 
 /// <summary>
-/// 通用分页数据响应基类
+/// 分页元数据
+/// 包含分页的统计信息
 /// </summary>
 public class PageData
 {
@@ -29,39 +30,53 @@ public class PageData
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="totalCount">数据总数</param>
-    public PageData(int totalCount)
+    /// <param name="pageIndex">页码</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="totalCount">总记录数</param>
+    public PageData(int pageIndex, int pageSize, int totalCount)
     {
-        var page = new PageInfo();
-        PageInfo = page;
+        PageIndex = pageIndex;
+        PageSize = pageSize;
         TotalCount = totalCount;
-        PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
     }
 
     /// <summary>
-    /// 构造函数
+    /// 页码（从1开始）
     /// </summary>
-    /// <param name="page">分页信息</param>
-    /// <param name="totalCount">数据总数</param>
-    public PageData(PageInfo page, int totalCount)
-    {
-        PageInfo = page;
-        TotalCount = totalCount;
-        PageCount = (int)Math.Ceiling((decimal)totalCount / page.PageSize);
-    }
+    public int PageIndex { get; set; } = PageInfo.DefaultPageIndex;
 
     /// <summary>
-    /// 分页数据
+    /// 每页大小
     /// </summary>
-    public PageInfo PageInfo { get; set; } = new();
+    public int PageSize { get; set; } = PageInfo.DefaultPageSize;
 
     /// <summary>
-    /// 数据总数
+    /// 总记录数
     /// </summary>
     public int TotalCount { get; set; }
 
     /// <summary>
     /// 总页数
     /// </summary>
-    public int PageCount { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+
+    /// <summary>
+    /// 是否有上一页
+    /// </summary>
+    public bool HasPrevious => PageIndex > 1;
+
+    /// <summary>
+    /// 是否有下一页
+    /// </summary>
+    public bool HasNext => PageIndex < TotalPages;
+
+    /// <summary>
+    /// 是否是第一页
+    /// </summary>
+    public bool IsFirstPage => PageIndex == 1;
+
+    /// <summary>
+    /// 是否是最后一页
+    /// </summary>
+    public bool IsLastPage => PageIndex >= TotalPages;
 }
