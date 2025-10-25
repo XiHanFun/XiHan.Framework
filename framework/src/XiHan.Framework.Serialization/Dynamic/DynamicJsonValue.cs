@@ -16,6 +16,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Serialization.Dynamic;
 
@@ -148,6 +149,31 @@ public class DynamicJsonValue : DynamicObject, IEquatable<DynamicJsonValue>
         }
     }
 
+    /// <summary>
+    /// 灵活地转换为指定类型（支持跨类型转换，如字符串转数值）
+    /// 使用 Utils.Extensions 的 ConvertTo 扩展方法
+    /// </summary>
+    /// <typeparam name="T">目标类型</typeparam>
+    /// <returns>转换后的值</returns>
+    private T? ConvertTo<T>()
+    {
+        if (_value == null)
+        {
+            return default;
+        }
+
+        try
+        {
+            // 如果失败，获取字符串值并使用扩展方法转换
+            var stringValue = _value.ToString();
+            return stringValue.ConvertTo<T>();
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
     #endregion 类型转换
 
     #region 隐式转换操作符
@@ -247,97 +273,97 @@ public class DynamicJsonValue : DynamicObject, IEquatable<DynamicJsonValue>
 
     // 反向转换
     /// <summary>显式转换：DynamicJsonValue → 字符串</summary>
-    public static explicit operator string?(DynamicJsonValue value) => value._value?.GetValue<string>();
+    public static explicit operator string?(DynamicJsonValue value) => value.ConvertTo<string?>();
 
     /// <summary>显式转换：DynamicJsonValue → 布尔值</summary>
-    public static explicit operator bool(DynamicJsonValue value) => value._value?.GetValue<bool>() ?? false;
+    public static explicit operator bool(DynamicJsonValue value) => value.ConvertTo<bool>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空布尔值</summary>
-    public static explicit operator bool?(DynamicJsonValue value) => value._value?.GetValue<bool?>();
+    public static explicit operator bool?(DynamicJsonValue value) => value.ConvertTo<bool?>();
 
     /// <summary>显式转换：DynamicJsonValue → 字节</summary>
-    public static explicit operator byte(DynamicJsonValue value) => value._value?.GetValue<byte>() ?? 0;
+    public static explicit operator byte(DynamicJsonValue value) => value.ConvertTo<byte>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空字节</summary>
-    public static explicit operator byte?(DynamicJsonValue value) => value._value?.GetValue<byte?>();
+    public static explicit operator byte?(DynamicJsonValue value) => value.ConvertTo<byte?>();
 
     /// <summary>显式转换：DynamicJsonValue → 有符号字节</summary>
-    public static explicit operator sbyte(DynamicJsonValue value) => value._value?.GetValue<sbyte>() ?? 0;
+    public static explicit operator sbyte(DynamicJsonValue value) => value.ConvertTo<sbyte>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空有符号字节</summary>
-    public static explicit operator sbyte?(DynamicJsonValue value) => value._value?.GetValue<sbyte?>();
+    public static explicit operator sbyte?(DynamicJsonValue value) => value.ConvertTo<sbyte?>();
 
     /// <summary>显式转换：DynamicJsonValue → 短整数</summary>
-    public static explicit operator short(DynamicJsonValue value) => value._value?.GetValue<short>() ?? 0;
+    public static explicit operator short(DynamicJsonValue value) => value.ConvertTo<short>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空短整数</summary>
-    public static explicit operator short?(DynamicJsonValue value) => value._value?.GetValue<short?>();
+    public static explicit operator short?(DynamicJsonValue value) => value.ConvertTo<short?>();
 
     /// <summary>显式转换：DynamicJsonValue → 无符号短整数</summary>
-    public static explicit operator ushort(DynamicJsonValue value) => value._value?.GetValue<ushort>() ?? 0;
+    public static explicit operator ushort(DynamicJsonValue value) => value.ConvertTo<ushort>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空无符号短整数</summary>
-    public static explicit operator ushort?(DynamicJsonValue value) => value._value?.GetValue<ushort?>();
+    public static explicit operator ushort?(DynamicJsonValue value) => value.ConvertTo<ushort?>();
 
     /// <summary>显式转换：DynamicJsonValue → 整数</summary>
-    public static explicit operator int(DynamicJsonValue value) => value._value?.GetValue<int>() ?? 0;
+    public static explicit operator int(DynamicJsonValue value) => value.ConvertTo<int>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空整数</summary>
-    public static explicit operator int?(DynamicJsonValue value) => value._value?.GetValue<int?>();
+    public static explicit operator int?(DynamicJsonValue value) => value.ConvertTo<int?>();
 
     /// <summary>显式转换：DynamicJsonValue → 无符号整数</summary>
-    public static explicit operator uint(DynamicJsonValue value) => value._value?.GetValue<uint>() ?? 0;
+    public static explicit operator uint(DynamicJsonValue value) => value.ConvertTo<uint>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空无符号整数</summary>
-    public static explicit operator uint?(DynamicJsonValue value) => value._value?.GetValue<uint?>();
+    public static explicit operator uint?(DynamicJsonValue value) => value.ConvertTo<uint?>();
 
     /// <summary>显式转换：DynamicJsonValue → 长整数</summary>
-    public static explicit operator long(DynamicJsonValue value) => value._value?.GetValue<long>() ?? 0;
+    public static explicit operator long(DynamicJsonValue value) => value.ConvertTo<long>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空长整数</summary>
-    public static explicit operator long?(DynamicJsonValue value) => value._value?.GetValue<long?>();
+    public static explicit operator long?(DynamicJsonValue value) => value.ConvertTo<long?>();
 
     /// <summary>显式转换：DynamicJsonValue → 无符号长整数</summary>
-    public static explicit operator ulong(DynamicJsonValue value) => value._value?.GetValue<ulong>() ?? 0;
+    public static explicit operator ulong(DynamicJsonValue value) => value.ConvertTo<ulong>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空无符号长整数</summary>
-    public static explicit operator ulong?(DynamicJsonValue value) => value._value?.GetValue<ulong?>();
+    public static explicit operator ulong?(DynamicJsonValue value) => value.ConvertTo<ulong?>();
 
     /// <summary>显式转换：DynamicJsonValue → 单精度浮点数</summary>
-    public static explicit operator float(DynamicJsonValue value) => value._value?.GetValue<float>() ?? 0f;
+    public static explicit operator float(DynamicJsonValue value) => value.ConvertTo<float>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空单精度浮点数</summary>
-    public static explicit operator float?(DynamicJsonValue value) => value._value?.GetValue<float?>();
+    public static explicit operator float?(DynamicJsonValue value) => value.ConvertTo<float?>();
 
     /// <summary>显式转换：DynamicJsonValue → 双精度浮点数</summary>
-    public static explicit operator double(DynamicJsonValue value) => value._value?.GetValue<double>() ?? 0d;
+    public static explicit operator double(DynamicJsonValue value) => value.ConvertTo<double>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空双精度浮点数</summary>
-    public static explicit operator double?(DynamicJsonValue value) => value._value?.GetValue<double?>();
+    public static explicit operator double?(DynamicJsonValue value) => value.ConvertTo<double?>();
 
     /// <summary>显式转换：DynamicJsonValue → 十进制数</summary>
-    public static explicit operator decimal(DynamicJsonValue value) => value._value?.GetValue<decimal>() ?? 0m;
+    public static explicit operator decimal(DynamicJsonValue value) => value.ConvertTo<decimal>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空十进制数</summary>
-    public static explicit operator decimal?(DynamicJsonValue value) => value._value?.GetValue<decimal?>();
+    public static explicit operator decimal?(DynamicJsonValue value) => value.ConvertTo<decimal?>();
 
     /// <summary>显式转换：DynamicJsonValue → 日期时间</summary>
-    public static explicit operator DateTime(DynamicJsonValue value) => value._value?.GetValue<DateTime>() ?? default;
+    public static explicit operator DateTime(DynamicJsonValue value) => value.ConvertTo<DateTime>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空日期时间</summary>
-    public static explicit operator DateTime?(DynamicJsonValue value) => value._value?.GetValue<DateTime?>();
+    public static explicit operator DateTime?(DynamicJsonValue value) => value.ConvertTo<DateTime?>();
 
     /// <summary>显式转换：DynamicJsonValue → 带时区的日期时间</summary>
-    public static explicit operator DateTimeOffset(DynamicJsonValue value) => value._value?.GetValue<DateTimeOffset>() ?? default;
+    public static explicit operator DateTimeOffset(DynamicJsonValue value) => value.ConvertTo<DateTimeOffset>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空带时区的日期时间</summary>
-    public static explicit operator DateTimeOffset?(DynamicJsonValue value) => value._value?.GetValue<DateTimeOffset?>();
+    public static explicit operator DateTimeOffset?(DynamicJsonValue value) => value.ConvertTo<DateTimeOffset?>();
 
     /// <summary>显式转换：DynamicJsonValue → GUId</summary>
-    public static explicit operator Guid(DynamicJsonValue value) => value._value?.GetValue<Guid>() ?? default;
+    public static explicit operator Guid(DynamicJsonValue value) => value.ConvertTo<Guid>();
 
     /// <summary>显式转换：DynamicJsonValue → 可空GUId</summary>
-    public static explicit operator Guid?(DynamicJsonValue value) => value._value?.GetValue<Guid?>();
+    public static explicit operator Guid?(DynamicJsonValue value) => value.ConvertTo<Guid?>();
 
     #endregion 隐式转换操作符
 
