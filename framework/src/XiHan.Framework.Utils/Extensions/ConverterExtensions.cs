@@ -60,6 +60,50 @@ public static class ConverterExtensions
     }
 
     /// <summary>
+    /// 转换为字节
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>字节值</returns>
+    public static byte ConvertToByte(this object? value, byte defaultValue = 0)
+    {
+        return ConvertHelper.ToByte(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为有符号字节
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>有符号字节值</returns>
+    public static sbyte ConvertToSByte(this object? value, sbyte defaultValue = 0)
+    {
+        return ConvertHelper.ToSByte(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为短整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>短整数值</returns>
+    public static short ConvertToShort(this object? value, short defaultValue = 0)
+    {
+        return ConvertHelper.ToShort(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为无符号短整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号短整数值</returns>
+    public static ushort ConvertToUShort(this object? value, ushort defaultValue = 0)
+    {
+        return ConvertHelper.ToUShort(value, defaultValue);
+    }
+
+    /// <summary>
     /// 转换为整数
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -71,6 +115,17 @@ public static class ConverterExtensions
     }
 
     /// <summary>
+    /// 转换为无符号整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号整数值</returns>
+    public static uint ConvertToUInt(this object? value, uint defaultValue = 0)
+    {
+        return ConvertHelper.ToUInt(value, defaultValue);
+    }
+
+    /// <summary>
     /// 转换为长整数
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -79,6 +134,28 @@ public static class ConverterExtensions
     public static long ConvertToLong(this object? value, long defaultValue = 0)
     {
         return ConvertHelper.ToLong(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为无符号长整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号长整数值</returns>
+    public static ulong ConvertToULong(this object? value, ulong defaultValue = 0)
+    {
+        return ConvertHelper.ToULong(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为单精度浮点数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>单精度浮点数值</returns>
+    public static float ConvertToFloat(this object? value, float defaultValue = 0f)
+    {
+        return ConvertHelper.ToFloat(value, defaultValue);
     }
 
     /// <summary>
@@ -112,6 +189,17 @@ public static class ConverterExtensions
     public static DateTime ConvertToDateTime(this object? value, DateTime defaultValue = default)
     {
         return ConvertHelper.ToDateTime(value, defaultValue);
+    }
+
+    /// <summary>
+    /// 转换为带时区的日期时间
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>带时区的日期时间值</returns>
+    public static DateTimeOffset ConvertToDateTimeOffset(this object? value, DateTimeOffset defaultValue = default)
+    {
+        return ConvertHelper.ToDateTimeOffset(value, defaultValue);
     }
 
     /// <summary>
@@ -175,6 +263,96 @@ public static class ConverterExtensions
     #region 安全转换方法
 
     /// <summary>
+    /// 安全转换为布尔值（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static bool ConvertToBoolSafe(this object? value, bool defaultValue = false)
+    {
+        try
+        {
+            return ConvertHelper.ToBool(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为字节（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static byte ConvertToByteSafe(this object? value, byte defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToByte(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为有符号字节（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static sbyte ConvertToSByteSafe(this object? value, sbyte defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToSByte(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为短整数（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static short ConvertToShortSafe(this object? value, short defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToShort(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为无符号短整数（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static ushort ConvertToUShortSafe(this object? value, ushort defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToUShort(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
     /// 安全转换为整数（不抛出异常）
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -193,6 +371,24 @@ public static class ConverterExtensions
     }
 
     /// <summary>
+    /// 安全转换为无符号整数（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static uint ConvertToUIntSafe(this object? value, uint defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToUInt(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
     /// 安全转换为长整数（不抛出异常）
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -203,6 +399,42 @@ public static class ConverterExtensions
         try
         {
             return ConvertHelper.ToLong(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为无符号长整数（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static ulong ConvertToULongSafe(this object? value, ulong defaultValue = 0)
+    {
+        try
+        {
+            return ConvertHelper.ToULong(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为单精度浮点数（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static float ConvertToFloatSafe(this object? value, float defaultValue = 0f)
+    {
+        try
+        {
+            return ConvertHelper.ToFloat(value, defaultValue);
         }
         catch
         {
@@ -257,6 +489,42 @@ public static class ConverterExtensions
         try
         {
             return ConvertHelper.ToDateTime(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为带时区的日期时间（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static DateTimeOffset ConvertToDateTimeOffsetSafe(this object? value, DateTimeOffset defaultValue = default)
+    {
+        try
+        {
+            return ConvertHelper.ToDateTimeOffset(value, defaultValue);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// 安全转换为 GUId（不抛出异常）
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>转换结果</returns>
+    public static Guid ConvertToGuidSafe(this object? value, Guid defaultValue = default)
+    {
+        try
+        {
+            return ConvertHelper.ToGuid(value, defaultValue);
         }
         catch
         {
