@@ -279,6 +279,158 @@ public static class ConvertHelper
     }
 
     /// <summary>
+    /// 转换为字节
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>字节值</returns>
+    public static byte ToByte(object? value, byte defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is byte byteValue)
+        {
+            return byteValue;
+        }
+
+        if (value is string stringValue && byte.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToByte(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为有符号字节
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>有符号字节值</returns>
+    public static sbyte ToSByte(object? value, sbyte defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is sbyte sbyteValue)
+        {
+            return sbyteValue;
+        }
+
+        if (value is string stringValue && sbyte.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToSByte(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为短整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>短整数值</returns>
+    public static short ToShort(object? value, short defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is short shortValue)
+        {
+            return shortValue;
+        }
+
+        if (value is string stringValue && short.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToInt16(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为无符号短整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号短整数值</returns>
+    public static ushort ToUShort(object? value, ushort defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is ushort ushortValue)
+        {
+            return ushortValue;
+        }
+
+        if (value is string stringValue && ushort.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToUInt16(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
     /// 转换为整数
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -317,6 +469,44 @@ public static class ConvertHelper
     }
 
     /// <summary>
+    /// 转换为无符号整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号整数值</returns>
+    public static uint ToUInt(object? value, uint defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is uint uintValue)
+        {
+            return uintValue;
+        }
+
+        if (value is string stringValue && uint.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToUInt32(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
     /// 转换为长整数
     /// </summary>
     /// <param name="value">要转换的值</param>
@@ -344,6 +534,82 @@ public static class ConvertHelper
             try
             {
                 return convertible.ToInt64(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为无符号长整数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>无符号长整数值</returns>
+    public static ulong ToULong(object? value, ulong defaultValue = 0)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is ulong ulongValue)
+        {
+            return ulongValue;
+        }
+
+        if (value is string stringValue && ulong.TryParse(stringValue, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToUInt64(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为单精度浮点数
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>单精度浮点数值</returns>
+    public static float ToFloat(object? value, float defaultValue = 0f)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is float floatValue)
+        {
+            return floatValue;
+        }
+
+        if (value is string stringValue && float.TryParse(stringValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+        {
+            return result;
+        }
+
+        if (value is IConvertible convertible)
+        {
+            try
+            {
+                return convertible.ToSingle(CultureInfo.InvariantCulture);
             }
             catch
             {
@@ -463,6 +729,51 @@ public static class ConvertHelper
             {
                 return defaultValue;
             }
+        }
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// 转换为带时区的日期时间
+    /// </summary>
+    /// <param name="value">要转换的值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <returns>带时区的日期时间值</returns>
+    public static DateTimeOffset ToDateTimeOffset(object? value, DateTimeOffset defaultValue = default)
+    {
+        if (value == null)
+        {
+            return defaultValue;
+        }
+
+        if (value is DateTimeOffset dateTimeOffsetValue)
+        {
+            return dateTimeOffsetValue;
+        }
+
+        if (value is DateTime dateTime)
+        {
+            return new DateTimeOffset(dateTime);
+        }
+
+        if (value is string stringValue && DateTimeOffset.TryParse(stringValue, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+        {
+            return result;
+        }
+
+        try
+        {
+            // 尝试先转换为 DateTime，然后转为 DateTimeOffset
+            var dateTimeResult = ToDateTime(value);
+            if (dateTimeResult != default)
+            {
+                return new DateTimeOffset(dateTimeResult);
+            }
+        }
+        catch
+        {
+            // 忽略异常，返回默认值
         }
 
         return defaultValue;
