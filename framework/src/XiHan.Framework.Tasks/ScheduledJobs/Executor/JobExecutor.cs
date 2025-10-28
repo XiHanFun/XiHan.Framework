@@ -74,7 +74,7 @@ public class JobExecutor : IJobExecutor
                 cancellationToken);
 
             // 创建任务实例
-            var job = ActivatorUtilities.CreateInstance(scopedServiceProvider, jobInstance.JobInfo.JobType) as IJob
+            var job = ActivatorUtilities.CreateInstance(scopedServiceProvider, jobInstance.JobInfo.JobType) as IJobWorker
                 ?? throw new InvalidOperationException($"无法创建任务实例: {jobInstance.JobInfo.JobType.Name}");
 
             // 构建并执行管道

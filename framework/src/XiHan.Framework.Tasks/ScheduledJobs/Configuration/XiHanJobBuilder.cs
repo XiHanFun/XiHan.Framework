@@ -65,7 +65,7 @@ public class XiHanJobBuilder
     /// <summary>
     /// 添加任务
     /// </summary>
-    public XiHanJobBuilder AddJob<TJob>() where TJob : class, IJob
+    public XiHanJobBuilder AddJob<TJob>() where TJob : class, IJobWorker
     {
         Services.AddTransient<TJob>();
         return this;

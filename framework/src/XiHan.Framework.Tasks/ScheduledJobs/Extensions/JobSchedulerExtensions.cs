@@ -33,7 +33,7 @@ public static class JobSchedulerExtensions
         ArgumentNullException.ThrowIfNull(assembly);
 
         var jobTypes = assembly.GetTypes()
-            .Where(t => typeof(IJob).IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
+            .Where(t => typeof(IJobWorker).IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
             .ToList();
 
         foreach (var jobType in jobTypes)
@@ -54,7 +54,7 @@ public static class JobSchedulerExtensions
         string jobName,
         string cronExpression,
         string? description = null,
-        JobPriority priority = JobPriority.Normal) where TJob : IJob
+        JobPriority priority = JobPriority.Normal) where TJob : IJobWorker
     {
         var jobInfo = new JobInfo
         {
@@ -77,7 +77,7 @@ public static class JobSchedulerExtensions
         string jobName,
         TimeSpan interval,
         string? description = null,
-        JobPriority priority = JobPriority.Normal) where TJob : IJob
+        JobPriority priority = JobPriority.Normal) where TJob : IJobWorker
     {
         var jobInfo = new JobInfo
         {

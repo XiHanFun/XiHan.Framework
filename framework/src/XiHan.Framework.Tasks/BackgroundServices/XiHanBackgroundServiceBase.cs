@@ -12,10 +12,11 @@
 
 #endregion <<版权版本注释>>
 
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
+using XiHan.Framework.Tasks.BackgroundServices.Abstractions;
 using XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 
 namespace XiHan.Framework.Tasks.BackgroundServices;
@@ -25,7 +26,7 @@ namespace XiHan.Framework.Tasks.BackgroundServices;
 /// 提供并发任务管理、队列处理、异常重试等核心功能
 /// </summary>
 /// <typeparam name="T">具体的后台服务类型</typeparam>
-public abstract class XiHanBackgroundServiceBase<T> : BackgroundService where T : class
+public abstract class XiHanBackgroundServiceBase<T> : BackgroundService, IBackgroundWorker where T : class
 {
     /// <summary>
     /// 日志记录器
