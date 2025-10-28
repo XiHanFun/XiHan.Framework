@@ -45,7 +45,7 @@ public class JobExecutionPipeline
     /// <summary>
     /// 构建执行委托
     /// </summary>
-    public JobExecutionDelegate Build(IJob job)
+    public JobExecutionDelegate Build(IJobWorker job)
     {
         JobExecutionDelegate pipeline = async context =>
         {
@@ -77,7 +77,7 @@ public class JobExecutionPipeline
     /// <summary>
     /// 执行任务
     /// </summary>
-    public async Task<JobResult> ExecuteAsync(IJobContext context, IJob job)
+    public async Task<JobResult> ExecuteAsync(IJobContext context, IJobWorker job)
     {
         var pipeline = Build(job);
         return await pipeline(context);

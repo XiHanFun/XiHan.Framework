@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJob
+// FileName:IJobWorker
 // Guid:de5070ab-f808-461e-afa8-fa5b71516a59
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,7 +19,7 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 /// <summary>
 /// 任务执行接口
 /// </summary>
-public interface IJob
+public interface IJobWorker
 {
     /// <summary>
     /// 执行任务
