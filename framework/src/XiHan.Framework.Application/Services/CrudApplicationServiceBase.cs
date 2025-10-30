@@ -12,9 +12,11 @@
 
 //#endregion <<版权版本注释>>
 
-//using XiHan.Framework.Application.Paging.Dtos;
+//using System.Linq.Expressions;
 //using XiHan.Framework.Domain.Entities.Abstracts;
+//using XiHan.Framework.Domain.Paging.Dtos;
 //using XiHan.Framework.Domain.Repositories;
+//using XiHan.Framework.Utils.Linq.Expressions;
 
 //namespace XiHan.Framework.Application.Services;
 
@@ -59,24 +61,26 @@
 //    /// </summary>
 //    /// <param name="input">分页查询参数</param>
 //    /// <returns>分页响应</returns>
-//    public virtual async Task<PageResponse<TEntityDto>> GetListAsync(PageQuery input)
+//    public virtual async Task<PageResponse<TEntityDto>> GetPageResponseAsync(PageQuery input)
 //    {
-//        var query = await CreateFilteredQueryAsync(input);
+//        // 获取基础查询对象
+//        var query = await Repository.GetQueryableAsync();
 
-//        // 应用过滤条件
-//        if (input.Filters != null && input.Filters.Count > 0)
+//        // 构建过滤表达式
+//        var predicate = BuildFilterPredicate(input.Filters);
+//        if (predicate != null)
 //        {
-//            query = ApplyFilters(query, input.Filters);
+//            query = query.Where(predicate);
 //        }
+
+//        // 应用自定义过滤
+//        query = await ApplyCustomFiltersAsync(query, input);
 
 //        // 应用排序
-//        if (input.Sorts != null && input.Sorts.Count > 0)
-//        {
-//            query = ApplySorts(query, input.Sorts);
-//        }
+//        query = ApplySorting(query, input.Sorts);
 
-//        // 计算总数
-//        var totalCount = await Repository.CountAsync(query);
+//        // 计算总数（在分页前）
+//        var totalCount = query.LongCount();
 
 //        // 应用分页（如果未禁用）
 //        if (!input.DisablePaging)
@@ -85,7 +89,7 @@
 //        }
 
 //        // 获取数据
-//        var entities = await Repository.GetAllAsync(query);
+//        var entities = query.ToList();
 //        var dtos = await MapToEntityDtosAsync(entities);
 
 //        // 构建分页响应
@@ -113,7 +117,7 @@
 //    /// <returns>更新后的实体DTO</returns>
 //    public virtual async Task<TEntityDto> UpdateAsync(TKey id, TEntityDto input)
 //    {
-//        var entity = await Repository.GetAsync(id);
+//        var entity = await Repository.GetByIdAsync(id);
 //        if (entity == null)
 //        {
 //            throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
@@ -131,7 +135,7 @@
 //    /// <returns>删除结果</returns>
 //    public virtual async Task<bool> DeleteAsync(TKey id)
 //    {
-//        var entity = await Repository.GetAsync(id);
+//        var entity = await Repository.GetByIdAsync(id);
 //        if (entity == null)
 //        {
 //            return false;
@@ -142,31 +146,72 @@
 //    }
 
 //    /// <summary>
-//    /// 应用过滤条件
+//    /// 构建过滤谓词表达式
 //    /// </summary>
-//    protected virtual IQueryable<TEntity> ApplyFilters(IQueryable<TEntity> query, List<SelectCondition> filters)
+//    /// <param name="filters">过滤条件列表</param>
+//    /// <returns>组合后的过滤谓词，如果没有过滤条件则返回 null</returns>
+//    protected virtual Expression<Func<TEntity, bool>>? BuildFilterPredicate(List<SelectCondition>? filters)
+//    {
+//        if (filters == null || filters.Count == 0)
+//        {
+//            return null;
+//        }
+
+//        // 使用 PredicateComposer 组合多个过滤条件
+//        var predicate = PredicateComposer.True<TEntity>();
+
+//        foreach (var filter in filters)
+//        {
+//            var filterExpression = BuildSingleFilterExpression(filter);
+//            if (filterExpression != null)
+//            {
+//                predicate = predicate.And(filterExpression);
+//            }
+//        }
+
+//        return predicate;
+//    }
+
+//    /// <summary>
+//    /// 构建单个过滤条件的表达式
+//    /// </summary>
+//    /// <param name="condition">过滤条件</param>
+//    /// <returns>过滤表达式</returns>
+//    protected virtual Expression<Func<TEntity, bool>>? BuildSingleFilterExpression(SelectCondition condition)
 //    {
 //        // 子类可以重写此方法以实现自定义过滤逻辑
-//        return query;
+//        // 默认实现可以使用 ExpressionBuilder 构建基本的相等性比较
+//        return null;
 //    }
 
 //    /// <summary>
-//    /// 应用排序条件
+//    /// 应用自定义过滤
 //    /// </summary>
-//    protected virtual IQueryable<TEntity> ApplySorts(IQueryable<TEntity> query, List<SortCondition> sorts)
+//    /// <param name="query">查询对象</param>
+//    /// <param name="input">查询参数</param>
+//    /// <returns>应用过滤后的查询对象</returns>
+//    protected virtual Task<IQueryable<TEntity>> ApplyCustomFiltersAsync(IQueryable<TEntity> query, PageQuery input)
 //    {
+//        // 子类可以重写此方法以实现额外的自定义过滤逻辑
+//        return Task.FromResult(query);
+//    }
+
+//    /// <summary>
+//    /// 应用排序
+//    /// </summary>
+//    /// <param name="query">查询对象</param>
+//    /// <param name="sorts">排序条件列表</param>
+//    /// <returns>应用排序后的查询对象</returns>
+//    protected virtual IQueryable<TEntity> ApplySorting(IQueryable<TEntity> query, List<SortCondition>? sorts)
+//    {
+//        if (sorts == null || sorts.Count == 0)
+//        {
+//            return query;
+//        }
+
 //        // 子类可以重写此方法以实现自定义排序逻辑
+//        // 默认实现：可以使用反射或表达式树来实现动态排序
 //        return query;
-//    }
-
-//    /// <summary>
-//    /// 创建过滤查询
-//    /// </summary>
-//    /// <param name="input">分页查询参数</param>
-//    /// <returns>查询表达式</returns>
-//    protected virtual Task<IQueryable<TEntity>> CreateFilteredQueryAsync(PageQuery input)
-//    {
-//        return Task.FromResult(Repository.GetQueryableAsync().Result);
 //    }
 
 //    /// <summary>
