@@ -31,14 +31,14 @@ public class OutgoingEventInfo : IOutgoingEventInfo
     /// <param name="id">事件唯一标识符</param>
     /// <param name="eventName">事件名称</param>
     /// <param name="eventData">序列化的事件数据</param>
-    /// <param name="creationTime">事件创建时间</param>
+    /// <param name="createdTime">事件创建时间</param>
     /// <exception cref="ArgumentException">当 eventName 为 null、空或超过最大长度时</exception>
     /// <exception cref="ArgumentNullException">当 eventData 为 null 时</exception>
     public OutgoingEventInfo(
         Guid id,
         string eventName,
         byte[] eventData,
-        DateTime creationTime)
+        DateTime createdTime)
     {
         Id = id;
         EventName = Guard.NotNullOrWhiteSpace(eventName, nameof(eventName), MaxEventNameLength);
@@ -49,7 +49,7 @@ public class OutgoingEventInfo : IOutgoingEventInfo
         }
 
         EventData = eventData ?? throw new ArgumentNullException(nameof(eventData));
-        CreationTime = creationTime;
+        CreatedTime = createdTime;
         ExtraProperties = [];
         this.SetDefaultsForExtraProperties();
     }
@@ -102,7 +102,7 @@ public class OutgoingEventInfo : IOutgoingEventInfo
     /// 表示事件在源系统中被创建的时间点
     /// </summary>
     /// <value>事件创建的 UTC 时间</value>
-    public DateTime CreationTime { get; }
+    public DateTime CreatedTime { get; }
 
     /// <summary>
     /// 设置关联标识符

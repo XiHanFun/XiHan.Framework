@@ -23,7 +23,7 @@ public interface ICreationEntity
     /// <summary>
     /// 创建时间
     /// </summary>
-    DateTimeOffset CreationTime { get; set; }
+    DateTimeOffset CreatedTime { get; set; }
 }
 
 /// <summary>
@@ -37,10 +37,10 @@ public interface ICreationEntity<TKey> : ICreationEntity
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    TKey? CreatorId { get; set; }
+    TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    string? Creator { get; set; }
+    string? CreatedBy { get; set; }
 }

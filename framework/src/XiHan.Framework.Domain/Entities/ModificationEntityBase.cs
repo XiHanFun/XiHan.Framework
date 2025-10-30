@@ -31,7 +31,7 @@ public abstract class ModificationEntityBase : IModificationEntity
     /// <summary>
     /// 修改时间
     /// </summary>
-    public virtual DateTimeOffset? ModificationTime { get; set; }
+    public virtual DateTimeOffset? ModifiedTime { get; set; }
 }
 
 /// <summary>
@@ -51,10 +51,10 @@ public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IMo
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
-    public virtual TKey? ModifierId { get; set; }
+    public virtual TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    public virtual string? Modifier { get; set; }
+    public virtual string? ModifiedBy { get; set; }
 }

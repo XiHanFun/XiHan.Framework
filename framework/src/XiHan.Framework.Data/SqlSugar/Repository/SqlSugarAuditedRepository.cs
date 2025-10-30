@@ -43,39 +43,39 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <summary>
     /// 根据创建者获取实体
     /// </summary>
-    /// <param name="creatorId">创建者主键</param>
+    /// <param name="createdId">创建者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey creatorId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.CreatorId != null && entity.CreatorId.Equals(creatorId))
+            .Where(entity => entity.CreatedId != null && entity.CreatedId.Equals(createdId))
             .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// 根据修改者获取实体
     /// </summary>
-    /// <param name="modifierId">修改者主键</param>
+    /// <param name="modifiedId">修改者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifierId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.ModifierId != null && entity.ModifierId.Equals(modifierId))
+            .Where(entity => entity.ModifiedId != null && entity.ModifiedId.Equals(modifiedId))
             .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// 根据删除者获取实体
     /// </summary>
-    /// <param name="deleterId">删除者主键</param>
+    /// <param name="deletedId">删除者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deleterId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.DeleterId != null && entity.DeleterId.Equals(deleterId))
+            .Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(deletedId))
             .ToListAsync(cancellationToken);
     }
 
@@ -89,7 +89,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     public async Task<IEnumerable<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.CreationTime >= startTime && entity.CreationTime <= endTime)
+            .Where(entity => entity.CreatedTime >= startTime && entity.CreatedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
 
@@ -103,7 +103,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     public async Task<IEnumerable<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.ModificationTime >= startTime && entity.ModificationTime <= endTime)
+            .Where(entity => entity.ModifiedTime >= startTime && entity.ModifiedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
 
@@ -117,7 +117,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     public async Task<IEnumerable<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
-            .Where(entity => entity.DeletionTime >= startTime && entity.DeletionTime <= endTime)
+            .Where(entity => entity.DeletedTime >= startTime && entity.DeletedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
 
@@ -133,49 +133,49 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
 
         var query = _dbClient.Queryable<TEntity>();
 
-        if (options.CreatorId is not null)
+        if (options.CreatedId is not null)
         {
-            query = query.Where(entity => entity.CreatorId != null && entity.CreatorId.Equals(options.CreatorId));
+            query = query.Where(entity => entity.CreatedId != null && entity.CreatedId.Equals(options.CreatedId));
         }
 
-        if (options.ModifierId is not null)
+        if (options.ModifiedId is not null)
         {
-            query = query.Where(entity => entity.ModifierId != null && entity.ModifierId.Equals(options.ModifierId));
+            query = query.Where(entity => entity.ModifiedId != null && entity.ModifiedId.Equals(options.ModifiedId));
         }
 
-        if (options.DeleterId is not null)
+        if (options.DeletedId is not null)
         {
-            query = query.Where(entity => entity.DeleterId != null && entity.DeleterId.Equals(options.DeleterId));
+            query = query.Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(options.DeletedId));
         }
 
         if (options.CreatedTimeStart.HasValue)
         {
-            query = query.Where(entity => entity.CreationTime >= options.CreatedTimeStart.Value);
+            query = query.Where(entity => entity.CreatedTime >= options.CreatedTimeStart.Value);
         }
 
         if (options.CreatedTimeEnd.HasValue)
         {
-            query = query.Where(entity => entity.CreationTime <= options.CreatedTimeEnd.Value);
+            query = query.Where(entity => entity.CreatedTime <= options.CreatedTimeEnd.Value);
         }
 
         if (options.ModifiedTimeStart.HasValue)
         {
-            query = query.Where(entity => entity.ModificationTime >= options.ModifiedTimeStart.Value);
+            query = query.Where(entity => entity.ModifiedTime >= options.ModifiedTimeStart.Value);
         }
 
         if (options.ModifiedTimeEnd.HasValue)
         {
-            query = query.Where(entity => entity.ModificationTime <= options.ModifiedTimeEnd.Value);
+            query = query.Where(entity => entity.ModifiedTime <= options.ModifiedTimeEnd.Value);
         }
 
         if (options.DeletedTimeStart.HasValue)
         {
-            query = query.Where(entity => entity.DeletionTime >= options.DeletedTimeStart.Value);
+            query = query.Where(entity => entity.DeletedTime >= options.DeletedTimeStart.Value);
         }
 
         if (options.DeletedTimeEnd.HasValue)
         {
-            query = query.Where(entity => entity.DeletionTime <= options.DeletedTimeEnd.Value);
+            query = query.Where(entity => entity.DeletedTime <= options.DeletedTimeEnd.Value);
         }
 
         if (options.OnlySoftDeleted)

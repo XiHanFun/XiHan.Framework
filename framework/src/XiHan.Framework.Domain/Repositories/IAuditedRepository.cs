@@ -29,26 +29,26 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <summary>
     /// 根据创建者查找实体
     /// </summary>
-    /// <param name="creatorId">创建者的唯一标识</param>
+    /// <param name="createdId">创建者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定创建者创建的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey creatorId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据修改者查找实体
     /// </summary>
-    /// <param name="modifierId">最后修改者的唯一标识</param>
+    /// <param name="modifiedId">最后修改者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定用户最后修改的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifierId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据删除者查找实体
     /// </summary>
-    /// <param name="deleterId">删除者的唯一标识</param>
+    /// <param name="deletedId">删除者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定用户删除的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deleterId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内创建的实体

@@ -35,7 +35,7 @@ public interface IDeletionEntity : ISoftDelete
     /// <summary>
     /// 删除时间
     /// </summary>
-    DateTimeOffset? DeletionTime { get; set; }
+    DateTimeOffset? DeletedTime { get; set; }
 }
 
 /// <summary>
@@ -49,10 +49,10 @@ public interface IDeletionEntity<TKey> : IDeletionEntity
     /// <summary>
     /// 删除者唯一标识
     /// </summary>
-    TKey? DeleterId { get; set; }
+    TKey? DeletedId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
-    string? Deleter { get; set; }
+    string? DeletedBy { get; set; }
 }

@@ -42,7 +42,7 @@ public class ProductDto
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public string Category { get; set; } = string.Empty;
-    public DateTimeOffset CreationTime { get; set; }
+    public DateTimeOffset CreatedTime { get; set; }
 }
 
 public class CreateProductDto
@@ -89,7 +89,7 @@ public class ProductAppService : CrudApplicationServiceBase<Product, ProductDto,
             Price = entity.Price,
             Stock = entity.Stock,
             Category = entity.Category,
-            CreationTime = entity.CreationTime
+            CreatedTime = entity.CreatedTime
         };
     }
 
@@ -185,7 +185,7 @@ public class OrderDto
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<OrderItemDto> Items { get; set; } = new();
-    public DateTimeOffset CreationTime { get; set; }
+    public DateTimeOffset CreatedTime { get; set; }
 }
 
 public class OrderItemDto
@@ -245,7 +245,7 @@ public class OrderAppService : BatchCrudApplicationServiceBase<Order, OrderDto, 
                 Quantity = i.Quantity,
                 UnitPrice = i.UnitPrice
             }).ToList(),
-            CreationTime = entity.CreationTime
+            CreatedTime = entity.CreatedTime
         };
     }
 
@@ -416,7 +416,7 @@ public class ProductSearchAppService : ApplicationServiceBase
             "price_asc" => query.OrderBy(p => p.Price),
             "price_desc" => query.OrderByDescending(p => p.Price),
             "name" => query.OrderBy(p => p.Name),
-            _ => query.OrderByDescending(p => p.CreationTime)
+            _ => query.OrderByDescending(p => p.CreatedTime)
         };
 
         // 分页
@@ -462,7 +462,7 @@ public class ProductSearchAppService : ApplicationServiceBase
             Price = product.Price,
             Stock = product.Stock,
             Category = product.Category,
-            CreationTime = product.CreationTime
+            CreatedTime = product.CreatedTime
         };
     }
 }
@@ -599,7 +599,7 @@ public class UserManagementAppService : CrudApplicationServiceBase<User, UserDto
             TotalOrders = user.Orders.Count,
             TotalSpent = user.Orders.Sum(o => o.TotalAmount),
             LastLoginTime = user.LastLoginTime,
-            RegistrationDays = (int)(DateTimeOffset.UtcNow - user.CreationTime).TotalDays
+            RegistrationDays = (int)(DateTimeOffset.UtcNow - user.CreatedTime).TotalDays
         };
     }
 

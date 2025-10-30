@@ -151,7 +151,7 @@
 //                if (request.SoftDelete && entity is IDeletionEntity deletionEntity)
 //                {
 //                    deletionEntity.IsDeleted = true;
-//                    deletionEntity.DeletionTime = DateTimeOffset.UtcNow;
+//                    deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
 //                    await Repository.UpdateAsync(entity);
 //                }
 //                else
@@ -420,7 +420,7 @@
 //                if (request.SoftDelete && entity is IDeletionEntity deletionEntity)
 //                {
 //                    deletionEntity.IsDeleted = true;
-//                    deletionEntity.DeletionTime = DateTimeOffset.UtcNow;
+//                    deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
 //                    await Repository.UpdateAsync(entity);
 //                }
 //                else

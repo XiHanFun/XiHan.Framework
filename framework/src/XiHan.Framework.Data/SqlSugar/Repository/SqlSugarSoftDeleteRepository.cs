@@ -57,7 +57,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         entity.IsDeleted = true;
         if (entity is IDeletionEntity deletionEntity)
         {
-            deletionEntity.DeletionTime = DateTimeOffset.UtcNow;
+            deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
         }
 
         await _dbClient.Updateable(entity)
@@ -102,7 +102,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             entity.IsDeleted = true;
             if (entity is IDeletionEntity deletionEntity)
             {
-                deletionEntity.DeletionTime = DateTimeOffset.UtcNow;
+                deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
             }
         }
 
@@ -127,7 +127,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await _dbClient.Updateable<TEntity>()
             .Where(entity => idArray.Contains(entity.BasicId))
             .SetColumns(entity => entity.IsDeleted == true)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletionTime == DateTimeOffset.UtcNow)
+            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -142,7 +142,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await _dbClient.Updateable<TEntity>()
             .Where(predicate)
             .SetColumns(entity => entity.IsDeleted == true)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletionTime == DateTimeOffset.UtcNow)
+            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -172,7 +172,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         entity.IsDeleted = false;
         if (entity is IDeletionEntity deletionEntity)
         {
-            deletionEntity.DeletionTime = null;
+            deletionEntity.DeletedTime = null;
         }
 
         await _dbClient.Updateable(entity)
@@ -217,7 +217,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             entity.IsDeleted = false;
             if (entity is IDeletionEntity deletionEntity)
             {
-                deletionEntity.DeletionTime = null;
+                deletionEntity.DeletedTime = null;
             }
         }
 
@@ -242,7 +242,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         await _dbClient.Updateable<TEntity>()
             .Where(entity => idArray.Contains(entity.BasicId))
             .SetColumns(entity => entity.IsDeleted == false)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletionTime == null)
+            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == null)
             .ExecuteCommandAsync(cancellationToken);
     }
 
