@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
-using Serilog;
 
 namespace XiHan.Framework.Logging.Services;
 
