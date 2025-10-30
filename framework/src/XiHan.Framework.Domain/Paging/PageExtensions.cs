@@ -12,10 +12,11 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Application.Paging.Dtos;
-using XiHan.Framework.Application.Paging.Handlers;
+using XiHan.Framework.Domain.Paging;
+using XiHan.Framework.Domain.Paging.Dtos;
+using XiHan.Framework.Domain.Paging.Handlers;
 
-namespace XiHan.Framework.Application.Paging;
+namespace XiHan.Framework.Domain.Paging;
 
 /// <summary>
 /// 分页扩展方法

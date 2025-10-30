@@ -14,10 +14,10 @@
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using XiHan.Framework.Application.Paging.Dtos;
+using XiHan.Framework.Domain.Paging.Dtos;
 using XiHan.Framework.Utils.Reflections;
 
-namespace XiHan.Framework.Application.Paging.Handlers;
+namespace XiHan.Framework.Domain.Paging.Handlers;
 
 /// <summary>
 /// 排序条件解析器
