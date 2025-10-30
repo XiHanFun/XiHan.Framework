@@ -88,7 +88,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体，如果不存在则返回 <c>null</c></returns>
-    public async Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<TEntity?> GetFirstAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -102,7 +102,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体，如果不存在则返回 <c>null</c></returns>
-    public async Task<TEntity?> GetAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<TEntity?> GetFirstAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
         cancellationToken.ThrowIfCancellationRequested();
@@ -115,7 +115,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -129,7 +129,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -146,7 +146,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <param name="orderBy">排序</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(orderBy);
@@ -164,7 +164,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
         cancellationToken.ThrowIfCancellationRequested();
