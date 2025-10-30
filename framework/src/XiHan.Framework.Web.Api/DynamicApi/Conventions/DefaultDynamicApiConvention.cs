@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Mvc.Routing;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Application.Attributes;
@@ -88,7 +89,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 检查是否禁用动态 API
     /// </summary>
-    private bool IsDisabled(Type serviceType, MethodInfo? methodInfo)
+    private static bool IsDisabled(Type serviceType, MethodInfo? methodInfo)
     {
         // 检查类级别的禁用标记
         if (serviceType.GetCustomAttribute<DisableDynamicApiAttribute>() != null)
@@ -119,6 +120,71 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 判断是否是标准的 CRUD 操作
+    /// </summary>
+    private static bool IsStandardCrudAction(string actionName)
+    {
+        var standardActions = new[] { "get", "getlist", "create", "update", "delete" };
+        return standardActions.Contains(actionName.ToLower());
+    }
+
+    /// <summary>
+    /// 判断是否是简单类型
+    /// </summary>
+    private static bool IsSimpleType(Type type)
+    {
+        return type.IsPrimitive ||
+               type.IsEnum ||
+               type == typeof(string) ||
+               type == typeof(decimal) ||
+               type == typeof(DateTime) ||
+               type == typeof(DateTimeOffset) ||
+               type == typeof(TimeSpan) ||
+               type == typeof(Guid) ||
+               Nullable.GetUnderlyingType(type) != null;
+    }
+
+    /// <summary>
+    /// 获取 API 版本
+    /// </summary>
+    private static string? GetApiVersion(Type serviceType)
+    {
+        var attribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
+        return attribute?.Version;
+    }
+
+    /// <summary>
+    /// 获取路由参数
+    /// </summary>
+    private static List<string> GetRouteParameters(MethodInfo methodInfo, string? httpMethod)
+    {
+        var parameters = new List<string>();
+        var methodParameters = methodInfo.GetParameters();
+
+        foreach (var parameter in methodParameters)
+        {
+            // 对于 GET 和 DELETE 请求，将简单类型参数添加到路由
+            if (httpMethod is "GET" or "DELETE")
+            {
+                if (IsSimpleType(parameter.ParameterType))
+                {
+                    parameters.Add($"{{{parameter.Name}}}");
+                }
+            }
+            // 对于 PUT 和 PATCH 请求，通常第一个参数是 ID
+            else if (httpMethod is "PUT" or "PATCH")
+            {
+                if (IsSimpleType(parameter.ParameterType) && parameters.Count == 0)
+                {
+                    parameters.Add($"{{{parameter.Name}}}");
+                }
+            }
+        }
+
+        return parameters;
     }
 
     /// <summary>
@@ -169,7 +235,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         var httpMethodAttr = methodInfo.GetCustomAttribute<HttpMethodAttribute>();
         if (httpMethodAttr != null)
         {
-            return httpMethodAttr.Method;
+            return httpMethodAttr.HttpMethods.First();
         }
 
         // 根据方法名推断 HTTP 方法
@@ -231,78 +297,13 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         if (context.MethodInfo != null)
         {
             var parameters = GetRouteParameters(context.MethodInfo, context.HttpMethod);
-            if (parameters.Any())
+            if (parameters.Count != 0)
             {
                 parts.AddRange(parameters);
             }
         }
 
         return string.Join("/", parts);
-    }
-
-    /// <summary>
-    /// 判断是否是标准的 CRUD 操作
-    /// </summary>
-    private bool IsStandardCrudAction(string actionName)
-    {
-        var standardActions = new[] { "get", "getlist", "create", "update", "delete" };
-        return standardActions.Contains(actionName.ToLower());
-    }
-
-    /// <summary>
-    /// 获取路由参数
-    /// </summary>
-    private List<string> GetRouteParameters(MethodInfo methodInfo, string? httpMethod)
-    {
-        var parameters = new List<string>();
-        var methodParameters = methodInfo.GetParameters();
-
-        foreach (var parameter in methodParameters)
-        {
-            // 对于 GET 和 DELETE 请求，将简单类型参数添加到路由
-            if (httpMethod is "GET" or "DELETE")
-            {
-                if (IsSimpleType(parameter.ParameterType))
-                {
-                    parameters.Add($"{{{parameter.Name}}}");
-                }
-            }
-            // 对于 PUT 和 PATCH 请求，通常第一个参数是 ID
-            else if (httpMethod is "PUT" or "PATCH")
-            {
-                if (IsSimpleType(parameter.ParameterType) && parameters.Count == 0)
-                {
-                    parameters.Add($"{{{parameter.Name}}}");
-                }
-            }
-        }
-
-        return parameters;
-    }
-
-    /// <summary>
-    /// 判断是否是简单类型
-    /// </summary>
-    private bool IsSimpleType(Type type)
-    {
-        return type.IsPrimitive ||
-               type.IsEnum ||
-               type == typeof(string) ||
-               type == typeof(decimal) ||
-               type == typeof(DateTime) ||
-               type == typeof(DateTimeOffset) ||
-               type == typeof(TimeSpan) ||
-               type == typeof(Guid) ||
-               Nullable.GetUnderlyingType(type) != null;
-    }
-
-    /// <summary>
-    /// 获取 API 版本
-    /// </summary>
-    private string? GetApiVersion(Type serviceType)
-    {
-        var attribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-        return attribute?.Version;
     }
 
     /// <summary>
