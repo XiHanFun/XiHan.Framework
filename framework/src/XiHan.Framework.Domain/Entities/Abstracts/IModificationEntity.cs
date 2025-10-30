@@ -23,7 +23,7 @@ public interface IModificationEntity
     /// <summary>
     /// 修改时间
     /// </summary>
-    DateTimeOffset? ModificationTime { get; set; }
+    DateTimeOffset? ModifiedTime { get; set; }
 }
 
 /// <summary>
@@ -37,10 +37,10 @@ public interface IModificationEntity<TKey> : IModificationEntity
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
-    TKey? ModifierId { get; set; }
+    TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    string? Modifier { get; set; }
+    string? ModifiedBy { get; set; }
 }

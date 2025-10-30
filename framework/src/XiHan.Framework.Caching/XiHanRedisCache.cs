@@ -455,14 +455,14 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
         var tasks = new List<Task>();
         leases = [];
 
-        var creationTime = DateTimeOffset.UtcNow;
+        var createdTime = DateTimeOffset.UtcNow;
 
-        var absoluteExpiration = GetAbsoluteExpiration(creationTime, options);
+        var absoluteExpiration = GetAbsoluteExpiration(createdTime, options);
 
         foreach (var item in items)
         {
             var prefixedKey = InstancePrefix.Append(item.Key);
-            var ttl = GetExpirationInSeconds(creationTime, absoluteExpiration, options);
+            var ttl = GetExpirationInSeconds(createdTime, absoluteExpiration, options);
             var fields = GetHashFields(Linearize(new ReadOnlySequence<byte>(item.Value), out var lease), absoluteExpiration, options.SlidingExpiration);
             leases.Add(lease);
             if (ttl is null)
@@ -500,24 +500,24 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// <summary>
     /// 获取过期时间秒数
     /// </summary>
-    /// <param name="creationTime"></param>
+    /// <param name="createdTime"></param>
     /// <param name="absoluteExpiration"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    protected virtual long? GetExpirationInSeconds(DateTimeOffset creationTime, DateTimeOffset? absoluteExpiration, DistributedCacheEntryOptions options)
+    protected virtual long? GetExpirationInSeconds(DateTimeOffset createdTime, DateTimeOffset? absoluteExpiration, DistributedCacheEntryOptions options)
     {
-        return (long?)GetExpirationInSecondsMethod.Invoke(null, [creationTime, absoluteExpiration, options]);
+        return (long?)GetExpirationInSecondsMethod.Invoke(null, [createdTime, absoluteExpiration, options]);
     }
 
     /// <summary>
     /// 获取绝对过期时间
     /// </summary>
-    /// <param name="creationTime"></param>
+    /// <param name="createdTime"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    protected virtual DateTimeOffset? GetAbsoluteExpiration(DateTimeOffset creationTime, DistributedCacheEntryOptions options)
+    protected virtual DateTimeOffset? GetAbsoluteExpiration(DateTimeOffset createdTime, DistributedCacheEntryOptions options)
     {
-        return (DateTimeOffset?)GetAbsoluteExpirationMethod.Invoke(null, [creationTime, options]);
+        return (DateTimeOffset?)GetAbsoluteExpirationMethod.Invoke(null, [createdTime, options]);
     }
 
     /// <summary>

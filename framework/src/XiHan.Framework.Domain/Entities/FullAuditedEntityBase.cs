@@ -29,7 +29,7 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     protected FullAuditedEntityBase()
     {
         RowVersion = [];
-        CreationTime = DateTimeOffset.UtcNow;
+        CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
     }
 
@@ -43,12 +43,12 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     /// <summary>
     /// 创建时间
     /// </summary>
-    public virtual DateTimeOffset CreationTime { get; set; }
+    public virtual DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 修改时间
     /// </summary>
-    public virtual DateTimeOffset? ModificationTime { get; set; }
+    public virtual DateTimeOffset? ModifiedTime { get; set; }
 
     /// <summary>
     /// 软删除标记
@@ -58,7 +58,7 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     /// <summary>
     /// 删除时间
     /// </summary>
-    public virtual DateTimeOffset? DeletionTime { get; set; }
+    public virtual DateTimeOffset? DeletedTime { get; set; }
 }
 
 /// <summary>
@@ -92,32 +92,32 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    public virtual TKey? CreatorId { get; set; }
+    public virtual TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    public virtual string? Creator { get; set; }
+    public virtual string? CreatedBy { get; set; }
 
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
-    public virtual TKey? ModifierId { get; set; }
+    public virtual TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    public virtual string? Modifier { get; set; }
+    public virtual string? ModifiedBy { get; set; }
 
     /// <summary>
     /// 删除者唯一标识
     /// </summary>
-    public virtual TKey? DeleterId { get; set; }
+    public virtual TKey? DeletedId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
-    public virtual string? Deleter { get; set; }
+    public virtual string? DeletedBy { get; set; }
 
     /// <summary>
     /// 检查实体是否为临时实体（尚未持久化）

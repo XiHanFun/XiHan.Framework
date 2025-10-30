@@ -26,13 +26,13 @@ public abstract class CreationEntityBase : ICreationEntity
     /// </summary>
     protected CreationEntityBase()
     {
-        CreationTime = DateTimeOffset.UtcNow;
+        CreatedTime = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public virtual DateTimeOffset CreationTime { get; set; }
+    public virtual DateTimeOffset CreatedTime { get; set; }
 }
 
 /// <summary>
@@ -52,10 +52,10 @@ public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEn
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    public virtual TKey? CreatorId { get; set; }
+    public virtual TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    public virtual string? Creator { get; set; }
+    public virtual string? CreatedBy { get; set; }
 }

@@ -31,7 +31,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     protected SugarFullAuditedEntity() : base()
     {
         RowVersion = [];
-        CreationTime = DateTimeOffset.UtcNow;
+        CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
     }
 
@@ -43,7 +43,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     {
         RowVersion = [];
         BasicId = basicId;
-        CreationTime = DateTimeOffset.UtcNow;
+        CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
     }
 
@@ -65,37 +65,37 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// 创建时间
     /// </summary>
     [SugarColumn(IsNullable = false, ColumnDescription = "创建时间")]
-    public override DateTimeOffset CreationTime { get; set; }
+    public override DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "创建者唯一标识")]
-    public override TKey? CreatorId { get; set; }
+    public override TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "创建人")]
-    public override string? Creator { get; set; }
+    public override string? CreatedBy { get; set; }
 
     /// <summary>
     /// 修改时间
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "修改时间")]
-    public override DateTimeOffset? ModificationTime { get; set; }
+    public override DateTimeOffset? ModifiedTime { get; set; }
 
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "修改者唯一标识")]
-    public override TKey? ModifierId { get; set; }
+    public override TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "修改人")]
-    public override string? Modifier { get; set; }
+    public override string? ModifiedBy { get; set; }
 
     /// <summary>
     /// 软删除标记
@@ -107,17 +107,17 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// 删除时间
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "删除时间")]
-    public override DateTimeOffset? DeletionTime { get; set; }
+    public override DateTimeOffset? DeletedTime { get; set; }
 
     /// <summary>
     /// 删除者唯一标识
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "删除者唯一标识")]
-    public override TKey? DeleterId { get; set; }
+    public override TKey? DeletedId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "删除者")]
-    public override string? Deleter { get; set; }
+    public override string? DeletedBy { get; set; }
 }

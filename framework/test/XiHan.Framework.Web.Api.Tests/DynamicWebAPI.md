@@ -85,7 +85,7 @@ public class UserDto
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public bool IsActive { get; set; }
-    public DateTimeOffset CreationTime { get; set; }
+    public DateTimeOffset CreatedTime { get; set; }
 }
 
 /// <summary>
@@ -137,7 +137,7 @@ public class UserAppService : CrudApplicationServiceBase<User, UserDto, long, Cr
             Email = entity.Email,
             PhoneNumber = entity.PhoneNumber,
             IsActive = entity.IsActive,
-            CreationTime = entity.CreationTime
+            CreatedTime = entity.CreatedTime
         };
     }
 
