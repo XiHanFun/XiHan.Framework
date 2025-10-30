@@ -48,5 +48,5 @@ public interface IOutgoingEventInfo : IHasExtraProperties
     /// 表示事件在源系统中被创建的时间点
     /// </summary>
     /// <value>事件创建的 UTC 时间</value>
-    DateTime CreationTime { get; }
+    DateTime CreatedTime { get; }
 }

@@ -50,7 +50,7 @@ public abstract class DeletionEntityBase : SoftDeleteEntityBase, IDeletionEntity
     /// <summary>
     /// 删除时间
     /// </summary>
-    public virtual DateTimeOffset? DeletionTime { get; set; }
+    public virtual DateTimeOffset? DeletedTime { get; set; }
 }
 
 /// <summary>
@@ -70,10 +70,10 @@ public abstract class DeletionEntityBase<TKey> : DeletionEntityBase, IDeletionEn
     /// <summary>
     /// 删除者唯一标识
     /// </summary>
-    public virtual TKey? DeleterId { get; set; }
+    public virtual TKey? DeletedId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
-    public virtual string? Deleter { get; set; }
+    public virtual string? DeletedBy { get; set; }
 }

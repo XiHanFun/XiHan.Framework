@@ -29,24 +29,24 @@ public abstract class SugarCreationEntity<TKey> : CreationEntityBase<TKey>
     /// </summary>
     protected SugarCreationEntity()
     {
-        CreationTime = DateTimeOffset.UtcNow;
+        CreatedTime = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
     /// 创建时间
     /// </summary>
     [SugarColumn(IsNullable = false, ColumnDescription = "创建时间")]
-    public override DateTimeOffset CreationTime { get; set; }
+    public override DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "创建者唯一标识")]
-    public override TKey? CreatorId { get; set; }
+    public override TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
     [SugarColumn(IsNullable = true, ColumnDescription = "创建人")]
-    public override string? Creator { get; set; }
+    public override string? CreatedBy { get; set; }
 }

@@ -24,17 +24,17 @@ public sealed class AuditQueryOptions<TKey>
     /// <summary>
     /// 创建者主键
     /// </summary>
-    public TKey? CreatorId { get; init; }
+    public TKey? CreatedId { get; init; }
 
     /// <summary>
     /// 最后修改者主键
     /// </summary>
-    public TKey? ModifierId { get; init; }
+    public TKey? ModifiedId { get; init; }
 
     /// <summary>
     /// 删除者主键
     /// </summary>
-    public TKey? DeleterId { get; init; }
+    public TKey? DeletedId { get; init; }
 
     /// <summary>
     /// 创建时间起始（包含）
