@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Application.Paging.Dtos;
+using XiHan.Framework.Domain.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Services;
 
@@ -37,7 +37,7 @@ public interface ICrudApplicationService<TEntityDto, TKey> : IApplicationService
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    Task<PageResponse<TEntityDto>> GetListAsync(PageQuery input);
+    Task<PageResponse<TEntityDto>> GetPageResponseAsync(PageQuery input);
 
     /// <summary>
     /// 创建实体
