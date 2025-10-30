@@ -103,7 +103,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// </summary>
     /// <param name="context">模板上下文</param>
     /// <returns>变量字典</returns>
-    private Dictionary<string, object?> ExtractVariables(ITemplateContext context)
+    private static Dictionary<string, object?> ExtractVariables(ITemplateContext context)
     {
         var variables = new Dictionary<string, object?>();
 
@@ -234,7 +234,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// <param name="condition">条件表达式</param>
     /// <param name="values">变量值字典</param>
     /// <returns>条件评估结果</returns>
-    private bool EvaluateCondition(string condition, IDictionary<string, object?> values)
+    private static bool EvaluateCondition(string condition, IDictionary<string, object?> values)
     {
         // 支持简单的条件表达式：变量存在性、相等、不等
         if (condition.Contains("=="))
@@ -276,7 +276,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// <param name="expression">表达式</param>
     /// <param name="values">变量值字典</param>
     /// <returns>表达式计算的值</returns>
-    private object? GetValueFromExpression(string expression, IDictionary<string, object?> values)
+    private static object? GetValueFromExpression(string expression, IDictionary<string, object?> values)
     {
         expression = expression.Trim();
 
@@ -313,7 +313,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// </summary>
     /// <param name="templateSource">模板源码</param>
     /// <returns>验证结果</returns>
-    private TemplateValidationResult ValidateTemplateInternal(string templateSource)
+    private static TemplateValidationResult ValidateTemplateInternal(string templateSource)
     {
         try
         {
@@ -348,7 +348,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// </summary>
     /// <param name="template">模板内容</param>
     /// <returns>是否有效</returns>
-    private bool ValidateBasicSyntax(string template)
+    private static bool ValidateBasicSyntax(string template)
     {
         // 检查变量占位符的匹配
         var openCount = 0;
@@ -380,7 +380,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// </summary>
     /// <param name="template">模板内容</param>
     /// <returns>是否有效</returns>
-    private bool ValidateConditionalSyntax(string template)
+    private static bool ValidateConditionalSyntax(string template)
     {
         // 验证 if/else/endif 匹配
         var ifMatches = Regex.Matches(template, @"{{if\s+[^}]+}}");
@@ -394,7 +394,7 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     /// </summary>
     /// <param name="template">模板内容</param>
     /// <returns>是否有效</returns>
-    private bool ValidateLoopSyntax(string template)
+    private static bool ValidateLoopSyntax(string template)
     {
         // 验证 for/endfor 匹配
         var forMatches = Regex.Matches(template, @"{{for\s+[^}]+\s+in\s+[^}]+}}");

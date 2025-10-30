@@ -183,7 +183,7 @@ public class SocksProxyExample
     /// <summary>
     /// 示例6: 原生 HttpClient 使用 SOCKS5 代理（底层实现）
     /// </summary>
-    public async Task Example6_NativeSocks5SupportAsync()
+    public static async Task Example6_NativeSocks5SupportAsync()
     {
         // 这是 .NET 6+ 原生支持的方式
         var client = new HttpClient(new SocketsHttpHandler

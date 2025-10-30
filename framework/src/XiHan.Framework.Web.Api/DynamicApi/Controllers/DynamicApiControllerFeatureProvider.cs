@@ -52,7 +52,7 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     /// <summary>
     /// 获取应用服务类型
     /// </summary>
-    private IEnumerable<TypeInfo> GetApplicationServiceTypes(IEnumerable<ApplicationPart> parts)
+    private static IEnumerable<TypeInfo> GetApplicationServiceTypes(IEnumerable<ApplicationPart> parts)
     {
         var serviceTypes = new List<TypeInfo>();
 
@@ -73,7 +73,7 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     /// <summary>
     /// 判断是否是应用服务
     /// </summary>
-    private bool IsApplicationService(TypeInfo typeInfo)
+    private static bool IsApplicationService(TypeInfo typeInfo)
     {
         return typeInfo.IsClass &&
                !typeInfo.IsAbstract &&
