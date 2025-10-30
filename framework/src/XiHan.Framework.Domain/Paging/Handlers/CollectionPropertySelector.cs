@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Application.Paging;
 using XiHan.Framework.Domain.Paging.Dtos;
 using XiHan.Framework.Domain.Paging.Enums;
 
