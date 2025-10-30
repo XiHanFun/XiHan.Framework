@@ -14,7 +14,7 @@
 
 using System.ComponentModel;
 
-namespace XiHan.Framework.Application.Paging.Enums;
+namespace XiHan.Framework.Domain.Paging.Enums;
 
 /// <summary>
 /// 选择比较枚举

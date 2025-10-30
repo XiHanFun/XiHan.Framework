@@ -13,9 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
-using XiHan.Framework.Application.Paging.Enums;
+using XiHan.Framework.Domain.Paging.Enums;
 
-namespace XiHan.Framework.Application.Paging.Dtos;
+namespace XiHan.Framework.Domain.Paging.Dtos;
 
 /// <summary>
 /// 排序条件
