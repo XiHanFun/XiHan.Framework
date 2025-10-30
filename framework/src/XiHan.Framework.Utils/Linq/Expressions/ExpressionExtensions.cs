@@ -177,10 +177,11 @@ public static class ExpressionExtensions
     /// 动态生成 Select 投影表达式
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
     /// <param name="source"></param>
     /// <param name="propertyNames"></param>
     /// <returns></returns>
-    public static IQueryable<dynamic> SelectProperties<T>(this IQueryable<T> source, params string[] propertyNames)
+    public static IQueryable<TResult> SelectProperties<T, TResult>(this IQueryable<T> source, params string[] propertyNames)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
 
@@ -190,8 +191,8 @@ public static class ExpressionExtensions
             return Expression.Bind(property.Member, property);
         });
 
-        var newExpression = Expression.MemberInit(Expression.New(typeof(object)), bindings);
-        var lambda = Expression.Lambda<Func<T, object>>(newExpression, parameter);
+        var newExpression = Expression.MemberInit(Expression.New(typeof(TResult)), bindings);
+        var lambda = Expression.Lambda<Func<T, TResult>>(newExpression, parameter);
 
         return source.Select(lambda);
     }
