@@ -12,14 +12,11 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Options;
-using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Domain;
-using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data;
