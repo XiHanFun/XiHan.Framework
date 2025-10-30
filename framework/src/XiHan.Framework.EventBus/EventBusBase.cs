@@ -277,7 +277,7 @@ public abstract class EventBusBase : IEventBus
 
         await TriggerHandlersAsync(eventType, eventData, exceptions);
 
-        if (exceptions.Any())
+        if (exceptions.Count != 0)
         {
             ThrowOriginalExceptions(eventType, exceptions);
         }

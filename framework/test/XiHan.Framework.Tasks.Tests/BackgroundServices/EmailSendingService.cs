@@ -234,7 +234,7 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
     /// 生成随机测试邮件
     /// </summary>
     /// <returns>随机邮件任务</returns>
-    private EmailTaskItem GenerateRandomEmail()
+    private static EmailTaskItem GenerateRandomEmail()
     {
         var recipients = new[] { "test1@example.com", "test2@example.com", "test3@example.com" };
         var subjects = new[] { "系统通知", "重要提醒", "活动邀请", "安全警告" };

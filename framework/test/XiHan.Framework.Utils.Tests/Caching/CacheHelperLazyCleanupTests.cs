@@ -272,7 +272,7 @@ public class CacheHelperLazyCleanupTests
     /// <summary>
     /// 清理测试后的缓存
     /// </summary>
-    public void Dispose()
+    public static void Dispose()
     {
         CacheHelper.Clear();
     }
