@@ -30,7 +30,7 @@ public interface ICrudApplicationService<TEntityDto, TKey> : IApplicationService
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>实体DTO</returns>
-    Task<TEntityDto?> GetAsync(TKey id);
+    Task<TEntityDto?> GetByIdAsync(TKey id);
 
     /// <summary>
     /// 获取分页列表
