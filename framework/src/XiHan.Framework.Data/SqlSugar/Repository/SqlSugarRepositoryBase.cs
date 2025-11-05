@@ -16,6 +16,9 @@ using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Paging.Dtos;
+using XiHan.Framework.Domain.Paging.Enums;
+using XiHan.Framework.Domain.Paging.Handlers;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Specifications.Abstracts;
 
@@ -557,4 +560,312 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : IRepositoryBase<TEntity, TK
     }
 
     #endregion 规约支持
+
+    #region 分页查询
+
+    /// <summary>
+    /// 获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var query = _dbClient.Queryable<TEntity>();
+
+        // 计算总数
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // 应用分页
+        var pageInfo = new PageInfo(pageIndex, pageSize);
+        var items = await query
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(pageIndex, pageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据条件获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var query = _dbClient.Queryable<TEntity>().Where(predicate);
+
+        // 计算总数
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // 应用分页
+        var pageInfo = new PageInfo(pageIndex, pageSize);
+        var items = await query
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(pageIndex, pageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据条件获取分页数据（支持排序）
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="predicate">条件</param>
+    /// <param name="orderBy">排序</param>
+    /// <param name="isAscending">是否升序</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>> orderBy, bool isAscending = true, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(orderBy);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var query = _dbClient.Queryable<TEntity>();
+
+        // 应用条件
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
+        // 应用排序
+        query = isAscending ? query.OrderBy(orderBy) : query.OrderByDescending(orderBy);
+
+        // 计算总数
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // 应用分页
+        var pageInfo = new PageInfo(pageIndex, pageSize);
+        var items = await query
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(pageIndex, pageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据规约获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+
+        // 计算总数
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // 应用分页
+        var pageInfo = new PageInfo(pageIndex, pageSize);
+        var items = await query
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(pageIndex, pageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据分页查询对象获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var queryable = _dbClient.Queryable<TEntity>();
+
+        // 应用过滤条件
+        queryable = ApplyFilters(queryable, query.Filters);
+        // 应用排序
+        queryable = ApplySorts(queryable, query.Sorts);
+
+        // 计算总数
+        var totalCount = await queryable.CountAsync(cancellationToken);
+
+        // 如果禁用分页，返回所有数据
+        if (query.DisablePaging)
+        {
+            var allItems = await queryable.ToListAsync(cancellationToken);
+            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+        }
+
+        // 应用分页
+        var pageInfo = query.ToPageInfo();
+        var items = await queryable
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(query.PageIndex, query.PageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据分页查询对象和条件获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="predicate">条件</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(predicate);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var queryable = _dbClient.Queryable<TEntity>().Where(predicate);
+
+        // 应用过滤条件
+        queryable = ApplyFilters(queryable, query.Filters);
+        // 应用排序
+        queryable = ApplySorts(queryable, query.Sorts);
+
+        // 计算总数
+        var totalCount = await queryable.CountAsync(cancellationToken);
+
+        // 如果禁用分页，返回所有数据
+        if (query.DisablePaging)
+        {
+            var allItems = await queryable.ToListAsync(cancellationToken);
+            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+        }
+
+        // 应用分页
+        var pageInfo = query.ToPageInfo();
+        var items = await queryable
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(query.PageIndex, query.PageSize, totalCount));
+    }
+
+    /// <summary>
+    /// 根据分页查询对象和规约获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="specification">规约</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(specification);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var queryable = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+
+        // 应用过滤条件
+        queryable = ApplyFilters(queryable, query.Filters);
+        // 应用排序
+        queryable = ApplySorts(queryable, query.Sorts);
+
+        // 计算总数
+        var totalCount = await queryable.CountAsync(cancellationToken);
+
+        // 如果禁用分页，返回所有数据
+        if (query.DisablePaging)
+        {
+            var allItems = await queryable.ToListAsync(cancellationToken);
+            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+        }
+
+        // 应用分页
+        var pageInfo = query.ToPageInfo();
+        var items = await queryable
+            .Skip(pageInfo.Skip)
+            .Take(pageInfo.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PageResponse<TEntity>(items, new PageData(query.PageIndex, query.PageSize, totalCount));
+    }
+
+    #endregion 分页查询
+
+    #region PageQuery 支持方法
+
+    /// <summary>
+    /// 应用过滤条件
+    /// </summary>
+    /// <param name="queryable">查询对象</param>
+    /// <param name="filters">过滤条件集合</param>
+    /// <returns>应用过滤后的查询对象</returns>
+    private static ISugarQueryable<TEntity> ApplyFilters(ISugarQueryable<TEntity> queryable, List<SelectCondition>? filters)
+    {
+        if (filters == null || filters.Count == 0)
+        {
+            return queryable;
+        }
+
+        foreach (var filter in filters)
+        {
+            var expression = SelectConditionParser<TEntity>.GetSelectConditionParser(filter);
+            queryable = queryable.Where(expression);
+        }
+
+        return queryable;
+    }
+
+    /// <summary>
+    /// 应用排序条件
+    /// </summary>
+    /// <param name="queryable">查询对象</param>
+    /// <param name="sorts">排序条件集合</param>
+    /// <returns>应用排序后的查询对象</returns>
+    private static ISugarQueryable<TEntity> ApplySorts(ISugarQueryable<TEntity> queryable, List<SortCondition>? sorts)
+    {
+        if (sorts == null || sorts.Count == 0)
+        {
+            return queryable;
+        }
+
+        // 按优先级排序
+        var orderedSorts = sorts.OrderBy(s => s.Priority).ToList();
+
+        for (var i = 0; i < orderedSorts.Count; i++)
+        {
+            var sort = orderedSorts[i];
+            var expression = SortConditionParser<TEntity>.GetSortConditionParser(sort);
+
+            if (i == 0)
+            {
+                // 第一个排序使用 OrderBy 或 OrderByDescending
+                queryable = sort.Direction == SortDirection.Asc
+                    ? queryable.OrderBy(expression)
+                    : queryable.OrderByDescending(expression);
+            }
+            else
+            {
+                // 后续排序使用 OrderBy 或 OrderByDescending（SqlSugar 会自动处理为 ThenBy）
+                queryable = sort.Direction == SortDirection.Asc
+                    ? queryable.OrderBy(expression)
+                    : queryable.OrderByDescending(expression);
+            }
+        }
+
+        return queryable;
+    }
+
+    #endregion PageQuery 支持方法
 }
