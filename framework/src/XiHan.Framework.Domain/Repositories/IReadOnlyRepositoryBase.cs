@@ -14,6 +14,7 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Paging.Dtos;
 using XiHan.Framework.Domain.Specifications.Abstracts;
 
 namespace XiHan.Framework.Domain.Repositories;
@@ -129,4 +130,75 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>如果存在满足规约的实体则返回 <c>true</c>，否则返回 <c>false</c></returns>
     Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+
+    #region 分页查询
+
+    /// <summary>
+    /// 获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据条件获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据条件获取分页数据（支持排序）
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="orderBy">用于排序实体的表达式</param>
+    /// <param name="isAscending">是否升序排序</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>> orderBy, bool isAscending = true, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据规约获取分页数据
+    /// </summary>
+    /// <param name="pageIndex">页码（从1开始）</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(int pageIndex, int pageSize, ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据分页查询对象获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据分页查询对象和条件获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 根据分页查询对象和规约获取分页数据
+    /// </summary>
+    /// <param name="query">分页查询对象</param>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResponse<TEntity>> GetPagedAsync(PageQuery query, ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+
+    #endregion 分页查询
 }

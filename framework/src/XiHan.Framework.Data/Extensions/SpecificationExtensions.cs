@@ -14,6 +14,7 @@
 
 using SqlSugar;
 using XiHan.Framework.Domain.Specifications.Abstracts;
+using XiHan.Framework.Domain.Paging.Dtos;
 
 namespace XiHan.Framework.Data.Extensions;
 
@@ -128,7 +129,7 @@ public static class SpecificationExtensions
     /// <param name="pageSize">页大小</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public static async Task<PagedResult<T>> ToPageAsync<T>(this ISugarQueryable<T> queryable, ISpecification<T> specification, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
+    public static async Task<PageResponse<T>> ToPageAsync<T>(this ISugarQueryable<T> queryable, ISpecification<T> specification, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryable);
         ArgumentNullException.ThrowIfNull(specification);
@@ -154,55 +155,15 @@ public static class SpecificationExtensions
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<T>
+        return new PageResponse<T>
         {
             Items = items,
-            TotalCount = totalCount,
-            PageIndex = pageIndex,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            PageData = new PageData
+            {
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            }
         };
     }
-}
-
-/// <summary>
-/// 分页结果
-/// </summary>
-/// <typeparam name="T">实体类型</typeparam>
-public class PagedResult<T>
-{
-    /// <summary>
-    /// 数据项
-    /// </summary>
-    public List<T> Items { get; set; } = [];
-
-    /// <summary>
-    /// 总数量
-    /// </summary>
-    public int TotalCount { get; set; }
-
-    /// <summary>
-    /// 页码（从1开始）
-    /// </summary>
-    public int PageIndex { get; set; }
-
-    /// <summary>
-    /// 页大小
-    /// </summary>
-    public int PageSize { get; set; }
-
-    /// <summary>
-    /// 总页数
-    /// </summary>
-    public int TotalPages { get; set; }
-
-    /// <summary>
-    /// 是否有上一页
-    /// </summary>
-    public bool HasPreviousPage => PageIndex > 1;
-
-    /// <summary>
-    /// 是否有下一页
-    /// </summary>
-    public bool HasNextPage => PageIndex < TotalPages;
 }
