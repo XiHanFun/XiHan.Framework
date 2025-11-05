@@ -15,8 +15,7 @@
 namespace XiHan.Framework.Domain.Paging.Dtos;
 
 /// <summary>
-/// 分页请求信息
-/// 用于接收分页查询参数
+/// 分页请求元数据
 /// </summary>
 public class PageInfo
 {
