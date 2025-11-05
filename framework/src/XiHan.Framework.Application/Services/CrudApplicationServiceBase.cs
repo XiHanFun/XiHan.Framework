@@ -63,47 +63,18 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// <returns>分页响应</returns>
     public virtual async Task<PageResponse<TEntityDto>> GetPageResponseAsync(PageQuery input)
     {
-        // 第一步：使用 ExpressionBuilder 构建所有的过滤条件表达式
-        var expressionBuilder = new ExpressionBuilder<TEntity>();
+        // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
+        var additionalPredicate = BuildAdditionalFilterPredicate(input);
 
-        // 构建基础过滤表达式
-        var predicate = BuildFilterPredicate(expressionBuilder, input.Filters);
+        // 使用仓储层的 PageQuery 重载方法，直接处理 Filters、Sorts 和 DisablePaging
+        var entityPageResponse = additionalPredicate != null
+            ? await Repository.GetPagedAsync(input, additionalPredicate)
+            : await Repository.GetPagedAsync(input);
 
-        // 应用自定义过滤表达式
-        predicate = await BuildCustomFilterPredicateAsync(expressionBuilder, input, predicate);
+        // 映射实体到 DTO
+        var dtos = await MapToEntityDtosAsync(entityPageResponse.Items);
 
-        // 第二步：执行查询，获取满足条件的实体总数
-        var totalCount = predicate != null
-            ? await Repository.CountAsync(predicate)
-            : await Repository.CountAsync();
-
-        // 如果没有数据，直接返回空结果
-        if (totalCount == 0)
-        {
-            return new PageResponse<TEntityDto>([], input.PageIndex, input.PageSize, 0);
-        }
-
-        // 获取满足条件的实体列表（如果有过滤条件）
-        var entities = predicate != null
-            ? await Repository.GetListAsync(predicate)
-            : await Repository.GetListAsync();
-
-        // 第三步：在内存中应用排序和分页，注意：子类可以重写此方法以在数据库层面进行排序和分页（推荐使用 Specification 模式）
-        entities = ApplySortingInMemory(entities, input.Sorts);
-
-        // 应用分页（如果未禁用）
-        if (!input.DisablePaging)
-        {
-            var pageInfo = input.ToPageInfo();
-            entities = entities.Skip(pageInfo.Skip).Take(pageInfo.Take);
-        }
-
-        // 转换为DTO
-        var dtos = await MapToEntityDtosAsync(entities);
-
-        // 构建分页响应
-        var pageData = new PageData(input.PageIndex, input.PageSize, (int)totalCount);
-        return new PageResponse<TEntityDto>(dtos, pageData);
+        return new PageResponse<TEntityDto>(dtos, entityPageResponse.PageData);
     }
 
     /// <summary>
@@ -126,12 +97,8 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// <returns>更新后的实体DTO</returns>
     public virtual async Task<TEntityDto> UpdateAsync(TKey id, TEntityDto input)
     {
-        var entity = await Repository.GetByIdAsync(id);
-        if (entity == null)
-        {
+        var entity = await Repository.GetByIdAsync(id) ??
             throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-        }
-
         await MapToEntityAsync(input, entity);
         entity = await Repository.UpdateAsync(entity);
         return await MapToEntityDtoAsync(entity);
@@ -155,77 +122,19 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     }
 
     /// <summary>
-    /// 构建过滤谓词表达式
+    /// 构建额外的过滤谓词表达式
     /// </summary>
-    /// <param name="expressionBuilder">表达式构建器</param>
-    /// <param name="filters">过滤条件列表</param>
-    /// <returns>组合后的过滤谓词，如果没有过滤条件则返回 null</returns>
-    protected virtual Expression<Func<TEntity, bool>>? BuildFilterPredicate(ExpressionBuilder<TEntity> expressionBuilder, List<SelectCondition>? filters)
+    /// <param name="input">分页查询参数</param>
+    /// <returns>额外的过滤谓词，如果没有则返回 null</returns>
+    /// <remarks>
+    /// 子类可以重写此方法以添加额外的过滤逻辑，例如基于当前用户权限的数据过滤。
+    /// PageQuery 中的 Filters 和 Sorts 会由仓储层自动处理，此方法用于添加额外的业务逻辑过滤。
+    /// </remarks>
+    protected virtual Expression<Func<TEntity, bool>>? BuildAdditionalFilterPredicate(PageQuery input)
     {
-        if (filters == null || filters.Count == 0)
-        {
-            return null;
-        }
-
-        // 使用 PredicateComposer 组合多个过滤条件
-        var predicate = PredicateComposer.True<TEntity>();
-
-        foreach (var filter in filters)
-        {
-            var filterExpression = BuildSingleFilterExpression(filter, expressionBuilder);
-            if (filterExpression != null)
-            {
-                predicate = predicate.And(filterExpression);
-            }
-        }
-
-        return predicate;
-    }
-
-    /// <summary>
-    /// 构建单个过滤条件的表达式
-    /// </summary>
-    /// <param name="condition">过滤条件</param>
-    /// <param name="expressionBuilder">表达式构建器</param>
-    /// <returns>过滤表达式</returns>
-    protected virtual Expression<Func<TEntity, bool>>? BuildSingleFilterExpression(SelectCondition condition, ExpressionBuilder<TEntity> expressionBuilder)
-    {
-        // 子类可以重写此方法以实现自定义过滤逻辑
-        // 默认实现可以使用 ExpressionBuilder 构建基本的相等性比较
+        // 子类可以重写此方法以添加额外的过滤逻辑
+        // 例如：权限过滤、租户过滤等
         return null;
-    }
-
-    /// <summary>
-    /// 构建自定义过滤谓词表达式
-    /// </summary>
-    /// <param name="expressionBuilder">表达式构建器</param>
-    /// <param name="input">查询参数</param>
-    /// <param name="currentPredicate">当前的过滤谓词</param>
-    /// <returns>组合后的过滤谓词</returns>
-    protected virtual Task<Expression<Func<TEntity, bool>>?> BuildCustomFilterPredicateAsync(ExpressionBuilder<TEntity> expressionBuilder, PageQuery input, Expression<Func<TEntity, bool>>? currentPredicate)
-    {
-        // 子类可以重写此方法以实现额外的自定义过滤逻辑
-        // 使用 expressionBuilder 构建条件，然后与 currentPredicate 组合
-        return Task.FromResult(currentPredicate);
-    }
-
-    /// <summary>
-    /// 在内存中应用排序
-    /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="sorts">排序条件列表</param>
-    /// <returns>应用排序后的实体集合</returns>
-    protected virtual IEnumerable<TEntity> ApplySortingInMemory(IEnumerable<TEntity> entities, List<SortCondition>? sorts)
-    {
-        if (sorts == null || sorts.Count == 0)
-        {
-            return entities;
-        }
-
-        // 子类可以重写此方法以实现自定义排序逻辑
-        // 默认实现：可以使用反射或表达式树来实现动态排序
-        // 这里提供一个基础实现框架
-        return entities;
     }
 
     /// <summary>
@@ -243,7 +152,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     protected virtual async Task<IReadOnlyList<TEntityDto>> MapToEntityDtosAsync(IEnumerable<TEntity> entities)
     {
         var tasks = entities.Select(MapToEntityDtoAsync);
-        return (await Task.WhenAll(tasks)).ToList();
+        return [.. (await Task.WhenAll(tasks))];
     }
 
     /// <summary>
@@ -304,12 +213,8 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <returns>更新后的实体DTO</returns>
     public virtual async Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input)
     {
-        var entity = await Repository.GetByIdAsync(id);
-        if (entity == null)
-        {
+        var entity = await Repository.GetByIdAsync(id) ??
             throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-        }
-
         await MapToEntityAsync(input, entity);
         entity = await Repository.UpdateAsync(entity);
         return await MapToEntityDtoAsync(entity);
