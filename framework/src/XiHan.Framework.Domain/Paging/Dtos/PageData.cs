@@ -15,8 +15,7 @@
 namespace XiHan.Framework.Domain.Paging.Dtos;
 
 /// <summary>
-/// 分页元数据
-/// 包含分页的统计信息
+/// 分页响应元数据
 /// </summary>
 public class PageData
 {

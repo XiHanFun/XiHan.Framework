@@ -66,5 +66,5 @@ public class PageResponse<T>
     /// <summary>
     /// 扩展数据（可选）
     /// </summary>
-    public Dictionary<string, object>? Metadata { get; set; }
+    public Dictionary<string, object>? ExtendData { get; set; }
 }

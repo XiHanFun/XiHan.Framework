@@ -15,7 +15,7 @@
 namespace XiHan.Framework.Domain.Paging.Dtos;
 
 /// <summary>
-/// 分页查询请求
+/// 分页查询
 /// </summary>
 public class PageQuery
 {

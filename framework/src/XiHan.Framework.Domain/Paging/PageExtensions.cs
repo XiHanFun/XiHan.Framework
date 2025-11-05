@@ -46,7 +46,7 @@ public static class PageExtensions
     /// </summary>
     public static IQueryable<T> Where<T>(this IQueryable<T> source, IEnumerable<SelectCondition>? filters)
     {
-        if (filters == null)
+        if (filters == null || !filters.Any())
         {
             return source;
         }
