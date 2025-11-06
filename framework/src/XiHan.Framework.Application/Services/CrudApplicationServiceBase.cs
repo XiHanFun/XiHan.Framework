@@ -16,7 +16,6 @@ using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Paging.Dtos;
 using XiHan.Framework.Domain.Repositories;
-using XiHan.Framework.Utils.Linq.Expressions;
 
 namespace XiHan.Framework.Application.Services;
 
