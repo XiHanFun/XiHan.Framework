@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.DistributedIds;
@@ -27,5 +28,12 @@ public class XiHanDistributedIdsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 注册默认的 SnowflakeId 生成器
+        context.Services.AddSingleton<IDistributedIdGenerator<long>>(
+            IdGeneratorFactory<long>.CreateSnowflakeIdGenerator_HighWorkload(1));
+
+        // 注册默认的 SequentialGuid 生成器
+        context.Services.AddSingleton<IDistributedIdGenerator<Guid>>(
+            IdGeneratorFactory<Guid>.CreateSequentialGuidGenerator_Default());
     }
 }
