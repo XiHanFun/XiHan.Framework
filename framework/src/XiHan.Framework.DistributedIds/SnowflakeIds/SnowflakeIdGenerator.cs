@@ -25,7 +25,7 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 /// 信息丰富(Informative)：可从唯一标识中提取生成时间、工作机器唯一标识、数据中心唯一标识和序列号
 /// 算法可选(Versatile)：支持经典雪花算法和雪花漂移算法，满足不同场景需求
 /// </summary>
-public class SnowflakeIdGenerator : IDistributedIdGenerator
+public class SnowflakeIdGenerator : IDistributedIdGenerator<long>
 {
     // 生成器配置
     private readonly SnowflakeIdOptions _options;

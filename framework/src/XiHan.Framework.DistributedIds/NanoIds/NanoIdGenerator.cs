@@ -26,7 +26,7 @@ namespace XiHan.Framework.DistributedIds.NanoIds;
 /// 字符友好(URL-Safe)：仅使用URL安全字符(A-Za-z0-9_-)，避免转义问题，适合各类系统
 /// 时间可提取(Time-Extractable)：支持从生成的唯一标识中提取创建时间，便于分析和调试
 /// </summary>
-public class NanoIdGenerator : IDistributedIdGenerator
+public class NanoIdGenerator : IDistributedIdGenerator<long>
 {
     // 使用随机数生成器
     private static readonly RandomNumberGenerator Rng = RandomNumberGenerator.Create();
@@ -45,13 +45,6 @@ public class NanoIdGenerator : IDistributedIdGenerator
 
     // 上次生成唯一标识的时间戳
     private long _lastTimestamp;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public NanoIdGenerator() : this(new NanoIdOptions())
-    {
-    }
 
     /// <summary>
     /// 构造函数

@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Timing;
 using XiHan.Framework.Core.Tracing;
+using XiHan.Framework.DistributedIds;
 using XiHan.Framework.DistributedIds.Guids;
 using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
@@ -49,7 +50,7 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
         ICurrentTenant currentTenant,
         IUnitOfWorkManager unitOfWorkManager,
         IOptions<XiHanDistributedEventBusOptions> distributedEventBusOptions,
-        IGuidGenerator guidGenerator,
+        IDistributedIdGenerator<Guid> guidGenerator,
         IClock clock,
         IEventHandlerInvoker eventHandlerInvoker,
         ILocalEventBus localEventBus,
@@ -69,7 +70,7 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
     /// <summary>
     /// 全局唯一标识生成器
     /// </summary>
-    protected IGuidGenerator GuidGenerator { get; }
+    protected IDistributedIdGenerator<Guid> GuidGenerator { get; }
 
     /// <summary>
     /// 时钟
@@ -264,7 +265,7 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
                 await OnAddToOutboxAsync(eventName, eventType, eventData);
 
                 var outgoingEventInfo = new OutgoingEventInfo(
-                    GuidGenerator.Create(),
+                    GuidGenerator.NextId(),
                     eventName,
                     Serialize(eventData),
                     Clock.Now
@@ -337,7 +338,7 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
                     }
 
                     var incomingEventInfo = new IncomingEventInfo(
-                        GuidGenerator.Create(),
+                        GuidGenerator.NextId(),
                         messageId!,
                         eventName,
                         Serialize(eventData),

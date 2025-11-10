@@ -23,6 +23,7 @@ using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Timing;
 using XiHan.Framework.Core.Tracing;
+using XiHan.Framework.DistributedIds;
 using XiHan.Framework.DistributedIds.Guids;
 using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
@@ -58,7 +59,7 @@ public class LocalDistributedEventBus : DistributedEventBusBase, ISingletonDepen
         ICurrentTenant currentTenant,
         IUnitOfWorkManager unitOfWorkManager,
         IOptions<XiHanDistributedEventBusOptions> abpDistributedEventBusOptions,
-        IGuidGenerator guidGenerator,
+        IDistributedIdGenerator<Guid> guidGenerator,
         IClock clock,
         IEventHandlerInvoker eventHandlerInvoker,
         ILocalEventBus localEventBus,
