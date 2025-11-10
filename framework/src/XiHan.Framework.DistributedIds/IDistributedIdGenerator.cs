@@ -17,13 +17,13 @@ namespace XiHan.Framework.DistributedIds;
 /// <summary>
 /// 分布式唯一标识生成器接口
 /// </summary>
-public interface IDistributedIdGenerator
+public interface IDistributedIdGenerator<TKey>
 {
     /// <summary>
     /// 获取下一个唯一标识
     /// </summary>
     /// <returns>生成的唯一标识</returns>
-    long NextId();
+    TKey NextId();
 
     /// <summary>
     /// 获取下一个唯一标识(字符串形式)
@@ -36,7 +36,7 @@ public interface IDistributedIdGenerator
     /// </summary>
     /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
-    long[] NextIds(int count);
+    TKey[] NextIds(int count);
 
     /// <summary>
     /// 批量获取唯一标识(字符串形式)
@@ -49,7 +49,7 @@ public interface IDistributedIdGenerator
     /// 异步获取下一个唯一标识
     /// </summary>
     /// <returns>生成的唯一标识</returns>
-    Task<long> NextIdAsync();
+    Task<TKey> NextIdAsync();
 
     /// <summary>
     /// 异步获取下一个唯一标识(字符串形式)
@@ -62,7 +62,7 @@ public interface IDistributedIdGenerator
     /// </summary>
     /// <param name="count">需要获取的唯一标识数量</param>
     /// <returns>ID数组</returns>
-    Task<long[]> NextIdsAsync(int count);
+    Task<TKey[]> NextIdsAsync(int count);
 
     /// <summary>
     /// 异步批量获取唯一标识(字符串形式)
@@ -76,28 +76,28 @@ public interface IDistributedIdGenerator
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>时间戳</returns>
-    DateTime ExtractTime(long id);
+    DateTime ExtractTime(TKey id);
 
     /// <summary>
     /// 从唯一标识中提取工作机器唯一标识
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>工作机器唯一标识</returns>
-    int ExtractWorkerId(long id);
+    int ExtractWorkerId(TKey id);
 
     /// <summary>
     /// 从唯一标识中提取序列号
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>序列号</returns>
-    int ExtractSequence(long id);
+    int ExtractSequence(TKey id);
 
     /// <summary>
     /// 从唯一标识中提取数据中心唯一标识
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns>数据中心唯一标识</returns>
-    int ExtractDataCenterId(long id);
+    int ExtractDataCenterId(TKey id);
 
     /// <summary>
     /// 获取生成器类型
