@@ -487,7 +487,23 @@ public static class CloneHelper
 
         if (deepCopy)
         {
-            return [.. source.Select(item => DeepCopy(item))];
+            var value = new List<T>();
+            foreach (var item in source)
+            {
+                var clonedItem = DeepCopy(item);
+                // 如果 T 是不可为 null 的值类型，则跳过 null
+                if (clonedItem is T typedItem)
+                {
+                    value.Add(typedItem);
+                }
+                // 如果 T 是引用类型，允许 null
+                else if (default(T) == null) // T 是引用类型
+                {
+                    value.Add((T?)clonedItem!);
+                }
+                // 如果 T 是不可为 null 的值类型且 DeepCopy 返回 null，则不添加
+            }
+            return value;
         }
         else
         {
