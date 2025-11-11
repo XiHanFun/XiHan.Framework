@@ -60,7 +60,7 @@ public class AdvancedHttpService : IAdvancedHttpService
         _proxyPoolManager = proxyPoolManager;
         _jsonOptions = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = null,
             WriteIndented = false
         };
     }
