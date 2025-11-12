@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Buffers;
 using System.Numerics;
-using System.Text;
 
 namespace XiHan.Framework.Utils.Text.Converters;
 
@@ -49,32 +49,62 @@ public static class Base58
     /// </summary>
     public static string Encode(byte[] input)
     {
-        // 转换为大整数
-        var intData = new BigInteger(input.Concat(new byte[] { 0 }).ToArray()); // 防止负数
-        var result = new StringBuilder();
-
-        // 进行 Base58 编码
-        while (intData > 0)
+        // 使用 ArrayPool 租用缓冲区
+        var tempBuffer = ArrayPool<byte>.Shared.Rent(input.Length + 1);
+        try
         {
-            var remainder = (int)(intData % 58);
-            intData /= 58;
-            result.Insert(0, Alphabet[remainder]);
-        }
+            // 复制数据并添加0字节防止负数
+            input.CopyTo(tempBuffer.AsSpan());
+            tempBuffer[input.Length] = 0;
 
-        // 处理前导0(Base58 用 '1' 表示)
-        foreach (var b in input)
+            var intData = new BigInteger(tempBuffer.AsSpan(0, input.Length + 1));
+
+            // 计算前导零的数量
+            var leadingZeroCount = 0;
+            foreach (var b in input)
+            {
+                if (b == 0)
+                {
+                    leadingZeroCount++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (intData == 0)
+            {
+                return new string('1', Math.Max(1, leadingZeroCount));
+            }
+
+            // 使用 stackalloc 存储结果字符
+            var maxChars = (int)Math.Ceiling(input.Length * 1.38) + leadingZeroCount; // Base58 扩展率约1.38倍
+            var resultSpan = maxChars <= 128 ? stackalloc char[maxChars] : new char[maxChars];
+            var index = 0;
+
+            // 正向构建（后面会反转）
+            while (intData > 0)
+            {
+                var remainder = (int)(intData % 58);
+                resultSpan[index++] = Alphabet[remainder];
+                intData /= 58;
+            }
+
+            // 添加前导 '1'（Base58 中表示 0）
+            for (var i = 0; i < leadingZeroCount; i++)
+            {
+                resultSpan[index++] = '1';
+            }
+
+            // 反转结果
+            resultSpan[..index].Reverse();
+            return new string(resultSpan[..index]);
+        }
+        finally
         {
-            if (b == 0)
-            {
-                result.Insert(0, '1');
-            }
-            else
-            {
-                break;
-            }
+            ArrayPool<byte>.Shared.Return(tempBuffer);
         }
-
-        return result.ToString();
     }
 
     /// <summary>
@@ -97,13 +127,37 @@ public static class Base58
 
         // 转换成 byte[]
         var bytes = intData.ToByteArray();
-        if (bytes[^1] == 0)
+
+        // 移除末尾补零
+        var bytesLength = bytes.Length;
+        if (bytesLength > 0 && bytes[^1] == 0)
         {
-            bytes = [.. bytes.Take(bytes.Length - 1)]; // 移除补零
+            bytesLength--;
         }
 
-        // 处理前导 '1'(即 Base58 中的0)
-        var leadingZeros = input.TakeWhile(c => c == '1').Count();
-        return [.. Enumerable.Repeat((byte)0, leadingZeros), .. Enumerable.Reverse(bytes)];
+        // 计算前导 '1' 的数量（Base58 中的0）
+        var leadingZeroCount = 0;
+        foreach (var c in input)
+        {
+            if (c == '1')
+            {
+                leadingZeroCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 构建最终结果
+        var result = new byte[leadingZeroCount + bytesLength];
+
+        // 反转并复制字节（跳过末尾的0）
+        for (var i = 0; i < bytesLength; i++)
+        {
+            result[leadingZeroCount + i] = bytes[bytesLength - 1 - i];
+        }
+
+        return result;
     }
 }
