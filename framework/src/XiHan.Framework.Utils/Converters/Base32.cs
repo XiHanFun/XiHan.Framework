@@ -14,7 +14,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.Utils.Text.Converters;
+namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
 /// Base32 编码解码
