@@ -31,7 +31,7 @@ public static class NetworkHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static List<NetworkInfo> NetworkInfos => CacheHelper.GetOrAdd("NetworkInfos", GetNetworkInfos, TimeSpan.FromMinutes(1));
+    public static List<NetworkInfo> NetworkInfos => CacheHelper.GetOrAdd("NetworkInfos", GetNetworkInfos, TimeSpan.FromSeconds(5));
 
     /// <summary>
     /// 获取网卡信息

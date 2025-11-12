@@ -30,7 +30,7 @@ public static class BoardHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static BoardInfo BoardInfos => CacheHelper.GetOrAdd("BoardInfos", GetBoardInfos, TimeSpan.FromMinutes(1));
+    public static BoardInfo BoardInfos => CacheHelper.GetOrAdd("BoardInfos", GetBoardInfos, TimeSpan.FromSeconds(5));
 
     /// <summary>
     /// 获取主板信息
