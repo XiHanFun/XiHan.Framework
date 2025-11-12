@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:Base95
-// Guid:39bb5fd2-94c8-43da-a4c8-c44331511dac
+// FileName:Base36
+// Guid:afdafa23-4475-4347-a4a0-4923da87148f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/5/23 21:34:00
+// CreateTime:2025/5/23 21:33:51
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -15,38 +15,21 @@
 using System.Buffers;
 using System.Numerics;
 
-namespace XiHan.Framework.Utils.Text.Converters;
+namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
-/// Base95 编码和解码
+/// Base36 编码和解码
 /// </summary>
 /// <remarks>
-/// 主要特点：最紧凑的标准编码之一，可打印字符集，可读性较差，URL 不完全安全
-/// 常见用途：密钥/口令生成(可打印)、二维码 / 短信传输、嵌入式系统传输数据、空间压缩极致场景、数据序列化压缩格式
+/// 主要特点：比 Base16 更短，但不如 Base62/Base64 紧凑，人类可识别，适合数字与字母组合使用，不包含特殊符号，适合用户手输
+/// 常见用途：邀请码、用户标识、订单号、编号编码、短链接唯一标识、数字压缩显示等
 /// </remarks>
-public static class Base95
+public static class Base36
 {
-    private const int Base = 95;
-
-    // ASCII 可打印字符(从 32 到 126，共 95 个字符)
-    // !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-    // 0-31 ASCII 控制字符
-    // 32-126 ASCII 字符
-    // 127-255 扩展 ASCII 字符
-    private static readonly char[] Alphabet;
-
-    static Base95()
-    {
-        // 优化：使用直接数组初始化，避免 LINQ
-        Alphabet = new char[95];
-        for (var i = 0; i < 95; i++)
-        {
-            Alphabet[i] = (char)(i + 32);
-        }
-    }
+    private const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /// <summary>
-    /// 编码 byte[] 为 Base95 字符串
+    /// 编码 byte[] 为 Base36 字符串
     /// </summary>
     /// <param name="data"></param>
     /// <returns></returns>
@@ -82,16 +65,16 @@ public static class Base95
             }
 
             // 使用 stackalloc 存储结果字符
-            var maxChars = (int)Math.Ceiling(data.Length * 1.23) + leadingZeroCount; // Base95 扩展率约1.23倍
+            var maxChars = (int)Math.Ceiling(data.Length * 1.4) + leadingZeroCount; // Base36 扩展率约1.4倍
             var resultSpan = maxChars <= 128 ? stackalloc char[maxChars] : new char[maxChars];
             var index = 0;
 
             // 正向构建（后面会反转）
             while (value > 0)
             {
-                var rem = (int)(value % Base);
+                var rem = (int)(value % 36);
                 resultSpan[index++] = Alphabet[rem];
-                value /= Base;
+                value /= 36;
             }
 
             // 添加前导零
@@ -111,7 +94,7 @@ public static class Base95
     }
 
     /// <summary>
-    /// 解码 Base95 字符串为 byte[]
+    /// 解码 Base36 字符串为 byte[]
     /// </summary>
     /// <param name="encoded"></param>
     /// <returns></returns>
@@ -121,13 +104,13 @@ public static class Base95
         BigInteger value = 0;
         foreach (var c in encoded)
         {
-            var index = c - 32;
-            if (index is < 0 or >= 95)
+            var index = Alphabet.IndexOf(c);
+            if (index == -1)
             {
-                throw new ArgumentException($"非法 Base95 字符: {c}");
+                throw new ArgumentException($"非法 Base36 字符: {c}");
             }
 
-            value = (value * Base) + index;
+            value = (value * 36) + index;
         }
 
         var bytes = value.ToByteArray();

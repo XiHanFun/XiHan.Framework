@@ -16,7 +16,7 @@ using System.Buffers;
 using System.Numerics;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Text.Converters;
+namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
 /// Base62 编码解码
