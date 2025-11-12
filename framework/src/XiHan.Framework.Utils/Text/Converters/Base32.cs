@@ -99,8 +99,10 @@ public static class Base32
         var bitCount = 0;
         var accumulatedBits = 0;
         var bufferIndex = 0;
-        foreach (var currentCharValue in input.Select(currentChar => Base32Alphabet.IndexOf(currentChar)))
+
+        foreach (var currentChar in input)
         {
+            var currentCharValue = Base32Alphabet.IndexOf(currentChar);
             if (currentCharValue is < 0 or > 31)
             {
                 throw new ArgumentException("Invalid character in Base32 string.");
