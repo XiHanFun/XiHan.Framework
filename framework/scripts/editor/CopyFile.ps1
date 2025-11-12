@@ -3,11 +3,11 @@
 
 # 设置原文件路径和目标文件夹路径
 $SRC_FOLDER = Get-Location
-$CLASS_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\CSharp\Code\2052\Class"
-$CLASS_CORE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\AspNetCore\Code\1033\Class"
-$INTERFACE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\CSharp\Code\2052\Interface"
-$INTERFACE_CORE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\AspNetCore\Code\1033\Interface"
-$CONTROLLER_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\ItemTemplates\AspNetCore\Web\ASP.NET\1033\WebApiEmptyController"
+$CLASS_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\ItemTemplates\CSharp\Code\2052\Class"
+$CLASS_CORE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\ItemTemplates\AspNetCore\Code\1033\Class"
+$INTERFACE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\ItemTemplates\CSharp\Code\2052\Interface"
+$INTERFACE_CORE_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\ItemTemplates\AspNetCore\Code\1033\Interface"
+$CONTROLLER_DEST_PATH = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\ItemTemplates\AspNetCore\Web\ASP.NET\1033\WebApiEmptyController"
 
 # 检查是否以管理员权限运行
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
