@@ -487,7 +487,8 @@ public static class CloneHelper
 
         if (deepCopy)
         {
-            return [.. source.Select(item => DeepCopy(item))];
+            // 过滤掉 null，避免传递 null 给 List<T>.Add
+            return [.. source.Select(item => DeepCopy(item)!).Where(item => item is not null)];
         }
         else
         {

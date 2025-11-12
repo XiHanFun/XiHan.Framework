@@ -12,10 +12,11 @@
 
 #endregion <<版权版本注释>>
 
+using System.Buffers;
 using System.Numerics;
 using System.Text;
 
-namespace XiHan.Framework.Utils.Text.Converters;
+namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
 /// Base62 编码解码
@@ -44,15 +45,42 @@ public static class Base62
     /// </summary>
     public static string Encode(byte[] input)
     {
-        var intData = new BigInteger(input.Concat(new byte[] { 0 }).ToArray()); // 防止负数
-        var result = new StringBuilder();
-        while (intData > 0)
+        // 使用 ArrayPool 租用缓冲区
+        var tempBuffer = ArrayPool<byte>.Shared.Rent(input.Length + 1);
+        try
         {
-            var remainder = (int)(intData % 62);
-            intData /= 62;
-            result.Insert(0, Base62Alphabet[remainder]);
+            // 复制数据并添加0字节防止负数
+            input.CopyTo(tempBuffer.AsSpan());
+            tempBuffer[input.Length] = 0;
+
+            var intData = new BigInteger(tempBuffer.AsSpan(0, input.Length + 1));
+
+            if (intData == 0)
+            {
+                return "0";
+            }
+
+            // 使用 stackalloc 存储结果字符（预估最大长度）
+            var maxChars = (int)Math.Ceiling(input.Length * 1.37); // Base62 扩展率约1.37倍
+            var resultSpan = maxChars <= 128 ? stackalloc char[maxChars] : new char[maxChars];
+            var index = 0;
+
+            // 正向构建（后面会反转）
+            while (intData > 0)
+            {
+                var remainder = (int)(intData % 62);
+                resultSpan[index++] = Base62Alphabet[remainder];
+                intData /= 62;
+            }
+
+            // 反转结果
+            resultSpan[..index].Reverse();
+            return new string(resultSpan[..index]);
         }
-        return result.ToString();
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(tempBuffer);
+        }
     }
 
     /// <summary>
@@ -67,9 +95,13 @@ public static class Base62
         }
 
         var bytes = intData.ToByteArray();
-        if (bytes[^1] == 0)
+
+        // 移除末尾补零
+        if (bytes.Length > 0 && bytes[^1] == 0)
         {
-            bytes = [.. bytes.Take(bytes.Length - 1)]; // 移除补零
+            var result = new byte[bytes.Length - 1];
+            Array.Copy(bytes, result, result.Length);
+            return result;
         }
 
         return bytes;
@@ -85,13 +117,20 @@ public static class Base62
             return "0";
         }
 
-        var result = new StringBuilder();
+        // 使用 stackalloc 存储结果（long 最多需要11个字符）
+        Span<char> buffer = stackalloc char[11];
+        var index = 0;
+
+        // 正向构建（后面会反转）
         while (input > 0)
         {
-            result.Insert(0, Base62Alphabet[(int)(input % 62)]);
+            buffer[index++] = Base62Alphabet[(int)(input % 62)];
             input /= 62;
         }
-        return result.ToString();
+
+        // 反转结果
+        buffer[..index].Reverse();
+        return new string(buffer[..index]);
     }
 
     /// <summary>
