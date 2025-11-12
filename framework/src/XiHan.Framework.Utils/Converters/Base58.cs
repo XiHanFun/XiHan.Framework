@@ -15,7 +15,7 @@
 using System.Buffers;
 using System.Numerics;
 
-namespace XiHan.Framework.Utils.Text.Converters;
+namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
 /// Base58 编码和解码

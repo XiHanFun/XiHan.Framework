@@ -13,4 +13,8 @@
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Text\" />
+    </ItemGroup>
+
 </Project>
