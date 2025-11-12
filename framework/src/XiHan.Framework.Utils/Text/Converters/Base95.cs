@@ -99,6 +99,6 @@ public static class Base95
         }
 
         var leadingZeroCount = encoded.TakeWhile(c => c == Alphabet[0]).Count();
-        return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. bytes.Reverse()];
+        return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. Enumerable.Reverse(bytes)];
     }
 }
