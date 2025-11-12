@@ -12,8 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Buffers;
 using System.Numerics;
-using System.Text;
 
 namespace XiHan.Framework.Utils.Text.Converters;
 
@@ -35,34 +35,62 @@ public static class Base36
     /// <returns></returns>
     public static string Encode(byte[] data)
     {
-        var value = new BigInteger(data.Concat(new byte[] { 0 }).ToArray());
-        if (value == 0)
+        // 使用 ArrayPool 租用缓冲区
+        var tempBuffer = ArrayPool<byte>.Shared.Rent(data.Length + 1);
+        try
         {
-            return Alphabet[0].ToString();
-        }
+            // 复制数据并添加0字节防止负数
+            data.CopyTo(tempBuffer.AsSpan());
+            tempBuffer[data.Length] = 0;
 
-        var sb = new StringBuilder();
-        while (value > 0)
-        {
-            var rem = (int)(value % 36);
-            sb.Insert(0, Alphabet[rem]);
-            value /= 36;
-        }
+            var value = new BigInteger(tempBuffer.AsSpan(0, data.Length + 1));
 
-        // 前导0处理
-        foreach (var b in data)
-        {
-            if (b == 0)
+            if (value == 0)
             {
-                sb.Insert(0, Alphabet[0]);
+                return Alphabet[0].ToString();
             }
-            else
-            {
-                break;
-            }
-        }
 
-        return sb.ToString();
+            // 计算前导零的数量
+            var leadingZeroCount = 0;
+            foreach (var b in data)
+            {
+                if (b == 0)
+                {
+                    leadingZeroCount++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // 使用 stackalloc 存储结果字符
+            var maxChars = (int)Math.Ceiling(data.Length * 1.4) + leadingZeroCount; // Base36 扩展率约1.4倍
+            var resultSpan = maxChars <= 128 ? stackalloc char[maxChars] : new char[maxChars];
+            var index = 0;
+
+            // 正向构建（后面会反转）
+            while (value > 0)
+            {
+                var rem = (int)(value % 36);
+                resultSpan[index++] = Alphabet[rem];
+                value /= 36;
+            }
+
+            // 添加前导零
+            for (var i = 0; i < leadingZeroCount; i++)
+            {
+                resultSpan[index++] = Alphabet[0];
+            }
+
+            // 反转结果
+            resultSpan[..index].Reverse();
+            return new string(resultSpan[..index]);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(tempBuffer);
+        }
     }
 
     /// <summary>
@@ -86,12 +114,37 @@ public static class Base36
         }
 
         var bytes = value.ToByteArray();
-        if (bytes[^1] == 0)
+
+        // 移除末尾补零
+        var bytesLength = bytes.Length;
+        if (bytesLength > 0 && bytes[^1] == 0)
         {
-            bytes = [.. bytes.Take(bytes.Length - 1)];
+            bytesLength--;
         }
 
-        var leadingZeroCount = encoded.TakeWhile(c => c == Alphabet[0]).Count();
-        return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. Enumerable.Reverse(bytes)];
+        // 计算前导零的数量
+        var leadingZeroCount = 0;
+        foreach (var c in encoded)
+        {
+            if (c == Alphabet[0])
+            {
+                leadingZeroCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 构建最终结果
+        var result = new byte[leadingZeroCount + bytesLength];
+
+        // 反转并复制字节（跳过末尾的0）
+        for (var i = 0; i < bytesLength; i++)
+        {
+            result[leadingZeroCount + i] = bytes[bytesLength - 1 - i];
+        }
+
+        return result;
     }
 }
