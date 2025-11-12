@@ -117,6 +117,6 @@ public class CustomRadix
 
         // 补前导0
         var leadingZeroCount = encoded.TakeWhile(c => c == _alphabet[0]).Count();
-        return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. bytes.Reverse()];
+        return [.. Enumerable.Repeat((byte)0, leadingZeroCount), .. Enumerable.Reverse(bytes)];
     }
 }
