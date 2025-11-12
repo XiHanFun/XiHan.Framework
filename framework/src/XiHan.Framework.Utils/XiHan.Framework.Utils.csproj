@@ -14,7 +14,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Text\" />
+      <Compile Remove="Text\**" />
+      <EmbeddedResource Remove="Text\**" />
+      <None Remove="Text\**" />
     </ItemGroup>
 
 </Project>

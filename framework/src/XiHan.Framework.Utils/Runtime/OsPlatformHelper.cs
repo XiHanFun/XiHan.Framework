@@ -60,7 +60,7 @@ public static class OsPlatformHelper
     /// <remarks>
     /// 推荐使用，默认有缓存
     /// </remarks>
-    public static RuntimeInfo RuntimeInfos => CacheHelper.GetOrAdd("RuntimeInfos", GetRuntimeInfo, TimeSpan.FromMinutes(60));
+    public static RuntimeInfo RuntimeInfos => CacheHelper.GetOrAdd("RuntimeInfos", GetRuntimeInfo, TimeSpan.FromSeconds(5));
 
     /// <summary>
     /// 收集运行时信息
