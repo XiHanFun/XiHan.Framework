@@ -21,7 +21,7 @@ namespace XiHan.Framework.DistributedIds;
 /// <summary>
 /// ID生成器工厂
 /// </summary>
-public static class IdGeneratorFactory<TKey>
+public static class IdGeneratorFactory
 {
     /// <summary>
     /// 创建雪花漂移算法唯一标识生成器
