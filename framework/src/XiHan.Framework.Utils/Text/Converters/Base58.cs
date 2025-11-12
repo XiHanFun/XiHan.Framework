@@ -104,6 +104,6 @@ public static class Base58
 
         // 处理前导 '1'(即 Base58 中的0)
         var leadingZeros = input.TakeWhile(c => c == '1').Count();
-        return [.. Enumerable.Repeat((byte)0, leadingZeros), .. bytes.Reverse()];
+        return [.. Enumerable.Repeat((byte)0, leadingZeros), .. Enumerable.Reverse(bytes)];
     }
 }
