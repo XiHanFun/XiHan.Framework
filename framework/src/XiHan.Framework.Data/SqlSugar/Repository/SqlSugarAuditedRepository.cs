@@ -133,59 +133,19 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
 
         var query = _dbClient.Queryable<TEntity>();
 
-        if (options.CreatedId is not null)
-        {
-            query = query.Where(entity => entity.CreatedId != null && entity.CreatedId.Equals(options.CreatedId));
-        }
-
-        if (options.ModifiedId is not null)
-        {
-            query = query.Where(entity => entity.ModifiedId != null && entity.ModifiedId.Equals(options.ModifiedId));
-        }
-
-        if (options.DeletedId is not null)
-        {
-            query = query.Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(options.DeletedId));
-        }
-
-        if (options.CreatedTimeStart.HasValue)
-        {
-            query = query.Where(entity => entity.CreatedTime >= options.CreatedTimeStart.Value);
-        }
-
-        if (options.CreatedTimeEnd.HasValue)
-        {
-            query = query.Where(entity => entity.CreatedTime <= options.CreatedTimeEnd.Value);
-        }
-
-        if (options.ModifiedTimeStart.HasValue)
-        {
-            query = query.Where(entity => entity.ModifiedTime >= options.ModifiedTimeStart.Value);
-        }
-
-        if (options.ModifiedTimeEnd.HasValue)
-        {
-            query = query.Where(entity => entity.ModifiedTime <= options.ModifiedTimeEnd.Value);
-        }
-
-        if (options.DeletedTimeStart.HasValue)
-        {
-            query = query.Where(entity => entity.DeletedTime >= options.DeletedTimeStart.Value);
-        }
-
-        if (options.DeletedTimeEnd.HasValue)
-        {
-            query = query.Where(entity => entity.DeletedTime <= options.DeletedTimeEnd.Value);
-        }
-
-        if (options.OnlySoftDeleted)
-        {
-            query = query.Where(entity => entity.IsDeleted);
-        }
-        else if (!options.IncludeSoftDeleted)
-        {
-            query = query.Where(entity => !entity.IsDeleted);
-        }
+        query = query.WhereIF(options.CreatedId is not null, entity => entity.CreatedId != null && entity.CreatedId.Equals(options.CreatedId))
+            .WhereIF(options.ModifiedId is not null, entity => entity.ModifiedId != null && entity.ModifiedId.Equals(options.ModifiedId))
+            .WhereIF(options.DeletedId is not null, entity => entity.DeletedId != null && entity.DeletedId.Equals(options.DeletedId))
+            .WhereIF(options.CreatedTimeStart.HasValue, entity => entity.CreatedTime >= options.CreatedTimeStart)
+            .WhereIF(options.CreatedTimeEnd.HasValue, entity => entity.CreatedTime <= options.CreatedTimeEnd)
+            .WhereIF(options.ModifiedTimeStart.HasValue, entity => entity.ModifiedTime >= options.ModifiedTimeStart)
+            .WhereIF(options.ModifiedTimeEnd.HasValue, entity => entity.ModifiedTime <= options.ModifiedTimeEnd)
+            .WhereIF(options.DeletedTimeStart.HasValue, entity => entity.DeletedTime >= options.DeletedTimeStart)
+            .WhereIF(options.DeletedTimeEnd.HasValue, entity => entity.DeletedTime <= options.DeletedTimeEnd)
+            // 只要只查软删，优先处理
+            .WhereIF(options.OnlySoftDeleted, entity => entity.IsDeleted)
+            // 否则，如果不包含软删（即查未软删）
+            .WhereIF(!options.IncludeSoftDeleted, entity => !entity.IsDeleted);
 
         return await query.ToListAsync(cancellationToken);
     }
