@@ -105,7 +105,7 @@ public static class XiHan
     /// </summary>
     public static readonly string[] SupportedFrameworks =
     [
-        "net9.0"
+        "net10.0"
     ];
 
     /// <summary>
