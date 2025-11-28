@@ -3,15 +3,24 @@
   <Folder Name="/1.src/1.Common/">
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
   </Folder>
-  <Folder Name="/1.src/2.Core/">
-    <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+  <Folder Name="/1.src/2.Metadata/">
     <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
   </Folder>
-  <Folder Name="/1.src/3.Domain/">
+  <Folder Name="/1.src/3.Core/">
+    <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
+  </Folder>
+  <Folder Name="/1.src/4.Domain/">
     <Project Path="src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
   </Folder>
-  <Folder Name="/1.src/4.Infrastructure/">
+  <Folder Name="/1.src/5.Application/">
+    <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
+    <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
+    <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
+  </Folder>
+  <Folder Name="/1.src/6.Infrastructure/">
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
     <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" />
@@ -29,14 +38,7 @@
     <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
-  <Folder Name="/1.src/5.Application/">
-    <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
-    <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
-    <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
-    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
-    <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
-  </Folder>
-  <Folder Name="/1.src/6.Extensions/">
+  <Folder Name="/1.src/7.Extensions/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
     <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
@@ -44,7 +46,7 @@
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
     <Project Path="src/XiHan.Framework.Templating/XiHan.Framework.Templating.csproj" />
   </Folder>
-  <Folder Name="/1.src/7.Web/">
+  <Folder Name="/1.src/8.Web/">
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
     <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" Id="e8a1d021-4093-4e09-b9da-027db1eb90ae" />
