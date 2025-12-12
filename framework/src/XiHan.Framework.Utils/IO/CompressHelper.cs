@@ -123,17 +123,6 @@ public static class CompressHelper
     }
 
     /// <summary>
-    /// 从GZIP解压
-    /// </summary>
-    private static void ExtractGZip(string archivePath, string extractPath)
-    {
-        using var sourceStream = File.OpenRead(archivePath);
-        using var gzipStream = new GZipStream(sourceStream, CompressionMode.Decompress);
-        using var destinationStream = File.Create(Path.Combine(extractPath, Path.GetFileNameWithoutExtension(archivePath)));
-        gzipStream.CopyTo(destinationStream);
-    }
-
-    /// <summary>
     /// 压缩到DEFLATE
     /// </summary>
     private static void CompressToDeflate(string sourcePath, string archivePath, CompressionLevel level)
@@ -142,6 +131,17 @@ public static class CompressHelper
         using var destinationStream = File.Create(archivePath);
         using var deflateStream = new DeflateStream(destinationStream, level);
         sourceStream.CopyTo(deflateStream);
+    }
+
+    /// <summary>
+    /// 从GZIP解压
+    /// </summary>
+    private static void ExtractGZip(string archivePath, string extractPath)
+    {
+        using var sourceStream = File.OpenRead(archivePath);
+        using var gzipStream = new GZipStream(sourceStream, CompressionMode.Decompress);
+        using var destinationStream = File.Create(Path.Combine(extractPath, Path.GetFileNameWithoutExtension(archivePath)));
+        gzipStream.CopyTo(destinationStream);
     }
 
     /// <summary>
