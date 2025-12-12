@@ -30,7 +30,6 @@ public static class LockExtensions
     public static void Lock(this object lockObj, Action action)
     {
         ArgumentNullException.ThrowIfNull(lockObj);
-
         ArgumentNullException.ThrowIfNull(action);
 
         lock (lockObj)
@@ -50,7 +49,6 @@ public static class LockExtensions
     public static T Lock<T>(this object lockObj, Func<T> func)
     {
         ArgumentNullException.ThrowIfNull(lockObj);
-
         ArgumentNullException.ThrowIfNull(func);
 
         lock (lockObj)
@@ -72,7 +70,6 @@ public static class LockExtensions
     public static void ReadLock(this ReaderWriterLockSlim lockSlim, Action action)
     {
         ArgumentNullException.ThrowIfNull(lockSlim);
-
         ArgumentNullException.ThrowIfNull(action);
 
         lockSlim.EnterReadLock();
@@ -97,7 +94,6 @@ public static class LockExtensions
     public static T ReadLock<T>(this ReaderWriterLockSlim lockSlim, Func<T> func)
     {
         ArgumentNullException.ThrowIfNull(lockSlim);
-
         ArgumentNullException.ThrowIfNull(func);
 
         lockSlim.EnterReadLock();
@@ -119,7 +115,6 @@ public static class LockExtensions
     public static void WriteLock(this ReaderWriterLockSlim lockSlim, Action action)
     {
         ArgumentNullException.ThrowIfNull(lockSlim);
-
         ArgumentNullException.ThrowIfNull(action);
 
         lockSlim.EnterWriteLock();
@@ -143,7 +138,6 @@ public static class LockExtensions
     public static T WriteLock<T>(this ReaderWriterLockSlim lockSlim, Func<T> func)
     {
         ArgumentNullException.ThrowIfNull(lockSlim);
-
         ArgumentNullException.ThrowIfNull(func);
 
         lockSlim.EnterWriteLock();
@@ -171,7 +165,6 @@ public static class LockExtensions
     public static bool TryLock(this object lockObj, TimeSpan timeout, Action action)
     {
         ArgumentNullException.ThrowIfNull(lockObj);
-
         ArgumentNullException.ThrowIfNull(action);
 
         var lockTaken = false;
@@ -206,7 +199,6 @@ public static class LockExtensions
     public static (bool Success, T? Result) TryLock<T>(this object lockObj, TimeSpan timeout, Func<T> func)
     {
         ArgumentNullException.ThrowIfNull(lockObj);
-
         ArgumentNullException.ThrowIfNull(func);
 
         var lockTaken = false;
