@@ -19,4 +19,8 @@
       <None Remove="Text\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\XiHan.Framework\XiHan.Framework.csproj" />
+    </ItemGroup>
+
 </Project>
