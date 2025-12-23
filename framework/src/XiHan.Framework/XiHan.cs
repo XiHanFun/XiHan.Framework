@@ -24,78 +24,77 @@ public static class XiHan
     /// <summary>
     /// 框架名称
     /// </summary>
-    public const string Name = "XiHan.Framework";
+    public static string Name = "XiHan.Framework";
 
     /// <summary>
     /// 框架显示名称
     /// </summary>
-    public const string DisplayName = "曦寒框架";
+    public static string DisplayName = "曦寒框架";
 
     /// <summary>
     /// 框架版权信息
     /// </summary>
-    public const string Copyright = "Copyright ©2021-Present ZhaiFanhua All Rights Reserved.";
+    public static string Copyright = "Copyright ©2021-Present ZhaiFanhua All Rights Reserved.";
 
     /// <summary>
     /// 框架作者
     /// </summary>
-    public const string Author = "ZhaiFanhua";
+    public static string Author = "ZhaiFanhua";
 
     /// <summary>
     /// 框架作者邮箱
     /// </summary>
-    public const string AuthorEmail = "me@zhaifanhua.com";
+    public static string AuthorEmail = "me@zhaifanhua.com";
 
     /// <summary>
     /// 框架组织
     /// </summary>
-    public const string Organization = "XiHanFun";
+    public static string Organization = "XiHanFun";
 
     /// <summary>
     /// 框架组织网址
     /// </summary>
-    public const string OrganizationUrl = "https://github.com/XiHanFun";
+    public static string OrganizationUrl = "https://github.com/XiHanFun";
 
     /// <summary>
     /// 框架仓库地址
     /// </summary>
-    public const string RepositoryUrl = "https://github.com/XiHanFun/XiHan.Framework";
+    public static string RepositoryUrl = "https://github.com/XiHanFun/XiHan.Framework";
 
     /// <summary>
     /// 框架文档地址
     /// </summary>
-    public const string DocumentationUrl = "https://docs.xihanfun.com";
+    public static string DocumentationUrl = "https://docs.xihanfun.com";
 
     /// <summary>
     /// 框架许可证
     /// </summary>
-    public const string License = "MIT";
+    public static string License = "MIT";
 
     /// <summary>
     /// 框架许可证地址
     /// </summary>
-    public const string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
+    public static string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
 
     /// <summary>
     /// 框架描述
     /// </summary>
-    public const string Description = "快速、轻量、高效、用心的开发框架和组件库。基于 .NET 9 构建。";
+    public static string Description = $"快速、轻量、高效、用心的开发框架和组件库。基于 .NET 10 构建。";
 
     /// <summary>
     /// 框架关键词
     /// </summary>
-    public static readonly string[] Keywords =
+    public static string[] Keywords =
     [
-        "csharp",
+        "dotnet",
         "aspnetcore",
+        "csharp",
         "web",
         "webapp",
         "xihan",
         "framework",
         "zhaifanhua",
         "xihanfun",
-        "dotnet",
-        "net9",
         "modular",
         "extensible"
     ];
@@ -103,7 +102,7 @@ public static class XiHan
     /// <summary>
     /// 框架支持的 .NET 版本
     /// </summary>
-    public static readonly string[] SupportedFrameworks =
+    public static string[] SupportedFrameworks =
     [
         "net10.0"
     ];
@@ -111,11 +110,11 @@ public static class XiHan
     /// <summary>
     /// 框架支持的平台
     /// </summary>
-    public static readonly string[] SupportedPlatforms =
+    public static string[] SupportedPlatforms =
     [
         "Windows",
         "Linux",
-        "macOS"
+        "MacOS"
     ];
 
     /// <summary>
