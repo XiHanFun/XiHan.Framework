@@ -27,7 +27,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     protected EntityBase()
     {
-        RowVersion = [];
+        RowVersion = new Version(1, 0, 0);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public abstract class EntityBase : IEntityBase
     /// </summary>
     [ConcurrencyCheck]
     [Timestamp]
-    public virtual byte[] RowVersion { get; set; }
+    public virtual Version RowVersion { get; set; }
 }
 
 /// <summary>
