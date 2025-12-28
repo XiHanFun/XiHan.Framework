@@ -28,7 +28,7 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     /// </summary>
     protected FullAuditedEntityBase()
     {
-        RowVersion = [];
+        RowVersion = new Version(1, 0, 0);
         CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
     }
@@ -38,7 +38,7 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     /// </summary>
     [ConcurrencyCheck]
     [Timestamp]
-    public virtual byte[] RowVersion { get; set; }
+    public virtual Version RowVersion { get; set; }
 
     /// <summary>
     /// 创建时间

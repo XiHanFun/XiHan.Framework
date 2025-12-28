@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.VisualBasic;
 using SqlSugar;
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
@@ -30,7 +31,7 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     /// </summary>
     protected SugarEntityWithIdentity()
     {
-        RowVersion = [];
+        RowVersion = new Version(1, 0, 0);
     }
 
     /// <summary>
@@ -39,7 +40,7 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     [ConcurrencyCheck]
     [Timestamp]
     [SugarColumn(IsOnlyIgnoreUpdate = true, ColumnDescription = "版本控制标识，用于处理并发")]
-    public override byte[] RowVersion { get; set; }
+    public override Version RowVersion { get; set; }
 
     /// <summary>
     /// 主键（自增）
