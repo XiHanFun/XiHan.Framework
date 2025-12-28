@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SoftDeleteEntityBase
+// FileName:DeletionEntityBase
 // Guid:pqr12345-1234-1234-1234-123456789pqr
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
