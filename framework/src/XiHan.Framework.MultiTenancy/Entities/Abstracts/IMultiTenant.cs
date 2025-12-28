@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.MultiTenancy.Abstractions;
+namespace XiHan.Framework.MultiTenancy.Entities.Abstracts;
 
 /// <summary>
 /// 多租户实体接口

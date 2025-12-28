@@ -21,6 +21,7 @@ using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
 using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.Entities.Abstracts;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.EventBus;
@@ -404,31 +405,29 @@ public abstract class EventBusBase : IEventBus
     protected virtual async Task TriggerHandlerAsync(IEventHandlerFactory asyncHandlerFactory, Type eventType,
         object eventData, List<Exception> exceptions, InboxConfig? inboxConfig = null)
     {
-        using (var eventHandlerWrapper = asyncHandlerFactory.GetHandler())
+        using var eventHandlerWrapper = asyncHandlerFactory.GetHandler();
+        try
         {
-            try
-            {
-                var handlerType = eventHandlerWrapper.EventHandler.GetType();
+            var handlerType = eventHandlerWrapper.EventHandler.GetType();
 
-                if (inboxConfig?.HandlerSelector != null &&
-                    !inboxConfig.HandlerSelector(handlerType))
-                {
-                    return;
-                }
+            if (inboxConfig?.HandlerSelector != null &&
+                !inboxConfig.HandlerSelector(handlerType))
+            {
+                return;
+            }
 
-                using (CurrentTenant.Change(GetEventDataTenantId(eventData)))
-                {
-                    await InvokeEventHandlerAsync(eventHandlerWrapper.EventHandler, eventData, eventType);
-                }
-            }
-            catch (TargetInvocationException ex)
+            using (CurrentTenant.Change(GetEventDataTenantId(eventData)))
             {
-                exceptions.Add(ex.InnerException!);
+                await InvokeEventHandlerAsync(eventHandlerWrapper.EventHandler, eventData, eventType);
             }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
+        }
+        catch (TargetInvocationException ex)
+        {
+            exceptions.Add(ex.InnerException!);
+        }
+        catch (Exception ex)
+        {
+            exceptions.Add(ex);
         }
     }
 
