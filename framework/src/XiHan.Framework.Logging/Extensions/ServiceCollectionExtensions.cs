@@ -119,7 +119,7 @@ public static class ServiceCollectionExtensions
                 configuration
                     .WriteTo.Console(outputTemplate: options.ConsoleOutputTemplate)
                     .WriteTo.Async(a => a.File(
-                        options.FileOutputPath,
+                        path: options.FileOutputPath,
                         outputTemplate: options.FileOutputTemplate,
                         rollingInterval: options.RollingInterval,
                         retainedFileCountLimit: options.RetainedFileCountLimit,
