@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Reflection;
-
 namespace XiHan.Framework.Web.Api.DynamicApi.Conventions;
 
 /// <summary>
@@ -27,55 +25,3 @@ public interface IDynamicApiConvention
     /// <param name="context">约定上下文</param>
     void Apply(DynamicApiConventionContext context);
 }
-
-/// <summary>
-/// 动态 API 约定上下文
-/// </summary>
-public class DynamicApiConventionContext
-{
-    /// <summary>
-    /// 服务类型
-    /// </summary>
-    public Type ServiceType { get; set; } = null!;
-
-    /// <summary>
-    /// 方法信息
-    /// </summary>
-    public MethodInfo? MethodInfo { get; set; }
-
-    /// <summary>
-    /// 控制器名称
-    /// </summary>
-    public string? ControllerName { get; set; }
-
-    /// <summary>
-    /// 动作名称
-    /// </summary>
-    public string? ActionName { get; set; }
-
-    /// <summary>
-    /// HTTP 方法
-    /// </summary>
-    public string? HttpMethod { get; set; }
-
-    /// <summary>
-    /// 路由模板
-    /// </summary>
-    public string? RouteTemplate { get; set; }
-
-    /// <summary>
-    /// API 版本
-    /// </summary>
-    public string? ApiVersion { get; set; }
-
-    /// <summary>
-    /// 是否启用
-    /// </summary>
-    public bool IsEnabled { get; set; } = true;
-
-    /// <summary>
-    /// 额外数据
-    /// </summary>
-    public Dictionary<string, object?> Metadata { get; set; } = new();
-}
-

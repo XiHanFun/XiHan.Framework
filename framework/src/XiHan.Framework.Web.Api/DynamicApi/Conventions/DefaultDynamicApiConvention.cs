@@ -91,12 +91,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     private static bool IsDisabled(Type serviceType, MethodInfo? methodInfo)
     {
-        // 检查类级别的禁用标记
-        if (serviceType.GetCustomAttribute<DisableDynamicApiAttribute>() != null)
-        {
-            return true;
-        }
-
         // 检查类级别的动态 API 特性
         var classAttribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
         if (classAttribute != null && !classAttribute.IsEnabled)
@@ -107,11 +101,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         // 检查方法级别的禁用标记
         if (methodInfo != null)
         {
-            if (methodInfo.GetCustomAttribute<DisableDynamicApiAttribute>() != null)
-            {
-                return true;
-            }
-
             var methodAttribute = methodInfo.GetCustomAttribute<DynamicApiAttribute>();
             if (methodAttribute != null && !methodAttribute.IsEnabled)
             {
@@ -257,6 +246,21 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     private string GetRouteTemplate(DynamicApiConventionContext context)
     {
+        // 如果是控制器级别的路由（没有方法信息），返回控制器基础路径
+        if (context.MethodInfo == null)
+        {
+            return GetControllerRouteTemplate(context);
+        }
+
+        // 如果是方法级别的路由，返回方法特定的部分
+        return GetActionRouteTemplate(context);
+    }
+
+    /// <summary>
+    /// 获取控制器级别的路由模板
+    /// </summary>
+    private string GetControllerRouteTemplate(DynamicApiConventionContext context)
+    {
         var parts = new List<string>();
 
         // 添加路由前缀
@@ -286,6 +290,16 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         {
             parts.Add(context.ControllerName);
         }
+
+        return string.Join("/", parts);
+    }
+
+    /// <summary>
+    /// 获取动作方法级别的路由模板
+    /// </summary>
+    private string GetActionRouteTemplate(DynamicApiConventionContext context)
+    {
+        var parts = new List<string>();
 
         // 添加动作名称（如果不是标准的 CRUD 操作）
         if (!string.IsNullOrEmpty(context.ActionName) && !IsStandardCrudAction(context.ActionName))

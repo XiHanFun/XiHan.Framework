@@ -43,9 +43,11 @@ public static class DynamicApiServiceCollectionExtensions
 
         // 添加动态控制器特性提供者
         services.AddControllers()
-            .ConfigureApplicationPartManager(manager =>
+            .ConfigureApplicationPartManager((manager) =>
             {
-                manager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider());
+                // 这里我们需要在构建服务提供者后才能传递，所以使用延迟初始化的方式
+                var provider = services.BuildServiceProvider();
+                manager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider(provider));
             });
 
         return services;
@@ -87,4 +89,3 @@ public static class DynamicApiServiceCollectionExtensions
         return services;
     }
 }
-
