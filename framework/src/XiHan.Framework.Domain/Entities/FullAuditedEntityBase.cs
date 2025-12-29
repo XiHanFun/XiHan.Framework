@@ -36,8 +36,6 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [ConcurrencyCheck]
-    [Timestamp]
     public virtual long RowVersion { get; set; }
 
     /// <summary>
