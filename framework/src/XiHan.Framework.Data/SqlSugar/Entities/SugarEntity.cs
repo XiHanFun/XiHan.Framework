@@ -30,7 +30,7 @@ public abstract class SugarEntity<TKey> : EntityBase<TKey>
     /// </summary>
     protected SugarEntity()
     {
-        RowVersion = new Version(1, 0, 0);
+        RowVersion = 0;
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public abstract class SugarEntity<TKey> : EntityBase<TKey>
     /// <param name="basicId">实体主键</param>
     protected SugarEntity(TKey basicId)
     {
-        RowVersion = new Version(1, 0, 0);
+        RowVersion = 0;
         BasicId = basicId;
     }
 
@@ -49,7 +49,7 @@ public abstract class SugarEntity<TKey> : EntityBase<TKey>
     [ConcurrencyCheck]
     [Timestamp]
     [SugarColumn(IsOnlyIgnoreUpdate = true, ColumnDescription = "版本控制标识，用于处理并发")]
-    public override Version RowVersion { get; set; }
+    public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键

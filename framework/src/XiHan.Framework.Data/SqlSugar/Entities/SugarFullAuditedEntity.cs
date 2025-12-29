@@ -30,7 +30,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// </summary>
     protected SugarFullAuditedEntity() : base()
     {
-        RowVersion = new Version(1, 0, 0);
+        RowVersion = 0;
         CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
     }
@@ -41,7 +41,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// <param name="basicId">主键</param>
     protected SugarFullAuditedEntity(TKey basicId) : base(basicId)
     {
-        RowVersion = new Version(1, 0, 0);
+        RowVersion = 0;
         BasicId = basicId;
         CreatedTime = DateTimeOffset.UtcNow;
         IsDeleted = false;
@@ -53,7 +53,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     [ConcurrencyCheck]
     [Timestamp]
     [SugarColumn(IsOnlyIgnoreUpdate = true, ColumnDescription = "版本控制标识，用于处理并发")]
-    public override Version RowVersion { get; set; }
+    public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键
