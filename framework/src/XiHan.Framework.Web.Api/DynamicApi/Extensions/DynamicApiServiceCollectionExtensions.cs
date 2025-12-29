@@ -12,6 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using System.Reflection;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Application.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Controllers;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
@@ -41,11 +45,29 @@ public static class DynamicApiServiceCollectionExtensions
         // 注册约定
         services.AddSingleton<IDynamicApiConvention>(sp => new DefaultDynamicApiConvention(options));
 
-        // 添加动态控制器特性提供者
+        // 自动发现并注册包含应用服务的程序集
         services.AddControllers()
             .ConfigureApplicationPartManager((manager) =>
             {
-                // 这里我们需要在构建服务提供者后才能传递，所以使用延迟初始化的方式
+                // 扫描所有已加载的程序集，查找包含 IApplicationService 的程序集
+                var assemblies = DiscoverApplicationServiceAssemblies();
+
+                var addedCount = 0;
+                foreach (var assembly in assemblies)
+                {
+                    // 检查是否已添加
+                    var assemblyName = assembly.GetName().Name;
+                    if (!manager.ApplicationParts.Any(p => p.Name == assemblyName))
+                    {
+                        manager.ApplicationParts.Add(new AssemblyPart(assembly));
+                        addedCount++;
+                    }
+                }
+
+                // 输出发现的程序集信息（开发时可以取消注释查看）
+                // Console.WriteLine($"[动态 API] 自动发现并注册了 {addedCount} 个包含应用服务的程序集");
+
+                // 添加动态 API 控制器特性提供者
                 var provider = services.BuildServiceProvider();
                 manager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider(provider));
             });
@@ -87,5 +109,67 @@ public static class DynamicApiServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// 发现包含应用服务的程序集
+    /// </summary>
+    /// <returns>包含应用服务的程序集列表</returns>
+    private static List<Assembly> DiscoverApplicationServiceAssemblies()
+    {
+        var assemblies = new List<Assembly>();
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+        foreach (var assembly in loadedAssemblies)
+        {
+            // 跳过系统程序集
+            if (IsSystemAssembly(assembly))
+            {
+                continue;
+            }
+
+            try
+            {
+                // 检查程序集中是否有实现 IApplicationService 的类型
+                var hasApplicationService = assembly.GetTypes()
+                    .Any(type => type.IsClass &&
+                                !type.IsAbstract &&
+                                typeof(IApplicationService).IsAssignableFrom(type));
+
+                if (hasApplicationService)
+                {
+                    assemblies.Add(assembly);
+                }
+            }
+            catch (ReflectionTypeLoadException)
+            {
+                // 忽略无法加载的程序集
+            }
+            catch (Exception)
+            {
+                // 忽略其他异常
+            }
+        }
+
+        return assemblies;
+    }
+
+    /// <summary>
+    /// 判断是否是系统程序集
+    /// </summary>
+    /// <param name="assembly">程序集</param>
+    /// <returns>是否是系统程序集</returns>
+    private static bool IsSystemAssembly(Assembly assembly)
+    {
+        var name = assembly.GetName().Name ?? string.Empty;
+
+        // 跳过 Microsoft、System 等系统程序集
+        return name.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase) ||
+               name.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+               name.StartsWith("Serilog", StringComparison.OrdinalIgnoreCase) ||
+               name.StartsWith("Newtonsoft", StringComparison.OrdinalIgnoreCase) ||
+               name.Equals("System", StringComparison.OrdinalIgnoreCase) ||
+               name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase) ||
+               name.Equals("netstandard", StringComparison.OrdinalIgnoreCase);
     }
 }
