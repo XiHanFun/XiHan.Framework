@@ -15,7 +15,10 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using XiHan.Framework.Application.Services;
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Web.Api.DynamicApi.Configuration;
+using XiHan.Framework.Web.Api.DynamicApi.Conventions;
+using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 
@@ -24,6 +27,24 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 /// </summary>
 public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
 {
+    private readonly IServiceProvider? _serviceProvider;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    public DynamicApiControllerFeatureProvider()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="serviceProvider">服务提供者</param>
+    public DynamicApiControllerFeatureProvider(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     /// <summary>
     /// 填充特性
     /// </summary>
@@ -31,22 +52,70 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     /// <param name="feature">控制器特性</param>
     public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
     {
+        // 尝试获取配置和约定
+        IDynamicApiConvention? convention = null;
+        DynamicApiOptions? options = null;
+        ILogger? logger = null;
+
+        if (_serviceProvider != null)
+        {
+            convention = _serviceProvider.GetService<IDynamicApiConvention>();
+            options = _serviceProvider.GetService<DynamicApiOptions>();
+            logger = _serviceProvider.GetService<ILogger<DynamicApiControllerFeatureProvider>>();
+        }
+
+        // 检查是否启用动态 API
+        if (options?.IsEnabled == false)
+        {
+            logger?.LogInformation("动态 API 功能已禁用");
+            return;
+        }
+
+        logger?.LogInformation("开始生成动态 API 控制器...");
+
         // 获取所有应用服务类型
         var serviceTypes = GetApplicationServiceTypes(parts);
+        var totalServices = serviceTypes.Count();
+
+        logger?.LogInformation("找到 {TotalServices} 个应用服务待处理", totalServices);
+
+        var successCount = 0;
+        var failCount = 0;
 
         foreach (var serviceType in serviceTypes)
         {
-            // 创建动态控制器类型
-            var controllerType = DynamicApiControllerFactory.CreateControllerType(serviceType.AsType());
-            if (controllerType != null)
+            try
             {
-                var controllerTypeInfo = controllerType.GetTypeInfo();
-                if (!feature.Controllers.Contains(controllerTypeInfo))
+                // 创建动态控制器类型
+                var controllerType = DynamicApiControllerFactory.CreateControllerType(
+                    serviceType.AsType(),
+                    convention,
+                    options,
+                    logger);
+
+                if (controllerType != null)
                 {
-                    feature.Controllers.Add(controllerTypeInfo);
+                    var controllerTypeInfo = controllerType.GetTypeInfo();
+                    if (!feature.Controllers.Contains(controllerTypeInfo))
+                    {
+                        feature.Controllers.Add(controllerTypeInfo);
+                        successCount++;
+                    }
+                }
+                else
+                {
+                    failCount++;
                 }
             }
+            catch (Exception ex)
+            {
+                failCount++;
+                logger?.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
+            }
         }
+
+        logger?.LogInformation("动态 API 生成完成: {SuccessCount} 个成功, {FailCount} 个失败",
+            successCount, failCount);
     }
 
     /// <summary>
@@ -75,9 +144,6 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     /// </summary>
     private static bool IsApplicationService(TypeInfo typeInfo)
     {
-        return typeInfo.IsClass &&
-               !typeInfo.IsAbstract &&
-               typeInfo.IsPublic &&
-               typeof(IApplicationService).IsAssignableFrom(typeInfo);
+        return TypeHelper.IsApplicationService(typeInfo);
     }
 }

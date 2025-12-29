@@ -15,6 +15,7 @@
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
 
@@ -36,6 +37,27 @@ public class XiHanWebApiModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+
+        // 添加动态 API
+        services.AddDynamicApi(options =>
+        {
+            // 默认配置
+            options.IsEnabled = true;
+            options.DefaultRoutePrefix = "api";
+            options.EnableBatchOperations = true;
+            options.MaxBatchSize = 100;
+            options.RemoveServiceSuffix = true;
+
+            // 约定配置
+            options.Conventions.UseLowercaseRoutes = true;
+            options.Conventions.UsePascalCaseRoutes = true;
+            options.Conventions.RouteSeparator = "";
+
+            // 路由配置
+            options.Routes.UseModuleNameAsRoute = true;
+            options.Routes.UseNamespaceAsRoute = false;
+        });
+
         var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions();
 
         services.AddControllers(options =>
