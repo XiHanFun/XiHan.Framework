@@ -58,7 +58,7 @@ public class DynamicApiOptions
     /// <summary>
     /// 要移除的服务名称后缀列表
     /// </summary>
-    public List<string> ServiceSuffixes { get; set; } = ["AppService", "ApplicationService", "Service"];
+    public List<string> ServiceSuffixes { get; set; } = ["ApplicationService", "Service"];
 
     /// <summary>
     /// 约定配置
@@ -112,12 +112,12 @@ public class DynamicApiConventionOptions
     /// <summary>
     /// 是否使用小写路由
     /// </summary>
-    public bool UseLowercaseRoutes { get; set; } = true;
+    public bool UseLowercaseRoutes { get; set; } = false;
 
     /// <summary>
     /// 路由分隔符
     /// </summary>
-    public string RouteSeparator { get; set; } = "-";
+    public string RouteSeparator { get; set; } = "";
 }
 
 /// <summary>
@@ -145,4 +145,3 @@ public class DynamicApiRouteOptions
     /// </summary>
     public string? ModuleNamePattern { get; set; }
 }
-

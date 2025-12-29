@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.DynamicApi.Versioning;
+namespace XiHan.Framework.Web.Api.DynamicApi.Attributes;
 
 /// <summary>
 /// API 版本特性
@@ -20,16 +20,6 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Versioning;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class ApiVersionAttribute : Attribute
 {
-    /// <summary>
-    /// 版本号
-    /// </summary>
-    public string Version { get; }
-
-    /// <summary>
-    /// 是否已弃用
-    /// </summary>
-    public bool Deprecated { get; set; }
-
     /// <summary>
     /// 构造函数
     /// </summary>
@@ -48,37 +38,14 @@ public class ApiVersionAttribute : Attribute
     {
         Version = $"{majorVersion}.{minorVersion}";
     }
-}
 
-/// <summary>
-/// 映射到 API 版本特性
-/// 将方法映射到指定的 API 版本
-/// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public class MapToApiVersionAttribute : Attribute
-{
     /// <summary>
     /// 版本号
     /// </summary>
     public string Version { get; }
 
     /// <summary>
-    /// 构造函数
+    /// 是否已弃用
     /// </summary>
-    /// <param name="version">版本号</param>
-    public MapToApiVersionAttribute(string version)
-    {
-        Version = version;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="majorVersion">主版本号</param>
-    /// <param name="minorVersion">次版本号</param>
-    public MapToApiVersionAttribute(int majorVersion, int minorVersion = 0)
-    {
-        Version = $"{majorVersion}.{minorVersion}";
-    }
+    public bool Deprecated { get; set; }
 }
-
