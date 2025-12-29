@@ -42,11 +42,13 @@ using XiHan.Framework.Uow;
 using XiHan.Framework.Validation;
 using XiHan.Framework.VirtualFileSystem;
 using XiHan.Framework.Application;
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Docs;
 using XiHan.Framework.Web.Gateway;
 using XiHan.Framework.Web.RealTime;
+using XiHan.Framework.Web.Tests.Services;
 
 namespace XiHan.Framework.Web.Tests;
 
@@ -96,6 +98,10 @@ public class XiHanTestsWebModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+
+        // 注册测试服务
+        services.AddScoped<IProductService, ProductService>();
     }
 
     /// <summary>
