@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
-using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
 
 namespace XiHan.Framework.Data.SqlSugar.Entities;
