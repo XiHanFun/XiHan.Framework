@@ -91,7 +91,7 @@ public static class DynamicApiControllerFactory
 
                 // 创建控制器类型
                 var typeBuilder = ModuleBuilder.DefineType(
-                    $"{controllerName}DynamicController",
+                    $"{controllerName}Controller",
                     TypeAttributes.Public | TypeAttributes.Class,
                     typeof(ControllerBase));
 

@@ -56,7 +56,7 @@ public static class TypeHelper
         }
 
         // 检查是否是值类型且有到基本类型的隐式转换运算符
-        // 这样可以支持 ID 包装类型（如 XiHanBasicAppIdType）
+        // 这样可以支持 ID 包装类型（如 struct）
         if (underlyingType.IsValueType && !underlyingType.IsGenericType)
         {
             // 检查是否有 implicit operator 到基本类型的转换
