@@ -18,6 +18,7 @@
 	  <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.ObjectMapping\XiHan.Framework.ObjectMapping.csproj" />
 	</ItemGroup>
