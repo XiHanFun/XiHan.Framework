@@ -50,9 +50,7 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [ConcurrencyCheck]
-    [Timestamp]
-    [SugarColumn(IsOnlyIgnoreUpdate = true, ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
     public override long RowVersion { get; set; }
 
     /// <summary>
