@@ -57,11 +57,3 @@ public class DynamicApiAttribute : Attribute
     /// </summary>
     public string? Version { get; set; }
 }
-
-/// <summary>
-/// 禁用动态 API 特性
-/// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-public class DisableDynamicApiAttribute : Attribute
-{
-}
