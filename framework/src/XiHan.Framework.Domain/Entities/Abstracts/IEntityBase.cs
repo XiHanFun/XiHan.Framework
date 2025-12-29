@@ -22,7 +22,7 @@ public interface IEntityBase
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    Version RowVersion { get; set; }
+    long RowVersion { get; set; }
 }
 
 /// <summary>
