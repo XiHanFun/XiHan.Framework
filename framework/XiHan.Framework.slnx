@@ -30,14 +30,14 @@
     <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
-    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
-    <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
     <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" />
     <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
   </Folder>
   <Folder Name="/1.src/6.Infrastructure/">
+    <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
+    <Project Path="src/XiHan.Framework.CodeGeneration/XiHan.Framework.CodeGeneration.csproj" />
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />
