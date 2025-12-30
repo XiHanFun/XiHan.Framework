@@ -55,12 +55,32 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             context.ControllerName = GetControllerName(context.ServiceType);
         }
 
-        // 如果没有方法信息，只需要控制器名称
-        if (context.MethodInfo == null)
+        // 设置 API 版本
+        if (string.IsNullOrEmpty(context.ApiVersion))
         {
-            return;
+            if (context.MethodInfo == null)
+            {
+                // 控制器级别：从类级别或配置获取
+                context.ApiVersion = GetApiVersion(context.ServiceType, null) ?? _options.DefaultApiVersion;
+            }
+            else
+            {
+                // 方法级别：优先从方法获取，然后从类级别，最后从配置
+                context.ApiVersion = GetApiVersion(context.ServiceType, context.MethodInfo) ?? _options.DefaultApiVersion;
+            }
         }
 
+        // 如果没有方法信息，设置控制器级别的路由模板后返回
+        if (context.MethodInfo == null)
+        {
+            // 设置控制器级别的路由模板
+            if (string.IsNullOrEmpty(context.RouteTemplate))
+            {
+                context.RouteTemplate = GetRouteTemplate(context);
+            }
+            return;
+        }
+        
         // 设置动作名称
         if (string.IsNullOrEmpty(context.ActionName))
         {
@@ -73,16 +93,10 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             context.HttpMethod = GetHttpMethod(context.MethodInfo);
         }
 
-        // 设置路由模板
+        // 设置方法级别的路由模板
         if (string.IsNullOrEmpty(context.RouteTemplate))
         {
             context.RouteTemplate = GetRouteTemplate(context);
-        }
-
-        // 设置 API 版本
-        if (string.IsNullOrEmpty(context.ApiVersion))
-        {
-            context.ApiVersion = GetApiVersion(context.ServiceType) ?? _options.DefaultApiVersion;
         }
     }
 
@@ -130,10 +144,24 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 获取 API 版本
     /// </summary>
-    private static string? GetApiVersion(Type serviceType)
+    /// <param name="serviceType">服务类型</param>
+    /// <param name="methodInfo">方法信息（可选）</param>
+    /// <returns>API版本号，优先从方法级别获取，然后从类级别获取</returns>
+    private static string? GetApiVersion(Type serviceType, MethodInfo? methodInfo = null)
     {
-        var attribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-        return attribute?.Version;
+        // 优先从方法级别获取版本号
+        if (methodInfo != null)
+        {
+            var methodAttribute = methodInfo.GetCustomAttribute<DynamicApiAttribute>();
+            if (!string.IsNullOrEmpty(methodAttribute?.Version))
+            {
+                return methodAttribute.Version;
+            }
+        }
+
+        // 然后从类级别获取版本号
+        var classAttribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
+        return classAttribute?.Version;
     }
 
     /// <summary>
@@ -291,6 +319,19 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     private string GetActionRouteTemplate(DynamicApiConventionContext context)
     {
         var parts = new List<string>();
+
+        // 如果启用了 API 版本控制，且方法有版本号
+        if (_options.EnableApiVersioning && context.MethodInfo != null && !string.IsNullOrEmpty(context.ApiVersion))
+        {
+            // 获取类级别的版本号
+            var classVersion = GetApiVersion(context.ServiceType, null) ?? _options.DefaultApiVersion;
+            
+            // 如果方法级别的版本号与类级别不同（或类级别没有版本号），在方法路由中添加版本号
+            if (string.IsNullOrEmpty(classVersion) || context.ApiVersion != classVersion)
+            {
+                parts.Add($"v{context.ApiVersion}");
+            }
+        }
 
         // 总是添加动作名称（包括标准的 CRUD 操作）
         if (!string.IsNullOrEmpty(context.ActionName))

@@ -30,14 +30,14 @@ public class DynamicApiOptions
     public string DefaultRoutePrefix { get; set; } = "api";
 
     /// <summary>
-    /// 默认 API 版本
+    /// 默认 API 版本，字符串类型的数字，不需要加 v 前缀
     /// </summary>
     public string? DefaultApiVersion { get; set; }
 
     /// <summary>
     /// 是否启用 API 版本控制
     /// </summary>
-    public bool EnableApiVersioning { get; set; } = false;
+    public bool EnableApiVersioning { get; set; } = true;
 
     /// <summary>
     /// 是否启用批量操作
@@ -58,7 +58,7 @@ public class DynamicApiOptions
     /// <summary>
     /// 要移除的服务名称后缀列表
     /// </summary>
-    public List<string> ServiceSuffixes { get; set; } = ["ApplicationService", "Service"];
+    public List<string> ServiceSuffixes { get; set; } = ["ApplicationService", "AppService", "Service"];
 
     /// <summary>
     /// 约定配置
@@ -138,7 +138,7 @@ public class DynamicApiRouteOptions
     /// <summary>
     /// 是否将模块名称作为路由段
     /// </summary>
-    public bool UseModuleNameAsRoute { get; set; } = true;
+    public bool UseModuleNameAsRoute { get; set; } = false;
 
     /// <summary>
     /// 模块名称提取正则表达式

@@ -12,10 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
@@ -439,7 +438,7 @@ public static class DynamicApiControllerFactory
     private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterDescriptor descriptor)
     {
         // 根据参数来源选择绑定特性类型
-        Type? bindingAttributeType = descriptor.Source switch
+        var bindingAttributeType = descriptor.Source switch
         {
             ParameterSource.Route => typeof(FromRouteAttribute),
             ParameterSource.Query => typeof(FromQueryAttribute),
