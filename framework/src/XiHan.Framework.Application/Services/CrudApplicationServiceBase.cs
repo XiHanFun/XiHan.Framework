@@ -83,9 +83,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// <returns>创建后的实体DTO</returns>
     public virtual async Task<TEntityDto> CreateAsync(TEntityDto input)
     {
-        var entity = await MapToEntityAsync(input);
-        entity = await Repository.AddAsync(entity);
-        return await MapToEntityDtoAsync(entity);
+        return await CreateInternalAsync(input);
     }
 
     /// <summary>
@@ -96,11 +94,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// <returns>更新后的实体DTO</returns>
     public virtual async Task<TEntityDto> UpdateAsync(TKey id, TEntityDto input)
     {
-        var entity = await Repository.GetByIdAsync(id) ??
-            throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-        await MapToEntityAsync(input, entity);
-        entity = await Repository.UpdateAsync(entity);
-        return await MapToEntityDtoAsync(entity);
+        return await UpdateInternalAsync(id, input);
     }
 
     /// <summary>
@@ -118,6 +112,28 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
 
         await Repository.DeleteAsync(entity);
         return true;
+    }
+
+    /// <summary>
+    /// 创建实体的内部实现
+    /// </summary>
+    protected virtual async Task<TEntityDto> CreateInternalAsync(TEntityDto input)
+    {
+        var entity = await MapToEntityAsync(input);
+        entity = await Repository.AddAsync(entity);
+        return await MapToEntityDtoAsync(entity);
+    }
+
+    /// <summary>
+    /// 更新实体的内部实现
+    /// </summary>
+    protected virtual async Task<TEntityDto> UpdateInternalAsync(TKey id, TEntityDto input)
+    {
+        var entity = await Repository.GetByIdAsync(id) ??
+            throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
+        await MapToEntityAsync(input, entity);
+        entity = await Repository.UpdateAsync(entity);
+        return await MapToEntityDtoAsync(entity);
     }
 
     /// <summary>
@@ -217,6 +233,30 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
         await MapToEntityAsync(input, entity);
         entity = await Repository.UpdateAsync(entity);
         return await MapToEntityDtoAsync(entity);
+    }
+
+    /// <summary>
+    /// 隐藏基类的 CreateAsync(TEntityDto) 方法
+    /// </summary>
+    /// <remarks>
+    /// 此类使用独立的 CreateDto 和 UpdateDto，不应调用基类的方法
+    /// </remarks>
+    protected override sealed Task<TEntityDto> CreateInternalAsync(TEntityDto input)
+    {
+        throw new NotSupportedException(
+            $"此服务使用 {typeof(TCreateDto).Name} 作为创建DTO，请使用 CreateAsync(TCreateDto) 方法");
+    }
+
+    /// <summary>
+    /// 隐藏基类的 UpdateAsync(TKey, TEntityDto) 方法
+    /// </summary>
+    /// <remarks>
+    /// 此类使用独立的 CreateDto 和 UpdateDto，不应调用基类的方法
+    /// </remarks>
+    protected override sealed Task<TEntityDto> UpdateInternalAsync(TKey id, TEntityDto input)
+    {
+        throw new NotSupportedException(
+            $"此服务使用 {typeof(TUpdateDto).Name} 作为更新DTO，请使用 UpdateAsync(TKey, TUpdateDto) 方法");
     }
 
     /// <summary>
