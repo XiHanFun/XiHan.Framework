@@ -13,20 +13,19 @@
 #endregion <<版权版本注释>>
 
 using Mapster;
-using Microsoft.AspNetCore.Mvc;
 using XiHan.BasicApp.Core;
 using XiHan.BasicApp.Rbac.Entities;
 using XiHan.BasicApp.Rbac.Repositories.AccessLogs;
 using XiHan.BasicApp.Rbac.Services.AccessLogs.Dtos;
 using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Services;
+using XiHan.Framework.Web.Api.DynamicApi.Attributes;
 
 namespace XiHan.BasicApp.Rbac.Services.AccessLogs;
 
 /// <summary>
 /// 系统访问日志服务实现
 /// </summary>
-[DynamicApi(Version = "1")]
 public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, AccessLogDto, XiHanBasicAppIdType, CreateAccessLogDto, CreateAccessLogDto>, ISysAccessLogService
 {
     private readonly ISysAccessLogRepository _accessLogRepository;
@@ -44,7 +43,9 @@ public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, Acce
     /// <summary>
     /// 根据用户ID获取访问日志列表
     /// </summary>
+    [DynamicApi(Version = "1")]
     [DynamicApi(Version = "2")]
+    [MapToApiVersion("3")]
     public async Task<List<AccessLogDto>> GetByUserIdAsync(XiHanBasicAppIdType userId)
     {
         var logs = await _accessLogRepository.GetByUserIdAsync(userId);
