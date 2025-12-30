@@ -18,6 +18,7 @@ using XiHan.BasicApp.Core;
 using XiHan.BasicApp.Rbac.Entities;
 using XiHan.BasicApp.Rbac.Repositories.AccessLogs;
 using XiHan.BasicApp.Rbac.Services.AccessLogs.Dtos;
+using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Services;
 
 namespace XiHan.BasicApp.Rbac.Services.AccessLogs;
@@ -25,6 +26,7 @@ namespace XiHan.BasicApp.Rbac.Services.AccessLogs;
 /// <summary>
 /// 系统访问日志服务实现
 /// </summary>
+[DynamicApi(Version = "1")]
 public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, AccessLogDto, XiHanBasicAppIdType, CreateAccessLogDto, CreateAccessLogDto>, ISysAccessLogService
 {
     private readonly ISysAccessLogRepository _accessLogRepository;
@@ -42,6 +44,7 @@ public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, Acce
     /// <summary>
     /// 根据用户ID获取访问日志列表
     /// </summary>
+    [DynamicApi(Version = "2")]
     public async Task<List<AccessLogDto>> GetByUserIdAsync(XiHanBasicAppIdType userId)
     {
         var logs = await _accessLogRepository.GetByUserIdAsync(userId);
@@ -51,6 +54,7 @@ public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, Acce
     /// <summary>
     /// 根据资源路径获取访问日志列表
     /// </summary>
+    [DynamicApi(Version = "1")]
     public async Task<List<AccessLogDto>> GetByResourcePathAsync(string resourcePath)
     {
         var logs = await _accessLogRepository.GetByResourcePathAsync(resourcePath);
@@ -60,6 +64,7 @@ public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, Acce
     /// <summary>
     /// 根据租户ID获取访问日志列表
     /// </summary>
+    [DynamicApi(Version = "3")]
     public async Task<List<AccessLogDto>> GetByTenantIdAsync(XiHanBasicAppIdType tenantId)
     {
         var logs = await _accessLogRepository.GetByTenantIdAsync(tenantId);
