@@ -44,4 +44,3 @@ public enum ParameterKind
     /// </summary>
     Special
 }
-

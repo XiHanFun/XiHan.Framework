@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
+using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
@@ -65,12 +66,37 @@ public class DynamicApiParameterAnalyzer
         catch (DynamicApiException ex)
         {
             // 添加更多上下文信息
-            throw new DynamicApiException(
-                $"参数分析失败 - {methodInfo.DeclaringType?.Name}.{methodName}: {ex.Message}",
-                ex);
+            throw new DynamicApiException($"参数分析失败 - {methodInfo.DeclaringType?.Name}.{methodName}: {ex.Message}", ex);
         }
 
         return descriptors;
+    }
+
+    /// <summary>
+    /// 获取 Route 参数名称列表
+    /// </summary>
+    public static List<string> GetRouteParameterNames(List<ParameterDescriptor> descriptors)
+    {
+        return descriptors
+            .Where(d => d.Source == ParameterSource.Route)
+            .Select(d => d.Name)
+            .ToList();
+    }
+
+    /// <summary>
+    /// 获取 Body 参数
+    /// </summary>
+    public static ParameterDescriptor? GetBodyParameter(List<ParameterDescriptor> descriptors)
+    {
+        return descriptors.FirstOrDefault(d => d.Source == ParameterSource.Body);
+    }
+
+    /// <summary>
+    /// 判断是否有参数来自指定来源
+    /// </summary>
+    public static bool HasParameterFromSource(List<ParameterDescriptor> descriptors, ParameterSource source)
+    {
+        return descriptors.Any(d => d.Source == source);
     }
 
     /// <summary>
@@ -155,32 +181,4 @@ public class DynamicApiParameterAnalyzer
         // Nullable<T>
         return Nullable.GetUnderlyingType(type) != null;
     }
-
-    /// <summary>
-    /// 获取 Route 参数名称列表
-    /// </summary>
-    public static List<string> GetRouteParameterNames(List<ParameterDescriptor> descriptors)
-    {
-        return descriptors
-            .Where(d => d.Source == ParameterSource.Route)
-            .Select(d => d.Name)
-            .ToList();
-    }
-
-    /// <summary>
-    /// 获取 Body 参数
-    /// </summary>
-    public static ParameterDescriptor? GetBodyParameter(List<ParameterDescriptor> descriptors)
-    {
-        return descriptors.FirstOrDefault(d => d.Source == ParameterSource.Body);
-    }
-
-    /// <summary>
-    /// 判断是否有参数来自指定来源
-    /// </summary>
-    public static bool HasParameterFromSource(List<ParameterDescriptor> descriptors, ParameterSource source)
-    {
-        return descriptors.Any(d => d.Source == source);
-    }
 }
-
