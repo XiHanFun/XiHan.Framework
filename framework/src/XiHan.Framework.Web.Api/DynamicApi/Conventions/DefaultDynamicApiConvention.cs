@@ -112,15 +112,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     }
 
     /// <summary>
-    /// 判断是否是标准的 CRUD 操作
-    /// </summary>
-    private static bool IsStandardCrudAction(string actionName)
-    {
-        var standardActions = new[] { "get", "getlist", "create", "update", "delete" };
-        return standardActions.Contains(actionName.ToLower());
-    }
-
-    /// <summary>
     /// 判断是否是简单类型
     /// </summary>
     private static bool IsSimpleType(Type type)
@@ -301,8 +292,8 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     {
         var parts = new List<string>();
 
-        // 添加动作名称（如果不是标准的 CRUD 操作）
-        if (!string.IsNullOrEmpty(context.ActionName) && !IsStandardCrudAction(context.ActionName))
+        // 总是添加动作名称（包括标准的 CRUD 操作）
+        if (!string.IsNullOrEmpty(context.ActionName))
         {
             parts.Add(context.ActionName);
         }

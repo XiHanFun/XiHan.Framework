@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
+using XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 
@@ -229,8 +230,11 @@ public static class DynamicApiControllerFactory
         var serviceMethods = serviceType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(TypeHelper.ShouldExposeAsApi);
 
+        // 过滤掉被隐藏的方法和重载方法，只保留每个方法名的最派生版本
+        var filteredMethods = FilterOverloadedAndHiddenMethods(serviceMethods, serviceType, logger);
+
         var count = 0;
-        foreach (var serviceMethod in serviceMethods)
+        foreach (var serviceMethod in filteredMethods)
         {
             try
             {
@@ -246,6 +250,72 @@ public static class DynamicApiControllerFactory
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// 过滤重载和被隐藏的方法，只保留每个方法名的最派生版本
+    /// </summary>
+    /// <remarks>
+    /// 当基类和派生类有相同名称的方法（不管参数是否相同）时，
+    /// 只保留声明类型最接近实际服务类型的那个版本，避免生成重复的 API 路由。
+    /// </remarks>
+    private static IEnumerable<MethodInfo> FilterOverloadedAndHiddenMethods(IEnumerable<MethodInfo> methods, Type serviceType, ILogger? logger = null)
+    {
+        var methodGroups = methods.GroupBy(m => m.Name);
+        var result = new List<MethodInfo>();
+
+        foreach (var group in methodGroups)
+        {
+            if (group.Count() == 1)
+            {
+                result.Add(group.First());
+            }
+            else
+            {
+                // 如果有多个同名方法（重载），选择声明类型最接近服务类型的那个
+                var mostDerived = group
+                    .OrderBy(m => GetDistanceFromType(m.DeclaringType, serviceType))
+                    .First();
+
+                result.Add(mostDerived);
+
+                var skipped = group.Where(m => m != mostDerived).ToList();
+                if (skipped.Count != 0)
+                {
+                    logger?.LogDebug("检测到方法重载/隐藏: {MethodName}，已选择 {DeclaringType} 中的版本，跳过 {SkippedCount} 个版本",
+                        group.Key, mostDerived.DeclaringType?.Name, skipped.Count);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 获取声明类型到服务类型的距离
+    /// </summary>
+    /// <returns>距离值，越小表示越接近服务类型</returns>
+    private static int GetDistanceFromType(Type? declaringType, Type serviceType)
+    {
+        if (declaringType == null)
+        {
+            return int.MaxValue;
+        }
+
+        var distance = 0;
+        var currentType = serviceType;
+
+        while (currentType != null && currentType != typeof(object))
+        {
+            if (currentType == declaringType)
+            {
+                return distance;
+            }
+            distance++;
+            currentType = currentType.BaseType;
+        }
+
+        return int.MaxValue;
     }
 
     /// <summary>
@@ -269,6 +339,21 @@ public static class DynamicApiControllerFactory
             return;
         }
 
+        var httpMethod = context.HttpMethod ?? "POST";
+
+        // 使用参数分析器分析参数
+        List<ParameterDescriptor> parameterDescriptors;
+        try
+        {
+            parameterDescriptors = DynamicApiParameterAnalyzer.Analyze(serviceMethod, httpMethod);
+        }
+        catch (DynamicApiException ex)
+        {
+            throw new InvalidOperationException(
+                $"分析方法 '{serviceMethod.DeclaringType?.Name}.{serviceMethod.Name}' 的参数时失败: {ex.Message}",
+                ex);
+        }
+
         var parameters = serviceMethod.GetParameters();
         var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
 
@@ -279,18 +364,19 @@ public static class DynamicApiControllerFactory
             parameterTypes);
 
         // 添加 HTTP 方法特性（带路由模板）
-        AddHttpMethodAttribute(methodBuilder, context.HttpMethod ?? "POST", context.RouteTemplate);
-
-        // 获取路由模板中的参数名称
-        var routeParameterNames = ExtractRouteParameterNames(context.RouteTemplate ?? string.Empty);
+        AddHttpMethodAttribute(methodBuilder, httpMethod, context.RouteTemplate);
 
         // 添加参数及参数特性
         for (var i = 0; i < parameters.Length; i++)
         {
             var paramBuilder = methodBuilder.DefineParameter(i + 1, parameters[i].Attributes, parameters[i].Name);
 
-            // 添加参数绑定特性
-            AddParameterBindingAttribute(paramBuilder, parameters[i], context.HttpMethod ?? "POST", i, parameters.Length, routeParameterNames);
+            // 使用参数描述符添加参数绑定特性
+            var descriptor = parameterDescriptors.FirstOrDefault(d => d.Name == parameters[i].Name);
+            if (descriptor != null)
+            {
+                AddParameterBindingAttribute(paramBuilder, descriptor);
+            }
         }
 
         // 生成 IL 代码
@@ -347,35 +433,21 @@ public static class DynamicApiControllerFactory
     }
 
     /// <summary>
-    /// 添加参数绑定特性
+    /// 添加参数绑定特性（基于参数描述符）
     /// </summary>
-    private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterInfo paramInfo,
-        string httpMethod, int parameterIndex, int totalParameters, HashSet<string> routeParameterNames)
+    private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterDescriptor descriptor)
     {
-        // 根据 HTTP 方法和参数类型决定绑定源
-        Type? bindingAttributeType = null;
-
-        // 检查参数是否在路由模板中
-        var isInRoute = paramInfo.Name != null && routeParameterNames.Contains(paramInfo.Name);
-
-        if (IsSimpleType(paramInfo.ParameterType))
+        // 根据参数来源选择绑定特性类型
+        Type? bindingAttributeType = descriptor.Source switch
         {
-            // 如果参数在路由模板中，使用 [FromRoute]
-            if (isInRoute)
-            {
-                bindingAttributeType = typeof(FromRouteAttribute);
-            }
-            else
-            {
-                // 不在路由中的简单类型参数使用 [FromQuery]
-                bindingAttributeType = typeof(FromQueryAttribute);
-            }
-        }
-        else
-        {
-            // 复杂类型：从 Body 绑定
-            bindingAttributeType = typeof(FromBodyAttribute);
-        }
+            ParameterSource.Route => typeof(FromRouteAttribute),
+            ParameterSource.Query => typeof(FromQueryAttribute),
+            ParameterSource.Body => typeof(FromBodyAttribute),
+            ParameterSource.Services => typeof(FromServicesAttribute),
+            ParameterSource.Header => typeof(FromHeaderAttribute),
+            ParameterSource.Form => typeof(FromFormAttribute),
+            _ => null
+        };
 
         if (bindingAttributeType != null)
         {
@@ -385,41 +457,6 @@ public static class DynamicApiControllerFactory
                 paramBuilder.SetCustomAttribute(new CustomAttributeBuilder(constructor, []));
             }
         }
-    }
-
-    /// <summary>
-    /// 提取路由模板中的参数名称
-    /// </summary>
-    private static HashSet<string> ExtractRouteParameterNames(string routeTemplate)
-    {
-        var parameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (string.IsNullOrEmpty(routeTemplate))
-        {
-            return parameterNames;
-        }
-
-        // 使用正则表达式提取 {paramName} 格式的参数
-        var regex = new Regex(@"\{([^}:?]+)[\?:]?[^}]*\}");
-        var matches = regex.Matches(routeTemplate);
-
-        foreach (Match match in matches)
-        {
-            if (match.Groups.Count > 1)
-            {
-                parameterNames.Add(match.Groups[1].Value);
-            }
-        }
-
-        return parameterNames;
-    }
-
-    /// <summary>
-    /// 判断是否是简单类型
-    /// </summary>
-    private static bool IsSimpleType(Type type)
-    {
-        return TypeHelper.IsSimpleType(type);
     }
 
     #endregion
