@@ -36,6 +36,11 @@ public class ParameterSourceResolver
     }
 
     /// <summary>
+    /// 获取当前 Body 参数数量
+    /// </summary>
+    public int BodyParameterCount => _bodyParameterCount;
+
+    /// <summary>
     /// 解析参数来源
     /// </summary>
     public ParameterSource Resolve(ParameterDescriptor descriptor)
@@ -137,12 +142,6 @@ public class ParameterSourceResolver
     private bool IsBodyAllowed()
     {
         // GET / DELETE 不允许 Body
-        return _httpMethod != "GET" && _httpMethod != "DELETE";
+        return _httpMethod is not "GET" and not "DELETE";
     }
-
-    /// <summary>
-    /// 获取当前 Body 参数数量
-    /// </summary>
-    public int BodyParameterCount => _bodyParameterCount;
 }
-
