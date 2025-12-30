@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Reflection;
-
 namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
 /// <summary>
@@ -78,7 +76,7 @@ public class ParameterRuleValidator
     /// </summary>
     private void ValidateGetMethodBody(List<ParameterDescriptor> descriptors)
     {
-        if (_httpMethod != "GET" && _httpMethod != "DELETE")
+        if (_httpMethod is not "GET" and not "DELETE")
         {
             return;
         }
@@ -148,24 +146,3 @@ public class ParameterRuleValidator
         }
     }
 }
-
-/// <summary>
-/// 动态 API 异常
-/// </summary>
-public class DynamicApiException : Exception
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public DynamicApiException(string message) : base(message)
-    {
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public DynamicApiException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-}
-

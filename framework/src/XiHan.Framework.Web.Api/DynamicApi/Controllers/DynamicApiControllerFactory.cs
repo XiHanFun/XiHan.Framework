@@ -18,6 +18,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
+using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 using XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 

@@ -44,4 +44,3 @@ public enum ParameterRole
     /// </summary>
     Infra
 }
-

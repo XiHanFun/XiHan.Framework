@@ -71,4 +71,3 @@ public class ParameterDescriptor
     /// </summary>
     public bool HasDefaultValue { get; set; }
 }
-
