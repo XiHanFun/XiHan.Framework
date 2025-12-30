@@ -13,17 +13,17 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.AI;
+using XiHan.Framework.Application;
 using XiHan.Framework.Authentication;
 using XiHan.Framework.Authorization;
-using XiHan.Framework.Tasks;
 using XiHan.Framework.Bot;
 using XiHan.Framework.Caching;
 using XiHan.Framework.CodeGeneration;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data;
-using XiHan.Framework.Domain;
 using XiHan.Framework.DistributedIds;
+using XiHan.Framework.Domain;
 using XiHan.Framework.EventBus;
 using XiHan.Framework.Http;
 using XiHan.Framework.Localization;
@@ -36,19 +36,17 @@ using XiHan.Framework.SearchEngines;
 using XiHan.Framework.Security;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Settings;
+using XiHan.Framework.Tasks;
 using XiHan.Framework.Templating;
 using XiHan.Framework.Threading;
 using XiHan.Framework.Uow;
 using XiHan.Framework.Validation;
 using XiHan.Framework.VirtualFileSystem;
-using XiHan.Framework.Application;
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Docs;
 using XiHan.Framework.Web.Gateway;
 using XiHan.Framework.Web.RealTime;
-using XiHan.Framework.Web.Tests.Services;
 
 namespace XiHan.Framework.Web.Tests;
 
@@ -99,9 +97,6 @@ public class XiHanTestsWebModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-
-        // 注册测试服务
-        services.AddScoped<IProductService, ProductService>();
     }
 
     /// <summary>
