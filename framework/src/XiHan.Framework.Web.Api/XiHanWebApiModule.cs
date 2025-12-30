@@ -44,6 +44,7 @@ public class XiHanWebApiModule : XiHanModule
             // 默认配置
             options.IsEnabled = true;
             options.DefaultRoutePrefix = "api";
+            options.EnableApiVersioning = true;
             options.EnableBatchOperations = true;
             options.MaxBatchSize = 100;
             options.RemoveServiceSuffix = true;
@@ -54,7 +55,7 @@ public class XiHanWebApiModule : XiHanModule
             options.Conventions.RouteSeparator = "";
 
             // 路由配置
-            options.Routes.UseModuleNameAsRoute = true;
+            options.Routes.UseModuleNameAsRoute = false;
             options.Routes.UseNamespaceAsRoute = false;
         });
 

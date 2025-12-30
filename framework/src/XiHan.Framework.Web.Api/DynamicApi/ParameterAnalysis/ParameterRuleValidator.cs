@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
+
 namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
 /// <summary>
