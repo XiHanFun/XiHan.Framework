@@ -13,8 +13,11 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Reflection.Emit;
+using XiHan.Framework.Application.Attributes;
+using XiHan.Framework.Web.Api.DynamicApi.Attributes;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
@@ -238,9 +241,26 @@ public static class DynamicApiControllerFactory
         {
             try
             {
-                CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options);
-                count++;
-                logger?.LogDebug("已创建操作方法: {MethodName}", serviceMethod.Name);
+                // 获取方法的所有版本号
+                var versions = GetMethodVersions(serviceMethod, serviceType, options);
+
+                if (versions.Count == 0)
+                {
+                    // 没有指定版本，创建默认的 Action
+                    CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, null);
+                    count++;
+                    logger?.LogDebug("已创建操作方法: {MethodName}", serviceMethod.Name);
+                }
+                else
+                {
+                    // 为每个版本创建一个独立的 Action
+                    foreach (var version in versions)
+                    {
+                        CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, version);
+                        count++;
+                        logger?.LogDebug("已创建操作方法: {MethodName} (版本: {Version})", serviceMethod.Name, version);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -250,6 +270,73 @@ public static class DynamicApiControllerFactory
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// 获取方法的所有版本号
+    /// </summary>
+    private static List<string> GetMethodVersions(MethodInfo methodInfo, Type serviceType, DynamicApiOptions? options)
+    {
+        var versions = new HashSet<string>();
+
+        // 1. 获取方法级别的 MapToApiVersionAttribute
+        var mapToVersionAttrs = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>();
+        foreach (var attr in mapToVersionAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version))
+            {
+                versions.Add(attr.Version);
+            }
+        }
+
+        // 2. 获取方法级别的 DynamicApiAttribute.Version
+        var dynamicApiAttrs = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
+        foreach (var attr in dynamicApiAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version))
+            {
+                versions.Add(attr.Version);
+            }
+        }
+
+        // 3. 获取方法级别的 ApiVersionAttribute
+        var apiVersionAttrs = methodInfo.GetCustomAttributes<ApiVersionAttribute>();
+        foreach (var attr in apiVersionAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version))
+            {
+                versions.Add(attr.Version);
+            }
+        }
+
+        // 如果方法级别没有版本号，尝试从类级别获取
+        if (versions.Count == 0)
+        {
+            // 4. 类级别的 DynamicApiAttribute.Version
+            var classDynamicApiAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
+            if (!string.IsNullOrEmpty(classDynamicApiAttr?.Version))
+            {
+                versions.Add(classDynamicApiAttr.Version);
+            }
+
+            // 5. 类级别的 ApiVersionAttribute（可能有多个）
+            var classApiVersionAttrs = serviceType.GetCustomAttributes<ApiVersionAttribute>();
+            foreach (var attr in classApiVersionAttrs)
+            {
+                if (!string.IsNullOrEmpty(attr.Version))
+                {
+                    versions.Add(attr.Version);
+                }
+            }
+        }
+
+        // 如果还是没有版本号，使用默认版本
+        if (versions.Count == 0 && !string.IsNullOrEmpty(options?.DefaultApiVersion))
+        {
+            versions.Add(options.DefaultApiVersion);
+        }
+
+        return [.. versions];
     }
 
     /// <summary>
@@ -321,8 +408,14 @@ public static class DynamicApiControllerFactory
     /// <summary>
     /// 创建动作方法
     /// </summary>
+    /// <param name="typeBuilder">类型构建器</param>
+    /// <param name="serviceMethod">服务方法</param>
+    /// <param name="serviceField">服务字段</param>
+    /// <param name="convention">动态API约定</param>
+    /// <param name="options">配置选项</param>
+    /// <param name="specificVersion">指定的版本号（为多版本方法生成独立Action时使用）</param>
     private static void CreateActionMethod(TypeBuilder typeBuilder, MethodInfo serviceMethod, FieldBuilder serviceField,
-        IDynamicApiConvention? convention, DynamicApiOptions? options)
+        IDynamicApiConvention? convention, DynamicApiOptions? options, string? specificVersion = null)
     {
         // 应用约定获取方法信息
         var context = new DynamicApiConventionContext
@@ -331,7 +424,19 @@ public static class DynamicApiControllerFactory
             MethodInfo = serviceMethod
         };
 
+        // 如果指定了特定版本，强制使用该版本
+        if (!string.IsNullOrEmpty(specificVersion))
+        {
+            context.ApiVersion = specificVersion;
+        }
+
         convention?.Apply(context);
+
+        // 如果指定了特定版本，确保使用该版本（约定可能会覆盖）
+        if (!string.IsNullOrEmpty(specificVersion))
+        {
+            context.ApiVersion = specificVersion;
+        }
 
         // 如果方法被禁用，跳过
         if (!context.IsEnabled)
@@ -357,8 +462,18 @@ public static class DynamicApiControllerFactory
         var parameters = serviceMethod.GetParameters();
         var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
 
+        // 生成 Action 方法名称
+        // 如果指定了版本号，添加版本后缀以区分不同版本的方法
+        var actionName = context.ActionName ?? serviceMethod.Name;
+        if (!string.IsNullOrEmpty(specificVersion))
+        {
+            // 将版本号转换为合法的方法名后缀（去除点号等特殊字符）
+            var versionSuffix = specificVersion.Replace(".", "").Replace("-", "");
+            actionName = $"{actionName}_V{versionSuffix}";
+        }
+
         var methodBuilder = typeBuilder.DefineMethod(
-            context.ActionName ?? serviceMethod.Name,
+            actionName,
             MethodAttributes.Public | MethodAttributes.Virtual,
             serviceMethod.ReturnType,
             parameterTypes);
