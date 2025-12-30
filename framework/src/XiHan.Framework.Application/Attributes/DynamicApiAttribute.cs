@@ -18,7 +18,7 @@ namespace XiHan.Framework.Application.Attributes;
 /// 动态 API 特性
 /// 标记类或方法以配置动态 API 行为
 /// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class DynamicApiAttribute : Attribute
 {
     /// <summary>

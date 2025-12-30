@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Application.Attributes;
+using XiHan.Framework.Web.Api.DynamicApi.Attributes;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Conventions;
@@ -105,20 +106,26 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     private static bool IsDisabled(Type serviceType, MethodInfo? methodInfo)
     {
-        // 检查类级别的动态 API 特性
-        var classAttribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-        if (classAttribute != null && !classAttribute.IsEnabled)
+        // 检查类级别的动态 API 特性（可能有多个）
+        var classAttributes = serviceType.GetCustomAttributes<DynamicApiAttribute>();
+        foreach (var attr in classAttributes)
         {
-            return true;
-        }
-
-        // 检查方法级别的禁用标记
-        if (methodInfo != null)
-        {
-            var methodAttribute = methodInfo.GetCustomAttribute<DynamicApiAttribute>();
-            if (methodAttribute != null && !methodAttribute.IsEnabled)
+            if (!attr.IsEnabled)
             {
                 return true;
+            }
+        }
+
+        // 检查方法级别的禁用标记（可能有多个）
+        if (methodInfo != null)
+        {
+            var methodAttributes = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
+            foreach (var attr in methodAttributes)
+            {
+                if (!attr.IsEnabled)
+                {
+                    return true;
+                }
             }
         }
 
@@ -142,26 +149,92 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     }
 
     /// <summary>
-    /// 获取 API 版本
+    /// 获取 API 版本（获取单个版本，用于约定系统）
     /// </summary>
     /// <param name="serviceType">服务类型</param>
     /// <param name="methodInfo">方法信息（可选）</param>
-    /// <returns>API版本号，优先从方法级别获取，然后从类级别获取</returns>
+    /// <returns>API版本号，优先级：MapToApiVersion > DynamicApi.Version(方法) > ApiVersion(方法) > DynamicApi.Version(类) > ApiVersion(类)</returns>
     private static string? GetApiVersion(Type serviceType, MethodInfo? methodInfo = null)
     {
         // 优先从方法级别获取版本号
         if (methodInfo != null)
         {
-            var methodAttribute = methodInfo.GetCustomAttribute<DynamicApiAttribute>();
-            if (!string.IsNullOrEmpty(methodAttribute?.Version))
+            // 1. 最高优先级：MapToApiVersionAttribute（取第一个）
+            var mapToVersionAttr = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>().FirstOrDefault();
+            if (mapToVersionAttr != null && !string.IsNullOrEmpty(mapToVersionAttr.Version))
             {
-                return methodAttribute.Version;
+                return mapToVersionAttr.Version;
+            }
+
+            // 2. 次优先级：DynamicApiAttribute.Version（取第一个有版本号的）
+            var dynamicApiAttrs = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
+            foreach (var attr in dynamicApiAttrs)
+            {
+                if (!string.IsNullOrEmpty(attr.Version))
+                {
+                    return attr.Version;
+                }
+            }
+
+            // 3. 标准 ApiVersionAttribute（取第一个）
+            var apiVersionAttr = methodInfo.GetCustomAttributes<ApiVersionAttribute>().FirstOrDefault();
+            if (apiVersionAttr != null && !string.IsNullOrEmpty(apiVersionAttr.Version))
+            {
+                return apiVersionAttr.Version;
             }
         }
 
         // 然后从类级别获取版本号
-        var classAttribute = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-        return classAttribute?.Version;
+        // 4. 类级别的 DynamicApiAttribute.Version（取第一个有版本号的）
+        var classDynamicApiAttrs = serviceType.GetCustomAttributes<DynamicApiAttribute>();
+        foreach (var attr in classDynamicApiAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version))
+            {
+                return attr.Version;
+            }
+        }
+
+        // 5. 类级别的 ApiVersionAttribute（取第一个）
+        var classApiVersionAttr = serviceType.GetCustomAttributes<ApiVersionAttribute>().FirstOrDefault();
+        if (classApiVersionAttr != null && !string.IsNullOrEmpty(classApiVersionAttr.Version))
+        {
+            return classApiVersionAttr.Version;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 获取方法映射的所有 API 版本
+    /// </summary>
+    /// <param name="methodInfo">方法信息</param>
+    /// <returns>该方法映射的所有版本号列表</returns>
+    private static List<string> GetMappedApiVersions(MethodInfo methodInfo)
+    {
+        var versions = new List<string>();
+
+        // 获取所有 MapToApiVersionAttribute
+        var mapToVersionAttrs = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>();
+        foreach (var attr in mapToVersionAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version) && !versions.Contains(attr.Version))
+            {
+                versions.Add(attr.Version);
+            }
+        }
+
+        // 获取所有 ApiVersionAttribute
+        var apiVersionAttrs = methodInfo.GetCustomAttributes<ApiVersionAttribute>();
+        foreach (var attr in apiVersionAttrs)
+        {
+            if (!string.IsNullOrEmpty(attr.Version) && !versions.Contains(attr.Version))
+            {
+                versions.Add(attr.Version);
+            }
+        }
+
+        return versions;
     }
 
     /// <summary>
