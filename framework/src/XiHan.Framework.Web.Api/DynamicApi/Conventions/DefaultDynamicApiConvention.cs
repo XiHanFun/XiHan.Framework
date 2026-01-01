@@ -81,7 +81,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             }
             return;
         }
-        
+
         // 设置动作名称
         if (string.IsNullOrEmpty(context.ActionName))
         {
@@ -398,7 +398,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         {
             // 获取类级别的版本号
             var classVersion = GetApiVersion(context.ServiceType, null) ?? _options.DefaultApiVersion;
-            
+
             // 如果方法级别的版本号与类级别不同（或类级别没有版本号），在方法路由中添加版本号
             if (string.IsNullOrEmpty(classVersion) || context.ApiVersion != classVersion)
             {
