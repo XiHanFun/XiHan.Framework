@@ -27,7 +27,15 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected SugarModificationEntity()
+    protected SugarModificationEntity() : base()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="modifiedId"></param>
+    protected SugarModificationEntity(TKey modifiedId) : base(modifiedId)
     {
     }
 

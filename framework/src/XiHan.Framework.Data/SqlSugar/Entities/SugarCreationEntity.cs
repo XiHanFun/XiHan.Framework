@@ -27,9 +27,16 @@ public abstract class SugarCreationEntity<TKey> : CreationEntityBase<TKey>
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected SugarCreationEntity()
+    protected SugarCreationEntity() : base()
     {
-        CreatedTime = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="createdId"></param>
+    protected SugarCreationEntity(TKey createdId) : base(createdId)
+    {
     }
 
     /// <summary>

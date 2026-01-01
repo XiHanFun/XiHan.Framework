@@ -68,6 +68,15 @@ public abstract class DeletionEntityBase<TKey> : DeletionEntityBase, IDeletionEn
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="deletedId"></param>
+    protected DeletionEntityBase(TKey deletedId) : this()
+    {
+        DeletedId = deletedId;
+    }
+
+    /// <summary>
     /// 删除者唯一标识
     /// </summary>
     public virtual TKey? DeletedId { get; set; }

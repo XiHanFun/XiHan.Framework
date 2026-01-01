@@ -49,6 +49,15 @@ public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IMo
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="modifiedId"></param>
+    protected ModificationEntityBase(TKey modifiedId) : this()
+    {
+        ModifiedId = modifiedId;
+    }
+
+    /// <summary>
     /// 修改者唯一标识
     /// </summary>
     public virtual TKey? ModifiedId { get; set; }
