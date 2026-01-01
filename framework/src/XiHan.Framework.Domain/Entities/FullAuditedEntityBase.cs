@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities.Abstracts;
 
 namespace XiHan.Framework.Domain.Entities;
@@ -77,9 +76,20 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected FullAuditedEntityBase(TKey basicId) : base()
+    /// <param name="basicId"></param>
+    protected FullAuditedEntityBase(TKey basicId) : this()
     {
         BasicId = basicId;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId"></param>
+    /// <param name="createdId"></param>
+    protected FullAuditedEntityBase(TKey basicId, TKey createdId) : this(basicId)
+    {
+        CreatedId = createdId;
     }
 
     /// <summary>
