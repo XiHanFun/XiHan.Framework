@@ -29,9 +29,8 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected SugarEntityWithIdentity()
+    protected SugarEntityWithIdentity() : base()
     {
-        RowVersion = 0;
     }
 
     /// <summary>

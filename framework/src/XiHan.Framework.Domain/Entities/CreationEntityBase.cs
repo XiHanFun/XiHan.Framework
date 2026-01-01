@@ -50,6 +50,15 @@ public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEn
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="createdId"></param>
+    protected CreationEntityBase(TKey createdId) : this()
+    {
+        CreatedId = createdId;
+    }
+
+    /// <summary>
     /// 创建者唯一标识
     /// </summary>
     public virtual TKey? CreatedId { get; set; }

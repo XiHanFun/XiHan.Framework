@@ -27,19 +27,16 @@ public abstract class SugarEntity<TKey> : EntityBase<TKey>
     /// <summary>
     /// 构造函数
     /// </summary>
-    protected SugarEntity()
+    protected SugarEntity() : base()
     {
-        RowVersion = 0;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="basicId">实体主键</param>
-    protected SugarEntity(TKey basicId)
+    protected SugarEntity(TKey basicId) : base(basicId)
     {
-        RowVersion = 0;
-        BasicId = basicId;
     }
 
     /// <summary>

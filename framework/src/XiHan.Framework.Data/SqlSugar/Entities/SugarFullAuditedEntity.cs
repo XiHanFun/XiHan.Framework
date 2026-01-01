@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
-using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
 
 namespace XiHan.Framework.Data.SqlSugar.Entities;
@@ -30,9 +29,6 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// </summary>
     protected SugarFullAuditedEntity() : base()
     {
-        RowVersion = 0;
-        CreatedTime = DateTimeOffset.UtcNow;
-        IsDeleted = false;
     }
 
     /// <summary>
@@ -41,10 +37,6 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// <param name="basicId">主键</param>
     protected SugarFullAuditedEntity(TKey basicId) : base(basicId)
     {
-        RowVersion = 0;
-        BasicId = basicId;
-        CreatedTime = DateTimeOffset.UtcNow;
-        IsDeleted = false;
     }
 
     /// <summary>
