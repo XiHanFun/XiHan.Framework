@@ -40,7 +40,7 @@ public class XiHanDataModule : XiHanModule
         var services = context.Services;
 
         // 配置SqlSugar选项
-        Configure<XiHanSqlSugarCoreOptions>(services.GetConfiguration());
+        Configure<XiHanSqlSugarCoreOptions>(services.GetConfiguration().GetSection("XiHanSqlSugarCore"));
 
         // 添加SqlSugar数据访问服务
         services.AddXiHanDataSqlSugar();
