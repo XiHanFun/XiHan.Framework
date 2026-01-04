@@ -17,13 +17,17 @@ using XiHan.Framework.Domain.Paging.Dtos;
 namespace XiHan.Framework.Application.Services.Abstracts;
 
 /// <summary>
-/// CRUD 应用服务接口
+/// CRUD 应用服务接口（支持创建和更新DTO分离）
 /// </summary>
 /// <typeparam name="TEntityDto">实体DTO类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public interface ICrudApplicationService<TEntityDto, TKey> : IApplicationService
+/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
+/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
+public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto> : IApplicationService
     where TEntityDto : class
     where TKey : IEquatable<TKey>
+    where TCreateDto : class
+    where TUpdateDto : class
 {
     /// <summary>
     /// 获取单个实体
@@ -44,42 +48,6 @@ public interface ICrudApplicationService<TEntityDto, TKey> : IApplicationService
     /// </summary>
     /// <param name="input">创建DTO</param>
     /// <returns>创建后的实体DTO</returns>
-    Task<TEntityDto> CreateAsync(TEntityDto input);
-
-    /// <summary>
-    /// 更新实体
-    /// </summary>
-    /// <param name="id">实体主键</param>
-    /// <param name="input">更新DTO</param>
-    /// <returns>更新后的实体DTO</returns>
-    Task<TEntityDto> UpdateAsync(TKey id, TEntityDto input);
-
-    /// <summary>
-    /// 删除实体
-    /// </summary>
-    /// <param name="id">实体主键</param>
-    /// <returns>删除结果</returns>
-    Task<bool> DeleteAsync(TKey id);
-}
-
-/// <summary>
-/// CRUD 应用服务接口（支持创建和更新DTO分离）
-/// </summary>
-/// <typeparam name="TEntityDto">实体DTO类型</typeparam>
-/// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
-/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto> : ICrudApplicationService<TEntityDto, TKey>
-    where TEntityDto : class
-    where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
-{
-    /// <summary>
-    /// 创建实体
-    /// </summary>
-    /// <param name="input">创建DTO</param>
-    /// <returns>创建后的实体DTO</returns>
     Task<TEntityDto> CreateAsync(TCreateDto input);
 
     /// <summary>
@@ -89,4 +57,11 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     /// <param name="input">更新DTO</param>
     /// <returns>更新后的实体DTO</returns>
     Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input);
+
+    /// <summary>
+    /// 删除实体
+    /// </summary>
+    /// <param name="id">实体主键</param>
+    /// <returns>删除结果</returns>
+    Task<bool> DeleteAsync(TKey id);
 }

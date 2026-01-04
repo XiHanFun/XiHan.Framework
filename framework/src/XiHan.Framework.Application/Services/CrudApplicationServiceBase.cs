@@ -22,15 +22,20 @@ using XiHan.Framework.Domain.Repositories;
 namespace XiHan.Framework.Application.Services;
 
 /// <summary>
-/// CRUD 应用服务基类
+/// CRUD 应用服务基类（支持创建和更新DTO分离）
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TEntityDto">实体DTO类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey>
+/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
+/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
+public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>
+    : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
     where TEntity : class, IEntityBase<TKey>
     where TEntityDto : class
     where TKey : IEquatable<TKey>
+    where TCreateDto : class
+    where TUpdateDto : class
 {
     /// <summary>
     /// 仓储
@@ -83,7 +88,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// </summary>
     /// <param name="input">创建DTO</param>
     /// <returns>创建后的实体DTO</returns>
-    public virtual async Task<TEntityDto> CreateAsync(TEntityDto input)
+    public virtual async Task<TEntityDto> CreateAsync(TCreateDto input)
     {
         var entity = await MapToEntityAsync(input);
         entity = await Repository.AddAsync(entity);
@@ -96,7 +101,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     /// <param name="id">实体主键</param>
     /// <param name="input">更新DTO</param>
     /// <returns>更新后的实体DTO</returns>
-    public virtual async Task<TEntityDto> UpdateAsync(TKey id, TEntityDto input)
+    public virtual async Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input)
     {
         var entity = await Repository.GetByIdAsync(id) ??
             throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
@@ -177,57 +182,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey> : Ap
     {
         entity = dto.Adapt<TEntity>();
         return Task.CompletedTask;
-    }
-}
-
-/// <summary>
-/// CRUD 应用服务基类（支持创建和更新DTO分离）
-/// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TEntityDto">实体DTO类型</typeparam>
-/// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
-/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto> : CrudApplicationServiceBase<TEntity, TEntityDto, TKey>, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
-    where TEntity : class, IEntityBase<TKey>
-    where TEntityDto : class
-    where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="repository">仓储</param>
-    protected CrudApplicationServiceBase(IRepositoryBase<TEntity, TKey> repository) : base(repository)
-    {
-    }
-
-    /// <summary>
-    /// 创建实体
-    /// </summary>
-    /// <param name="input">创建DTO</param>
-    /// <returns>创建后的实体DTO</returns>
-    public virtual async Task<TEntityDto> CreateAsync(TCreateDto input)
-    {
-        var entity = await MapToEntityAsync(input);
-        entity = await Repository.AddAsync(entity);
-        return await MapToEntityDtoAsync(entity);
-    }
-
-    /// <summary>
-    /// 更新实体
-    /// </summary>
-    /// <param name="id">实体主键</param>
-    /// <param name="input">更新DTO</param>
-    /// <returns>更新后的实体DTO</returns>
-    public virtual async Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input)
-    {
-        var entity = await Repository.GetByIdAsync(id) ??
-            throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-        await MapToEntityAsync(input, entity);
-        entity = await Repository.UpdateAsync(entity);
-        return await MapToEntityDtoAsync(entity);
     }
 
     /// <summary>
