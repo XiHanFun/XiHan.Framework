@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Application.Services.Abstracts;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
@@ -34,57 +35,6 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey>
     /// <param name="repository">仓储</param>
     protected BatchCrudApplicationServiceBase(IRepositoryBase<TEntity, TKey> repository) : base(repository)
     {
-    }
-
-    /// <summary>
-    /// 执行批量操作的通用方法
-    /// </summary>
-    /// <typeparam name="TInput">输入类型</typeparam>
-    /// <typeparam name="TOutput">输出类型</typeparam>
-    /// <param name="items">要处理的项目列表</param>
-    /// <param name="continueOnError">出错时是否继续</param>
-    /// <param name="operation">要执行的操作</param>
-    /// <param name="errorMessageFormatter">错误信息格式化函数</param>
-    /// <returns>批量操作响应</returns>
-    protected virtual async Task<BatchOperationResponse<TOutput>> ExecuteBatchOperationAsync<TInput, TOutput>(
-        IReadOnlyList<TInput> items,
-        bool continueOnError,
-        Func<TInput, int, Task<TOutput>> operation,
-        Func<int, string> errorMessageFormatter)
-    {
-        var response = new BatchOperationResponse<TOutput>
-        {
-            TotalCount = items.Count
-        };
-
-        for (var i = 0; i < items.Count; i++)
-        {
-            var result = new BatchOperationResult<TOutput> { Index = i };
-
-            try
-            {
-                result.Data = await operation(items[i], i);
-                result.IsSuccess = true;
-                response.SuccessCount++;
-            }
-            catch (Exception ex)
-            {
-                result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
-                response.FailureCount++;
-                response.Errors.Add($"{errorMessageFormatter(i)}: {ex.Message}");
-
-                if (!continueOnError)
-                {
-                    response.Results.Add(result);
-                    break;
-                }
-            }
-
-            response.Results.Add(result);
-        }
-
-        return response;
     }
 
     /// <summary>
@@ -174,31 +124,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey>
 
         // 使用仓储的批量获取方法
         var entities = await Repository.GetByIdsAsync(ids);
-        return (await MapToEntityDtosAsync(entities)).ToList();
-    }
-}
-
-/// <summary>
-/// 批量 CRUD 应用服务基类（支持创建和更新DTO分离）
-/// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TEntityDto">实体DTO类型</typeparam>
-/// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
-/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto> : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
-    where TEntity : class, IEntityBase<TKey>
-    where TEntityDto : class
-    where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="repository">仓储</param>
-    protected BatchCrudApplicationServiceBase(IRepositoryBase<TEntity, TKey> repository) : base(repository)
-    {
+        return [.. (await MapToEntityDtosAsync(entities))];
     }
 
     /// <summary>
@@ -250,6 +176,30 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
         }
 
         return response;
+    }
+}
+
+/// <summary>
+/// 批量 CRUD 应用服务基类（支持创建和更新DTO分离）
+/// </summary>
+/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TEntityDto">实体DTO类型</typeparam>
+/// <typeparam name="TKey">主键类型</typeparam>
+/// <typeparam name="TCreateDto">创建DTO类型</typeparam>
+/// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
+public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto> : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
+    where TEntity : class, IEntityBase<TKey>
+    where TEntityDto : class
+    where TKey : IEquatable<TKey>
+    where TCreateDto : class
+    where TUpdateDto : class
+{
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="repository">仓储</param>
+    protected BatchCrudApplicationServiceBase(IRepositoryBase<TEntity, TKey> repository) : base(repository)
+    {
     }
 
     /// <summary>
@@ -382,5 +332,56 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
         // 使用仓储的批量获取方法
         var entities = await Repository.GetByIdsAsync(ids);
         return (await MapToEntityDtosAsync(entities)).ToList();
+    }
+
+    /// <summary>
+    /// 执行批量操作的通用方法
+    /// </summary>
+    /// <typeparam name="TInput">输入类型</typeparam>
+    /// <typeparam name="TOutput">输出类型</typeparam>
+    /// <param name="items">要处理的项目列表</param>
+    /// <param name="continueOnError">出错时是否继续</param>
+    /// <param name="operation">要执行的操作</param>
+    /// <param name="errorMessageFormatter">错误信息格式化函数</param>
+    /// <returns>批量操作响应</returns>
+    protected virtual async Task<BatchOperationResponse<TOutput>> ExecuteBatchOperationAsync<TInput, TOutput>(
+        IReadOnlyList<TInput> items,
+        bool continueOnError,
+        Func<TInput, int, Task<TOutput>> operation,
+        Func<int, string> errorMessageFormatter)
+    {
+        var response = new BatchOperationResponse<TOutput>
+        {
+            TotalCount = items.Count
+        };
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var result = new BatchOperationResult<TOutput> { Index = i };
+
+            try
+            {
+                result.Data = await operation(items[i], i);
+                result.IsSuccess = true;
+                response.SuccessCount++;
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = ex.Message;
+                response.FailureCount++;
+                response.Errors.Add($"{errorMessageFormatter(i)}: {ex.Message}");
+
+                if (!continueOnError)
+                {
+                    response.Results.Add(result);
+                    break;
+                }
+            }
+
+            response.Results.Add(result);
+        }
+
+        return response;
     }
 }
