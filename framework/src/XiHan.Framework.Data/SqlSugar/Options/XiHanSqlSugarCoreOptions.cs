@@ -73,6 +73,11 @@ public class XiHanSqlSugarCoreOptions
     public Dictionary<Type, Func<object, bool>> GlobalFilters { get; set; } = [];
 
     /// <summary>
+    /// 实体类型集合（用于创建表结构）
+    /// </summary>
+    public List<Type> EntityTypes { get; set; } = [];
+
+    /// <summary>
     /// 是否启用SQL日志
     /// </summary>
     public bool EnableSqlLog { get; set; } = false;
@@ -86,4 +91,14 @@ public class XiHanSqlSugarCoreOptions
     /// 配置SqlSugar客户端的动作
     /// </summary>
     public Action<ISqlSugarClient>? ConfigureDbAction { get; set; }
+
+    /// <summary>
+    /// 是否启用数据库初始化
+    /// </summary>
+    public bool EnableDbInitialization { get; set; } = false;
+
+    /// <summary>
+    /// 是否启用种子数据
+    /// </summary>
+    public bool EnableDataSeeding { get; set; } = false;
 }

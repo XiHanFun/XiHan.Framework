@@ -14,11 +14,10 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using SqlSugar;
+using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
-using XiHan.Framework.Domain.Aggregates.Abstracts;
-using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Repositories;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
@@ -42,11 +41,11 @@ public static class SqlSugarServiceCollectionExtensions
             services.Configure(configureOptions);
         }
 
-        var options = new XiHanSqlSugarCoreOptions();
-        configureOptions?.Invoke(options);
-
         // 注册核心服务
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
+
+        // 注册数据库初始化器
+        services.TryAddScoped<IDbInitializer, DbInitializer>();
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
@@ -59,33 +58,36 @@ public static class SqlSugarServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 添加聚合根仓储
+    /// 添加种子数据提供者
     /// </summary>
-    /// <typeparam name="TAggregateRoot">聚合根类型</typeparam>
-    /// <typeparam name="TKey">主键类型</typeparam>
+    /// <typeparam name="TSeeder">种子数据类型</typeparam>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanAggregateRepository<TAggregateRoot, TKey>(this IServiceCollection services)
-        where TAggregateRoot : class, IAggregateRoot<TKey>, new()
-        where TKey : IEquatable<TKey>
+    public static IServiceCollection AddDataSeeder<TSeeder>(this IServiceCollection services)
+        where TSeeder : class, IDataSeeder
     {
-        services.TryAddScoped<IAggregateRootRepository<TAggregateRoot, TKey>, SqlSugarAggregateRepository<TAggregateRoot, TKey>>();
+        services.AddScoped<IDataSeeder, TSeeder>();
         return services;
     }
 
     /// <summary>
-    /// 添加自定义仓储实现
+    /// 批量添加种子数据提供者
     /// </summary>
-    /// <typeparam name="TInterface">仓储接口</typeparam>
-    /// <typeparam name="TImplementation">仓储实现</typeparam>
     /// <param name="services">服务集合</param>
-    /// <param name="lifetime">服务生命周期</param>
+    /// <param name="seederTypes">种子数据类型集合</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanCustomRepository<TInterface, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped)
-        where TInterface : class
-        where TImplementation : class, TInterface
+    public static IServiceCollection AddDataSeeders(this IServiceCollection services, params Type[] seederTypes)
     {
-        services.Add(new ServiceDescriptor(typeof(TInterface), typeof(TImplementation), lifetime));
+        foreach (var seederType in seederTypes)
+        {
+            if (!typeof(IDataSeeder).IsAssignableFrom(seederType))
+            {
+                throw new ArgumentException($"类型 {seederType.Name} 必须实现 IDataSeeder 接口");
+            }
+
+            services.AddScoped(typeof(IDataSeeder), seederType);
+        }
+
         return services;
     }
 }
