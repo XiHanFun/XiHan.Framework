@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using DocumentFormat.OpenXml.Vml.Office;
 using Mapster;
 using XiHan.BasicApp.Core;
 using XiHan.BasicApp.Rbac.Entities;
@@ -98,33 +99,7 @@ public class SysAccessLogService : CrudApplicationServiceBase<SysAccessLog, Acce
     /// </summary>
     protected override Task<SysAccessLog> MapToEntityAsync(CreateAccessLogDto createDto)
     {
-        var entity = new SysAccessLog
-        {
-            TenantId = createDto.TenantId,
-            UserId = createDto.UserId,
-            UserName = createDto.UserName,
-            SessionId = createDto.SessionId,
-            ResourcePath = createDto.ResourcePath,
-            ResourceName = createDto.ResourceName,
-            ResourceType = createDto.ResourceType,
-            Method = createDto.Method,
-            StatusCode = createDto.StatusCode,
-            AccessIp = createDto.AccessIp,
-            AccessLocation = createDto.AccessLocation,
-            UserAgent = createDto.UserAgent,
-            Browser = createDto.Browser,
-            Os = createDto.Os,
-            Device = createDto.Device,
-            Referer = createDto.Referer,
-            ResponseTime = createDto.ResponseTime,
-            ResponseSize = createDto.ResponseSize,
-            StayTime = createDto.StayTime,
-            ErrorMessage = createDto.ErrorMessage,
-            ExtendData = createDto.ExtendData,
-            Remark = createDto.Remark
-        };
-
-        return Task.FromResult(entity);
+        return Task.FromResult(createDto.Adapt<SysAccessLog>());
     }
 
     protected override Task MapToEntityAsync(CreateAccessLogDto updateDto, SysAccessLog entity)

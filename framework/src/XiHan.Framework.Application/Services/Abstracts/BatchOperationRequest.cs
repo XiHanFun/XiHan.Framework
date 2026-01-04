@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Application.Services;
+namespace XiHan.Framework.Application.Services.Abstracts;
 
 /// <summary>
 /// 批量操作请求
@@ -103,4 +103,3 @@ public class BatchUpdateItem<TKey, TUpdate>
     /// </summary>
     public TUpdate Data { get; set; } = default!;
 }
-
