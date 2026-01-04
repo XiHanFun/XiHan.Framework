@@ -14,9 +14,11 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
@@ -40,10 +42,17 @@ public static class SqlSugarServiceCollectionExtensions
             services.Configure(configureOptions);
         }
 
+        var options = new XiHanSqlSugarCoreOptions();
+        configureOptions?.Invoke(options);
+
         // 注册核心服务
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
 
         // 注册仓储服务
+        services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
+        services.TryAddScoped(typeof(IRepositoryBase<,>), typeof(SqlSugarRepositoryBase<,>));
+        services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
+        services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
 
         return services;
