@@ -24,7 +24,6 @@ using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Timing;
 using XiHan.Framework.Core.Tracing;
 using XiHan.Framework.DistributedIds;
-using XiHan.Framework.DistributedIds.Guids;
 using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;

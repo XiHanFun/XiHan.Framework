@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.DistributedIds.Extensions;
 
 namespace XiHan.Framework.DistributedIds;
 
@@ -27,5 +28,8 @@ public class XiHanDistributedIdsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        // 注册分布式唯一标识生成器服务
+        services.AddXiHanDistributedIds();
     }
 }
