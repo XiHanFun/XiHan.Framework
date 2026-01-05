@@ -54,7 +54,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     {
         try
         {
-            _logger.LogInformation("==================== 开始数据库初始化 ====================");
+            _logger.LogInformation("开始数据库初始化");
 
             // 检查是否启用数据库初始化
             if (_options.EnableDbInitialization)
@@ -82,7 +82,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
                 _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
             }
 
-            _logger.LogInformation("==================== 数据库初始化完成 ====================");
+            _logger.LogInformation("数据库初始化完成");
         }
         catch (Exception ex)
         {
