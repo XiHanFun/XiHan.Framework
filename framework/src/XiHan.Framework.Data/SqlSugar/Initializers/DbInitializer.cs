@@ -56,14 +56,31 @@ public class DbInitializer : IDbInitializer, IScopedDependency
         {
             _logger.LogInformation("==================== 开始数据库初始化 ====================");
 
-            // 1. 创建数据库
-            await CreateDatabaseAsync();
+            // 检查是否启用数据库初始化
+            if (_options.EnableDbInitialization)
+            {
+                // 1. 创建数据库
+                await CreateDatabaseAsync();
 
-            // 2. 创建表结构
-            await CreateTablesAsync();
+                // 2. 创建表结构
+                await CreateTablesAsync();
+            }
+            else
+            {
+                _logger.LogInformation("数据库初始化已禁用（EnableDbInitialization = false），跳过初始化");
+                return;
+            }
 
-            // 3. 执行种子数据
-            await SeedDataAsync();
+            // 检查是否启用种子数据
+            if (_options.EnableDataSeeding)
+            {
+                // 3. 执行种子数据
+                await SeedDataAsync();
+            }
+            else
+            {
+                _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
+            }
 
             _logger.LogInformation("==================== 数据库初始化完成 ====================");
         }
@@ -84,11 +101,11 @@ public class DbInitializer : IDbInitializer, IScopedDependency
             var db = _dbContext.GetClient();
             await Task.Run(() =>
             {
-                if (!db.DbMaintenance.IsAnySystemTablePermissions())
-                {
-                    _logger.LogWarning("没有创建数据库的权限，跳过数据库创建");
-                    return;
-                }
+                //if (!db.DbMaintenance.IsAnySystemTablePermissions())
+                //{
+                //    _logger.LogWarning("没有创建数据库的权限，跳过数据库创建");
+                //    return;
+                //}
 
                 if (!db.DbMaintenance.CreateDatabase())
                 {
