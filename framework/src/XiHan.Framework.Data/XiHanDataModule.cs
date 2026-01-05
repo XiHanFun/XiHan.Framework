@@ -12,10 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data.SqlSugar.Extensions;
-using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain;
 using XiHan.Framework.Uow;
 
@@ -27,7 +26,8 @@ namespace XiHan.Framework.Data;
 /// </summary>
 [DependsOn(
     typeof(XiHanDomainModule),
-    typeof(XiHanUowModule)
+    typeof(XiHanUowModule),
+    typeof(XiHanDistributedIdsModule)
     )]
 public class XiHanDataModule : XiHanModule
 {
@@ -38,9 +38,6 @@ public class XiHanDataModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-
-        // 配置SqlSugar选项
-        Configure<XiHanSqlSugarCoreOptions>(services.GetConfiguration().GetSection("XiHanSqlSugarCore"));
 
         // 添加SqlSugar数据访问服务
         services.AddXiHanDataSqlSugar();
