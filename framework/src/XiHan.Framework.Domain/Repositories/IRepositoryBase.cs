@@ -105,7 +105,7 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="id">实体主键</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体

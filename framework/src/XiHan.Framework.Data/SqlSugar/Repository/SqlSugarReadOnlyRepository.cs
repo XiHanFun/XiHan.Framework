@@ -117,7 +117,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

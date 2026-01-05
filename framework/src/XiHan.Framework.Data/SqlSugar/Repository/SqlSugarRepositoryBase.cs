@@ -249,7 +249,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="id">主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
