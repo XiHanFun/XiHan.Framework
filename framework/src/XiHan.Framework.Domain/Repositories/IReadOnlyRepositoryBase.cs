@@ -65,7 +65,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetListAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
