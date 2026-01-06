@@ -32,7 +32,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="createdId">创建者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定创建者创建的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据修改者查找实体
@@ -40,7 +40,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="modifiedId">最后修改者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定用户最后修改的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据删除者查找实体
@@ -48,7 +48,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="deletedId">删除者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>由指定用户删除的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内创建的实体
@@ -57,7 +57,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>在时间范围内创建的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内修改的实体
@@ -66,7 +66,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>在时间范围内修改的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内删除的实体
@@ -75,7 +75,7 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>在时间范围内删除的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据组合审计条件筛选实体
@@ -83,5 +83,5 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="options">审计查询参数</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合审计条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default);
 }
