@@ -46,7 +46,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="createdId">创建者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.CreatedId != null && entity.CreatedId.Equals(createdId))
@@ -59,7 +59,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="modifiedId">修改者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.ModifiedId != null && entity.ModifiedId.Equals(modifiedId))
@@ -72,7 +72,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="deletedId">删除者主键</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(deletedId))
@@ -86,7 +86,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="endTime">结束时间</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.CreatedTime >= startTime && entity.CreatedTime <= endTime)
@@ -100,7 +100,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="endTime">结束时间</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.ModifiedTime >= startTime && entity.ModifiedTime <= endTime)
@@ -114,7 +114,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="endTime">结束时间</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.DeletedTime >= startTime && entity.DeletedTime <= endTime)
@@ -127,7 +127,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <param name="options">审计查询选项</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>符合条件的实体集合</returns>
-    public async Task<IList<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
 
