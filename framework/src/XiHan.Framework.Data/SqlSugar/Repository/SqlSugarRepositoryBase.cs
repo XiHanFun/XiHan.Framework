@@ -82,21 +82,20 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>已添加的实体集合</returns>
-    public async Task<IList<TEntity>> AddRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> AddRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        var entityArray = entities.ToArray();
-        if (entityArray.Length == 0)
+        if (entities.Count == 0)
         {
             return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Insertable(entityArray)
+        await _dbClient.Insertable(entities)
             .ExecuteCommandAsync(cancellationToken);
-        return entityArray;
+        return entities;
     }
 
     /// <summary>
@@ -143,21 +142,20 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>已更新的实体集合</returns>
-    public async Task<IList<TEntity>> UpdateRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<List<TEntity>> UpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        var entityArray = entities.ToArray();
-        if (entityArray.Length == 0)
+        if (entities.Count == 0)
         {
             return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Updateable(entityArray)
+        await _dbClient.Updateable(entities)
             .ExecuteCommandAsync(cancellationToken);
-        return entityArray;
+        return entities;
     }
 
     /// <summary>
@@ -188,7 +186,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> AddOrUpdateRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<bool> AddOrUpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -265,7 +263,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> DeleteRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -298,7 +296,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> DeleteRangeAsync(IList<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteRangeAsync(List<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
