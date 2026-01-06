@@ -42,7 +42,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="ids">实体主键集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>与主键集合匹配的实体集合</returns>
-    Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TEntity>> GetByIdsAsync(IList<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取单个实体
@@ -65,7 +65,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
@@ -73,7 +73,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="predicate">用于过滤实体的表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
@@ -82,7 +82,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="orderBy">用于排序实体的表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约获取实体集合
@@ -90,7 +90,7 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="specification">定义查询条件的规约</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>符合条件的实体集合</returns>
-    Task<IEnumerable<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取总数

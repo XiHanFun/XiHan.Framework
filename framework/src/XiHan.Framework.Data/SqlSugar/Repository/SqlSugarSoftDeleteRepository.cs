@@ -87,7 +87,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task SoftDeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task SoftDeleteRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -116,7 +116,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task SoftDeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task SoftDeleteRangeAsync(IList<TKey> ids, CancellationToken cancellationToken = default)
     {
         var idArray = ids.ToArray();
         if (idArray.Length == 0)
@@ -202,7 +202,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task RestoreRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task RestoreRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -231,7 +231,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task RestoreRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task RestoreRangeAsync(IList<TKey> ids, CancellationToken cancellationToken = default)
     {
         var idArray = ids.ToArray();
         if (idArray.Length == 0)
@@ -282,7 +282,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .ToListAsync(cancellationToken);
@@ -293,7 +293,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.IsDeleted)
@@ -306,7 +306,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.IsDeleted)
@@ -320,7 +320,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         return await _dbClient.Queryable<TEntity>()
             .Where(entity => entity.IsDeleted)

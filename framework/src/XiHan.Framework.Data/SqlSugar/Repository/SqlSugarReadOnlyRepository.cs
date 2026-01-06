@@ -68,7 +68,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IList<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
@@ -117,7 +117,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -131,7 +131,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -148,7 +148,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="orderBy">排序</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(orderBy);
@@ -166,7 +166,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>实体集合</returns>
-    public async Task<IEnumerable<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<IList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
         cancellationToken.ThrowIfCancellationRequested();

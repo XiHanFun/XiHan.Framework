@@ -49,7 +49,7 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="entities">待软删除的实体集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示软删除操作的任务</returns>
-    Task SoftDeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    Task SoftDeleteRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量软删除实体（根据主键）
@@ -57,7 +57,7 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="ids">需要软删除的实体主键集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示软删除操作的任务</returns>
-    Task SoftDeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+    Task SoftDeleteRangeAsync(IList<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件批量软删除实体
@@ -97,7 +97,7 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="entities">待恢复的实体集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示恢复操作的任务</returns>
-    Task RestoreRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    Task RestoreRangeAsync(IList<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量恢复软删除的实体（根据主键）
@@ -105,7 +105,7 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="ids">需要恢复的实体主键集合</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示恢复操作的任务</returns>
-    Task RestoreRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+    Task RestoreRangeAsync(IList<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件批量恢复软删除的实体
@@ -128,14 +128,14 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>包含软删除实体的集合</returns>
-    Task<IEnumerable<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取已删除的实体
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>所有软删除实体的集合</returns>
-    Task<IEnumerable<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取已删除的实体
@@ -143,7 +143,7 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="predicate">用于筛选软删除实体的条件表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>满足条件的软删除实体集合</returns>
-    Task<IEnumerable<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约获取已删除的实体
@@ -151,5 +151,5 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     /// <param name="specification">定义筛选条件的规约</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>满足规约的软删除实体集合</returns>
-    Task<IEnumerable<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+    Task<IList<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 }
