@@ -100,6 +100,13 @@ public abstract class AuditedAggregateRoot<TKey> : FullAuditedEntityBase<TKey>, 
     /// <summary>
     /// 构造函数
     /// </summary>
+    protected AuditedAggregateRoot() : base()
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
     /// <param name="basicId"></param>
     protected AuditedAggregateRoot(TKey basicId) : base(basicId)
     {
