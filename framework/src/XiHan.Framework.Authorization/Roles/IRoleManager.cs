@@ -48,7 +48,7 @@ public interface IRoleManager
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>角色列表</returns>
-    Task<IEnumerable<RoleDefinition>> GetAllRolesAsync(CancellationToken cancellationToken = default);
+    Task<List<RoleDefinition>> GetAllRolesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据名称获取角色
@@ -90,7 +90,7 @@ public interface IRoleManager
     /// <param name="userId">用户ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>角色列表</returns>
-    Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default);
+    Task<List<RoleDefinition>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 检查用户是否在指定角色中

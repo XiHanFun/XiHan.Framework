@@ -15,6 +15,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Authentication;
 using XiHan.Framework.Authorization.Permissions;
+using XiHan.Framework.Authorization.Policies;
+using XiHan.Framework.Authorization.Roles;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Authorization;
@@ -33,19 +35,22 @@ public class XiHanAuthorizationModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 以下接口为默认实现，具体需要根据实际实现进行替换
         var services = context.Services;
 
+        // 注册角色存储
+        services.AddScoped<IRoleStore, DefaultRoleStore>();
+        // 注册角色管理器
+        services.AddScoped<IRoleManager, DefaultRoleManager>();
+        // 注册权限存储
+        services.AddScoped<IPermissionStore, DefaultPermissionStore>();
         // 注册权限检查器
-        services.AddScoped<IPermissionChecker, PermissionChecker>();
-
+        services.AddScoped<IPermissionChecker, DefaultPermissionChecker>();
+        // 注册策略存储
+        services.AddScoped<IPolicyStore, DefaultPolicyStore>();
+        // 注册策略评估器
+        services.AddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
         // 注册授权服务
-        services.AddScoped<IAuthorizationService, AuthorizationService>();
-
-        // 注意: 以下接口需要用户自己实现并注册
-        // services.AddScoped<IPermissionStore, YourPermissionStoreImplementation>();
-        // services.AddScoped<IRoleStore, YourRoleStoreImplementation>();
-        // services.AddScoped<IRoleManager, YourRoleManagerImplementation>();
-        // services.AddScoped<IPolicyStore, YourPolicyStoreImplementation>();
-        // services.AddScoped<IPolicyEvaluator, YourPolicyEvaluatorImplementation>();
+        services.AddScoped<IAuthorizationService, DefaultAuthorizationService>();
     }
 }
