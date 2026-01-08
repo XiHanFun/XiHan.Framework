@@ -117,7 +117,7 @@ public class DefaultAuthorizationService : IAuthorizationService
     public async Task<List<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
     {
         var roles = await _roleStore.GetUserRolesAsync(userId, cancellationToken);
-        return roles.Select(r => r.Name);
+        return roles.Select(r => r.Name).ToList();
     }
 
     /// <summary>
