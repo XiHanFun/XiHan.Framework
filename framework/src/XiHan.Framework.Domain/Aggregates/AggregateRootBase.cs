@@ -22,7 +22,7 @@ namespace XiHan.Framework.Domain.Aggregates;
 /// <summary>
 /// 聚合根基类
 /// </summary>
-public abstract class AggregateRootBase : EntityBase, IAggregateRoot
+public abstract class AggregateRootBase : FullAuditedEntityBase, IAggregateRoot
 {
     private readonly DomainEventsManagerBase _eventManager = new();
 
@@ -89,7 +89,7 @@ public abstract class AggregateRootBase : EntityBase, IAggregateRoot
 /// 泛型主键聚合根基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class AggregateRootBase<TKey> : EntityBase<TKey>, IAggregateRoot<TKey>
+public abstract class AggregateRootBase<TKey> : FullAuditedEntityBase<TKey>, IAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
     private readonly DomainEventsManagerBase _eventManager = new();
