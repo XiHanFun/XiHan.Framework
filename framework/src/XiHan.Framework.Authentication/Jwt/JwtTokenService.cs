@@ -44,7 +44,7 @@ public class JwtTokenService : IJwtTokenService
     /// </summary>
     /// <param name="claims">声明集合</param>
     /// <returns>JWT Token 结果</returns>
-    public JwtTokenResult GenerateAccessToken(IEnumerable<Claim> claims)
+    public JwtTokenResult GenerateAccessToken(List<Claim> claims)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_options.SecretKey);
@@ -125,10 +125,10 @@ public class JwtTokenService : IJwtTokenService
     /// </summary>
     /// <param name="token">JWT Token</param>
     /// <returns>声明集合</returns>
-    public IEnumerable<Claim>? GetClaimsFromToken(string token)
+    public List<Claim>? GetClaimsFromToken(string token)
     {
         var principal = ValidateToken(token);
-        return principal?.Claims;
+        return principal?.Claims.ToList();
     }
 
     /// <summary>
@@ -182,7 +182,7 @@ public class JwtTokenService : IJwtTokenService
             // if (!await _refreshTokenStore.ValidateRefreshToken(refreshToken)) return null;
 
             // 生成新的访问令牌
-            var newToken = GenerateAccessToken(principal.Claims);
+            var newToken = GenerateAccessToken(principal.Claims.ToList());
 
             return newToken;
         }

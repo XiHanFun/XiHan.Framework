@@ -34,7 +34,7 @@ public interface IAuthenticationService
     /// <param name="password">密码</param>
     /// <param name="customBlacklist">自定义黑名单</param>
     /// <returns>验证结果</returns>
-    Task<PasswordValidationResult> ValidatePasswordStrengthAsync(string password, IEnumerable<string>? customBlacklist = null);
+    Task<PasswordValidationResult> ValidatePasswordStrengthAsync(string password, List<string>? customBlacklist = null);
 
     /// <summary>
     /// 更改密码

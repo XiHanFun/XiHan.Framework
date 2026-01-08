@@ -31,6 +31,7 @@ public class XiHanAuthenticationModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // 以下接口为默认实现，具体需要根据实际实现进行替换
         var services = context.Services;
 
         // 配置密码哈希服务
@@ -38,7 +39,6 @@ public class XiHanAuthenticationModule : XiHanModule
         {
             // 使用默认配置，用户可以通过配置文件覆盖
         });
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         // 配置密码策略
         services.Configure<PasswordPolicy>(options =>
@@ -51,17 +51,23 @@ public class XiHanAuthenticationModule : XiHanModule
         {
             // 使用默认配置，用户必须通过配置文件提供密钥等信息
         });
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         // 配置 OTP 服务
         services.Configure<OtpOptions>(options =>
         {
             // 使用默认配置，用户可以通过配置文件覆盖
         });
+
+        // 注册密码哈希服务
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        // 注册 JWT 服务
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        // 注册 OTP 服务
         services.AddSingleton<IOtpService, OtpService>();
 
+        // 注册用户存储
+        services.AddScoped<IUserStore, DefaultUserStore>();
         // 注册认证服务接口
-        // 注意: IAuthenticationService 需要用户自己实现并注册
-        // services.AddScoped<IAuthenticationService, YourAuthenticationServiceImplementation>();
+        services.AddScoped<IAuthenticationService, DefaultAuthenticationService>();
     }
 }
