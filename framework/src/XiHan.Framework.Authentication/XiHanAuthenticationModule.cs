@@ -41,7 +41,7 @@ public class XiHanAuthenticationModule : XiHanModule
         });
 
         // 配置密码策略
-        services.Configure<PasswordPolicy>(options =>
+        services.Configure<PasswordPolicyOptions>(options =>
         {
             // 使用默认配置，用户可以通过配置文件覆盖
         });
