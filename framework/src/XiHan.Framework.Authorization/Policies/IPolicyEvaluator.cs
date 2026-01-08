@@ -37,7 +37,7 @@ public interface IPolicyEvaluator
     /// <param name="resource">资源对象</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>评估结果</returns>
-    Task<PolicyEvaluationResult> EvaluateAllAsync(string userId, IEnumerable<string> policyNames, object? resource = null, CancellationToken cancellationToken = default);
+    Task<PolicyEvaluationResult> EvaluateAllAsync(string userId, List<string> policyNames, object? resource = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 评估多个策略（任意一个策略通过即可）
@@ -47,5 +47,5 @@ public interface IPolicyEvaluator
     /// <param name="resource">资源对象</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>评估结果</returns>
-    Task<PolicyEvaluationResult> EvaluateAnyAsync(string userId, IEnumerable<string> policyNames, object? resource = null, CancellationToken cancellationToken = default);
+    Task<PolicyEvaluationResult> EvaluateAnyAsync(string userId, List<string> policyNames, object? resource = null, CancellationToken cancellationToken = default);
 }

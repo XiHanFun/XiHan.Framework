@@ -27,7 +27,7 @@ public interface IPolicyStore
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>策略列表</returns>
-    Task<IEnumerable<PolicyDefinition>> GetAllPoliciesAsync(CancellationToken cancellationToken = default);
+    Task<List<PolicyDefinition>> GetAllPoliciesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据名称获取策略

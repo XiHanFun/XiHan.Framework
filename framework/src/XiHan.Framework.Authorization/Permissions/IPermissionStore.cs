@@ -28,7 +28,7 @@ public interface IPermissionStore
     /// <param name="userId">用户ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限列表</returns>
-    Task<IEnumerable<PermissionDefinition>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<List<PermissionDefinition>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取角色的权限列表
@@ -36,7 +36,7 @@ public interface IPermissionStore
     /// <param name="roleId">角色ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限列表</returns>
-    Task<IEnumerable<PermissionDefinition>> GetRolePermissionsAsync(string roleId, CancellationToken cancellationToken = default);
+    Task<List<PermissionDefinition>> GetRolePermissionsAsync(string roleId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 授予用户权限
@@ -75,7 +75,7 @@ public interface IPermissionStore
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限定义列表</returns>
-    Task<IEnumerable<PermissionDefinition>> GetAllPermissionsAsync(CancellationToken cancellationToken = default);
+    Task<List<PermissionDefinition>> GetAllPermissionsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据名称获取权限定义

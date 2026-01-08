@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AuthorizationService
+// FileName:DefaultAuthorizationService
 // Guid:b2c3d4e5-f6a7-8901-5678-123456789041
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -19,9 +19,9 @@ using XiHan.Framework.Authorization.Roles;
 namespace XiHan.Framework.Authorization;
 
 /// <summary>
-/// 授权服务实现
+/// 默认授权服务实现
 /// </summary>
-public class AuthorizationService : IAuthorizationService
+public class DefaultAuthorizationService : IAuthorizationService
 {
     private readonly IPermissionChecker _permissionChecker;
     private readonly IPermissionStore _permissionStore;
@@ -31,7 +31,7 @@ public class AuthorizationService : IAuthorizationService
     /// <summary>
     /// 构造函数
     /// </summary>
-    public AuthorizationService(
+    public DefaultAuthorizationService(
         IPermissionChecker permissionChecker,
         IPermissionStore permissionStore,
         IRoleStore roleStore,
@@ -80,7 +80,7 @@ public class AuthorizationService : IAuthorizationService
     /// <summary>
     /// 检查是否有任意权限
     /// </summary>
-    public async Task<AuthorizationResult> AuthorizeAnyAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
+    public async Task<AuthorizationResult> AuthorizeAnyAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default)
     {
         var permissions = permissionNames.ToList();
         var isGranted = await _permissionChecker.IsAnyGrantedAsync(userId, permissions, cancellationToken);
@@ -93,7 +93,7 @@ public class AuthorizationService : IAuthorizationService
     /// <summary>
     /// 检查是否有所有权限
     /// </summary>
-    public async Task<AuthorizationResult> AuthorizeAllAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
+    public async Task<AuthorizationResult> AuthorizeAllAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default)
     {
         var permissions = permissionNames.ToList();
         var isGranted = await _permissionChecker.IsAllGrantedAsync(userId, permissions, cancellationToken);
@@ -106,7 +106,7 @@ public class AuthorizationService : IAuthorizationService
     /// <summary>
     /// 获取用户的所有权限
     /// </summary>
-    public async Task<IEnumerable<string>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<List<string>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await _permissionChecker.GetGrantedPermissionsAsync(userId, cancellationToken);
     }
@@ -114,7 +114,7 @@ public class AuthorizationService : IAuthorizationService
     /// <summary>
     /// 获取用户的所有角色
     /// </summary>
-    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<List<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
     {
         var roles = await _roleStore.GetUserRolesAsync(userId, cancellationToken);
         return roles.Select(r => r.Name);

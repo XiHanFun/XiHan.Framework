@@ -54,7 +54,7 @@ public interface IAuthorizationService
     /// <param name="permissionNames">权限名称列表</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>授权结果</returns>
-    Task<AuthorizationResult> AuthorizeAnyAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default);
+    Task<AuthorizationResult> AuthorizeAnyAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 检查是否有所有权限
@@ -63,7 +63,7 @@ public interface IAuthorizationService
     /// <param name="permissionNames">权限名称列表</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>授权结果</returns>
-    Task<AuthorizationResult> AuthorizeAllAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default);
+    Task<AuthorizationResult> AuthorizeAllAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取用户的所有权限
@@ -71,7 +71,7 @@ public interface IAuthorizationService
     /// <param name="userId">用户ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限列表</returns>
-    Task<IEnumerable<string>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<List<string>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取用户的所有角色
@@ -79,7 +79,7 @@ public interface IAuthorizationService
     /// <param name="userId">用户ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>角色列表</returns>
-    Task<IEnumerable<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default);
+    Task<List<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 授予用户权限

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PermissionChecker
+// FileName:DefaultPermissionChecker
 // Guid:a9b0c1d2-e3f4-5678-2345-123456789028
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,9 +17,9 @@ using XiHan.Framework.Authorization.Roles;
 namespace XiHan.Framework.Authorization.Permissions;
 
 /// <summary>
-/// 权限检查器实现
+/// 默认权限检查器实现
 /// </summary>
-public class PermissionChecker : IPermissionChecker
+public class DefaultPermissionChecker : IPermissionChecker
 {
     private readonly IPermissionStore _permissionStore;
     private readonly IRoleStore _roleStore;
@@ -29,7 +29,7 @@ public class PermissionChecker : IPermissionChecker
     /// </summary>
     /// <param name="permissionStore">权限存储</param>
     /// <param name="roleStore">角色存储</param>
-    public PermissionChecker(IPermissionStore permissionStore, IRoleStore roleStore)
+    public DefaultPermissionChecker(IPermissionStore permissionStore, IRoleStore roleStore)
     {
         _permissionStore = permissionStore;
         _roleStore = roleStore;
@@ -77,7 +77,7 @@ public class PermissionChecker : IPermissionChecker
     /// <param name="permissionNames">权限名称列表</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否有任意一个权限</returns>
-    public async Task<bool> IsAnyGrantedAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
+    public async Task<bool> IsAnyGrantedAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default)
     {
         var names = permissionNames.ToList();
         if (!names.Any())
@@ -103,7 +103,7 @@ public class PermissionChecker : IPermissionChecker
     /// <param name="permissionNames">权限名称列表</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否有所有权限</returns>
-    public async Task<bool> IsAllGrantedAsync(string userId, IEnumerable<string> permissionNames, CancellationToken cancellationToken = default)
+    public async Task<bool> IsAllGrantedAsync(string userId, List<string> permissionNames, CancellationToken cancellationToken = default)
     {
         var names = permissionNames.ToList();
         if (!names.Any())
@@ -128,7 +128,7 @@ public class PermissionChecker : IPermissionChecker
     /// <param name="userId">用户ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限列表</returns>
-    public async Task<IEnumerable<string>> GetGrantedPermissionsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<List<string>> GetGrantedPermissionsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var permissions = new HashSet<string>();
 
@@ -150,7 +150,7 @@ public class PermissionChecker : IPermissionChecker
             }
         }
 
-        return permissions;
+        return permissions.ToList();
     }
 
     /// <summary>
