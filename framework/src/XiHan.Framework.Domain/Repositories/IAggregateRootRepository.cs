@@ -21,7 +21,7 @@ namespace XiHan.Framework.Domain.Repositories;
 /// </summary>
 /// <typeparam name="TAggregateRoot">聚合根类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public interface IAggregateRootRepository<TAggregateRoot, TKey> : IRepositoryBase<TAggregateRoot, TKey>
+public interface IAggregateRootRepository<TAggregateRoot, TKey> : IAuditedRepository<TAggregateRoot, TKey>
     where TAggregateRoot : class, IAggregateRoot<TKey>, new()
     where TKey : IEquatable<TKey>
 {

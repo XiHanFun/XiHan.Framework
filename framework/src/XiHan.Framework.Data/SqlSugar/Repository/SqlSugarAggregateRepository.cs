@@ -23,7 +23,7 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// </summary>
 /// <typeparam name="TAggregateRoot">聚合根类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
-public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarRepositoryBase<TAggregateRoot, TKey>, IAggregateRootRepository<TAggregateRoot, TKey>
+public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAuditedRepository<TAggregateRoot, TKey>, IAggregateRootRepository<TAggregateRoot, TKey>
     where TAggregateRoot : class, IAggregateRoot<TKey>, new()
     where TKey : IEquatable<TKey>
 {

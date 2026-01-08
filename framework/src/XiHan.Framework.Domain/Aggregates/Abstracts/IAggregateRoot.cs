@@ -20,7 +20,7 @@ namespace XiHan.Framework.Domain.Aggregates.Abstracts;
 /// <summary>
 /// 聚合根接口
 /// </summary>
-public interface IAggregateRoot : IEntityBase, IDomainEventsManager
+public interface IAggregateRoot : IFullAuditedEntity, IDomainEventsManager
 {
 }
 
@@ -28,7 +28,7 @@ public interface IAggregateRoot : IEntityBase, IDomainEventsManager
 /// 泛型主键聚合根接口
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
-public interface IAggregateRoot<TKey> : IAggregateRoot, IEntityBase<TKey>
+public interface IAggregateRoot<TKey> : IAggregateRoot, IFullAuditedEntity<TKey>
     where TKey : IEquatable<TKey>
 {
 }
