@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Authentication.Jwt;
@@ -25,12 +26,6 @@ namespace XiHan.Framework.Authentication;
 /// </summary>
 public partial class DefaultAuthenticationService : IAuthenticationService
 {
-    private readonly IUserStore _userStore;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly IOtpService _otpService;
-    private readonly PasswordPolicy _passwordPolicy;
-
     /// <summary>
     /// 常用弱密码黑名单
     /// </summary>
@@ -43,6 +38,12 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         "football", "admin", "admin123", "root", "test", "guest"
     ];
 
+    private readonly IUserStore _userStore;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtTokenService _jwtTokenService;
+    private readonly IOtpService _otpService;
+    private readonly PasswordPolicyOptions _passwordPolicyOptions;
+
     /// <summary>
     /// 构造函数
     /// </summary>
@@ -51,13 +52,13 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
         IOtpService otpService,
-        PasswordPolicy passwordPolicy)
+        IOptions<PasswordPolicyOptions> passwordPolicyOptions)
     {
         _userStore = userStore;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _otpService = otpService;
-        _passwordPolicy = passwordPolicy;
+        _passwordPolicyOptions = passwordPolicyOptions.Value;
     }
 
     /// <summary>
@@ -141,22 +142,22 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         }
 
         // 检查长度
-        if (password.Length < _passwordPolicy.MinimumLength)
+        if (password.Length < _passwordPolicyOptions.MinimumLength)
         {
-            errors.Add($"密码长度至少需要 {_passwordPolicy.MinimumLength} 个字符");
+            errors.Add($"密码长度至少需要 {_passwordPolicyOptions.MinimumLength} 个字符");
         }
         else
         {
-            score += Math.Min(password.Length - _passwordPolicy.MinimumLength, 10);
+            score += Math.Min(password.Length - _passwordPolicyOptions.MinimumLength, 10);
         }
 
-        if (password.Length > _passwordPolicy.MaximumLength)
+        if (password.Length > _passwordPolicyOptions.MaximumLength)
         {
-            errors.Add($"密码长度不能超过 {_passwordPolicy.MaximumLength} 个字符");
+            errors.Add($"密码长度不能超过 {_passwordPolicyOptions.MaximumLength} 个字符");
         }
 
         // 检查大写字母
-        if (_passwordPolicy.RequireUppercase && !password.Any(char.IsUpper))
+        if (_passwordPolicyOptions.RequireUppercase && !password.Any(char.IsUpper))
         {
             errors.Add("密码必须包含至少一个大写字母");
         }
@@ -166,7 +167,7 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         }
 
         // 检查小写字母
-        if (_passwordPolicy.RequireLowercase && !password.Any(char.IsLower))
+        if (_passwordPolicyOptions.RequireLowercase && !password.Any(char.IsLower))
         {
             errors.Add("密码必须包含至少一个小写字母");
         }
@@ -176,7 +177,7 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         }
 
         // 检查数字
-        if (_passwordPolicy.RequireDigit && !password.Any(char.IsDigit))
+        if (_passwordPolicyOptions.RequireDigit && !password.Any(char.IsDigit))
         {
             errors.Add("密码必须包含至少一个数字");
         }
@@ -186,7 +187,7 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         }
 
         // 检查特殊字符
-        if (_passwordPolicy.RequireSpecialCharacter && !SpecialCharacterRegex().IsMatch(password))
+        if (_passwordPolicyOptions.RequireSpecialCharacter && !SpecialCharacterRegex().IsMatch(password))
         {
             errors.Add("密码必须包含至少一个特殊字符");
         }
@@ -479,9 +480,9 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         var failedAttempts = await _userStore.GetFailedLoginAttemptsAsync(username, cancellationToken);
 
         // 检查是否达到锁定阈值
-        if (failedAttempts >= _passwordPolicy.MaxFailedAccessAttempts)
+        if (failedAttempts >= _passwordPolicyOptions.MaxFailedAccessAttempts)
         {
-            var lockoutEnd = DateTime.UtcNow.AddMinutes(_passwordPolicy.LockoutDurationMinutes);
+            var lockoutEnd = DateTime.UtcNow.AddMinutes(_passwordPolicyOptions.LockoutDurationMinutes);
             await _userStore.SetLockoutEndAsync(username, lockoutEnd, cancellationToken);
             return true;
         }

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PasswordPolicy
+// FileName:PasswordPolicyOptions
 // Guid:d4e5f6a7-b8c9-0123-def0-123456789013
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,9 +15,9 @@
 namespace XiHan.Framework.Authentication.Password;
 
 /// <summary>
-/// 密码策略配置
+/// 密码策略配置选项
 /// </summary>
-public class PasswordPolicy
+public class PasswordPolicyOptions
 {
     /// <summary>
     /// 密码最小长度
