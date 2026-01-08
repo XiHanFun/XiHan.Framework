@@ -26,7 +26,7 @@ public interface IJwtTokenService
     /// </summary>
     /// <param name="claims">声明集合</param>
     /// <returns>JWT Token 结果</returns>
-    JwtTokenResult GenerateAccessToken(IEnumerable<Claim> claims);
+    JwtTokenResult GenerateAccessToken(List<Claim> claims);
 
     /// <summary>
     /// 生成刷新令牌
@@ -46,7 +46,7 @@ public interface IJwtTokenService
     /// </summary>
     /// <param name="token">JWT Token</param>
     /// <returns>声明集合</returns>
-    IEnumerable<Claim>? GetClaimsFromToken(string token);
+    List<Claim>? GetClaimsFromToken(string token);
 
     /// <summary>
     /// 检查令牌是否过期
