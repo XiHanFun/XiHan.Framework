@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -46,8 +47,8 @@ public class XiHanApplicationBase : IXiHanApplication
         Guard.NotNull(startupModuleType, nameof(startupModuleType));
         Guard.NotNull(services, nameof(services));
         LogHelper.SetIsDisplayHeader(false);
-        LogHelper.Rainbow(XiHan.Logo);
-        LogHelper.Info(XiHan.GetSummary());
+        LogHelper.Rainbow(XiHanMetadata.Logo);
+        LogHelper.Info(XiHanMetadata.GetSummary());
 
         // 设置启动模块
         StartupModuleType = startupModuleType;

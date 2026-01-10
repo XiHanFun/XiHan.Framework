@@ -62,7 +62,7 @@ public class CacheHelperLazyCleanupTests
 
         // Act - 设置一个1秒后过期的缓存
         CacheHelper.Set(key, value, 1);
-        
+
         // 立即获取，应该能获取到
         var immediateResult = CacheHelper.Get<string>(key);
         Assert.Equal(value, immediateResult);
@@ -88,7 +88,7 @@ public class CacheHelperLazyCleanupTests
     {
         // Arrange - 创建多个即将过期的缓存项
         var keys = Enumerable.Range(1, 100).Select(i => $"batch_test_{i}").ToList();
-        
+
         foreach (var key in keys)
         {
             CacheHelper.Set(key, $"value_{key}", 1); // 1秒后过期
@@ -228,7 +228,7 @@ public class CacheHelperLazyCleanupTests
     {
         // Arrange - 创建大量缓存项
         var tasks = new List<Task>();
-        
+
         for (var i = 0; i < 100; i++)
         {
             var index = i;
@@ -260,20 +260,11 @@ public class CacheHelperLazyCleanupTests
 
         // 最终手动清理所有过期项
         CacheHelper.CleanupExpired();
-        
+
         var remainingCount = CacheHelper.Count;
         _output.WriteLine($"✓ 最终剩余缓存项: {remainingCount}");
-        
+
         // 由于过期项可能还没完全清理，这里只验证清理逻辑不会出错
         Assert.True(remainingCount >= 0);
     }
-
-    /// <summary>
-    /// 清理测试后的缓存
-    /// </summary>
-    public static void Dispose()
-    {
-        CacheHelper.Clear();
-    }
 }
-
