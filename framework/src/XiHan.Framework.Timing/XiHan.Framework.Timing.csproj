@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Timing</Title>
+        <AssemblyName>XiHan.Framework.Timing</AssemblyName>
+        <PackageId>XiHan.Framework.Timing</PackageId>
+        <Description>曦寒框架时间管理包</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+    </ItemGroup>
+
+</Project>

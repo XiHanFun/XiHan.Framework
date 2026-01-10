@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.EventBus.Abstractions</Title>
+        <AssemblyName>XiHan.Framework.EventBus.Abstractions</AssemblyName>
+        <PackageId>XiHan.Framework.EventBus.Abstractions</PackageId>
+        <Description>曦寒框架事件总线抽象包</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.ObjectMapping\XiHan.Framework.ObjectMapping.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Timing\XiHan.Framework.Timing.csproj" />
+    </ItemGroup>
+
+</Project>

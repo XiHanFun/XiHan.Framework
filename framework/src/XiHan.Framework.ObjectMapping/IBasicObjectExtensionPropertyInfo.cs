@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Localization;
+using XiHan.Framework.Localization.Abstractions;
 
 namespace XiHan.Framework.ObjectMapping;
 

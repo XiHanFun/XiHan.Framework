@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Domain.Paging.Dtos;
+using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Services.Abstracts;
 

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\version.props" />
+	<Import Project="..\..\props\nuget.props" />
+
+	<PropertyGroup>
+		<Title>XiHan.Framework.Domain.Shared</Title>
+		<AssemblyName>XiHan.Framework.Domain.Shared</AssemblyName>
+		<PackageId>XiHan.Framework.Domain.Shared</PackageId>
+		<Description>曦寒框架领域层共享包</Description>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
+	</ItemGroup>
+
+</Project>
