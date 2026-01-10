@@ -466,11 +466,4 @@ public class LogHelperConcurrencyTests
         Assert.Empty(exceptions);
         Assert.Equal(threadCount * messagesPerThread, totalMessages);
     }
-
-    public void Dispose()
-    {
-        // 恢复原始日志级别
-        LogHelper.SetMinimumLevel(_originalLogLevel);
-        LogHelper.SetIsDisplayHeader(true);
-    }
 }

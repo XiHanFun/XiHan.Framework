@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHan
+// FileName:XiHanMetadata
 // Guid:0bb4ba7a-182a-4a74-aee2-20eed339b5b5
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -14,12 +14,12 @@
 
 using System.Reflection;
 
-namespace XiHan.Framework;
+namespace XiHan.Framework.Metadata;
 
 /// <summary>
-/// 曦寒项目信息
+/// 曦寒元数据信息
 /// </summary>
-public static class XiHan
+public static class XiHanMetadata
 {
     /// <summary>
     /// 框架名称
@@ -148,27 +148,27 @@ public static class XiHan
     /// <summary>
     /// 框架版本
     /// </summary>
-    public static string Version => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.ToString() ?? new Version(0, 0, 0).ToString();
+    public static string Version => Assembly.GetAssembly(typeof(XiHanMetadata))?.GetName().Version?.ToString() ?? new Version(0, 0, 0).ToString();
 
     /// <summary>
     /// 框架完整版本信息
     /// </summary>
-    public static Version FullVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version ?? new Version(0, 0, 0);
+    public static Version FullVersion => Assembly.GetAssembly(typeof(XiHanMetadata))?.GetName().Version ?? new Version(0, 0, 0);
 
     /// <summary>
     /// 框架主要版本
     /// </summary>
-    public static int MajorVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.Major ?? 0;
+    public static int MajorVersion => Assembly.GetAssembly(typeof(XiHanMetadata))?.GetName().Version?.Major ?? 0;
 
     /// <summary>
     /// 框架次要版本
     /// </summary>
-    public static int MinorVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.Minor ?? 0;
+    public static int MinorVersion => Assembly.GetAssembly(typeof(XiHanMetadata))?.GetName().Version?.Minor ?? 0;
 
     /// <summary>
     /// 框架修订版本
     /// </summary>
-    public static int PatchVersion => Assembly.GetAssembly(typeof(XiHan))?.GetName().Version?.Build ?? 0;
+    public static int PatchVersion => Assembly.GetAssembly(typeof(XiHanMetadata))?.GetName().Version?.Build ?? 0;
 
     /// <summary>
     /// 获取框架信息摘要

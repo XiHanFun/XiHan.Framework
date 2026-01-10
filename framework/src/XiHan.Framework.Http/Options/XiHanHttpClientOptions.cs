@@ -14,6 +14,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Http.Configuration;
+using XiHan.Framework.Metadata;
 
 namespace XiHan.Framework.Http.Options;
 
@@ -106,7 +107,7 @@ public class XiHanHttpClientOptions
     public Dictionary<string, string> DefaultHeaders { get; set; } = new()
     {
         ["Accept"] = "application/json",
-        ["User-Agent"] = $"XiHan.Framework.Http/{XiHan.Version}"
+        ["User-Agent"] = $"XiHan.Framework.Http/{XiHanMetadata.Version}"
     };
 
     /// <summary>

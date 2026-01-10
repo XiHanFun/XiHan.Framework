@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/1.src/" />
-  <Folder Name="/1.src/1.Metadata/">
-    <Project Path="src/XiHan.Framework/XiHan.Framework.csproj" />
-  </Folder>
-  <Folder Name="/1.src/2.Common/">
+  <Folder Name="/1.src/1.Common/">
     <Project Path="src/XiHan.Framework.Utils/XiHan.Framework.Utils.csproj" />
+  </Folder>
+  <Folder Name="/1.src/2.Metadata/">
+    <Project Path="src/XiHan.Framework.Metadata/XiHan.Framework.Metadata.csproj" />
   </Folder>
   <Folder Name="/1.src/3.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />

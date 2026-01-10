@@ -6,12 +6,11 @@
     <Import Project="..\..\props\nuget.props" />
 
     <PropertyGroup>
-        <Title>XiHan.Framework</Title>
-        <AssemblyName>XiHan.Framework</AssemblyName>
-        <PackageId>XiHan.Framework</PackageId>
+        <Title>XiHan.Framework.Metadata</Title>
+        <AssemblyName>XiHan.Framework.Metadata</AssemblyName>
+        <PackageId>XiHan.Framework.Metadata</PackageId>
         <Description>曦寒框架元数据包</Description>
         <OutputType>Library</OutputType>
-        <RootNamespace>XiHan.Framework</RootNamespace>
     </PropertyGroup>
 
 </Project>
