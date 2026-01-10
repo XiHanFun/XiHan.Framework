@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
 using XiHan.Framework.VirtualFileSystem;
@@ -23,6 +24,7 @@ namespace XiHan.Framework.Localization;
 /// 曦寒框架本地化模块
 /// </summary>
 [DependsOn(
+    typeof(XiHanLocalizationAbstractionsModule),
     typeof(XiHanVirtualFileSystemModule),
     typeof(XiHanThreadingModule),
     typeof(XiHanSettingsModule)

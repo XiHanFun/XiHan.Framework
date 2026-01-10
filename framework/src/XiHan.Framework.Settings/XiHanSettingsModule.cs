@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Data;
 using XiHan.Framework.Security;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Options;
@@ -28,9 +27,8 @@ namespace XiHan.Framework.Settings;
 /// 曦寒框架设置模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanSecurityModule),
-    typeof(XiHanDataModule)
-)]
+    typeof(XiHanSecurityModule)
+    )]
 public class XiHanSettingsModule : XiHanModule
 {
     /// <summary>

@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
-using XiHan.Framework.Data;
+using XiHan.Framework.Core.Data;
 using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.MultiTenancy;

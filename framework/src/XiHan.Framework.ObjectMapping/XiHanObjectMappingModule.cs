@@ -13,13 +13,19 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectMapping.Extensions;
+using XiHan.Framework.Validation.Abstractions;
 
 namespace XiHan.Framework.ObjectMapping;
 
 /// <summary>
 /// 曦寒框架对象映射模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanLocalizationAbstractionsModule),
+    typeof(XiHanValidationAbstractionsModule)
+    )]
 public class XiHanObjectMappingModule : XiHanModule
 {
     /// <summary>

@@ -21,8 +21,7 @@ using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
 using XiHan.Framework.EventBus.Distributed;
 using XiHan.Framework.EventBus.Local;
-using XiHan.Framework.MultiTenancy;
-using XiHan.Framework.Tasks;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Utils.Collections;
 using XiHan.Framework.Utils.Extensions;
 
@@ -32,9 +31,8 @@ namespace XiHan.Framework.EventBus;
 /// 曦寒框架事件总线模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanMultiTenancyModule),
-    typeof(XiHanDistributedIdsModule),
-    typeof(XiHanTasksModule)
+    typeof(XiHanMultiTenancyAbstractionsModule),
+    typeof(XiHanDistributedIdsModule)
     )]
 public class XiHanEventBusModule : XiHanModule
 {

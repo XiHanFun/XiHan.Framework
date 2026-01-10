@@ -17,13 +17,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using XiHan.Framework.Caching.Extensions;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Abstracts;
 using XiHan.Framework.Core.Exceptions.Handling;
 using XiHan.Framework.Core.Extensions.Logging;
 using XiHan.Framework.Core.Extensions.Threading;
-using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Threading;
 using XiHan.Framework.Threading.Extensions;
 using XiHan.Framework.Uow;
@@ -339,7 +338,14 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="keyNormalizer"></param>
     /// <param name="serviceScopeFactory"></param>
     /// <param name="unitOfWorkManager"></param>
-    public DistributedCache(IOptions<XiHanDistributedCacheOptions> distributedCacheOption, IDistributedCache cache, ICancellationTokenProvider cancellationTokenProvider, IDistributedCacheSerializer serializer, IDistributedCacheKeyNormalizer keyNormalizer, IServiceScopeFactory serviceScopeFactory, IUnitOfWorkManager unitOfWorkManager)
+    public DistributedCache(
+        IOptions<XiHanDistributedCacheOptions> distributedCacheOption,
+        IDistributedCache cache,
+        ICancellationTokenProvider cancellationTokenProvider,
+        IDistributedCacheSerializer serializer,
+        IDistributedCacheKeyNormalizer keyNormalizer,
+        IServiceScopeFactory serviceScopeFactory,
+        IUnitOfWorkManager unitOfWorkManager)
     {
         _distributedCacheOption = distributedCacheOption.Value;
         Cache = cache;

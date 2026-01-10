@@ -13,12 +13,16 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Validation.Abstractions;
 
 namespace XiHan.Framework.Validation;
 
 /// <summary>
 /// 曦寒框架数据校验模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanValidationAbstractionsModule)
+)]
 public class XiHanValidationModule : XiHanModule
 {
     /// <summary>

@@ -21,7 +21,6 @@ using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.MultiTenancy.Entities.Abstracts;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.EventBus;
