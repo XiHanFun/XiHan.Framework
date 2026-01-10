@@ -15,10 +15,10 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;
-using XiHan.Framework.Domain.Paging.Dtos;
-using XiHan.Framework.Domain.Paging.Enums;
-using XiHan.Framework.Domain.Paging.Handlers;
 using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.Domain.Shared.Paging.Dtos;
+using XiHan.Framework.Domain.Shared.Paging.Enums;
+using XiHan.Framework.Domain.Shared.Paging.Handlers;
 using XiHan.Framework.Domain.Specifications.Abstracts;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;

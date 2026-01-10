@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Hybrid;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Caching;
@@ -25,6 +26,9 @@ namespace XiHan.Framework.Caching;
 /// <summary>
 /// 曦寒框架缓存模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanMultiTenancyAbstractionsModule)
+    )]
 public class XiHanCachingModule : XiHanModule
 {
     /// <summary>

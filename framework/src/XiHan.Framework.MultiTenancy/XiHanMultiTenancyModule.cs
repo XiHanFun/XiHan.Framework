@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Data;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.ConfigurationStore;
 using XiHan.Framework.Security;
@@ -29,7 +28,7 @@ namespace XiHan.Framework.MultiTenancy;
 /// 曦寒多租户模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanDataModule),
+    typeof(XiHanMultiTenancyAbstractionsModule),
     typeof(XiHanSettingsModule),
     typeof(XiHanSecurityModule)
 )]

@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
+using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Specifications.Abstracts;
-using XiHan.Framework.Domain.Paging.Dtos;
 
 namespace XiHan.Framework.Data.Extensions;
 

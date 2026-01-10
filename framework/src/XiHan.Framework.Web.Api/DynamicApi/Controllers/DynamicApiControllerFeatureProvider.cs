@@ -15,7 +15,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.Extensions.Logging;
 using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;

@@ -15,7 +15,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />
     </ItemGroup>
