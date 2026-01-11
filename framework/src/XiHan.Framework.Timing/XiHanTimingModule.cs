@@ -13,16 +13,14 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Timing.Extensions;
 
 namespace XiHan.Framework.Timing;
 
 /// <summary>
 /// 曦寒框架时间管理模块
 /// </summary>
-[DependsOn(
-    )]
 public class XiHanTimingModule : XiHanModule
 {
     /// <summary>
@@ -31,10 +29,9 @@ public class XiHanTimingModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddOptions<XiHanClockOptions>();
+        var services = context.Services;
 
-        context.Services.TryAddSingleton<IClock, Clock>();
-        context.Services.TryAddSingleton<ITimezoneProvider, TZConvertTimezoneProvider>();
-        context.Services.TryAddTransient<ICurrentTimezoneProvider, CurrentTimezoneProvider>();
+        services.AddOptions<XiHanClockOptions>();
+        services.AddXiHanTiming();
     }
 }

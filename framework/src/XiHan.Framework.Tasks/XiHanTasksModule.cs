@@ -14,12 +14,16 @@
 
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Tasks.ScheduledJobs.Extensions;
+using XiHan.Framework.Timing;
 
 namespace XiHan.Framework.Tasks;
 
 /// <summary>
 /// 曦寒框架任务模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanTimingModule)
+    )]
 public class XiHanTasksModule : XiHanModule
 {
     /// <summary>

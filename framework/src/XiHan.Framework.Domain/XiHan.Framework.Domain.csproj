@@ -14,8 +14,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\XiHan.Framework.Application.Contracts\XiHan.Framework.Application.Contracts.csproj" />
-	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Domain.Shared\XiHan.Framework.Domain.Shared.csproj" />
 	</ItemGroup>
 
