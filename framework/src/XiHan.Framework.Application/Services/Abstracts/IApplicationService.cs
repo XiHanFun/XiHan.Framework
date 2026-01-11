@@ -23,4 +23,3 @@ namespace XiHan.Framework.Application.Services.Abstracts;
 public interface IApplicationService : IRemoteService
 {
 }
-

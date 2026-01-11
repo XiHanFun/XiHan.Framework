@@ -46,7 +46,7 @@ public class CacheHelperAdvancedTests : IDisposable
         // Act - 执行一些缓存操作
         CacheHelper.Set("key1", "value1", 60);
         CacheHelper.Set("key2", "value2", 60);
-        
+
         var hit1 = CacheHelper.Get<string>("key1"); // 命中
         var hit2 = CacheHelper.Get<string>("key2"); // 命中
         var miss = CacheHelper.Get<string>("key3"); // 未命中
@@ -54,12 +54,12 @@ public class CacheHelperAdvancedTests : IDisposable
         // Assert
         var stats = CacheHelper.GetStatistics();
         _output.WriteLine($"统计信息: {stats.GetSummary()}");
-        
+
         Assert.Equal(2, stats.HitCount);
         Assert.Equal(1, stats.MissCount);
         Assert.Equal(3, stats.TotalRequests);
         Assert.True(stats.HitRate > 0);
-        
+
         _output.WriteLine($"✓ 缓存统计测试通过 - 命中率: {stats.HitRate:F2}%");
     }
 
@@ -86,14 +86,14 @@ public class CacheHelperAdvancedTests : IDisposable
 
         var count = CacheHelper.Count;
         _output.WriteLine($"缓存项数量: {count}");
-        
+
         // Assert - 应该触发淘汰
         Assert.True(count <= 10, $"缓存项数量应该不超过10，实际: {count}");
-        
+
         var stats = CacheHelper.GetStatistics();
         _output.WriteLine($"淘汰次数: {stats.EvictionCount}");
         Assert.True(stats.EvictionCount > 0, "应该有淘汰记录");
-        
+
         _output.WriteLine($"✓ LRU 淘汰策略测试通过");
     }
 
@@ -126,7 +126,7 @@ public class CacheHelperAdvancedTests : IDisposable
         Assert.True(events.Count >= 2, $"应该至少有2个事件，实际: {events.Count}");
         Assert.Contains(events, e => e.EventType == CacheEventType.Added);
         Assert.Contains(events, e => e.EventType == CacheEventType.Removed);
-        
+
         _output.WriteLine($"✓ 缓存事件通知测试通过，共 {events.Count} 个事件");
     }
 
@@ -152,7 +152,7 @@ public class CacheHelperAdvancedTests : IDisposable
         Assert.Equal(2, userKeys.Count());
         Assert.Equal(2, orderKeys.Count());
         Assert.Equal(2, allUserKeys.Count());
-        
+
         _output.WriteLine($"✓ 模式匹配查询测试通过");
         _output.WriteLine($"  - User 键: {string.Join(", ", userKeys)}");
         _output.WriteLine($"  - Order 键: {string.Join(", ", orderKeys)}");
@@ -187,7 +187,7 @@ public class CacheHelperAdvancedTests : IDisposable
         Assert.Equal(3, finalCount);
         Assert.False(CacheHelper.Exists("session:0"));
         Assert.True(CacheHelper.Exists("temp:0"));
-        
+
         _output.WriteLine($"✓ 前缀删除测试通过 - 删除了 {removed} 个缓存项");
     }
 
@@ -216,7 +216,7 @@ public class CacheHelperAdvancedTests : IDisposable
         Assert.True(CacheHelper.Count <= 5);
         Assert.False(CacheHelper.Exists("key0")); // 第一个应该被淘汰
         Assert.True(CacheHelper.Exists("key7")); // 最后一个应该存在
-        
+
         _output.WriteLine($"✓ FIFO 淘汰策略测试通过");
     }
 
@@ -249,7 +249,7 @@ public class CacheHelperAdvancedTests : IDisposable
         // Assert - 访问频率高的应该被保留
         Assert.True(CacheHelper.Count <= 5);
         Assert.True(CacheHelper.Exists("frequent"), "频繁访问的缓存项应该被保留");
-        
+
         _output.WriteLine($"✓ LFU 淘汰策略测试通过");
     }
 
@@ -261,7 +261,7 @@ public class CacheHelperAdvancedTests : IDisposable
     {
         // Arrange
         CacheHelper.Configure(opt => opt.EnableStatistics = true);
-        
+
         CacheHelper.Set("key1", "value1", 60);
         CacheHelper.Get<string>("key1");
         CacheHelper.Get<string>("key2");
@@ -275,11 +275,11 @@ public class CacheHelperAdvancedTests : IDisposable
         // Assert
         var statsAfter = CacheHelper.GetStatistics();
         _output.WriteLine($"重置后: {statsAfter.GetSummary()}");
-        
+
         Assert.Equal(0, statsAfter.HitCount);
         Assert.Equal(0, statsAfter.MissCount);
         Assert.Equal(0, statsAfter.EvictionCount);
-        
+
         _output.WriteLine($"✓ 统计信息重置测试通过");
     }
 
@@ -306,10 +306,10 @@ public class CacheHelperAdvancedTests : IDisposable
         }
 
         Assert.True(CacheHelper.Count <= 100, "应该遵循最大容量限制");
-        
+
         var stats = CacheHelper.GetStatistics();
         Assert.True(stats.EvictionCount > 0, "应该有淘汰记录（说明统计功能开启）");
-        
+
         _output.WriteLine($"✓ 配置更改测试通过 - 缓存项: {CacheHelper.Count}, 淘汰: {stats.EvictionCount}");
     }
 
@@ -328,4 +328,3 @@ public class CacheHelperAdvancedTests : IDisposable
         });
     }
 }
-

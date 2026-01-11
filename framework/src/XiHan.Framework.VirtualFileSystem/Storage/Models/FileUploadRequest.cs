@@ -22,17 +22,17 @@ public class FileUploadRequest
     /// <summary>
     /// 文件流
     /// </summary>
-    public required Stream FileStream { get; set; }
+    public Stream FileStream { get; set; }
 
     /// <summary>
     /// 文件名
     /// </summary>
-    public required string FileName { get; set; }
+    public string FileName { get; set; }
 
     /// <summary>
     /// 存储路径
     /// </summary>
-    public required string StoragePath { get; set; }
+    public string StoragePath { get; set; }
 
     /// <summary>
     /// 内容类型（MIME Type）

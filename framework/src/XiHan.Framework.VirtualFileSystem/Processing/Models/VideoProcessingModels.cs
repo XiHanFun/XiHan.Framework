@@ -22,12 +22,12 @@ public class VideoTranscodeRequest
     /// <summary>
     /// 源视频路径
     /// </summary>
-    public required string SourcePath { get; set; }
+    public string SourcePath { get; set; }
 
     /// <summary>
     /// 输出路径
     /// </summary>
-    public required string OutputPath { get; set; }
+    public string OutputPath { get; set; }
 
     /// <summary>
     /// 目标格式
@@ -78,12 +78,12 @@ public class VideoThumbnailRequest
     /// <summary>
     /// 源视频路径
     /// </summary>
-    public required string SourcePath { get; set; }
+    public string SourcePath { get; set; }
 
     /// <summary>
     /// 输出路径
     /// </summary>
-    public required string OutputPath { get; set; }
+    public string OutputPath { get; set; }
 
     /// <summary>
     /// 提取时间点（秒）
@@ -114,12 +114,12 @@ public class HlsGenerationRequest
     /// <summary>
     /// 源视频路径
     /// </summary>
-    public required string SourcePath { get; set; }
+    public string SourcePath { get; set; }
 
     /// <summary>
     /// 输出目录
     /// </summary>
-    public required string OutputDirectory { get; set; }
+    public string OutputDirectory { get; set; }
 
     /// <summary>
     /// 切片时长（秒）

@@ -47,7 +47,7 @@ public class FFmpegVideoProcessingService : IVideoProcessingService
         {
             // FFmpeg命令示例：
             // ffmpeg -i input.mp4 -c:v libx264 -b:v 2000k -c:a aac -b:a 128k -s 1920x1080 -r 30 output.mp4
-            
+
             var arguments = $"-i \"{request.SourcePath}\" -c:v {request.VideoCodec} -c:a {request.AudioCodec}";
 
             if (!string.IsNullOrEmpty(request.VideoBitrate))
@@ -89,7 +89,6 @@ public class FFmpegVideoProcessingService : IVideoProcessingService
             // process.Start();
             // await process.WaitForExitAsync(cancellationToken);
 
-            
             throw new NotImplementedException("FFmpeg implementation required. Install FFmpeg or use FFMpegCore package");
         }
         catch (Exception ex)
@@ -111,8 +110,7 @@ public class FFmpegVideoProcessingService : IVideoProcessingService
     {
         // FFmpeg命令示例：
         // ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 1280x720 output.jpg
-        
-        
+
         throw new NotImplementedException("FFmpeg implementation required");
     }
 
@@ -123,8 +121,7 @@ public class FFmpegVideoProcessingService : IVideoProcessingService
     {
         // FFmpeg命令示例：
         // ffmpeg -i input.mp4 -c:v libx264 -c:a aac -hls_time 10 -hls_list_size 0 -f hls output/playlist.m3u8
-        
-        
+
         throw new NotImplementedException("FFmpeg implementation required");
     }
 
@@ -135,8 +132,7 @@ public class FFmpegVideoProcessingService : IVideoProcessingService
     {
         // FFprobe命令示例：
         // ffprobe -v quiet -print_format json -show_format -show_streams input.mp4
-        
-        
+
         throw new NotImplementedException("FFmpeg implementation required");
     }
 }
