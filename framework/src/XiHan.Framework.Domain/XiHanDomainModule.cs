@@ -13,12 +13,16 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Domain.Shared;
 
 namespace XiHan.Framework.Domain;
 
 /// <summary>
 /// 曦寒框架领域驱动设计模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanDomainSharedModule)
+    )]
 public class XiHanDomainModule : XiHanModule
 {
     /// <summary>

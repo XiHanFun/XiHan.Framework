@@ -22,7 +22,7 @@ public class ThumbnailRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 宽度
@@ -58,7 +58,7 @@ public class ImageCompressionRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 目标质量（1-100）
@@ -89,7 +89,7 @@ public class WatermarkRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 水印类型
@@ -140,7 +140,7 @@ public class ImageCropRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 起始X坐标
@@ -176,7 +176,7 @@ public class ImageResizeRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 目标宽度（0表示自动）
@@ -212,7 +212,7 @@ public class ImageRotateRequest
     /// <summary>
     /// 源图片流
     /// </summary>
-    public Stream SourceStream { get; set; }
+    public Stream SourceStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 旋转角度（0, 90, 180, 270）
