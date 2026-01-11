@@ -69,7 +69,6 @@ public class ImageSharpProcessingService : IImageProcessingService
             //     DurationMs = stopwatch.ElapsedMilliseconds
             // };
 
-            
             throw new NotImplementedException("ImageSharp SDK implementation required. Install: SixLabors.ImageSharp");
         }
         catch (Exception ex)
@@ -89,7 +88,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageProcessingResult> CompressAsync(ImageCompressionRequest request, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 
@@ -98,7 +96,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageProcessingResult> AddWatermarkAsync(WatermarkRequest request, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 
@@ -107,7 +104,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageProcessingResult> CropAsync(ImageCropRequest request, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 
@@ -116,7 +112,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageProcessingResult> ResizeAsync(ImageResizeRequest request, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 
@@ -125,7 +120,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageProcessingResult> RotateAsync(ImageRotateRequest request, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 
@@ -134,7 +128,6 @@ public class ImageSharpProcessingService : IImageProcessingService
     /// </summary>
     public async Task<ImageInfo> GetImageInfoAsync(Stream imageStream, CancellationToken cancellationToken = default)
     {
-        
         throw new NotImplementedException("ImageSharp SDK implementation required");
     }
 }

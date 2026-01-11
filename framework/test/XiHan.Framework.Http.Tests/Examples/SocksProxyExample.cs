@@ -36,6 +36,21 @@ public class SocksProxyExample
     }
 
     /// <summary>
+    /// 示例6: 原生 HttpClient 使用 SOCKS5 代理（底层实现）
+    /// </summary>
+    public static async Task Example6_NativeSocks5SupportAsync()
+    {
+        // 这是 .NET 6+ 原生支持的方式
+        var client = new HttpClient(new SocketsHttpHandler
+        {
+            Proxy = new System.Net.WebProxy("socks5://127.0.0.1:9050")
+        });
+
+        var content = await client.GetStringAsync("https://check.torproject.org/");
+        Console.WriteLine(content);
+    }
+
+    /// <summary>
     /// 示例1: 使用 SOCKS5 代理（如 Tor）
     /// </summary>
     public async Task Example1_UseSocks5ProxyWithTorAsync()
@@ -178,21 +193,6 @@ public class SocksProxyExample
         var result = await _httpService.GetStringAsync("https://api.example.com/data", options);
 
         Console.WriteLine($"通过代理池访问: {result.IsSuccess}");
-    }
-
-    /// <summary>
-    /// 示例6: 原生 HttpClient 使用 SOCKS5 代理（底层实现）
-    /// </summary>
-    public static async Task Example6_NativeSocks5SupportAsync()
-    {
-        // 这是 .NET 6+ 原生支持的方式
-        var client = new HttpClient(new SocketsHttpHandler
-        {
-            Proxy = new System.Net.WebProxy("socks5://127.0.0.1:9050")
-        });
-
-        var content = await client.GetStringAsync("https://check.torproject.org/");
-        Console.WriteLine(content);
     }
 
     /// <summary>

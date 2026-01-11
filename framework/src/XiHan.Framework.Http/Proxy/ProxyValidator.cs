@@ -178,4 +178,3 @@ public class ProxyValidator : IProxyValidator
         return handler;
     }
 }
-

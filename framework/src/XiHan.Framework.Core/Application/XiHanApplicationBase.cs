@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -23,6 +22,7 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Internal;
 using XiHan.Framework.Core.Logging;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Metadata;
 using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Logging;

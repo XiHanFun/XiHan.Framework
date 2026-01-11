@@ -39,6 +39,18 @@ public class ProxyPoolHealthCheckService : BackgroundService
     }
 
     /// <summary>
+    /// 停止异步任务
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns></returns>
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("正在停止代理池健康检查服务");
+        _proxyPoolManager.StopHealthCheck();
+        return base.StopAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// 执行异步任务
     /// </summary>
     /// <param name="stoppingToken">停止令牌</param>
@@ -63,17 +75,4 @@ public class ProxyPoolHealthCheckService : BackgroundService
             _logger.LogError(ex, "代理池健康检查服务异常");
         }
     }
-
-    /// <summary>
-    /// 停止异步任务
-    /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns></returns>
-    public override Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("正在停止代理池健康检查服务");
-        _proxyPoolManager.StopHealthCheck();
-        return base.StopAsync(cancellationToken);
-    }
 }
-

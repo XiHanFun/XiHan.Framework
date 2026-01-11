@@ -142,4 +142,3 @@ public class ProxyStatistics
         ConsecutiveFailures = 0;
     }
 }
-

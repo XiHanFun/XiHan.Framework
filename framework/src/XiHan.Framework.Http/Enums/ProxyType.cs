@@ -44,4 +44,3 @@ public enum ProxyType
     /// </summary>
     Socks5 = 4
 }
-

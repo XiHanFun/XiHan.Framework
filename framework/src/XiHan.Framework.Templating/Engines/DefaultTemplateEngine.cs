@@ -117,118 +117,6 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
     }
 
     /// <summary>
-    /// 渲染包含条件语句的模板（集成Simple功能）
-    /// </summary>
-    /// <param name="template">模板文本，支持 {{if condition}}...{{else}}...{{endif}} 条件语句</param>
-    /// <param name="values">变量值字典</param>
-    /// <returns>渲染后的文本</returns>
-    private string RenderAdvanced(string template, IDictionary<string, object?>? values)
-    {
-        if (string.IsNullOrEmpty(template))
-        {
-            return string.Empty;
-        }
-
-        if (values == null || values.Count == 0)
-        {
-            return template;
-        }
-
-        // 先处理条件语句
-        var result = ProcessConditionals(template, values);
-
-        // 再处理循环语句
-        result = ProcessLoops(result, values);
-
-        // 最后替换普通变量
-        foreach (var pair in values)
-        {
-            var placeholder = $"{{{{{pair.Key}}}}}";
-            var value = pair.Value?.ToString() ?? string.Empty;
-            result = result.Replace(placeholder, value);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 处理条件语句
-    /// </summary>
-    /// <param name="template">模板文本</param>
-    /// <param name="values">变量值字典</param>
-    /// <returns>处理后的文本</returns>
-    private string ProcessConditionals(string template, IDictionary<string, object?> values)
-    {
-        var ifPattern = @"{{if\s+([^}]+)}}(.*?)(?:{{else}}(.*?))?{{endif}}";
-        var result = template;
-
-        while (Regex.IsMatch(result, ifPattern, RegexOptions.Singleline))
-        {
-            result = Regex.Replace(result, ifPattern, match =>
-            {
-                var condition = match.Groups[1].Value.Trim();
-                var trueBlock = match.Groups[2].Value;
-                var falseBlock = match.Groups.Count > 3 ? match.Groups[3].Value : string.Empty;
-
-                var conditionValue = EvaluateCondition(condition, values);
-                return conditionValue ? trueBlock : falseBlock;
-            }, RegexOptions.Singleline);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 处理循环语句
-    /// </summary>
-    /// <param name="template">模板文本</param>
-    /// <param name="values">变量值字典</param>
-    /// <returns>处理后的文本</returns>
-    private string ProcessLoops(string template, IDictionary<string, object?> values)
-    {
-        var forPattern = @"{{for\s+([^}]+)\s+in\s+([^}]+)}}(.*?){{endfor}}";
-        var result = template;
-
-        while (Regex.IsMatch(result, forPattern, RegexOptions.Singleline))
-        {
-            result = Regex.Replace(result, forPattern, match =>
-            {
-                var itemName = match.Groups[1].Value.Trim();
-                var listName = match.Groups[2].Value.Trim();
-                var loopContent = match.Groups[3].Value;
-
-                if (!values.TryGetValue(listName, out var listObj) || listObj == null)
-                {
-                    return string.Empty;
-                }
-
-                if (listObj is not IEnumerable enumerable)
-                {
-                    return string.Empty;
-                }
-
-                var sb = new StringBuilder();
-                foreach (var item in enumerable)
-                {
-                    // 创建一个新的上下文，包含循环项
-                    var loopContext = new Dictionary<string, object?>(values)
-                    {
-                        [itemName] = item
-                    };
-
-                    // 递归处理循环内容
-                    var processedContent = RenderAdvanced(loopContent, loopContext);
-                    sb.Append(processedContent);
-                }
-
-                return sb.ToString();
-            }, RegexOptions.Singleline);
-        }
-
-        return result;
-    }
-
-    /// <summary>
     /// 评估条件表达式
     /// </summary>
     /// <param name="condition">条件表达式</param>
@@ -401,6 +289,118 @@ public class DefaultTemplateEngine : ITemplateEngine<string>
         var endForMatches = Regex.Matches(template, @"{{endfor}}");
 
         return forMatches.Count == endForMatches.Count;
+    }
+
+    /// <summary>
+    /// 渲染包含条件语句的模板（集成Simple功能）
+    /// </summary>
+    /// <param name="template">模板文本，支持 {{if condition}}...{{else}}...{{endif}} 条件语句</param>
+    /// <param name="values">变量值字典</param>
+    /// <returns>渲染后的文本</returns>
+    private string RenderAdvanced(string template, IDictionary<string, object?>? values)
+    {
+        if (string.IsNullOrEmpty(template))
+        {
+            return string.Empty;
+        }
+
+        if (values == null || values.Count == 0)
+        {
+            return template;
+        }
+
+        // 先处理条件语句
+        var result = ProcessConditionals(template, values);
+
+        // 再处理循环语句
+        result = ProcessLoops(result, values);
+
+        // 最后替换普通变量
+        foreach (var pair in values)
+        {
+            var placeholder = $"{{{{{pair.Key}}}}}";
+            var value = pair.Value?.ToString() ?? string.Empty;
+            result = result.Replace(placeholder, value);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 处理条件语句
+    /// </summary>
+    /// <param name="template">模板文本</param>
+    /// <param name="values">变量值字典</param>
+    /// <returns>处理后的文本</returns>
+    private string ProcessConditionals(string template, IDictionary<string, object?> values)
+    {
+        var ifPattern = @"{{if\s+([^}]+)}}(.*?)(?:{{else}}(.*?))?{{endif}}";
+        var result = template;
+
+        while (Regex.IsMatch(result, ifPattern, RegexOptions.Singleline))
+        {
+            result = Regex.Replace(result, ifPattern, match =>
+            {
+                var condition = match.Groups[1].Value.Trim();
+                var trueBlock = match.Groups[2].Value;
+                var falseBlock = match.Groups.Count > 3 ? match.Groups[3].Value : string.Empty;
+
+                var conditionValue = EvaluateCondition(condition, values);
+                return conditionValue ? trueBlock : falseBlock;
+            }, RegexOptions.Singleline);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 处理循环语句
+    /// </summary>
+    /// <param name="template">模板文本</param>
+    /// <param name="values">变量值字典</param>
+    /// <returns>处理后的文本</returns>
+    private string ProcessLoops(string template, IDictionary<string, object?> values)
+    {
+        var forPattern = @"{{for\s+([^}]+)\s+in\s+([^}]+)}}(.*?){{endfor}}";
+        var result = template;
+
+        while (Regex.IsMatch(result, forPattern, RegexOptions.Singleline))
+        {
+            result = Regex.Replace(result, forPattern, match =>
+            {
+                var itemName = match.Groups[1].Value.Trim();
+                var listName = match.Groups[2].Value.Trim();
+                var loopContent = match.Groups[3].Value;
+
+                if (!values.TryGetValue(listName, out var listObj) || listObj == null)
+                {
+                    return string.Empty;
+                }
+
+                if (listObj is not IEnumerable enumerable)
+                {
+                    return string.Empty;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var item in enumerable)
+                {
+                    // 创建一个新的上下文，包含循环项
+                    var loopContext = new Dictionary<string, object?>(values)
+                    {
+                        [itemName] = item
+                    };
+
+                    // 递归处理循环内容
+                    var processedContent = RenderAdvanced(loopContent, loopContext);
+                    sb.Append(processedContent);
+                }
+
+                return sb.ToString();
+            }, RegexOptions.Singleline);
+        }
+
+        return result;
     }
 
     #endregion
