@@ -14,14 +14,13 @@
 
 using TimeZoneConverter;
 using XiHan.Framework.Core;
-using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 
 namespace XiHan.Framework.Timing;
 
 /// <summary>
 /// 时区提供器
 /// </summary>
-public class TZConvertTimezoneProvider : ITimezoneProvider, ISingletonDependency
+public class TZConvertTimezoneProvider : ITimezoneProvider
 {
     /// <summary>
     /// 获取 Windows 时区

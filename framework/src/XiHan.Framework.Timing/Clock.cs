@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
-using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Timing;
@@ -21,7 +20,7 @@ namespace XiHan.Framework.Timing;
 /// <summary>
 /// 时钟
 /// </summary>
-public class Clock : IClock, ITransientDependency
+public class Clock : IClock
 {
     /// <summary>
     /// 构造函数

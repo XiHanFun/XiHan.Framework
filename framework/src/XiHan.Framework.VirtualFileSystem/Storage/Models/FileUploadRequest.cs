@@ -22,17 +22,17 @@ public class FileUploadRequest
     /// <summary>
     /// 文件流
     /// </summary>
-    public Stream FileStream { get; set; }
+    public Stream FileStream { get; set; } = Stream.Null;
 
     /// <summary>
     /// 文件名
     /// </summary>
-    public string FileName { get; set; }
+    public string FileName { get; set; } = string.Empty;
 
     /// <summary>
     /// 存储路径
     /// </summary>
-    public string StoragePath { get; set; }
+    public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
     /// 内容类型（MIME Type）

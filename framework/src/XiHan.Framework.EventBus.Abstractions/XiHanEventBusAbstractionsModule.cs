@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.ObjectMapping;
 
 namespace XiHan.Framework.EventBus.Abstractions;
 
@@ -21,7 +21,7 @@ namespace XiHan.Framework.EventBus.Abstractions;
 /// 曦寒框架事件总线抽象模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanMultiTenancyAbstractionsModule)
+    typeof(XiHanObjectMappingModule)
 )]
 public class XiHanEventBusAbstractionsModule : XiHanModule
 {

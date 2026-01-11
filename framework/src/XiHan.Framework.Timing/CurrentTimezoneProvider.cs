@@ -12,14 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-
 namespace XiHan.Framework.Timing;
 
 /// <summary>
 /// 当前时区提供器
 /// </summary>
-public class CurrentTimezoneProvider : ICurrentTimezoneProvider, ISingletonDependency
+public class CurrentTimezoneProvider : ICurrentTimezoneProvider
 {
     private readonly AsyncLocal<string?> _currentScope;
 
