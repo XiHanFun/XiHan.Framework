@@ -25,11 +25,6 @@ public class SequentialGuidOptions
     public SequentialGuidType? DefaultSequentialGuidType { get; set; }
 
     /// <summary>
-    /// 获取默认顺序 GUID 类型
-    /// </summary>
-    public SequentialGuidType GetDefaultSequentialGuidType() => DefaultSequentialGuidType ?? SequentialGuidType.SequentialAtEnd;
-
-    /// <summary>
     /// 创建字符串形式的顺序 GUID 选项（适合字符串比较排序）
     /// </summary>
     /// <returns>顺序 GUID 选项</returns>
@@ -73,4 +68,9 @@ public class SequentialGuidOptions
     {
         return AtEnd();
     }
+
+    /// <summary>
+    /// 获取默认顺序 GUID 类型
+    /// </summary>
+    public SequentialGuidType GetDefaultSequentialGuidType() => DefaultSequentialGuidType ?? SequentialGuidType.SequentialAtEnd;
 }

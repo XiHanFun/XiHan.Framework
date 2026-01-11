@@ -12,13 +12,26 @@
 
 #endregion <<版权版本注释>>
 
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.BackgroundServices;
 using XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 
 namespace XiHan.Framework.Tasks.Tests.BackgroundServices;
+
+/// <summary>
+/// 邮件发送器接口
+/// </summary>
+public interface IEmailSender
+{
+    /// <summary>
+    /// 发送邮件
+    /// </summary>
+    /// <param name="emailTask">邮件任务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task SendEmailAsync(EmailTaskItem emailTask, CancellationToken cancellationToken);
+}
 
 /// <summary>
 /// 邮件发送后台服务示例
@@ -36,13 +49,13 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
     /// <param name="options">配置选项</param>
     /// <param name="emailSender">邮件发送器</param>
     public EmailSendingService(
-        ILogger<EmailSendingService> logger, 
+        ILogger<EmailSendingService> logger,
         IOptions<XiHanBackgroundServiceOptions> options,
         IEmailSender emailSender)
         : base(logger, options)
     {
         _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
-        
+
         // 预填充一些测试邮件
         InitializeTestEmails();
     }
@@ -64,9 +77,39 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
         : base(logger, options, dynamicConfig, retryPolicy)
     {
         _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
-        
+
         // 预填充一些测试邮件
         InitializeTestEmails();
+    }
+
+    /// <summary>
+    /// 添加邮件到发送队列
+    /// </summary>
+    /// <param name="to">收件人</param>
+    /// <param name="subject">邮件主题</param>
+    /// <param name="body">邮件内容</param>
+    /// <param name="priority">邮件优先级</param>
+    /// <returns>任务唯一标识</returns>
+    public string QueueEmail(string to, string subject, string body, EmailPriority priority = EmailPriority.Normal)
+    {
+        var emailTask = new EmailTaskItem(to, subject, body)
+        {
+            Priority = priority
+        };
+
+        _emailQueue.Enqueue(emailTask);
+        Logger.LogDebug("邮件已加入发送队列: {TaskId} -> {To}", emailTask.TaskId, emailTask.To);
+
+        return emailTask.TaskId;
+    }
+
+    /// <summary>
+    /// 获取队列中的邮件数量
+    /// </summary>
+    /// <returns>待发送邮件数量</returns>
+    public int GetQueuedEmailCount()
+    {
+        return _emailQueue.Count;
     }
 
     /// <summary>
@@ -116,7 +159,7 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
             throw new InvalidOperationException($"不支持的任务类型: {item.GetType()}");
         }
 
-        Logger.LogInformation("开始发送邮件 {TaskId}: {To} - {Subject}", 
+        Logger.LogInformation("开始发送邮件 {TaskId}: {To} - {Subject}",
             emailTask.TaskId, emailTask.To, emailTask.Subject);
 
         try
@@ -149,7 +192,7 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "邮件 {TaskId} 发送失败: {To} - {Subject}", 
+            Logger.LogError(ex, "邮件 {TaskId} 发送失败: {To} - {Subject}",
                 emailTask.TaskId, emailTask.To, emailTask.Subject);
             throw; // 重新抛出异常，由重试策略处理
         }
@@ -179,33 +222,21 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
     }
 
     /// <summary>
-    /// 添加邮件到发送队列
+    /// 生成随机测试邮件
     /// </summary>
-    /// <param name="to">收件人</param>
-    /// <param name="subject">邮件主题</param>
-    /// <param name="body">邮件内容</param>
-    /// <param name="priority">邮件优先级</param>
-    /// <returns>任务唯一标识</returns>
-    public string QueueEmail(string to, string subject, string body, EmailPriority priority = EmailPriority.Normal)
+    /// <returns>随机邮件任务</returns>
+    private static EmailTaskItem GenerateRandomEmail()
     {
-        var emailTask = new EmailTaskItem(to, subject, body)
-        {
-            Priority = priority
-        };
+        var recipients = new[] { "test1@example.com", "test2@example.com", "test3@example.com" };
+        var subjects = new[] { "系统通知", "重要提醒", "活动邀请", "安全警告" };
+        var priorities = Enum.GetValues<EmailPriority>();
 
-        _emailQueue.Enqueue(emailTask);
-        Logger.LogDebug("邮件已加入发送队列: {TaskId} -> {To}", emailTask.TaskId, emailTask.To);
+        var to = recipients[Random.Shared.Next(recipients.Length)];
+        var subject = subjects[Random.Shared.Next(subjects.Length)];
+        var priority = priorities[Random.Shared.Next(priorities.Length)];
+        var body = $"这是一封 {priority} 优先级的测试邮件，发送时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
 
-        return emailTask.TaskId;
-    }
-
-    /// <summary>
-    /// 获取队列中的邮件数量
-    /// </summary>
-    /// <returns>待发送邮件数量</returns>
-    public int GetQueuedEmailCount()
-    {
-        return _emailQueue.Count;
+        return new EmailTaskItem(to, subject, body) { Priority = priority };
     }
 
     /// <summary>
@@ -231,24 +262,6 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
     }
 
     /// <summary>
-    /// 生成随机测试邮件
-    /// </summary>
-    /// <returns>随机邮件任务</returns>
-    private static EmailTaskItem GenerateRandomEmail()
-    {
-        var recipients = new[] { "test1@example.com", "test2@example.com", "test3@example.com" };
-        var subjects = new[] { "系统通知", "重要提醒", "活动邀请", "安全警告" };
-        var priorities = Enum.GetValues<EmailPriority>();
-
-        var to = recipients[Random.Shared.Next(recipients.Length)];
-        var subject = subjects[Random.Shared.Next(subjects.Length)];
-        var priority = priorities[Random.Shared.Next(priorities.Length)];
-        var body = $"这是一封 {priority} 优先级的测试邮件，发送时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
-
-        return new EmailTaskItem(to, subject, body) { Priority = priority };
-    }
-
-    /// <summary>
     /// 保存失败的邮件信息
     /// </summary>
     /// <param name="emailTask">失败的邮件任务</param>
@@ -261,22 +274,9 @@ public class EmailSendingService : XiHanBackgroundServiceBase<EmailSendingServic
         // 3. 记录详细的错误日志
         // 4. 可能需要通知管理员
 
-        Logger.LogWarning("保存失败邮件记录: {TaskId} - {To} - {Error}", 
+        Logger.LogWarning("保存失败邮件记录: {TaskId} - {To} - {Error}",
             emailTask.TaskId, emailTask.To, exception.Message);
     }
-}
-
-/// <summary>
-/// 邮件发送器接口
-/// </summary>
-public interface IEmailSender
-{
-    /// <summary>
-    /// 发送邮件
-    /// </summary>
-    /// <param name="emailTask">邮件任务</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    Task SendEmailAsync(EmailTaskItem emailTask, CancellationToken cancellationToken);
 }
 
 /// <summary>

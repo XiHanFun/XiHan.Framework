@@ -63,11 +63,6 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     }
 
     /// <summary>
-    /// 上传文件的核心实现
-    /// </summary>
-    protected abstract Task<FileUploadResult> UploadCoreAsync(FileUploadRequest request, CancellationToken cancellationToken);
-
-    /// <summary>
     /// 初始化分片上传
     /// </summary>
     public virtual Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
@@ -141,6 +136,11 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     /// 列出目录下的文件
     /// </summary>
     public abstract Task<List<FileMetadata>> ListFilesAsync(string path, bool recursive = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 上传文件的核心实现
+    /// </summary>
+    protected abstract Task<FileUploadResult> UploadCoreAsync(FileUploadRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// 规范化路径

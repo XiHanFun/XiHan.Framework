@@ -22,12 +22,12 @@ public class ChunkedUploadInitRequest
     /// <summary>
     /// 文件名
     /// </summary>
-    public required string FileName { get; set; }
+    public string FileName { get; set; }
 
     /// <summary>
     /// 存储路径
     /// </summary>
-    public required string StoragePath { get; set; }
+    public string StoragePath { get; set; }
 
     /// <summary>
     /// 文件总大小
@@ -68,12 +68,12 @@ public class ChunkUploadRequest
     /// <summary>
     /// 上传ID
     /// </summary>
-    public required string UploadId { get; set; }
+    public string UploadId { get; set; }
 
     /// <summary>
     /// 存储路径
     /// </summary>
-    public required string StoragePath { get; set; }
+    public string StoragePath { get; set; }
 
     /// <summary>
     /// 分片序号（从1开始）
@@ -83,7 +83,7 @@ public class ChunkUploadRequest
     /// <summary>
     /// 分片数据
     /// </summary>
-    public required Stream ChunkData { get; set; }
+    public Stream ChunkData { get; set; }
 
     /// <summary>
     /// 分片大小
@@ -145,17 +145,17 @@ public class ChunkedUploadCompleteRequest
     /// <summary>
     /// 上传ID
     /// </summary>
-    public required string UploadId { get; set; }
+    public string UploadId { get; set; }
 
     /// <summary>
     /// 存储路径
     /// </summary>
-    public required string StoragePath { get; set; }
+    public string StoragePath { get; set; }
 
     /// <summary>
     /// 分片列表（按序号排序的ETag列表）
     /// </summary>
-    public required List<ChunkInfo> ChunkInfos { get; set; }
+    public List<ChunkInfo> ChunkInfos { get; set; }
 
     /// <summary>
     /// 存储桶名称

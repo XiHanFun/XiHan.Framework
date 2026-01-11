@@ -99,4 +99,3 @@ public class ProxyPoolOptions
     [Range(3600, 604800)]
     public int StatisticsRetentionSeconds { get; set; } = 86400; // 24小时
 }
-

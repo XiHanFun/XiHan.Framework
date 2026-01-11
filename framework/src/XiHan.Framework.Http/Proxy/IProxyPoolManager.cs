@@ -105,4 +105,3 @@ public interface IProxyPoolManager
     /// <returns></returns>
     int GetAvailableCount();
 }
-

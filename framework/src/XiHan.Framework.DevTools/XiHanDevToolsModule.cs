@@ -19,5 +19,4 @@ namespace XiHan.Framework.DevTools;
 /// </summary>
 public class XiHanDevToolsModule
 {
-
 }

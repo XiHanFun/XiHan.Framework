@@ -561,9 +561,9 @@ public static class LogicHelper
     /// <param name="backoffFactor">退避因子</param>
     /// <returns>执行结果</returns>
     public static async Task<(bool Success, Exception? LastException)> RetryAsync(
-        Func<Task> action, 
-        int maxAttempts = 3, 
-        TimeSpan? delay = null, 
+        Func<Task> action,
+        int maxAttempts = 3,
+        TimeSpan? delay = null,
         double backoffFactor = 1.0)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -586,7 +586,7 @@ public static class LogicHelper
             catch (Exception ex)
             {
                 lastException = ex;
-                
+
                 if (attempt == maxAttempts)
                 {
                     break;
@@ -613,9 +613,9 @@ public static class LogicHelper
     /// <param name="backoffFactor">退避因子</param>
     /// <returns>执行结果</returns>
     public static async Task<(bool Success, T? Result, Exception? LastException)> RetryAsync<T>(
-        Func<Task<T>> func, 
-        int maxAttempts = 3, 
-        TimeSpan? delay = null, 
+        Func<Task<T>> func,
+        int maxAttempts = 3,
+        TimeSpan? delay = null,
         double backoffFactor = 1.0)
     {
         ArgumentNullException.ThrowIfNull(func);
@@ -638,7 +638,7 @@ public static class LogicHelper
             catch (Exception ex)
             {
                 lastException = ex;
-                
+
                 if (attempt == maxAttempts)
                 {
                     break;

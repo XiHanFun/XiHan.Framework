@@ -36,19 +36,19 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Attributes;
 ///     public Task&lt;UserDto&gt; GetAsync(long id) { ... }
 ///     // 路由：api/v2/user/get/{id}
 /// }
-/// 
+///
 /// // 方法级别版本
 /// public class ProductService : IApplicationService
 /// {
 ///     [ApiVersion("1")]
 ///     public Task&lt;ProductDto&gt; GetAsync(long id) { ... }
 ///     // 路由：api/product/v1/get/{id}
-///     
+///
 ///     [ApiVersion("2")]
 ///     public Task&lt;ProductDto&gt; GetDetailAsync(long id) { ... }
 ///     // 路由：api/product/v2/getdetail/{id}
 /// }
-/// 
+///
 /// // 标记废弃
 /// [ApiVersion("1", Deprecated = true)]
 /// public class LegacyService : IApplicationService { ... }
