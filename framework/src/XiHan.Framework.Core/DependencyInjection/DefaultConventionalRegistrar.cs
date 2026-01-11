@@ -42,7 +42,9 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
             return;
         }
 
-        var exposedServiceAndKeyedServiceTypes = GetExposedKeyedServiceTypes(type).Concat(GetExposedServiceTypes(type).Select(t => new ServiceIdentifier(t))).ToList();
+        var exposedServiceAndKeyedServiceTypes = GetExposedKeyedServiceTypes(type)
+            .Concat(GetExposedServiceTypes(type)
+            .Select(t => new ServiceIdentifier(t))).ToList();
 
         TriggerServiceExposing(services, type, exposedServiceAndKeyedServiceTypes);
 
