@@ -14,7 +14,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Mapster" Version="9.0.0-pre01" />
+	  <PackageReference Include="Mapster" Version="10.0.0-pre01" />
 	</ItemGroup>
 	
 	<ItemGroup>
