@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -38,6 +38,17 @@ public static class HmacHelper
     }
 
     /// <summary>
+    /// 使用 HmacSha1 算法生成 HMAC 值（返回字节数组）
+    /// </summary>
+    /// <param name="key">密钥(字节数组)</param>
+    /// <param name="data">数据内容(字节数组)</param>
+    /// <returns>HMAC 值(字节数组)</returns>
+    public static byte[] HmacSha1(byte[] key, byte[] data)
+    {
+        return ComputeHmacBytes("HMACSHA1", key, data);
+    }
+
+    /// <summary>
     /// 使用 HmacSha256 算法生成 HMAC 值
     /// </summary>
     /// <param name="key">密钥(字节数组)</param>
@@ -46,6 +57,17 @@ public static class HmacHelper
     public static string HmacSha256(string key, string message)
     {
         return ComputeHmac("HMACSHA256", key, message);
+    }
+
+    /// <summary>
+    /// 使用 HmacSha256 算法生成 HMAC 值（返回字节数组）
+    /// </summary>
+    /// <param name="key">密钥(字节数组)</param>
+    /// <param name="data">数据内容(字节数组)</param>
+    /// <returns>HMAC 值(字节数组)</returns>
+    public static byte[] HmacSha256(byte[] key, byte[] data)
+    {
+        return ComputeHmacBytes("HMACSHA256", key, data);
     }
 
     /// <summary>
@@ -60,6 +82,17 @@ public static class HmacHelper
     }
 
     /// <summary>
+    /// 使用 HmacSha384 算法生成 HMAC 值（返回字节数组）
+    /// </summary>
+    /// <param name="key">密钥(字节数组)</param>
+    /// <param name="data">数据内容(字节数组)</param>
+    /// <returns>HMAC 值(字节数组)</returns>
+    public static byte[] HmacSha384(byte[] key, byte[] data)
+    {
+        return ComputeHmacBytes("HMACSHA384", key, data);
+    }
+
+    /// <summary>
     /// 使用 HmacSha512 算法生成 HMAC 值
     /// </summary>
     /// <param name="key">密钥(字节数组)</param>
@@ -68,6 +101,17 @@ public static class HmacHelper
     public static string HmacSha512(string key, string message)
     {
         return ComputeHmac("HMACSHA512", key, message);
+    }
+
+    /// <summary>
+    /// 使用 HmacSha512 算法生成 HMAC 值（返回字节数组）
+    /// </summary>
+    /// <param name="key">密钥(字节数组)</param>
+    /// <param name="data">数据内容(字节数组)</param>
+    /// <returns>HMAC 值(字节数组)</returns>
+    public static byte[] HmacSha512(byte[] key, byte[] data)
+    {
+        return ComputeHmacBytes("HMACSHA512", key, data);
     }
 
     /// <summary>
@@ -98,6 +142,34 @@ public static class HmacHelper
         using var hmac = CreateHmacAlgorithm(algorithm, keyBytes);
         var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
         return Convert.ToBase64String(hashBytes);
+    }
+
+    /// <summary>
+    /// 使用指定的 HMAC 算法生成 HMAC 值（返回字节数组）
+    /// </summary>
+    /// <param name="algorithm">HMAC 算法类型，例如 "HMACSHA1", "HMACSHA256", "HMACSHA512"</param>
+    /// <param name="key">密钥(字节数组)</param>
+    /// <param name="data">数据内容(字节数组)</param>
+    /// <returns>HMAC 值(字节数组)</returns>
+    public static byte[] ComputeHmacBytes(string algorithm, byte[] key, byte[] data)
+    {
+        if (string.IsNullOrWhiteSpace(algorithm))
+        {
+            throw new ArgumentException("算法名称不能为空", nameof(algorithm));
+        }
+
+        if (key is null || key.Length == 0)
+        {
+            throw new ArgumentException("密钥不能为空", nameof(key));
+        }
+
+        if (data is null)
+        {
+            throw new ArgumentException("数据不能为空", nameof(data));
+        }
+
+        using var hmac = CreateHmacAlgorithm(algorithm, key);
+        return hmac.ComputeHash(data);
     }
 
     /// <summary>
