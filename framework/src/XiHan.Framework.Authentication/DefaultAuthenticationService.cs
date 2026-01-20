@@ -428,7 +428,7 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         var recoveryCodes = _otpService.GenerateRecoveryCodes(10);
 
         // 哈希恢复码后存储
-        user.RecoveryCodes = recoveryCodes.Select(code => _passwordHasher.HashPassword(code)).ToList();
+        user.RecoveryCodes = [.. recoveryCodes.Select(code => _passwordHasher.HashPassword(code))];
         await _userStore.UpdateUserAsync(user, cancellationToken);
 
         return recoveryCodes;
@@ -590,7 +590,7 @@ public partial class DefaultAuthenticationService : IAuthenticationService
         for (var i = 0; i < lowerPassword.Length - 2; i++)
         {
             var substring = lowerPassword.Substring(i, 3);
-            if (sequences.Contains(substring) || sequences.Contains(new string(substring.Reverse().ToArray())))
+            if (sequences.Contains(substring) || sequences.Contains(new string([.. substring.Reverse()])))
             {
                 return true;
             }

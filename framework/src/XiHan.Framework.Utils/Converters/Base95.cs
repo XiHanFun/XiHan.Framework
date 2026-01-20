@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -18,11 +18,13 @@ using System.Numerics;
 namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
-/// Base95 编码和解码
+/// Base95 编码和解码（ASCII 可打印字符标准）
 /// </summary>
 /// <remarks>
+/// 使用 ASCII 可打印字符（32-126，共 95 个字符）
 /// 主要特点：最紧凑的标准编码之一，可打印字符集，可读性较差，URL 不完全安全
-/// 常见用途：密钥/口令生成(可打印)、二维码 / 短信传输、嵌入式系统传输数据、空间压缩极致场景、数据序列化压缩格式
+/// 常见用途：密钥/口令生成(可打印)、二维码/短信传输、嵌入式系统传输数据、空间压缩极致场景、数据序列化压缩格式
+/// 标准参考：ASCII 标准（无特定 RFC）
 /// </remarks>
 public static class Base95
 {

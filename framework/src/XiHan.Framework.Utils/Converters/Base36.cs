@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -18,11 +18,13 @@ using System.Numerics;
 namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
-/// Base36 编码和解码
+/// Base36 编码和解码（0-9A-Z 标准）
 /// </summary>
 /// <remarks>
+/// 使用标准 Base36 字符集（0-9 和 A-Z，共 36 个字符）
 /// 主要特点：比 Base16 更短，但不如 Base62/Base64 紧凑，人类可识别，适合数字与字母组合使用，不包含特殊符号，适合用户手输
 /// 常见用途：邀请码、用户标识、订单号、编号编码、短链接唯一标识、数字压缩显示等
+/// 标准参考：数学进制转换标准（无特定 RFC）
 /// </remarks>
 public static class Base36
 {

@@ -182,7 +182,7 @@ public class JwtTokenService : IJwtTokenService
             // if (!await _refreshTokenStore.ValidateRefreshToken(refreshToken)) return null;
 
             // 生成新的访问令牌
-            var newToken = GenerateAccessToken(principal.Claims.ToList());
+            var newToken = GenerateAccessToken([.. principal.Claims]);
 
             return newToken;
         }

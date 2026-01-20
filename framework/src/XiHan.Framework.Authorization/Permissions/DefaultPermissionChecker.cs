@@ -150,7 +150,7 @@ public class DefaultPermissionChecker : IPermissionChecker
             }
         }
 
-        return permissions.ToList();
+        return [.. permissions];
     }
 
     /// <summary>

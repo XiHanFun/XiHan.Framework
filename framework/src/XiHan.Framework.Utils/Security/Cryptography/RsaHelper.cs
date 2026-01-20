@@ -139,7 +139,7 @@ public static class RsaHelper
             using var rsa = RSA.Create();
             rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
 
-            var effectiveBlockSize = blockSize ?? rsa.KeySize / 8;
+            var effectiveBlockSize = blockSize ?? (rsa.KeySize / 8);
             var buffer = new MemoryStream();
 
             // 分割加密块

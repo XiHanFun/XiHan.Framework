@@ -53,7 +53,7 @@ public static class RandomCoder
     /// <returns>随机字母字符串</returns>
     public static string GetLetter(int? length = 6, string? source = null)
     {
-        return RandomHelper.GetRandom(length ?? 6, source ?? DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters);
+        return RandomHelper.GetRandom(length ?? 6, source ?? (DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters));
     }
 
     /// <summary>

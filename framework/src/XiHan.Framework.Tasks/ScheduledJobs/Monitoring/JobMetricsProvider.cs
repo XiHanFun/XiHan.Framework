@@ -48,7 +48,7 @@ public class JobMetricsProvider
             }
 
             // 计算平均耗时
-            metrics.AverageDurationMs = (metrics.AverageDurationMs * (metrics.TotalExecutions - 1) + durationMs) / metrics.TotalExecutions;
+            metrics.AverageDurationMs = ((metrics.AverageDurationMs * (metrics.TotalExecutions - 1)) + durationMs) / metrics.TotalExecutions;
 
             switch (status)
             {
