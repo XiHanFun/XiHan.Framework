@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -18,11 +18,13 @@ using System.Numerics;
 namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
-/// Base62 编码解码
+/// Base62 编码解码（0-9A-Za-z 标准）
 /// </summary>
 /// <remarks>
-/// 主要特点：包含数字+大小写字母，较紧凑，编码长度更短
-/// 常见用途：短链接、邀请码、用户唯一标识编码等
+/// 使用标准 Base62 字符集（0-9、A-Z、a-z，共 62 个字符）
+/// 主要特点：包含数字+大小写字母，较紧凑，编码长度更短，URL 安全
+/// 常见用途：短链接、邀请码、用户唯一标识编码、YouTube 视频 ID 等
+/// 标准参考：数学进制转换标准（无特定 RFC）
 /// </remarks>
 public static class Base62
 {

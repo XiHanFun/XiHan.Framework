@@ -130,11 +130,8 @@ public class DefaultPolicyEvaluator : IPolicyEvaluator
                 UserId = userId,
                 PolicyName = policyName,
                 Resource = resource,
-                UserRoles = (await _roleStore.GetUserRolesAsync(userId, cancellationToken))
-                    .Select(r => r.Name)
-                    .ToList(),
-                UserPermissions = (await _permissionChecker.GetGrantedPermissionsAsync(userId, cancellationToken))
-                    .ToList()
+                UserRoles = [.. (await _roleStore.GetUserRolesAsync(userId, cancellationToken)).Select(r => r.Name)],
+                UserPermissions = [.. (await _permissionChecker.GetGrantedPermissionsAsync(userId, cancellationToken))]
             };
 
             foreach (var requirement in policy.CustomRequirements)

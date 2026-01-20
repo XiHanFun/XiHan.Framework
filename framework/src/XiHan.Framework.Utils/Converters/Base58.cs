@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -18,11 +18,13 @@ using System.Numerics;
 namespace XiHan.Framework.Utils.Converters;
 
 /// <summary>
-/// Base58 编码和解码
+/// Base58 编码和解码（Bitcoin Base58 标准）
 /// </summary>
 /// <remarks>
+/// 符合 Bitcoin Base58 编码标准
 /// 主要特点：排除易混字符(0/O/I/l)，高可读性，编码长度较短
-/// 常见用途：比特币地址、钱包唯一标识、邀请码
+/// 常见用途：比特币地址、钱包唯一标识、邀请码、区块链应用
+/// 标准参考：https://en.bitcoin.it/wiki/Base58Check_encoding
 /// </remarks>
 public static class Base58
 {

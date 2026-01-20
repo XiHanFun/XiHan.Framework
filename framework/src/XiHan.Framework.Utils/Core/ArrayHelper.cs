@@ -145,7 +145,7 @@ public static class ArrayHelper
             return -1;
         }
 
-        var start = startIndex ?? array!.Length - 1;
+        var start = startIndex ?? (array!.Length - 1);
         if (start < 0 || start >= array!.Length)
         {
             return -1;
@@ -209,7 +209,7 @@ public static class ArrayHelper
             return -1;
         }
 
-        var start = startIndex ?? array!.Length - 1;
+        var start = startIndex ?? (array!.Length - 1);
         if (start < 0 || start >= array!.Length)
         {
             return -1;

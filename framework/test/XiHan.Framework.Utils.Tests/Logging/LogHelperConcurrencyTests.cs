@@ -424,7 +424,7 @@ public class LogHelperConcurrencyTests
                 {
                     for (var j = 0; j < messagesPerThread; j++)
                     {
-                        var logLevel = (LogLevel)(j % 5 + 1); // 循环使用不同的日志级别
+                        var logLevel = (LogLevel)((j % 5) + 1); // 循环使用不同的日志级别
 
                         switch (logLevel)
                         {
