@@ -19,7 +19,7 @@ using XiHan.Framework.Utils.Security.Cryptography;
 namespace XiHan.Framework.Utils.Security;
 
 /// <summary>
-/// OtpHelper
+/// OtpHelper，建议使用 TOTP，安全性更高
 /// </summary>
 /// <remarks>
 /// TOTP 和 HOTP 都是一次性密码（OTP）算法，常用于 2FA / MFA（双因素认证），比如 Google Authenticator、Microsoft Authenticator、Authy 等。
