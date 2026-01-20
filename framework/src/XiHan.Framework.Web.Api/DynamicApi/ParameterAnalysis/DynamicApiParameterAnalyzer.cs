@@ -77,10 +77,9 @@ public class DynamicApiParameterAnalyzer
     /// </summary>
     public static List<string> GetRouteParameterNames(List<ParameterDescriptor> descriptors)
     {
-        return descriptors
+        return [.. descriptors
             .Where(d => d.Source == ParameterSource.Route)
-            .Select(d => d.Name)
-            .ToList();
+            .Select(d => d.Name)];
     }
 
     /// <summary>
