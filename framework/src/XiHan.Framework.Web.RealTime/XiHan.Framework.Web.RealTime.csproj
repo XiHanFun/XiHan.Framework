@@ -15,7 +15,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Authentication\XiHan.Framework.Authentication.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
     </ItemGroup>
 
