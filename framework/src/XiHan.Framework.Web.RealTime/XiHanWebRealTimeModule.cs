@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -13,8 +13,11 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Authentication;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Core;
+using XiHan.Framework.Web.RealTime.Extensions;
+using XiHan.Framework.Web.RealTime.Options;
 
 namespace XiHan.Framework.Web.RealTime;
 
@@ -33,5 +36,20 @@ public class XiHanWebRealTimeModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var configuration = services.GetConfiguration();
+        var signalROptions = new XiHanSignalROptions();
+
+        // 配置 SignalR 选项
+        services.Configure<XiHanSignalROptions>(options =>
+        {
+            // 从配置文件读取
+            configuration.GetSection("XiHan:SignalR").Bind(options);
+        });
+
+        // 添加 SignalR 服务
+        configuration.GetSection("XiHan:SignalR").Bind(signalROptions);
+
+        services.AddXiHanSignalRWithJson();
     }
 }
