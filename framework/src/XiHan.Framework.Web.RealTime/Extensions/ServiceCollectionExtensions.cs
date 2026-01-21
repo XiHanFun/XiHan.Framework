@@ -13,8 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 using XiHan.Framework.Web.RealTime.Options;
 using XiHan.Framework.Web.RealTime.Services;
 
@@ -60,7 +58,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IXiHanUserIdProvider, XiHanUserIdProvider>();
 
         // 注册实时通知服务
-        services.AddSingleton(typeof(IRealtimeNotificationService), typeof(RealtimeNotificationService<>));
+        services.AddScoped(typeof(IRealtimeNotificationService<>), typeof(RealtimeNotificationService<>));
 
         return services;
     }
@@ -105,7 +103,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IXiHanUserIdProvider, XiHanUserIdProvider>();
 
         // 注册实时通知服务
-        services.AddSingleton(typeof(IRealtimeNotificationService), typeof(RealtimeNotificationService<>));
+        services.AddScoped(typeof(IRealtimeNotificationService<>), typeof(RealtimeNotificationService<>));
 
         return signalRBuilder;
     }

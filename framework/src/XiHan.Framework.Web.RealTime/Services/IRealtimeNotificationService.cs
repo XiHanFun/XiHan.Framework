@@ -12,12 +12,15 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Web.RealTime.Hubs;
+
 namespace XiHan.Framework.Web.RealTime.Services;
 
 /// <summary>
 /// 实时通知服务接口
 /// </summary>
-public interface IRealtimeNotificationService
+public interface IRealtimeNotificationService<THub>
+    where THub : XiHanHub
 {
     /// <summary>
     /// 向指定用户发送通知

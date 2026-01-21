@@ -21,7 +21,7 @@ namespace XiHan.Framework.Web.RealTime.Services;
 /// 实时通知服务
 /// </summary>
 /// <typeparam name="THub">Hub 类型</typeparam>
-public class RealtimeNotificationService<THub> : IRealtimeNotificationService
+public class RealtimeNotificationService<THub> : IRealtimeNotificationService<THub>
     where THub : XiHanHub
 {
     private readonly IHubContext<THub> _hubContext;
