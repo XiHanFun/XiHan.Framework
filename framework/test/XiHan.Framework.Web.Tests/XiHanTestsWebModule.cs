@@ -18,7 +18,6 @@ using XiHan.Framework.Authentication;
 using XiHan.Framework.Authorization;
 using XiHan.Framework.Bot;
 using XiHan.Framework.Caching;
-using XiHan.Framework.CodeGeneration;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data;
@@ -60,7 +59,6 @@ namespace XiHan.Framework.Web.Tests;
     typeof(XiHanTasksModule),
     typeof(XiHanBotModule),
     typeof(XiHanCachingModule),
-    typeof(XiHanCodeGenerationModule),
     typeof(XiHanDataModule),
     typeof(XiHanDomainModule),
     typeof(XiHanDistributedIdsModule),
