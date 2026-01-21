@@ -4,19 +4,19 @@
 
 # XiHan.Framework
 
-XiHan framework repository. Fast, lightweight, efficient, and dedicated development framework. Built on .NET 9.
+XiHan framework repository. Fast, lightweight, efficient, and dedicated development framework. Built on .NET 10.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
 ## Project Overview
 
-**XiHan.Framework** is a modern, modular enterprise-level development framework based on .NET 9, specifically designed for front-end and back-end separated ASP.NET Core applications. The framework prioritizes .NET 9 native features, reduces third-party dependencies, and ensures modularity, extensibility, and ease of use.
+**XiHan.Framework** is a modern, modular enterprise-level development framework based on .NET 10, specifically designed for front-end and back-end separated ASP.NET Core applications. The framework prioritizes .NET 10 native features, reduces third-party dependencies, and ensures modularity, extensibility, and ease of use.
 
 ### 🚀 Core Features
 
 - **📦 Modular Architecture** - Highly extensible modular design with on-demand selection
 - **⚡ Quick Start** - Download and run instantly, quickly experience complete Web API projects
-- **🎯 .NET 9 First** - Fully leverage .NET 9 native features (DI, logging, serialization, AOT)
+- **🎯 .NET 10 First** - Fully leverage .NET 10 native features (DI, logging, serialization, AOT)
 - **🏗️ DDD Support** - Complete Domain-Driven Design architecture support
 - **🔒 Enterprise Security** - Comprehensive authentication, authorization, and security mechanisms
 - **🌐 Frontend-Backend Separation** - Designed for modern web applications
@@ -89,7 +89,7 @@ dotnet add package XiHan.Framework.MultiTenancy      # Multi-tenancy
 
 ### Core Technologies
 
-- **.NET 9** - Base runtime with AOT compilation support
+- **.NET 10** - Base runtime with AOT compilation support
 - **ASP.NET Core** - Web framework
 - **System.Text.Json** - High-performance serialization
 - **Entity Framework Core** - ORM framework
@@ -222,7 +222,7 @@ app.UseXiHanAuthentication();
 - Users select modules on demand
 - Support independent development and testing
 
-### ⚡ .NET 9 First
+### ⚡ .NET 10 First
 
 - Prioritize built-in features (DI, logging, serialization)
 - Only use third-party libraries when necessary
@@ -237,7 +237,7 @@ app.UseXiHanAuthentication();
 ## Version Information
 
 - **Current Version**: 0.11.7-preview.3
-- **Target Framework**: .NET 9.0
+- **Target Framework**: .NET 10.0
 - **License**: MIT
 - **Development Status**: Actively Developing
 
