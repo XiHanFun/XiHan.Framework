@@ -96,7 +96,7 @@ dotnet test --filter "LoggingPerformanceTests" --logger "console;verbosity=detai
 
 ## 测试环境要求
 
-- **.NET 9.0** 或更高版本
+- **.NET 10.0** 或更高版本
 - **xUnit** 测试框架
 - **足够磁盘空间** (测试会创建大量临时日志文件)
 - **多核 CPU** (并发测试效果更佳)
