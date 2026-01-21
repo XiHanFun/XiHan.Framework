@@ -48,6 +48,7 @@
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
     <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
     <Project Path="src/XiHan.Framework.Templating/XiHan.Framework.Templating.csproj" />
+    <Project Path="src/XiHan.Framework.Traffic/XiHan.Framework.Traffic.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
   </Folder>
