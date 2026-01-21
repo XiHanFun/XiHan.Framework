@@ -4,19 +4,19 @@
 
 # XiHan.Framework
 
-曦寒框架存储库。快速、轻量、高效、用心的开发框架，基于 .NET 9 构建。
+曦寒框架存储库。快速、轻量、高效、用心的开发框架，基于 .NET 10 构建。
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
 ## 项目概览
 
-**XiHan.Framework** 是一个基于 .NET 9 的现代化、模块化的企业级开发框架，专为前后端分离的 ASP.NET Core 应用设计。框架优先使用 .NET 9 原生功能，减少第三方依赖，确保模块化、可扩展和易用性。
+**XiHan.Framework** 是一个基于 .NET 10 的现代化、模块化的企业级开发框架，专为前后端分离的 ASP.NET Core 应用设计。框架优先使用 .NET 10 原生功能，减少第三方依赖，确保模块化、可扩展和易用性。
 
 ### 🚀 核心特性
 
 - **📦 模块化架构** - 高度可扩展的模块化设计，按需选择
 - **⚡ 快速启动** - 下载即可运行，快速体验完整的 Web API 项目
-- **🎯 .NET 9 优先** - 充分利用 .NET 9 原生功能（DI、日志、序列化、AOT）
+- **🎯 .NET 10 优先** - 充分利用 .NET 10 原生功能（DI、日志、序列化、AOT）
 - **🏗️ DDD 支持** - 完整的领域驱动设计架构支持
 - **🔒 企业级安全** - 完善的认证授权和安全机制
 - **🌐 前后端分离** - 专为现代 Web 应用设计
@@ -89,7 +89,7 @@ dotnet add package XiHan.Framework.MultiTenancy      # 多租户
 
 ### 核心技术
 
-- **.NET 9** - 基础运行时，支持 AOT 编译
+- **.NET 10** - 基础运行时，支持 AOT 编译
 - **ASP.NET Core** - Web 框架
 - **System.Text.Json** - 高性能序列化
 - **Entity Framework Core** - ORM 框架
@@ -222,7 +222,7 @@ app.UseXiHanAuthentication();
 - 用户按需选择模块
 - 支持独立开发和测试
 
-### ⚡ .NET 9 优先
+### ⚡ .NET 10 优先
 
 - 优先使用内置功能（DI、日志、序列化）
 - 仅在必要时兼容第三方库
@@ -237,7 +237,7 @@ app.UseXiHanAuthentication();
 ## 版本信息
 
 - **当前版本**: 0.11.7-preview.3
-- **目标框架**: .NET 9.0
+- **目标框架**: .NET 10.0
 - **许可证**: MIT
 - **开发状态**: 活跃开发中
 
