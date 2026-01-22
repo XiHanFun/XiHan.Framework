@@ -59,7 +59,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     public virtual async Task<TEntityDto?> GetByIdAsync(TKey id)
     {
         var entity = await Repository.GetByIdAsync(id);
-        return entity == null ? null : await MapToEntityDtoAsync(entity);
+        return entity == null ? null : await MapEntityToDtoAsync(entity);
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    public virtual async Task<PageResponse<TEntityDto>> GetPageResponseAsync(PageQuery input)
+    public virtual async Task<PageResponse<TEntityDto>> GetPageAsync(PageQuery input)
     {
         // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
         var additionalPredicate = BuildAdditionalFilterPredicate(input);
@@ -78,7 +78,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
             : await Repository.GetPagedAsync(input);
 
         // 映射实体到 DTO
-        var dtos = await MapToEntityDtosAsync(entityPageResponse.Items);
+        var dtos = await MapEntitiesToDtosAsync(entityPageResponse.Items);
 
         return new PageResponse<TEntityDto>(dtos, entityPageResponse.PageData);
     }
@@ -90,9 +90,9 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <returns>创建后的实体DTO</returns>
     public virtual async Task<TEntityDto> CreateAsync(TCreateDto input)
     {
-        var entity = await MapToEntityAsync(input);
+        var entity = await MapDtoToEntityAsync(input);
         entity = await Repository.AddAsync(entity);
-        return await MapToEntityDtoAsync(entity);
+        return await MapEntityToDtoAsync(entity);
     }
 
     /// <summary>
@@ -105,9 +105,9 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     {
         var entity = await Repository.GetByIdAsync(id) ??
             throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-        await MapToEntityAsync(input, entity);
+        await MapDtoToEntityAsync(input, entity);
         entity = await Repository.UpdateAsync(entity);
-        return await MapToEntityDtoAsync(entity);
+        return await MapEntityToDtoAsync(entity);
     }
 
     /// <summary>
@@ -138,8 +138,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </remarks>
     protected virtual Expression<Func<TEntity, bool>>? BuildAdditionalFilterPredicate(PageQuery input)
     {
-        // 子类可以重写此方法以添加额外的过滤逻辑
-        // 例如：权限过滤、租户过滤等
+        // 子类可以重写此方法以添加额外的过滤逻辑，例如：权限过滤、租户过滤等
         return null;
     }
 
@@ -148,7 +147,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="entity">实体</param>
     /// <returns>DTO</returns>
-    protected virtual Task<TEntityDto> MapToEntityDtoAsync(TEntity entity)
+    protected virtual Task<TEntityDto> MapEntityToDtoAsync(TEntity entity)
     {
         return Task.FromResult(entity.Adapt<TEntityDto>());
     }
@@ -158,7 +157,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="entities">实体列表</param>
     /// <returns>DTO列表</returns>
-    protected virtual async Task<IReadOnlyList<TEntityDto>> MapToEntityDtosAsync(IEnumerable<TEntity> entities)
+    protected virtual async Task<IReadOnlyList<TEntityDto>> MapEntitiesToDtosAsync(IEnumerable<TEntity> entities)
     {
         return await Task.FromResult(entities.Adapt<IReadOnlyList<TEntityDto>>());
     }
@@ -168,7 +167,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="dto">DTO</param>
     /// <returns>实体</returns>
-    protected virtual Task<TEntity> MapToEntityAsync(TEntityDto dto)
+    protected virtual Task<TEntity> MapDtoToEntityAsync(TEntityDto dto)
     {
         return Task.FromResult(dto.Adapt<TEntity>());
     }
@@ -178,7 +177,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="dto">DTO</param>
     /// <param name="entity">实体</param>
-    protected virtual Task MapToEntityAsync(TEntityDto dto, TEntity entity)
+    protected virtual Task MapDtoToEntityAsync(TEntityDto dto, TEntity entity)
     {
         entity = dto.Adapt<TEntity>();
         return Task.CompletedTask;
@@ -189,7 +188,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="createDto">创建DTO</param>
     /// <returns>实体</returns>
-    protected virtual Task<TEntity> MapToEntityAsync(TCreateDto createDto)
+    protected virtual Task<TEntity> MapDtoToEntityAsync(TCreateDto createDto)
     {
         return Task.FromResult(createDto.Adapt<TEntity>());
     }
@@ -199,7 +198,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="updateDto">更新DTO</param>
     /// <param name="entity">实体</param>
-    protected virtual Task MapToEntityAsync(TUpdateDto updateDto, TEntity entity)
+    protected virtual Task MapDtoToEntityAsync(TUpdateDto updateDto, TEntity entity)
     {
         entity = updateDto.Adapt<TEntity>();
         return Task.CompletedTask;

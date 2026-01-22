@@ -29,7 +29,7 @@ public class ConnectionManager : IConnectionManager
     /// <summary>
     /// 连接锁对象
     /// </summary>
-    private readonly object _connectionLock = new();
+    private readonly Lock _connectionLock = new();
 
     /// <summary>
     /// 添加连接
