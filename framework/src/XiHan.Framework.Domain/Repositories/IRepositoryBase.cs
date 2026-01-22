@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -45,10 +45,10 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <summary>
     /// 批量添加实体
     /// </summary>
-    /// <param name="entities">待添加的实体集合</param>
+    /// <param name="entities">待添加的实体集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>已持久化的实体集合</returns>
-    Task<List<TEntity>> AddRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default);
+    /// <returns>已持久化的只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 更新实体
@@ -70,10 +70,10 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <summary>
     /// 批量更新实体
     /// </summary>
-    /// <param name="entities">待更新的实体集合</param>
+    /// <param name="entities">待更新的实体集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>更新后的实体集合</returns>
-    Task<List<TEntity>> UpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default);
+    /// <returns>更新后的只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 新增或更新实体
@@ -86,10 +86,10 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <summary>
     /// 批量新增或更新实体
     /// </summary>
-    /// <param name="entities">待新增或更新的实体集合</param>
+    /// <param name="entities">待新增或更新的实体集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步新增或更新操作的任务</returns>
-    Task<bool> AddOrUpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除实体
@@ -110,18 +110,18 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <summary>
     /// 批量删除实体
     /// </summary>
-    /// <param name="entities">待删除的实体集合</param>
+    /// <param name="entities">待删除的实体集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task<bool> DeleteRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除实体（根据主键）
     /// </summary>
-    /// <param name="ids">需要删除的实体主键集合</param>
+    /// <param name="ids">需要删除的实体主键集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
-    Task<bool> DeleteRangeAsync(List<TKey> ids, CancellationToken cancellationToken = default);
+    Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件删除实体

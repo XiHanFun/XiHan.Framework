@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -39,10 +39,10 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <summary>
     /// 根据主键集合批量获取实体
     /// </summary>
-    /// <param name="ids">实体主键集合</param>
+    /// <param name="ids">实体主键集合（只需遍历）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>与主键集合匹配的实体集合</returns>
-    Task<List<TEntity>> GetByIdsAsync(List<TKey> ids, CancellationToken cancellationToken = default);
+    /// <returns>与主键集合匹配的只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取单个实体
@@ -64,16 +64,16 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// 获取所有实体
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>符合条件的实体集合</returns>
-    Task<List<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
     /// </summary>
     /// <param name="predicate">用于过滤实体的表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>符合条件的实体集合</returns>
-    Task<List<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据条件获取实体集合
@@ -81,16 +81,16 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     /// <param name="predicate">用于过滤实体的表达式</param>
     /// <param name="orderBy">用于排序实体的表达式</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>符合条件的实体集合</returns>
-    Task<List<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据规约获取实体集合
     /// </summary>
     /// <param name="specification">定义查询条件的规约</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>符合条件的实体集合</returns>
-    Task<List<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取总数
