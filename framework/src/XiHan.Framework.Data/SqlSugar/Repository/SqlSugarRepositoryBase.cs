@@ -81,21 +81,23 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// </summary>
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>已添加的实体集合</returns>
-    public async Task<List<TEntity>> AddRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        if (entities.Count == 0)
+        // 内部实现使用 List<T> 以提高性能
+        var entityList = entities.ToList();
+        if (entityList.Count == 0)
         {
-            return [];
+            return Array.Empty<TEntity>();
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Insertable(entities)
+        await _dbClient.Insertable(entityList)
             .ExecuteCommandAsync(cancellationToken);
-        return entities;
+        return entityList;
     }
 
     /// <summary>
@@ -141,21 +143,23 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// </summary>
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>已更新的实体集合</returns>
-    public async Task<List<TEntity>> UpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        if (entities.Count == 0)
+        // 内部实现使用 List<T> 以提高性能
+        var entityList = entities.ToList();
+        if (entityList.Count == 0)
         {
-            return [];
+            return Array.Empty<TEntity>();
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Updateable(entities)
+        await _dbClient.Updateable(entityList)
             .ExecuteCommandAsync(cancellationToken);
-        return entities;
+        return entityList;
     }
 
     /// <summary>
@@ -186,10 +190,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> AddOrUpdateRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
+        // 内部实现使用数组以提高性能
         var entityArray = entities.ToArray();
         if (entityArray.Length == 0)
         {
@@ -263,10 +268,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> DeleteRangeAsync(List<TEntity> entities, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
+        // 内部实现使用数组以提高性能
         var entityArray = entities.ToArray();
         if (entityArray.Length == 0)
         {
@@ -296,10 +302,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功</returns>
-    public async Task<bool> DeleteRangeAsync(List<TKey> ids, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
+        // 内部实现使用数组以提高性能
         var idArray = ids.ToArray();
         if (idArray.Length == 0)
         {
