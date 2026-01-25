@@ -14,23 +14,25 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace XiHan.Framework.Timing.Extensions;
+namespace XiHan.Framework.DistributedIds.Extensions.DependencyInjection;
 
 /// <summary>
 /// 服务集合扩展方法
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class XiHanDistributedIdsServiceCollectionExtensions
 {
     /// <summary>
-    /// 添加 XiHan 时间服务
+    /// 添加 XiHan 日志服务
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddXiHanTiming(this IServiceCollection services)
+    public static IServiceCollection AddXiHanDistributedIds(this IServiceCollection services)
     {
-        services.AddSingleton<IClock, Clock>();
-        services.AddSingleton<ITimezoneProvider, TZConvertTimezoneProvider>();
-        services.AddTransient<ICurrentTimezoneProvider, CurrentTimezoneProvider>();
+        var guidGenerator = IdGeneratorFactory.CreateSequentialGuidGenerator_Default();
+        services.AddSingleton<IDistributedIdGenerator<Guid>>(guidGenerator);
+
+        var longGenerator = IdGeneratorFactory.CreateSnowflakeIdGenerator_MediumWorkload();
+        services.AddSingleton<IDistributedIdGenerator<long>>(longGenerator);
 
         return services;
     }

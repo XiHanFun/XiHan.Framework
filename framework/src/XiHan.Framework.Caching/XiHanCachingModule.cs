@@ -39,7 +39,7 @@ public class XiHanCachingModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var configuration = services.GetConfiguration();
+        var config = services.GetConfiguration();
 
         services.AddMemoryCache();
         services.AddDistributedMemoryCache();
@@ -55,7 +55,7 @@ public class XiHanCachingModule : XiHanModule
             cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
         });
 
-        var redisEnabled = configuration.GetValue<bool>("XiHan:Caching:Redis:IsEnabled");
+        var redisEnabled = config.GetValue<bool>("XiHan:Caching:Redis:IsEnabled");
         if (redisEnabled)
         {
             return;
@@ -63,7 +63,7 @@ public class XiHanCachingModule : XiHanModule
 
         services.AddStackExchangeRedisCache(options =>
         {
-            var redisConfiguration = configuration.GetValue<string>("XiHan:Caching:Redis:Configuration");
+            var redisConfiguration = config.GetValue<string>("XiHan:Caching:Redis:Configuration");
             if (!redisConfiguration.IsNullOrEmpty())
             {
                 options.Configuration = redisConfiguration;

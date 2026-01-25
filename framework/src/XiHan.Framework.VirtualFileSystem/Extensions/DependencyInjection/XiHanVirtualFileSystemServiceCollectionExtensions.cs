@@ -13,26 +13,26 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.VirtualFileSystem.Services;
 
-namespace XiHan.Framework.DistributedIds.Extensions;
+namespace XiHan.Framework.VirtualFileSystem.Extensions.DependencyInjection;
 
 /// <summary>
 /// 服务集合扩展方法
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class XiHanVirtualFileSystemServiceCollectionExtensions
 {
     /// <summary>
-    /// 添加 XiHan 日志服务
+    /// 添加 XiHan 虚拟文件服务
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddXiHanDistributedIds(this IServiceCollection services)
+    public static IServiceCollection AddXiHanVirtualFileSystem(this IServiceCollection services)
     {
-        var guidGenerator = IdGeneratorFactory.CreateSequentialGuidGenerator_Default();
-        services.AddSingleton<IDistributedIdGenerator<Guid>>(guidGenerator);
-
-        var longGenerator = IdGeneratorFactory.CreateSnowflakeIdGenerator_MediumWorkload();
-        services.AddSingleton<IDistributedIdGenerator<long>>(longGenerator);
+        // 注册核心服务
+        services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
+        // 注册附加服务
+        services.AddSingleton<IFileVersioningService, FileVersioningService>();
 
         return services;
     }

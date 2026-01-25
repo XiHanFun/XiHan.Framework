@@ -47,6 +47,7 @@ public class XiHanWebCoreModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         //Configure<XiHanAuditingOptions>(options =>
         //{

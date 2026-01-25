@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.Otp;
 using XiHan.Framework.Authentication.Password;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Authentication;
@@ -31,8 +32,9 @@ public class XiHanAuthenticationModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // 以下接口为默认实现，具体需要根据实际实现进行替换
         var services = context.Services;
+        var config = services.GetConfiguration();
+        // 以下接口为默认实现，具体需要根据实际实现进行替换
 
         // 配置密码哈希服务
         services.Configure<PasswordHasherOptions>(options =>

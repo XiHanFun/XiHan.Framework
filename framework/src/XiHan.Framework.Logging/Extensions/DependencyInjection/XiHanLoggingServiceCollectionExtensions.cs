@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ServiceCollectionExtensions
+// FileName:XiHanLoggingServiceCollectionExtensions
 // Guid:d0e5f6a7-9b8c-4d0e-b7f4-5a6b9c8d0e2f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -17,16 +17,17 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Events;
 using XiHan.Framework.Logging.Options;
 using XiHan.Framework.Logging.Providers;
 using XiHan.Framework.Logging.Services;
 
-namespace XiHan.Framework.Logging.Extensions;
+namespace XiHan.Framework.Logging.Extensions.DependencyInjection;
 
 /// <summary>
 /// 服务集合扩展方法
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class XiHanLoggingServiceCollectionExtensions
 {
     /// <summary>
     /// 添加 XiHan 日志服务
@@ -63,6 +64,8 @@ public static class ServiceCollectionExtensions
         // 注册日志上下文服务
         services.TryAddScoped<ILogContext, LogContext>();
 
+        services.AddXiHanSerilog();
+
         return services;
     }
 
@@ -98,36 +101,47 @@ public static class ServiceCollectionExtensions
     /// <param name="services"></param>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public static IServiceCollection AddXiHanSerilog(this IServiceCollection services, Action<LoggerConfiguration>? configure = null)
+    private static IServiceCollection AddXiHanSerilog(this IServiceCollection services, Action<LoggerConfiguration>? configure = null)
     {
+        // 配置 Serilog
         services.AddSerilog((serviceProvider, configuration) =>
         {
-            var options = serviceProvider.GetService<IOptions<XiHanLoggingOptions>>()?.Value
-                         ?? new XiHanLoggingOptions();
+            var loggingOptions = serviceProvider.GetRequiredService<IOptions<XiHanLoggingOptions>>().Value;
 
             configuration
-                .MinimumLevel.Information()
+                .MinimumLevel.Is(ConvertToSerilogLevel(loggingOptions.MinimumLevel))
                 .Enrich.FromLogContext()
-                .Enrich.WithProperty("Application", "XiHanFramework");
-
-            // 应用自定义配置
-            configure?.Invoke(configuration);
-
-            // 应用选项配置
-            if (options.IsEnabled)
-            {
-                configuration
-                    .WriteTo.Console(outputTemplate: options.ConsoleOutputTemplate)
-                    .WriteTo.Async(a => a.File(
-                        path: options.FileOutputPath,
-                        outputTemplate: options.FileOutputTemplate,
-                        rollingInterval: options.RollingInterval,
-                        retainedFileCountLimit: options.RetainedFileCountLimit,
-                        fileSizeLimitBytes: options.FileSizeLimitBytes,
-                        rollOnFileSizeLimit: options.RollOnFileSizeLimit));
-            }
+                .Enrich.WithProperty("Application", "XiHanFramework")
+                .WriteTo.Console(outputTemplate: loggingOptions.ConsoleOutputTemplate)
+                .WriteTo.Async(a => a.File(
+                    loggingOptions.FileOutputPath,
+                    outputTemplate: loggingOptions.FileOutputTemplate,
+                    rollingInterval: loggingOptions.RollingInterval,
+                    retainedFileCountLimit: loggingOptions.RetainedFileCountLimit,
+                    fileSizeLimitBytes: loggingOptions.FileSizeLimitBytes,
+                    rollOnFileSizeLimit: loggingOptions.RollOnFileSizeLimit));
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// 将 Microsoft.Extensions.Logging.LogLevel 转换为 Serilog.Events.LogEventLevel
+    /// </summary>
+    /// <param name="logLevel"></param>
+    /// <returns></returns>
+    private static LogEventLevel ConvertToSerilogLevel(LogLevel logLevel)
+    {
+        return logLevel switch
+        {
+            LogLevel.Trace => LogEventLevel.Verbose,
+            LogLevel.Debug => LogEventLevel.Debug,
+            LogLevel.Information => LogEventLevel.Information,
+            LogLevel.Warning => LogEventLevel.Warning,
+            LogLevel.Error => LogEventLevel.Error,
+            LogLevel.Critical => LogEventLevel.Fatal,
+            LogLevel.None => LogEventLevel.Fatal,
+            _ => LogEventLevel.Information
+        };
     }
 }

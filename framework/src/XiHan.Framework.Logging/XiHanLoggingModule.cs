@@ -14,12 +14,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Serilog;
-using Serilog.Events;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Logging.Extensions;
+using XiHan.Framework.Logging.Extensions.DependencyInjection;
 using XiHan.Framework.Logging.Options;
 
 namespace XiHan.Framework.Logging;
@@ -53,47 +50,9 @@ public class XiHanLoggingModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         // 添加 XiHan 日志服务
         services.AddXiHanLogging();
-
-        // 配置 Serilog
-        services.AddSerilog((serviceProvider, configuration) =>
-        {
-            var loggingOptions = serviceProvider.GetRequiredService<IOptions<XiHanLoggingOptions>>().Value;
-
-            configuration
-                .MinimumLevel.Is(ConvertToSerilogLevel(loggingOptions.MinimumLevel))
-                .Enrich.FromLogContext()
-                .Enrich.WithProperty("Application", "XiHanFramework")
-                .WriteTo.Console(outputTemplate: loggingOptions.ConsoleOutputTemplate)
-                .WriteTo.Async(a => a.File(
-                    loggingOptions.FileOutputPath,
-                    outputTemplate: loggingOptions.FileOutputTemplate,
-                    rollingInterval: loggingOptions.RollingInterval,
-                    retainedFileCountLimit: loggingOptions.RetainedFileCountLimit,
-                    fileSizeLimitBytes: loggingOptions.FileSizeLimitBytes,
-                    rollOnFileSizeLimit: loggingOptions.RollOnFileSizeLimit));
-        });
-    }
-
-    /// <summary>
-    /// 将 Microsoft.Extensions.Logging.LogLevel 转换为 Serilog.Events.LogEventLevel
-    /// </summary>
-    /// <param name="logLevel"></param>
-    /// <returns></returns>
-    private static LogEventLevel ConvertToSerilogLevel(LogLevel logLevel)
-    {
-        return logLevel switch
-        {
-            LogLevel.Trace => LogEventLevel.Verbose,
-            LogLevel.Debug => LogEventLevel.Debug,
-            LogLevel.Information => LogEventLevel.Information,
-            LogLevel.Warning => LogEventLevel.Warning,
-            LogLevel.Error => LogEventLevel.Error,
-            LogLevel.Critical => LogEventLevel.Fatal,
-            LogLevel.None => LogEventLevel.Fatal,
-            _ => LogEventLevel.Information
-        };
     }
 }

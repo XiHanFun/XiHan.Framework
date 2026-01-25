@@ -17,8 +17,13 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// OpenAI服务配置
 /// </summary>
-public class OpenAiOptions
+public class OpenAIOptions
 {
+    /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:AI:OpenAI";
+
     /// <summary>
     /// 服务唯一标识
     /// </summary>

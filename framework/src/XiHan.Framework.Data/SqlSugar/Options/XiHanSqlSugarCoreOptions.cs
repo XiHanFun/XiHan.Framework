@@ -22,6 +22,11 @@ namespace XiHan.Framework.Data.SqlSugar.Options;
 public class XiHanSqlSugarCoreOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Data:SqlSugarCore";
+
+    /// <summary>
     /// 连接配置集合
     /// </summary>
     public List<SqlSugarConnectionConfigOptions> ConnectionConfigs { get; set; } = [];

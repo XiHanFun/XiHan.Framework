@@ -46,6 +46,8 @@ public class XiHanSettingsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var config = services.GetConfiguration();
         Configure<XiHanSettingOptions>(options =>
         {
             options.ValueProviders.Add<DefaultValueSettingValueProvider>();
