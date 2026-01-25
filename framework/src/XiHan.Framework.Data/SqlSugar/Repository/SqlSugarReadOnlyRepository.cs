@@ -76,7 +76,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         var idList = ids.ToArray();
         if (idList.Length == 0)
         {
-            return Array.Empty<TEntity>();
+            return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
