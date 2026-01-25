@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Script;
@@ -27,5 +28,7 @@ public class XiHanScriptModule : XiHanModule
     /// <param name="context">服务配置上下文</param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var config = services.GetConfiguration();
     }
 }

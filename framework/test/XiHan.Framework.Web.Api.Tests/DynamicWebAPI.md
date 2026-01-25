@@ -199,6 +199,8 @@ public class MyAppWebModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
+        var services = context.Services;
 
         // 配置动态 API
         services.AddDynamicApi(options =>

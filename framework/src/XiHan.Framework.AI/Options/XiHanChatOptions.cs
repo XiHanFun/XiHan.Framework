@@ -20,6 +20,11 @@ namespace XiHan.Framework.AI.Options;
 public class XiHanChatOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:AI:Chat";
+
+    /// <summary>
     /// 聊天模型名称
     /// </summary>
     public string? ModelName { get; set; }

@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Data.SqlSugar.Extensions;
+using XiHan.Framework.Data.Extensions.DependencyInjection;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain;
 using XiHan.Framework.Uow;
@@ -42,6 +42,6 @@ public class XiHanDataModule : XiHanModule
         var config = services.GetConfiguration();
 
         // 添加SqlSugar数据访问服务
-        services.AddXiHanDataSqlSugar();
+        services.AddXiHanDataSqlSugar(config);
     }
 }

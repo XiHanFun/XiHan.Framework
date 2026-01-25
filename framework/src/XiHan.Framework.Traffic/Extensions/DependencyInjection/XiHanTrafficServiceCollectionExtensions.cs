@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TrafficServiceCollectionExtensions
+// FileName:XiHanTrafficServiceCollectionExtensions
 // Guid:7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,12 +18,12 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Implementations;
 using XiHan.Framework.Traffic.GrayRouting.Matchers;
 
-namespace XiHan.Framework.Traffic.Extensions;
+namespace XiHan.Framework.Traffic.Extensions.DependencyInjection;
 
 /// <summary>
 /// 流量治理服务集合扩展
 /// </summary>
-public static class TrafficServiceCollectionExtensions
+public static class XiHanTrafficServiceCollectionExtensions
 {
     /// <summary>
     /// 添加灰度路由服务

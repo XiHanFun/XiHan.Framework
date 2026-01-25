@@ -18,6 +18,7 @@ using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Api;
 
@@ -37,6 +38,7 @@ public class XiHanWebApiModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         // 添加动态 API
         services.AddDynamicApi(options =>

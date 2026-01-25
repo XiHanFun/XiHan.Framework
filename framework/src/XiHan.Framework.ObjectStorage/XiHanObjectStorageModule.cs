@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.ObjectStorage;
@@ -28,6 +29,7 @@ public class XiHanObjectStorageModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         // 对象存储提供程序将由使用方根据需求注册
         // 例如：services.AddSingleton<IFileStorageProvider, LocalFileStorageProvider>();

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ServiceCollectionExtensions
+// FileName:XiHanTasksServiceCollectionExtensions
 // Guid:5ee4588e-3755-4527-88cf-40471dc706bb
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -24,19 +24,17 @@ using XiHan.Framework.Tasks.ScheduledJobs.Pipeline;
 using XiHan.Framework.Tasks.ScheduledJobs.Scheduler;
 using XiHan.Framework.Tasks.ScheduledJobs.Store;
 
-namespace XiHan.Framework.Tasks.ScheduledJobs.Extensions;
+namespace XiHan.Framework.Tasks.ScheduledJobs.Extensions.DependencyInjection;
 
 /// <summary>
 /// 服务集合扩展方法
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class XiHanTasksServiceCollectionExtensions
 {
     /// <summary>
     /// 添加曦寒任务调度服务
     /// </summary>
-    public static XiHanJobBuilder AddXiHanJobs(
-        this IServiceCollection services,
-        Action<XiHanJobOptions>? configureOptions = null)
+    public static XiHanJobBuilder AddXiHanTasks(this IServiceCollection services, Action<XiHanJobOptions>? configureOptions = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 

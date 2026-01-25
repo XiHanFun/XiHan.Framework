@@ -20,12 +20,12 @@ using XiHan.Framework.AI.Options;
 using XiHan.Framework.AI.Prompts;
 using XiHan.Framework.AI.Skills;
 
-namespace XiHan.Framework.AI.Extensions;
+namespace XiHan.Framework.AI.Extensions.DependencyInjection;
 
 /// <summary>
 /// 服务集合扩展
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class XiHanAIServiceCollectionExtensions
 {
     /// <summary>
     /// 添加曦寒AI服务
@@ -36,10 +36,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddXiHanAI(this IServiceCollection services, IConfiguration configuration)
     {
         // 注册配置
-        services.Configure<AiOptions>(configuration.GetSection("XiHan:AI"));
-        services.Configure<OpenAiOptions>(configuration.GetSection("XiHan:AI:OpenAI"));
-        services.Configure<OllamaOptions>(configuration.GetSection("XiHan:AI:Ollama"));
-        services.Configure<KernelMemoryOptions>(configuration.GetSection("XiHan:AI:Memory"));
+        services.Configure<AIOptions>(configuration.GetSection(AIOptions.SectionName));
+        services.Configure<OpenAIOptions>(configuration.GetSection(OpenAIOptions.SectionName));
+        services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
+        services.Configure<KernelMemoryOptions>(configuration.GetSection(KernelMemoryOptions.SectionName));
 
         // 注册各种服务
         services.AddSingleton<IXiHanAIAgentService, XiHanAIAgentManager>();
