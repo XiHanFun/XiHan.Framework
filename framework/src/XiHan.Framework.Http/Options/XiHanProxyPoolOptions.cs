@@ -21,7 +21,7 @@ namespace XiHan.Framework.Http.Options;
 /// <summary>
 /// 代理池配置选项
 /// </summary>
-public class ProxyPoolOptions
+public class XiHanProxyPoolOptions
 {
     /// <summary>
     /// 配置节名称
