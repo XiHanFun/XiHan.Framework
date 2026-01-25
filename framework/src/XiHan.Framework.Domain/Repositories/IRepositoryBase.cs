@@ -130,4 +130,21 @@ public interface IRepositoryBase<TEntity, TKey> : IReadOnlyRepositoryBase<TEntit
     /// <param name="cancellationToken">用于取消操作的标记</param>
     /// <returns>表示异步删除操作的任务</returns>
     Task<bool> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 使用事务执行操作
+    /// </summary>
+    /// <param name="action">需要在事务中执行的操作</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>表示异步事务操作的任务</returns>
+    Task<bool> UseTranAsync(Func<Task> action, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 使用事务执行操作并返回结果
+    /// </summary>
+    /// <typeparam name="TResult">返回结果类型</typeparam>
+    /// <param name="func">需要在事务中执行的操作</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>事务操作的结果</returns>
+    Task<TResult> UseTranAsync<TResult>(Func<Task<TResult>> func, CancellationToken cancellationToken = default);
 }
