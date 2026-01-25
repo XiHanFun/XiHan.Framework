@@ -41,7 +41,7 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    Task<PageResponse<TEntityDto>> GetPageResponseAsync(PageQuery input);
+    Task<PageResponse<TEntityDto>> GetPageAsync(PageQuery input);
 
     /// <summary>
     /// 创建实体

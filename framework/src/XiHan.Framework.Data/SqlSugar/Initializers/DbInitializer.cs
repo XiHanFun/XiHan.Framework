@@ -19,6 +19,8 @@ using SqlSugar;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
+using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Data.SqlSugar.Initializers;
 
@@ -56,14 +58,10 @@ public class DbInitializer : IDbInitializer, IScopedDependency
         {
             _logger.LogInformation("开始数据库初始化");
 
-            // 检查是否启用数据库初始化
+            // 1. 创建数据库
             if (_options.EnableDbInitialization)
             {
-                // 1. 创建数据库
                 await CreateDatabaseAsync();
-
-                // 2. 创建表结构
-                await CreateTablesAsync();
             }
             else
             {
@@ -71,10 +69,20 @@ public class DbInitializer : IDbInitializer, IScopedDependency
                 return;
             }
 
-            // 检查是否启用种子数据
+            // 2. 创建表结构
+            if (_options.EnableTableInitialization)
+            {
+                await CreateTablesAsync();
+            }
+            else
+            {
+                _logger.LogInformation("表结构初始化已禁用（EnableTableInitialization = false），跳过初始化");
+                return;
+            }
+
+            // 3. 执行种子数据
             if (_options.EnableDataSeeding)
             {
-                // 3. 执行种子数据
                 await SeedDataAsync();
             }
             else
@@ -190,12 +198,13 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     /// 获取所有实体类型
     /// </summary>
     /// <returns></returns>
-    private List<Type> GetEntityTypes()
+    private static List<Type> GetEntityTypes()
     {
+        var dbEntities = ReflectionHelper.GetContainsAttributeSubClasses<IEntityBase, SugarTable>().ToList();
         // 从配置中获取实体类型
-        if (_options.EntityTypes != null && _options.EntityTypes.Count > 0)
+        if (dbEntities != null && dbEntities.Count > 0)
         {
-            return [.. _options.EntityTypes];
+            return dbEntities;
         }
 
         // 如果没有配置，返回空列表
