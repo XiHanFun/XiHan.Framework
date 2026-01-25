@@ -26,6 +26,8 @@
     <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
     <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />
     <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectStorage/XiHan.Framework.ObjectStorage.csproj" />
+    <Project Path="src/XiHan.Framework.Observability/XiHan.Framework.Observability.csproj" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
