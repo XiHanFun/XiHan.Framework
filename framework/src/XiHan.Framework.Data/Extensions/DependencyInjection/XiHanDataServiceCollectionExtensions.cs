@@ -12,34 +12,32 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Repositories;
 
-namespace XiHan.Framework.Data.SqlSugar.Extensions;
+namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 
 /// <summary>
 /// SqlSugar 服务集合扩展
 /// </summary>
-public static class SqlSugarServiceCollectionExtensions
+public static class XiHanDataServiceCollectionExtensions
 {
     /// <summary>
     /// 添加SqlSugar数据访问服务
     /// </summary>
     /// <param name="services">服务集合</param>
-    /// <param name="configureOptions">配置选项</param>
+    /// <param name="configuration">配置选项</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanDataSqlSugar(this IServiceCollection services, Action<XiHanSqlSugarCoreOptions>? configureOptions = null)
+    public static IServiceCollection AddXiHanDataSqlSugar(this IServiceCollection services, IConfiguration configuration)
     {
-        // 配置选项
-        if (configureOptions != null)
-        {
-            services.Configure(configureOptions);
-        }
+        services.Configure<XiHanSqlSugarCoreOptions>(configuration.GetSection(XiHanSqlSugarCoreOptions.SectionName));
 
         // 注册核心服务
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();

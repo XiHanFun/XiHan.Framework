@@ -16,6 +16,7 @@ using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Http;
 using XiHan.Framework.Logging;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Integration.Tests;
 
@@ -34,6 +35,8 @@ public class XiHanTestsIntegrationModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var config = services.GetConfiguration();
     }
 
     /// <summary>

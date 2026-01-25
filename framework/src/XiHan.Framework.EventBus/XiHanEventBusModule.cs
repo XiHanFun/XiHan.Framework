@@ -51,6 +51,8 @@ public class XiHanEventBusModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var config = services.GetConfiguration();
     }
 
     /// <summary>
