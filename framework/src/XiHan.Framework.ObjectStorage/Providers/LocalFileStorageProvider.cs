@@ -13,9 +13,11 @@
 #endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
-using XiHan.Framework.VirtualFileSystem.Storage.Models;
+using Microsoft.Extensions.Options;
+using XiHan.Framework.ObjectStorage.Models;
+using XiHan.Framework.ObjectStorage.Options;
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Providers;
+namespace XiHan.Framework.ObjectStorage.Providers;
 
 /// <summary>
 /// 本地文件存储提供程序
@@ -28,10 +30,11 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="rootPath">根目录路径</param>
-    public LocalFileStorageProvider(string rootPath)
+    /// <param name="options">本地存储配置</param>
+    public LocalFileStorageProvider(IOptions<LocalStorageOptions> options)
     {
-        _rootPath = Path.GetFullPath(rootPath);
+        var storageOptions = options.Value ?? throw new ArgumentNullException(nameof(options));
+        _rootPath = Path.GetFullPath(storageOptions.RootPath);
         if (!Directory.Exists(_rootPath))
         {
             Directory.CreateDirectory(_rootPath);

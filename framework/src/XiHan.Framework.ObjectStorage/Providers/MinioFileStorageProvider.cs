@@ -12,12 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
-using XiHan.Framework.VirtualFileSystem.Storage.Models;
-using XiHan.Framework.VirtualFileSystem.Storage.Options;
+using XiHan.Framework.ObjectStorage.Models;
+using XiHan.Framework.ObjectStorage.Options;
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Providers;
+namespace XiHan.Framework.ObjectStorage.Providers;
 
 /// <summary>
 /// MinIO 文件存储提供程序（基于S3 SDK）
@@ -35,9 +36,10 @@ public class MinioFileStorageProvider : FileStorageProviderBase
     /// <summary>
     /// 构造函数
     /// </summary>
-    public MinioFileStorageProvider(MinioStorageOptions options)
+    /// <param name="options">MinIO配置</param>
+    public MinioFileStorageProvider(IOptions<MinioStorageOptions> options)
     {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _options = options.Value ?? throw new ArgumentNullException(nameof(options));
 
         // 初始化MinIO客户端
         var builder = new MinioClient()
