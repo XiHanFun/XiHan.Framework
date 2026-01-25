@@ -12,7 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Application.Contracts;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.DistributedIds;
+using XiHan.Framework.Domain;
+using XiHan.Framework.Logging;
+using XiHan.Framework.ObjectMapping;
 
 namespace XiHan.Framework.Application;
 
@@ -20,6 +25,11 @@ namespace XiHan.Framework.Application;
 /// 曦寒框架领域驱动应用模块
 /// </summary>
 [DependsOn(
+    typeof(XiHanLoggingModule),
+    typeof(XiHanApplicationContractsModule),
+    typeof(XiHanDomainModule),
+    typeof(XiHanDistributedIdsModule),
+    typeof(XiHanObjectMappingModule)
     )]
 public class XiHanApplicationModule : XiHanModule
 {

@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Application.Services.Abstracts;
+namespace XiHan.Framework.Application.Contracts.Dtos;
 
 /// <summary>
 /// 批量操作请求

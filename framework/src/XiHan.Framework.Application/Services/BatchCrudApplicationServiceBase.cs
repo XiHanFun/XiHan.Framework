@@ -12,7 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Application.Services.Abstracts;
+using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
