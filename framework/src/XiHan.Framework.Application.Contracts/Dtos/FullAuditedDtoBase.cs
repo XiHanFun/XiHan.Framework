@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Application.Dtos;
+namespace XiHan.Framework.Application.Contracts.Dtos;
 
 /// <summary>
 /// 审计 DTO 基类

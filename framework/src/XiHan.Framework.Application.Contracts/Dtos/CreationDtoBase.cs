@@ -3,33 +3,28 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DtoBase
-// Guid:7f821e80-1dfc-4ca3-8861-1f5b84c6bce6
+// FileName:CreationDtoBase
+// Guid:f5919add-1e73-4551-9af9-ce67cb2ac2d1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/11/16 2:24:42
+// CreateTime:2025/11/16 2:32:10
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Application.Dtos;
+namespace XiHan.Framework.Application.Contracts.Dtos;
 
 /// <summary>
-/// DTO 基类
+/// 创建 DTO 基类
 /// </summary>
-public abstract class DtoBase
+public abstract class CreationDtoBase
 {
 }
 
 /// <summary>
-/// 泛型主键 DTO 基类
+/// 泛型主键创建 DTO 基类
 /// </summary>
-/// <typeparam name="TKey"></typeparam>
-public abstract class DtoBase<TKey> : DtoBase
+public abstract class CreationDtoBase<TKey> : CreationDtoBase
     where TKey : IEquatable<TKey>
 {
-    /// <summary>
-    /// 主键
-    /// </summary>
-    public virtual TKey BasicId { get; set; } = default!;
 }

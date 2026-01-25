@@ -15,7 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using XiHan.Framework.Application.Services.Abstracts;
+using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 

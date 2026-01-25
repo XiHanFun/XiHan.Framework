@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
-namespace XiHan.Framework.Application.Services.Abstracts;
+namespace XiHan.Framework.Application.Contracts.Services;
 
 /// <summary>
 /// CRUD 应用服务接口（支持创建和更新DTO分离）

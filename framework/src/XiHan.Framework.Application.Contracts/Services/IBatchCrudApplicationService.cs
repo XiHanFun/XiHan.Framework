@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Application.Services.Abstracts;
+using XiHan.Framework.Application.Contracts.Dtos;
+
+namespace XiHan.Framework.Application.Contracts.Services;
 
 /// <summary>
 /// 批量 CRUD 应用服务接口（支持创建和更新DTO分离）

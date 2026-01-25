@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Core.Application;
 
-namespace XiHan.Framework.Application.Services.Abstracts;
+namespace XiHan.Framework.Application.Contracts.Services;
 
 /// <summary>
 /// 应用服务接口
