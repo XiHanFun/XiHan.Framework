@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Options;
+namespace XiHan.Framework.ObjectStorage.Options;
 
 /// <summary>
 /// 本地存储配置

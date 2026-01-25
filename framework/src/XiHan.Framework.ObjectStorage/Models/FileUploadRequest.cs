@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Models;
+namespace XiHan.Framework.ObjectStorage.Models;
 
 /// <summary>
 /// 文件上传请求

@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TencentCosStorageOptions
+// FileName:AliyunOssStorageOptions
 // Guid:c9d0e1f2-a3b4-4f5c-d6e7-f8a9b0c1d2e3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,32 +12,27 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Options;
+namespace XiHan.Framework.ObjectStorage.Options;
 
 /// <summary>
-/// 腾讯云COS配置
+/// 阿里云OSS配置
 /// </summary>
-public class TencentCosStorageOptions
+public class AliyunOssStorageOptions
 {
     /// <summary>
-    /// 密钥ID
+    /// 访问密钥ID
     /// </summary>
-    public string SecretId { get; set; } = string.Empty;
+    public string AccessKeyId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 密钥Key
+    /// 访问密钥Secret
     /// </summary>
-    public string SecretKey { get; set; } = string.Empty;
+    public string AccessKeySecret { get; set; } = string.Empty;
 
     /// <summary>
-    /// 应用ID
+    /// 终端节点
     /// </summary>
-    public string AppId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 地域
-    /// </summary>
-    public string Region { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = string.Empty;
 
     /// <summary>
     /// 默认存储桶
@@ -48,4 +43,9 @@ public class TencentCosStorageOptions
     /// CDN域名
     /// </summary>
     public string? CdnDomain { get; set; }
+
+    /// <summary>
+    /// 是否使用内网
+    /// </summary>
+    public bool UseInternal { get; set; } = false;
 }

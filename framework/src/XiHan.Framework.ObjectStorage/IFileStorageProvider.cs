@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.VirtualFileSystem.Storage.Models;
+using XiHan.Framework.ObjectStorage.Models;
 
-namespace XiHan.Framework.VirtualFileSystem.Storage;
+namespace XiHan.Framework.ObjectStorage;
 
 /// <summary>
 /// 文件存储提供程序接口

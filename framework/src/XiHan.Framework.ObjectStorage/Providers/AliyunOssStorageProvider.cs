@@ -3,65 +3,56 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TencentCosStorageProvider
-// Guid:b2c3d4e5-f6a7-48b9-c0d1-e2f3a4b5c6d7
+// FileName:AliyunOssStorageProvider
+// Guid:a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/10 11:05:00
+// CreateTime:2025/1/10 11:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-using COSXML;
-using COSXML.Auth;
-using COSXML.Model.Bucket;
-using COSXML.Model.Object;
-using COSXML.Model.Tag;
 using System.Collections.Concurrent;
-using XiHan.Framework.VirtualFileSystem.Storage.Models;
-using XiHan.Framework.VirtualFileSystem.Storage.Options;
+using Aliyun.OSS;
+using Aliyun.OSS.Common;
+using Microsoft.Extensions.Options;
+using XiHan.Framework.ObjectStorage.Models;
+using XiHan.Framework.ObjectStorage.Options;
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Providers;
+namespace XiHan.Framework.ObjectStorage.Providers;
 
 /// <summary>
-/// 腾讯云 COS 文件存储提供程序
+/// 阿里云 OSS 文件存储提供程序
 /// </summary>
 /// <remarks>
-/// 基于 COSXML SDK 实现
-/// NuGet: Install-Package Tencent.QCloud.Cos.Sdk
-/// 文档: https://cloud.tencent.com/document/product/436/32819
+/// 基于 Aliyun.OSS.SDK 实现
+/// NuGet: Install-Package Aliyun.OSS.SDK.NetCore
+/// 文档: https://help.aliyun.com/zh/oss/developer-reference/net
 /// </remarks>
-public class TencentCosStorageProvider : FileStorageProviderBase
+public class AliyunOssStorageProvider : FileStorageProviderBase
 {
-    private readonly TencentCosStorageOptions _options;
-    private readonly CosXml _cosXml;
+    private readonly AliyunOssStorageOptions _options;
+    private readonly OssClient _client;
     private readonly ConcurrentDictionary<string, MultipartUploadSession> _uploadSessions = new();
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public TencentCosStorageProvider(TencentCosStorageOptions options)
+    /// <param name="options">阿里云OSS配置</param>
+    public AliyunOssStorageProvider(IOptions<AliyunOssStorageOptions> options)
     {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _options = options.Value ?? throw new ArgumentNullException(nameof(options));
 
-        var config = new CosXmlConfig.Builder()
-            .IsHttps(true)
-            .SetRegion(_options.Region)
-            .SetDebugLog(false)
-            .Build();
-
-        var credential = new DefaultQCloudCredentialProvider(
-            _options.SecretId,
-            _options.SecretKey,
-            3600);
-
-        _cosXml = new CosXmlServer(config, credential);
+        var endpoint = _options.UseInternal
+            ? _options.Endpoint.Replace("oss-", "oss-internal-")
+            : _options.Endpoint;
+        _client = new OssClient(endpoint, _options.AccessKeyId, _options.AccessKeySecret);
     }
 
     /// <summary>
     /// 存储类型名称
     /// </summary>
-    public override string ProviderName => "TencentCOS";
+    public override string ProviderName => "AliyunOSS";
 
     /// <summary>
     /// 是否支持分片上传
@@ -78,26 +69,30 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
     {
-        var bucket = request.BucketName ?? GetFullBucketName(_options.DefaultBucket);
-        var objectKey = NormalizePath(request.StoragePath);
+        var bucket = request.BucketName ?? _options.DefaultBucket;
+        var objectName = NormalizePath(request.StoragePath);
 
         try
         {
-            var initRequest = new InitMultipartUploadRequest(bucket, objectKey);
+            var initRequest = new InitiateMultipartUploadRequest(bucket, objectName);
 
             if (request.ContentType != null)
             {
-                initRequest.SetRequestHeader("Content-Type", request.ContentType);
+                var metadata = new ObjectMetadata
+                {
+                    ContentType = request.ContentType
+                };
+                initRequest.ObjectMetadata = metadata;
             }
 
-            var result = _cosXml.InitMultipartUpload(initRequest);
-            var uploadId = result.initMultipartUpload.uploadId;
+            var result = _client.InitiateMultipartUpload(initRequest);
+            var uploadId = result.UploadId;
 
             _uploadSessions[uploadId] = new MultipartUploadSession
             {
                 UploadId = uploadId,
                 BucketName = bucket,
-                ObjectKey = objectKey,
+                ObjectName = objectName,
                 PartETags = new ConcurrentDictionary<int, string>()
             };
 
@@ -124,20 +119,28 @@ public class TencentCosStorageProvider : FileStorageProviderBase
             };
         }
 
-        var bucket = request.BucketName ?? _options.DefaultBucket;
-        var key = NormalizePath(request.StoragePath);
-
         try
         {
-            var putRequest = new PutObjectRequest(bucket, key, request.StoragePath);
+            var uploadRequest = new UploadPartRequest(
+                session.BucketName,
+                session.ObjectName,
+                request.UploadId)
+            {
+                InputStream = request.ChunkData,
+                PartSize = request.ChunkSize,
+                PartNumber = request.ChunkNumber
+            };
 
-            var result = _cosXml.PutObject(putRequest);
+            var result = _client.UploadPart(uploadRequest);
+            var etag = result.ETag;
+
+            session.PartETags[request.ChunkNumber] = etag;
 
             return new ChunkUploadResult
             {
                 Success = true,
                 ChunkNumber = request.ChunkNumber,
-                ETag = result.eTag
+                ETag = etag
             };
         }
         catch (Exception ex)
@@ -167,19 +170,23 @@ public class TencentCosStorageProvider : FileStorageProviderBase
 
         try
         {
+            var partETags = request.ChunkInfos
+                .OrderBy(c => c.ChunkNumber)
+                .Select(c => new PartETag(c.ChunkNumber, c.ETag))
+                .ToList();
+
             var completeRequest = new CompleteMultipartUploadRequest(
                 session.BucketName,
-                session.ObjectKey,
+                session.ObjectName,
                 request.UploadId);
 
-            var partNumbersAndETags = new Dictionary<int, string>();
-            foreach (var chunk in request.ChunkInfos.OrderBy(c => c.ChunkNumber))
+            // 添加所有分片的ETag
+            foreach (var partETag in partETags)
             {
-                partNumbersAndETags[chunk.ChunkNumber] = chunk.ETag!;
+                completeRequest.PartETags.Add(partETag);
             }
-            completeRequest.SetPartNumberAndETag(partNumbersAndETags);
 
-            var result = _cosXml.CompleteMultiUpload(completeRequest);
+            var result = _client.CompleteMultipartUpload(completeRequest);
 
             _uploadSessions.TryRemove(request.UploadId, out _);
 
@@ -187,8 +194,8 @@ public class TencentCosStorageProvider : FileStorageProviderBase
             {
                 Success = true,
                 Path = request.StoragePath,
-                Url = GetObjectUrl(session.BucketName, session.ObjectKey),
-                ETag = result.completeResult.eTag
+                Url = GetObjectUrl(session.BucketName, session.ObjectName),
+                ETag = result.ETag
             };
         }
         catch (Exception ex)
@@ -212,15 +219,11 @@ public class TencentCosStorageProvider : FileStorageProviderBase
             {
                 var abortRequest = new AbortMultipartUploadRequest(
                     session.BucketName,
-                    session.ObjectKey,
+                    session.ObjectName,
                     uploadId);
-                _cosXml.AbortMultiUpload(abortRequest);
+                _client.AbortMultipartUpload(abortRequest);
             }
-            catch (COSXML.CosException.CosClientException)
-            {
-                // 忽略错误，会话已经被移除
-            }
-            catch (COSXML.CosException.CosServerException)
+            catch (OssException)
             {
                 // 忽略错误，会话已经被移除
             }
@@ -232,23 +235,16 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<Stream> DownloadAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        var (bucket, objectName) = ParsePath(path);
 
         try
         {
-            var localPath = Path.GetTempFileName();
-            var getRequest = new GetObjectRequest(bucket, objectKey, localPath, null);
-            _cosXml.GetObject(getRequest);
-
-            // 读取临时文件到内存流
+            var obj = _client.GetObject(bucket, objectName);
             var memoryStream = new MemoryStream();
-            using (var fileStream = File.OpenRead(localPath))
+            using (obj.Content)
             {
-                await fileStream.CopyToAsync(memoryStream, cancellationToken);
+                await obj.Content.CopyToAsync(memoryStream, cancellationToken);
             }
-            // 删除临时文件
-            File.Delete(localPath);
-
             memoryStream.Position = 0;
             return memoryStream;
         }
@@ -263,12 +259,11 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        var (bucket, objectName) = ParsePath(path);
 
         try
         {
-            var deleteRequest = new DeleteObjectRequest(bucket, objectKey);
-            _cosXml.DeleteObject(deleteRequest);
+            _client.DeleteObject(bucket, objectName);
         }
         catch (Exception ex)
         {
@@ -281,13 +276,11 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        var (bucket, objectName) = ParsePath(path);
 
         try
         {
-            var headRequest = new HeadObjectRequest(bucket, objectKey);
-            _cosXml.HeadObject(headRequest);
-            return true;
+            return _client.DoesObjectExist(bucket, objectName);
         }
         catch
         {
@@ -300,23 +293,22 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        var (bucket, objectName) = ParsePath(path);
 
         try
         {
-            var headRequest = new HeadObjectRequest(bucket, objectKey);
-            var result = _cosXml.HeadObject(headRequest);
+            var metadata = _client.GetObjectMetadata(bucket, objectName);
 
             return new FileMetadata
             {
-                Name = Path.GetFileName(objectKey),
+                Name = Path.GetFileName(objectName),
                 Path = path,
-                Size = result.size,
-                ContentType = result.cosStorageClass,
-                LastModified = ParseCosTime(result.lastModified),
-                ETag = result.eTag,
+                Size = metadata.ContentLength,
+                ContentType = metadata.ContentType,
+                LastModified = metadata.LastModified,
+                ETag = metadata.ETag,
                 IsDirectory = false,
-                Url = GetObjectUrl(bucket, objectKey)
+                Url = GetObjectUrl(bucket, objectName)
             };
         }
         catch (Exception ex)
@@ -330,25 +322,16 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<string> GeneratePresignedUrlAsync(string path, TimeSpan expiresIn, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        var (bucket, objectName) = ParsePath(path);
 
         try
         {
-            var request = new PreSignatureStruct
+            var req = new GeneratePresignedUriRequest(bucket, objectName, SignHttpMethod.Get)
             {
-                appid = _options.AppId,
-                region = _options.Region,
-                bucket = bucket.Replace($"-{_options.AppId}", ""), // 去除AppId后缀
-                key = objectKey,
-                httpMethod = "GET",
-                isHttps = true,
-                signDurationSecond = (long)expiresIn.TotalSeconds,
-                headers = null,
-                queryParameters = null
+                Expiration = DateTime.Now.Add(expiresIn)
             };
-
-            var url = _cosXml.GenerateSignURL(request);
-            return url;
+            var uri = _client.GeneratePresignedUri(req);
+            return uri.ToString();
         }
         catch (Exception ex)
         {
@@ -361,19 +344,13 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task CopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken = default)
     {
-        var (sourceBucket, sourceKey) = ParsePath(sourcePath);
-        var (destBucket, destKey) = ParsePath(destinationPath);
+        var (sourceBucket, sourceObject) = ParsePath(sourcePath);
+        var (destBucket, destObject) = ParsePath(destinationPath);
 
         try
         {
-            var copyRequest = new CopyObjectRequest(destBucket, destKey);
-            var copySource = new CopySourceStruct(
-                _options.AppId,
-                sourceBucket,
-                _options.Region,
-                sourceKey);
-            copyRequest.SetCopySource(copySource);
-            _cosXml.CopyObject(copyRequest);
+            var request = new CopyObjectRequest(sourceBucket, sourceObject, destBucket, destObject);
+            _client.CopyObject(request);
         }
         catch (Exception ex)
         {
@@ -400,44 +377,33 @@ public class TencentCosStorageProvider : FileStorageProviderBase
 
         try
         {
-            var listRequest = new GetBucketRequest(bucket);
-            listRequest.SetPrefix(prefix);
-            if (!recursive)
+            var listRequest = new ListObjectsRequest(bucket)
             {
-                listRequest.SetDelimiter("/");
-            }
+                Prefix = prefix,
+                Delimiter = recursive ? null : "/"
+            };
 
-            GetBucketResult result;
+            ObjectListing result;
             do
             {
-                result = _cosXml.GetBucket(listRequest);
+                result = _client.ListObjects(listRequest);
 
-                if (result.listBucket?.contentsList != null)
+                foreach (var obj in result.ObjectSummaries)
                 {
-                    foreach (var content in result.listBucket.contentsList)
+                    files.Add(new FileMetadata
                     {
-                        files.Add(new FileMetadata
-                        {
-                            Name = Path.GetFileName(content.key),
-                            Path = content.key,
-                            Size = content.size,
-                            LastModified = DateTimeOffset.TryParse(content.lastModified, out var lm) ? lm : DateTimeOffset.MinValue,
-                            ETag = content.eTag,
-                            IsDirectory = false,
-                            Url = GetObjectUrl(bucket, content.key)
-                        });
-                    }
+                        Name = Path.GetFileName(obj.Key),
+                        Path = obj.Key,
+                        Size = obj.Size,
+                        LastModified = obj.LastModified,
+                        ETag = obj.ETag,
+                        IsDirectory = false,
+                        Url = GetObjectUrl(bucket, obj.Key)
+                    });
                 }
 
-                if (result.listBucket != null && !string.IsNullOrEmpty(result.listBucket.nextMarker))
-                {
-                    listRequest.SetMarker(result.listBucket.nextMarker);
-                }
-                else
-                {
-                    break;
-                }
-            } while (result.listBucket?.isTruncated == true);
+                listRequest.Marker = result.NextMarker;
+            } while (result.IsTruncated);
 
             return files;
         }
@@ -452,40 +418,52 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     protected override async Task<FileUploadResult> UploadCoreAsync(FileUploadRequest request, CancellationToken cancellationToken)
     {
-        var bucket = request.BucketName ?? GetFullBucketName(_options.DefaultBucket);
-        var objectKey = NormalizePath(request.StoragePath);
+        var bucket = request.BucketName ?? _options.DefaultBucket;
+        var objectName = NormalizePath(request.StoragePath);
 
         try
         {
-            var putRequest = new PutObjectRequest(bucket, objectKey, request.FileStream);
-
+            var metadata = new ObjectMetadata();
             if (request.ContentType != null)
             {
-                putRequest.SetRequestHeader("Content-Type", request.ContentType);
+                metadata.ContentType = request.ContentType;
             }
-
-            if (request.AccessControl != null)
+            if (request.CacheControl != null)
             {
-                putRequest.SetCosACL(request.AccessControl);
+                metadata.CacheControl = request.CacheControl;
             }
-
             if (request.Metadata != null)
             {
                 foreach (var kvp in request.Metadata)
                 {
-                    putRequest.SetRequestHeader($"x-cos-meta-{kvp.Key}", kvp.Value);
+                    metadata.UserMetadata.Add(kvp.Key, kvp.Value);
                 }
             }
 
-            var result = _cosXml.PutObject(putRequest);
+            var putRequest = new PutObjectRequest(bucket, objectName, request.FileStream, metadata);
+
+            var result = _client.PutObject(putRequest);
+
+            // 设置访问控制（如果需要）
+            if (request.AccessControl != null)
+            {
+                var cannedAcl = request.AccessControl switch
+                {
+                    "public-read" => CannedAccessControlList.PublicRead,
+                    "private" => CannedAccessControlList.Private,
+                    _ => CannedAccessControlList.Private
+                };
+                var setAclRequest = new SetObjectAclRequest(bucket, objectName, cannedAcl);
+                _client.SetObjectAcl(setAclRequest);
+            }
 
             return new FileUploadResult
             {
                 Success = true,
                 Path = request.StoragePath,
-                Url = GetObjectUrl(bucket, objectKey),
+                Url = GetObjectUrl(bucket, objectName),
                 FileSize = request.FileStream.Length,
-                ETag = result.eTag
+                ETag = result.ETag
             };
         }
         catch (Exception ex)
@@ -493,7 +471,7 @@ public class TencentCosStorageProvider : FileStorageProviderBase
             return new FileUploadResult
             {
                 Success = false,
-                ErrorMessage = $"腾讯云COS上传失败: {ex.Message}"
+                ErrorMessage = $"阿里云OSS上传失败: {ex.Message}"
             };
         }
     }
@@ -501,53 +479,25 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     #region 私有方法
 
     /// <summary>
-    /// 解析 COS 时间格式
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    private static DateTimeOffset? ParseCosTime(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        if (DateTimeOffset.TryParse(value, out var dto))
-        {
-            return dto;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// 获取完整的存储桶名称
-    /// </summary>
-    private string GetFullBucketName(string bucketName)
-    {
-        return $"{bucketName}-{_options.AppId}";
-    }
-
-    /// <summary>
     /// 获取对象URL
     /// </summary>
-    private string GetObjectUrl(string bucket, string objectKey)
+    private string GetObjectUrl(string bucket, string objectName)
     {
         if (!string.IsNullOrEmpty(_options.CdnDomain))
         {
-            return $"https://{_options.CdnDomain}/{objectKey}";
+            return $"https://{_options.CdnDomain}/{objectName}";
         }
 
-        return $"https://{bucket}.cos.{_options.Region}.myqcloud.com/{objectKey}";
+        return $"https://{bucket}.{_options.Endpoint}/{objectName}";
     }
 
     /// <summary>
     /// 解析路径
     /// </summary>
-    private (string bucket, string objectKey) ParsePath(string path)
+    private (string bucket, string objectName) ParsePath(string path)
     {
         var normalizedPath = NormalizePath(path);
-        return (GetFullBucketName(_options.DefaultBucket), normalizedPath);
+        return (_options.DefaultBucket, normalizedPath);
     }
 
     #endregion
@@ -559,7 +509,7 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     {
         public string UploadId { get; set; } = string.Empty;
         public string BucketName { get; set; } = string.Empty;
-        public string ObjectKey { get; set; } = string.Empty;
+        public string ObjectName { get; set; } = string.Empty;
         public ConcurrentDictionary<int, string> PartETags { get; set; } = new();
     }
 }

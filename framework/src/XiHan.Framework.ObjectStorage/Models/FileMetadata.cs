@@ -3,26 +3,26 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FileUploadResult
-// Guid:c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8
+// FileName:FileMetadata
+// Guid:e5f6a7b8-c9d0-4b1e-f2a3-b4c5d6e7f8a9
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/10 10:06:00
+// CreateTime:2025/1/10 10:08:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.VirtualFileSystem.Storage.Models;
+namespace XiHan.Framework.ObjectStorage.Models;
 
 /// <summary>
-/// 文件上传结果
+/// 文件元数据
 /// </summary>
-public class FileUploadResult
+public class FileMetadata
 {
     /// <summary>
-    /// 是否成功
+    /// 文件名
     /// </summary>
-    public bool Success { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// 文件路径
@@ -30,9 +30,29 @@ public class FileUploadResult
     public string? Path { get; set; }
 
     /// <summary>
-    /// 完整路径（绝对路径）
+    /// 文件大小
     /// </summary>
-    public string? FullPath { get; set; }
+    public long Size { get; set; }
+
+    /// <summary>
+    /// 内容类型
+    /// </summary>
+    public string? ContentType { get; set; }
+
+    /// <summary>
+    /// 最后修改时间
+    /// </summary>
+    public DateTimeOffset? LastModified { get; set; }
+
+    /// <summary>
+    /// ETag
+    /// </summary>
+    public string? ETag { get; set; }
+
+    /// <summary>
+    /// 是否是目录
+    /// </summary>
+    public bool IsDirectory { get; set; }
 
     /// <summary>
     /// 访问URL
@@ -40,27 +60,7 @@ public class FileUploadResult
     public string? Url { get; set; }
 
     /// <summary>
-    /// 文件大小
+    /// 自定义元数据
     /// </summary>
-    public long FileSize { get; set; }
-
-    /// <summary>
-    /// 文件哈希值（ETag）
-    /// </summary>
-    public string? ETag { get; set; }
-
-    /// <summary>
-    /// 上传耗时（毫秒）
-    /// </summary>
-    public long DurationMs { get; set; }
-
-    /// <summary>
-    /// 错误消息
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
-    /// <summary>
-    /// 额外信息
-    /// </summary>
-    public Dictionary<string, object>? Extra { get; set; }
+    public Dictionary<string, string>? Metadata { get; set; }
 }
