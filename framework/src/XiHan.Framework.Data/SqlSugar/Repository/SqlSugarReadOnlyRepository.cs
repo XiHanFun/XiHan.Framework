@@ -67,11 +67,12 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
-    public async Task<List<TEntity>> GetByIdsAsync(List<TKey> ids, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
+        // 内部实现使用 List<T> 以提高性能
         var idList = ids.ToArray();
         if (idList.Length == 0)
         {
@@ -80,6 +81,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
         var result = await _simpleClient.GetListAsync(it => idList.Contains(it.BasicId), cancellationToken);
         return result;
     }
@@ -116,11 +118,12 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// 获取所有实体
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
-    public async Task<List<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
         return await _dbClient.Queryable<TEntity>()
             .ToListAsync(cancellationToken);
     }
@@ -130,8 +133,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
-    public async Task<List<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -147,8 +150,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="predicate">条件</param>
     /// <param name="orderBy">排序</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
-    public async Task<List<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(orderBy);
@@ -165,8 +168,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体集合</returns>
-    public async Task<List<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    /// <returns>只读实体集合</returns>
+    public async Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
         cancellationToken.ThrowIfCancellationRequested();

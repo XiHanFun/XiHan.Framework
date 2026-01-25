@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -31,24 +31,24 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// </summary>
     /// <param name="createdId">创建者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>由指定创建者创建的实体集合</returns>
-    Task<List<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据修改者查找实体
     /// </summary>
     /// <param name="modifiedId">最后修改者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>由指定用户最后修改的实体集合</returns>
-    Task<List<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据删除者查找实体
     /// </summary>
     /// <param name="deletedId">删除者的唯一标识</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>由指定用户删除的实体集合</returns>
-    Task<List<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内创建的实体
@@ -56,8 +56,8 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="startTime">时间范围开始点（包含）</param>
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>在时间范围内创建的实体集合</returns>
-    Task<List<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内修改的实体
@@ -65,8 +65,8 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="startTime">时间范围开始点（包含）</param>
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>在时间范围内修改的实体集合</returns>
-    Task<List<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间范围内删除的实体
@@ -74,14 +74,14 @@ public interface IAuditedRepository<TEntity, TKey> : ISoftDeleteRepositoryBase<T
     /// <param name="startTime">时间范围开始点（包含）</param>
     /// <param name="endTime">时间范围结束点（包含）</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>在时间范围内删除的实体集合</returns>
-    Task<List<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据组合审计条件筛选实体
     /// </summary>
     /// <param name="options">审计查询参数</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>符合审计条件的实体集合</returns>
-    Task<List<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default);
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetByAuditAsync(AuditQueryOptions<TKey> options, CancellationToken cancellationToken = default);
 }

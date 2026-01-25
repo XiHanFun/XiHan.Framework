@@ -54,7 +54,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
 
         // 使用仓储的批量获取方法
         var entities = await Repository.GetByIdsAsync(ids);
-        return [.. (await MapToEntityDtosAsync(entities))];
+        return [.. (await MapEntitiesToDtosAsync(entities))];
     }
 
     /// <summary>
@@ -67,9 +67,9 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
             request.ContinueOnError,
             async (item, index) =>
             {
-                var entity = await MapToEntityAsync(item);
+                var entity = await MapDtoToEntityAsync(item);
                 entity = await Repository.AddAsync(entity);
-                return await MapToEntityDtoAsync(entity);
+                return await MapEntityToDtoAsync(entity);
             },
             index => $"索引 {index}"
         );
@@ -85,15 +85,10 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
             request.ContinueOnError,
             async (item, index) =>
             {
-                var entity = await Repository.GetByIdAsync(item.Id);
-                if (entity == null)
-                {
-                    throw new KeyNotFoundException($"未找到 ID 为 {item.Id} 的实体");
-                }
-
-                await MapToEntityAsync(item.Data, entity);
+                var entity = await Repository.GetByIdAsync(item.Id) ?? throw new KeyNotFoundException($"未找到 ID 为 {item.Id} 的实体");
+                await MapDtoToEntityAsync(item.Data, entity);
                 entity = await Repository.UpdateAsync(entity);
-                return await MapToEntityDtoAsync(entity);
+                return await MapEntityToDtoAsync(entity);
             },
             index => $"索引 {index} (ID: {request.Items[index].Id})"
         );
@@ -109,12 +104,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
             request.ContinueOnError,
             async (id, index) =>
             {
-                var entity = await Repository.GetByIdAsync(id);
-                if (entity == null)
-                {
-                    throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
-                }
-
+                var entity = await Repository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
                 if (request.SoftDelete && entity is IDeletionEntity deletionEntity)
                 {
                     deletionEntity.IsDeleted = true;
