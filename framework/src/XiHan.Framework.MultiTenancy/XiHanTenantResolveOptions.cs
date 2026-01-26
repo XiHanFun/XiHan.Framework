@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -22,6 +22,11 @@ namespace XiHan.Framework.MultiTenancy;
 /// </summary>
 public class XiHanTenantResolveOptions
 {
+    /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:MultiTenancy:Resolve";
+
     /// <summary>
     /// 构造函数
     /// </summary>

@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,10 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Authentication.Jwt;
-using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Authentication.Password;
+using XiHan.Framework.Authentication.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
@@ -34,42 +31,8 @@ public class XiHanAuthenticationModule : XiHanModule
     {
         var services = context.Services;
         var config = services.GetConfiguration();
-        // 以下接口为默认实现，具体需要根据实际实现进行替换
 
-        // 配置密码哈希服务
-        services.Configure<PasswordHasherOptions>(options =>
-        {
-            // 使用默认配置，用户可以通过配置文件覆盖
-        });
-
-        // 配置密码策略
-        services.Configure<PasswordPolicyOptions>(options =>
-        {
-            // 使用默认配置，用户可以通过配置文件覆盖
-        });
-
-        // 配置 JWT 服务
-        services.Configure<JwtOptions>(options =>
-        {
-            // 使用默认配置，用户必须通过配置文件提供密钥等信息
-        });
-
-        // 配置 OTP 服务
-        services.Configure<OtpOptions>(options =>
-        {
-            // 使用默认配置，用户可以通过配置文件覆盖
-        });
-
-        // 注册密码哈希服务
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        // 注册 JWT 服务
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        // 注册 OTP 服务
-        services.AddSingleton<IOtpService, OtpService>();
-
-        // 注册用户存储
-        services.AddScoped<IUserStore, DefaultUserStore>();
-        // 注册认证服务接口
-        services.AddScoped<IAuthenticationService, DefaultAuthenticationService>();
+        // 使用扩展方法添加认证服务
+        services.AddXiHanAuthentication(config);
     }
 }

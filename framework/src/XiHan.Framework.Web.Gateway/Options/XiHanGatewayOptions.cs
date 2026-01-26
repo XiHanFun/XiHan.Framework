@@ -20,6 +20,11 @@ namespace XiHan.Framework.Web.Gateway.Options;
 public class XiHanGatewayOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Web:Gateway";
+
+    /// <summary>
     /// 是否启用灰度路由
     /// </summary>
     public bool EnableGrayRouting { get; set; } = true;

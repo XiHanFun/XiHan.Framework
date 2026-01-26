@@ -20,6 +20,11 @@ namespace XiHan.Framework.Authentication.Jwt;
 public class JwtOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Authentication:Jwt";
+
+    /// <summary>
     /// 密钥
     /// </summary>
     public string SecretKey { get; set; } = string.Empty;
