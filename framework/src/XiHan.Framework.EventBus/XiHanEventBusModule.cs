@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,18 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.DistributedIds;
-using XiHan.Framework.EventBus.Abstractions.Distributed;
-using XiHan.Framework.EventBus.Abstractions.Local;
-using XiHan.Framework.EventBus.Distributed;
-using XiHan.Framework.EventBus.Local;
+using XiHan.Framework.EventBus.Extensions.DependencyInjection;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Utils.Collections;
-using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.EventBus;
 
@@ -42,7 +36,11 @@ public class XiHanEventBusModule : XiHanModule
     /// <param name="context"></param>
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
-        AddEventHandlers(context.Services);
+        var services = context.Services;
+        var config = services.GetConfiguration();
+
+        // 使用扩展方法添加事件总线服务
+        services.AddXiHanEventBus(config);
     }
 
     /// <summary>
@@ -64,38 +62,5 @@ public class XiHanEventBusModule : XiHanModule
     {
         //await context.AddBackgroundWorkerAsync<OutboxSenderManager>();
         //await context.AddBackgroundWorkerAsync<InboxProcessManager>();
-    }
-
-    /// <summary>
-    /// 添加事件处理器
-    /// </summary>
-    /// <param name="services"></param>
-    private static void AddEventHandlers(IServiceCollection services)
-    {
-        var localHandlers = new List<Type>();
-        var distributedHandlers = new List<Type>();
-
-        services.OnRegistered(context =>
-        {
-            if (context.ImplementationType.IsAssignableToGeneric(typeof(ILocalEventHandler<>)))
-            {
-                localHandlers.Add(context.ImplementationType);
-            }
-
-            if (context.ImplementationType.IsAssignableToGeneric(typeof(IDistributedEventHandler<>)))
-            {
-                distributedHandlers.Add(context.ImplementationType);
-            }
-        });
-
-        services.Configure<XiHanLocalEventBusOptions>(options =>
-        {
-            options.Handlers.AddIfNotContains(localHandlers);
-        });
-
-        services.Configure<XiHanDistributedEventBusOptions>(options =>
-        {
-            options.Handlers.AddIfNotContains(distributedHandlers);
-        });
     }
 }

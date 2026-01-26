@@ -22,6 +22,11 @@ namespace XiHan.Framework.Logging.Options;
 public class XiHanConsoleLoggerOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Logging:Console";
+
+    /// <summary>
     /// 最小日志级别
     /// </summary>
     public LogLevel MinLevel { get; set; } = LogLevel.Information;

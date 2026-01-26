@@ -20,6 +20,11 @@ namespace XiHan.Framework.ObjectStorage.Options;
 public class LocalStorageOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:ObjectStorage:Local";
+
+    /// <summary>
     /// 根目录路径
     /// </summary>
     public string RootPath { get; set; } = "uploads";

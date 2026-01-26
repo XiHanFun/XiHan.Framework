@@ -20,6 +20,11 @@ namespace XiHan.Framework.ObjectStorage.Options;
 public class TencentCosStorageOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:ObjectStorage:TencentCos";
+
+    /// <summary>
     /// 密钥ID
     /// </summary>
     public string SecretId { get; set; } = string.Empty;

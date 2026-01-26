@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,11 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Authentication;
-using XiHan.Framework.Authorization.Permissions;
-using XiHan.Framework.Authorization.Policies;
-using XiHan.Framework.Authorization.Roles;
+using XiHan.Framework.Authorization.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
@@ -38,21 +35,8 @@ public class XiHanAuthorizationModule : XiHanModule
     {
         var services = context.Services;
         var config = services.GetConfiguration();
-        // 以下接口为默认实现，具体需要根据实际实现进行替换
 
-        // 注册角色存储
-        services.AddScoped<IRoleStore, DefaultRoleStore>();
-        // 注册角色管理器
-        services.AddScoped<IRoleManager, DefaultRoleManager>();
-        // 注册权限存储
-        services.AddScoped<IPermissionStore, DefaultPermissionStore>();
-        // 注册权限检查器
-        services.AddScoped<IPermissionChecker, DefaultPermissionChecker>();
-        // 注册策略存储
-        services.AddScoped<IPolicyStore, DefaultPolicyStore>();
-        // 注册策略评估器
-        services.AddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
-        // 注册授权服务
-        services.AddScoped<IAuthorizationService, DefaultAuthorizationService>();
+        // 使用扩展方法添加授权服务
+        services.AddXiHanAuthorization(config);
     }
 }

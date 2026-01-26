@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -17,8 +17,8 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Security;
 using XiHan.Framework.Settings.Definitions;
+using XiHan.Framework.Settings.Extensions.DependencyInjection;
 using XiHan.Framework.Settings.Options;
-using XiHan.Framework.Settings.Providers;
 using XiHan.Framework.Utils.Collections;
 
 namespace XiHan.Framework.Settings;
@@ -48,13 +48,9 @@ public class XiHanSettingsModule : XiHanModule
     {
         var services = context.Services;
         var config = services.GetConfiguration();
-        Configure<XiHanSettingOptions>(options =>
-        {
-            options.ValueProviders.Add<DefaultValueSettingValueProvider>();
-            options.ValueProviders.Add<ConfigurationSettingValueProvider>();
-            options.ValueProviders.Add<GlobalSettingValueProvider>();
-            options.ValueProviders.Add<UserSettingValueProvider>();
-        });
+
+        // 使用扩展方法添加设置服务
+        services.AddXiHanSettings(config);
     }
 
     private static void AutoAddDefinitionProviders(IServiceCollection services)

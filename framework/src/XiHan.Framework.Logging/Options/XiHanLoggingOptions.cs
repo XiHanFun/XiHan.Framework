@@ -23,6 +23,11 @@ namespace XiHan.Framework.Logging.Options;
 public class XiHanLoggingOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Logging";
+
+    /// <summary>
     /// 是否启用日志
     /// </summary>
     public bool IsEnabled { get; set; } = true;

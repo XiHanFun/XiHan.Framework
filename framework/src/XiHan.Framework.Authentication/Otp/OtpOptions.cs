@@ -20,6 +20,11 @@ namespace XiHan.Framework.Authentication.Otp;
 public class OtpOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Authentication:Otp";
+
+    /// <summary>
     /// 密钥长度
     /// </summary>
     public int SecretKeyLength { get; set; } = 32;

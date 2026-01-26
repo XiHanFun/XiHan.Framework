@@ -20,6 +20,11 @@ namespace XiHan.Framework.ObjectStorage.Options;
 public class AliyunOssStorageOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:ObjectStorage:AliyunOss";
+
+    /// <summary>
     /// 访问密钥ID
     /// </summary>
     public string AccessKeyId { get; set; } = string.Empty;

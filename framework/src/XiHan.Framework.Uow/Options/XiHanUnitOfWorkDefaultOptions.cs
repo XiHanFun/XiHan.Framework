@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -22,6 +22,11 @@ namespace XiHan.Framework.Uow.Options;
 /// </summary>
 public class XiHanUnitOfWorkDefaultOptions
 {
+    /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Uow:Default";
+
     /// <summary>
     /// 事务行为
     /// </summary>

@@ -22,6 +22,11 @@ namespace XiHan.Framework.Authentication.Password;
 public class PasswordHasherOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Authentication:PasswordHasher";
+
+    /// <summary>
     /// 版本号，用于标识哈希算法版本
     /// </summary>
     public int Version { get; set; } = 1;

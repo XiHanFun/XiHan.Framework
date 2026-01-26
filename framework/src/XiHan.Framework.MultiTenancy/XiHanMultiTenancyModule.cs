@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,15 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.MultiTenancy.ConfigurationStore;
+using XiHan.Framework.MultiTenancy.Extensions.DependencyInjection;
 using XiHan.Framework.Security;
 using XiHan.Framework.Settings;
-using XiHan.Framework.Settings.Options;
-using XiHan.Framework.Utils.Collections;
 
 namespace XiHan.Framework.MultiTenancy;
 
@@ -43,18 +40,7 @@ public class XiHanMultiTenancyModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
-
-        Configure<XiHanDefaultTenantStoreOptions>(config);
-
-        Configure<XiHanSettingOptions>(options =>
-        {
-            options.ValueProviders.InsertAfter(t => t == typeof(GlobalSettingValueProvider), typeof(TenantSettingValueProvider));
-        });
-
-        Configure<XiHanTenantResolveOptions>(options =>
-        {
-            options.TenantResolvers.Insert(0, new CurrentUserTenantResolveContributor());
-        });
+        // 使用扩展方法添加多租户服务
+        services.AddXiHanMultiTenancy(config);
     }
 }
