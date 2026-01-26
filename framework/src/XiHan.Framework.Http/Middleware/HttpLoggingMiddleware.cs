@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -52,8 +52,21 @@ public class HttpLoggingMiddleware : DelegatingHandler
 
         try
         {
+            // 检查请求级别的日志配置，如果没有设置则使用全局配置
+            var enableRequestLogging = _options.EnableRequestLogging;
+            if (request.Options.TryGetValue(new HttpRequestOptionsKey<bool>("LogRequest"), out var logRequest))
+            {
+                enableRequestLogging = logRequest;
+            }
+
+            var enableResponseLogging = _options.EnableResponseLogging;
+            if (request.Options.TryGetValue(new HttpRequestOptionsKey<bool>("LogResponse"), out var logResponse))
+            {
+                enableResponseLogging = logResponse;
+            }
+
             // 记录请求日志
-            if (_options.EnableRequestLogging)
+            if (enableRequestLogging)
             {
                 await LogRequestAsync(request, requestId);
             }
@@ -64,7 +77,7 @@ public class HttpLoggingMiddleware : DelegatingHandler
             stopwatch.Stop();
 
             // 记录响应日志
-            if (_options.EnableResponseLogging)
+            if (enableResponseLogging)
             {
                 await LogResponseAsync(response, requestId, stopwatch.ElapsedMilliseconds);
             }

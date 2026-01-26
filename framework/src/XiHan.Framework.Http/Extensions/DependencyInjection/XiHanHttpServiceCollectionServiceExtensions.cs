@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -257,16 +257,27 @@ public static class XiHanHttpServiceCollectionServiceExtensions
         var enableRetry = clientConfig?.EnableRetry ?? true;
         if (enableRetry)
         {
-            var retryDelays = options.RetryDelaySeconds.Select(s => TimeSpan.FromSeconds(s)).ToArray();
-            var retryPolicy = HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .Or<TimeoutRejectedException>()
-                .WaitAndRetryAsync(retryDelays, onRetry: (outcome, timespan, retryCount, context) =>
+            // 使用动态策略选择器，允许在运行时根据请求上下文决定是否应用重试
+            clientBuilder.AddPolicyHandler((request) =>
+            {
+                // 检查请求上下文中是否禁用了重试
+                if (request.Options.TryGetValue(new HttpRequestOptionsKey<bool>("EnableRetry"), out var enableRetryOption)
+                    && !enableRetryOption)
                 {
-                    // 如果需要日志记录，可以在HTTP中间件中处理
-                });
+                    // 如果禁用重试，返回一个空策略（NoOp）
+                    return Policy.NoOpAsync<HttpResponseMessage>();
+                }
 
-            clientBuilder.AddPolicyHandler(retryPolicy);
+                // 否则应用重试策略
+                var retryDelays = options.RetryDelaySeconds.Select(s => TimeSpan.FromSeconds(s)).ToArray();
+                return HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .Or<TimeoutRejectedException>()
+                    .WaitAndRetryAsync(retryDelays, onRetry: (outcome, timespan, retryCount, context) =>
+                    {
+                        // 如果需要日志记录，可以在HTTP中间件中处理
+                    });
+            });
         }
 
         // 超时策略
@@ -277,25 +288,36 @@ public static class XiHanHttpServiceCollectionServiceExtensions
         var enableCircuitBreaker = clientConfig?.EnableCircuitBreaker ?? true;
         if (enableCircuitBreaker)
         {
-            var circuitBreakerPolicy = HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .CircuitBreakerAsync(
-                    handledEventsAllowedBeforeBreaking: options.CircuitBreakerFailureThreshold,
-                    durationOfBreak: TimeSpan.FromSeconds(options.CircuitBreakerDurationOfBreakSeconds),
-                    onBreak: (exception, duration) =>
-                    {
-                        // 记录熔断器打开的日志
-                    },
-                    onReset: () =>
-                    {
-                        // 记录熔断器重置的日志
-                    },
-                    onHalfOpen: () =>
-                    {
-                        // 记录熔断器半开状态的日志
-                    });
+            // 使用动态策略选择器，允许在运行时根据请求上下文决定是否应用断路器
+            clientBuilder.AddPolicyHandler((request) =>
+            {
+                // 检查请求上下文中是否禁用了断路器
+                if (request.Options.TryGetValue(new HttpRequestOptionsKey<bool>("EnableCircuitBreaker"), out var enableCircuitBreakerOption)
+                    && !enableCircuitBreakerOption)
+                {
+                    // 如果禁用断路器，返回一个空策略（NoOp）
+                    return Policy.NoOpAsync<HttpResponseMessage>();
+                }
 
-            clientBuilder.AddPolicyHandler(circuitBreakerPolicy);
+                // 否则应用断路器策略
+                return HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .CircuitBreakerAsync(
+                        handledEventsAllowedBeforeBreaking: options.CircuitBreakerFailureThreshold,
+                        durationOfBreak: TimeSpan.FromSeconds(options.CircuitBreakerDurationOfBreakSeconds),
+                        onBreak: (exception, duration) =>
+                        {
+                            // 记录熔断器打开的日志
+                        },
+                        onReset: () =>
+                        {
+                            // 记录熔断器重置的日志
+                        },
+                        onHalfOpen: () =>
+                        {
+                            // 记录熔断器半开状态的日志
+                        });
+            });
         }
     }
 }
