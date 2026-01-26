@@ -32,10 +32,10 @@ public class XiHanHttpModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var configuration = context.Services.GetConfiguration();
+        var config = services.GetConfiguration();
 
         // 使用扩展方法添加服务
-        services.AddXiHanHttpModule(configuration);
+        services.AddXiHanHttpModule(config);
     }
 
     /// <summary>

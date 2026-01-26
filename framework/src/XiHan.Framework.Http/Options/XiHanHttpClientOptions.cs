@@ -14,6 +14,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Http.Configuration;
+using XiHan.Framework;
 
 namespace XiHan.Framework.Http.Options;
 
@@ -31,7 +32,7 @@ public class XiHanHttpClientOptions
     /// 默认超时时间(秒)
     /// </summary>
     [Range(1, 300)]
-    public int DefaultTimeoutSeconds { get; set; } = 30;
+    public int DefaultTimeoutSeconds { get; set; } = 60;
 
     /// <summary>
     /// 重试次数
@@ -66,7 +67,7 @@ public class XiHanHttpClientOptions
     /// 熔断器断开持续时间(秒)
     /// </summary>
     [Range(10, 600)]
-    public int CircuitBreakerDurationOfBreakSeconds { get; set; } = 30;
+    public int CircuitBreakerDurationOfBreakSeconds { get; set; } = 10;
 
     /// <summary>
     /// 是否启用请求日志
@@ -103,11 +104,7 @@ public class XiHanHttpClientOptions
     /// <summary>
     /// 默认请求头
     /// </summary>
-    public Dictionary<string, string> DefaultHeaders { get; set; } = new()
-    {
-        ["Accept"] = "application/json",
-        ["User-Agent"] = $"XiHan.Framework.Http/{XiHan.Version}"
-    };
+    public Dictionary<string, string> DefaultHeaders { get; set; } = [];
 
     /// <summary>
     /// 预定义的HTTP客户端配置
