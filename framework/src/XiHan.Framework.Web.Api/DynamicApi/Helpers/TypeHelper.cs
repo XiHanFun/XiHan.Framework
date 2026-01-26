@@ -34,46 +34,6 @@ public static class TypeHelper
     }
 
     /// <summary>
-    /// 判断是否是简单类型
-    /// </summary>
-    public static bool IsSimpleType(Type type)
-    {
-        var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
-
-        // 基本类型检查
-        if (underlyingType.IsPrimitive ||
-            underlyingType.IsEnum ||
-            underlyingType == typeof(string) ||
-            underlyingType == typeof(decimal) ||
-            underlyingType == typeof(DateTime) ||
-            underlyingType == typeof(DateTimeOffset) ||
-            underlyingType == typeof(TimeSpan) ||
-            underlyingType == typeof(Guid) ||
-            underlyingType == typeof(DateOnly) ||
-            underlyingType == typeof(TimeOnly))
-        {
-            return true;
-        }
-
-        // 检查是否是值类型且有到基本类型的隐式转换运算符
-        // 这样可以支持 ID 包装类型（如 struct）
-        if (underlyingType.IsValueType && !underlyingType.IsGenericType)
-        {
-            // 检查是否有 implicit operator 到基本类型的转换
-            var methods = underlyingType.GetMethods(BindingFlags.Public | BindingFlags.Static);
-            foreach (var method in methods)
-            {
-                if (method.Name == "op_Implicit" && method.ReturnType.IsPrimitive || method.ReturnType == typeof(string))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>
     /// 判断方法是否继承自 Object
     /// </summary>
     public static bool IsInheritedFromObject(MethodInfo method)
