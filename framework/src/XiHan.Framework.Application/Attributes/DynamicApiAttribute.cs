@@ -56,4 +56,19 @@ public class DynamicApiAttribute : Attribute
     /// API 版本
     /// </summary>
     public string? Version { get; set; }
+
+    /// <summary>
+    /// API 描述（用于 Swagger 文档）
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// API 分组名称/标签（用于 Swagger 文档分组）
+    /// </summary>
+    public string? GroupName { get; set; }
+
+    /// <summary>
+    /// 是否在 API 浏览器中显示（默认 true）
+    /// </summary>
+    public bool VisibleInApiExplorer { get; set; } = true;
 }
