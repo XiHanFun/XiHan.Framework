@@ -20,6 +20,11 @@ namespace XiHan.Framework.ObjectStorage.Options;
 public class MinioStorageOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:ObjectStorage:Minio";
+
+    /// <summary>
     /// 终端节点
     /// </summary>
     public string Endpoint { get; set; } = string.Empty;

@@ -12,12 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Observability.Diagnostics;
-using XiHan.Framework.Observability.Metrics;
-using XiHan.Framework.Observability.Performance;
+using XiHan.Framework.Observability.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Observability;
 
@@ -35,16 +32,7 @@ public class XiHanObservabilityModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        // 注册健康检查
-        services.AddHealthChecks();
-
-        // 注册指标收集服务
-        services.AddSingleton<IMetricsCollector, MetricsCollector>();
-
-        // 注册性能监控服务
-        services.AddSingleton<IPerformanceMonitor, PerformanceMonitor>();
-
-        // 注册诊断服务
-        services.AddSingleton<IDiagnosticsService, DiagnosticsService>();
+        // 使用扩展方法添加可观测性服务
+        services.AddXiHanObservability(config);
     }
 }

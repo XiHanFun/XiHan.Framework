@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,15 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Caching;
 
@@ -41,35 +36,7 @@ public class XiHanCachingModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.AddMemoryCache();
-        services.AddDistributedMemoryCache();
-        services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
-        services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
-
-        services.AddHybridCache();
-        services.AddSingleton(typeof(IHybridCache<>), typeof(XiHanHybridCache<>));
-        services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
-
-        services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
-        {
-            cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
-        });
-
-        var redisEnabled = config.GetValue<bool>("XiHan:Caching:Redis:IsEnabled");
-        if (redisEnabled)
-        {
-            return;
-        }
-
-        services.AddStackExchangeRedisCache(options =>
-        {
-            var redisConfiguration = config.GetValue<string>("XiHan:Caching:Redis:Configuration");
-            if (!redisConfiguration.IsNullOrEmpty())
-            {
-                options.Configuration = redisConfiguration;
-            }
-        });
-
-        services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
+        // 使用扩展方法添加缓存服务
+        services.AddXiHanCaching(config);
     }
 }

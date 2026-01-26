@@ -22,6 +22,11 @@ namespace XiHan.Framework.Logging.Options;
 public class XiHanFileLoggerOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Logging:File";
+
+    /// <summary>
     /// 文件路径
     /// </summary>
     public string FilePath { get; set; } = "logs/xihan-.log";

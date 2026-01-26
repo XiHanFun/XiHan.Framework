@@ -20,6 +20,11 @@ namespace XiHan.Framework.Authentication.Password;
 public class PasswordPolicyOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Authentication:PasswordPolicy";
+
+    /// <summary>
     /// 密码最小长度
     /// </summary>
     public int MinimumLength { get; set; } = 8;
