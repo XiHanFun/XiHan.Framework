@@ -104,11 +104,7 @@ public class XiHanHttpClientOptions
     /// <summary>
     /// 默认请求头
     /// </summary>
-    public Dictionary<string, string> DefaultHeaders { get; set; } = new()
-    {
-        ["Accept"] = "application/json",
-        ["User-Agent"] = $"XiHan.Framework.Http/{XiHanMetadata.Version}"
-    };
+    public Dictionary<string, string> DefaultHeaders { get; set; } = [];
 
     /// <summary>
     /// 预定义的HTTP客户端配置
