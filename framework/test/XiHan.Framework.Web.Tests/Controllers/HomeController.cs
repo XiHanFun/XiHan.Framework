@@ -12,6 +12,7 @@ namespace XiHan.Framework.Web.Tests.Controllers;
 [ApiController]
 [Route("[controller]/[action]")]
 [Produces("application/json")]
+[Tags("用户模块")]
 [ApiExplorerSettings(GroupName = "v1")]
 public class HomeController : ControllerBase
 {
