@@ -206,38 +206,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     }
 
     /// <summary>
-    /// 获取方法映射的所有 API 版本
-    /// </summary>
-    /// <param name="methodInfo">方法信息</param>
-    /// <returns>该方法映射的所有版本号列表</returns>
-    private static List<string> GetMappedApiVersions(MethodInfo methodInfo)
-    {
-        var versions = new List<string>();
-
-        // 获取所有 MapToApiVersionAttribute
-        var mapToVersionAttrs = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>();
-        foreach (var attr in mapToVersionAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version) && !versions.Contains(attr.Version))
-            {
-                versions.Add(attr.Version);
-            }
-        }
-
-        // 获取所有 ApiVersionAttribute
-        var apiVersionAttrs = methodInfo.GetCustomAttributes<ApiVersionAttribute>();
-        foreach (var attr in apiVersionAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version) && !versions.Contains(attr.Version))
-            {
-                versions.Add(attr.Version);
-            }
-        }
-
-        return versions;
-    }
-
-    /// <summary>
     /// 获取路由参数
     /// </summary>
     private static List<string> GetRouteParameters(MethodInfo methodInfo, string? httpMethod)
@@ -247,18 +215,26 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
 
         foreach (var parameter in methodParameters)
         {
-            // 对于 GET 和 DELETE 请求，将简单类型参数添加到路由
+            var paramName = parameter.Name ?? string.Empty;
+
+            // 只将 ID 相关的简单类型参数添加到路由，参数名以 "Id"/"ID" 结尾
+            var isIdParameter = paramName.EndsWith("Id", StringComparison.Ordinal) ||
+                               paramName.EndsWith("ID", StringComparison.Ordinal);
+
+            if (!isIdParameter || !IsSimpleType(parameter.ParameterType))
+            {
+                continue;
+            }
+
+            // 对于 GET 和 DELETE 请求，ID 参数添加到路由
             if (httpMethod is "GET" or "DELETE")
             {
-                if (IsSimpleType(parameter.ParameterType))
-                {
-                    parameters.Add($"{{{parameter.Name}}}");
-                }
+                parameters.Add($"{{{parameter.Name}}}");
             }
-            // 对于 PUT 和 PATCH 请求，通常第一个参数是 ID
+            // 对于 PUT 和 PATCH 请求，通常第一个 ID 参数添加到路由
             else if (httpMethod is "PUT" or "PATCH")
             {
-                if (IsSimpleType(parameter.ParameterType) && parameters.Count == 0)
+                if (parameters.Count == 0)
                 {
                     parameters.Add($"{{{parameter.Name}}}");
                 }
