@@ -43,4 +43,3 @@ public interface IProxyValidator
     /// <returns></returns>
     Task<IEnumerable<ProxyValidationResult>> ValidateBatchAsync(IEnumerable<ProxyConfiguration> proxies, string testUrl, int timeoutSeconds = 10, int maxConcurrency = 10, CancellationToken cancellationToken = default);
 }
-

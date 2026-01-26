@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -355,8 +355,13 @@ public class AdvancedHttpService : IAdvancedHttpService
     public async Task<HttpResult> DownloadFileAsync(string url, string destinationPath, IProgress<long>? progress = null,
         XiHanHttpRequestOptions? options = null, CancellationToken cancellationToken = default)
     {
-        // 设置默认超时时间
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
+        // 确定实际使用的超时时间：优先使用请求级别的超时，否则使用全局默认超时
+        var effectiveTimeout = options?.Timeout.HasValue == true
+            ? options.Timeout.Value
+            : TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds);
+
+        // 设置超时时间
+        using var cts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
         var effectiveToken = linkedCts.Token;
 
@@ -396,10 +401,10 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "文件下载超时。Url: {Url}, 目标路径: {DestinationPath}, 请求唯一标识: {RequestId}",
-                url, destinationPath, requestId);
+            _logger.LogWarning(ex, "文件下载超时。Url: {Url}, 目标路径: {DestinationPath}, 请求唯一标识: {RequestId}, 超时时间: {Timeout}秒",
+                url, destinationPath, requestId, effectiveTimeout.TotalSeconds);
 
-            return HttpResult.Failure($"文件下载超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex);
+            return HttpResult.Failure($"文件下载超时（超过 {effectiveTimeout.TotalSeconds} 秒）", HttpStatusCode.RequestTimeout, ex);
         }
         catch (TaskCanceledException ex)
         {
@@ -488,8 +493,13 @@ public class AdvancedHttpService : IAdvancedHttpService
     private async Task<HttpResult<T>> SendRequestAsync<T>(HttpMethod method, string url, HttpContent? content,
         XiHanHttpRequestOptions? options, CancellationToken cancellationToken)
     {
-        // 设置默认超时时间
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds));
+        // 确定实际使用的超时时间：优先使用请求级别的超时，否则使用全局默认超时
+        var effectiveTimeout = options?.Timeout.HasValue == true
+            ? options.Timeout.Value
+            : TimeSpan.FromSeconds(_options.DefaultTimeoutSeconds);
+
+        // 设置超时时间
+        using var cts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
         var effectiveToken = linkedCts.Token;
 
@@ -516,10 +526,20 @@ public class AdvancedHttpService : IAdvancedHttpService
             HttpClient client;
             HttpMessageHandler? handler = null;
 
-            // 如果需要使用代理,创建带代理的客户端
-            if (proxyToUse != null)
+            // 确定是否忽略 SSL 证书错误
+            var ignoreSslErrors = _options.IgnoreSslErrors;
+            if (options?.ValidateSslCertificate.HasValue == true)
             {
-                handler = CreateProxyHandler(proxyToUse, _options.IgnoreSslErrors);
+                // 如果请求明确指定了验证SSL，则不忽略SSL错误；否则忽略
+                ignoreSslErrors = !options.ValidateSslCertificate.Value;
+            }
+
+            // 如果需要使用代理或需要特殊的SSL配置,创建带特殊配置的客户端
+            var needCustomClient = proxyToUse != null || (options?.ValidateSslCertificate.HasValue == true && ignoreSslErrors != _options.IgnoreSslErrors);
+
+            if (needCustomClient)
+            {
+                handler = CreateProxyHandler(proxyToUse, ignoreSslErrors);
                 client = new HttpClient(handler)
                 {
                     // 应用超时设置
@@ -538,6 +558,24 @@ public class AdvancedHttpService : IAdvancedHttpService
                 using var request = new HttpRequestMessage(method, fullUrl) { Content = content };
 
                 AddHeaders(request, options, requestId);
+
+                // 将断路器、重试和日志选项传递到请求上下文中
+                if (options?.EnableCircuitBreaker.HasValue == true)
+                {
+                    request.Options.Set(new HttpRequestOptionsKey<bool>("EnableCircuitBreaker"), options.EnableCircuitBreaker.Value);
+                }
+                if (options?.EnableRetry.HasValue == true)
+                {
+                    request.Options.Set(new HttpRequestOptionsKey<bool>("EnableRetry"), options.EnableRetry.Value);
+                }
+                if (options?.LogRequest.HasValue == true)
+                {
+                    request.Options.Set(new HttpRequestOptionsKey<bool>("LogRequest"), options.LogRequest.Value);
+                }
+                if (options?.LogResponse.HasValue == true)
+                {
+                    request.Options.Set(new HttpRequestOptionsKey<bool>("LogResponse"), options.LogResponse.Value);
+                }
 
                 using var response = await client.SendAsync(request, effectiveToken);
 
@@ -607,10 +645,10 @@ public class AdvancedHttpService : IAdvancedHttpService
         }
         catch (TaskCanceledException ex) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "HTTP请求超时。方法: {Method}, Url: {Url}, 请求唯一标识: {RequestId}",
-                method.Method, url, requestId);
+            _logger.LogWarning(ex, "HTTP请求超时。方法: {Method}, Url: {Url}, 请求唯一标识: {RequestId}, 超时时间: {Timeout}秒",
+                method.Method, url, requestId, effectiveTimeout.TotalSeconds);
 
-            return HttpResult<T>.Failure($"请求超时（超过 {_options.DefaultTimeoutSeconds} 秒）", HttpStatusCode.RequestTimeout, ex)
+            return HttpResult<T>.Failure($"请求超时（超过 {effectiveTimeout.TotalSeconds} 秒）", HttpStatusCode.RequestTimeout, ex)
                 .SetElapsedMilliseconds(stopwatch.ElapsedMilliseconds)
                 .SetRequestInfo(method.Method, url);
         }
@@ -711,44 +749,48 @@ public class AdvancedHttpService : IAdvancedHttpService
     /// <summary>
     /// 创建代理处理器
     /// </summary>
-    /// <param name="proxy">代理配置</param>
+    /// <param name="proxy">代理配置(可选)</param>
     /// <param name="ignoreSslErrors">是否忽略SSL错误</param>
     /// <returns></returns>
-    private static HttpClientHandler CreateProxyHandler(ProxyConfiguration proxy, bool ignoreSslErrors)
+    private static HttpClientHandler CreateProxyHandler(ProxyConfiguration? proxy, bool ignoreSslErrors)
     {
         var handler = new HttpClientHandler();
 
-        var scheme = proxy.Type switch
+        // 如果提供了代理配置，则设置代理
+        if (proxy != null)
         {
-            ProxyType.Http => "http",
-            ProxyType.Https => "https",
-            ProxyType.Socks4 => "socks4",
-            ProxyType.Socks4A => "socks4a",
-            ProxyType.Socks5 => "socks5",
-            _ => "http"
-        };
+            var scheme = proxy.Type switch
+            {
+                ProxyType.Http => "http",
+                ProxyType.Https => "https",
+                ProxyType.Socks4 => "socks4",
+                ProxyType.Socks4A => "socks4a",
+                ProxyType.Socks5 => "socks5",
+                _ => "http"
+            };
 
-        var webProxy = new WebProxy
-        {
-            Address = new Uri($"{scheme}://{proxy.Host}:{proxy.Port}"),
-            BypassProxyOnLocal = !proxy.UseProxyForLocalAddress,
-            UseDefaultCredentials = false
-        };
+            var webProxy = new WebProxy
+            {
+                Address = new Uri($"{scheme}://{proxy.Host}:{proxy.Port}"),
+                BypassProxyOnLocal = !proxy.UseProxyForLocalAddress,
+                UseDefaultCredentials = false
+            };
 
-        // 设置绕过列表
-        if (proxy.BypassList.Count > 0)
-        {
-            webProxy.BypassList = [.. proxy.BypassList];
+            // 设置绕过列表
+            if (proxy.BypassList.Count > 0)
+            {
+                webProxy.BypassList = [.. proxy.BypassList];
+            }
+
+            // 设置认证
+            if (!string.IsNullOrEmpty(proxy.Username) && !string.IsNullOrEmpty(proxy.Password))
+            {
+                webProxy.Credentials = new NetworkCredential(proxy.Username, proxy.Password);
+            }
+
+            handler.Proxy = webProxy;
+            handler.UseProxy = true;
         }
-
-        // 设置认证
-        if (!string.IsNullOrEmpty(proxy.Username) && !string.IsNullOrEmpty(proxy.Password))
-        {
-            webProxy.Credentials = new NetworkCredential(proxy.Username, proxy.Password);
-        }
-
-        handler.Proxy = webProxy;
-        handler.UseProxy = true;
 
         // 设置SSL证书验证
         if (ignoreSslErrors)
