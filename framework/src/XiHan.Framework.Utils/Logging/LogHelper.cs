@@ -307,9 +307,19 @@ public static class LogHelper
     /// <summary>
     /// 错误、删除、危险、异常信息
     /// </summary>
-    /// <param name="errorMessage">消息模板</param>
     /// <param name="ex">异常</param>
-    public static void Error(string? errorMessage, Exception ex)
+    public static void Error(Exception ex)
+    {
+        var message = $"{ex}";
+        WriteColorLine(message, LogLevel.Error);
+    }
+
+    /// <summary>
+    /// 错误、删除、危险、异常信息
+    /// </summary>
+    /// <param name="ex">异常</param>
+    /// <param name="errorMessage">消息模板</param>
+    public static void Error(Exception ex, string? errorMessage)
     {
         var message = $"{errorMessage}{Environment.NewLine}{ex}";
         WriteColorLine(message, LogLevel.Error);
