@@ -104,6 +104,9 @@ public static class DynamicApiControllerFactory
                 // 添加 Route 特性
                 AddRouteAttribute(typeBuilder, routeTemplate);
 
+                // 添加 ApiExplorerSettings 特性（用于文档分组）
+                AddApiExplorerSettingsAttribute(typeBuilder, serviceType);
+
                 // 添加服务字段
                 var serviceField = DefineServiceField(typeBuilder, serviceType);
 
@@ -165,6 +168,41 @@ public static class DynamicApiControllerFactory
         if (constructor != null)
         {
             typeBuilder.SetCustomAttribute(new CustomAttributeBuilder(constructor, [routeTemplate]));
+        }
+    }
+
+    /// <summary>
+    /// 添加 ApiExplorerSettings 特性
+    /// </summary>
+    private static void AddApiExplorerSettingsAttribute(TypeBuilder typeBuilder, Type serviceType)
+    {
+        // 从服务类型获取 DynamicApiAttribute
+        var dynamicApiAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
+        if (dynamicApiAttr == null)
+        {
+            return;
+        }
+
+        // 只处理 VisibleInApiExplorer = false 的情况
+        // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
+        if (!dynamicApiAttr.VisibleInApiExplorer)
+        {
+            var attributeType = typeof(Microsoft.AspNetCore.Mvc.ApiExplorerSettingsAttribute);
+            var constructor = attributeType.GetConstructor(Type.EmptyTypes);
+            if (constructor != null)
+            {
+                var ignoreApiProperty = attributeType.GetProperty("IgnoreApi");
+                if (ignoreApiProperty != null)
+                {
+                    var attributeBuilder = new CustomAttributeBuilder(
+                        constructor,
+                        [],
+                        [ignoreApiProperty],
+                        [true]);
+
+                    typeBuilder.SetCustomAttribute(attributeBuilder);
+                }
+            }
         }
     }
 
@@ -480,6 +518,12 @@ public static class DynamicApiControllerFactory
         // 添加 HTTP 方法特性（带路由模板）
         AddHttpMethodAttribute(methodBuilder, httpMethod, context.RouteTemplate);
 
+        // 添加方法级别的 ApiExplorerSettings 特性
+        AddMethodApiExplorerSettingsAttribute(methodBuilder, serviceMethod);
+
+        // 添加原始方法标记特性（用于 Swagger 读取 XML 注释）
+        AddOriginalMethodAttribute(methodBuilder, serviceMethod);
+
         // 添加参数及参数特性
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -570,6 +614,59 @@ public static class DynamicApiControllerFactory
             {
                 paramBuilder.SetCustomAttribute(new CustomAttributeBuilder(constructor, []));
             }
+        }
+    }
+
+    /// <summary>
+    /// 添加方法级别的 ApiExplorerSettings 特性
+    /// </summary>
+    private static void AddMethodApiExplorerSettingsAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod)
+    {
+        // 从服务方法获取 DynamicApiAttribute
+        var dynamicApiAttr = serviceMethod.GetCustomAttribute<DynamicApiAttribute>();
+        if (dynamicApiAttr == null)
+        {
+            return;
+        }
+
+        // 只处理 VisibleInApiExplorer = false 的情况
+        // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
+        if (!dynamicApiAttr.VisibleInApiExplorer)
+        {
+            var attributeType = typeof(Microsoft.AspNetCore.Mvc.ApiExplorerSettingsAttribute);
+            var constructor = attributeType.GetConstructor(Type.EmptyTypes);
+            if (constructor != null)
+            {
+                var ignoreApiProperty = attributeType.GetProperty("IgnoreApi");
+                if (ignoreApiProperty != null)
+                {
+                    var attributeBuilder = new CustomAttributeBuilder(
+                        constructor,
+                        [],
+                        [ignoreApiProperty],
+                        [true]);
+
+                    methodBuilder.SetCustomAttribute(attributeBuilder);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 添加原始方法标记特性
+    /// </summary>
+    private static void AddOriginalMethodAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod)
+    {
+        var attributeType = typeof(Attributes.OriginalMethodAttribute);
+        var constructor = attributeType.GetConstructor([typeof(Type), typeof(string), typeof(Type[])]);
+        if (constructor != null)
+        {
+            var parameterTypes = serviceMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+            var attributeBuilder = new CustomAttributeBuilder(
+                constructor,
+                [serviceMethod.DeclaringType!, serviceMethod.Name, parameterTypes]);
+
+            methodBuilder.SetCustomAttribute(attributeBuilder);
         }
     }
 
