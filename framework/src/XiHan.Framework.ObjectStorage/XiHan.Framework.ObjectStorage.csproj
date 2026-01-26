@@ -16,7 +16,7 @@
     <ItemGroup>
         <PackageReference Include="Aliyun.OSS.SDK.NetCore" Version="2.14.1" />
         <PackageReference Include="Minio" Version="7.0.0" />
-        <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.49" />
+        <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.51" />
     </ItemGroup>
 
     <ItemGroup>
