@@ -48,10 +48,8 @@ public class XiHanWebDocsModule : XiHanModule
                 options.IncludeXmlComments(xmlFile, includeControllerXmlComments: true);
             }
 
-            // 添加动态 API 标签过滤器（用于设置 Swagger Tags）
-            options.OperationFilter<DynamicApiTagsOperationFilter>();
-
             // 添加动态 API XML 注释过滤器（用于读取原始服务方法的 XML 注释）
+            // Tags 现在使用 ASP.NET Core 内置的 TagsAttribute，不再需要自定义过滤器
             options.OperationFilter<DynamicApiXmlCommentsOperationFilter>();
         });
     }
