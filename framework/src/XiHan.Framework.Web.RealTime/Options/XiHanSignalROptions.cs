@@ -20,6 +20,11 @@ namespace XiHan.Framework.Web.RealTime.Options;
 public class XiHanSignalROptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Web:RealTime:SignalR";
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     public XiHanSignalROptions()

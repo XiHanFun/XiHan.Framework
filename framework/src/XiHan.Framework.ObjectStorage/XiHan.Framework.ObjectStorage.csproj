@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.ObjectStorage</Title>
+        <AssemblyName>XiHan.Framework.ObjectStorage</AssemblyName>
+        <PackageId>XiHan.Framework.ObjectStorage</PackageId>
+        <Description>曦寒框架对象存储库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Aliyun.OSS.SDK.NetCore" Version="2.14.1" />
+        <PackageReference Include="Minio" Version="7.0.0" />
+        <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.49" />
+    </ItemGroup>
+
+    <ItemGroup>
+		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>

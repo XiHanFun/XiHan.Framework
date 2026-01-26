@@ -42,7 +42,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     {
         // 配置选项
         services.Configure<XiHanHttpClientOptions>(configuration.GetSection(XiHanHttpClientOptions.SectionName));
-        services.Configure<ProxyPoolOptions>(configuration.GetSection(ProxyPoolOptions.SectionName));
+        services.Configure<XiHanProxyPoolOptions>(configuration.GetSection(XiHanProxyPoolOptions.SectionName));
 
         // 注册代理相关服务
         services.AddSingleton<IProxyValidator, ProxyValidator>();
@@ -67,8 +67,8 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// <param name="configuration">配置</param>
     private static void ConfigureProxyPool(IServiceCollection services, IConfiguration configuration)
     {
-        var proxyPoolOptions = new ProxyPoolOptions();
-        configuration.GetSection(ProxyPoolOptions.SectionName).Bind(proxyPoolOptions);
+        var proxyPoolOptions = new XiHanProxyPoolOptions();
+        configuration.GetSection(XiHanProxyPoolOptions.SectionName).Bind(proxyPoolOptions);
 
         if (proxyPoolOptions.Enabled && proxyPoolOptions.EnableHealthCheck)
         {

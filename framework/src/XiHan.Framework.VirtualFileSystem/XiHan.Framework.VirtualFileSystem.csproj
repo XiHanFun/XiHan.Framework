@@ -14,12 +14,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aliyun.OSS.SDK.NetCore" Version="2.14.1" />
         <PackageReference Include="Microsoft.Extensions.FileProviders.Composite" Version="10.0.2" />
         <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="10.0.2" />
         <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.2" />
-        <PackageReference Include="Minio" Version="7.0.0" />
-        <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.49" />
     </ItemGroup>
 
     <ItemGroup>

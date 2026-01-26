@@ -40,10 +40,12 @@ public class XiHanMultiTenancyModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
+        var services = context.Services;
+        var config = services.GetConfiguration();
 
-        var configuration = context.Services.GetConfiguration();
-        Configure<XiHanDefaultTenantStoreOptions>(configuration);
+        services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
+
+        Configure<XiHanDefaultTenantStoreOptions>(config);
 
         Configure<XiHanSettingOptions>(options =>
         {

@@ -17,8 +17,13 @@ namespace XiHan.Framework.AI.Options;
 /// <summary>
 /// AI服务基础配置
 /// </summary>
-public class AiOptions
+public class AIOptions
 {
+    /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:AI";
+
     /// <summary>
     /// 默认服务提供商名称
     /// </summary>

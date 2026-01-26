@@ -12,13 +12,13 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Logging;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Traffic;
-using XiHan.Framework.Traffic.Extensions;
+using XiHan.Framework.Traffic.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Core;
 
 namespace XiHan.Framework.Web.Gateway;
@@ -45,6 +45,7 @@ public class XiHanWebGatewayModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         // 注册灰度路由服务
         services.AddGrayRouting();
