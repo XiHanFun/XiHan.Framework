@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
-using XiHan.Framework.Application.Services.Abstracts;
+using XiHan.Framework.Application.Contracts.Services;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Helpers;
 

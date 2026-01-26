@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Timing.Extensions;
+using XiHan.Framework.Timing.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Timing;
 
@@ -30,8 +30,8 @@ public class XiHanTimingModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
-        services.AddOptions<XiHanClockOptions>();
         services.AddXiHanTiming();
     }
 }

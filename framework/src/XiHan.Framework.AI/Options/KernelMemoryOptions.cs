@@ -20,6 +20,11 @@ namespace XiHan.Framework.AI.Options;
 public class KernelMemoryOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:AI:Memory";
+
+    /// <summary>
     /// 存储类型
     /// </summary>
     public string StorageType { get; set; } = "Volatile";

@@ -14,7 +14,7 @@
 
 using Mapster;
 using System.Linq.Expressions;
-using XiHan.Framework.Application.Services.Abstracts;
+using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;

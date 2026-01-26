@@ -46,6 +46,7 @@ using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Docs;
 using XiHan.Framework.Web.Gateway;
 using XiHan.Framework.Web.RealTime;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Tests;
 
@@ -95,6 +96,7 @@ public class XiHanTestsWebModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
     }
 
     /// <summary>

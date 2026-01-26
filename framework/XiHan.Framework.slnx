@@ -8,24 +8,8 @@
   </Folder>
   <Folder Name="/1.src/3.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
-    <Project Path="src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
-    <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
-    <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
   </Folder>
-  <Folder Name="/1.src/4.Domain/">
-    <Project Path="src/XiHan.Framework.Domain.Shared/XiHan.Framework.Domain.Shared.csproj" />
-    <Project Path="src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
-  </Folder>
-  <Folder Name="/1.src/5.Application/">
-    <Project Path="src/XiHan.Framework.Application.Contracts/XiHan.Framework.Application.Contracts.csproj" />
-    <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
-    <Project Path="src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
-    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
-    <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" />
-    <Project Path="src/XiHan.Framework.Validation.Abstractions/XiHan.Framework.Validation.Abstractions.csproj" />
-    <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
-  </Folder>
-  <Folder Name="/1.src/6.Infrastructure/">
+  <Folder Name="/1.src/4.Infrastructure/">
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
@@ -37,8 +21,13 @@
     <Project Path="src/XiHan.Framework.EventBus.Abstractions/XiHan.Framework.EventBus.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
     <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
+    <Project Path="src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />
+    <Project Path="src/XiHan.Framework.Logging/XiHan.Framework.Logging.csproj" />
     <Project Path="src/XiHan.Framework.Messaging/XiHan.Framework.Messaging.csproj" />
     <Project Path="src/XiHan.Framework.ObjectMapping/XiHan.Framework.ObjectMapping.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectStorage/XiHan.Framework.ObjectStorage.csproj" />
+    <Project Path="src/XiHan.Framework.Observability/XiHan.Framework.Observability.csproj" />
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
@@ -50,6 +39,19 @@
     <Project Path="src/XiHan.Framework.Traffic/XiHan.Framework.Traffic.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
+  </Folder>
+  <Folder Name="/1.src/5.Domain/">
+    <Project Path="src/XiHan.Framework.Domain.Shared/XiHan.Framework.Domain.Shared.csproj" />
+    <Project Path="src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+  </Folder>
+  <Folder Name="/1.src/6.Application/">
+    <Project Path="src/XiHan.Framework.Application.Contracts/XiHan.Framework.Application.Contracts.csproj" />
+    <Project Path="src/XiHan.Framework.Application/XiHan.Framework.Application.csproj" Id="a910c835-b325-4cd2-ba75-ebbd5778a8c9" />
+    <Project Path="src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
+    <Project Path="src/XiHan.Framework.Settings/XiHan.Framework.Settings.csproj" />
+    <Project Path="src/XiHan.Framework.Validation.Abstractions/XiHan.Framework.Validation.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Validation/XiHan.Framework.Validation.csproj" />
   </Folder>
   <Folder Name="/1.src/7.Web/">
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />

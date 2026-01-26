@@ -29,13 +29,13 @@ namespace XiHan.Framework.AI.Providers.OpenAI;
 /// <summary>
 /// 基于远程 OpenAI 的曦寒 AI 服务
 /// </summary>
-public class XiHanOpenAiService : IXiHanAIService
+public class XiHanOpenAIService : IXiHanAIService
 {
     private readonly Kernel _kernel;
-    private readonly OpenAiOptions _options;
+    private readonly OpenAIOptions _options;
     private readonly IChatCompletionService _openAiChatService;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _openAiTextEmbeddingService;
-    private readonly ILogger<XiHanOpenAiService> _logger;
+    private readonly ILogger<XiHanOpenAIService> _logger;
 
     private string _currentModel;
 
@@ -45,10 +45,10 @@ public class XiHanOpenAiService : IXiHanAIService
     /// <param name="kernel">Semantic Kernel实例</param>
     /// <param name="options">OpenAI配置选项</param>
     /// <param name="logger">日志记录器</param>
-    public XiHanOpenAiService(
+    public XiHanOpenAIService(
         Kernel kernel,
-        IOptions<OpenAiOptions> options,
-        ILogger<XiHanOpenAiService> logger)
+        IOptions<OpenAIOptions> options,
+        ILogger<XiHanOpenAIService> logger)
     {
         _kernel = kernel;
         _options = options.Value;

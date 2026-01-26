@@ -17,6 +17,7 @@ using XiHan.Framework.Authentication;
 using XiHan.Framework.Authorization.Permissions;
 using XiHan.Framework.Authorization.Policies;
 using XiHan.Framework.Authorization.Roles;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Authorization;
@@ -35,8 +36,9 @@ public class XiHanAuthorizationModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // 以下接口为默认实现，具体需要根据实际实现进行替换
         var services = context.Services;
+        var config = services.GetConfiguration();
+        // 以下接口为默认实现，具体需要根据实际实现进行替换
 
         // 注册角色存储
         services.AddScoped<IRoleStore, DefaultRoleStore>();

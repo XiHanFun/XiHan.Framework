@@ -37,18 +37,19 @@ public class XiHanWebRealTimeModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var configuration = services.GetConfiguration();
+        var config = services.GetConfiguration();
+
         var signalROptions = new XiHanSignalROptions();
 
         // 配置 SignalR 选项
         services.Configure<XiHanSignalROptions>(options =>
         {
             // 从配置文件读取
-            configuration.GetSection("XiHan:SignalR").Bind(options);
+            config.GetSection(XiHanSignalROptions.SectionName).Bind(options);
         });
 
         // 添加 SignalR 服务
-        configuration.GetSection("XiHan:SignalR").Bind(signalROptions);
+        config.GetSection(XiHanSignalROptions.SectionName).Bind(signalROptions);
 
         services.AddXiHanSignalRWithJson();
     }

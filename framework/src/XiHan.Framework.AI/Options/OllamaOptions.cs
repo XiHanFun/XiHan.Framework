@@ -20,6 +20,11 @@ namespace XiHan.Framework.AI.Options;
 public class OllamaOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:AI:Ollama";
+
+    /// <summary>
     /// 服务唯一标识
     /// </summary>
     public string ServiceId { get; set; } = "Ollama";
