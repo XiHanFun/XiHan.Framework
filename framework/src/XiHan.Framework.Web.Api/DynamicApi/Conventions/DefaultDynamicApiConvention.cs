@@ -74,16 +74,28 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         // 如果没有方法信息，设置控制器级别的路由模板后返回
         if (context.MethodInfo == null)
         {
-            // 设置控制器级别的路由模板
-            if (string.IsNullOrEmpty(context.RouteTemplate))
+            // 从类级别的 DynamicApiAttribute 读取自定义路由模板
+            var classAttr = context.ServiceType.GetCustomAttribute<DynamicApiAttribute>();
+            if (classAttr != null && !string.IsNullOrEmpty(classAttr.RouteTemplate))
+            {
+                context.RouteTemplate = classAttr.RouteTemplate;
+            }
+            // 如果没有自定义路由模板，使用默认规则
+            else if (string.IsNullOrEmpty(context.RouteTemplate))
             {
                 context.RouteTemplate = GetRouteTemplate(context);
             }
             return;
         }
 
+        // 从方法级别的 DynamicApiAttribute 读取自定义名称
+        var methodAttr = context.MethodInfo.GetCustomAttribute<DynamicApiAttribute>();
+        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.Name))
+        {
+            context.ActionName = methodAttr.Name;
+        }
         // 设置动作名称
-        if (string.IsNullOrEmpty(context.ActionName))
+        else if (string.IsNullOrEmpty(context.ActionName))
         {
             context.ActionName = GetActionName(context.MethodInfo);
         }
@@ -94,8 +106,13 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             context.HttpMethod = GetHttpMethod(context.MethodInfo);
         }
 
+        // 从方法级别的 DynamicApiAttribute 读取自定义路由模板
+        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.RouteTemplate))
+        {
+            context.RouteTemplate = methodAttr.RouteTemplate;
+        }
         // 设置方法级别的路由模板
-        if (string.IsNullOrEmpty(context.RouteTemplate))
+        else if (string.IsNullOrEmpty(context.RouteTemplate))
         {
             context.RouteTemplate = GetRouteTemplate(context);
         }
