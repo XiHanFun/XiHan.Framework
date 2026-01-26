@@ -32,7 +32,7 @@ public class XiHanHttpClientOptions
     /// 默认超时时间(秒)
     /// </summary>
     [Range(1, 300)]
-    public int DefaultTimeoutSeconds { get; set; } = 30;
+    public int DefaultTimeoutSeconds { get; set; } = 60;
 
     /// <summary>
     /// 重试次数
@@ -67,7 +67,7 @@ public class XiHanHttpClientOptions
     /// 熔断器断开持续时间(秒)
     /// </summary>
     [Range(10, 600)]
-    public int CircuitBreakerDurationOfBreakSeconds { get; set; } = 30;
+    public int CircuitBreakerDurationOfBreakSeconds { get; set; } = 10;
 
     /// <summary>
     /// 是否启用请求日志

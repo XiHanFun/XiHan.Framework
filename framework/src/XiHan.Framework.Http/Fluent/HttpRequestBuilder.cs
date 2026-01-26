@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -305,6 +305,27 @@ public class HttpRequestBuilder
     public HttpRequestBuilder AddTag(string key, object value)
     {
         _options.AddTag(key, value);
+        return this;
+    }
+
+    /// <summary>
+    /// 验证SSL证书
+    /// </summary>
+    /// <param name="validate">是否验证SSL证书</param>
+    /// <returns></returns>
+    public HttpRequestBuilder ValidateSslCertificate(bool validate = true)
+    {
+        _options.ValidateSslCertificate = validate;
+        return this;
+    }
+
+    /// <summary>
+    /// 忽略SSL证书错误
+    /// </summary>
+    /// <returns></returns>
+    public HttpRequestBuilder IgnoreSslErrors()
+    {
+        _options.ValidateSslCertificate = false;
         return this;
     }
 
