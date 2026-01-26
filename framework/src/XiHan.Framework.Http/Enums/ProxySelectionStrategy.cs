@@ -44,4 +44,3 @@ public enum ProxySelectionStrategy
     /// </summary>
     Priority = 4
 }
-

@@ -29,7 +29,7 @@ public class ProxyPoolManager : IProxyPoolManager, IDisposable
 {
     private readonly ILogger<ProxyPoolManager> _logger;
     private readonly IProxyValidator _proxyValidator;
-    private readonly ProxyPoolOptions _options;
+    private readonly XiHanProxyPoolOptions _options;
     private readonly ConcurrentDictionary<string, ProxyConfiguration> _proxies;
     private readonly ConcurrentDictionary<string, ProxyStatistics> _statistics;
     private readonly Random _random;
@@ -46,7 +46,7 @@ public class ProxyPoolManager : IProxyPoolManager, IDisposable
     public ProxyPoolManager(
         ILogger<ProxyPoolManager> logger,
         IProxyValidator proxyValidator,
-        IOptions<ProxyPoolOptions> options)
+        IOptions<XiHanProxyPoolOptions> options)
     {
         _logger = logger;
         _proxyValidator = proxyValidator;
