@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.VirtualFileSystem.Services;
+using XiHan.Framework.VirtualFileSystem.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.VirtualFileSystem;
 
@@ -30,10 +30,8 @@ public class XiHanVirtualFileSystemModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
-        // 注册核心服务
-        services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
-        // 注册附加服务
-        services.AddSingleton<IFileVersioningService, FileVersioningService>();
+        services.AddXiHanVirtualFileSystem();
     }
 }

@@ -495,6 +495,8 @@ public class MyAppModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
+        var services = context.Services;
         services.AddDynamicApi();
     }
 }

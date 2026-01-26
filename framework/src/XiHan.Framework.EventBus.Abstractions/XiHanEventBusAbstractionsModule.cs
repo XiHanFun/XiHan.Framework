@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.ObjectMapping;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.EventBus.Abstractions;
 
@@ -31,5 +32,7 @@ public class XiHanEventBusAbstractionsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        var services = context.Services;
+        var config = services.GetConfiguration();
     }
 }

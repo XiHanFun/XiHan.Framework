@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
+using XiHan.Framework.AI.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Options;
 using XiHan.Framework.AI.Providers;
 using XiHan.Framework.AI.Providers.Ollama;
@@ -34,8 +35,6 @@ namespace XiHan.Framework.AI;
     )]
 public class XiHanAIModule : XiHanModule
 {
-    private const string ModuleConfigNode = "XiHan:AI";
-
     /// <summary>
     /// 服务配置
     /// </summary>
@@ -43,10 +42,9 @@ public class XiHanAIModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var configuration = services.GetConfiguration();
+        var config = services.GetConfiguration();
 
-        Configure<OllamaOptions>(configuration.GetSection($"{ModuleConfigNode}:Ollama"));
-        Configure<OpenAiOptions>(configuration.GetSection($"{ModuleConfigNode}:OpenAI"));
+        services.AddXiHanAI(config);
 
         // 注册 Semantic Kernel 内核，配置 Ollama、OpenAI 等 Connector
         var kernelBuilder = services.AddKernel();
@@ -65,7 +63,7 @@ public class XiHanAIModule : XiHanModule
             services.AddKeyedTransient<IXiHanAIService, XiHanOllamaService>(ollamaOptions.ServiceId);
         });
         // OpenAI
-        PostConfigure<OpenAiOptions>(openAiOptions =>
+        PostConfigure<OpenAIOptions>(openAiOptions =>
         {
             kernelBuilder.AddOpenAIChatCompletion(
                 modelId: openAiOptions.ModelName,
@@ -76,7 +74,7 @@ public class XiHanAIModule : XiHanModule
                 modelId: openAiOptions.ModelName,
                 apiKey: openAiOptions.ApiKey,
                 serviceId: openAiOptions.ServiceId);
-            services.AddKeyedTransient<IXiHanAIService, XiHanOpenAiService>(openAiOptions.ServiceId);
+            services.AddKeyedTransient<IXiHanAIService, XiHanOpenAIService>(openAiOptions.ServiceId);
         });
     }
 }

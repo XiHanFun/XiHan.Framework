@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Hybrid;
@@ -38,6 +39,7 @@ public class XiHanCachingModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+        var config = services.GetConfiguration();
 
         services.AddMemoryCache();
         services.AddDistributedMemoryCache();
@@ -53,23 +55,21 @@ public class XiHanCachingModule : XiHanModule
             cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
         });
 
-        var configuration = context.Services.GetConfiguration();
-
-        var redisEnabled = configuration["Redis:IsEnabled"];
-        if (!string.IsNullOrEmpty(redisEnabled) && !bool.Parse(redisEnabled))
+        var redisEnabled = config.GetValue<bool>("XiHan:Caching:Redis:IsEnabled");
+        if (redisEnabled)
         {
             return;
         }
 
-        context.Services.AddStackExchangeRedisCache(options =>
+        services.AddStackExchangeRedisCache(options =>
         {
-            var redisConfiguration = configuration["Redis:Configuration"];
+            var redisConfiguration = config.GetValue<string>("XiHan:Caching:Redis:Configuration");
             if (!redisConfiguration.IsNullOrEmpty())
             {
                 options.Configuration = redisConfiguration;
             }
         });
 
-        context.Services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
+        services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
     }
 }
