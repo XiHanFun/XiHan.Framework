@@ -28,7 +28,7 @@ namespace XiHan.Framework.Web.Docs.Swagger;
 /// </summary>
 public class DynamicApiXmlCommentsOperationFilter : IOperationFilter
 {
-    private readonly Dictionary<string, XDocument> _xmlDocuments = new();
+    private readonly Dictionary<string, XDocument> _xmlDocuments = [];
 
     /// <summary>
     /// 构造函数
@@ -187,40 +187,5 @@ public class DynamicApiXmlCommentsOperationFilter : IOperationFilter
         }
 
         return null;
-    }
-}
-
-/// <summary>
-/// XML 注释节点名称辅助类
-/// </summary>
-internal static class XmlCommentsNodeNameHelper
-{
-    /// <summary>
-    /// 获取方法的成员名称
-    /// </summary>
-    public static string GetMemberNameForMethod(MethodInfo method)
-    {
-        var declaringTypeName = method.DeclaringType?.FullName?.Replace("+", ".");
-        var parameters = method.GetParameters();
-
-        var parameterTypeNames = parameters.Select(p =>
-        {
-            var typeName = p.ParameterType.FullName ?? p.ParameterType.Name;
-            // 处理泛型参数
-            if (p.ParameterType.IsGenericType)
-            {
-                var genericTypeName = typeName.Substring(0, typeName.IndexOf('`'));
-                var genericArgs = p.ParameterType.GetGenericArguments();
-                var genericArgNames = string.Join(",", genericArgs.Select(t => t.FullName ?? t.Name));
-                typeName = $"{genericTypeName}{{{genericArgNames}}}";
-            }
-            return typeName.Replace("+", ".");
-        });
-
-        var parameterList = parameters.Length > 0
-            ? $"({string.Join(",", parameterTypeNames)})"
-            : string.Empty;
-
-        return $"M:{declaringTypeName}.{method.Name}{parameterList}";
     }
 }

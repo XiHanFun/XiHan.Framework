@@ -38,6 +38,11 @@ public class DynamicApiAttribute : Attribute
     }
 
     /// <summary>
+    /// 是否启用动态 API
+    /// </summary>
+    public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
     /// 路由模板
     /// </summary>
     public string? RouteTemplate { get; set; }
@@ -46,11 +51,6 @@ public class DynamicApiAttribute : Attribute
     /// API 名称
     /// </summary>
     public string? Name { get; set; }
-
-    /// <summary>
-    /// 是否启用动态 API
-    /// </summary>
-    public bool IsEnabled { get; set; } = true;
 
     /// <summary>
     /// API 版本

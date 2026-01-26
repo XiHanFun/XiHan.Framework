@@ -4,14 +4,14 @@ using XiHan.Framework.Application.Services;
 /// <summary>
 /// 测试服务
 /// </summary>
-[Tags("测试服务")]
 public class TestService : ApplicationServiceBase
 {
     /// <summary>
     /// 获取测试消息1
     /// </summary>
     [DynamicApi(
-        Name = "GetTest1",
+        RouteTemplate = "{TestService}/get1",
+        Name = "GetTest11111111111",
         Description = "获取第一个测试消息，使用自定义路由",
         GroupName = "测试-基础接口")]
     public string GetTest1()

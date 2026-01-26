@@ -521,6 +521,9 @@ public static class DynamicApiControllerFactory
         // 添加方法级别的 ApiExplorerSettings 特性
         AddMethodApiExplorerSettingsAttribute(methodBuilder, serviceMethod);
 
+        // 添加 Tags 特性（用于 Swagger/OpenAPI 分组）
+        AddTagsAttribute(methodBuilder, serviceMethod, serviceField.FieldType);
+
         // 添加原始方法标记特性（用于 Swagger 读取 XML 注释）
         AddOriginalMethodAttribute(methodBuilder, serviceMethod);
 
@@ -653,11 +656,50 @@ public static class DynamicApiControllerFactory
     }
 
     /// <summary>
+    /// 添加 Tags 特性（用于 Swagger/OpenAPI 分组）
+    /// </summary>
+    private static void AddTagsAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod, Type serviceType)
+    {
+        // 获取方法级别的 DynamicApiAttribute
+        var methodAttr = serviceMethod.GetCustomAttribute<DynamicApiAttribute>();
+
+        // 获取类级别的 DynamicApiAttribute
+        var classAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
+
+        // 确定使用哪个 GroupName（方法级别优先）
+        string? groupName = null;
+        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.GroupName))
+        {
+            groupName = methodAttr.GroupName;
+        }
+        else if (classAttr != null && !string.IsNullOrEmpty(classAttr.GroupName))
+        {
+            groupName = classAttr.GroupName;
+        }
+
+        // 如果有 GroupName，添加 Tags 特性
+        if (!string.IsNullOrEmpty(groupName))
+        {
+            // 使用 ASP.NET Core 内置的 TagsAttribute
+            var attributeType = typeof(Microsoft.AspNetCore.Http.TagsAttribute);
+            var constructor = attributeType.GetConstructor([typeof(string[])]);
+            if (constructor != null)
+            {
+                var attributeBuilder = new CustomAttributeBuilder(
+                    constructor,
+                    [new string[] { groupName }]);
+
+                methodBuilder.SetCustomAttribute(attributeBuilder);
+            }
+        }
+    }
+
+    /// <summary>
     /// 添加原始方法标记特性
     /// </summary>
     private static void AddOriginalMethodAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod)
     {
-        var attributeType = typeof(Attributes.OriginalMethodAttribute);
+        var attributeType = typeof(OriginalMethodAttribute);
         var constructor = attributeType.GetConstructor([typeof(Type), typeof(string), typeof(Type[])]);
         if (constructor != null)
         {
