@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -34,10 +34,31 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="modifiedId"></param>
-    protected SugarModificationEntity(TKey modifiedId) : base(modifiedId)
+    /// <param name="basicId">主键</param>
+    protected SugarModificationEntity(TKey basicId) : base(basicId)
     {
     }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">主键</param>
+    /// <param name="modifiedId">修改者ID</param>
+    protected SugarModificationEntity(TKey basicId, TKey modifiedId) : base(basicId, modifiedId)
+    {
+    }
+
+    /// <summary>
+    /// 版本控制标识，用于处理并发
+    /// </summary>
+    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    public override long RowVersion { get; set; }
+
+    /// <summary>
+    /// 主键
+    /// </summary>
+    [SugarColumn(IsPrimaryKey = true, ColumnDescription = "主键")]
+    public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
     /// 修改时间

@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -36,6 +36,15 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// </summary>
     /// <param name="basicId">主键</param>
     protected SugarFullAuditedEntity(TKey basicId) : base(basicId)
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">主键</param>
+    /// <param name="createdId">创建者ID</param>
+    protected SugarFullAuditedEntity(TKey basicId, TKey createdId) : base(basicId, createdId)
     {
     }
 

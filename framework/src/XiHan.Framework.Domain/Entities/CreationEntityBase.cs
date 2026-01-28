@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -36,10 +36,10 @@ public abstract class CreationEntityBase : ICreationEntity
 }
 
 /// <summary>
-/// 创建审计实体基类（带创建者）
+/// 创建审计实体基类（带创建者和主键）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEntity<TKey>
+public abstract class CreationEntityBase<TKey> : EntityBase<TKey>, ICreationEntity<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
@@ -47,16 +47,33 @@ public abstract class CreationEntityBase<TKey> : CreationEntityBase, ICreationEn
     /// </summary>
     protected CreationEntityBase() : base()
     {
+        CreatedTime = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="createdId"></param>
-    protected CreationEntityBase(TKey createdId) : this()
+    /// <param name="basicId">主键</param>
+    protected CreationEntityBase(TKey basicId) : base(basicId)
     {
+        CreatedTime = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">主键</param>
+    /// <param name="createdId">创建者ID</param>
+    protected CreationEntityBase(TKey basicId, TKey createdId) : base(basicId)
+    {
+        CreatedTime = DateTimeOffset.UtcNow;
         CreatedId = createdId;
     }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    public virtual DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
