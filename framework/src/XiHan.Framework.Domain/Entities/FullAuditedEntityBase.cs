@@ -59,11 +59,11 @@ public abstract class FullAuditedEntityBase : IFullAuditedEntity
 }
 
 /// <summary>
-/// 完整审计实体基类（带用户）
+/// 完整审计实体基类（带用户和主键）
 /// 包含创建、修改、删除的所有审计信息和对应的用户唯一标识
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFullAuditedEntity<TKey>
+public abstract class FullAuditedEntityBase<TKey> : EntityBase<TKey>, IFullAuditedEntity<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
@@ -71,31 +71,36 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     /// </summary>
     protected FullAuditedEntityBase() : base()
     {
+        CreatedTime = DateTimeOffset.UtcNow;
+        IsDeleted = false;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="basicId"></param>
-    protected FullAuditedEntityBase(TKey basicId) : this()
+    /// <param name="basicId">主键</param>
+    protected FullAuditedEntityBase(TKey basicId) : base(basicId)
     {
-        BasicId = basicId;
+        CreatedTime = DateTimeOffset.UtcNow;
+        IsDeleted = false;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="basicId"></param>
-    /// <param name="createdId"></param>
-    protected FullAuditedEntityBase(TKey basicId, TKey createdId) : this(basicId)
+    /// <param name="basicId">主键</param>
+    /// <param name="createdId">创建者ID</param>
+    protected FullAuditedEntityBase(TKey basicId, TKey createdId) : base(basicId)
     {
+        CreatedTime = DateTimeOffset.UtcNow;
+        IsDeleted = false;
         CreatedId = createdId;
     }
 
     /// <summary>
-    /// 主键
+    /// 创建时间
     /// </summary>
-    public virtual TKey BasicId { get; protected set; } = default!;
+    public virtual DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
@@ -108,6 +113,11 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     public virtual string? CreatedBy { get; set; }
 
     /// <summary>
+    /// 修改时间
+    /// </summary>
+    public virtual DateTimeOffset? ModifiedTime { get; set; }
+
+    /// <summary>
     /// 修改者唯一标识
     /// </summary>
     public virtual TKey? ModifiedId { get; set; }
@@ -118,6 +128,16 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     public virtual string? ModifiedBy { get; set; }
 
     /// <summary>
+    /// 软删除标记
+    /// </summary>
+    public virtual bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// 删除时间
+    /// </summary>
+    public virtual DateTimeOffset? DeletedTime { get; set; }
+
+    /// <summary>
     /// 删除者唯一标识
     /// </summary>
     public virtual TKey? DeletedId { get; set; }
@@ -126,13 +146,4 @@ public abstract class FullAuditedEntityBase<TKey> : FullAuditedEntityBase, IFull
     /// 删除者
     /// </summary>
     public virtual string? DeletedBy { get; set; }
-
-    /// <summary>
-    /// 检查实体是否为临时实体（尚未持久化）
-    /// </summary>
-    /// <returns>如果是临时实体返回 true，否则返回 false</returns>
-    public virtual bool IsTransient()
-    {
-        return EqualityComparer<TKey>.Default.Equals(BasicId, default!);
-    }
 }

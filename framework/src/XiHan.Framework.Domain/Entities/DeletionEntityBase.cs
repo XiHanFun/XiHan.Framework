@@ -54,10 +54,10 @@ public abstract class DeletionEntityBase : SoftDeleteEntityBase, IDeletionEntity
 }
 
 /// <summary>
-/// 删除审计实体基类（带删除者）
+/// 删除审计实体基类（带删除者和主键）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class DeletionEntityBase<TKey> : DeletionEntityBase, IDeletionEntity<TKey>
+public abstract class DeletionEntityBase<TKey> : EntityBase<TKey>, IDeletionEntity<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
@@ -65,16 +65,38 @@ public abstract class DeletionEntityBase<TKey> : DeletionEntityBase, IDeletionEn
     /// </summary>
     protected DeletionEntityBase() : base()
     {
+        IsDeleted = false;
     }
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="deletedId"></param>
-    protected DeletionEntityBase(TKey deletedId) : this()
+    /// <param name="basicId">主键</param>
+    protected DeletionEntityBase(TKey basicId) : base(basicId)
     {
+        IsDeleted = false;
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">主键</param>
+    /// <param name="deletedId">删除者ID</param>
+    protected DeletionEntityBase(TKey basicId, TKey deletedId) : base(basicId)
+    {
+        IsDeleted = false;
         DeletedId = deletedId;
     }
+
+    /// <summary>
+    /// 软删除标记
+    /// </summary>
+    public virtual bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// 删除时间
+    /// </summary>
+    public virtual DateTimeOffset? DeletedTime { get; set; }
 
     /// <summary>
     /// 删除者唯一标识
