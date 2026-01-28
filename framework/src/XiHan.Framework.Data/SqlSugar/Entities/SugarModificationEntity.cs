@@ -57,7 +57,7 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, ColumnDescription = "主键")]
+    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
     public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>

@@ -21,6 +21,8 @@ namespace XiHan.Framework.Data.SqlSugar.Aggregates;
 /// SqlSugar 聚合根基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
+[SugarIndex("IX_{table}_CreatedTime", nameof(CreatedTime), OrderByType.Asc)]
+[SugarIndex("IX_{table}_IsDeleted", nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarAggregateRoot<TKey> : AggregateRootBase<TKey>
      where TKey : IEquatable<TKey>
 {
@@ -48,25 +50,25 @@ public abstract class SugarAggregateRoot<TKey> : AggregateRootBase<TKey>
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, ColumnDescription = "主键")]
+    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
     public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IsNullable = false, ColumnDescription = "创建时间")]
+    [SugarColumn(IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
     public override DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "创建者唯一标识")]
+    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
     public override TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "创建人")]
+    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
     public override string? CreatedBy { get; set; }
 
     /// <summary>
