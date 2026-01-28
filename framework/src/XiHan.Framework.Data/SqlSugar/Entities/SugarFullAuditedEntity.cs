@@ -21,8 +21,8 @@ namespace XiHan.Framework.Data.SqlSugar.Entities;
 /// SqlSugar 完整审计实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_{table}_CreatedTime", nameof(CreatedTime), OrderByType.Asc)]
-[SugarIndex("IX_{table}_IsDeleted", nameof(IsDeleted), OrderByType.Asc)]
+[SugarIndex("IX_CreatedTime", nameof(CreatedTime), OrderByType.Asc)]
+[SugarIndex("IX_IsDeleted", nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
