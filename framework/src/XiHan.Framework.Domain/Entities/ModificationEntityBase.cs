@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -35,10 +35,10 @@ public abstract class ModificationEntityBase : IModificationEntity
 }
 
 /// <summary>
-/// 修改审计实体基类（带修改者）
+/// 修改审计实体基类（带修改者和主键）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IModificationEntity<TKey>
+public abstract class ModificationEntityBase<TKey> : EntityBase<TKey>, IModificationEntity<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
@@ -51,11 +51,25 @@ public abstract class ModificationEntityBase<TKey> : ModificationEntityBase, IMo
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="modifiedId"></param>
-    protected ModificationEntityBase(TKey modifiedId) : this()
+    /// <param name="basicId">主键</param>
+    protected ModificationEntityBase(TKey basicId) : base(basicId)
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="basicId">主键</param>
+    /// <param name="modifiedId">修改者ID</param>
+    protected ModificationEntityBase(TKey basicId, TKey modifiedId) : base(basicId)
     {
         ModifiedId = modifiedId;
     }
+
+    /// <summary>
+    /// 修改时间
+    /// </summary>
+    public virtual DateTimeOffset? ModifiedTime { get; set; }
 
     /// <summary>
     /// 修改者唯一标识
