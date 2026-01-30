@@ -3,6 +3,7 @@ using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
+using XiHan.Framework.Utils.Security.ErrorObfuscation;
 
 namespace XiHan.Framework.Web.Tests.Controllers;
 
@@ -76,5 +77,16 @@ public class HomeController : ControllerBase
                 Trend = cpuTrend.Trend > 0 ? "上升" : "下降"
             }
         });
+    }
+
+    /// <summary>
+    /// ErrorObfuscation
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("ErrorObfuscation")]
+    public IActionResult ErrorObfuscation()
+    {
+        var error = ErrorObfuscationHelper.GenerateObfuscatedError();
+        return Ok(error);
     }
 }
