@@ -19,6 +19,11 @@ namespace XiHan.Framework.DistributedIds.Sqids;
 public class SqidsOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:DistributedIds:Sqids";
+
+    /// <summary>
     /// 默认字母表
     /// </summary>
     internal const string DefaultAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

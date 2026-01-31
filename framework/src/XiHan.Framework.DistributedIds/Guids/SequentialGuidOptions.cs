@@ -20,6 +20,11 @@ namespace XiHan.Framework.DistributedIds.Guids;
 public class SequentialGuidOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:DistributedIds:SequentialGuid";
+
+    /// <summary>
     /// 默认顺序 GUID 类型
     /// </summary>
     public SequentialGuidType? DefaultSequentialGuidType { get; set; }

@@ -55,6 +55,11 @@ public class NanoIdOptions
     public const string HexAlphabet = "0123456789abcdef";
 
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:DistributedIds:NanoId";
+
+    /// <summary>
     /// 默认开始时间(2020年1月1日)
     /// </summary>
     public static readonly DateTime DefaultStartTime = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
