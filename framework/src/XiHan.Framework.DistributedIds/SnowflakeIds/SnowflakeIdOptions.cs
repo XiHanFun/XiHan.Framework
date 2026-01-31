@@ -21,6 +21,11 @@ namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 /// </summary>
 public class SnowflakeIdOptions
 {
+    /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:DistributedIds:SnowflakeId";
+
     // JSON序列化选项
     private static readonly JsonSerializerOptions CachedJsonSerializerOptions = new()
     {
@@ -49,7 +54,7 @@ public class SnowflakeIdOptions
     private string _generatorId = Guid.NewGuid().ToString("N");
 
     // 基础时间(纪元时间)
-    private DateTime _baseTime = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    private DateTime _baseTime = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     // 工作机器唯一标识
     private ushort _workerId;
@@ -89,7 +94,7 @@ public class SnowflakeIdOptions
         {
             // 检查基准时间不能超过当前系统时间
             var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var baseTimestamp = (long)(value.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+            var baseTimestamp = (long)(value.ToUniversalTime() - new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
             if (currentTimestamp < baseTimestamp)
             {
                 throw new Exception("基准时间不能超过当前时间");

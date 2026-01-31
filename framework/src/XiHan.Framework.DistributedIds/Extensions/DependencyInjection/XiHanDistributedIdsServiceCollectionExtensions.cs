@@ -12,7 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.DistributedIds.Guids;
+using XiHan.Framework.DistributedIds.NanoIds;
+using XiHan.Framework.DistributedIds.SnowflakeIds;
+using XiHan.Framework.DistributedIds.Sqids;
 
 namespace XiHan.Framework.DistributedIds.Extensions.DependencyInjection;
 
@@ -25,13 +30,19 @@ public static class XiHanDistributedIdsServiceCollectionExtensions
     /// 添加 XiHan 日志服务
     /// </summary>
     /// <param name="services"></param>
+    /// <param name="configuration"></param>
     /// <returns></returns>
-    public static IServiceCollection AddXiHanDistributedIds(this IServiceCollection services)
+    public static IServiceCollection AddXiHanDistributedIds(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<SnowflakeIdOptions>(configuration.GetSection(SnowflakeIdOptions.SectionName));
+        services.Configure<SequentialGuidOptions>(configuration.GetSection(SequentialGuidOptions.SectionName));
+        services.Configure<NanoIdOptions>(configuration.GetSection(NanoIdOptions.SectionName));
+        services.Configure<SqidsOptions>(configuration.GetSection(SqidsOptions.SectionName));
+
         var guidGenerator = IdGeneratorFactory.CreateSequentialGuidGenerator_Default();
         services.AddSingleton<IDistributedIdGenerator<Guid>>(guidGenerator);
 
-        var longGenerator = IdGeneratorFactory.CreateSnowflakeIdGenerator_MediumWorkload();
+        var longGenerator = IdGeneratorFactory.CreateSnowflakeIdGenerator_HighWorkload();
         services.AddSingleton<IDistributedIdGenerator<long>>(longGenerator);
 
         return services;
