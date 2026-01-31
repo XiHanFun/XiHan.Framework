@@ -15,6 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Domain.Rules;
 using XiHan.Framework.Domain.Services.Abstracts;
@@ -200,7 +201,7 @@ public abstract class DomainService : IDomainService
     /// <param name="parameters">操作参数（可选）</param>
     protected virtual void ExecuteWithPerformanceMonitoring(string operation, Action action, object? parameters = null)
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -228,7 +229,7 @@ public abstract class DomainService : IDomainService
     /// <returns>操作结果</returns>
     protected virtual T ExecuteWithPerformanceMonitoring<T>(string operation, Func<T> func, object? parameters = null)
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -261,7 +262,7 @@ public abstract class DomainService : IDomainService
         object? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -294,7 +295,7 @@ public abstract class DomainService : IDomainService
         object? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
