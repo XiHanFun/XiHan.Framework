@@ -33,6 +33,6 @@ public class XiHanDistributedIdsModule : XiHanModule
         var config = services.GetConfiguration();
 
         // 注册分布式唯一标识生成器服务
-        services.AddXiHanDistributedIds();
+        services.AddXiHanDistributedIds(config);
     }
 }
