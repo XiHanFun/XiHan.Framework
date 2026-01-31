@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Uow.Abstracts;
 
 namespace XiHan.Framework.Data.SqlSugar;
@@ -33,6 +34,9 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     // 服务提供器
     private readonly ITransientCachedServiceProvider _transientCachedServiceProvider;
 
+    // 分布式ID生成器
+    private readonly IDistributedIdGenerator<long> _idGenerator;
+
     // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
     private readonly SqlSugarScope _sqlSugarScope;
 
@@ -44,10 +48,15 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     /// </summary>
     /// <param name="options"></param>
     /// <param name="transientCachedServiceProvider"></param>
-    public SqlSugarDbContext(IOptions<XiHanSqlSugarCoreOptions> options, ITransientCachedServiceProvider transientCachedServiceProvider)
+    /// <param name="idGenerator">分布式ID生成器（可选）</param>
+    public SqlSugarDbContext(
+        IOptions<XiHanSqlSugarCoreOptions> options,
+        ITransientCachedServiceProvider transientCachedServiceProvider,
+        IDistributedIdGenerator<long> idGenerator)
     {
         _options = options.Value;
         _transientCachedServiceProvider = transientCachedServiceProvider;
+        _idGenerator = idGenerator;
 
         _sqlSugarScope = CreateSqlSugarScope();
     }
@@ -153,11 +162,25 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     }
 
     /// <summary>
+    /// 释放
+    /// </summary>
+    public void Dispose()
+    {
+        // 释放SqlSugarScope资源
+        _sqlSugarScope?.Dispose();
+
+        // 调用 GC.SuppressFinalize 以防止派生类需要重新实现 IDisposable
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
     /// 创建SqlSugarScope
     /// </summary>
     /// <returns></returns>
     private SqlSugarScope CreateSqlSugarScope()
     {
+        StaticConfig.CustomSnowFlakeFunc = _idGenerator.NextId;
+
         var connectionConfigs = new List<ConnectionConfig>();
         foreach (var connConfig in _options.ConnectionConfigs)
         {
