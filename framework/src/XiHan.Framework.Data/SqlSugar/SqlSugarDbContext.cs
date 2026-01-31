@@ -153,18 +153,6 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     }
 
     /// <summary>
-    /// 释放
-    /// </summary>
-    public void Dispose()
-    {
-        // 释放SqlSugarScope资源
-        _sqlSugarScope?.Dispose();
-
-        // 调用 GC.SuppressFinalize 以防止派生类需要重新实现 IDisposable
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
     /// 创建SqlSugarScope
     /// </summary>
     /// <returns></returns>
