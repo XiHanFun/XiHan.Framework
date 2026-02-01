@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ParameterSourceResolver
-// Guid:param-source-resolver-dynamic-api-2025
+// Guid:fd894502-eda0-4178-b6b5-04e3ee830da1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/12/30 0:00:00
+// CreateTime:2025/12/30 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LogicHelper
-// Guid:7h6g5f4e-3d2c-1b0a-9f8e-7d6c5b4a3f2e
+// Guid:b7c1acda-2b49-4c8d-885d-8ef80f4f0152
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/20 0:30:00
+// CreateTime:2024/12/20 00:30:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

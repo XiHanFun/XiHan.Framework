@@ -4,10 +4,10 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanLocalizationModule
-// Guid:3e2d1f0a-9b8c-7d6e-5f4a-3e2d-1f0a-9b8c
+// Guid:638c874e-7656-4255-865f-ab6d97320828
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/2/27 13:40:18
+// CreateTime:2025/02/27 13:40:18
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

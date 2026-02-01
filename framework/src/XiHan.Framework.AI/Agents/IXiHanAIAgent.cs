@@ -1,14 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IXiHanAIAgent
 // Guid:ee473294-4159-4199-930e-313091e47d17
-// Guid:f08e70dd-f2b2-4c05-a595-053a6e5f133a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/5/25
+// CreateTime:2025/05/25 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

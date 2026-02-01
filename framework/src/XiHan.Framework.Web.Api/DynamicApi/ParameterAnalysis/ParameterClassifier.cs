@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ParameterClassifier
-// Guid:param-classifier-dynamic-api-2025
+// Guid:c373e619-d2b4-4009-ab5f-3bfd79dbd3f0
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/12/30 0:00:00
+// CreateTime:2025/12/30 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

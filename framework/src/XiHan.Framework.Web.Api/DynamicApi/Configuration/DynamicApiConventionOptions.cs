@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DynamicApiConventionOptions
-// Guid:f6g7h8i9-j0k1-4l2m-3n4o-5p6q7r8s9t0u
+// Guid:f2b3162c-626f-41cf-823c-c5324b6f6c13
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/10/24 0:00:00
+// CreateTime:2025/10/24 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

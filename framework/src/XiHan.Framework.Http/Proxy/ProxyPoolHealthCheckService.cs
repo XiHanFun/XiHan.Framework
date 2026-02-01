@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ProxyPoolHealthCheckService
-// Guid:h3m5o7j9-ik0l-4m6n-jo2p-1k3l4m5n6o7i
+// Guid:50f39e55-dbda-4d92-81a8-b0f83273cdcc
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

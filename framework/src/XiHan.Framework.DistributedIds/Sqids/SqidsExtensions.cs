@@ -4,7 +4,8 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SqidsExtensions
-// Author:ZhaiFanhua
+// Guid:29f9d394-f885-4a29-97a4-ed1234932d0f
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/05/08 17:46:05
 // ----------------------------------------------------------------

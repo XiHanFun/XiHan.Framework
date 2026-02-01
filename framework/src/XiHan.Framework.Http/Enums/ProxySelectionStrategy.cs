@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ProxySelectionStrategy
-// Guid:e4d6f8a0-9b1c-5d7e-af3g-2b4c5d6e7f8a
+// Guid:4749728a-d76c-480b-aecc-f249b9b70bc2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

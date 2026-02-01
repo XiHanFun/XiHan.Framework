@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ShaHashHelper
+// FileName:HashHelper
 // Guid:8575ee1d-e5f7-464a-a85f-2926dd507546
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/10/11 6:03:40
+// CreateTime:2024/10/11 06:03:40
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

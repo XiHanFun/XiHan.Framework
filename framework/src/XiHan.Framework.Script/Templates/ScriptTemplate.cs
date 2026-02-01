@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ScriptTemplate
-// Guid:e1f2g3h4-i5j6-k7l8-m9n0-o1p2q3r4s5t6
+// Guid:24bd1b49-9a86-4a09-bd1d-8b9f270e3993
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/1/2 10:45:00
+// CreateTime:2025/01/02 10:45:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
