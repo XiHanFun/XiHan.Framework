@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+
+    <PropertyGroup>
+        <Title>Region</Title>
+        <AssemblyName>Region</AssemblyName>
+        <PackageId>Region</PackageId>
+        <Description>曦寒框架文件头统一</Description>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+</Project>
