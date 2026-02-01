@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -14,6 +14,7 @@
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Reflection;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Utils.Reflections;
 
@@ -25,9 +26,9 @@ namespace XiHan.Framework.Domain.Shared.Paging.Handlers;
 public static class SortConditionParser<T>
 {
     /// <summary>
-    /// 排序条件缓存
+    /// 属性信息缓存（仅缓存属性元数据，不缓存表达式）
     /// </summary>
-    private static readonly ConcurrentDictionary<string, LambdaExpression> SortConditionParserCache = new();
+    private static readonly ConcurrentDictionary<string, PropertyInfo> PropertyInfoCache = new();
 
     /// <summary>
     /// 获取排序条件解析器
@@ -49,22 +50,23 @@ public static class SortConditionParser<T>
     public static Expression<Func<T, object>> GetSortConditionParser(string field)
     {
         var type = typeof(T);
+        var param = Expression.Parameter(type, "x");
+
+        // 从缓存获取或创建属性信息
         var key = $"{type.FullName}.{field}";
-        if (SortConditionParserCache.TryGetValue(key, out var sortConditionParser))
+        if (!PropertyInfoCache.TryGetValue(key, out var property))
         {
-            return (Expression<Func<T, object>>)sortConditionParser;
+            property = type.GetPropertyInfo(field);
+            PropertyInfoCache.TryAdd(key, property);
         }
 
-        var param = Expression.Parameter(type);
-        var property = type.GetPropertyInfo(field);
+        // 每次创建新的属性访问表达式（必须使用当前 Parameter）
         var propertyAccess = Expression.MakeMemberAccess(param, property);
 
         // 将属性访问转换为 object 类型
         var converted = Expression.Convert(propertyAccess, typeof(object));
-        sortConditionParser = Expression.Lambda<Func<T, object>>(converted, param);
+        var sortConditionParser = Expression.Lambda<Func<T, object>>(converted, param);
 
-        SortConditionParserCache.TryAdd(key, sortConditionParser);
-
-        return (Expression<Func<T, object>>)sortConditionParser;
+        return sortConditionParser;
     }
 }

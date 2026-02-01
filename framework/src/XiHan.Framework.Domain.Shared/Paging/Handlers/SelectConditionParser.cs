@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -14,6 +14,7 @@
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Reflection;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Enums;
 using XiHan.Framework.Utils.Reflections;
@@ -27,9 +28,9 @@ namespace XiHan.Framework.Domain.Shared.Paging.Handlers;
 public static class SelectConditionParser<T>
 {
     /// <summary>
-    /// 键选择器缓存
+    /// 属性信息缓存（仅缓存属性元数据，不缓存表达式）
     /// </summary>
-    private static readonly ConcurrentDictionary<string, MemberExpression> SelectConditionMemberParserCache = new();
+    private static readonly ConcurrentDictionary<string, PropertyInfo> PropertyInfoCache = new();
 
     /// <summary>
     /// 获取选择条件解析器
@@ -51,17 +52,18 @@ public static class SelectConditionParser<T>
     public static Expression<Func<T, bool>> GetSelectConditionParser(string field, object? value, SelectCompare @operator)
     {
         var type = typeof(T);
-        var key = $"{typeof(T).FullName}.{field}.{@operator}";
+        var param = Expression.Parameter(type, "x");
 
-        var param = Expression.Parameter(type);
-
-        if (!SelectConditionMemberParserCache.TryGetValue(key, out var propertyAccess))
+        // 从缓存获取或创建属性信息
+        var key = $"{type.FullName}.{field}";
+        if (!PropertyInfoCache.TryGetValue(key, out var property))
         {
-            var property = type.GetPropertyInfo(field);
-            propertyAccess = Expression.MakeMemberAccess(param, property);
-
-            SelectConditionMemberParserCache.TryAdd(key, propertyAccess);
+            property = type.GetPropertyInfo(field);
+            PropertyInfoCache.TryAdd(key, property);
         }
+
+        // 每次创建新的属性访问表达式（必须使用当前 Parameter）
+        var propertyAccess = Expression.MakeMemberAccess(param, property);
 
         // 生成比较表达式
         var comparison = GenerateComparison(propertyAccess, value, @operator);
@@ -82,17 +84,15 @@ public static class SelectConditionParser<T>
     /// <exception cref="NotSupportedException"></exception>
     private static Expression GenerateComparison(MemberExpression propertyAccess, object? value, SelectCompare @operator)
     {
-        var constant = Expression.Constant(value);
-
         return @operator switch
         {
             // 单值比较
-            SelectCompare.Equal => Expression.Equal(propertyAccess, constant),
-            SelectCompare.Greater => Expression.GreaterThan(propertyAccess, constant),
-            SelectCompare.GreaterEqual => Expression.GreaterThanOrEqual(propertyAccess, constant),
-            SelectCompare.Less => Expression.LessThan(propertyAccess, constant),
-            SelectCompare.LessEqual => Expression.LessThanOrEqual(propertyAccess, constant),
-            SelectCompare.NotEqual => Expression.NotEqual(propertyAccess, constant),
+            SelectCompare.Equal => GenerateEqualExpression(propertyAccess, value),
+            SelectCompare.Greater => GenerateGreaterExpression(propertyAccess, value),
+            SelectCompare.GreaterEqual => GenerateGreaterEqualExpression(propertyAccess, value),
+            SelectCompare.Less => GenerateLessExpression(propertyAccess, value),
+            SelectCompare.LessEqual => GenerateLessEqualExpression(propertyAccess, value),
+            SelectCompare.NotEqual => GenerateNotEqualExpression(propertyAccess, value),
 
             // 集合比较
             SelectCompare.Contains => GenerateContainsExpression(propertyAccess, value),
@@ -104,6 +104,60 @@ public static class SelectConditionParser<T>
 
             _ => throw new NotSupportedException($"不支持的比较操作：{@operator}")
         };
+    }
+
+    /// <summary>
+    /// 生成 Equal 表达式
+    /// </summary>
+    private static BinaryExpression GenerateEqualExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.Equal(propertyAccess, constant);
+    }
+
+    /// <summary>
+    /// 生成 NotEqual 表达式
+    /// </summary>
+    private static BinaryExpression GenerateNotEqualExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.NotEqual(propertyAccess, constant);
+    }
+
+    /// <summary>
+    /// 生成 Greater 表达式
+    /// </summary>
+    private static BinaryExpression GenerateGreaterExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.GreaterThan(propertyAccess, constant);
+    }
+
+    /// <summary>
+    /// 生成 GreaterEqual 表达式
+    /// </summary>
+    private static BinaryExpression GenerateGreaterEqualExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.GreaterThanOrEqual(propertyAccess, constant);
+    }
+
+    /// <summary>
+    /// 生成 Less 表达式
+    /// </summary>
+    private static BinaryExpression GenerateLessExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.LessThan(propertyAccess, constant);
+    }
+
+    /// <summary>
+    /// 生成 LessEqual 表达式
+    /// </summary>
+    private static BinaryExpression GenerateLessEqualExpression(MemberExpression propertyAccess, object? value)
+    {
+        var constant = Expression.Constant(value, propertyAccess.Type);
+        return Expression.LessThanOrEqual(propertyAccess, constant);
     }
 
     /// <summary>
@@ -166,9 +220,11 @@ public static class SelectConditionParser<T>
             throw new ArgumentException("InWithEqual 操作需要一个值集合。");
         }
 
+        var propertyType = propertyAccess.Type;
+
         // 生成多个 Equal 表达式并连接
         return valueList
-            .Select(v => Expression.Equal(propertyAccess, Expression.Constant(v)))
+            .Select(v => Expression.Equal(propertyAccess, Expression.Constant(v, propertyType)))
             .Aggregate(Expression.OrElse);
     }
 
@@ -186,8 +242,9 @@ public static class SelectConditionParser<T>
             throw new ArgumentException("Between 操作需要一个范围值(Tuple<object, object>)。");
         }
 
-        var lowerBound = Expression.GreaterThanOrEqual(propertyAccess, Expression.Constant(range.Item1));
-        var upperBound = Expression.LessThanOrEqual(propertyAccess, Expression.Constant(range.Item2));
+        var propertyType = propertyAccess.Type;
+        var lowerBound = Expression.GreaterThanOrEqual(propertyAccess, Expression.Constant(range.Item1, propertyType));
+        var upperBound = Expression.LessThanOrEqual(propertyAccess, Expression.Constant(range.Item2, propertyType));
         return Expression.AndAlso(lowerBound, upperBound);
     }
 
