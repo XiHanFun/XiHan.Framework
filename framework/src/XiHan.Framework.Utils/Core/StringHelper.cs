@@ -241,30 +241,6 @@ public static class StringHelper
 
     #endregion 转换为新样式
 
-    #region 是否 SQL 安全字符串
-
-    /// <summary>
-    /// 转换为 SQL 安全字符串
-    /// </summary>
-    /// <param name="sourceStr"></param>
-    /// <param name="isDel"></param>
-    /// <returns></returns>
-    public static string GetSqlSafe(string sourceStr, bool isDel)
-    {
-        if (isDel)
-        {
-            sourceStr = sourceStr.Replace(@"'", string.Empty);
-            sourceStr = sourceStr.Replace(@"""", string.Empty);
-            return sourceStr;
-        }
-
-        sourceStr = sourceStr.Replace(@"'", "&#39;");
-        sourceStr = sourceStr.Replace(@"""", "&#34;");
-        return sourceStr;
-    }
-
-    #endregion 是否 SQL 安全字符串
-
     #region 检查验证
 
     /// <summary>
