@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DynamicJsonFactory
-// Guid:f0j3i8h7-eh2g-9i1f-di6i-7g4h2f1g0i3e
+// Guid:2bb7b446-c987-418f-bae6-7e9b931432e2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/5 9:35:36
+// CreateTime:2025/09/05 09:35:36
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

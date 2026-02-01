@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:GenericExtensions
 // Guid:a5574e0a-f226-4b0a-89bc-4bd9e9618a3d
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2023-08-09 下午 05:23:37
+// CreateTime:2023/08/09 17:23:37
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

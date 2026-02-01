@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DomainEventBase
-// Guid:wxy12f9d-8e3a-4b5c-9a2e-1234567890wx
+// Guid:b7f24ced-d817-4636-aed3-40f02bba7016
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/12 16:15:00
+// CreateTime:2025/09/12 16:15:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

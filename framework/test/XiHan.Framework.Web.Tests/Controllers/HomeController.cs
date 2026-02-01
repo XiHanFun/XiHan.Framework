@@ -1,4 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:HomeController
+// Guid:a21f5c4e-1501-4062-af84-28ac33dfb64c
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2025/10/04 14:42:11
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
+using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Reflections;

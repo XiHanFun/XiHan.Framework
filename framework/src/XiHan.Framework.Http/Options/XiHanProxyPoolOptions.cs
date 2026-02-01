@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ProxyPoolOptions
-// Guid:a6f8h0c2-bd3e-7f9g-ch5i-4d6e7f8g9h0b
+// FileName:XiHanProxyPoolOptions
+// Guid:5b5c98b1-15df-4cd4-bc42-523ce949df8e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

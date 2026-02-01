@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ILogContext
-// Guid:d6e1f2a3-5b4c-4d6e-b3f0-1a2b3c4d6e8l
+// Guid:2515139e-9024-4632-90e8-244767b8ae22
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/14 11:40:00

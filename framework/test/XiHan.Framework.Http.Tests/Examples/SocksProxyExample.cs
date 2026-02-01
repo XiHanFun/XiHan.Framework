@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SocksProxyExample
-// Guid:j5o7q9l1-km2n-6o8p-lq4r-3m5n6o7p8q9k
+// Guid:8d651c02-e770-4480-b8db-03d8da4ba406
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DefaultModuleLifecycleContributor
 // Guid:c7ba70ab-4d2b-477c-b58d-42e2f34b950e
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-28 上午 09:18:44
+// CreateTime:2024/04/28 09:18:44
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

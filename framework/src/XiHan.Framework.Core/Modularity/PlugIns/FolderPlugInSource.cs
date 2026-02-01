@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:FolderPlugInSource
 // Guid:e5045ebd-415b-4956-815f-6d1e74b5ef89
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-28 上午 09:47:43
+// CreateTime:2024/04/28 09:47:43
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

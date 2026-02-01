@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IBusinessRule
-// Guid:hij12f9d-8e3a-4b5c-9a2e-1234567890ij
+// Guid:e2ea1df8-ad36-4f91-a192-6d3b3ac6817a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/12 15:50:00
+// CreateTime:2025/09/12 15:50:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

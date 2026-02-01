@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ParameterRole
-// Guid:param-role-dynamic-api-2025
+// Guid:c69ca1b3-d1fe-44de-b5e0-ca363f900808
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/12/30 0:00:00
+// CreateTime:2025/12/30 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

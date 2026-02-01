@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDeletionAudited
+// FileName:IDeletionEntity
 // Guid:8faf9286-4ba2-4079-875a-98cb1a82faea
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/13 2:56:03
+// CreateTime:2025/09/13 02:56:03
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

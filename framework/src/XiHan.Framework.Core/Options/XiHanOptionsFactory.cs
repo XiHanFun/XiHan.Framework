@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanOptionsFactory
 // Guid:d2199d7d-ee37-4bfe-94d5-79e74511e23d
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-28 上午 10:42:21
+// CreateTime:2024/04/28 10:42:21
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

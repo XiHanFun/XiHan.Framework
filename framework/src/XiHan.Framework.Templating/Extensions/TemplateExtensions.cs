@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:TemplateExtensions
-// Guid:9q4s8s3o-7r0t-8p3q-4s9s-8o3r0t7q4s9s
+// Guid:29f0ebce-c623-49d3-957b-075d0070d721
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 3:42:14
+// CreateTime:2024/12/16 03:42:14
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ScribanTemplateEngine
-// Guid:3k8m2m7i-1l4n-2j7k-8m3m-2i7l4n1k8m3m
+// Guid:66cd4d42-37a5-441d-8a64-51cb1b00e8ea
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 3:42:14
+// CreateTime:2024/12/16 03:42:14
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IStructuredLogger
-// Guid:b4c9d0e1-3f2a-4b4c-f1d8-9e0f1a2b4c6j
+// Guid:bf43b8ad-b60a-4e71-b42d-9d262847fd06
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/14 11:30:00

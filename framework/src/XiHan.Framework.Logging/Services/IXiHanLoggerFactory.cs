@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IXiHanLoggerFactory
-// Guid:a3b8c9d0-2e1f-4a3b-e0c7-8d9e0f1a3b5i
+// Guid:bee3da65-c382-440f-a05b-7c56e412ded3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/14 11:25:00
