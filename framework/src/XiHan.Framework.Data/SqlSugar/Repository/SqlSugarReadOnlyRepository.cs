@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -404,6 +404,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
         var queryable = _dbClient.Queryable<TEntity>();
 
+        // 应用关键字搜索
+        queryable = ApplyKeyword(queryable, query.Keyword);
         // 应用过滤条件
         queryable = ApplyFilters(queryable, query.Filters);
         // 应用排序
@@ -416,7 +418,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         if (query.DisablePaging)
         {
             var allItems = await queryable.ToListAsync(cancellationToken);
-            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+            return new PageResponse<TEntity>(allItems, new PageData(1, totalCount, totalCount));
         }
 
         // 应用分页
@@ -444,6 +446,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
         var queryable = _dbClient.Queryable<TEntity>().Where(predicate);
 
+        // 应用关键字搜索
+        queryable = ApplyKeyword(queryable, query.Keyword);
         // 应用过滤条件
         queryable = ApplyFilters(queryable, query.Filters);
         // 应用排序
@@ -456,7 +460,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         if (query.DisablePaging)
         {
             var allItems = await queryable.ToListAsync(cancellationToken);
-            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+            return new PageResponse<TEntity>(allItems, new PageData(1, totalCount, totalCount));
         }
 
         // 应用分页
@@ -484,6 +488,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
         var queryable = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
 
+        // 应用关键字搜索
+        queryable = ApplyKeyword(queryable, query.Keyword);
         // 应用过滤条件
         queryable = ApplyFilters(queryable, query.Filters);
         // 应用排序
@@ -496,7 +502,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         if (query.DisablePaging)
         {
             var allItems = await queryable.ToListAsync(cancellationToken);
-            return new PageResponse<TEntity>(allItems, new PageData(1, (int)totalCount, totalCount));
+            return new PageResponse<TEntity>(allItems, new PageData(1, totalCount, totalCount));
         }
 
         // 应用分页
@@ -512,6 +518,18 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     #endregion 分页查询
 
     #region PageQuery 支持方法
+
+    /// <summary>
+    /// 应用关键字搜索
+    /// </summary>
+    /// <param name="queryable">查询对象</param>
+    /// <param name="keyword">搜索关键字</param>
+    /// <returns>应用关键字搜索后的查询对象</returns>
+    private static ISugarQueryable<TEntity> ApplyKeyword(ISugarQueryable<TEntity> queryable, string? keyword)
+    {
+        var expression = KeywordSearchParser<TEntity>.GetKeywordSearchParser(keyword);
+        return expression == null ? queryable : queryable.Where(expression);
+    }
 
     /// <summary>
     /// 应用过滤条件
@@ -551,25 +569,13 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         // 按优先级排序
         var orderedSorts = sorts.OrderBy(s => s.Priority).ToList();
 
-        for (var i = 0; i < orderedSorts.Count; i++)
+        // SqlSugar 支持链式调用多个 OrderBy 实现多字段排序
+        foreach (var sort in orderedSorts)
         {
-            var sort = orderedSorts[i];
             var expression = SortConditionParser<TEntity>.GetSortConditionParser(sort);
-
-            if (i == 0)
-            {
-                // 第一个排序使用 OrderBy 或 OrderByDescending
-                queryable = sort.Direction == SortDirection.Asc
-                    ? queryable.OrderBy(expression)
-                    : queryable.OrderByDescending(expression);
-            }
-            else
-            {
-                // 后续排序使用 OrderBy 或 OrderByDescending（SqlSugar 会自动处理为 ThenBy）
-                queryable = sort.Direction == SortDirection.Asc
-                    ? queryable.OrderBy(expression)
-                    : queryable.OrderByDescending(expression);
-            }
+            queryable = sort.Direction == SortDirection.Asc
+                ? queryable.OrderBy(expression)
+                : queryable.OrderByDescending(expression);
         }
 
         return queryable;
