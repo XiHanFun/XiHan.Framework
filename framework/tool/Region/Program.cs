@@ -3,6 +3,13 @@ using System.Text.RegularExpressions;
 
 internal class Program
 {
+    private const string RegionName = "<<版权版本注释>>";
+    private const int HeaderLineCount = 12;
+
+    private static readonly Regex HeaderRegex = new(
+        @"^\s*#region\s+<<版权版本注释>>[\s\S]*?#endregion\s+<<版权版本注释>>\r?\n\r?\n?",
+        RegexOptions.Multiline | RegexOptions.Compiled);
+
     private static void Main()
     {
         var root = Directory.GetCurrentDirectory();
@@ -29,41 +36,81 @@ internal class Program
     {
         var content = File.ReadAllText(filePath, Encoding.UTF8);
         var fileName = Path.GetFileNameWithoutExtension(filePath);
-        var newGuid = Guid.NewGuid().ToString();
-        var now = DateTime.Now.ToString("yyyy/M/d H:mm:ss");
+        var guid = Guid.NewGuid().ToString();
+        var now = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
 
-        var regionPattern =
-            @"^#region\s+<<版权版本注释>>[\s\S]*?#endregion\s+<<版权版本注释>>\s*";
-
-        if (Regex.IsMatch(content, regionPattern, RegexOptions.Multiline))
+        if (HeaderRegex.IsMatch(content))
         {
-            // 已存在版权头 → 只更新 FileName / Guid
-            var regionMatch = Regex.Match(content, regionPattern, RegexOptions.Multiline);
-            var regionText = regionMatch.Value;
+            var oldHeader = HeaderRegex.Match(content).Value;
 
-            regionText = Regex.Replace(regionText,
-                @"//\s*FileName\s*:.*",
-                $"// FileName:{fileName}");
-
-            regionText = Regex.Replace(regionText,
-                @"//\s*Guid\s*:.*",
-                $"// Guid:{newGuid}");
-
-            var newContent = content.Replace(regionMatch.Value, regionText);
-            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-
-            Console.WriteLine($"🔁 更新头部：{filePath}");
+            if (IsHeaderValid(oldHeader, fileName))
+            {
+                var newHeader = UpdateHeader(oldHeader, fileName, guid);
+                content = content.Replace(oldHeader, newHeader);
+                Console.WriteLine($"更新头部：{filePath}");
+            }
+            else
+            {
+                var newHeader = BuildHeader(fileName, guid, now);
+                content = content.Replace(oldHeader, newHeader);
+                Console.WriteLine($"重建头部：{filePath}");
+            }
         }
         else
         {
-            // 不存在版权头 → 自动插入
-            var header = BuildHeader(fileName, newGuid, now);
-            var newContent = header + Environment.NewLine + content;
-
-            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-
+            var header = BuildHeader(fileName, guid, now);
+            content = header + content;
             Console.WriteLine($"插入头部：{filePath}");
         }
+
+        File.WriteAllText(filePath, content, Encoding.UTF8);
+    }
+
+    /// <summary>
+    /// 严格校验版权头是否完全符合规范
+    /// </summary>
+    private static bool IsHeaderValid(string header, string expectedFileName)
+    {
+        var lines = header
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Where(l => l.Length > 0)
+            .ToArray();
+
+        // 1️ 行数必须严格等于 12
+        if (lines.Length != HeaderLineCount)
+            return false;
+
+        // 2️ FileName 必须匹配
+        var fileNameLine = lines.FirstOrDefault(l => l.Contains("FileName:"));
+        if (fileNameLine == null || !fileNameLine.EndsWith(expectedFileName))
+            return false;
+
+        // 3️ Guid 必须合法
+        var guidLine = lines.FirstOrDefault(l => l.Contains("Guid:"));
+        if (guidLine == null ||
+            !Guid.TryParse(guidLine.Split(':').Last().Trim(), out _))
+            return false;
+
+        // 4️ CreateTime 必须可解析
+        var timeLine = lines.FirstOrDefault(l => l.Contains("CreateTime:"));
+        if (timeLine == null ||
+            !DateTime.TryParse(timeLine.Split(':', 2).Last().Trim(), out _))
+            return false;
+
+        return true;
+    }
+
+    private static string UpdateHeader(string header, string fileName, string guid)
+    {
+        header = Regex.Replace(header,
+            @"//\s*FileName\s*:.*",
+            $"// FileName:{fileName}");
+
+        header = Regex.Replace(header,
+            @"//\s*Guid\s*:.*",
+            $"// Guid:{guid}");
+
+        return header;
     }
 
     private static string BuildHeader(string fileName, string guid, string createTime)
@@ -81,6 +128,8 @@ $@"#region <<版权版本注释>>
 // CreateTime:{createTime}
 // ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>";
+#endregion <<版权版本注释>>
+
+";
     }
 }
