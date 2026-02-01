@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DynamicServiceConfig
-// Guid:${guid}
+// Guid:64ca87cf-c093-417c-b700-45402e5fe089
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/17 16:00:00
+// CreateTime:2025/09/17 16:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

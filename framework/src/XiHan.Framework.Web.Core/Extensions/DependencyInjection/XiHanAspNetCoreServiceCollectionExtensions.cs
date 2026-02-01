@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanWebCoreServiceCollectionExtensions
+// FileName:XiHanAspNetCoreServiceCollectionExtensions
 // Guid:b38bad27-b763-4184-b535-10917dfc8689
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/4/1 19:39:08
+// CreateTime:2025/04/01 19:39:08
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

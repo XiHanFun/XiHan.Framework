@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:OSPlatformHelper
+// FileName:OsPlatformHelper
 // Guid:d404f006-9a93-45b2-b33b-8ec201355621
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreatedTime:2023-04-09 上午 06:49:33
+// CreateTime:2025/07/27 10:21:25
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IProxyValidator
-// Guid:c8h0j2e4-df5g-9h1i-ej7k-6f8g9h0i1j2d
+// Guid:77a914e4-f1fd-4856-91b4-92af6fb8018a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

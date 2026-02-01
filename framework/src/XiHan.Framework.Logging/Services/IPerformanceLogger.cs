@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IPerformanceLogger
-// Guid:c5d0e1f2-4a3b-4c5d-a2e9-0f1a2b3c5d7k
+// Guid:9071461d-825d-4634-a01f-c8b3ad89d6f1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/14 11:35:00

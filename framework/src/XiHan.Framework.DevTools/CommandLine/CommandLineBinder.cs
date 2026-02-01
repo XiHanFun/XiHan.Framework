@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:CommandLineBinder
-// Guid:i5j6k780-h2j9-1506-fk4i-g6fd84c18142
+// Guid:a7b983d2-aa3b-41ea-9d02-1b156ae0afcc
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/16 0:00:00
+// CreateTime:2025/09/16 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:BackgroundServiceStatistics
-// Guid:${guid}
+// Guid:d0fe23d5-f7eb-4275-8837-11157d1bbc07
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/17 16:30:00
+// CreateTime:2025/09/17 16:30:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

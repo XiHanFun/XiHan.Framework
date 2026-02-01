@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IFullAudited
-// Guid:jkl12345-1234-1234-1234-123456789jkl
+// FileName:IFullAuditedEntity
+// Guid:2c4acb75-fb74-4e62-abdb-fab0956ad045
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/12 16:36:00
+// CreateTime:2025/09/12 16:36:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

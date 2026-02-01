@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IBackgroundTaskItem
-// Guid:${guid}
+// Guid:5443c704-f480-47ed-83bc-29ef0f5c7b29
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/9/17 15:00:00
+// CreateTime:2025/09/17 15:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

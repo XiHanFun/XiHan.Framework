@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanEventBusAbstractionsModule
-// Guid:a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6
+// Guid:a5b3173d-d1bf-4b25-81ed-283a1dac3579
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/01/11 00:00:00

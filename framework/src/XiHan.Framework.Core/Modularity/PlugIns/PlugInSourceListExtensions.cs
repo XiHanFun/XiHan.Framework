@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:PlugInSourceListExtensions
 // Guid:fb4d8833-4b07-4904-b06a-32a4fe774411
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-28 上午 09:52:29
+// CreateTime:2024/04/28 09:52:29
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

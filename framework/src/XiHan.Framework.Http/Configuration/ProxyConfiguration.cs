@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ProxyConfiguration
-// Guid:f5e7g9b1-ac2d-6e8f-bg4h-3c5d6e7f8g9a
+// Guid:e85f4133-7896-4dc8-a898-44afa1f3d06d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00

@@ -1,13 +1,13 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ArrayHelper
-// Guid:6g5f4e3d-2c1b-0a9f-8e7d-6c5b4a3f2e1d
+// Guid:0a07dd0d-db29-455f-9d75-b7dc8f20fb95
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/12/20 0:15:00
+// CreateTime:2024/12/20 00:15:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

@@ -4,7 +4,8 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SqidsEncoder
-// Author:ZhaiFanhua
+// Guid:639626c9-abd6-4c1b-b633-731cc883a866
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/05/08 17:42:58
 // ----------------------------------------------------------------

@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:AdditionalAssemblyAttribute
 // Guid:218559cc-c96b-4f29-a2ad-76d5d684f703
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-28 上午 09:15:00
+// CreateTime:2024/04/28 09:15:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

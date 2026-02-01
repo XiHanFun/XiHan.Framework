@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TableBorderChars
+// FileName:ConsoleTableBorderChars
 // Guid:0174509c-7507-4507-a960-f1b377ef14c9
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2025/10/17 5:23:37
+// CreateTime:2025/10/17 05:23:37
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

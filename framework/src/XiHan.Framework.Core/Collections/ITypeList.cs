@@ -5,9 +5,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ITypeList
 // Guid:9ae02503-64bb-4f7a-8209-ea2f7cce7daa
-// Author:Administrator
+// Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024-04-24 下午 03:20:12
+// CreateTime:2024/04/24 15:20:12
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>

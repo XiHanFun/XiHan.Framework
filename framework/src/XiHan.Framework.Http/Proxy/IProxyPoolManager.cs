@@ -1,10 +1,10 @@
-#region <<版权版本注释>>
+﻿#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IProxyPoolManager
-// Guid:f1k3m5h7-gi8j-2k4l-hm0n-9i1j2k3l4m5g
+// Guid:01ea967f-d01f-4caa-a4b2-9fd7e33c77fe
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/20 00:00:00
