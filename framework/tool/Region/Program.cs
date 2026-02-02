@@ -91,14 +91,18 @@ internal class Program
         var match = HeaderRegex.Match(content);
 
         if (!match.Success)
+        {
             return;
+        }
 
         var guidLine = match.Value
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
             .FirstOrDefault(l => l.Contains("Guid:"));
 
         if (guidLine == null)
+        {
             return;
+        }
 
         var guidStr = guidLine.Split(':', 2).Last().Trim();
         if (Guid.TryParse(guidStr, out var guid))
@@ -239,43 +243,61 @@ internal class Program
 
         // 行数必须严格等于 12
         if (lines.Length != HeaderLineCount)
+        {
             return false;
+        }
 
         // Guid 行必须且只能有一条
         if (lines.Count(l => l.Contains("Guid:")) != 1)
+        {
             return false;
+        }
 
         // FileName 行必须且只能有一条
         if (lines.Count(l => l.Contains("FileName:")) != 1)
+        {
             return false;
+        }
 
         // CreateTime 行必须且只能有一条
         if (lines.Count(l => l.Contains("CreateTime:")) != 1)
+        {
             return false;
+        }
 
         // FileName 必须匹配
         var fileNameLine = lines.FirstOrDefault(l => l.Contains("FileName:"));
         if (fileNameLine == null || !fileNameLine.EndsWith(expectedFileName))
+        {
             return false;
+        }
 
         // Guid 必须合法且格式标准
         var guidLine = lines.FirstOrDefault(l => l.Contains("Guid:"));
         if (guidLine == null)
+        {
             return false;
+        }
 
         var guidStr = guidLine.Split(':', 2).Last().Trim();
         if (!Guid.TryParse(guidStr, out var parsedGuid))
+        {
             return false;
+        }
 
         // 验证 GUID 格式是否标准（小写，带连字符）
         if (guidStr != parsedGuid.ToString())
+        {
             return false;
+        }
 
         // CreateTime 必须可解析
         var timeLine = lines.FirstOrDefault(l => l.Contains("CreateTime:"));
         if (timeLine == null ||
             !DateTime.TryParse(timeLine.Split(':', 2).Last().Trim(), out _))
+        {
             return false;
+        }
 
         return true;
     }

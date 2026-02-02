@@ -225,7 +225,10 @@ public static class ErrorObfuscationHelper
     /// <returns>错误对象列表</returns>
     public static List<object> GenerateBatchObfuscatedErrors(int count)
     {
-        if (count <= 0) throw new ArgumentException("Count must be greater than 0", nameof(count));
+        if (count <= 0)
+        {
+            throw new ArgumentException("Count must be greater than 0", nameof(count));
+        }
 
         var errors = new List<object>(count);
         for (var i = 0; i < count; i++)
