@@ -70,7 +70,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
     [HttpPost]
-    public virtual async Task<PageResponse<TEntityDto>> GetPageAsync(PageQuery input)
+    public virtual async Task<BasePageResultDto<TEntityDto>> GetPageAsync(BasePageRequestDto input)
     {
         // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
         var additionalPredicate = BuildAdditionalFilterPredicate(input);
@@ -83,7 +83,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
         // 映射实体到 DTO
         var dtos = await MapEntitiesToDtosAsync(entityPageResponse.Items);
 
-        return new PageResponse<TEntityDto>(dtos, entityPageResponse.PageData);
+        return new BasePageResultDto<TEntityDto>(dtos, entityPageResponse.PageResultMetadata);
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// 子类可以重写此方法以添加额外的过滤逻辑，例如基于当前用户权限的数据过滤。
     /// PageQuery 中的 Filters 和 Sorts 会由仓储层自动处理，此方法用于添加额外的业务逻辑过滤。
     /// </remarks>
-    protected virtual Expression<Func<TEntity, bool>>? BuildAdditionalFilterPredicate(PageQuery input)
+    protected virtual Expression<Func<TEntity, bool>>? BuildAdditionalFilterPredicate(BasePageRequestDto input)
     {
         // 子类可以重写此方法以添加额外的过滤逻辑，例如：权限过滤、租户过滤等
         return null;
@@ -163,9 +163,9 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="entities">实体列表</param>
     /// <returns>DTO列表</returns>
-    protected virtual async Task<IReadOnlyList<TEntityDto>> MapEntitiesToDtosAsync(IEnumerable<TEntity> entities)
+    protected virtual async Task<IList<TEntityDto>> MapEntitiesToDtosAsync(IEnumerable<TEntity> entities)
     {
-        return await Task.FromResult(entities.Adapt<IReadOnlyList<TEntityDto>>());
+        return await Task.FromResult(entities.Adapt<IList<TEntityDto>>());
     }
 
     /// <summary>

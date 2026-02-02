@@ -83,7 +83,10 @@ internal static class ErrorUtilities
     private static string ExtractExceptionType(string message, ProgrammingLanguage language)
     {
         var colonIndex = message.IndexOf(':');
-        if (colonIndex <= 0) return "UnknownException";
+        if (colonIndex <= 0)
+        {
+            return "UnknownException";
+        }
 
         var exceptionType = message[..colonIndex].Trim();
 

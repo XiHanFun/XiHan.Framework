@@ -17,7 +17,7 @@ using System.ComponentModel;
 namespace XiHan.Framework.Domain.Shared.Paging.Enums;
 
 /// <summary>
-/// 排序方向枚举
+/// 排序方向
 /// </summary>
 public enum SortDirection
 {
@@ -25,11 +25,11 @@ public enum SortDirection
     /// 升序
     /// </summary>
     [Description("升序")]
-    Asc,
+    Ascending = 1000,
 
     /// <summary>
     /// 降序
     /// </summary>
     [Description("降序")]
-    Desc
+    Descending = 1001
 }
