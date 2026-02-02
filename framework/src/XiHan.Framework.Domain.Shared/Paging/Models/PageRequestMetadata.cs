@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageInfo
+// FileName:PageRequestMetadata
 // Guid:96c7c379-cafa-4826-a6ba-9dc0b6c33ca8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,12 +12,12 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Domain.Shared.Paging.Dtos;
+namespace XiHan.Framework.Domain.Shared.Paging.Models;
 
 /// <summary>
 /// 分页请求元数据
 /// </summary>
-public class PageInfo
+public class PageRequestMetadata
 {
     /// <summary>
     /// 默认页码
@@ -45,7 +45,7 @@ public class PageInfo
     /// <summary>
     /// 构造函数
     /// </summary>
-    public PageInfo()
+    public PageRequestMetadata()
     {
     }
 
@@ -54,7 +54,7 @@ public class PageInfo
     /// </summary>
     /// <param name="pageIndex">页码</param>
     /// <param name="pageSize">每页大小</param>
-    public PageInfo(int pageIndex, int pageSize)
+    public PageRequestMetadata(int pageIndex, int pageSize)
     {
         PageIndex = pageIndex;
         PageSize = pageSize;

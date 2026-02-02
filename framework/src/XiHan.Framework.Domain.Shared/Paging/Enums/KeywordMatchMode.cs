@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SortDirection
-// Guid:515da136-9391-4bad-b892-4131478583fd
+// FileName:KeywordMatchMode
+// Guid:8f49aa7d-35b3-4c28-854e-e53a9d66c538
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 06:35:47
+// CreateTime:2026/2/2 13:11:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -17,19 +17,31 @@ using System.ComponentModel;
 namespace XiHan.Framework.Domain.Shared.Paging.Enums;
 
 /// <summary>
-/// 排序方向
+/// 关键字匹配模式
 /// </summary>
-public enum SortDirection
+public enum KeywordMatchMode
 {
     /// <summary>
-    /// 升序
+    /// 包含（LIKE %x%）
     /// </summary>
-    [Description("升序")]
-    Ascending = 1000,
+    [Description("包含")]
+    Contains = 1000,
 
     /// <summary>
-    /// 降序
+    /// 前缀匹配（LIKE x%）
     /// </summary>
-    [Description("降序")]
-    Descending = 1001
+    [Description("前缀匹配")]
+    StartsWith = 1001,
+
+    /// <summary>
+    /// 后缀匹配（LIKE %x）
+    /// </summary>
+    [Description("后缀匹配")]
+    EndsWith = 1002,
+
+    /// <summary>
+    /// 完全匹配
+    /// </summary>
+    [Description("完全匹配")]
+    Exact = 1003
 }

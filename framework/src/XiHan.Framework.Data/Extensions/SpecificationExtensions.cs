@@ -14,6 +14,7 @@
 
 using SqlSugar;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
+using XiHan.Framework.Domain.Shared.Paging.Models;
 using XiHan.Framework.Domain.Specifications.Abstracts;
 
 namespace XiHan.Framework.Data.Extensions;
@@ -129,7 +130,7 @@ public static class SpecificationExtensions
     /// <param name="pageSize">页大小</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public static async Task<PageResponse<T>> ToPageAsync<T>(this ISugarQueryable<T> queryable, ISpecification<T> specification, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
+    public static async Task<BasePageResultDto<T>> ToPageAsync<T>(this ISugarQueryable<T> queryable, ISpecification<T> specification, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryable);
         ArgumentNullException.ThrowIfNull(specification);
@@ -155,10 +156,10 @@ public static class SpecificationExtensions
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PageResponse<T>
+        return new BasePageResultDto<T>
         {
             Items = items,
-            PageData = new PageData
+            PageResultMetadata = new PageResultMetadata
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize,
