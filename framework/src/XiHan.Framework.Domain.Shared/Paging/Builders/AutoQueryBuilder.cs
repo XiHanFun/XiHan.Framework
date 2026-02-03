@@ -290,18 +290,22 @@ public class AutoQueryBuilder
 
         if (value is IList<DateTime> dateList && dateList.Count == 2)
         {
-            if (dateList[0] != default && dateList[1] != default)
+            var startDate = dateList[0];
+            var endDate = dateList[1];
+            if (startDate != default && endDate != default)
             {
-                _queryBuilder.WhereBetween(fieldName, dateList[0], dateList[1]);
+                _queryBuilder.WhereBetween(fieldName, startDate, endDate);
                 return true;
             }
         }
 
         if (value is IList<DateTime?> nullableDateList && nullableDateList.Count == 2)
         {
-            if (nullableDateList[0].HasValue && nullableDateList[1].HasValue)
+            var startDate = nullableDateList[0];
+            var endDate = nullableDateList[1];
+            if (startDate.HasValue && endDate.HasValue)
             {
-                _queryBuilder.WhereBetween(fieldName, nullableDateList[0].Value, nullableDateList[1].Value);
+                _queryBuilder.WhereBetween(fieldName, startDate.Value, endDate.Value);
                 return true;
             }
         }
