@@ -30,13 +30,15 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>
-    : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
+/// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
+public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
     where TEntity : class, IEntityBase<TKey>
     where TEntityDto : class
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
+    where TPageRequestDto : BasePageRequestDto
 {
     /// <summary>
     /// 仓储
@@ -70,7 +72,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
     [HttpPost]
-    public virtual async Task<BasePageResultDto<TEntityDto>> GetPageAsync(BasePageRequestDto input)
+    public virtual async Task<BasePageResultDto<TEntityDto>> GetPageAsync(TPageRequestDto input)
     {
         // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
         var additionalPredicate = BuildAdditionalFilterPredicate(input);

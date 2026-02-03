@@ -23,11 +23,13 @@ namespace XiHan.Framework.Application.Contracts.Services;
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto> : IApplicationService
+/// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
+public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto> : IApplicationService
     where TEntityDto : class
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
+    where TPageRequestDto : BasePageRequestDto
 {
     /// <summary>
     /// 获取单个实体
@@ -41,7 +43,7 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    Task<BasePageResultDto<TEntityDto>> GetPageAsync(BasePageRequestDto input);
+    Task<BasePageResultDto<TEntityDto>> GetPageAsync(TPageRequestDto input);
 
     /// <summary>
     /// 创建实体
