@@ -17,6 +17,7 @@ using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Services;
 
@@ -28,13 +29,15 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>
-    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
+/// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
+public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
     where TEntity : class, IEntityBase<TKey>
     where TEntityDto : class
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
+    where TPageRequestDto : BasePageRequestDto
 {
     /// <summary>
     /// 构造函数

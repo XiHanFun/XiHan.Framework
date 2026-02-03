@@ -92,7 +92,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 是否禁用分页（返回所有数据）
     /// </summary>
-    public bool DisablePaging { get; set; }
+    public bool DisablePaging { get; set; } = false;
 
     /// <summary>
     /// 转换为 PageRequestMetadata

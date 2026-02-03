@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Contracts.Services;
 
@@ -23,11 +24,14 @@ namespace XiHan.Framework.Application.Contracts.Services;
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
-public interface IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto> : ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto>
+/// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
+public interface IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
     where TEntityDto : class
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
+    where TPageRequestDto : BasePageRequestDto
 {
     /// <summary>
     /// 批量获取
