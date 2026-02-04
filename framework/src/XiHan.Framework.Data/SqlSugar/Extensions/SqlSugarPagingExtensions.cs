@@ -32,7 +32,7 @@ public static class SqlSugarPagingExtensions
     /// <summary>
     /// 自动查询并返回分页结果（根据DTO属性类型）
     /// </summary>
-    public static async Task<BasePageResultDto<T>> ToPageResultAutoAsync<T>(
+    public static async Task<PageResultDtoBase<T>> ToPageResultAutoAsync<T>(
         this ISugarQueryable<T> query,
         object queryDto,
         QueryConvention? convention = null,
@@ -51,7 +51,7 @@ public static class SqlSugarPagingExtensions
     /// <summary>
     /// 自动查询并返回分页结果（同步版本）
     /// </summary>
-    public static BasePageResultDto<T> ToPageResultAuto<T>(
+    public static PageResultDtoBase<T> ToPageResultAuto<T>(
         this ISugarQueryable<T> query,
         object queryDto,
         QueryConvention? convention = null) where T : class, new()
@@ -70,7 +70,7 @@ public static class SqlSugarPagingExtensions
     /// </summary>
     public static ISugarQueryable<T> ApplyPageRequest<T>(
         this ISugarQueryable<T> query,
-        BasePageRequestDto request) where T : class, new()
+        PageRequestDtoBase request) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
@@ -344,9 +344,9 @@ public static class SqlSugarPagingExtensions
     /// <summary>
     /// 转换为分页结果（异步）
     /// </summary>
-    public static async Task<BasePageResultDto<T>> ToPageResultAsync<T>(
+    public static async Task<PageResultDtoBase<T>> ToPageResultAsync<T>(
         this ISugarQueryable<T> query,
-        BasePageRequestDto request,
+        PageRequestDtoBase request,
         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -357,7 +357,7 @@ public static class SqlSugarPagingExtensions
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
         }
 
         // 应用分页
@@ -374,15 +374,15 @@ public static class SqlSugarPagingExtensions
                 .ToListAsync(cancellationToken);
         }
 
-        return BasePageResultDto<T>.Create(items, request, totalCount);
+        return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
     /// <summary>
     /// 转换为分页结果（同步）
     /// </summary>
-    public static BasePageResultDto<T> ToPageResult<T>(
+    public static PageResultDtoBase<T> ToPageResult<T>(
         this ISugarQueryable<T> query,
-        BasePageRequestDto request) where T : class, new()
+        PageRequestDtoBase request) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
@@ -391,7 +391,7 @@ public static class SqlSugarPagingExtensions
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
         }
 
         List<T> items;
@@ -407,7 +407,7 @@ public static class SqlSugarPagingExtensions
                 .ToList();
         }
 
-        return BasePageResultDto<T>.Create(items, request, totalCount);
+        return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
     /// <summary>
@@ -415,7 +415,7 @@ public static class SqlSugarPagingExtensions
     /// </summary>
     public static ISugarQueryable<T> ApplyPaging<T>(
         this ISugarQueryable<T> query,
-        BasePageRequestDto request) where T : class, new()
+        PageRequestDtoBase request) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);

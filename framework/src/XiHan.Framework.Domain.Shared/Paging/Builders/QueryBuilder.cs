@@ -264,9 +264,9 @@ public class QueryBuilder
     /// <summary>
     /// 构建为 BasePageRequestDto
     /// </summary>
-    public BasePageRequestDto Build()
+    public PageRequestDtoBase Build()
     {
-        return new BasePageRequestDto(_pageIndex, _pageSize)
+        return new PageRequestDtoBase(_pageIndex, _pageSize)
         {
             Filters = [.. _filters],
             Sorts = [.. _sorts],
@@ -279,7 +279,7 @@ public class QueryBuilder
     /// <summary>
     /// 从已有请求创建构建器
     /// </summary>
-    public static QueryBuilder FromRequest(BasePageRequestDto request)
+    public static QueryBuilder FromRequest(PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
 

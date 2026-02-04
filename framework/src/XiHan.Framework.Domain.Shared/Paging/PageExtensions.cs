@@ -40,7 +40,7 @@ public static class PageExtensions
     /// <summary>
     /// 应用分页
     /// </summary>
-    public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, BasePageRequestDto pageRequest)
+    public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
@@ -56,9 +56,9 @@ public static class PageExtensions
     /// <summary>
     /// 应用分页并返回分页结果
     /// </summary>
-    public static async Task<BasePageResultDto<T>> ToPageResultAsync<T>(
+    public static async Task<PageResultDtoBase<T>> ToPageResultAsync<T>(
         this IQueryable<T> query,
-        BasePageRequestDto pageRequest,
+        PageRequestDtoBase pageRequest,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -70,7 +70,7 @@ public static class PageExtensions
         // 如果没有数据，直接返回空结果
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
         }
 
         // 应用分页
@@ -80,15 +80,15 @@ public static class PageExtensions
                 .Take(pageRequest.PageSize)
                 .ToList();
 
-        return BasePageResultDto<T>.Create(items, pageRequest, totalCount);
+        return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
 
     /// <summary>
     /// 应用分页并返回分页结果（同步版本）
     /// </summary>
-    public static BasePageResultDto<T> ToPageResult<T>(
+    public static PageResultDtoBase<T> ToPageResult<T>(
         this IQueryable<T> query,
-        BasePageRequestDto pageRequest)
+        PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
@@ -97,7 +97,7 @@ public static class PageExtensions
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
         }
 
         var items = pageRequest.DisablePaging
@@ -106,7 +106,7 @@ public static class PageExtensions
                 .Take(pageRequest.PageSize)
                 .ToList();
 
-        return BasePageResultDto<T>.Create(items, pageRequest, totalCount);
+        return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
 
     #endregion
@@ -127,7 +127,7 @@ public static class PageExtensions
     /// <summary>
     /// 应用分页
     /// </summary>
-    public static IEnumerable<T> ApplyPaging<T>(this IEnumerable<T> source, BasePageRequestDto pageRequest)
+    public static IEnumerable<T> ApplyPaging<T>(this IEnumerable<T> source, PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
@@ -143,9 +143,9 @@ public static class PageExtensions
     /// <summary>
     /// 转换为分页结果
     /// </summary>
-    public static BasePageResultDto<T> ToPageResult<T>(
+    public static PageResultDtoBase<T> ToPageResult<T>(
         this IEnumerable<T> source,
-        BasePageRequestDto pageRequest)
+        PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
@@ -155,7 +155,7 @@ public static class PageExtensions
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
         }
 
         var items = pageRequest.DisablePaging
@@ -164,13 +164,13 @@ public static class PageExtensions
                 .Take(pageRequest.PageSize)
                 .ToList();
 
-        return BasePageResultDto<T>.Create(items, pageRequest, totalCount);
+        return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
 
     /// <summary>
     /// 转换为分页结果
     /// </summary>
-    public static BasePageResultDto<T> ToPageResult<T>(
+    public static PageResultDtoBase<T> ToPageResult<T>(
         this IEnumerable<T> source,
         int pageIndex,
         int pageSize,
@@ -179,7 +179,7 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
 
         var items = source.ToList();
-        return BasePageResultDto<T>.Create(items, pageIndex, pageSize, totalCount);
+        return PageResultDtoBase<T>.Create(items, pageIndex, pageSize, totalCount);
     }
 
     #endregion
@@ -189,9 +189,9 @@ public static class PageExtensions
     /// <summary>
     /// 列表转分页结果
     /// </summary>
-    public static BasePageResultDto<T> ToPageResult<T>(
+    public static PageResultDtoBase<T> ToPageResult<T>(
         this List<T> list,
-        BasePageRequestDto pageRequest)
+        PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(pageRequest);
@@ -200,7 +200,7 @@ public static class PageExtensions
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
         }
 
         var items = pageRequest.DisablePaging
@@ -209,7 +209,7 @@ public static class PageExtensions
                 .Take(pageRequest.PageSize)
                 .ToList();
 
-        return BasePageResultDto<T>.Create(items, pageRequest, totalCount);
+        return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
 
     #endregion
@@ -443,7 +443,7 @@ public static class PageExtensions
     /// <summary>
     /// 应用完整的分页请求（包括过滤、排序、关键字搜索）
     /// </summary>
-    public static IQueryable<T> ApplyPageRequest<T>(this IQueryable<T> query, BasePageRequestDto pageRequest)
+    public static IQueryable<T> ApplyPageRequest<T>(this IQueryable<T> query, PageRequestDtoBase pageRequest)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);

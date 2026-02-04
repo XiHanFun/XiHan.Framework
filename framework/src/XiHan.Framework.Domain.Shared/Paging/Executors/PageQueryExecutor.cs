@@ -41,7 +41,7 @@ public class PageQueryExecutor<T> where T : class
     /// <summary>
     /// 执行分页查询（带验证）
     /// </summary>
-    public BasePageResultDto<T> Execute(IQueryable<T> query, BasePageRequestDto request, bool validate = true)
+    public PageResultDtoBase<T> Execute(IQueryable<T> query, PageRequestDtoBase request, bool validate = true)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
@@ -76,7 +76,7 @@ public class PageQueryExecutor<T> where T : class
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
         }
 
         // 7. 应用分页
@@ -89,13 +89,13 @@ public class PageQueryExecutor<T> where T : class
         // 8. 执行查询
         var items = query.ToList();
 
-        return BasePageResultDto<T>.Create(items, request, totalCount);
+        return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
     /// <summary>
     /// 异步执行分页查询
     /// </summary>
-    public async Task<BasePageResultDto<T>> ExecuteAsync(IQueryable<T> query, BasePageRequestDto request,
+    public async Task<PageResultDtoBase<T>> ExecuteAsync(IQueryable<T> query, PageRequestDtoBase request,
         bool validate = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -125,7 +125,7 @@ public class PageQueryExecutor<T> where T : class
 
         if (totalCount == 0)
         {
-            return BasePageResultDto<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
         }
 
         if (!request.DisablePaging)
@@ -136,7 +136,7 @@ public class PageQueryExecutor<T> where T : class
 
         var items = query.ToList();
 
-        return BasePageResultDto<T>.Create(items, request, totalCount);
+        return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
     /// <summary>
