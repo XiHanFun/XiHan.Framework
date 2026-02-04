@@ -31,7 +31,7 @@ public interface IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpd
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
-    where TPageRequestDto : BasePageRequestDto
+    where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
     /// 批量获取

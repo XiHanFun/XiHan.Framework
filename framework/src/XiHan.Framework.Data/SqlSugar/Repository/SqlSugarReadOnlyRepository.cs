@@ -278,7 +278,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="pageSize">每页大小</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -287,7 +287,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
-        return new BasePageResultDto<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
+        return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
@@ -298,7 +298,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
@@ -308,7 +308,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
-        return new BasePageResultDto<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
+        return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
@@ -321,7 +321,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="isAscending">是否升序</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>> orderBy, bool isAscending = true, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>> orderBy, bool isAscending = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(orderBy);
         cancellationToken.ThrowIfCancellationRequested();
@@ -340,7 +340,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
-        return new BasePageResultDto<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
+        return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
@@ -351,7 +351,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(int pageIndex, int pageSize, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
@@ -362,7 +362,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
-        return new BasePageResultDto<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
+        return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
@@ -371,7 +371,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="pageRequestDto">分页查询对象</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(BasePageRequestDto pageRequestDto, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         cancellationToken.ThrowIfCancellationRequested();
@@ -392,7 +392,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="predicate">条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(BasePageRequestDto pageRequestDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         ArgumentNullException.ThrowIfNull(predicate);
@@ -414,7 +414,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAsync(BasePageRequestDto pageRequestDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         ArgumentNullException.ThrowIfNull(specification);
@@ -439,7 +439,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="queryDto">查询DTO对象</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAutoAsync(object queryDto, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
@@ -457,7 +457,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="predicate">额外的条件</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAutoAsync(object queryDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         ArgumentNullException.ThrowIfNull(predicate);
@@ -475,7 +475,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <param name="specification">规约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>分页结果</returns>
-    public async Task<BasePageResultDto<TEntity>> GetPagedAutoAsync(object queryDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         ArgumentNullException.ThrowIfNull(specification);
