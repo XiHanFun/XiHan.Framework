@@ -29,7 +29,7 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
-    where TPageRequestDto : BasePageRequestDto
+    where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
     /// 获取单个实体
@@ -43,7 +43,7 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    Task<BasePageResultDto<TEntityDto>> GetPageAsync(TPageRequestDto input);
+    Task<PageResultDtoBase<TEntityDto>> GetPageAsync(TPageRequestDto input);
 
     /// <summary>
     /// 创建实体

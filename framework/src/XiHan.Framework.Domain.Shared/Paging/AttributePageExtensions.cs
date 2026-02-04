@@ -29,9 +29,9 @@ public static class AttributePageExtensions
     /// <param name="query">查询源</param>
     /// <param name="request">分页请求</param>
     /// <param name="validate">是否验证请求（默认启用）</param>
-    public static BasePageResultDto<T> ToPageResultWithValidation<T>(
+    public static PageResultDtoBase<T> ToPageResultWithValidation<T>(
         this IQueryable<T> query,
-        BasePageRequestDto request,
+        PageRequestDtoBase request,
         bool validate = true) where T : class
     {
         var executor = new PageQueryExecutor<T>();
@@ -41,9 +41,9 @@ public static class AttributePageExtensions
     /// <summary>
     /// 应用分页查询（异步，自动根据实体类型的 Attribute 进行验证和处理）
     /// </summary>
-    public static async Task<BasePageResultDto<T>> ToPageResultWithValidationAsync<T>(
+    public static async Task<PageResultDtoBase<T>> ToPageResultWithValidationAsync<T>(
         this IQueryable<T> query,
-        BasePageRequestDto request,
+        PageRequestDtoBase request,
         bool validate = true,
         CancellationToken cancellationToken = default) where T : class
     {
@@ -54,7 +54,7 @@ public static class AttributePageExtensions
     /// <summary>
     /// 验证分页请求（基于实体类型的 Attribute）
     /// </summary>
-    public static ValidationResult ValidateRequest<T>(this BasePageRequestDto request)
+    public static ValidationResult ValidateRequest<T>(this PageRequestDtoBase request)
     {
         return AttributeBasedValidator.ValidatePageRequest<T>(request);
     }
@@ -62,7 +62,7 @@ public static class AttributePageExtensions
     /// <summary>
     /// 验证分页请求并抛出异常（如果验证失败）
     /// </summary>
-    public static BasePageRequestDto EnsureValid<T>(this BasePageRequestDto request)
+    public static PageRequestDtoBase EnsureValid<T>(this PageRequestDtoBase request)
     {
         var validationResult = AttributeBasedValidator.ValidatePageRequest<T>(request);
         if (!validationResult.IsValid)
@@ -76,7 +76,7 @@ public static class AttributePageExtensions
     /// <summary>
     /// 尝试验证分页请求
     /// </summary>
-    public static bool TryValidate<T>(this BasePageRequestDto request, out ValidationResult? validationResult)
+    public static bool TryValidate<T>(this PageRequestDtoBase request, out ValidationResult? validationResult)
     {
         validationResult = AttributeBasedValidator.ValidatePageRequest<T>(request);
         return validationResult.IsValid;

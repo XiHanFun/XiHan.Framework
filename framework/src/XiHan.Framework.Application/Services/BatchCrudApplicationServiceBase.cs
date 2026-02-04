@@ -37,7 +37,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     where TKey : IEquatable<TKey>
     where TCreateDto : class
     where TUpdateDto : class
-    where TPageRequestDto : BasePageRequestDto
+    where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
     /// 构造函数

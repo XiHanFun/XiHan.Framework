@@ -29,7 +29,7 @@ public static class AutoQueryExtensions
     /// </summary>
     /// <param name="dto">查询DTO</param>
     /// <param name="convention">约定配置（可选）</param>
-    public static BasePageRequestDto AutoBuild(this object dto, QueryConvention? convention = null)
+    public static PageRequestDtoBase AutoBuild(this object dto, QueryConvention? convention = null)
     {
         return AutoQueryBuilder.BuildFrom(dto, convention);
     }
@@ -42,7 +42,7 @@ public static class AutoQueryExtensions
     /// <param name="dto">查询DTO</param>
     /// <param name="convention">约定配置（可选）</param>
     /// <param name="validate">是否验证（默认启用）</param>
-    public static BasePageResultDto<T> ToPageResultAuto<T>(
+    public static PageResultDtoBase<T> ToPageResultAuto<T>(
         this IQueryable<T> query,
         object dto,
         QueryConvention? convention = null,
@@ -57,7 +57,7 @@ public static class AutoQueryExtensions
     /// <summary>
     /// 自动查询并返回分页结果（异步）
     /// </summary>
-    public static async Task<BasePageResultDto<T>> ToPageResultAutoAsync<T>(
+    public static async Task<PageResultDtoBase<T>> ToPageResultAutoAsync<T>(
         this IQueryable<T> query,
         object dto,
         QueryConvention? convention = null,

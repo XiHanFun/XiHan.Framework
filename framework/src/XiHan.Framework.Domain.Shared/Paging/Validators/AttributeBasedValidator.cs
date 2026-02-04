@@ -26,7 +26,7 @@ public static class AttributeBasedValidator
     /// <summary>
     /// 验证分页请求（基于实体类型的 Attribute）
     /// </summary>
-    public static ValidationResult ValidatePageRequest<T>(BasePageRequestDto request)
+    public static ValidationResult ValidatePageRequest<T>(PageRequestDtoBase request)
     {
         return ValidatePageRequest(typeof(T), request);
     }
@@ -34,7 +34,7 @@ public static class AttributeBasedValidator
     /// <summary>
     /// 验证分页请求（基于实体类型的 Attribute）
     /// </summary>
-    public static ValidationResult ValidatePageRequest(Type entityType, BasePageRequestDto request)
+    public static ValidationResult ValidatePageRequest(Type entityType, PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(entityType);
         ArgumentNullException.ThrowIfNull(request);

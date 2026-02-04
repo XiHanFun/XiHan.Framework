@@ -53,7 +53,7 @@ public class AutoQueryBuilder
     /// <summary>
     /// 从DTO自动构建查询请求
     /// </summary>
-    public static BasePageRequestDto BuildFrom(object dto, QueryConvention? convention = null)
+    public static PageRequestDtoBase BuildFrom(object dto, QueryConvention? convention = null)
     {
         return new AutoQueryBuilder(dto, convention).Build();
     }
@@ -61,7 +61,7 @@ public class AutoQueryBuilder
     /// <summary>
     /// 自动构建查询请求
     /// </summary>
-    public BasePageRequestDto Build()
+    public PageRequestDtoBase Build()
     {
         // 1. 处理分页参数
         ProcessPagingProperties();

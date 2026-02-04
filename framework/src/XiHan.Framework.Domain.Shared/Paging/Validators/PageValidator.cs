@@ -25,7 +25,7 @@ public static class PageValidator
     /// <summary>
     /// 验证分页请求
     /// </summary>
-    public static ValidationResult ValidatePageRequest(BasePageRequestDto request)
+    public static ValidationResult ValidatePageRequest(PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
 

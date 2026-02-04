@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BasePageRequestDto
+// FileName:PageRequestDtoBase
 // Guid:aec9055a-15c5-48d1-a835-05a28e11cdf3
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -18,9 +18,9 @@ using XiHan.Framework.Domain.Shared.Paging.Models;
 namespace XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 /// <summary>
-/// 通用分页请求
+/// 分页请求基类
 /// </summary>
-public class BasePageRequestDto
+public class PageRequestDtoBase
 {
     private int _pageIndex = PageRequestMetadata.DefaultPageIndex;
 
@@ -29,7 +29,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 构造函数
     /// </summary>
-    public BasePageRequestDto()
+    public PageRequestDtoBase()
     {
         PageIndex = PageRequestMetadata.DefaultPageIndex;
         PageSize = PageRequestMetadata.DefaultPageSize;
@@ -40,7 +40,7 @@ public class BasePageRequestDto
     /// </summary>
     /// <param name="pageIndex">页码</param>
     /// <param name="pageSize">每页大小</param>
-    public BasePageRequestDto(int pageIndex, int pageSize)
+    public PageRequestDtoBase(int pageIndex, int pageSize)
     {
         PageIndex = pageIndex;
         PageSize = pageSize;
@@ -102,7 +102,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 添加过滤条件
     /// </summary>
-    public BasePageRequestDto AddFilter(string field, object? value, QueryOperator @operator = QueryOperator.Equal)
+    public PageRequestDtoBase AddFilter(string field, object? value, QueryOperator @operator = QueryOperator.Equal)
     {
         Filters.Add(new QueryFilter(field, value, @operator));
         return this;
@@ -111,7 +111,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 添加过滤条件
     /// </summary>
-    public BasePageRequestDto AddFilter(QueryFilter filter)
+    public PageRequestDtoBase AddFilter(QueryFilter filter)
     {
         ArgumentNullException.ThrowIfNull(filter);
         Filters.Add(filter);
@@ -121,7 +121,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 添加排序条件
     /// </summary>
-    public BasePageRequestDto AddSort(string field, SortDirection direction = SortDirection.Ascending, int priority = 0)
+    public PageRequestDtoBase AddSort(string field, SortDirection direction = SortDirection.Ascending, int priority = 0)
     {
         Sorts.Add(new QuerySort(field, direction, priority));
         return this;
@@ -130,7 +130,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 添加排序条件
     /// </summary>
-    public BasePageRequestDto AddSort(QuerySort sort)
+    public PageRequestDtoBase AddSort(QuerySort sort)
     {
         ArgumentNullException.ThrowIfNull(sort);
         Sorts.Add(sort);
@@ -140,7 +140,7 @@ public class BasePageRequestDto
     /// <summary>
     /// 设置关键字搜索
     /// </summary>
-    public BasePageRequestDto SetKeyword(string? keyword, params string[] fields)
+    public PageRequestDtoBase SetKeyword(string? keyword, params string[] fields)
     {
         Keyword = keyword;
         if (fields.Length > 0)

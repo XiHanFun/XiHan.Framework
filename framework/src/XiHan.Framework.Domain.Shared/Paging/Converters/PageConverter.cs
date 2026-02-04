@@ -25,7 +25,7 @@ public static class PageConverter
     /// <summary>
     /// BasePageRequestDto 转 PageRequestMetadata
     /// </summary>
-    public static PageRequestMetadata ToMetadata(this BasePageRequestDto request)
+    public static PageRequestMetadata ToMetadata(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
         return new PageRequestMetadata(request.PageIndex, request.PageSize);
@@ -34,31 +34,31 @@ public static class PageConverter
     /// <summary>
     /// PageRequestMetadata 转 BasePageRequestDto
     /// </summary>
-    public static BasePageRequestDto ToDto(this PageRequestMetadata metadata)
+    public static PageRequestDtoBase ToDto(this PageRequestMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(metadata);
-        return new BasePageRequestDto(metadata.PageIndex, metadata.PageSize);
+        return new PageRequestDtoBase(metadata.PageIndex, metadata.PageSize);
     }
 
     /// <summary>
     /// 将分页结果的数据类型转换
     /// </summary>
-    public static BasePageResultDto<TTarget> ConvertItems<TSource, TTarget>(
-        this BasePageResultDto<TSource> source,
+    public static PageResultDtoBase<TTarget> ConvertItems<TSource, TTarget>(
+        this PageResultDtoBase<TSource> source,
         Func<TSource, TTarget> converter)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(converter);
 
         var convertedItems = source.Items.Select(converter).ToList();
-        return new BasePageResultDto<TTarget>(convertedItems, source.PageResultMetadata);
+        return new PageResultDtoBase<TTarget>(convertedItems, source.PageResultMetadata);
     }
 
     /// <summary>
     /// 异步转换分页结果的数据类型
     /// </summary>
-    public static async Task<BasePageResultDto<TTarget>> ConvertItemsAsync<TSource, TTarget>(
-        this BasePageResultDto<TSource> source,
+    public static async Task<PageResultDtoBase<TTarget>> ConvertItemsAsync<TSource, TTarget>(
+        this PageResultDtoBase<TSource> source,
         Func<TSource, Task<TTarget>> converter,
         CancellationToken cancellationToken = default)
     {
@@ -68,17 +68,17 @@ public static class PageConverter
         var tasks = source.Items.Select(converter);
         var convertedItems = await Task.WhenAll(tasks);
 
-        return new BasePageResultDto<TTarget>(convertedItems, source.PageResultMetadata);
+        return new PageResultDtoBase<TTarget>(convertedItems, source.PageResultMetadata);
     }
 
     /// <summary>
     /// 克隆分页请求
     /// </summary>
-    public static BasePageRequestDto Clone(this BasePageRequestDto request)
+    public static PageRequestDtoBase Clone(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return new BasePageRequestDto(request.PageIndex, request.PageSize)
+        return new PageRequestDtoBase(request.PageIndex, request.PageSize)
         {
             Filters = [.. request.Filters],
             Sorts = [.. request.Sorts],
@@ -91,7 +91,7 @@ public static class PageConverter
     /// <summary>
     /// 合并两个分页请求（第二个请求覆盖第一个）
     /// </summary>
-    public static BasePageRequestDto Merge(this BasePageRequestDto first, BasePageRequestDto second)
+    public static PageRequestDtoBase Merge(this PageRequestDtoBase first, PageRequestDtoBase second)
     {
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
@@ -140,18 +140,18 @@ public static class PageConverter
     /// <summary>
     /// 创建空的分页结果
     /// </summary>
-    public static BasePageResultDto<T> CreateEmptyResult<T>(this BasePageRequestDto request)
+    public static PageResultDtoBase<T> CreateEmptyResult<T>(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return BasePageResultDto<T>.Empty(request.PageIndex, request.PageSize);
+        return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
     }
 
     /// <summary>
     /// 从分页元数据创建空结果
     /// </summary>
-    public static BasePageResultDto<T> CreateEmptyResult<T>(this PageRequestMetadata metadata)
+    public static PageResultDtoBase<T> CreateEmptyResult<T>(this PageRequestMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(metadata);
-        return BasePageResultDto<T>.Empty(metadata.PageIndex, metadata.PageSize);
+        return PageResultDtoBase<T>.Empty(metadata.PageIndex, metadata.PageSize);
     }
 }
