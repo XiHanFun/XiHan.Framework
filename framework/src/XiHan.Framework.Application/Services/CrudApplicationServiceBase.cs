@@ -79,8 +79,8 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
 
         // 使用仓储层的 PageQuery 重载方法，直接处理 Filters、Sorts 和 DisablePaging
         var entityPageResponse = additionalPredicate != null
-            ? await Repository.GetPagedAsync(input, additionalPredicate)
-            : await Repository.GetPagedAsync(input);
+            ? await Repository.GetPagedAutoAsync(input, additionalPredicate)
+            : await Repository.GetPagedAutoAsync(input);
 
         // 映射实体到 DTO
         var dtos = await MapEntitiesToDtosAsync(entityPageResponse.Items);
