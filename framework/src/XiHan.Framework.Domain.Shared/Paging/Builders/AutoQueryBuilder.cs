@@ -177,6 +177,12 @@ public class AutoQueryBuilder
                 continue;
             }
 
+            // 跳过 PageRequestDtoBase 的内置属性
+            if (property.Name is "Filters" or "Sorts" or "KeywordFields" or "Keyword" or "DisablePaging")
+            {
+                continue;
+            }
+
             // 跳过关键字搜索输入字段
             if (_convention.IsKeywordProperty(property.Name))
             {
