@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -201,4 +201,34 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase query, ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     #endregion 分页查询
+
+    #region 自动查询分页
+
+    /// <summary>
+    /// 自动查询分页数据（根据查询DTO自动构建条件）
+    /// </summary>
+    /// <param name="queryDto">查询DTO对象</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 自动查询分页数据（带额外条件）
+    /// </summary>
+    /// <param name="queryDto">查询DTO对象</param>
+    /// <param name="predicate">用于过滤实体的表达式</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 自动查询分页数据（带规约）
+    /// </summary>
+    /// <param name="queryDto">查询DTO对象</param>
+    /// <param name="specification">定义查询条件的规约</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>分页结果</returns>
+    Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
+
+    #endregion 自动查询分页
 }

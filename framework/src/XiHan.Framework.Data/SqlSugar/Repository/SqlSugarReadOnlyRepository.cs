@@ -431,7 +431,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
     #endregion 分页查询
 
-    #region 自动查询分页（新增）
+    #region 自动查询分页
 
     /// <summary>
     /// 自动查询分页数据（根据查询DTO自动构建条件）
