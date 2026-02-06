@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Collections;
 using XiHan.Framework.Domain.Shared.Paging.Enums;
 
 namespace XiHan.Framework.Domain.Shared.Paging.Models;
@@ -154,13 +155,13 @@ public class QueryFilter
         // In 和 NotIn 需要集合类型的值
         if (Operator is QueryOperator.In or QueryOperator.NotIn)
         {
-            return Value is System.Collections.IEnumerable and not string;
+            return Value is IEnumerable and not string;
         }
 
         // Between 需要两个元素的数组
-        if (Operator == QueryOperator.Between)
+        if (Operator is QueryOperator.Between)
         {
-            return Value is System.Collections.ICollection { Count: 2 };
+            return Value is ICollection { Count: 2 };
         }
 
         // 其他操作符需要非空值
