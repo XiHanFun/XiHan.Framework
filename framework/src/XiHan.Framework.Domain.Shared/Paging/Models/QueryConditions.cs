@@ -42,7 +42,12 @@ public sealed class QueryConditions
     public bool IsEmpty =>
         Filters.Count == 0 &&
         Sorts.Count == 0 &&
-        Keyword is null;
+        (Keyword is null || Keyword.IsEmpty);
+
+    /// <summary>
+    /// 是否有任何条件
+    /// </summary>
+    public bool HasConditions => !IsEmpty;
 
     /// <summary>
     /// 添加过滤条件
@@ -60,6 +65,16 @@ public sealed class QueryConditions
     {
         ArgumentNullException.ThrowIfNull(filter);
         Filters.Add(filter);
+        return this;
+    }
+
+    /// <summary>
+    /// 批量添加过滤条件
+    /// </summary>
+    public QueryConditions AddFilters(IEnumerable<QueryFilter> filters)
+    {
+        ArgumentNullException.ThrowIfNull(filters);
+        Filters.AddRange(filters);
         return this;
     }
 
@@ -83,6 +98,16 @@ public sealed class QueryConditions
     }
 
     /// <summary>
+    /// 批量添加排序条件
+    /// </summary>
+    public QueryConditions AddSorts(IEnumerable<QuerySort> sorts)
+    {
+        ArgumentNullException.ThrowIfNull(sorts);
+        Sorts.AddRange(sorts);
+        return this;
+    }
+
+    /// <summary>
     /// 设置关键字搜索
     /// </summary>
     public QueryConditions SetKeyword(string? keyword, params string[] fields)
@@ -93,6 +118,35 @@ public sealed class QueryConditions
         {
             Keyword.Fields = [.. fields];
         }
+        return this;
+    }
+
+    /// <summary>
+    /// 清空所有条件
+    /// </summary>
+    public QueryConditions Clear()
+    {
+        Filters.Clear();
+        Sorts.Clear();
+        Keyword = null;
+        return this;
+    }
+
+    /// <summary>
+    /// 移除指定字段的过滤条件
+    /// </summary>
+    public QueryConditions RemoveFilter(string field)
+    {
+        Filters.RemoveAll(f => f.Field.Equals(field, StringComparison.OrdinalIgnoreCase));
+        return this;
+    }
+
+    /// <summary>
+    /// 移除指定字段的排序条件
+    /// </summary>
+    public QueryConditions RemoveSort(string field)
+    {
+        Sorts.RemoveAll(s => s.Field.Equals(field, StringComparison.OrdinalIgnoreCase));
         return this;
     }
 
@@ -114,5 +168,21 @@ public sealed class QueryConditions
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// 克隆当前查询条件
+    /// </summary>
+    public QueryConditions Clone()
+    {
+        var cloned = new QueryConditions
+        {
+            Filters = [.. Filters],
+            Sorts = [.. Sorts],
+            Keyword = Keyword is not null
+                ? new QueryKeyword { Value = Keyword.Value, Fields = [.. Keyword.Fields] }
+                : null
+        };
+        return cloned;
     }
 }

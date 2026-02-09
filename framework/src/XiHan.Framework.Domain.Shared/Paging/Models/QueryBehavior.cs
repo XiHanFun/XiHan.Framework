@@ -38,4 +38,48 @@ public sealed class QueryBehavior
     /// 是否忽略软删除过滤
     /// </summary>
     public bool IgnoreSoftDelete { get; set; } = false;
+
+    /// <summary>
+    /// 是否启用查询追踪（EF Core）
+    /// </summary>
+    public bool EnableTracking { get; set; } = false;
+
+    /// <summary>
+    /// 是否启用拆分查询（避免笛卡尔积）
+    /// </summary>
+    public bool EnableSplitQuery { get; set; } = false;
+
+    /// <summary>
+    /// 查询超时时间（秒）
+    /// </summary>
+    public int? QueryTimeout { get; set; }
+
+    /// <summary>
+    /// 是否使用默认配置（所有选项都是默认值）
+    /// </summary>
+    public bool IsDefault =>
+        DisablePaging == false &&
+        DisableDefaultSort == false &&
+        IgnoreTenant == false &&
+        IgnoreSoftDelete == false &&
+        EnableTracking == false &&
+        EnableSplitQuery == false &&
+        QueryTimeout is null;
+
+    /// <summary>
+    /// 克隆当前查询行为
+    /// </summary>
+    public QueryBehavior Clone()
+    {
+        return new QueryBehavior
+        {
+            DisablePaging = DisablePaging,
+            DisableDefaultSort = DisableDefaultSort,
+            IgnoreTenant = IgnoreTenant,
+            IgnoreSoftDelete = IgnoreSoftDelete,
+            EnableTracking = EnableTracking,
+            EnableSplitQuery = EnableSplitQuery,
+            QueryTimeout = QueryTimeout
+        };
+    }
 }
