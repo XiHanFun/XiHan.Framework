@@ -26,8 +26,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Scalar.AspNetCore" Version="2.12.27" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.1" />
+		<PackageReference Include="Scalar.AspNetCore" Version="2.12.36" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.2" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="10.0.1" />
 	</ItemGroup>
 
