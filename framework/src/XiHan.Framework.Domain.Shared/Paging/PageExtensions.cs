@@ -45,12 +45,12 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.QueryMetadata?.DisablePaging == true)
+        if (pageRequest.Behavior.DisablePaging)
         {
             return query;
         }
 
-        var meta = pageRequest.PageRequestMetadata;
+        var meta = pageRequest.Page;
         return query.Skip(meta.Skip).Take(meta.Take);
     }
 
@@ -66,15 +66,14 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(pageRequest);
 
         var totalCount = query.Count();
-        var meta = pageRequest.PageRequestMetadata;
-        var q = pageRequest.QueryMetadata;
+        var meta = pageRequest.Page;
 
         if (totalCount == 0)
         {
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = q?.DisablePaging == true
+        var items = pageRequest.Behavior.DisablePaging
             ? query.ToList()
             : [.. query.Skip(meta.Skip).Take(meta.Take)];
 
@@ -92,15 +91,14 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(pageRequest);
 
         var totalCount = query.Count();
-        var meta = pageRequest.PageRequestMetadata;
-        var q = pageRequest.QueryMetadata;
+        var meta = pageRequest.Page;
 
         if (totalCount == 0)
         {
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = q?.DisablePaging == true
+        var items = pageRequest.Behavior.DisablePaging
             ? query.ToList()
             : [.. query.Skip(meta.Skip).Take(meta.Take)];
 
@@ -130,12 +128,12 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.QueryMetadata?.DisablePaging == true)
+        if (pageRequest.Behavior.DisablePaging)
         {
             return source;
         }
 
-        var meta = pageRequest.PageRequestMetadata;
+        var meta = pageRequest.Page;
         return source.Skip(meta.Skip).Take(meta.Take);
     }
 
@@ -151,15 +149,14 @@ public static class PageExtensions
 
         var list = source as IList<T> ?? [.. source];
         var totalCount = list.Count;
-        var meta = pageRequest.PageRequestMetadata;
-        var q = pageRequest.QueryMetadata;
+        var meta = pageRequest.Page;
 
         if (totalCount == 0)
         {
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = q?.DisablePaging == true
+        var items = pageRequest.Behavior.DisablePaging
             ? list
             : [.. list.Skip(meta.Skip).Take(meta.Take)];
 
@@ -196,15 +193,14 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(pageRequest);
 
         var totalCount = list.Count;
-        var meta = pageRequest.PageRequestMetadata;
-        var q = pageRequest.QueryMetadata;
+        var meta = pageRequest.Page;
 
         if (totalCount == 0)
         {
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = q?.DisablePaging == true
+        var items = pageRequest.Behavior.DisablePaging
             ? list
             : [.. list.Skip(meta.Skip).Take(meta.Take)];
 
@@ -447,26 +443,23 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        var q = pageRequest.QueryMetadata;
-        if (q != null)
+        var cond = pageRequest.Conditions;
+        if (cond.Filters.Count > 0)
         {
-            if (q.Filters.Count > 0)
-            {
-                query = query.ApplyFilters(q.Filters);
-            }
-
-            if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count > 0)
-            {
-                query = query.ApplyKeywordSearch(q.Keyword, [.. q.KeywordFields]);
-            }
-
-            if (q.Sorts.Count > 0)
-            {
-                query = query.ApplySorts(q.Sorts);
-            }
+            query = query.ApplyFilters(cond.Filters);
         }
 
-        if (q?.DisablePaging != true)
+        if (!string.IsNullOrWhiteSpace(cond.Keyword?.Value) && (cond.Keyword?.Fields?.Count ?? 0) > 0)
+        {
+            query = query.ApplyKeywordSearch(cond.Keyword!.Value, [.. cond.Keyword.Fields]);
+        }
+
+        if (cond.Sorts.Count > 0)
+        {
+            query = query.ApplySorts(cond.Sorts);
+        }
+
+        if (!pageRequest.Behavior.DisablePaging)
         {
             query = query.ApplyPaging(pageRequest);
         }

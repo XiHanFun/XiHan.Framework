@@ -159,7 +159,7 @@ public static class SpecificationExtensions
         return new PageResultDtoBase<T>
         {
             Items = items,
-            PageResultMetadata = new PageResultMetadata
+            Page = new PageResultMetadata
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize,
