@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Domain.Shared.Paging.Enums;
 using XiHan.Framework.Domain.Shared.Paging.Models;
 
 namespace XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -35,4 +36,61 @@ public class PageRequestDtoBase
     /// 分页参数
     /// </summary>
     public PageRequestMetadata Page { get; set; } = new();
+
+    /// <summary>
+    /// 快速添加过滤条件（链式调用）
+    /// </summary>
+    public PageRequestDtoBase WithFilter(string field, object? value, QueryOperator @operator = QueryOperator.Equal)
+    {
+        Conditions.AddFilter(field, value, @operator);
+        return this;
+    }
+
+    /// <summary>
+    /// 快速添加排序条件（链式调用）
+    /// </summary>
+    public PageRequestDtoBase WithSort(string field, SortDirection direction = SortDirection.Ascending)
+    {
+        Conditions.AddSort(field, direction);
+        return this;
+    }
+
+    /// <summary>
+    /// 快速设置关键字搜索（链式调用）
+    /// </summary>
+    public PageRequestDtoBase WithKeyword(string? keyword, params string[] fields)
+    {
+        Conditions.SetKeyword(keyword, fields);
+        return this;
+    }
+
+    /// <summary>
+    /// 设置页码和每页大小（链式调用）
+    /// </summary>
+    public PageRequestDtoBase WithPage(int pageIndex, int pageSize)
+    {
+        Page.PageIndex = pageIndex;
+        Page.PageSize = pageSize;
+        return this;
+    }
+
+    /// <summary>
+    /// 禁用分页（返回所有数据）
+    /// </summary>
+    public PageRequestDtoBase WithoutPaging()
+    {
+        Behavior.DisablePaging = true;
+        return this;
+    }
+
+    /// <summary>
+    /// 创建默认分页请求（第1页，10条）
+    /// </summary>
+    public static PageRequestDtoBase Default() => new();
+
+    /// <summary>
+    /// 创建指定页码的请求
+    /// </summary>
+    public static PageRequestDtoBase Create(int pageIndex, int pageSize) =>
+        new PageRequestDtoBase().WithPage(pageIndex, pageSize);
 }

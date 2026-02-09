@@ -20,7 +20,7 @@ namespace XiHan.Framework.Domain.Shared.Paging.Models;
 /// <summary>
 /// 查询过滤条件
 /// </summary>
-public class QueryFilter
+public sealed class QueryFilter
 {
     private string _field = string.Empty;
 
@@ -183,5 +183,30 @@ public class QueryFilter
 
         // 其他操作符使用 Value
         return Value is not null;
+    }
+
+    /// <summary>
+    /// 转换为可读字符串（调试用）
+    /// </summary>
+    public override string ToString()
+    {
+        return Operator switch
+        {
+            QueryOperator.IsNull => $"{Field} IS NULL",
+            QueryOperator.IsNotNull => $"{Field} IS NOT NULL",
+            QueryOperator.In => $"{Field} IN [{string.Join(", ", Values ?? [])}]",
+            QueryOperator.NotIn => $"{Field} NOT IN [{string.Join(", ", Values ?? [])}]",
+            QueryOperator.Between => $"{Field} BETWEEN {Values?[0]} AND {Values?[1]}",
+            QueryOperator.Contains => $"{Field} CONTAINS '{Value}'",
+            QueryOperator.StartsWith => $"{Field} STARTS WITH '{Value}'",
+            QueryOperator.EndsWith => $"{Field} ENDS WITH '{Value}'",
+            QueryOperator.Equal => $"{Field} = {Value}",
+            QueryOperator.NotEqual => $"{Field} != {Value}",
+            QueryOperator.GreaterThan => $"{Field} > {Value}",
+            QueryOperator.GreaterThanOrEqual => $"{Field} >= {Value}",
+            QueryOperator.LessThan => $"{Field} < {Value}",
+            QueryOperator.LessThanOrEqual => $"{Field} <= {Value}",
+            _ => $"{Field} {Operator} {Value}"
+        };
     }
 }

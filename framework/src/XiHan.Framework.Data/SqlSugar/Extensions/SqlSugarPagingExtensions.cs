@@ -189,26 +189,31 @@ public static class SqlSugarPagingExtensions
                     break;
 
                 case QueryOperator.In:
-                    if (filter.Value is System.Collections.IEnumerable enumerable and not string)
+                case QueryOperator.NotIn:
+                    if (filter.Values is { Length: > 0 })
                     {
-                        var values = new List<object>();
-                        foreach (var item in enumerable)
-                        {
-                            if (item != null)
-                            {
-                                values.Add(item);
-                            }
-                        }
+                        var containsMethod = typeof(Enumerable).GetMethods()
+                            .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
+                            .MakeGenericMethod(property.Type);
 
-                        if (values.Count > 0)
-                        {
-                            var containsMethod = typeof(Enumerable).GetMethods()
-                                .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
-                                .MakeGenericMethod(property.Type);
+                        var convertedValues = filter.Values.Select(v => Convert.ChangeType(v, property.Type)).ToList();
+                        var valuesExpr = Expression.Constant(convertedValues);
+                        var containsPredicate = Expression.Call(containsMethod, valuesExpr, property);
 
-                            var valuesExpr = Expression.Constant(values.Select(v => Convert.ChangeType(v, property.Type)).ToList());
-                            predicate = Expression.Call(containsMethod, valuesExpr, property);
-                        }
+                        predicate = filter.Operator == QueryOperator.In
+                            ? containsPredicate
+                            : Expression.Not(containsPredicate);
+                    }
+                    break;
+
+                case QueryOperator.Between:
+                    if (filter.Values is { Length: 2 })
+                    {
+                        var start = Expression.Constant(Convert.ChangeType(filter.Values[0], property.Type), property.Type);
+                        var end = Expression.Constant(Convert.ChangeType(filter.Values[1], property.Type), property.Type);
+                        predicate = Expression.AndAlso(
+                            Expression.GreaterThanOrEqual(property, start),
+                            Expression.LessThanOrEqual(property, end));
                     }
                     break;
 
@@ -364,9 +369,10 @@ public static class SqlSugarPagingExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = request.Behavior.DisablePaging
             ? await query.ToListAsync(cancellationToken)
-            : await query.Skip(meta.Skip).Take(meta.Take).ToListAsync(cancellationToken);
+            : await query.Skip(skip).Take(meta.PageSize).ToListAsync(cancellationToken);
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -389,9 +395,10 @@ public static class SqlSugarPagingExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = request.Behavior.DisablePaging
             ? query.ToList()
-            : query.Skip(meta.Skip).Take(meta.Take).ToList();
+            : query.Skip(skip).Take(meta.PageSize).ToList();
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -412,7 +419,8 @@ public static class SqlSugarPagingExtensions
         }
 
         var meta = request.Page;
-        return query.Skip(meta.Skip).Take(meta.Take);
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
+        return query.Skip(skip).Take(meta.PageSize);
     }
 
     #endregion
