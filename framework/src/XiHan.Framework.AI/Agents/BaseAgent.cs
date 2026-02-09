@@ -88,13 +88,11 @@ public class BaseAgent : IXiHanAIAgent
         {
             _aiService = _serviceProvider.GetKeyedService<IXiHanAIService>("OpenAI");
         }
-        else if (_options.ProviderName == "Ollama")
-        {
-            _aiService = _serviceProvider.GetKeyedService<IXiHanAIService>("Ollama");
-        }
         else
         {
-            throw new ArgumentException($"不支持的AI服务提供商: {_options.ProviderName}");
+            _aiService = _options.ProviderName == "Ollama"
+                ? _serviceProvider.GetKeyedService<IXiHanAIService>("Ollama")
+                : throw new ArgumentException($"不支持的AI服务提供商: {_options.ProviderName}");
         }
 
         // 初始化记忆服务

@@ -265,7 +265,7 @@ public static class RsaHelper
                 resultBuffer.AddRange(decryptedBlock);
             }
 
-            return resultBuffer.ToArray();
+            return [.. resultBuffer];
         }
         catch (Exception ex) when (ex is FormatException or CryptographicException)
         {

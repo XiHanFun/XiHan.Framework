@@ -30,45 +30,45 @@ public static class PageValidator
         ArgumentNullException.ThrowIfNull(request);
 
         var errors = new List<string>();
+        var meta = request.PageRequestMetadata;
+        var q = request.QueryMetadata;
 
-        // 验证分页参数
-        if (request.PageIndex < PageRequestMetadata.DefaultPageIndex)
+        if (meta.PageIndex < PageRequestMetadata.DefaultPageIndex)
         {
             errors.Add($"页码不能小于 {PageRequestMetadata.DefaultPageIndex}");
         }
 
-        if (request.PageSize < PageRequestMetadata.MinPageSize)
+        if (meta.PageSize < PageRequestMetadata.MinPageSize)
         {
             errors.Add($"每页大小不能小于 {PageRequestMetadata.MinPageSize}");
         }
 
-        if (request.PageSize > PageRequestMetadata.MaxPageSize)
+        if (meta.PageSize > PageRequestMetadata.MaxPageSize)
         {
             errors.Add($"每页大小不能大于 {PageRequestMetadata.MaxPageSize}");
         }
 
-        // 验证过滤条件
-        for (var i = 0; i < request.Filters.Count; i++)
+        var filters = q?.Filters ?? [];
+        for (var i = 0; i < filters.Count; i++)
         {
-            var filter = request.Filters[i];
+            var filter = filters[i];
             if (!filter.IsValid())
             {
                 errors.Add($"过滤条件 [{i}] 无效: 字段名={filter.Field}, 操作符={filter.Operator}");
             }
         }
 
-        // 验证排序条件
-        for (var i = 0; i < request.Sorts.Count; i++)
+        var sorts = q?.Sorts ?? [];
+        for (var i = 0; i < sorts.Count; i++)
         {
-            var sort = request.Sorts[i];
+            var sort = sorts[i];
             if (!sort.IsValid())
             {
                 errors.Add($"排序条件 [{i}] 无效: 字段名={sort.Field}");
             }
         }
 
-        // 验证关键字搜索
-        if (!string.IsNullOrWhiteSpace(request.Keyword) && request.KeywordFields.Count == 0)
+        if (!string.IsNullOrWhiteSpace(q?.Keyword) && (q.KeywordFields?.Count ?? 0) == 0)
         {
             errors.Add("指定了关键字但未指定搜索字段");
         }

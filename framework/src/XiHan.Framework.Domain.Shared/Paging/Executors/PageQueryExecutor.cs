@@ -56,34 +56,28 @@ public class PageQueryExecutor<T> where T : class
             }
         }
 
-        // 2. 自动填充默认关键字字段
-        if (!string.IsNullOrWhiteSpace(request.Keyword) && request.KeywordFields.Count == 0)
+        var q = request.QueryMetadata ?? new QueryMetadata();
+        var meta = request.PageRequestMetadata;
+
+        if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count == 0)
         {
-            request.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
+            q.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
         }
 
-        // 3. 应用过滤条件
-        query = ApplyFilters(query, request.Filters);
+        query = ApplyFilters(query, q.Filters);
+        query = ApplyKeywordSearch(query, q.Keyword, q.KeywordFields);
+        query = ApplySorts(query, q.Sorts);
 
-        // 4. 应用关键字搜索
-        query = ApplyKeywordSearch(query, request.Keyword, request.KeywordFields);
-
-        // 5. 应用排序
-        query = ApplySorts(query, request.Sorts);
-
-        // 6. 获取总数
         var totalCount = query.Count();
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        // 7. 应用分页
-        if (!request.DisablePaging)
+        if (!q.DisablePaging)
         {
-            query = query.Skip((request.PageIndex - 1) * request.PageSize)
-                .Take(request.PageSize);
+            query = query.Skip(meta.Skip).Take(meta.Take);
         }
 
         // 8. 执行查询
@@ -111,27 +105,28 @@ public class PageQueryExecutor<T> where T : class
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Keyword) && request.KeywordFields.Count == 0)
+        var q = request.QueryMetadata ?? new QueryMetadata();
+        var meta = request.PageRequestMetadata;
+
+        if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count == 0)
         {
-            request.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
+            q.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
         }
 
-        // 应用查询条件
-        query = ApplyFilters(query, request.Filters);
-        query = ApplyKeywordSearch(query, request.Keyword, request.KeywordFields);
-        query = ApplySorts(query, request.Sorts);
+        query = ApplyFilters(query, q.Filters);
+        query = ApplyKeywordSearch(query, q.Keyword, q.KeywordFields);
+        query = ApplySorts(query, q.Sorts);
 
         var totalCount = query.Count();
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        if (!request.DisablePaging)
+        if (!q.DisablePaging)
         {
-            query = query.Skip((request.PageIndex - 1) * request.PageSize)
-                .Take(request.PageSize);
+            query = query.Skip(meta.Skip).Take(meta.Take);
         }
 
         var items = query.ToList();
@@ -140,36 +135,25 @@ public class PageQueryExecutor<T> where T : class
     }
 
     /// <summary>
-    /// 应用过滤条件（解析别名）
+    /// 获取查询字段信息
     /// </summary>
-    private IQueryable<T> ApplyFilters(IQueryable<T> query, List<QueryFilter> filters)
-    {
-        foreach (var filter in filters.Where(f => f.IsValid()))
-        {
-            // 解析字段名（处理别名）
-            var actualFieldName = ResolveFieldName(filter.Field);
-            if (string.IsNullOrEmpty(actualFieldName))
-            {
-                continue;
-            }
+    public Dictionary<string, QueryFieldInfo> GetQueryFields() => _queryFields;
 
-            query = ApplySingleFilter(query, actualFieldName, filter);
-        }
-
-        return query;
-    }
+    /// <summary>
+    /// 获取默认关键字搜索字段
+    /// </summary>
+    public List<string> GetDefaultKeywordFields() => AttributeReader.GetDefaultKeywordFields<T>();
 
     /// <summary>
     /// 应用单个过滤条件
     /// </summary>
-    private IQueryable<T> ApplySingleFilter(IQueryable<T> query, string fieldName, QueryFilter filter)
+    private static IQueryable<T> ApplySingleFilter(IQueryable<T> query, string fieldName, QueryFilter filter)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
         var property = Expression.Property(parameter, fieldName);
-        Expression? predicate = null;
-
         try
         {
+            Expression? predicate;
             switch (filter.Operator)
             {
                 case QueryOperator.Equal:
@@ -236,6 +220,53 @@ public class PageQueryExecutor<T> where T : class
         catch
         {
             // 忽略无效的过滤条件
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// 应用单个排序
+    /// </summary>
+    private static IQueryable<T> ApplySingleSort(IQueryable<T> query, string fieldName, SortDirection direction,
+        bool isFirst)
+    {
+        try
+        {
+            var parameter = Expression.Parameter(typeof(T), "x");
+            var property = Expression.Property(parameter, fieldName);
+            var lambda = Expression.Lambda(property, parameter);
+
+            var methodName = isFirst
+                ? direction == SortDirection.Ascending ? "OrderBy" : "OrderByDescending"
+                : direction == SortDirection.Ascending ? "ThenBy" : "ThenByDescending";
+            var method = typeof(Queryable).GetMethods()
+                .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                .MakeGenericMethod(typeof(T), property.Type);
+
+            return (IQueryable<T>)method.Invoke(null, [query, lambda])!;
+        }
+        catch
+        {
+            return query;
+        }
+    }
+
+    /// <summary>
+    /// 应用过滤条件（解析别名）
+    /// </summary>
+    private IQueryable<T> ApplyFilters(IQueryable<T> query, List<QueryFilter> filters)
+    {
+        foreach (var filter in filters.Where(f => f.IsValid()))
+        {
+            // 解析字段名（处理别名）
+            var actualFieldName = ResolveFieldName(filter.Field);
+            if (string.IsNullOrEmpty(actualFieldName))
+            {
+                continue;
+            }
+
+            query = PageQueryExecutor<T>.ApplySingleFilter(query, actualFieldName, filter);
         }
 
         return query;
@@ -344,7 +375,7 @@ public class PageQueryExecutor<T> where T : class
         var actualFieldName = ResolveFieldName(firstSort.Field);
         if (!string.IsNullOrEmpty(actualFieldName))
         {
-            query = ApplySingleSort(query, actualFieldName, firstSort.Direction, true);
+            query = PageQueryExecutor<T>.ApplySingleSort(query, actualFieldName, firstSort.Direction, true);
         }
 
         // 应用后续排序
@@ -353,45 +384,11 @@ public class PageQueryExecutor<T> where T : class
             actualFieldName = ResolveFieldName(validSorts[i].Field);
             if (!string.IsNullOrEmpty(actualFieldName))
             {
-                query = ApplySingleSort(query, actualFieldName, validSorts[i].Direction, false);
+                query = PageQueryExecutor<T>.ApplySingleSort(query, actualFieldName, validSorts[i].Direction, false);
             }
         }
 
         return query;
-    }
-
-    /// <summary>
-    /// 应用单个排序
-    /// </summary>
-    private IQueryable<T> ApplySingleSort(IQueryable<T> query, string fieldName, SortDirection direction,
-        bool isFirst)
-    {
-        try
-        {
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var property = Expression.Property(parameter, fieldName);
-            var lambda = Expression.Lambda(property, parameter);
-
-            string methodName;
-            if (isFirst)
-            {
-                methodName = direction == SortDirection.Ascending ? "OrderBy" : "OrderByDescending";
-            }
-            else
-            {
-                methodName = direction == SortDirection.Ascending ? "ThenBy" : "ThenByDescending";
-            }
-
-            var method = typeof(Queryable).GetMethods()
-                .First(m => m.Name == methodName && m.GetParameters().Length == 2)
-                .MakeGenericMethod(typeof(T), property.Type);
-
-            return (IQueryable<T>)method.Invoke(null, [query, lambda])!;
-        }
-        catch
-        {
-            return query;
-        }
     }
 
     /// <summary>
@@ -406,14 +403,4 @@ public class PageQueryExecutor<T> where T : class
 
         return null;
     }
-
-    /// <summary>
-    /// 获取查询字段信息
-    /// </summary>
-    public Dictionary<string, QueryFieldInfo> GetQueryFields() => _queryFields;
-
-    /// <summary>
-    /// 获取默认关键字搜索字段
-    /// </summary>
-    public List<string> GetDefaultKeywordFields() => AttributeReader.GetDefaultKeywordFields<T>();
 }

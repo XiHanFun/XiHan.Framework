@@ -202,7 +202,7 @@ public static class AttributeReader
             }
         }
 
-        return fields.OrderBy(f => GetKeywordPriority(type.GetProperty(f)!)).ToList();
+        return [.. fields.OrderBy(f => GetKeywordPriority(type.GetProperty(f)!))];
     }
 
     /// <summary>
