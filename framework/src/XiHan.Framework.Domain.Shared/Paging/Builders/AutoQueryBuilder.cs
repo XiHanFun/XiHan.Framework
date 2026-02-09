@@ -102,19 +102,31 @@ public class AutoQueryBuilder
     /// </summary>
     private void ProcessPagingProperties()
     {
-        var pageIndexProp = _dtoType.GetProperty("PageIndex", BindingFlags.Public | BindingFlags.Instance);
-        var pageSizeProp = _dtoType.GetProperty("PageSize", BindingFlags.Public | BindingFlags.Instance);
-
-        if (pageIndexProp != null && pageIndexProp.PropertyType == typeof(int))
+        // 尝试从 Page 嵌套对象获取
+        var pageProp = _dtoType.GetProperty("Page", BindingFlags.Public | BindingFlags.Instance);
+        if (pageProp != null && pageProp.PropertyType.Name == "PageRequestMetadata")
         {
-            var pageIndex = (int)pageIndexProp.GetValue(_dto)!;
-            _queryBuilder.SetPageIndex(pageIndex);
-        }
+            var pageObj = pageProp.GetValue(_dto);
+            if (pageObj != null)
+            {
+                var pageType = pageObj.GetType();
+                var pageIndexProp = pageType.GetProperty("PageIndex");
+                var pageSizeProp = pageType.GetProperty("PageSize");
 
-        if (pageSizeProp != null && pageSizeProp.PropertyType == typeof(int))
-        {
-            var pageSize = (int)pageSizeProp.GetValue(_dto)!;
-            _queryBuilder.SetPageSize(pageSize);
+                if (pageIndexProp != null && pageIndexProp.PropertyType == typeof(int))
+                {
+                    var pageIndex = (int)pageIndexProp.GetValue(pageObj)!;
+                    _queryBuilder.SetPageIndex(pageIndex);
+                }
+
+                if (pageSizeProp != null && pageSizeProp.PropertyType == typeof(int))
+                {
+                    var pageSize = (int)pageSizeProp.GetValue(pageObj)!;
+                    _queryBuilder.SetPageSize(pageSize);
+                }
+
+                return;
+            }
         }
     }
 
@@ -178,7 +190,7 @@ public class AutoQueryBuilder
             }
 
             // 跳过 PageRequestDtoBase 的内置属性
-            if (property.Name is "Filters" or "Sorts" or "KeywordFields" or "Keyword" or "DisablePaging")
+            if (property.Name is "Conditions" or "Behavior" or "Page")
             {
                 continue;
             }

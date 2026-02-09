@@ -19,7 +19,7 @@ namespace XiHan.Framework.Domain.Shared.Paging.Models;
 /// <summary>
 /// 查询排序条件
 /// </summary>
-public class QuerySort
+public sealed class QuerySort
 {
     private string _field = string.Empty;
 

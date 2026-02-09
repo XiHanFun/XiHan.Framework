@@ -17,7 +17,7 @@ namespace XiHan.Framework.Domain.Shared.Paging.Models;
 /// <summary>
 /// 分页响应元数据
 /// </summary>
-public class PageResultMetadata
+public sealed class PageResultMetadata
 {
     /// <summary>
     /// 构造函数

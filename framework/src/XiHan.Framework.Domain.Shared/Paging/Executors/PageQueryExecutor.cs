@@ -77,7 +77,8 @@ public class PageQueryExecutor<T> where T : class
 
         if (!request.Behavior.DisablePaging)
         {
-            query = query.Skip(meta.Skip).Take(meta.Take);
+            var skip = (meta.PageIndex - 1) * meta.PageSize;
+            query = query.Skip(skip).Take(meta.PageSize);
         }
 
         // 8. 执行查询
@@ -126,7 +127,8 @@ public class PageQueryExecutor<T> where T : class
 
         if (!request.Behavior.DisablePaging)
         {
-            query = query.Skip(meta.Skip).Take(meta.Take);
+            var skip = (meta.PageIndex - 1) * meta.PageSize;
+            query = query.Skip(skip).Take(meta.PageSize);
         }
 
         var items = query.ToList();

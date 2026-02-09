@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -17,7 +17,7 @@ namespace XiHan.Framework.Domain.Shared.Paging.Models;
 /// <summary>
 /// 分页请求元数据
 /// </summary>
-public class PageRequestMetadata
+public sealed class PageRequestMetadata
 {
     /// <summary>
     /// 默认页码
@@ -82,14 +82,4 @@ public class PageRequestMetadata
             _ => value
         };
     }
-
-    /// <summary>
-    /// 计算跳过的记录数
-    /// </summary>
-    public int Skip => (PageIndex - 1) * PageSize;
-
-    /// <summary>
-    /// 获取数量
-    /// </summary>
-    public int Take => PageSize;
 }

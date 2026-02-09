@@ -34,7 +34,8 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        return query.Skip(pageRequest.Skip).Take(pageRequest.Take);
+        var skip = (pageRequest.PageIndex - 1) * pageRequest.PageSize;
+        return query.Skip(skip).Take(pageRequest.PageSize);
     }
 
     /// <summary>
@@ -51,7 +52,8 @@ public static class PageExtensions
         }
 
         var meta = pageRequest.Page;
-        return query.Skip(meta.Skip).Take(meta.Take);
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
+        return query.Skip(skip).Take(meta.PageSize);
     }
 
     /// <summary>
@@ -73,9 +75,10 @@ public static class PageExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = pageRequest.Behavior.DisablePaging
             ? query.ToList()
-            : [.. query.Skip(meta.Skip).Take(meta.Take)];
+            : [.. query.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -98,9 +101,10 @@ public static class PageExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = pageRequest.Behavior.DisablePaging
             ? query.ToList()
-            : [.. query.Skip(meta.Skip).Take(meta.Take)];
+            : [.. query.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -117,7 +121,8 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        return source.Skip(pageRequest.Skip).Take(pageRequest.Take);
+        var skip = (pageRequest.PageIndex - 1) * pageRequest.PageSize;
+        return source.Skip(skip).Take(pageRequest.PageSize);
     }
 
     /// <summary>
@@ -134,7 +139,8 @@ public static class PageExtensions
         }
 
         var meta = pageRequest.Page;
-        return source.Skip(meta.Skip).Take(meta.Take);
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
+        return source.Skip(skip).Take(meta.PageSize);
     }
 
     /// <summary>
@@ -156,9 +162,10 @@ public static class PageExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = pageRequest.Behavior.DisablePaging
             ? list
-            : [.. list.Skip(meta.Skip).Take(meta.Take)];
+            : [.. list.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -200,9 +207,10 @@ public static class PageExtensions
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
+        var skip = (meta.PageIndex - 1) * meta.PageSize;
         var items = pageRequest.Behavior.DisablePaging
             ? list
-            : [.. list.Skip(meta.Skip).Take(meta.Take)];
+            : [.. list.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
