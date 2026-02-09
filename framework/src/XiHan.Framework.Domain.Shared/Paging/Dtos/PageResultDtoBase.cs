@@ -28,7 +28,7 @@ public class PageResultDtoBase<T>
     public PageResultDtoBase()
     {
         Items = [];
-        PageResultMetadata = new PageResultMetadata();
+        Page = new PageResultMetadata();
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public class PageResultDtoBase<T>
     public PageResultDtoBase(IList<T> items, int pageIndex, int pageSize, int totalCount)
     {
         Items = items;
-        PageResultMetadata = new PageResultMetadata(pageIndex, pageSize, totalCount);
+        Page = new PageResultMetadata(pageIndex, pageSize, totalCount);
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class PageResultDtoBase<T>
     public PageResultDtoBase(IList<T> items, PageResultMetadata pageData)
     {
         Items = items;
-        PageResultMetadata = pageData;
+        Page = pageData;
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public class PageResultDtoBase<T>
     /// <summary>
     /// 分页响应元数据
     /// </summary>
-    public PageResultMetadata PageResultMetadata { get; set; }
+    public PageResultMetadata Page { get; set; }
 
     /// <summary>
     /// 扩展数据（可选）
@@ -93,7 +93,7 @@ public class PageResultDtoBase<T>
     public static PageResultDtoBase<T> Create(IList<T> items, PageRequestDtoBase request, int totalCount)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new PageResultDtoBase<T>(items, request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize, totalCount);
+        return new PageResultDtoBase<T>(items, request.Page.PageIndex, request.Page.PageSize, totalCount);
     }
 
     /// <summary>
@@ -103,6 +103,6 @@ public class PageResultDtoBase<T>
     {
         ArgumentNullException.ThrowIfNull(mapper);
         var mappedItems = Items.Select(mapper).ToList();
-        return new PageResultDtoBase<TTarget>(mappedItems, PageResultMetadata);
+        return new PageResultDtoBase<TTarget>(mappedItems, Page);
     }
 }

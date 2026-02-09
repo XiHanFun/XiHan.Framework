@@ -28,7 +28,7 @@ public static class PageConverter
     public static PageRequestMetadata ToMetadata(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new PageRequestMetadata(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize);
+        return new PageRequestMetadata(request.Page.PageIndex, request.Page.PageSize);
     }
 
     /// <summary>
@@ -37,7 +37,10 @@ public static class PageConverter
     public static PageRequestDtoBase ToDto(this PageRequestMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(metadata);
-        return new PageRequestDtoBase { PageRequestMetadata = new PageRequestMetadata(metadata.PageIndex, metadata.PageSize) };
+        return new PageRequestDtoBase
+        {
+            Page = new PageRequestMetadata(metadata.PageIndex, metadata.PageSize)
+        };
     }
 
     /// <summary>
@@ -51,7 +54,7 @@ public static class PageConverter
         ArgumentNullException.ThrowIfNull(converter);
 
         var convertedItems = source.Items.Select(converter).ToList();
-        return new PageResultDtoBase<TTarget>(convertedItems, source.PageResultMetadata);
+        return new PageResultDtoBase<TTarget>(convertedItems, source.Page);
     }
 
     /// <summary>
@@ -68,7 +71,7 @@ public static class PageConverter
         var tasks = source.Items.Select(converter);
         var convertedItems = await Task.WhenAll(tasks);
 
-        return new PageResultDtoBase<TTarget>(convertedItems, source.PageResultMetadata);
+        return new PageResultDtoBase<TTarget>(convertedItems, source.Page);
     }
 
     /// <summary>
@@ -77,17 +80,24 @@ public static class PageConverter
     public static PageRequestDtoBase Clone(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var q = request.QueryMetadata;
+        var cond = request.Conditions;
         return new PageRequestDtoBase
         {
-            PageRequestMetadata = new PageRequestMetadata(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize),
-            QueryMetadata = new QueryMetadata
+            Page = new PageRequestMetadata(request.Page.PageIndex, request.Page.PageSize),
+            Conditions = new QueryConditions
             {
-                Filters = [.. q?.Filters ?? []],
-                Sorts = [.. q?.Sorts ?? []],
-                KeywordFields = [.. q?.KeywordFields ?? []],
-                Keyword = q?.Keyword,
-                DisablePaging = q?.DisablePaging ?? false
+                Filters = [.. cond.Filters],
+                Sorts = [.. cond.Sorts],
+                Keyword = cond.Keyword != null
+                    ? new QueryKeyword { Value = cond.Keyword.Value, Fields = [.. cond.Keyword.Fields] }
+                    : null
+            },
+            Behavior = new QueryBehavior
+            {
+                DisablePaging = request.Behavior.DisablePaging,
+                DisableDefaultSort = request.Behavior.DisableDefaultSort,
+                IgnoreTenant = request.Behavior.IgnoreTenant,
+                IgnoreSoftDelete = request.Behavior.IgnoreSoftDelete
             }
         };
     }
@@ -101,38 +111,51 @@ public static class PageConverter
         ArgumentNullException.ThrowIfNull(second);
 
         var merged = first.Clone();
-        var mq = merged.QueryMetadata!;
-        var sq = second.QueryMetadata;
 
-        merged.PageRequestMetadata = new PageRequestMetadata(second.PageRequestMetadata.PageIndex, second.PageRequestMetadata.PageSize);
-        mq.DisablePaging = sq?.DisablePaging ?? false;
+        // 合并分页参数
+        merged.Page = new PageRequestMetadata(second.Page.PageIndex, second.Page.PageSize);
 
-        foreach (var filter in sq?.Filters ?? [])
+        // 合并查询行为
+        merged.Behavior = new QueryBehavior
         {
-            var existing = mq.Filters.FirstOrDefault(f => f.Field == filter.Field);
+            DisablePaging = second.Behavior.DisablePaging,
+            DisableDefaultSort = second.Behavior.DisableDefaultSort,
+            IgnoreTenant = second.Behavior.IgnoreTenant,
+            IgnoreSoftDelete = second.Behavior.IgnoreSoftDelete
+        };
+
+        // 合并过滤条件
+        foreach (var filter in second.Conditions.Filters)
+        {
+            var existing = merged.Conditions.Filters.FirstOrDefault(f => f.Field == filter.Field);
             if (existing != null)
             {
-                mq.Filters.Remove(existing);
+                merged.Conditions.Filters.Remove(existing);
             }
 
-            mq.Filters.Add(filter);
+            merged.Conditions.Filters.Add(filter);
         }
 
-        foreach (var sort in sq?.Sorts ?? [])
+        // 合并排序条件
+        foreach (var sort in second.Conditions.Sorts)
         {
-            var existing = mq.Sorts.FirstOrDefault(s => s.Field == sort.Field);
+            var existing = merged.Conditions.Sorts.FirstOrDefault(s => s.Field == sort.Field);
             if (existing != null)
             {
-                mq.Sorts.Remove(existing);
+                merged.Conditions.Sorts.Remove(existing);
             }
 
-            mq.Sorts.Add(sort);
+            merged.Conditions.Sorts.Add(sort);
         }
 
-        if (!string.IsNullOrWhiteSpace(sq?.Keyword))
+        // 合并关键字搜索
+        if (!string.IsNullOrWhiteSpace(second.Conditions.Keyword?.Value))
         {
-            mq.Keyword = sq.Keyword;
-            mq.KeywordFields = [.. sq.KeywordFields];
+            merged.Conditions.Keyword = new QueryKeyword
+            {
+                Value = second.Conditions.Keyword.Value,
+                Fields = [.. second.Conditions.Keyword.Fields]
+            };
         }
 
         return merged;
@@ -144,7 +167,7 @@ public static class PageConverter
     public static PageResultDtoBase<T> CreateEmptyResult<T>(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return PageResultDtoBase<T>.Empty(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize);
+        return PageResultDtoBase<T>.Empty(request.Page.PageIndex, request.Page.PageSize);
     }
 
     /// <summary>

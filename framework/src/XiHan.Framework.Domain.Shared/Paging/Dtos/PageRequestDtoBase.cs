@@ -22,12 +22,17 @@ namespace XiHan.Framework.Domain.Shared.Paging.Dtos;
 public class PageRequestDtoBase
 {
     /// <summary>
-    /// 查询元数据
+    /// 查询条件（描述"查什么"）
     /// </summary>
-    public QueryMetadata? QueryMetadata { get; set; }
+    public QueryConditions Conditions { get; set; } = new();
 
     /// <summary>
-    /// 分页请求元数据
+    /// 查询行为控制（影响查询管道行为）
     /// </summary>
-    public PageRequestMetadata PageRequestMetadata { get; set; } = new();
+    public QueryBehavior Behavior { get; set; } = new();
+
+    /// <summary>
+    /// 分页参数
+    /// </summary>
+    public PageRequestMetadata Page { get; set; } = new();
 }

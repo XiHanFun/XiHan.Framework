@@ -85,7 +85,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
         // 映射实体到 DTO
         var dtos = await MapEntitiesToDtosAsync(entityPageResponse.Items);
 
-        return new PageResultDtoBase<TEntityDto>(dtos, entityPageResponse.PageResultMetadata);
+        return new PageResultDtoBase<TEntityDto>(dtos, entityPageResponse.Page);
     }
 
     /// <summary>
