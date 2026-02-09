@@ -352,14 +352,7 @@ public class ExpressionBuilder<T>
     public ExpressionBuilder<T> And(ExpressionBuilder<T> other)
     {
         var otherExpression = other.Build();
-        if (_body == null)
-        {
-            _body = otherExpression.Body;
-        }
-        else
-        {
-            _body = Expression.AndAlso(_body, otherExpression.Body);
-        }
+        _body = _body == null ? otherExpression.Body : Expression.AndAlso(_body, otherExpression.Body);
         return this;
     }
 
@@ -373,14 +366,7 @@ public class ExpressionBuilder<T>
         var visitor = new ParameterReplacer(_parameter);
         var replacedBody = visitor.Visit(expression.Body);
 
-        if (_body == null)
-        {
-            _body = replacedBody;
-        }
-        else
-        {
-            _body = Expression.AndAlso(_body, replacedBody);
-        }
+        _body = _body == null ? replacedBody : Expression.AndAlso(_body, replacedBody);
         return this;
     }
 
@@ -392,14 +378,7 @@ public class ExpressionBuilder<T>
     public ExpressionBuilder<T> Or(ExpressionBuilder<T> other)
     {
         var otherExpression = other.Build();
-        if (_body == null)
-        {
-            _body = otherExpression.Body;
-        }
-        else
-        {
-            _body = Expression.OrElse(_body, otherExpression.Body);
-        }
+        _body = _body == null ? otherExpression.Body : Expression.OrElse(_body, otherExpression.Body);
         return this;
     }
 
@@ -413,14 +392,7 @@ public class ExpressionBuilder<T>
         var visitor = new ParameterReplacer(_parameter);
         var replacedBody = visitor.Visit(expression.Body);
 
-        if (_body == null)
-        {
-            _body = replacedBody;
-        }
-        else
-        {
-            _body = Expression.OrElse(_body, replacedBody);
-        }
+        _body = _body == null ? replacedBody : Expression.OrElse(_body, replacedBody);
         return this;
     }
 

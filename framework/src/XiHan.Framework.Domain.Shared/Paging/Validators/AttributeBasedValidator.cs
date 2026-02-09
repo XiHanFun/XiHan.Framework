@@ -51,8 +51,8 @@ public static class AttributeBasedValidator
         // 2. 获取实体类型的查询字段信息
         var queryFields = AttributeReader.GetQueryFields(entityType);
 
-        // 3. 验证过滤条件
-        foreach (var filter in request.Filters)
+        var q = request.QueryMetadata;
+        foreach (var filter in q?.Filters ?? [])
         {
             var fieldValidation = ValidateFilter(entityType, queryFields, filter);
             if (!fieldValidation.IsValid)
@@ -61,8 +61,7 @@ public static class AttributeBasedValidator
             }
         }
 
-        // 4. 验证排序条件
-        foreach (var sort in request.Sorts)
+        foreach (var sort in q?.Sorts ?? [])
         {
             var sortValidation = ValidateSort(entityType, queryFields, sort);
             if (!sortValidation.IsValid)
@@ -71,10 +70,9 @@ public static class AttributeBasedValidator
             }
         }
 
-        // 5. 验证关键字搜索
-        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        if (!string.IsNullOrWhiteSpace(q?.Keyword))
         {
-            var keywordValidation = ValidateKeywordSearch(entityType, queryFields, request.KeywordFields);
+            var keywordValidation = ValidateKeywordSearch(entityType, queryFields, q.KeywordFields ?? []);
             if (!keywordValidation.IsValid)
             {
                 errors.AddRange(keywordValidation.Errors);

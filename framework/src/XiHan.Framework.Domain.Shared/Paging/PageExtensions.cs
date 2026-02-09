@@ -45,12 +45,13 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.DisablePaging)
+        if (pageRequest.QueryMetadata?.DisablePaging == true)
         {
             return query;
         }
 
-        return query.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize).Take(pageRequest.PageSize);
+        var meta = pageRequest.PageRequestMetadata;
+        return query.Skip(meta.Skip).Take(meta.Take);
     }
 
     /// <summary>
@@ -64,21 +65,18 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        // 获取总数（使用 IQueryable 的 Count）
         var totalCount = query.Count();
+        var meta = pageRequest.PageRequestMetadata;
+        var q = pageRequest.QueryMetadata;
 
-        // 如果没有数据，直接返回空结果
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        // 应用分页
-        var items = pageRequest.DisablePaging
+        var items = q?.DisablePaging == true
             ? query.ToList()
-            : query.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .ToList();
+            : [.. query.Skip(meta.Skip).Take(meta.Take)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -94,17 +92,17 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(pageRequest);
 
         var totalCount = query.Count();
+        var meta = pageRequest.PageRequestMetadata;
+        var q = pageRequest.QueryMetadata;
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = pageRequest.DisablePaging
+        var items = q?.DisablePaging == true
             ? query.ToList()
-            : query.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .ToList();
+            : [.. query.Skip(meta.Skip).Take(meta.Take)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -132,12 +130,13 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.DisablePaging)
+        if (pageRequest.QueryMetadata?.DisablePaging == true)
         {
             return source;
         }
 
-        return source.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize).Take(pageRequest.PageSize);
+        var meta = pageRequest.PageRequestMetadata;
+        return source.Skip(meta.Skip).Take(meta.Take);
     }
 
     /// <summary>
@@ -150,19 +149,19 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        var list = source as IList<T> ?? source.ToList();
+        var list = source as IList<T> ?? [.. source];
         var totalCount = list.Count;
+        var meta = pageRequest.PageRequestMetadata;
+        var q = pageRequest.QueryMetadata;
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = pageRequest.DisablePaging
+        var items = q?.DisablePaging == true
             ? list
-            : list.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .ToList();
+            : [.. list.Skip(meta.Skip).Take(meta.Take)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -197,17 +196,17 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(pageRequest);
 
         var totalCount = list.Count;
+        var meta = pageRequest.PageRequestMetadata;
+        var q = pageRequest.QueryMetadata;
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(pageRequest.PageIndex, pageRequest.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = pageRequest.DisablePaging
+        var items = q?.DisablePaging == true
             ? list
-            : list.Skip((pageRequest.PageIndex - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .ToList();
+            : [.. list.Skip(meta.Skip).Take(meta.Take)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -448,26 +447,26 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        // 1. 应用过滤条件
-        if (pageRequest.Filters.Count > 0)
+        var q = pageRequest.QueryMetadata;
+        if (q != null)
         {
-            query = query.ApplyFilters(pageRequest.Filters);
+            if (q.Filters.Count > 0)
+            {
+                query = query.ApplyFilters(q.Filters);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count > 0)
+            {
+                query = query.ApplyKeywordSearch(q.Keyword, [.. q.KeywordFields]);
+            }
+
+            if (q.Sorts.Count > 0)
+            {
+                query = query.ApplySorts(q.Sorts);
+            }
         }
 
-        // 2. 应用关键字搜索
-        if (!string.IsNullOrWhiteSpace(pageRequest.Keyword) && pageRequest.KeywordFields.Count > 0)
-        {
-            query = query.ApplyKeywordSearch(pageRequest.Keyword, [.. pageRequest.KeywordFields]);
-        }
-
-        // 3. 应用排序
-        if (pageRequest.Sorts.Count > 0)
-        {
-            query = query.ApplySorts(pageRequest.Sorts);
-        }
-
-        // 4. 应用分页
-        if (!pageRequest.DisablePaging)
+        if (q?.DisablePaging != true)
         {
             query = query.ApplyPaging(pageRequest);
         }

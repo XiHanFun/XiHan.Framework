@@ -93,7 +93,7 @@ public class PageResultDtoBase<T>
     public static PageResultDtoBase<T> Create(IList<T> items, PageRequestDtoBase request, int totalCount)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new PageResultDtoBase<T>(items, request.PageIndex, request.PageSize, totalCount);
+        return new PageResultDtoBase<T>(items, request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize, totalCount);
     }
 
     /// <summary>

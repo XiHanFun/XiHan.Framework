@@ -28,7 +28,7 @@ public static class PageConverter
     public static PageRequestMetadata ToMetadata(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new PageRequestMetadata(request.PageIndex, request.PageSize);
+        return new PageRequestMetadata(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public static class PageConverter
     public static PageRequestDtoBase ToDto(this PageRequestMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(metadata);
-        return new PageRequestDtoBase(metadata.PageIndex, metadata.PageSize);
+        return new PageRequestDtoBase { PageRequestMetadata = new PageRequestMetadata(metadata.PageIndex, metadata.PageSize) };
     }
 
     /// <summary>
@@ -77,14 +77,18 @@ public static class PageConverter
     public static PageRequestDtoBase Clone(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-
-        return new PageRequestDtoBase(request.PageIndex, request.PageSize)
+        var q = request.QueryMetadata;
+        return new PageRequestDtoBase
         {
-            Filters = [.. request.Filters],
-            Sorts = [.. request.Sorts],
-            KeywordFields = [.. request.KeywordFields],
-            Keyword = request.Keyword,
-            DisablePaging = request.DisablePaging
+            PageRequestMetadata = new PageRequestMetadata(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize),
+            QueryMetadata = new QueryMetadata
+            {
+                Filters = [.. q?.Filters ?? []],
+                Sorts = [.. q?.Sorts ?? []],
+                KeywordFields = [.. q?.KeywordFields ?? []],
+                Keyword = q?.Keyword,
+                DisablePaging = q?.DisablePaging ?? false
+            }
         };
     }
 
@@ -97,41 +101,38 @@ public static class PageConverter
         ArgumentNullException.ThrowIfNull(second);
 
         var merged = first.Clone();
+        var mq = merged.QueryMetadata!;
+        var sq = second.QueryMetadata;
 
-        // 合并分页参数
-        merged.PageIndex = second.PageIndex;
-        merged.PageSize = second.PageSize;
-        merged.DisablePaging = second.DisablePaging;
+        merged.PageRequestMetadata = new PageRequestMetadata(second.PageRequestMetadata.PageIndex, second.PageRequestMetadata.PageSize);
+        mq.DisablePaging = sq?.DisablePaging ?? false;
 
-        // 合并过滤条件（去重）
-        foreach (var filter in second.Filters)
+        foreach (var filter in sq?.Filters ?? [])
         {
-            var existing = merged.Filters.FirstOrDefault(f => f.Field == filter.Field);
+            var existing = mq.Filters.FirstOrDefault(f => f.Field == filter.Field);
             if (existing != null)
             {
-                merged.Filters.Remove(existing);
+                mq.Filters.Remove(existing);
             }
 
-            merged.Filters.Add(filter);
+            mq.Filters.Add(filter);
         }
 
-        // 合并排序条件（去重）
-        foreach (var sort in second.Sorts)
+        foreach (var sort in sq?.Sorts ?? [])
         {
-            var existing = merged.Sorts.FirstOrDefault(s => s.Field == sort.Field);
+            var existing = mq.Sorts.FirstOrDefault(s => s.Field == sort.Field);
             if (existing != null)
             {
-                merged.Sorts.Remove(existing);
+                mq.Sorts.Remove(existing);
             }
 
-            merged.Sorts.Add(sort);
+            mq.Sorts.Add(sort);
         }
 
-        // 合并关键字搜索
-        if (!string.IsNullOrWhiteSpace(second.Keyword))
+        if (!string.IsNullOrWhiteSpace(sq?.Keyword))
         {
-            merged.Keyword = second.Keyword;
-            merged.KeywordFields = [.. second.KeywordFields];
+            mq.Keyword = sq.Keyword;
+            mq.KeywordFields = [.. sq.KeywordFields];
         }
 
         return merged;
@@ -143,7 +144,7 @@ public static class PageConverter
     public static PageResultDtoBase<T> CreateEmptyResult<T>(this PageRequestDtoBase request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
+        return PageResultDtoBase<T>.Empty(request.PageRequestMetadata.PageIndex, request.PageRequestMetadata.PageSize);
     }
 
     /// <summary>

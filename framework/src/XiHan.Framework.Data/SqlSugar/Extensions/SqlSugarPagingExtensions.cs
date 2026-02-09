@@ -75,17 +75,24 @@ public static class SqlSugarPagingExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
 
-        // 1. 应用过滤条件
-        query = query.ApplyFilters(request.Filters);
-
-        // 2. 应用关键字搜索
-        if (!string.IsNullOrWhiteSpace(request.Keyword) && request.KeywordFields.Count > 0)
+        var q = request.QueryMetadata;
+        if (q != null)
         {
-            query = query.ApplyKeywordSearch(request.Keyword, request.KeywordFields);
-        }
+            if ((q.Filters?.Count ?? 0) > 0)
+            {
+                query = query.ApplyFilters(q.Filters ?? []);
+            }
 
-        // 3. 应用排序
-        query = query.ApplySorts(request.Sorts);
+            if (!string.IsNullOrWhiteSpace(q.Keyword) && (q.KeywordFields?.Count ?? 0) > 0)
+            {
+                query = query.ApplyKeywordSearch(q.Keyword, q.KeywordFields ?? []);
+            }
+
+            if ((q.Sorts?.Count ?? 0) > 0)
+            {
+                query = query.ApplySorts(q.Sorts ?? []);
+            }
+        }
 
         // 4. 不在这里应用分页，让调用者决定
         return query;
@@ -352,28 +359,21 @@ public static class SqlSugarPagingExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
 
-        // 计算总数
         var totalCount = await query.CountAsync(cancellationToken);
+        var meta = request.PageRequestMetadata;
+        var q = request.QueryMetadata;
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        // 应用分页
-        List<T> items;
-        if (request.DisablePaging)
-        {
-            items = await query.ToListAsync(cancellationToken);
-        }
-        else
-        {
-            items = await query
-                .Skip((request.PageIndex - 1) * request.PageSize)
-                .Take(request.PageSize)
+        var items = q?.DisablePaging == true
+            ? await query.ToListAsync(cancellationToken)
+            : await query
+                .Skip(meta.Skip)
+                .Take(meta.Take)
                 .ToListAsync(cancellationToken);
-        }
-
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
@@ -388,25 +388,20 @@ public static class SqlSugarPagingExtensions
         ArgumentNullException.ThrowIfNull(request);
 
         var totalCount = query.Count();
+        var meta = request.PageRequestMetadata;
+        var q = request.QueryMetadata;
 
         if (totalCount == 0)
         {
-            return PageResultDtoBase<T>.Empty(request.PageIndex, request.PageSize);
+            return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        List<T> items;
-        if (request.DisablePaging)
-        {
-            items = query.ToList();
-        }
-        else
-        {
-            items = query
-                .Skip((request.PageIndex - 1) * request.PageSize)
-                .Take(request.PageSize)
+        var items = q?.DisablePaging == true
+            ? query.ToList()
+            : query
+                .Skip(meta.Skip)
+                .Take(meta.Take)
                 .ToList();
-        }
-
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
 
@@ -420,14 +415,13 @@ public static class SqlSugarPagingExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
 
-        if (request.DisablePaging)
+        if (request.QueryMetadata?.DisablePaging == true)
         {
             return query;
         }
 
-        return query
-            .Skip((request.PageIndex - 1) * request.PageSize)
-            .Take(request.PageSize);
+        var meta = request.PageRequestMetadata;
+        return query.Skip(meta.Skip).Take(meta.Take);
     }
 
     #endregion

@@ -82,7 +82,7 @@ public class PageResultMetadata
     /// <summary>
     /// 当前页起始记录号（从1开始）
     /// </summary>
-    public int StartRecord => TotalCount == 0 ? 0 : (PageIndex - 1) * PageSize + 1;
+    public int StartRecord => TotalCount == 0 ? 0 : ((PageIndex - 1) * PageSize) + 1;
 
     /// <summary>
     /// 当前页结束记录号
