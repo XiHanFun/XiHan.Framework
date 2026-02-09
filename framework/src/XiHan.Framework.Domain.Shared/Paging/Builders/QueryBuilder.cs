@@ -268,13 +268,17 @@ public class QueryBuilder
     {
         return new PageRequestDtoBase
         {
-            PageRequestMetadata = new PageRequestMetadata(_pageIndex, _pageSize),
-            QueryMetadata = new QueryMetadata
+            Page = new PageRequestMetadata(_pageIndex, _pageSize),
+            Conditions = new QueryConditions
             {
                 Filters = [.. _filters],
                 Sorts = [.. _sorts],
-                KeywordFields = [.. _keywordFields],
-                Keyword = _keyword,
+                Keyword = _keyword != null || _keywordFields.Count > 0
+                    ? new QueryKeyword { Value = _keyword, Fields = [.. _keywordFields] }
+                    : null
+            },
+            Behavior = new QueryBehavior
+            {
                 DisablePaging = _disablePaging
             }
         };
@@ -288,14 +292,13 @@ public class QueryBuilder
         ArgumentNullException.ThrowIfNull(request);
 
         var builder = new QueryBuilder();
-        var q = request.QueryMetadata;
-        builder._filters.AddRange(q?.Filters ?? []);
-        builder._sorts.AddRange(q?.Sorts ?? []);
-        builder._keywordFields.AddRange(q?.KeywordFields ?? []);
-        builder._keyword = q?.Keyword;
-        builder._pageIndex = request.PageRequestMetadata.PageIndex;
-        builder._pageSize = request.PageRequestMetadata.PageSize;
-        builder._disablePaging = q?.DisablePaging ?? false;
+        builder._filters.AddRange(request.Conditions?.Filters ?? []);
+        builder._sorts.AddRange(request.Conditions?.Sorts ?? []);
+        builder._keywordFields.AddRange(request.Conditions?.Keyword?.Fields ?? []);
+        builder._keyword = request.Conditions?.Keyword?.Value;
+        builder._pageIndex = request.Page.PageIndex;
+        builder._pageSize = request.Page.PageSize;
+        builder._disablePaging = request.Behavior?.DisablePaging ?? false;
 
         return builder;
     }

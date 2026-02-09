@@ -45,6 +45,19 @@ public class QueryFilter
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="field">字段名称</param>
+    /// <param name="values">多值（Between / In）</param>
+    /// <param name="operator">比较操作符</param>
+    public QueryFilter(string field, object[]? values, QueryOperator @operator = QueryOperator.Between)
+    {
+        Field = field;
+        Values = values;
+        Operator = @operator;
+    }
+
+    /// <summary>
     /// 字段名称
     /// </summary>
     public string Field
@@ -56,9 +69,14 @@ public class QueryFilter
     }
 
     /// <summary>
-    /// 条件值
+    /// 比较值
     /// </summary>
     public object? Value { get; set; }
+
+    /// <summary>
+    /// 多值（Between / In）
+    /// </summary>
+    public object[]? Values { get; set; }
 
     /// <summary>
     /// 比较操作符，默认为等于
@@ -152,19 +170,18 @@ public class QueryFilter
             return true;
         }
 
-        // In 和 NotIn 需要集合类型的值
+        // In / NotIn / Between 使用 Values
         if (Operator is QueryOperator.In or QueryOperator.NotIn)
         {
-            return Value is IEnumerable and not string;
+            return Values is { Length: > 0 };
         }
 
-        // Between 需要两个元素的数组
         if (Operator is QueryOperator.Between)
         {
-            return Value is ICollection { Count: 2 };
+            return Values is { Length: 2 };
         }
 
-        // 其他操作符需要非空值
-        return Value != null;
+        // 其他操作符使用 Value
+        return Value is not null;
     }
 }

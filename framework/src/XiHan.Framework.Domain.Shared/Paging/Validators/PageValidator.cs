@@ -30,8 +30,8 @@ public static class PageValidator
         ArgumentNullException.ThrowIfNull(request);
 
         var errors = new List<string>();
-        var meta = request.PageRequestMetadata;
-        var q = request.QueryMetadata;
+        var meta = request.Page;
+        var cond = request.Conditions;
 
         if (meta.PageIndex < PageRequestMetadata.DefaultPageIndex)
         {
@@ -48,27 +48,25 @@ public static class PageValidator
             errors.Add($"每页大小不能大于 {PageRequestMetadata.MaxPageSize}");
         }
 
-        var filters = q?.Filters ?? [];
-        for (var i = 0; i < filters.Count; i++)
+        for (var i = 0; i < cond.Filters.Count; i++)
         {
-            var filter = filters[i];
+            var filter = cond.Filters[i];
             if (!filter.IsValid())
             {
                 errors.Add($"过滤条件 [{i}] 无效: 字段名={filter.Field}, 操作符={filter.Operator}");
             }
         }
 
-        var sorts = q?.Sorts ?? [];
-        for (var i = 0; i < sorts.Count; i++)
+        for (var i = 0; i < cond.Sorts.Count; i++)
         {
-            var sort = sorts[i];
+            var sort = cond.Sorts[i];
             if (!sort.IsValid())
             {
                 errors.Add($"排序条件 [{i}] 无效: 字段名={sort.Field}");
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(q?.Keyword) && (q.KeywordFields?.Count ?? 0) == 0)
+        if (!string.IsNullOrWhiteSpace(cond.Keyword?.Value) && (cond.Keyword?.Fields?.Count ?? 0) == 0)
         {
             errors.Add("指定了关键字但未指定搜索字段");
         }

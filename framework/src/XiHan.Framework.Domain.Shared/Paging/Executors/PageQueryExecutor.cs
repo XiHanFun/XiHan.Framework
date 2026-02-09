@@ -56,17 +56,17 @@ public class PageQueryExecutor<T> where T : class
             }
         }
 
-        var q = request.QueryMetadata ?? new QueryMetadata();
-        var meta = request.PageRequestMetadata;
+        var cond = request.Conditions;
+        var meta = request.Page;
 
-        if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count == 0)
+        if (!string.IsNullOrWhiteSpace(cond.Keyword?.Value) && (cond.Keyword?.Fields?.Count ?? 0) == 0)
         {
-            q.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
+            cond.Keyword!.Fields = AttributeReader.GetDefaultKeywordFields<T>();
         }
 
-        query = ApplyFilters(query, q.Filters);
-        query = ApplyKeywordSearch(query, q.Keyword, q.KeywordFields);
-        query = ApplySorts(query, q.Sorts);
+        query = ApplyFilters(query, cond.Filters);
+        query = ApplyKeywordSearch(query, cond.Keyword?.Value, cond.Keyword?.Fields ?? []);
+        query = ApplySorts(query, cond.Sorts);
 
         var totalCount = query.Count();
 
@@ -75,7 +75,7 @@ public class PageQueryExecutor<T> where T : class
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        if (!q.DisablePaging)
+        if (!request.Behavior.DisablePaging)
         {
             query = query.Skip(meta.Skip).Take(meta.Take);
         }
@@ -105,17 +105,17 @@ public class PageQueryExecutor<T> where T : class
             }
         }
 
-        var q = request.QueryMetadata ?? new QueryMetadata();
-        var meta = request.PageRequestMetadata;
+        var cond = request.Conditions;
+        var meta = request.Page;
 
-        if (!string.IsNullOrWhiteSpace(q.Keyword) && q.KeywordFields.Count == 0)
+        if (!string.IsNullOrWhiteSpace(cond.Keyword?.Value) && (cond.Keyword?.Fields?.Count ?? 0) == 0)
         {
-            q.KeywordFields = AttributeReader.GetDefaultKeywordFields<T>();
+            cond.Keyword!.Fields = AttributeReader.GetDefaultKeywordFields<T>();
         }
 
-        query = ApplyFilters(query, q.Filters);
-        query = ApplyKeywordSearch(query, q.Keyword, q.KeywordFields);
-        query = ApplySorts(query, q.Sorts);
+        query = ApplyFilters(query, cond.Filters);
+        query = ApplyKeywordSearch(query, cond.Keyword?.Value, cond.Keyword?.Fields ?? []);
+        query = ApplySorts(query, cond.Sorts);
 
         var totalCount = query.Count();
 
@@ -124,7 +124,7 @@ public class PageQueryExecutor<T> where T : class
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        if (!q.DisablePaging)
+        if (!request.Behavior.DisablePaging)
         {
             query = query.Skip(meta.Skip).Take(meta.Take);
         }
