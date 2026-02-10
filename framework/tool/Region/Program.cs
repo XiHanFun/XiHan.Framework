@@ -96,7 +96,7 @@ internal class Program
         }
 
         var guidLine = match.Value
-            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Split(["\r\n", "\n"], StringSplitOptions.None)
             .FirstOrDefault(l => l.Contains("Guid:"));
 
         if (guidLine == null)
@@ -162,7 +162,7 @@ internal class Program
         if (match.Success)
         {
             var guidLine = match.Value
-                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Split(["\r\n", "\n"], StringSplitOptions.None)
                 .FirstOrDefault(l => l.Contains("Guid:"));
 
             if (guidLine != null)
@@ -200,7 +200,7 @@ internal class Program
         if (match.Success)
         {
             var timeLine = match.Value
-                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Split(["\r\n", "\n"], StringSplitOptions.None)
                 .FirstOrDefault(l => l.Contains("CreateTime:"));
 
             if (timeLine != null)
@@ -237,7 +237,7 @@ internal class Program
     private static bool IsHeaderValid(string header, string expectedFileName)
     {
         var lines = header
-            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Split(["\r\n", "\n"], StringSplitOptions.None)
             .Where(l => l.Length > 0)
             .ToArray();
 
