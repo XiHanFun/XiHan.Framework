@@ -55,7 +55,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 获取单个实体
+    /// 获取单个
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>实体DTO</returns>
@@ -67,17 +67,16 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 获取分页列表
+    /// 分页
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
     [HttpPost]
-    public virtual async Task<PageResultDtoBase<TEntityDto>> GetPageAsync(TPageRequestDto input)
+    public virtual async Task<PageResultDtoBase<TEntityDto>> PageAsync(TPageRequestDto input)
     {
         // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
         var additionalPredicate = BuildAdditionalFilterPredicate(input);
 
-        // 使用仓储层的 PageQuery 重载方法，直接处理 Filters、Sorts 和 DisablePaging
         var entityPageResponse = additionalPredicate != null
             ? await Repository.GetPagedAutoAsync(input, additionalPredicate)
             : await Repository.GetPagedAutoAsync(input);
@@ -89,7 +88,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 创建实体
+    /// 创建
     /// </summary>
     /// <param name="input">创建DTO</param>
     /// <returns>创建后的实体DTO</returns>
@@ -102,7 +101,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 更新实体
+    /// 更新
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <param name="input">更新DTO</param>
@@ -118,7 +117,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 删除实体
+    /// 删除
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>删除结果</returns>

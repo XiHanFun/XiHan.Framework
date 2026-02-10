@@ -28,10 +28,9 @@ public static class AutoQueryExtensions
     /// 自动构建查询请求（根据DTO属性类型和命名约定）
     /// </summary>
     /// <param name="dto">查询DTO</param>
-    /// <param name="convention">约定配置（可选）</param>
-    public static PageRequestDtoBase AutoBuild(this object dto, QueryConvention? convention = null)
+    public static PageRequestDtoBase AutoBuild(this object dto)
     {
-        return AutoQueryBuilder.BuildFrom(dto, convention);
+        return AutoQueryBuilder.BuildFrom(dto);
     }
 
     /// <summary>
@@ -40,15 +39,13 @@ public static class AutoQueryExtensions
     /// <typeparam name="T">实体类型</typeparam>
     /// <param name="query">查询源</param>
     /// <param name="dto">查询DTO</param>
-    /// <param name="convention">约定配置（可选）</param>
     /// <param name="validate">是否验证（默认启用）</param>
     public static PageResultDtoBase<T> ToPageResultAuto<T>(
         this IQueryable<T> query,
         object dto,
-        QueryConvention? convention = null,
         bool validate = true) where T : class
     {
-        var request = dto.AutoBuild(convention);
+        var request = dto.AutoBuild();
         return validate
             ? query.ToPageResultWithValidation(request)
             : query.ToPageResult(request);
@@ -60,11 +57,10 @@ public static class AutoQueryExtensions
     public static async Task<PageResultDtoBase<T>> ToPageResultAutoAsync<T>(
         this IQueryable<T> query,
         object dto,
-        QueryConvention? convention = null,
         bool validate = true,
         CancellationToken cancellationToken = default) where T : class
     {
-        var request = dto.AutoBuild(convention);
+        var request = dto.AutoBuild();
 
         if (validate)
         {

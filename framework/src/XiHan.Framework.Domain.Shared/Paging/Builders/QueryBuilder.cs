@@ -25,8 +25,7 @@ public class QueryBuilder
 {
     private readonly List<QueryFilter> _filters = [];
     private readonly List<QuerySort> _sorts = [];
-    private readonly List<string> _keywordFields = [];
-    private string? _keyword;
+    private QueryKeyword? _keyword;
     private int _pageIndex = PageRequestMetadata.DefaultPageIndex;
     private int _pageSize = PageRequestMetadata.DefaultPageSize;
     private bool _disablePaging;
@@ -152,7 +151,8 @@ public class QueryBuilder
     /// </summary>
     public QueryBuilder SetKeyword(string? keyword)
     {
-        _keyword = keyword;
+        _keyword ??= new QueryKeyword();
+        _keyword.Value = keyword;
         return this;
     }
 
@@ -161,7 +161,21 @@ public class QueryBuilder
     /// </summary>
     public QueryBuilder AddKeywordField(params string[] fields)
     {
-        _keywordFields.AddRange(fields);
+        _keyword ??= new QueryKeyword();
+        _keyword.AddFields(fields);
+        return this;
+    }
+
+    /// <summary>
+    /// 设置关键字搜索（关键字 + 字段）
+    /// </summary>
+    public QueryBuilder SetKeywordSearch(string? keyword, params string[] fields)
+    {
+        _keyword = new QueryKeyword
+        {
+            Value = keyword,
+            Fields = [.. fields]
+        };
         return this;
     }
 
@@ -242,7 +256,6 @@ public class QueryBuilder
     public QueryBuilder ClearKeyword()
     {
         _keyword = null;
-        _keywordFields.Clear();
         return this;
     }
 
@@ -253,7 +266,6 @@ public class QueryBuilder
     {
         _filters.Clear();
         _sorts.Clear();
-        _keywordFields.Clear();
         _keyword = null;
         _pageIndex = PageRequestMetadata.DefaultPageIndex;
         _pageSize = PageRequestMetadata.DefaultPageSize;
@@ -273,9 +285,7 @@ public class QueryBuilder
             {
                 Filters = [.. _filters],
                 Sorts = [.. _sorts],
-                Keyword = _keyword != null || _keywordFields.Count > 0
-                    ? new QueryKeyword { Value = _keyword, Fields = [.. _keywordFields] }
-                    : null
+                Keyword = _keyword?.Clone()
             },
             Behavior = new QueryBehavior
             {
@@ -294,8 +304,7 @@ public class QueryBuilder
         var builder = new QueryBuilder();
         builder._filters.AddRange(request.Conditions?.Filters ?? []);
         builder._sorts.AddRange(request.Conditions?.Sorts ?? []);
-        builder._keywordFields.AddRange(request.Conditions?.Keyword?.Fields ?? []);
-        builder._keyword = request.Conditions?.Keyword?.Value;
+        builder._keyword = request.Conditions?.Keyword?.Clone();
         builder._pageIndex = request.Page.PageIndex;
         builder._pageSize = request.Page.PageSize;
         builder._disablePaging = request.Behavior?.DisablePaging ?? false;
