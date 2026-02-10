@@ -37,19 +37,6 @@ public sealed class QueryConditions
     public QueryKeyword? Keyword { get; set; }
 
     /// <summary>
-    /// 是否为空（无任何查询条件）
-    /// </summary>
-    public bool IsEmpty =>
-        Filters.Count == 0 &&
-        Sorts.Count == 0 &&
-        (Keyword is null || Keyword.IsEmpty);
-
-    /// <summary>
-    /// 是否有任何条件
-    /// </summary>
-    public bool HasConditions => !IsEmpty;
-
-    /// <summary>
     /// 添加过滤条件
     /// </summary>
     public QueryConditions AddFilter(string field, object? value, QueryOperator @operator = QueryOperator.Equal)
