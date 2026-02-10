@@ -141,7 +141,7 @@ public sealed class QueryFilter
     /// <summary>
     /// 创建区间条件
     /// </summary>
-    public static QueryFilter Between(string field, object start, object end) => new(field, new[] { start, end }, QueryOperator.Between);
+    public static QueryFilter Between(string field, object start, object end) => new(field, [start, end], QueryOperator.Between);
 
     /// <summary>
     /// 创建为空条件
