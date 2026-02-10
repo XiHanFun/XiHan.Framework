@@ -75,12 +75,6 @@ public class PageQueryExecutor<T> where T : class
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        if (!request.Behavior.DisablePaging)
-        {
-            var skip = (meta.PageIndex - 1) * meta.PageSize;
-            query = query.Skip(skip).Take(meta.PageSize);
-        }
-
         // 8. 执行查询
         var items = query.ToList();
 
@@ -123,12 +117,6 @@ public class PageQueryExecutor<T> where T : class
         if (totalCount == 0)
         {
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
-        }
-
-        if (!request.Behavior.DisablePaging)
-        {
-            var skip = (meta.PageIndex - 1) * meta.PageSize;
-            query = query.Skip(skip).Take(meta.PageSize);
         }
 
         var items = query.ToList();

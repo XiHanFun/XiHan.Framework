@@ -28,7 +28,31 @@ public class QueryBuilder
     private QueryKeyword? _keyword;
     private int _pageIndex = PageRequestMetadata.DefaultPageIndex;
     private int _pageSize = PageRequestMetadata.DefaultPageSize;
-    private bool _disablePaging;
+
+    /// <summary>
+    /// 从已有请求创建构建器
+    /// </summary>
+    public static QueryBuilder FromRequest(PageRequestDtoBase request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var builder = new QueryBuilder();
+        builder._filters.AddRange(request.Conditions?.Filters ?? []);
+        builder._sorts.AddRange(request.Conditions?.Sorts ?? []);
+        builder._keyword = request.Conditions?.Keyword?.Clone();
+        builder._pageIndex = request.Page.PageIndex;
+        builder._pageSize = request.Page.PageSize;
+
+        return builder;
+    }
+
+    /// <summary>
+    /// 创建新的构建器
+    /// </summary>
+    public static QueryBuilder Create()
+    {
+        return new QueryBuilder();
+    }
 
     /// <summary>
     /// 添加过滤条件
@@ -215,24 +239,6 @@ public class QueryBuilder
     }
 
     /// <summary>
-    /// 禁用分页
-    /// </summary>
-    public QueryBuilder DisablePaging()
-    {
-        _disablePaging = true;
-        return this;
-    }
-
-    /// <summary>
-    /// 启用分页
-    /// </summary>
-    public QueryBuilder EnablePaging()
-    {
-        _disablePaging = false;
-        return this;
-    }
-
-    /// <summary>
     /// 清除所有过滤条件
     /// </summary>
     public QueryBuilder ClearFilters()
@@ -269,7 +275,6 @@ public class QueryBuilder
         _keyword = null;
         _pageIndex = PageRequestMetadata.DefaultPageIndex;
         _pageSize = PageRequestMetadata.DefaultPageSize;
-        _disablePaging = false;
         return this;
     }
 
@@ -286,37 +291,7 @@ public class QueryBuilder
                 Filters = [.. _filters],
                 Sorts = [.. _sorts],
                 Keyword = _keyword?.Clone()
-            },
-            Behavior = new QueryBehavior
-            {
-                DisablePaging = _disablePaging
             }
         };
-    }
-
-    /// <summary>
-    /// 从已有请求创建构建器
-    /// </summary>
-    public static QueryBuilder FromRequest(PageRequestDtoBase request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var builder = new QueryBuilder();
-        builder._filters.AddRange(request.Conditions?.Filters ?? []);
-        builder._sorts.AddRange(request.Conditions?.Sorts ?? []);
-        builder._keyword = request.Conditions?.Keyword?.Clone();
-        builder._pageIndex = request.Page.PageIndex;
-        builder._pageSize = request.Page.PageSize;
-        builder._disablePaging = request.Behavior?.DisablePaging ?? false;
-
-        return builder;
-    }
-
-    /// <summary>
-    /// 创建新的构建器
-    /// </summary>
-    public static QueryBuilder Create()
-    {
-        return new QueryBuilder();
     }
 }
