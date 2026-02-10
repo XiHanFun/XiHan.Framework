@@ -37,18 +37,6 @@ public sealed class QueryKeyword
     public KeywordMatchMode MatchMode { get; set; } = KeywordMatchMode.Contains;
 
     /// <summary>
-    /// 是否有效（有关键字且有有效的搜索字段）
-    /// </summary>
-    public bool IsValid => !string.IsNullOrWhiteSpace(Value) && 
-                          Fields.Exists(f => !string.IsNullOrWhiteSpace(f));
-
-    /// <summary>
-    /// 是否为空
-    /// </summary>
-    public bool IsEmpty => string.IsNullOrWhiteSpace(Value) || 
-                          !Fields.Exists(f => !string.IsNullOrWhiteSpace(f));
-
-    /// <summary>
     /// 添加搜索字段（自动过滤空值）
     /// </summary>
     public QueryKeyword AddField(string field)

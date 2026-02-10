@@ -12,10 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using System.Collections;
 using System.Reflection;
 using XiHan.Framework.Domain.Shared.Paging.Attributes;
 using XiHan.Framework.Domain.Shared.Paging.Conventions;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
+using XiHan.Framework.Domain.Shared.Paging.Models;
 
 namespace XiHan.Framework.Domain.Shared.Paging.Builders;
 
@@ -32,30 +34,30 @@ public class AutoQueryBuilder
     /// <summary>
     /// 构造函数
     /// </summary>
-    public AutoQueryBuilder(object dto, QueryConvention? convention = null)
+    public AutoQueryBuilder(object dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
         _dto = dto;
         _dtoType = dto.GetType();
-        _convention = convention ?? QueryConvention.Default;
+        _convention = QueryConvention.Default;
         _queryBuilder = QueryBuilder.Create();
     }
 
     /// <summary>
     /// 从DTO创建自动查询构建器
     /// </summary>
-    public static AutoQueryBuilder FromDto(object dto, QueryConvention? convention = null)
+    public static AutoQueryBuilder FromDto(object dto)
     {
-        return new AutoQueryBuilder(dto, convention);
+        return new AutoQueryBuilder(dto);
     }
 
     /// <summary>
     /// 从DTO自动构建查询请求
     /// </summary>
-    public static PageRequestDtoBase BuildFrom(object dto, QueryConvention? convention = null)
+    public static PageRequestDtoBase BuildFrom(object dto)
     {
-        return new AutoQueryBuilder(dto, convention).Build();
+        return new AutoQueryBuilder(dto).Build();
     }
 
     /// <summary>
@@ -103,15 +105,15 @@ public class AutoQueryBuilder
     private void ProcessPagingProperties()
     {
         // 尝试从 Page 嵌套对象获取
-        var pageProp = _dtoType.GetProperty("Page", BindingFlags.Public | BindingFlags.Instance);
-        if (pageProp != null && pageProp.PropertyType.Name == "PageRequestMetadata")
+        var pageProp = _dtoType.GetProperty(nameof(PageRequestDtoBase.Page), BindingFlags.Public | BindingFlags.Instance);
+        if (pageProp != null && pageProp.PropertyType.Name == nameof(PageRequestMetadata))
         {
             var pageObj = pageProp.GetValue(_dto);
             if (pageObj != null)
             {
                 var pageType = pageObj.GetType();
-                var pageIndexProp = pageType.GetProperty("PageIndex");
-                var pageSizeProp = pageType.GetProperty("PageSize");
+                var pageIndexProp = pageType.GetProperty(nameof(PageRequestMetadata.PageIndex));
+                var pageSizeProp = pageType.GetProperty(nameof(PageRequestMetadata.PageSize));
 
                 if (pageIndexProp != null && pageIndexProp.PropertyType == typeof(int))
                 {
@@ -183,14 +185,8 @@ public class AutoQueryBuilder
 
         foreach (var property in properties)
         {
-            // 跳过分页属性
-            if (property.Name is "PageIndex" or "PageSize")
-            {
-                continue;
-            }
-
             // 跳过 PageRequestDtoBase 的内置属性
-            if (property.Name is "Conditions" or "Behavior" or "Page")
+            if (property.Name is nameof(PageRequestDtoBase.Conditions) or nameof(PageRequestDtoBase.Behavior) or nameof(PageRequestDtoBase.Page))
             {
                 continue;
             }
@@ -336,7 +332,7 @@ public class AutoQueryBuilder
     /// </summary>
     private bool TryProcessListProperty(string fieldName, object value, Type propertyType)
     {
-        if (value is System.Collections.IEnumerable enumerable and not string)
+        if (value is IEnumerable enumerable and not string)
         {
             var items = new List<object>();
             foreach (var item in enumerable)

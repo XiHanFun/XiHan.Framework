@@ -87,10 +87,4 @@ public class PageRequestDtoBase
     /// 创建默认分页请求（第1页，10条）
     /// </summary>
     public static PageRequestDtoBase Default() => new();
-
-    /// <summary>
-    /// 创建指定页码的请求
-    /// </summary>
-    public static PageRequestDtoBase Create(int pageIndex, int pageSize) =>
-        new PageRequestDtoBase().WithPage(pageIndex, pageSize);
 }

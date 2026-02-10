@@ -32,28 +32,28 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
-    /// 获取单个实体
+    /// 获取单个
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>实体DTO</returns>
     Task<TEntityDto?> GetByIdAsync(TKey id);
 
     /// <summary>
-    /// 获取分页列表
+    /// 分页
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    Task<PageResultDtoBase<TEntityDto>> GetPageAsync(TPageRequestDto input);
+    Task<PageResultDtoBase<TEntityDto>> PageAsync(TPageRequestDto input);
 
     /// <summary>
-    /// 创建实体
+    /// 创建
     /// </summary>
     /// <param name="input">创建DTO</param>
     /// <returns>创建后的实体DTO</returns>
     Task<TEntityDto> CreateAsync(TCreateDto input);
 
     /// <summary>
-    /// 更新实体
+    /// 更新
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <param name="input">更新DTO</param>
@@ -61,7 +61,7 @@ public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDt
     Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input);
 
     /// <summary>
-    /// 删除实体
+    /// 删除
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>删除结果</returns>

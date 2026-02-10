@@ -15,10 +15,10 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Shared.Paging.Builders;
-using XiHan.Framework.Domain.Shared.Paging.Conventions;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Enums;
 using XiHan.Framework.Domain.Shared.Paging.Models;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
 
@@ -30,21 +30,30 @@ public static class SqlSugarPagingExtensions
     #region 自动查询扩展
 
     /// <summary>
-    /// 自动查询并返回分页结果（根据DTO属性类型）
+    /// 自动查询并返回分页结果（从 PageRequestDtoBase 或普通 DTO）
     /// </summary>
     public static async Task<PageResultDtoBase<T>> ToPageResultAutoAsync<T>(
         this ISugarQueryable<T> query,
         object queryDto,
-        QueryConvention? convention = null,
         CancellationToken cancellationToken = default) where T : class, new()
     {
-        // 1. 自动构建查询请求
-        var request = AutoQueryBuilder.BuildFrom(queryDto, convention);
+        PageRequestDtoBase request;
 
-        // 2. 应用查询条件
+        // 如果 queryDto 本身就是 PageRequestDtoBase，直接使用
+        if (queryDto is PageRequestDtoBase pageRequest)
+        {
+            request = pageRequest;
+        }
+        else
+        {
+            // 否则通过 AutoQueryBuilder 构建
+            request = AutoQueryBuilder.BuildFrom(queryDto);
+        }
+
+        // 应用查询条件
         query = query.ApplyPageRequest(request);
 
-        // 3. 执行分页查询
+        // 执行分页查询
         return await query.ToPageResultAsync(request, cancellationToken);
     }
 
@@ -53,10 +62,21 @@ public static class SqlSugarPagingExtensions
     /// </summary>
     public static PageResultDtoBase<T> ToPageResultAuto<T>(
         this ISugarQueryable<T> query,
-        object queryDto,
-        QueryConvention? convention = null) where T : class, new()
+        object queryDto) where T : class, new()
     {
-        var request = AutoQueryBuilder.BuildFrom(queryDto, convention);
+        PageRequestDtoBase request;
+
+        // 如果 queryDto 本身就是 PageRequestDtoBase，直接使用
+        if (queryDto is PageRequestDtoBase pageRequest)
+        {
+            request = pageRequest;
+        }
+        else
+        {
+            // 否则通过 AutoQueryBuilder 构建
+            request = AutoQueryBuilder.BuildFrom(queryDto);
+        }
+
         query = query.ApplyPageRequest(request);
         return query.ToPageResult(request);
     }
@@ -91,7 +111,6 @@ public static class SqlSugarPagingExtensions
             query = query.ApplySorts(cond.Sorts);
         }
 
-        // 4. 不在这里应用分页，让调用者决定
         return query;
     }
 
@@ -306,41 +325,27 @@ public static class SqlSugarPagingExtensions
             .OrderBy(s => s.Priority)
             .ToList();
 
-        foreach (var sort in orderedSorts)
-        {
-            query = query.ApplySort(sort);
-        }
-
-        return query;
-    }
-
-    /// <summary>
-    /// 应用单个排序
-    /// </summary>
-    public static ISugarQueryable<T> ApplySort<T>(
-        this ISugarQueryable<T> query,
-        QuerySort sort) where T : class, new()
-    {
-        if (!sort.IsValid())
+        if (orderedSorts.Count == 0)
         {
             return query;
         }
 
+        // 构建排序表达式字符串
+        var orderByFields = orderedSorts.Select(s =>
+            $"{s.Field} {(s.Direction == SortDirection.Ascending ? "ASC" : "DESC")}"
+        );
+
+        var orderByString = string.Join(", ", orderByFields);
+
         try
         {
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var property = Expression.Property(parameter, sort.Field);
-            var lambda = Expression.Lambda<Func<T, object>>(
-                Expression.Convert(property, typeof(object)),
-                parameter);
-
-            query = sort.Direction == SortDirection.Ascending
-                ? query.OrderBy(lambda, OrderByType.Asc)
-                : query.OrderBy(lambda, OrderByType.Desc);
+            query = query.OrderBy(orderByString);
+            Console.WriteLine(query.ToSqlString());
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略无效排序
+            LogHelper.Error($"[SqlSugar.ApplySorts] OrderBy failed: {ex.Message}");
+            throw;
         }
 
         return query;
