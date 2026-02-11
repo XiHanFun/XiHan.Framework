@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -12,17 +12,34 @@
 
 #endregion <<版权版本注释>>
 
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
 internal class Program
 {
     private const string RegionName = "<<版权版本注释>>";
+    private const string RootDirectoryName = "XiHanFun";
     private const int HeaderLineCount = 12;
+
+    /// <summary>
+    /// 自定义 VS 模板文件，不参与版权头处理。
+    /// </summary>
+    private static readonly HashSet<string> ExcludedRelativePaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "scripts\\editor\\Class.cs",
+        "scripts\\editor\\Controller.cs",
+        "scripts\\editor\\Interface.cs",
+    };
 
     private static readonly Regex HeaderRegex = new(
         @"^\s*#region\s+<<版权版本注释>>[\s\S]*?#endregion\s+<<版权版本注释>>\r?\n\r?\n?",
         RegexOptions.Multiline | RegexOptions.Compiled);
+
+    /// <summary>
+    /// 保存文件时使用 UTF-8 无 BOM（charset = utf-8）。
+    /// </summary>
+    private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
     private static readonly HashSet<Guid> UsedGuids = new();
     private static int processedCount = 0;
@@ -32,10 +49,15 @@ internal class Program
 
     private static void Main()
     {
-        var root = Directory.GetCurrentDirectory();
-        var csFiles = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).ToList();
+        var root = FindXiHanFunRoot();
+        Console.WriteLine($"目标根目录：{root}\n");
 
-        Console.WriteLine($"找到 {csFiles.Count} 个 C# 文件");
+        var allCsFiles = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories);
+        var csFiles = allCsFiles
+            .Where(f => !IsExcludedFile(root, f))
+            .ToList();
+
+        Console.WriteLine($"找到 {csFiles.Count} 个 C# 文件（已排除 {allCsFiles.Length - csFiles.Count} 个模板文件）");
         Console.WriteLine("开始处理...\n");
 
         // 第一遍：收集所有现有的有效 GUID
@@ -80,6 +102,43 @@ internal class Program
         Console.WriteLine($"  唯一 GUID 数：{UsedGuids.Count}");
         Console.WriteLine(new string('=', 50));
         Console.ReadKey();
+    }
+
+    /// <summary>
+    /// 从当前目录向上查找名为 XiHanFun 的目录并作为目标根路径；未找到则抛出异常。
+    /// </summary>
+    private static string FindXiHanFunRoot()
+    {
+        var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (current != null)
+        {
+            if (string.Equals(current.Name, RootDirectoryName, StringComparison.OrdinalIgnoreCase))
+            {
+                return current.FullName;
+            }
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException(
+            $"未找到名为 \"{RootDirectoryName}\" 的目录。请从 {RootDirectoryName} 或其子目录下运行本工具。");
+    }
+
+    /// <summary>
+    /// 判断是否为排除的 VS 模板文件（按相对路径匹配）。
+    /// </summary>
+    private static bool IsExcludedFile(string root, string fullPath)
+    {
+        var rootDir = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!fullPath.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var relative = fullPath.Length == rootDir.Length
+            ? string.Empty
+            : fullPath[(rootDir.Length + 1)..];
+        var normalized = relative.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        return ExcludedRelativePaths.Contains(normalized);
     }
 
     /// <summary>
@@ -128,7 +187,7 @@ internal class Program
                 if (oldHeader != newHeader)
                 {
                     content = content.Replace(oldHeader, newHeader);
-                    File.WriteAllText(filePath, content, Encoding.UTF8);
+                    WriteFileWithFormat(filePath, content);
                     updatedCount++;
                     Console.WriteLine($"更新头部：{Path.GetFileName(filePath)}");
                 }
@@ -137,7 +196,7 @@ internal class Program
             {
                 var newHeader = BuildHeader(fileName, guid, createTime);
                 content = content.Replace(oldHeader, newHeader);
-                File.WriteAllText(filePath, content, Encoding.UTF8);
+                WriteFileWithFormat(filePath, content);
                 rebuiltCount++;
                 Console.WriteLine($"重建头部：{Path.GetFileName(filePath)}");
             }
@@ -146,10 +205,26 @@ internal class Program
         {
             var header = BuildHeader(fileName, guid, createTime);
             content = header + content;
-            File.WriteAllText(filePath, content, Encoding.UTF8);
+            WriteFileWithFormat(filePath, content);
             insertedCount++;
             Console.WriteLine($"插入头部：{Path.GetFileName(filePath)}");
         }
+    }
+
+    /// <summary>
+    /// 按统一格式写入文件：charset = utf-8，end_of_line = lf，insert_final_newline = true，indent_style = space，indent_size = 4。
+    /// </summary>
+    private static void WriteFileWithFormat(string filePath, string content)
+    {
+        content = content
+            .Replace("\r\n", "\n")
+            .Replace("\r", "\n");
+        if (!content.EndsWith('\n'))
+        {
+            content += "\n";
+        }
+        content = content.Replace("\t", "    ");
+        File.WriteAllText(filePath, content, Utf8NoBom);
     }
 
     /// <summary>
