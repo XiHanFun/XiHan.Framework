@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -86,7 +86,7 @@ public class PasswordHasher : IPasswordHasher
 
             var version = int.Parse(parts[0]);
             var iterations = int.Parse(parts[1]);
-            var hashAlgorithm = Enum.Parse<HashAlgorithmName>(parts[2]);
+            var hashAlgorithm = ParseHashAlgorithmName(parts[2]);
             var salt = Convert.FromBase64String(parts[3]);
             var hash = Convert.FromBase64String(parts[4]);
 
@@ -130,7 +130,7 @@ public class PasswordHasher : IPasswordHasher
 
             var version = int.Parse(parts[0]);
             var iterations = int.Parse(parts[1]);
-            var hashAlgorithm = Enum.Parse<HashAlgorithmName>(parts[2]);
+            var hashAlgorithm = ParseHashAlgorithmName(parts[2]);
 
             // 如果版本、迭代次数或哈希算法不匹配，需要重新哈希
             return version != _options.Version ||
@@ -141,5 +141,21 @@ public class PasswordHasher : IPasswordHasher
         {
             return true;
         }
+    }
+
+    /// <summary>
+    /// 将存储的算法名称字符串解析为 HashAlgorithmName
+    /// </summary>
+    private static HashAlgorithmName ParseHashAlgorithmName(string name)
+    {
+        return name?.ToUpperInvariant() switch
+        {
+            "SHA1" => HashAlgorithmName.SHA1,
+            "SHA256" => HashAlgorithmName.SHA256,
+            "SHA384" => HashAlgorithmName.SHA384,
+            "SHA512" => HashAlgorithmName.SHA512,
+            "MD5" => HashAlgorithmName.MD5,
+            _ => HashAlgorithmName.SHA256
+        };
     }
 }
