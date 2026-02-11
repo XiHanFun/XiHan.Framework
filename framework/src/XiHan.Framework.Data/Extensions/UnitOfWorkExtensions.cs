@@ -59,16 +59,4 @@ public static class UnitOfWorkExtensions
     {
         return unitOfWork.GetSqlSugarClient(serviceProvider).Queryable<TEntity>();
     }
-
-    /// <summary>
-    /// 获取SimpleClient客户端
-    /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <param name="unitOfWork">工作单元</param>
-    /// <param name="serviceProvider">服务提供者</param>
-    /// <returns></returns>
-    public static SimpleClient<TEntity> GetSimpleClient<TEntity>(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider) where TEntity : class, new()
-    {
-        return unitOfWork.GetSqlSugarDbContext(serviceProvider).GetSimpleClient<TEntity>();
-    }
 }

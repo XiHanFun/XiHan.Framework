@@ -23,6 +23,11 @@ namespace XiHan.Framework.Data.SqlSugar;
 public interface ISqlSugarDbContext : IDatabaseApi
 {
     /// <summary>
+    /// 当前租户标识
+    /// </summary>
+    long? CurrentTenantId { get; }
+
+    /// <summary>
     /// 获取SqlSugarClient客户端
     /// </summary>
     /// <returns></returns>
@@ -35,9 +40,22 @@ public interface ISqlSugarDbContext : IDatabaseApi
     SqlSugarScope GetScope();
 
     /// <summary>
-    /// 获取SimpleClient简单客户端
+    /// 创建带租户隔离的查询
     /// </summary>
-    /// <typeparam name="T">实体类型</typeparam>
+    /// <typeparam name="TEntity">实体类型</typeparam>
     /// <returns></returns>
-    SimpleClient<T> GetSimpleClient<T>() where T : class, new();
+    ISugarQueryable<TEntity> CreateQueryable<TEntity>() where TEntity : class, new();
+
+    /// <summary>
+    /// 尝试写入实体租户标识
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <param name="entity"></param>
+    void TrySetTenantId<TEntity>(TEntity entity) where TEntity : class;
+
+    /// <summary>
+    /// 临时禁用租户过滤
+    /// </summary>
+    /// <returns></returns>
+    IDisposable DisableTenantFilter();
 }

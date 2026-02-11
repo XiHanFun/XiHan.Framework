@@ -19,7 +19,9 @@ using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.DistributedIds;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow.Abstracts;
+using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Data.SqlSugar;
 
@@ -28,6 +30,8 @@ namespace XiHan.Framework.Data.SqlSugar;
 /// </summary>
 public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsSavingChanges, ISupportsRollback, IScopedDependency
 {
+    private static readonly AsyncLocal<bool?> TenantFilterEnabled = new();
+
     // 选项配置
     private readonly XiHanSqlSugarCoreOptions _options;
 
@@ -37,8 +41,14 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     // 分布式ID生成器
     private readonly IDistributedIdGenerator<long> _idGenerator;
 
+    // 当前租户
+    private readonly ICurrentTenant _currentTenant;
+
     // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
     private readonly SqlSugarScope _sqlSugarScope;
+
+    // 配置过的连接标识
+    private readonly HashSet<string> _configIds;
 
     // 标记是否有活动事务
     private bool _hasActiveTransaction;
@@ -49,17 +59,29 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     /// <param name="options"></param>
     /// <param name="transientCachedServiceProvider"></param>
     /// <param name="idGenerator">分布式ID生成器（可选）</param>
+    /// <param name="currentTenant">当前租户上下文</param>
     public SqlSugarDbContext(
         IOptions<XiHanSqlSugarCoreOptions> options,
         ITransientCachedServiceProvider transientCachedServiceProvider,
-        IDistributedIdGenerator<long> idGenerator)
+        IDistributedIdGenerator<long> idGenerator,
+        ICurrentTenant currentTenant)
     {
         _options = options.Value;
         _transientCachedServiceProvider = transientCachedServiceProvider;
         _idGenerator = idGenerator;
+        _currentTenant = currentTenant;
+        _configIds = _options.ConnectionConfigs
+            .Select(x => x.ConfigId)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         _sqlSugarScope = CreateSqlSugarScope();
     }
+
+    /// <summary>
+    /// 当前租户标识
+    /// </summary>
+    public long? CurrentTenantId => _currentTenant.Id;
 
     /// <summary>
     /// 保存实体变更
@@ -82,8 +104,13 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     /// <returns></returns>
     public ISqlSugarClient GetClient()
     {
-        // SqlSugarScope 实现了 ISqlSugarClient 接口，可以直接返回
-        return _sqlSugarScope;
+        var tenantConfigId = GetCurrentTenantConfigId();
+        if (tenantConfigId is null)
+        {
+            return _sqlSugarScope;
+        }
+
+        return _sqlSugarScope.GetConnectionScope(tenantConfigId);
     }
 
     /// <summary>
@@ -96,13 +123,64 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     }
 
     /// <summary>
-    /// 获取SimpleClient简单客户端
+    /// 创建带租户隔离的查询
     /// </summary>
-    /// <typeparam name="T">实体类型</typeparam>
+    /// <typeparam name="TEntity"></typeparam>
     /// <returns></returns>
-    public SimpleClient<T> GetSimpleClient<T>() where T : class, new()
+    public ISugarQueryable<TEntity> CreateQueryable<TEntity>() where TEntity : class, new()
     {
-        return _sqlSugarScope.GetSimpleClient<T>();
+        var queryable = GetClient().Queryable<TEntity>();
+        return ApplyTenantFilter(queryable);
+    }
+
+    /// <summary>
+    /// 尝试写入实体租户标识
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <param name="entity"></param>
+    public void TrySetTenantId<TEntity>(TEntity entity) where TEntity : class
+    {
+        var tenantId = CurrentTenantId;
+        if (!tenantId.HasValue)
+        {
+            return;
+        }
+
+        var property = typeof(TEntity).GetProperty("TenantId");
+        if (property is null || !property.CanWrite)
+        {
+            return;
+        }
+
+        if (property.PropertyType == typeof(long))
+        {
+            var currentValue = (long)property.GetValue(entity)!;
+            if (currentValue == 0)
+            {
+                property.SetValue(entity, tenantId.Value);
+            }
+            return;
+        }
+
+        if (property.PropertyType == typeof(long?))
+        {
+            var currentValue = (long?)property.GetValue(entity);
+            if (!currentValue.HasValue || currentValue.Value == 0)
+            {
+                property.SetValue(entity, tenantId.Value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 临时禁用租户过滤
+    /// </summary>
+    /// <returns></returns>
+    public IDisposable DisableTenantFilter()
+    {
+        var previous = TenantFilterEnabled.Value;
+        TenantFilterEnabled.Value = false;
+        return new DisposeAction(() => TenantFilterEnabled.Value = previous);
     }
 
     /// <summary>
@@ -247,5 +325,62 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     private void LogSqlExecuting(string sql, SugarParameter[] parameters)
     {
         _options.SqlLogAction?.Invoke(sql, parameters);
+    }
+
+    private string? GetCurrentTenantConfigId()
+    {
+        if (!CurrentTenantId.HasValue)
+        {
+            return null;
+        }
+
+        var tenantIdText = CurrentTenantId.Value.ToString();
+        if (_configIds.Contains(tenantIdText))
+        {
+            return tenantIdText;
+        }
+
+        var prefixed = $"Tenant_{tenantIdText}";
+        if (_configIds.Contains(prefixed))
+        {
+            return prefixed;
+        }
+
+        return null;
+    }
+
+    private ISugarQueryable<TEntity> ApplyTenantFilter<TEntity>(ISugarQueryable<TEntity> queryable)
+        where TEntity : class, new()
+    {
+        if ((TenantFilterEnabled.Value ?? true) is false)
+        {
+            return queryable;
+        }
+
+        var tenantId = CurrentTenantId;
+        if (!tenantId.HasValue)
+        {
+            return queryable;
+        }
+
+        var property = typeof(TEntity).GetProperty("TenantId");
+        if (property is null)
+        {
+            return queryable;
+        }
+
+        if (property.PropertyType != typeof(long) && property.PropertyType != typeof(long?))
+        {
+            return queryable;
+        }
+
+        var parameter = Expression.Parameter(typeof(TEntity), "e");
+        var propertyAccess = Expression.Property(parameter, property);
+        Expression targetValue = property.PropertyType == typeof(long)
+            ? Expression.Constant(tenantId.Value, typeof(long))
+            : Expression.Convert(Expression.Constant(tenantId.Value, typeof(long)), typeof(long?));
+        var body = Expression.Equal(propertyAccess, targetValue);
+        var lambda = Expression.Lambda<Func<TEntity, bool>>(body, parameter);
+        return queryable.Where(lambda);
     }
 }
