@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -38,12 +38,12 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <summary>
     /// 是否认证
     /// </summary>
-    public virtual bool IsAuthenticated => Id.HasValue;
+    public virtual bool IsAuthenticated => UserId.HasValue;
 
     /// <summary>
     /// 用户标识
     /// </summary>
-    public virtual Guid? Id => _principalAccessor.Principal.FindUserId();
+    public virtual long? UserId => _principalAccessor.Principal.FindUserId();
 
     /// <summary>
     /// 用户名
@@ -83,7 +83,7 @@ public class CurrentUser : ICurrentUser, ITransientDependency
     /// <summary>
     /// 租户标识
     /// </summary>
-    public virtual Guid? TenantId => _principalAccessor.Principal.FindTenantId();
+    public virtual long? TenantId => _principalAccessor.Principal.FindTenantId();
 
     /// <summary>
     /// 角色

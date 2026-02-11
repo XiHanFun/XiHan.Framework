@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -55,11 +55,11 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static Guid GetId(this ICurrentUser currentUser)
+    public static long GetUserId(this ICurrentUser currentUser)
     {
-        Debug.Assert(currentUser.Id is not null, "当前用户唯一标识不为空");
+        Debug.Assert(currentUser.UserId is not null, "当前用户唯一标识不为空");
 
-        return currentUser.Id!.Value;
+        return currentUser.UserId!.Value;
     }
 
     /// <summary>
