@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanVirtualFileSystemServiceCollectionExtensions
-// Guid:d0e5f6a7-9b8c-4d0e-b7f4-5a6b9c8d0e2f
+// Guid:f46852b8-fe45-4a82-b45f-e2f475747f64
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2024/12/14 11:10:00

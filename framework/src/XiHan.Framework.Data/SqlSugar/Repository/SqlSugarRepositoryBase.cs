@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SqlSugarRepositoryBase
-// Guid:5f3a1f88-6d0e-4ab3-8f41-3a6d9c2b8e74
+// Guid:165b306d-7a53-4480-9f8c-11b8c271f2c6
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/09/25 05:52:00

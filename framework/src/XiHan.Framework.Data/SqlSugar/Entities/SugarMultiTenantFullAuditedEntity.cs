@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SugarMultiTenantFullAuditedEntity
-// Guid:80f4f02b-1f8f-492f-9c84-cfe6056f203a
+// Guid:eaf5244a-a05f-4726-9da8-666a3e53042c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/02/12 00:00:00

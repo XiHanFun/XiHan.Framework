@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ILogFormatter
-// Guid:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+// Guid:07828a00-eb45-4266-a809-6347440c964f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/17 00:00:00

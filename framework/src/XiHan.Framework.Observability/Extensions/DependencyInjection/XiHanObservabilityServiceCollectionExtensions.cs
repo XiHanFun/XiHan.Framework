@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanObservabilityServiceCollectionExtensions
-// Guid:a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6
+// Guid:c60c56f2-0237-4e29-ac81-06440a49e95c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/26 00:00:00

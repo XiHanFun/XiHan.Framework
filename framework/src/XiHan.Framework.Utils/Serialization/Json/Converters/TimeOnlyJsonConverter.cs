@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:TimeOnlyJsonConverter
-// Guid:fded905f-17ef-4373-afbc-f2716e06f072
+// Guid:80eab8e8-7cbf-484f-9ffe-5cd4a87b3048
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanEventBusServiceCollectionExtensions
-// Guid:33286838-2730-4c0a-a480-0aa34d45b21c
+// Guid:00efaecf-ecf9-4204-900b-bf1f21c61fa1
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/26 00:00:00

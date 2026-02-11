@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanMultiTenancyServiceCollectionExtensions
-// Guid:2d25167f-53fa-4771-97b9-fef8f1e84505
+// Guid:0cbd9cd2-7b5d-4eaa-b0f5-a8160ae5bc42
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/26 00:00:00

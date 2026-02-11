@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:MultiTenantDeletionEntityBase
-// Guid:4dd69dfd-0ec6-4fe8-9f3d-57cc02ba3ad3
+// Guid:f1f0569e-d717-40aa-a965-6a61db9bde0a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/02/12 00:00:00

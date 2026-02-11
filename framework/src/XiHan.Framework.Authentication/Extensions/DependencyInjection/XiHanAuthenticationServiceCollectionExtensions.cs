@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanAuthenticationServiceCollectionExtensions
-// Guid:7aecf557-92ae-475f-bbd9-c667564c59a8
+// Guid:926b757a-137d-4daf-b2f9-2395130e94c4
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/26 00:00:00

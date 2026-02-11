@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:PredicateComposer
-// Guid:a1b2c3d4-e5f6-7890-abcd-ef1234567890
+// Guid:95e8e43f-dbc6-4dbe-a83a-0647c1b0d6a7
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/13 05:35:00

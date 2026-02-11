@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanTemplatingServiceCollectionExtensions
-// Guid:8eb2d44d-4e2e-49e9-887e-b59e940c2b19
+// Guid:dbce6b06-c815-464c-a8d3-330155aacb09
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/10/06 04:57:29
