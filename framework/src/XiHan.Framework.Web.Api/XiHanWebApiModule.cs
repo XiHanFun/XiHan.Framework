@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -96,6 +96,8 @@ public class XiHanWebApiModule : XiHanModule
 
         app.UseRouting();
         app.UseCors();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.UseEndpoints(endpoints =>
         {
             // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由

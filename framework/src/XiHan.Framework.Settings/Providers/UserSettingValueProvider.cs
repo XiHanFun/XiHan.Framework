@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -56,7 +56,7 @@ public class UserSettingValueProvider : SettingValueProvider
     /// <returns></returns>
     public override async Task<string?> GetOrNullAsync(SettingDefinition setting)
     {
-        return CurrentUser.Id is null ? null : await SettingStore.GetOrNullAsync(setting.Name, Name, CurrentUser.Id.ToString());
+        return CurrentUser.UserId is null ? null : await SettingStore.GetOrNullAsync(setting.Name, Name, CurrentUser.UserId.ToString());
     }
 
     /// <summary>
@@ -66,8 +66,8 @@ public class UserSettingValueProvider : SettingValueProvider
     /// <returns></returns>
     public override async Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
-        return CurrentUser.Id is null
+        return CurrentUser.UserId is null
             ? [.. settings.Select(x => new SettingValue(x.Name, null))]
-            : await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, CurrentUser.Id.ToString());
+            : await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, CurrentUser.UserId.ToString());
     }
 }
