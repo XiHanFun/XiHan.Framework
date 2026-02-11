@@ -33,6 +33,8 @@ public class XiHanTenantResolveOptions
     public XiHanTenantResolveOptions()
     {
         TenantResolvers = [];
+        HeaderKeys = ["X-Tenant-Id", "x-tenant-id", "TenantId"];
+        QueryStringKeys = ["tenantId", "tenant"];
     }
 
     /// <summary>
@@ -40,6 +42,28 @@ public class XiHanTenantResolveOptions
     /// </summary>
     [NotNull]
     public List<ITenantResolveContributor> TenantResolvers { get; }
+
+    /// <summary>
+    /// 是否启用 Header 租户解析
+    /// </summary>
+    public bool EnableHeaderResolve { get; set; } = true;
+
+    /// <summary>
+    /// Header 租户键集合（按优先级顺序）
+    /// </summary>
+    [NotNull]
+    public string[] HeaderKeys { get; set; }
+
+    /// <summary>
+    /// 是否启用 QueryString 租户解析
+    /// </summary>
+    public bool EnableQueryStringResolve { get; set; } = true;
+
+    /// <summary>
+    /// QueryString 租户键集合（按优先级顺序）
+    /// </summary>
+    [NotNull]
+    public string[] QueryStringKeys { get; set; }
 
     /// <summary>
     /// 回退租户（当无法解析租户时使用该租户）
