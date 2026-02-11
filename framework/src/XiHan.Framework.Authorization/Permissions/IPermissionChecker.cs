@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IPermissionChecker
-// Guid:d6e7f8a9-b0c1-2345-9012-123456789025
+// Guid:ff0afaf7-109f-4d4b-94c6-225743e039da
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/06 10:00:00

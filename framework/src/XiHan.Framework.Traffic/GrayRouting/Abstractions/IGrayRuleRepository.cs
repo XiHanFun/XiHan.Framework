@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IGrayRuleRepository
-// Guid:8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e
+// Guid:e422a72d-2fe6-474a-a9af-64660dbd1c41
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/01/22 00:00:00

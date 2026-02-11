@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:TimeZoneHelper
-// Guid:9b8c7d6e-5f4e-3b2c-1a9d-8e7f6d5c4b3a
+// Guid:9a71c0a1-1180-4a22-9d7a-21063079627e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/04/29 00:47:00

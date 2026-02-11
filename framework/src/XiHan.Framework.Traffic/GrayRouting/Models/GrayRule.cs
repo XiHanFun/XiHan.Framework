@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:GrayRule
-// Guid:7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
+// Guid:ccdcf221-ef8c-4e73-8841-4f1a8eba4994
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/01/22 00:00:00

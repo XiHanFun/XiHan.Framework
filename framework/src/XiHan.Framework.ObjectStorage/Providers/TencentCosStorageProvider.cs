@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:TencentCosStorageProvider
-// Guid:b2c3d4e5-f6a7-48b9-c0d1-e2f3a4b5c6d7
+// Guid:d621c3ba-bd19-49f1-8851-6f0bc6c30973
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/10 11:05:00
