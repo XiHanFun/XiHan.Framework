@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<Import Project="..\..\props\netcore.props" />
 	<Import Project="..\..\props\common.props" />
@@ -21,6 +21,7 @@
 	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
 	</ItemGroup>
 

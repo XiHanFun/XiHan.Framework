@@ -55,6 +55,11 @@ public class JobHistory
     public long? DurationMilliseconds { get; set; }
 
     /// <summary>
+    /// 归属租户（为空表示 Host 任务）
+    /// </summary>
+    public long? TenantId { get; set; }
+
+    /// <summary>
     /// 触发类型
     /// </summary>
     public JobTriggerType TriggerType { get; set; }

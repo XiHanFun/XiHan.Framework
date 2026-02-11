@@ -65,6 +65,11 @@ public class JobInstance
     public JobTriggerType TriggerType { get; set; }
 
     /// <summary>
+    /// 归属租户（为空表示 Host 任务）
+    /// </summary>
+    public long? TenantId { get; set; }
+
+    /// <summary>
     /// 执行参数
     /// </summary>
     public IDictionary<string, object?>? Parameters { get; set; }

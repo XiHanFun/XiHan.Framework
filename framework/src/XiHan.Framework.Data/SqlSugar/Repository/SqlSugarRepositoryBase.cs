@@ -14,6 +14,7 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
+using XiHan.Framework.Data.SqlSugar.Tenancy;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
@@ -30,7 +31,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 {
     private readonly ISqlSugarDbContext _dbContext;
     private readonly ISqlSugarClient _dbClient;
-    private readonly ISimpleClient<TEntity> _simpleClient;
 
     /// <summary>
     /// 构造函数
@@ -40,7 +40,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         _dbContext = dbContext;
         _dbClient = _dbContext.GetClient();
-        _simpleClient = _dbClient.GetSimpleClient<TEntity>();
     }
 
     /// <summary>
@@ -53,6 +52,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
+        XiHanTenantDataFilter.TrySetTenantId(entity);
 
         var result = await _dbClient.Insertable(entity)
             .ExecuteReturnEntityAsync();
@@ -94,6 +94,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        foreach (var item in entityList)
+        {
+            XiHanTenantDataFilter.TrySetTenantId(item);
+        }
 
         await _dbClient.Insertable(entityList)
             .ExecuteCommandAsync(cancellationToken);
@@ -172,6 +176,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
+        XiHanTenantDataFilter.TrySetTenantId(entity);
 
         if (entity.IsTransient())
         {
@@ -205,6 +210,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         var addEntities = entityArray.Where(entity => entity.IsTransient()).ToArray();
         var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
+        foreach (var item in addEntities)
+        {
+            XiHanTenantDataFilter.TrySetTenantId(item);
+        }
+        foreach (var item in updateEntities)
+        {
+            XiHanTenantDataFilter.TrySetTenantId(item);
+        }
 
         if (addEntities.Length == 0 && updateEntities.Length == 0)
         {

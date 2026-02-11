@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.ConfigurationStore;
+using XiHan.Framework.MultiTenancy.Features;
 using XiHan.Framework.Settings.Options;
 using XiHan.Framework.Settings.Providers;
 using XiHan.Framework.Utils.Collections;
@@ -48,6 +49,7 @@ public static class XiHanMultiTenancyServiceCollectionExtensions
         {
             options.TenantResolvers.Insert(0, new CurrentUserTenantResolveContributor());
         });
+        services.AddTransient<ITenantFeatureChecker, TenantFeatureChecker>();
 
         return services;
     }

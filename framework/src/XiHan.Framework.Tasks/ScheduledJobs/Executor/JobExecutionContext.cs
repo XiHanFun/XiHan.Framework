@@ -35,6 +35,7 @@ public class JobExecutionContext : IJobContext
         Parameters = parameters ?? new Dictionary<string, object?>();
         ServiceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         TraceId = jobInstance.TraceId ?? Guid.NewGuid().ToString("N");
+        TenantId = jobInstance.TenantId;
         StartedAt = DateTimeOffset.UtcNow;
         AttemptCount = 1;
         CancellationToken = cancellationToken;
@@ -44,6 +45,11 @@ public class JobExecutionContext : IJobContext
     /// 任务实例信息
     /// </summary>
     public JobInstance JobInstance { get; }
+
+    /// <summary>
+    /// 当前任务租户（为空表示 Host 任务）
+    /// </summary>
+    public long? TenantId { get; }
 
     /// <summary>
     /// 任务参数

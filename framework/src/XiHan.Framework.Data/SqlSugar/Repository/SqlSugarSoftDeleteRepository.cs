@@ -158,7 +158,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = _dbClient.Queryable<TEntity>().ApplySpecification(specification);
+        var query = CreateTenantQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await SoftDeleteRangeAsync(entities, cancellationToken);
     }
@@ -276,7 +276,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = _dbClient.Queryable<TEntity>().ApplySpecification(specification);
+        var query = CreateTenantQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await RestoreRangeAsync(entities, cancellationToken);
     }
@@ -293,7 +293,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     public async Task<IReadOnlyList<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
     {
         // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .ToListAsync(cancellationToken);
     }
 
@@ -304,7 +304,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.IsDeleted)
             .ToListAsync(cancellationToken);
     }
@@ -317,7 +317,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.IsDeleted)
             .Where(predicate)
             .ToListAsync(cancellationToken);
@@ -331,7 +331,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.IsDeleted)
             .ApplySpecification(specification)
             .ToListAsync(cancellationToken);

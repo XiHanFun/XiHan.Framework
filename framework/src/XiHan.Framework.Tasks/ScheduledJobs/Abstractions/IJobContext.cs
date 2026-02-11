@@ -27,6 +27,11 @@ public interface IJobContext
     JobInstance JobInstance { get; }
 
     /// <summary>
+    /// 当前任务租户（为空表示 Host 任务）
+    /// </summary>
+    long? TenantId { get; }
+
+    /// <summary>
     /// 任务参数
     /// </summary>
     IDictionary<string, object?> Parameters { get; }

@@ -49,7 +49,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     public async Task<IReadOnlyList<TEntity>> GetByCreatorAsync(TKey createdId, CancellationToken cancellationToken = default)
     {
         // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.CreatedId != null && entity.CreatedId.Equals(createdId))
             .ToListAsync(cancellationToken);
     }
@@ -62,7 +62,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetByModifierAsync(TKey modifiedId, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.ModifiedId != null && entity.ModifiedId.Equals(modifiedId))
             .ToListAsync(cancellationToken);
     }
@@ -75,7 +75,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(deletedId))
             .ToListAsync(cancellationToken);
     }
@@ -89,7 +89,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetCreatedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.CreatedTime >= startTime && entity.CreatedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
@@ -103,7 +103,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetModifiedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.ModifiedTime >= startTime && entity.ModifiedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
@@ -117,7 +117,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(entity => entity.DeletedTime >= startTime && entity.DeletedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
@@ -132,7 +132,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var query = _dbClient.Queryable<TEntity>();
+        var query = CreateTenantQueryable();
 
         query = query.WhereIF(options.CreatedId is not null, entity => entity.CreatedId != null && entity.CreatedId.Equals(options.CreatedId))
             .WhereIF(options.ModifiedId is not null, entity => entity.ModifiedId != null && entity.ModifiedId.Equals(options.ModifiedId))
