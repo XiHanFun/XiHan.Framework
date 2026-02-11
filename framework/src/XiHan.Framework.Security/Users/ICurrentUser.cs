@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -29,7 +29,7 @@ public interface ICurrentUser
     /// <summary>
     /// 用户标识
     /// </summary>
-    Guid? Id { get; }
+    long? UserId { get; }
 
     /// <summary>
     /// 用户名
@@ -69,7 +69,7 @@ public interface ICurrentUser
     /// <summary>
     /// 租户标识
     /// </summary>
-    Guid? TenantId { get; }
+    long? TenantId { get; }
 
     /// <summary>
     /// 角色
