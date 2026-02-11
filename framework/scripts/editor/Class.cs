@@ -1,4 +1,4 @@
-﻿#region <<版权版本注释>>
+#region <<版权版本注释>>
 
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
@@ -19,5 +19,5 @@ namespace $rootnamespace$;
 /// </summary>
 public class $safeitemrootname$
 {
-	
+    
 }
