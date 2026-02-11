@@ -15,8 +15,10 @@
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Core.Security.Claims;
 
 namespace XiHan.Framework.Web.Core;
 
@@ -61,6 +63,9 @@ public class XiHanWebCoreModule : XiHanModule
 
         //AddAspNetServices(context.Services);
         services.AddObjectAccessor<IApplicationBuilder>();
+        services.AddHttpContextAccessor();
+        // 使用 HttpContext.User 作为当前主体，使 ICurrentUser 在 Web 请求中可用
+        services.AddScoped<ICurrentPrincipalAccessor, HttpContextCurrentPrincipalAccessor>();
         //context.Services.AddXiHanDynamicOptions<RequestLocalizationOptions, XiHanRequestLocalizationOptionsManager>();
     }
 }
