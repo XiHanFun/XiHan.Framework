@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -41,11 +40,11 @@ internal class Program
     /// </summary>
     private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
-    private static readonly HashSet<Guid> UsedGuids = new();
-    private static int processedCount = 0;
-    private static int updatedCount = 0;
-    private static int rebuiltCount = 0;
-    private static int insertedCount = 0;
+    private static readonly HashSet<Guid> UsedGuids = [];
+    private static int _processedCount = 0;
+    private static int _updatedCount = 0;
+    private static int _rebuiltCount = 0;
+    private static int _insertedCount = 0;
 
     private static void Main()
     {
@@ -83,7 +82,7 @@ internal class Program
             try
             {
                 ProcessFile(file);
-                processedCount++;
+                _processedCount++;
             }
             catch (Exception ex)
             {
@@ -95,10 +94,10 @@ internal class Program
         Console.WriteLine("\n" + new string('=', 50));
         Console.WriteLine($"处理完成！统计信息：");
         Console.WriteLine($"  总文件数：{csFiles.Count}");
-        Console.WriteLine($"  成功处理：{processedCount}");
-        Console.WriteLine($"  更新头部：{updatedCount}");
-        Console.WriteLine($"  重建头部：{rebuiltCount}");
-        Console.WriteLine($"  插入头部：{insertedCount}");
+        Console.WriteLine($"  成功处理：{_processedCount}");
+        Console.WriteLine($"  更新头部：{_updatedCount}");
+        Console.WriteLine($"  重建头部：{_rebuiltCount}");
+        Console.WriteLine($"  插入头部：{_insertedCount}");
         Console.WriteLine($"  唯一 GUID 数：{UsedGuids.Count}");
         Console.WriteLine(new string('=', 50));
         Console.ReadKey();
@@ -188,7 +187,7 @@ internal class Program
                 {
                     content = content.Replace(oldHeader, newHeader);
                     WriteFileWithFormat(filePath, content);
-                    updatedCount++;
+                    _updatedCount++;
                     Console.WriteLine($"更新头部：{Path.GetFileName(filePath)}");
                 }
             }
@@ -197,7 +196,7 @@ internal class Program
                 var newHeader = BuildHeader(fileName, guid, createTime);
                 content = content.Replace(oldHeader, newHeader);
                 WriteFileWithFormat(filePath, content);
-                rebuiltCount++;
+                _rebuiltCount++;
                 Console.WriteLine($"重建头部：{Path.GetFileName(filePath)}");
             }
         }
@@ -206,7 +205,7 @@ internal class Program
             var header = BuildHeader(fileName, guid, createTime);
             content = header + content;
             WriteFileWithFormat(filePath, content);
-            insertedCount++;
+            _insertedCount++;
             Console.WriteLine($"插入头部：{Path.GetFileName(filePath)}");
         }
     }
