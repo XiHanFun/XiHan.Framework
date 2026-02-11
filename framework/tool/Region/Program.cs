@@ -22,13 +22,13 @@ internal class Program
     private const int HeaderLineCount = 12;
 
     /// <summary>
-    /// 自定义 VS 模板文件，不参与版权头处理。
+    /// 自定义 VS 模板文件，不参与版权头处理。（相对 XiHanFun 根目录的路径）
     /// </summary>
     private static readonly HashSet<string> ExcludedRelativePaths = new(StringComparer.OrdinalIgnoreCase)
     {
-        "scripts\\editor\\Class.cs",
-        "scripts\\editor\\Controller.cs",
-        "scripts\\editor\\Interface.cs",
+        "XiHan.Framework\\framework\\scripts\\editor\\Class.cs",
+        "XiHan.Framework\\framework\\scripts\\editor\\Controller.cs",
+        "XiHan.Framework\\framework\\scripts\\editor\\Interface.cs",
     };
 
     private static readonly Regex HeaderRegex = new(
@@ -40,7 +40,16 @@ internal class Program
     /// </summary>
     private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
+    /// <summary>
+    /// 收集所有现有的有效 GUID
+    /// </summary>
     private static readonly HashSet<Guid> UsedGuids = [];
+
+    /// <summary>
+    /// 第二遍处理时已“分配”出去的 GUID（同一 GUID 只允许一个文件保留，重复的需重写为新 GUID）。
+    /// </summary>
+    private static readonly HashSet<Guid> AssignedGuids = [];
+
     private static int _processedCount = 0;
     private static int _updatedCount = 0;
     private static int _rebuiltCount = 0;
@@ -227,7 +236,8 @@ internal class Program
     }
 
     /// <summary>
-    /// 获取或生成 GUID：优先使用现有的有效 GUID，否则生成新的唯一 GUID
+    /// 获取或生成 GUID：优先使用现有的有效且未重复的 GUID，否则生成新的唯一 GUID。
+    /// 若文件中已有 GUID 但该 GUID 已被其他文件占用，则生成新 GUID 并重写头部。
     /// </summary>
     private static string GetOrGenerateGuid(string content)
     {
@@ -244,8 +254,13 @@ internal class Program
                 var guidStr = guidLine.Split(':', 2).Last().Trim();
                 if (Guid.TryParse(guidStr, out var existingGuid))
                 {
-                    // 如果现有 GUID 有效，直接返回
-                    return guidStr;
+                    // 若该 GUID 尚未在本轮中分配给任何文件，则保留并标记为已分配
+                    if (!AssignedGuids.Contains(existingGuid))
+                    {
+                        AssignedGuids.Add(existingGuid);
+                        return guidStr;
+                    }
+                    // 否则为重复 GUID，需要生成新 GUID 并写回
                 }
             }
         }
@@ -258,6 +273,7 @@ internal class Program
         } while (UsedGuids.Contains(newGuid));
 
         UsedGuids.Add(newGuid);
+        AssignedGuids.Add(newGuid);
         return newGuid.ToString();
     }
 
