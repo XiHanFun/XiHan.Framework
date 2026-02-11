@@ -33,5 +33,5 @@ public interface IEventDataMayHaveTenantId
     /// <param name="tenantId">
     /// 如果此方法返回 true，则设置的租户唯一标识
     /// </param>
-    bool IsMultiTenant(out Guid? tenantId);
+    bool IsMultiTenant(out long? tenantId);
 }

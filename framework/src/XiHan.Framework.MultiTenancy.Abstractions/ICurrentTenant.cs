@@ -32,7 +32,7 @@ public interface ICurrentTenant
     /// 获取当前租户的唯一标识符
     /// </summary>
     /// <value>租户的全局唯一唯一标识，如果当前没有租户则为 null</value>
-    Guid? Id { get; }
+    long? Id { get; }
 
     /// <summary>
     /// 获取当前租户名称
@@ -58,5 +58,5 @@ public interface ICurrentTenant
     /// // 作用域结束后，租户上下文自动恢复
     /// </code>
     /// </remarks>
-    IDisposable Change(Guid? id, string? name = null);
+    IDisposable Change(long? id, string? name = null);
 }

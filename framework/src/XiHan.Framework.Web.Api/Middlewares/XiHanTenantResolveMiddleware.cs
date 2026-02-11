@@ -62,11 +62,10 @@ public class XiHanTenantResolveMiddleware(
 
         var tenantKey = tenantIdOrName.Trim();
         var tenantId = ResolveTenantId(tenantKey);
-
-        if (!Guid.TryParse(tenantKey, out _))
+        if (!long.TryParse(tenantKey, out _))
         {
             logger.LogDebug(
-                "租户标识 {TenantKey} 非 Guid，已映射为稳定 Guid {TenantId}",
+                "租户标识 {TenantKey} 非 long，已映射为稳定 long {TenantId}",
                 tenantKey,
                 tenantId);
         }
@@ -77,32 +76,20 @@ public class XiHanTenantResolveMiddleware(
         }
     }
 
-    private static Guid ResolveTenantId(string tenantIdOrName)
+    private static long ResolveTenantId(string tenantIdOrName)
     {
-        if (Guid.TryParse(tenantIdOrName, out var guidTenantId))
-        {
-            return guidTenantId;
-        }
-
         if (long.TryParse(tenantIdOrName, out var longTenantId))
         {
-            return ConvertLongToStableGuid(longTenantId);
+            return longTenantId;
         }
 
-        return ConvertStringToStableGuid(tenantIdOrName);
+        return ConvertStringToStableLong(tenantIdOrName);
     }
 
-    private static Guid ConvertLongToStableGuid(long tenantId)
-    {
-        Span<byte> bytes = stackalloc byte[16];
-        BitConverter.GetBytes(tenantId).AsSpan().CopyTo(bytes);
-        return new Guid(bytes);
-    }
-
-    private static Guid ConvertStringToStableGuid(string value)
+    private static long ConvertStringToStableLong(string value)
     {
         var bytes = MD5.HashData(Encoding.UTF8.GetBytes(value));
-        return new Guid(bytes);
+        return BitConverter.ToInt64(bytes, 0) & long.MaxValue;
     }
 
     private sealed class TenantResolveContext(IServiceProvider serviceProvider) : ITenantResolveContext

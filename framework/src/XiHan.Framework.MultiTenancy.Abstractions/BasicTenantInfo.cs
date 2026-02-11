@@ -24,7 +24,7 @@ public class BasicTenantInfo
     /// </summary>
     /// <param name="tenantId"></param>
     /// <param name="name"></param>
-    public BasicTenantInfo(Guid? tenantId, string? name = null)
+    public BasicTenantInfo(long? tenantId, string? name = null)
     {
         TenantId = tenantId;
         Name = name;
@@ -33,7 +33,7 @@ public class BasicTenantInfo
     /// <summary>
     /// 租户唯一标识符
     /// </summary>
-    public Guid? TenantId { get; }
+    public long? TenantId { get; }
 
     /// <summary>
     /// 租户名称

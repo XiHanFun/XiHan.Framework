@@ -154,14 +154,14 @@ public static class XiHanClaimsIdentityExtensions
     /// </summary>
     /// <param name="principal"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorTenantId(this ClaimsPrincipal principal)
+    public static long? FindImpersonatorTenantId(this ClaimsPrincipal principal)
     {
         Guard.NotNull(principal, nameof(principal));
 
         var impersonatorTenantIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorTenantId);
         return impersonatorTenantIdOrNull is null || impersonatorTenantIdOrNull.Value.IsNullOrWhiteSpace()
             ? null
-            : Guid.TryParse(impersonatorTenantIdOrNull.Value, out var guid) ? guid : null;
+            : long.TryParse(impersonatorTenantIdOrNull.Value, out var id) ? id : null;
     }
 
     /// <summary>
@@ -169,7 +169,7 @@ public static class XiHanClaimsIdentityExtensions
     /// </summary>
     /// <param name="identity"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorTenantId(this IIdentity identity)
+    public static long? FindImpersonatorTenantId(this IIdentity identity)
     {
         Guard.NotNull(identity, nameof(identity));
 
@@ -178,7 +178,7 @@ public static class XiHanClaimsIdentityExtensions
         var impersonatorTenantIdOrNull = claimsIdentity?.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorTenantId);
         return impersonatorTenantIdOrNull is null || impersonatorTenantIdOrNull.Value.IsNullOrWhiteSpace()
             ? null
-            : Guid.TryParse(impersonatorTenantIdOrNull.Value, out var guid) ? guid : null;
+            : long.TryParse(impersonatorTenantIdOrNull.Value, out var id) ? id : null;
     }
 
     /// <summary>

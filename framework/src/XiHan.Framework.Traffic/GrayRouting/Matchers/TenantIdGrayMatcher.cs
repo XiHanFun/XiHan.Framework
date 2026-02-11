@@ -79,6 +79,6 @@ public class TenantIdGrayMatcher : IGrayMatcher
         /// <summary>
         /// 租户ID列表
         /// </summary>
-        public List<Guid> TenantIds { get; set; } = [];
+        public List<long> TenantIds { get; set; } = [];
     }
 }
