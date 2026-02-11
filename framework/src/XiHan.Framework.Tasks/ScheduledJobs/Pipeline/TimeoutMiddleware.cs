@@ -81,6 +81,7 @@ public class TimeoutMiddleware : IJobMiddleware
         }
 
         public JobInstance JobInstance => _innerContext.JobInstance;
+        public long? TenantId => _innerContext.TenantId;
         public IDictionary<string, object?> Parameters => _innerContext.Parameters;
         public IServiceProvider ServiceProvider => _innerContext.ServiceProvider;
         public string TraceId => _innerContext.TraceId;

@@ -455,8 +455,44 @@ public abstract class EventBusBase : IEventBus
         {
             IMultiTenant multiTenantEventData => multiTenantEventData.TenantId,
             IEventDataMayHaveTenantId eventDataMayHaveTenantId when eventDataMayHaveTenantId.IsMultiTenant(out var tenantId) => tenantId,
-            _ => CurrentTenant.Id
+            _ => TryResolveTenantIdFromPlainObject(eventData) ?? CurrentTenant.Id
         };
+    }
+
+    /// <summary>
+    /// 兼容未实现多租户接口的事件对象
+    /// </summary>
+    /// <param name="eventData"></param>
+    /// <returns></returns>
+    protected virtual Guid? TryResolveTenantIdFromPlainObject(object eventData)
+    {
+        var tenantIdProperty = eventData.GetType().GetProperty("TenantId");
+        if (tenantIdProperty is null)
+        {
+            return null;
+        }
+
+        var tenantIdValue = tenantIdProperty.GetValue(eventData);
+        return tenantIdValue switch
+        {
+            Guid guid => guid,
+            long longId => ConvertLongToGuid(longId),
+            string stringValue when long.TryParse(stringValue, out var longFromString) => ConvertLongToGuid(longFromString),
+            string stringValue when Guid.TryParse(stringValue, out var guidFromString) => guidFromString,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// 将 long 租户标识映射为稳定 Guid
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <returns></returns>
+    private static Guid ConvertLongToGuid(long tenantId)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        BitConverter.GetBytes(tenantId).AsSpan().CopyTo(bytes);
+        return new Guid(bytes);
     }
 
     /// <summary>

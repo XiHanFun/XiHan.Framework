@@ -15,6 +15,7 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Extensions;
+using XiHan.Framework.Data.SqlSugar.Tenancy;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -34,7 +35,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 {
     private readonly ISqlSugarDbContext _dbContext;
     private readonly ISqlSugarClient _dbClient;
-    private readonly ISimpleClient<TEntity> _simpleClient;
 
     /// <summary>
     /// 构造函数
@@ -44,7 +44,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     {
         _dbContext = dbContext;
         _dbClient = _dbContext.GetClient();
-        _simpleClient = _dbClient.GetSimpleClient<TEntity>();
     }
 
     #region 查询
@@ -59,7 +58,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _simpleClient.GetByIdAsync(id, cancellationToken);
+        return await CreateTenantQueryable()
+            .Where(entity => entity.BasicId.Equals(id))
+            .FirstAsync(cancellationToken);
     }
 
     /// <summary>
@@ -81,8 +82,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        var result = await _simpleClient.GetListAsync(it => idList.Contains(it.BasicId), cancellationToken);
+        var result = await CreateTenantQueryable()
+            .Where(it => idList.Contains(it.BasicId))
+            .ToListAsync(cancellationToken);
         return result;
     }
 
@@ -97,7 +99,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _simpleClient.GetFirstAsync(predicate, cancellationToken);
+        return await CreateTenantQueryable()
+            .Where(predicate)
+            .FirstAsync(cancellationToken);
     }
 
     /// <summary>
@@ -108,7 +112,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns>实体，如果不存在则返回 <c>null</c></returns>
     public async Task<TEntity?> GetFirstAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
 
         return await query.FirstAsync(cancellationToken);
@@ -124,7 +128,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         cancellationToken.ThrowIfCancellationRequested();
 
         // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .ToListAsync(cancellationToken);
     }
 
@@ -139,7 +143,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(predicate)
             .ToListAsync(cancellationToken);
     }
@@ -157,7 +161,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(orderBy);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(predicate)
             .OrderBy(orderBy)
             .ToListAsync(cancellationToken);
@@ -171,7 +175,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
 
         return await query.ToListAsync(cancellationToken);
@@ -186,7 +190,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .CountAsync(cancellationToken);
     }
 
@@ -201,7 +205,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(predicate)
             .CountAsync(cancellationToken);
     }
@@ -214,7 +218,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns>实体总数</returns>
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
 
         return await query.CountAsync(cancellationToken);
@@ -231,7 +235,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _dbClient.Queryable<TEntity>()
+        return await CreateTenantQueryable()
             .Where(predicate)
             .AnyAsync(cancellationToken);
     }
@@ -244,7 +248,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns>是否存在实体</returns>
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
 
         return await query.AnyAsync(cancellationToken);
@@ -267,6 +271,24 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         return query.Where(specification.ToExpression());
     }
 
+    /// <summary>
+    /// 创建原始查询
+    /// </summary>
+    /// <returns></returns>
+    protected virtual ISugarQueryable<TEntity> CreateRawQueryable()
+    {
+        return _dbClient.Queryable<TEntity>();
+    }
+
+    /// <summary>
+    /// 创建租户隔离查询
+    /// </summary>
+    /// <returns></returns>
+    protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
+    {
+        return XiHanTenantDataFilter.ApplyTenantFilter(CreateRawQueryable());
+    }
+
     #endregion 规约支持
 
     #region 分页查询
@@ -282,7 +304,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = _dbClient.Queryable<TEntity>();
+        var query = CreateTenantQueryable();
         RefAsync<int> totalCount = 0;
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
@@ -303,7 +325,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = _dbClient.Queryable<TEntity>().Where(predicate);
+        var query = CreateTenantQueryable().Where(predicate);
         RefAsync<int> totalCount = 0;
         var items = await query
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
@@ -326,7 +348,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(orderBy);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = _dbClient.Queryable<TEntity>();
+        var query = CreateTenantQueryable();
 
         // 应用条件
         if (predicate != null)
@@ -356,7 +378,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
 
         RefAsync<int> totalCount = 0;
         var items = await query
@@ -376,7 +398,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = _dbClient.Queryable<TEntity>();
+        var query = CreateTenantQueryable();
 
         // 使用扩展方法应用完整的查询条件
         query = query.ApplyPageRequest(pageRequestDto);
@@ -398,7 +420,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = _dbClient.Queryable<TEntity>().Where(predicate);
+        var query = CreateTenantQueryable().Where(predicate);
 
         // 使用扩展方法应用完整的查询条件
         query = query.ApplyPageRequest(pageRequestDto);
@@ -420,7 +442,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var query = ApplySpecification(CreateTenantQueryable(), specification);
 
         // 使用扩展方法应用完整的查询条件
         query = query.ApplyPageRequest(pageRequestDto);
@@ -444,7 +466,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryable = _dbClient.Queryable<TEntity>();
+        var queryable = CreateTenantQueryable();
 
         // 使用扩展方法自动构建和执行查询
         return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
@@ -463,7 +485,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryable = _dbClient.Queryable<TEntity>().Where(predicate);
+        var queryable = CreateTenantQueryable().Where(predicate);
 
         return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
@@ -481,7 +503,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryable = ApplySpecification(_dbClient.Queryable<TEntity>(), specification);
+        var queryable = ApplySpecification(CreateTenantQueryable(), specification);
 
         return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }

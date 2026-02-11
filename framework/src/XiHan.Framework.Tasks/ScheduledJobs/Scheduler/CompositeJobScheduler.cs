@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 
@@ -248,6 +249,7 @@ public class CompositeJobScheduler : IJobScheduler
             TriggerType = triggerType,
             ScheduledAt = DateTimeOffset.UtcNow,
             Parameters = parameters,
+            TenantId = ResolveTenantId(jobInfo, parameters),
             TraceId = Guid.NewGuid().ToString("N"),
             ExecutionNode = Environment.MachineName
         };
@@ -291,5 +293,36 @@ public class CompositeJobScheduler : IJobScheduler
         };
 
         _triggerManager.UpdateNextFireTime(jobInfo.JobName, nextFireTime);
+    }
+
+    /// <summary>
+    /// 解析任务所属租户
+    /// </summary>
+    /// <param name="jobInfo"></param>
+    /// <param name="parameters"></param>
+    /// <returns></returns>
+    private static long? ResolveTenantId(JobInfo jobInfo, IDictionary<string, object?>? parameters)
+    {
+        if (parameters is not null
+            && parameters.TryGetValue("tenantId", out var tenantIdValue)
+            && tenantIdValue is not null
+            && long.TryParse(tenantIdValue.ToString(), out var parameterTenantId))
+        {
+            return parameterTenantId;
+        }
+
+        if (jobInfo.TenantId.HasValue)
+        {
+            return jobInfo.TenantId.Value;
+        }
+
+        var currentTenant = AsyncLocalCurrentTenantAccessor.Instance.Current;
+        if (!string.IsNullOrWhiteSpace(currentTenant?.Name)
+            && long.TryParse(currentTenant.Name, out var scopedTenantId))
+        {
+            return scopedTenantId;
+        }
+
+        return null;
     }
 }

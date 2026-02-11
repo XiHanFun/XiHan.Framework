@@ -14,6 +14,8 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Extensions.DependencyInjection;
 using XiHan.Framework.Timing;
 
@@ -23,6 +25,8 @@ namespace XiHan.Framework.Tasks;
 /// 曦寒框架任务模块
 /// </summary>
 [DependsOn(
+    typeof(XiHanMultiTenancyAbstractionsModule),
+    typeof(XiHanMultiTenancyModule),
     typeof(XiHanTimingModule)
     )]
 public class XiHanTasksModule : XiHanModule
