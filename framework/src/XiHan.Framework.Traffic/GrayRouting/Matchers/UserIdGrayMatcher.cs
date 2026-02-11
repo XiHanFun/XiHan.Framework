@@ -37,7 +37,7 @@ public class UserIdGrayMatcher : IGrayMatcher
     /// </summary>
     public bool IsMatch(GrayContext context, IGrayRule rule)
     {
-        if (string.IsNullOrEmpty(context.UserId))
+        if (!context.UserId.HasValue)
         {
             return false;
         }
@@ -55,7 +55,7 @@ public class UserIdGrayMatcher : IGrayMatcher
                 return false;
             }
 
-            return config.UserIds.Contains(context.UserId, StringComparer.OrdinalIgnoreCase);
+            return config.UserIds.Contains(context.UserId.Value);
         }
         catch
         {
@@ -79,6 +79,6 @@ public class UserIdGrayMatcher : IGrayMatcher
         /// <summary>
         /// 用户ID列表
         /// </summary>
-        public List<string> UserIds { get; set; } = [];
+        public List<long> UserIds { get; set; } = [];
     }
 }

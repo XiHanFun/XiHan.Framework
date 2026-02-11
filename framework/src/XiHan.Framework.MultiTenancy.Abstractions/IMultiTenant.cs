@@ -36,5 +36,5 @@ public interface IMultiTenant
     /// <item>在数据保存时自动设置租户标识</item>
     /// </list>
     /// </remarks>
-    Guid? TenantId { get; }
+    long? TenantId { get; }
 }

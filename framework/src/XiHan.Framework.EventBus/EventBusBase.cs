@@ -449,7 +449,7 @@ public abstract class EventBusBase : IEventBus
     /// </summary>
     /// <param name="eventData">事件数据</param>
     /// <returns>租户唯一标识，如果不是多租户事件则返回当前租户唯一标识</returns>
-    protected virtual Guid? GetEventDataTenantId(object eventData)
+    protected virtual long? GetEventDataTenantId(object eventData)
     {
         return eventData switch
         {
@@ -464,7 +464,7 @@ public abstract class EventBusBase : IEventBus
     /// </summary>
     /// <param name="eventData"></param>
     /// <returns></returns>
-    protected virtual Guid? TryResolveTenantIdFromPlainObject(object eventData)
+    protected virtual long? TryResolveTenantIdFromPlainObject(object eventData)
     {
         var tenantIdProperty = eventData.GetType().GetProperty("TenantId");
         if (tenantIdProperty is null)
@@ -475,24 +475,10 @@ public abstract class EventBusBase : IEventBus
         var tenantIdValue = tenantIdProperty.GetValue(eventData);
         return tenantIdValue switch
         {
-            Guid guid => guid,
-            long longId => ConvertLongToGuid(longId),
-            string stringValue when long.TryParse(stringValue, out var longFromString) => ConvertLongToGuid(longFromString),
-            string stringValue when Guid.TryParse(stringValue, out var guidFromString) => guidFromString,
+            long longId => longId,
+            string stringValue when long.TryParse(stringValue, out var longFromString) => longFromString,
             _ => null
         };
-    }
-
-    /// <summary>
-    /// 将 long 租户标识映射为稳定 Guid
-    /// </summary>
-    /// <param name="tenantId"></param>
-    /// <returns></returns>
-    private static Guid ConvertLongToGuid(long tenantId)
-    {
-        Span<byte> bytes = stackalloc byte[16];
-        BitConverter.GetBytes(tenantId).AsSpan().CopyTo(bytes);
-        return new Guid(bytes);
     }
 
     /// <summary>
