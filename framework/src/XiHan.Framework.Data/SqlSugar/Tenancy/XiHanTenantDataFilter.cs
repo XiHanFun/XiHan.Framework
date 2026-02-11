@@ -61,8 +61,7 @@ public static class XiHanTenantDataFilter
 
         if (tenantInfo.TenantId.HasValue)
         {
-            var bytes = tenantInfo.TenantId.Value.ToByteArray();
-            return BitConverter.ToInt64(bytes, 0);
+            return tenantInfo.TenantId.Value;
         }
 
         return null;

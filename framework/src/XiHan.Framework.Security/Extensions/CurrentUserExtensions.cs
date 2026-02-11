@@ -67,10 +67,10 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorTenantId(this ICurrentUser currentUser)
+    public static long? FindImpersonatorTenantId(this ICurrentUser currentUser)
     {
         var impersonatorTenantId = currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorTenantId);
-        return impersonatorTenantId.IsNullOrWhiteSpace() ? null : Guid.TryParse(impersonatorTenantId, out var guid) ? guid : null;
+        return impersonatorTenantId.IsNullOrWhiteSpace() ? null : long.TryParse(impersonatorTenantId, out var id) ? id : null;
     }
 
     /// <summary>

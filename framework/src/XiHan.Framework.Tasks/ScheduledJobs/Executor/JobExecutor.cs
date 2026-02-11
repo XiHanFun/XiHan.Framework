@@ -89,7 +89,7 @@ public class JobExecutor : IJobExecutor
             JobResult result;
             if (currentTenant is not null && jobInstance.TenantId.HasValue)
             {
-                using (currentTenant.Change(ConvertLongToGuid(jobInstance.TenantId.Value), jobInstance.TenantId.Value.ToString()))
+                using (currentTenant.Change(jobInstance.TenantId.Value, jobInstance.TenantId.Value.ToString()))
                 {
                     result = await pipeline.ExecuteAsync(context, job);
                 }
@@ -176,15 +176,4 @@ public class JobExecutor : IJobExecutor
         }
     }
 
-    /// <summary>
-    /// 将 long 租户标识映射为稳定 Guid
-    /// </summary>
-    /// <param name="tenantId"></param>
-    /// <returns></returns>
-    private static Guid ConvertLongToGuid(long tenantId)
-    {
-        Span<byte> bytes = stackalloc byte[16];
-        BitConverter.GetBytes(tenantId).AsSpan().CopyTo(bytes);
-        return new Guid(bytes);
-    }
 }

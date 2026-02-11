@@ -37,7 +37,7 @@ public class TenantConfiguration
     /// </summary>
     /// <param name="id">租户唯一标识</param>
     /// <param name="name">租户名称</param>
-    public TenantConfiguration(Guid id, [NotNull] string name)
+    public TenantConfiguration(long id, [NotNull] string name)
         : this()
     {
         Guard.NotNull(name, nameof(name));
@@ -55,7 +55,7 @@ public class TenantConfiguration
     /// <param name="name">租户名称</param>
     /// <param name="normalizedName">租户规范化名称</param>
     /// <param name="editionId">租户版本唯一标识</param>
-    public TenantConfiguration(Guid id, [NotNull] string name, [NotNull] string normalizedName, Guid? editionId = null)
+    public TenantConfiguration(long id, [NotNull] string name, [NotNull] string normalizedName, Guid? editionId = null)
         : this(id, name)
     {
         Guard.NotNull(normalizedName, nameof(normalizedName));
@@ -67,7 +67,7 @@ public class TenantConfiguration
     /// <summary>
     /// 租户唯一标识
     /// </summary>
-    public Guid Id { get; set; }
+    public long Id { get; set; }
 
     /// <summary>
     /// 租户名称

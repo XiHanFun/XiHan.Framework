@@ -92,9 +92,13 @@ public class GrayRoutingMiddleware
         };
 
         // 提取用户ID（从Claims或Header）
-        context.UserId = httpContext.User?.FindFirst("sub")?.Value
+        var userIdText = httpContext.User?.FindFirst("sub")?.Value
             ?? httpContext.User?.FindFirst("userId")?.Value
             ?? httpContext.Request.Headers["X-User-Id"].FirstOrDefault();
+        if (long.TryParse(userIdText, out var userId))
+        {
+            context.UserId = userId;
+        }
 
         // 提取租户ID
         if (currentTenant?.Id != null)

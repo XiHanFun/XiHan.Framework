@@ -34,12 +34,12 @@ public class GrayContext
     /// <summary>
     /// 用户ID
     /// </summary>
-    public string? UserId { get; set; }
+    public long? UserId { get; set; }
 
     /// <summary>
     /// 租户ID
     /// </summary>
-    public Guid? TenantId { get; set; }
+    public long? TenantId { get; set; }
 
     /// <summary>
     /// 请求路径

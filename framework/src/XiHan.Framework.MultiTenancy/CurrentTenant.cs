@@ -44,7 +44,7 @@ public class CurrentTenant : ICurrentTenant, ITransientDependency
     /// 租户唯一标识
     /// </summary>
     /// <returns>租户唯一标识</returns>
-    public virtual Guid? Id => _currentTenantAccessor.Current?.TenantId;
+    public virtual long? Id => _currentTenantAccessor.Current?.TenantId;
 
     /// <summary>
     /// 租户名称
@@ -58,7 +58,7 @@ public class CurrentTenant : ICurrentTenant, ITransientDependency
     /// <param name="id">租户唯一标识</param>
     /// <param name="name">租户名称</param>
     /// <returns>IDisposable</returns>
-    public IDisposable Change(Guid? id, string? name = null)
+    public IDisposable Change(long? id, string? name = null)
     {
         return SetCurrent(id, name);
     }
@@ -69,7 +69,7 @@ public class CurrentTenant : ICurrentTenant, ITransientDependency
     /// <param name="tenantId">租户唯一标识</param>
     /// <param name="name">租户名称</param>
     /// <returns>IDisposable</returns>
-    private IDisposable SetCurrent(Guid? tenantId, string? name = null)
+    private IDisposable SetCurrent(long? tenantId, string? name = null)
     {
         var parentScope = _currentTenantAccessor.Current;
         _currentTenantAccessor.Current = new BasicTenantInfo(tenantId, name);
