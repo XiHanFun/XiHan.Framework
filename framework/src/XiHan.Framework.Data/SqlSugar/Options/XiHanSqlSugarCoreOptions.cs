@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanSqlSugarCoreOptions
-// Guid:3de67a9c-9f8a-4c79-8e2c-7a6c3d09e124
+// Guid:e2459dc8-3292-48e6-9955-cae7a0503ad0
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2023/11/15 08:40:52

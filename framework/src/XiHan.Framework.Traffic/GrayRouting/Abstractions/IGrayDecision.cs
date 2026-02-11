@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IGrayDecision
-// Guid:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+// Guid:eee0d1b8-0e17-49ea-8f9b-6516e0afd097
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/01/22 00:00:00

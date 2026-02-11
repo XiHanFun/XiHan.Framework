@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SqlSugarPagingExtensions
-// Guid:1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+// Guid:6b502634-a1de-410e-be15-23538f89ed97
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/02/02 20:00:00

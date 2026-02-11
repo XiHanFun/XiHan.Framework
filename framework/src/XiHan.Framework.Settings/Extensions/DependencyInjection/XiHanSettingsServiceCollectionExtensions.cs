@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:XiHanSettingsServiceCollectionExtensions
-// Guid:8d40aebb-a267-4d29-8c55-d8b5723570b7
+// Guid:42892b6b-ddf7-477f-9eb5-bc5dafe870eb
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/26 00:00:00

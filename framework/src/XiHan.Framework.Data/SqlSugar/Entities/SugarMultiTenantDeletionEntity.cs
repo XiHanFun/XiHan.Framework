@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:SugarMultiTenantDeletionEntity
-// Guid:80f4f02b-1f8f-492f-9c84-cfe6056f203a
+// Guid:6332a4fe-5086-41ee-8e3d-bb9e359bb4fb
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/02/12 00:00:00

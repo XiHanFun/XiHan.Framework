@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LocalStorageOptions
-// Guid:c9d0e1f2-a3b4-4f5c-d6e7-f8a9b0c1d2e3
+// Guid:3aadb9e7-709a-4451-857e-c88a8c7c2541
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/10 10:25:00
