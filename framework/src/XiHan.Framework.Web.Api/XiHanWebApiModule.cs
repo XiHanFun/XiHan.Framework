@@ -12,10 +12,18 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
+using XiHan.Framework.Web.Api.Filters;
+using XiHan.Framework.Web.Api.Middlewares;
+using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -27,6 +35,7 @@ namespace XiHan.Framework.Web.Api;
 /// </summary>
 [DependsOn(
     typeof(XiHanWebCoreModule),
+    typeof(XiHanMultiTenancyModule),
     typeof(XiHanSerializationModule)
 )]
 public class XiHanWebApiModule : XiHanModule
@@ -40,6 +49,8 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
+        services.AddScoped<XiHanGlobalExceptionFilter>();
+        services.AddScoped<XiHanActionLoggingFilter>();
         // 添加动态 API
         services.AddDynamicApi(options =>
         {
@@ -61,25 +72,63 @@ public class XiHanWebApiModule : XiHanModule
             options.Routes.UseNamespaceAsRoute = false;
         });
 
-        var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions();
+        var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions()
+            .ConfigureJsonOptionsDefault()
+            .ConfigureApiBehaviorOptions(options =>
+            {
+                options.InvalidModelStateResponseFactory = actionContext =>
+                {
+                    var traceId = actionContext.HttpContext.TraceIdentifier;
+                    var errors = actionContext.ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .Where(e => !string.IsNullOrWhiteSpace(e))
+                        .Distinct()
+                        .ToArray();
+
+                    var message = errors.Length > 0
+                        ? string.Join("; ", errors)
+                        : "请求参数校验失败";
+
+                    return new BadRequestObjectResult(ApiResponse.Fail(
+                        message,
+                        ApiResponseCodes.BadRequest,
+                        traceId));
+                };
+            });
+
+        services.Configure<XiHanTenantResolveOptions>(options =>
+        {
+            options.TenantResolvers.Add(new HeaderTenantResolveContributor());
+            options.TenantResolvers.Add(new QueryStringTenantResolveContributor());
+        });
 
         services.AddControllers(options =>
         {
-            options = aspNetCoreMvcOptions.MvcOptions;
-        }).ConfigureApiBehaviorOptions(options =>
+            options.Filters.AddService<XiHanGlobalExceptionFilter>();
+            options.Filters.AddService<XiHanActionLoggingFilter>();
+        })
+        .ConfigureApiBehaviorOptions(options =>
         {
-            options = aspNetCoreMvcOptions.ApiBehaviorOptions;
-        }).AddJsonOptions(options =>
+            options.InvalidModelStateResponseFactory = aspNetCoreMvcOptions.ApiBehaviorOptions.InvalidModelStateResponseFactory;
+        })
+        .AddJsonOptions(options =>
         {
-            options = aspNetCoreMvcOptions.JsonOptions;
-        }).AddFormatterMappings(options =>
-        {
-            options = aspNetCoreMvcOptions.FormatterOptions;
-        });
-
-        services.AddCors(options =>
-        {
-            options = aspNetCoreMvcOptions.CorsOptions;
+            options.JsonSerializerOptions.WriteIndented = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.WriteIndented;
+            options.JsonSerializerOptions.ReferenceHandler = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.ReferenceHandler;
+            options.JsonSerializerOptions.NumberHandling = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.NumberHandling;
+            options.JsonSerializerOptions.AllowTrailingCommas = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowTrailingCommas;
+            options.JsonSerializerOptions.ReadCommentHandling = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.ReadCommentHandling;
+            options.JsonSerializerOptions.PropertyNameCaseInsensitive = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNameCaseInsensitive;
+            options.JsonSerializerOptions.PropertyNamingPolicy = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNamingPolicy;
+            options.JsonSerializerOptions.Encoder = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.Encoder;
+            options.JsonSerializerOptions.AllowOutOfOrderMetadataProperties = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowOutOfOrderMetadataProperties;
+            options.JsonSerializerOptions.IgnoreReadOnlyFields = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.IgnoreReadOnlyFields;
+            options.JsonSerializerOptions.DefaultIgnoreCondition = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.DefaultIgnoreCondition;
+            foreach (var converter in aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.Converters)
+            {
+                options.JsonSerializerOptions.Converters.Add(converter);
+            }
         });
 
         services.AddOpenApi();
@@ -94,9 +143,12 @@ public class XiHanWebApiModule : XiHanModule
     {
         var app = context.GetApplicationBuilder();
 
+        app.UseMiddleware<XiHanTraceIdMiddleware>();
+        app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
         app.UseCors();
         app.UseAuthentication();
+        app.UseMiddleware<XiHanTenantResolveMiddleware>();
         app.UseAuthorization();
         app.UseEndpoints(endpoints =>
         {
