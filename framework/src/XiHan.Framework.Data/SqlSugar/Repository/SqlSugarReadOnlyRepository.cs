@@ -15,7 +15,6 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Extensions;
-using XiHan.Framework.Data.SqlSugar.Tenancy;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -34,7 +33,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     where TKey : IEquatable<TKey>
 {
     private readonly ISqlSugarDbContext _dbContext;
-    private readonly ISqlSugarClient _dbClient;
 
     /// <summary>
     /// 构造函数
@@ -43,7 +41,15 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public SqlSugarReadOnlyRepository(ISqlSugarDbContext dbContext)
     {
         _dbContext = dbContext;
-        _dbClient = _dbContext.GetClient();
+    }
+
+    /// <summary>
+    /// 创建租户隔离查询
+    /// </summary>
+    /// <returns></returns>
+    protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
+    {
+        return _dbContext.CreateQueryable<TEntity>();
     }
 
     #region 查询
@@ -269,24 +275,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
 
         return query.Where(specification.ToExpression());
-    }
-
-    /// <summary>
-    /// 创建原始查询
-    /// </summary>
-    /// <returns></returns>
-    protected virtual ISugarQueryable<TEntity> CreateRawQueryable()
-    {
-        return _dbClient.Queryable<TEntity>();
-    }
-
-    /// <summary>
-    /// 创建租户隔离查询
-    /// </summary>
-    /// <returns></returns>
-    protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
-    {
-        return XiHanTenantDataFilter.ApplyTenantFilter(CreateRawQueryable());
     }
 
     #endregion 规约支持

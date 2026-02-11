@@ -14,7 +14,6 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
-using XiHan.Framework.Data.SqlSugar.Tenancy;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
@@ -30,7 +29,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     where TKey : IEquatable<TKey>
 {
     private readonly ISqlSugarDbContext _dbContext;
-    private readonly ISqlSugarClient _dbClient;
 
     /// <summary>
     /// 构造函数
@@ -39,8 +37,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     public SqlSugarRepositoryBase(ISqlSugarDbContext dbContext) : base(dbContext)
     {
         _dbContext = dbContext;
-        _dbClient = _dbContext.GetClient();
     }
+
+    private ISqlSugarClient DbClient => _dbContext.GetClient();
 
     /// <summary>
     /// 添加实体
@@ -52,9 +51,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        XiHanTenantDataFilter.TrySetTenantId(entity);
+        _dbContext.TrySetTenantId(entity);
 
-        var result = await _dbClient.Insertable(entity)
+        var result = await DbClient.Insertable(entity)
             .ExecuteReturnEntityAsync();
         return result;
     }
@@ -69,8 +68,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
+        _dbContext.TrySetTenantId(entity);
 
-        var result = await _dbClient.Insertable(entity)
+        var result = await DbClient.Insertable(entity)
             .ExecuteReturnEntityAsync();
 
         return result.BasicId;
@@ -96,10 +96,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in entityList)
         {
-            XiHanTenantDataFilter.TrySetTenantId(item);
+            _dbContext.TrySetTenantId(item);
         }
 
-        await _dbClient.Insertable(entityList)
+        await DbClient.Insertable(entityList)
             .ExecuteCommandAsync(cancellationToken);
         return entityList;
     }
@@ -115,8 +115,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
 
         cancellationToken.ThrowIfCancellationRequested();
+        _dbContext.TrySetTenantId(entity);
 
-        await _dbClient.Updateable(entity)
+        await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
         return entity;
     }
@@ -135,7 +136,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _dbClient.Updateable<TEntity>()
+        await DbClient.Updateable<TEntity>()
             .SetColumns(columns)
             .Where(whereExpression)
             .ExecuteCommandAsync(cancellationToken);
@@ -160,8 +161,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        foreach (var item in entityList)
+        {
+            _dbContext.TrySetTenantId(item);
+        }
 
-        await _dbClient.Updateable(entityList)
+        await DbClient.Updateable(entityList)
             .ExecuteCommandAsync(cancellationToken);
         return entityList;
     }
@@ -176,15 +181,15 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        XiHanTenantDataFilter.TrySetTenantId(entity);
+        _dbContext.TrySetTenantId(entity);
 
         if (entity.IsTransient())
         {
-            var insertedRows = await _dbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
+            var insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
             return insertedRows > 0;
         }
 
-        var affectedRows = await _dbClient.Updateable(entity)
+        var affectedRows = await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -212,11 +217,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
         foreach (var item in addEntities)
         {
-            XiHanTenantDataFilter.TrySetTenantId(item);
+            _dbContext.TrySetTenantId(item);
         }
         foreach (var item in updateEntities)
         {
-            XiHanTenantDataFilter.TrySetTenantId(item);
+            _dbContext.TrySetTenantId(item);
         }
 
         if (addEntities.Length == 0 && updateEntities.Length == 0)
@@ -228,14 +233,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (addEntities.Length > 0)
         {
-            var insertedRows = await _dbClient.Insertable(addEntities)
+            var insertedRows = await DbClient.Insertable(addEntities)
                 .ExecuteCommandAsync(cancellationToken);
             hasChanges |= insertedRows > 0;
         }
 
         if (updateEntities.Length > 0)
         {
-            var updatedRows = await _dbClient.Updateable(updateEntities)
+            var updatedRows = await DbClient.Updateable(updateEntities)
                 .ExecuteCommandAsync(cancellationToken);
             hasChanges |= updatedRows > 0;
         }
@@ -254,7 +259,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await _dbClient.Deleteable(entity)
+        var affectedRows = await DbClient.Deleteable(entity)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -269,7 +274,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await _dbClient.Deleteable<TEntity>()
+        var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(id)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
@@ -303,7 +308,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await _dbClient.Deleteable<TEntity>()
+        var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
@@ -328,7 +333,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await _dbClient.Deleteable<TEntity>()
+        var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
@@ -345,7 +350,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await _dbClient.Deleteable<TEntity>()
+        var affectedRows = await DbClient.Deleteable<TEntity>()
             .Where(predicate)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
@@ -361,7 +366,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(action);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await _dbClient.Ado.UseTranAsync(async () =>
+        var result = await DbClient.Ado.UseTranAsync(async () =>
         {
             await action();
         });
@@ -380,7 +385,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(func);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await _dbClient.Ado.UseTranAsync(async () =>
+        var result = await DbClient.Ado.UseTranAsync(async () =>
         {
             return await func();
         });
