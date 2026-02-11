@@ -57,7 +57,7 @@ public class TenantSettingValueProvider : SettingValueProvider
     /// <returns>设置值</returns>
     public override async Task<string?> GetOrNullAsync(SettingDefinition setting)
     {
-        return await SettingStore.GetOrNullAsync(setting.Name, Name, CurrentTenant.Id?.ToString());
+        return await SettingStore.GetOrNullAsync(setting.Name, Name, GetTenantProviderKey());
     }
 
     /// <summary>
@@ -67,6 +67,17 @@ public class TenantSettingValueProvider : SettingValueProvider
     /// <returns>设置值</returns>
     public override async Task<List<SettingValue>> GetAllAsync(SettingDefinition[] settings)
     {
-        return await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, CurrentTenant.Id?.ToString());
+        return await SettingStore.GetAllAsync([.. settings.Select(x => x.Name)], Name, GetTenantProviderKey());
+    }
+
+    /// <summary>
+    /// 获取租户 ProviderKey（优先名称，回退到唯一标识）
+    /// </summary>
+    /// <returns></returns>
+    private string? GetTenantProviderKey()
+    {
+        return !string.IsNullOrWhiteSpace(CurrentTenant.Name)
+            ? CurrentTenant.Name
+            : CurrentTenant.Id?.ToString();
     }
 }

@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 using XiHan.Framework.Utils.Serialization.Json;
@@ -84,7 +85,19 @@ public class JobExecutor : IJobExecutor
                 pipeline.Use(middleware);
             }
 
-            var result = await pipeline.ExecuteAsync(context, job);
+            var currentTenant = scopedServiceProvider.GetService<ICurrentTenant>();
+            JobResult result;
+            if (currentTenant is not null && jobInstance.TenantId.HasValue)
+            {
+                using (currentTenant.Change(ConvertLongToGuid(jobInstance.TenantId.Value), jobInstance.TenantId.Value.ToString()))
+                {
+                    result = await pipeline.ExecuteAsync(context, job);
+                }
+            }
+            else
+            {
+                result = await pipeline.ExecuteAsync(context, job);
+            }
 
             // 更新执行结果
             var endTime = DateTimeOffset.UtcNow;
@@ -140,6 +153,7 @@ public class JobExecutor : IJobExecutor
             StartedAt = jobInstance.StartedAt ?? DateTimeOffset.UtcNow,
             CompletedAt = jobInstance.CompletedAt,
             DurationMilliseconds = jobInstance.DurationMilliseconds,
+            TenantId = jobInstance.TenantId,
             TriggerType = jobInstance.TriggerType,
             IsSuccess = result.IsSuccess,
             ErrorMessage = result.ErrorMessage,
@@ -160,5 +174,17 @@ public class JobExecutor : IJobExecutor
         {
             _logger.LogError(ex, "保存任务执行历史失败: {JobName} ({InstanceId})", jobInstance.JobName, jobInstance.InstanceId);
         }
+    }
+
+    /// <summary>
+    /// 将 long 租户标识映射为稳定 Guid
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <returns></returns>
+    private static Guid ConvertLongToGuid(long tenantId)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        BitConverter.GetBytes(tenantId).AsSpan().CopyTo(bytes);
+        return new Guid(bytes);
     }
 }

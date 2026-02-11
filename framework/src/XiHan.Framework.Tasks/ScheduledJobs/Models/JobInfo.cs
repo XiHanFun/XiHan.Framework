@@ -80,6 +80,11 @@ public class JobInfo
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
+    /// 归属租户（为空表示 Host 任务）
+    /// </summary>
+    public long? TenantId { get; set; }
+
+    /// <summary>
     /// 默认参数
     /// </summary>
     public IDictionary<string, object?>? DefaultParameters { get; set; }
