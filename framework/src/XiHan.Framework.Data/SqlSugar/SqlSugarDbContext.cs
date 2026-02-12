@@ -184,6 +184,16 @@ public class SqlSugarDbContext : ISqlSugarDbContext, ITransactionApi, ISupportsS
     }
 
     /// <summary>
+    /// 获取当前作用域服务
+    /// </summary>
+    /// <typeparam name="TService">服务类型</typeparam>
+    /// <returns>服务实例</returns>
+    public TService? GetService<TService>() where TService : class
+    {
+        return _transientCachedServiceProvider.GetService<TService>(defaultValue: null!);
+    }
+
+    /// <summary>
     /// 开始事务
     /// </summary>
     public void BeginTransaction()

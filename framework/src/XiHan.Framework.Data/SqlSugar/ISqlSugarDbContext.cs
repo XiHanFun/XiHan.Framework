@@ -58,4 +58,11 @@ public interface ISqlSugarDbContext : IDatabaseApi
     /// </summary>
     /// <returns></returns>
     IDisposable DisableTenantFilter();
+
+    /// <summary>
+    /// 获取当前作用域服务
+    /// </summary>
+    /// <typeparam name="TService">服务类型</typeparam>
+    /// <returns>服务实例</returns>
+    TService? GetService<TService>() where TService : class;
 }

@@ -14,10 +14,13 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Text.Json;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Logging;
 
 namespace XiHan.Framework.Web.Api.Filters;
 
@@ -26,15 +29,22 @@ namespace XiHan.Framework.Web.Api.Filters;
 /// </summary>
 public class XiHanGlobalExceptionFilter(ILogger<XiHanGlobalExceptionFilter> logger) : IAsyncExceptionFilter
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = false
+    };
+
     /// <summary>
     /// 异常处理
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public Task OnExceptionAsync(ExceptionContext context)
+    public async Task OnExceptionAsync(ExceptionContext context)
     {
         var exception = context.Exception;
+        var cancellationToken = context.HttpContext.RequestAborted;
         var traceId = ResolveTraceId(context.HttpContext);
+        var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
         var (statusCode, code, message) = MapException(exception);
 
         if (statusCode >= StatusCodes.Status500InternalServerError)
@@ -62,7 +72,35 @@ public class XiHanGlobalExceptionFilter(ILogger<XiHanGlobalExceptionFilter> logg
         };
         context.ExceptionHandled = true;
 
-        return Task.CompletedTask;
+        try
+        {
+            var writer = context.HttpContext.RequestServices.GetService<IExceptionLogWriter>();
+            if (writer is not null)
+            {
+                await writer.WriteAsync(new ExceptionLogRecord
+                {
+                    TraceId = traceId,
+                    UserId = currentUser?.UserId,
+                    UserName = currentUser?.UserName,
+                    Path = context.HttpContext.Request.Path.ToString(),
+                    Method = context.HttpContext.Request.Method,
+                    ControllerName = (context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor)?.ControllerName,
+                    ActionName = (context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor)?.ActionName,
+                    StatusCode = statusCode,
+                    ExceptionType = exception.GetType().FullName ?? exception.GetType().Name,
+                    ExceptionMessage = exception.Message,
+                    ExceptionStackTrace = exception.StackTrace,
+                    RequestHeaders = SafeSerialize(context.HttpContext.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString())),
+                    RequestParams = SafeSerialize(context.RouteData.Values.ToDictionary(k => k.Key, v => v.Value)),
+                    RemoteIp = context.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = context.HttpContext.Request.Headers.UserAgent.ToString()
+                }, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "异常日志写入失败，TraceId: {TraceId}", traceId);
+        }
     }
 
     private static string ResolveTraceId(HttpContext httpContext)
@@ -100,5 +138,23 @@ public class XiHanGlobalExceptionFilter(ILogger<XiHanGlobalExceptionFilter> logg
                 ApiResponseCodes.Failed,
                 "服务端处理异常")
         };
+    }
+
+    private static string? SafeSerialize(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(value, JsonOptions);
+            return json.Length > 4000 ? json[..4000] : json;
+        }
+        catch
+        {
+            return value.ToString();
+        }
     }
 }

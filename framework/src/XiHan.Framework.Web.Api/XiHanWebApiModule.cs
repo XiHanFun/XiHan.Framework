@@ -14,6 +14,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
@@ -23,6 +24,7 @@ using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Middlewares;
+using XiHan.Framework.Web.Api.Logging;
 using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
@@ -51,6 +53,9 @@ public class XiHanWebApiModule : XiHanModule
 
         services.AddScoped<XiHanGlobalExceptionFilter>();
         services.AddScoped<XiHanActionLoggingFilter>();
+        services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
+        services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
+        services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
         // 添加动态 API
         services.AddDynamicApi(options =>
         {

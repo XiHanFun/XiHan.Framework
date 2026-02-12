@@ -17,7 +17,7 @@ using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Models;
 using XiHan.Framework.Domain.Specifications.Abstracts;
 
-namespace XiHan.Framework.Data.Extensions;
+namespace XiHan.Framework.Data.SqlSugar.Extensions;
 
 /// <summary>
 /// 规约扩展方法

@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Logging;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 
@@ -28,10 +31,13 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
     /// <returns></returns>
     public async Task InvokeAsync(HttpContext context)
     {
+        var cancellationToken = context.RequestAborted;
         var traceId = context.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? context.TraceIdentifier;
+        var currentUser = context.RequestServices.GetService<ICurrentUser>();
 
         var startAt = DateTimeOffset.UtcNow;
+        Exception? unhandledException = null;
         logger.LogInformation(
             "请求开始: {Method} {Path}, TraceId: {TraceId}, ClientIP: {ClientIP}",
             context.Request.Method,
@@ -43,6 +49,11 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
         {
             await next(context);
         }
+        catch (Exception ex)
+        {
+            unhandledException = ex;
+            throw;
+        }
         finally
         {
             var elapsedMs = (DateTimeOffset.UtcNow - startAt).TotalMilliseconds;
@@ -53,6 +64,33 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                 traceId,
                 context.Response.StatusCode,
                 elapsedMs);
+
+            try
+            {
+                var writer = context.RequestServices.GetService<IAccessLogWriter>();
+                if (writer is not null)
+                {
+                    await writer.WriteAsync(new AccessLogRecord
+                    {
+                        TraceId = traceId,
+                        UserId = currentUser?.UserId,
+                        UserName = currentUser?.UserName,
+                        SessionId = context.Features.Get<ISessionFeature>()?.Session?.Id,
+                        Method = context.Request.Method,
+                        Path = context.Request.Path.ToString(),
+                        StatusCode = context.Response.StatusCode,
+                        RemoteIp = context.Connection.RemoteIpAddress?.ToString(),
+                        UserAgent = context.Request.Headers.UserAgent.ToString(),
+                        Referer = context.Request.Headers.Referer.ToString(),
+                        ElapsedMilliseconds = (long)Math.Round(elapsedMs),
+                        ErrorMessage = unhandledException?.Message
+                    }, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "访问日志写入失败，TraceId: {TraceId}", traceId);
+            }
         }
     }
 }

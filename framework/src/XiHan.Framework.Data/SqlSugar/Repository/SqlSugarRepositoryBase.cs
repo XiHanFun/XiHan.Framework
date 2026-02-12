@@ -14,6 +14,8 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
+using System.Text.Json;
+using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
@@ -28,6 +30,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = false
+    };
+
     private readonly ISqlSugarDbContext _dbContext;
 
     /// <summary>
@@ -116,9 +123,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
         _dbContext.TrySetTenantId(entity);
+        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
 
         await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
+        await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
         return entity;
     }
 
@@ -189,8 +198,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return insertedRows > 0;
         }
 
+        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
         var affectedRows = await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows > 0)
+        {
+            await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
+        }
         return affectedRows > 0;
     }
 
@@ -258,9 +272,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
+        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken) ?? entity;
 
         var affectedRows = await DbClient.Deleteable(entity)
             .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows > 0)
+        {
+            await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
+        }
         return affectedRows > 0;
     }
 
@@ -273,10 +292,15 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     public async Task<bool> DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var beforeEntity = await TryGetCurrentEntityAsync(id, cancellationToken);
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(id)
             .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows > 0 && beforeEntity is not null)
+        {
+            await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
+        }
         return affectedRows > 0;
     }
 
@@ -391,5 +415,87 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         });
 
         return result.IsSuccess ? result.Data : default!;
+    }
+
+    private static string? SerializeForAudit(TEntity? entity)
+    {
+        if (entity is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(entity, JsonOptions);
+            return json.Length > 8000 ? json[..8000] : json;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? BuildChangedFields(TEntity? beforeEntity, TEntity? afterEntity)
+    {
+        if (beforeEntity is null || afterEntity is null)
+        {
+            return null;
+        }
+
+        var changed = new List<object>();
+        var properties = typeof(TEntity).GetProperties()
+            .Where(p => p.CanRead && p.Name is not "BasicId");
+
+        foreach (var property in properties)
+        {
+            var beforeValue = property.GetValue(beforeEntity);
+            var afterValue = property.GetValue(afterEntity);
+            if (Equals(beforeValue, afterValue))
+            {
+                continue;
+            }
+
+            changed.Add(new
+            {
+                Field = property.Name,
+                Before = beforeValue,
+                After = afterValue
+            });
+        }
+
+        return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
+    }
+
+    private async Task<TEntity?> TryGetCurrentEntityAsync(TKey id, CancellationToken cancellationToken)
+    {
+        return await CreateTenantQueryable()
+            .Where(entity => entity.BasicId.Equals(id))
+            .FirstAsync(cancellationToken);
+    }
+
+    private async Task TryWriteAuditLogAsync(TEntity? beforeEntity, TEntity? afterEntity, string operationType, CancellationToken cancellationToken)
+    {
+        var contextProvider = _dbContext.GetService<IEntityAuditContextProvider>();
+        var writer = _dbContext.GetService<IEntityAuditLogWriter>();
+        if (contextProvider is null || writer is null || !contextProvider.ShouldAudit(typeof(TEntity)))
+        {
+            return;
+        }
+
+        var changedFields = BuildChangedFields(beforeEntity, afterEntity);
+        if (operationType == "Update" && string.IsNullOrWhiteSpace(changedFields))
+        {
+            return;
+        }
+
+        var record = contextProvider.CreateBaseRecord();
+        record.OperationType = operationType;
+        record.EntityType = typeof(TEntity).Name;
+        record.EntityId = afterEntity?.BasicId?.ToString() ?? beforeEntity?.BasicId?.ToString();
+        record.BeforeData = SerializeForAudit(beforeEntity);
+        record.AfterData = SerializeForAudit(afterEntity);
+        record.ChangedFields = changedFields;
+
+        await writer.WriteAsync(record, cancellationToken);
     }
 }
