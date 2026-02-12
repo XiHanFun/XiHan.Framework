@@ -16,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SqlSugar;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
@@ -151,6 +153,8 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
             // 使用 CodeFirst 模式逐表创建，便于定位失败点
             var successCount = 0;
+            var skippedExistsCount = 0;
+            var splitTableInitCount = 0;
             foreach (var entityType in entityTypes)
             {
                 var entityName = entityType.FullName ?? entityType.Name;
@@ -158,9 +162,42 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
                 try
                 {
+                    var isSplitTable = entityType.GetCustomAttribute<SplitTableAttribute>() != null;
+
+                    var tableName = entityType.GetCustomAttribute<SugarTable>()?.TableName;
+                    if (string.IsNullOrWhiteSpace(tableName))
+                    {
+                        tableName = entityType.Name;
+                    }
+
+                    var tableExists = isSplitTable
+                        ? await Task.Run(() => IsAnySplitTableExists(db, tableName))
+                        : await Task.Run(() => db.DbMaintenance.IsAnyTable(tableName, false));
+                    if (tableExists)
+                    {
+                        skippedExistsCount++;
+                        if (isSplitTable)
+                        {
+                            _logger.LogInformation("分表已存在，跳过初始化：{Entity}（表名：{TableName}）", entityName, tableName);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("表已存在，跳过创建：{Entity}（表名：{TableName}）", entityName, tableName);
+                        }
+                        continue;
+                    }
+
                     await Task.Run(() => db.CodeFirst.InitTables(entityType));
                     successCount++;
-                    _logger.LogInformation("创建表成功：{Entity}", entityName);
+                    if (isSplitTable)
+                    {
+                        splitTableInitCount++;
+                        _logger.LogInformation("分表初始化成功：{Entity}（表名：{TableName}）", entityName, tableName);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("创建表成功：{Entity}", entityName);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -169,7 +206,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
                 }
             }
 
-            _logger.LogInformation("表结构创建成功，共创建 {Count} 个表", successCount);
+            _logger.LogInformation("表结构创建完成，成功创建 {SuccessCount} 个表（含分表初始化 {SplitTableInitCount} 个），跳过 {SkippedExistsCount} 个已存在表", successCount, splitTableInitCount, skippedExistsCount);
         }
         catch (Exception ex)
         {
@@ -226,5 +263,27 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
         // 如果没有配置，返回空列表
         return [];
+    }
+
+    /// <summary>
+    /// 判断分表是否已存在（支持 {year}{month}{day} 等占位符模板）
+    /// </summary>
+    private static bool IsAnySplitTableExists(ISqlSugarClient db, string tableNameTemplate)
+    {
+        // 无占位符时按普通表判断
+        if (!tableNameTemplate.Contains('{') || !tableNameTemplate.Contains('}'))
+        {
+            return db.DbMaintenance.IsAnyTable(tableNameTemplate, false);
+        }
+
+        // 先去掉占位符，再按前缀匹配任意实际分表名
+        var normalizedTemplate = Regex.Replace(tableNameTemplate, "\\{[^}]+\\}", string.Empty);
+        if (string.IsNullOrWhiteSpace(normalizedTemplate))
+        {
+            return false;
+        }
+
+        var allTables = db.DbMaintenance.GetTableInfoList(false);
+        return allTables.Any(t => !string.IsNullOrWhiteSpace(t.Name) && t.Name.StartsWith(normalizedTemplate, StringComparison.OrdinalIgnoreCase));
     }
 }
