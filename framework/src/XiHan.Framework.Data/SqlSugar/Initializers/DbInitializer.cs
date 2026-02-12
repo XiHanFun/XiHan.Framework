@@ -149,10 +149,27 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
             _logger.LogInformation("开始创建表结构，共 {Count} 个实体", entityTypes.Count);
 
-            // 使用 CodeFirst 模式创建表
-            await Task.Run(() => db.CodeFirst.InitTables(entityTypes.ToArray()));
+            // 使用 CodeFirst 模式逐表创建，便于定位失败点
+            var successCount = 0;
+            foreach (var entityType in entityTypes)
+            {
+                var entityName = entityType.FullName ?? entityType.Name;
+                _logger.LogInformation("开始创建表：{Entity}", entityName);
 
-            _logger.LogInformation("表结构创建成功，共创建 {Count} 个表", entityTypes.Count);
+                try
+                {
+                    await Task.Run(() => db.CodeFirst.InitTables(entityType));
+                    successCount++;
+                    _logger.LogInformation("创建表成功：{Entity}", entityName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "创建表失败：{Entity}，错误：{Error}", entityName, ex.Message);
+                    throw;
+                }
+            }
+
+            _logger.LogInformation("表结构创建成功，共创建 {Count} 个表", successCount);
         }
         catch (Exception ex)
         {

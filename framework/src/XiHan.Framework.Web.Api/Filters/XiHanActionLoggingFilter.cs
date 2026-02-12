@@ -14,7 +14,10 @@
 
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Text.Json;
+using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Logging;
 
 namespace XiHan.Framework.Web.Api.Filters;
 
@@ -23,6 +26,11 @@ namespace XiHan.Framework.Web.Api.Filters;
 /// </summary>
 public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) : IAsyncActionFilter
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = false
+    };
+
     /// <summary>
     /// Action 执行前后日志
     /// </summary>
@@ -31,7 +39,9 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
     /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        var cancellationToken = context.HttpContext.RequestAborted;
         var traceId = ResolveTraceId(context.HttpContext);
+        var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
         var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
         var actionName = actionDescriptor?.ActionName ?? context.ActionDescriptor.DisplayName;
         var controllerName = actionDescriptor?.ControllerName ?? "UnknownController";
@@ -65,11 +75,58 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                 actionName,
                 traceId);
         }
+
+        try
+        {
+            var writer = context.HttpContext.RequestServices.GetService<IOperationLogWriter>();
+            if (writer is not null)
+            {
+                await writer.WriteAsync(new OperationLogRecord
+                {
+                    TraceId = traceId,
+                    UserId = currentUser?.UserId,
+                    UserName = currentUser?.UserName,
+                    ControllerName = controllerName,
+                    ActionName = actionName,
+                    Method = context.HttpContext.Request.Method,
+                    Path = context.HttpContext.Request.Path.ToString(),
+                    RequestParams = SafeSerialize(context.ActionArguments),
+                    ResponseResult = SafeSerialize(executedContext.Result),
+                    StatusCode = context.HttpContext.Response.StatusCode,
+                    ElapsedMilliseconds = (long)Math.Round(elapsedMs),
+                    RemoteIp = context.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = context.HttpContext.Request.Headers.UserAgent.ToString(),
+                    ErrorMessage = executedContext.Exception?.Message
+                }, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "操作日志写入失败，TraceId: {TraceId}", traceId);
+        }
     }
 
     private static string ResolveTraceId(HttpContext httpContext)
     {
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
+    }
+
+    private static string? SafeSerialize(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(value, JsonOptions);
+            return json.Length > 4000 ? json[..4000] : json;
+        }
+        catch
+        {
+            return value.ToString();
+        }
     }
 }
