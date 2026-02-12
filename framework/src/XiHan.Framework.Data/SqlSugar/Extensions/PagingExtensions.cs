@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarPagingExtensions
+// FileName:PagingExtensions
 // Guid:6b502634-a1de-410e-be15-23538f89ed97
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -25,7 +25,7 @@ namespace XiHan.Framework.Data.SqlSugar.Extensions;
 /// <summary>
 /// SqlSugar 分页扩展方法
 /// </summary>
-public static class SqlSugarPagingExtensions
+public static class PagingExtensions
 {
     #region 自动查询扩展
 

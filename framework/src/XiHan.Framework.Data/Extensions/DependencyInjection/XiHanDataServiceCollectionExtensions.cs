@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Options;
@@ -41,6 +42,8 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 注册核心服务
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
+        services.TryAddScoped<IEntityAuditContextProvider, NullEntityAuditContextProvider>();
+        services.TryAddScoped<IEntityAuditLogWriter, NullEntityAuditLogWriter>();
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
