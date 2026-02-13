@@ -77,19 +77,6 @@ public static class XmlHelper
     }
 
     /// <summary>
-    /// 异步将对象序列化为 XML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>XML 字符串</returns>
-    public static async Task<string> SerializeAsync<T>(T obj, XmlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Serialize(obj, options), cancellationToken);
-    }
-
-    /// <summary>
     /// 从 XML 字符串反序列化为对象
     /// </summary>
     /// <typeparam name="T">目标对象类型</typeparam>
@@ -130,19 +117,6 @@ public static class XmlHelper
     }
 
     /// <summary>
-    /// 异步从 XML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="xml">XML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeAsync<T>(string xml, XmlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Deserialize<T>(xml, options), cancellationToken);
-    }
-
-    /// <summary>
     /// 从文件反序列化对象
     /// </summary>
     /// <typeparam name="T">目标对象类型</typeparam>
@@ -161,25 +135,6 @@ public static class XmlHelper
     }
 
     /// <summary>
-    /// 异步从文件反序列化对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="filePath">文件路径</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeFromFileAsync<T>(string filePath, XmlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"文件不存在：{filePath}");
-        }
-
-        var xml = await File.ReadAllTextAsync(filePath, Encoding.UTF8, cancellationToken);
-        return await DeserializeAsync<T>(xml, options, cancellationToken);
-    }
-
-    /// <summary>
     /// 将对象序列化并保存到文件
     /// </summary>
     /// <typeparam name="T">对象类型</typeparam>
@@ -195,25 +150,6 @@ public static class XmlHelper
             Directory.CreateDirectory(directory);
         }
         File.WriteAllText(filePath, xml, Encoding.UTF8);
-    }
-
-    /// <summary>
-    /// 异步将对象序列化并保存到文件
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="filePath">文件路径</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    public static async Task SerializeToFileAsync<T>(T obj, string filePath, XmlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        var xml = await SerializeAsync(obj, options, cancellationToken);
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-        await File.WriteAllTextAsync(filePath, xml, Encoding.UTF8, cancellationToken);
     }
 
     #region Try 方法

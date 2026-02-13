@@ -36,19 +36,6 @@ public static class XmlExtensions
         return XmlHelper.Serialize(obj, options);
     }
 
-    /// <summary>
-    /// 异步将对象转换为 XML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要转换的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>XML 字符串</returns>
-    public static async Task<string> ToXmlAsync<T>(this T obj, XmlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await XmlHelper.SerializeAsync(obj, options, cancellationToken);
-    }
-
     #endregion 对象扩展
 
     #region 字符串扩展
@@ -63,19 +50,6 @@ public static class XmlExtensions
     public static T FromXml<T>(this string xml, XmlDeserializeOptions? options = null)
     {
         return XmlHelper.Deserialize<T>(xml, options);
-    }
-
-    /// <summary>
-    /// 异步从 XML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="xml">XML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> FromXmlAsync<T>(this string xml, XmlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await XmlHelper.DeserializeAsync<T>(xml, options, cancellationToken);
     }
 
     /// <summary>

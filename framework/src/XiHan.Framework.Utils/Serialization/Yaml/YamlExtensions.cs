@@ -35,19 +35,6 @@ public static class YamlExtensions
         return YamlHelper.Serialize(obj, options);
     }
 
-    /// <summary>
-    /// 异步将对象转换为 YAML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要转换的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>YAML 字符串</returns>
-    public static async Task<string> ToYamlAsync<T>(this T obj, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await YamlHelper.SerializeAsync(obj, options, cancellationToken);
-    }
-
     #endregion 对象扩展
 
     #region 字符串扩展
@@ -62,19 +49,6 @@ public static class YamlExtensions
     public static T FromYaml<T>(this string yaml, YamlDeserializeOptions? options = null)
     {
         return YamlHelper.Deserialize<T>(yaml, options);
-    }
-
-    /// <summary>
-    /// 异步从 YAML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="yaml">YAML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> FromYamlAsync<T>(this string yaml, YamlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await YamlHelper.DeserializeAsync<T>(yaml, options, cancellationToken);
     }
 
     /// <summary>

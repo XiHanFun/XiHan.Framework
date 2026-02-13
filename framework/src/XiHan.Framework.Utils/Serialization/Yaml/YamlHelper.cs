@@ -67,19 +67,6 @@ public static partial class YamlHelper
     }
 
     /// <summary>
-    /// 异步将对象序列化为 YAML 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>YAML 字符串</returns>
-    public static async Task<string> SerializeAsync<T>(T obj, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Serialize(obj, options), cancellationToken);
-    }
-
-    /// <summary>
     /// 从 YAML 字符串反序列化为对象
     /// </summary>
     /// <typeparam name="T">目标对象类型</typeparam>
@@ -111,19 +98,6 @@ public static partial class YamlHelper
         }
     }
 
-    /// <summary>
-    /// 异步从 YAML 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="yaml">YAML 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeAsync<T>(string yaml, YamlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => Deserialize<T>(yaml, options), cancellationToken);
-    }
-
     #endregion 对象序列化与反序列化
 
     #region 文件操作
@@ -146,24 +120,6 @@ public static partial class YamlHelper
     }
 
     /// <summary>
-    /// 异步从 YAML 文件加载字典
-    /// </summary>
-    /// <param name="filePath">YAML 文件路径</param>
-    /// <param name="options">解析选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>键值对字典</returns>
-    public static async Task<Dictionary<string, string>> LoadFromFileAsync(string filePath, YamlParseOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        if (!File.Exists(filePath))
-        {
-            return [];
-        }
-
-        var yaml = await File.ReadAllTextAsync(filePath, Encoding.UTF8, cancellationToken);
-        return ParseYaml(yaml, options);
-    }
-
-    /// <summary>
     /// 保存字典到 YAML 文件
     /// </summary>
     /// <param name="filePath">文件路径</param>
@@ -178,24 +134,6 @@ public static partial class YamlHelper
             Directory.CreateDirectory(directory);
         }
         File.WriteAllText(filePath, yaml, Encoding.UTF8);
-    }
-
-    /// <summary>
-    /// 异步保存字典到 YAML 文件
-    /// </summary>
-    /// <param name="filePath">文件路径</param>
-    /// <param name="data">要保存的数据</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    public static async Task SaveToFileAsync(string filePath, Dictionary<string, string> data, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        var yaml = ConvertToYaml(data, options);
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-        await File.WriteAllTextAsync(filePath, yaml, Encoding.UTF8, cancellationToken);
     }
 
     /// <summary>
@@ -217,25 +155,6 @@ public static partial class YamlHelper
     }
 
     /// <summary>
-    /// 异步从 YAML 文件反序列化对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="filePath">文件路径</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> DeserializeFromFileAsync<T>(string filePath, YamlDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"文件不存在：{filePath}");
-        }
-
-        var yaml = await File.ReadAllTextAsync(filePath, Encoding.UTF8, cancellationToken);
-        return await DeserializeAsync<T>(yaml, options, cancellationToken);
-    }
-
-    /// <summary>
     /// 将对象序列化并保存到 YAML 文件
     /// </summary>
     /// <typeparam name="T">对象类型</typeparam>
@@ -251,25 +170,6 @@ public static partial class YamlHelper
             Directory.CreateDirectory(directory);
         }
         File.WriteAllText(filePath, yaml, Encoding.UTF8);
-    }
-
-    /// <summary>
-    /// 异步将对象序列化并保存到 YAML 文件
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要序列化的对象</param>
-    /// <param name="filePath">文件路径</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    public static async Task SerializeToFileAsync<T>(T obj, string filePath, YamlSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        var yaml = await SerializeAsync(obj, options, cancellationToken);
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-        await File.WriteAllTextAsync(filePath, yaml, Encoding.UTF8, cancellationToken);
     }
 
     #region Try 方法
