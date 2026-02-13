@@ -46,19 +46,6 @@ public static class JsonExtensions
         return JsonHelper.Serialize(obj, options);
     }
 
-    /// <summary>
-    /// 异步将对象转换为 JSON 字符串
-    /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
-    /// <param name="obj">要转换的对象</param>
-    /// <param name="options">序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>JSON 字符串</returns>
-    public static async Task<string> ToJsonAsync<T>(this T obj, JsonSerializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => JsonHelper.Serialize(obj, options), cancellationToken);
-    }
-
     #endregion 对象扩展
 
     #region 字符串扩展
@@ -84,19 +71,6 @@ public static class JsonExtensions
     public static T FromJson<T>(this string json, JsonDeserializeOptions? options = null)
     {
         return JsonHelper.Deserialize<T>(json, options);
-    }
-
-    /// <summary>
-    /// 异步从 JSON 字符串反序列化为对象
-    /// </summary>
-    /// <typeparam name="T">目标对象类型</typeparam>
-    /// <param name="json">JSON 字符串</param>
-    /// <param name="options">反序列化选项</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>反序列化的对象</returns>
-    public static async Task<T> FromJsonAsync<T>(this string json, JsonDeserializeOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => JsonHelper.Deserialize<T>(json, options), cancellationToken);
     }
 
     /// <summary>

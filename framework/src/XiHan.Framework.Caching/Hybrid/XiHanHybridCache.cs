@@ -561,7 +561,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         if (serializer is not null)
         {
             return serializer is null
-                ? throw new InvalidOperationException($"在 '{typeof(TCacheItem).Name}' 中没有可用配置 {nameof(IHybridCacheSerializer<TCacheItem>)}")
+                ? throw new InvalidOperationException($"在 '{typeof(TCacheItem).Name}' 中没有可用配置 {nameof(IHybridCacheSerializer<>)}")
                 : serializer.As<IHybridCacheSerializer<TCacheItem>>();
         }
 
@@ -579,7 +579,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
         }
 
         return serializer is null
-            ? throw new InvalidOperationException($"在 '{typeof(TCacheItem).Name}' 中没有可用配置 {nameof(IHybridCacheSerializer<TCacheItem>)}")
+            ? throw new InvalidOperationException($"在 '{typeof(TCacheItem).Name}' 中没有可用配置 {nameof(IHybridCacheSerializer<>)}")
             : serializer.As<IHybridCacheSerializer<TCacheItem>>();
     }
 }
