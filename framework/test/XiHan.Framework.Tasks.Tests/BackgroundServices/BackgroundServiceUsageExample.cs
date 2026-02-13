@@ -164,7 +164,7 @@ public class BackgroundServiceUsageExample
         services.AddSingleton<IEmailSender, MockEmailSender>();
 
         // 注册后台服务（使用完整构造函数）
-        services.AddSingleton<EmailSendingService>(provider =>
+        services.AddSingleton(provider =>
         {
             var logger = provider.GetRequiredService<ILogger<EmailSendingService>>();
             var options = provider.GetRequiredService<IOptions<XiHanBackgroundServiceOptions>>();
@@ -175,7 +175,7 @@ public class BackgroundServiceUsageExample
             return new EmailSendingService(logger, options, emailSender, dynamicConfig, retryPolicy);
         });
 
-        services.AddHostedService<EmailSendingService>(provider => provider.GetRequiredService<EmailSendingService>());
+        services.AddHostedService(provider => provider.GetRequiredService<EmailSendingService>());
 
         var serviceProvider = services.BuildServiceProvider();
 

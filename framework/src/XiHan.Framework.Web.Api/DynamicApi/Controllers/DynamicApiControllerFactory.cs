@@ -187,7 +187,7 @@ public static class DynamicApiControllerFactory
         // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
         if (!dynamicApiAttr.VisibleInApiExplorer)
         {
-            var attributeType = typeof(Microsoft.AspNetCore.Mvc.ApiExplorerSettingsAttribute);
+            var attributeType = typeof(ApiExplorerSettingsAttribute);
             var constructor = attributeType.GetConstructor(Type.EmptyTypes);
             if (constructor != null)
             {
@@ -636,7 +636,7 @@ public static class DynamicApiControllerFactory
         // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
         if (!dynamicApiAttr.VisibleInApiExplorer)
         {
-            var attributeType = typeof(Microsoft.AspNetCore.Mvc.ApiExplorerSettingsAttribute);
+            var attributeType = typeof(ApiExplorerSettingsAttribute);
             var constructor = attributeType.GetConstructor(Type.EmptyTypes);
             if (constructor != null)
             {
@@ -681,7 +681,7 @@ public static class DynamicApiControllerFactory
         if (!string.IsNullOrEmpty(groupName))
         {
             // 使用 ASP.NET Core 内置的 TagsAttribute
-            var attributeType = typeof(Microsoft.AspNetCore.Http.TagsAttribute);
+            var attributeType = typeof(TagsAttribute);
             var constructor = attributeType.GetConstructor([typeof(string[])]);
             if (constructor != null)
             {
