@@ -41,6 +41,6 @@ public abstract class SugarMultiTenantEntity<TKey> : SugarEntity<TKey>
     /// <summary>
     /// 租户ID
     /// </summary>
-    [SugarColumn(ColumnDescription = "租户ID", IsNullable = true)]
+    [SugarColumn(ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true, IsNullable = true)]
     public virtual long? TenantId { get; set; }
 }
