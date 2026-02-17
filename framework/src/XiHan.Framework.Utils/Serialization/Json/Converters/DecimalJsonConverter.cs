@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DecimalJsonConverter
-// Guid:302db373-1155-429b-b57b-07744a04c1b7
+// Guid:31766e85-c2c2-43cf-bfa1-1c0d105a308b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

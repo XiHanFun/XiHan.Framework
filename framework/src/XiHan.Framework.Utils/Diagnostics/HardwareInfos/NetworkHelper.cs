@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:NetworkHelper
-// Guid:dc0502e1-f675-41d3-8a67-dbd590e76260
+// Guid:a230eb0e-b434-4d93-a5ad-ee8f37b4f0a2
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

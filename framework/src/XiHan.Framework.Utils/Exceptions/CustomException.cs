@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:CustomException
-// Guid:661fd4f6-f39d-4e1c-8132-43b39be4a6ce
+// Guid:76745331-c7dc-4189-a73c-54f4dc373a5b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/07/27 10:21:25

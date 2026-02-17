@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:OsPlatformHelper
-// Guid:d404f006-9a93-45b2-b33b-8ec201355621
+// Guid:6c9f46d9-eaf1-40f5-931a-69aba4369c5c
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/07/27 10:21:25

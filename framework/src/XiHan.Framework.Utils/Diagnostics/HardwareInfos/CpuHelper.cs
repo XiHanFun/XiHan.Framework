@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:CpuHelper
-// Guid:2e1f186b-92ad-4e02-9e15-d373684b181e
+// Guid:d0373805-5a91-44ef-be4f-3193d5067848
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

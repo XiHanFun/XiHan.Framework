@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:CompressHelper
-// Guid:85265278-4d78-4775-a590-07b938651804
+// Guid:7849e116-92e6-4c63-bc9b-be8167aa3a7d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2023/07/21 09:30:46

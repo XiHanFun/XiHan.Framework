@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:RamHelper
-// Guid:93baae04-c99a-4095-b5ab-9f14e2a64c97
+// Guid:f92bddf7-c544-4602-aa63-e282cddb508b
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

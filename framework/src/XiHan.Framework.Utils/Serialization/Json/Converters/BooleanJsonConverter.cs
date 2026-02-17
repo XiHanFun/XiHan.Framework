@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:BooleanJsonConverter
-// Guid:9e1cdf66-5e38-4760-8ecc-1481ef4054f8
+// Guid:fcb0cf84-dd64-45ee-95e7-00063b783f12
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33
