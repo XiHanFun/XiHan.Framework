@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LogHelper
-// Guid:824ca05d-f5be-49a9-96f9-8a6502e5b064
+// Guid:dc4fb981-fd94-4470-a194-4504964b01a4
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/09/08 12:40:03

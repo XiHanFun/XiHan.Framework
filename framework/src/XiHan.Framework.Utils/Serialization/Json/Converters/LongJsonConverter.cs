@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LongJsonConverter
-// Guid:6c399d59-ef12-4354-a5b6-d9af73b04f8b
+// Guid:6ac4a049-d5f6-4bcd-92c3-65b5a3290a6f
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

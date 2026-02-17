@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DiskHelper
-// Guid:4e1014f7-200b-42f3-a1bf-cde1c500054a
+// Guid:4a94c097-2c2a-4e60-a496-90cd53c86696
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/08/27 12:28:33

@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:RegexHelper
-// Guid:351b39db-a1a2-4d26-94bb-96a924fba528
+// Guid:6c8016b3-3d8d-4636-aa13-ceecb7d11160
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/09/01 17:29:39
