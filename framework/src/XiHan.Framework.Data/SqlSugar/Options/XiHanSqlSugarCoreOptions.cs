@@ -52,6 +52,21 @@ public class XiHanSqlSugarCoreOptions
     public bool EnableSqlLog { get; set; } = false;
 
     /// <summary>
+    /// 是否启用SQL异常日志
+    /// </summary>
+    public bool EnableSqlErrorLog { get; set; } = true;
+
+    /// <summary>
+    /// 是否启用慢SQL日志
+    /// </summary>
+    public bool EnableSlowSqlLog { get; set; } = true;
+
+    /// <summary>
+    /// 慢SQL阈值（毫秒）
+    /// </summary>
+    public int SlowSqlThresholdMilliseconds { get; set; } = 1000;
+
+    /// <summary>
     /// 是否启用数据库初始化
     /// </summary>
     public bool EnableDbInitialization { get; set; } = false;
