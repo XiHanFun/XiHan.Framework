@@ -22,6 +22,7 @@ using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Repositories;
+using SqlSugar;
 
 namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 
@@ -42,6 +43,8 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 注册核心服务
         services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
+        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarDbContext>().GetClient());
+        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarDbContext>().GetScope());
         services.TryAddScoped<IEntityAuditContextProvider, NullEntityAuditContextProvider>();
         services.TryAddScoped<IEntityAuditLogWriter, NullEntityAuditLogWriter>();
 
