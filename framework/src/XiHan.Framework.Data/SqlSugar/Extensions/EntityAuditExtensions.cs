@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:EntityAuditExtensions
-// Guid:58f8f513-d60e-4f38-9f68-bf8b2f885f1e
+// Guid:5db943aa-c50f-4f98-b330-3aa9b8f907a8
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/02/12 14:30:00
