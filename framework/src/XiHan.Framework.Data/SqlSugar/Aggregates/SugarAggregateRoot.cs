@@ -21,8 +21,8 @@ namespace XiHan.Framework.Data.SqlSugar.Aggregates;
 /// SqlSugar 聚合根基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_{table}_CrTi", nameof(CreatedTime), OrderByType.Asc)]
-[SugarIndex("IX_{table}_IsDe", nameof(IsDeleted), OrderByType.Asc)]
+[SugarIndex("IX_CrTi", nameof(CreatedTime), OrderByType.Asc)]
+[SugarIndex("IX_IsDe", nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarAggregateRoot<TKey> : AggregateRootBase<TKey>
      where TKey : IEquatable<TKey>
 {

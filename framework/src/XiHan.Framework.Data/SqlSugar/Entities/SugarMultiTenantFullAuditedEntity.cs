@@ -20,9 +20,9 @@ namespace XiHan.Framework.Data.SqlSugar.Entities;
 /// SqlSugar 多租户完整审计实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_{table}_TeId", nameof(TenantId), OrderByType.Asc)]
-[SugarIndex("IX_{table}_TeId_CrTi", nameof(TenantId), OrderByType.Asc, nameof(CreatedTime), OrderByType.Asc)]
-[SugarIndex("IX_{table}_TeId_IsDe", nameof(TenantId), OrderByType.Asc, nameof(IsDeleted), OrderByType.Asc)]
+[SugarIndex("IX_TeId", nameof(TenantId), OrderByType.Asc)]
+[SugarIndex("IX_TeId_CrTi", nameof(TenantId), OrderByType.Asc, nameof(CreatedTime), OrderByType.Asc)]
+[SugarIndex("IX_TeId_IsDe", nameof(TenantId), OrderByType.Asc, nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarMultiTenantFullAuditedEntity<TKey> : SugarFullAuditedEntity<TKey>
     where TKey : IEquatable<TKey>
 {
