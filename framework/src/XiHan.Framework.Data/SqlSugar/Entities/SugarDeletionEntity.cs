@@ -21,7 +21,7 @@ namespace XiHan.Framework.Data.SqlSugar.Entities;
 /// SqlSugar 删除审计实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_{table}_IsDe", nameof(IsDeleted), OrderByType.Asc)]
+[SugarIndex("IX_IsDe", nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarDeletionEntity<TKey> : DeletionEntityBase<TKey>
     where TKey : IEquatable<TKey>
 {
