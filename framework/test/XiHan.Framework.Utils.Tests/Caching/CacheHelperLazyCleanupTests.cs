@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Caching;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace XiHan.Framework.Utils.Tests.Caching;

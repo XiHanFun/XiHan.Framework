@@ -14,6 +14,7 @@
 
 using System.Diagnostics;
 using XiHan.Framework.Utils.Logging;
+using Xunit;
 
 namespace XiHan.Framework.Utils.Tests.Logging;
 
