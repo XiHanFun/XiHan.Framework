@@ -15,6 +15,7 @@
 using System.Collections.Concurrent;
 using XiHan.Framework.Utils.ConsoleTools;
 using XiHan.Framework.Utils.Logging;
+using Xunit;
 
 namespace XiHan.Framework.Utils.Tests.Logging;
 
