@@ -287,7 +287,12 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
         catch (Exception ex)
         {
             _exception = ex;
+            await RollbackAllAsync(cancellationToken);
             throw;
+        }
+        finally
+        {
+            _isCompleting = false;
         }
     }
 
