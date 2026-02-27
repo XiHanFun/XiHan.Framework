@@ -186,7 +186,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <param name="entity">实体</param>
     protected virtual Task MapDtoToEntityAsync(TEntityDto dto, TEntity entity)
     {
-        entity = dto.Adapt<TEntity>();
+        dto.Adapt(entity);
         return Task.CompletedTask;
     }
 
@@ -207,7 +207,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <param name="entity">实体</param>
     protected virtual Task MapDtoToEntityAsync(TUpdateDto updateDto, TEntity entity)
     {
-        entity = updateDto.Adapt<TEntity>();
+        updateDto.Adapt(entity);
         return Task.CompletedTask;
     }
 }
