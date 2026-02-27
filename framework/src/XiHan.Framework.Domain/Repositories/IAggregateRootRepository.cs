@@ -46,8 +46,8 @@ public interface IAggregateRootRepository<TAggregateRoot, TKey> : IAuditedReposi
     /// </summary>
     /// <param name="aggregate">待删除的聚合根实例</param>
     /// <param name="cancellationToken">用于取消操作的标记</param>
-    /// <returns>表示删除操作的任务</returns>
-    new Task DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default);
+    /// <returns>删除是否成功</returns>
+    new Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 保存聚合根变更（包括事件处理）
