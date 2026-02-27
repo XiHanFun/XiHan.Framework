@@ -74,11 +74,12 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// </summary>
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>表示删除操作的任务</returns>
-    public new async Task DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    /// <returns>删除是否成功</returns>
+    public new async Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
-        await base.DeleteAsync(aggregate, cancellationToken);
+        var deleted = await base.DeleteAsync(aggregate, cancellationToken);
         await PublishDomainEventsAsync(aggregate);
+        return deleted;
     }
 
     /// <summary>
