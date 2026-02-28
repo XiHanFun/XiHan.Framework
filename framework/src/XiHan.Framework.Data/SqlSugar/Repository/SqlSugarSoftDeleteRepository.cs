@@ -12,9 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using SqlSugar;
 using System.Linq.Expressions;
-using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;

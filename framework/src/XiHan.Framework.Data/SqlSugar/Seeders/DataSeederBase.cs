@@ -13,9 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
-using System.Reflection;
-using XiHan.Framework.Data.SqlSugar;
-using XiHan.Framework.DistributedIds;
 
 namespace XiHan.Framework.Data.SqlSugar.Seeders;
 

@@ -14,8 +14,6 @@
 
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Models;
 

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Collections;
 using XiHan.Framework.Domain.Shared.Paging.Enums;
 
 namespace XiHan.Framework.Domain.Shared.Paging.Models;
