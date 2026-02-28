@@ -12,8 +12,10 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
@@ -32,8 +34,12 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <summary>
     /// 构造函数
     /// </summary>
-    public SqlSugarAggregateRepository(ISqlSugarDbContext dbContext, IUnitOfWorkManager unitOfWorkManager)
-        : base(dbContext)
+    public SqlSugarAggregateRepository(
+        ISqlSugarClientProvider clientProvider,
+        ICurrentTenant currentTenant,
+        IServiceProvider serviceProvider,
+        IUnitOfWorkManager unitOfWorkManager)
+        : base(clientProvider, currentTenant, serviceProvider)
     {
         _unitOfWorkManager = unitOfWorkManager;
     }

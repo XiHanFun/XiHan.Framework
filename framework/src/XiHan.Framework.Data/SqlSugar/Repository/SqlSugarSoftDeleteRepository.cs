@@ -14,10 +14,12 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
+using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Specifications.Abstracts;
+using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -30,16 +32,18 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     where TEntity : class, IEntityBase<TKey>, ISoftDelete, new()
     where TKey : IEquatable<TKey>
 {
-    private readonly ISqlSugarClient _dbClient;
-
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据库上下文</param>
-    public SqlSugarSoftDeleteRepository(ISqlSugarDbContext dbContext)
-        : base(dbContext)
+    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
+    /// <param name="currentTenant">当前租户</param>
+    /// <param name="serviceProvider">服务提供者</param>
+    public SqlSugarSoftDeleteRepository(
+        ISqlSugarClientProvider clientProvider,
+        ICurrentTenant currentTenant,
+        IServiceProvider serviceProvider)
+        : base(clientProvider, currentTenant, serviceProvider)
     {
-        _dbClient = dbContext.GetClient();
     }
 
     #region 软删除
@@ -60,7 +64,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
         }
 
-        await _dbClient.Updateable(entity)
+        await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -107,7 +111,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await _dbClient.Updateable(entityArray)
+        await DbClient.Updateable(entityArray)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -128,7 +132,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        await _dbClient.Updateable<TEntity>()
+        await DbClient.Updateable<TEntity>()
             .Where(entity => idArray.Contains(entity.BasicId))
             .SetColumns(entity => entity.IsDeleted == true)
             .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
@@ -143,7 +147,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        await _dbClient.Updateable<TEntity>()
+        await DbClient.Updateable<TEntity>()
             .Where(predicate)
             .SetColumns(entity => entity.IsDeleted == true)
             .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
@@ -179,7 +183,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             deletionEntity.DeletedTime = null;
         }
 
-        await _dbClient.Updateable(entity)
+        await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -226,7 +230,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await _dbClient.Updateable(entityArray)
+        await DbClient.Updateable(entityArray)
             .ExecuteCommandAsync(cancellationToken);
     }
 
@@ -247,7 +251,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        await _dbClient.Updateable<TEntity>()
+        await DbClient.Updateable<TEntity>()
             .Where(entity => idArray.Contains(entity.BasicId))
             .SetColumns(entity => entity.IsDeleted == false)
             .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == null)
@@ -262,7 +266,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        await _dbClient.Updateable<TEntity>()
+        await DbClient.Updateable<TEntity>()
             .Where(predicate)
             .SetColumns(entity => entity.IsDeleted == false)
             .ExecuteCommandAsync(cancellationToken);

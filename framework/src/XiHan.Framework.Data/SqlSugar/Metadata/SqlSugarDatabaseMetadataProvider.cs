@@ -14,6 +14,7 @@
 
 using System.Reflection;
 using SqlSugar;
+using XiHan.Framework.Data.SqlSugar;
 
 namespace XiHan.Framework.Data.SqlSugar.Metadata;
 
@@ -22,15 +23,15 @@ namespace XiHan.Framework.Data.SqlSugar.Metadata;
 /// </summary>
 public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
 {
-    private readonly ISqlSugarDbContext _dbContext;
+    private readonly ISqlSugarClientProvider _clientProvider;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">数据库上下文</param>
-    public SqlSugarDatabaseMetadataProvider(ISqlSugarDbContext dbContext)
+    /// <param name="clientProvider">数据库客户端提供器</param>
+    public SqlSugarDatabaseMetadataProvider(ISqlSugarClientProvider clientProvider)
     {
-        _dbContext = dbContext;
+        _clientProvider = clientProvider;
     }
 
     /// <inheritdoc />
@@ -85,10 +86,10 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
     {
         if (string.IsNullOrWhiteSpace(connectionConfigId))
         {
-            return _dbContext.GetClient();
+            return _clientProvider.GetClient();
         }
 
-        return _dbContext.GetScope().GetConnectionScope(connectionConfigId);
+        return _clientProvider.GetScope().GetConnectionScope(connectionConfigId);
     }
 
     private static DatabaseTableMetadata MapTableInfo(object tableInfo)

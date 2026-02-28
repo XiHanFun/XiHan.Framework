@@ -12,12 +12,14 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using System.Linq.Expressions;
 using System.Text.Json;
 using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -35,18 +37,22 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         WriteIndented = false
     };
 
-    private readonly ISqlSugarDbContext _dbContext;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据库上下文</param>
-    public SqlSugarRepositoryBase(ISqlSugarDbContext dbContext) : base(dbContext)
+    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
+    /// <param name="currentTenant">当前租户</param>
+    /// <param name="serviceProvider">服务提供者</param>
+    public SqlSugarRepositoryBase(
+        ISqlSugarClientProvider clientProvider,
+        ICurrentTenant currentTenant,
+        IServiceProvider serviceProvider)
+        : base(clientProvider, currentTenant)
     {
-        _dbContext = dbContext;
+        _serviceProvider = serviceProvider;
     }
-
-    private ISqlSugarClient DbClient => _dbContext.GetClient();
 
     /// <summary>
     /// 添加实体
@@ -58,7 +64,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        _dbContext.TrySetTenantId(entity);
+        TrySetTenantId(entity);
 
         var result = await DbClient.Insertable(entity)
             .ExecuteReturnEntityAsync();
@@ -75,7 +81,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        _dbContext.TrySetTenantId(entity);
+        TrySetTenantId(entity);
 
         var result = await DbClient.Insertable(entity)
             .ExecuteReturnEntityAsync();
@@ -103,7 +109,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in entityList)
         {
-            _dbContext.TrySetTenantId(item);
+            TrySetTenantId(item);
         }
 
         await DbClient.Insertable(entityList)
@@ -122,7 +128,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
 
         cancellationToken.ThrowIfCancellationRequested();
-        _dbContext.TrySetTenantId(entity);
+        TrySetTenantId(entity);
         var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
 
         await DbClient.Updateable(entity)
@@ -172,7 +178,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in entityList)
         {
-            _dbContext.TrySetTenantId(item);
+            TrySetTenantId(item);
         }
 
         await DbClient.Updateable(entityList)
@@ -190,7 +196,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        _dbContext.TrySetTenantId(entity);
+        TrySetTenantId(entity);
 
         if (entity.IsTransient())
         {
@@ -231,11 +237,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
         foreach (var item in addEntities)
         {
-            _dbContext.TrySetTenantId(item);
+            TrySetTenantId(item);
         }
         foreach (var item in updateEntities)
         {
-            _dbContext.TrySetTenantId(item);
+            TrySetTenantId(item);
         }
 
         if (addEntities.Length == 0 && updateEntities.Length == 0)
@@ -475,8 +481,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
     private async Task TryWriteAuditLogAsync(TEntity? beforeEntity, TEntity? afterEntity, string operationType, CancellationToken cancellationToken)
     {
-        var contextProvider = _dbContext.GetService<IEntityAuditContextProvider>();
-        var writer = _dbContext.GetService<IEntityAuditLogWriter>();
+        var contextProvider = _serviceProvider.GetService<IEntityAuditContextProvider>();
+        var writer = _serviceProvider.GetService<IEntityAuditLogWriter>();
         if (contextProvider is null || writer is null || !contextProvider.ShouldAudit(typeof(TEntity)))
         {
             return;
