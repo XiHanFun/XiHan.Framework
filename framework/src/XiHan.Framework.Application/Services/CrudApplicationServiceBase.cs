@@ -14,7 +14,9 @@
 
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
+using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
@@ -74,6 +76,9 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     [HttpPost]
     public virtual async Task<PageResultDtoBase<TEntityDto>> PageAsync(TPageRequestDto input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+        ValidateInputObject(input);
+
         // 构建额外的过滤表达式（子类可重写以添加额外过滤逻辑）
         var additionalPredicate = BuildAdditionalFilterPredicate(input);
 
@@ -95,6 +100,9 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     [HttpPost]
     public virtual async Task<TEntityDto> CreateAsync(TCreateDto input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+        ValidateInputObject(input);
+
         var entity = await MapDtoToEntityAsync(input);
         entity = await Repository.AddAsync(entity);
         return await MapEntityToDtoAsync(entity);
@@ -109,9 +117,24 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     [HttpPut]
     public virtual async Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+        ValidateInputObject(input);
+
+        if (input is UpdateDtoBase<TKey> keyUpdateDto)
+        {
+            var hasIncomingId = !EqualityComparer<TKey>.Default.Equals(keyUpdateDto.BasicId, default!);
+            if (hasIncomingId && !EqualityComparer<TKey>.Default.Equals(keyUpdateDto.BasicId, id))
+            {
+                throw new InvalidOperationException("更新请求中的实体主键与路由主键不一致");
+            }
+
+            keyUpdateDto.BasicId = id;
+        }
+
         var entity = await Repository.GetByIdAsync(id) ??
             throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
         await MapDtoToEntityAsync(input, entity);
+
         entity = await Repository.UpdateAsync(entity);
         return await MapEntityToDtoAsync(entity);
     }
@@ -209,5 +232,15 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     {
         updateDto.Adapt(entity);
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 使用 DataAnnotations 校验输入对象
+    /// </summary>
+    /// <param name="input">输入对象</param>
+    protected virtual void ValidateInputObject(object input)
+    {
+        var context = new ValidationContext(input);
+        Validator.ValidateObject(input, context, validateAllProperties: true);
     }
 }
