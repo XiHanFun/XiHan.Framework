@@ -81,16 +81,6 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         }, cancellationToken);
     }
 
-    private ISqlSugarClient ResolveClient(string? connectionConfigId)
-    {
-        if (string.IsNullOrWhiteSpace(connectionConfigId))
-        {
-            return _clientProvider.GetClient();
-        }
-
-        return _clientProvider.GetScope().GetConnectionScope(connectionConfigId);
-    }
-
     private static DatabaseTableMetadata MapTableInfo(object tableInfo)
     {
         return new DatabaseTableMetadata
@@ -173,5 +163,15 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         }
 
         return null;
+    }
+
+    private ISqlSugarClient ResolveClient(string? connectionConfigId)
+    {
+        if (string.IsNullOrWhiteSpace(connectionConfigId))
+        {
+            return _clientProvider.GetClient();
+        }
+
+        return _clientProvider.GetScope().GetConnectionScope(connectionConfigId);
     }
 }
