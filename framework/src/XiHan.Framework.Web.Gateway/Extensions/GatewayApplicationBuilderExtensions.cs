@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Builder;
 using XiHan.Framework.Web.Gateway.Middlewares;
 
 namespace XiHan.Framework.Web.Gateway.Extensions;

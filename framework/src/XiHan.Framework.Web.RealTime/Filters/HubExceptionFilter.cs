@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 
 namespace XiHan.Framework.Web.RealTime.Filters;
 

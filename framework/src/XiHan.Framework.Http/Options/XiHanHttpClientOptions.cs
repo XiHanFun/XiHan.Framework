@@ -14,7 +14,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Http.Configuration;
-using XiHan.Framework.Metadata;
 
 namespace XiHan.Framework.Http.Options;
 

@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using SqlSugar;
-using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Repositories.Models;

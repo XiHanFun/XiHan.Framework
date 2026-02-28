@@ -14,7 +14,6 @@
 
 using System.Reflection;
 using SqlSugar;
-using XiHan.Framework.Data.SqlSugar;
 
 namespace XiHan.Framework.Data.SqlSugar.Metadata;
 
