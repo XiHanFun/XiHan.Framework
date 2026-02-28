@@ -64,7 +64,7 @@ public class XiHanSqlSugarCoreOptions
     /// <summary>
     /// 慢SQL阈值（毫秒）
     /// </summary>
-    public int SlowSqlThresholdMilliseconds { get; set; } = 1000;
+    public int SlowSqlThresholdMilliseconds { get; set; } = 10000;
 
     /// <summary>
     /// 是否启用数据库初始化
