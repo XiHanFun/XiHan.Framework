@@ -13,9 +13,11 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
+using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Repositories.Models;
+using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -28,16 +30,18 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     where TEntity : class, IFullAuditedEntity<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private readonly ISqlSugarClient _dbClient;
-
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据库上下文</param>
-    public SqlSugarAuditedRepository(ISqlSugarDbContext dbContext)
-        : base(dbContext)
+    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
+    /// <param name="currentTenant">当前租户</param>
+    /// <param name="serviceProvider">服务提供者</param>
+    public SqlSugarAuditedRepository(
+        ISqlSugarClientProvider clientProvider,
+        ICurrentTenant currentTenant,
+        IServiceProvider serviceProvider)
+        : base(clientProvider, currentTenant, serviceProvider)
     {
-        _dbClient = dbContext.GetClient();
     }
 
     /// <summary>

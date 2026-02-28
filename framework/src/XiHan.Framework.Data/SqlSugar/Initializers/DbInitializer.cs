@@ -22,6 +22,7 @@ using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Data.SqlSugar.Initializers;
@@ -31,24 +32,27 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 /// </summary>
 public class DbInitializer : IDbInitializer, IScopedDependency
 {
-    private readonly ISqlSugarDbContext _dbContext;
+    private readonly ISqlSugarClientProvider _clientProvider;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<DbInitializer> _logger;
     private readonly XiHanSqlSugarCoreOptions _options;
+    private readonly ICurrentTenant _currentTenant;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     public DbInitializer(
-        ISqlSugarDbContext dbContext,
+        ISqlSugarClientProvider clientProvider,
         IServiceProvider serviceProvider,
         ILogger<DbInitializer> logger,
-        IOptions<XiHanSqlSugarCoreOptions> options)
+        IOptions<XiHanSqlSugarCoreOptions> options,
+        ICurrentTenant currentTenant)
     {
-        _dbContext = dbContext;
+        _clientProvider = clientProvider;
         _serviceProvider = serviceProvider;
         _logger = logger;
         _options = options.Value;
+        _currentTenant = currentTenant;
     }
 
     /// <summary>
@@ -60,36 +64,24 @@ public class DbInitializer : IDbInitializer, IScopedDependency
         {
             _logger.LogInformation("开始数据库初始化");
 
-            // 1. 创建数据库
-            if (_options.EnableDbInitialization)
-            {
-                await CreateDatabaseAsync();
-            }
-            else
+            if (!_options.EnableDbInitialization)
             {
                 _logger.LogInformation("数据库初始化已禁用（EnableDbInitialization = false），跳过初始化");
                 return;
             }
 
-            // 2. 创建表结构
-            if (_options.EnableTableInitialization)
+            var tenantIds = GetTenantIdsFromConnectionConfigs();
+            if (tenantIds.Count == 0)
             {
-                await CreateTablesAsync();
+                _logger.LogInformation("未解析到租户连接配置，使用默认租户上下文初始化");
+                await InitializeForTenantAsync(null);
             }
             else
             {
-                _logger.LogInformation("表结构初始化已禁用（EnableTableInitialization = false），跳过初始化");
-                return;
-            }
-
-            // 3. 执行种子数据
-            if (_options.EnableDataSeeding)
-            {
-                await SeedDataAsync();
-            }
-            else
-            {
-                _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
+                foreach (var tenantId in tenantIds)
+                {
+                    await InitializeForTenantAsync(tenantId);
+                }
             }
 
             _logger.LogInformation("数据库初始化完成");
@@ -108,7 +100,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     {
         try
         {
-            var db = _dbContext.GetClient();
+            var db = _clientProvider.GetClient();
             await Task.Run(() =>
             {
                 //if (!db.DbMaintenance.IsAnySystemTablePermissions())
@@ -140,7 +132,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     {
         try
         {
-            var db = _dbContext.GetClient();
+            var db = _clientProvider.GetClient();
             var entityTypes = GetEntityTypes();
 
             if (entityTypes.Count == 0)
@@ -249,6 +241,33 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     }
 
     /// <summary>
+    /// 从配置Id中解析租户Id（支持 "1" 或 "Tenant_1" 形式）
+    /// </summary>
+    private static bool TryParseTenantId(string? configId, out long tenantId)
+    {
+        tenantId = default;
+        if (string.IsNullOrWhiteSpace(configId))
+        {
+            return false;
+        }
+
+        var trimmed = configId.Trim();
+        if (long.TryParse(trimmed, out tenantId))
+        {
+            return true;
+        }
+
+        const string prefix = "Tenant_";
+        if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var idPart = trimmed.Substring(prefix.Length);
+            return long.TryParse(idPart, out tenantId);
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// 获取所有实体类型
     /// </summary>
     /// <returns></returns>
@@ -285,5 +304,60 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
         var allTables = db.DbMaintenance.GetTableInfoList(false);
         return allTables.Any(t => !string.IsNullOrWhiteSpace(t.Name) && t.Name.StartsWith(normalizedTemplate, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// 从连接配置解析租户Id
+    /// </summary>
+    /// <returns>解析到的租户Id集合</returns>
+    private IReadOnlyList<long> GetTenantIdsFromConnectionConfigs()
+    {
+        var tenantIds = new HashSet<long>();
+        foreach (var connConfig in _options.ConnectionConfigs)
+        {
+            if (TryParseTenantId(connConfig.ConfigId, out var tenantId))
+            {
+                tenantIds.Add(tenantId);
+            }
+        }
+
+        return tenantIds.OrderBy(id => id).ToList();
+    }
+
+    /// <summary>
+    /// 在指定租户上下文中执行初始化
+    /// </summary>
+    /// <param name="tenantId">租户标识，null 表示默认上下文</param>
+    private async Task InitializeForTenantAsync(long? tenantId)
+    {
+        using var tenantScope = _currentTenant.Change(tenantId, tenantId?.ToString());
+        var tenantLabel = tenantId.HasValue ? tenantId.Value.ToString() : "无租户";
+
+        _logger.LogInformation("开始初始化租户数据库: {Tenant}", tenantLabel);
+
+        await CreateDatabaseAsync();
+
+        // 2. 创建表结构
+        if (_options.EnableTableInitialization)
+        {
+            await CreateTablesAsync();
+        }
+        else
+        {
+            _logger.LogInformation("表结构初始化已禁用（EnableTableInitialization = false），跳过初始化");
+            return;
+        }
+
+        // 3. 执行种子数据
+        if (_options.EnableDataSeeding)
+        {
+            await SeedDataAsync();
+        }
+        else
+        {
+            _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
+        }
+
+        _logger.LogInformation("租户数据库初始化完成: {Tenant}", tenantLabel);
     }
 }

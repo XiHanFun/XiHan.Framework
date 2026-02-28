@@ -14,12 +14,16 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
+using System.Threading;
+using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Models;
 using XiHan.Framework.Domain.Specifications.Abstracts;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -32,16 +36,30 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private readonly ISqlSugarDbContext _dbContext;
+    private static readonly AsyncLocal<bool?> TenantFilterEnabled = new();
+    private readonly ISqlSugarClientProvider _clientProvider;
+    private readonly ICurrentTenant _currentTenant;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据库上下文</param>
-    public SqlSugarReadOnlyRepository(ISqlSugarDbContext dbContext)
+    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
+    /// <param name="currentTenant">当前租户</param>
+    public SqlSugarReadOnlyRepository(ISqlSugarClientProvider clientProvider, ICurrentTenant currentTenant)
     {
-        _dbContext = dbContext;
+        _clientProvider = clientProvider;
+        _currentTenant = currentTenant;
     }
+
+    /// <summary>
+    /// 当前租户标识
+    /// </summary>
+    protected long? CurrentTenantId => _currentTenant.Id;
+
+    /// <summary>
+    /// SqlSugar 客户端
+    /// </summary>
+    protected ISqlSugarClient DbClient => _clientProvider.GetClient();
 
     /// <summary>
     /// 创建租户隔离查询
@@ -49,7 +67,100 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns></returns>
     protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
     {
-        return _dbContext.CreateQueryable<TEntity>();
+        var queryable = DbClient.Queryable<TEntity>();
+        return ApplyTenantFilter(queryable);
+    }
+
+    /// <summary>
+    /// 创建带租户隔离的查询
+    /// </summary>
+    /// <typeparam name="T">实体类型</typeparam>
+    /// <returns></returns>
+    protected ISugarQueryable<T> CreateTenantQueryable<T>() where T : class, new()
+    {
+        var queryable = DbClient.Queryable<T>();
+        return ApplyTenantFilter(queryable);
+    }
+
+    /// <summary>
+    /// 尝试写入实体租户标识
+    /// </summary>
+    protected void TrySetTenantId<T>(T entity) where T : class
+    {
+        var tenantId = CurrentTenantId;
+        if (!tenantId.HasValue)
+        {
+            return;
+        }
+
+        var property = typeof(T).GetProperty("TenantId");
+        if (property is null || !property.CanWrite)
+        {
+            return;
+        }
+
+        if (property.PropertyType == typeof(long))
+        {
+            var currentValue = (long)property.GetValue(entity)!;
+            if (currentValue == 0)
+            {
+                property.SetValue(entity, tenantId.Value);
+            }
+            return;
+        }
+
+        if (property.PropertyType == typeof(long?))
+        {
+            var currentValue = (long?)property.GetValue(entity);
+            if (!currentValue.HasValue || currentValue.Value == 0)
+            {
+                property.SetValue(entity, tenantId.Value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 临时禁用租户过滤
+    /// </summary>
+    protected IDisposable DisableTenantFilter()
+    {
+        var previous = TenantFilterEnabled.Value;
+        TenantFilterEnabled.Value = false;
+        return new DisposeAction(() => TenantFilterEnabled.Value = previous);
+    }
+
+    private ISugarQueryable<T> ApplyTenantFilter<T>(ISugarQueryable<T> queryable) where T : class, new()
+    {
+        if ((TenantFilterEnabled.Value ?? true) is false)
+        {
+            return queryable;
+        }
+
+        var tenantId = CurrentTenantId;
+        if (!tenantId.HasValue)
+        {
+            return queryable;
+        }
+
+        var property = typeof(T).GetProperty("TenantId");
+        if (property is null)
+        {
+            return queryable;
+        }
+
+        if (property.PropertyType != typeof(long) && property.PropertyType != typeof(long?))
+        {
+            return queryable;
+        }
+
+        var parameter = Expression.Parameter(typeof(T), "e");
+        var propertyAccess = Expression.Property(parameter, property);
+        Expression targetValue = property.PropertyType == typeof(long)
+            ? Expression.Constant(tenantId.Value, typeof(long))
+            : Expression.Convert(Expression.Constant(tenantId.Value, typeof(long)), typeof(long?));
+        var body = Expression.Equal(propertyAccess, targetValue);
+        var lambda = Expression.Lambda<Func<T, bool>>(body, parameter);
+        return queryable.Where(lambda);
     }
 
     #region 查询
