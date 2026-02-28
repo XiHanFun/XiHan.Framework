@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace XiHan.Framework.Data.SqlSugar.Seeders;
 
@@ -88,7 +89,7 @@ public abstract class DataSeederBase : IDataSeeder
     /// <typeparam name="T">实体类型</typeparam>
     /// <param name="predicate">条件表达式</param>
     /// <returns></returns>
-    protected async Task<bool> HasDataAsync<T>(System.Linq.Expressions.Expression<Func<T, bool>> predicate) where T : class, new()
+    protected async Task<bool> HasDataAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
     {
         return await ClientProvider.GetClient().Queryable<T>().AnyAsync(predicate);
     }
