@@ -14,8 +14,6 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
-using System.Threading;
-using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;

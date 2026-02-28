@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Shared.Paging.Builders;
-using XiHan.Framework.Domain.Shared.Paging.Conventions;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Executors;
 

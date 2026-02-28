@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Security.Claims;
 

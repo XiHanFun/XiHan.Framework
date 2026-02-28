@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
 using XiHan.Framework.Web.RealTime.Hubs;
 
 namespace XiHan.Framework.Web.RealTime.Extensions;

@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Web.Gateway.Constants;
 

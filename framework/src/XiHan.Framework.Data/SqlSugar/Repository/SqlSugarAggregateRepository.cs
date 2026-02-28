@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Data.SqlSugar;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.MultiTenancy.Abstractions;

@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Models;

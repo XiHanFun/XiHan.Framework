@@ -15,7 +15,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
-using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Utils.Extensions;
