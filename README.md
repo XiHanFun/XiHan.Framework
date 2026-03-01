@@ -1,269 +1,100 @@
 ![logo](./assets/logo.png)
 
-[中文](README_CN.md)
+[![Ask DeepWiki](./assets/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
 # XiHan.Framework
 
-XiHan framework repository. Fast, lightweight, efficient, and dedicated development framework. Built on .NET 10.
+快速、轻量、高效、用心的开发框架，基于 .NET 10 构建。
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
+## 概述
 
-## Project Overview
+XiHan.Framework 是面向企业级应用的模块化后端框架。强调模块清晰、依赖可控、扩展可维护，并以应用服务与动态 API 约定支持前后端分离场景。
 
-**XiHan.Framework** is a modern, modular enterprise-level development framework based on .NET 10, specifically designed for front-end and back-end separated ASP.NET Core applications. The framework prioritizes .NET 10 native features, reduces third-party dependencies, and ensures modularity, extensibility, and ease of use.
+## 设计目标
+- 模块化分层清晰，依赖关系可追踪
+- 以框架内置能力为优先，降低外部依赖
+- 统一应用服务与动态 API 暴露规则
+- 为业务模块提供一致的基础设施能力
 
-### 🚀 Core Features
+## 架构概览
+框架采用模块化分层组织，主要包括：
+- 基础层：核心模块、工具与元数据
+- 应用层：应用服务与契约定义
+- 领域层：领域模型与共享模型
+- 基础设施层：数据访问、日志、缓存、消息与安全
+- Web 层：API、文档、网关、实时通信与 gRPC
 
-- **📦 Modular Architecture** - Highly extensible modular design with on-demand selection
-- **⚡ Quick Start** - Download and run instantly, quickly experience complete Web API projects
-- **🎯 .NET 10 First** - Fully leverage .NET 10 native features (DI, logging, serialization, AOT)
-- **🏗️ DDD Support** - Complete Domain-Driven Design architecture support
-- **🔒 Enterprise Security** - Comprehensive authentication, authorization, and security mechanisms
-- **🌐 Frontend-Backend Separation** - Designed for modern web applications
-- **📊 Monitoring & Logging** - Complete monitoring, logging, and performance analysis
+## 模块清单
+| 模块/项目 | 说明 |
+| --- | --- |
+| XiHan.Framework.AI | AI 能力的基础入口与扩展点 |
+| XiHan.Framework.Application | 应用层基础设施与应用服务基类 |
+| XiHan.Framework.Application.Contracts | 应用服务契约与 DTO 定义 |
+| XiHan.Framework.Authentication | 认证流程与策略基础能力 |
+| XiHan.Framework.Authorization | 授权与权限控制基础能力 |
+| XiHan.Framework.Bot | 机器人接入与消息交互基础能力 |
+| XiHan.Framework.Caching | 缓存能力的统一抽象与注册 |
+| XiHan.Framework.Core | 模块化与应用生命周期核心基础设施 |
+| XiHan.Framework.Data | SqlSugar 数据访问与仓储基础能力 |
+| XiHan.Framework.DevTools | 开发期辅助与调试能力入口 |
+| XiHan.Framework.DistributedIds | 分布式 ID 生成能力 |
+| XiHan.Framework.Domain | 领域层基础设施与约定 |
+| XiHan.Framework.Domain.Shared | 领域共享模型与基础类型 |
+| XiHan.Framework.EventBus | 事件总线实现与集成入口 |
+| XiHan.Framework.EventBus.Abstractions | 事件总线抽象契约 |
+| XiHan.Framework.Http | HTTP 客户端与请求管道基础能力 |
+| XiHan.Framework.Localization | 本地化能力实现与集成入口 |
+| XiHan.Framework.Localization.Abstractions | 本地化抽象契约 |
+| XiHan.Framework.Logging | 日志基础能力与扩展点 |
+| XiHan.Framework.Messaging | 消息处理与发送能力入口 |
+| XiHan.Framework.Metadata | 框架元数据与版本信息 |
+| XiHan.Framework.MultiTenancy | 多租户能力实现与集成入口 |
+| XiHan.Framework.MultiTenancy.Abstractions | 多租户抽象契约 |
+| XiHan.Framework.ObjectMapping | 对象映射能力与规则管理 |
+| XiHan.Framework.ObjectStorage | 对象存储能力与适配入口 |
+| XiHan.Framework.Observability | 监控与可观测性能力入口 |
+| XiHan.Framework.Script | 脚本引擎与执行能力 |
+| XiHan.Framework.SearchEngines | 搜索引擎接入与扩展 |
+| XiHan.Framework.Security | 安全与加密相关能力 |
+| XiHan.Framework.Serialization | 序列化配置与策略管理 |
+| XiHan.Framework.Settings | 设置管理与多来源配置 |
+| XiHan.Framework.Tasks | 定时任务与后台服务能力 |
+| XiHan.Framework.Templating | 模板渲染与资源加载能力 |
+| XiHan.Framework.Threading | 并发控制与线程工具 |
+| XiHan.Framework.Timing | 时间策略与时区能力 |
+| XiHan.Framework.Traffic | 流量治理与限流能力 |
+| XiHan.Framework.Uow | 工作单元与事务边界能力 |
+| XiHan.Framework.Upgrade | 分布式升级引擎基础能力 |
+| XiHan.Framework.Utils | 通用工具与辅助能力 |
+| XiHan.Framework.Validation | 校验能力实现与集成 |
+| XiHan.Framework.Validation.Abstractions | 校验抽象契约 |
+| XiHan.Framework.VirtualFileSystem | 虚拟文件系统能力 |
+| XiHan.Framework.Web.Api | Web API 与动态 API 支持 |
+| XiHan.Framework.Web.Core | Web 基础设施与管道能力 |
+| XiHan.Framework.Web.Docs | OpenAPI 文档能力 |
+| XiHan.Framework.Web.Gateway | 网关能力与入口管理 |
+| XiHan.Framework.Web.Grpc | gRPC 服务集成 |
+| XiHan.Framework.Web.RealTime | 实时通信基础能力 |
 
-## Architecture Design
-
-### Package Architecture
-
-The framework adopts a modular package design that users can select on demand:
-
-#### 🏆 Quick Start Packages (Core)
-
-```bash
-# Minimal configuration - Start Web API in 5 minutes
-dotnet add package XiHan.Framework
-dotnet add package XiHan.Framework.Web.Api
-dotnet add package XiHan.Framework.Web.Docs
-dotnet add package XiHan.Framework.Logging
-```
-
-#### 📋 Complete Feature Packages (Recommended)
-
-```bash
-# Production-ready Web API solution
-dotnet add package XiHan.Framework.Authentication  # Authentication
-dotnet add package XiHan.Framework.Data           # Data access
-dotnet add package XiHan.Framework.Validation     # Data validation
-dotnet add package XiHan.Framework.Caching        # Cache management
-```
-
-#### 🔧 Extension Packages (As Needed)
-
-```bash
-# Advanced feature extensions
-dotnet add package XiHan.Framework.Web.RealTime      # Real-time communication
-dotnet add package XiHan.Framework.BackgroundJobs    # Background jobs
-dotnet add package XiHan.Framework.Messaging         # Message queues
-dotnet add package XiHan.Framework.SearchEngines     # Full-text search
-dotnet add package XiHan.Framework.MultiTenancy      # Multi-tenancy
-```
-
-### Layered Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │  Web API        │  │  SignalR        │  │  Swagger/Scalar │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                    Application Layer                        │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │  Application    │  │  Background Jobs│  │  AI Services    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                    Domain Layer                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │  Domain Models  │  │  Domain Events  │  │  Domain Services│ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                  Infrastructure Layer                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │  Data Access    │  │  Caching & MQ   │  │  External APIs  │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Technology Stack
-
-### Core Technologies
-
-- **.NET 10** - Base runtime with AOT compilation support
-- **ASP.NET Core** - Web framework
-- **System.Text.Json** - High-performance serialization
-- **Entity Framework Core** - ORM framework
-- **Swagger/Scalar** - API documentation
-
-### Authentication & Authorization
-
-- **JWT** - JSON Web Token
-- **OAuth 2.0** - Open authorization protocol
-- **OpenID Connect** - Identity authentication protocol
-- **ASP.NET Core Identity** - Identity management
-
-### Extension Technologies
-
-- **Redis** - Distributed caching
-- **SignalR** - Real-time communication
-- **Hangfire/Quartz.NET** - Background jobs
-- **RabbitMQ/Kafka** - Message queues
-- **Elasticsearch** - Full-text search
-- **ML.NET** - Machine learning
-
-## Quick Start
-
-### 1. Create Project
-
-```bash
-dotnet new webapi -n MyApi
-cd MyApi
-```
-
-### 2. Install Framework (Minimal Configuration)
-
-```bash
-# Metadata package (required)
-dotnet add package XiHan.Framework
-
-# Web API core packages
-dotnet add package XiHan.Framework.Web.Api
-dotnet add package XiHan.Framework.Web.Docs
-dotnet add package XiHan.Framework.Logging
-```
-
-### 3. Basic Configuration
-
+## 基本使用
 ```csharp
-// Program.cs
+using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Api;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add framework services
-builder.Services.AddXiHanWebApi();
-builder.Services.AddXiHanDocs();
-builder.Services.AddXiHanLogging();
-
-var app = builder.Build();
-
-// Configure middleware
-app.UseXiHanWebApi();
-app.UseXiHanDocs();  // Auto-generate Swagger documentation
-
-app.Run();
-```
-
-### 4. Run Project
-
-```bash
-dotnet run
-```
-
-Visit `https://localhost:5001/swagger` to view API documentation!
-
-### 5. Add Business Features (Optional)
-
-```bash
-# Add authentication and data access
-dotnet add package XiHan.Framework.Authentication
-dotnet add package XiHan.Framework.Data
-dotnet add package XiHan.Framework.Validation
+[DependsOn(typeof(XiHanWebApiModule))]
+public class MyAppModule : XiHanModule
+{
+}
 ```
 
 ```csharp
-// Update Program.cs
-builder.Services.AddXiHanAuthentication();
-builder.Services.AddXiHanData(options =>
-{
-    options.UseInMemoryDatabase("MyDb"); // Or use SQL Server
-});
-builder.Services.AddXiHanValidation();
+using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
 
-app.UseXiHanAuthentication();
+var builder = WebApplication.CreateBuilder(args);
+await builder.AddApplicationAsync<MyAppModule>();
+
+var app = builder.Build();
+await app.InitializeApplicationAsync();
+await app.RunAsync();
 ```
-
-## Development Roadmap
-
-### 🎯 2024 Q4 (Current Phase)
-
-- ✅ Complete metadata package development
-- 🔄 Complete quick start core packages
-- 🔄 Complete Web API and documentation packages
-- 🔄 **Release v0.1.0-alpha** - Basic runnable version
-
-### 🚀 2025 Q1
-
-- Complete authentication, authorization, and data access packages
-- **Release v0.2.0-beta** - Complete API functionality
-- Complete system function packages
-
-### 📦 2025 Q2
-
-- Complete advanced data packages and development tools
-- **Release v1.0.0** - Stable production version
-
-### 🔧 2025 Q3-Q4
-
-- Complete all extension packages
-- **Release v1.1.0+** - Complete feature version
-
-## Design Principles
-
-### 🎯 Quick Start First
-
-- Users can run complete Web API immediately after download
-- Minimal configuration, maximum experience
-- Interactive API documentation out of the box
-
-### 🧩 Modular Design
-
-- Single responsibility, clear dependencies
-- Users select modules on demand
-- Support independent development and testing
-
-### ⚡ .NET 10 First
-
-- Prioritize built-in features (DI, logging, serialization)
-- Only use third-party libraries when necessary
-- Support AOT compilation and high-performance features
-
-### 🌐 Internationalization Friendly
-
-- Provide Chinese documentation and examples
-- Support domestic NuGet mirrors
-- Compatible with international standards (OpenAPI, gRPC)
-
-## Version Information
-
-- **Current Version**: 0.11.7-preview.3
-- **Target Framework**: .NET 10.0
-- **License**: MIT
-- **Development Status**: Actively Developing
-
-## Contributing
-
-We welcome Issue submissions and Pull Requests to improve this framework.
-
-### Contribution Guidelines
-
-1. Fork the project
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-- **Author**: ZhaiFanhua
-- **Email**: me@zhaifanhua.com
-- **Project URLs**: [GitHub](https://github.com/XiHanFun/XiHan.Framework) | [Gitee](https://gitee.com/XiHanFun/XiHan.Framework)
-- **Documentation**: [Development Docs](https://docs.xihan.fun)
-
----
-
-_XiHan Framework, making .NET development simpler._
