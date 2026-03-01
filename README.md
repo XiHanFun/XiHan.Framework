@@ -2,6 +2,8 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
+[曦寒懿官方交流群](https://qm.qq.com/q/qYp1Urv3z2) 462371834
+
 # XiHan.Framework
 
 快速、轻量、高效、用心的开发框架，基于 .NET 10 构建。
