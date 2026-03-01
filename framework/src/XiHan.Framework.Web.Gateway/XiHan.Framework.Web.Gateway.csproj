@@ -18,6 +18,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Content Remove="appsettings.example.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="appsettings.example.json" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Traffic\XiHan.Framework.Traffic.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Authorization\XiHan.Framework.Authorization.csproj" />
