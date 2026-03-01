@@ -1,6 +1,6 @@
 ![logo](./assets/logo.png)
 
-[![Ask DeepWiki](./assets/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
 # XiHan.Framework
 
