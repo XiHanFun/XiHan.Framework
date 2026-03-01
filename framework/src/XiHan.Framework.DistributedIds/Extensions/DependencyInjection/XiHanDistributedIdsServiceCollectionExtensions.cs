@@ -40,10 +40,10 @@ public static class XiHanDistributedIdsServiceCollectionExtensions
         services.Configure<SqidsOptions>(configuration.GetSection(SqidsOptions.SectionName));
 
         var guidGenerator = IdGeneratorFactory.CreateSequentialGuidGenerator_Default();
-        services.AddSingleton<IDistributedIdGenerator<Guid>>(guidGenerator);
+        services.AddSingleton(guidGenerator);
 
         var longGenerator = IdGeneratorFactory.CreateSnowflakeIdGenerator_HighWorkload();
-        services.AddSingleton<IDistributedIdGenerator<long>>(longGenerator);
+        services.AddSingleton(longGenerator);
 
         return services;
     }

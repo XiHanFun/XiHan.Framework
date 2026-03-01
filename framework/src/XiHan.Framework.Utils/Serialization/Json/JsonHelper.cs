@@ -44,7 +44,7 @@ public static class JsonHelper
         try
         {
             var systemOptions = options.ToSystemOptions();
-            return JsonSerializer.Serialize<T>(obj, systemOptions);
+            return JsonSerializer.Serialize(obj, systemOptions);
         }
         catch (Exception ex)
         {
