@@ -77,7 +77,7 @@ public static class XiHanLoggingServiceCollectionExtensions
     /// <returns></returns>
     public static ILoggingBuilder AddXiHanFileLogger(this ILoggingBuilder builder, Action<XiHanFileLoggerOptions>? configure = null)
     {
-        builder.Services.Configure<XiHanFileLoggerOptions>(configure ?? (_ => { }));
+        builder.Services.Configure(configure ?? (_ => { }));
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, XiHanFileLoggerProvider>());
         return builder;
     }
@@ -90,7 +90,7 @@ public static class XiHanLoggingServiceCollectionExtensions
     /// <returns></returns>
     public static ILoggingBuilder AddXiHanConsoleLogger(this ILoggingBuilder builder, Action<XiHanConsoleLoggerOptions>? configure = null)
     {
-        builder.Services.Configure<XiHanConsoleLoggerOptions>(configure ?? (_ => { }));
+        builder.Services.Configure(configure ?? (_ => { }));
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, XiHanConsoleLoggerProvider>());
         return builder;
     }
