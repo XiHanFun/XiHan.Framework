@@ -52,9 +52,9 @@ public static class XiHanDataServiceCollectionExtensions
         services.Configure<XiHanSqlSugarCoreOptions>(configuration.GetSection(XiHanSqlSugarCoreOptions.SectionName));
 
         // 注册核心服务
-        services.TryAddSingleton<SqlSugarScope>(sp => CreateScope(sp));
+        services.TryAddSingleton(sp => CreateScope(sp));
         services.TryAddScoped<ISqlSugarClientProvider, SqlSugarClientProvider>();
-        services.TryAddScoped<ISqlSugarClient>(sp => sp.GetRequiredService<ISqlSugarClientProvider>().GetClient());
+        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientProvider>().GetClient());
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
