@@ -68,6 +68,11 @@ public class DynamicApiAttribute : Attribute
     public string? Tag { get; set; }
 
     /// <summary>
+    /// API 分组
+    /// </summary>
+    public string? GroupName { get; set; }
+
+    /// <summary>
     /// 是否在 API 浏览器中显示（默认 true）
     /// </summary>
     public bool VisibleInApiExplorer { get; set; } = true;
