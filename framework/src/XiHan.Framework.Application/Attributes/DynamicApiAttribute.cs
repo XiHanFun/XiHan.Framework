@@ -70,7 +70,7 @@ public class DynamicApiAttribute : Attribute
     /// <summary>
     /// API 分组
     /// </summary>
-    public string? GroupName { get; set; }
+    public string? Group { get; set; }
 
     /// <summary>
     /// 是否在 API 浏览器中显示（默认 true）

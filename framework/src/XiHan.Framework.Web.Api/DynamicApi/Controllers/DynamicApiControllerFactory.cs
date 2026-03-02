@@ -170,26 +170,13 @@ public static class DynamicApiControllerFactory
             return;
         }
 
-        // 只处理 VisibleInApiExplorer = false 的情况
-        // Tag 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
-        if (!dynamicApiAttr.VisibleInApiExplorer)
-        {
-            var attributeType = typeof(ApiExplorerSettingsAttribute);
-            var constructor = attributeType.GetConstructor(Type.EmptyTypes);
-            if (constructor != null)
-            {
-                var ignoreApiProperty = attributeType.GetProperty("IgnoreApi");
-                if (ignoreApiProperty != null)
-                {
-                    var attributeBuilder = new CustomAttributeBuilder(
-                        constructor,
-                        [],
-                        [ignoreApiProperty],
-                        [true]);
+        var groupName = dynamicApiAttr.Group;
+        var ignoreApi = dynamicApiAttr.VisibleInApiExplorer ? (bool?)null : true;
 
-                    typeBuilder.SetCustomAttribute(attributeBuilder);
-                }
-            }
+        var attributeBuilder = BuildApiExplorerSettingsAttribute(groupName, ignoreApi);
+        if (attributeBuilder != null)
+        {
+            typeBuilder.SetCustomAttribute(attributeBuilder);
         }
     }
 
@@ -619,27 +606,69 @@ public static class DynamicApiControllerFactory
             return;
         }
 
-        // 只处理 VisibleInApiExplorer = false 的情况
-        // Tag 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
-        if (!dynamicApiAttr.VisibleInApiExplorer)
-        {
-            var attributeType = typeof(ApiExplorerSettingsAttribute);
-            var constructor = attributeType.GetConstructor(Type.EmptyTypes);
-            if (constructor != null)
-            {
-                var ignoreApiProperty = attributeType.GetProperty("IgnoreApi");
-                if (ignoreApiProperty != null)
-                {
-                    var attributeBuilder = new CustomAttributeBuilder(
-                        constructor,
-                        [],
-                        [ignoreApiProperty],
-                        [true]);
+        var groupName = dynamicApiAttr.Group;
+        var ignoreApi = dynamicApiAttr.VisibleInApiExplorer ? (bool?)null : true;
 
-                    methodBuilder.SetCustomAttribute(attributeBuilder);
-                }
+        var attributeBuilder = BuildApiExplorerSettingsAttribute(groupName, ignoreApi);
+        if (attributeBuilder != null)
+        {
+            methodBuilder.SetCustomAttribute(attributeBuilder);
+        }
+    }
+
+    /// <summary>
+    /// 构建 ApiExplorerSettings 特性
+    /// </summary>
+    private static CustomAttributeBuilder? BuildApiExplorerSettingsAttribute(string? groupName, bool? ignoreApi)
+    {
+        var hasGroupName = !string.IsNullOrWhiteSpace(groupName);
+        var shouldIgnoreApi = ignoreApi == true;
+
+        if (!hasGroupName && !shouldIgnoreApi)
+        {
+            return null;
+        }
+
+        var attributeType = typeof(ApiExplorerSettingsAttribute);
+        var constructor = attributeType.GetConstructor(Type.EmptyTypes);
+        if (constructor == null)
+        {
+            return null;
+        }
+
+        var namedProperties = new List<PropertyInfo>();
+        var propertyValues = new List<object?>();
+
+        if (hasGroupName)
+        {
+            var groupNameProperty = attributeType.GetProperty(nameof(ApiExplorerSettingsAttribute.GroupName));
+            if (groupNameProperty != null)
+            {
+                namedProperties.Add(groupNameProperty);
+                propertyValues.Add(groupName!.Trim());
             }
         }
+
+        if (shouldIgnoreApi)
+        {
+            var ignoreApiProperty = attributeType.GetProperty(nameof(ApiExplorerSettingsAttribute.IgnoreApi));
+            if (ignoreApiProperty != null)
+            {
+                namedProperties.Add(ignoreApiProperty);
+                propertyValues.Add(true);
+            }
+        }
+
+        if (namedProperties.Count == 0)
+        {
+            return null;
+        }
+
+        return new CustomAttributeBuilder(
+            constructor,
+            [],
+            [.. namedProperties],
+            [.. propertyValues]);
     }
 
     /// <summary>
