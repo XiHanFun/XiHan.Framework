@@ -16,14 +16,22 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Contracts.Services;
+using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 
 namespace XiHan.Framework.Web.Docs.Swagger;
 
 /// <summary>
-/// 动态 API Swagger 分组辅助
+/// 动态 API 文档分组辅助
 /// </summary>
 internal static class DynamicApiSwaggerGroupHelper
 {
+    internal sealed class DynamicApiDocGroupDefinition
+    {
+        public string Group { get; init; } = string.Empty;
+        public string DisplayName { get; init; } = string.Empty;
+        public int Order { get; init; }
+    }
+
     /// <summary>
     /// 默认文档名称
     /// </summary>
@@ -42,17 +50,18 @@ internal static class DynamicApiSwaggerGroupHelper
         return provider.ApiDescriptionGroups.Items
             .Select(group => group.GroupName)
             .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
     /// <summary>
-    /// 从特性扫描分组名称
+    /// 从特性扫描分组定义
     /// </summary>
-    internal static IReadOnlyList<string> GetGroupNamesFromAttributes()
+    internal static IReadOnlyList<DynamicApiDocGroupDefinition> GetGroupDefinitionsFromAttributes()
     {
-        var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var groupDefinitions = new Dictionary<string, DynamicApiDocGroupDefinition>(StringComparer.OrdinalIgnoreCase);
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
         foreach (var assembly in assemblies)
@@ -83,49 +92,92 @@ internal static class DynamicApiSwaggerGroupHelper
                     continue;
                 }
 
-                CollectGroupNames(type, groups);
+                CollectGroupDefinitions(type, groupDefinitions);
             }
         }
 
-        return groups
+        return groupDefinitions.Values
+            .OrderBy(definition => definition.Order)
+            .ThenBy(definition => definition.Group, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// 从特性扫描分组名称（仅文档键）
+    /// </summary>
+    internal static IReadOnlyList<string> GetGroupNamesFromAttributes()
+    {
+        return GetGroupDefinitionsFromAttributes()
+            .Select(definition => definition.Group)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
-    private static void CollectGroupNames(Type type, ISet<string> groups)
+    private static void CollectGroupDefinitions(
+        Type type,
+        IDictionary<string, DynamicApiDocGroupDefinition> groupDefinitions)
     {
-        foreach (var attr in type.GetCustomAttributes<DynamicApiAttribute>())
+        var classAttributes = DynamicApiAttributeMergeHelper.GetOrderedClassAttributes(type);
+        AddGroupDefinitions(classAttributes, groupDefinitions);
+
+        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (!attr.IsEnabled || !attr.VisibleInApiExplorer)
+            var methodAttributes = DynamicApiAttributeMergeHelper.GetOrderedMethodAttributes(method);
+            AddGroupDefinitions(methodAttributes, groupDefinitions);
+        }
+    }
+
+    private static void AddGroupDefinitions(
+        IEnumerable<DynamicApiAttribute> attributes,
+        IDictionary<string, DynamicApiDocGroupDefinition> groupDefinitions)
+    {
+        foreach (var attribute in attributes)
+        {
+            if (!attribute.IsEnabled || !attribute.VisibleInApiExplorer)
             {
                 continue;
             }
 
-            AddGroupName(attr.Group, groups);
-        }
-
-        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance))
-        {
-            foreach (var attr in method.GetCustomAttributes<DynamicApiAttribute>())
+            var group = attribute.Group?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(group))
             {
-                if (!attr.IsEnabled || !attr.VisibleInApiExplorer)
-                {
-                    continue;
-                }
-
-                AddGroupName(attr.Group, groups);
+                continue;
             }
-        }
-    }
 
-    private static void AddGroupName(string? groupName, ISet<string> groups)
-    {
-        if (string.IsNullOrWhiteSpace(groupName))
-        {
-            return;
-        }
+            var displayName = string.IsNullOrWhiteSpace(attribute.GroupName)
+                ? group
+                : attribute.GroupName.Trim();
 
-        groups.Add(groupName.Trim());
+            if (!groupDefinitions.TryGetValue(group, out var current))
+            {
+                groupDefinitions[group] = new DynamicApiDocGroupDefinition
+                {
+                    Group = group,
+                    DisplayName = displayName,
+                    Order = attribute.Order
+                };
+                continue;
+            }
+
+            var shouldOverrideByOrder = attribute.Order > current.Order;
+            var shouldFillDisplayName =
+                !string.IsNullOrWhiteSpace(attribute.GroupName) &&
+                string.Equals(current.DisplayName, current.Group, StringComparison.OrdinalIgnoreCase);
+            if (!shouldOverrideByOrder && !shouldFillDisplayName)
+            {
+                continue;
+            }
+
+            groupDefinitions[group] = new DynamicApiDocGroupDefinition
+            {
+                Group = group,
+                DisplayName = shouldFillDisplayName && !shouldOverrideByOrder
+                    ? attribute.GroupName.Trim()
+                    : displayName,
+                Order = shouldOverrideByOrder ? attribute.Order : current.Order
+            };
+        }
     }
 
     private static bool IsSystemAssembly(Assembly assembly)

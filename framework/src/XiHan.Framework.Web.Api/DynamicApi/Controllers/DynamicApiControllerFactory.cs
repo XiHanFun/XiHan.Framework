@@ -15,12 +15,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using System.Reflection.Emit;
-using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Web.Api.DynamicApi.Attributes;
-using XiHan.Framework.Web.Api.DynamicApi.Configuration;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
+using XiHan.Framework.Web.Api.DynamicApi.Options;
 using XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
@@ -52,7 +51,7 @@ public static class DynamicApiControllerFactory
     public static Type? CreateControllerType(Type serviceType, IDynamicApiConvention? convention = null,
         DynamicApiOptions? options = null, ILogger? logger = null)
     {
-        // 使用双重检查锁定模式
+        // 首先检查缓存，避免重复创建控制器类型
         if (ControllerTypeCache.TryGetValue(serviceType, out var cachedType))
         {
             return cachedType;
@@ -95,7 +94,7 @@ public static class DynamicApiControllerFactory
             // 添加 Route 特性
             AddRouteAttribute(typeBuilder, routeTemplate);
 
-            // 添加 ApiExplorerSettings 特性（用于文档分组）
+            // 添加 ApiExplorerSettings 特性
             AddApiExplorerSettingsAttribute(typeBuilder, serviceType);
 
             // 添加服务字段
@@ -130,6 +129,7 @@ public static class DynamicApiControllerFactory
     public static void ClearCache()
     {
         ControllerTypeCache.Clear();
+        DynamicApiXmlCommentsHelper.ClearCache();
     }
 
     #region 辅助方法
@@ -163,16 +163,16 @@ public static class DynamicApiControllerFactory
     /// </summary>
     private static void AddApiExplorerSettingsAttribute(TypeBuilder typeBuilder, Type serviceType)
     {
-        // 从服务类型获取 DynamicApiAttribute
-        var dynamicApiAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-        if (dynamicApiAttr == null)
+        var classAttributes = DynamicApiAttributeMergeHelper.GetOrderedClassAttributes(serviceType);
+        if (classAttributes.Count == 0)
         {
             return;
         }
 
-        var groupName = dynamicApiAttr.Group;
-        var ignoreApi = dynamicApiAttr.VisibleInApiExplorer ? (bool?)null : true;
-
+        var groupName = DynamicApiAttributeMergeHelper.ResolveStringFromAttributes(
+            classAttributes,
+            attribute => attribute.Group);
+        var ignoreApi = classAttributes.Any(attribute => !attribute.VisibleInApiExplorer);
         var attributeBuilder = BuildApiExplorerSettingsAttribute(groupName, ignoreApi);
         if (attributeBuilder != null)
         {
@@ -288,58 +288,9 @@ public static class DynamicApiControllerFactory
     /// </summary>
     private static List<string> GetMethodVersions(MethodInfo methodInfo, Type serviceType, DynamicApiOptions? options)
     {
-        var versions = new HashSet<string>();
-
-        // 1. 获取方法级别的 MapToApiVersionAttribute
-        var mapToVersionAttrs = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>();
-        foreach (var attr in mapToVersionAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version))
-            {
-                versions.Add(attr.Version);
-            }
-        }
-
-        // 2. 获取方法级别的 DynamicApiAttribute.Version
-        var dynamicApiAttrs = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
-        foreach (var attr in dynamicApiAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version))
-            {
-                versions.Add(attr.Version);
-            }
-        }
-
-        // 3. 获取方法级别的 ApiVersionAttribute
-        var apiVersionAttrs = methodInfo.GetCustomAttributes<ApiVersionAttribute>();
-        foreach (var attr in apiVersionAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version))
-            {
-                versions.Add(attr.Version);
-            }
-        }
-
-        // 如果方法级别没有版本号，尝试从类级别获取
-        if (versions.Count == 0)
-        {
-            // 4. 类级别的 DynamicApiAttribute.Version
-            var classDynamicApiAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-            if (!string.IsNullOrEmpty(classDynamicApiAttr?.Version))
-            {
-                versions.Add(classDynamicApiAttr.Version);
-            }
-
-            // 5. 类级别的 ApiVersionAttribute（可能有多个）
-            var classApiVersionAttrs = serviceType.GetCustomAttributes<ApiVersionAttribute>();
-            foreach (var attr in classApiVersionAttrs)
-            {
-                if (!string.IsNullOrEmpty(attr.Version))
-                {
-                    versions.Add(attr.Version);
-                }
-            }
-        }
+        var versions = DynamicApiAttributeMergeHelper
+            .ResolveVersions(serviceType, methodInfo)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 如果还是没有版本号，使用默认版本
         if (versions.Count == 0 && !string.IsNullOrEmpty(options?.DefaultApiVersion))
@@ -495,11 +446,11 @@ public static class DynamicApiControllerFactory
         // 添加方法级别的 ApiExplorerSettings 特性
         AddMethodApiExplorerSettingsAttribute(methodBuilder, serviceMethod);
 
-        // 添加 Tags 特性（用于 Swagger/OpenAPI 分组）
+        // 添加 Tags 特性（用于 OpenAPI 分组）
         AddTagsAttribute(methodBuilder, serviceMethod, serviceField.FieldType);
 
-        // 添加原始方法标记特性（用于 Swagger 读取 XML 注释）
-        AddOriginalMethodAttribute(methodBuilder, serviceMethod);
+        // 添加原始方法标记特性（用于读取 XML 注释）
+        AddOriginalMethodAttribute(methodBuilder, serviceMethod, serviceField.FieldType);
 
         // 添加参数及参数特性
         for (var i = 0; i < parameters.Length; i++)
@@ -599,15 +550,16 @@ public static class DynamicApiControllerFactory
     /// </summary>
     private static void AddMethodApiExplorerSettingsAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod)
     {
-        // 从服务方法获取 DynamicApiAttribute
-        var dynamicApiAttr = serviceMethod.GetCustomAttribute<DynamicApiAttribute>();
-        if (dynamicApiAttr == null)
+        var methodAttributes = DynamicApiAttributeMergeHelper.GetOrderedMethodAttributes(serviceMethod);
+        if (methodAttributes.Count == 0)
         {
             return;
         }
 
-        var groupName = dynamicApiAttr.Group;
-        var ignoreApi = dynamicApiAttr.VisibleInApiExplorer ? (bool?)null : true;
+        var groupName = DynamicApiAttributeMergeHelper.ResolveStringFromAttributes(
+            methodAttributes,
+            attribute => attribute.Group);
+        var ignoreApi = methodAttributes.Any(attribute => !attribute.VisibleInApiExplorer);
 
         var attributeBuilder = BuildApiExplorerSettingsAttribute(groupName, ignoreApi);
         if (attributeBuilder != null)
@@ -672,29 +624,22 @@ public static class DynamicApiControllerFactory
     }
 
     /// <summary>
-    /// 添加 Tags 特性（用于 Swagger/OpenAPI 分组）
+    /// 添加 Tags 特性（用于 OpenAPI 分组）
     /// </summary>
     private static void AddTagsAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod, Type serviceType)
     {
-        // 获取方法级别的 DynamicApiAttribute
-        var methodAttr = serviceMethod.GetCustomAttribute<DynamicApiAttribute>();
-
-        // 获取类级别的 DynamicApiAttribute
-        var classAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
-
-        // 确定使用哪个 Tag（方法级别优先）
-        string? tag = null;
-        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.Tag))
+        var tags = DynamicApiAttributeMergeHelper.ResolveTags(serviceType, serviceMethod).ToList();
+        if (tags.Count == 0)
         {
-            tag = methodAttr.Tag;
-        }
-        else if (classAttr != null && !string.IsNullOrEmpty(classAttr.Tag))
-        {
-            tag = classAttr.Tag;
+            var typeSummary = DynamicApiXmlCommentsHelper.GetTypeSummary(serviceType);
+            if (!string.IsNullOrWhiteSpace(typeSummary))
+            {
+                tags.Add(typeSummary);
+            }
         }
 
         // 如果有 Tag，添加 Tags 特性
-        if (!string.IsNullOrEmpty(tag))
+        if (tags.Count != 0)
         {
             // 使用 ASP.NET Core 内置的 TagsAttribute
             var attributeType = typeof(TagsAttribute);
@@ -703,7 +648,7 @@ public static class DynamicApiControllerFactory
             {
                 var attributeBuilder = new CustomAttributeBuilder(
                     constructor,
-                    [new string[] { tag }]);
+                    [tags.ToArray()]);
 
                 methodBuilder.SetCustomAttribute(attributeBuilder);
             }
@@ -713,7 +658,7 @@ public static class DynamicApiControllerFactory
     /// <summary>
     /// 添加原始方法标记特性
     /// </summary>
-    private static void AddOriginalMethodAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod)
+    private static void AddOriginalMethodAttribute(MethodBuilder methodBuilder, MethodInfo serviceMethod, Type serviceType)
     {
         var attributeType = typeof(OriginalMethodAttribute);
         var constructor = attributeType.GetConstructor([typeof(Type), typeof(string), typeof(Type[])]);
@@ -722,7 +667,7 @@ public static class DynamicApiControllerFactory
             var parameterTypes = serviceMethod.GetParameters().Select(p => p.ParameterType).ToArray();
             var attributeBuilder = new CustomAttributeBuilder(
                 constructor,
-                [serviceMethod.DeclaringType!, serviceMethod.Name, parameterTypes]);
+                [serviceType, serviceMethod.Name, parameterTypes]);
 
             methodBuilder.SetCustomAttribute(attributeBuilder);
         }
