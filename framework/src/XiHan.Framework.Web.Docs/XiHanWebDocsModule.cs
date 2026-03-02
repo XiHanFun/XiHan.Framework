@@ -52,6 +52,9 @@ public class XiHanWebDocsModule : XiHanModule
             // Tags 现在使用 ASP.NET Core 内置的 TagsAttribute，不再需要自定义过滤器
             options.OperationFilter<DynamicApiXmlCommentsOperationFilter>();
         });
+
+        // 动态 API 分组 Swagger 配置
+        services.ConfigureOptions<DynamicApiSwaggerGenOptionsSetup>();
     }
 
     /// <summary>
@@ -68,18 +71,47 @@ public class XiHanWebDocsModule : XiHanModule
         // 启用 Swagger UI
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
+            var groupNames = DynamicApiSwaggerGroupHelper.GetGroupNamesFromAttributes();
+
+            var extraGroupNames = groupNames
+                .Where(name => !string.Equals(name, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            options.SwaggerEndpoint(
+                $"/swagger/{DynamicApiSwaggerGroupHelper.DefaultDocName}/swagger.json",
+                DynamicApiSwaggerGroupHelper.DefaultDocTitle);
+
+            foreach (var groupName in extraGroupNames)
+            {
+                options.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
+            }
         });
 
         // 启用 Scalar（使用 Swagger 生成的 OpenAPI JSON）
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapScalarApiReference(options =>
+            endpoints.MapScalarApiReference((options, httpContext) =>
             {
+                var groupNames = DynamicApiSwaggerGroupHelper.GetGroupNamesFromAttributes();
+
+                var extraGroupNames = groupNames
+                    .Where(name => !string.Equals(name, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
                 // Scalar 会自动读取 Swagger 生成的 OpenAPI JSON
                 options.WithTitle("XiHan Framework API")
                        .WithTheme(ScalarTheme.Purple)
-                       .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+                       .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+                       .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json")
+                       .AddDocument(
+                           DynamicApiSwaggerGroupHelper.DefaultDocName,
+                           DynamicApiSwaggerGroupHelper.DefaultDocTitle,
+                           isDefault: true);
+
+                foreach (var groupName in extraGroupNames)
+                {
+                    options.AddDocument(groupName, groupName);
+                }
             });
         });
     }
