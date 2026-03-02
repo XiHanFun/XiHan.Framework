@@ -17,7 +17,6 @@ using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core.Extensions;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Docs.Swagger;
 
 namespace XiHan.Framework.Web.Docs;
@@ -37,24 +36,29 @@ public class XiHanWebDocsModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var config = services.GetConfiguration();
 
-        services.AddSwaggerGen(options =>
+        // 默认文档（v1）启用动态 API XML 注释增强
+        services.AddOpenApi(options =>
         {
-            // 读取所有程序集的 XML 文档
-            var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-            foreach (var xmlFile in xmlFiles)
-            {
-                options.IncludeXmlComments(xmlFile, includeControllerXmlComments: true);
-            }
-
-            // 添加动态 API XML 注释过滤器（用于读取原始服务方法的 XML 注释）
-            // Tags 现在使用 ASP.NET Core 内置的 TagsAttribute，不再需要自定义过滤器
-            options.OperationFilter<DynamicApiXmlCommentsOperationFilter>();
+            options.AddOperationTransformer<DynamicApiXmlCommentsOperationTransformer>();
         });
 
-        // 动态 API 分组 Swagger 配置
-        services.ConfigureOptions<DynamicApiSwaggerGenOptionsSetup>();
+        var groupDefinitions = DynamicApiSwaggerGroupHelper.GetGroupDefinitionsFromAttributes();
+        foreach (var groupDefinition in groupDefinitions)
+        {
+            if (string.Equals(groupDefinition.Group, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            // 以官方 OpenAPI 文档为基准：为每个动态分组注册独立文档
+            services.AddOpenApi(groupDefinition.Group, options =>
+            {
+                options.ShouldInclude = apiDescription =>
+                    string.Equals(apiDescription.GroupName, groupDefinition.Group, StringComparison.OrdinalIgnoreCase);
+                options.AddOperationTransformer<DynamicApiXmlCommentsOperationTransformer>();
+            });
+        }
     }
 
     /// <summary>
@@ -65,52 +69,51 @@ public class XiHanWebDocsModule : XiHanModule
     {
         var app = context.GetApplicationBuilder();
 
-        // 启用 Swagger 中间件（生成 OpenAPI JSON）
-        app.UseSwagger();
-        
-        // 启用 Swagger UI
+        // 启用 Swagger UI（读取官方 OpenAPI 文档）
         app.UseSwaggerUI(options =>
         {
-            var groupNames = DynamicApiSwaggerGroupHelper.GetGroupNamesFromAttributes();
+            var groupDefinitions = DynamicApiSwaggerGroupHelper.GetGroupDefinitionsFromAttributes();
 
-            var extraGroupNames = groupNames
-                .Where(name => !string.Equals(name, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
+            var extraGroupDefinitions = groupDefinitions
+                .Where(definition =>
+                    !string.Equals(definition.Group, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             options.SwaggerEndpoint(
-                $"/swagger/{DynamicApiSwaggerGroupHelper.DefaultDocName}/swagger.json",
+                $"/openapi/{DynamicApiSwaggerGroupHelper.DefaultDocName}.json",
                 DynamicApiSwaggerGroupHelper.DefaultDocTitle);
 
-            foreach (var groupName in extraGroupNames)
+            foreach (var groupDefinition in extraGroupDefinitions)
             {
-                options.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
+                options.SwaggerEndpoint($"/openapi/{groupDefinition.Group}.json", groupDefinition.DisplayName);
             }
         });
 
-        // 启用 Scalar（使用 Swagger 生成的 OpenAPI JSON）
+        // 启用 Scalar（读取官方 OpenAPI 文档）
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapScalarApiReference((options, httpContext) =>
             {
-                var groupNames = DynamicApiSwaggerGroupHelper.GetGroupNamesFromAttributes();
+                var groupDefinitions = DynamicApiSwaggerGroupHelper.GetGroupDefinitionsFromAttributes();
 
-                var extraGroupNames = groupNames
-                    .Where(name => !string.Equals(name, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
+                var extraGroupDefinitions = groupDefinitions
+                    .Where(definition =>
+                        !string.Equals(definition.Group, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-                // Scalar 会自动读取 Swagger 生成的 OpenAPI JSON
+                // Scalar 会自动读取官方 OpenAPI JSON
                 options.WithTitle("XiHan Framework API")
                        .WithTheme(ScalarTheme.Purple)
                        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-                       .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json")
+                       .WithOpenApiRoutePattern("/openapi/{documentName}.json")
                        .AddDocument(
                            DynamicApiSwaggerGroupHelper.DefaultDocName,
                            DynamicApiSwaggerGroupHelper.DefaultDocTitle,
                            isDefault: true);
 
-                foreach (var groupName in extraGroupNames)
+                foreach (var groupDefinition in extraGroupDefinitions)
                 {
-                    options.AddDocument(groupName, groupName);
+                    options.AddDocument(groupDefinition.Group, groupDefinition.DisplayName);
                 }
             });
         });

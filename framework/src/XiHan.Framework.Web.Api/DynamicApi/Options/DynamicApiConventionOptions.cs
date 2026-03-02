@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.DynamicApi.Configuration;
+namespace XiHan.Framework.Web.Api.DynamicApi.Options;
 
 /// <summary>
 /// 动态 API 约定配置
@@ -44,6 +44,13 @@ public class DynamicApiConventionOptions
         { "Patch", "PATCH" },
         { "PartialUpdate", "PATCH" }
     };
+
+    /// <summary>
+    /// 是否保留路由谓词（方法名前缀）
+    /// true: GetUsers -> GetUsers
+    /// false: GetUsers -> Users
+    /// </summary>
+    public bool PreserveRoutePredicate { get; set; } = false;
 
     /// <summary>
     /// 是否使用 PascalCase 路由
