@@ -151,9 +151,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var targetIds = await CreateTenantQueryable()
+            .Where(whereExpression)
+            .Select(entity => entity.BasicId)
+            .ToListAsync(cancellationToken);
+
+        if (targetIds.Count == 0)
+        {
+            return false;
+        }
+
         await DbClient.Updateable<TEntity>()
             .SetColumns(columns)
-            .Where(whereExpression)
+            .Where(entity => targetIds.Contains(entity.BasicId))
             .ExecuteCommandAsync(cancellationToken);
         return true;
     }
@@ -380,8 +390,18 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var affectedRows = await DbClient.Deleteable<TEntity>()
+        var targetIds = await CreateTenantQueryable()
             .Where(predicate)
+            .Select(entity => entity.BasicId)
+            .ToListAsync(cancellationToken);
+
+        if (targetIds.Count == 0)
+        {
+            return false;
+        }
+
+        var affectedRows = await DbClient.Deleteable<TEntity>()
+            .In(targetIds)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
