@@ -50,10 +50,12 @@ public class DynamicApiConventionOptions
     /// true: GetUsers -> GetUsers
     /// false: GetUsers -> get-users
     /// </summary>
-    public bool UsePascalCaseRoutes { get; set; } = false;
+    public bool UsePascalCaseRoutes { get; set; } = true;
 
     /// <summary>
     /// 是否使用小写路由
+    /// true: GetUsers -> getusers
+    /// false: GetUsers -> GetUsers
     /// </summary>
     public bool UseLowercaseRoutes { get; set; } = false;
 

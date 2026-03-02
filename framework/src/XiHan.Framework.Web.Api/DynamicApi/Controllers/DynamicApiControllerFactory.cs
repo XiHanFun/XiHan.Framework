@@ -33,7 +33,6 @@ public static class DynamicApiControllerFactory
     private static readonly AssemblyBuilder AssemblyBuilder;
     private static readonly ModuleBuilder ModuleBuilder;
     private static readonly Dictionary<Type, Type> ControllerTypeCache = [];
-    private static readonly Lock LockObject = new();
 
     static DynamicApiControllerFactory()
     {
@@ -59,78 +58,69 @@ public static class DynamicApiControllerFactory
             return cachedType;
         }
 
-        lock (LockObject)
+        try
         {
-            // 再次检查，防止并发创建
-            if (ControllerTypeCache.TryGetValue(serviceType, out cachedType))
+            logger?.LogDebug("正在为服务创建动态控制器: {ServiceType}", serviceType.FullName);
+
+            // 应用约定获取控制器信息
+            var context = new DynamicApiConventionContext
             {
-                return cachedType;
-            }
+                ServiceType = serviceType
+            };
 
-            try
+            convention?.Apply(context);
+
+            // 如果约定禁用了动态 API，返回 null
+            if (!context.IsEnabled)
             {
-                logger?.LogDebug("正在为服务创建动态控制器: {ServiceType}", serviceType.FullName);
-
-                // 应用约定获取控制器信息
-                var context = new DynamicApiConventionContext
-                {
-                    ServiceType = serviceType
-                };
-
-                convention?.Apply(context);
-
-                // 如果约定禁用了动态 API，返回 null
-                if (!context.IsEnabled)
-                {
-                    logger?.LogDebug("服务已禁用动态 API: {ServiceName}", serviceType.Name);
-                    return null;
-                }
-
-                var controllerName = context.ControllerName ?? serviceType.Name;
-                var routeTemplate = context.RouteTemplate ?? "api/[controller]";
-
-                logger?.LogInformation("正在生成控制器 '{ControllerName}'，路由模板: '{RouteTemplate}'",
-                    controllerName, routeTemplate);
-
-                // 创建控制器类型
-                var typeBuilder = ModuleBuilder.DefineType(
-                    $"{controllerName}Controller",
-                    TypeAttributes.Public | TypeAttributes.Class,
-                    typeof(ControllerBase));
-
-                // 添加 ApiController 特性
-                AddApiControllerAttribute(typeBuilder);
-
-                // 添加 Route 特性
-                AddRouteAttribute(typeBuilder, routeTemplate);
-
-                // 添加 ApiExplorerSettings 特性（用于文档分组）
-                AddApiExplorerSettingsAttribute(typeBuilder, serviceType);
-
-                // 添加服务字段
-                var serviceField = DefineServiceField(typeBuilder, serviceType);
-
-                // 创建构造函数
-                CreateConstructor(typeBuilder, serviceType, serviceField);
-
-                // 创建动作方法
-                var methodCount = CreateActionMethods(typeBuilder, serviceType, serviceField, convention, options, logger);
-
-                // 创建类型
-                var controllerType = typeBuilder.CreateType();
-                if (controllerType != null)
-                {
-                    ControllerTypeCache[serviceType] = controllerType;
-                    logger?.LogInformation("成功为服务 '{ServiceName}' 创建了动态控制器，包含 {MethodCount} 个操作方法", serviceType.Name, methodCount);
-                }
-
-                return controllerType;
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
+                logger?.LogDebug("服务已禁用动态 API: {ServiceName}", serviceType.Name);
                 return null;
             }
+
+            var controllerName = context.ControllerName ?? serviceType.Name;
+            var routeTemplate = context.RouteTemplate ?? "api/[controller]";
+
+            logger?.LogInformation("正在生成控制器 '{ControllerName}'，路由模板: '{RouteTemplate}'",
+                controllerName, routeTemplate);
+
+            // 创建控制器类型
+            var typeBuilder = ModuleBuilder.DefineType(
+                $"{controllerName}Controller",
+                TypeAttributes.Public | TypeAttributes.Class,
+                typeof(ControllerBase));
+
+            // 添加 ApiController 特性
+            AddApiControllerAttribute(typeBuilder);
+
+            // 添加 Route 特性
+            AddRouteAttribute(typeBuilder, routeTemplate);
+
+            // 添加 ApiExplorerSettings 特性（用于文档分组）
+            AddApiExplorerSettingsAttribute(typeBuilder, serviceType);
+
+            // 添加服务字段
+            var serviceField = DefineServiceField(typeBuilder, serviceType);
+
+            // 创建构造函数
+            CreateConstructor(typeBuilder, serviceType, serviceField);
+
+            // 创建动作方法
+            var methodCount = CreateActionMethods(typeBuilder, serviceType, serviceField, convention, options, logger);
+
+            // 创建类型
+            var controllerType = typeBuilder.CreateType();
+            if (controllerType != null)
+            {
+                ControllerTypeCache[serviceType] = controllerType;
+                logger?.LogInformation("成功为服务 '{ServiceName}' 创建了动态控制器，包含 {MethodCount} 个操作方法", serviceType.Name, methodCount);
+            }
+
+            return controllerType;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
+            return null;
         }
     }
 
@@ -139,10 +129,7 @@ public static class DynamicApiControllerFactory
     /// </summary>
     public static void ClearCache()
     {
-        lock (LockObject)
-        {
-            ControllerTypeCache.Clear();
-        }
+        ControllerTypeCache.Clear();
     }
 
     #region 辅助方法
@@ -184,7 +171,7 @@ public static class DynamicApiControllerFactory
         }
 
         // 只处理 VisibleInApiExplorer = false 的情况
-        // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
+        // Tag 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
         if (!dynamicApiAttr.VisibleInApiExplorer)
         {
             var attributeType = typeof(ApiExplorerSettingsAttribute);
@@ -633,7 +620,7 @@ public static class DynamicApiControllerFactory
         }
 
         // 只处理 VisibleInApiExplorer = false 的情况
-        // GroupName 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
+        // Tag 通过 Swagger OperationFilter 处理，不使用 ApiExplorerSettings
         if (!dynamicApiAttr.VisibleInApiExplorer)
         {
             var attributeType = typeof(ApiExplorerSettingsAttribute);
@@ -666,19 +653,19 @@ public static class DynamicApiControllerFactory
         // 获取类级别的 DynamicApiAttribute
         var classAttr = serviceType.GetCustomAttribute<DynamicApiAttribute>();
 
-        // 确定使用哪个 GroupName（方法级别优先）
-        string? groupName = null;
-        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.GroupName))
+        // 确定使用哪个 Tag（方法级别优先）
+        string? tag = null;
+        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.Tag))
         {
-            groupName = methodAttr.GroupName;
+            tag = methodAttr.Tag;
         }
-        else if (classAttr != null && !string.IsNullOrEmpty(classAttr.GroupName))
+        else if (classAttr != null && !string.IsNullOrEmpty(classAttr.Tag))
         {
-            groupName = classAttr.GroupName;
+            tag = classAttr.Tag;
         }
 
-        // 如果有 GroupName，添加 Tags 特性
-        if (!string.IsNullOrEmpty(groupName))
+        // 如果有 Tag，添加 Tags 特性
+        if (!string.IsNullOrEmpty(tag))
         {
             // 使用 ASP.NET Core 内置的 TagsAttribute
             var attributeType = typeof(TagsAttribute);
@@ -687,7 +674,7 @@ public static class DynamicApiControllerFactory
             {
                 var attributeBuilder = new CustomAttributeBuilder(
                     constructor,
-                    [new string[] { groupName }]);
+                    [new string[] { tag }]);
 
                 methodBuilder.SetCustomAttribute(attributeBuilder);
             }

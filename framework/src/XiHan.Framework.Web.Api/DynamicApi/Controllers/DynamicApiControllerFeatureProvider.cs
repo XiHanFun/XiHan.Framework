@@ -26,14 +26,7 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 /// </summary>
 public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
 {
-    private readonly IServiceProvider? _serviceProvider;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public DynamicApiControllerFeatureProvider()
-    {
-    }
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// 构造函数
@@ -52,16 +45,9 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
     {
         // 尝试获取配置和约定
-        IDynamicApiConvention? convention = null;
-        DynamicApiOptions? options = null;
-        ILogger? logger = null;
-
-        if (_serviceProvider != null)
-        {
-            convention = _serviceProvider.GetService<IDynamicApiConvention>();
-            options = _serviceProvider.GetService<DynamicApiOptions>();
-            logger = _serviceProvider.GetService<ILogger<DynamicApiControllerFeatureProvider>>();
-        }
+        var convention = _serviceProvider.GetService<IDynamicApiConvention>();
+        var options = _serviceProvider.GetService<DynamicApiOptions>();
+        var logger = _serviceProvider.GetService<ILogger<DynamicApiControllerFeatureProvider>>();
 
         // 检查是否启用动态 API
         if (options?.IsEnabled == false)
