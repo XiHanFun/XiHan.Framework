@@ -22,7 +22,7 @@ using XiHan.Framework.Domain.Shared.Paging.Dtos;
 namespace XiHan.Framework.Application.Services;
 
 /// <summary>
-/// 批量 CRUD 应用服务基类（支持创建和更新DTO分离）
+/// 批量 CRUD 应用服务基类
 /// </summary>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TEntityDto">实体DTO类型</typeparam>
@@ -64,7 +64,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     }
 
     /// <summary>
-    /// 批量创建（使用 TCreateDto）
+    /// 批量创建
     /// </summary>
     [HttpPost]
     public virtual async Task<BatchOperationResponse<TEntityDto>> BatchCreateAsync(BatchOperationRequest<TCreateDto> request)
@@ -83,7 +83,7 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     }
 
     /// <summary>
-    /// 批量更新（使用 TUpdateDto）
+    /// 批量更新
     /// </summary>
     [HttpPost]
     public virtual async Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TKey, TUpdateDto> request)

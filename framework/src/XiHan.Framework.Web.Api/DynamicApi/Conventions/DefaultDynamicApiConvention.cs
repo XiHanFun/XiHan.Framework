@@ -15,9 +15,8 @@
 using Microsoft.AspNetCore.Mvc.Routing;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using XiHan.Framework.Application.Attributes;
-using XiHan.Framework.Web.Api.DynamicApi.Attributes;
-using XiHan.Framework.Web.Api.DynamicApi.Configuration;
+using XiHan.Framework.Web.Api.DynamicApi.Helpers;
+using XiHan.Framework.Web.Api.DynamicApi.Options;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.Conventions;
 
@@ -50,10 +49,19 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             return;
         }
 
+        var usePascalCaseRoute = ResolveUsePascalCaseRoute(context.ServiceType, context.MethodInfo);
+        var useLowercaseRoute = ResolveUseLowercaseRoute(context.ServiceType, context.MethodInfo);
+        var preserveRoutePredicate = ResolvePreserveRoutePredicate(context.ServiceType, context.MethodInfo);
+        var customProperties = ResolveCustomProperties(context.ServiceType, context.MethodInfo);
+        if (customProperties.Count != 0)
+        {
+            context.Metadata["DynamicApi.CustomProperties"] = customProperties;
+        }
+
         // 设置控制器名称
         if (string.IsNullOrEmpty(context.ControllerName))
         {
-            context.ControllerName = GetControllerName(context.ServiceType);
+            context.ControllerName = GetControllerName(context.ServiceType, usePascalCaseRoute, useLowercaseRoute);
         }
 
         // 设置 API 版本
@@ -74,30 +82,33 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         // 如果没有方法信息，设置控制器级别的路由模板后返回
         if (context.MethodInfo == null)
         {
-            // 从类级别的 DynamicApiAttribute 读取自定义路由模板
-            var classAttr = context.ServiceType.GetCustomAttribute<DynamicApiAttribute>();
-            if (classAttr != null && !string.IsNullOrEmpty(classAttr.RouteTemplate))
+            // 从类级别合并结果读取自定义路由模板
+            var classRouteTemplate = DynamicApiAttributeMergeHelper.ResolveRouteTemplate(context.ServiceType);
+            if (!string.IsNullOrWhiteSpace(classRouteTemplate))
             {
-                context.RouteTemplate = classAttr.RouteTemplate;
+                context.RouteTemplate = classRouteTemplate;
             }
             // 如果没有自定义路由模板，使用默认规则
             else if (string.IsNullOrEmpty(context.RouteTemplate))
             {
-                context.RouteTemplate = GetRouteTemplate(context);
+                context.RouteTemplate = GetRouteTemplate(context, usePascalCaseRoute, useLowercaseRoute);
             }
             return;
         }
 
-        // 从方法级别的 DynamicApiAttribute 读取自定义名称
-        var methodAttr = context.MethodInfo.GetCustomAttribute<DynamicApiAttribute>();
-        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.Name))
+        // 从方法级别合并结果读取自定义名称
+        var methodAttributes = DynamicApiAttributeMergeHelper.GetOrderedMethodAttributes(context.MethodInfo);
+        var methodCustomName = DynamicApiAttributeMergeHelper.ResolveStringFromAttributes(
+            methodAttributes,
+            attribute => attribute.Name);
+        if (!string.IsNullOrWhiteSpace(methodCustomName))
         {
-            context.ActionName = methodAttr.Name;
+            context.ActionName = FormatRouteName(methodCustomName, usePascalCaseRoute, useLowercaseRoute);
         }
         // 设置动作名称
         else if (string.IsNullOrEmpty(context.ActionName))
         {
-            context.ActionName = GetActionName(context.MethodInfo);
+            context.ActionName = GetActionName(context.MethodInfo, preserveRoutePredicate, usePascalCaseRoute, useLowercaseRoute);
         }
 
         // 设置 HTTP 方法
@@ -107,14 +118,17 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         }
 
         // 从方法级别的 DynamicApiAttribute 读取自定义路由模板
-        if (methodAttr != null && !string.IsNullOrEmpty(methodAttr.RouteTemplate))
+        var methodRouteTemplate = DynamicApiAttributeMergeHelper.ResolveStringFromAttributes(
+            methodAttributes,
+            attribute => attribute.RouteTemplate);
+        if (!string.IsNullOrWhiteSpace(methodRouteTemplate))
         {
-            context.RouteTemplate = methodAttr.RouteTemplate;
+            context.RouteTemplate = methodRouteTemplate;
         }
         // 设置方法级别的路由模板
         else if (string.IsNullOrEmpty(context.RouteTemplate))
         {
-            context.RouteTemplate = GetRouteTemplate(context);
+            context.RouteTemplate = GetRouteTemplate(context, usePascalCaseRoute, useLowercaseRoute);
         }
     }
 
@@ -123,30 +137,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     private static bool IsDisabled(Type serviceType, MethodInfo? methodInfo)
     {
-        // 检查类级别的动态 API 特性（可能有多个）
-        var classAttributes = serviceType.GetCustomAttributes<DynamicApiAttribute>();
-        foreach (var attr in classAttributes)
-        {
-            if (!attr.IsEnabled)
-            {
-                return true;
-            }
-        }
-
-        // 检查方法级别的禁用标记（可能有多个）
-        if (methodInfo != null)
-        {
-            var methodAttributes = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
-            foreach (var attr in methodAttributes)
-            {
-                if (!attr.IsEnabled)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return !DynamicApiAttributeMergeHelper.IsEnabled(serviceType, methodInfo);
     }
 
     /// <summary>
@@ -170,56 +161,10 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     /// <param name="serviceType">服务类型</param>
     /// <param name="methodInfo">方法信息（可选）</param>
-    /// <returns>API版本号，优先级：MapToApiVersion > DynamicApi.Version(方法) > ApiVersion(方法) > DynamicApi.Version(类) > ApiVersion(类)</returns>
+    /// <returns>API版本号，优先级：DynamicApi.Version(方法) > DynamicApi.Version(类)</returns>
     private static string? GetApiVersion(Type serviceType, MethodInfo? methodInfo = null)
     {
-        // 优先从方法级别获取版本号
-        if (methodInfo != null)
-        {
-            // 1. 最高优先级：MapToApiVersionAttribute（取第一个）
-            var mapToVersionAttr = methodInfo.GetCustomAttributes<MapToApiVersionAttribute>().FirstOrDefault();
-            if (mapToVersionAttr != null && !string.IsNullOrEmpty(mapToVersionAttr.Version))
-            {
-                return mapToVersionAttr.Version;
-            }
-
-            // 2. 次优先级：DynamicApiAttribute.Version（取第一个有版本号的）
-            var dynamicApiAttrs = methodInfo.GetCustomAttributes<DynamicApiAttribute>();
-            foreach (var attr in dynamicApiAttrs)
-            {
-                if (!string.IsNullOrEmpty(attr.Version))
-                {
-                    return attr.Version;
-                }
-            }
-
-            // 3. 标准 ApiVersionAttribute（取第一个）
-            var apiVersionAttr = methodInfo.GetCustomAttributes<ApiVersionAttribute>().FirstOrDefault();
-            if (apiVersionAttr != null && !string.IsNullOrEmpty(apiVersionAttr.Version))
-            {
-                return apiVersionAttr.Version;
-            }
-        }
-
-        // 然后从类级别获取版本号
-        // 4. 类级别的 DynamicApiAttribute.Version（取第一个有版本号的）
-        var classDynamicApiAttrs = serviceType.GetCustomAttributes<DynamicApiAttribute>();
-        foreach (var attr in classDynamicApiAttrs)
-        {
-            if (!string.IsNullOrEmpty(attr.Version))
-            {
-                return attr.Version;
-            }
-        }
-
-        // 5. 类级别的 ApiVersionAttribute（取第一个）
-        var classApiVersionAttr = serviceType.GetCustomAttributes<ApiVersionAttribute>().FirstOrDefault();
-        if (classApiVersionAttr != null && !string.IsNullOrEmpty(classApiVersionAttr.Version))
-        {
-            return classApiVersionAttr.Version;
-        }
-
-        return null;
+        return DynamicApiAttributeMergeHelper.ResolveVersion(serviceType, methodInfo);
     }
 
     /// <summary>
@@ -262,9 +207,19 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     }
 
     /// <summary>
+    /// 解析并合并自定义属性（方法级覆盖类级）
+    /// </summary>
+    private static Dictionary<string, string> ResolveCustomProperties(Type serviceType, MethodInfo? methodInfo)
+    {
+        return new Dictionary<string, string>(
+            DynamicApiAttributeMergeHelper.ResolveCustomProperties(serviceType, methodInfo),
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// 获取控制器名称
     /// </summary>
-    private string GetControllerName(Type serviceType)
+    private string GetControllerName(Type serviceType, bool usePascalCaseRoute, bool useLowercaseRoute)
     {
         var name = serviceType.Name;
 
@@ -281,13 +236,17 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             }
         }
 
-        return FormatRouteName(name);
+        return FormatRouteName(name, usePascalCaseRoute, useLowercaseRoute);
     }
 
     /// <summary>
     /// 获取动作名称
     /// </summary>
-    private string GetActionName(MethodInfo methodInfo)
+    private string GetActionName(
+        MethodInfo methodInfo,
+        bool preserveRoutePredicate,
+        bool usePascalCaseRoute,
+        bool useLowercaseRoute)
     {
         var name = methodInfo.Name;
 
@@ -297,7 +256,12 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             name = name[..^5];
         }
 
-        return FormatRouteName(name);
+        if (!preserveRoutePredicate)
+        {
+            name = RemoveRoutePredicate(name);
+        }
+
+        return FormatRouteName(name, usePascalCaseRoute, useLowercaseRoute);
     }
 
     /// <summary>
@@ -329,12 +293,12 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 获取路由模板
     /// </summary>
-    private string GetRouteTemplate(DynamicApiConventionContext context)
+    private string GetRouteTemplate(DynamicApiConventionContext context, bool usePascalCaseRoute, bool useLowercaseRoute)
     {
         // 如果是控制器级别的路由（没有方法信息），返回控制器基础路径
         if (context.MethodInfo == null)
         {
-            return GetControllerRouteTemplate(context);
+            return GetControllerRouteTemplate(context, usePascalCaseRoute, useLowercaseRoute);
         }
 
         // 如果是方法级别的路由，返回方法特定的部分
@@ -344,7 +308,10 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 获取控制器级别的路由模板
     /// </summary>
-    private string GetControllerRouteTemplate(DynamicApiConventionContext context)
+    private string GetControllerRouteTemplate(
+        DynamicApiConventionContext context,
+        bool usePascalCaseRoute,
+        bool useLowercaseRoute)
     {
         var parts = new List<string>();
 
@@ -366,7 +333,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             var moduleName = GetModuleName(context.ServiceType);
             if (!string.IsNullOrEmpty(moduleName))
             {
-                parts.Add(FormatRouteName(moduleName));
+                parts.Add(FormatRouteName(moduleName, usePascalCaseRoute, useLowercaseRoute));
             }
         }
 
@@ -462,21 +429,80 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 格式化路由名称
     /// </summary>
-    private string FormatRouteName(string name)
+    private string FormatRouteName(string name, bool usePascalCaseRoute, bool useLowercaseRoute)
     {
         if (string.IsNullOrEmpty(name))
         {
             return name;
         }
 
-        if (_options.Conventions.UsePascalCaseRoutes)
+        if (usePascalCaseRoute)
         {
-            return name;
+            return useLowercaseRoute ? name.ToLowerInvariant() : name;
         }
 
         // 将 PascalCase 转换为 kebab-case 或其他格式
         var result = Regex.Replace(name, "([a-z])([A-Z])", $"$1{_options.Conventions.RouteSeparator}$2");
 
-        return _options.Conventions.UseLowercaseRoutes ? result.ToLower() : result;
+        return useLowercaseRoute ? result.ToLowerInvariant() : result;
+    }
+
+    /// <summary>
+    /// 解析是否使用 PascalCase 路由
+    /// </summary>
+    private bool ResolveUsePascalCaseRoute(Type serviceType, MethodInfo? methodInfo)
+    {
+        return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
+            serviceType,
+            methodInfo,
+            attribute => attribute.UsePascalCaseRoutes,
+            _options.Conventions.UsePascalCaseRoutes);
+    }
+
+    /// <summary>
+    /// 解析是否使用小写路由
+    /// </summary>
+    private bool ResolveUseLowercaseRoute(Type serviceType, MethodInfo? methodInfo)
+    {
+        return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
+            serviceType,
+            methodInfo,
+            attribute => attribute.UseLowercaseRoute,
+            _options.Conventions.UseLowercaseRoutes);
+    }
+
+    /// <summary>
+    /// 解析是否保留路由谓词
+    /// </summary>
+    private bool ResolvePreserveRoutePredicate(Type serviceType, MethodInfo? methodInfo)
+    {
+        return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
+            serviceType,
+            methodInfo,
+            attribute => attribute.PreserveRoutePredicate,
+            _options.Conventions.PreserveRoutePredicate);
+    }
+
+    /// <summary>
+    /// 移除路由谓词（方法名前缀）
+    /// </summary>
+    private string RemoveRoutePredicate(string name)
+    {
+        foreach (var prefix in _options.Conventions.HttpMethodConventions.Keys
+                     .OrderByDescending(prefix => prefix.Length))
+        {
+            if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var candidate = name[prefix.Length..];
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return name;
     }
 }

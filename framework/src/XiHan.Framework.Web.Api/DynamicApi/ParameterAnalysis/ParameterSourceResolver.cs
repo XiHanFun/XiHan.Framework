@@ -50,7 +50,7 @@ public class ParameterSourceResolver
             throw new ArgumentNullException(nameof(descriptor.ParameterInfo));
         }
 
-        // Step 0：显式特性优先（最高优先级）
+        // 1.显式特性优先（最高优先级）
         var explicitSource = GetExplicitSource(descriptor.ParameterInfo);
         if (explicitSource.HasValue)
         {
@@ -65,22 +65,22 @@ public class ParameterSourceResolver
             return explicitSource.Value;
         }
 
-        // Step 1：基础设施参数直接跳过
+        // 2.基础设施参数直接跳过
         if (descriptor.Kind == ParameterKind.Special)
         {
             return ParameterSource.Services;
         }
 
-        // Step 2：根据 HTTP Method 决策
+        // 3.根据 HTTP Method 决策
         var allowBody = IsBodyAllowed();
 
-        // Step 3：Route 参数推断
+        // 4.Route 参数推断
         if (descriptor.Role == ParameterRole.Id && descriptor.Kind == ParameterKind.Simple)
         {
             return ParameterSource.Route;
         }
 
-        // Step 4：Body 参数推断（只能 1 个）
+        // 5.Body 参数推断（只能 1 个）
         if (allowBody && descriptor.Kind == ParameterKind.Complex)
         {
             // 确保只有一个 Body 参数
@@ -94,7 +94,7 @@ public class ParameterSourceResolver
             return ParameterSource.Query;
         }
 
-        // Step 5：Query 参数兜底规则
+        // 6.Query 参数兜底规则
         return ParameterSource.Query;
     }
 

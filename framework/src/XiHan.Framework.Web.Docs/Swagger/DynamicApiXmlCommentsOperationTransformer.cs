@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DynamicApiXmlCommentsOperationFilter
+// FileName:DynamicApiXmlCommentsOperationTransformer
 // Guid:3e5d8d7a-1c5e-4e5d-8d7a-1c5e3b1c9f3a
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -12,48 +12,54 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Web.Api.DynamicApi.Attributes;
+using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 
 namespace XiHan.Framework.Web.Docs.Swagger;
 
 /// <summary>
-/// 动态 API XML 注释操作过滤器
-/// 用于从原始服务方法读取 XML 注释并应用到 Swagger 文档
+/// 动态 API XML 注释操作转换器
+/// 用于从原始服务方法读取 XML 注释并应用到 OpenAPI 文档
 /// </summary>
-public class DynamicApiXmlCommentsOperationFilter : IOperationFilter
+public class DynamicApiXmlCommentsOperationTransformer : IOpenApiOperationTransformer
 {
     private readonly Dictionary<string, XDocument> _xmlDocuments = [];
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public DynamicApiXmlCommentsOperationFilter()
+    public DynamicApiXmlCommentsOperationTransformer()
     {
-        // 加载所有程序集的 XML 文档
         LoadXmlDocuments();
     }
 
     /// <summary>
-    /// 应用过滤器
+    /// 转换操作
     /// </summary>
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    public Task TransformAsync(
+        OpenApiOperation operation,
+        OpenApiOperationTransformerContext context,
+        CancellationToken cancellationToken)
     {
-        // 检查是否有 OriginalMethodAttribute
-        var originalMethodAttr = context.MethodInfo.GetCustomAttribute<OriginalMethodAttribute>();
+        if (context.Description.ActionDescriptor is not ControllerActionDescriptor controllerActionDescriptor)
+        {
+            return Task.CompletedTask;
+        }
+
+        var originalMethodAttr = controllerActionDescriptor.MethodInfo.GetCustomAttribute<OriginalMethodAttribute>();
         if (originalMethodAttr == null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            // 获取原始方法
             var originalMethod = originalMethodAttr.ServiceType.GetMethod(
                 originalMethodAttr.MethodName,
                 BindingFlags.Public | BindingFlags.Instance,
@@ -61,92 +67,104 @@ public class DynamicApiXmlCommentsOperationFilter : IOperationFilter
                 originalMethodAttr.ParameterTypes,
                 null);
 
-            if (originalMethod == null)
+            if (originalMethod != null)
             {
-                return;
+                ApplyXmlComments(operation, originalMethodAttr.ServiceType, originalMethod);
             }
-
-            // 读取并应用 XML 注释
-            ApplyXmlComments(operation, originalMethod, context);
         }
         catch
         {
-            // 忽略错误，不影响 Swagger 生成
+            // 忽略错误，不影响 OpenAPI 生成
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// 应用 XML 注释
     /// </summary>
-    private void ApplyXmlComments(OpenApiOperation operation, MethodInfo methodInfo, OperationFilterContext context)
+    private void ApplyXmlComments(OpenApiOperation operation, Type serviceType, MethodInfo methodInfo)
     {
-        // 获取 DynamicApiAttribute 的 Description（优先级最高）
-        var dynamicApiAttr = methodInfo.GetCustomAttribute<DynamicApiAttribute>();
-        var hasCustomDescription = dynamicApiAttr != null && !string.IsNullOrEmpty(dynamicApiAttr.Description);
+        var dynamicApiDescription = DynamicApiAttributeMergeHelper.ResolveDescription(serviceType, methodInfo);
+        var hasCustomDescription = !string.IsNullOrWhiteSpace(dynamicApiDescription);
 
-        var memberName = XmlCommentsNodeNameHelper.GetMemberNameForMethod(methodInfo);
+        var memberNameCandidates = XmlCommentsNodeNameHelper.GetMemberNamesForMethod(methodInfo);
         var xmlDoc = GetXmlDocument(methodInfo.DeclaringType?.Assembly);
 
         if (xmlDoc == null)
         {
-            // 如果没有 XML 文档，但有自定义描述，仍然应用自定义描述
             if (hasCustomDescription && string.IsNullOrEmpty(operation.Summary))
             {
-                operation.Summary = dynamicApiAttr!.Description;
+                operation.Summary = dynamicApiDescription;
             }
             return;
         }
 
-        // 获取方法的 summary 注释
-        var summaryNode = xmlDoc.XPathSelectElement($"/doc/members/member[@name='{memberName}']/summary");
+        var memberNode = GetMethodMemberNode(xmlDoc, memberNameCandidates);
+        var summaryNode = memberNode?.Element("summary");
         if (string.IsNullOrEmpty(operation.Summary))
         {
-            // 优先使用 DynamicApiAttribute.Description
             if (hasCustomDescription)
             {
-                operation.Summary = dynamicApiAttr!.Description;
+                operation.Summary = dynamicApiDescription;
             }
-            // 否则使用 XML summary
             else if (summaryNode != null)
             {
                 operation.Summary = summaryNode.Value.Trim();
             }
         }
 
-        // 获取方法的 remarks 注释
-        var remarksNode = xmlDoc.XPathSelectElement($"/doc/members/member[@name='{memberName}']/remarks");
+        var remarksNode = memberNode?.Element("remarks");
         if (remarksNode != null && string.IsNullOrEmpty(operation.Description))
         {
             operation.Description = remarksNode.Value.Trim();
         }
 
-        // 应用参数注释
         var parameters = methodInfo.GetParameters();
         foreach (var parameter in parameters)
         {
-            var paramNode = xmlDoc.XPathSelectElement($"/doc/members/member[@name='{memberName}']/param[@name='{parameter.Name}']");
-            if (paramNode != null)
+            var paramNode = memberNode?
+                .Elements("param")
+                .FirstOrDefault(element => string.Equals(element.Attribute("name")?.Value, parameter.Name, StringComparison.Ordinal));
+            if (paramNode == null)
             {
-                var apiParam = operation.Parameters?.FirstOrDefault(p => p.Name == parameter.Name);
-                if (apiParam != null && string.IsNullOrEmpty(apiParam.Description))
-                {
-                    apiParam.Description = paramNode.Value.Trim();
-                }
+                continue;
+            }
+
+            var apiParam = operation.Parameters?.FirstOrDefault(p => p.Name == parameter.Name);
+            if (apiParam != null && string.IsNullOrEmpty(apiParam.Description))
+            {
+                apiParam.Description = paramNode.Value.Trim();
             }
         }
 
-        // 应用返回值注释
-        var returnsNode = xmlDoc.XPathSelectElement($"/doc/members/member[@name='{memberName}']/returns");
-        if (returnsNode != null && operation.Responses != null)
+        var returnsNode = memberNode?.Element("returns");
+        if (returnsNode == null || operation.Responses == null)
         {
-            foreach (var response in operation.Responses.Values)
+            return;
+        }
+
+        foreach (var response in operation.Responses.Values)
+        {
+            if (string.IsNullOrEmpty(response.Description))
             {
-                if (string.IsNullOrEmpty(response.Description))
-                {
-                    response.Description = returnsNode.Value.Trim();
-                }
+                response.Description = returnsNode.Value.Trim();
             }
         }
+    }
+
+    private static XElement? GetMethodMemberNode(XDocument xmlDoc, IEnumerable<string> memberNameCandidates)
+    {
+        foreach (var memberName in memberNameCandidates)
+        {
+            var node = xmlDoc.XPathSelectElement($"/doc/members/member[@name='{memberName}']");
+            if (node != null)
+            {
+                return node;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

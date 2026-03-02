@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.DynamicApi.Configuration;
+namespace XiHan.Framework.Web.Api.DynamicApi.Options;
 
 /// <summary>
 /// 动态 API 配置选项
