@@ -38,6 +38,7 @@ public static class XiHanCachingServiceCollectionExtensions
         services.AddMemoryCache();
         services.AddDistributedMemoryCache();
         services.AddSingleton<IDistributedCacheKeyNormalizer, DefaultDistributedCacheKeyNormalizer>();
+        services.AddSingleton<IDistributedCacheSerializer, JsonDistributedCacheSerializer>();
         services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
         services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
 
