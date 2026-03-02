@@ -129,7 +129,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
         TrySetTenantId(entity);
-        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
+        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken)
+            ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
+        TrySyncTenantIdFromCurrentEntity(entity, beforeEntity);
 
         await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
@@ -191,9 +193,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             TrySetTenantId(item);
         }
 
-        await DbClient.Updateable(entityList)
+        var tenantScopedIds = await GetTenantScopedIdsAsync(entityList.Select(entity => entity.BasicId), cancellationToken);
+        if (tenantScopedIds.Count != entityList.Select(entity => entity.BasicId).Distinct().Count())
+        {
+            throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
+        }
+
+        var updateEntities = entityList
+            .Where(entity => tenantScopedIds.Contains(entity.BasicId))
+            .ToList();
+
+        await DbClient.Updateable(updateEntities)
             .ExecuteCommandAsync(cancellationToken);
-        return entityList;
+        return updateEntities;
     }
 
     /// <summary>
@@ -215,6 +227,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
+        if (beforeEntity is null)
+        {
+            return false;
+        }
+
+        TrySyncTenantIdFromCurrentEntity(entity, beforeEntity);
         var affectedRows = await DbClient.Updateable(entity)
             .ExecuteCommandAsync(cancellationToken);
         if (affectedRows > 0)
@@ -270,7 +288,29 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (updateEntities.Length > 0)
         {
-            var updatedRows = await DbClient.Updateable(updateEntities)
+            var tenantScopedIds = await GetTenantScopedIdsAsync(updateEntities.Select(entity => entity.BasicId), cancellationToken);
+            if (tenantScopedIds.Count != updateEntities.Select(entity => entity.BasicId).Distinct().Count())
+            {
+                throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
+            }
+
+            var updateEntityList = updateEntities
+                .Where(entity => tenantScopedIds.Contains(entity.BasicId))
+                .ToList();
+            var currentEntities = await CreateTenantQueryable()
+                .Where(entity => tenantScopedIds.Contains(entity.BasicId))
+                .ToListAsync(cancellationToken);
+            var currentEntityMap = currentEntities.ToDictionary(entity => entity.BasicId);
+
+            foreach (var updateEntity in updateEntityList)
+            {
+                if (currentEntityMap.TryGetValue(updateEntity.BasicId, out var currentEntity))
+                {
+                    TrySyncTenantIdFromCurrentEntity(updateEntity, currentEntity);
+                }
+            }
+
+            var updatedRows = await DbClient.Updateable(updateEntityList)
                 .ExecuteCommandAsync(cancellationToken);
             hasChanges |= updatedRows > 0;
         }
@@ -288,9 +328,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken) ?? entity;
+        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
+        if (beforeEntity is null)
+        {
+            return false;
+        }
 
-        var affectedRows = await DbClient.Deleteable(entity)
+        var affectedRows = await DbClient.Deleteable<TEntity>()
+            .Where(item => item.BasicId.Equals(entity.BasicId))
             .ExecuteCommandAsync(cancellationToken);
         if (affectedRows > 0)
         {
@@ -309,11 +354,15 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
         var beforeEntity = await TryGetCurrentEntityAsync(id, cancellationToken);
+        if (beforeEntity is null)
+        {
+            return false;
+        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(id)
             .ExecuteCommandAsync(cancellationToken);
-        if (affectedRows > 0 && beforeEntity is not null)
+        if (affectedRows > 0)
         {
             await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
         }
@@ -347,9 +396,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        var tenantScopedIds = await GetTenantScopedIdsAsync(idArray, cancellationToken);
+        if (tenantScopedIds.Count == 0)
+        {
+            return false;
+        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(idArray)
+            .In(tenantScopedIds)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -372,9 +426,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        var tenantScopedIds = await GetTenantScopedIdsAsync(idArray, cancellationToken);
+        if (tenantScopedIds.Count == 0)
+        {
+            return false;
+        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(idArray)
+            .In(tenantScopedIds)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -490,6 +549,32 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
+    }
+
+    private static void TrySyncTenantIdFromCurrentEntity(TEntity targetEntity, TEntity currentEntity)
+    {
+        var tenantProperty = typeof(TEntity).GetProperty("TenantId");
+        if (tenantProperty is null || !tenantProperty.CanWrite || !tenantProperty.CanRead)
+        {
+            return;
+        }
+
+        var tenantValue = tenantProperty.GetValue(currentEntity);
+        tenantProperty.SetValue(targetEntity, tenantValue);
+    }
+
+    private async Task<IReadOnlyCollection<TKey>> GetTenantScopedIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken)
+    {
+        var idArray = ids.Distinct().ToArray();
+        if (idArray.Length == 0)
+        {
+            return [];
+        }
+
+        return await CreateTenantQueryable()
+            .Where(entity => idArray.Contains(entity.BasicId))
+            .Select(entity => entity.BasicId)
+            .ToListAsync(cancellationToken);
     }
 
     private async Task<TEntity?> TryGetCurrentEntityAsync(TKey id, CancellationToken cancellationToken)
