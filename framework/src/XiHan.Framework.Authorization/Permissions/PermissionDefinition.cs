@@ -62,7 +62,7 @@ public class PermissionDefinition
     /// <summary>
     /// 分组名称
     /// </summary>
-    public string? GroupName { get; set; }
+    public string? Tag { get; set; }
 
     /// <summary>
     /// 是否启用

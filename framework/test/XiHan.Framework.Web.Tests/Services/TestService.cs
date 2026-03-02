@@ -27,7 +27,7 @@ public class TestService : ApplicationServiceBase
         RouteTemplate = "{TestService}/get1",
         Name = "GetTest11111111111",
         Description = "获取第一个测试消息，使用自定义路由",
-        GroupName = "测试-基础接口")]
+        Tag = "测试-基础接口")]
     public string GetTest1()
     {
         return $"This is test message 1 from TestService.";
@@ -49,7 +49,7 @@ public class TestService : ApplicationServiceBase
     /// </summary>
     [DynamicApi(
         Description = "根据 ID 获取指定的测试数据",
-        GroupName = "测试-查询接口")]
+        Tag = "测试-查询接口")]
     public Task<string> GetByIdAsync(long id)
     {
         return Task.FromResult($"Test data with ID: {id}");
@@ -60,7 +60,7 @@ public class TestService : ApplicationServiceBase
     /// </summary>
     [DynamicApi(
         Description = "创建新的测试数据，支持传入自定义内容",
-        GroupName = "测试-写入接口")]
+        Tag = "测试-写入接口")]
     public Task<string> CreateAsync(string content)
     {
         return Task.FromResult($"Created: {content} at {DateTimeOffset.Now}");
@@ -73,7 +73,7 @@ public class TestService : ApplicationServiceBase
     /// 这个方法没有在 DynamicApi 特性中指定 Description，
     /// 所以会自动使用上面 summary 标签中的内容作为 Swagger 描述。
     /// </remarks>
-    [DynamicApi(GroupName = "测试-自动描述")]
+    [DynamicApi(Tag = "测试-自动描述")]
     public Task<string> GetAutoDescriptionAsync()
     {
         return Task.FromResult("This API uses XML comment summary as description automatically");

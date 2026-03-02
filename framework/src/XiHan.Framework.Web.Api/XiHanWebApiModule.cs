@@ -67,8 +67,8 @@ public class XiHanWebApiModule : XiHanModule
             options.RemoveServiceSuffix = true;
 
             // 约定配置
-            options.Conventions.UseLowercaseRoutes = true;
             options.Conventions.UsePascalCaseRoutes = true;
+            options.Conventions.UseLowercaseRoutes = false;
             options.Conventions.RouteSeparator = "";
 
             // 路由配置

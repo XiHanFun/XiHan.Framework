@@ -58,14 +58,14 @@ public class DynamicApiAttribute : Attribute
     public string? Version { get; set; }
 
     /// <summary>
-    /// API 描述（用于 Swagger 文档）
+    /// API 描述
     /// </summary>
     public string? Description { get; set; }
 
     /// <summary>
-    /// API 分组名称/标签（用于 Swagger 文档分组）
+    /// API 标签
     /// </summary>
-    public string? GroupName { get; set; }
+    public string? Tag { get; set; }
 
     /// <summary>
     /// 是否在 API 浏览器中显示（默认 true）

@@ -57,6 +57,7 @@ public class DynamicApiOptions
 
     /// <summary>
     /// 要移除的服务名称后缀列表
+    /// 例如: UserAppService -> User
     /// </summary>
     public List<string> ServiceSuffixes { get; set; } = ["ApplicationService", "AppService", "Service"];
 
