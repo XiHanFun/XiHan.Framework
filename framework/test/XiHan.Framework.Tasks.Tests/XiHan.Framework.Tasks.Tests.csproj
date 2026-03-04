@@ -2,10 +2,10 @@
 
     <Import Project="..\..\props\netcore.props" />
     <Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\test.props" />
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.Tasks\XiHan.Framework.Tasks.csproj" />
-        <ProjectReference Include="..\XiHan.Framework.TestsBase\XiHan.Framework.TestsBase.csproj" />
     </ItemGroup>
 
 </Project>

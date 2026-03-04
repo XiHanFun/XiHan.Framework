@@ -1,22 +1,13 @@
 ﻿<Project>
 	<PropertyGroup>
 		<!-- 全局警告抑制 -->
-		<NoWarn>$(NoWarn);CS1591;CS0436</NoWarn>
+		<NoWarn>$(NoWarn);1591;1701;1702;8603;8604;8625</NoWarn>
 		<IsPackable>false</IsPackable>
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>
 		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-	</PropertyGroup>
-
-	<!-- Debug/Release 统一追加，不覆盖 -->
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<NoWarn>$(NoWarn);1701;1702;8603;8604;8625</NoWarn>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<NoWarn>$(NoWarn);1701;1702;8603;8604;8625</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
