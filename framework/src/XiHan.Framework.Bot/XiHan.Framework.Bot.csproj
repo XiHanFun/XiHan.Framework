@@ -14,6 +14,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.15.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
       <ProjectReference Include="..\XiHan.Framework.Templating\XiHan.Framework.Templating.csproj" />
     </ItemGroup>
 
