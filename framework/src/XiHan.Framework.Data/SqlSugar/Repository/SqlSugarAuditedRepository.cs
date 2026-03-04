@@ -15,7 +15,7 @@
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Repositories.Models;
-using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -31,14 +31,14 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
-    /// <param name="currentTenant">当前租户</param>
+    /// <param name="dbContext">SqlSugar 数据上下文</param>
+    /// <param name="splitTableExecutor">分表执行器</param>
     /// <param name="serviceProvider">服务提供者</param>
     public SqlSugarAuditedRepository(
-        ISqlSugarClientProvider clientProvider,
-        ICurrentTenant currentTenant,
+        ISqlSugarDbContext dbContext,
+        ISqlSugarSplitTableExecutor splitTableExecutor,
         IServiceProvider serviceProvider)
-        : base(clientProvider, currentTenant, serviceProvider)
+        : base(dbContext, splitTableExecutor, serviceProvider)
     {
     }
 
@@ -77,7 +77,7 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetByDeleterAsync(TKey deletedId, CancellationToken cancellationToken = default)
     {
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
             .Where(entity => entity.DeletedId != null && entity.DeletedId.Equals(deletedId))
             .ToListAsync(cancellationToken);
     }
@@ -119,7 +119,8 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedBetweenAsync(DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken = default)
     {
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
+            .Where(entity => entity.IsDeleted)
             .Where(entity => entity.DeletedTime >= startTime && entity.DeletedTime <= endTime)
             .ToListAsync(cancellationToken);
     }
@@ -134,7 +135,9 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var query = CreateTenantQueryable();
+        var query = options.IncludeSoftDeleted || options.OnlySoftDeleted
+            ? CreateWithDeletedQueryable()
+            : CreateTenantQueryable();
 
         query = query.WhereIF(options.CreatedId is not null, entity => entity.CreatedId != null && entity.CreatedId.Equals(options.CreatedId))
             .WhereIF(options.ModifiedId is not null, entity => entity.ModifiedId != null && entity.ModifiedId.Equals(options.ModifiedId))
