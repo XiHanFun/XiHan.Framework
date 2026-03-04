@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.ComponentModel;
+
 namespace XiHan.Framework.Application.Contracts.Enums;
 
 /// <summary>
@@ -20,47 +22,98 @@ namespace XiHan.Framework.Application.Contracts.Enums;
 public enum ApiResponseCodes
 {
     /// <summary>
-    /// 成功（常见约定，与 HTTP 200 一致）
+    /// 继续请求
     /// </summary>
+    [Description("继续请求")]
+    Continue = 100,
+
+    /// <summary>
+    /// 切换协议
+    /// </summary>
+    [Description("切换协议")]
+    SwitchingProtocols = 101,
+
+    /// <summary>
+    /// 请求成功
+    /// </summary>
+    [Description("请求成功")]
     Success = 200,
 
     /// <summary>
-    /// 请求参数错误 / 非法请求
+    /// 等待响应
     /// </summary>
+    [Description("等待响应")]
+    Created = 201,
+
+    /// <summary>
+    /// 返回多条重定向供选择
+    /// </summary>
+    [Description("返回多条重定向供选择")]
+    MultipleChoices = 300,
+
+    /// <summary>
+    /// 永久重定向
+    /// </summary>
+    [Description("永久重定向")]
+    MovedPermanently = 301,
+
+    /// <summary>
+    /// 请求错误
+    /// </summary>
+    [Description("请求错误")]
     BadRequest = 400,
 
     /// <summary>
-    /// 未授权（未登录或 Token 无效）
+    /// 未授权
     /// </summary>
+    [Description("未授权")]
     Unauthorized = 401,
 
     /// <summary>
-    /// 禁止访问（无权限）
+    /// 禁止访问
     /// </summary>
+    [Description("禁止访问")]
     Forbidden = 403,
 
     /// <summary>
     /// 资源不存在
     /// </summary>
+    [Description("资源不存在")]
     NotFound = 404,
 
     /// <summary>
     /// 请求方法不允许
     /// </summary>
+    [Description("请求方法不允许")]
     MethodNotAllowed = 405,
 
     /// <summary>
     /// 请求超时
     /// </summary>
-    RequestTimeout = 408,
+    [Description("请求超时")]
+    RequestTimeOut = 408,
 
     /// <summary>
-    /// 业务失败 / 服务器内部错误（常见约定，与 HTTP 500 一致）
+    /// 请求的语义错误
     /// </summary>
+    [Description("请求的语义错误")]
+    UnprocessableEntity = 422,
+
+    /// <summary>
+    /// 并发请求过多
+    /// </summary>
+    [Description("并发请求过多")]
+    TooManyRequests = 429,
+
+    /// <summary>
+    /// 服务器内部错误
+    /// </summary>
+    [Description("服务器内部错误")]
     Failed = 500,
 
     /// <summary>
     /// 服务不可用
     /// </summary>
-    ServiceUnavailable = 503
+    [Description("服务不可用")]
+    ServiceUnavailable = 501
 }

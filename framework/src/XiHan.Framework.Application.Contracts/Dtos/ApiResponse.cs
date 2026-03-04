@@ -13,11 +13,12 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Enums;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Application.Contracts.Dtos;
 
 /// <summary>
-/// 统一返回模型（无数据）
+/// 统一返回模型
 /// </summary>
 public class ApiResponse
 {
@@ -29,7 +30,12 @@ public class ApiResponse
     /// <summary>
     /// 提示信息
     /// </summary>
-    public string Message { get; set; } = "操作成功";
+    public string Message { get; set; } = ApiResponseCodes.Success.GetDescription();
+
+    /// <summary>
+    /// 返回数据
+    /// </summary>
+    public object? Data { get; set; }
 
     /// <summary>
     /// 请求追踪 ID
@@ -47,37 +53,152 @@ public class ApiResponse
     public bool IsSuccess => Code == ApiResponseCodes.Success;
 
     /// <summary>
-    /// 创建成功响应
+    /// 继续响应 100
     /// </summary>
-    /// <param name="message">提示信息</param>
-    /// <param name="traceId">追踪 ID</param>
     /// <returns></returns>
-    public static ApiResponse Ok(string message = "操作成功", string? traceId = null)
-        => new()
+    public static ApiResponse Continue()
+    {
+        return new ApiResponse
         {
-            Code = ApiResponseCodes.Success,
-            Message = message,
-            TraceId = traceId
+            Code = ApiResponseCodes.Continue,
+            Message = ApiResponseCodes.Continue.GetDescription()
         };
+    }
 
     /// <summary>
-    /// 创建失败响应
+    /// 响应成功，返回通用数据 200
     /// </summary>
-    /// <param name="message">错误信息</param>
-    /// <param name="code">错误码</param>
-    /// <param name="traceId">追踪 ID</param>
+    /// <param name="data"></param>
+    /// <param name="traceId"></param>
     /// <returns></returns>
-    public static ApiResponse Fail(string message = "操作失败", ApiResponseCodes code = ApiResponseCodes.Failed, string? traceId = null)
-        => new()
+    public static ApiResponse Success(object? data, string? traceId)
+    {
+        return new ApiResponse
         {
-            Code = code,
-            Message = message,
+            Code = ApiResponseCodes.Success,
+            Message = ApiResponseCodes.Success.GetDescription(),
+            Data = data,
             TraceId = traceId
         };
+    }
+
+    /// <summary>
+    /// 响应失败，访问出错 400
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <param name="traceId"></param>
+    /// <returns></returns>
+    public static ApiResponse BadRequest(string? errorMessage = null, string? traceId = null)
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.BadRequest,
+            Message = ApiResponseCodes.BadRequest.GetDescription(),
+            Data = errorMessage,
+            TraceId = traceId
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，访问未授权 401
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <returns></returns>
+    public static ApiResponse Unauthorized(string? errorMessage = null)
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.Unauthorized,
+            Message = ApiResponseCodes.Unauthorized.GetDescription(),
+            Data = errorMessage
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，内容禁止访问 403
+    /// </summary>
+    /// <returns></returns>
+    public static ApiResponse Forbidden()
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.Forbidden,
+            Message = ApiResponseCodes.Forbidden.GetDescription()
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，数据未找到 404
+    /// </summary>
+    /// <returns></returns>
+    public static ApiResponse NotFound()
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.NotFound,
+            Message = ApiResponseCodes.NotFound.GetDescription()
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，参数不合法 422
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <returns></returns>
+    public static ApiResponse UnprocessableEntity(string? errorMessage = null)
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.UnprocessableEntity,
+            Message = ApiResponseCodes.UnprocessableEntity.GetDescription(),
+            Data = errorMessage
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，并发请求过多 429
+    /// </summary>
+    /// <returns></returns>
+    public static ApiResponse TooManyRequests()
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.TooManyRequests,
+            Message = ApiResponseCodes.TooManyRequests.GetDescription()
+        };
+    }
+
+    /// <summary>
+    /// 响应失败，服务器内部错误 500
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <returns></returns>
+    public static ApiResponse Failed(string? errorMessage = null)
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.Failed,
+            Message = ApiResponseCodes.Failed.GetDescription(),
+            Data = errorMessage
+        };
+    }
+
+    /// <summary>
+    /// 响应出错，服务不可用 501
+    /// </summary>
+    /// <returns></returns>
+    public static ApiResponse ServiceUnavailable()
+    {
+        return new ApiResponse
+        {
+            Code = ApiResponseCodes.ServiceUnavailable,
+            Message = ApiResponseCodes.ServiceUnavailable.GetDescription()
+        };
+    }
 }
 
 /// <summary>
-/// 统一返回模型（包含数据）
+/// 统一返回模型
 /// </summary>
 /// <typeparam name="T">返回数据类型</typeparam>
 public class ApiResponse<T> : ApiResponse
@@ -85,42 +206,39 @@ public class ApiResponse<T> : ApiResponse
     /// <summary>
     /// 返回数据
     /// </summary>
-    public T? Data { get; set; }
+    public new T? Data { get; set; }
 
     /// <summary>
-    /// 创建成功响应
+    /// 响应成功，返回通用数据 200
     /// </summary>
-    /// <param name="data">返回数据</param>
-    /// <param name="message">提示信息</param>
-    /// <param name="traceId">追踪 ID</param>
+    /// <param name="data"></param>
+    /// <param name="traceId"></param>
     /// <returns></returns>
-    public static ApiResponse<T> Ok(T? data, string message = "操作成功", string? traceId = null)
-        => new()
+    public static ApiResponse Success(T? data, string? traceId = null)
+    {
+        return new ApiResponse
         {
             Code = ApiResponseCodes.Success,
-            Message = message,
+            Message = ApiResponseCodes.Success.GetDescription(),
             Data = data,
             TraceId = traceId
         };
+    }
 
     /// <summary>
-    /// 创建失败响应
+    /// 响应失败，服务器内部错误 500
     /// </summary>
-    /// <param name="message">错误信息</param>
-    /// <param name="code">错误码</param>
-    /// <param name="data">可选返回数据</param>
-    /// <param name="traceId">追踪 ID</param>
+    /// <param name="data"></param>
+    /// <param name="traceId"></param>
     /// <returns></returns>
-    public static ApiResponse<T> Fail(
-        string message = "操作失败",
-        ApiResponseCodes code = ApiResponseCodes.Failed,
-        T? data = default,
-        string? traceId = null)
-        => new()
+    public static ApiResponse Failed(T? data = default, string? traceId = null)
+    {
+        return new ApiResponse
         {
-            Code = code,
-            Message = message,
+            Code = ApiResponseCodes.Failed,
+            Message = ApiResponseCodes.Failed.GetDescription(),
             Data = data,
             TraceId = traceId
         };
+    }
 }
