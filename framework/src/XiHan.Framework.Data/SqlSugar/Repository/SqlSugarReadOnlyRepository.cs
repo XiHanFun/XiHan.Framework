@@ -15,13 +15,13 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Extensions;
+using XiHan.Framework.Data.SqlSugar.Helpers;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Models;
 using XiHan.Framework.Domain.Specifications.Abstracts;
-using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Utils.Threading;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -34,39 +34,62 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private static readonly AsyncLocal<bool?> TenantFilterEnabled = new();
-    private readonly ISqlSugarClientProvider _clientProvider;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ISqlSugarDbContext _dbContext;
+    private readonly ISqlSugarSplitTableExecutor _splitTableExecutor;
+
+    /// <summary>
+    /// 分表执行器
+    /// </summary>
+    protected ISqlSugarSplitTableExecutor SplitTableExecutor => _splitTableExecutor;
+
+    /// <summary>
+    /// 是否分表实体
+    /// </summary>
+    protected bool IsSplitTableEntity => _splitTableExecutor.IsSplitTableEntity<TEntity>();
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
-    /// <param name="currentTenant">当前租户</param>
-    public SqlSugarReadOnlyRepository(ISqlSugarClientProvider clientProvider, ICurrentTenant currentTenant)
+    /// <param name="dbContext">SqlSugar 数据上下文</param>
+    /// <param name="splitTableExecutor">分表执行器</param>
+    public SqlSugarReadOnlyRepository(
+        ISqlSugarDbContext dbContext,
+        ISqlSugarSplitTableExecutor splitTableExecutor)
     {
-        _clientProvider = clientProvider;
-        _currentTenant = currentTenant;
+        _dbContext = dbContext;
+        _splitTableExecutor = splitTableExecutor;
     }
-
-    /// <summary>
-    /// 当前租户标识
-    /// </summary>
-    protected long? CurrentTenantId => _currentTenant.Id;
 
     /// <summary>
     /// SqlSugar 客户端
     /// </summary>
-    protected ISqlSugarClient DbClient => _clientProvider.GetClient();
+    protected ISqlSugarClient DbClient => _dbContext.GetClient();
 
     /// <summary>
-    /// 创建租户隔离查询
+    /// 创建默认查询（租户与软删除过滤由全局 QueryFilter 自动注入）
     /// </summary>
     /// <returns></returns>
     protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
     {
-        var queryable = DbClient.Queryable<TEntity>();
-        return ApplyTenantFilter(queryable);
+        return CreateQueryable();
+    }
+
+    /// <summary>
+    /// 创建忽略租户过滤的查询
+    /// </summary>
+    /// <returns></returns>
+    protected virtual ISugarQueryable<TEntity> CreateNoTenantQueryable()
+    {
+        return CreateQueryable(ignoreTenantFilter: true);
+    }
+
+    /// <summary>
+    /// 创建包含软删除数据的查询
+    /// </summary>
+    /// <returns></returns>
+    protected virtual ISugarQueryable<TEntity> CreateWithDeletedQueryable()
+    {
+        return CreateQueryable(ignoreSoftDeleteFilter: true);
     }
 
     /// <summary>
@@ -76,89 +99,55 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <returns></returns>
     protected ISugarQueryable<T> CreateTenantQueryable<T>() where T : class, new()
     {
-        var queryable = DbClient.Queryable<T>();
-        return ApplyTenantFilter(queryable);
+        return CreateQueryable<T>();
     }
 
     /// <summary>
-    /// 尝试写入实体租户标识
+    /// 创建查询
     /// </summary>
-    protected void TrySetTenantId<T>(T entity) where T : class
+    /// <typeparam name="T"></typeparam>
+    /// <param name="ignoreTenantFilter"></param>
+    /// <param name="ignoreSoftDeleteFilter"></param>
+    /// <param name="splitBeginTime"></param>
+    /// <param name="splitEndTime"></param>
+    /// <returns></returns>
+    protected ISugarQueryable<T> CreateQueryable<T>(
+        bool ignoreTenantFilter = false,
+        bool ignoreSoftDeleteFilter = false,
+        DateTimeOffset? splitBeginTime = null,
+        DateTimeOffset? splitEndTime = null)
+        where T : class, new()
     {
-        var tenantId = CurrentTenantId;
-        if (!tenantId.HasValue)
+        var queryable = _splitTableExecutor.CreateQueryable<T>(DbClient, splitBeginTime, splitEndTime);
+
+        if (ignoreTenantFilter && SqlSugarEntityTypeHelper.IsMultiTenantEntity<T>())
         {
-            return;
+            queryable = queryable.ClearFilter<IMultiTenantEntity>();
         }
 
-        var property = typeof(T).GetProperty("TenantId");
-        if (property is null || !property.CanWrite)
+        if (ignoreSoftDeleteFilter && SqlSugarEntityTypeHelper.IsSoftDeleteEntity<T>())
         {
-            return;
+            queryable = queryable.ClearFilter<ISoftDelete>();
         }
 
-        if (property.PropertyType == typeof(long))
-        {
-            var currentValue = (long)property.GetValue(entity)!;
-            if (currentValue == 0)
-            {
-                property.SetValue(entity, tenantId.Value);
-            }
-            return;
-        }
-
-        if (property.PropertyType == typeof(long?))
-        {
-            var currentValue = (long?)property.GetValue(entity);
-            if (!currentValue.HasValue || currentValue.Value == 0)
-            {
-                property.SetValue(entity, tenantId.Value);
-            }
-        }
+        return queryable;
     }
 
     /// <summary>
-    /// 临时禁用租户过滤
+    /// 创建查询
     /// </summary>
-    protected IDisposable DisableTenantFilter()
+    /// <param name="ignoreTenantFilter"></param>
+    /// <param name="ignoreSoftDeleteFilter"></param>
+    /// <param name="splitBeginTime"></param>
+    /// <param name="splitEndTime"></param>
+    /// <returns></returns>
+    protected ISugarQueryable<TEntity> CreateQueryable(
+        bool ignoreTenantFilter = false,
+        bool ignoreSoftDeleteFilter = false,
+        DateTimeOffset? splitBeginTime = null,
+        DateTimeOffset? splitEndTime = null)
     {
-        var previous = TenantFilterEnabled.Value;
-        TenantFilterEnabled.Value = false;
-        return new DisposeAction(() => TenantFilterEnabled.Value = previous);
-    }
-
-    private ISugarQueryable<T> ApplyTenantFilter<T>(ISugarQueryable<T> queryable) where T : class, new()
-    {
-        if ((TenantFilterEnabled.Value ?? true) is false)
-        {
-            return queryable;
-        }
-
-        var tenantId = CurrentTenantId;
-        if (!tenantId.HasValue)
-        {
-            return queryable;
-        }
-
-        var property = typeof(T).GetProperty("TenantId");
-        if (property is null)
-        {
-            return queryable;
-        }
-
-        if (property.PropertyType != typeof(long) && property.PropertyType != typeof(long?))
-        {
-            return queryable;
-        }
-
-        var parameter = Expression.Parameter(typeof(T), "e");
-        var propertyAccess = Expression.Property(parameter, property);
-        Expression targetValue = property.PropertyType == typeof(long)
-            ? Expression.Constant(tenantId.Value, typeof(long))
-            : Expression.Convert(Expression.Constant(tenantId.Value, typeof(long)), typeof(long?));
-        var body = Expression.Equal(propertyAccess, targetValue);
-        var lambda = Expression.Lambda<Func<T, bool>>(body, parameter);
-        return queryable.Where(lambda);
+        return CreateQueryable<TEntity>(ignoreTenantFilter, ignoreSoftDeleteFilter, splitBeginTime, splitEndTime);
     }
 
     #region 查询

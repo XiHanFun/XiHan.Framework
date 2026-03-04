@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Repositories;
-using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
@@ -34,11 +34,11 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// 构造函数
     /// </summary>
     public SqlSugarAggregateRepository(
-        ISqlSugarClientProvider clientProvider,
-        ICurrentTenant currentTenant,
+        ISqlSugarDbContext dbContext,
+        ISqlSugarSplitTableExecutor splitTableExecutor,
         IServiceProvider serviceProvider,
         IUnitOfWorkManager unitOfWorkManager)
-        : base(clientProvider, currentTenant, serviceProvider)
+        : base(dbContext, splitTableExecutor, serviceProvider)
     {
         _unitOfWorkManager = unitOfWorkManager;
     }
