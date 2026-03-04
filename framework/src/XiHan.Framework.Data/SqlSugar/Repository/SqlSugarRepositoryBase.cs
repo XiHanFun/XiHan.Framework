@@ -17,9 +17,9 @@ using SqlSugar;
 using System.Linq.Expressions;
 using System.Text.Json;
 using XiHan.Framework.Data.Auditing;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
-using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -42,14 +42,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
-    /// <param name="currentTenant">当前租户</param>
+    /// <param name="dbContext">SqlSugar 数据上下文</param>
+    /// <param name="splitTableExecutor">分表执行器</param>
     /// <param name="serviceProvider">服务提供者</param>
     public SqlSugarRepositoryBase(
-        ISqlSugarClientProvider clientProvider,
-        ICurrentTenant currentTenant,
+        ISqlSugarDbContext dbContext,
+        ISqlSugarSplitTableExecutor splitTableExecutor,
         IServiceProvider serviceProvider)
-        : base(clientProvider, currentTenant)
+        : base(dbContext, splitTableExecutor)
     {
         _serviceProvider = serviceProvider;
     }
@@ -64,11 +64,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        TrySetTenantId(entity);
 
-        var result = await DbClient.Insertable(entity)
-            .ExecuteReturnEntityAsync();
-        return result;
+        if (IsSplitTableEntity)
+        {
+            await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
+            return entity;
+        }
+
+        return await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
     }
 
     /// <summary>
@@ -81,12 +84,15 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        TrySetTenantId(entity);
 
-        var result = await DbClient.Insertable(entity)
-            .ExecuteReturnEntityAsync();
+        if (IsSplitTableEntity)
+        {
+            await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
+            return entity.BasicId;
+        }
 
-        return result.BasicId;
+        var insertedEntity = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        return insertedEntity.BasicId;
     }
 
     /// <summary>
@@ -107,13 +113,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        foreach (var item in entityList)
+        if (IsSplitTableEntity)
         {
-            TrySetTenantId(item);
+            await SplitTableExecutor.InsertAsync(DbClient, entityList, cancellationToken);
+            return entityList;
         }
 
-        await DbClient.Insertable(entityList)
-            .ExecuteCommandAsync(cancellationToken);
+        await DbClient.Insertable(entityList).ExecuteCommandAsync(cancellationToken);
         return entityList;
     }
 
@@ -128,13 +134,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
 
         cancellationToken.ThrowIfCancellationRequested();
-        TrySetTenantId(entity);
         var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
-        TrySyncTenantIdFromCurrentEntity(entity, beforeEntity);
 
-        await DbClient.Updateable(entity)
-            .ExecuteCommandAsync(cancellationToken);
+        if (IsSplitTableEntity)
+        {
+            await SplitTableExecutor.UpdateAsync(DbClient, [entity], cancellationToken);
+        }
+        else
+        {
+            await DbClient.Updateable(entity)
+                .ExecuteCommandAsync(cancellationToken);
+        }
+
         await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
         return entity;
     }
@@ -153,21 +165,23 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var targetIds = await CreateTenantQueryable()
-            .Where(whereExpression)
-            .Select(entity => entity.BasicId)
-            .ToListAsync(cancellationToken);
-
-        if (targetIds.Count == 0)
+        if (IsSplitTableEntity)
         {
-            return false;
+            var affectedRows = await DbClient.Updateable<TEntity>()
+                .SetColumns(columns)
+                .Where(whereExpression)
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+            return affectedRows > 0;
         }
 
-        await DbClient.Updateable<TEntity>()
+        var updatedRows = await DbClient.Updateable<TEntity>()
             .SetColumns(columns)
-            .Where(entity => targetIds.Contains(entity.BasicId))
+            .Where(whereExpression)
+            .EnableQueryFilter()
             .ExecuteCommandAsync(cancellationToken);
-        return true;
+        return updatedRows > 0;
     }
 
     /// <summary>
@@ -188,24 +202,31 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        foreach (var item in entityList)
+        var entityIds = entityList
+            .Select(entity => entity.BasicId)
+            .Distinct()
+            .ToArray();
+        var currentEntities = await CreateTenantQueryable()
+            .Where(entity => entityIds.Contains(entity.BasicId))
+            .ToListAsync(cancellationToken);
+        var currentEntityMap = currentEntities.ToDictionary(entity => entity.BasicId);
+        foreach (var entity in entityList)
         {
-            TrySetTenantId(item);
+            if (!currentEntityMap.ContainsKey(entity.BasicId))
+            {
+                throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
+            }
         }
 
-        var tenantScopedIds = await GetTenantScopedIdsAsync(entityList.Select(entity => entity.BasicId), cancellationToken);
-        if (tenantScopedIds.Count != entityList.Select(entity => entity.BasicId).Distinct().Count())
+        if (IsSplitTableEntity)
         {
-            throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
+            await SplitTableExecutor.UpdateAsync(DbClient, entityList, cancellationToken);
+            return entityList;
         }
 
-        var updateEntities = entityList
-            .Where(entity => tenantScopedIds.Contains(entity.BasicId))
-            .ToList();
-
-        await DbClient.Updateable(updateEntities)
+        await DbClient.Updateable(entityList)
             .ExecuteCommandAsync(cancellationToken);
-        return updateEntities;
+        return entityList;
     }
 
     /// <summary>
@@ -218,11 +239,18 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        TrySetTenantId(entity);
 
         if (entity.IsTransient())
         {
-            var insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
+            int insertedRows;
+            if (IsSplitTableEntity)
+            {
+                insertedRows = await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
+            }
+            else
+            {
+                insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
+            }
             return insertedRows > 0;
         }
 
@@ -232,9 +260,17 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return false;
         }
 
-        TrySyncTenantIdFromCurrentEntity(entity, beforeEntity);
-        var affectedRows = await DbClient.Updateable(entity)
-            .ExecuteCommandAsync(cancellationToken);
+        int affectedRows;
+        if (IsSplitTableEntity)
+        {
+            affectedRows = await SplitTableExecutor.UpdateAsync(DbClient, [entity], cancellationToken);
+        }
+        else
+        {
+            affectedRows = await DbClient.Updateable(entity)
+                .ExecuteCommandAsync(cancellationToken);
+        }
+
         if (affectedRows > 0)
         {
             await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
@@ -263,14 +299,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         var addEntities = entityArray.Where(entity => entity.IsTransient()).ToArray();
         var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
-        foreach (var item in addEntities)
-        {
-            TrySetTenantId(item);
-        }
-        foreach (var item in updateEntities)
-        {
-            TrySetTenantId(item);
-        }
 
         if (addEntities.Length == 0 && updateEntities.Length == 0)
         {
@@ -281,37 +309,49 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (addEntities.Length > 0)
         {
-            var insertedRows = await DbClient.Insertable(addEntities)
-                .ExecuteCommandAsync(cancellationToken);
+            int insertedRows;
+            if (IsSplitTableEntity)
+            {
+                insertedRows = await SplitTableExecutor.InsertAsync(DbClient, addEntities, cancellationToken);
+            }
+            else
+            {
+                insertedRows = await DbClient.Insertable(addEntities).ExecuteCommandAsync(cancellationToken);
+            }
             hasChanges |= insertedRows > 0;
         }
 
         if (updateEntities.Length > 0)
         {
-            var tenantScopedIds = await GetTenantScopedIdsAsync(updateEntities.Select(entity => entity.BasicId), cancellationToken);
-            if (tenantScopedIds.Count != updateEntities.Select(entity => entity.BasicId).Distinct().Count())
-            {
-                throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
-            }
-
-            var updateEntityList = updateEntities
-                .Where(entity => tenantScopedIds.Contains(entity.BasicId))
-                .ToList();
+            var updateEntityList = updateEntities.ToList();
+            var updateEntityIds = updateEntityList
+                .Select(entity => entity.BasicId)
+                .Distinct()
+                .ToArray();
             var currentEntities = await CreateTenantQueryable()
-                .Where(entity => tenantScopedIds.Contains(entity.BasicId))
+                .Where(entity => updateEntityIds.Contains(entity.BasicId))
                 .ToListAsync(cancellationToken);
             var currentEntityMap = currentEntities.ToDictionary(entity => entity.BasicId);
 
             foreach (var updateEntity in updateEntityList)
             {
-                if (currentEntityMap.TryGetValue(updateEntity.BasicId, out var currentEntity))
+                if (!currentEntityMap.TryGetValue(updateEntity.BasicId, out _))
                 {
-                    TrySyncTenantIdFromCurrentEntity(updateEntity, currentEntity);
+                    throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
                 }
             }
 
-            var updatedRows = await DbClient.Updateable(updateEntityList)
-                .ExecuteCommandAsync(cancellationToken);
+            int updatedRows;
+            if (IsSplitTableEntity)
+            {
+                updatedRows = await SplitTableExecutor.UpdateAsync(DbClient, updateEntityList, cancellationToken);
+            }
+            else
+            {
+                updatedRows = await DbClient.Updateable(updateEntityList)
+                    .ExecuteCommandAsync(cancellationToken);
+            }
+
             hasChanges |= updatedRows > 0;
         }
 
@@ -334,9 +374,24 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return false;
         }
 
-        var affectedRows = await DbClient.Deleteable<TEntity>()
-            .Where(item => item.BasicId.Equals(entity.BasicId))
-            .ExecuteCommandAsync(cancellationToken);
+        int affectedRows;
+        if (IsSplitTableEntity)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            affectedRows = await DbClient.Deleteable<TEntity>()
+                .Where(item => item.BasicId.Equals(entity.BasicId))
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+        }
+        else
+        {
+            affectedRows = await DbClient.Deleteable<TEntity>()
+                .Where(item => item.BasicId.Equals(entity.BasicId))
+                .EnableQueryFilter()
+                .ExecuteCommandAsync(cancellationToken);
+        }
+
         if (affectedRows > 0)
         {
             await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
@@ -359,9 +414,24 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return false;
         }
 
-        var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(id)
-            .ExecuteCommandAsync(cancellationToken);
+        int affectedRows;
+        if (IsSplitTableEntity)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            affectedRows = await DbClient.Deleteable<TEntity>()
+                .In(id)
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+        }
+        else
+        {
+            affectedRows = await DbClient.Deleteable<TEntity>()
+                .In(id)
+                .EnableQueryFilter()
+                .ExecuteCommandAsync(cancellationToken);
+        }
+
         if (affectedRows > 0)
         {
             await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
@@ -396,14 +466,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var tenantScopedIds = await GetTenantScopedIdsAsync(idArray, cancellationToken);
-        if (tenantScopedIds.Count == 0)
+        if (IsSplitTableEntity)
         {
-            return false;
+            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
+                .In(idArray)
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+            return splitTableAffectedRows > 0;
         }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(tenantScopedIds)
+            .In(idArray)
+            .EnableQueryFilter()
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -426,14 +501,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var tenantScopedIds = await GetTenantScopedIdsAsync(idArray, cancellationToken);
-        if (tenantScopedIds.Count == 0)
+        if (IsSplitTableEntity)
         {
-            return false;
+            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
+                .In(idArray)
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+            return splitTableAffectedRows > 0;
         }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(tenantScopedIds)
+            .In(idArray)
+            .EnableQueryFilter()
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -449,18 +529,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var targetIds = await CreateTenantQueryable()
-            .Where(predicate)
-            .Select(entity => entity.BasicId)
-            .ToListAsync(cancellationToken);
-
-        if (targetIds.Count == 0)
+        if (IsSplitTableEntity)
         {
-            return false;
+            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
+                .Where(predicate)
+                .EnableQueryFilter()
+                .SplitTable(tables => tables)
+                .ExecuteCommandAsync();
+            return splitTableAffectedRows > 0;
         }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(targetIds)
+            .Where(predicate)
+            .EnableQueryFilter()
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -549,32 +630,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
-    }
-
-    private static void TrySyncTenantIdFromCurrentEntity(TEntity targetEntity, TEntity currentEntity)
-    {
-        var tenantProperty = typeof(TEntity).GetProperty("TenantId");
-        if (tenantProperty is null || !tenantProperty.CanWrite || !tenantProperty.CanRead)
-        {
-            return;
-        }
-
-        var tenantValue = tenantProperty.GetValue(currentEntity);
-        tenantProperty.SetValue(targetEntity, tenantValue);
-    }
-
-    private async Task<IReadOnlyCollection<TKey>> GetTenantScopedIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken)
-    {
-        var idArray = ids.Distinct().ToArray();
-        if (idArray.Length == 0)
-        {
-            return [];
-        }
-
-        return await CreateTenantQueryable()
-            .Where(entity => idArray.Contains(entity.BasicId))
-            .Select(entity => entity.BasicId)
-            .ToListAsync(cancellationToken);
     }
 
     private async Task<TEntity?> TryGetCurrentEntityAsync(TKey id, CancellationToken cancellationToken)

@@ -24,16 +24,16 @@ namespace XiHan.Framework.Data.SqlSugar.Extensions;
 public static class UnitOfWorkExtensions
 {
     /// <summary>
-    /// 获取SqlSugar客户端提供器
+    /// 获取SqlSugar数据上下文
     /// </summary>
     /// <param name="unitOfWork">工作单元</param>
     /// <param name="serviceProvider">服务提供者</param>
     /// <returns></returns>
-    public static ISqlSugarClientProvider GetSqlSugarClientProvider(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
+    public static ISqlSugarDbContext GetSqlSugarDbContext(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
     {
-        return (ISqlSugarClientProvider)unitOfWork.GetOrAddDatabaseApi(
-            "SqlSugarClientProvider",
-            serviceProvider.GetRequiredService<ISqlSugarClientProvider>);
+        return (ISqlSugarDbContext)unitOfWork.GetOrAddDatabaseApi(
+            "SqlSugarDbContext",
+            serviceProvider.GetRequiredService<ISqlSugarDbContext>);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public static class UnitOfWorkExtensions
     /// <returns></returns>
     public static ISqlSugarClient GetSqlSugarClient(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
     {
-        return unitOfWork.GetSqlSugarClientProvider(serviceProvider).GetClient();
+        return unitOfWork.GetSqlSugarDbContext(serviceProvider).GetClient();
     }
 
     /// <summary>

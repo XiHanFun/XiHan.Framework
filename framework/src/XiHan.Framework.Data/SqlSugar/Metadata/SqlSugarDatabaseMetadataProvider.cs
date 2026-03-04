@@ -22,15 +22,15 @@ namespace XiHan.Framework.Data.SqlSugar.Metadata;
 /// </summary>
 public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
 {
-    private readonly ISqlSugarClientProvider _clientProvider;
+    private readonly ISqlSugarDbContext _dbContext;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">数据库客户端提供器</param>
-    public SqlSugarDatabaseMetadataProvider(ISqlSugarClientProvider clientProvider)
+    /// <param name="dbContext">数据库上下文</param>
+    public SqlSugarDatabaseMetadataProvider(ISqlSugarDbContext dbContext)
     {
-        _clientProvider = clientProvider;
+        _dbContext = dbContext;
     }
 
     /// <inheritdoc />
@@ -169,9 +169,9 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
     {
         if (string.IsNullOrWhiteSpace(connectionConfigId))
         {
-            return _clientProvider.GetClient();
+            return _dbContext.GetClient();
         }
 
-        return _clientProvider.GetScope().GetConnectionScope(connectionConfigId);
+        return _dbContext.Scope.GetConnectionScope(connectionConfigId);
     }
 }

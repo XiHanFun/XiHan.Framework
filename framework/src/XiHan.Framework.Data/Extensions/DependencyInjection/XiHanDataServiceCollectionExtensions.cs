@@ -27,12 +27,15 @@ using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Data.SqlSugar.Seeders;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
+using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.DistributedIds;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
-using XiHan.Framework.Utils.Exceptions;
 using XiHan.Framework.Utils.Logging;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 
@@ -52,9 +55,11 @@ public static class XiHanDataServiceCollectionExtensions
         services.Configure<XiHanSqlSugarCoreOptions>(configuration.GetSection(XiHanSqlSugarCoreOptions.SectionName));
 
         // 注册核心服务
-        services.TryAddSingleton(sp => CreateScope(sp));
-        services.TryAddScoped<ISqlSugarClientProvider, SqlSugarClientProvider>();
-        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientProvider>().GetClient());
+        services.TryAddSingleton(CreateScope);
+        services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
+        services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
+        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarDbContext>().GetClient());
+        services.TryAddSingleton<ISqlSugarSplitTableExecutor, SqlSugarSplitTableExecutor>();
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
@@ -111,44 +116,47 @@ public static class XiHanDataServiceCollectionExtensions
     /// 添加 SqlSugar
     /// </summary>
     /// <param name="services">服务集合</param>
-    /// <returns>服务集合</returns>
+    /// <returns></returns>
     private static SqlSugarScope CreateScope(IServiceProvider services)
     {
         var scopeFactory = services.GetRequiredService<IServiceScopeFactory>();
         var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
         var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
+        var currentTenantAccessor = services.GetRequiredService<ICurrentTenantAccessor>();
 
-        // 注入多库参考，官方文档 https://www.donet5.com/Home/Doc?typeId=2405
-        var connectionConfigs = new List<ConnectionConfig>();
-        foreach (var connConfig in options.ConnectionConfigs)
-        {
-            connectionConfigs.Add(new ConnectionConfig
+        var connectionConfigs = options.ConnectionConfigs
+            .Select(connConfig => new ConnectionConfig
             {
                 ConfigId = connConfig.ConfigId,
                 ConnectionString = connConfig.ConnectionString,
                 DbType = connConfig.DbType,
                 IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
                 InitKeyType = connConfig.InitKeyType,
-                MoreSettings = connConfig.MoreSettings,
+                MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
                 SlaveConnectionConfigs = connConfig.SlaveConnectionConfigs
-            });
-        }
+            })
+            .ToList();
 
         // 设置自定义全局雪花ID生成器
         StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
-        var sugarScope = new SqlSugarScope(connectionConfigs, client =>
+
+        return new SqlSugarScope(connectionConfigs, client =>
         {
-            connectionConfigs.ForEach(config =>
+            foreach (var config in connectionConfigs)
             {
                 var dbProvider = client.GetConnectionScope(config.ConfigId);
-
-                ApplySugarGlobalFilters(dbProvider, options);
-
+                ApplySugarGlobalFilters(dbProvider, options, currentTenantAccessor);
                 SetSugarAop(scopeFactory, dbProvider, options, idGenerator);
-            });
+            }
         });
+    }
 
-        return sugarScope;
+    private static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
+    {
+        rawSettings ??= new ConnMoreSettings();
+        rawSettings.IsAutoUpdateQueryFilter = options.EnableAutoUpdateQueryFilter;
+        rawSettings.IsAutoDeleteQueryFilter = options.EnableAutoDeleteQueryFilter;
+        return rawSettings;
     }
 
     /// <summary>
@@ -156,11 +164,24 @@ public static class XiHanDataServiceCollectionExtensions
     /// </summary>
     /// <param name="provider"></param>
     /// <param name="options"></param>
-    private static void ApplySugarGlobalFilters(SqlSugarScopeProvider provider, XiHanSqlSugarCoreOptions options)
+    /// <param name="currentTenantAccessor"></param>
+    private static void ApplySugarGlobalFilters(
+        SqlSugarScopeProvider provider,
+        XiHanSqlSugarCoreOptions options,
+        ICurrentTenantAccessor currentTenantAccessor)
     {
-        // 动态添加全局过滤器参考，官方文档 https://www.donet5.com/home/doc?masterId=1&typeId=1205
-        // 全局过滤器：作用是设置一个查询条件，当你使用查询操作的时候满足这个条件，那么你的语句就会附加你设置的条件。
-        // 应用场景：过滤假删除数据，比如，每个查询后面都要加 IsDeleted = false
+        if (options.EnableSoftDeleteFilter)
+        {
+            provider.QueryFilter.AddTableFilter<ISoftDelete>(entity => !entity.IsDeleted);
+        }
+
+        if (options.EnableTenantFilter)
+        {
+            provider.QueryFilter.AddTableFilter<IMultiTenantEntity>(
+                entity => currentTenantAccessor.Current == null ||
+                          !currentTenantAccessor.Current.TenantId.HasValue ||
+                          entity.TenantId == currentTenantAccessor.Current.TenantId);
+        }
 
         foreach (var filter in options.GlobalFilters)
         {
@@ -178,15 +199,6 @@ public static class XiHanDataServiceCollectionExtensions
             var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
             methodInfo?.Invoke(provider.QueryFilter, [lambda]);
         }
-
-        //// 获取当前请求上下文信息
-        //var httpCurrent = App.HttpContextCurrent;
-        //if (httpCurrent != null)
-        //{
-        //    var user = httpCurrent.GetAuthInfo();
-        //    // 非超级管理员或未登录用户，添加过滤假删除数据的条件
-        //    provider.QueryFilter.AddTableFilterIF<ISoftDelete>(user.IsSuperAdmin == false, it => it.IsDeleted == false);
-        //}
     }
 
     /// <summary>
@@ -196,11 +208,13 @@ public static class XiHanDataServiceCollectionExtensions
     /// <param name="dbProvider"></param>
     /// <param name="options"></param>
     /// <param name="idGenerator"></param>
-    /// <exception cref="CustomException"></exception>
-    private static void SetSugarAop(IServiceScopeFactory scopeFactory, SqlSugarScopeProvider dbProvider, XiHanSqlSugarCoreOptions options, IDistributedIdGenerator<long> idGenerator)
+    private static void SetSugarAop(
+        IServiceScopeFactory scopeFactory,
+        SqlSugarScopeProvider dbProvider,
+        XiHanSqlSugarCoreOptions options,
+        IDistributedIdGenerator<long> idGenerator)
     {
         var config = dbProvider.CurrentConnectionConfig;
-        var configId = config.ConfigId;
 
         // 设置超时时间
         dbProvider.Ado.CommandTimeOut = options.SlowSqlThresholdMilliseconds / 1000;
@@ -217,7 +231,7 @@ public static class XiHanDataServiceCollectionExtensions
         {
             dbProvider.Aop.OnError = ex =>
             {
-                HandleSqlOnErrorLog(ex);
+                HandleSqlOnErrorLog(config,ex);
             };
         }
 
@@ -225,11 +239,11 @@ public static class XiHanDataServiceCollectionExtensions
         {
             dbProvider.Aop.OnLogExecuted = (sql, parameters) =>
             {
-                HandleSqlSlowLog(dbProvider, options, sql, parameters);
+                HandleSqlSlowLog(dbProvider, options, config, sql, parameters);
             };
         }
 
-        dbProvider.Aop.DataExecuting = (value, entityInfo) =>
+        dbProvider.Aop.DataExecuting = (_, entityInfo) =>
         {
             HandleSqlDataExecuting(scopeFactory, entityInfo, idGenerator);
         };
@@ -245,9 +259,6 @@ public static class XiHanDataServiceCollectionExtensions
     /// <param name="parameters"></param>
     private static void HandleSqlExecutingLog(ConnectionConfig config, string sql, SugarParameter[] parameters)
     {
-        //options.SqlLogAction?.Invoke(sql, parameters);
-
-        // 构建SQL日志信息
         var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
         if (sql.TrimStart().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
         {
@@ -270,14 +281,14 @@ public static class XiHanDataServiceCollectionExtensions
     /// <summary>
     /// 处理SQL执行异常日志记录
     /// </summary>
+    /// <param name="config"></param>
     /// <param name="ex"></param>
-    private static void HandleSqlOnErrorLog(SqlSugarException ex)
+    private static void HandleSqlOnErrorLog(ConnectionConfig config, SqlSugarException ex)
     {
         var sql = ex.Sql ?? string.Empty;
         var parameters = ex.Parametres as SugarParameter[] ?? [];
-        // 构建原生SQL语句
-        var sqlNative = UtilMethods.GetNativeSql(sql, parameters);
-        LogHelper.Error(ex, $"SQL执行异常: {sqlNative}");
+        var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
+        LogHelper.Error(ex, $"SQL执行异常: {sqlInfo}");
     }
 
     /// <summary>
@@ -285,18 +296,19 @@ public static class XiHanDataServiceCollectionExtensions
     /// </summary>
     /// <param name="dbProvider"></param>
     /// <param name="options"></param>
+    /// <param name="config"></param>
     /// <param name="sql"></param>
     /// <param name="parameters"></param>
-    private static void HandleSqlSlowLog(SqlSugarScopeProvider dbProvider, XiHanSqlSugarCoreOptions options, string sql, SugarParameter[] parameters)
+    private static void HandleSqlSlowLog(SqlSugarScopeProvider dbProvider, XiHanSqlSugarCoreOptions options, ConnectionConfig config, string sql, SugarParameter[] parameters)
     {
         var elapsedMs = dbProvider.Ado.SqlExecutionTime.TotalMilliseconds;
         if (elapsedMs < options.SlowSqlThresholdMilliseconds)
         {
             return;
         }
-        // 构建原生SQL语句
-        var sqlNative = UtilMethods.GetNativeSql(sql, parameters);
-        LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlNative}");
+
+        var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
+        LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlInfo}");
     }
 
     /// <summary>
@@ -319,17 +331,14 @@ public static class XiHanDataServiceCollectionExtensions
 
         switch (entityInfo.OperationType)
         {
-            // 新增操作
             case DataFilterType.InsertByObject:
                 entityInfo.TrySetSnowflakeId(idGenerator.NextId());
                 entityInfo.ToCreated(auditContext);
                 break;
-            // 更新操作
             case DataFilterType.UpdateByObject:
                 entityInfo.ToModified(auditContext);
                 entityInfo.ToDeleted(auditContext);
                 break;
-            // 删除操作
             case DataFilterType.DeleteByObject:
                 entityInfo.ToDeleted(auditContext);
                 break;

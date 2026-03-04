@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.MultiTenancy.Abstractions;
@@ -26,8 +24,7 @@ namespace XiHan.Framework.Web.Api.Middlewares;
 /// </summary>
 public class XiHanTenantResolveMiddleware(
     RequestDelegate next,
-    IOptions<XiHanTenantResolveOptions> options,
-    ILogger<XiHanTenantResolveMiddleware> logger)
+    IOptions<XiHanTenantResolveOptions> options)
 {
     /// <summary>
     /// 执行中间件
@@ -60,35 +57,12 @@ public class XiHanTenantResolveMiddleware(
         }
 
         var tenantKey = tenantIdOrName.Trim();
-        var tenantId = ResolveTenantId(tenantKey);
-        if (!long.TryParse(tenantKey, out _))
-        {
-            logger.LogDebug(
-                "租户标识 {TenantKey} 非 long，已映射为稳定 long {TenantId}",
-                tenantKey,
-                tenantId);
-        }
+        long? tenantId = long.TryParse(tenantKey, out var parsedTenantId) ? parsedTenantId : null;
 
         using (currentTenant.Change(tenantId, tenantKey))
         {
             await next(httpContext);
         }
-    }
-
-    private static long ResolveTenantId(string tenantIdOrName)
-    {
-        if (long.TryParse(tenantIdOrName, out var longTenantId))
-        {
-            return longTenantId;
-        }
-
-        return ConvertStringToStableLong(tenantIdOrName);
-    }
-
-    private static long ConvertStringToStableLong(string value)
-    {
-        var bytes = MD5.HashData(Encoding.UTF8.GetBytes(value));
-        return BitConverter.ToInt64(bytes, 0) & long.MaxValue;
     }
 
     private sealed class TenantResolveContext(IServiceProvider serviceProvider) : ITenantResolveContext

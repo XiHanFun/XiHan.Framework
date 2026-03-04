@@ -14,10 +14,10 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
+using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Specifications.Abstracts;
-using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
@@ -33,14 +33,14 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
-    /// <param name="currentTenant">当前租户</param>
+    /// <param name="dbContext">SqlSugar 数据上下文</param>
+    /// <param name="splitTableExecutor">分表执行器</param>
     /// <param name="serviceProvider">服务提供者</param>
     public SqlSugarSoftDeleteRepository(
-        ISqlSugarClientProvider clientProvider,
-        ICurrentTenant currentTenant,
+        ISqlSugarDbContext dbContext,
+        ISqlSugarSplitTableExecutor splitTableExecutor,
         IServiceProvider serviceProvider)
-        : base(clientProvider, currentTenant, serviceProvider)
+        : base(dbContext, splitTableExecutor, serviceProvider)
     {
     }
 
@@ -62,8 +62,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
         }
 
-        await DbClient.Updateable(entity)
-            .ExecuteCommandAsync(cancellationToken);
+        await UpdateAsync(entity, cancellationToken);
     }
 
     /// <summary>
@@ -109,8 +108,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await DbClient.Updateable(entityArray)
-            .ExecuteCommandAsync(cancellationToken);
+        await UpdateRangeAsync(entityArray, cancellationToken);
     }
 
     /// <summary>
@@ -130,11 +128,10 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        await DbClient.Updateable<TEntity>()
+        var entities = await CreateWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
-            .SetColumns(entity => entity.IsDeleted == true)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
-            .ExecuteCommandAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        await SoftDeleteRangeAsync(entities, cancellationToken);
     }
 
     /// <summary>
@@ -145,11 +142,10 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        await DbClient.Updateable<TEntity>()
+        var entities = await CreateWithDeletedQueryable()
             .Where(predicate)
-            .SetColumns(entity => entity.IsDeleted == true)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == DateTimeOffset.UtcNow)
-            .ExecuteCommandAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        await SoftDeleteRangeAsync(entities, cancellationToken);
     }
 
     /// <summary>
@@ -181,8 +177,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             deletionEntity.DeletedTime = null;
         }
 
-        await DbClient.Updateable(entity)
-            .ExecuteCommandAsync(cancellationToken);
+        await UpdateAsync(entity, cancellationToken);
     }
 
     /// <summary>
@@ -193,7 +188,9 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
+        var entity = await CreateWithDeletedQueryable()
+            .Where(item => item.BasicId.Equals(id))
+            .FirstAsync(cancellationToken);
         if (entity == null)
         {
             return;
@@ -228,8 +225,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             }
         }
 
-        await DbClient.Updateable(entityArray)
-            .ExecuteCommandAsync(cancellationToken);
+        await UpdateRangeAsync(entityArray, cancellationToken);
     }
 
     /// <summary>
@@ -249,11 +245,10 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        await DbClient.Updateable<TEntity>()
+        var entities = await CreateWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
-            .SetColumns(entity => entity.IsDeleted == false)
-            .SetColumns(entity => ((IDeletionEntity)entity).DeletedTime == null)
-            .ExecuteCommandAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        await RestoreRangeAsync(entities, cancellationToken);
     }
 
     /// <summary>
@@ -264,10 +259,10 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        await DbClient.Updateable<TEntity>()
+        var entities = await CreateWithDeletedQueryable()
             .Where(predicate)
-            .SetColumns(entity => entity.IsDeleted == false)
-            .ExecuteCommandAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+        await RestoreRangeAsync(entities, cancellationToken);
     }
 
     /// <summary>
@@ -278,7 +273,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = CreateTenantQueryable().ApplySpecification(specification);
+        var query = CreateWithDeletedQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await RestoreRangeAsync(entities, cancellationToken);
     }
@@ -294,8 +289,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetAllWithDeletedAsync(CancellationToken cancellationToken = default)
     {
-        // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
             .ToListAsync(cancellationToken);
     }
 
@@ -306,7 +300,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(CancellationToken cancellationToken = default)
     {
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
             .Where(entity => entity.IsDeleted)
             .ToListAsync(cancellationToken);
     }
@@ -319,7 +313,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
             .Where(entity => entity.IsDeleted)
             .Where(predicate)
             .ToListAsync(cancellationToken);
@@ -333,7 +327,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetDeletedAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        return await CreateTenantQueryable()
+        return await CreateWithDeletedQueryable()
             .Where(entity => entity.IsDeleted)
             .ApplySpecification(specification)
             .ToListAsync(cancellationToken);

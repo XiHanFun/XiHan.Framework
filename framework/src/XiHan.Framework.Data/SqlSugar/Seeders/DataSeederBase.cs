@@ -28,9 +28,9 @@ public abstract class DataSeederBase : IDataSeeder
     protected readonly ILogger Logger;
 
     /// <summary>
-    /// SqlSugar 客户端提供器
+    /// SqlSugar 数据上下文
     /// </summary>
-    protected readonly ISqlSugarClientProvider ClientProvider;
+    protected readonly ISqlSugarDbContext DbContext;
 
     /// <summary>
     /// 服务提供者
@@ -40,12 +40,12 @@ public abstract class DataSeederBase : IDataSeeder
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="clientProvider">SqlSugar 客户端提供器</param>
+    /// <param name="dbContext">SqlSugar 数据上下文</param>
     /// <param name="logger">日志记录器</param>
     /// <param name="serviceProvider">服务提供者</param>
-    protected DataSeederBase(ISqlSugarClientProvider clientProvider, ILogger logger, IServiceProvider serviceProvider)
+    protected DataSeederBase(ISqlSugarDbContext dbContext, ILogger logger, IServiceProvider serviceProvider)
     {
-        ClientProvider = clientProvider;
+        DbContext = dbContext;
         Logger = logger;
         ServiceProvider = serviceProvider;
     }
@@ -91,7 +91,7 @@ public abstract class DataSeederBase : IDataSeeder
     /// <returns></returns>
     protected async Task<bool> HasDataAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
     {
-        return await ClientProvider.GetClient().Queryable<T>().AnyAsync(predicate);
+        return await DbContext.GetClient().Queryable<T>().AnyAsync(predicate);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public abstract class DataSeederBase : IDataSeeder
             return;
         }
 
-        await ClientProvider.GetClient().Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
+        await DbContext.GetClient().Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
         Logger.LogInformation("已插入 {Count} 条 {EntityType} 数据", entities.Count, typeof(T).Name);
     }
 }

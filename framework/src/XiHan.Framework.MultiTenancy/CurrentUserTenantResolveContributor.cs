@@ -41,11 +41,13 @@ public class CurrentUserTenantResolveContributor : TenantResolveContributorBase
     public override Task ResolveAsync(ITenantResolveContext context)
     {
         var currentUser = context.ServiceProvider.GetRequiredService<ICurrentUser>();
-        if (currentUser.IsAuthenticated)
+        if (!currentUser.IsAuthenticated || !currentUser.TenantId.HasValue)
         {
-            context.Handled = true;
-            context.TenantIdOrName = currentUser.TenantId?.ToString();
+            return Task.CompletedTask;
         }
+
+        context.TenantIdOrName = currentUser.TenantId.Value.ToString();
+        context.Handled = true;
 
         return Task.CompletedTask;
     }
