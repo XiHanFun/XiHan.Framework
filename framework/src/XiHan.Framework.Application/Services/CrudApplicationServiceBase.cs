@@ -179,7 +179,8 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <returns>DTO</returns>
     protected virtual Task<TEntityDto> MapEntityToDtoAsync(TEntity entity)
     {
-        return Task.FromResult(entity.Adapt<TEntityDto>());
+        var dto = entity.Adapt<TEntityDto>();
+        return Task.FromResult(EnsureNotNullMapping(dto));
     }
 
     /// <summary>
@@ -187,9 +188,10 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="entities">实体列表</param>
     /// <returns>DTO列表</returns>
-    protected virtual async Task<IList<TEntityDto>> MapEntitiesToDtosAsync(IEnumerable<TEntity> entities)
+    protected virtual Task<IList<TEntityDto>> MapEntitiesToDtosAsync(IEnumerable<TEntity> entities)
     {
-        return await Task.FromResult(entities.Adapt<IList<TEntityDto>>());
+        var dtos = entities.Adapt<IList<TEntityDto>>();
+        return Task.FromResult(EnsureNotNullMapping(dtos));
     }
 
     /// <summary>
@@ -199,7 +201,8 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <returns>实体</returns>
     protected virtual Task<TEntity> MapDtoToEntityAsync(TEntityDto dto)
     {
-        return Task.FromResult(dto.Adapt<TEntity>());
+        var entity = dto.Adapt<TEntity>();
+        return Task.FromResult(EnsureNotNullMapping(entity));
     }
 
     /// <summary>
@@ -220,7 +223,21 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <returns>实体</returns>
     protected virtual Task<TEntity> MapDtoToEntityAsync(TCreateDto createDto)
     {
-        return Task.FromResult(createDto.Adapt<TEntity>());
+        var entity = createDto.Adapt<TEntity>();
+        return Task.FromResult(EnsureNotNullMapping(entity));
+    }
+
+    /// <summary>
+    /// 确保映射结果不为空
+    /// </summary>
+    /// <typeparam name="TResult">结果类型</typeparam>
+    /// <param name="mappedResult">映射结果</param>
+    /// <returns>非空映射结果</returns>
+    /// <exception cref="InvalidOperationException">映射结果为空时抛出</exception>
+    protected static TResult EnsureNotNullMapping<TResult>(TResult? mappedResult)
+        where TResult : class
+    {
+        return mappedResult ?? throw new InvalidOperationException("对象映射失败，结果为空。");
     }
 
     /// <summary>
