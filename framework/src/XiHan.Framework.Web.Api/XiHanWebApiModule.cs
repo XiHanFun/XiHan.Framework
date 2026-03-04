@@ -14,20 +14,19 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Core.Application;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
-using XiHan.Framework.Application.Contracts.Dtos;
-using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
-using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Api;
 
@@ -95,10 +94,7 @@ public class XiHanWebApiModule : XiHanModule
                         ? string.Join("; ", errors)
                         : "请求参数校验失败";
 
-                    return new BadRequestObjectResult(ApiResponse.Fail(
-                        message,
-                        ApiResponseCodes.BadRequest,
-                        traceId));
+                    return new BadRequestObjectResult(ApiResponse.Fail(message, traceId));
                 };
             });
 
