@@ -172,14 +172,16 @@ public class ApiResponse
     /// 响应失败，服务器内部错误 500
     /// </summary>
     /// <param name="errorMessage"></param>
+    /// <param name="traceId"></param>
     /// <returns></returns>
-    public static ApiResponse Failed(string? errorMessage = null)
+    public static ApiResponse Fail(string? errorMessage = null, string? traceId = null)
     {
         return new ApiResponse
         {
             Code = ApiResponseCodes.Failed,
             Message = ApiResponseCodes.Failed.GetDescription(),
-            Data = errorMessage
+            Data = errorMessage,
+            TraceId = traceId
         };
     }
 

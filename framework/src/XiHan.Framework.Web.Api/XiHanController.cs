@@ -14,7 +14,6 @@
 
 using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Application.Contracts.Dtos;
-using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Core.Aspects;
 using XiHan.Framework.Core.DependencyInjection;
 
@@ -40,34 +39,19 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
     /// <param name="data">返回数据</param>
-    /// <param name="message">提示信息</param>
     /// <returns></returns>
-    protected virtual IActionResult Success<T>(T? data, string message = "操作成功")
-        => Ok(ApiResponse<T>.Ok(data, message, HttpContext.TraceIdentifier));
+    protected virtual IActionResult Success<T>(T? data)
+        => Ok(ApiResponse<T>.Success(data, HttpContext.TraceIdentifier));
 
     /// <summary>
-    /// 返回统一成功响应（无数据）
+    /// 返回统一成功响应
     /// </summary>
-    /// <param name="message">提示信息</param>
     /// <returns></returns>
-    protected virtual IActionResult Success(string message = "操作成功")
-        => Ok(ApiResponse.Ok(message, HttpContext.TraceIdentifier));
+    protected virtual IActionResult Success()
+        => Ok(ApiResponse.Success(null, HttpContext.TraceIdentifier));
 
     /// <summary>
-    /// 返回统一失败响应
-    /// </summary>
-    /// <param name="message">错误信息</param>
-    /// <param name="code">业务码</param>
-    /// <param name="statusCode">HTTP 状态码</param>
-    /// <returns></returns>
-    protected virtual IActionResult Fail(
-        string message = "操作失败",
-        ApiResponseCodes code = ApiResponseCodes.Failed,
-        int statusCode = StatusCodes.Status400BadRequest)
-        => StatusCode(statusCode, ApiResponse.Fail(message, code, HttpContext.TraceIdentifier));
-
-    /// <summary>
-    /// 返回统一失败响应（含数据）
+    /// 返回统一失败响应（含失败原因）
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
     /// <param name="message">错误信息</param>
@@ -75,10 +59,13 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// <param name="code">业务码</param>
     /// <param name="statusCode">HTTP 状态码</param>
     /// <returns></returns>
-    protected virtual IActionResult Fail<T>(
-        string message,
-        T? data,
-        ApiResponseCodes code = ApiResponseCodes.Failed,
-        int statusCode = StatusCodes.Status400BadRequest)
-        => StatusCode(statusCode, ApiResponse<T>.Fail(message, code, data, HttpContext.TraceIdentifier));
+    protected virtual IActionResult Fail<T>(string message)
+        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse<T>.Fail(message, HttpContext.TraceIdentifier));
+
+    /// <summary>
+    /// 返回统一失败响应
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IActionResult Fail()
+        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.Fail(null, HttpContext.TraceIdentifier));
 }

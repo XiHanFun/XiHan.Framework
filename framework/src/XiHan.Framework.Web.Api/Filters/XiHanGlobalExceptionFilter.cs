@@ -66,7 +66,7 @@ public class XiHanGlobalExceptionFilter(ILogger<XiHanGlobalExceptionFilter> logg
                 context.HttpContext.Request.Path);
         }
 
-        context.Result = new ObjectResult(ApiResponse.Fail(message, code, traceId))
+        context.Result = new ObjectResult(ApiResponse.Fail(message, traceId))
         {
             StatusCode = statusCode
         };
