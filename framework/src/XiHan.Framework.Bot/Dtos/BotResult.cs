@@ -1,3 +1,17 @@
+#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:BotResult
+// Guid:3f03bed6-519c-43df-ae30-7e13f277d95d
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2026/03/05 02:47:53
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
 using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Utils.Extensions;
 
