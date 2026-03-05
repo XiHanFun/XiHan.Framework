@@ -213,9 +213,7 @@ public class XiHanLoggerConfigurationBuilder
         const string ErrorPath = @"Logs/Error/.log";
         const string FatalPath = @"Logs/Fatal/.log";
 
-#if DEBUG
         WriteToFile(LogEventLevel.Debug, DebugPath, _infoTemplate);
-#endif
         WriteToFile(LogEventLevel.Information, InfoPath, _infoTemplate);
         WriteToFile(LogEventLevel.Warning, WaringPath, _warnTemplate);
         WriteToFile(LogEventLevel.Error, ErrorPath, _errorTemplate);
