@@ -23,4 +23,9 @@
         <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="IP2Region.Net" Version="3.0.2" />
+        <PackageReference Include="UAParser" Version="3.1.47" />
+    </ItemGroup>
+
 </Project>
