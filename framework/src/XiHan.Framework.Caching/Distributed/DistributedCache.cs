@@ -17,6 +17,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Caching.Attributes;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Exceptions.Abstracts;
 using XiHan.Framework.Core.Exceptions.Handling;
@@ -29,7 +31,7 @@ using XiHan.Framework.Uow;
 using XiHan.Framework.Uow.Extensions;
 using XiHan.Framework.Utils.Collections;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// 分布式缓存

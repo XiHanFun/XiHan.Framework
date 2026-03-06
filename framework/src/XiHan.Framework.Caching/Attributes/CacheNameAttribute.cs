@@ -15,7 +15,7 @@
 using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Extensions;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Attributes;
 
 /// <summary>
 /// 缓存名称特性

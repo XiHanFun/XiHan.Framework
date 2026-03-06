@@ -16,7 +16,10 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Caching.Distributed;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.Hybrid.Abstracts;
 using XiHan.Framework.Caching.Options;
 using XiHan.Framework.Utils.Extensions;
 

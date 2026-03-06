@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Hybrid;
+using XiHan.Framework.Caching.Attributes;
 
 namespace XiHan.Framework.Caching.Hybrid;
 
