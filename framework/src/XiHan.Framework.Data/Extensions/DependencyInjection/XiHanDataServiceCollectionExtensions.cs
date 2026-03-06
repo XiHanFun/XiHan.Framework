@@ -35,7 +35,6 @@ using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Utils.Logging;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 
@@ -231,7 +230,7 @@ public static class XiHanDataServiceCollectionExtensions
         {
             dbProvider.Aop.OnError = ex =>
             {
-                HandleSqlOnErrorLog(config,ex);
+                HandleSqlOnErrorLog(config, ex);
             };
         }
 
@@ -335,10 +334,12 @@ public static class XiHanDataServiceCollectionExtensions
                 entityInfo.TrySetSnowflakeId(idGenerator.NextId());
                 entityInfo.ToCreated(auditContext);
                 break;
+
             case DataFilterType.UpdateByObject:
                 entityInfo.ToModified(auditContext);
                 entityInfo.ToDeleted(auditContext);
                 break;
+
             case DataFilterType.DeleteByObject:
                 entityInfo.ToDeleted(auditContext);
                 break;
