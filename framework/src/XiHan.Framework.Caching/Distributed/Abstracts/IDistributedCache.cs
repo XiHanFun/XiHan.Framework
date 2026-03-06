@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace XiHan.Framework.Caching.Distributed.Abstracts;
 
@@ -237,4 +238,82 @@ public interface IDistributedCache<TCacheItem, TCacheKey> where TCacheItem : cla
     /// <param name="token">任务的 <see cref="T:System.Threading.CancellationToken" /></param>
     /// <returns>一个异步任务，表示操作的完成</returns>
     Task RemoveManyAsync(IEnumerable<TCacheKey> keys, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+
+    /// <summary>
+    /// 判断指定键是否存在
+    /// </summary>
+    /// <param name="key">缓存键</param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <returns>存在返回 true；否则返回 false</returns>
+    bool Exists(TCacheKey key, bool? hideErrors = null, bool considerUow = false);
+
+    /// <summary>
+    /// 异步判断指定键是否存在
+    /// </summary>
+    /// <param name="key">缓存键</param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>存在返回 true；否则返回 false</returns>
+    Task<bool> ExistsAsync(TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+
+    /// <summary>
+    /// 按模式获取当前缓存下的所有键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern">业务键匹配模式，默认 "*" </param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <returns>匹配到的键集合</returns>
+    TCacheKey[] GetKeys(string pattern = "*", bool? hideErrors = null, bool considerUow = false);
+
+    /// <summary>
+    /// 异步按模式获取当前缓存下的所有键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern">业务键匹配模式，默认 "*" </param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>匹配到的键集合</returns>
+    Task<TCacheKey[]> GetKeysAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+
+    /// <summary>
+    /// 按模式移除缓存项（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern">业务键匹配模式，默认 "*" </param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <returns>实际移除的键数量</returns>
+    long RemoveByPattern(string pattern = "*", bool? hideErrors = null, bool considerUow = false);
+
+    /// <summary>
+    /// 异步按模式移除缓存项（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern">业务键匹配模式，默认 "*" </param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="considerUow">是否考虑当前工作单元中的缓存变更</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>实际移除的键数量</returns>
+    Task<long> RemoveByPatternAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
+
+    /// <summary>
+    /// 执行 Lua 脚本
+    /// </summary>
+    /// <param name="script">Lua 脚本</param>
+    /// <param name="keys">脚本键集合（业务键）</param>
+    /// <param name="values">脚本参数集合</param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <returns>脚本执行结果</returns>
+    RedisResult? ScriptEvaluate(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null);
+
+    /// <summary>
+    /// 异步执行 Lua 脚本
+    /// </summary>
+    /// <param name="script">Lua 脚本</param>
+    /// <param name="keys">脚本键集合（业务键）</param>
+    /// <param name="values">脚本参数集合</param>
+    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>脚本执行结果</returns>
+    Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default);
 }
