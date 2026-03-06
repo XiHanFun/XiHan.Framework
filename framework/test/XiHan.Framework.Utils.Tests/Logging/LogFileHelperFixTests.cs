@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Logging;
-using Xunit;
 
 namespace XiHan.Framework.Utils.Tests.Logging;
 
