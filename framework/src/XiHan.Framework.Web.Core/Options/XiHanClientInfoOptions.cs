@@ -32,5 +32,5 @@ public class XiHanClientInfoOptions
     /// <summary>
     /// IP2Region xdb 文件路径（支持相对路径）
     /// </summary>
-    public string? Ip2RegionDbPath { get; set; } = "ip2region.xdb";
+    public string? Ip2RegionDbPath { get; set; } = "IpDatabases/ip2region.xdb";
 }

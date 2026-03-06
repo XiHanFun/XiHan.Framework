@@ -206,31 +206,60 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
     /// <returns></returns>
     private ISearcher? CreateSearcher()
     {
+        var candidatePaths = BuildCandidateDbPaths();
+        foreach (var dbPath in candidatePaths)
+        {
+            if (!File.Exists(dbPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                return new Searcher(CachePolicy.Content, dbPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "初始化 IP2Region 查询器失败。Path: {Path}", dbPath);
+            }
+        }
+
+        _logger.LogDebug("未找到可用的 ip2region 数据库文件，跳过IP地理位置解析。Candidates: {Candidates}", string.Join("; ", candidatePaths));
+        return null;
+    }
+
+    /// <summary>
+    /// 构建数据库候选路径
+    /// </summary>
+    /// <returns></returns>
+    private string[] BuildCandidateDbPaths()
+    {
         var configuredPath = NormalizeToNull(_options.Ip2RegionDbPath);
-        if (configuredPath is null)
+        var candidates = new List<string>(3);
+
+        AddCandidate(candidates, configuredPath);
+        AddCandidate(candidates, "IpDatabases/ip2region.xdb");
+        AddCandidate(candidates, "ip2region.xdb");
+
+        return [.. candidates.Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
+    /// <summary>
+    /// 添加候选路径
+    /// </summary>
+    /// <param name="candidates"></param>
+    /// <param name="path"></param>
+    private void AddCandidate(List<string> candidates, string? path)
+    {
+        path = NormalizeToNull(path);
+        if (path is null)
         {
-            return null;
+            return;
         }
 
-        var dbPath = Path.IsPathRooted(configuredPath)
-            ? configuredPath
-            : Path.Combine(_hostingEnvironment.ContentRootPath, configuredPath);
-
-        if (!File.Exists(dbPath))
-        {
-            _logger.LogDebug("未找到 ip2region 数据库文件，跳过IP地理位置解析。Path: {Path}", dbPath);
-            return null;
-        }
-
-        try
-        {
-            return new Searcher(CachePolicy.Content, dbPath);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "初始化 IP2Region 查询器失败。Path: {Path}", dbPath);
-            return null;
-        }
+        candidates.Add(Path.IsPathRooted(path)
+            ? path
+            : Path.Combine(_hostingEnvironment.ContentRootPath, path));
     }
 
     /// <summary>
