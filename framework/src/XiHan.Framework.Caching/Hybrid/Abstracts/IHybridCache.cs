@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Caching.Hybrid;
 
-namespace XiHan.Framework.Caching.Hybrid;
+namespace XiHan.Framework.Caching.Hybrid.Abstracts;
 
 /// <summary>
 /// 混合缓存接口

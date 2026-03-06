@@ -13,8 +13,9 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
+using XiHan.Framework.Caching.Attributes;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// 曦寒分布式缓存选项

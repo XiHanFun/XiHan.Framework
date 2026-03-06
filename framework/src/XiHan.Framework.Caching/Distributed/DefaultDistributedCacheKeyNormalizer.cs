@@ -13,10 +13,11 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Utils.Extensions;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// 默认分布式缓存键规范化器

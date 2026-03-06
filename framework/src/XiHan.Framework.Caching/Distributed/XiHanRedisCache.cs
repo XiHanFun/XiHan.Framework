@@ -19,11 +19,12 @@ using StackExchange.Redis;
 using System.Buffers;
 using System.Reflection;
 using System.Text;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Objects;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// 曦寒 Redis 缓存

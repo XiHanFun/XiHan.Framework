@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed.Abstracts;
 
 /// <summary>
 /// 用于缓存 <typeparamref name="TCacheItem" /> 类型对象的分布式缓存

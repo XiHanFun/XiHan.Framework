@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed.Abstracts;
 
 /// <summary>
 /// 缓存支持多项接口
