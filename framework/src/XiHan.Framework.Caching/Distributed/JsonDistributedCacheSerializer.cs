@@ -14,8 +14,9 @@
 
 using Microsoft.Extensions.Options;
 using System.Text.Json;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// 基于 System.Text.Json 的分布式缓存序列化器

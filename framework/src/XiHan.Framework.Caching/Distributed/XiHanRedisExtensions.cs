@@ -14,7 +14,7 @@
 
 using StackExchange.Redis;
 
-namespace XiHan.Framework.Caching;
+namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
 /// XiHanRedisExtensions
