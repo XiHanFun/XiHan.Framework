@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Caching.Hybrid;
 using XiHan.Framework.Caching.Attributes;
+using XiHan.Framework.Caching.Hybrid.Abstracts;
 
 namespace XiHan.Framework.Caching.Hybrid;
 
@@ -50,7 +51,7 @@ public class XiHanHybridCacheOptions
     /// <summary>
     /// 缓存配置器
     /// </summary>
-    public List<Func<string, HybridCacheEntryOptions?>> CacheConfigurators { get; set; } //TODO: use a configurator interface instead?
+    public List<IHybridCacheOptionsConfigurator> CacheConfigurators { get; set; }
 
     /// <summary>
     /// 配置缓存
@@ -79,6 +80,6 @@ public class XiHanHybridCacheOptions
     /// <param name="options"></param>
     public void ConfigureCache(string cacheName, HybridCacheEntryOptions? options)
     {
-        CacheConfigurators.Add(name => cacheName != name ? null : options);
+        CacheConfigurators.Add(new NamedHybridCacheOptionsConfigurator(cacheName, options));
     }
 }

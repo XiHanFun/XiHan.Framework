@@ -30,8 +30,13 @@ namespace XiHan.Framework.Caching.Distributed;
 /// 曦寒 Redis 缓存
 /// </summary>
 [DisableConventionalRegistration]
-public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
+public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSupportsKeyPattern, ICacheSupportsLuaScript
 {
+    /// <summary>
+    /// Redis 扫描键页大小
+    /// </summary>
+    protected const int DefaultKeyScanPageSize = 500;
+
     /// <summary>
     /// 绝对过期时间键
     /// </summary>
@@ -142,6 +147,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     public XiHanRedisCache(IOptions<RedisCacheOptions> optionsAccessor) : base(optionsAccessor)
     {
         var instanceName = optionsAccessor.Value.InstanceName;
+        InstancePrefixString = instanceName ?? string.Empty;
         if (!string.IsNullOrEmpty(instanceName))
         {
             InstancePrefix = (RedisKey)Encoding.UTF8.GetBytes(instanceName);
@@ -152,6 +158,11 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     /// 实例前缀
     /// </summary>
     protected RedisKey InstancePrefix { get; }
+
+    /// <summary>
+    /// 实例前缀（字符串）
+    /// </summary>
+    protected string InstancePrefixString { get; }
 
     /// <summary>
     /// 获取多个
@@ -300,6 +311,150 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     }
 
     /// <summary>
+    /// 按模式获取键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    public virtual string[] GetKeys(string pattern)
+    {
+        var cache = Connect();
+        try
+        {
+            var redisKeys = ScanKeys(cache, NormalizePattern(pattern));
+            return [.. redisKeys.Select(ToNormalizedKey).Distinct(StringComparer.Ordinal)];
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 异步按模式获取键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<string[]> GetKeysAsync(string pattern, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        var cache = await ConnectAsync(token);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            var redisKeys = ScanKeys(cache, NormalizePattern(pattern));
+            return [.. redisKeys.Select(ToNormalizedKey).Distinct(StringComparer.Ordinal)];
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 按模式移除键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    public virtual long RemoveByPattern(string pattern)
+    {
+        var cache = Connect();
+        try
+        {
+            var redisKeys = ScanKeys(cache, NormalizePattern(pattern));
+            return redisKeys.Length == 0 ? 0 : cache.KeyDelete(redisKeys);
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 异步按模式移除键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<long> RemoveByPatternAsync(string pattern, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        var cache = await ConnectAsync(token);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            var redisKeys = ScanKeys(cache, NormalizePattern(pattern));
+            return redisKeys.Length == 0 ? 0 : await cache.KeyDeleteAsync(redisKeys);
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <returns></returns>
+    public virtual RedisResult ScriptEvaluate(string script, string[]? keys = null, RedisValue[]? values = null)
+    {
+        if (string.IsNullOrWhiteSpace(script))
+        {
+            throw new ArgumentException("Lua 脚本不能为空。", nameof(script));
+        }
+
+        var cache = Connect();
+
+        try
+        {
+            var redisKeys = ToRedisKeys(keys);
+            return cache.ScriptEvaluate(script, redisKeys, values);
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 异步执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<RedisResult> ScriptEvaluateAsync(string script, string[]? keys = null, RedisValue[]? values = null, CancellationToken token = default)
+    {
+        if (string.IsNullOrWhiteSpace(script))
+        {
+            throw new ArgumentException("Lua 脚本不能为空。", nameof(script));
+        }
+
+        token.ThrowIfCancellationRequested();
+        var cache = await ConnectAsync(token);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            var redisKeys = ToRedisKeys(keys);
+            return await cache.ScriptEvaluateAsync(script, redisKeys, values);
+        }
+        catch (Exception ex)
+        {
+            OnRedisError(ex, cache);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 连接
     /// </summary>
     /// <returns></returns>
@@ -336,6 +491,59 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     protected virtual Task[] PipelineRemoveManyAsync(IDatabase cache, IEnumerable<string> keys)
     {
         return [.. keys.Select(key => cache.KeyDeleteAsync(InstancePrefix.Append(key)))];
+    }
+
+    /// <summary>
+    /// 扫描键
+    /// </summary>
+    /// <param name="cache"></param>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    protected virtual RedisKey[] ScanKeys(IDatabase cache, string pattern)
+    {
+        var keySet = new HashSet<RedisKey>();
+        var prefixedPattern = string.IsNullOrEmpty(InstancePrefixString)
+            ? pattern
+            : InstancePrefixString + pattern;
+        foreach (var endpoint in cache.Multiplexer.GetEndPoints())
+        {
+            IServer server;
+            try
+            {
+                server = cache.Multiplexer.GetServer(endpoint);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (!server.IsConnected)
+            {
+                continue;
+            }
+
+            foreach (var key in server.Keys(database: cache.Database, pattern: prefixedPattern, pageSize: DefaultKeyScanPageSize))
+            {
+                keySet.Add(key);
+            }
+        }
+
+        return [.. keySet];
+    }
+
+    /// <summary>
+    /// 转换为 RedisKey 数组并追加实例前缀
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <returns></returns>
+    protected virtual RedisKey[] ToRedisKeys(string[]? keys)
+    {
+        if (keys is null || keys.Length == 0)
+        {
+            return [];
+        }
+
+        return [.. keys.Select(key => InstancePrefix.Append(key))];
     }
 
     /// <summary>
@@ -565,6 +773,16 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
     }
 
     /// <summary>
+    /// 规范化模式
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    private static string NormalizePattern(string pattern)
+    {
+        return string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+    }
+
+    /// <summary>
     /// 获取哈希字段
     /// </summary>
     /// <param name="value"></param>
@@ -579,5 +797,23 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems
             new HashEntry(SlidingExpirationKey, slidingExpiration?.Ticks ?? NotPresent),
             new HashEntry(DataKey, value)
         ];
+    }
+
+    /// <summary>
+    /// 转换为规范化键（移除实例前缀）
+    /// </summary>
+    /// <param name="redisKey"></param>
+    /// <returns></returns>
+    private string ToNormalizedKey(RedisKey redisKey)
+    {
+        var key = redisKey.ToString();
+        if (string.IsNullOrEmpty(InstancePrefixString))
+        {
+            return key;
+        }
+
+        return key.StartsWith(InstancePrefixString, StringComparison.Ordinal)
+            ? key[InstancePrefixString.Length..]
+            : key;
     }
 }

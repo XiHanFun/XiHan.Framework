@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Caching.Distributed;
 using XiHan.Framework.Caching.Attributes;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 
 namespace XiHan.Framework.Caching.Distributed;
 
@@ -50,7 +51,7 @@ public class XiHanDistributedCacheOptions
     /// <summary>
     /// 缓存配置器
     /// </summary>
-    public List<Func<string, DistributedCacheEntryOptions?>> CacheConfigurators { get; set; } //TODO: 是否使用配置器接口来代替？
+    public List<IDistributedCacheOptionsConfigurator> CacheConfigurators { get; set; }
 
     /// <summary>
     /// 配置缓存
@@ -79,6 +80,6 @@ public class XiHanDistributedCacheOptions
     /// <param name="options"></param>
     public void ConfigureCache(string cacheName, DistributedCacheEntryOptions? options)
     {
-        CacheConfigurators.Add(name => cacheName != name ? null : options);
+        CacheConfigurators.Add(new NamedDistributedCacheOptionsConfigurator(cacheName, options));
     }
 }

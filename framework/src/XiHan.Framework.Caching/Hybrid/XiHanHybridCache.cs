@@ -478,7 +478,7 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     {
         foreach (var configure in DistributedCacheOption.CacheConfigurators)
         {
-            var options = configure.Invoke(CacheName);
+            var options = configure.Configure(CacheName);
             if (options is not null)
             {
                 return options;
@@ -495,10 +495,10 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     {
         CacheName = CacheNameAttribute.GetCacheName<TCacheItem>();
 
-        //IgnoreMultiTenancy
+        // 如果缓存项定义了 IgnoreMultiTenancyAttribute 注解，则忽略多租户
         IgnoreMultiTenancy = typeof(TCacheItem).IsDefined(typeof(IgnoreMultiTenancyAttribute), true);
 
-        //Configure default cache entry options
+        // 获取默认缓存项选项
         DefaultCacheOptions = GetDefaultCacheEntryOptions();
     }
 
