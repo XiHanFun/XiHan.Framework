@@ -17,6 +17,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Caching.Attributes;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Core.Exceptions;
@@ -306,6 +308,108 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
     public Task RemoveManyAsync(IEnumerable<string> keys, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
     {
         return InternalCache.RemoveManyAsync(keys, hideErrors, considerUow, token);
+    }
+
+    /// <summary>
+    /// 判断缓存键是否存在
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public bool Exists(string key, bool? hideErrors = null, bool considerUow = false)
+    {
+        return InternalCache.Exists(key, hideErrors, considerUow);
+    }
+
+    /// <summary>
+    /// 异步判断缓存键是否存在
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<bool> ExistsAsync(string key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        return InternalCache.ExistsAsync(key, hideErrors, considerUow, token);
+    }
+
+    /// <summary>
+    /// 按模式获取缓存键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public string[] GetKeys(string pattern = "*", bool? hideErrors = null, bool considerUow = false)
+    {
+        return InternalCache.GetKeys(pattern, hideErrors, considerUow);
+    }
+
+    /// <summary>
+    /// 异步按模式获取缓存键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<string[]> GetKeysAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        return InternalCache.GetKeysAsync(pattern, hideErrors, considerUow, token);
+    }
+
+    /// <summary>
+    /// 按模式移除缓存键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public long RemoveByPattern(string pattern = "*", bool? hideErrors = null, bool considerUow = false)
+    {
+        return InternalCache.RemoveByPattern(pattern, hideErrors, considerUow);
+    }
+
+    /// <summary>
+    /// 异步按模式移除缓存键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<long> RemoveByPatternAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        return InternalCache.RemoveByPatternAsync(pattern, hideErrors, considerUow, token);
+    }
+
+    /// <summary>
+    /// 执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <param name="hideErrors"></param>
+    /// <returns></returns>
+    public RedisResult? ScriptEvaluate(string script, IEnumerable<string>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null)
+    {
+        return InternalCache.ScriptEvaluate(script, keys, values, hideErrors);
+    }
+
+    /// <summary>
+    /// 异步执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<string>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default)
+    {
+        return InternalCache.ScriptEvaluateAsync(script, keys, values, hideErrors, token);
     }
 }
 
@@ -1423,6 +1527,325 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     }
 
     /// <summary>
+    /// 判断缓存键是否存在
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public virtual bool Exists(TCacheKey key, bool? hideErrors = null, bool considerUow = false)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+
+        if (ShouldConsiderUow(considerUow))
+        {
+            var uowItem = GetUnitOfWorkCache().GetOrDefault(key);
+            if (uowItem is not null)
+            {
+                return !uowItem.IsRemoved && uowItem.Value is not null;
+            }
+        }
+
+        try
+        {
+            return Cache.Get(NormalizeKey(key)) is not null;
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            HandleException(ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 异步判断缓存键是否存在
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<bool> ExistsAsync(TCacheKey key, bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+
+        if (ShouldConsiderUow(considerUow))
+        {
+            var uowItem = GetUnitOfWorkCache().GetOrDefault(key);
+            if (uowItem is not null)
+            {
+                return !uowItem.IsRemoved && uowItem.Value is not null;
+            }
+        }
+
+        try
+        {
+            return await Cache.GetAsync(NormalizeKey(key), CancellationTokenProvider.FallbackToProvider(token)) is not null;
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            await HandleExceptionAsync(ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 按模式获取缓存键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public virtual TCacheKey[] GetKeys(string pattern = "*", bool? hideErrors = null, bool considerUow = false)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        var businessPattern = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+
+        try
+        {
+            EnsureStringCacheKeyType();
+
+            var keys = Cache is ICacheSupportsKeyPattern keyPatternSupports
+                ? keyPatternSupports.GetKeys(NormalizePattern(businessPattern))
+                : [];
+            var businessKeys = ToBusinessKeys(keys);
+            if (ShouldConsiderUow(considerUow))
+            {
+                businessKeys = MergeWithUnitOfWorkKeys(businessKeys, businessPattern);
+            }
+
+            return [.. businessKeys.Select(static key => (TCacheKey)(object)key)];
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            HandleException(ex);
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 异步按模式获取缓存键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<TCacheKey[]> GetKeysAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        token = CancellationTokenProvider.FallbackToProvider(token);
+        var businessPattern = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+
+        try
+        {
+            EnsureStringCacheKeyType();
+
+            var keys = Cache is ICacheSupportsKeyPattern keyPatternSupports
+                ? await keyPatternSupports.GetKeysAsync(NormalizePattern(businessPattern), token)
+                : [];
+            var businessKeys = ToBusinessKeys(keys);
+            if (ShouldConsiderUow(considerUow))
+            {
+                businessKeys = MergeWithUnitOfWorkKeys(businessKeys, businessPattern);
+            }
+
+            return [.. businessKeys.Select(static key => (TCacheKey)(object)key)];
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            await HandleExceptionAsync(ex);
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 按模式移除缓存键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <returns></returns>
+    public virtual long RemoveByPattern(string pattern = "*", bool? hideErrors = null, bool considerUow = false)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        var businessPattern = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+
+        try
+        {
+            EnsureStringCacheKeyType();
+            if (!ShouldConsiderUow(considerUow) && Cache is ICacheSupportsKeyPattern keyPatternSupports)
+            {
+                return keyPatternSupports.RemoveByPattern(NormalizePattern(businessPattern));
+            }
+
+            var keys = GetKeys(businessPattern, hideErrors, considerUow);
+            if (keys.Length == 0)
+            {
+                return 0;
+            }
+
+            RemoveMany(keys, hideErrors, considerUow);
+            return keys.LongLength;
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            HandleException(ex);
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// 异步按模式移除缓存键（仅支持字符串键缓存）
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="considerUow"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<long> RemoveByPatternAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        token = CancellationTokenProvider.FallbackToProvider(token);
+        var businessPattern = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+
+        try
+        {
+            EnsureStringCacheKeyType();
+            if (!ShouldConsiderUow(considerUow) && Cache is ICacheSupportsKeyPattern keyPatternSupports)
+            {
+                return await keyPatternSupports.RemoveByPatternAsync(NormalizePattern(businessPattern), token);
+            }
+
+            var keys = await GetKeysAsync(businessPattern, hideErrors, considerUow, token);
+            if (keys.Length == 0)
+            {
+                return 0;
+            }
+
+            await RemoveManyAsync(keys, hideErrors, considerUow, token);
+            return keys.LongLength;
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            await HandleExceptionAsync(ex);
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// 执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <param name="hideErrors"></param>
+    /// <returns></returns>
+    public virtual RedisResult? ScriptEvaluate(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(script))
+            {
+                throw new ArgumentException("Lua 脚本不能为空。", nameof(script));
+            }
+
+            if (Cache is not ICacheSupportsLuaScript cacheSupportsLuaScript)
+            {
+                throw new NotSupportedException("当前缓存实现不支持 Lua 脚本执行。");
+            }
+
+            var normalizedKeys = keys?.Select(NormalizeKey).ToArray() ?? [];
+            var args = values?.ToArray() ?? [];
+            return cacheSupportsLuaScript.ScriptEvaluate(script, normalizedKeys, args);
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            HandleException(ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 异步执行 Lua 脚本
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="keys"></param>
+    /// <param name="values"></param>
+    /// <param name="hideErrors"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default)
+    {
+        hideErrors ??= _distributedCacheOption.HideErrors;
+        token = CancellationTokenProvider.FallbackToProvider(token);
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(script))
+            {
+                throw new ArgumentException("Lua 脚本不能为空。", nameof(script));
+            }
+
+            if (Cache is not ICacheSupportsLuaScript cacheSupportsLuaScript)
+            {
+                throw new NotSupportedException("当前缓存实现不支持 Lua 脚本执行。");
+            }
+
+            var normalizedKeys = keys?.Select(NormalizeKey).ToArray() ?? [];
+            var args = values?.ToArray() ?? [];
+            return await cacheSupportsLuaScript.ScriptEvaluateAsync(script, normalizedKeys, args, token);
+        }
+        catch (Exception ex)
+        {
+            if (hideErrors != true)
+            {
+                throw;
+            }
+
+            await HandleExceptionAsync(ex);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 处理异常
     /// </summary>
     /// <param name="key"></param>
@@ -1433,6 +1856,25 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     }
 
     /// <summary>
+    /// 规范化模式键
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    protected virtual string NormalizePattern(string pattern)
+    {
+        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(pattern, CacheName, IgnoreMultiTenancy));
+    }
+
+    /// <summary>
+    /// 获取规范化键前缀
+    /// </summary>
+    /// <returns></returns>
+    protected virtual string GetNormalizedKeyPrefix()
+    {
+        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(string.Empty, CacheName, IgnoreMultiTenancy));
+    }
+
+    /// <summary>
     /// 获取默认缓存条目选项
     /// </summary>
     /// <returns></returns>
@@ -1440,7 +1882,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     {
         foreach (var configure in _distributedCacheOption.CacheConfigurators)
         {
-            var options = configure.Invoke(CacheName);
+            var options = configure.Configure(CacheName);
             if (options is not null)
             {
                 return options;
@@ -1684,5 +2126,84 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     private static KeyValuePair<TCacheKey, TCacheItem?>[] ToCacheItemsWithDefaultValues(TCacheKey[] keys)
     {
         return [.. keys.Select(key => new KeyValuePair<TCacheKey, TCacheItem?>(key, null))];
+    }
+
+    /// <summary>
+    /// 确保键类型为字符串
+    /// </summary>
+    /// <exception cref="NotSupportedException"></exception>
+    private static void EnsureStringCacheKeyType()
+    {
+        if (typeof(TCacheKey) != typeof(string))
+        {
+            throw new NotSupportedException($"当前缓存键类型 '{typeof(TCacheKey).Name}' 不支持按模式操作，需使用 string 键类型。");
+        }
+    }
+
+    /// <summary>
+    /// 创建通配符匹配正则
+    /// </summary>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    private static Regex CreateWildcardRegex(string pattern)
+    {
+        var regexPattern = "^" + Regex.Escape(pattern)
+            .Replace("\\*", ".*", StringComparison.Ordinal)
+            .Replace("\\?", ".", StringComparison.Ordinal) + "$";
+        return new Regex(regexPattern, RegexOptions.CultureInvariant);
+    }
+
+    /// <summary>
+    /// 转换为业务键
+    /// </summary>
+    /// <param name="normalizedKeys"></param>
+    /// <returns></returns>
+    private string[] ToBusinessKeys(IEnumerable<string> normalizedKeys)
+    {
+        var keyPrefix = GetNormalizedKeyPrefix();
+
+        return
+        [
+            .. normalizedKeys
+                .Where(static key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.StartsWith(keyPrefix, StringComparison.Ordinal)
+                    ? key[keyPrefix.Length..]
+                    : key)
+                .Where(static key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+        ];
+    }
+
+    /// <summary>
+    /// 合并当前工作单元中的键变更
+    /// </summary>
+    /// <param name="storeKeys"></param>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    private string[] MergeWithUnitOfWorkKeys(IEnumerable<string> storeKeys, string pattern)
+    {
+        var keySet = storeKeys.ToHashSet(StringComparer.Ordinal);
+        var regex = CreateWildcardRegex(pattern);
+        var uowCache = GetUnitOfWorkCache();
+
+        foreach (var item in uowCache)
+        {
+            var key = item.Key.ToString()!;
+            if (!regex.IsMatch(key))
+            {
+                continue;
+            }
+
+            if (item.Value.IsRemoved || item.Value.Value is null)
+            {
+                keySet.Remove(key);
+            }
+            else
+            {
+                keySet.Add(key);
+            }
+        }
+
+        return [.. keySet];
     }
 }
