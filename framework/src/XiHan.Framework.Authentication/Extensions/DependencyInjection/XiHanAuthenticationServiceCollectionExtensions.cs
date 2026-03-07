@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.Otp;
 using XiHan.Framework.Authentication.Password;
@@ -46,16 +47,17 @@ public static class XiHanAuthenticationServiceCollectionExtensions
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
         // 注册密码哈希服务
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.TryAddSingleton<IPasswordHasher, PasswordHasher>();
+        // 注册刷新令牌存储
+        services.TryAddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         // 注册 JWT 服务
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.TryAddSingleton<IJwtTokenService, JwtTokenService>();
         // 注册 OTP 服务
-        services.AddSingleton<IOtpService, OtpService>();
-
+        services.TryAddSingleton<IOtpService, OtpService>();
         // 注册用户存储
-        services.AddScoped<IUserStore, DefaultUserStore>();
+        services.TryAddScoped<IUserStore, DefaultUserStore>();
         // 注册认证服务接口
-        services.AddScoped<IAuthenticationService, DefaultAuthenticationService>();
+        services.TryAddScoped<IAuthenticationService, DefaultAuthenticationService>();
 
         return services;
     }
