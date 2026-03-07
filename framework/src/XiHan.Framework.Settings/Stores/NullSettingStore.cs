@@ -62,4 +62,29 @@ public class NullSettingStore : ISettingStore, ISingletonDependency
     {
         return Task.FromResult(names.Select(x => new SettingValue(x, null)).ToList());
     }
+
+    /// <summary>
+    /// 设置值（空实现）
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="value"></param>
+    /// <param name="providerName"></param>
+    /// <param name="providerKey"></param>
+    /// <returns></returns>
+    public Task SetAsync(string name, string? value, string? providerName, string? providerKey)
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 删除设置值（空实现）
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="providerName"></param>
+    /// <param name="providerKey"></param>
+    /// <returns></returns>
+    public Task DeleteAsync(string name, string? providerName, string? providerKey)
+    {
+        return Task.CompletedTask;
+    }
 }

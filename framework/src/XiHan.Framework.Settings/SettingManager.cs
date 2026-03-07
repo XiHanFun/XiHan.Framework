@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Security.Users;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
 using XiHan.Framework.Settings.Stores;
@@ -28,6 +29,10 @@ namespace XiHan.Framework.Settings;
 /// </summary>
 public class SettingManager : ISettingManager, ISingletonDependency
 {
+    private const string GlobalProviderName = "G";
+    private const string TenantProviderName = "T";
+    private const string UserProviderName = "U";
+
     private readonly ILogger<SettingManager> _logger;
     private readonly ISettingStore _settingStore;
     private readonly IServiceProvider _serviceProvider;
@@ -117,7 +122,7 @@ public class SettingManager : ISettingManager, ISingletonDependency
             }
         }
 
-        value ??= await _settingStore.GetOrNullAsync(name, definition.Name, null) ?? definition.DefaultValue;
+        value ??= await _settingStore.GetOrNullAsync(name, GlobalProviderName, null) ?? definition.DefaultValue;
 
         if (definition.IsEncrypted && !string.IsNullOrEmpty(value))
         {
@@ -154,9 +159,55 @@ public class SettingManager : ISettingManager, ISingletonDependency
             value = EncryptValue(value);
         }
 
+        var (providerName, providerKey) = ResolveProvider(scope);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            await _settingStore.DeleteAsync(name, providerName, providerKey);
+        }
+        else
+        {
+            await _settingStore.SetAsync(name, value, providerName, providerKey);
+        }
+
         // 触发变更事件
         OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(name, scope, value));
-        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 解析设置提供者信息
+    /// </summary>
+    /// <param name="scope"></param>
+    /// <returns></returns>
+    /// <exception cref="XiHanException"></exception>
+    private (string ProviderName, string? ProviderKey) ResolveProvider(SettingScope scope)
+    {
+        if (scope == SettingScope.Application)
+        {
+            return (GlobalProviderName, null);
+        }
+
+        var currentUser = _serviceProvider.GetService(typeof(ICurrentUser)) as ICurrentUser;
+        if (scope == SettingScope.User || scope == SettingScope.Session)
+        {
+            if (currentUser?.UserId is null)
+            {
+                throw new XiHanException("当前上下文无用户信息，无法写入用户级设置");
+            }
+
+            return (UserProviderName, currentUser.UserId.Value.ToString());
+        }
+
+        if (scope == SettingScope.Tenant)
+        {
+            if (currentUser?.TenantId is null)
+            {
+                throw new XiHanException("当前上下文无租户信息，无法写入租户级设置");
+            }
+
+            return (TenantProviderName, currentUser.TenantId.Value.ToString());
+        }
+
+        return (GlobalProviderName, null);
     }
 
     /// <summary>
