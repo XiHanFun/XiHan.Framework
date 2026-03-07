@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.ConfigurationStore;
 using XiHan.Framework.MultiTenancy.Features;
@@ -39,6 +40,7 @@ public static class XiHanMultiTenancyServiceCollectionExtensions
         services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
 
         services.Configure<XiHanDefaultTenantStoreOptions>(configuration.GetSection(XiHanDefaultTenantStoreOptions.SectionName));
+        services.TryAddSingleton<ITenantStore, DefaultTenantStore>();
 
         services.Configure<XiHanSettingOptions>(options =>
         {
