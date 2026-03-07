@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Authentication;
+namespace XiHan.Framework.Authentication.Otp;
 
 /// <summary>
 /// 双因素认证设置结果
