@@ -20,6 +20,11 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 public class XiHanJobOptions
 {
     /// <summary>
+    /// 配置节名称
+    /// </summary>
+    public const string SectionName = "XiHan:Tasks:ScheduledJobs";
+
+    /// <summary>
     /// 是否启用任务调度
     /// </summary>
     public bool Enabled { get; set; } = true;
