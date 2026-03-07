@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 using XiHan.Framework.Tasks.ScheduledJobs.Executor;
@@ -46,7 +47,15 @@ public static class XiHanTasksServiceCollectionExtensions
 
         // 注册核心服务
         services.TryAddSingleton<IJobStore, InMemoryJobStore>();
-        services.TryAddSingleton<IJobLockProvider, InMemoryLockProvider>();
+        services.TryAddSingleton<InMemoryLockProvider>();
+        services.TryAddSingleton<DistributedJobLockProvider>();
+        services.TryAddSingleton<IJobLockProvider>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<XiHanJobOptions>>().Value;
+            return options.EnableDistributedLock
+                ? sp.GetRequiredService<DistributedJobLockProvider>()
+                : sp.GetRequiredService<InMemoryLockProvider>();
+        });
         services.TryAddSingleton<IJobScheduler, CompositeJobScheduler>();
         services.TryAddSingleton<IJobExecutor, JobExecutor>();
         services.TryAddSingleton<JobMetricsProvider>();
@@ -79,5 +88,15 @@ public static class XiHanTasksServiceCollectionExtensions
     public static XiHanJobBuilder UseInMemoryLock(this XiHanJobBuilder builder)
     {
         return builder.UseLockProvider<InMemoryLockProvider>();
+    }
+
+    /// <summary>
+    /// 使用分布式锁（基于 Redis）
+    /// </summary>
+    /// <param name="builder">任务构建器</param>
+    /// <returns>任务构建器</returns>
+    public static XiHanJobBuilder UseDistributedLock(this XiHanJobBuilder builder)
+    {
+        return builder.UseLockProvider<DistributedJobLockProvider>();
     }
 }

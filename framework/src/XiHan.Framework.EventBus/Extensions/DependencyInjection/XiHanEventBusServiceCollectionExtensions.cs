@@ -14,6 +14,8 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.EventBus.Abstractions.Local;
@@ -37,6 +39,10 @@ public static class XiHanEventBusServiceCollectionExtensions
     /// <returns>服务集合</returns>
     public static IServiceCollection AddXiHanEventBus(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<EventBoxProcessingOptions>(
+            configuration.GetSection(EventBoxProcessingOptions.SectionName));
+        ConfigureDefaultEventBoxes(services);
+        RegisterDefaultEventBoxServices(services);
         AddEventHandlers(services);
         return services;
     }
@@ -72,5 +78,56 @@ public static class XiHanEventBusServiceCollectionExtensions
         {
             options.Handlers.AddIfNotContains(distributedHandlers);
         });
+    }
+
+    /// <summary>
+    /// 配置默认事件盒
+    /// </summary>
+    /// <param name="services"></param>
+    private static void ConfigureDefaultEventBoxes(IServiceCollection services)
+    {
+        services.Configure<XiHanDistributedEventBusOptions>(options =>
+        {
+            options.Outboxes.Configure(config =>
+            {
+                if (config.ImplementationType == default)
+                {
+                    config.ImplementationType = typeof(InMemoryEventOutbox);
+                }
+
+                if (string.IsNullOrWhiteSpace(config.DatabaseName))
+                {
+                    config.DatabaseName = "Default";
+                }
+            });
+
+            options.Inboxes.Configure(config =>
+            {
+                if (config.ImplementationType == default)
+                {
+                    config.ImplementationType = typeof(InMemoryEventInbox);
+                }
+
+                if (string.IsNullOrWhiteSpace(config.DatabaseName))
+                {
+                    config.DatabaseName = "Default";
+                }
+            });
+        });
+    }
+
+    /// <summary>
+    /// 注册默认事件盒服务
+    /// </summary>
+    /// <param name="services"></param>
+    private static void RegisterDefaultEventBoxServices(IServiceCollection services)
+    {
+        services.TryAddSingleton<InMemoryEventOutbox>();
+        services.TryAddSingleton<InMemoryEventInbox>();
+        services.TryAddSingleton<IEventOutbox>(sp => sp.GetRequiredService<InMemoryEventOutbox>());
+        services.TryAddSingleton<IEventInbox>(sp => sp.GetRequiredService<InMemoryEventInbox>());
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, EventBoxOutboxSenderHostedService>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, EventBoxInboxProcessorHostedService>());
     }
 }

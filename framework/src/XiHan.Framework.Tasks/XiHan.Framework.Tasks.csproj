@@ -14,6 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
       <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
       <ProjectReference Include="..\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
       <ProjectReference Include="..\XiHan.Framework.Timing\XiHan.Framework.Timing.csproj" />

@@ -14,8 +14,10 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Caching;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 using XiHan.Framework.Tasks.ScheduledJobs.Extensions.DependencyInjection;
 using XiHan.Framework.Timing;
 
@@ -25,6 +27,7 @@ namespace XiHan.Framework.Tasks;
 /// 曦寒框架任务模块
 /// </summary>
 [DependsOn(
+    typeof(XiHanCachingModule),
     typeof(XiHanMultiTenancyAbstractionsModule),
     typeof(XiHanMultiTenancyModule),
     typeof(XiHanTimingModule)
@@ -40,13 +43,9 @@ public class XiHanTasksModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
+        Configure<XiHanJobOptions>(config.GetSection(XiHanJobOptions.SectionName));
+
         // 注册任务调度服务
-        services.AddXiHanTasks(options =>
-        {
-            // 默认配置
-            options.Enabled = true;
-            options.AutoDiscoverJobs = true;
-            options.EnableMetrics = true;
-        });
+        services.AddXiHanTasks();
     }
 }

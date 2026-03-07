@@ -12,8 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.ObjectStorage.Constants;
+using XiHan.Framework.ObjectStorage.Extensions.DependencyInjection;
+using XiHan.Framework.ObjectStorage.Options;
 
 namespace XiHan.Framework.ObjectStorage;
 
@@ -30,8 +35,81 @@ public class XiHanObjectStorageModule : XiHanModule
     {
         var services = context.Services;
         var config = services.GetConfiguration();
+        services.AddXiHanObjectStorage();
 
-        // 对象存储提供程序将由使用方根据需求注册
-        // 例如：services.AddSingleton<IFileStorageProvider, LocalFileStorageProvider>();
+        Configure<XiHanObjectStorageOptions>(config.GetSection(XiHanObjectStorageOptions.SectionName));
+        Configure<LocalStorageOptions>(config.GetSection(LocalStorageOptions.SectionName));
+        Configure<MinioStorageOptions>(config.GetSection(MinioStorageOptions.SectionName));
+        Configure<AliyunOssStorageOptions>(config.GetSection(AliyunOssStorageOptions.SectionName));
+        Configure<TencentCosStorageOptions>(config.GetSection(TencentCosStorageOptions.SectionName));
+
+        RegisterConfiguredProviders(services, config);
+    }
+
+    /// <summary>
+    /// 按配置注册提供程序
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="config">应用配置</param>
+    private static void RegisterConfiguredProviders(IServiceCollection services, IConfiguration config)
+    {
+        var storageOptions = new XiHanObjectStorageOptions();
+        config.GetSection(XiHanObjectStorageOptions.SectionName).Bind(storageOptions);
+
+        var providerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var providerName in storageOptions.EnabledProviders ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(providerName))
+            {
+                providerNames.Add(providerName.Trim());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(storageOptions.DefaultProvider))
+        {
+            providerNames.Add(storageOptions.DefaultProvider.Trim());
+        }
+
+        if (providerNames.Count == 0)
+        {
+            providerNames.Add(ObjectStorageProviderNames.Local);
+        }
+
+        foreach (var providerName in providerNames)
+        {
+            RegisterProvider(services, providerName);
+        }
+    }
+
+    /// <summary>
+    /// 注册单个提供程序
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="providerName">提供程序名称</param>
+    /// <exception cref="InvalidOperationException">未知提供程序名称</exception>
+    private static void RegisterProvider(IServiceCollection services, string providerName)
+    {
+        switch (providerName.Trim().ToUpperInvariant())
+        {
+            case "LOCAL":
+                services.AddLocalFileStorageProvider();
+                break;
+
+            case "MINIO":
+                services.AddMinioFileStorageProvider();
+                break;
+
+            case "ALIYUNOSS":
+                services.AddAliyunOssFileStorageProvider();
+                break;
+
+            case "TENCENTCOS":
+                services.AddTencentCosFileStorageProvider();
+                break;
+
+            default:
+                throw new InvalidOperationException($"不支持的对象存储提供程序：{providerName}");
+        }
     }
 }
