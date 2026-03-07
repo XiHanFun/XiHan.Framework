@@ -18,6 +18,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using XiHan.Framework.Security.Claims;
 
 namespace XiHan.Framework.Authentication.Jwt;
 
@@ -28,14 +29,17 @@ public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _options;
     private readonly TokenValidationParameters _tokenValidationParameters;
+    private readonly IRefreshTokenStore _refreshTokenStore;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="options">JWT 配置选项</param>
-    public JwtTokenService(IOptions<JwtOptions> options)
+    /// <param name="refreshTokenStore">刷新令牌存储</param>
+    public JwtTokenService(IOptions<JwtOptions> options, IRefreshTokenStore refreshTokenStore)
     {
         _options = options.Value;
+        _refreshTokenStore = refreshTokenStore;
         _tokenValidationParameters = CreateTokenValidationParameters();
     }
 
@@ -51,6 +55,7 @@ public class JwtTokenService : IJwtTokenService
 
         var now = DateTime.UtcNow;
         var expires = now.AddMinutes(_options.AccessTokenExpirationMinutes);
+        var refreshTokenExpireAt = now.AddDays(Math.Max(1, _options.RefreshTokenExpirationDays));
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -65,11 +70,15 @@ public class JwtTokenService : IJwtTokenService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         var tokenString = tokenHandler.WriteToken(token);
+        var refreshToken = GenerateRefreshToken();
+        var subject = GetTokenSubject(claims);
+
+        _refreshTokenStore.Save(refreshToken, subject, refreshTokenExpireAt);
 
         return new JwtTokenResult
         {
             AccessToken = tokenString,
-            RefreshToken = GenerateRefreshToken(),
+            RefreshToken = refreshToken,
             ExpiresIn = (int)TimeSpan.FromMinutes(_options.AccessTokenExpirationMinutes).TotalSeconds,
             TokenType = "Bearer",
             IssuedAt = now,
@@ -176,13 +185,16 @@ public class JwtTokenService : IJwtTokenService
             validationParameters.ValidateLifetime = false; // 允许过期令牌
 
             var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out _);
+            var subject = GetTokenSubject(principal.Claims);
 
-            // 这里应该验证 refreshToken 是否存在于数据库中
-            // 实际应用中需要实现 IRefreshTokenStore 接口
-            // if (!await _refreshTokenStore.ValidateRefreshToken(refreshToken)) return null;
+            if (!_refreshTokenStore.Validate(refreshToken, subject))
+            {
+                return null;
+            }
 
             // 生成新的访问令牌
             var newToken = GenerateAccessToken([.. principal.Claims]);
+            _refreshTokenStore.Remove(refreshToken);
 
             return newToken;
         }
@@ -211,5 +223,18 @@ public class JwtTokenService : IJwtTokenService
             ValidateLifetime = _options.ValidateLifetime,
             ClockSkew = TimeSpan.FromMinutes(_options.ClockSkewMinutes)
         };
+    }
+
+    /// <summary>
+    /// 获取令牌主体标识
+    /// </summary>
+    /// <param name="claims">声明集合</param>
+    /// <returns>主体标识</returns>
+    private static string? GetTokenSubject(IEnumerable<Claim> claims)
+    {
+        return claims.FirstOrDefault(claim =>
+            claim.Type == JwtRegisteredClaimNames.Sub ||
+            claim.Type == ClaimTypes.NameIdentifier ||
+            claim.Type == XiHanClaimTypes.UserId)?.Value;
     }
 }
