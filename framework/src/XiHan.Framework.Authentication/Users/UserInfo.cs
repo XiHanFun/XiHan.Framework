@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Authentication;
+namespace XiHan.Framework.Authentication.Users;
 
 /// <summary>
 /// 用户信息
