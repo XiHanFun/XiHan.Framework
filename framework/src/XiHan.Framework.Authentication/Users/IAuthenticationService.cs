@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Authentication;
+using XiHan.Framework.Authentication.Otp;
+using XiHan.Framework.Authentication.Password;
+
+namespace XiHan.Framework.Authentication.Users;
 
 /// <summary>
 /// 认证服务接口

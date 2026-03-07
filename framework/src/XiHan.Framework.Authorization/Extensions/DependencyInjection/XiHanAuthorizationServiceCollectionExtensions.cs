@@ -36,8 +36,6 @@ public static class XiHanAuthorizationServiceCollectionExtensions
     {
         // 注册角色存储
         services.TryAddScoped<IRoleStore, DefaultRoleStore>();
-        // 注册角色管理器
-        services.TryAddScoped<IRoleManager, DefaultRoleManager>();
         // 注册权限存储
         services.TryAddScoped<IPermissionStore, DefaultPermissionStore>();
         // 注册权限检查器

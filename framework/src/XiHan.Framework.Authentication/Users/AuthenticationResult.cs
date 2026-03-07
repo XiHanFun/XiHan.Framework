@@ -14,7 +14,7 @@
 
 using XiHan.Framework.Authentication.Jwt;
 
-namespace XiHan.Framework.Authentication;
+namespace XiHan.Framework.Authentication.Users;
 
 /// <summary>
 /// 认证结果

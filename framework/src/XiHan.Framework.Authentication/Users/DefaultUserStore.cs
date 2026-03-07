@@ -14,7 +14,7 @@
 
 using System.Collections.Concurrent;
 
-namespace XiHan.Framework.Authentication;
+namespace XiHan.Framework.Authentication.Users;
 
 /// <summary>
 /// 默认用户存储实现
