@@ -87,7 +87,10 @@ public class EmailBot(EmailFromModel fromModel)
             // 解决远程证书验证无效
             client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             await client.ConnectAsync(fromModel.SmtpHost, fromModel.SmtpPort, fromModel.UseSsl);
-            await client.AuthenticateAsync(fromModel.FromUserName, fromModel.FromPassword);
+            if (!string.IsNullOrWhiteSpace(fromModel.FromUserName))
+            {
+                await client.AuthenticateAsync(fromModel.FromUserName, fromModel.FromPassword);
+            }
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
