@@ -27,7 +27,7 @@ namespace XiHan.Framework.Settings;
 /// <summary>
 /// 设置管理器
 /// </summary>
-public class SettingManager : ISettingManager, ISingletonDependency
+public class SettingManager : ISettingManager, IScopedDependency
 {
     private const string GlobalProviderName = "G";
     private const string TenantProviderName = "T";
