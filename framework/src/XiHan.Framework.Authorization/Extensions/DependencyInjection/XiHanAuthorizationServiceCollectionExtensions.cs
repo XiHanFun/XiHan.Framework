@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authorization.Permissions;
 using XiHan.Framework.Authorization.Policies;
 using XiHan.Framework.Authorization.Roles;
@@ -34,19 +35,19 @@ public static class XiHanAuthorizationServiceCollectionExtensions
     public static IServiceCollection AddXiHanAuthorization(this IServiceCollection services, IConfiguration configuration)
     {
         // 注册角色存储
-        services.AddScoped<IRoleStore, DefaultRoleStore>();
+        services.TryAddScoped<IRoleStore, DefaultRoleStore>();
         // 注册角色管理器
-        services.AddScoped<IRoleManager, DefaultRoleManager>();
+        services.TryAddScoped<IRoleManager, DefaultRoleManager>();
         // 注册权限存储
-        services.AddScoped<IPermissionStore, DefaultPermissionStore>();
+        services.TryAddScoped<IPermissionStore, DefaultPermissionStore>();
         // 注册权限检查器
-        services.AddScoped<IPermissionChecker, DefaultPermissionChecker>();
+        services.TryAddScoped<IPermissionChecker, DefaultPermissionChecker>();
         // 注册策略存储
-        services.AddScoped<IPolicyStore, DefaultPolicyStore>();
+        services.TryAddScoped<IPolicyStore, DefaultPolicyStore>();
         // 注册策略评估器
-        services.AddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
+        services.TryAddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
         // 注册授权服务
-        services.AddScoped<IAuthorizationService, DefaultAuthorizationService>();
+        services.TryAddScoped<IAuthorizationService, DefaultAuthorizationService>();
 
         return services;
     }
