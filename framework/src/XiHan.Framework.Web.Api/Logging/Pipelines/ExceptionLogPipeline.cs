@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.Api.Logging.Options;
 using XiHan.Framework.Web.Api.Logging.Queues;
+using XiHan.Framework.Web.Api.Logging.Writers;
 
 namespace XiHan.Framework.Web.Api.Logging.Pipelines;
 

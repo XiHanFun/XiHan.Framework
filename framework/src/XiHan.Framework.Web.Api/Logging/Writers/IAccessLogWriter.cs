@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.Logging;
+namespace XiHan.Framework.Web.Api.Logging.Writers;
 
 /// <summary>
 /// 访问日志写入器
