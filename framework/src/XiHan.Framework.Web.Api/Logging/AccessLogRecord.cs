@@ -50,6 +50,16 @@ public class AccessLogRecord
     public string Path { get; set; } = string.Empty;
 
     /// <summary>
+    /// 查询字符串
+    /// </summary>
+    public string? QueryString { get; set; }
+
+    /// <summary>
+    /// 请求体摘要
+    /// </summary>
+    public string? RequestBody { get; set; }
+
+    /// <summary>
     /// 状态码
     /// </summary>
     public int StatusCode { get; set; }
@@ -73,6 +83,11 @@ public class AccessLogRecord
     /// 耗时毫秒
     /// </summary>
     public long ElapsedMilliseconds { get; set; }
+
+    /// <summary>
+    /// 响应大小（字节）
+    /// </summary>
+    public long ResponseSize { get; set; }
 
     /// <summary>
     /// 错误信息

@@ -68,10 +68,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         if (IsSplitTableEntity)
         {
             await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
+            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
             return entity;
         }
 
-        return await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        var insertedEntity = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        await TryWriteAuditLogAsync(null, insertedEntity, "Create", cancellationToken);
+        return insertedEntity;
     }
 
     /// <summary>
@@ -88,10 +91,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         if (IsSplitTableEntity)
         {
             await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
+            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
             return entity.BasicId;
         }
 
         var insertedEntity = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        await TryWriteAuditLogAsync(null, insertedEntity, "Create", cancellationToken);
         return insertedEntity.BasicId;
     }
 
@@ -116,10 +121,18 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         if (IsSplitTableEntity)
         {
             await SplitTableExecutor.InsertAsync(DbClient, entityList, cancellationToken);
+            foreach (var entity in entityList)
+            {
+                await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+            }
             return entityList;
         }
 
         await DbClient.Insertable(entityList).ExecuteCommandAsync(cancellationToken);
+        foreach (var entity in entityList)
+        {
+            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+        }
         return entityList;
     }
 
@@ -251,7 +264,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             {
                 insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
             }
-            return insertedRows > 0;
+            if (insertedRows > 0)
+            {
+                await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+                return true;
+            }
+
+            return false;
         }
 
         var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
@@ -319,6 +338,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
                 insertedRows = await DbClient.Insertable(addEntities).ExecuteCommandAsync(cancellationToken);
             }
             hasChanges |= insertedRows > 0;
+            if (insertedRows > 0)
+            {
+                foreach (var entity in addEntities)
+                {
+                    await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+                }
+            }
         }
 
         if (updateEntities.Length > 0)
@@ -350,6 +376,17 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             {
                 updatedRows = await DbClient.Updateable(updateEntityList)
                     .ExecuteCommandAsync(cancellationToken);
+            }
+
+            if (updatedRows > 0)
+            {
+                foreach (var updateEntity in updateEntityList)
+                {
+                    if (currentEntityMap.TryGetValue(updateEntity.BasicId, out var beforeEntity))
+                    {
+                        await TryWriteAuditLogAsync(beforeEntity, updateEntity, "Update", cancellationToken);
+                    }
+                }
             }
 
             hasChanges |= updatedRows > 0;

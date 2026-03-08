@@ -85,6 +85,11 @@ public class ExceptionLogRecord
     public string? RequestParams { get; set; }
 
     /// <summary>
+    /// 请求体摘要（JSON）
+    /// </summary>
+    public string? RequestBody { get; set; }
+
+    /// <summary>
     /// 远端 IP
     /// </summary>
     public string? RemoteIp { get; set; }
