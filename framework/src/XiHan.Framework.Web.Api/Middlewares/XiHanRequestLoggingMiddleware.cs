@@ -15,6 +15,7 @@
 using System.Text;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
 using Microsoft.AspNetCore.Http.Features;
 
@@ -35,7 +36,9 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
     public async Task InvokeAsync(HttpContext context)
     {
         var cancellationToken = context.RequestAborted;
-        var traceId = context.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
+        var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
+        var traceId = requestContext?.TraceId
+            ?? context.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? context.TraceIdentifier;
         var currentUser = context.RequestServices.GetService<ICurrentUser>();
         var queryString = context.Request.QueryString.HasValue
@@ -53,7 +56,7 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
             context.Items[XiHanWebApiConstants.RequestBodyItemKey] = requestBody;
         }
 
-        var startAt = DateTimeOffset.UtcNow;
+        var startAt = requestContext?.StartTime ?? DateTimeOffset.UtcNow;
         Exception? unhandledException = null;
         logger.LogInformation(
             "请求开始: {Method} {Path}, TraceId: {TraceId}, ClientIP: {ClientIP}",
@@ -90,8 +93,8 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                     await writer.WriteAsync(new AccessLogRecord
                     {
                         TraceId = traceId,
-                        UserId = currentUser?.UserId,
-                        UserName = currentUser?.UserName,
+                        UserId = requestContext?.UserId ?? currentUser?.UserId,
+                        UserName = requestContext?.UserName ?? currentUser?.UserName,
                         SessionId = context.Features.Get<ISessionFeature>()?.Session?.Id,
                         Method = context.Request.Method,
                         Path = context.Request.Path.ToString(),

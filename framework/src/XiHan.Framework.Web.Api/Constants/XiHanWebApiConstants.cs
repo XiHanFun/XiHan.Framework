@@ -38,4 +38,9 @@ public static class XiHanWebApiConstants
     /// HttpContext Items 中的 QueryString 键
     /// </summary>
     public const string RequestQueryItemKey = "__XiHanRequestQuery";
+
+    /// <summary>
+    /// HttpContext Items 中的 RequestContext 键
+    /// </summary>
+    public const string RequestContextItemKey = "__XiHanRequestContext";
 }

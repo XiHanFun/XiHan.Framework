@@ -19,6 +19,7 @@ using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
@@ -53,7 +54,8 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         var cancellationToken = context.RequestAborted;
-        var traceId = ResolveTraceId(context);
+        var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
+        var traceId = requestContext?.TraceId ?? ResolveTraceId(context);
         var currentUser = context.RequestServices.GetService<ICurrentUser>();
         var (statusCode, _, message) = MapException(exception);
 
@@ -76,7 +78,7 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
                 context.Request.Path);
         }
 
-        await TryWriteExceptionLogAsync(context, currentUser, traceId, exception, statusCode, cancellationToken);
+        await TryWriteExceptionLogAsync(context, requestContext, currentUser, traceId, exception, statusCode, cancellationToken);
 
         if (context.Response.HasStarted)
         {
@@ -94,6 +96,7 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
     private async Task TryWriteExceptionLogAsync(
         HttpContext context,
+        RequestContext? requestContext,
         ICurrentUser? currentUser,
         string traceId,
         Exception exception,
@@ -115,10 +118,10 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
             await writer.WriteAsync(new ExceptionLogRecord
             {
                 TraceId = traceId,
-                UserId = currentUser?.UserId,
-                UserName = currentUser?.UserName,
-                Path = context.Request.Path.ToString(),
-                Method = context.Request.Method,
+                UserId = requestContext?.UserId ?? currentUser?.UserId,
+                UserName = requestContext?.UserName ?? currentUser?.UserName,
+                Path = requestContext?.Path ?? context.Request.Path.ToString(),
+                Method = requestContext?.Method ?? context.Request.Method,
                 ControllerName = controllerName,
                 ActionName = actionName,
                 StatusCode = statusCode,
@@ -128,8 +131,8 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
                 RequestHeaders = SafeSerialize(context.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString())),
                 RequestParams = SafeSerialize(BuildRequestParams(context)),
                 RequestBody = ResolveRequestBody(context),
-                RemoteIp = context.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = context.Request.Headers.UserAgent.ToString()
+                RemoteIp = requestContext?.RemoteIp ?? context.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = requestContext?.UserAgent ?? context.Request.Headers.UserAgent.ToString()
             }, cancellationToken);
         }
         catch (Exception ex)
@@ -140,6 +143,12 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
     private static string ResolveTraceId(HttpContext httpContext)
     {
+        var requestContext = httpContext.RequestServices.GetService<IRequestContextAccessor>()?.Current;
+        if (!string.IsNullOrWhiteSpace(requestContext?.TraceId))
+        {
+            return requestContext.TraceId;
+        }
+
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
     }

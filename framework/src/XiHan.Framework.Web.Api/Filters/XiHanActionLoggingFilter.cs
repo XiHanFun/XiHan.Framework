@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using System.Text.Json;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
 
 namespace XiHan.Framework.Web.Api.Filters;
@@ -40,7 +41,8 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var cancellationToken = context.HttpContext.RequestAborted;
-        var traceId = ResolveTraceId(context.HttpContext);
+        var requestContext = context.HttpContext.RequestServices.GetService<IRequestContextAccessor>()?.Current;
+        var traceId = requestContext?.TraceId ?? ResolveTraceId(context.HttpContext);
         var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
         var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
         var actionName = actionDescriptor?.ActionName ?? context.ActionDescriptor.DisplayName;
@@ -84,8 +86,8 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                 await writer.WriteAsync(new OperationLogRecord
                 {
                     TraceId = traceId,
-                    UserId = currentUser?.UserId,
-                    UserName = currentUser?.UserName,
+                    UserId = requestContext?.UserId ?? currentUser?.UserId,
+                    UserName = requestContext?.UserName ?? currentUser?.UserName,
                     ControllerName = controllerName,
                     ActionName = actionName,
                     Method = context.HttpContext.Request.Method,
@@ -108,6 +110,12 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
 
     private static string ResolveTraceId(HttpContext httpContext)
     {
+        var requestContext = httpContext.RequestServices.GetService<IRequestContextAccessor>()?.Current;
+        if (!string.IsNullOrWhiteSpace(requestContext?.TraceId))
+        {
+            return requestContext.TraceId;
+        }
+
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
     }
