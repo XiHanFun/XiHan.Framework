@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:WeComModel
-// Guid:479a9594-c7fb-42e7-bc6a-2c51c7e58b28
+// Guid:06f6a599-5c7d-4b55-a7f2-031fbf512493
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/03/05 01:08:45

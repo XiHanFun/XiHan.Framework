@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:DingTalkModel
-// Guid:5d00cc16-5e63-4fd4-9052-54068c536acf
+// Guid:17f7d2f9-3104-4c1e-8a06-d95818a5ab61
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/03/05 01:08:45
