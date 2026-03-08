@@ -24,6 +24,11 @@ using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Web.Api.Logging.Options;
+using XiHan.Framework.Web.Api.Logging.Pipelines;
+using XiHan.Framework.Web.Api.Logging.Queues;
+using XiHan.Framework.Web.Api.Logging.Workers;
+using XiHan.Framework.Web.Api.Logging.Writers;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
@@ -51,6 +56,14 @@ public class XiHanWebApiModule : XiHanModule
         var config = services.GetConfiguration();
 
         services.AddSingleton<IRequestContextAccessor, RequestContextAccessor>();
+        services.Configure<XiHanWebApiLogQueueOptions>(config.GetSection(XiHanWebApiLogQueueOptions.SectionName));
+        services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
+        services.AddHostedService<AccessLogQueueWorker>();
+        services.AddHostedService<OperationLogQueueWorker>();
+        services.AddHostedService<ExceptionLogQueueWorker>();
+        services.AddScoped<IAccessLogPipeline, AccessLogPipeline>();
+        services.AddScoped<IOperationLogPipeline, OperationLogPipeline>();
+        services.AddScoped<IExceptionLogPipeline, ExceptionLogPipeline>();
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
