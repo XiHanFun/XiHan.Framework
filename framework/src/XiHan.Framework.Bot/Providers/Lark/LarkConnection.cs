@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:LarkConnection
-// Guid:f2365168-e192-48e0-ac99-32925512f628
+// Guid:6eafb05f-8024-4c1e-bd3f-42767aee0b7e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/03/05 01:08:45
