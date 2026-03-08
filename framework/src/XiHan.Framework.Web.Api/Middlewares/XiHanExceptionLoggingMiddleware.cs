@@ -21,6 +21,7 @@ using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 
@@ -105,8 +106,8 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
     {
         try
         {
-            var writer = context.RequestServices.GetService<IExceptionLogWriter>();
-            if (writer is null)
+            var pipeline = context.RequestServices.GetService<IExceptionLogPipeline>();
+            if (pipeline is null)
             {
                 return;
             }
@@ -115,7 +116,7 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
             var controllerName = actionDescriptor?.ControllerName;
             var actionName = actionDescriptor?.ActionName;
 
-            await writer.WriteAsync(new ExceptionLogRecord
+            await pipeline.WriteAsync(new ExceptionLogRecord
             {
                 TraceId = traceId,
                 UserId = requestContext?.UserId ?? currentUser?.UserId,

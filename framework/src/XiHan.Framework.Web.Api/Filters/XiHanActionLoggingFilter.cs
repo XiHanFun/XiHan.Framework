@@ -19,6 +19,7 @@ using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Filters;
 
@@ -80,10 +81,10 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
 
         try
         {
-            var writer = context.HttpContext.RequestServices.GetService<IOperationLogWriter>();
-            if (writer is not null)
+            var pipeline = context.HttpContext.RequestServices.GetService<IOperationLogPipeline>();
+            if (pipeline is not null)
             {
-                await writer.WriteAsync(new OperationLogRecord
+                await pipeline.WriteAsync(new OperationLogRecord
                 {
                     TraceId = traceId,
                     UserId = requestContext?.UserId ?? currentUser?.UserId,
