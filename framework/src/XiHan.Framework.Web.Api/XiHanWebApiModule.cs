@@ -50,6 +50,7 @@ public class XiHanWebApiModule : XiHanModule
         var config = services.GetConfiguration();
 
         services.AddScoped<XiHanActionLoggingFilter>();
+        services.AddScoped<XiHanApiResponseResultFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
         services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
         services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
@@ -106,6 +107,7 @@ public class XiHanWebApiModule : XiHanModule
         services.AddControllers(options =>
         {
             options.Filters.AddService<XiHanActionLoggingFilter>();
+            options.Filters.AddService<XiHanApiResponseResultFilter>();
         })
         .ConfigureApiBehaviorOptions(options =>
         {
