@@ -49,7 +49,6 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.AddScoped<XiHanGlobalExceptionFilter>();
         services.AddScoped<XiHanActionLoggingFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
         services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
@@ -106,7 +105,6 @@ public class XiHanWebApiModule : XiHanModule
 
         services.AddControllers(options =>
         {
-            options.Filters.AddService<XiHanGlobalExceptionFilter>();
             options.Filters.AddService<XiHanActionLoggingFilter>();
         })
         .ConfigureApiBehaviorOptions(options =>
@@ -145,6 +143,7 @@ public class XiHanWebApiModule : XiHanModule
         var app = context.GetApplicationBuilder();
 
         app.UseMiddleware<XiHanTraceIdMiddleware>();
+        app.UseMiddleware<XiHanExceptionLoggingMiddleware>();
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
         app.UseCors();

@@ -28,4 +28,14 @@ public static class XiHanWebApiConstants
     /// HttpContext Items 中的 TraceId 键
     /// </summary>
     public const string TraceIdItemKey = "__XiHanTraceId";
+
+    /// <summary>
+    /// HttpContext Items 中的 RequestBody 键
+    /// </summary>
+    public const string RequestBodyItemKey = "__XiHanRequestBody";
+
+    /// <summary>
+    /// HttpContext Items 中的 QueryString 键
+    /// </summary>
+    public const string RequestQueryItemKey = "__XiHanRequestQuery";
 }
