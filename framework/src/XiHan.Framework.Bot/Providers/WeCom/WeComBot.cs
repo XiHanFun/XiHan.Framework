@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:WeComBot
-// Guid:1f9edb73-56c9-4849-88a8-c57488b3582d
+// Guid:3bac6d71-d478-4762-bbc2-c2e05b6e50c5
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/03/05 01:08:45
