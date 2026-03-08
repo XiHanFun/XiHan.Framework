@@ -20,6 +20,7 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Logging;
@@ -49,6 +50,7 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
+        services.AddSingleton<IRequestContextAccessor, RequestContextAccessor>();
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
@@ -145,6 +147,7 @@ public class XiHanWebApiModule : XiHanModule
         var app = context.GetApplicationBuilder();
 
         app.UseMiddleware<XiHanTraceIdMiddleware>();
+        app.UseMiddleware<XiHanRequestContextMiddleware>();
         app.UseMiddleware<XiHanExceptionLoggingMiddleware>();
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
