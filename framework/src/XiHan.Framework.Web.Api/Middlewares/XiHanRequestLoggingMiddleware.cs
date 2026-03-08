@@ -18,6 +18,7 @@ using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
 using Microsoft.AspNetCore.Http.Features;
+using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 
@@ -87,10 +88,10 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
 
             try
             {
-                var writer = context.RequestServices.GetService<IAccessLogWriter>();
-                if (writer is not null)
+                var pipeline = context.RequestServices.GetService<IAccessLogPipeline>();
+                if (pipeline is not null)
                 {
-                    await writer.WriteAsync(new AccessLogRecord
+                    await pipeline.WriteAsync(new AccessLogRecord
                     {
                         TraceId = traceId,
                         UserId = requestContext?.UserId ?? currentUser?.UserId,

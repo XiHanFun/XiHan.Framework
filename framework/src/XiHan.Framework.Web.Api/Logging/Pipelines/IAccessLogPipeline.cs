@@ -3,26 +3,27 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IOperationLogWriter
-// Guid:e19436db-59cc-4128-ba97-277eb33a491f
+// FileName:IAccessLogPipeline
+// Guid:3a2fd451-80b3-4b14-94f7-2e45ad2aa9a7
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 16:22:40
+// CreateTime:2026/03/08 22:30:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.Logging;
+namespace XiHan.Framework.Web.Api.Logging.Pipelines;
 
 /// <summary>
-/// 操作日志写入器
+/// 访问日志管道
 /// </summary>
-public interface IOperationLogWriter
+public interface IAccessLogPipeline
 {
     /// <summary>
-    /// 写入操作日志
+    /// 写入访问日志
     /// </summary>
-    /// <param name="record">操作日志记录</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    Task WriteAsync(OperationLogRecord record, CancellationToken cancellationToken = default);
+    /// <param name="record"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task WriteAsync(AccessLogRecord record, CancellationToken cancellationToken = default);
 }

@@ -3,24 +3,24 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NullOperationLogWriter
-// Guid:8b2c9cae-55df-4410-8f30-f90e85de3527
+// FileName:NullExceptionLogWriter
+// Guid:6e3df022-a315-4302-bf8a-9b973de8fe43
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 16:25:10
+// CreateTime:2026/02/12 16:25:20
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Web.Api.Logging;
+namespace XiHan.Framework.Web.Api.Logging.Writers;
 
 /// <summary>
-/// 空操作日志写入器
+/// 空异常日志写入器
 /// </summary>
-public class NullOperationLogWriter : IOperationLogWriter
+public class NullExceptionLogWriter : IExceptionLogWriter
 {
     /// <inheritdoc />
-    public Task WriteAsync(OperationLogRecord record, CancellationToken cancellationToken = default)
+    public Task WriteAsync(ExceptionLogRecord record, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }
