@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using System.IO;
 using System.Text;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
