@@ -15,6 +15,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Domain.Shared\XiHan.Framework.Domain.Shared.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />
     </ItemGroup>
 
 </Project>

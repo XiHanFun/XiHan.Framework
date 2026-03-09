@@ -66,14 +66,13 @@ public class BatchDeleteRequest<TKey>
 /// <summary>
 /// 批量更新请求
 /// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
-/// <typeparam name="TUpdate">更新数据类型</typeparam>
-public class BatchUpdateRequest<TKey, TUpdate>
+/// <typeparam name="TUpdateDto">更新数据类型</typeparam>
+public class BatchUpdateRequest<TUpdateDto>
 {
     /// <summary>
     /// 更新项列表
     /// </summary>
-    public List<BatchUpdateItem<TKey, TUpdate>> Items { get; set; } = [];
+    public List<BatchUpdateItem<TUpdateDto>> Items { get; set; } = [];
 
     /// <summary>
     /// 是否在遇到错误时继续执行
@@ -89,15 +88,9 @@ public class BatchUpdateRequest<TKey, TUpdate>
 /// <summary>
 /// 批量更新项
 /// </summary>
-/// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TUpdate">更新数据类型</typeparam>
-public class BatchUpdateItem<TKey, TUpdate>
+public class BatchUpdateItem<TUpdate>
 {
-    /// <summary>
-    /// 主键
-    /// </summary>
-    public TKey Id { get; set; } = default!;
-
     /// <summary>
     /// 更新数据
     /// </summary>
