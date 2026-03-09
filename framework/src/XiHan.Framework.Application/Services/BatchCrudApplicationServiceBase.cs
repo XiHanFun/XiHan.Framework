@@ -15,6 +15,7 @@
 using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -31,12 +32,12 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
 public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    where TEntity : class, IEntityBase<TKey>
-    where TEntityDto : class
+    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>, IBatchCrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    where TEntity : EntityBase<TKey>
+    where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
+    where TCreateDto : CreationDtoBase<TKey>
+    where TUpdateDto : UpdateDtoBase<TKey>
     where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
@@ -86,19 +87,20 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     /// 批量更新
     /// </summary>
     [HttpPost]
-    public virtual async Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TKey, TUpdateDto> request)
+    public virtual async Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TUpdateDto> request)
     {
         return await ExecuteBatchOperationAsync(
             request.Items,
             request.ContinueOnError,
             async (item, index) =>
             {
-                var entity = await Repository.GetByIdAsync(item.Id) ?? throw new KeyNotFoundException($"未找到 ID 为 {item.Id} 的实体");
+                var basicId = item.Data.BasicId;
+                var entity = await Repository.GetByIdAsync(basicId) ?? throw new KeyNotFoundException($"未找到 ID 为 {basicId} 的实体");
                 await MapDtoToEntityAsync(item.Data, entity);
                 entity = await Repository.UpdateAsync(entity);
                 return await MapEntityToDtoAsync(entity);
             },
-            index => $"索引 {index} (ID: {request.Items[index].Id})"
+            index => $"索引 {index} (ID: {request.Items[index].Data.BasicId})"
         );
     }
 
@@ -111,9 +113,9 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
         return await ExecuteBatchOperationAsync(
             request.Ids,
             request.ContinueOnError,
-            async (id, index) =>
+            async (basicId, index) =>
             {
-                var entity = await Repository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
+                var entity = await Repository.GetByIdAsync(basicId) ?? throw new KeyNotFoundException($"未找到 ID 为 {basicId} 的实体");
                 if (request.SoftDelete && entity is IDeletionEntity deletionEntity)
                 {
                     deletionEntity.IsDeleted = true;
