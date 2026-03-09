@@ -116,7 +116,8 @@ public class XiHanWebCoreMvcOptions
         // 属性名称使用区分大小写的比较
         JsonOptions.JsonSerializerOptions.PropertyNameCaseInsensitive = false;
         // 数据格式首字母小写 JsonNamingPolicy.CamelCase 驼峰样式，null则为不改变大小写
-        JsonOptions.JsonSerializerOptions.PropertyNamingPolicy = null;
+        JsonOptions.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        JsonOptions.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
         // 获取或设置要在转义字符串时使用的编码器，UnsafeRelaxedJsonEscaping 为不转义字符
         JsonOptions.JsonSerializerOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
         // 允许额外的元数据属性
