@@ -18,7 +18,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
-using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
@@ -34,12 +34,12 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
 public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    where TEntity : class, IEntityBase<TKey>
-    where TEntityDto : class
+    : ApplicationServiceBase, ICrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    where TEntity : EntityBase<TKey>
+    where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
+    where TCreateDto : CreationDtoBase<TKey>
+    where TUpdateDto : UpdateDtoBase<TKey>
     where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
@@ -111,28 +111,16 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// <summary>
     /// 更新
     /// </summary>
-    /// <param name="id">实体主键</param>
     /// <param name="input">更新DTO</param>
     /// <returns>更新后的实体DTO</returns>
     [HttpPut]
-    public virtual async Task<TEntityDto> UpdateAsync(TKey id, TUpdateDto input)
+    public virtual async Task<TEntityDto> UpdateAsync(TUpdateDto input)
     {
         ArgumentNullException.ThrowIfNull(input);
         ValidateInputObject(input);
 
-        if (input is UpdateDtoBase<TKey> keyUpdateDto)
-        {
-            var hasIncomingId = !EqualityComparer<TKey>.Default.Equals(keyUpdateDto.BasicId, default!);
-            if (hasIncomingId && !EqualityComparer<TKey>.Default.Equals(keyUpdateDto.BasicId, id))
-            {
-                throw new InvalidOperationException("更新请求中的实体主键与路由主键不一致");
-            }
-
-            keyUpdateDto.BasicId = id;
-        }
-
-        var entity = await Repository.GetByIdAsync(id) ??
-            throw new KeyNotFoundException($"未找到 ID 为 {id} 的实体");
+        var entity = await Repository.GetByIdAsync(input.BasicId) ??
+            throw new KeyNotFoundException($"未找到 ID 为 {input.BasicId} 的实体");
         await MapDtoToEntityAsync(input, entity);
 
         entity = await Repository.UpdateAsync(entity);
@@ -155,6 +143,19 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
 
         await Repository.DeleteAsync(entity);
         return true;
+    }
+
+    /// <summary>
+    /// 确保映射结果不为空
+    /// </summary>
+    /// <typeparam name="TResult">结果类型</typeparam>
+    /// <param name="mappedResult">映射结果</param>
+    /// <returns>非空映射结果</returns>
+    /// <exception cref="InvalidOperationException">映射结果为空时抛出</exception>
+    protected static TResult EnsureNotNullMapping<TResult>(TResult? mappedResult)
+        where TResult : class
+    {
+        return mappedResult ?? throw new InvalidOperationException("对象映射失败，结果为空。");
     }
 
     /// <summary>
@@ -225,19 +226,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     {
         var entity = createDto.Adapt<TEntity>();
         return Task.FromResult(EnsureNotNullMapping(entity));
-    }
-
-    /// <summary>
-    /// 确保映射结果不为空
-    /// </summary>
-    /// <typeparam name="TResult">结果类型</typeparam>
-    /// <param name="mappedResult">映射结果</param>
-    /// <returns>非空映射结果</returns>
-    /// <exception cref="InvalidOperationException">映射结果为空时抛出</exception>
-    protected static TResult EnsureNotNullMapping<TResult>(TResult? mappedResult)
-        where TResult : class
-    {
-        return mappedResult ?? throw new InvalidOperationException("对象映射失败，结果为空。");
     }
 
     /// <summary>

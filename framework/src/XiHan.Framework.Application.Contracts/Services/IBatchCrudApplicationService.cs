@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Contracts.Services;
@@ -20,17 +21,19 @@ namespace XiHan.Framework.Application.Contracts.Services;
 /// <summary>
 /// 批量 CRUD 应用服务接口（支持创建和更新DTO分离）
 /// </summary>
+/// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TEntityDto">实体DTO类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
-public interface IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    : ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    where TEntityDto : class
+public interface IBatchCrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : ICrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    where TEntity : EntityBase<TKey>
+    where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
-    where TCreateDto : class
-    where TUpdateDto : class
+    where TCreateDto : CreationDtoBase<TKey>
+    where TUpdateDto : UpdateDtoBase<TKey>
     where TPageRequestDto : PageRequestDtoBase
 {
     /// <summary>
@@ -52,7 +55,7 @@ public interface IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpd
     /// </summary>
     /// <param name="request">批量更新请求</param>
     /// <returns>批量操作响应</returns>
-    Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TKey, TUpdateDto> request);
+    Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TUpdateDto> request);
 
     /// <summary>
     /// 批量删除
