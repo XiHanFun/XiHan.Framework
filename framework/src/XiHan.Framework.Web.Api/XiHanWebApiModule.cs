@@ -135,6 +135,7 @@ public class XiHanWebApiModule : XiHanModule
             options.JsonSerializerOptions.AllowTrailingCommas = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowTrailingCommas;
             options.JsonSerializerOptions.ReadCommentHandling = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.ReadCommentHandling;
             options.JsonSerializerOptions.PropertyNameCaseInsensitive = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNameCaseInsensitive;
+            options.JsonSerializerOptions.DictionaryKeyPolicy = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.DictionaryKeyPolicy;
             options.JsonSerializerOptions.PropertyNamingPolicy = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNamingPolicy;
             options.JsonSerializerOptions.Encoder = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.Encoder;
             options.JsonSerializerOptions.AllowOutOfOrderMetadataProperties = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowOutOfOrderMetadataProperties;
