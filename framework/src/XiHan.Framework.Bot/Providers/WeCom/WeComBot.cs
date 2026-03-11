@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Bot.Dtos;
+using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Utils.Extensions;
 
@@ -34,7 +34,7 @@ public class WeComBot
     /// 构造函数
     /// </summary>
     /// <param name="weChatConnection"></param>
-    public WeComBot(WeComConnection weChatConnection)
+    public WeComBot(WeComOptions weChatConnection)
     {
         _messageUrl = weChatConnection.WebHookUrl + "?key=" + weChatConnection.Key;
         _uploadUrl = weChatConnection.UploadUrl + "?key=" + weChatConnection.Key;

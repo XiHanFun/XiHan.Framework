@@ -60,7 +60,7 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// <param name="statusCode">HTTP 状态码</param>
     /// <returns></returns>
     protected virtual IActionResult Fail<T>(string message)
-        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse<T>.Fail(message, HttpContext.TraceIdentifier));
+        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.Fail(message, HttpContext.TraceIdentifier));
 
     /// <summary>
     /// 返回统一失败响应
