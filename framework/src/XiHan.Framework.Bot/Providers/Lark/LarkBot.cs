@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Bot.Dtos;
+using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers.DingTalk;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Utils.Core;
@@ -36,7 +36,7 @@ public class LarkBot
     /// 构造函数
     /// </summary>
     /// <param name="larkConnection"></param>
-    public LarkBot(LarkConnection larkConnection)
+    public LarkBot(LarkOptions larkConnection)
     {
         _url = larkConnection.WebHookUrl + "/" + larkConnection.AccessToken;
         _secret = larkConnection.Secret;

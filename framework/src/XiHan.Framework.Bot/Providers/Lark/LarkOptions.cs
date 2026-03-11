@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LarkConnection
+// FileName:LarkOptions
 // Guid:6eafb05f-8024-4c1e-bd3f-42767aee0b7e
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -15,9 +15,9 @@
 namespace XiHan.Framework.Bot.Providers.Lark;
 
 /// <summary>
-/// LarkConnection
+/// 飞书提供者配置
 /// </summary>
-public class LarkConnection
+public class LarkOptions
 {
     private const string DefaultLarkWebHookUrl = "https://open.feishu.cn/open-apis/bot/v2/hook";
 
@@ -26,6 +26,11 @@ public class LarkConnection
     private string? _webHookUrl;
 
     private string? _uploadUrl;
+
+    /// <summary>
+    /// 是否启用该提供者
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// 网络挂钩地址

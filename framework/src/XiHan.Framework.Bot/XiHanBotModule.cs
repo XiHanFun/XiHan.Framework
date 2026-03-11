@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Bot.Extensions.DependencyInjection;
 
 using XiHan.Framework.Core.Modularity;
 
@@ -30,6 +30,6 @@ public class XiHanBotModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var config = services.GetConfiguration();
+        services.AddXiHanBot();
     }
 }

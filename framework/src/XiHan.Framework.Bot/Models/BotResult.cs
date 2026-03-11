@@ -13,9 +13,8 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Enums;
-using XiHan.Framework.Utils.Extensions;
 
-namespace XiHan.Framework.Bot.Dtos;
+namespace XiHan.Framework.Bot.Models;
 
 /// <summary>
 /// 机器人通用返回结果
@@ -43,47 +42,45 @@ public class BotResult
     public bool IsSuccess => Code == BotResultCodes.Success;
 
     /// <summary>
-    /// 响应成功，返回通用数据 200
+    /// 提供者名称
     /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static BotResult Success(object? data)
+    public string? Provider { get; set; }
+
+    /// <summary>
+    /// 从基础结果创建
+    /// </summary>
+    public static BotResult From(BotResult result, string? provider = null)
     {
         return new BotResult
         {
-            Code = BotResultCodes.Success,
-            Message = BotResultCodes.Success.GetDescription(),
-            Data = data
+            Code = result.Code,
+            Message = result.Message,
+            Data = result.Data,
+            Provider = provider
         };
     }
 
     /// <summary>
-    /// 响应失败，访问出错 400
+    /// 成功结果
     /// </summary>
-    /// <param name="errorMessage"></param>
-    /// <returns></returns>
-    public static BotResult BadRequest(string? errorMessage = null)
+    public static BotResult Success(object? data, string? provider = null)
     {
-        return new BotResult
-        {
-            Code = BotResultCodes.BadRequest,
-            Message = BotResultCodes.BadRequest.GetDescription(),
-            Data = errorMessage
-        };
+        return From(Success(data), provider);
     }
 
     /// <summary>
-    /// 响应失败，服务器内部错误 500
+    /// 请求错误结果
     /// </summary>
-    /// <param name="errorMessage"></param>
-    /// <returns></returns>
-    public static BotResult Failed(string? errorMessage = null)
+    public static BotResult BadRequest(string? errorMessage = null, string? provider = null)
     {
-        return new BotResult
-        {
-            Code = BotResultCodes.Failed,
-            Message = BotResultCodes.Failed.GetDescription(),
-            Data = errorMessage
-        };
+        return From(BadRequest(errorMessage), provider);
+    }
+
+    /// <summary>
+    /// 失败结果
+    /// </summary>
+    public static BotResult Failed(string? errorMessage = null, string? provider = null)
+    {
+        return From(Failed(errorMessage), provider);
     }
 }
