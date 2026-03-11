@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Bot.Dtos;
+using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
@@ -35,7 +35,7 @@ public class DingTalkBot
     /// 构造函数
     /// </summary>
     /// <param name="dingTalkConnection"></param>
-    public DingTalkBot(DingTalkConnection dingTalkConnection)
+    public DingTalkBot(DingTalkOptions dingTalkConnection)
     {
         _url = dingTalkConnection.WebHookUrl + "?access_token=" + dingTalkConnection.AccessToken;
         _secret = dingTalkConnection.Secret;
