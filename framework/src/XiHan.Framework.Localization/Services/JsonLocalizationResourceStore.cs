@@ -455,17 +455,14 @@ public sealed class JsonLocalizationResourceStore : IDisposable
     {
         value = string.Empty;
 
-        if (!_resources.TryGetValue(resourceName, out var cultureMap))
+        if (!_resources.TryGetValue(resourceName, out Dictionary<string, Dictionary<string, string>>? cultureMap)
+            || cultureMap is null)
         {
             return false;
         }
 
-        if (!cultureMap.TryGetValue(cultureName, out var textMap))
-        {
-            return false;
-        }
-
-        if (textMap is null)
+        if (!cultureMap.TryGetValue(cultureName, out Dictionary<string, string>? textMap)
+            || textMap is null)
         {
             return false;
         }
@@ -475,17 +472,14 @@ public sealed class JsonLocalizationResourceStore : IDisposable
 
     private void MergeResourceEntries(string resourceName, string cultureName, Dictionary<string, string> destination)
     {
-        if (!_resources.TryGetValue(resourceName, out var cultureMap))
+        if (!_resources.TryGetValue(resourceName, out Dictionary<string, Dictionary<string, string>>? cultureMap)
+            || cultureMap is null)
         {
             return;
         }
 
-        if (!cultureMap.TryGetValue(cultureName, out var textMap))
-        {
-            return;
-        }
-
-        if (textMap is null)
+        if (!cultureMap.TryGetValue(cultureName, out Dictionary<string, string>? textMap)
+            || textMap is null)
         {
             return;
         }
