@@ -47,7 +47,7 @@ public static class PathResolver
             return normalizedPath[1..];
         }
 
-        if (normalizedPath.StartsWith('/', StringComparison.Ordinal))
+        if (normalizedPath.StartsWith("/", StringComparison.Ordinal))
         {
             return normalizedPath;
         }
