@@ -171,6 +171,62 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
     #region 私有方法
 
+    private static Regex CreateWatchRegex(string filter)
+    {
+        var normalizedFilter = NormalizeFilter(filter);
+        var regexPattern = Regex.Escape(normalizedFilter)
+            .Replace(@"\*\*", ".*")
+            .Replace(@"\*", @"[^/]*")
+            .Replace(@"\?", ".");
+
+        return new Regex($"^{regexPattern}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    }
+
+    private static string NormalizeFilter(string filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return "**/*";
+        }
+
+        return filter.Trim().Replace('\\', '/');
+    }
+
+    private static string NormalizePhysicalPath(string path)
+    {
+        return Path.GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static string GetProviderKey(IFileProvider provider)
+    {
+        return provider switch
+        {
+            VirtualPhysicalFileProvider virtualPhysicalProvider => $"physical:{NormalizePhysicalPath(virtualPhysicalProvider.Root)}",
+            PhysicalFileProvider physicalProvider => $"physical:{NormalizePhysicalPath(physicalProvider.Root)}",
+            VirtualEmbeddedFileProvider virtualEmbeddedProvider => $"embedded:{virtualEmbeddedProvider.Assembly.FullName}",
+            _ => $"instance:{provider.GetType().FullName}:{provider.GetHashCode()}"
+        };
+    }
+
+    private static string GetEmbeddedCacheKey(Assembly assembly, string resourceName)
+    {
+        return $"{assembly.FullName}::{resourceName}";
+    }
+
+    private static string GetEmbeddedResourceNameFromCacheKey(string cacheKey)
+    {
+        var separatorIndex = cacheKey.IndexOf("::", StringComparison.Ordinal);
+        return separatorIndex < 0
+            ? cacheKey
+            : cacheKey[(separatorIndex + 2)..];
+    }
+
+    private static string GetEmbeddedVirtualPath(Assembly assembly, string resourceName)
+    {
+        return $"embedded://{assembly.GetName().Name}/{resourceName}";
+    }
+
     private IChangeToken RegisterWatch(string normalizedFilter)
     {
         var token = _compositeProvider.Watch(normalizedFilter);
@@ -296,7 +352,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         }
     }
 
-    private IEnumerable<(string Path, FileChangeType ChangeType)> GetChangedFiles(string filter)
+    private List<(string Path, FileChangeType ChangeType)> GetChangedFiles(string filter)
     {
         var changes = new List<(string Path, FileChangeType ChangeType)>();
         if (!_enableChangeTracking)
@@ -420,62 +476,6 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         var regex = _watchRegexCache.GetOrAdd(filter, CreateWatchRegex);
         var normalizedPath = path.Replace('\\', '/');
         return regex.IsMatch(normalizedPath);
-    }
-
-    private static Regex CreateWatchRegex(string filter)
-    {
-        var normalizedFilter = NormalizeFilter(filter);
-        var regexPattern = Regex.Escape(normalizedFilter)
-            .Replace(@"\*\*", ".*")
-            .Replace(@"\*", @"[^/]*")
-            .Replace(@"\?", ".");
-
-        return new Regex($"^{regexPattern}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    }
-
-    private static string NormalizeFilter(string filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter))
-        {
-            return "**/*";
-        }
-
-        return filter.Trim().Replace('\\', '/');
-    }
-
-    private static string NormalizePhysicalPath(string path)
-    {
-        return Path.GetFullPath(path)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-    }
-
-    private static string GetProviderKey(IFileProvider provider)
-    {
-        return provider switch
-        {
-            VirtualPhysicalFileProvider virtualPhysicalProvider => $"physical:{NormalizePhysicalPath(virtualPhysicalProvider.Root)}",
-            PhysicalFileProvider physicalProvider => $"physical:{NormalizePhysicalPath(physicalProvider.Root)}",
-            VirtualEmbeddedFileProvider virtualEmbeddedProvider => $"embedded:{virtualEmbeddedProvider.Assembly.FullName}",
-            _ => $"instance:{provider.GetType().FullName}:{provider.GetHashCode()}"
-        };
-    }
-
-    private static string GetEmbeddedCacheKey(Assembly assembly, string resourceName)
-    {
-        return $"{assembly.FullName}::{resourceName}";
-    }
-
-    private static string GetEmbeddedResourceNameFromCacheKey(string cacheKey)
-    {
-        var separatorIndex = cacheKey.IndexOf("::", StringComparison.Ordinal);
-        return separatorIndex < 0
-            ? cacheKey
-            : cacheKey[(separatorIndex + 2)..];
-    }
-
-    private static string GetEmbeddedVirtualPath(Assembly assembly, string resourceName)
-    {
-        return $"embedded://{assembly.GetName().Name}/{resourceName}";
     }
 
     private void ThrowIfDisposed()
