@@ -13,7 +13,9 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Localization;
 using XiHan.Framework.Core.DynamicProxy;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectMapping.Extensions;
 using XiHan.Framework.ObjectMapping.Extensions.Data;
 using XiHan.Framework.Validation.Abstractions;
@@ -302,9 +304,16 @@ public static class ExtensibleObjectValidator
             return;
         }
 
+        var displayName = property.Name;
+        if (property.DisplayName != null
+            && objectValidationContext.GetService(typeof(IStringLocalizerFactory)) is IStringLocalizerFactory localizerFactory)
+        {
+            displayName = property.DisplayName.LocalizeOrFallback(localizerFactory, property.Name);
+        }
+
         var propertyValidationContext = new ValidationContext(extensibleObject, objectValidationContext, null)
         {
-            DisplayName = property.Name,
+            DisplayName = displayName,
             MemberName = property.Name
         };
 
