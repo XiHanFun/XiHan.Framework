@@ -16,8 +16,10 @@ using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.DistributedIds;
+using XiHan.Framework.EventBus.Abstractions;
 using XiHan.Framework.EventBus.Extensions.DependencyInjection;
-using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Messaging;
+using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.EventBus;
 
@@ -25,8 +27,10 @@ namespace XiHan.Framework.EventBus;
 /// 曦寒框架事件总线模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanMultiTenancyAbstractionsModule),
-    typeof(XiHanDistributedIdsModule)
+    typeof(XiHanDistributedIdsModule),
+    typeof(XiHanEventBusAbstractionsModule),
+    typeof(XiHanMessagingModule),
+    typeof(XiHanUowModule)
     )]
 public class XiHanEventBusModule : XiHanModule
 {

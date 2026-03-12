@@ -17,12 +17,16 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Http.Extensions.DependencyInjection;
+using XiHan.Framework.Serialization;
 
 namespace XiHan.Framework.Http;
 
 /// <summary>
 /// 曦寒框架网络请求模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanSerializationModule)
+    )]
 public class XiHanHttpModule : XiHanModule
 {
     /// <summary>

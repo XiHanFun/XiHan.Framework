@@ -17,6 +17,8 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data.Extensions.DependencyInjection;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain;
+using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.Security;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data;
@@ -28,7 +30,9 @@ namespace XiHan.Framework.Data;
 [DependsOn(
     typeof(XiHanDomainModule),
     typeof(XiHanUowModule),
-    typeof(XiHanDistributedIdsModule)
+    typeof(XiHanDistributedIdsModule),
+    typeof(XiHanMultiTenancyModule),
+    typeof(XiHanSecurityModule)
     )]
 public class XiHanDataModule : XiHanModule
 {

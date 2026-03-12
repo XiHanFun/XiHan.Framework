@@ -15,12 +15,16 @@
 using XiHan.Framework.Authentication.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Security;
 
 namespace XiHan.Framework.Authentication;
 
 /// <summary>
 /// 曦寒框架认证模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanSecurityModule)
+    )]
 public class XiHanAuthenticationModule : XiHanModule
 {
     /// <summary>
