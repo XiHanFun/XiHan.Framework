@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Upgrade.Abstractions;
 using XiHan.Framework.Upgrade.Extensions;
 using XiHan.Framework.Upgrade.Options;
@@ -26,6 +27,9 @@ namespace XiHan.Framework.Upgrade;
 /// <summary>
 /// 曦寒框架升级模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanMultiTenancyAbstractionsModule)
+    )]
 public class XiHanUpgradeModule : XiHanModule
 {
     /// <summary>

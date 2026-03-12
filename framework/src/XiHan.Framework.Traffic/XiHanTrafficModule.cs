@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Traffic.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Traffic;
@@ -25,6 +26,9 @@ namespace XiHan.Framework.Traffic;
 /// 提供流量治理的基础抽象：灰度路由、限流、熔断等
 /// 不负责具体执行，只提供规则模型和抽象接口
 /// </remarks>
+[DependsOn(
+    typeof(XiHanMultiTenancyAbstractionsModule)
+    )]
 public class XiHanTrafficModule : XiHanModule
 {
     /// <summary>

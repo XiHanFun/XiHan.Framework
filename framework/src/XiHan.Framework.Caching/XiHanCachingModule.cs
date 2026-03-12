@@ -16,6 +16,9 @@ using XiHan.Framework.Caching.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Serialization;
+using XiHan.Framework.Threading;
+using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Caching;
 
@@ -23,7 +26,10 @@ namespace XiHan.Framework.Caching;
 /// 曦寒框架缓存模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanMultiTenancyAbstractionsModule)
+    typeof(XiHanMultiTenancyAbstractionsModule),
+    typeof(XiHanSerializationModule),
+    typeof(XiHanThreadingModule),
+    typeof(XiHanUowModule)
     )]
 public class XiHanCachingModule : XiHanModule
 {
