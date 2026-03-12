@@ -12,7 +12,11 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.VirtualFileSystem.Options;
+using XiHan.Framework.VirtualFileSystem.Processing;
 using XiHan.Framework.VirtualFileSystem.Services;
 
 namespace XiHan.Framework.VirtualFileSystem.Extensions.DependencyInjection;
@@ -26,13 +30,26 @@ public static class XiHanVirtualFileSystemServiceCollectionExtensions
     /// 添加 XiHan 虚拟文件服务
     /// </summary>
     /// <param name="services"></param>
+    /// <param name="configuration"></param>
     /// <returns></returns>
-    public static IServiceCollection AddXiHanVirtualFileSystem(this IServiceCollection services)
+    public static IServiceCollection AddXiHanVirtualFileSystem(this IServiceCollection services, IConfiguration? configuration = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddOptions<VirtualFileSystemOptions>();
+        if (configuration != null)
+        {
+            services.Configure<VirtualFileSystemOptions>(configuration.GetSection(VirtualFileSystemOptions.SectionName));
+        }
+
         // 注册核心服务
-        services.AddSingleton<IVirtualFileSystem, VirtualFileSystem>();
+        services.TryAddSingleton<IVirtualFileSystem, VirtualFileSystem>();
         // 注册附加服务
-        services.AddSingleton<IFileVersioningService, FileVersioningService>();
+        services.TryAddSingleton<IFileVersioningService, FileVersioningService>();
+
+        // 注册媒体处理服务（默认实现会返回失败结果，不会中断主流程）
+        services.TryAddTransient<IImageProcessingService, ImageSharpProcessingService>();
+        services.TryAddTransient<IVideoProcessingService, FFmpegVideoProcessingService>();
 
         return services;
     }
