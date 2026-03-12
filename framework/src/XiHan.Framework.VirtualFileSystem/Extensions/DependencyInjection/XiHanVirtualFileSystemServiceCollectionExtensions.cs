@@ -16,7 +16,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.VirtualFileSystem.Options;
-using XiHan.Framework.VirtualFileSystem.Processing;
 using XiHan.Framework.VirtualFileSystem.Services;
 
 namespace XiHan.Framework.VirtualFileSystem.Extensions.DependencyInjection;
@@ -46,10 +45,6 @@ public static class XiHanVirtualFileSystemServiceCollectionExtensions
         services.TryAddSingleton<IVirtualFileSystem, VirtualFileSystem>();
         // 注册附加服务
         services.TryAddSingleton<IFileVersioningService, FileVersioningService>();
-
-        // 注册媒体处理服务（默认实现会返回失败结果，不会中断主流程）
-        services.TryAddTransient<IImageProcessingService, ImageSharpProcessingService>();
-        services.TryAddTransient<IVideoProcessingService, FFmpegVideoProcessingService>();
 
         return services;
     }
