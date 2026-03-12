@@ -43,7 +43,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     private readonly ConcurrentDictionary<string, Regex> _watchRegexCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Debouncer _changeDebouncer;
     private readonly bool _enableChangeTracking;
-    private IFileProvider _compositeProvider = NullFileProvider.Instance;
+    private IFileProvider _compositeProvider = new NullFileProvider();
     private bool _disposed;
 
     /// <summary>
@@ -392,7 +392,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
         (_compositeProvider as IDisposable)?.Dispose();
         _compositeProvider = orderedProviders.Count == 0
-            ? NullFileProvider.Instance
+            ? new NullFileProvider()
             : new VirtualCompositeFileProvider(orderedProviders);
     }
 
