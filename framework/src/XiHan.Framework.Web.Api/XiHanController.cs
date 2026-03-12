@@ -24,6 +24,8 @@ namespace XiHan.Framework.Web.Api;
 /// </summary>
 public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingConcerns
 {
+    private readonly List<string> _appliedCrossCuttingConcerns = [];
+
     /// <summary>
     /// 缓存服务提供程序
     /// </summary>
@@ -32,7 +34,7 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// <summary>
     /// 应用的横切关注点
     /// </summary>
-    public List<string> AppliedCrossCuttingConcerns => throw new NotImplementedException();
+    public List<string> AppliedCrossCuttingConcerns => _appliedCrossCuttingConcerns;
 
     /// <summary>
     /// 返回统一成功响应（含数据）
