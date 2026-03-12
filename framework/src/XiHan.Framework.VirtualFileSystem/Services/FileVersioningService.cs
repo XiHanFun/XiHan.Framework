@@ -48,15 +48,35 @@ public class FileVersioningService : IFileVersioningService
     /// <returns></returns>
     public bool Rollback(string path, int steps = 1)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (steps <= 0)
+        {
+            return false;
+        }
+
         if (!_fileVersions.TryGetValue(path, out var versions))
         {
             return false;
         }
 
+        FileVersion? targetVersion = null;
         while (steps-- > 0 && versions.Count > 0)
         {
-            versions.Pop();
+            targetVersion = versions.Pop();
         }
+
+        if (targetVersion is null)
+        {
+            return false;
+        }
+
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        File.WriteAllBytes(path, targetVersion.Content);
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
         return true;
     }
 }

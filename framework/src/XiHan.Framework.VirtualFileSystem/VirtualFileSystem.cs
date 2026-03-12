@@ -16,6 +16,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Collections.Concurrent;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Threading;
 using XiHan.Framework.VirtualFileSystem.Events;
@@ -33,55 +35,40 @@ namespace XiHan.Framework.VirtualFileSystem;
 /// </summary>
 public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
+    private readonly Lock _syncLock = new();
     private readonly List<PrioritizedFileProvider> _providers = [];
+    private readonly HashSet<string> _physicalPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<Assembly> _embeddedAssemblies = [];
+    private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Regex> _watchRegexCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Debouncer _changeDebouncer;
-    private readonly List<string> _physicalPaths = [];
-    private readonly List<Type> _embeddedResourceTypes = [];
-    private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = [];
-    private IFileProvider _compositeProvider;
+    private readonly bool _enableChangeTracking;
+    private IFileProvider _compositeProvider = NullFileProvider.Instance;
+    private bool _disposed;
 
     /// <summary>
     /// 初始化虚拟文件系统
     /// </summary>
-    /// <param name="options">虚拟文件系统配置选项</param>
+    /// <param name="options">虚拟文件系统配置</param>
     public VirtualFileSystem(IOptions<VirtualFileSystemOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         try
         {
-            var virtualFileSystemOptions = options.Value;
-            var providers = virtualFileSystemOptions.Providers
-                .OrderByDescending(p => p.Priority)
-                .Select(p => p.Provider)
-            .ToList();
+            var vfsOptions = options.Value;
 
-            var prioritizedFileProviders = new List<PrioritizedFileProvider>();
+            _enableChangeTracking = vfsOptions.EnableChangeTracking;
+            _changeDebouncer = new Debouncer(
+                TimeSpan.FromMilliseconds(Math.Max(vfsOptions.ChangeDebounceMilliseconds, 50))
+            );
 
-            foreach (var provider in providers)
+            foreach (var provider in vfsOptions.Providers.OrderByDescending(x => x.Priority))
             {
-                switch (provider)
-                {
-                    case VirtualPhysicalFileProvider physicalProvider:
-                        {
-                            _physicalPaths.Add(physicalProvider.Root);
-                            // 初始化时记录已存在的文件
-                            var files = Directory.GetFiles(physicalProvider.Root, "*.*", SearchOption.AllDirectories);
-                            foreach (var file in files)
-                            {
-                                _fileStateCache[file] = File.GetLastWriteTime(file);
-                            }
-
-                            break;
-                        }
-                    case VirtualEmbeddedFileProvider embeddedProvider:
-                        _embeddedResourceTypes.Add(embeddedProvider.Assembly.GetType());
-                        break;
-                }
-
-                prioritizedFileProviders.Add(new PrioritizedFileProvider(provider, 0));
+                RegisterProvider(provider.Provider, provider.Priority, replaceExisting: true);
             }
 
-            _changeDebouncer = new Debouncer(TimeSpan.FromMilliseconds(500));
-            _compositeProvider = new VirtualCompositeFileProvider(prioritizedFileProviders);
+            RebuildCompositeProvider();
         }
         catch (Exception ex)
         {
@@ -113,33 +100,13 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     }
 
     /// <summary>
-    /// 监控文件变化
+    /// 监听文件变化
     /// </summary>
     public IChangeToken Watch(string filter)
     {
-        // 获取原始变化令牌
-        var originalToken = _compositeProvider.Watch(filter);
-
-        // 应用防抖处理
-        _changeDebouncer.Debounce(() =>
-        {
-            // 注册回调以触发事件
-            originalToken.RegisterChangeCallback(o =>
-            {
-                // 获取变化的文件列表
-                var changedFiles = GetChangedFiles(filter);
-
-                // 遍历变化的文件并触发事件
-                foreach (var file in changedFiles)
-                {
-                    OnFileChanged?.Invoke(this, new FileChangedEventArgs(file.Path, file.ChangeType));
-                }
-
-                // 重新注册监听，实现持续监控
-                o = Watch(filter);
-            }, null);
-        });
-        return originalToken;
+        ThrowIfDisposed();
+        var normalizedFilter = NormalizeFilter(filter);
+        return RegisterWatch(normalizedFilter);
     }
 
     /// <summary>
@@ -147,9 +114,12 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public void Mount(IFileProvider provider, int priority = 0)
     {
-        lock (_providers)
+        ArgumentNullException.ThrowIfNull(provider);
+        ThrowIfDisposed();
+
+        lock (_syncLock)
         {
-            _providers.Add(new PrioritizedFileProvider(provider, priority));
+            RegisterProvider(provider, priority, replaceExisting: true);
             RebuildCompositeProvider();
         }
     }
@@ -159,15 +129,20 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public bool Unmount(IFileProvider provider)
     {
-        lock (_providers)
+        ArgumentNullException.ThrowIfNull(provider);
+        ThrowIfDisposed();
+
+        lock (_syncLock)
         {
-            var item = _providers.FirstOrDefault(p => p.Provider == provider);
-            if (item is null)
+            var key = GetProviderKey(provider);
+            var existing = _providers.FirstOrDefault(x => GetProviderKey(x.Provider) == key);
+            if (existing is null)
             {
                 return false;
             }
 
-            _providers.Remove(item);
+            _providers.Remove(existing);
+            UnregisterProviderChangeTracking(existing.Provider);
             RebuildCompositeProvider();
             return true;
         }
@@ -178,122 +153,334 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public void Dispose()
     {
-        try
+        if (_disposed)
         {
-            // 释放防抖器资源
-            _changeDebouncer.Dispose();
-
-            // 释放组合文件提供程序资源
-            (_compositeProvider as IDisposable)?.Dispose();
-
-            // 清空文件状态缓存
-            _fileStateCache.Clear();
-
-            // 清空物理路径列表
-            _physicalPaths.Clear();
-
-            // 清空嵌入资源类型列表
-            _embeddedResourceTypes.Clear();
-
-            // 清空文件提供程序集合
-            _providers.Clear();
+            return;
         }
-        catch (Exception ex)
-        {
-            throw new XiHanException("释放虚拟文件系统资源时发生异常", ex);
-        }
+
+        _disposed = true;
+        _changeDebouncer.Dispose();
+        (_compositeProvider as IDisposable)?.Dispose();
+        _providers.Clear();
+        _physicalPaths.Clear();
+        _embeddedAssemblies.Clear();
+        _fileStateCache.Clear();
+        _watchRegexCache.Clear();
+        GC.SuppressFinalize(this);
     }
 
     #region 私有方法
 
-    /// <summary>
-    /// 获取变化的文件列表
-    /// </summary>
-    /// <param name="filter"></param>
-    /// <returns></returns>
-    private IEnumerable<(string Path, FileChangeType ChangeType)> GetChangedFiles(string filter)
+    private IChangeToken RegisterWatch(string normalizedFilter)
     {
-        var changedFiles = new List<(string Path, FileChangeType ChangeType)>();
-
-        // 检查物理路径中的文件变化
-        foreach (var physicalPath in _physicalPaths)
+        var token = _compositeProvider.Watch(normalizedFilter);
+        token.RegisterChangeCallback(_ =>
         {
-            var files = Directory.GetFiles(physicalPath, "*.*", SearchOption.AllDirectories);
-            foreach (var file in files)
+            if (_disposed)
             {
-                var fileInfo = new FileInfo(file);
-                if (!_fileStateCache.TryGetValue(file, out var lastWriteTime))
-                {
-                    changedFiles.Add((file, FileChangeType.Created));
-                    _fileStateCache[file] = fileInfo.LastWriteTime;
-                }
-                else if (lastWriteTime != fileInfo.LastWriteTime)
-                {
-                    // 修改文件
-                    changedFiles.Add((file, FileChangeType.Modified));
-                    _fileStateCache[file] = fileInfo.LastWriteTime;
-                }
+                return;
             }
 
-            // 检查删除的文件
-            var deletedFiles = _fileStateCache.Keys
-                .Where(k => k.StartsWith(physicalPath) && !files.Contains(k))
-                .ToList();
-            foreach (var file in deletedFiles)
+            _changeDebouncer.Debounce(() =>
             {
-                changedFiles.Add((file, FileChangeType.Deleted));
-                _fileStateCache.Remove(file, out _);
+                if (_disposed)
+                {
+                    return;
+                }
+
+                var changedFiles = GetChangedFiles(normalizedFilter).ToList();
+                foreach (var (path, changeType) in changedFiles)
+                {
+                    OnFileChanged.Invoke(this, new FileChangedEventArgs(path, changeType));
+                }
+            });
+
+            RegisterWatch(normalizedFilter);
+        }, null);
+
+        return token;
+    }
+
+    private void RegisterProvider(IFileProvider provider, int priority, bool replaceExisting)
+    {
+        var key = GetProviderKey(provider);
+        var existing = _providers.FirstOrDefault(x => GetProviderKey(x.Provider) == key);
+        if (existing != null)
+        {
+            if (!replaceExisting)
+            {
+                return;
             }
+
+            _providers.Remove(existing);
+            UnregisterProviderChangeTracking(existing.Provider);
         }
 
-        // 检查嵌入资源中的文件变化
-        foreach (var type in _embeddedResourceTypes)
-        {
-            var assembly = type.Assembly;
-            var resourceNames = assembly.GetManifestResourceNames()
-                .Where(name => name.EndsWith(filter, StringComparison.OrdinalIgnoreCase));
+        _providers.Add(new PrioritizedFileProvider(provider, priority));
+        RegisterProviderChangeTracking(provider);
+    }
 
-            foreach (var resourceName in resourceNames)
+    private void RegisterProviderChangeTracking(IFileProvider provider)
+    {
+        if (!_enableChangeTracking)
+        {
+            return;
+        }
+
+        if (provider is PhysicalFileProvider physicalProvider)
+        {
+            RegisterPhysicalProvider(physicalProvider.Root);
+            return;
+        }
+
+        if (provider is VirtualEmbeddedFileProvider embeddedProvider)
+        {
+            RegisterEmbeddedProvider(embeddedProvider.Assembly);
+        }
+    }
+
+    private void UnregisterProviderChangeTracking(IFileProvider provider)
+    {
+        if (!_enableChangeTracking)
+        {
+            return;
+        }
+
+        if (provider is PhysicalFileProvider physicalProvider)
+        {
+            _physicalPaths.Remove(NormalizePhysicalPath(physicalProvider.Root));
+            return;
+        }
+
+        if (provider is VirtualEmbeddedFileProvider embeddedProvider)
+        {
+            _embeddedAssemblies.Remove(embeddedProvider.Assembly);
+        }
+    }
+
+    private void RegisterPhysicalProvider(string rootPath)
+    {
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            return;
+        }
+
+        var normalizedPath = NormalizePhysicalPath(rootPath);
+        if (!_physicalPaths.Add(normalizedPath))
+        {
+            return;
+        }
+
+        if (!Directory.Exists(normalizedPath))
+        {
+            return;
+        }
+
+        foreach (var file in Directory.GetFiles(normalizedPath, "*", SearchOption.AllDirectories))
+        {
+            var normalizedFile = NormalizePhysicalPath(file);
+            _fileStateCache[normalizedFile] = File.GetLastWriteTimeUtc(normalizedFile);
+        }
+    }
+
+    private void RegisterEmbeddedProvider(Assembly assembly)
+    {
+        if (!_embeddedAssemblies.Add(assembly))
+        {
+            return;
+        }
+
+        foreach (var resourceName in assembly.GetManifestResourceNames())
+        {
+            _fileStateCache[GetEmbeddedCacheKey(assembly, resourceName)] = DateTime.UtcNow;
+        }
+    }
+
+    private IEnumerable<(string Path, FileChangeType ChangeType)> GetChangedFiles(string filter)
+    {
+        var changes = new List<(string Path, FileChangeType ChangeType)>();
+        if (!_enableChangeTracking)
+        {
+            return changes;
+        }
+
+        var normalizedFilter = NormalizeFilter(filter);
+
+        foreach (var physicalPath in _physicalPaths)
+        {
+            var files = Directory.Exists(physicalPath)
+                ? Directory.GetFiles(physicalPath, "*", SearchOption.AllDirectories)
+                : [];
+
+            var currentFiles = new HashSet<string>(
+                files.Select(NormalizePhysicalPath),
+                StringComparer.OrdinalIgnoreCase
+            );
+
+            foreach (var file in currentFiles)
             {
-                if (_fileStateCache.ContainsKey(resourceName))
+                if (!IsPhysicalFileMatchFilter(physicalPath, file, normalizedFilter))
                 {
                     continue;
                 }
 
-                // 新增资源
-                changedFiles.Add((resourceName, FileChangeType.Created));
-                // 嵌入资源无法获取修改时间，使用当前时间
-                _fileStateCache[resourceName] = DateTime.UtcNow;
+                var currentWriteTime = File.GetLastWriteTimeUtc(file);
+                if (!_fileStateCache.TryGetValue(file, out var previousWriteTime))
+                {
+                    _fileStateCache[file] = currentWriteTime;
+                    changes.Add((file, FileChangeType.Created));
+                }
+                else if (previousWriteTime != currentWriteTime)
+                {
+                    _fileStateCache[file] = currentWriteTime;
+                    changes.Add((file, FileChangeType.Modified));
+                }
             }
 
-            // 检查删除的资源
-            var deletedResources = _fileStateCache.Keys
-                .Where(k => k.StartsWith(assembly.GetName().Name!) && !resourceNames.Contains(k))
+            var deletedFiles = _fileStateCache.Keys
+                .Where(x => x.StartsWith(physicalPath, StringComparison.OrdinalIgnoreCase))
+                .Where(x => !currentFiles.Contains(x))
+                .Where(x => IsPhysicalFileMatchFilter(physicalPath, x, normalizedFilter))
                 .ToList();
-            foreach (var resource in deletedResources)
+
+            foreach (var deletedFile in deletedFiles)
             {
-                changedFiles.Add((resource, FileChangeType.Deleted));
-                _fileStateCache.Remove(resource, out _);
+                _fileStateCache.Remove(deletedFile, out _);
+                changes.Add((deletedFile, FileChangeType.Deleted));
             }
         }
 
-        return changedFiles;
+        foreach (var assembly in _embeddedAssemblies)
+        {
+            var currentResourceNames = assembly.GetManifestResourceNames()
+                .Where(x => IsEmbeddedResourceMatchFilter(x, normalizedFilter))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var resourceName in currentResourceNames)
+            {
+                var cacheKey = GetEmbeddedCacheKey(assembly, resourceName);
+                if (_fileStateCache.ContainsKey(cacheKey))
+                {
+                    continue;
+                }
+
+                _fileStateCache[cacheKey] = DateTime.UtcNow;
+                changes.Add((GetEmbeddedVirtualPath(assembly, resourceName), FileChangeType.Created));
+            }
+
+            var deletedResources = _fileStateCache.Keys
+                .Where(x => x.StartsWith($"{assembly.FullName}::", StringComparison.OrdinalIgnoreCase))
+                .Where(x => !currentResourceNames.Contains(GetEmbeddedResourceNameFromCacheKey(x)))
+                .ToList();
+
+            foreach (var deletedResource in deletedResources)
+            {
+                var resourceName = GetEmbeddedResourceNameFromCacheKey(deletedResource);
+                _fileStateCache.Remove(deletedResource, out _);
+                changes.Add((GetEmbeddedVirtualPath(assembly, resourceName), FileChangeType.Deleted));
+            }
+        }
+
+        return changes;
     }
 
-    /// <summary>
-    /// 重新构建组合文件提供程序
-    /// </summary>
     private void RebuildCompositeProvider()
     {
         var orderedProviders = _providers
-            .OrderByDescending(p => p.Priority)
-            .Select(p => p.Provider)
+            .OrderByDescending(x => x.Priority)
             .ToList();
 
         (_compositeProvider as IDisposable)?.Dispose();
-        _compositeProvider = new VirtualCompositeFileProvider(
-            orderedProviders.Select(p => new PrioritizedFileProvider(p, 0))
-        );
+        _compositeProvider = orderedProviders.Count == 0
+            ? NullFileProvider.Instance
+            : new VirtualCompositeFileProvider(orderedProviders);
+    }
+
+    private bool IsPhysicalFileMatchFilter(string rootPath, string fullFilePath, string filter)
+    {
+        var relativePath = "/" + Path.GetRelativePath(rootPath, fullFilePath).Replace('\\', '/');
+        return IsPathMatch(relativePath, filter) || IsPathMatch(Path.GetFileName(fullFilePath), filter);
+    }
+
+    private bool IsEmbeddedResourceMatchFilter(string resourceName, string filter)
+    {
+        var normalizedResourcePath = "/" + resourceName.Replace('.', '/');
+        return IsPathMatch(normalizedResourcePath, filter)
+            || IsPathMatch(resourceName, filter)
+            || IsPathMatch(Path.GetFileName(normalizedResourcePath), filter);
+    }
+
+    private bool IsPathMatch(string path, string filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter) || filter == "*" || filter == "**/*")
+        {
+            return true;
+        }
+
+        var regex = _watchRegexCache.GetOrAdd(filter, CreateWatchRegex);
+        var normalizedPath = path.Replace('\\', '/');
+        return regex.IsMatch(normalizedPath);
+    }
+
+    private static Regex CreateWatchRegex(string filter)
+    {
+        var normalizedFilter = NormalizeFilter(filter);
+        var regexPattern = Regex.Escape(normalizedFilter)
+            .Replace(@"\*\*", ".*")
+            .Replace(@"\*", @"[^/]*")
+            .Replace(@"\?", ".");
+
+        return new Regex($"^{regexPattern}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    }
+
+    private static string NormalizeFilter(string filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return "**/*";
+        }
+
+        return filter.Trim().Replace('\\', '/');
+    }
+
+    private static string NormalizePhysicalPath(string path)
+    {
+        return Path.GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static string GetProviderKey(IFileProvider provider)
+    {
+        return provider switch
+        {
+            VirtualPhysicalFileProvider virtualPhysicalProvider => $"physical:{NormalizePhysicalPath(virtualPhysicalProvider.Root)}",
+            PhysicalFileProvider physicalProvider => $"physical:{NormalizePhysicalPath(physicalProvider.Root)}",
+            VirtualEmbeddedFileProvider virtualEmbeddedProvider => $"embedded:{virtualEmbeddedProvider.Assembly.FullName}",
+            _ => $"instance:{provider.GetType().FullName}:{provider.GetHashCode()}"
+        };
+    }
+
+    private static string GetEmbeddedCacheKey(Assembly assembly, string resourceName)
+    {
+        return $"{assembly.FullName}::{resourceName}";
+    }
+
+    private static string GetEmbeddedResourceNameFromCacheKey(string cacheKey)
+    {
+        var separatorIndex = cacheKey.IndexOf("::", StringComparison.Ordinal);
+        return separatorIndex < 0
+            ? cacheKey
+            : cacheKey[(separatorIndex + 2)..];
+    }
+
+    private static string GetEmbeddedVirtualPath(Assembly assembly, string resourceName)
+    {
+        return $"embedded://{assembly.GetName().Name}/{resourceName}";
+    }
+
+    private void ThrowIfDisposed()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
     #endregion 私有方法

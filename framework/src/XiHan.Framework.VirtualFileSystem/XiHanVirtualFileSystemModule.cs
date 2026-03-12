@@ -32,6 +32,6 @@ public class XiHanVirtualFileSystemModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.AddXiHanVirtualFileSystem();
+        services.AddXiHanVirtualFileSystem(config);
     }
 }
