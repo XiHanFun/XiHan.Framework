@@ -467,7 +467,13 @@ public sealed class JsonLocalizationResourceStore : IDisposable
             return false;
         }
 
-        return textMap.TryGetValue(key, out value);
+        if (textMap.TryGetValue(key, out var foundValue))
+        {
+            value = foundValue ?? string.Empty;
+            return true;
+        }
+
+        return false;
     }
 
     private void MergeResourceEntries(string resourceName, string cultureName, Dictionary<string, string> destination)
