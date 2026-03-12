@@ -13,14 +13,19 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Extensions.DependencyInjection;
-
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Http;
+using XiHan.Framework.Templating;
 
 namespace XiHan.Framework.Bot;
 
 /// <summary>
 /// 曦寒机器人模板模块
 /// </summary>
+[DependsOn(
+    typeof(XiHanHttpModule),
+    typeof(XiHanTemplatingModule)
+    )]
 public class XiHanBotModule : XiHanModule
 {
     /// <summary>
