@@ -84,7 +84,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
             {
                 try
                 {
-                    contributor.InitializeAsync(context, module.Instance);
+                    contributor.Initialize(context, module.Instance);
                 }
                 catch (Exception ex)
                 {
@@ -134,7 +134,7 @@ public class ModuleManager : IModuleManager, ISingletonDependency
             {
                 try
                 {
-                    contributor.ShutdownAsync(context, module.Instance);
+                    contributor.Shutdown(context, module.Instance);
                 }
                 catch (Exception ex)
                 {

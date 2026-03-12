@@ -105,6 +105,5 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CodeMaid.config" />
-    <File Path="global.json" />
   </Folder>
 </Solution>
