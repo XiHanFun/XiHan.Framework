@@ -59,22 +59,29 @@ public class OperationLogQueueWorker : BackgroundService
         var batch = new List<OperationLogRecord>(_options.BatchSize);
         var lastFlushAt = DateTimeOffset.UtcNow;
 
-        await foreach (var record in _queue.DequeueAllAsync(stoppingToken))
+        try
         {
-            batch.Add(record);
-
-            if (batch.Count >= _options.BatchSize ||
-                (DateTimeOffset.UtcNow - lastFlushAt).TotalMilliseconds >= _options.BatchDelayMilliseconds)
+            await foreach (var record in _queue.DequeueAllAsync(stoppingToken))
             {
-                await FlushAsync(batch, stoppingToken);
-                batch.Clear();
-                lastFlushAt = DateTimeOffset.UtcNow;
+                batch.Add(record);
+
+                if (batch.Count >= _options.BatchSize ||
+                    (DateTimeOffset.UtcNow - lastFlushAt).TotalMilliseconds >= _options.BatchDelayMilliseconds)
+                {
+                    await FlushAsync(batch, CancellationToken.None);
+                    batch.Clear();
+                    lastFlushAt = DateTimeOffset.UtcNow;
+                }
             }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // host 正常停止，忽略取消异常
         }
 
         if (batch.Count > 0)
         {
-            await FlushAsync(batch, stoppingToken);
+            await FlushAsync(batch, CancellationToken.None);
         }
     }
 
@@ -98,6 +105,10 @@ public class OperationLogQueueWorker : BackgroundService
             {
                 await writer.WriteAsync(record, cancellationToken);
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 由外部取消触发，视为正常结束
         }
         catch (Exception ex)
         {
