@@ -29,6 +29,7 @@ using XiHan.Framework.Web.Api.Logging.Queues;
 using XiHan.Framework.Web.Api.Logging.Workers;
 using XiHan.Framework.Web.Api.Logging.Writers;
 using XiHan.Framework.Web.Api.Middlewares;
+using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
@@ -55,6 +56,8 @@ public class XiHanWebApiModule : XiHanModule
         var config = services.GetConfiguration();
 
         services.AddSingleton<IRequestContextAccessor, RequestContextAccessor>();
+        services.Configure<XiHanOpenApiSecurityOptions>(config.GetSection(XiHanOpenApiSecurityOptions.SectionName));
+        services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
         services.Configure<XiHanWebApiLogQueueOptions>(config.GetSection(XiHanWebApiLogQueueOptions.SectionName));
         services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
         services.AddHostedService<AccessLogQueueWorker>();
@@ -165,6 +168,7 @@ public class XiHanWebApiModule : XiHanModule
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
         app.UseCors();
+        app.UseMiddleware<XiHanOpenApiSecurityMiddleware>();
         app.UseAuthentication();
         app.UseMiddleware<XiHanTenantResolveMiddleware>();
         app.UseAuthorization();
