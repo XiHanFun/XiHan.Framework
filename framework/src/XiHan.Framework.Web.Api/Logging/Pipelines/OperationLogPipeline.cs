@@ -53,7 +53,7 @@ public class OperationLogPipeline : IOperationLogPipeline
     {
         if (!_options.EnableOperationLogQueue)
         {
-            await _writer.WriteAsync(record, cancellationToken);
+            await _writer.WriteAsync(record, CancellationToken.None);
             return;
         }
 
@@ -63,6 +63,13 @@ public class OperationLogPipeline : IOperationLogPipeline
             return;
         }
 
-        await _queue.EnqueueAsync(record, cancellationToken);
+        try
+        {
+            await _queue.EnqueueAsync(record, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 请求取消时忽略日志入队取消，避免污染主流程日志
+        }
     }
 }
