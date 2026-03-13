@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Options;
@@ -24,15 +25,15 @@ namespace XiHan.Framework.Bot.Template;
 /// </summary>
 public class BotTemplateEngine : IBotTemplateEngine
 {
-    private readonly ITemplateService _templateService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly XiHanBotOptions _options;
 
     /// <summary>
     /// 创建模板引擎
     /// </summary>
-    public BotTemplateEngine(ITemplateService templateService, IOptions<XiHanBotOptions> options)
+    public BotTemplateEngine(IServiceScopeFactory serviceScopeFactory, IOptions<XiHanBotOptions> options)
     {
-        _templateService = templateService;
+        _serviceScopeFactory = serviceScopeFactory;
         _options = options.Value;
     }
 
@@ -55,12 +56,15 @@ public class BotTemplateEngine : IBotTemplateEngine
     public async Task<BotMessage> RenderAsync(BotTemplate template, object? model = null)
     {
         ArgumentNullException.ThrowIfNull(template);
-        var content = await _templateService.RenderAsync(template.Content, model);
+        using var scope = _serviceScopeFactory.CreateScope();
+        var templateService = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+
+        var content = await templateService.RenderAsync(template.Content, model);
         var title = template.Title;
 
         if (!string.IsNullOrWhiteSpace(title))
         {
-            title = await _templateService.RenderAsync(title, model);
+            title = await templateService.RenderAsync(title, model);
         }
 
         var data = template.Data is null
