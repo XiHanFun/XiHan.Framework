@@ -31,7 +31,7 @@ public class DefaultDistributedCacheKeyNormalizer(IServiceProvider serviceProvid
     /// <returns></returns>
     public string NormalizeKey(DistributedCacheKeyNormalizeArgs args)
     {
-        var tenantSegment = "host";
+        var tenantSegment = "Default";
         if (!args.IgnoreMultiTenancy)
         {
             var currentTenantAccessor = serviceProvider.GetService<ICurrentTenantAccessor>();
