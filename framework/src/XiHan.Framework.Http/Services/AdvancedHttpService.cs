@@ -833,7 +833,7 @@ public class AdvancedHttpService : IAdvancedHttpService
             throw new ArgumentNullException(nameof(data), "数据不能为空");
         }
 
-        var json = JsonSerializer.Serialize(data, _jsonOptions);
+        var json = data is string ? data.ToString() ?? "{}" : JsonSerializer.Serialize(data, _jsonOptions);
         return new StringContent(json, options?.Encoding ?? Encoding.UTF8, options?.ContentType ?? "application/json");
     }
 
