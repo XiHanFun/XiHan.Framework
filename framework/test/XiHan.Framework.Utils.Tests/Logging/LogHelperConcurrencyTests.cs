@@ -38,21 +38,21 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentConsoleOutput_ShouldBeThreadSafe()
     {
         // Arrange
-        const int threadCount = 20;
-        const int messagesPerThread = 50;
+        const int ThreadCount = 20;
+        const int MessagesPerThread = 50;
         var completedTasks = 0;
         var exceptions = new ConcurrentBag<Exception>();
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
                 try
                 {
-                    for (var j = 0; j < messagesPerThread; j++)
+                    for (var j = 0; j < MessagesPerThread; j++)
                     {
                         LogHelper.Info($"Thread-{threadId:D2} Message-{j:D3}");
                         LogHelper.Warn($"Thread-{threadId:D2} Warning-{j:D3}");
@@ -64,7 +64,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -72,7 +72,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(threadCount, completedTasks);
+        Assert.Equal(ThreadCount, completedTasks);
     }
 
     /// <summary>
@@ -82,13 +82,13 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentFormattedMessages_ShouldHandleCorrectly()
     {
         // Arrange
-        const int messageCount = 1000;
+        const int MessageCount = 1000;
         var exceptions = new ConcurrentBag<Exception>();
         var processedMessages = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             var messageIndex = i;
             var task = Task.Run(() =>
@@ -104,7 +104,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -112,7 +112,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(messageCount, processedMessages);
+        Assert.Equal(MessageCount, processedMessages);
     }
 
     /// <summary>
@@ -122,21 +122,21 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentRainbowOutput_ShouldBeStable()
     {
         // Arrange
-        const int threadCount = 10;
-        const int messagesPerThread = 20;
+        const int ThreadCount = 10;
+        const int MessagesPerThread = 20;
         var exceptions = new ConcurrentBag<Exception>();
         var completedTasks = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
                 try
                 {
-                    for (var j = 0; j < messagesPerThread; j++)
+                    for (var j = 0; j < MessagesPerThread; j++)
                     {
                         LogHelper.Rainbow($"🌈 Rainbow Message from Thread-{threadId:D2} #{j:D3}");
                         Thread.Sleep(10); // 小延迟模拟真实场景
@@ -147,7 +147,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -155,7 +155,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(threadCount, completedTasks);
+        Assert.Equal(ThreadCount, completedTasks);
     }
 
     /// <summary>
@@ -165,13 +165,13 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentTableOutput_ShouldBeThreadSafe()
     {
         // Arrange
-        const int tableCount = 50;
+        const int TableCount = 50;
         var exceptions = new ConcurrentBag<Exception>();
         var processedTables = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < tableCount; i++)
+        for (var i = 0; i < TableCount; i++)
         {
             var tableIndex = i;
             var task = Task.Run(() =>
@@ -196,7 +196,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -204,7 +204,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(tableCount, processedTables);
+        Assert.Equal(TableCount, processedTables);
     }
 
     /// <summary>
@@ -215,13 +215,13 @@ public class LogHelperConcurrencyTests
     {
         // Arrange
         LogHelper.SetMinimumLevel(LogLevel.Warn); // 只输出警告及以上级别
-        const int messageCount = 500;
+        const int MessageCount = 500;
         var exceptions = new ConcurrentBag<Exception>();
         var processedMessages = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             var messageIndex = i;
             var task = Task.Run(() =>
@@ -243,7 +243,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -251,7 +251,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(messageCount, processedMessages);
+        Assert.Equal(MessageCount, processedMessages);
 
         // 恢复日志级别
         LogHelper.SetMinimumLevel(LogLevel.Info);
@@ -264,13 +264,13 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentExceptionHandling_ShouldBeRobust()
     {
         // Arrange
-        const int taskCount = 100;
+        const int TaskCount = 100;
         var exceptions = new ConcurrentBag<Exception>();
         var processedTasks = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < taskCount; i++)
+        for (var i = 0; i < TaskCount; i++)
         {
             var taskIndex = i;
             var task = Task.Run(() =>
@@ -295,7 +295,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -303,7 +303,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(taskCount, processedTasks);
+        Assert.Equal(TaskCount, processedTasks);
     }
 
     /// <summary>
@@ -313,13 +313,13 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentSettingsChanges_ShouldBeThreadSafe()
     {
         // Arrange
-        const int changeCount = 100;
+        const int ChangeCount = 100;
         var exceptions = new ConcurrentBag<Exception>();
         var completedChanges = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < changeCount; i++)
+        for (var i = 0; i < ChangeCount; i++)
         {
             var changeIndex = i;
             var task = Task.Run(() =>
@@ -343,7 +343,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -351,7 +351,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(changeCount, completedChanges);
+        Assert.Equal(ChangeCount, completedChanges);
     }
 
     /// <summary>
@@ -361,13 +361,13 @@ public class LogHelperConcurrencyTests
     public async Task ConcurrentConsoleClear_ShouldBeStable()
     {
         // Arrange
-        const int operationCount = 50;
+        const int OperationCount = 50;
         var exceptions = new ConcurrentBag<Exception>();
         var completedOperations = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < operationCount; i++)
+        for (var i = 0; i < OperationCount; i++)
         {
             var operationIndex = i;
             var task = Task.Run(() =>
@@ -390,7 +390,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -398,7 +398,7 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(operationCount, completedOperations);
+        Assert.Equal(OperationCount, completedOperations);
     }
 
     /// <summary>
@@ -408,21 +408,21 @@ public class LogHelperConcurrencyTests
     public async Task HighVolumeOutput_ShouldMaintainStability()
     {
         // Arrange
-        const int threadCount = 25;
-        const int messagesPerThread = 200;
+        const int ThreadCount = 25;
+        const int MessagesPerThread = 200;
         var exceptions = new ConcurrentBag<Exception>();
         var totalMessages = 0;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
                 try
                 {
-                    for (var j = 0; j < messagesPerThread; j++)
+                    for (var j = 0; j < MessagesPerThread; j++)
                     {
                         var logLevel = (LogLevel)((j % 5) + 1); // 循环使用不同的日志级别
 
@@ -456,7 +456,7 @@ public class LogHelperConcurrencyTests
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -464,6 +464,6 @@ public class LogHelperConcurrencyTests
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(threadCount * messagesPerThread, totalMessages);
+        Assert.Equal(ThreadCount * MessagesPerThread, totalMessages);
     }
 }
