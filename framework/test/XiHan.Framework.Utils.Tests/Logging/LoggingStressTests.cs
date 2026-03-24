@@ -23,6 +23,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// </summary>
 public class LoggingStressTests : IDisposable
 {
+    private static readonly int[] Function = [50, 100, 150, 200];
     private readonly string _testLogDirectory;
 
     public LoggingStressTests()
@@ -44,8 +45,8 @@ public class LoggingStressTests : IDisposable
     {
         // Arrange
         var maxThreads = Environment.ProcessorCount * 4; // 4倍CPU核心数
-        const int messagesPerThread = 100;
-        var totalMessages = maxThreads * messagesPerThread;
+        const int MessagesPerThread = 100;
+        var totalMessages = maxThreads * MessagesPerThread;
         var completedThreads = 0;
         var exceptions = new ConcurrentBag<Exception>();
 
@@ -62,7 +63,7 @@ public class LoggingStressTests : IDisposable
             {
                 try
                 {
-                    for (var j = 0; j < messagesPerThread; j++)
+                    for (var j = 0; j < MessagesPerThread; j++)
                     {
                         LogFileHelper.Info($"EXTREME Thread-{threadId:D3} Message-{j:D3} PId-{Environment.ProcessId}");
 
@@ -78,7 +79,7 @@ public class LoggingStressTests : IDisposable
                 {
                     exceptions.Add(ex);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -86,7 +87,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(3000); // 等待异步写入完成
+        await Task.Delay(3000, TestContext.Current.CancellationToken); // 等待异步写入完成
 
         // Assert
         Assert.Empty(exceptions);
@@ -102,7 +103,7 @@ public class LoggingStressTests : IDisposable
         var actualMessageCount = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             actualMessageCount += lines.Length;
         }
 
@@ -117,7 +118,7 @@ public class LoggingStressTests : IDisposable
     {
         // Arrange
         var initialMemory = GC.GetTotalMemory(true);
-        const int maxMemoryIncreaseMB = 100; // 100MB 限制
+        const int MaxMemoryIncreaseMB = 100; // 100MB 限制
         var messageCount = 0;
         var largeData = new string('M', 2048); // 2KB per message
 
@@ -135,7 +136,7 @@ public class LoggingStressTests : IDisposable
                     var currentMemory = GC.GetTotalMemory(false);
                     var memoryIncrease = (currentMemory - initialMemory) / 1024.0 / 1024.0;
 
-                    if (memoryIncrease > maxMemoryIncreaseMB)
+                    if (memoryIncrease > MaxMemoryIncreaseMB)
                     {
                         break; // 达到内存限制
                     }
@@ -147,7 +148,7 @@ public class LoggingStressTests : IDisposable
                         await Task.Delay(10); // 给系统一些喘息时间
                     }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -155,7 +156,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         var finalMemory = GC.GetTotalMemory(false);
         var totalMemoryIncrease = (finalMemory - initialMemory) / 1024.0 / 1024.0;
@@ -168,7 +169,7 @@ public class LoggingStressTests : IDisposable
         Console.WriteLine($"  Data Volume: {messageCount * 2.0 / 1024:F2} MB");
 
         Assert.True(messageCount > 1000, "Should write significant number of messages");
-        Assert.True(totalMemoryIncrease <= maxMemoryIncreaseMB * 1.5,
+        Assert.True(totalMemoryIncrease <= MaxMemoryIncreaseMB * 1.5,
             "Memory usage should be controlled even under pressure");
 
         // 验证文件内容
@@ -184,20 +185,20 @@ public class LoggingStressTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(50 * 1024); // 50KB 非常小的文件，强制频繁滚动
-        const int threadCount = 8;
-        const int messagesPerThread = 500;
+        const int ThreadCount = 8;
+        const int MessagesPerThread = 500;
         var longMessage = new string('F', 200); // 200字符消息强制滚动
 
         // Act
         var stopwatch = Stopwatch.StartNew();
         var tasks = new List<Task>();
 
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
-                for (var j = 0; j < messagesPerThread; j++)
+                for (var j = 0; j < MessagesPerThread; j++)
                 {
                     LogFileHelper.Error($"ROLLOVER Thread-{threadId:D2} #{j:D3} {DateTime.Now:HH:mm:ss.fff}: {longMessage}");
 
@@ -207,7 +208,7 @@ public class LoggingStressTests : IDisposable
                         Thread.Sleep(5);
                     }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -215,7 +216,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(3000);
+        await Task.Delay(3000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*error*.log");
@@ -232,11 +233,11 @@ public class LoggingStressTests : IDisposable
         var totalMessages = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalMessages += lines.Length;
         }
 
-        Assert.Equal(threadCount * messagesPerThread, totalMessages);
+        Assert.Equal(ThreadCount * MessagesPerThread, totalMessages);
     }
 
     /// <summary>
@@ -246,12 +247,12 @@ public class LoggingStressTests : IDisposable
     public async Task ErrorRecovery_FileSystemErrors()
     {
         // Arrange
-        const int normalMessageCount = 1000;
+        const int NormalMessageCount = 1000;
         var messageCount = 0;
         var errorCount = 0;
 
         // Act - 正常写入一些消息
-        for (var i = 0; i < normalMessageCount / 2; i++)
+        for (var i = 0; i < NormalMessageCount / 2; i++)
         {
             LogFileHelper.Success($"Normal message before error simulation #{++messageCount}");
         }
@@ -275,27 +276,27 @@ public class LoggingStressTests : IDisposable
                 {
                     Interlocked.Increment(ref errorCount);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             stressTasks.Add(task);
         }
 
         await Task.WhenAll(stressTasks);
 
         // 继续正常写入
-        for (var i = 0; i < normalMessageCount / 2; i++)
+        for (var i = 0; i < NormalMessageCount / 2; i++)
         {
             LogFileHelper.Success($"Normal message after stress test #{++messageCount}");
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         Console.WriteLine($"Error Recovery Test:");
         Console.WriteLine($"  Total Messages: {messageCount}");
         Console.WriteLine($"  Error Count: {errorCount}");
 
-        Assert.True(messageCount > normalMessageCount, "Should process most messages despite stress");
+        Assert.True(messageCount > NormalMessageCount, "Should process most messages despite stress");
         Assert.True(errorCount < messageCount * 0.1, "Error rate should be low");
 
         // 验证文件完整性
@@ -310,8 +311,8 @@ public class LoggingStressTests : IDisposable
     public async Task ResourceContention_MixedOperations()
     {
         // Arrange
-        const int durationSeconds = 30;
-        var cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(durationSeconds));
+        const int DurationSeconds = 30;
+        var cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(DurationSeconds));
         var operations = new ConcurrentDictionary<string, int>();
 
         // Act - 启动多种并发操作
@@ -327,7 +328,7 @@ public class LoggingStressTests : IDisposable
                     operations.AddOrUpdate("Info", 1, (k, v) => v + 1);
                     await Task.Delay(10, cancellationToken.Token);
                 }
-            }),
+            }, cancellationToken.Token),
 
             Task.Run(async () =>
             {
@@ -338,7 +339,7 @@ public class LoggingStressTests : IDisposable
                     operations.AddOrUpdate("Warn", 1, (k, v) => v + 1);
                     await Task.Delay(15, cancellationToken.Token);
                 }
-            }),
+            }, cancellationToken.Token),
 
             Task.Run(async () =>
             {
@@ -349,7 +350,7 @@ public class LoggingStressTests : IDisposable
                     operations.AddOrUpdate("Error", 1, (k, v) => v + 1);
                     await Task.Delay(20, cancellationToken.Token);
                 }
-            }),
+            }, cancellationToken.Token),
 
             // 定期刷新
             Task.Run(async () =>
@@ -362,13 +363,13 @@ public class LoggingStressTests : IDisposable
                     count++;
                     await Task.Delay(500, cancellationToken.Token);
                 }
-            }),
+            }, cancellationToken.Token),
 
             // 配置更改
             Task.Run(async () =>
             {
                 var count = 0;
-                var bufferSizes = new[] { 50, 100, 150, 200 };
+                var bufferSizes = Function;
                 while (!cancellationToken.Token.IsCancellationRequested)
                 {
                     var newSize = bufferSizes[count % bufferSizes.Length];
@@ -377,7 +378,7 @@ public class LoggingStressTests : IDisposable
                     count++;
                     await Task.Delay(1000, cancellationToken.Token);
                 }
-            })
+            }, cancellationToken.Token)
         };
 
         try
@@ -390,7 +391,7 @@ public class LoggingStressTests : IDisposable
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         Console.WriteLine($"Resource Contention Test Results:");
@@ -417,12 +418,12 @@ public class LoggingStressTests : IDisposable
     public async Task LongTermStability_MemoryLeakCheck()
     {
         // Arrange
-        const int cycles = 10;
-        const int messagesPerCycle = 1000;
+        const int Cycles = 10;
+        const int MessagesPerCycle = 1000;
         var memorySnapshots = new List<long>();
 
         // Act
-        for (var cycle = 0; cycle < cycles; cycle++)
+        for (var cycle = 0; cycle < Cycles; cycle++)
         {
             // 记录内存快照
             GC.Collect();
@@ -437,17 +438,17 @@ public class LoggingStressTests : IDisposable
                 var taskId = i;
                 var task = Task.Run(() =>
                 {
-                    for (var j = 0; j < messagesPerCycle / 5; j++)
+                    for (var j = 0; j < MessagesPerCycle / 5; j++)
                     {
                         LogFileHelper.Handle($"Cycle-{cycle:D2} Task-{taskId} Message-{j:D3}");
                     }
-                });
+                }, TestContext.Current.CancellationToken);
                 tasks.Add(task);
             }
 
             await Task.WhenAll(tasks);
             LogFileHelper.Flush();
-            await Task.Delay(500);
+            await Task.Delay(500, TestContext.Current.CancellationToken);
 
             // 再次记录内存
             GC.Collect();
@@ -467,8 +468,8 @@ public class LoggingStressTests : IDisposable
         var totalIncrease = (lastSnapshot - firstSnapshot) / 1024.0 / 1024.0; // MB
 
         Console.WriteLine($"Long Term Stability Test:");
-        Console.WriteLine($"  Cycles: {cycles}");
-        Console.WriteLine($"  Messages per Cycle: {messagesPerCycle}");
+        Console.WriteLine($"  Cycles: {Cycles}");
+        Console.WriteLine($"  Messages per Cycle: {MessagesPerCycle}");
         Console.WriteLine($"  Total Memory Increase: {totalIncrease:F2} MB");
 
         // 内存增长应该在合理范围内（不应该有严重的内存泄漏）
@@ -487,6 +488,7 @@ public class LoggingStressTests : IDisposable
         {
             LogFileHelper.Flush();
             Thread.Sleep(1000);
+            GC.SuppressFinalize(this);
 
             if (Directory.Exists(_testLogDirectory))
             {

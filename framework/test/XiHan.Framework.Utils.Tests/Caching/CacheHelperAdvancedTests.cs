@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Caching;
-using Xunit.Abstractions;
 
 namespace XiHan.Framework.Utils.Tests.Caching;
 
@@ -209,7 +208,7 @@ public class CacheHelperAdvancedTests : IDisposable
         for (var i = 0; i < 8; i++)
         {
             CacheHelper.Set($"key{i}", $"value{i}", 3600);
-            await Task.Delay(10); // 确保创建时间有差异
+            await Task.Delay(10, TestContext.Current.CancellationToken); // 确保创建时间有差异
         }
 
         // Assert - 先添加的应该被淘汰
@@ -326,5 +325,6 @@ public class CacheHelperAdvancedTests : IDisposable
             opt.CleanupBatchSize = 64;
             opt.EvictionPolicy = CacheEvictionPolicy.Lru;
         });
+        GC.SuppressFinalize(this);
     }
 }
