@@ -42,13 +42,13 @@ public class LogFileHelperFixTests : IDisposable
     public void LargeVolumeWrite_ShouldNotCreateExcessiveFiles()
     {
         // Arrange
-        const int messageCount = 10000; // 1万条消息测试
+        const int MessageCount = 10000; // 1万条消息测试
         var expectedMaxFiles = 50; // 预期最多50个文件（50KB * 50 = 2.5MB）
 
         // Act
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
-            LogFileHelper.Handle($"应用启动中...{i + 1}/{messageCount}");
+            LogFileHelper.Handle($"应用启动中...{i + 1}/{MessageCount}");
 
             // 每1000条强制刷新一次
             if (i % 1000 == 0)
@@ -64,7 +64,7 @@ public class LogFileHelperFixTests : IDisposable
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*handle*.log");
 
-        Console.WriteLine($"Created {logFiles.Length} handle log files for {messageCount} messages");
+        Console.WriteLine($"Created {logFiles.Length} handle log files for {MessageCount} messages");
         foreach (var file in logFiles.Take(10)) // 显示前10个文件信息
         {
             var fileInfo = new FileInfo(file);
@@ -83,7 +83,7 @@ public class LogFileHelperFixTests : IDisposable
             totalLines += lines.Length;
         }
 
-        Assert.Equal(messageCount, totalLines);
+        Assert.Equal(MessageCount, totalLines);
     }
 
     /// <summary>
@@ -94,11 +94,11 @@ public class LogFileHelperFixTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(1024); // 1KB 非常小的文件大小
-        const int messageCount = 500;
+        const int MessageCount = 500;
         var longMessage = new string('X', 100); // 100字符消息
 
         // Act
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             LogFileHelper.Info($"Message-{i:D3}: {longMessage}");
         }
@@ -130,7 +130,7 @@ public class LogFileHelperFixTests : IDisposable
             totalLines += lines.Length;
         }
 
-        Assert.Equal(messageCount, totalLines);
+        Assert.Equal(MessageCount, totalLines);
     }
 
     /// <summary>
@@ -141,28 +141,28 @@ public class LogFileHelperFixTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(2048); // 2KB文件大小
-        const int threadCount = 10;
-        const int messagesPerThread = 100;
-        var totalMessages = threadCount * messagesPerThread;
+        const int ThreadCount = 10;
+        const int MessagesPerThread = 100;
+        var totalMessages = ThreadCount * MessagesPerThread;
 
         // Act
         var tasks = new List<Task>();
-        for (var i = 0; i < threadCount; i++)
+        for (var i = 0; i < ThreadCount; i++)
         {
             var threadId = i;
             var task = Task.Run(() =>
             {
-                for (var j = 0; j < messagesPerThread; j++)
+                for (var j = 0; j < MessagesPerThread; j++)
                 {
                     LogFileHelper.Warn($"Thread-{threadId:D2}-Message-{j:D3}: Concurrent test data");
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        await Task.Delay(1000);
+        await Task.Delay(1000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*warn*.log");
@@ -195,11 +195,11 @@ public class LogFileHelperFixTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(1024); // 1KB
-        const int messagesPerLevel = 100;
+        const int MessagesPerLevel = 100;
         var longMessage = new string('Y', 80);
 
         // Act
-        for (var i = 0; i < messagesPerLevel; i++)
+        for (var i = 0; i < MessagesPerLevel; i++)
         {
             LogFileHelper.Info($"Info-{i:D3}: {longMessage}");
             LogFileHelper.Warn($"Warn-{i:D3}: {longMessage}");
@@ -229,7 +229,7 @@ public class LogFileHelperFixTests : IDisposable
                 totalLines += lines.Length;
             }
 
-            Assert.Equal(messagesPerLevel, totalLines);
+            Assert.Equal(MessagesPerLevel, totalLines);
             Console.WriteLine($"  {level}: {levelFiles.Length} files, {totalLines} messages");
         }
     }
@@ -242,10 +242,10 @@ public class LogFileHelperFixTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(512); // 512字节，强制多文件
-        const int messageCount = 200;
+        const int MessageCount = 200;
 
         // Act
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             LogFileHelper.Error($"Error message {i:D3} with some content to reach size limit");
         }
@@ -286,13 +286,13 @@ public class LogFileHelperFixTests : IDisposable
     {
         // Arrange
         LogFileHelper.SetMaxFileSize(10 * 1024); // 10KB
-        const int messageCount = 5000;
+        const int MessageCount = 5000;
         var message = "Performance test message with moderate length content";
 
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        for (var i = 0; i < messageCount; i++)
+        for (var i = 0; i < MessageCount; i++)
         {
             LogFileHelper.Success($"{message} #{i:D4}");
         }
@@ -301,11 +301,11 @@ public class LogFileHelperFixTests : IDisposable
         stopwatch.Stop();
 
         // Assert
-        var throughput = messageCount / stopwatch.Elapsed.TotalSeconds;
+        var throughput = MessageCount / stopwatch.Elapsed.TotalSeconds;
         var logFiles = Directory.GetFiles(_testLogDirectory, "*success*.log");
 
         Console.WriteLine($"Performance test:");
-        Console.WriteLine($"  Messages: {messageCount}");
+        Console.WriteLine($"  Messages: {MessageCount}");
         Console.WriteLine($"  Time: {stopwatch.Elapsed.TotalMilliseconds:F2} ms");
         Console.WriteLine($"  Throughput: {throughput:F0} messages/second");
         Console.WriteLine($"  Files created: {logFiles.Length}");
@@ -338,5 +338,6 @@ public class LogFileHelperFixTests : IDisposable
         LogFileHelper.SetMaxFileSize(10 * 1024 * 1024); // 10MB
         LogFileHelper.SetBufferSize(100);
         LogFileHelper.SetAsyncWriteEnabled(true);
+        GC.SuppressFinalize(this);
     }
 }

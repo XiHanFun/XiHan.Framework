@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Caching;
-using Xunit.Abstractions;
 
 namespace XiHan.Framework.Utils.Tests.Caching;
 
@@ -38,15 +37,15 @@ public class CacheHelperLazyCleanupTests
     public void TestBasicSetAndGet()
     {
         // Arrange
-        const string key = "test_key";
-        const string value = "test_value";
+        const string Key = "test_key";
+        const string Value = "test_value";
 
         // Act
-        CacheHelper.Set(key, value, 60);
-        var result = CacheHelper.Get<string>(key);
+        CacheHelper.Set(Key, Value, 60);
+        var result = CacheHelper.Get<string>(Key);
 
         // Assert
-        Assert.Equal(value, result);
+        Assert.Equal(Value, result);
         _output.WriteLine($"✓ 基本设置和获取测试通过");
     }
 
@@ -57,27 +56,27 @@ public class CacheHelperLazyCleanupTests
     public async Task TestExpiredCacheAutoCleanup()
     {
         // Arrange
-        const string key = "expire_test";
-        const string value = "test_value";
+        const string Key = "expire_test";
+        const string Value = "test_value";
 
         // Act - 设置一个1秒后过期的缓存
-        CacheHelper.Set(key, value, 1);
+        CacheHelper.Set(Key, Value, 1);
 
         // 立即获取，应该能获取到
-        var immediateResult = CacheHelper.Get<string>(key);
-        Assert.Equal(value, immediateResult);
+        var immediateResult = CacheHelper.Get<string>(Key);
+        Assert.Equal(Value, immediateResult);
         _output.WriteLine($"✓ 立即获取成功: {immediateResult}");
 
         // 等待2秒，让缓存过期
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // 再次获取，应该返回 null（触发惰性清理）
-        var expiredResult = CacheHelper.Get<string>(key);
+        var expiredResult = CacheHelper.Get<string>(Key);
         Assert.Null(expiredResult);
         _output.WriteLine($"✓ 过期后获取返回 null，惰性清理成功");
 
         // 验证缓存项确实被移除
-        Assert.False(CacheHelper.Exists(key));
+        Assert.False(CacheHelper.Exists(Key));
     }
 
     /// <summary>
@@ -98,7 +97,7 @@ public class CacheHelperLazyCleanupTests
         Assert.Equal(keys.Count, CacheHelper.Count);
 
         // 等待缓存过期
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Act - 触发惰性清理（通过一次 Get 调用）
         CacheHelper.Get<string>("trigger_cleanup");
@@ -108,7 +107,7 @@ public class CacheHelperLazyCleanupTests
         for (var i = 0; i < 3; i++)
         {
             CacheHelper.Get<string>($"trigger_{i}");
-            await Task.Delay(100);
+            await Task.Delay(100, TestContext.Current.CancellationToken);
         }
 
         _output.WriteLine($"✓ 触发惰性清理后，剩余缓存项: {CacheHelper.Count}");
@@ -131,27 +130,27 @@ public class CacheHelperLazyCleanupTests
     public async Task TestSlidingExpirationWithLazyCleanup()
     {
         // Arrange
-        const string key = "sliding_test";
-        const string value = "sliding_value";
+        const string Key = "sliding_test";
+        const string Value = "sliding_value";
 
         // 设置滑动过期时间为2秒
-        CacheHelper.SetSliding(key, value, TimeSpan.FromSeconds(2));
-        _output.WriteLine($"✓ 设置滑动过期缓存项: {key}");
+        CacheHelper.SetSliding(Key, Value, TimeSpan.FromSeconds(2));
+        _output.WriteLine($"✓ 设置滑动过期缓存项: {Key}");
 
         // Act - 每隔1秒访问一次，保持缓存活跃
         for (var i = 0; i < 3; i++)
         {
-            await Task.Delay(1000);
-            var result = CacheHelper.Get<string>(key);
-            Assert.Equal(value, result);
+            await Task.Delay(1000, TestContext.Current.CancellationToken);
+            var result = CacheHelper.Get<string>(Key);
+            Assert.Equal(Value, result);
             _output.WriteLine($"✓ 第 {i + 1} 次访问成功，缓存仍然有效");
         }
 
         // 停止访问3秒，让滑动过期生效
-        await Task.Delay(3000);
+        await Task.Delay(3000, TestContext.Current.CancellationToken);
 
         // 获取应该返回 null
-        var expiredResult = CacheHelper.Get<string>(key);
+        var expiredResult = CacheHelper.Get<string>(Key);
         Assert.Null(expiredResult);
         _output.WriteLine($"✓ 滑动过期生效，缓存已清理");
     }
@@ -163,11 +162,11 @@ public class CacheHelperLazyCleanupTests
     public async Task TestGetOrAddWithLazyCleanup()
     {
         // Arrange
-        const string key = "getadd_test";
+        const string Key = "getadd_test";
         var callCount = 0;
 
         // Act - 第一次调用，会执行工厂方法
-        var result1 = CacheHelper.GetOrAdd(key, () =>
+        var result1 = CacheHelper.GetOrAdd(Key, () =>
         {
             callCount++;
             return $"value_{callCount}";
@@ -178,10 +177,10 @@ public class CacheHelperLazyCleanupTests
         _output.WriteLine($"✓ 第一次 GetOrAdd，工厂方法被调用: {result1}");
 
         // 等待过期
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // 第二次调用，缓存已过期，会再次执行工厂方法
-        var result2 = CacheHelper.GetOrAdd(key, () =>
+        var result2 = CacheHelper.GetOrAdd(Key, () =>
         {
             callCount++;
             return $"value_{callCount}";
@@ -208,7 +207,7 @@ public class CacheHelperLazyCleanupTests
         _output.WriteLine($"✓ 初始缓存项数量: {initialCount}");
 
         // 等待过期
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Act - 手动触发全量清理
         CacheHelper.CleanupExpired();
@@ -235,14 +234,14 @@ public class CacheHelperLazyCleanupTests
             tasks.Add(Task.Run(() =>
             {
                 CacheHelper.Set($"concurrent_{index}", $"value_{index}", 1);
-            }));
+            }, TestContext.Current.CancellationToken));
         }
 
         await Task.WhenAll(tasks);
         _output.WriteLine($"✓ 并发创建 100 个缓存项");
 
         // 等待过期
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Act - 并发触发惰性清理
         var readTasks = new List<Task>();
@@ -252,7 +251,7 @@ public class CacheHelperLazyCleanupTests
             readTasks.Add(Task.Run(() =>
             {
                 CacheHelper.Get<string>($"concurrent_{index}");
-            }));
+            }, TestContext.Current.CancellationToken));
         }
 
         await Task.WhenAll(readTasks);
