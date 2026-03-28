@@ -106,7 +106,7 @@ public class LoggingPerformanceTests : IDisposable
                 {
                     LogFileHelper.Warn($"Thread-{threadId:D2} {message} #{j:D4}");
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -114,7 +114,7 @@ public class LoggingPerformanceTests : IDisposable
         var writeTime = stopwatch.Elapsed;
 
         LogFileHelper.Flush();
-        await Task.Delay(1000); // 等待异步写入完成
+        await Task.Delay(1000, TestContext.Current.CancellationToken); // 等待异步写入完成
         stopwatch.Stop();
 
         var endMemory = GC.GetTotalMemory(false);
@@ -216,7 +216,7 @@ public class LoggingPerformanceTests : IDisposable
             LogFileHelper.Success($"ASYNC {message} #{i:D4}");
         }
         LogFileHelper.Flush();
-        await Task.Delay(2000); // 等待异步写入完成
+        await Task.Delay(2000, TestContext.Current.CancellationToken); // 等待异步写入完成
         asyncStopwatch.Stop();
 
         var asyncThroughput = MessageCount / asyncStopwatch.Elapsed.TotalSeconds;
@@ -264,13 +264,13 @@ public class LoggingPerformanceTests : IDisposable
                         Thread.Sleep(1);
                     }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        await Task.Delay(3000); // 等待所有异步操作完成
+        await Task.Delay(3000, TestContext.Current.CancellationToken); // 等待所有异步操作完成
 
         stopwatch.Stop();
         var finalMemory = GC.GetTotalMemory(false);
@@ -294,7 +294,7 @@ public class LoggingPerformanceTests : IDisposable
         var totalLoggedMessages = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalLoggedMessages += lines.Length;
         }
 
@@ -363,7 +363,7 @@ public class LoggingPerformanceTests : IDisposable
 
                 Console.WriteLine($"Endurance Test - Messages: {messageCount}, Memory: {memoryIncrease:F2} MB, Errors: {errorCount}");
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         try
         {
@@ -375,7 +375,7 @@ public class LoggingPerformanceTests : IDisposable
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         var finalMemory = GC.GetTotalMemory(false);
         var totalMemoryIncrease = (finalMemory - startMemory) / 1024.0 / 1024.0;
@@ -451,6 +451,7 @@ public class LoggingPerformanceTests : IDisposable
         {
             LogFileHelper.Flush();
             Thread.Sleep(1000);
+            GC.SuppressFinalize(this);
 
             if (Directory.Exists(_testLogDirectory))
             {

@@ -68,7 +68,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
                     writtenMessages.Add(message);
                     LogFileHelper.Info(message);
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             threads.Add(task);
         }
 
@@ -76,7 +76,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
 
         // 等待所有缓冲区刷新
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*.log");
@@ -85,7 +85,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var allLogContent = string.Empty;
         foreach (var file in logFiles)
         {
-            allLogContent += await File.ReadAllTextAsync(file);
+            allLogContent += await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
         }
 
         // 验证所有消息都被写入
@@ -118,13 +118,13 @@ public class LogFileHelperConcurrencyTests : IDisposable
             var task = Task.Run(() =>
             {
                 LogFileHelper.Warn($"Pressure-Test-Message-{messageIndex:D4}");
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        await Task.Delay(1000);
+        await Task.Delay(1000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*warn*.log");
@@ -133,7 +133,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var totalLines = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalLines += lines.Length;
         }
 
@@ -162,15 +162,15 @@ public class LogFileHelperConcurrencyTests : IDisposable
                 for (var j = 0; j < MessagesPerThread; j++)
                 {
                     LogFileHelper.Error($"Thread-{threadId:D2}-LongMessage-{j:D3}: {longMessage}");
-                    await Task.Delay(1); // 小延迟以模拟真实场景
+                    await Task.Delay(1, TestContext.Current.CancellationToken); // 小延迟以模拟真实场景
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*error*.log");
@@ -183,7 +183,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var totalMessages = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalMessages += lines.Length;
         }
 
@@ -240,13 +240,13 @@ public class LogFileHelperConcurrencyTests : IDisposable
                         LogFileHelper.Handle($"Handle message {iteration}");
                         break;
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*.log");
@@ -263,7 +263,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
                 var totalLines = 0;
                 foreach (var file in levelFiles)
                 {
-                    var lines = await File.ReadAllLinesAsync(file);
+                    var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
                     totalLines += lines.Length;
                 }
 
@@ -293,7 +293,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
             var task = Task.Run(() =>
             {
                 LogFileHelper.Info($"Async-Performance-Test-{messageIndex:D5}");
-            });
+            }, TestContext.Current.CancellationToken);
             tasks.Add(task);
         }
 
@@ -301,7 +301,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var writeTime = stopwatch.Elapsed;
 
         LogFileHelper.Flush();
-        await Task.Delay(3000); // 等待异步写入完成
+        await Task.Delay(3000, TestContext.Current.CancellationToken); // 等待异步写入完成
         stopwatch.Stop();
 
         // Assert
@@ -311,7 +311,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var totalMessages = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalMessages += lines.Length;
         }
 
@@ -362,7 +362,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(1000);
+        await Task.Delay(1000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*handle*.log");
@@ -371,7 +371,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var totalLines = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalLines += lines.Length;
         }
 
@@ -412,13 +412,13 @@ public class LogFileHelperConcurrencyTests : IDisposable
                         GC.Collect();
                     }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
             batches.Add(batchTask);
         }
 
         await Task.WhenAll(batches);
         LogFileHelper.Flush();
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*success*.log");
@@ -427,7 +427,7 @@ public class LogFileHelperConcurrencyTests : IDisposable
         var totalMessages = 0;
         foreach (var file in logFiles)
         {
-            var lines = await File.ReadAllLinesAsync(file);
+            var lines = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
             totalMessages += lines.Length;
         }
 
@@ -457,5 +457,6 @@ public class LogFileHelperConcurrencyTests : IDisposable
         LogFileHelper.SetBufferSize(100);
         LogFileHelper.SetMaxFileSize(10 * 1024 * 1024);
         LogFileHelper.SetAsyncWriteEnabled(true);
+        GC.SuppressFinalize(this);
     }
 }
