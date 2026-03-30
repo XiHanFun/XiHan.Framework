@@ -18,37 +18,11 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 
 /// <summary>
-/// LongJsonConverter
+/// long 序列化为 JSON 字符串，避免 JavaScript Number 精度溢出
 /// </summary>
 public class LongJsonConverter : JsonConverter<long>
 {
-    // 是否超过最大长度 17 再处理
-    private readonly bool _isMax17;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public LongJsonConverter()
-    {
-        _isMax17 = false;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="isMax17"></param>
-    public LongJsonConverter(bool isMax17)
-    {
-        _isMax17 = isMax17;
-    }
-
-    /// <summary>
-    /// 读
-    /// </summary>
-    /// <param name="reader"></param>
-    /// <param name="typeToConvert"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
@@ -59,59 +33,19 @@ public class LongJsonConverter : JsonConverter<long>
         };
     }
 
-    /// <summary>
-    /// 写
-    /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
-    /// <param name="options"></param>
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
     {
-        switch (_isMax17 && value > 99999999999999999)
-        {
-            case true:
-                writer.WriteStringValue(value.ToString());
-                break;
-
-            case false:
-                writer.WriteNumberValue(value);
-                break;
-        }
+        writer.WriteStringValue(value.ToString());
     }
 }
 
 /// <summary>
-/// LongNullableConverter
+/// long? 序列化为 JSON 字符串
 /// </summary>
 public class LongNullableConverter : JsonConverter<long?>
 {
-    // 是否超过最大长度 17 再处理
-    private readonly bool _isMax17;
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public LongNullableConverter()
-    {
-        _isMax17 = false;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="isMax17"></param>
-    public LongNullableConverter(bool isMax17)
-    {
-        _isMax17 = isMax17;
-    }
-
-    /// <summary>
-    /// 读
-    /// </summary>
-    /// <param name="reader"></param>
-    /// <param name="typeToConvert"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
@@ -123,27 +57,15 @@ public class LongNullableConverter : JsonConverter<long?>
         };
     }
 
-    /// <summary>
-    /// 写
-    /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
-    /// <param name="options"></param>
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
     {
-        switch (value.HasValue)
+        if (!value.HasValue)
         {
-            case true when _isMax17 && value.Value > 99999999999999999:
-                writer.WriteStringValue(value.Value.ToString());
-                break;
-
-            case true:
-                writer.WriteNumberValue(value.Value);
-                break;
-
-            case false:
-                writer.WriteNullValue();
-                break;
+            writer.WriteNullValue();
+            return;
         }
+
+        writer.WriteStringValue(value.Value.ToString());
     }
 }
