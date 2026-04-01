@@ -41,7 +41,6 @@ public static class XiHanOAuthServiceCollectionExtensions
             return services;
         }
 
-        services.Configure<OAuthOptions>(configuration.GetSection(OAuthOptions.SectionName));
         services.TryAddScoped<IExternalLoginStore, DefaultExternalLoginStore>();
 
         // 获取或创建 AuthenticationBuilder
