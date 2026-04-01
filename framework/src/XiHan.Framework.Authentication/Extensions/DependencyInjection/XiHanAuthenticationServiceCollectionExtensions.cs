@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authentication.Jwt;
+using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Authentication.Otp;
 using XiHan.Framework.Authentication.Password;
 using XiHan.Framework.Authentication.Users;
@@ -59,6 +60,12 @@ public static class XiHanAuthenticationServiceCollectionExtensions
         services.TryAddScoped<IUserStore, DefaultUserStore>();
         // 注册认证服务接口
         services.TryAddScoped<IAuthenticationService, DefaultAuthenticationService>();
+
+        // 始终绑定 OAuthOptions（即使未启用，保证 IOptions<OAuthOptions> 可注入）
+        services.Configure<OAuthOptions>(configuration.GetSection(OAuthOptions.SectionName));
+
+        // 注册 OAuth 第三方登录
+        services.AddXiHanOAuth(configuration);
 
         return services;
     }
