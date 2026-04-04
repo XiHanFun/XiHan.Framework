@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using Mapster;
-using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using XiHan.Framework.Application.Contracts.Dtos;
@@ -61,7 +60,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>实体DTO</returns>
-    [HttpGet]
     public virtual async Task<TEntityDto?> GetByIdAsync(TKey id)
     {
         var entity = await Repository.GetByIdAsync(id);
@@ -73,7 +71,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="input">分页查询参数</param>
     /// <returns>分页响应</returns>
-    [HttpPost]
     public virtual async Task<PageResultDtoBase<TEntityDto>> PageAsync(TPageRequestDto input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -97,7 +94,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="input">创建DTO</param>
     /// <returns>创建后的实体DTO</returns>
-    [HttpPost]
     public virtual async Task<TEntityDto> CreateAsync(TCreateDto input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -113,7 +109,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="input">更新DTO</param>
     /// <returns>更新后的实体DTO</returns>
-    [HttpPut]
     public virtual async Task<TEntityDto> UpdateAsync(TUpdateDto input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -132,7 +127,6 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>删除结果</returns>
-    [HttpDelete]
     public virtual async Task<bool> DeleteAsync(TKey id)
     {
         var entity = await Repository.GetByIdAsync(id);
