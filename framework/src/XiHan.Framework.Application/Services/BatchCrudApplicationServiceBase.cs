@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities;
@@ -51,7 +50,6 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     /// <summary>
     /// 批量获取
     /// </summary>
-    [HttpPost]
     public virtual async Task<List<TEntityDto>> BatchGetAsync(List<TKey> ids)
     {
         if (ids == null || ids.Count == 0)
@@ -67,7 +65,6 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     /// <summary>
     /// 批量创建
     /// </summary>
-    [HttpPost]
     public virtual async Task<BatchOperationResponse<TEntityDto>> BatchCreateAsync(BatchOperationRequest<TCreateDto> request)
     {
         return await ExecuteBatchOperationAsync(
@@ -86,7 +83,6 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     /// <summary>
     /// 批量更新
     /// </summary>
-    [HttpPost]
     public virtual async Task<BatchOperationResponse<TEntityDto>> BatchUpdateAsync(BatchUpdateRequest<TUpdateDto> request)
     {
         return await ExecuteBatchOperationAsync(
@@ -107,7 +103,6 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
     /// <summary>
     /// 批量删除
     /// </summary>
-    [HttpPost]
     public virtual async Task<BatchOperationResponse<bool>> BatchDeleteAsync(BatchDeleteRequest<TKey> request)
     {
         return await ExecuteBatchOperationAsync(
