@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Caching.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.Interceptors;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy.Abstractions;
@@ -42,7 +43,8 @@ public class XiHanCachingModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        // 使用扩展方法添加缓存服务
         services.AddXiHanCaching(config);
+
+        services.OnRegistered(CacheInterceptorRegistrar.RegisterIfNeeded);
     }
 }
