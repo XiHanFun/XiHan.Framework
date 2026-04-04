@@ -34,7 +34,7 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
 public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    : ApplicationServiceBase, ICrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : ApplicationServiceBase, ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
     where TEntity : EntityBase<TKey>
     where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
