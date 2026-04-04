@@ -32,7 +32,7 @@ namespace XiHan.Framework.Application.Services;
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
 public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
-    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>, IBatchCrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
+    : CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>, IBatchCrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>
     where TEntity : EntityBase<TKey>
     where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
