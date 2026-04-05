@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -96,6 +97,12 @@ public static class DynamicApiControllerFactory
 
             // 添加 ApiExplorerSettings 特性
             AddApiExplorerSettingsAttribute(typeBuilder, serviceType);
+
+            // 复制类级别的授权相关特性（[Authorize] / [AllowAnonymous]）
+            foreach (var attrBuilder in BuildAuthorizationAttributeBuilders(serviceType))
+            {
+                typeBuilder.SetCustomAttribute(attrBuilder);
+            }
 
             // 添加服务字段
             var serviceField = DefineServiceField(typeBuilder, serviceType);
@@ -452,6 +459,12 @@ public static class DynamicApiControllerFactory
         // 添加原始方法标记特性（用于读取 XML 注释）
         AddOriginalMethodAttribute(methodBuilder, serviceMethod, serviceField.FieldType);
 
+        // 复制方法级别的授权相关特性（[Authorize] / [AllowAnonymous]）
+        foreach (var attrBuilder in BuildAuthorizationAttributeBuilders(serviceMethod))
+        {
+            methodBuilder.SetCustomAttribute(attrBuilder);
+        }
+
         // 添加参数及参数特性
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -671,6 +684,88 @@ public static class DynamicApiControllerFactory
 
             methodBuilder.SetCustomAttribute(attributeBuilder);
         }
+    }
+
+    /// <summary>
+    /// 构建授权相关特性（[AllowAnonymous] / [Authorize]），用于复制到动态生成的控制器或动作方法
+    /// </summary>
+    private static List<CustomAttributeBuilder> BuildAuthorizationAttributeBuilders(MemberInfo source)
+    {
+        var builders = new List<CustomAttributeBuilder>();
+
+        if (source.GetCustomAttribute<AllowAnonymousAttribute>() != null)
+        {
+            var ctor = typeof(AllowAnonymousAttribute).GetConstructor(Type.EmptyTypes);
+            if (ctor != null)
+            {
+                builders.Add(new CustomAttributeBuilder(ctor, []));
+            }
+        }
+
+        foreach (var attr in source.GetCustomAttributes<AuthorizeAttribute>())
+        {
+            var builder = BuildAuthorizeAttributeBuilder(attr);
+            if (builder != null)
+            {
+                builders.Add(builder);
+            }
+        }
+
+        return builders;
+    }
+
+    /// <summary>
+    /// 构建 [Authorize] 特性（支持 Policy、Roles、AuthenticationSchemes）
+    /// </summary>
+    private static CustomAttributeBuilder? BuildAuthorizeAttributeBuilder(AuthorizeAttribute source)
+    {
+        var type = typeof(AuthorizeAttribute);
+
+        ConstructorInfo? ctor;
+        object[] ctorArgs;
+
+        if (!string.IsNullOrEmpty(source.Policy))
+        {
+            ctor = type.GetConstructor([typeof(string)]);
+            ctorArgs = [source.Policy];
+        }
+        else
+        {
+            ctor = type.GetConstructor(Type.EmptyTypes);
+            ctorArgs = [];
+        }
+
+        if (ctor == null)
+        {
+            return null;
+        }
+
+        var namedProps = new List<PropertyInfo>();
+        var propValues = new List<object>();
+
+        if (!string.IsNullOrEmpty(source.Roles))
+        {
+            var prop = type.GetProperty(nameof(AuthorizeAttribute.Roles));
+            if (prop != null)
+            {
+                namedProps.Add(prop);
+                propValues.Add(source.Roles);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(source.AuthenticationSchemes))
+        {
+            var prop = type.GetProperty(nameof(AuthorizeAttribute.AuthenticationSchemes));
+            if (prop != null)
+            {
+                namedProps.Add(prop);
+                propValues.Add(source.AuthenticationSchemes);
+            }
+        }
+
+        return namedProps.Count > 0
+            ? new CustomAttributeBuilder(ctor, ctorArgs, [.. namedProps], [.. propValues])
+            : new CustomAttributeBuilder(ctor, ctorArgs);
     }
 
     #endregion
