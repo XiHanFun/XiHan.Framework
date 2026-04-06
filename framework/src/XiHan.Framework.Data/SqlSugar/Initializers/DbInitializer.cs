@@ -193,12 +193,13 @@ public class DbInitializer : IDbInitializer, IScopedDependency
             var db = ResolveDbClient(connectionConfigId);
             await Task.Run(() =>
             {
-                if (!db.DbMaintenance.CreateDatabase())
+                if (IsDatabaseAccessible(db))
                 {
                     _logger.LogInformation("数据库已存在，跳过创建");
                     return;
                 }
 
+                db.DbMaintenance.CreateDatabase();
                 _logger.LogInformation("数据库创建成功");
             });
         }
@@ -206,6 +207,23 @@ public class DbInitializer : IDbInitializer, IScopedDependency
         {
             _logger.LogError(ex, "创建数据库失败: {Error}", ex.Message);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 尝试连接数据库以判断其是否已存在
+    /// </summary>
+    private static bool IsDatabaseAccessible(ISqlSugarClient db)
+    {
+        try
+        {
+            db.Ado.Open();
+            db.Ado.Close();
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 
