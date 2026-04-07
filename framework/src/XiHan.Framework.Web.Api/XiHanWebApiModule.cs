@@ -176,7 +176,7 @@ public class XiHanWebApiModule : XiHanModule
         {
             // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由
             endpoints.MapControllers();
-            endpoints.MapOpenApi();
+            endpoints.MapOpenApi().AllowAnonymous();
         });
     }
 }

@@ -62,14 +62,13 @@ public class XiHanWebDocsModule : XiHanModule
     }
 
     /// <summary>
-    /// 应用初始化
+    /// 应用初始化前：注册 Swagger UI 中间件，确保在认证/授权中间件之前处理文档请求
     /// </summary>
     /// <param name="context"></param>
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
 
-        // 启用 Swagger UI（读取官方 OpenAPI 文档）
         app.UseSwaggerUI(options =>
         {
             var groupDefinitions = DynamicApiSwaggerGroupHelper.GetGroupDefinitionsFromAttributes();
@@ -88,8 +87,16 @@ public class XiHanWebDocsModule : XiHanModule
                 options.SwaggerEndpoint($"/openapi/{groupDefinition.Group}.json", groupDefinition.DisplayName);
             }
         });
+    }
 
-        // 启用 Scalar（读取官方 OpenAPI 文档）
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context"></param>
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var app = context.GetApplicationBuilder();
+
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapScalarApiReference((options, httpContext) =>
@@ -101,7 +108,6 @@ public class XiHanWebDocsModule : XiHanModule
                         !string.Equals(definition.Group, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-                // Scalar 会自动读取官方 OpenAPI JSON
                 options.WithTitle("XiHan Framework API")
                        .WithTheme(ScalarTheme.Purple)
                        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
@@ -115,7 +121,7 @@ public class XiHanWebDocsModule : XiHanModule
                 {
                     options.AddDocument(groupDefinition.Group, groupDefinition.DisplayName);
                 }
-            });
+            }).AllowAnonymous();
         });
     }
 }
