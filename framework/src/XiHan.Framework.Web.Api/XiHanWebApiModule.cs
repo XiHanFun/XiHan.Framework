@@ -21,6 +21,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Api.Contexts;
+using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Logging.Options;
@@ -59,6 +60,66 @@ public class XiHanWebApiModule : XiHanModule
         services.Configure<XiHanOpenApiSecurityOptions>(config.GetSection(XiHanOpenApiSecurityOptions.SectionName));
         services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
         services.Configure<XiHanWebApiLogQueueOptions>(config.GetSection(XiHanWebApiLogQueueOptions.SectionName));
+
+        // 配置 CORS 跨域资源共享
+        services.Configure<XiHanCorsOptions>(config.GetSection(XiHanCorsOptions.SectionName));
+        var corsOptions = config.GetSection(XiHanCorsOptions.SectionName).Get<XiHanCorsOptions>() ?? new XiHanCorsOptions();
+        if (corsOptions.IsEnabled)
+        {
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    // 配置来源
+                    if (corsOptions.AllowAnyOrigin)
+                    {
+                        policy.AllowAnyOrigin();
+                    }
+                    else if (corsOptions.AllowedOrigins.Count > 0)
+                    {
+                        policy.WithOrigins([.. corsOptions.AllowedOrigins]);
+                    }
+
+                    // 配置方法
+                    if (corsOptions.AllowAnyMethod)
+                    {
+                        policy.AllowAnyMethod();
+                    }
+                    else if (corsOptions.AllowedMethods.Count > 0)
+                    {
+                        policy.WithMethods([.. corsOptions.AllowedMethods]);
+                    }
+
+                    // 配置请求头
+                    if (corsOptions.AllowAnyHeader)
+                    {
+                        policy.AllowAnyHeader();
+                    }
+                    else if (corsOptions.AllowedHeaders.Count > 0)
+                    {
+                        policy.WithHeaders([.. corsOptions.AllowedHeaders]);
+                    }
+
+                    // 配置凭据（AllowAnyOrigin 与 AllowCredentials 互斥）
+                    if (corsOptions.AllowCredentials && !corsOptions.AllowAnyOrigin)
+                    {
+                        policy.AllowCredentials();
+                    }
+
+                    // 配置暴露的响应头
+                    if (corsOptions.ExposedHeaders.Count > 0)
+                    {
+                        policy.WithExposedHeaders([.. corsOptions.ExposedHeaders]);
+                    }
+
+                    // 配置预检请求缓存时间
+                    if (corsOptions.PreflightMaxAgeSeconds > 0)
+                    {
+                        policy.SetPreflightMaxAge(TimeSpan.FromSeconds(corsOptions.PreflightMaxAgeSeconds));
+                    }
+                });
+            });
+        }
         services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
         services.AddHostedService<AccessLogQueueWorker>();
         services.AddHostedService<OperationLogQueueWorker>();
