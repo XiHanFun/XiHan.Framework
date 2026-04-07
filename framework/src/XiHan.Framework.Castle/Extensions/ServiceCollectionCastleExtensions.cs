@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ServiceCollectionCastleExtensions
-// Guid:c3d4e5f6-a7b8-9012-cdef-123456789012
+// Guid:8c89c7e2-ff7f-4865-90e0-6b3d92b24872
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/04/05 05:30:00
