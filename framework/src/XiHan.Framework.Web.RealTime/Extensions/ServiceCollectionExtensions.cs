@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.RealTime.Options;
 using XiHan.Framework.Web.RealTime.Services;
@@ -24,6 +25,22 @@ namespace XiHan.Framework.Web.RealTime.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// 添加曦寒 SignalR 服务（带 JSON 配置，从配置文件绑定选项）
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>SignalR 服务构建器</returns>
+    public static ISignalRServerBuilder AddXiHanSignalRWithJson(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.Configure<XiHanSignalROptions>(configuration.GetSection(XiHanSignalROptions.SectionName));
+        return services.AddXiHanSignalRWithJson(configureOptions: null);
+    }
+
     /// <summary>
     /// 添加曦寒 SignalR 服务
     /// </summary>
