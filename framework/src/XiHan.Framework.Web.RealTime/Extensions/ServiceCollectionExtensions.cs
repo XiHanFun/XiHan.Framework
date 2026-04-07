@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.RealTime.Options;
 using XiHan.Framework.Web.RealTime.Services;
 
@@ -34,21 +35,14 @@ public static class ServiceCollectionExtensions
         Action<XiHanSignalROptions>? configureOptions = null)
     {
         // 配置选项
-        var options = new XiHanSignalROptions();
-        configureOptions?.Invoke(options);
+        if (configureOptions != null)
+        {
+            services.Configure(configureOptions);
+        }
 
         // 添加 SignalR 服务
-        services.AddSignalR(hubOptions =>
-        {
-            hubOptions.EnableDetailedErrors = options.EnableDetailedErrors;
-            hubOptions.KeepAliveInterval = options.KeepAliveInterval;
-            hubOptions.ClientTimeoutInterval = options.ClientTimeoutInterval;
-            hubOptions.HandshakeTimeout = options.HandshakeTimeout;
-            hubOptions.MaximumReceiveMessageSize = options.MaximumReceiveMessageSize;
-            hubOptions.StreamBufferCapacity = options.StreamBufferCapacity;
-            hubOptions.MaximumParallelInvocationsPerClient = options.MaximumParallelInvocationsPerClient;
-            hubOptions.EnableDetailedErrors = options.EnableDetailedErrors;
-        });
+        services.AddSignalR();
+        ApplySignalROptions(services);
 
         // 注册连接管理器
         services.AddSingleton<IConnectionManager, ConnectionManager>();
@@ -74,26 +68,21 @@ public static class ServiceCollectionExtensions
         Action<XiHanSignalROptions>? configureOptions = null)
     {
         // 配置选项
-        var options = new XiHanSignalROptions();
-        configureOptions?.Invoke(options);
+        if (configureOptions != null)
+        {
+            services.Configure(configureOptions);
+        }
 
         // 添加 SignalR 服务并配置 JSON
-        var signalRBuilder = services.AddSignalR(hubOptions =>
-        {
-            hubOptions.EnableDetailedErrors = options.EnableDetailedErrors;
-            hubOptions.KeepAliveInterval = options.KeepAliveInterval;
-            hubOptions.ClientTimeoutInterval = options.ClientTimeoutInterval;
-            hubOptions.HandshakeTimeout = options.HandshakeTimeout;
-            hubOptions.MaximumReceiveMessageSize = options.MaximumReceiveMessageSize;
-            hubOptions.StreamBufferCapacity = options.StreamBufferCapacity;
-            hubOptions.MaximumParallelInvocationsPerClient = options.MaximumParallelInvocationsPerClient;
-        })
-        .AddJsonProtocol(jsonOptions =>
-        {
-            // 配置 JSON 序列化选项
-            jsonOptions.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-            jsonOptions.PayloadSerializerOptions.WriteIndented = false;
-        });
+        var signalRBuilder = services.AddSignalR()
+            .AddJsonProtocol(jsonOptions =>
+            {
+                // 配置 JSON 序列化选项
+                jsonOptions.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                jsonOptions.PayloadSerializerOptions.WriteIndented = false;
+            });
+
+        ApplySignalROptions(services);
 
         // 注册连接管理器
         services.AddSingleton<IConnectionManager, ConnectionManager>();
@@ -106,5 +95,24 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IRealtimeNotificationService<>), typeof(RealtimeNotificationService<>));
 
         return signalRBuilder;
+    }
+
+    /// <summary>
+    /// 延迟桥接 XiHanSignalROptions → HubOptions，运行时从 DI 读取配置值
+    /// </summary>
+    private static void ApplySignalROptions(IServiceCollection services)
+    {
+        services.AddOptions<HubOptions>()
+            .Configure<IOptions<XiHanSignalROptions>>((hubOptions, xihanOptions) =>
+            {
+                var opts = xihanOptions.Value;
+                hubOptions.EnableDetailedErrors = opts.EnableDetailedErrors;
+                hubOptions.KeepAliveInterval = opts.KeepAliveInterval;
+                hubOptions.ClientTimeoutInterval = opts.ClientTimeoutInterval;
+                hubOptions.HandshakeTimeout = opts.HandshakeTimeout;
+                hubOptions.MaximumReceiveMessageSize = opts.MaximumReceiveMessageSize;
+                hubOptions.StreamBufferCapacity = opts.StreamBufferCapacity;
+                hubOptions.MaximumParallelInvocationsPerClient = opts.MaximumParallelInvocationsPerClient;
+            });
     }
 }
