@@ -29,6 +29,7 @@
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
     <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
+    <Project Path="src/XiHan.Framework.Castle/XiHan.Framework.Castle.csproj" />
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />
     <Project Path="src/XiHan.Framework.Upgrade/XiHan.Framework.Upgrade.csproj" />
     <Project Path="src/XiHan.Framework.DevTools/XiHan.Framework.DevTools.csproj" Id="368a4e06-cb61-4cbe-92fa-32eac5b80cd4" />

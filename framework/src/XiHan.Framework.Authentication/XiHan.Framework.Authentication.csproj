@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<Import Project="..\..\props\netcore.props" />
 	<Import Project="..\..\props\common.props" />
@@ -16,6 +16,9 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+	  <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.5" />
+	  <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+	  <PackageReference Include="AspNet.Security.OAuth.QQ" Version="10.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

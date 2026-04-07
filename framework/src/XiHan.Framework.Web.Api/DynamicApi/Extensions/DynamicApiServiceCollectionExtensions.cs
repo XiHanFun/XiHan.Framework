@@ -84,10 +84,11 @@ public static class DynamicApiServiceCollectionExtensions
         this IServiceCollection services,
         Action<DynamicApiConventionOptions> configurator)
     {
-        services.Configure<DynamicApiOptions>(options =>
+        var options = GetRegisteredDynamicApiOptions(services);
+        if (options != null)
         {
             configurator(options.Conventions);
-        });
+        }
 
         return services;
     }
@@ -102,12 +103,20 @@ public static class DynamicApiServiceCollectionExtensions
         this IServiceCollection services,
         Action<DynamicApiRouteOptions> configurator)
     {
-        services.Configure<DynamicApiOptions>(options =>
+        var options = GetRegisteredDynamicApiOptions(services);
+        if (options != null)
         {
             configurator(options.Routes);
-        });
+        }
 
         return services;
+    }
+
+    private static DynamicApiOptions? GetRegisteredDynamicApiOptions(IServiceCollection services)
+    {
+        return services
+            .FirstOrDefault(d => d.ServiceType == typeof(DynamicApiOptions))
+            ?.ImplementationInstance as DynamicApiOptions;
     }
 
     /// <summary>

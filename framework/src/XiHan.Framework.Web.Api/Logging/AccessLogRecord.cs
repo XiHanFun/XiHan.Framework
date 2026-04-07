@@ -40,6 +40,11 @@ public class AccessLogRecord
     public string? SessionId { get; set; }
 
     /// <summary>
+    /// 资源名称（控制器/操作描述等）
+    /// </summary>
+    public string? ResourceName { get; set; }
+
+    /// <summary>
     /// 请求方法
     /// </summary>
     public string Method { get; set; } = string.Empty;
