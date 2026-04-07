@@ -58,8 +58,7 @@ public static class XiHanCachingServiceCollectionExtensions
         services.Configure<XiHanRedisCacheOptions>(configuration.GetSection(XiHanRedisCacheOptions.SectionName));
 
         // 获取 Redis 配置
-        var redisOptions = new XiHanRedisCacheOptions();
-        configuration.GetSection(XiHanRedisCacheOptions.SectionName).Bind(redisOptions);
+        var redisOptions = configuration.GetSection(XiHanRedisCacheOptions.SectionName).Get<XiHanRedisCacheOptions>() ?? new XiHanRedisCacheOptions();
 
         if (!redisOptions.IsEnabled)
         {
