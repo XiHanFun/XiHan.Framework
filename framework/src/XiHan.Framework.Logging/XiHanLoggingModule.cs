@@ -52,7 +52,7 @@ public class XiHanLoggingModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        // 添加 XiHan 日志服务
+        services.Configure<XiHanLoggingOptions>(config.GetSection(XiHanLoggingOptions.SectionName));
         services.AddXiHanLogging();
     }
 }

@@ -53,8 +53,7 @@ public class XiHanObjectStorageModule : XiHanModule
     /// <param name="config">应用配置</param>
     private static void RegisterConfiguredProviders(IServiceCollection services, IConfiguration config)
     {
-        var storageOptions = new XiHanObjectStorageOptions();
-        config.GetSection(XiHanObjectStorageOptions.SectionName).Bind(storageOptions);
+        var storageOptions = config.GetSection(XiHanObjectStorageOptions.SectionName).Get<XiHanObjectStorageOptions>() ?? new XiHanObjectStorageOptions();
 
         var providerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
