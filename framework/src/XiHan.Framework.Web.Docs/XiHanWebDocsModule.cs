@@ -17,6 +17,7 @@ using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Core.Extensions;
+using XiHan.Framework.Web.Docs.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Docs.Swagger;
 
 namespace XiHan.Framework.Web.Docs;
@@ -37,28 +38,7 @@ public class XiHanWebDocsModule : XiHanModule
     {
         var services = context.Services;
 
-        // 默认文档（v1）启用动态 API XML 注释增强
-        services.AddOpenApi(options =>
-        {
-            options.AddOperationTransformer<DynamicApiXmlCommentsOperationTransformer>();
-        });
-
-        var groupDefinitions = DynamicApiSwaggerGroupHelper.GetGroupDefinitionsFromAttributes();
-        foreach (var groupDefinition in groupDefinitions)
-        {
-            if (string.Equals(groupDefinition.Group, DynamicApiSwaggerGroupHelper.DefaultDocName, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            // 以官方 OpenAPI 文档为基准：为每个动态分组注册独立文档
-            services.AddOpenApi(groupDefinition.Group, options =>
-            {
-                options.ShouldInclude = apiDescription =>
-                    string.Equals(apiDescription.GroupName, groupDefinition.Group, StringComparison.OrdinalIgnoreCase);
-                options.AddOperationTransformer<DynamicApiXmlCommentsOperationTransformer>();
-            });
-        }
+        services.AddXiHanWebDocs();
     }
 
     /// <summary>

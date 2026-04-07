@@ -12,9 +12,8 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Threading.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Threading;
 
@@ -30,8 +29,7 @@ public class XiHanThreadingModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var config = services.GetConfiguration();
-        context.Services.AddSingleton<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
-        context.Services.AddSingleton(typeof(IAmbientScopeProvider<>), typeof(AmbientDataContextAmbientScopeProvider<>));
+
+        services.AddXiHanThreading();
     }
 }
