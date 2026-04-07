@@ -105,6 +105,16 @@ public static class CurrentUserExtensions
     }
 
     /// <summary>
+    /// 获取头像地址
+    /// </summary>
+    /// <param name="currentUser"></param>
+    /// <returns></returns>
+    public static string? FindPicture(this ICurrentUser currentUser)
+    {
+        return currentUser.FindClaimValue(XiHanClaimTypes.Picture);
+    }
+
+    /// <summary>
     /// 获取会话标识
     /// </summary>
     /// <param name="currentUser"></param>

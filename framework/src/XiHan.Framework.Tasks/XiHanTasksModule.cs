@@ -43,9 +43,7 @@ public class XiHanTasksModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        Configure<XiHanJobOptions>(config.GetSection(XiHanJobOptions.SectionName));
-
         // 注册任务调度服务
-        services.AddXiHanTasks();
+        services.AddXiHanTasks(config);
     }
 }
