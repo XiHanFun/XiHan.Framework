@@ -12,25 +12,14 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
-using XiHan.Framework.Web.Api.Contexts;
-using XiHan.Framework.Web.Api.DynamicApi.Extensions;
-using XiHan.Framework.Web.Api.Filters;
-using XiHan.Framework.Web.Api.Logging.Options;
-using XiHan.Framework.Web.Api.Logging.Pipelines;
-using XiHan.Framework.Web.Api.Logging.Queues;
-using XiHan.Framework.Web.Api.Logging.Workers;
-using XiHan.Framework.Web.Api.Logging.Writers;
+using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.Security.OpenApi;
-using XiHan.Framework.Web.Api.TenantResolvers;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
 
@@ -55,102 +44,7 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.AddSingleton<IRequestContextAccessor, RequestContextAccessor>();
-        services.Configure<XiHanOpenApiSecurityOptions>(config.GetSection(XiHanOpenApiSecurityOptions.SectionName));
-        services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
-        services.Configure<XiHanWebApiLogQueueOptions>(config.GetSection(XiHanWebApiLogQueueOptions.SectionName));
-        services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
-        services.AddHostedService<AccessLogQueueWorker>();
-        services.AddHostedService<OperationLogQueueWorker>();
-        services.AddHostedService<ExceptionLogQueueWorker>();
-        services.AddScoped<IAccessLogPipeline, AccessLogPipeline>();
-        services.AddScoped<IOperationLogPipeline, OperationLogPipeline>();
-        services.AddScoped<IExceptionLogPipeline, ExceptionLogPipeline>();
-        services.AddScoped<XiHanActionLoggingFilter>();
-        services.AddScoped<XiHanApiResponseResultFilter>();
-        services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
-        services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
-        services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
-        // 添加动态 API
-        services.AddDynamicApi(options =>
-        {
-            // 默认配置
-            options.IsEnabled = true;
-            options.DefaultRoutePrefix = "api";
-            options.EnableApiVersioning = true;
-            options.EnableBatchOperations = true;
-            options.MaxBatchSize = 100;
-            options.RemoveServiceSuffix = true;
-
-            // 约定配置
-            options.Conventions.PreserveRoutePredicate = true;
-            options.Conventions.UsePascalCaseRoutes = true;
-            options.Conventions.UseLowercaseRoutes = false;
-            options.Conventions.RouteSeparator = "";
-
-            // 路由配置
-            options.Routes.UseModuleNameAsRoute = false;
-            options.Routes.UseNamespaceAsRoute = false;
-        });
-
-        var aspNetCoreMvcOptions = new XiHanWebCoreMvcOptions()
-            .ConfigureJsonOptionsDefault()
-            .ConfigureApiBehaviorOptions(options =>
-            {
-                options.InvalidModelStateResponseFactory = actionContext =>
-                {
-                    var traceId = actionContext.HttpContext.TraceIdentifier;
-                    var errors = actionContext.ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .Where(e => !string.IsNullOrWhiteSpace(e))
-                        .Distinct()
-                        .ToArray();
-
-                    var message = errors.Length > 0
-                        ? string.Join("; ", errors)
-                        : "请求参数校验失败";
-
-                    return new BadRequestObjectResult(ApiResponse.Fail(message, traceId));
-                };
-            });
-
-        services.Configure<XiHanTenantResolveOptions>(options =>
-        {
-            options.TenantResolvers.Add(new HeaderTenantResolveContributor());
-            options.TenantResolvers.Add(new QueryStringTenantResolveContributor());
-        });
-
-        services.AddControllers(options =>
-        {
-            options.Filters.AddService<XiHanActionLoggingFilter>();
-            options.Filters.AddService<XiHanApiResponseResultFilter>();
-        })
-        .ConfigureApiBehaviorOptions(options =>
-        {
-            options.InvalidModelStateResponseFactory = aspNetCoreMvcOptions.ApiBehaviorOptions.InvalidModelStateResponseFactory;
-        })
-        .AddJsonOptions(options =>
-        {
-            options.JsonSerializerOptions.WriteIndented = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.WriteIndented;
-            options.JsonSerializerOptions.ReferenceHandler = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.ReferenceHandler;
-            options.JsonSerializerOptions.NumberHandling = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.NumberHandling;
-            options.JsonSerializerOptions.AllowTrailingCommas = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowTrailingCommas;
-            options.JsonSerializerOptions.ReadCommentHandling = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.ReadCommentHandling;
-            options.JsonSerializerOptions.PropertyNameCaseInsensitive = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNameCaseInsensitive;
-            options.JsonSerializerOptions.DictionaryKeyPolicy = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.DictionaryKeyPolicy;
-            options.JsonSerializerOptions.PropertyNamingPolicy = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.PropertyNamingPolicy;
-            options.JsonSerializerOptions.Encoder = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.Encoder;
-            options.JsonSerializerOptions.AllowOutOfOrderMetadataProperties = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.AllowOutOfOrderMetadataProperties;
-            options.JsonSerializerOptions.IgnoreReadOnlyFields = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.IgnoreReadOnlyFields;
-            options.JsonSerializerOptions.DefaultIgnoreCondition = aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.DefaultIgnoreCondition;
-            foreach (var converter in aspNetCoreMvcOptions.JsonOptions.JsonSerializerOptions.Converters)
-            {
-                options.JsonSerializerOptions.Converters.Add(converter);
-            }
-        });
-
-        services.AddOpenApi();
+        services.AddXiHanWebApi(config);
     }
 
     /// <summary>
@@ -176,7 +70,7 @@ public class XiHanWebApiModule : XiHanModule
         {
             // 不对约定路由做任何假设，也就是不使用约定路由，依赖用户的特性路由
             endpoints.MapControllers();
-            endpoints.MapOpenApi();
+            endpoints.MapOpenApi().AllowAnonymous();
         });
     }
 }

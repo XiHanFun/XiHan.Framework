@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IPasswordHasher
-// Guid:a1b2c3d4-e5f6-7890-abcd-ef1234567890
+// Guid:bae7db42-2841-4c9f-b2e5-a1a9a36d26a5
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2025/01/06 10:00:00

@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,20 @@ namespace XiHan.Framework.Logging.Extensions.DependencyInjection;
 /// </summary>
 public static class XiHanLoggingServiceCollectionExtensions
 {
+    /// <summary>
+    /// 添加 XiHan 日志服务（从配置文件绑定选项）
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanLogging(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.Configure<XiHanLoggingOptions>(configuration.GetSection(XiHanLoggingOptions.SectionName));
+        return services.AddXiHanLogging(_ => { });
+    }
+
     /// <summary>
     /// 添加 XiHan 日志服务
     /// </summary>

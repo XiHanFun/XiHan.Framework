@@ -58,6 +58,11 @@ public static class SignalRConstants
         /// 错误
         /// </summary>
         public const string Error = "Error";
+
+        /// <summary>
+        /// 强制下线
+        /// </summary>
+        public const string ForceLogout = "ForceLogout";
     }
 
     /// <summary>

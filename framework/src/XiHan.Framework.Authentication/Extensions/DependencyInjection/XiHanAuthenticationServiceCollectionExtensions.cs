@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authentication.Jwt;
+using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Authentication.Otp;
 using XiHan.Framework.Authentication.Password;
 using XiHan.Framework.Authentication.Users;
@@ -59,6 +60,24 @@ public static class XiHanAuthenticationServiceCollectionExtensions
         services.TryAddScoped<IUserStore, DefaultUserStore>();
         // 注册认证服务接口
         services.TryAddScoped<IAuthenticationService, DefaultAuthenticationService>();
+
+        // 始终绑定 OAuthOptions（即使未启用，保证 IOptions<OAuthOptions> 可注入）
+        // 使用显式赋值而非 section.Bind()，避免 List<T> 属性被多次追加导致重复
+        var oauthSection = configuration.GetSection(OAuthOptions.SectionName);
+        services.Configure<OAuthOptions>(options =>
+        {
+            options.Enabled = oauthSection.GetValue<bool>(nameof(OAuthOptions.Enabled));
+            var frontendUrl = oauthSection.GetValue<string>(nameof(OAuthOptions.FrontendCallbackUrl));
+            if (!string.IsNullOrEmpty(frontendUrl))
+            {
+                options.FrontendCallbackUrl = frontendUrl;
+            }
+            options.Providers = oauthSection.GetSection(nameof(OAuthOptions.Providers))
+                .Get<List<OAuthProviderConfig>>() ?? [];
+        });
+
+        // 注册 OAuth 第三方登录
+        services.AddXiHanOAuth(configuration);
 
         return services;
     }

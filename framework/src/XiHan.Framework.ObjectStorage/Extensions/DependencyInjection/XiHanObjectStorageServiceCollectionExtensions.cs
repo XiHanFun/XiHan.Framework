@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.ObjectStorage.Constants;
@@ -27,14 +28,36 @@ namespace XiHan.Framework.ObjectStorage.Extensions.DependencyInjection;
 public static class XiHanObjectStorageServiceCollectionExtensions
 {
     /// <summary>
+    /// 添加对象存储全部服务（从配置文件绑定选项并自动注册已启用的 Provider）
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanObjectStorage(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddXiHanObjectStorage();
+
+        services.Configure<XiHanObjectStorageOptions>(configuration.GetSection(XiHanObjectStorageOptions.SectionName));
+        services.Configure<LocalStorageOptions>(configuration.GetSection(LocalStorageOptions.SectionName));
+        services.Configure<MinioStorageOptions>(configuration.GetSection(MinioStorageOptions.SectionName));
+        services.Configure<AliyunOssStorageOptions>(configuration.GetSection(AliyunOssStorageOptions.SectionName));
+        services.Configure<TencentCosStorageOptions>(configuration.GetSection(TencentCosStorageOptions.SectionName));
+
+        RegisterConfiguredProviders(services, configuration);
+
+        return services;
+    }
+
+    /// <summary>
     /// 添加对象存储核心服务
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <param name="configure">对象存储配置</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanObjectStorage(
-        this IServiceCollection services,
-        Action<XiHanObjectStorageOptions>? configure = null)
+    public static IServiceCollection AddXiHanObjectStorage( this IServiceCollection services,Action<XiHanObjectStorageOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -174,5 +197,62 @@ public static class XiHanObjectStorageServiceCollectionExtensions
         }
 
         return services.AddFileStorageProvider<TencentCosStorageProvider>(ObjectStorageProviderNames.TencentCos);
+    }
+
+    /// <summary>
+    /// 按配置注册提供程序
+    /// </summary>
+    private static void RegisterConfiguredProviders(IServiceCollection services, IConfiguration config)
+    {
+        var storageOptions = config.GetSection(XiHanObjectStorageOptions.SectionName).Get<XiHanObjectStorageOptions>() ?? new XiHanObjectStorageOptions();
+
+        var providerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var providerName in storageOptions.EnabledProviders ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(providerName))
+            {
+                providerNames.Add(providerName.Trim());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(storageOptions.DefaultProvider))
+        {
+            providerNames.Add(storageOptions.DefaultProvider.Trim());
+        }
+
+        if (providerNames.Count == 0)
+        {
+            providerNames.Add(ObjectStorageProviderNames.Local);
+        }
+
+        foreach (var providerName in providerNames)
+        {
+            RegisterProvider(services, providerName);
+        }
+    }
+
+    /// <summary>
+    /// 注册单个提供程序
+    /// </summary>
+    private static void RegisterProvider(IServiceCollection services, string providerName)
+    {
+        switch (providerName.Trim().ToUpperInvariant())
+        {
+            case "LOCAL":
+                services.AddLocalFileStorageProvider();
+                break;
+            case "MINIO":
+                services.AddMinioFileStorageProvider();
+                break;
+            case "ALIYUNOSS":
+                services.AddAliyunOssFileStorageProvider();
+                break;
+            case "TENCENTCOS":
+                services.AddTencentCosFileStorageProvider();
+                break;
+            default:
+                throw new InvalidOperationException($"不支持的对象存储提供程序：{providerName}");
+        }
     }
 }

@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Domain;
 using XiHan.Framework.Domain.Shared;
 
 namespace XiHan.Framework.Application.Contracts;
@@ -23,8 +22,7 @@ namespace XiHan.Framework.Application.Contracts;
 /// 曦寒框架应用层契约模块
 /// </summary>
 [DependsOn(
-    typeof(XiHanDomainSharedModule),
-    typeof(XiHanDomainModule))]
+    typeof(XiHanDomainSharedModule))]
 public class XiHanApplicationContractsModule : XiHanModule
 {
     /// <summary>

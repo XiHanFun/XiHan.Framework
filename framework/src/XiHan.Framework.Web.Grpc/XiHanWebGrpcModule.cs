@@ -17,7 +17,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Grpc.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Grpc;
 
@@ -37,9 +37,8 @@ public class XiHanWebGrpcModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        var config = services.GetConfiguration();
 
-        services.AddGrpc();
+        services.AddXiHanWebGrpc();
     }
 
     /// <summary>
