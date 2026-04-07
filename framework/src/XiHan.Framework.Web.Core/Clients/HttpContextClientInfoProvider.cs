@@ -153,7 +153,22 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
     /// <returns></returns>
     private string? ResolveLocation(string? ipAddress)
     {
-        if (!_options.EnableIpRegion || string.IsNullOrWhiteSpace(ipAddress) || IsPrivateOrLoopbackIp(ipAddress))
+        if (string.IsNullOrWhiteSpace(ipAddress))
+        {
+            return null;
+        }
+
+        if (IsLoopbackIp(ipAddress))
+        {
+            return "本机";
+        }
+
+        if (IsPrivateIp(ipAddress))
+        {
+            return "局域网";
+        }
+
+        if (!_options.EnableIpRegion)
         {
             return null;
         }
@@ -288,28 +303,33 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
         return normalized;
     }
 
-    /// <summary>
-    /// 是否内网/回环地址
-    /// </summary>
-    /// <param name="ipAddress"></param>
-    /// <returns></returns>
-    private static bool IsPrivateOrLoopbackIp(string ipAddress)
+    private static bool IsLoopbackIp(string ipAddress)
     {
         if (!IPAddress.TryParse(ipAddress, out var address))
         {
             return false;
         }
 
-        if (IPAddress.IsLoopback(address))
+        if (address.IsIPv4MappedToIPv6)
         {
-            return true;
+            address = address.MapToIPv4();
+        }
+
+        return IPAddress.IsLoopback(address);
+    }
+
+    private static bool IsPrivateIp(string ipAddress)
+    {
+        if (!IPAddress.TryParse(ipAddress, out var address))
+        {
+            return false;
         }
 
         if (address.AddressFamily == AddressFamily.InterNetworkV6)
         {
             if (address.IsIPv4MappedToIPv6)
             {
-                return IsPrivateOrLoopbackIp(address.MapToIPv4().ToString());
+                return IsPrivateIp(address.MapToIPv4().ToString());
             }
 
             return address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6Multicast;
@@ -317,7 +337,6 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
 
         var bytes = address.GetAddressBytes();
         return bytes[0] == 10 ||
-               bytes[0] == 127 ||
                (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
                (bytes[0] == 192 && bytes[1] == 168);
     }
@@ -348,7 +367,7 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
     }
 
     /// <summary>
-    /// 规范化设备名称
+    /// 规范化设备名称，桌面浏览器 UA 的 Device.Family 通常为 "Other"，回退为 "PC"
     /// </summary>
     /// <param name="deviceName"></param>
     /// <returns></returns>
@@ -356,7 +375,7 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
     {
         deviceName = NormalizeToNull(deviceName);
         return string.Equals(deviceName, "Other", StringComparison.OrdinalIgnoreCase)
-            ? null
+            ? "PC"
             : deviceName;
     }
 
