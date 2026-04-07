@@ -67,8 +67,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// <param name="configuration">配置</param>
     private static void ConfigureProxyPool(IServiceCollection services, IConfiguration configuration)
     {
-        var proxyPoolOptions = new XiHanProxyPoolOptions();
-        configuration.GetSection(XiHanProxyPoolOptions.SectionName).Bind(proxyPoolOptions);
+        var proxyPoolOptions = configuration.GetSection(XiHanProxyPoolOptions.SectionName).Get<XiHanProxyPoolOptions>() ?? new XiHanProxyPoolOptions();
 
         if (proxyPoolOptions.Enabled && proxyPoolOptions.EnableHealthCheck)
         {
@@ -84,8 +83,7 @@ public static class XiHanHttpServiceCollectionServiceExtensions
     /// <param name="configuration">配置</param>
     private static void ConfigureHttpClients(IServiceCollection services, IConfiguration configuration)
     {
-        var httpOptions = new XiHanHttpClientOptions();
-        configuration.GetSection(XiHanHttpClientOptions.SectionName).Bind(httpOptions);
+        var httpOptions = configuration.GetSection(XiHanHttpClientOptions.SectionName).Get<XiHanHttpClientOptions>() ?? new XiHanHttpClientOptions();
 
         // 配置远程请求客户端
         ConfigureRemoteHttpClient(services, httpOptions);

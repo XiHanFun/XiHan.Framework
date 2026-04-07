@@ -12,12 +12,14 @@
 
 #endregion <<版权版本注释>>
 
+using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
-using Microsoft.AspNetCore.Http.Features;
 using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
@@ -96,7 +98,8 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                         TraceId = traceId,
                         UserId = requestContext?.UserId ?? currentUser?.UserId,
                         UserName = requestContext?.UserName ?? currentUser?.UserName,
-                        SessionId = context.Features.Get<ISessionFeature>()?.Session?.Id,
+                        SessionId = ResolveSessionId(context),
+                        ResourceName = ResolveResourceName(context),
                         Method = context.Request.Method,
                         Path = context.Request.Path.ToString(),
                         QueryString = queryString,
@@ -116,6 +119,38 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                 logger.LogWarning(ex, "访问日志写入失败，TraceId: {TraceId}", traceId);
             }
         }
+    }
+
+    /// <summary>
+    /// 优先 ASP.NET Session，回退 JWT jti / sub 声明
+    /// </summary>
+    private static string? ResolveSessionId(HttpContext context)
+    {
+        var sessionId = context.Features.Get<ISessionFeature>()?.Session?.Id;
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            return sessionId;
+        }
+
+        var user = context.User;
+        return user?.FindFirstValue("jti")
+            ?? user?.FindFirstValue(ClaimTypes.Sid);
+    }
+
+    /// <summary>
+    /// 从 MVC 端点元数据提取 "Controller.Action" 作为资源名称
+    /// </summary>
+    private static string? ResolveResourceName(HttpContext context)
+    {
+        var endpoint = context.GetEndpoint();
+        var actionDescriptor = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
+        if (actionDescriptor is not null)
+        {
+            return $"{actionDescriptor.ControllerName}.{actionDescriptor.ActionName}";
+        }
+
+        var displayName = endpoint?.DisplayName;
+        return string.IsNullOrWhiteSpace(displayName) ? null : displayName;
     }
 
     private static bool ShouldCaptureBody(HttpRequest request)

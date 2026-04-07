@@ -12,9 +12,13 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data.Extensions.DependencyInjection;
+using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain;
 using XiHan.Framework.MultiTenancy;
@@ -47,5 +51,30 @@ public class XiHanDataModule : XiHanModule
 
         // 添加SqlSugar数据访问服务
         services.AddXiHanDataSqlSugar(config);
+    }
+
+    /// <summary>
+    /// 应用初始化
+    /// </summary>
+    /// <param name="context">应用初始化上下文</param>
+    public override async Task OnApplicationInitializationAsync(ApplicationInitializationContext context)
+    {
+        using var scope = context.ServiceProvider.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<IDbInitializer>>();
+
+        try
+        {
+            logger.LogInformation("准备初始化数据库...");
+
+            var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+            await initializer.InitializeAsync();
+
+            logger.LogInformation("数据库初始化成功！");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "数据库初始化失败: {Message}", ex.Message);
+            throw;
+        }
     }
 }

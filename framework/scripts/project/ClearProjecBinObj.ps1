@@ -1,4 +1,7 @@
-﻿# 确认是否以管理员权限运行
+﻿# 设置控制台编码为 UTF-8 以正确显示中文
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# 确认是否以管理员权限运行
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Warning "脚本未以管理员权限运行，可能无法删除某些文件。建议以管理员权限运行。"

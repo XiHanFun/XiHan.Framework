@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Dtos;
-using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Contracts.Services;
@@ -21,14 +20,12 @@ namespace XiHan.Framework.Application.Contracts.Services;
 /// <summary>
 /// CRUD 应用服务接口（支持创建和更新DTO分离）
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TEntityDto">实体DTO类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
 /// <typeparam name="TCreateDto">创建DTO类型</typeparam>
 /// <typeparam name="TUpdateDto">更新DTO类型</typeparam>
 /// <typeparam name="TPageRequestDto">分页请求DTO类型</typeparam>
-public interface ICrudApplicationService<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto> : IApplicationService
-    where TEntity : EntityBase<TKey>
+public interface ICrudApplicationService<TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto> : IApplicationService
     where TEntityDto : DtoBase<TKey>
     where TKey : IEquatable<TKey>
     where TCreateDto : CreationDtoBase<TKey>
