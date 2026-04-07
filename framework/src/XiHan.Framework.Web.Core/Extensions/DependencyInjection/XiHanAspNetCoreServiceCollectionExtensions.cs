@@ -13,7 +13,11 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Security.Claims;
+using XiHan.Framework.Web.Core.Clients;
+using XiHan.Framework.Web.Core.Options;
 using XiHan.Framework.Web.Core.Security.Claims;
 
 namespace XiHan.Framework.Web.Core.Extensions.DependencyInjection;
@@ -36,6 +40,27 @@ public static class XiHanWebCoreServiceCollectionExtensions
         {
             EnvironmentName = Environments.Development
         };
+    }
+
+    /// <summary>
+    /// 添加曦寒 Web 核心服务
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanWebCore(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddObjectAccessor<IApplicationBuilder>();
+        services.AddHttpContextAccessor();
+        services.Configure<XiHanClientInfoOptions>(configuration.GetSection(XiHanClientInfoOptions.SectionName));
+        services.AddSingleton<IClientInfoProvider, HttpContextClientInfoProvider>();
+        // 使用 HttpContext.User 作为当前主体，使 ICurrentUser 在 Web 请求中可用
+        services.AddScoped<ICurrentPrincipalAccessor, HttpContextCurrentPrincipalAccessor>();
+
+        return services;
     }
 
     /// <summary>

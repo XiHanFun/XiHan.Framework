@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -32,6 +33,20 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Extensions.DependencyInjection;
 /// </summary>
 public static class XiHanTasksServiceCollectionExtensions
 {
+    /// <summary>
+    /// 添加曦寒任务调度服务（从配置文件绑定选项）
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>任务构建器</returns>
+    public static XiHanJobBuilder AddXiHanTasks(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.Configure<XiHanJobOptions>(configuration.GetSection(XiHanJobOptions.SectionName));
+        return services.AddXiHanTasks(configureOptions: null);
+    }
+
     /// <summary>
     /// 添加曦寒任务调度服务
     /// </summary>

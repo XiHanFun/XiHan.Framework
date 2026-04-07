@@ -52,7 +52,6 @@ public class XiHanLoggingModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
-        services.Configure<XiHanLoggingOptions>(config.GetSection(XiHanLoggingOptions.SectionName));
-        services.AddXiHanLogging();
+        services.AddXiHanLogging(config);
     }
 }
