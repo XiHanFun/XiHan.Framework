@@ -12,14 +12,21 @@
 
 #endregion <<版权版本注释>>
 
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Tokens;
 using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Authentication.Jwt;
+using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Web.Api.Auth;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
@@ -120,6 +127,86 @@ public class XiHanWebApiModule : XiHanModule
                 });
             });
         }
+
+        // 配置认证授权
+        services.Configure<XiHanWebAuthOptions>(config.GetSection(XiHanWebAuthOptions.SectionName));
+        var webAuthOptions = config.GetSection(XiHanWebAuthOptions.SectionName).Get<XiHanWebAuthOptions>() ?? new XiHanWebAuthOptions();
+        var jwtOptions = config.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
+
+        if (webAuthOptions.EnableJwtBearer && jwtOptions != null && !string.IsNullOrEmpty(jwtOptions.SecretKey))
+        {
+            var authBuilder = services.AddAuthentication(authOptions =>
+            {
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(bearerOptions =>
+            {
+                bearerOptions.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = jwtOptions.ValidateIssuer,
+                    ValidateAudience = jwtOptions.ValidateAudience,
+                    ValidateLifetime = jwtOptions.ValidateLifetime,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
+                    ClockSkew = TimeSpan.FromMinutes(jwtOptions.ClockSkewMinutes)
+                };
+
+                bearerOptions.Events = new JwtBearerEvents
+                {
+                    // SignalR WebSocket/SSE 无法携带 Authorization Header，需从 query string 提取 token
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(webAuthOptions.SignalRHubPathPrefix))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers["Token-Expired"] = "true";
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+            // OAuth 第三方登录所需的临时 Cookie scheme
+            var oauthOptions = config.GetSection(OAuthOptions.SectionName).Get<OAuthOptions>();
+            if (oauthOptions is { Enabled: true })
+            {
+                authBuilder.AddCookie("ExternalCookie", cookieOptions =>
+                {
+                    cookieOptions.Cookie.Name = ".XiHan.External";
+                    cookieOptions.Cookie.HttpOnly = true;
+                    cookieOptions.Cookie.SameSite = SameSiteMode.Lax;
+                    cookieOptions.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                });
+            }
+
+            // 授权策略
+            if (webAuthOptions.RequireAuthenticatedUser)
+            {
+                services.AddAuthorization(authzOptions =>
+                {
+                    authzOptions.FallbackPolicy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build();
+                });
+            }
+            else
+            {
+                services.AddAuthorization();
+            }
+        }
+
         services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
         services.AddHostedService<AccessLogQueueWorker>();
         services.AddHostedService<OperationLogQueueWorker>();
