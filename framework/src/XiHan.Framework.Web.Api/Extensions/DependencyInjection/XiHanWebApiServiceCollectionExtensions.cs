@@ -24,6 +24,7 @@ using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Web.Api.Auth;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
@@ -71,6 +72,7 @@ public static class XiHanWebApiServiceCollectionExtensions
     public static IServiceCollection AddXiHanWebApiSecurity(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IRequestContextAccessor, RequestContextAccessor>();
+        services.TryAddScoped<ITraceIdProvider, HttpTraceIdProvider>();
         services.Configure<XiHanOpenApiSecurityOptions>(configuration.GetSection(XiHanOpenApiSecurityOptions.SectionName));
         services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
 
@@ -246,14 +248,17 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.AddHostedService<AccessLogQueueWorker>();
         services.AddHostedService<OperationLogQueueWorker>();
         services.AddHostedService<ExceptionLogQueueWorker>();
+        services.AddHostedService<ApiLogQueueWorker>();
         services.AddScoped<IAccessLogPipeline, AccessLogPipeline>();
         services.AddScoped<IOperationLogPipeline, OperationLogPipeline>();
         services.AddScoped<IExceptionLogPipeline, ExceptionLogPipeline>();
+        services.AddScoped<IApiLogPipeline, ApiLogPipeline>();
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
         services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
         services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
+        services.TryAddScoped<IApiLogWriter, NullApiLogWriter>();
 
         return services;
     }

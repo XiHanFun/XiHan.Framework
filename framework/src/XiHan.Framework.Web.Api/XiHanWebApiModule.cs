@@ -62,6 +62,7 @@ public class XiHanWebApiModule : XiHanModule
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
         app.UseCors();
+        app.UseMiddleware<XiHanApiLoggingMiddleware>();
         app.UseMiddleware<XiHanOpenApiSecurityMiddleware>();
         app.UseAuthentication();
         app.UseMiddleware<XiHanTenantResolveMiddleware>();
