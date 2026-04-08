@@ -40,6 +40,11 @@ public class XiHanWebApiLogQueueOptions
     public bool EnableExceptionLogQueue { get; set; } = false;
 
     /// <summary>
+    /// 是否启用接口日志队列
+    /// </summary>
+    public bool EnableApiLogQueue { get; set; } = false;
+
+    /// <summary>
     /// 队列容量
     /// </summary>
     public int QueueCapacity { get; set; } = 10000;
