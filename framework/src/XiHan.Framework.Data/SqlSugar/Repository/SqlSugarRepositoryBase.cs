@@ -65,6 +65,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
+        TryFillTraceId(entity);
+
         if (IsSplitTableEntity)
         {
             await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
@@ -87,6 +89,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
+
+        TryFillTraceId(entity);
 
         if (IsSplitTableEntity)
         {
@@ -118,6 +122,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        foreach (var entity in entityList)
+        {
+            TryFillTraceId(entity);
+        }
+
         if (IsSplitTableEntity)
         {
             await SplitTableExecutor.InsertAsync(DbClient, entityList, cancellationToken);
@@ -667,6 +676,25 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
+    }
+
+    /// <summary>
+    /// 如果实体实现了 ITraceableEntity 且 TraceId 为空，则自动从 ITraceIdProvider 填充
+    /// </summary>
+    private void TryFillTraceId(TEntity entity)
+    {
+        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
+        {
+            return;
+        }
+
+        var traceIdProvider = _serviceProvider.GetService<ITraceIdProvider>();
+        var traceId = traceIdProvider?.GetCurrentTraceId();
+
+        if (!string.IsNullOrWhiteSpace(traceId))
+        {
+            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
+        }
     }
 
     private async Task<TEntity?> TryGetCurrentEntityAsync(TKey id, CancellationToken cancellationToken)
