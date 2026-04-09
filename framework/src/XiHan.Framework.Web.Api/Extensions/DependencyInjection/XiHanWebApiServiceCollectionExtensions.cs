@@ -87,11 +87,6 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.Configure<XiHanCorsOptions>(configuration.GetSection(XiHanCorsOptions.SectionName));
         var corsOptions = configuration.GetSection(XiHanCorsOptions.SectionName).Get<XiHanCorsOptions>() ?? new XiHanCorsOptions();
 
-        if (!corsOptions.IsEnabled)
-        {
-            return services;
-        }
-
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
@@ -157,54 +152,56 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.Configure<XiHanWebAuthOptions>(configuration.GetSection(XiHanWebAuthOptions.SectionName));
         var webAuthOptions = configuration.GetSection(XiHanWebAuthOptions.SectionName).Get<XiHanWebAuthOptions>() ?? new XiHanWebAuthOptions();
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
+        var hasJwtBearerConfiguration = jwtOptions != null && !string.IsNullOrWhiteSpace(jwtOptions.SecretKey);
 
-        if (!webAuthOptions.EnableJwtBearer || jwtOptions == null || string.IsNullOrEmpty(jwtOptions.SecretKey))
+        var authBuilder = hasJwtBearerConfiguration
+            ? services.AddAuthentication(authOptions =>
+            {
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            : services.AddAuthentication();
+
+        if (hasJwtBearerConfiguration)
         {
-            return services;
+            authBuilder.AddJwtBearer(bearerOptions =>
+            {
+                bearerOptions.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = jwtOptions!.ValidateIssuer,
+                    ValidateAudience = jwtOptions.ValidateAudience,
+                    ValidateLifetime = jwtOptions.ValidateLifetime,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
+                    ClockSkew = TimeSpan.FromMinutes(jwtOptions.ClockSkewMinutes)
+                };
+
+                bearerOptions.Events = new JwtBearerEvents
+                {
+                    // SignalR WebSocket/SSE 无法携带 Authorization Header，需从 query string 提取 token
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(webAuthOptions.SignalRHubPathPrefix))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers["Token-Expired"] = "true";
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
+            });
         }
-
-        var authBuilder = services.AddAuthentication(authOptions =>
-        {
-            authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(bearerOptions =>
-        {
-            bearerOptions.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = jwtOptions.ValidateIssuer,
-                ValidateAudience = jwtOptions.ValidateAudience,
-                ValidateLifetime = jwtOptions.ValidateLifetime,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtOptions.Issuer,
-                ValidAudience = jwtOptions.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
-                ClockSkew = TimeSpan.FromMinutes(jwtOptions.ClockSkewMinutes)
-            };
-
-            bearerOptions.Events = new JwtBearerEvents
-            {
-                // SignalR WebSocket/SSE 无法携带 Authorization Header，需从 query string 提取 token
-                OnMessageReceived = context =>
-                {
-                    var accessToken = context.Request.Query["access_token"];
-                    var path = context.HttpContext.Request.Path;
-                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(webAuthOptions.SignalRHubPathPrefix))
-                    {
-                        context.Token = accessToken;
-                    }
-                    return Task.CompletedTask;
-                },
-                OnAuthenticationFailed = context =>
-                {
-                    if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                    {
-                        context.Response.Headers["Token-Expired"] = "true";
-                    }
-                    return Task.CompletedTask;
-                }
-            };
-        });
 
         // OAuth 第三方登录所需的临时 Cookie scheme
         var oauthOptions = configuration.GetSection(OAuthOptions.SectionName).Get<OAuthOptions>();
@@ -222,9 +219,16 @@ public static class XiHanWebApiServiceCollectionExtensions
         // 授权策略
         if (webAuthOptions.RequireAuthenticatedUser)
         {
+            if (!hasJwtBearerConfiguration)
+            {
+                throw new InvalidOperationException(
+                    "XiHan:Web:Api:Auth:RequireAuthenticatedUser=true 时，必须配置有效的 XiHan:Authentication:Jwt:SecretKey。");
+            }
+
             services.AddAuthorization(authzOptions =>
             {
                 authzOptions.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
             });
