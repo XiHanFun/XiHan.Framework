@@ -251,8 +251,8 @@ public static class DynamicApiControllerFactory
         var serviceMethods = serviceType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(TypeHelper.ShouldExposeAsApi);
 
-        // 过滤掉被隐藏的方法和重载方法，只保留每个方法名的最派生版本
-        var filteredMethods = FilterOverloadedAndHiddenMethods(serviceMethods, serviceType, logger);
+        // 仅过滤同签名的隐藏方法，保留合法重载
+        var filteredMethods = FilterHiddenMethodsBySignature(serviceMethods, serviceType, logger);
 
         var count = 0;
         foreach (var serviceMethod in filteredMethods)
@@ -309,15 +309,14 @@ public static class DynamicApiControllerFactory
     }
 
     /// <summary>
-    /// 过滤重载和被隐藏的方法，只保留每个方法名的最派生版本
+    /// 过滤被隐藏的方法，仅对同签名方法保留最派生版本
     /// </summary>
     /// <remarks>
-    /// 当基类和派生类有相同名称的方法（不管参数是否相同）时，
-    /// 只保留声明类型最接近实际服务类型的那个版本，避免生成重复的 API 路由。
+    /// 同名不同参数的合法重载会被保留。
     /// </remarks>
-    private static IEnumerable<MethodInfo> FilterOverloadedAndHiddenMethods(IEnumerable<MethodInfo> methods, Type serviceType, ILogger? logger = null)
+    private static IEnumerable<MethodInfo> FilterHiddenMethodsBySignature(IEnumerable<MethodInfo> methods, Type serviceType, ILogger? logger = null)
     {
-        var methodGroups = methods.GroupBy(m => m.Name);
+        var methodGroups = methods.GroupBy(GetMethodSignatureKey, StringComparer.Ordinal);
         var result = new List<MethodInfo>();
 
         foreach (var group in methodGroups)
@@ -328,7 +327,7 @@ public static class DynamicApiControllerFactory
             }
             else
             {
-                // 如果有多个同名方法（重载），选择声明类型最接近服务类型的那个
+                // 同签名出现多个版本（多为隐藏基类方法），选择最派生版本
                 var mostDerived = group
                     .OrderBy(m => GetDistanceFromType(m.DeclaringType, serviceType))
                     .First();
@@ -338,13 +337,50 @@ public static class DynamicApiControllerFactory
                 var skipped = group.Where(m => m != mostDerived).ToList();
                 if (skipped.Count != 0)
                 {
-                    logger?.LogDebug("检测到方法重载/隐藏: {MethodName}，已选择 {DeclaringType} 中的版本，跳过 {SkippedCount} 个版本",
+                    logger?.LogDebug("检测到同签名隐藏方法: {MethodSignature}，已选择 {DeclaringType} 中的版本，跳过 {SkippedCount} 个版本",
                         group.Key, mostDerived.DeclaringType?.Name, skipped.Count);
                 }
             }
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 获取方法签名键（方法名 + 参数类型列表）
+    /// </summary>
+    private static string GetMethodSignatureKey(MethodInfo method)
+    {
+        var parameterTypeNames = method
+            .GetParameters()
+            .Select(parameter => GetTypeSignatureName(parameter.ParameterType));
+
+        return $"{method.Name}({string.Join(",", parameterTypeNames)})";
+    }
+
+    /// <summary>
+    /// 获取类型签名名称
+    /// </summary>
+    private static string GetTypeSignatureName(Type type)
+    {
+        if (type.IsByRef)
+        {
+            return $"{GetTypeSignatureName(type.GetElementType()!)}&";
+        }
+
+        if (type.IsArray)
+        {
+            return $"{GetTypeSignatureName(type.GetElementType()!)}[]";
+        }
+
+        if (!type.IsGenericType)
+        {
+            return type.FullName ?? type.Name;
+        }
+
+        var genericTypeName = type.GetGenericTypeDefinition().FullName ?? type.Name;
+        var genericArgs = type.GetGenericArguments().Select(GetTypeSignatureName);
+        return $"{genericTypeName}[{string.Join(",", genericArgs)}]";
     }
 
     /// <summary>
