@@ -76,14 +76,29 @@ public class XiHanOpenApiSecurityOptions
     public string DefaultSignatureAlgorithm { get; set; } = "HMACSHA256";
 
     /// <summary>
+    /// 是否允许旧版签名算法（如 HMACSHA1）
+    /// </summary>
+    public bool AllowLegacySignatureAlgorithms { get; set; } = false;
+
+    /// <summary>
     /// 默认内容签名算法
     /// </summary>
     public string DefaultContentSignatureAlgorithm { get; set; } = "SHA256";
 
     /// <summary>
+    /// 是否允许旧版内容签名算法（如 MD5）
+    /// </summary>
+    public bool AllowLegacyContentSignatureAlgorithms { get; set; } = false;
+
+    /// <summary>
     /// 默认加密算法
     /// </summary>
     public string DefaultEncryptionAlgorithm { get; set; } = "AES-CBC";
+
+    /// <summary>
+    /// 是否允许旧版加密算法（如 BLOWFISH）
+    /// </summary>
+    public bool AllowLegacyEncryptionAlgorithms { get; set; } = false;
 
     /// <summary>
     /// 受保护路径前缀列表（为空时表示全路径生效）
