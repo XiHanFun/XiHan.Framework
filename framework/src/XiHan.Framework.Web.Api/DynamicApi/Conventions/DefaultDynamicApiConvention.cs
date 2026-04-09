@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -171,18 +170,16 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
                 continue;
             }
 
-            // 显式 [FromRoute] 优先，支持 Name 映射
-            var explicitRouteName = GetExplicitRouteParameterName(parameter, paramName);
-            if (!string.IsNullOrEmpty(explicitRouteName))
+            // 显式绑定优先处理，非路由绑定不参与路由参数推断
+            if (ParameterSourceResolver.TryGetExplicitBinding(parameter, out var explicitSource, out var bindingName))
             {
-                parameters.Add($"{{{explicitRouteName}}}");
-                routeIdCount++;
-                continue;
-            }
+                if (explicitSource == ParameterSource.Route)
+                {
+                    var routeParameterName = bindingName ?? paramName;
+                    parameters.Add($"{{{routeParameterName}}}");
+                    routeIdCount++;
+                }
 
-            // 显式非路由绑定不参与路由参数推断
-            if (HasNonRouteBindingAttribute(parameter))
-            {
                 continue;
             }
 
@@ -209,32 +206,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         }
 
         return parameters;
-    }
-
-    /// <summary>
-    /// 获取显式路由参数名
-    /// </summary>
-    private static string? GetExplicitRouteParameterName(ParameterInfo parameter, string parameterName)
-    {
-        var fromRoute = parameter.GetCustomAttribute<FromRouteAttribute>();
-        if (fromRoute == null)
-        {
-            return null;
-        }
-
-        return string.IsNullOrWhiteSpace(fromRoute.Name) ? parameterName : fromRoute.Name;
-    }
-
-    /// <summary>
-    /// 是否显式标注了非路由绑定特性
-    /// </summary>
-    private static bool HasNonRouteBindingAttribute(ParameterInfo parameter)
-    {
-        return parameter.GetCustomAttribute<FromQueryAttribute>() != null ||
-               parameter.GetCustomAttribute<FromBodyAttribute>() != null ||
-               parameter.GetCustomAttribute<FromServicesAttribute>() != null ||
-               parameter.GetCustomAttribute<FromHeaderAttribute>() != null ||
-               parameter.GetCustomAttribute<FromFormAttribute>() != null;
     }
 
     /// <summary>

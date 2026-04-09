@@ -74,11 +74,11 @@ public class ParameterRuleValidator
     }
 
     /// <summary>
-    /// 校验 GET 方法不允许 Body
+    /// 校验 GET / DELETE / HEAD 方法不允许 Body
     /// </summary>
     private void ValidateGetMethodBody(List<ParameterDescriptor> descriptors)
     {
-        if (_httpMethod is not "GET" and not "DELETE")
+        if (_httpMethod is not "GET" and not "DELETE" and not "HEAD")
         {
             return;
         }

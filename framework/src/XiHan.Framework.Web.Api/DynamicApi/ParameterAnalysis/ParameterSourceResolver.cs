@@ -53,18 +53,22 @@ public class ParameterSourceResolver
         }
 
         // 1.显式特性优先（最高优先级）
-        var explicitSource = GetExplicitSource(descriptor.ParameterInfo);
-        if (explicitSource.HasValue)
+        if (TryGetExplicitBinding(descriptor.ParameterInfo, out var explicitSource, out _))
         {
             descriptor.IsExplicit = true;
 
             // 如果显式标注为 Body，增加计数
-            if (explicitSource.Value == ParameterSource.Body)
+            if (explicitSource == ParameterSource.Body)
             {
                 _bodyParameterCount++;
             }
+            // 如果显式标注为 Route，计入路由参数计数，避免 PUT/PATCH 继续追加自动 Id 路由
+            else if (explicitSource == ParameterSource.Route)
+            {
+                _routeIdParameterCount++;
+            }
 
-            return explicitSource.Value;
+            return explicitSource;
         }
 
         // 2.基础设施参数直接跳过
@@ -102,41 +106,67 @@ public class ParameterSourceResolver
     }
 
     /// <summary>
-    /// 获取显式标注的参数来源
+    /// 尝试获取显式绑定配置
     /// </summary>
-    private static ParameterSource? GetExplicitSource(ParameterInfo parameter)
+    /// <param name="parameter">参数信息</param>
+    /// <param name="source">绑定来源</param>
+    /// <param name="bindingName">绑定名称（Route/Query/Header/Form 可能有）</param>
+    /// <returns>是否存在显式绑定</returns>
+    public static bool TryGetExplicitBinding(ParameterInfo parameter, out ParameterSource source, out string? bindingName)
     {
-        if (parameter.GetCustomAttribute<FromRouteAttribute>() != null)
+        if (parameter.GetCustomAttribute<FromRouteAttribute>() is { } fromRoute)
         {
-            return ParameterSource.Route;
+            source = ParameterSource.Route;
+            bindingName = NormalizeBindingName(fromRoute.Name);
+            return true;
         }
 
-        if (parameter.GetCustomAttribute<FromQueryAttribute>() != null)
+        if (parameter.GetCustomAttribute<FromQueryAttribute>() is { } fromQuery)
         {
-            return ParameterSource.Query;
+            source = ParameterSource.Query;
+            bindingName = NormalizeBindingName(fromQuery.Name);
+            return true;
         }
 
         if (parameter.GetCustomAttribute<FromBodyAttribute>() != null)
         {
-            return ParameterSource.Body;
+            source = ParameterSource.Body;
+            bindingName = null;
+            return true;
         }
 
         if (parameter.GetCustomAttribute<FromServicesAttribute>() != null)
         {
-            return ParameterSource.Services;
+            source = ParameterSource.Services;
+            bindingName = null;
+            return true;
         }
 
-        if (parameter.GetCustomAttribute<FromHeaderAttribute>() != null)
+        if (parameter.GetCustomAttribute<FromHeaderAttribute>() is { } fromHeader)
         {
-            return ParameterSource.Header;
+            source = ParameterSource.Header;
+            bindingName = NormalizeBindingName(fromHeader.Name);
+            return true;
         }
 
-        if (parameter.GetCustomAttribute<FromFormAttribute>() != null)
+        if (parameter.GetCustomAttribute<FromFormAttribute>() is { } fromForm)
         {
-            return ParameterSource.Form;
+            source = ParameterSource.Form;
+            bindingName = NormalizeBindingName(fromForm.Name);
+            return true;
         }
 
-        return null;
+        source = default;
+        bindingName = null;
+        return false;
+    }
+
+    /// <summary>
+    /// 规范化绑定名称
+    /// </summary>
+    private static string? NormalizeBindingName(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 
     /// <summary>
@@ -144,8 +174,8 @@ public class ParameterSourceResolver
     /// </summary>
     private bool IsBodyAllowed()
     {
-        // GET / DELETE 不允许 Body
-        return _httpMethod is not "GET" and not "DELETE";
+        // GET / DELETE / HEAD 不允许 Body
+        return _httpMethod is not "GET" and not "DELETE" and not "HEAD";
     }
 
     /// <summary>
