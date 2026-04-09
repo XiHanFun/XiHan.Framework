@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -160,10 +161,30 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         var parameters = new List<string>();
         var methodParameters = methodInfo.GetParameters();
         var routeIdCount = 0;
+        var normalizedHttpMethod = (httpMethod ?? "POST").ToUpperInvariant();
 
         foreach (var parameter in methodParameters)
         {
-            var paramName = parameter.Name ?? string.Empty;
+            var paramName = parameter.Name;
+            if (string.IsNullOrWhiteSpace(paramName))
+            {
+                continue;
+            }
+
+            // 显式 [FromRoute] 优先，支持 Name 映射
+            var explicitRouteName = GetExplicitRouteParameterName(parameter, paramName);
+            if (!string.IsNullOrEmpty(explicitRouteName))
+            {
+                parameters.Add($"{{{explicitRouteName}}}");
+                routeIdCount++;
+                continue;
+            }
+
+            // 显式非路由绑定不参与路由参数推断
+            if (HasNonRouteBindingAttribute(parameter))
+            {
+                continue;
+            }
 
             if (!ParameterClassifier.IsIdParameter(paramName, parameter.ParameterType))
             {
@@ -171,13 +192,13 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             }
 
             // 对于 GET 和 DELETE 请求，ID 参数添加到路由
-            if (httpMethod is "GET" or "DELETE" or "HEAD")
+            if (normalizedHttpMethod is "GET" or "DELETE" or "HEAD")
             {
                 parameters.Add($"{{{parameter.Name}}}");
                 routeIdCount++;
             }
             // 对于 PUT 和 PATCH 请求，通常第一个 ID 参数添加到路由
-            else if (httpMethod is "PUT" or "PATCH")
+            else if (normalizedHttpMethod is "PUT" or "PATCH")
             {
                 if (routeIdCount == 0)
                 {
@@ -188,6 +209,32 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         }
 
         return parameters;
+    }
+
+    /// <summary>
+    /// 获取显式路由参数名
+    /// </summary>
+    private static string? GetExplicitRouteParameterName(ParameterInfo parameter, string parameterName)
+    {
+        var fromRoute = parameter.GetCustomAttribute<FromRouteAttribute>();
+        if (fromRoute == null)
+        {
+            return null;
+        }
+
+        return string.IsNullOrWhiteSpace(fromRoute.Name) ? parameterName : fromRoute.Name;
+    }
+
+    /// <summary>
+    /// 是否显式标注了非路由绑定特性
+    /// </summary>
+    private static bool HasNonRouteBindingAttribute(ParameterInfo parameter)
+    {
+        return parameter.GetCustomAttribute<FromQueryAttribute>() != null ||
+               parameter.GetCustomAttribute<FromBodyAttribute>() != null ||
+               parameter.GetCustomAttribute<FromServicesAttribute>() != null ||
+               parameter.GetCustomAttribute<FromHeaderAttribute>() != null ||
+               parameter.GetCustomAttribute<FromFormAttribute>() != null;
     }
 
     /// <summary>
