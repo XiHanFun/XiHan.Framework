@@ -253,6 +253,7 @@ public static class DynamicApiControllerFactory
 
         // 仅过滤同签名的隐藏方法，保留合法重载
         var filteredMethods = FilterHiddenMethodsBySignature(serviceMethods, serviceType, logger);
+        var endpointRouteMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         var count = 0;
         foreach (var serviceMethod in filteredMethods)
@@ -265,7 +266,7 @@ public static class DynamicApiControllerFactory
                 if (versions.Count == 0)
                 {
                     // 没有指定版本，创建默认的 Action
-                    CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, null);
+                    CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, endpointRouteMap, null);
                     count++;
                     logger?.LogDebug("已创建操作方法: {MethodName}", serviceMethod.Name);
                 }
@@ -274,11 +275,15 @@ public static class DynamicApiControllerFactory
                     // 为每个版本创建一个独立的 Action
                     foreach (var version in versions)
                     {
-                        CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, version);
+                        CreateActionMethod(typeBuilder, serviceMethod, serviceField, convention, options, endpointRouteMap, version);
                         count++;
                         logger?.LogDebug("已创建操作方法: {MethodName} (版本: {Version})", serviceMethod.Name, version);
                     }
                 }
+            }
+            catch (DynamicApiException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -418,9 +423,10 @@ public static class DynamicApiControllerFactory
     /// <param name="serviceField">服务字段</param>
     /// <param name="convention">动态API约定</param>
     /// <param name="options">配置选项</param>
+    /// <param name="endpointRouteMap">端点映射（用于检测冲突）</param>
     /// <param name="specificVersion">指定的版本号（为多版本方法生成独立Action时使用）</param>
     private static void CreateActionMethod(TypeBuilder typeBuilder, MethodInfo serviceMethod, FieldBuilder serviceField,
-        IDynamicApiConvention? convention, DynamicApiOptions? options, string? specificVersion = null)
+        IDynamicApiConvention? convention, DynamicApiOptions? options, Dictionary<string, string> endpointRouteMap, string? specificVersion = null)
     {
         // 应用约定获取方法信息
         var context = new DynamicApiConventionContext
@@ -450,6 +456,7 @@ public static class DynamicApiControllerFactory
         }
 
         var httpMethod = context.HttpMethod ?? "POST";
+        EnsureUniqueEndpointRoute(endpointRouteMap, serviceMethod, httpMethod, context.RouteTemplate, specificVersion);
 
         // 使用参数分析器分析参数
         List<ParameterDescriptor> parameterDescriptors;
@@ -459,7 +466,7 @@ public static class DynamicApiControllerFactory
         }
         catch (DynamicApiException ex)
         {
-            throw new InvalidOperationException(
+            throw new DynamicApiException(
                 $"分析方法 '{serviceMethod.DeclaringType?.Name}.{serviceMethod.Name}' 的参数时失败: {ex.Message}",
                 ex);
         }
@@ -533,6 +540,43 @@ public static class DynamicApiControllerFactory
     }
 
     /// <summary>
+    /// 确保端点路由唯一，避免运行期出现路由歧义
+    /// </summary>
+    private static void EnsureUniqueEndpointRoute(
+        Dictionary<string, string> endpointRouteMap,
+        MethodInfo serviceMethod,
+        string httpMethod,
+        string? routeTemplate,
+        string? specificVersion)
+    {
+        var normalizedRoute = string.IsNullOrWhiteSpace(routeTemplate)
+            ? string.Empty
+            : routeTemplate.Trim().Trim('/');
+        var normalizedHttpMethod = httpMethod.ToUpperInvariant();
+        var endpointKey = $"{normalizedHttpMethod}:{normalizedRoute}";
+        var currentMethodDisplay = BuildMethodDisplayName(serviceMethod, specificVersion);
+
+        if (endpointRouteMap.TryGetValue(endpointKey, out var existingMethodDisplay))
+        {
+            throw new DynamicApiException(
+                $"检测到动态 API 路由冲突：{normalizedHttpMethod} '{normalizedRoute}' 同时映射到 '{existingMethodDisplay}' 和 '{currentMethodDisplay}'。请为重载方法指定不同的 Name/RouteTemplate，或调整 HTTP 方法。");
+        }
+
+        endpointRouteMap[endpointKey] = currentMethodDisplay;
+    }
+
+    /// <summary>
+    /// 构建方法展示名称（用于冲突提示）
+    /// </summary>
+    private static string BuildMethodDisplayName(MethodInfo methodInfo, string? specificVersion)
+    {
+        var parameters = string.Join(", ", methodInfo.GetParameters().Select(parameter =>
+            $"{parameter.ParameterType.Name} {parameter.Name}"));
+        var versionSuffix = string.IsNullOrWhiteSpace(specificVersion) ? string.Empty : $" [v{specificVersion}]";
+        return $"{methodInfo.DeclaringType?.Name}.{methodInfo.Name}({parameters}){versionSuffix}";
+    }
+
+    /// <summary>
     /// 添加 HTTP 方法特性
     /// </summary>
     private static void AddHttpMethodAttribute(MethodBuilder methodBuilder, string httpMethod, string? routeTemplate = null)
@@ -573,15 +617,30 @@ public static class DynamicApiControllerFactory
     private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterDescriptor descriptor)
     {
         // 显式绑定特性优先，保留 Name 等绑定元数据
-        var explicitBindingBuilder = BuildExplicitBindingAttribute(descriptor.ParameterInfo);
-        if (explicitBindingBuilder != null)
+        if (descriptor.ParameterInfo != null &&
+            ParameterSourceResolver.TryGetExplicitBinding(descriptor.ParameterInfo, out var explicitSource, out var explicitBindingName))
         {
-            paramBuilder.SetCustomAttribute(explicitBindingBuilder);
-            return;
+            var explicitBindingBuilder = BuildBindingAttribute(explicitSource, explicitBindingName);
+            if (explicitBindingBuilder != null)
+            {
+                paramBuilder.SetCustomAttribute(explicitBindingBuilder);
+                return;
+            }
         }
 
-        // 根据参数来源选择绑定特性类型
-        var bindingAttributeType = descriptor.Source switch
+        var inferredBindingBuilder = BuildBindingAttribute(descriptor.Source);
+        if (inferredBindingBuilder != null)
+        {
+            paramBuilder.SetCustomAttribute(inferredBindingBuilder);
+        }
+    }
+
+    /// <summary>
+    /// 按参数来源构建参数绑定特性
+    /// </summary>
+    private static CustomAttributeBuilder? BuildBindingAttribute(ParameterSource source, string? name = null)
+    {
+        var attributeType = source switch
         {
             ParameterSource.Route => typeof(FromRouteAttribute),
             ParameterSource.Query => typeof(FromQueryAttribute),
@@ -592,54 +651,7 @@ public static class DynamicApiControllerFactory
             _ => null
         };
 
-        if (bindingAttributeType != null)
-        {
-            var constructor = bindingAttributeType.GetConstructor(Type.EmptyTypes);
-            if (constructor != null)
-            {
-                paramBuilder.SetCustomAttribute(new CustomAttributeBuilder(constructor, []));
-            }
-        }
-    }
-
-    /// <summary>
-    /// 构建显式参数绑定特性
-    /// </summary>
-    private static CustomAttributeBuilder? BuildExplicitBindingAttribute(ParameterInfo? parameterInfo)
-    {
-        if (parameterInfo == null)
-        {
-            return null;
-        }
-
-        if (parameterInfo.GetCustomAttribute<FromRouteAttribute>() is { } fromRoute)
-        {
-            return BuildBindingAttribute(typeof(FromRouteAttribute), fromRoute.Name);
-        }
-
-        if (parameterInfo.GetCustomAttribute<FromQueryAttribute>() is { } fromQuery)
-        {
-            return BuildBindingAttribute(typeof(FromQueryAttribute), fromQuery.Name);
-        }
-
-        if (parameterInfo.GetCustomAttribute<FromHeaderAttribute>() is { } fromHeader)
-        {
-            return BuildBindingAttribute(typeof(FromHeaderAttribute), fromHeader.Name);
-        }
-
-        if (parameterInfo.GetCustomAttribute<FromFormAttribute>() is { } fromForm)
-        {
-            return BuildBindingAttribute(typeof(FromFormAttribute), fromForm.Name);
-        }
-
-        if (parameterInfo.GetCustomAttribute<FromBodyAttribute>() != null)
-        {
-            return BuildBindingAttribute(typeof(FromBodyAttribute));
-        }
-
-        return parameterInfo.GetCustomAttribute<FromServicesAttribute>() != null
-            ? BuildBindingAttribute(typeof(FromServicesAttribute))
-            : null;
+        return attributeType == null ? null : BuildBindingAttribute(attributeType, name);
     }
 
     /// <summary>
