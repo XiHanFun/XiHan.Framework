@@ -24,7 +24,7 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Store;
 public class InMemoryJobStore : IJobStore
 {
     private readonly ConcurrentDictionary<string, JobInstance> _instances = new();
-    private readonly ConcurrentBag<JobHistory> _histories = [];
+    private readonly ConcurrentDictionary<string, JobHistory> _histories = new();
 
     /// <summary>
     /// 保存任务实例
@@ -61,7 +61,12 @@ public class InMemoryJobStore : IJobStore
     {
         ArgumentNullException.ThrowIfNull(history);
 
-        _histories.Add(history);
+        var historyId = string.IsNullOrWhiteSpace(history.HistoryId)
+            ? Guid.NewGuid().ToString("N")
+            : history.HistoryId;
+
+        history.HistoryId = historyId;
+        _histories.AddOrUpdate(historyId, history, (_, _) => history);
         return Task.CompletedTask;
     }
 
@@ -79,7 +84,19 @@ public class InMemoryJobStore : IJobStore
     /// </summary>
     public Task<IReadOnlyList<JobHistory>> GetJobHistoryAsync(string jobName, int pageIndex = 1, int pageSize = 20)
     {
-        var histories = _histories
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobName);
+
+        if (pageIndex < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pageIndex), pageIndex, "页码必须大于等于 1。");
+        }
+
+        if (pageSize < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pageSize), pageSize, "页大小必须大于等于 1。");
+        }
+
+        var histories = _histories.Values
             .Where(h => h.JobName == jobName)
             .OrderByDescending(h => h.StartedAt)
             .Skip((pageIndex - 1) * pageSize)
@@ -94,6 +111,8 @@ public class InMemoryJobStore : IJobStore
     /// </summary>
     public Task<IReadOnlyList<JobInstance>> GetRunningInstancesAsync(string jobName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobName);
+
         var runningInstances = _instances.Values
             .Where(i => i.JobName == jobName && i.Status == JobStatus.Running)
             .ToList();
@@ -106,16 +125,21 @@ public class InMemoryJobStore : IJobStore
     /// </summary>
     public Task CleanupHistoryAsync(int retentionDays)
     {
+        if (retentionDays < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(retentionDays), retentionDays, "保留天数不能小于 0。");
+        }
+
         var cutoffDate = DateTimeOffset.UtcNow.AddDays(-retentionDays);
 
-        // 注意：ConcurrentBag 不支持直接删除，这里只是示例
-        // 实际使用中建议使用数据库或 Redis 存储
-        var oldHistories = _histories
-            .Where(h => h.StartedAt < cutoffDate)
-            .ToList();
+        foreach (var history in _histories.Values)
+        {
+            if (history.StartedAt < cutoffDate)
+            {
+                _histories.TryRemove(history.HistoryId, out _);
+            }
+        }
 
-        // 这里只是记录，实际无法从 ConcurrentBag 中删除
-        // 如果需要真正的清理功能，请使用数据库存储
         return Task.CompletedTask;
     }
 }
