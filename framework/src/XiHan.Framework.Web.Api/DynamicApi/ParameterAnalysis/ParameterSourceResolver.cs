@@ -24,6 +24,7 @@ public class ParameterSourceResolver
 {
     private readonly string _httpMethod;
     private int _bodyParameterCount;
+    private int _routeIdParameterCount;
 
     /// <summary>
     /// 构造函数
@@ -33,6 +34,7 @@ public class ParameterSourceResolver
     {
         _httpMethod = httpMethod.ToUpperInvariant();
         _bodyParameterCount = 0;
+        _routeIdParameterCount = 0;
     }
 
     /// <summary>
@@ -75,8 +77,9 @@ public class ParameterSourceResolver
         var allowBody = IsBodyAllowed();
 
         // 4.Route 参数推断
-        if (descriptor.Role == ParameterRole.Id && descriptor.Kind == ParameterKind.Simple)
+        if (ShouldBindIdFromRoute(descriptor))
         {
+            _routeIdParameterCount++;
             return ParameterSource.Route;
         }
 
@@ -143,5 +146,23 @@ public class ParameterSourceResolver
     {
         // GET / DELETE 不允许 Body
         return _httpMethod is not "GET" and not "DELETE";
+    }
+
+    /// <summary>
+    /// 判断是否应将 Id 参数绑定到 Route
+    /// </summary>
+    private bool ShouldBindIdFromRoute(ParameterDescriptor descriptor)
+    {
+        if (descriptor.Role != ParameterRole.Id || descriptor.Kind != ParameterKind.Simple)
+        {
+            return false;
+        }
+
+        return _httpMethod switch
+        {
+            "GET" or "DELETE" or "HEAD" => true,
+            "PUT" or "PATCH" => _routeIdParameterCount == 0,
+            _ => false
+        };
     }
 }

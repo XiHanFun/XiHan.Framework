@@ -152,7 +152,7 @@ public static class ParameterClassifier
     /// 识别规则：
     /// - 参数名 == "id"（忽略大小写）
     /// - 参数名以 "Id" 或 "ID" 结尾
-    /// - 类型是 long / int / Guid / string
+    /// - 类型是常见标识类型（long / int / Guid / string 等）或可解析的自定义 Id 值对象
     /// </remarks>
     public static bool IsIdParameter(string parameterName, Type type)
     {
@@ -169,11 +169,71 @@ public static class ParameterClassifier
         // 检查类型（允许 Id 类型）
         var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
 
-        return underlyingType == typeof(int) ||
-               underlyingType == typeof(long) ||
-               underlyingType == typeof(Guid) ||
-               underlyingType == typeof(string) ||
-               underlyingType.IsValueType; // 支持自定义 Id 类型（struct）
+        return IsSupportedIdType(underlyingType);
+    }
+
+    /// <summary>
+    /// 判断是否是可接受的 Id 类型
+    /// </summary>
+    private static bool IsSupportedIdType(Type underlyingType)
+    {
+        // 常见标识类型
+        if (underlyingType == typeof(string) ||
+            underlyingType == typeof(Guid) ||
+            underlyingType == typeof(int) ||
+            underlyingType == typeof(long) ||
+            underlyingType == typeof(short) ||
+            underlyingType == typeof(byte) ||
+            underlyingType == typeof(uint) ||
+            underlyingType == typeof(ulong) ||
+            underlyingType == typeof(ushort) ||
+            underlyingType == typeof(sbyte))
+        {
+            return true;
+        }
+
+        // 明确排除易误判类型
+        if (underlyingType.IsEnum ||
+            underlyingType == typeof(bool) ||
+            underlyingType == typeof(char) ||
+            underlyingType == typeof(float) ||
+            underlyingType == typeof(double) ||
+            underlyingType == typeof(decimal) ||
+            underlyingType == typeof(DateTime) ||
+            underlyingType == typeof(DateTimeOffset) ||
+            underlyingType == typeof(TimeSpan) ||
+            underlyingType == typeof(DateOnly) ||
+            underlyingType == typeof(TimeOnly))
+        {
+            return false;
+        }
+
+        // 支持自定义 Id 值对象（结构体）：
+        // 1. 类型名以 Id 结尾，或
+        // 2. 实现 IParsable<TSelf>，可从路由字符串解析
+        if (underlyingType.IsValueType && !underlyingType.IsPrimitive)
+        {
+            if (underlyingType.Name.EndsWith("Id", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            foreach (var item in underlyingType.GetInterfaces())
+            {
+                if (!item.IsGenericType)
+                {
+                    continue;
+                }
+
+                if (item.GetGenericTypeDefinition() == typeof(IParsable<>) &&
+                    item.GetGenericArguments()[0] == underlyingType)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

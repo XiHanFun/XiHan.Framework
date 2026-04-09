@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Controllers;
@@ -36,13 +37,14 @@ public static class DynamicApiServiceCollectionExtensions
         this IServiceCollection services,
         Action<DynamicApiOptions>? configureOptions = null)
     {
-        // 配置选项
-        var options = new DynamicApiOptions();
+        // 配置选项（复用已注册实例，避免重复注册）
+        var options = GetRegisteredDynamicApiOptions(services) ?? new DynamicApiOptions();
+        services.TryAddSingleton(options);
         configureOptions?.Invoke(options);
-        services.AddSingleton(options);
 
-        // 注册约定
-        services.AddSingleton<IDynamicApiConvention>(sp => new DefaultDynamicApiConvention(options));
+        // 注册约定（不覆盖外部自定义实现）
+        var convention = GetRegisteredDynamicApiConvention(services) ?? new DefaultDynamicApiConvention(options);
+        services.TryAddSingleton<IDynamicApiConvention>(convention);
 
         // 自动发现并注册包含应用服务的程序集
         services.AddControllers()
@@ -67,8 +69,7 @@ public static class DynamicApiServiceCollectionExtensions
                 // Console.WriteLine($"[动态 API] 自动发现并注册了 {addedCount} 个包含应用服务的程序集");
 
                 // 添加动态 API 控制器特性提供者
-                var provider = services.BuildServiceProvider();
-                manager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider(provider));
+                manager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider(convention, options));
             });
 
         return services;
@@ -117,6 +118,13 @@ public static class DynamicApiServiceCollectionExtensions
         return services
             .FirstOrDefault(d => d.ServiceType == typeof(DynamicApiOptions))
             ?.ImplementationInstance as DynamicApiOptions;
+    }
+
+    private static IDynamicApiConvention? GetRegisteredDynamicApiConvention(IServiceCollection services)
+    {
+        return services
+            .FirstOrDefault(d => d.ServiceType == typeof(IDynamicApiConvention))
+            ?.ImplementationInstance as IDynamicApiConvention;
     }
 
     /// <summary>

@@ -15,6 +15,8 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 using XiHan.Framework.Web.Api.DynamicApi.Options;
@@ -26,15 +28,24 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 /// </summary>
 public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IDynamicApiConvention? _convention;
+    private readonly DynamicApiOptions _options;
+    private readonly ILogger<DynamicApiControllerFeatureProvider> _logger;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="serviceProvider">服务提供者</param>
-    public DynamicApiControllerFeatureProvider(IServiceProvider serviceProvider)
+    /// <param name="convention">动态 API 约定</param>
+    /// <param name="options">动态 API 选项</param>
+    /// <param name="logger">日志记录器</param>
+    public DynamicApiControllerFeatureProvider(
+        IDynamicApiConvention? convention,
+        DynamicApiOptions? options,
+        ILogger<DynamicApiControllerFeatureProvider>? logger = null)
     {
-        _serviceProvider = serviceProvider;
+        _convention = convention;
+        _options = options ?? new DynamicApiOptions();
+        _logger = logger ?? NullLogger<DynamicApiControllerFeatureProvider>.Instance;
     }
 
     /// <summary>
@@ -44,25 +55,20 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
     /// <param name="feature">控制器特性</param>
     public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
     {
-        // 尝试获取配置和约定
-        var convention = _serviceProvider.GetService<IDynamicApiConvention>();
-        var options = _serviceProvider.GetService<DynamicApiOptions>();
-        var logger = _serviceProvider.GetService<ILogger<DynamicApiControllerFeatureProvider>>();
-
         // 检查是否启用动态 API
-        if (options?.IsEnabled == false)
+        if (!_options.IsEnabled)
         {
-            logger?.LogInformation("动态 API 功能已禁用");
+            _logger.LogInformation("动态 API 功能已禁用");
             return;
         }
 
-        logger?.LogInformation("开始生成动态 API 控制器...");
+        _logger.LogInformation("开始生成动态 API 控制器...");
 
         // 获取所有应用服务类型
         var serviceTypes = GetApplicationServiceTypes(parts);
         var totalServices = serviceTypes.Count();
 
-        logger?.LogInformation("找到 {TotalServices} 个应用服务待处理", totalServices);
+        _logger.LogInformation("找到 {TotalServices} 个应用服务待处理", totalServices);
 
         var successCount = 0;
         var failCount = 0;
@@ -74,9 +80,9 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
                 // 创建动态控制器类型
                 var controllerType = DynamicApiControllerFactory.CreateControllerType(
                     serviceType.AsType(),
-                    convention,
-                    options,
-                    logger);
+                    _convention,
+                    _options,
+                    _logger);
 
                 if (controllerType != null)
                 {
@@ -95,11 +101,11 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
             catch (Exception ex)
             {
                 failCount++;
-                logger?.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
+                _logger.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
             }
         }
 
-        logger?.LogInformation("动态 API 生成完成: {SuccessCount} 个成功, {FailCount} 个失败",
+        _logger.LogInformation("动态 API 生成完成: {SuccessCount} 个成功, {FailCount} 个失败",
             successCount, failCount);
     }
 
