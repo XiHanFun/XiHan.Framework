@@ -22,9 +22,10 @@ namespace XiHan.Framework.Logging.Providers;
 /// XiHan 文件日志提供器
 /// </summary>
 [ProviderAlias("XiHanFile")]
-public class XiHanFileLoggerProvider : ILoggerProvider
+public class XiHanFileLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
     private readonly XiHanFileLoggerOptions _options;
+    private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
 
     /// <summary>
     /// 构造函数
@@ -42,7 +43,16 @@ public class XiHanFileLoggerProvider : ILoggerProvider
     /// <returns></returns>
     public ILogger CreateLogger(string categoryName)
     {
-        return new XiHanFileLogger(categoryName, _options);
+        return new XiHanFileLogger(categoryName, _options, _scopeProvider);
+    }
+
+    /// <summary>
+    /// 设置外部作用域提供器
+    /// </summary>
+    /// <param name="scopeProvider">作用域提供器</param>
+    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
     }
 
     /// <summary>
