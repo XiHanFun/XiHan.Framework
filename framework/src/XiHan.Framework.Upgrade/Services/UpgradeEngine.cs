@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Application;
@@ -38,7 +39,7 @@ public class UpgradeEngine : IUpgradeEngine
     private readonly IRollingRestartCoordinator _restartCoordinator;
     private readonly IUpgradeTenantProvider _tenantProvider;
     private readonly IUpgradeMigrationExecutor _migrationExecutor;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentTenant? _currentTenant;
     private readonly IApplicationInfoAccessor _applicationInfo;
     private readonly XiHanUpgradeOptions _options;
     private readonly ILogger<UpgradeEngine> _logger;
@@ -54,7 +55,7 @@ public class UpgradeEngine : IUpgradeEngine
     /// <param name="restartCoordinator">重启协调器</param>
     /// <param name="tenantProvider">租户提供者</param>
     /// <param name="migrationExecutor">迁移执行器</param>
-    /// <param name="currentTenant">当前租户</param>
+    /// <param name="serviceProvider">服务提供器</param>
     /// <param name="applicationInfo">应用程序信息访问器</param>
     /// <param name="options">升级选项</param>
     /// <param name="logger">日志记录器</param>
@@ -67,7 +68,7 @@ public class UpgradeEngine : IUpgradeEngine
         IRollingRestartCoordinator restartCoordinator,
         IUpgradeTenantProvider tenantProvider,
         IUpgradeMigrationExecutor migrationExecutor,
-        ICurrentTenant currentTenant,
+        IServiceProvider serviceProvider,
         IApplicationInfoAccessor applicationInfo,
         IOptions<XiHanUpgradeOptions> options,
         ILogger<UpgradeEngine> logger)
@@ -80,7 +81,7 @@ public class UpgradeEngine : IUpgradeEngine
         _restartCoordinator = restartCoordinator;
         _tenantProvider = tenantProvider;
         _migrationExecutor = migrationExecutor;
-        _currentTenant = currentTenant;
+        _currentTenant = serviceProvider.GetService<ICurrentTenant>();
         _applicationInfo = applicationInfo;
         _options = options.Value;
         _logger = logger;
@@ -110,7 +111,7 @@ public class UpgradeEngine : IUpgradeEngine
         {
             foreach (var tenant in _tenantProvider.GetTenants())
             {
-                using var tenantScope = _currentTenant.Change(tenant.TenantId, tenant.Name);
+                using var tenantScope = _currentTenant?.Change(tenant.TenantId, tenant.Name);
                 var result = await ExecuteForTenantAsync(currentAppVersion, nodeName, cancellationToken);
                 if (result.Status == UpgradeStatus.Failed)
                 {
