@@ -27,12 +27,13 @@ public class XiHanOpenApiSecurityOptions
     /// <summary>
     /// 是否启用 OpenApi 安全中间件
     /// </summary>
-    public bool IsEnabled { get; set; } = true;
+    public bool IsEnabled { get; set; } = false;
 
     /// <summary>
     /// 允许未携带安全头的请求直接通过（灰度开关）
+    /// 仅在 IsEnabled=true 时生效
     /// </summary>
-    public bool AllowUnsignedRequests { get; set; } = true;
+    public bool AllowUnsignedRequests { get; set; } = false;
 
     /// <summary>
     /// 是否必须校验内容签名
