@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using System.Text;
 using XiHan.Framework.Logging.Options;
 
 namespace XiHan.Framework.Logging.Providers;
@@ -22,18 +23,24 @@ namespace XiHan.Framework.Logging.Providers;
 /// </summary>
 internal class XiHanFileLogger : ILogger
 {
+    private static readonly Lock FileWriteLock = new();
     private readonly string _categoryName;
     private readonly XiHanFileLoggerOptions _options;
+    private readonly IExternalScopeProvider _scopeProvider;
+    private readonly Encoding _encoding;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="categoryName">分类名称</param>
     /// <param name="options">文件日志选项</param>
-    public XiHanFileLogger(string categoryName, XiHanFileLoggerOptions options)
+    /// <param name="scopeProvider">作用域提供器</param>
+    public XiHanFileLogger(string categoryName, XiHanFileLoggerOptions options, IExternalScopeProvider scopeProvider)
     {
         _categoryName = categoryName;
         _options = options;
+        _scopeProvider = scopeProvider;
+        _encoding = ResolveEncoding(options.Encoding);
     }
 
     /// <summary>
@@ -44,7 +51,7 @@ internal class XiHanFileLogger : ILogger
     /// <returns></returns>
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        return null; // 简化实现
+        return _scopeProvider.Push(state);
     }
 
     /// <summary>
@@ -74,29 +81,141 @@ internal class XiHanFileLogger : ILogger
         }
 
         var message = formatter(state, exception);
+        var scopeText = XiHanLogEntryFormatter.BuildScopeText(_scopeProvider, _options.IncludeScopes);
+        var logEntry = XiHanLogEntryFormatter.Format(
+            _options.LogFormat,
+            DateTimeOffset.Now,
+            logLevel,
+            _categoryName,
+            message,
+            exception,
+            scopeText);
 
-        // 简化的文件写入实现
-        var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{logLevel}] {_categoryName}: {message}";
-
-        if (exception != null)
-        {
-            logEntry += Environment.NewLine + exception.ToString();
-        }
-
-        // 这里应该实现异步文件写入，简化起见使用同步写入
         try
         {
-            var directory = Path.GetDirectoryName(_options.FilePath);
+            var filePath = ResolveFilePath(DateTimeOffset.Now);
+            var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            File.AppendAllText(_options.FilePath, logEntry + Environment.NewLine);
+            lock (FileWriteLock)
+            {
+                EnsureFileSizeLimit(filePath);
+                File.AppendAllText(filePath, logEntry + Environment.NewLine, _encoding);
+            }
         }
         catch
         {
             // 忽略文件写入错误
+        }
+    }
+
+    private string ResolveFilePath(DateTimeOffset now)
+    {
+        var filePath = string.IsNullOrWhiteSpace(_options.FilePath)
+            ? "logs/xihan.log"
+            : _options.FilePath.Trim();
+
+        if (filePath.Contains("{Date}", StringComparison.OrdinalIgnoreCase))
+        {
+            return filePath.Replace("{Date}", now.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // 兼容 logs/xihan-.log 这种按天切分命名约定
+        var fileName = Path.GetFileName(filePath);
+        if (fileName.Contains("-.", StringComparison.Ordinal))
+        {
+            var datedFileName = fileName.Replace("-.", $"-{now:yyyyMMdd}.", StringComparison.Ordinal);
+            var directory = Path.GetDirectoryName(filePath);
+            return string.IsNullOrEmpty(directory)
+                ? datedFileName
+                : Path.Combine(directory, datedFileName);
+        }
+
+        return filePath;
+    }
+
+    private void EnsureFileSizeLimit(string filePath)
+    {
+        if (_options.FileSizeLimit <= 0 || !File.Exists(filePath))
+        {
+            return;
+        }
+
+        var fileInfo = new FileInfo(filePath);
+        if (fileInfo.Length < _options.FileSizeLimit)
+        {
+            return;
+        }
+
+        var archivePath = BuildArchivePath(filePath);
+        File.Move(filePath, archivePath, overwrite: true);
+        CleanupArchivedFiles(filePath);
+    }
+
+    private string BuildArchivePath(string filePath)
+    {
+        var directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+        var extension = Path.GetExtension(filePath);
+        var suffix = DateTimeOffset.Now.ToString("yyyyMMddHHmmssfff");
+        var archiveFileName = $"{fileNameWithoutExtension}.{suffix}{extension}";
+        return Path.Combine(directory, archiveFileName);
+    }
+
+    private void CleanupArchivedFiles(string filePath)
+    {
+        if (_options.RetainedFileCountLimit <= 0)
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+        {
+            return;
+        }
+
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+        var extension = Path.GetExtension(filePath);
+        var searchPattern = $"{fileNameWithoutExtension}.*{extension}";
+
+        var archives = Directory
+            .EnumerateFiles(directory, searchPattern, SearchOption.TopDirectoryOnly)
+            .Where(path => !string.Equals(path, filePath, StringComparison.OrdinalIgnoreCase))
+            .Select(path => new FileInfo(path))
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .ToList();
+
+        foreach (var archive in archives.Skip(_options.RetainedFileCountLimit))
+        {
+            try
+            {
+                archive.Delete();
+            }
+            catch
+            {
+                // 忽略归档清理错误
+            }
+        }
+    }
+
+    private static Encoding ResolveEncoding(string encodingName)
+    {
+        if (string.IsNullOrWhiteSpace(encodingName))
+        {
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        }
+
+        try
+        {
+            return Encoding.GetEncoding(encodingName);
+        }
+        catch (ArgumentException)
+        {
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
     }
 }

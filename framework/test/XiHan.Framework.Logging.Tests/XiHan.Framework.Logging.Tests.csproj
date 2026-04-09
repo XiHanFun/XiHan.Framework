@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
+    </ItemGroup>
+
+</Project>
