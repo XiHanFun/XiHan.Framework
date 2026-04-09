@@ -25,16 +25,19 @@ internal class XiHanConsoleLogger : ILogger
     private static readonly Lock LockObj = new();
     private readonly string _categoryName;
     private readonly XiHanConsoleLoggerOptions _options;
+    private readonly IExternalScopeProvider _scopeProvider;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="categoryName">分类名称</param>
     /// <param name="options">控制台日志选项</param>
-    public XiHanConsoleLogger(string categoryName, XiHanConsoleLoggerOptions options)
+    /// <param name="scopeProvider">作用域提供器</param>
+    public XiHanConsoleLogger(string categoryName, XiHanConsoleLoggerOptions options, IExternalScopeProvider scopeProvider)
     {
         _categoryName = categoryName;
         _options = options;
+        _scopeProvider = scopeProvider;
     }
 
     /// <summary>
@@ -45,7 +48,7 @@ internal class XiHanConsoleLogger : ILogger
     /// <returns></returns>
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        return null; // 简化实现
+        return _scopeProvider.Push(state);
     }
 
     /// <summary>
@@ -75,6 +78,20 @@ internal class XiHanConsoleLogger : ILogger
         }
 
         var message = formatter(state, exception);
+        var scopeText = XiHanLogEntryFormatter.BuildScopeText(_scopeProvider, _options.IncludeScopes);
+        var template = ApplyTimestampFormat(_options.LogFormat, _options.TimestampFormat);
+        var logEntry = XiHanLogEntryFormatter.Format(
+            template,
+            DateTimeOffset.Now,
+            logLevel,
+            _categoryName,
+            message,
+            exception,
+            scopeText,
+            includeTimestamp: _options.ShowTimestamp,
+            includeLogLevel: _options.ShowLogLevel,
+            includeCategory: _options.ShowCategoryName,
+            singleLine: _options.SingleLine);
 
         lock (LockObj)
         {
@@ -83,13 +100,13 @@ internal class XiHanConsoleLogger : ILogger
                 var originalColor = Console.ForegroundColor;
                 Console.ForegroundColor = color;
 
-                WriteLogEntry(logLevel, message, exception);
+                WriteLogEntry(logEntry);
 
                 Console.ForegroundColor = originalColor;
             }
             else
             {
-                WriteLogEntry(logLevel, message, exception);
+                WriteLogEntry(logEntry);
             }
         }
     }
@@ -138,29 +155,30 @@ internal class XiHanConsoleLogger : ILogger
     /// <summary>
     /// 写入日志条目
     /// </summary>
-    /// <param name="logLevel">日志级别</param>
-    /// <param name="message">消息</param>
-    /// <param name="exception">异常</param>
-    private void WriteLogEntry(LogLevel logLevel, string message, Exception? exception)
+    /// <param name="logEntry">日志条目</param>
+    private void WriteLogEntry(string logEntry)
     {
-        var timestamp = _options.ShowTimestamp ? DateTime.Now.ToString(_options.TimestampFormat) : string.Empty;
-        var level = _options.ShowLogLevel ? $"[{logLevel}]" : string.Empty;
-        var category = _options.ShowCategoryName ? _categoryName : string.Empty;
-
-        var logEntry = string.Join(" ", new[] { timestamp, level, category, message }.Where(s => !string.IsNullOrEmpty(s)));
-
         if (_options.EnableRainbow)
         {
-            WriteRainbowText(logEntry);
+            var lines = logEntry.Split(Environment.NewLine);
+            foreach (var line in lines)
+            {
+                WriteRainbowText(line);
+            }
         }
         else
         {
             Console.WriteLine(logEntry);
         }
+    }
 
-        if (exception != null)
+    private static string ApplyTimestampFormat(string template, string timestampFormat)
+    {
+        if (template.Contains("{Timestamp:", StringComparison.Ordinal))
         {
-            Console.WriteLine(exception.ToString());
+            return template;
         }
+
+        return template.Replace("{Timestamp}", $"{{Timestamp:{timestampFormat}}}", StringComparison.Ordinal);
     }
 }
