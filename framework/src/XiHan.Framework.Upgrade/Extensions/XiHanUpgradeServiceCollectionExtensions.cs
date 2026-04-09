@@ -37,6 +37,10 @@ public static class XiHanUpgradeServiceCollectionExtensions
         services.Configure<XiHanUpgradeOptions>(configuration.GetSection(XiHanUpgradeOptions.SectionName));
 
         services.TryAddSingleton<IUpgradeScriptProvider, FileSystemUpgradeScriptProvider>();
+        services.TryAddScoped<IUpgradeVersionStore, InMemoryUpgradeVersionStore>();
+        services.TryAddSingleton<IUpgradeLockProvider, InMemoryUpgradeLockProvider>();
+        services.TryAddScoped<IUpgradeTenantProvider, DefaultUpgradeTenantProvider>();
+        services.TryAddSingleton<IUpgradeMigrationExecutor, DefaultUpgradeMigrationExecutor>();
         services.TryAddScoped<IUpgradeStatusService, UpgradeStatusService>();
         services.TryAddScoped<IUpgradeEngine, UpgradeEngine>();
         services.TryAddSingleton<IUpgradeCoordinator, UpgradeCoordinator>();
