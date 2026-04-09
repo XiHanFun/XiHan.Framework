@@ -572,6 +572,14 @@ public static class DynamicApiControllerFactory
     /// </summary>
     private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterDescriptor descriptor)
     {
+        // 显式绑定特性优先，保留 Name 等绑定元数据
+        var explicitBindingBuilder = BuildExplicitBindingAttribute(descriptor.ParameterInfo);
+        if (explicitBindingBuilder != null)
+        {
+            paramBuilder.SetCustomAttribute(explicitBindingBuilder);
+            return;
+        }
+
         // 根据参数来源选择绑定特性类型
         var bindingAttributeType = descriptor.Source switch
         {
@@ -592,6 +600,75 @@ public static class DynamicApiControllerFactory
                 paramBuilder.SetCustomAttribute(new CustomAttributeBuilder(constructor, []));
             }
         }
+    }
+
+    /// <summary>
+    /// 构建显式参数绑定特性
+    /// </summary>
+    private static CustomAttributeBuilder? BuildExplicitBindingAttribute(ParameterInfo? parameterInfo)
+    {
+        if (parameterInfo == null)
+        {
+            return null;
+        }
+
+        if (parameterInfo.GetCustomAttribute<FromRouteAttribute>() is { } fromRoute)
+        {
+            return BuildBindingAttribute(typeof(FromRouteAttribute), fromRoute.Name);
+        }
+
+        if (parameterInfo.GetCustomAttribute<FromQueryAttribute>() is { } fromQuery)
+        {
+            return BuildBindingAttribute(typeof(FromQueryAttribute), fromQuery.Name);
+        }
+
+        if (parameterInfo.GetCustomAttribute<FromHeaderAttribute>() is { } fromHeader)
+        {
+            return BuildBindingAttribute(typeof(FromHeaderAttribute), fromHeader.Name);
+        }
+
+        if (parameterInfo.GetCustomAttribute<FromFormAttribute>() is { } fromForm)
+        {
+            return BuildBindingAttribute(typeof(FromFormAttribute), fromForm.Name);
+        }
+
+        if (parameterInfo.GetCustomAttribute<FromBodyAttribute>() != null)
+        {
+            return BuildBindingAttribute(typeof(FromBodyAttribute));
+        }
+
+        return parameterInfo.GetCustomAttribute<FromServicesAttribute>() != null
+            ? BuildBindingAttribute(typeof(FromServicesAttribute))
+            : null;
+    }
+
+    /// <summary>
+    /// 构建参数绑定特性
+    /// </summary>
+    private static CustomAttributeBuilder? BuildBindingAttribute(Type attributeType, string? name = null)
+    {
+        var constructor = attributeType.GetConstructor(Type.EmptyTypes);
+        if (constructor == null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return new CustomAttributeBuilder(constructor, []);
+        }
+
+        var nameProperty = attributeType.GetProperty(nameof(FromQueryAttribute.Name));
+        if (nameProperty == null)
+        {
+            return new CustomAttributeBuilder(constructor, []);
+        }
+
+        return new CustomAttributeBuilder(
+            constructor,
+            [],
+            [nameProperty],
+            [name]);
     }
 
     /// <summary>
