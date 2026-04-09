@@ -15,6 +15,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Application.Contracts.Dtos;
@@ -61,6 +62,9 @@ public class XiHanOpenApiSecurityMiddleware(
         "AES-CBC",
         "BLOWFISH"
     ];
+
+    private static readonly ConcurrentDictionary<string, DateTimeOffset> LocalReplayNonceStore = new(StringComparer.Ordinal);
+    private static int _localReplayNonceCleanupCounter;
 
     /// <summary>
     /// 执行中间件
@@ -599,11 +603,17 @@ public class XiHanOpenApiSecurityMiddleware(
         var distributedCache = context.RequestServices.GetService<IDistributedCache>();
         if (distributedCache is null)
         {
-            return true;
+            var localNonceKey = $"openapi:nonce:{accessKey}:{nonce}";
+            return TryAcquireLocalNonce(localNonceKey, options.NonceExpireSeconds);
         }
 
         var nonceKey = $"openapi:nonce:{accessKey}:{nonce}";
         var cancellationToken = context.RequestAborted;
+        if (!TryAcquireLocalNonce(nonceKey, options.NonceExpireSeconds))
+        {
+            return false;
+        }
+
         var exists = await distributedCache.GetAsync(nonceKey, cancellationToken);
         if (exists is not null)
         {
@@ -621,6 +631,48 @@ public class XiHanOpenApiSecurityMiddleware(
             cancellationToken);
 
         return true;
+    }
+
+    private static bool TryAcquireLocalNonce(string nonceKey, int nonceExpireSeconds)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expiry = now.AddSeconds(Math.Max(1, nonceExpireSeconds));
+
+        while (true)
+        {
+            if (LocalReplayNonceStore.TryGetValue(nonceKey, out var existingExpiry))
+            {
+                if (existingExpiry > now)
+                {
+                    return false;
+                }
+
+                LocalReplayNonceStore.TryRemove(nonceKey, out _);
+                continue;
+            }
+
+            if (LocalReplayNonceStore.TryAdd(nonceKey, expiry))
+            {
+                TryCleanupExpiredLocalNonces(now);
+                return true;
+            }
+        }
+    }
+
+    private static void TryCleanupExpiredLocalNonces(DateTimeOffset now)
+    {
+        if (Interlocked.Increment(ref _localReplayNonceCleanupCounter) % 256 != 0)
+        {
+            return;
+        }
+
+        foreach (var entry in LocalReplayNonceStore)
+        {
+            if (entry.Value <= now)
+            {
+                LocalReplayNonceStore.TryRemove(entry.Key, out _);
+            }
+        }
     }
 
     private static async Task<string> ReadRequestBodyAsync(
