@@ -27,8 +27,8 @@ public class DynamicApiRouteOptions
     public bool UseNamespaceAsRoute { get; set; } = false;
 
     /// <summary>
-    /// 要排除的命名空间前缀
-    /// 例如: XiHan.Framework.Web.Api.Controllers -> XiHan.Framework.Web.Api
+    /// 要排除的命名空间前缀（用于命名空间路由与模块路由）
+    /// 例如: XiHan.Framework.Web.Api.Controllers -> Controllers
     /// </summary>
     public List<string> NamespacePrefixesToExclude { get; set; } = [];
 

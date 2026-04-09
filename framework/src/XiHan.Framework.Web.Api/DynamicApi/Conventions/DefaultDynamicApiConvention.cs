@@ -311,8 +311,17 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             parts.Add($"v{context.ApiVersion}");
         }
 
+        // 添加命名空间路由段（启用后优先于模块路由，避免重复）
+        if (_options.Routes.UseNamespaceAsRoute)
+        {
+            var namespaceSegments = GetNamespaceRouteSegments(context.ServiceType, usePascalCaseRoute, useLowercaseRoute);
+            if (namespaceSegments.Count != 0)
+            {
+                parts.AddRange(namespaceSegments);
+            }
+        }
         // 添加模块名称
-        if (_options.Routes.UseModuleNameAsRoute)
+        else if (_options.Routes.UseModuleNameAsRoute)
         {
             var moduleName = GetModuleName(context.ServiceType);
             if (!string.IsNullOrEmpty(moduleName))
@@ -370,6 +379,29 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     }
 
     /// <summary>
+    /// 获取命名空间路由段
+    /// </summary>
+    private List<string> GetNamespaceRouteSegments(Type serviceType, bool usePascalCaseRoute, bool useLowercaseRoute)
+    {
+        if (!_options.Routes.UseNamespaceAsRoute)
+        {
+            return [];
+        }
+
+        var namespaceName = GetNormalizedNamespaceName(serviceType);
+        if (string.IsNullOrWhiteSpace(namespaceName))
+        {
+            return [];
+        }
+
+        return namespaceName
+            .Split('.', StringSplitOptions.RemoveEmptyEntries)
+            .Select(segment => FormatRouteName(segment, usePascalCaseRoute, useLowercaseRoute))
+            .Where(segment => !string.IsNullOrWhiteSpace(segment))
+            .ToList();
+    }
+
+    /// <summary>
     /// 获取模块名称
     /// </summary>
     private string? GetModuleName(Type serviceType)
@@ -379,20 +411,10 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             return null;
         }
 
-        var namespaceName = serviceType.Namespace;
-        if (string.IsNullOrEmpty(namespaceName))
+        var namespaceName = GetNormalizedNamespaceName(serviceType);
+        if (string.IsNullOrWhiteSpace(namespaceName))
         {
             return null;
-        }
-
-        // 移除排除的命名空间前缀
-        foreach (var prefix in _options.Routes.NamespacePrefixesToExclude)
-        {
-            if (namespaceName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                namespaceName = namespaceName[prefix.Length..].TrimStart('.');
-                break;
-            }
         }
 
         // 提取模块名称
@@ -408,6 +430,38 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         // 默认使用第一个命名空间段
         var segments = namespaceName.Split('.');
         return segments.Length > 0 ? segments[0] : null;
+    }
+
+    /// <summary>
+    /// 获取规范化后的命名空间（移除配置中的前缀）
+    /// </summary>
+    private string? GetNormalizedNamespaceName(Type serviceType)
+    {
+        var namespaceName = serviceType.Namespace;
+        if (string.IsNullOrWhiteSpace(namespaceName))
+        {
+            return null;
+        }
+
+        var prefixes = _options.Routes.NamespacePrefixesToExclude
+            .Where(prefix => !string.IsNullOrWhiteSpace(prefix))
+            .OrderByDescending(prefix => prefix.Length);
+
+        foreach (var prefix in prefixes)
+        {
+            if (namespaceName.Equals(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            var matchPrefix = $"{prefix}.";
+            if (namespaceName.StartsWith(matchPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return namespaceName[matchPrefix.Length..].TrimStart('.');
+            }
+        }
+
+        return namespaceName.Trim('.');
     }
 
     /// <summary>
