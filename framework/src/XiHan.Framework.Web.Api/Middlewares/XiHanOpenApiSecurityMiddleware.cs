@@ -41,17 +41,25 @@ public class XiHanOpenApiSecurityMiddleware(
 
     private static readonly HashSet<string> SupportedSignatureAlgorithms =
     [
-        "HMACSHA1",
         "HMACSHA256",
         "HMACSHA512",
         "RSASHA256",
         "SM2"
     ];
 
+    private static readonly HashSet<string> LegacySignatureAlgorithms =
+    [
+        "HMACSHA1"
+    ];
+
     private static readonly HashSet<string> SupportedContentSignatureAlgorithms =
     [
         "SHA256",
-        "SHA512",
+        "SHA512"
+    ];
+
+    private static readonly HashSet<string> LegacyContentSignatureAlgorithms =
+    [
         "MD5"
     ];
 
@@ -59,7 +67,11 @@ public class XiHanOpenApiSecurityMiddleware(
     [
         "NONE",
         "AES",
-        "AES-CBC",
+        "AES-CBC"
+    ];
+
+    private static readonly HashSet<string> LegacyEncryptionAlgorithms =
+    [
         "BLOWFISH"
     ];
 
@@ -167,19 +179,19 @@ public class XiHanOpenApiSecurityMiddleware(
             client.EncryptionAlgorithm,
             options.DefaultEncryptionAlgorithm);
 
-        if (!SupportedSignatureAlgorithms.Contains(signatureAlgorithm))
+        if (!IsSupportedSignatureAlgorithm(signatureAlgorithm, options))
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status400BadRequest, $"不支持的签名算法: {signatureAlgorithm}");
             return;
         }
 
-        if (!SupportedContentSignatureAlgorithms.Contains(contentSignAlgorithm))
+        if (!IsSupportedContentSignatureAlgorithm(contentSignAlgorithm, options))
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status400BadRequest, $"不支持的内容签名算法: {contentSignAlgorithm}");
             return;
         }
 
-        if (!SupportedEncryptionAlgorithms.Contains(encryptionAlgorithm))
+        if (!IsSupportedEncryptionAlgorithm(encryptionAlgorithm, options))
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status400BadRequest, $"不支持的加密算法: {encryptionAlgorithm}");
             return;
@@ -207,6 +219,7 @@ public class XiHanOpenApiSecurityMiddleware(
                 plaintextBody = DecryptPayload(
                     requestBody,
                     encryptionAlgorithm,
+                    options,
                     client,
                     nonce,
                     encryptedIvHeader,
@@ -470,6 +483,27 @@ public class XiHanOpenApiSecurityMiddleware(
             : algorithm.Trim().ToUpperInvariant();
     }
 
+    private static bool IsSupportedSignatureAlgorithm(string signatureAlgorithm, XiHanOpenApiSecurityOptions options)
+    {
+        var normalized = NormalizeAlgorithm(signatureAlgorithm);
+        return SupportedSignatureAlgorithms.Contains(normalized) ||
+               (options.AllowLegacySignatureAlgorithms && LegacySignatureAlgorithms.Contains(normalized));
+    }
+
+    private static bool IsSupportedContentSignatureAlgorithm(string contentSignatureAlgorithm, XiHanOpenApiSecurityOptions options)
+    {
+        var normalized = NormalizeAlgorithm(contentSignatureAlgorithm);
+        return SupportedContentSignatureAlgorithms.Contains(normalized) ||
+               (options.AllowLegacyContentSignatureAlgorithms && LegacyContentSignatureAlgorithms.Contains(normalized));
+    }
+
+    private static bool IsSupportedEncryptionAlgorithm(string encryptionAlgorithm, XiHanOpenApiSecurityOptions options)
+    {
+        var normalized = NormalizeAlgorithm(encryptionAlgorithm);
+        return SupportedEncryptionAlgorithms.Contains(normalized) ||
+               (options.AllowLegacyEncryptionAlgorithms && LegacyEncryptionAlgorithms.Contains(normalized));
+    }
+
     private static bool VerifySignature(string signatureAlgorithm, string canonicalRequest, string signature, OpenApiSecurityClient client)
     {
         if (string.IsNullOrWhiteSpace(signature))
@@ -726,6 +760,7 @@ public class XiHanOpenApiSecurityMiddleware(
     private static string DecryptPayload(
         string requestBody,
         string encryptionAlgorithm,
+        XiHanOpenApiSecurityOptions options,
         OpenApiSecurityClient client,
         string nonce,
         string? ivHeader,
@@ -736,7 +771,7 @@ public class XiHanOpenApiSecurityMiddleware(
             ? NormalizeAlgorithm(envelopeAlg)
             : NormalizeAlgorithm(encryptionAlgorithm);
 
-        if (!SupportedEncryptionAlgorithms.Contains(resolvedAlgorithm) || IsNoEncryption(resolvedAlgorithm))
+        if (!IsSupportedEncryptionAlgorithm(resolvedAlgorithm, options) || IsNoEncryption(resolvedAlgorithm))
         {
             throw new InvalidOperationException($"不支持的加密算法: {resolvedAlgorithm}");
         }
