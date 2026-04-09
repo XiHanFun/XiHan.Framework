@@ -25,11 +25,6 @@ public class XiHanCorsOptions
     public const string SectionName = "XiHan:Web:Api:Cors";
 
     /// <summary>
-    /// 是否启用 CORS
-    /// </summary>
-    public bool IsEnabled { get; set; } = true;
-
-    /// <summary>
     /// 允许的来源地址列表
     /// </summary>
     /// <remarks>

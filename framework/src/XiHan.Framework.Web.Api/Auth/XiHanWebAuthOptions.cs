@@ -25,19 +25,11 @@ public class XiHanWebAuthOptions
     public const string SectionName = "XiHan:Web:Api:Auth";
 
     /// <summary>
-    /// 是否启用 JWT Bearer 认证
-    /// </summary>
-    /// <remarks>
-    /// 当为 true 且 JwtOptions.SecretKey 不为空时，自动注册 JWT Bearer 认证方案
-    /// </remarks>
-    public bool EnableJwtBearer { get; set; } = true;
-
-    /// <summary>
     /// 是否要求所有端点默认需要认证用户
     /// </summary>
     /// <remarks>
     /// 当为 true 时，所有未标记 [AllowAnonymous] 的端点都需要已认证用户。
-    /// 仅在 JWT Bearer 认证启用时生效
+    /// 仅在 JwtOptions.SecretKey 配置有效时生效
     /// </remarks>
     public bool RequireAuthenticatedUser { get; set; } = true;
 
