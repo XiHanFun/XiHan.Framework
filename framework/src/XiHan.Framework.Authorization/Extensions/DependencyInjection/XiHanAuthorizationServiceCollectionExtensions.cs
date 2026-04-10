@@ -12,9 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Authorization.Abac;
+using XiHan.Framework.Authorization.AspNetCore;
 using XiHan.Framework.Authorization.Permissions;
 using XiHan.Framework.Authorization.Policies;
 using XiHan.Framework.Authorization.Roles;
@@ -44,8 +47,16 @@ public static class XiHanAuthorizationServiceCollectionExtensions
         services.TryAddScoped<IPolicyStore, DefaultPolicyStore>();
         // 注册策略评估器
         services.TryAddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
+        // 注册 ABAC 属性收集器
+        services.TryAddScoped<IAbacAttributeCollector, DefaultAbacAttributeCollector>();
+        // 注册 ABAC 评估器
+        services.TryAddScoped<IAbacEvaluator, DefaultAbacEvaluator>();
         // 注册授权服务
         services.TryAddScoped<IAuthorizationService, DefaultAuthorizationService>();
+        // 注册混合授权策略提供器
+        services.TryAddSingleton<IAuthorizationPolicyProvider, HybridPermissionPolicyProvider>();
+        // 注册混合授权处理器
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IAuthorizationHandler, HybridPermissionAuthorizationHandler>());
 
         return services;
     }
