@@ -30,9 +30,25 @@ public class XiHanLocalizationOptions
     public string ResourcesPath { get; set; } = "/Localization";
 
     /// <summary>
+    /// 是否启用动态 JSON 重载
+    /// </summary>
+    public bool EnableDynamicJsonReload { get; set; } = true;
+
+    /// <summary>
     /// 默认资源名称
     /// </summary>
     public string DefaultResourceName { get; set; } = "Default";
+
+    /// <summary>
+    /// 枚举本地化默认资源名
+    /// </summary>
+    public string EnumResourceName { get; set; } = "Enums";
+
+    /// <summary>
+    /// 枚举本地化默认键前缀
+    /// 空字符串表示不使用前缀
+    /// </summary>
+    public string EnumLocalizationKeyPrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// 默认文化

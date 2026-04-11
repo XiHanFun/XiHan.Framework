@@ -48,4 +48,14 @@ public record EnumInfo
     /// 所有名称
     /// </summary>
     public string[] Names { get; set; } = [];
+
+    /// <summary>
+    /// 默认本地化资源名
+    /// </summary>
+    public string? LocalizationResourceName { get; set; }
+
+    /// <summary>
+    /// 默认本地化键前缀
+    /// </summary>
+    public string? LocalizationKeyPrefix { get; set; }
 }

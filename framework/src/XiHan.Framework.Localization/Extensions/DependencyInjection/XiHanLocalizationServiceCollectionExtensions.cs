@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Localization.Abstractions.Enums;
 using XiHan.Framework.Localization.Options;
 using XiHan.Framework.Localization.Services;
 
@@ -52,6 +53,7 @@ public static class XiHanLocalizationServiceCollectionExtensions
             sp.GetRequiredService<ILoggerFactory>()));
 
         services.TryAddSingleton<JsonLocalizationResourceStore>();
+        services.TryAddSingleton<IEnumLocalizationService, EnumLocalizationService>();
         services.Replace(ServiceDescriptor.Singleton<IStringLocalizerFactory, XiHanStringLocalizerFactory>());
 
         return services;

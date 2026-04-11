@@ -46,6 +46,42 @@ public record EnumItem
     public string? Theme { get; set; }
 
     /// <summary>
+    /// 图标
+    /// </summary>
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
+
+    /// <summary>
+    /// 排序值
+    /// </summary>
+    [JsonPropertyName("order")]
+    public int Order { get; set; }
+
+    /// <summary>
+    /// 是否隐藏
+    /// </summary>
+    [JsonPropertyName("hidden")]
+    public bool Hidden { get; set; }
+
+    /// <summary>
+    /// 是否禁用
+    /// </summary>
+    [JsonPropertyName("disabled")]
+    public bool Disabled { get; set; }
+
+    /// <summary>
+    /// 本地化键
+    /// </summary>
+    [JsonPropertyName("localizationKey")]
+    public string? LocalizationKey { get; set; }
+
+    /// <summary>
+    /// 本地化资源名
+    /// </summary>
+    [JsonPropertyName("resourceName")]
+    public string? ResourceName { get; set; }
+
+    /// <summary>
     /// 扩展属性
     /// </summary>
     [JsonPropertyName("extra")]

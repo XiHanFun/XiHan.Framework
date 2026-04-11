@@ -57,6 +57,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         try
         {
             var vfsOptions = options.Value;
+            EnsureDefaultProviders(vfsOptions);
 
             _enableChangeTracking = vfsOptions.EnableChangeTracking;
             _changeDebouncer = new Debouncer(
@@ -86,6 +87,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public IFileInfo GetFile(string virtualPath)
     {
+        ThrowIfDisposed();
         var resolvedPath = PathResolver.ResolveVirtualPath(virtualPath);
         return _compositeProvider.GetFileInfo(resolvedPath);
     }
@@ -95,8 +97,80 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     /// </summary>
     public IDirectoryContents GetDirectoryContents(string virtualPath)
     {
+        ThrowIfDisposed();
         var resolvedPath = PathResolver.ResolveVirtualPath(virtualPath);
         return _compositeProvider.GetDirectoryContents(resolvedPath);
+    }
+
+    /// <summary>
+    /// 判断文件是否存在
+    /// </summary>
+    /// <param name="virtualPath">虚拟文件路径</param>
+    /// <returns>是否存在</returns>
+    public bool FileExists(string virtualPath)
+    {
+        var fileInfo = GetFile(virtualPath);
+        return fileInfo.Exists && !fileInfo.IsDirectory;
+    }
+
+    /// <summary>
+    /// 判断目录是否存在
+    /// </summary>
+    /// <param name="virtualPath">虚拟目录路径</param>
+    /// <returns>是否存在</returns>
+    public bool DirectoryExists(string virtualPath)
+    {
+        var directoryContents = GetDirectoryContents(virtualPath);
+        return directoryContents.Exists;
+    }
+
+    /// <summary>
+    /// 枚举目录中的文件
+    /// </summary>
+    /// <param name="virtualPath">虚拟目录路径</param>
+    /// <param name="searchPattern">搜索模式</param>
+    /// <param name="recursive">是否递归</param>
+    /// <returns>虚拟文件路径集合</returns>
+    public IReadOnlyList<string> EnumerateFiles(string virtualPath, string searchPattern = "*", bool recursive = true)
+    {
+        ThrowIfDisposed();
+
+        var normalizedRoot = PathResolver.ResolveVirtualPath(virtualPath);
+        var normalizedPattern = NormalizeFilter(searchPattern);
+        var results = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pendingDirectories = new Stack<string>();
+        pendingDirectories.Push(normalizedRoot);
+
+        while (pendingDirectories.Count > 0)
+        {
+            var currentDirectory = pendingDirectories.Pop();
+            var contents = GetDirectoryContents(currentDirectory);
+            if (!contents.Exists)
+            {
+                continue;
+            }
+
+            foreach (var item in contents)
+            {
+                var childPath = PathResolver.CombineVirtualPath(currentDirectory, item.Name);
+                if (item.IsDirectory)
+                {
+                    if (recursive)
+                    {
+                        pendingDirectories.Push(childPath);
+                    }
+
+                    continue;
+                }
+
+                if (IsPathMatch(item.Name, normalizedPattern) || IsPathMatch(childPath, normalizedPattern))
+                {
+                    results.Add(childPath);
+                }
+            }
+        }
+
+        return results.OrderBy(static x => x, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     /// <summary>
@@ -171,6 +245,26 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
     #region 私有方法
 
+    private static void EnsureDefaultProviders(VirtualFileSystemOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (options.IncludeCurrentDirectory)
+        {
+            options.AddPhysical(Environment.CurrentDirectory, priority: 100);
+        }
+
+        if (options.IncludeAppBaseDirectory)
+        {
+            options.AddPhysical(AppContext.BaseDirectory, priority: 80);
+        }
+
+        if (options.AdditionalPhysicalPaths.Count > 0)
+        {
+            options.AddPhysicalRange(options.AdditionalPhysicalPaths, priority: 90);
+        }
+    }
+
     private static Regex CreateWatchRegex(string filter)
     {
         var normalizedFilter = NormalizeFilter(filter);
@@ -225,6 +319,15 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
     private static string GetEmbeddedVirtualPath(Assembly assembly, string resourceName)
     {
         return $"embedded://{assembly.GetName().Name}/{resourceName}";
+    }
+
+    private static string ConvertPhysicalToVirtualPath(string rootPath, string fullFilePath)
+    {
+        var relativePath = Path.GetRelativePath(rootPath, fullFilePath)
+            .Replace('\\', '/')
+            .TrimStart('/');
+
+        return "/" + relativePath;
     }
 
     private IChangeToken RegisterWatch(string normalizedFilter)
@@ -384,12 +487,12 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
                 if (!_fileStateCache.TryGetValue(file, out var previousWriteTime))
                 {
                     _fileStateCache[file] = currentWriteTime;
-                    changes.Add((file, FileChangeType.Created));
+                    changes.Add((ConvertPhysicalToVirtualPath(physicalPath, file), FileChangeType.Created));
                 }
                 else if (previousWriteTime != currentWriteTime)
                 {
                     _fileStateCache[file] = currentWriteTime;
-                    changes.Add((file, FileChangeType.Modified));
+                    changes.Add((ConvertPhysicalToVirtualPath(physicalPath, file), FileChangeType.Modified));
                 }
             }
 
@@ -402,7 +505,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             foreach (var deletedFile in deletedFiles)
             {
                 _fileStateCache.Remove(deletedFile, out _);
-                changes.Add((deletedFile, FileChangeType.Deleted));
+                changes.Add((ConvertPhysicalToVirtualPath(physicalPath, deletedFile), FileChangeType.Deleted));
             }
         }
 
