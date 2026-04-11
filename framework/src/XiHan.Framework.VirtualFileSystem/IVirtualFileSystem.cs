@@ -45,6 +45,29 @@ public interface IVirtualFileSystem
     IDirectoryContents GetDirectoryContents(string virtualPath);
 
     /// <summary>
+    /// 判断文件是否存在
+    /// </summary>
+    /// <param name="virtualPath">虚拟文件路径</param>
+    /// <returns>是否存在</returns>
+    bool FileExists(string virtualPath);
+
+    /// <summary>
+    /// 判断目录是否存在
+    /// </summary>
+    /// <param name="virtualPath">虚拟目录路径</param>
+    /// <returns>是否存在</returns>
+    bool DirectoryExists(string virtualPath);
+
+    /// <summary>
+    /// 枚举指定目录下文件
+    /// </summary>
+    /// <param name="virtualPath">虚拟目录路径</param>
+    /// <param name="searchPattern">文件搜索模式（如 *.json）</param>
+    /// <param name="recursive">是否递归子目录</param>
+    /// <returns>虚拟文件路径集合</returns>
+    IReadOnlyList<string> EnumerateFiles(string virtualPath, string searchPattern = "*", bool recursive = true);
+
+    /// <summary>
     /// 监控文件变化
     /// </summary>
     /// <param name="filter">监控过滤条件(支持通配符)</param>

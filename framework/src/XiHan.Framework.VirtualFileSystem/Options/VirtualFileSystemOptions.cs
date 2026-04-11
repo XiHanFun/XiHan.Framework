@@ -46,6 +46,21 @@ public class VirtualFileSystemOptions
     public bool EnableChangeTracking { get; set; } = true;
 
     /// <summary>
+    /// 是否自动挂载当前工作目录
+    /// </summary>
+    public bool IncludeCurrentDirectory { get; set; } = true;
+
+    /// <summary>
+    /// 是否自动挂载应用基目录
+    /// </summary>
+    public bool IncludeAppBaseDirectory { get; set; } = true;
+
+    /// <summary>
+    /// 附加物理目录
+    /// </summary>
+    public List<string> AdditionalPhysicalPaths { get; } = [];
+
+    /// <summary>
     /// 添加自定义文件提供程序
     /// </summary>
     /// <param name="provider">文件提供程序</param>
@@ -74,6 +89,11 @@ public class VirtualFileSystemOptions
     /// <returns>配置选项实例</returns>
     public VirtualFileSystemOptions AddPhysical(string rootPath, int priority = 100)
     {
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            throw new ArgumentException("物理目录不能为空。", nameof(rootPath));
+        }
+
         var fullPath = Path.GetFullPath(rootPath);
 
         // 自动创建不存在的目录
@@ -83,6 +103,24 @@ public class VirtualFileSystemOptions
         }
 
         return AddProvider(new VirtualPhysicalFileProvider(fullPath, priority), priority);
+    }
+
+    /// <summary>
+    /// 添加多个物理文件提供程序
+    /// </summary>
+    /// <param name="rootPaths">物理目录列表</param>
+    /// <param name="priority">提供程序优先级</param>
+    /// <returns>配置选项实例</returns>
+    public VirtualFileSystemOptions AddPhysicalRange(IEnumerable<string> rootPaths, int priority = 100)
+    {
+        ArgumentNullException.ThrowIfNull(rootPaths);
+
+        foreach (var rootPath in rootPaths.Where(static p => !string.IsNullOrWhiteSpace(p)))
+        {
+            AddPhysical(rootPath, priority);
+        }
+
+        return this;
     }
 
     /// <summary>

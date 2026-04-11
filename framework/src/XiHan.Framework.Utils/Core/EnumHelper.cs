@@ -22,10 +22,13 @@ namespace XiHan.Framework.Utils.Core;
 
 /// <summary>
 /// 枚举帮助类
+/// 提供枚举反射、元数据解析、缓存和常用转换能力
 /// </summary>
 public static class EnumHelper
 {
     #region 缓存
+
+    private readonly record struct EnumItemsCacheKey(Type EnumType, bool IncludeHidden, bool Ordered);
 
     /// <summary>
     /// 枚举信息缓存
@@ -35,7 +38,7 @@ public static class EnumHelper
     /// <summary>
     /// 枚举项缓存
     /// </summary>
-    private static readonly ConcurrentDictionary<Type, List<EnumItem>> EnumItemsCache = new();
+    private static readonly ConcurrentDictionary<EnumItemsCacheKey, IReadOnlyList<EnumItem>> EnumItemsCache = new();
 
     /// <summary>
     /// 枚举名称-值缓存
@@ -80,31 +83,15 @@ public static class EnumHelper
             throw new ArgumentException($"类型 {enumType.Name} 不是枚举类型", nameof(enumType));
         }
 
-        var cacheKey = $"{enumType.FullName}_{includeHidden}_{ordered}";
-
-        return EnumItemsCache.GetOrAdd(enumType, _ =>
+        var cacheKey = new EnumItemsCacheKey(enumType, includeHidden, ordered);
+        var cachedItems = EnumItemsCache.GetOrAdd(cacheKey, static key =>
         {
-            var items = new List<EnumItem>();
-            var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            foreach (var field in fields)
-            {
-                if (!includeHidden && field.GetCustomAttribute<EnumHiddenAttribute>() != null)
-                {
-                    continue;
-                }
-
-                var item = CreateEnumItem(field);
-                items.Add(item);
-            }
-
-            if (ordered)
-            {
-                items = [.. items.OrderBy(x => x.Extra?.GetValueOrDefault("Order", int.MaxValue) ?? int.MaxValue).ThenBy(x => x.Key)];
-            }
-
+            var items = BuildEnumItems(key.EnumType, key.IncludeHidden, key.Ordered);
             return items;
         });
+
+        // 返回拷贝，避免调用方修改缓存对象
+        return [.. cachedItems];
     }
 
     /// <summary>
@@ -124,6 +111,12 @@ public static class EnumHelper
             Value = (TEnum)item.Value,
             Description = item.Description,
             Theme = item.Theme,
+            Icon = item.Icon,
+            Order = item.Order,
+            Hidden = item.Hidden,
+            Disabled = item.Disabled,
+            LocalizationKey = item.LocalizationKey,
+            ResourceName = item.ResourceName,
             Extra = item.Extra
         })];
     }
@@ -160,6 +153,7 @@ public static class EnumHelper
 
             var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? type.Name;
             var isFlagsEnum = type.GetCustomAttribute<FlagsAttribute>() != null;
+            var localizationResource = type.GetCustomAttribute<EnumLocalizationResourceAttribute>();
 
             return new EnumInfo
             {
@@ -168,7 +162,9 @@ public static class EnumHelper
                 Description = description,
                 IsFlags = isFlagsEnum,
                 Values = [.. values.Cast<object>()],
-                Names = names
+                Names = names,
+                LocalizationResourceName = localizationResource?.ResourceName,
+                LocalizationKeyPrefix = localizationResource?.KeyPrefix
             };
         });
     }
@@ -227,19 +223,16 @@ public static class EnumHelper
         var enumType = typeof(TEnum);
         var underlyingType = Enum.GetUnderlyingType(enumType);
 
-        // 如果值已经是目标枚举类型
         if (value is TEnum enumValue)
         {
             return enumValue;
         }
 
-        // 如果值是字符串，尝试按名称解析
         if (value is string stringValue)
         {
             return Parse<TEnum>(stringValue);
         }
 
-        // 将值转换为底层类型
         var convertedValue = Convert.ChangeType(value, underlyingType);
         return (TEnum)Enum.ToObject(enumType, convertedValue);
     }
@@ -349,7 +342,6 @@ public static class EnumHelper
             return (TEnum)value;
         }
 
-        // 尝试忽略大小写匹配
         var kvp = nameValueMap.FirstOrDefault(x =>
             string.Equals(x.Key, name, StringComparison.OrdinalIgnoreCase));
 
@@ -381,7 +373,7 @@ public static class EnumHelper
 
     #endregion
 
-    #region 描述相关
+    #region 描述与本地化元数据
 
     /// <summary>
     /// 获取枚举值的描述
@@ -391,34 +383,22 @@ public static class EnumHelper
     /// <returns>描述信息</returns>
     public static string GetDescription<TEnum>(TEnum value) where TEnum : struct, Enum
     {
-        var field = typeof(TEnum).GetField(value.ToString());
-        if (field == null)
-        {
-            return value.ToString();
-        }
+        return GetDescription(typeof(TEnum), value);
+    }
 
-        // 优先使用 EnumDisplayAttribute
-        var displayAttr = field.GetCustomAttribute<EnumDisplayAttribute>();
-        if (displayAttr != null)
-        {
-            return displayAttr.Description;
-        }
+    /// <summary>
+    /// 获取枚举值的描述
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <param name="value">枚举值</param>
+    /// <returns>描述信息</returns>
+    public static string GetDescription(Type enumType, object value)
+    {
+        ArgumentNullException.ThrowIfNull(enumType);
+        ArgumentNullException.ThrowIfNull(value);
 
-        // 其次使用 DescriptionAttribute
-        var descAttr = field.GetCustomAttribute<DescriptionAttribute>();
-        if (descAttr != null)
-        {
-            return descAttr.Description;
-        }
-
-        // 最后使用 EnumMemberAttribute
-        var memberAttr = field.GetCustomAttribute<EnumMemberAttribute>();
-        if (memberAttr != null && !string.IsNullOrEmpty(memberAttr.Value))
-        {
-            return memberAttr.Value;
-        }
-
-        return value.ToString();
+        var item = GetEnumItem(enumType, value);
+        return item?.Description ?? value.ToString() ?? string.Empty;
     }
 
     /// <summary>
@@ -429,89 +409,175 @@ public static class EnumHelper
     /// <returns>主题名称</returns>
     public static string? GetTheme<TEnum>(TEnum value) where TEnum : struct, Enum
     {
-        var field = typeof(TEnum).GetField(value.ToString());
-        if (field == null)
-        {
-            return null;
-        }
+        return GetTheme(typeof(TEnum), value);
+    }
 
-        // 优先使用 EnumDisplayAttribute
-        var displayAttr = field.GetCustomAttribute<EnumDisplayAttribute>();
-        if (displayAttr?.Theme != null)
-        {
-            return displayAttr.Theme;
-        }
+    /// <summary>
+    /// 获取枚举值的主题
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <param name="value">枚举值</param>
+    /// <returns>主题名称</returns>
+    public static string? GetTheme(Type enumType, object value)
+    {
+        ArgumentNullException.ThrowIfNull(enumType);
+        ArgumentNullException.ThrowIfNull(value);
 
-        // 其次使用 EnumThemeAttribute
-        var themeAttr = field.GetCustomAttribute<EnumThemeAttribute>();
-        return themeAttr?.Theme;
+        var item = GetEnumItem(enumType, value);
+        return item?.Theme;
+    }
+
+    /// <summary>
+    /// 获取枚举值的本地化键
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型</typeparam>
+    /// <param name="value">枚举值</param>
+    /// <returns>本地化键</returns>
+    public static string? GetLocalizationKey<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        return GetLocalizationKey(typeof(TEnum), value);
+    }
+
+    /// <summary>
+    /// 获取枚举值的本地化键
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <param name="value">枚举值</param>
+    /// <returns>本地化键</returns>
+    public static string? GetLocalizationKey(Type enumType, object value)
+    {
+        ArgumentNullException.ThrowIfNull(enumType);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var item = GetEnumItem(enumType, value);
+        return item?.LocalizationKey;
+    }
+
+    /// <summary>
+    /// 获取枚举值的本地化资源名
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型</typeparam>
+    /// <param name="value">枚举值</param>
+    /// <returns>本地化资源名</returns>
+    public static string? GetLocalizationResourceName<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        return GetLocalizationResourceName(typeof(TEnum), value);
+    }
+
+    /// <summary>
+    /// 获取枚举值的本地化资源名
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <param name="value">枚举值</param>
+    /// <returns>本地化资源名</returns>
+    public static string? GetLocalizationResourceName(Type enumType, object value)
+    {
+        ArgumentNullException.ThrowIfNull(enumType);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var item = GetEnumItem(enumType, value);
+        return item?.ResourceName;
     }
 
     #endregion
 
     #region 私有方法
 
+    private static IReadOnlyList<EnumItem> BuildEnumItems(Type enumType, bool includeHidden, bool ordered)
+    {
+        var items = new List<EnumItem>();
+        var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
+        var typeLocalization = enumType.GetCustomAttribute<EnumLocalizationResourceAttribute>();
+
+        foreach (var field in fields)
+        {
+            var item = CreateEnumItem(field, typeLocalization);
+            if (!includeHidden && item.Hidden)
+            {
+                continue;
+            }
+
+            items.Add(item);
+        }
+
+        if (ordered)
+        {
+            items = [.. items.OrderBy(x => x.Order).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)];
+        }
+
+        return items;
+    }
+
     /// <summary>
     /// 创建枚举项
     /// </summary>
     /// <param name="field">字段信息</param>
+    /// <param name="typeLocalization">类型级本地化配置</param>
     /// <returns>枚举项</returns>
-    private static EnumItem CreateEnumItem(FieldInfo field)
+    private static EnumItem CreateEnumItem(FieldInfo field, EnumLocalizationResourceAttribute? typeLocalization)
     {
         var value = field.GetValue(null)!;
         var name = field.Name;
+        var enumType = field.DeclaringType ?? throw new InvalidOperationException("枚举字段缺少声明类型。");
 
-        // 获取描述
-        var description = name;
         var displayAttr = field.GetCustomAttribute<EnumDisplayAttribute>();
-        if (displayAttr != null)
-        {
-            description = displayAttr.Description;
-        }
-        else
-        {
-            var descAttr = field.GetCustomAttribute<DescriptionAttribute>();
-            if (descAttr != null)
-            {
-                description = descAttr.Description;
-            }
-            else
-            {
-                var memberAttr = field.GetCustomAttribute<EnumMemberAttribute>();
-                if (memberAttr?.Value != null)
-                {
-                    description = memberAttr.Value;
-                }
-            }
-        }
-
-        // 获取主题
-        string? theme;
-        if (displayAttr?.Theme != null)
-        {
-            theme = displayAttr.Theme;
-        }
-        else
-        {
-            var themeAttr = field.GetCustomAttribute<EnumThemeAttribute>();
-            theme = themeAttr?.Theme;
-        }
-
-        // 获取扩展属性
-        var extra = new Dictionary<string, object>();
-
-        // 排序
+        var descriptionAttr = field.GetCustomAttribute<DescriptionAttribute>();
+        var enumMemberAttr = field.GetCustomAttribute<EnumMemberAttribute>();
         var orderAttr = field.GetCustomAttribute<EnumOrderAttribute>();
-        if (orderAttr != null)
+        var hiddenAttr = field.GetCustomAttribute<EnumHiddenAttribute>();
+        var disabledAttr = field.GetCustomAttribute<EnumDisabledAttribute>();
+        var iconAttr = field.GetCustomAttribute<EnumIconAttribute>();
+        var themeAttr = field.GetCustomAttribute<EnumThemeAttribute>();
+        var fieldLocalization = field.GetCustomAttribute<EnumLocalizationResourceAttribute>();
+        var localizationKeyAttr = field.GetCustomAttribute<EnumLocalizationKeyAttribute>();
+
+        var description = displayAttr?.Description
+                          ?? descriptionAttr?.Description
+                          ?? enumMemberAttr?.Value
+                          ?? name;
+
+        var theme = displayAttr?.Theme ?? themeAttr?.Theme;
+        var order = orderAttr?.Order ?? displayAttr?.Order ?? int.MaxValue;
+        var hidden = hiddenAttr != null || (displayAttr?.Hidden ?? false);
+        var disabled = disabledAttr?.Disabled ?? displayAttr?.Disabled ?? false;
+        var icon = displayAttr?.Icon ?? iconAttr?.Icon;
+
+        var localizationKey = localizationKeyAttr?.LocalizationKey ?? displayAttr?.LocalizationKey;
+        var localizationResource = fieldLocalization?.ResourceName
+                                   ?? displayAttr?.ResourceName
+                                   ?? typeLocalization?.ResourceName;
+
+        if (string.IsNullOrWhiteSpace(localizationKey))
         {
-            extra["Order"] = orderAttr.Order;
-        }
-        else if (displayAttr != null)
-        {
-            extra["Order"] = displayAttr.Order;
+            var keyPrefix = fieldLocalization?.KeyPrefix ?? typeLocalization?.KeyPrefix;
+            localizationKey = string.IsNullOrWhiteSpace(keyPrefix)
+                ? $"{enumType.Name}.{name}"
+                : $"{keyPrefix}.{enumType.Name}.{name}";
         }
 
-        // 扩展属性
+        var extra = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Order"] = order
+        };
+
+        if (!string.IsNullOrWhiteSpace(icon))
+        {
+            extra["Icon"] = icon;
+        }
+
+        if (disabled)
+        {
+            extra["Disabled"] = true;
+        }
+
+        if (displayAttr?.Extra != null)
+        {
+            foreach (var pair in displayAttr.Extra)
+            {
+                extra[pair.Key] = pair.Value;
+            }
+        }
+
         var extraAttrs = field.GetCustomAttributes<EnumExtraAttribute>();
         foreach (var extraAttr in extraAttrs)
         {
@@ -524,8 +590,34 @@ public static class EnumHelper
             Value = value,
             Description = description,
             Theme = theme,
+            Icon = icon,
+            Order = order,
+            Hidden = hidden,
+            Disabled = disabled,
+            LocalizationKey = localizationKey,
+            ResourceName = localizationResource,
             Extra = extra.Count > 0 ? extra : null
         };
+    }
+
+    private static EnumItem? GetEnumItem(Type enumType, object value)
+    {
+        if (!enumType.IsEnum)
+        {
+            throw new ArgumentException($"类型 {enumType.Name} 不是枚举类型", nameof(enumType));
+        }
+
+        var enumName = value is Enum enumValue
+            ? enumValue.ToString()
+            : Enum.GetName(enumType, value) ?? value.ToString();
+
+        if (string.IsNullOrWhiteSpace(enumName))
+        {
+            return null;
+        }
+
+        return GetEnumItems(enumType, includeHidden: true, ordered: false)
+            .FirstOrDefault(x => string.Equals(x.Key, enumName, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -538,7 +630,7 @@ public static class EnumHelper
         var enumType = typeof(TEnum);
         return NameValueCache.GetOrAdd(enumType, type =>
         {
-            var result = new Dictionary<string, object>();
+            var result = new Dictionary<string, object>(StringComparer.Ordinal);
             var names = Enum.GetNames(type);
             var values = Enum.GetValues(type);
 
@@ -594,10 +686,16 @@ public static class EnumHelper
     /// <param name="enumType">枚举类型</param>
     public static void ClearCache(Type enumType)
     {
+        ArgumentNullException.ThrowIfNull(enumType);
+
         EnumInfoCache.TryRemove(enumType, out _);
-        EnumItemsCache.TryRemove(enumType, out _);
         NameValueCache.TryRemove(enumType, out _);
         ValueNameCache.TryRemove(enumType, out _);
+
+        foreach (var key in EnumItemsCache.Keys.Where(x => x.EnumType == enumType).ToList())
+        {
+            EnumItemsCache.TryRemove(key, out _);
+        }
     }
 
     /// <summary>

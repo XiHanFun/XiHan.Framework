@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using System.Globalization;
 using System.Text.Json;
 using XiHan.Framework.Localization.Options;
@@ -32,8 +33,10 @@ public sealed class JsonLocalizationResourceStore : IDisposable
     private readonly IOptionsMonitor<XiHanLocalizationOptions> _optionsMonitor;
     private readonly IDisposable? _optionsChangeRegistration;
     private Dictionary<string, Dictionary<string, Dictionary<string, string>>> _resources = new(StringComparer.OrdinalIgnoreCase);
+    private string _normalizedResourcesPath = "/Localization";
     private bool _initialized;
     private bool _disposed;
+    private long _version;
 
     /// <summary>
     /// 初始化资源存储
@@ -49,10 +52,18 @@ public sealed class JsonLocalizationResourceStore : IDisposable
 
         _virtualFileSystem = virtualFileSystem;
         _optionsMonitor = optionsMonitor;
+        _normalizedResourcesPath = NormalizeVirtualPath(_optionsMonitor.CurrentValue.ResourcesPath);
 
         _virtualFileSystem.OnFileChanged += OnVirtualFileChanged;
-        _optionsChangeRegistration = _optionsMonitor.OnChange(_ => ResetCache());
+        _optionsChangeRegistration = _optionsMonitor.OnChange(HandleOptionsChanged);
+        RegisterWatchIfNeeded(_optionsMonitor.CurrentValue);
     }
+
+    /// <summary>
+    /// 当前资源版本
+    /// 每次缓存重置都会递增，可用于上层缓存失效策略
+    /// </summary>
+    public long Version => Interlocked.Read(ref _version);
 
     /// <summary>
     /// 尝试获取本地化文本
@@ -155,102 +166,6 @@ public sealed class JsonLocalizationResourceStore : IDisposable
         _optionsChangeRegistration?.Dispose();
     }
 
-    private void EnsureInitialized()
-    {
-        if (_initialized)
-        {
-            return;
-        }
-
-        lock (_syncLock)
-        {
-            if (_initialized)
-            {
-                return;
-            }
-
-            _resources = LoadResources();
-            _initialized = true;
-        }
-    }
-
-    private Dictionary<string, Dictionary<string, Dictionary<string, string>>> LoadResources()
-    {
-        var options = _optionsMonitor.CurrentValue;
-        var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var filePath in EnumerateJsonFiles(options.ResourcesPath).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
-        {
-            var fileInfo = _virtualFileSystem.GetFile(filePath);
-            if (!fileInfo.Exists || fileInfo.IsDirectory)
-            {
-                continue;
-            }
-
-            using var stream = fileInfo.CreateReadStream();
-            using var document = JsonDocument.Parse(stream);
-
-            if (!TryResolveResourceAndCulture(filePath, document.RootElement, options, out var resourceName, out var cultureName))
-            {
-                continue;
-            }
-
-            var texts = ParseTexts(document.RootElement);
-            if (texts.Count == 0)
-            {
-                continue;
-            }
-
-            if (!result.TryGetValue(resourceName, out var cultureMap))
-            {
-                cultureMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
-                result[resourceName] = cultureMap;
-            }
-
-            if (!cultureMap.TryGetValue(cultureName, out var textMap))
-            {
-                textMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                cultureMap[cultureName] = textMap;
-            }
-
-            foreach (var pair in texts)
-            {
-                textMap[pair.Key] = pair.Value;
-            }
-        }
-
-        return result;
-    }
-
-    private IEnumerable<string> EnumerateJsonFiles(string directoryPath)
-    {
-        var normalizedDirectory = NormalizeVirtualPath(directoryPath);
-        var contents = _virtualFileSystem.GetDirectoryContents(normalizedDirectory);
-        if (!contents.Exists)
-        {
-            yield break;
-        }
-
-        foreach (var item in contents)
-        {
-            var childPath = CombineVirtualPath(normalizedDirectory, item.Name);
-            if (item.IsDirectory)
-            {
-                foreach (var nestedPath in EnumerateJsonFiles(childPath))
-                {
-                    yield return nestedPath;
-                }
-
-                continue;
-            }
-
-            if (item.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return childPath;
-            }
-        }
-    }
-
     private static bool TryResolveResourceAndCulture(
         string filePath,
         JsonElement root,
@@ -346,17 +261,21 @@ public sealed class JsonLocalizationResourceStore : IDisposable
                 case JsonValueKind.Object:
                     FlattenJsonToDictionary(property.Value, key, result);
                     break;
+
                 case JsonValueKind.Array:
                     result[key] = property.Value.ToString();
                     break;
+
                 case JsonValueKind.String:
                     result[key] = property.Value.GetString() ?? string.Empty;
                     break;
+
                 case JsonValueKind.Number:
                 case JsonValueKind.True:
                 case JsonValueKind.False:
                     result[key] = property.Value.ToString();
                     break;
+
                 case JsonValueKind.Null:
                 case JsonValueKind.Undefined:
                     result[key] = string.Empty;
@@ -416,6 +335,149 @@ public sealed class JsonLocalizationResourceStore : IDisposable
         {
             return false;
         }
+    }
+
+    private static bool TryGetStringProperty(JsonElement root, string propertyName, out string? value)
+    {
+        value = null;
+        if (!TryGetPropertyIgnoreCase(root, propertyName, out var property))
+        {
+            return false;
+        }
+
+        if (property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        value = property.GetString();
+        return true;
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement root, string propertyName, out JsonElement value)
+    {
+        foreach (var property in root.EnumerateObject())
+        {
+            if (property.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string NormalizeVirtualPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "/";
+        }
+
+        var normalized = path.Replace('\\', '/');
+        if (normalized.StartsWith("embedded://", StringComparison.OrdinalIgnoreCase))
+        {
+            // embedded://Assembly/path/to/file.json -> /path/to/file.json
+            var index = normalized.IndexOf('/', "embedded://".Length);
+            normalized = index < 0 ? "/" : normalized[index..];
+        }
+
+        if (!normalized.StartsWith('/'))
+        {
+            normalized = "/" + normalized;
+        }
+
+        normalized = normalized.TrimEnd('/');
+        return normalized.Length == 0 ? "/" : normalized;
+    }
+
+    private static string BuildWatchFilter(string resourcesPath)
+    {
+        var normalized = NormalizeVirtualPath(resourcesPath).TrimEnd('/');
+        if (normalized.Length == 0 || normalized == "/")
+        {
+            return "/**/*.json";
+        }
+
+        return $"{normalized}/**/*.json";
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized)
+        {
+            return;
+        }
+
+        lock (_syncLock)
+        {
+            if (_initialized)
+            {
+                return;
+            }
+
+            _resources = LoadResources();
+            _initialized = true;
+        }
+    }
+
+    private Dictionary<string, Dictionary<string, Dictionary<string, string>>> LoadResources()
+    {
+        var options = _optionsMonitor.CurrentValue;
+        var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var filePath in EnumerateJsonFiles(options.ResourcesPath).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        {
+            var fileInfo = _virtualFileSystem.GetFile(filePath);
+            if (!fileInfo.Exists || fileInfo.IsDirectory)
+            {
+                continue;
+            }
+
+            using var stream = fileInfo.CreateReadStream();
+            using var document = JsonDocument.Parse(stream);
+
+            if (!TryResolveResourceAndCulture(filePath, document.RootElement, options, out var resourceName, out var cultureName))
+            {
+                continue;
+            }
+
+            var texts = ParseTexts(document.RootElement);
+            if (texts.Count == 0)
+            {
+                continue;
+            }
+
+            if (!result.TryGetValue(resourceName, out var cultureMap))
+            {
+                cultureMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+                result[resourceName] = cultureMap;
+            }
+
+            if (!cultureMap.TryGetValue(cultureName, out var textMap))
+            {
+                textMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                cultureMap[cultureName] = textMap;
+            }
+
+            foreach (var pair in texts)
+            {
+                textMap[pair.Key] = pair.Value;
+            }
+        }
+
+        return result;
+    }
+
+    private IReadOnlyList<string> EnumerateJsonFiles(string directoryPath)
+    {
+        var normalizedDirectory = NormalizeVirtualPath(directoryPath);
+        return _virtualFileSystem
+            .EnumerateFiles(normalizedDirectory, "*.json", recursive: true)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private List<string> BuildCultureFallbackChain(CultureInfo culture, XiHanLocalizationOptions options)
@@ -498,12 +560,42 @@ public sealed class JsonLocalizationResourceStore : IDisposable
 
     private void OnVirtualFileChanged(object? sender, FileChangedEventArgs eventArgs)
     {
+        if (!_optionsMonitor.CurrentValue.EnableDynamicJsonReload)
+        {
+            return;
+        }
+
         if (!eventArgs.FilePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
+        var normalizedPath = NormalizeVirtualPath(eventArgs.FilePath);
+        if (!IsPathUnderResources(normalizedPath))
+        {
+            return;
+        }
+
         ResetCache();
+    }
+
+    private void HandleOptionsChanged(XiHanLocalizationOptions options)
+    {
+        _normalizedResourcesPath = NormalizeVirtualPath(options.ResourcesPath);
+        RegisterWatchIfNeeded(options);
+        ResetCache();
+    }
+
+    private void RegisterWatchIfNeeded(XiHanLocalizationOptions options)
+    {
+        if (!options.EnableDynamicJsonReload)
+        {
+            _watchToken = null;
+            return;
+        }
+
+        var filter = BuildWatchFilter(options.ResourcesPath);
+        _watchToken = _virtualFileSystem.Watch(filter);
     }
 
     private void ResetCache()
@@ -512,61 +604,23 @@ public sealed class JsonLocalizationResourceStore : IDisposable
         {
             _resources = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
             _initialized = false;
+            Interlocked.Increment(ref _version);
         }
     }
 
-    private static bool TryGetStringProperty(JsonElement root, string propertyName, out string? value)
+    private bool IsPathUnderResources(string normalizedPath)
     {
-        value = null;
-        if (!TryGetPropertyIgnoreCase(root, propertyName, out var property))
+        if (string.IsNullOrWhiteSpace(normalizedPath))
         {
             return false;
         }
 
-        if (property.ValueKind != JsonValueKind.String)
+        if (_normalizedResourcesPath == "/")
         {
-            return false;
+            return true;
         }
 
-        value = property.GetString();
-        return true;
-    }
-
-    private static bool TryGetPropertyIgnoreCase(JsonElement root, string propertyName, out JsonElement value)
-    {
-        foreach (var property in root.EnumerateObject())
-        {
-            if (property.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
-            {
-                value = property.Value;
-                return true;
-            }
-        }
-
-        value = default;
-        return false;
-    }
-
-    private static string NormalizeVirtualPath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return "/";
-        }
-
-        var normalized = path.Replace('\\', '/');
-        if (!normalized.StartsWith('/'))
-        {
-            normalized = "/" + normalized;
-        }
-
-        return normalized.TrimEnd('/');
-    }
-
-    private static string CombineVirtualPath(string left, string right)
-    {
-        var normalizedLeft = NormalizeVirtualPath(left);
-        var normalizedRight = right.Replace('\\', '/').TrimStart('/');
-        return $"{normalizedLeft}/{normalizedRight}";
+        return normalizedPath.Equals(_normalizedResourcesPath, StringComparison.OrdinalIgnoreCase)
+               || normalizedPath.StartsWith($"{_normalizedResourcesPath}/", StringComparison.OrdinalIgnoreCase);
     }
 }
