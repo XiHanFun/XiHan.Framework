@@ -14,7 +14,10 @@
 
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.Features;
+using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
@@ -87,6 +90,7 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                 await pipeline.WriteAsync(new OperationLogRecord
                 {
                     TraceId = traceId,
+                    SessionId = ResolveSessionId(context.HttpContext),
                     UserId = requestContext?.UserId ?? currentUser?.UserId,
                     UserName = requestContext?.UserName ?? currentUser?.UserName,
                     ControllerName = controllerName,
@@ -119,6 +123,25 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
 
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
+    }
+
+    /// <summary>
+    /// 优先 ASP.NET Session，回退会话声明（session_id / sid / jti）
+    /// </summary>
+    /// <param name="httpContext"></param>
+    /// <returns></returns>
+    private static string? ResolveSessionId(HttpContext httpContext)
+    {
+        var sessionId = httpContext.Features.Get<ISessionFeature>()?.Session?.Id;
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            return sessionId;
+        }
+
+        var user = httpContext.User;
+        return user?.FindFirstValue(XiHanClaimTypes.SessionId)
+            ?? user?.FindFirstValue(ClaimTypes.Sid)
+            ?? user?.FindFirstValue("jti");
     }
 
     private static string? SafeSerialize(object? value)
