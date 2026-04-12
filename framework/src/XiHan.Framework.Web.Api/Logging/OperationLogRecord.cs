@@ -25,6 +25,11 @@ public class OperationLogRecord
     public string TraceId { get; set; } = string.Empty;
 
     /// <summary>
+    /// 会话标识
+    /// </summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>
     /// 用户标识
     /// </summary>
     public long? UserId { get; set; }
