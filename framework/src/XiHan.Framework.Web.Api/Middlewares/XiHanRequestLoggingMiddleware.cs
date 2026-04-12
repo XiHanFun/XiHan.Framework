@@ -16,6 +16,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
@@ -122,7 +123,7 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
     }
 
     /// <summary>
-    /// 优先 ASP.NET Session，回退 JWT jti / sub 声明
+    /// 优先 ASP.NET Session，回退会话声明（session_id / sid / jti）
     /// </summary>
     private static string? ResolveSessionId(HttpContext context)
     {
@@ -133,8 +134,9 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
         }
 
         var user = context.User;
-        return user?.FindFirstValue("jti")
-            ?? user?.FindFirstValue(ClaimTypes.Sid);
+        return user?.FindFirstValue(XiHanClaimTypes.SessionId)
+            ?? user?.FindFirstValue(ClaimTypes.Sid)
+            ?? user?.FindFirstValue("jti");
     }
 
     /// <summary>
