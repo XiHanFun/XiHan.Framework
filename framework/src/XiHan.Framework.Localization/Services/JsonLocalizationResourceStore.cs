@@ -37,6 +37,7 @@ public sealed class JsonLocalizationResourceStore : IDisposable
     private bool _initialized;
     private bool _disposed;
     private long _version;
+    private IChangeToken? _watchToken;
 
     /// <summary>
     /// 初始化资源存储
@@ -162,6 +163,7 @@ public sealed class JsonLocalizationResourceStore : IDisposable
         }
 
         _disposed = true;
+        _watchToken = null;
         _virtualFileSystem.OnFileChanged -= OnVirtualFileChanged;
         _optionsChangeRegistration?.Dispose();
     }
