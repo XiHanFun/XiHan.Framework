@@ -24,7 +24,7 @@ public abstract class MultiTenantEntityBase<TKey> : EntityBase<TKey>, IMultiTena
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// 租户ID
+    /// 租户ID（0=平台租户；业务租户从 1 开始）
     /// </summary>
-    public virtual long? TenantId { get; set; }
+    public virtual long TenantId { get; set; }
 }

@@ -39,8 +39,8 @@ public abstract class SugarMultiTenantAggregateRoot<TKey> : SugarAggregateRoot<T
     }
 
     /// <summary>
-    /// 租户ID
+    /// 租户ID（0=平台租户；业务租户从 1 开始）
     /// </summary>
-    [SugarColumn(ColumnDescription = "租户ID", IsNullable = true)]
-    public virtual long? TenantId { get; set; }
+    [SugarColumn(ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true)]
+    public virtual long TenantId { get; set; }
 }
