@@ -39,8 +39,8 @@ public abstract class SugarMultiTenantEntity<TKey> : SugarEntity<TKey>
     }
 
     /// <summary>
-    /// 租户ID
+    /// 租户ID（0=平台租户；业务租户从 1 开始；非空确保 UNIQUE(TenantId, XxCode) 等复合唯一索引对全局记录生效）
     /// </summary>
-    [SugarColumn(ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true, IsNullable = true)]
-    public virtual long? TenantId { get; set; }
+    [SugarColumn(ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true)]
+    public virtual long TenantId { get; set; }
 }
