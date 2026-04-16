@@ -20,7 +20,6 @@ namespace XiHan.Framework.Data.SqlSugar.Entities;
 /// SqlSugar 多租户修改审计实体基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_TeId", nameof(TenantId), OrderByType.Asc)]
 public abstract class SugarMultiTenantModificationEntity<TKey> : SugarModificationEntity<TKey>
     where TKey : IEquatable<TKey>
 {
