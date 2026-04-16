@@ -20,7 +20,6 @@ namespace XiHan.Framework.Data.SqlSugar.Entities;
 /// SqlSugar 多租户实体基类（泛型主键）
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_TeId", nameof(TenantId), OrderByType.Asc)]
 public abstract class SugarMultiTenantEntity<TKey> : SugarEntity<TKey>
     where TKey : IEquatable<TKey>
 {
