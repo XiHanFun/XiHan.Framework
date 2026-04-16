@@ -20,9 +20,6 @@ namespace XiHan.Framework.Data.SqlSugar.Aggregates;
 /// SqlSugar 多租户聚合根基类
 /// </summary>
 /// <typeparam name="TKey">主键类型</typeparam>
-[SugarIndex("IX_TeId", nameof(TenantId), OrderByType.Asc)]
-[SugarIndex("IX_TeId_CrTi", nameof(TenantId), OrderByType.Asc, nameof(CreatedTime), OrderByType.Asc)]
-[SugarIndex("IX_TeId_IsDe", nameof(TenantId), OrderByType.Asc, nameof(IsDeleted), OrderByType.Asc)]
 public abstract class SugarMultiTenantAggregateRoot<TKey> : SugarAggregateRoot<TKey>
     where TKey : IEquatable<TKey>
 {
