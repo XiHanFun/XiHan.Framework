@@ -14,8 +14,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq.Expressions;
-using System.Text.Json;
-using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
@@ -28,10 +26,12 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// <remarks>
 /// 设计原则：
 /// <list type="bullet">
-///   <item>方法体专注纯业务语义：不包含 <c>.SplitTable()</c>、<c>.EnableQueryFilter()</c> 等横切细节。</item>
+///   <item>仓储只负责纯持久化 + 租户安全边界（Update/Delete 前的 before 预读用于确保实体在当前租户范围内）。</item>
 ///   <item>租户连接/租户过滤/软删过滤 统一由 <see cref="ISqlSugarClientResolver"/> + 全局 QueryFilter AOP 承担。</item>
-///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入，无需仓储侧处理。</item>
-///   <item>审计日志通过可选的 <see cref="IEntityAuditLogWriter"/> 写入，未注册时不产生开销。</item>
+///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入。</item>
+///   <item>实体审计日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>
+///   作为"启用开关"，序列化/diff/落库由 <c>SqlSugarAuditLogAop</c> 统一完成，仓储侧零感知。</item>
+///   <item>TraceId/业务事件派发等其他横切诉求请在调用端或独立订阅者处理，不得侵入仓储。</item>
 /// </list>
 /// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
@@ -40,19 +40,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private const string OperationCreate = "Create";
-    private const string OperationUpdate = "Update";
-    private const string OperationDelete = "Delete";
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
-
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="clientResolver">SqlSugar 客户端解析器</param>
-    /// <param name="serviceProvider">服务提供者（审计/TraceId 可选服务）</param>
+    /// <param name="serviceProvider">服务提供者（用于按需解析 TraceId 等可选服务）</param>
     public SqlSugarRepositoryBase(
         ISqlSugarClientResolver clientResolver,
         IServiceProvider serviceProvider)
@@ -60,6 +54,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         _serviceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 审计开关业务对象：传入实体 Type 供 AOP 辨识该条 Diff 属于哪个实体类型
+    /// </summary>
+    private static readonly Type AuditBusinessData = typeof(TEntity);
 
     #region 新增
 
@@ -73,8 +72,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         TryFillTraceId(entity);
 
-        var inserted = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
-        await TryWriteAuditLogAsync(null, inserted, OperationCreate, cancellationToken);
+        var inserted = await DbClient.Insertable(entity)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteReturnEntityAsync();
         return inserted;
     }
 
@@ -106,12 +106,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             TryFillTraceId(entity);
         }
 
-        await DbClient.Insertable(entityArray).ExecuteCommandAsync(cancellationToken);
-
-        foreach (var entity in entityArray)
-        {
-            await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
-        }
+        await DbClient.Insertable(entityArray)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
         return entityArray;
     }
 
@@ -127,11 +124,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken)
+        // 预读仅用于租户安全校验（Updateable(entity) 不走 QueryFilter，防止越权）
+        _ = await GetByIdAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
 
-        await DbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
-        await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
+        await DbClient.Updateable(entity)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
         return entity;
     }
 
@@ -144,11 +143,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(whereExpression);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // 条件更新需显式 EnableQueryFilter 让全局过滤器生效
         var affectedRows = await DbClient.Updateable<TEntity>()
             .SetColumns(columns)
             .Where(whereExpression)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -168,29 +167,24 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        // 租户安全校验：确保所有实体 Id 都在当前租户可见范围内
         var idArray = entityArray.Select(e => e.BasicId).Distinct().ToArray();
-        var beforeEntities = await CreateQueryable()
+        var existingIds = await CreateQueryable()
             .Where(e => idArray.Contains(e.BasicId))
+            .Select(e => e.BasicId)
             .ToListAsync(cancellationToken);
-        var beforeMap = beforeEntities.ToDictionary(e => e.BasicId);
-
+        var existingSet = existingIds.ToHashSet();
         foreach (var entity in entityArray)
         {
-            if (!beforeMap.ContainsKey(entity.BasicId))
+            if (!existingSet.Contains(entity.BasicId))
             {
                 throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
             }
         }
 
-        await DbClient.Updateable(entityArray).ExecuteCommandAsync(cancellationToken);
-
-        foreach (var entity in entityArray)
-        {
-            if (beforeMap.TryGetValue(entity.BasicId, out var beforeEntity))
-            {
-                await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
-            }
-        }
+        await DbClient.Updateable(entityArray)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
         return entityArray;
     }
 
@@ -209,13 +203,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         if (entity.IsTransient())
         {
             TryFillTraceId(entity);
-            var insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
-            if (insertedRows > 0)
-            {
-                await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
-                return true;
-            }
-            return false;
+            var insertedRows = await DbClient.Insertable(entity)
+                .EnableDiffLogEvent(AuditBusinessData)
+                .ExecuteCommandAsync(cancellationToken);
+            return insertedRows > 0;
         }
 
         var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken);
@@ -224,11 +215,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return false;
         }
 
-        var affectedRows = await DbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
-        if (affectedRows > 0)
-        {
-            await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
-        }
+        var affectedRows = await DbClient.Updateable(entity)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
 
@@ -259,13 +248,11 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
                 TryFillTraceId(entity);
             }
 
-            var insertedRows = await DbClient.Insertable(addEntities).ExecuteCommandAsync(cancellationToken);
+            var insertedRows = await DbClient.Insertable(addEntities)
+                .EnableDiffLogEvent(AuditBusinessData)
+                .ExecuteCommandAsync(cancellationToken);
             if (insertedRows > 0)
             {
-                foreach (var entity in addEntities)
-                {
-                    await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
-                }
                 hasChanges = true;
             }
         }
@@ -273,29 +260,24 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         if (updateEntities.Length > 0)
         {
             var updateIds = updateEntities.Select(e => e.BasicId).Distinct().ToArray();
-            var beforeEntities = await CreateQueryable()
+            var existingIds = await CreateQueryable()
                 .Where(e => updateIds.Contains(e.BasicId))
+                .Select(e => e.BasicId)
                 .ToListAsync(cancellationToken);
-            var beforeMap = beforeEntities.ToDictionary(e => e.BasicId);
-
+            var existingSet = existingIds.ToHashSet();
             foreach (var entity in updateEntities)
             {
-                if (!beforeMap.ContainsKey(entity.BasicId))
+                if (!existingSet.Contains(entity.BasicId))
                 {
                     throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
                 }
             }
 
-            var updatedRows = await DbClient.Updateable(updateEntities).ExecuteCommandAsync(cancellationToken);
+            var updatedRows = await DbClient.Updateable(updateEntities)
+                .EnableDiffLogEvent(AuditBusinessData)
+                .ExecuteCommandAsync(cancellationToken);
             if (updatedRows > 0)
             {
-                foreach (var entity in updateEntities)
-                {
-                    if (beforeMap.TryGetValue(entity.BasicId, out var beforeEntity))
-                    {
-                        await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
-                    }
-                }
                 hasChanges = true;
             }
         }
@@ -315,21 +297,14 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken);
-        if (beforeEntity is null)
-        {
-            return false;
-        }
+        // 租户安全校验
+        _ = await GetByIdAsync(entity.BasicId, cancellationToken) ?? throw new InvalidOperationException("删除失败：实体不存在或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(entity.BasicId!)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
-
-        if (affectedRows > 0)
-        {
-            await TryWriteAuditLogAsync(beforeEntity, null, OperationDelete, cancellationToken);
-        }
         return affectedRows > 0;
     }
 
@@ -340,8 +315,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var beforeEntity = await GetByIdAsync(id, cancellationToken);
-        if (beforeEntity is null)
+        // 租户安全校验
+        if (await GetByIdAsync(id, cancellationToken) is null)
         {
             return false;
         }
@@ -349,12 +324,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(id!)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
-
-        if (affectedRows > 0)
-        {
-            await TryWriteAuditLogAsync(beforeEntity, null, OperationDelete, cancellationToken);
-        }
         return affectedRows > 0;
     }
 
@@ -380,6 +351,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -402,6 +374,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -417,6 +390,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .Where(predicate)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
     }
@@ -456,6 +430,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 如实体实现 <c>ITraceableEntity</c> 且 TraceId 为空，则自动从 <c>ITraceIdProvider</c> 填充
     /// </summary>
+    /// <remarks>
+    /// TraceId 是跨服务链路追踪标识，非审计字段；仓储侧做最小填充仅是无 AOP 链路时的兜底。
+    /// </remarks>
     private void TryFillTraceId(TEntity entity)
     {
         if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
@@ -470,90 +447,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         {
             traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
         }
-    }
-
-    /// <summary>
-    /// 尝试写审计日志（未注册审计服务时静默跳过）
-    /// </summary>
-    private async Task TryWriteAuditLogAsync(TEntity? beforeEntity, TEntity? afterEntity, string operationType, CancellationToken cancellationToken)
-    {
-        var contextProvider = _serviceProvider.GetService<IEntityAuditContextProvider>();
-        var writer = _serviceProvider.GetService<IEntityAuditLogWriter>();
-        if (contextProvider is null || writer is null || !contextProvider.ShouldAudit(typeof(TEntity)))
-        {
-            return;
-        }
-
-        var changedFields = BuildChangedFields(beforeEntity, afterEntity);
-        if (operationType == OperationUpdate && string.IsNullOrWhiteSpace(changedFields))
-        {
-            return;
-        }
-
-        var record = contextProvider.CreateBaseRecord();
-        record.OperationType = operationType;
-        record.EntityType = typeof(TEntity).Name;
-        record.EntityId = afterEntity?.BasicId?.ToString() ?? beforeEntity?.BasicId?.ToString();
-        record.BeforeData = SerializeForAudit(beforeEntity);
-        record.AfterData = SerializeForAudit(afterEntity);
-        record.ChangedFields = changedFields;
-
-        await writer.WriteAsync(record, cancellationToken);
-    }
-
-    /// <summary>
-    /// 序列化实体为审计 JSON（超长截断至 8000 字符）
-    /// </summary>
-    private static string? SerializeForAudit(TEntity? entity)
-    {
-        if (entity is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            var json = JsonSerializer.Serialize(entity, JsonOptions);
-            return json.Length > 8000 ? json[..8000] : json;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 构建字段变更明细（只保留有差异的字段）
-    /// </summary>
-    private static string? BuildChangedFields(TEntity? beforeEntity, TEntity? afterEntity)
-    {
-        if (beforeEntity is null || afterEntity is null)
-        {
-            return null;
-        }
-
-        var changed = new List<object>();
-        var properties = typeof(TEntity).GetProperties()
-            .Where(p => p.CanRead && p.Name is not "BasicId");
-
-        foreach (var property in properties)
-        {
-            var beforeValue = property.GetValue(beforeEntity);
-            var afterValue = property.GetValue(afterEntity);
-            if (Equals(beforeValue, afterValue))
-            {
-                continue;
-            }
-
-            changed.Add(new
-            {
-                Field = property.Name,
-                Before = beforeValue,
-                After = afterValue
-            });
-        }
-
-        return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
     }
 
     #endregion

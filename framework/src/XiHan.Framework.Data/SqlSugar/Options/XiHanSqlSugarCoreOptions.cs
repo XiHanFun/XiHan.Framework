@@ -112,6 +112,17 @@ public class XiHanSqlSugarCoreOptions
     public int SlowSqlThresholdMilliseconds { get; set; } = 10000;
 
     /// <summary>
+    /// 是否启用实体审计日志
+    /// </summary>
+    /// <remarks>
+    /// 开启后仓储的 Insert/Update/Delete 会走 SqlSugar DiffLog AOP，
+    /// 自动生成 before/after 快照并调用 <see cref="XiHan.Framework.Data.Auditing.IEntityAuditLogWriter"/> 落库。
+    /// 该开关需同时配合业务层实现 <see cref="XiHan.Framework.Data.Auditing.IEntityAuditLogWriter"/>
+    /// 与 <see cref="XiHan.Framework.Data.Auditing.IEntityAuditContextProvider"/>；未实现时即便打开也不会产生记录。
+    /// </remarks>
+    public bool EnableAuditLog { get; set; } = false;
+
+    /// <summary>
     /// 是否启用数据库初始化
     /// </summary>
     public bool EnableDbInitialization { get; set; } = false;
