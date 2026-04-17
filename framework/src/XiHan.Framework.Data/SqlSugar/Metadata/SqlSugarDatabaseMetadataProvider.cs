@@ -14,6 +14,7 @@
 
 using System.Reflection;
 using SqlSugar;
+using XiHan.Framework.Data.SqlSugar.Clients;
 
 namespace XiHan.Framework.Data.SqlSugar.Metadata;
 
@@ -22,15 +23,15 @@ namespace XiHan.Framework.Data.SqlSugar.Metadata;
 /// </summary>
 public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
 {
-    private readonly ISqlSugarDbContext _dbContext;
+    private readonly ISqlSugarClientResolver _clientResolver;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">数据库上下文</param>
-    public SqlSugarDatabaseMetadataProvider(ISqlSugarDbContext dbContext)
+    /// <param name="clientResolver">SqlSugar 客户端解析器</param>
+    public SqlSugarDatabaseMetadataProvider(ISqlSugarClientResolver clientResolver)
     {
-        _dbContext = dbContext;
+        _clientResolver = clientResolver;
     }
 
     /// <inheritdoc />
@@ -167,11 +168,8 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
 
     private ISqlSugarClient ResolveClient(string? connectionConfigId)
     {
-        if (string.IsNullOrWhiteSpace(connectionConfigId))
-        {
-            return _dbContext.GetClient();
-        }
-
-        return _dbContext.Scope.GetConnectionScope(connectionConfigId);
+        return string.IsNullOrWhiteSpace(connectionConfigId)
+            ? _clientResolver.GetCurrentClient()
+            : _clientResolver.GetClient(connectionConfigId);
     }
 }
