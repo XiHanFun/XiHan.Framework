@@ -13,7 +13,9 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using SqlSugar;
 using System.Linq.Expressions;
+using XiHan.Framework.Data.SqlSugar.Clients;
 
 namespace XiHan.Framework.Data.SqlSugar.Seeders;
 
@@ -28,9 +30,9 @@ public abstract class DataSeederBase : IDataSeeder
     protected readonly ILogger Logger;
 
     /// <summary>
-    /// SqlSugar 数据上下文
+    /// SqlSugar 客户端解析器
     /// </summary>
-    protected readonly ISqlSugarDbContext DbContext;
+    protected readonly ISqlSugarClientResolver ClientResolver;
 
     /// <summary>
     /// 服务提供者
@@ -40,15 +42,20 @@ public abstract class DataSeederBase : IDataSeeder
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据上下文</param>
+    /// <param name="clientResolver">SqlSugar 客户端解析器</param>
     /// <param name="logger">日志记录器</param>
     /// <param name="serviceProvider">服务提供者</param>
-    protected DataSeederBase(ISqlSugarDbContext dbContext, ILogger logger, IServiceProvider serviceProvider)
+    protected DataSeederBase(ISqlSugarClientResolver clientResolver, ILogger logger, IServiceProvider serviceProvider)
     {
-        DbContext = dbContext;
+        ClientResolver = clientResolver;
         Logger = logger;
         ServiceProvider = serviceProvider;
     }
+
+    /// <summary>
+    /// 当前租户对应的 SqlSugar 客户端
+    /// </summary>
+    protected ISqlSugarClient DbClient => ClientResolver.GetCurrentClient();
 
     /// <summary>
     /// 种子数据优先级（数字越小优先级越高）
@@ -91,7 +98,7 @@ public abstract class DataSeederBase : IDataSeeder
     /// <returns></returns>
     protected async Task<bool> HasDataAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
     {
-        return await DbContext.GetClient().Queryable<T>().AnyAsync(predicate);
+        return await DbClient.Queryable<T>().AnyAsync(predicate);
     }
 
     /// <summary>
@@ -106,7 +113,7 @@ public abstract class DataSeederBase : IDataSeeder
             return;
         }
 
-        await DbContext.GetClient().Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
+        await DbClient.Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
         Logger.LogInformation("已插入 {Count} 条 {EntityType} 数据", entities.Count, typeof(T).Name);
     }
 }

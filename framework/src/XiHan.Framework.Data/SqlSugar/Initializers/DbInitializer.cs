@@ -19,6 +19,7 @@ using SqlSugar;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Entities.Abstracts;
@@ -32,7 +33,7 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 /// </summary>
 public class DbInitializer : IDbInitializer, IScopedDependency
 {
-    private readonly ISqlSugarDbContext _dbContext;
+    private readonly ISqlSugarClientResolver _clientResolver;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<DbInitializer> _logger;
     private readonly XiHanSqlSugarCoreOptions _options;
@@ -42,13 +43,13 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     /// 构造函数
     /// </summary>
     public DbInitializer(
-        ISqlSugarDbContext dbContext,
+        ISqlSugarClientResolver clientResolver,
         IServiceProvider serviceProvider,
         ILogger<DbInitializer> logger,
         IOptions<XiHanSqlSugarCoreOptions> options,
         ICurrentTenant currentTenant)
     {
-        _dbContext = dbContext;
+        _clientResolver = clientResolver;
         _serviceProvider = serviceProvider;
         _logger = logger;
         _options = options.Value;
@@ -379,12 +380,9 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
     private ISqlSugarClient ResolveDbClient(string? connectionConfigId = null)
     {
-        if (string.IsNullOrWhiteSpace(connectionConfigId))
-        {
-            return _dbContext.GetClient();
-        }
-
-        return _dbContext.GetClient(connectionConfigId);
+        return string.IsNullOrWhiteSpace(connectionConfigId)
+            ? _clientResolver.GetCurrentClient()
+            : _clientResolver.GetClient(connectionConfigId);
     }
 
     private (long? TenantId, string? TenantName, string ConnectionLabel) ResolveTenantScope(string connectionConfigId)

@@ -13,8 +13,8 @@
 #endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
-using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Specifications.Abstracts;
@@ -33,14 +33,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据上下文</param>
-    /// <param name="splitTableExecutor">分表执行器</param>
+    /// <param name="clientResolver">SqlSugar 客户端解析器</param>
     /// <param name="serviceProvider">服务提供者</param>
     public SqlSugarSoftDeleteRepository(
-        ISqlSugarDbContext dbContext,
-        ISqlSugarSplitTableExecutor splitTableExecutor,
+        ISqlSugarClientResolver clientResolver,
         IServiceProvider serviceProvider)
-        : base(dbContext, splitTableExecutor, serviceProvider)
+        : base(clientResolver, serviceProvider)
     {
     }
 
@@ -156,7 +154,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = CreateTenantQueryable().ApplySpecification(specification);
+        var query = CreateQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await SoftDeleteRangeAsync(entities, cancellationToken);
     }

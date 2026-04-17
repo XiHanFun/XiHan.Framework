@@ -14,9 +14,9 @@
 
 using SqlSugar;
 using System.Linq.Expressions;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Helpers;
-using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -26,143 +26,95 @@ using XiHan.Framework.Domain.Specifications.Abstracts;
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
 /// <summary>
-/// SqlSugar 仓储基类
+/// SqlSugar 只读仓储基类
 /// </summary>
+/// <remarks>
+/// 架构分层：
+/// <list type="bullet">
+///   <item>租户连接选择 → 由 <see cref="ISqlSugarClientResolver"/> + <c>ISqlSugarTenantConnectionResolver</c> 自动解析。</item>
+///   <item>租户行级过滤 + 软删过滤 → 由 <c>QueryFilter.AddTableFilter</c> 全局 AOP 统一注入，仓储无感。</item>
+///   <item>分表实体 → 禁止使用常规仓储，请改用 <see cref="ISplitRepositoryBase{TEntity}"/>。</item>
+/// </list>
+/// 仓储方法专注纯业务 CRUD；跨租户/含软删场景使用 <see cref="CreateNoTenantQueryable"/> / <see cref="CreateWithDeletedQueryable"/>。
+/// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
 public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase<TEntity, TKey>
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private readonly ISqlSugarDbContext _dbContext;
-    private readonly ISqlSugarSplitTableExecutor _splitTableExecutor;
-
-    /// <summary>
-    /// 分表执行器
-    /// </summary>
-    protected ISqlSugarSplitTableExecutor SplitTableExecutor => _splitTableExecutor;
-
-    /// <summary>
-    /// 是否分表实体
-    /// </summary>
-    protected bool IsSplitTableEntity => _splitTableExecutor.IsSplitTableEntity<TEntity>();
+    private readonly ISqlSugarClientResolver _clientResolver;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据上下文</param>
-    /// <param name="splitTableExecutor">分表执行器</param>
-    public SqlSugarReadOnlyRepository(
-        ISqlSugarDbContext dbContext,
-        ISqlSugarSplitTableExecutor splitTableExecutor)
+    /// <param name="clientResolver">SqlSugar 客户端解析器</param>
+    public SqlSugarReadOnlyRepository(ISqlSugarClientResolver clientResolver)
     {
-        _dbContext = dbContext;
-        _splitTableExecutor = splitTableExecutor;
+        _clientResolver = clientResolver;
+        EnsureNotSplitEntity();
     }
 
     /// <summary>
-    /// SqlSugar 客户端
+    /// 当前租户对应的 SqlSugar 客户端（每次访问都按当前租户上下文解析）
     /// </summary>
-    protected ISqlSugarClient DbClient => _dbContext.GetClient();
+    protected ISqlSugarClient DbClient => _clientResolver.GetCurrentClient();
+
+    #region 查询构建
 
     /// <summary>
-    /// 创建默认查询（租户与软删除过滤由全局 QueryFilter 自动注入）
+    /// 创建默认查询（租户/软删过滤器由全局 AOP 自动生效）
     /// </summary>
-    /// <returns></returns>
-    protected virtual ISugarQueryable<TEntity> CreateTenantQueryable()
+    protected virtual ISugarQueryable<TEntity> CreateQueryable()
     {
-        return CreateQueryable();
+        return DbClient.Queryable<TEntity>();
     }
 
     /// <summary>
-    /// 创建忽略租户过滤的查询
+    /// 创建忽略租户过滤的查询（平台管理员跨租户场景使用，需权限校验）
     /// </summary>
-    /// <returns></returns>
     protected virtual ISugarQueryable<TEntity> CreateNoTenantQueryable()
     {
-        return CreateQueryable(ignoreTenantFilter: true);
-    }
-
-    /// <summary>
-    /// 创建包含软删除数据的查询
-    /// </summary>
-    /// <returns></returns>
-    protected virtual ISugarQueryable<TEntity> CreateWithDeletedQueryable()
-    {
-        return CreateQueryable(ignoreSoftDeleteFilter: true);
-    }
-
-    /// <summary>
-    /// 创建带租户隔离的查询
-    /// </summary>
-    /// <typeparam name="T">实体类型</typeparam>
-    /// <returns></returns>
-    protected ISugarQueryable<T> CreateTenantQueryable<T>() where T : class, new()
-    {
-        return CreateQueryable<T>();
-    }
-
-    /// <summary>
-    /// 创建查询
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="ignoreTenantFilter"></param>
-    /// <param name="ignoreSoftDeleteFilter"></param>
-    /// <param name="splitBeginTime"></param>
-    /// <param name="splitEndTime"></param>
-    /// <returns></returns>
-    protected ISugarQueryable<T> CreateQueryable<T>(
-        bool ignoreTenantFilter = false,
-        bool ignoreSoftDeleteFilter = false,
-        DateTimeOffset? splitBeginTime = null,
-        DateTimeOffset? splitEndTime = null)
-        where T : class, new()
-    {
-        var queryable = _splitTableExecutor.CreateQueryable<T>(DbClient, splitBeginTime, splitEndTime);
-
-        if (ignoreTenantFilter && SqlSugarEntityTypeHelper.IsMultiTenantEntity<T>())
+        var queryable = DbClient.Queryable<TEntity>();
+        if (SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>())
         {
             queryable = queryable.ClearFilter<IMultiTenantEntity>();
         }
-
-        if (ignoreSoftDeleteFilter && SqlSugarEntityTypeHelper.IsSoftDeleteEntity<T>())
-        {
-            queryable = queryable.ClearFilter<ISoftDelete>();
-        }
-
         return queryable;
     }
 
     /// <summary>
-    /// 创建查询
+    /// 创建包含软删除数据的查询（审计/恢复场景使用）
     /// </summary>
-    /// <param name="ignoreTenantFilter"></param>
-    /// <param name="ignoreSoftDeleteFilter"></param>
-    /// <param name="splitBeginTime"></param>
-    /// <param name="splitEndTime"></param>
-    /// <returns></returns>
-    protected ISugarQueryable<TEntity> CreateQueryable(
-        bool ignoreTenantFilter = false,
-        bool ignoreSoftDeleteFilter = false,
-        DateTimeOffset? splitBeginTime = null,
-        DateTimeOffset? splitEndTime = null)
+    protected virtual ISugarQueryable<TEntity> CreateWithDeletedQueryable()
     {
-        return CreateQueryable<TEntity>(ignoreTenantFilter, ignoreSoftDeleteFilter, splitBeginTime, splitEndTime);
+        var queryable = DbClient.Queryable<TEntity>();
+        if (SqlSugarEntityTypeHelper.IsSoftDeleteEntity<TEntity>())
+        {
+            queryable = queryable.ClearFilter<ISoftDelete>();
+        }
+        return queryable;
     }
+
+    /// <summary>
+    /// 创建辅助实体类型的查询（跨实体联查场景）
+    /// </summary>
+    protected ISugarQueryable<T> CreateQueryable<T>() where T : class, new()
+    {
+        return DbClient.Queryable<T>();
+    }
+
+    #endregion
 
     #region 查询
 
     /// <summary>
     /// 根据主键获取实体
     /// </summary>
-    /// <param name="id">主键</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
     public async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(entity => entity.BasicId.Equals(id))
             .FirstAsync(cancellationToken);
     }
@@ -170,429 +122,318 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// <summary>
     /// 根据主键集合获取实体
     /// </summary>
-    /// <param name="ids">主键集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
-        // 内部实现使用 List<T> 以提高性能
-        var idList = ids.ToArray();
-        if (idList.Length == 0)
+        var idArray = ids.ToArray();
+        if (idArray.Length == 0)
         {
             return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await CreateTenantQueryable()
-            .Where(it => idList.Contains(it.BasicId))
+        return await CreateQueryable()
+            .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
-        return result;
     }
 
     /// <summary>
-    /// 根据条件获取实体
+    /// 根据条件获取首个实体
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
     public async Task<TEntity?> GetFirstAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(predicate)
             .FirstAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据规约获取实体
+    /// 根据规约获取首个实体
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体，如果不存在则返回 <c>null</c></returns>
     public async Task<TEntity?> GetFirstAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await query.FirstAsync(cancellationToken);
+        return await ApplySpecification(CreateQueryable(), specification)
+            .FirstAsync(cancellationToken);
     }
 
     /// <summary>
     /// 获取所有实体
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        // SqlSugar 内部返回 List<T>，符合"内部实现用具体类型"原则
-        return await CreateTenantQueryable()
-            .ToListAsync(cancellationToken);
+        return await CreateQueryable().ToListAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据条件获取所有实体
+    /// 根据条件获取实体列表
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(predicate)
             .ToListAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据条件和排序获取所有实体
+    /// 根据条件获取实体列表（带排序）
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="orderBy">排序</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, object>> orderBy, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(orderBy);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(predicate)
             .OrderBy(orderBy)
             .ToListAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据规约获取所有实体
+    /// 根据规约获取实体列表
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await query.ToListAsync(cancellationToken);
+        return await ApplySpecification(CreateQueryable(), specification)
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// 获取实体总数
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await CreateTenantQueryable()
-            .CountAsync(cancellationToken);
+        return await CreateQueryable().CountAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据条件获取实体总数
+    /// 根据条件统计
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(predicate)
             .CountAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据规约获取实体总数
+    /// 根据规约统计
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实体总数</returns>
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await query.CountAsync(cancellationToken);
+        return await ApplySpecification(CreateQueryable(), specification)
+            .CountAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据条件判断是否存在实体
+    /// 根据条件判断是否存在
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否存在实体</returns>
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateTenantQueryable()
+        return await CreateQueryable()
             .Where(predicate)
             .AnyAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 根据规约判断是否存在实体
+    /// 根据规约判断是否存在
     /// </summary>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否存在实体</returns>
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
         cancellationToken.ThrowIfCancellationRequested();
-
-        return await query.AnyAsync(cancellationToken);
+        return await ApplySpecification(CreateQueryable(), specification)
+            .AnyAsync(cancellationToken);
     }
 
-    #endregion 查询
-
-    #region 规约支持
-
-    /// <summary>
-    /// 应用规约
-    /// </summary>
-    /// <param name="query">查询表达式</param>
-    /// <param name="specification">规约</param>
-    /// <returns>应用规约后的查询表达式</returns>
-    private static ISugarQueryable<TEntity> ApplySpecification(ISugarQueryable<TEntity> query, ISpecification<TEntity> specification)
-    {
-        ArgumentNullException.ThrowIfNull(specification);
-
-        return query.Where(specification.ToExpression());
-    }
-
-    #endregion 规约支持
+    #endregion
 
     #region 分页查询
 
     /// <summary>
-    /// 获取分页数据
+    /// 分页
     /// </summary>
-    /// <param name="pageIndex">页码（从1开始）</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateTenantQueryable();
         RefAsync<int> totalCount = 0;
-        var items = await query
+        var items = await CreateQueryable()
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
-    /// 根据条件获取分页数据
+    /// 条件分页
     /// </summary>
-    /// <param name="pageIndex">页码（从1开始）</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateTenantQueryable().Where(predicate);
         RefAsync<int> totalCount = 0;
-        var items = await query
+        var items = await CreateQueryable()
+            .Where(predicate)
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
-    /// 根据条件获取分页数据（支持排序）
+    /// 条件 + 排序分页
     /// </summary>
-    /// <param name="pageIndex">页码（从1开始）</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="predicate">条件</param>
-    /// <param name="orderBy">排序</param>
-    /// <param name="isAscending">是否升序</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>> orderBy, bool isAscending = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(orderBy);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateTenantQueryable();
-
-        // 应用条件
-        if (predicate != null)
+        var query = CreateQueryable();
+        if (predicate is not null)
         {
             query = query.Where(predicate);
         }
-        // 应用排序
         query = isAscending ? query.OrderBy(orderBy) : query.OrderByDescending(orderBy);
 
         RefAsync<int> totalCount = 0;
-        var items = await query
-            .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
+        var items = await query.ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
-    /// 根据规约获取分页数据
+    /// 规约分页
     /// </summary>
-    /// <param name="pageIndex">页码（从1开始）</param>
-    /// <param name="pageSize">每页大小</param>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(int pageIndex, int pageSize, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
-
         RefAsync<int> totalCount = 0;
-        var items = await query
+        var items = await ApplySpecification(CreateQueryable(), specification)
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
     /// <summary>
-    /// 根据分页查询对象获取分页数据
+    /// 分页请求对象分页
     /// </summary>
-    /// <param name="pageRequestDto">分页查询对象</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateTenantQueryable();
-
-        // 使用扩展方法应用完整的查询条件
-        query = query.ApplyPageRequest(pageRequestDto);
-
-        // 使用扩展方法转换为分页结果
+        var query = CreateQueryable().ApplyPageRequest(pageRequestDto);
         return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
     /// <summary>
-    /// 根据分页查询对象和条件获取分页数据
+    /// 分页请求 + 条件分页
     /// </summary>
-    /// <param name="pageRequestDto">分页查询对象</param>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateTenantQueryable().Where(predicate);
-
-        // 使用扩展方法应用完整的查询条件
-        query = query.ApplyPageRequest(pageRequestDto);
-
-        // 使用扩展方法转换为分页结果
+        var query = CreateQueryable().Where(predicate).ApplyPageRequest(pageRequestDto);
         return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
     /// <summary>
-    /// 根据分页查询对象和规约获取分页数据
+    /// 分页请求 + 规约分页
     /// </summary>
-    /// <param name="pageRequestDto">分页查询对象</param>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAsync(PageRequestDtoBase pageRequestDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(CreateTenantQueryable(), specification);
-
-        // 使用扩展方法应用完整的查询条件
-        query = query.ApplyPageRequest(pageRequestDto);
-
-        // 使用扩展方法转换为分页结果
+        var query = ApplySpecification(CreateQueryable(), specification).ApplyPageRequest(pageRequestDto);
         return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
-    #endregion 分页查询
+    #endregion
 
     #region 自动查询分页
 
     /// <summary>
-    /// 自动查询分页数据（根据查询DTO自动构建条件）
+    /// 自动查询分页（根据 DTO 构建条件）
     /// </summary>
-    /// <param name="queryDto">查询DTO对象</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
-
-        var queryable = CreateTenantQueryable();
-
-        // 使用扩展方法自动构建和执行查询
-        return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable().ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     /// <summary>
-    /// 自动查询分页数据（带额外条件）
+    /// 自动查询分页（带额外条件）
     /// </summary>
-    /// <param name="queryDto">查询DTO对象</param>
-    /// <param name="predicate">额外的条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryable = CreateTenantQueryable().Where(predicate);
-
-        return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable().Where(predicate).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     /// <summary>
-    /// 自动查询分页数据（带规约）
+    /// 自动查询分页（带规约）
     /// </summary>
-    /// <param name="queryDto">查询DTO对象</param>
-    /// <param name="specification">规约</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>分页结果</returns>
     public async Task<PageResultDtoBase<TEntity>> GetPagedAutoAsync(object queryDto, ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryable = ApplySpecification(CreateTenantQueryable(), specification);
-
-        return await queryable.ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await ApplySpecification(CreateQueryable(), specification).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
-    #endregion 自动查询分页
+    #endregion
+
+    #region 规约支持
+
+    /// <summary>
+    /// 应用规约到查询
+    /// </summary>
+    private static ISugarQueryable<TEntity> ApplySpecification(ISugarQueryable<TEntity> query, ISpecification<TEntity> specification)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        return query.Where(specification.ToExpression());
+    }
+
+    #endregion
+
+    /// <summary>
+    /// 分表实体防呆：不允许用常规仓储承载
+    /// </summary>
+    private static void EnsureNotSplitEntity()
+    {
+        if (SqlSugarEntityTypeHelper.IsSplitTableEntity<TEntity>())
+        {
+            throw new InvalidOperationException(
+                $"实体 {typeof(TEntity).FullName} 是分表实体，请改用 ISplitRepositoryBase<{typeof(TEntity).Name}>。");
+        }
+    }
 }

@@ -13,53 +13,59 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using SqlSugar;
 using System.Linq.Expressions;
 using System.Text.Json;
 using XiHan.Framework.Data.Auditing;
-using XiHan.Framework.Data.SqlSugar.SplitTables;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 
 namespace XiHan.Framework.Data.SqlSugar.Repository;
 
 /// <summary>
-/// SqlSugar 仓储基类
+/// SqlSugar 仓储基类（读 + 写）
 /// </summary>
+/// <remarks>
+/// 设计原则：
+/// <list type="bullet">
+///   <item>方法体专注纯业务语义：不包含 <c>.SplitTable()</c>、<c>.EnableQueryFilter()</c> 等横切细节。</item>
+///   <item>租户连接/租户过滤/软删过滤 统一由 <see cref="ISqlSugarClientResolver"/> + 全局 QueryFilter AOP 承担。</item>
+///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入，无需仓储侧处理。</item>
+///   <item>审计日志通过可选的 <see cref="IEntityAuditLogWriter"/> 写入，未注册时不产生开销。</item>
+/// </list>
+/// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
 public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<TEntity, TKey>, IRepositoryBase<TEntity, TKey>
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false
-    };
+    private const string OperationCreate = "Create";
+    private const string OperationUpdate = "Update";
+    private const string OperationDelete = "Delete";
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="dbContext">SqlSugar 数据上下文</param>
-    /// <param name="splitTableExecutor">分表执行器</param>
-    /// <param name="serviceProvider">服务提供者</param>
+    /// <param name="clientResolver">SqlSugar 客户端解析器</param>
+    /// <param name="serviceProvider">服务提供者（审计/TraceId 可选服务）</param>
     public SqlSugarRepositoryBase(
-        ISqlSugarDbContext dbContext,
-        ISqlSugarSplitTableExecutor splitTableExecutor,
+        ISqlSugarClientResolver clientResolver,
         IServiceProvider serviceProvider)
-        : base(dbContext, splitTableExecutor)
+        : base(clientResolver)
     {
         _serviceProvider = serviceProvider;
     }
 
+    #region 新增
+
     /// <summary>
     /// 添加实体
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>已添加的实体</returns>
     public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -67,196 +73,134 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         TryFillTraceId(entity);
 
-        if (IsSplitTableEntity)
-        {
-            await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
-            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
-            return entity;
-        }
-
-        var insertedEntity = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
-        await TryWriteAuditLogAsync(null, insertedEntity, "Create", cancellationToken);
-        return insertedEntity;
+        var inserted = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
+        await TryWriteAuditLogAsync(null, inserted, OperationCreate, cancellationToken);
+        return inserted;
     }
 
     /// <summary>
     /// 添加实体并返回主键
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>主键</returns>
     public async Task<TKey> AddReturnIdAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(entity);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        TryFillTraceId(entity);
-
-        if (IsSplitTableEntity)
-        {
-            await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
-            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
-            return entity.BasicId;
-        }
-
-        var insertedEntity = await DbClient.Insertable(entity).ExecuteReturnEntityAsync();
-        await TryWriteAuditLogAsync(null, insertedEntity, "Create", cancellationToken);
-        return insertedEntity.BasicId;
+        var inserted = await AddAsync(entity, cancellationToken);
+        return inserted.BasicId;
     }
 
     /// <summary>
-    /// 添加实体集合
+    /// 批量添加实体
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        // 内部实现使用 Array<T> 以提高性能
-        var entityList = entities.ToArray();
-        if (entityList.Length == 0)
+        var entityArray = entities.ToArray();
+        if (entityArray.Length == 0)
         {
             return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        foreach (var entity in entityList)
+        foreach (var entity in entityArray)
         {
             TryFillTraceId(entity);
         }
 
-        if (IsSplitTableEntity)
-        {
-            await SplitTableExecutor.InsertAsync(DbClient, entityList, cancellationToken);
-            foreach (var entity in entityList)
-            {
-                await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
-            }
-            return entityList;
-        }
+        await DbClient.Insertable(entityArray).ExecuteCommandAsync(cancellationToken);
 
-        await DbClient.Insertable(entityList).ExecuteCommandAsync(cancellationToken);
-        foreach (var entity in entityList)
+        foreach (var entity in entityArray)
         {
-            await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+            await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
         }
-        return entityList;
+        return entityArray;
     }
 
+    #endregion
+
+    #region 更新
+
     /// <summary>
-    /// 更新实体
+    /// 按主键更新实体
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>已更新的实体</returns>
     public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-
         cancellationToken.ThrowIfCancellationRequested();
-        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken)
+
+        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
 
-        if (IsSplitTableEntity)
-        {
-            await SplitTableExecutor.UpdateAsync(DbClient, [entity], cancellationToken);
-        }
-        else
-        {
-            await DbClient.Updateable(entity)
-                .ExecuteCommandAsync(cancellationToken);
-        }
-
-        await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
+        await DbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
+        await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
         return entity;
     }
 
     /// <summary>
-    /// 更新实体
+    /// 按条件更新（SetColumns + Where）
     /// </summary>
-    /// <param name="columns">更新列</param>
-    /// <param name="whereExpression">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> UpdateAsync(Expression<Func<TEntity, TEntity>> columns, Expression<Func<TEntity, bool>> whereExpression, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(columns);
         ArgumentNullException.ThrowIfNull(whereExpression);
-
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (IsSplitTableEntity)
-        {
-            var affectedRows = await DbClient.Updateable<TEntity>()
-                .SetColumns(columns)
-                .Where(whereExpression)
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-            return affectedRows > 0;
-        }
-
-        var updatedRows = await DbClient.Updateable<TEntity>()
+        // 条件更新需显式 EnableQueryFilter 让全局过滤器生效
+        var affectedRows = await DbClient.Updateable<TEntity>()
             .SetColumns(columns)
             .Where(whereExpression)
             .EnableQueryFilter()
             .ExecuteCommandAsync(cancellationToken);
-        return updatedRows > 0;
+        return affectedRows > 0;
     }
 
     /// <summary>
-    /// 更新实体集合
+    /// 批量更新实体
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>只读实体集合</returns>
     public async Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        // 内部实现使用 List<T> 以提高性能
-        var entityList = entities.ToList();
-        if (entityList.Count == 0)
+        var entityArray = entities.ToArray();
+        if (entityArray.Length == 0)
         {
             return [];
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var entityIds = entityList
-            .Select(entity => entity.BasicId)
-            .Distinct()
-            .ToArray();
-        var currentEntities = await CreateTenantQueryable()
-            .Where(entity => entityIds.Contains(entity.BasicId))
+
+        var idArray = entityArray.Select(e => e.BasicId).Distinct().ToArray();
+        var beforeEntities = await CreateQueryable()
+            .Where(e => idArray.Contains(e.BasicId))
             .ToListAsync(cancellationToken);
-        var currentEntityMap = currentEntities.ToDictionary(entity => entity.BasicId);
-        foreach (var entity in entityList)
+        var beforeMap = beforeEntities.ToDictionary(e => e.BasicId);
+
+        foreach (var entity in entityArray)
         {
-            if (!currentEntityMap.ContainsKey(entity.BasicId))
+            if (!beforeMap.ContainsKey(entity.BasicId))
             {
                 throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
             }
         }
 
-        if (IsSplitTableEntity)
-        {
-            await SplitTableExecutor.UpdateAsync(DbClient, entityList, cancellationToken);
-            return entityList;
-        }
+        await DbClient.Updateable(entityArray).ExecuteCommandAsync(cancellationToken);
 
-        await DbClient.Updateable(entityList)
-            .ExecuteCommandAsync(cancellationToken);
-        return entityList;
+        foreach (var entity in entityArray)
+        {
+            if (beforeMap.TryGetValue(entity.BasicId, out var beforeEntity))
+            {
+                await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
+            }
+        }
+        return entityArray;
     }
 
+    #endregion
+
+    #region 新增或更新
+
     /// <summary>
-    /// 新增或更新实体
+    /// 新增或更新单条实体（根据 IsTransient 判断）
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> AddOrUpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -264,59 +208,37 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (entity.IsTransient())
         {
-            int insertedRows;
-            if (IsSplitTableEntity)
-            {
-                insertedRows = await SplitTableExecutor.InsertAsync(DbClient, [entity], cancellationToken);
-            }
-            else
-            {
-                insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
-            }
+            TryFillTraceId(entity);
+            var insertedRows = await DbClient.Insertable(entity).ExecuteCommandAsync(cancellationToken);
             if (insertedRows > 0)
             {
-                await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+                await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
                 return true;
             }
-
             return false;
         }
 
-        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
+        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken);
         if (beforeEntity is null)
         {
             return false;
         }
 
-        int affectedRows;
-        if (IsSplitTableEntity)
-        {
-            affectedRows = await SplitTableExecutor.UpdateAsync(DbClient, [entity], cancellationToken);
-        }
-        else
-        {
-            affectedRows = await DbClient.Updateable(entity)
-                .ExecuteCommandAsync(cancellationToken);
-        }
-
+        var affectedRows = await DbClient.Updateable(entity).ExecuteCommandAsync(cancellationToken);
         if (affectedRows > 0)
         {
-            await TryWriteAuditLogAsync(beforeEntity, entity, "Update", cancellationToken);
+            await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
         }
         return affectedRows > 0;
     }
 
     /// <summary>
-    /// 批量新增或更新实体
+    /// 批量新增或更新（按 IsTransient 分组处理）
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> AddOrUpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        // 内部实现使用数组以提高性能
         var entityArray = entities.ToArray();
         if (entityArray.Length == 0)
         {
@@ -325,185 +247,127 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var addEntities = entityArray.Where(entity => entity.IsTransient()).ToArray();
-        var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
-
-        if (addEntities.Length == 0 && updateEntities.Length == 0)
-        {
-            return false;
-        }
+        var addEntities = entityArray.Where(e => e.IsTransient()).ToArray();
+        var updateEntities = entityArray.Where(e => !e.IsTransient()).ToArray();
 
         var hasChanges = false;
 
         if (addEntities.Length > 0)
         {
-            int insertedRows;
-            if (IsSplitTableEntity)
+            foreach (var entity in addEntities)
             {
-                insertedRows = await SplitTableExecutor.InsertAsync(DbClient, addEntities, cancellationToken);
+                TryFillTraceId(entity);
             }
-            else
-            {
-                insertedRows = await DbClient.Insertable(addEntities).ExecuteCommandAsync(cancellationToken);
-            }
-            hasChanges |= insertedRows > 0;
+
+            var insertedRows = await DbClient.Insertable(addEntities).ExecuteCommandAsync(cancellationToken);
             if (insertedRows > 0)
             {
                 foreach (var entity in addEntities)
                 {
-                    await TryWriteAuditLogAsync(null, entity, "Create", cancellationToken);
+                    await TryWriteAuditLogAsync(null, entity, OperationCreate, cancellationToken);
                 }
+                hasChanges = true;
             }
         }
 
         if (updateEntities.Length > 0)
         {
-            var updateEntityList = updateEntities.ToList();
-            var updateEntityIds = updateEntityList
-                .Select(entity => entity.BasicId)
-                .Distinct()
-                .ToArray();
-            var currentEntities = await CreateTenantQueryable()
-                .Where(entity => updateEntityIds.Contains(entity.BasicId))
+            var updateIds = updateEntities.Select(e => e.BasicId).Distinct().ToArray();
+            var beforeEntities = await CreateQueryable()
+                .Where(e => updateIds.Contains(e.BasicId))
                 .ToListAsync(cancellationToken);
-            var currentEntityMap = currentEntities.ToDictionary(entity => entity.BasicId);
+            var beforeMap = beforeEntities.ToDictionary(e => e.BasicId);
 
-            foreach (var updateEntity in updateEntityList)
+            foreach (var entity in updateEntities)
             {
-                if (!currentEntityMap.TryGetValue(updateEntity.BasicId, out _))
+                if (!beforeMap.ContainsKey(entity.BasicId))
                 {
                     throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
                 }
             }
 
-            int updatedRows;
-            if (IsSplitTableEntity)
-            {
-                updatedRows = await SplitTableExecutor.UpdateAsync(DbClient, updateEntityList, cancellationToken);
-            }
-            else
-            {
-                updatedRows = await DbClient.Updateable(updateEntityList)
-                    .ExecuteCommandAsync(cancellationToken);
-            }
-
+            var updatedRows = await DbClient.Updateable(updateEntities).ExecuteCommandAsync(cancellationToken);
             if (updatedRows > 0)
             {
-                foreach (var updateEntity in updateEntityList)
+                foreach (var entity in updateEntities)
                 {
-                    if (currentEntityMap.TryGetValue(updateEntity.BasicId, out var beforeEntity))
+                    if (beforeMap.TryGetValue(entity.BasicId, out var beforeEntity))
                     {
-                        await TryWriteAuditLogAsync(beforeEntity, updateEntity, "Update", cancellationToken);
+                        await TryWriteAuditLogAsync(beforeEntity, entity, OperationUpdate, cancellationToken);
                     }
                 }
+                hasChanges = true;
             }
-
-            hasChanges |= updatedRows > 0;
         }
 
         return hasChanges;
     }
 
+    #endregion
+
+    #region 删除
+
     /// <summary>
-    /// 删除实体
+    /// 按实体删除
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-        var beforeEntity = await TryGetCurrentEntityAsync(entity.BasicId, cancellationToken);
+
+        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken);
         if (beforeEntity is null)
         {
             return false;
         }
 
-        int affectedRows;
-        if (IsSplitTableEntity)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            affectedRows = await DbClient.Deleteable<TEntity>()
-                .Where(item => item.BasicId.Equals(entity.BasicId))
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-        }
-        else
-        {
-            affectedRows = await DbClient.Deleteable<TEntity>()
-                .Where(item => item.BasicId.Equals(entity.BasicId))
-                .EnableQueryFilter()
-                .ExecuteCommandAsync(cancellationToken);
-        }
+        var affectedRows = await DbClient.Deleteable<TEntity>()
+            .In(entity.BasicId!)
+            .EnableQueryFilter()
+            .ExecuteCommandAsync(cancellationToken);
 
         if (affectedRows > 0)
         {
-            await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
+            await TryWriteAuditLogAsync(beforeEntity, null, OperationDelete, cancellationToken);
         }
         return affectedRows > 0;
     }
 
     /// <summary>
-    /// 根据主键删除实体
+    /// 按主键删除
     /// </summary>
-    /// <param name="id">主键</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var beforeEntity = await TryGetCurrentEntityAsync(id, cancellationToken);
+
+        var beforeEntity = await GetByIdAsync(id, cancellationToken);
         if (beforeEntity is null)
         {
             return false;
         }
 
-        int affectedRows;
-        if (IsSplitTableEntity)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            affectedRows = await DbClient.Deleteable<TEntity>()
-                .In(id)
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-        }
-        else
-        {
-            affectedRows = await DbClient.Deleteable<TEntity>()
-                .In(id)
-                .EnableQueryFilter()
-                .ExecuteCommandAsync(cancellationToken);
-        }
+        var affectedRows = await DbClient.Deleteable<TEntity>()
+            .In(id!)
+            .EnableQueryFilter()
+            .ExecuteCommandAsync(cancellationToken);
 
         if (affectedRows > 0)
         {
-            await TryWriteAuditLogAsync(beforeEntity, null, "Delete", cancellationToken);
+            await TryWriteAuditLogAsync(beforeEntity, null, OperationDelete, cancellationToken);
         }
         return affectedRows > 0;
     }
 
     /// <summary>
-    /// 批量删除实体
+    /// 批量按实体删除
     /// </summary>
-    /// <param name="entities">实体集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        // 内部实现使用数组以提高性能
-        var entityArray = entities.ToArray();
-        if (entityArray.Length == 0)
-        {
-            return false;
-        }
-
-        var idArray = entityArray.Select(entity => entity.BasicId)
-            .Where(id => id is not null)
+        var idArray = entities
+            .Where(e => e.BasicId is not null)
+            .Select(e => e.BasicId!)
             .ToArray();
 
         if (idArray.Length == 0)
@@ -512,15 +376,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (IsSplitTableEntity)
-        {
-            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
-                .In(idArray)
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-            return splitTableAffectedRows > 0;
-        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
@@ -530,32 +385,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     }
 
     /// <summary>
-    /// 批量删除实体
+    /// 批量按主键删除
     /// </summary>
-    /// <param name="ids">主键集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
-        // 内部实现使用数组以提高性能
-        var idArray = ids.ToArray();
+        var idArray = ids.Cast<object>().ToArray();
         if (idArray.Length == 0)
         {
             return false;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (IsSplitTableEntity)
-        {
-            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
-                .In(idArray)
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-            return splitTableAffectedRows > 0;
-        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
@@ -565,25 +407,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     }
 
     /// <summary>
-    /// 根据条件删除实体
+    /// 按条件删除
     /// </summary>
-    /// <param name="predicate">条件</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
-
-        if (IsSplitTableEntity)
-        {
-            var splitTableAffectedRows = await DbClient.Deleteable<TEntity>()
-                .Where(predicate)
-                .EnableQueryFilter()
-                .SplitTable(tables => tables)
-                .ExecuteCommandAsync();
-            return splitTableAffectedRows > 0;
-        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .Where(predicate)
@@ -592,43 +421,89 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         return affectedRows > 0;
     }
 
+    #endregion
+
+    #region 事务
+
     /// <summary>
-    /// 使用事务执行操作
+    /// 在事务中执行操作（无返回值）
     /// </summary>
-    /// <param name="action">需要在事务中执行的操作</param>
-    /// <param name="cancellationToken">取消令牌</param>
     public async Task<bool> UseTranAsync(Func<Task> action, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(action);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await DbClient.Ado.UseTranAsync(async () =>
-        {
-            await action();
-        });
+        var result = await DbClient.Ado.UseTranAsync(async () => await action());
         return result.IsSuccess;
     }
 
     /// <summary>
-    /// 使用事务执行操作并返回结果
+    /// 在事务中执行操作（带返回值）
     /// </summary>
-    /// <typeparam name="TResult">返回结果类型</typeparam>
-    /// <param name="func">需要在事务中执行的操作</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>事务操作的结果</returns>
     public async Task<TResult> UseTranAsync<TResult>(Func<Task<TResult>> func, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(func);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await DbClient.Ado.UseTranAsync(async () =>
-        {
-            return await func();
-        });
-
+        var result = await DbClient.Ado.UseTranAsync(async () => await func());
         return result.IsSuccess ? result.Data : default!;
     }
 
+    #endregion
+
+    #region 辅助
+
+    /// <summary>
+    /// 如实体实现 <c>ITraceableEntity</c> 且 TraceId 为空，则自动从 <c>ITraceIdProvider</c> 填充
+    /// </summary>
+    private void TryFillTraceId(TEntity entity)
+    {
+        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
+        {
+            return;
+        }
+
+        var traceIdProvider = _serviceProvider.GetService<ITraceIdProvider>();
+        var traceId = traceIdProvider?.GetCurrentTraceId();
+
+        if (!string.IsNullOrWhiteSpace(traceId))
+        {
+            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
+        }
+    }
+
+    /// <summary>
+    /// 尝试写审计日志（未注册审计服务时静默跳过）
+    /// </summary>
+    private async Task TryWriteAuditLogAsync(TEntity? beforeEntity, TEntity? afterEntity, string operationType, CancellationToken cancellationToken)
+    {
+        var contextProvider = _serviceProvider.GetService<IEntityAuditContextProvider>();
+        var writer = _serviceProvider.GetService<IEntityAuditLogWriter>();
+        if (contextProvider is null || writer is null || !contextProvider.ShouldAudit(typeof(TEntity)))
+        {
+            return;
+        }
+
+        var changedFields = BuildChangedFields(beforeEntity, afterEntity);
+        if (operationType == OperationUpdate && string.IsNullOrWhiteSpace(changedFields))
+        {
+            return;
+        }
+
+        var record = contextProvider.CreateBaseRecord();
+        record.OperationType = operationType;
+        record.EntityType = typeof(TEntity).Name;
+        record.EntityId = afterEntity?.BasicId?.ToString() ?? beforeEntity?.BasicId?.ToString();
+        record.BeforeData = SerializeForAudit(beforeEntity);
+        record.AfterData = SerializeForAudit(afterEntity);
+        record.ChangedFields = changedFields;
+
+        await writer.WriteAsync(record, cancellationToken);
+    }
+
+    /// <summary>
+    /// 序列化实体为审计 JSON（超长截断至 8000 字符）
+    /// </summary>
     private static string? SerializeForAudit(TEntity? entity)
     {
         if (entity is null)
@@ -647,6 +522,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
     }
 
+    /// <summary>
+    /// 构建字段变更明细（只保留有差异的字段）
+    /// </summary>
     private static string? BuildChangedFields(TEntity? beforeEntity, TEntity? afterEntity)
     {
         if (beforeEntity is null || afterEntity is null)
@@ -678,55 +556,5 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         return changed.Count == 0 ? null : JsonSerializer.Serialize(changed, JsonOptions);
     }
 
-    /// <summary>
-    /// 如果实体实现了 ITraceableEntity 且 TraceId 为空，则自动从 ITraceIdProvider 填充
-    /// </summary>
-    private void TryFillTraceId(TEntity entity)
-    {
-        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
-        {
-            return;
-        }
-
-        var traceIdProvider = _serviceProvider.GetService<ITraceIdProvider>();
-        var traceId = traceIdProvider?.GetCurrentTraceId();
-
-        if (!string.IsNullOrWhiteSpace(traceId))
-        {
-            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
-        }
-    }
-
-    private async Task<TEntity?> TryGetCurrentEntityAsync(TKey id, CancellationToken cancellationToken)
-    {
-        return await CreateTenantQueryable()
-            .Where(entity => entity.BasicId.Equals(id))
-            .FirstAsync(cancellationToken);
-    }
-
-    private async Task TryWriteAuditLogAsync(TEntity? beforeEntity, TEntity? afterEntity, string operationType, CancellationToken cancellationToken)
-    {
-        var contextProvider = _serviceProvider.GetService<IEntityAuditContextProvider>();
-        var writer = _serviceProvider.GetService<IEntityAuditLogWriter>();
-        if (contextProvider is null || writer is null || !contextProvider.ShouldAudit(typeof(TEntity)))
-        {
-            return;
-        }
-
-        var changedFields = BuildChangedFields(beforeEntity, afterEntity);
-        if (operationType == "Update" && string.IsNullOrWhiteSpace(changedFields))
-        {
-            return;
-        }
-
-        var record = contextProvider.CreateBaseRecord();
-        record.OperationType = operationType;
-        record.EntityType = typeof(TEntity).Name;
-        record.EntityId = afterEntity?.BasicId?.ToString() ?? beforeEntity?.BasicId?.ToString();
-        record.BeforeData = SerializeForAudit(beforeEntity);
-        record.AfterData = SerializeForAudit(afterEntity);
-        record.ChangedFields = changedFields;
-
-        await writer.WriteAsync(record, cancellationToken);
-    }
+    #endregion
 }
