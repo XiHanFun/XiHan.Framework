@@ -20,6 +20,7 @@ using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Data.Auditing;
+using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Initializers;
@@ -74,6 +75,7 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped(typeof(ISplitRepositoryBase<>), typeof(SqlSugarSplitRepository<>));
 
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
+        // 默认 Null 实现：未启用审计或业务层未实现时零开销
         services.TryAddScoped<IEntityAuditContextProvider, NullEntityAuditContextProvider>();
         services.TryAddScoped<IEntityAuditLogWriter, NullEntityAuditLogWriter>();
 
@@ -256,6 +258,13 @@ public static class XiHanDataServiceCollectionExtensions
         {
             HandleSqlDataExecuting(scopeFactory, entityInfo, idGenerator);
         };
+
+        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真·AOP 审计
+        // 仓储层通过 .EnableDiffLogEvent(businessData) 启用，本处理器自动生成审计记录
+        if (options.EnableAuditLog)
+        {
+            SqlSugarAuditLogAop.Attach(scopeFactory, dbProvider);
+        }
 
         options.ConfigureDbAction?.Invoke(dbProvider);
     }
