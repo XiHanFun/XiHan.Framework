@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.SqlSugar.Extensions;
@@ -23,38 +24,53 @@ namespace XiHan.Framework.Data.SqlSugar.Extensions;
 /// </summary>
 public static class UnitOfWorkExtensions
 {
+    private const string SqlSugarApiKey = "SqlSugarClientResolver";
+
     /// <summary>
-    /// 获取SqlSugar数据上下文
+    /// 获取 SqlSugar 客户端解析器（作为 UoW 的 IDatabaseApi 持有）
     /// </summary>
     /// <param name="unitOfWork">工作单元</param>
     /// <param name="serviceProvider">服务提供者</param>
-    /// <returns></returns>
-    public static ISqlSugarDbContext GetSqlSugarDbContext(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
+    /// <returns>SqlSugar 客户端解析器</returns>
+    public static ISqlSugarClientResolver GetSqlSugarClientResolver(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
     {
-        return (ISqlSugarDbContext)unitOfWork.GetOrAddDatabaseApi(
-            "SqlSugarDbContext",
-            serviceProvider.GetRequiredService<ISqlSugarDbContext>);
+        return (ISqlSugarClientResolver)unitOfWork.GetOrAddDatabaseApi(
+            SqlSugarApiKey,
+            serviceProvider.GetRequiredService<ISqlSugarClientResolver>);
     }
 
     /// <summary>
-    /// 获取SqlSugar客户端
+    /// 获取当前租户对应的 SqlSugar 客户端
     /// </summary>
     /// <param name="unitOfWork">工作单元</param>
     /// <param name="serviceProvider">服务提供者</param>
-    /// <returns></returns>
+    /// <returns>SqlSugar 客户端</returns>
     public static ISqlSugarClient GetSqlSugarClient(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
     {
-        return unitOfWork.GetSqlSugarDbContext(serviceProvider).GetClient();
+        return unitOfWork.GetSqlSugarClientResolver(serviceProvider).GetCurrentClient();
     }
 
     /// <summary>
-    /// 获取SqlSugar查询器
+    /// 获取指定配置的 SqlSugar 客户端
+    /// </summary>
+    /// <param name="unitOfWork">工作单元</param>
+    /// <param name="serviceProvider">服务提供者</param>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>SqlSugar 客户端</returns>
+    public static ISqlSugarClient GetSqlSugarClient(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider, string configId)
+    {
+        return unitOfWork.GetSqlSugarClientResolver(serviceProvider).GetClient(configId);
+    }
+
+    /// <summary>
+    /// 获取 SqlSugar 查询器
     /// </summary>
     /// <typeparam name="TEntity">实体类型</typeparam>
     /// <param name="unitOfWork">工作单元</param>
     /// <param name="serviceProvider">服务提供者</param>
-    /// <returns></returns>
-    public static ISugarQueryable<TEntity> GetSqlSugarQueryable<TEntity>(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider) where TEntity : class, new()
+    /// <returns>SqlSugar 查询器</returns>
+    public static ISugarQueryable<TEntity> GetSqlSugarQueryable<TEntity>(this IUnitOfWork unitOfWork, IServiceProvider serviceProvider)
+        where TEntity : class, new()
     {
         return unitOfWork.GetSqlSugarClient(serviceProvider).Queryable<TEntity>();
     }

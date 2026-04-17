@@ -20,7 +20,7 @@ using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Data.Auditing;
-using XiHan.Framework.Data.SqlSugar;
+using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Metadata;
@@ -56,16 +56,22 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
-        services.TryAddScoped<ISqlSugarDbContext, SqlSugarDbContext>();
-        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarDbContext>().GetClient());
-        services.TryAddSingleton<ISqlSugarSplitTableExecutor, SqlSugarSplitTableExecutor>();
+        // 客户端解析器（同时作为 IDatabaseApi 供 UoW 使用）
+        services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
+        // 当前租户对应的 ISqlSugarClient 直接注入
+        services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientResolver>().GetCurrentClient());
+        // 分表定位器（基于分布式 ID 时间戳反推分片范围）
+        services.TryAddSingleton<ISplitTableLocator, SplitTableLocator>();
 
-        // 注册仓储服务
+        // 注册常规仓储服务（不处理分表，分表实体请改用 ISplitRepositoryBase<,>）
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
         services.TryAddScoped(typeof(IRepositoryBase<,>), typeof(SqlSugarRepositoryBase<,>));
         services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
+
+        // 注册分表仓储服务（TEntity 单泛型，主键固定为 long 雪花 ID）
+        services.TryAddScoped(typeof(ISplitRepositoryBase<>), typeof(SqlSugarSplitRepository<>));
 
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
         services.TryAddScoped<IEntityAuditContextProvider, NullEntityAuditContextProvider>();
@@ -176,10 +182,14 @@ public static class XiHanDataServiceCollectionExtensions
 
         if (options.EnableTenantFilter)
         {
+            // 租户过滤策略：
+            // - 当前无租户上下文（跨租户/平台运维）：不过滤
+            // - 当前有租户上下文：只看（自己租户数据 OR 全局模板 TenantId=0）
             provider.QueryFilter.AddTableFilter<IMultiTenantEntity>(
                 entity => currentTenantAccessor.Current == null ||
                           !currentTenantAccessor.Current.TenantId.HasValue ||
-                          entity.TenantId == currentTenantAccessor.Current.TenantId);
+                          entity.TenantId == currentTenantAccessor.Current.TenantId.Value ||
+                          entity.TenantId == 0);
         }
 
         foreach (var filter in options.GlobalFilters)
