@@ -280,6 +280,28 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
     #region 辅助
 
     /// <summary>
+    /// 校验时间范围
+    /// </summary>
+    private static void EnsureValidRange(DateTimeOffset beginTime, DateTimeOffset endTime)
+    {
+        if (beginTime > endTime)
+        {
+            throw new ArgumentException("分表查询的起始时间不能晚于结束时间。", nameof(beginTime));
+        }
+    }
+
+    /// <summary>
+    /// 确保实体的 CreatedTime 不为默认值（影响分片路由）
+    /// </summary>
+    private static void EnsureCreatedTime(TEntity entity)
+    {
+        if (entity.CreatedTime == default)
+        {
+            entity.CreatedTime = DateTimeOffset.UtcNow;
+        }
+    }
+
+    /// <summary>
     /// 构建基于时间范围的查询对象（应用 QueryFilter、SplitTable、可选谓词）
     /// </summary>
     private ISugarQueryable<TEntity> BuildRangeQueryable(
@@ -303,28 +325,6 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
     {
         var time = DateTime.SpecifyKind(_locator.ExtractTime(id), DateTimeKind.Utc);
         return (time.Subtract(LocateWindow), time.Add(LocateWindow));
-    }
-
-    /// <summary>
-    /// 校验时间范围
-    /// </summary>
-    private static void EnsureValidRange(DateTimeOffset beginTime, DateTimeOffset endTime)
-    {
-        if (beginTime > endTime)
-        {
-            throw new ArgumentException("分表查询的起始时间不能晚于结束时间。", nameof(beginTime));
-        }
-    }
-
-    /// <summary>
-    /// 确保实体的 CreatedTime 不为默认值（影响分片路由）
-    /// </summary>
-    private static void EnsureCreatedTime(TEntity entity)
-    {
-        if (entity.CreatedTime == default)
-        {
-            entity.CreatedTime = DateTimeOffset.UtcNow;
-        }
     }
 
     #endregion
