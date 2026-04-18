@@ -12,4 +12,12 @@
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <PackageReference Update="coverlet.collector" Version="10.0.0">
+	    <PrivateAssets>all</PrivateAssets>
+	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+	  <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+	</ItemGroup>
+
 </Project>
