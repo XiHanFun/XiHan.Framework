@@ -34,13 +34,11 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// 构造函数
     /// </summary>
     /// <param name="clientResolver">SqlSugar 客户端解析器</param>
-    /// <param name="serviceProvider">服务提供者</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
     public SqlSugarAggregateRepository(
         ISqlSugarClientResolver clientResolver,
-        IServiceProvider serviceProvider,
         IUnitOfWorkManager unitOfWorkManager)
-        : base(clientResolver, serviceProvider)
+        : base(clientResolver)
     {
         _unitOfWorkManager = unitOfWorkManager;
     }

@@ -352,6 +352,7 @@ public static class XiHanDataServiceCollectionExtensions
             case DataFilterType.InsertByObject:
                 entityInfo.TrySetSnowflakeId(idGenerator.NextId());
                 entityInfo.ToCreated(auditContext);
+                TryFillTraceId(scope.ServiceProvider, entityInfo.EntityValue);
                 break;
 
             case DataFilterType.UpdateByObject:
@@ -362,6 +363,20 @@ public static class XiHanDataServiceCollectionExtensions
             case DataFilterType.DeleteByObject:
                 entityInfo.ToDeleted(auditContext);
                 break;
+        }
+    }
+
+    private static void TryFillTraceId(IServiceProvider serviceProvider, object entity)
+    {
+        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
+        {
+            return;
+        }
+
+        var traceId = serviceProvider.GetService<ITraceIdProvider>()?.GetCurrentTraceId();
+        if (!string.IsNullOrWhiteSpace(traceId))
+        {
+            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
         }
     }
 }

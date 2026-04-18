@@ -32,11 +32,8 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
     /// 构造函数
     /// </summary>
     /// <param name="clientResolver">SqlSugar 客户端解析器</param>
-    /// <param name="serviceProvider">服务提供者</param>
-    public SqlSugarAuditedRepository(
-        ISqlSugarClientResolver clientResolver,
-        IServiceProvider serviceProvider)
-        : base(clientResolver, serviceProvider)
+    public SqlSugarAuditedRepository(ISqlSugarClientResolver clientResolver)
+        : base(clientResolver)
     {
     }
 
