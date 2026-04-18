@@ -12,7 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.DependencyInjection;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Domain.Entities.Abstracts;
@@ -31,7 +30,7 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 ///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入。</item>
 ///   <item>实体审计日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>
 ///   作为"启用开关"，序列化/diff/落库由 <c>SqlSugarAuditLogAop</c> 统一完成，仓储侧零感知。</item>
-///   <item>TraceId/业务事件派发等其他横切诉求请在调用端或独立订阅者处理，不得侵入仓储。</item>
+///   <item>TraceId 填充通过 <c>DataExecuting</c> AOP 在 InsertByObject 时自动注入，仓储无感知。</item>
 /// </list>
 /// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
@@ -40,25 +39,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     where TEntity : class, IEntityBase<TKey>, new()
     where TKey : IEquatable<TKey>
 {
-    private readonly IServiceProvider _serviceProvider;
+    /// <summary>
+    /// 审计开关业务对象：传入实体 Type 供 AOP 辨识该条 Diff 属于哪个实体类型
+    /// </summary>
+    private static readonly Type AuditBusinessData = typeof(TEntity);
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="clientResolver">SqlSugar 客户端解析器</param>
-    /// <param name="serviceProvider">服务提供者（用于按需解析 TraceId 等可选服务）</param>
-    public SqlSugarRepositoryBase(
-        ISqlSugarClientResolver clientResolver,
-        IServiceProvider serviceProvider)
+    public SqlSugarRepositoryBase(ISqlSugarClientResolver clientResolver)
         : base(clientResolver)
     {
-        _serviceProvider = serviceProvider;
     }
-
-    /// <summary>
-    /// 审计开关业务对象：传入实体 Type 供 AOP 辨识该条 Diff 属于哪个实体类型
-    /// </summary>
-    private static readonly Type AuditBusinessData = typeof(TEntity);
 
     #region 新增
 
@@ -69,8 +62,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
-
-        TryFillTraceId(entity);
 
         var inserted = await DbClient.Insertable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -101,10 +92,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        foreach (var entity in entityArray)
-        {
-            TryFillTraceId(entity);
-        }
 
         await DbClient.Insertable(entityArray)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -202,7 +189,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (entity.IsTransient())
         {
-            TryFillTraceId(entity);
             var insertedRows = await DbClient.Insertable(entity)
                 .EnableDiffLogEvent(AuditBusinessData)
                 .ExecuteCommandAsync(cancellationToken);
@@ -243,11 +229,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (addEntities.Length > 0)
         {
-            foreach (var entity in addEntities)
-            {
-                TryFillTraceId(entity);
-            }
-
             var insertedRows = await DbClient.Insertable(addEntities)
                 .EnableDiffLogEvent(AuditBusinessData)
                 .ExecuteCommandAsync(cancellationToken);
@@ -421,32 +402,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         var result = await DbClient.Ado.UseTranAsync(async () => await func());
         return result.IsSuccess ? result.Data : default!;
-    }
-
-    #endregion
-
-    #region 辅助
-
-    /// <summary>
-    /// 如实体实现 <c>ITraceableEntity</c> 且 TraceId 为空，则自动从 <c>ITraceIdProvider</c> 填充
-    /// </summary>
-    /// <remarks>
-    /// TraceId 是跨服务链路追踪标识，非审计字段；仓储侧做最小填充仅是无 AOP 链路时的兜底。
-    /// </remarks>
-    private void TryFillTraceId(TEntity entity)
-    {
-        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
-        {
-            return;
-        }
-
-        var traceIdProvider = _serviceProvider.GetService<ITraceIdProvider>();
-        var traceId = traceIdProvider?.GetCurrentTraceId();
-
-        if (!string.IsNullOrWhiteSpace(traceId))
-        {
-            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
-        }
     }
 
     #endregion
