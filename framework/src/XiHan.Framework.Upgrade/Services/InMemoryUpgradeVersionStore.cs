@@ -130,7 +130,7 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
     /// <param name="startTime">开始时间</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>任务</returns>
-    public Task SetUpgradingAsync(UpgradeVersionState version, string nodeName, DateTime startTime, CancellationToken cancellationToken = default)
+    public Task SetUpgradingAsync(UpgradeVersionState version, string nodeName, DateTimeOffset startTime, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(version);

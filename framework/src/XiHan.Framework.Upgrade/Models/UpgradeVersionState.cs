@@ -57,5 +57,5 @@ public sealed class UpgradeVersionState
     /// <summary>
     /// 升级开始时间
     /// </summary>
-    public DateTime? UpgradeStartTime { get; set; }
+    public DateTimeOffset? UpgradeStartTime { get; set; }
 }
