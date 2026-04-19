@@ -39,7 +39,7 @@ public interface IUpgradeVersionStore
     /// <summary>
     /// 设置升级中状态
     /// </summary>
-    Task SetUpgradingAsync(UpgradeVersionState version, string nodeName, DateTime startTime, CancellationToken cancellationToken = default);
+    Task SetUpgradingAsync(UpgradeVersionState version, string nodeName, DateTimeOffset startTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 设置升级完成状态

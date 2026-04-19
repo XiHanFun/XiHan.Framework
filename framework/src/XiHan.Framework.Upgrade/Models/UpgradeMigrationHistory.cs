@@ -37,7 +37,7 @@ public sealed class UpgradeMigrationHistory
     /// <summary>
     /// 执行时间
     /// </summary>
-    public DateTime ExecutedTime { get; set; }
+    public DateTimeOffset ExecutedTime { get; set; }
 
     /// <summary>
     /// 是否成功

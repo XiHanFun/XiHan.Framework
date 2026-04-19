@@ -199,7 +199,7 @@ public class UpgradeEngine : IUpgradeEngine
         await using (lockToken)
         {
             _logger.LogInformation("已获取升级锁: {ResourceKey}", resourceKey);
-            await _versionStore.SetUpgradingAsync(version, nodeName, DateTime.UtcNow, cancellationToken);
+            await _versionStore.SetUpgradingAsync(version, nodeName, DateTimeOffset.UtcNow, cancellationToken);
 
             try
             {
@@ -305,7 +305,7 @@ public class UpgradeEngine : IUpgradeEngine
                     TenantId = version.TenantId,
                     Version = script.Version,
                     ScriptName = script.ScriptName,
-                    ExecutedTime = DateTime.UtcNow,
+                    ExecutedTime = DateTimeOffset.UtcNow,
                     Success = false,
                     NodeName = nodeName
                 };
