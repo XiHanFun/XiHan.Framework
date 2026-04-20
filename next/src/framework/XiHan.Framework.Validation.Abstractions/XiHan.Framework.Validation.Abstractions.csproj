@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Validation.Abstractions</AssemblyName>
+    <RootNamespace>XiHan.Framework.Validation.Abstractions</RootNamespace>
+    <PackageId>XiHan.Framework.Validation.Abstractions</PackageId>
+    <Description>曦寒框架验证抽象。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Shared\XiHan.Framework.Shared.csproj" />
+  </ItemGroup>
+</Project>
