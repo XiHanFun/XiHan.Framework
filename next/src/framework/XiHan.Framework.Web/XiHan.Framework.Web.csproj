@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Web</AssemblyName>
+    <RootNamespace>XiHan.Framework.Web</RootNamespace>
+    <PackageId>XiHan.Framework.Web</PackageId>
+    <Description>曦寒框架 Web 基础构建块。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Application\XiHan.Framework.Application.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Localization.Abstractions\XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

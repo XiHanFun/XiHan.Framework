@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Tests.Unit</AssemblyName>
+    <RootNamespace>XiHan.Framework.Tests.Unit</RootNamespace>
+    <Description>曦寒框架单元测试项目。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Shared\XiHan.Framework.Shared.csproj" />
+  </ItemGroup>
+</Project>

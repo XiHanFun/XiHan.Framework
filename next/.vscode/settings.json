@@ -1,0 +1,18 @@
+{
+  // 隐藏 node_modules 文件夹
+  "files.exclude": {
+    "node_modules/": true,
+    // 隐藏 bin 文件夹
+    "**/bin": true,
+    // 隐藏 obj 文件夹
+    "**/obj": true,
+    // 隐藏 .vscode 文件夹
+    "**/.vscode": true,
+    // 隐藏 .vs 文件夹
+    "**/.vs": true,
+    // 隐藏 .git 文件夹
+    "**/.git": true,
+    // 隐藏 .idea 文件夹
+    "**/.idea": true
+  }
+}

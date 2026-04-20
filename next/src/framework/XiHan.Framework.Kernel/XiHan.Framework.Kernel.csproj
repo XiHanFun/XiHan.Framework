@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Kernel</AssemblyName>
+    <RootNamespace>XiHan.Framework.Kernel</RootNamespace>
+    <PackageId>XiHan.Framework.Kernel</PackageId>
+    <Description>曦寒框架最小内核，承载模块化、生命周期与最基础运行机制。</Description>
+  </PropertyGroup>
+</Project>
