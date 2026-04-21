@@ -54,10 +54,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>已持久化的聚合根实例</returns>
-    public new async Task<TAggregateRoot> AddAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<TAggregateRoot> AddAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.AddAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return result;
     }
 
@@ -67,10 +67,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>更新后的聚合根实例</returns>
-    public new async Task<TAggregateRoot> UpdateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<TAggregateRoot> UpdateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.UpdateAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return result;
     }
 
@@ -80,10 +80,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>删除是否成功</returns>
-    public new async Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var deleted = await base.DeleteAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return deleted;
     }
 
@@ -132,8 +132,7 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// 发布领域事件
     /// </summary>
     /// <param name="aggregate">聚合根实例</param>
-    /// <returns>表示发布操作的任务</returns>
-    private Task PublishDomainEventsAsync(TAggregateRoot aggregate)
+    private void PublishDomainEvents(TAggregateRoot aggregate)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
 
@@ -155,7 +154,5 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
 
         aggregate.ClearLocalEvents();
         aggregate.ClearDistributedEvents();
-
-        return Task.CompletedTask;
     }
 }
