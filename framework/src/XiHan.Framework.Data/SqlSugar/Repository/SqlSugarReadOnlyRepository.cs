@@ -17,6 +17,7 @@ using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Helpers;
+using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -158,7 +159,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<TEntity?> GetFirstAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+        return await CreateQueryable().ApplySpecification(specification)
             .FirstAsync(cancellationToken);
     }
 
@@ -205,7 +206,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+        return await CreateQueryable().ApplySpecification(specification)
             .ToListAsync(cancellationToken);
     }
 
@@ -237,7 +238,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+        return await CreateQueryable().ApplySpecification(specification)
             .CountAsync(cancellationToken);
     }
 
@@ -260,7 +261,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+        return await CreateQueryable().ApplySpecification(specification)
             .AnyAsync(cancellationToken);
     }
 
@@ -328,7 +329,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         cancellationToken.ThrowIfCancellationRequested();
 
         RefAsync<int> totalCount = 0;
-        var items = await ApplySpecification(CreateQueryable(), specification)
+        var items = await CreateQueryable().ApplySpecification(specification)
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
@@ -368,7 +369,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(CreateQueryable(), specification).ApplyPageRequest(pageRequestDto);
+        var query = CreateQueryable().ApplySpecification(specification).ApplyPageRequest(pageRequestDto);
         return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
@@ -407,20 +408,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await ApplySpecification(CreateQueryable(), specification).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
-    }
-
-    #endregion
-
-    #region 规约支持
-
-    /// <summary>
-    /// 应用规约到查询
-    /// </summary>
-    private static ISugarQueryable<TEntity> ApplySpecification(ISugarQueryable<TEntity> query, ISpecification<TEntity> specification)
-    {
-        ArgumentNullException.ThrowIfNull(specification);
-        return query.Where(specification.ToExpression());
+        return await CreateQueryable().ApplySpecification(specification).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     #endregion
