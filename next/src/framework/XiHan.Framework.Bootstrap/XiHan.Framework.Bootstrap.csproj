@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Bootstrap</AssemblyName>
+    <RootNamespace>XiHan.Framework.Bootstrap</RootNamespace>
+    <PackageId>XiHan.Framework.Bootstrap</PackageId>
+    <Description>曦寒框架引导层实现，承载可选模块运行时与发现机制默认实现。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Bootstrap.Abstractions\XiHan.Framework.Bootstrap.Abstractions.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>
