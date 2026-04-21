@@ -9,7 +9,10 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\framework\XiHan.Framework.Bootstrap.Abstractions\XiHan.Framework.Bootstrap.Abstractions.csproj" />
+    <ProjectReference Include="..\..\framework\XiHan.Framework.Bootstrap\XiHan.Framework.Bootstrap.csproj" />
     <ProjectReference Include="..\..\framework\XiHan.Framework.Application\XiHan.Framework.Application.csproj" />
+    <ProjectReference Include="..\..\framework\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
     <ProjectReference Include="..\..\framework\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
   </ItemGroup>
 </Project>

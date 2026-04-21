@@ -17,6 +17,13 @@
 3. 框架级基础异常
 4. 极少量全局稳定约定
 
+其中“最小模块契约”当前包括：
+
+1. `IXiHanModule`
+2. `XiHanModule`
+3. `ServiceConfigurationContext`
+4. `DependsOnAttribute`
+
 本项目不负责：
 
 1. 应用创建、启动、关闭等宿主抽象
