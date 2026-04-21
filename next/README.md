@@ -60,9 +60,18 @@
 2. 通过项目命名表达职责与归属
 3. 通过解决方案目录表达逻辑分层
 
+并额外遵循以下核心边界：
+
+1. `Kernel` 只保留最小核心原语
+2. `Bootstrap.Abstractions` 承接应用引导和可选模块运行时抽象
+3. `Bootstrap` 承接默认发现与默认装配实现
+4. 模块化是可选组织方式，而不是整个框架唯一的元架构
+
 例如：
 
 - `src/framework/XiHan.Framework.Kernel`
+- `src/framework/XiHan.Framework.Bootstrap.Abstractions`
+- `src/framework/XiHan.Framework.Bootstrap`
 - `src/framework/XiHan.Framework.Shared`
 - `src/framework/XiHan.Framework.Domain.Primitives`
 - `src/framework/XiHan.Framework.Domain`
@@ -131,10 +140,11 @@
 4. `XiHan.Framework.Next.slnx` 解决方案初始化
 5. 正式项目、测试项目、总览解决方案三套入口建立
 6. 目录结构已统一到扁平物理目录风格
+7. `Kernel / Bootstrap.Abstractions / Bootstrap` 三层边界已开始分离
 
 下一阶段将继续完成：
 
 1. 首个真实业务模块落地
-2. 继续补足尚未实现的框架能力
+2. 继续补足引导层与模块运行时能力
 3. 中文架构文档、ADR 模板和模块模板补全
 4. 架构测试与模块模板固化

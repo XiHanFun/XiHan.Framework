@@ -4,6 +4,8 @@
     <Project Path="src/framework/XiHan.Framework.Application.Contracts/XiHan.Framework.Application.Contracts.csproj" />
     <Project Path="src/framework/XiHan.Framework.Application/XiHan.Framework.Application.csproj" />
     <Project Path="src/framework/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
+    <Project Path="src/framework/XiHan.Framework.Bootstrap.Abstractions/XiHan.Framework.Bootstrap.Abstractions.csproj" />
+    <Project Path="src/framework/XiHan.Framework.Bootstrap/XiHan.Framework.Bootstrap.csproj" />
     <Project Path="src/framework/XiHan.Framework.Data.Abstractions/XiHan.Framework.Data.Abstractions.csproj" />
     <Project Path="src/framework/XiHan.Framework.Data.EntityFrameworkCore/XiHan.Framework.Data.EntityFrameworkCore.csproj" />
     <Project Path="src/framework/XiHan.Framework.Data.SqlSugar/XiHan.Framework.Data.SqlSugar.csproj" />
@@ -15,6 +17,7 @@
     <Project Path="src/framework/XiHan.Framework.Logging.Abstractions/XiHan.Framework.Logging.Abstractions.csproj" />
     <Project Path="src/framework/XiHan.Framework.Logging.Console/XiHan.Framework.Logging.Console.csproj" />
     <Project Path="src/framework/XiHan.Framework.Logging.Serilog/XiHan.Framework.Logging.Serilog.csproj" />
+    <Project Path="src/framework/XiHan.Framework.Metadata/XiHan.Framework.Metadata.csproj" />
     <Project Path="src/framework/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
     <Project Path="src/framework/XiHan.Framework.MultiTenancy/XiHan.Framework.MultiTenancy.csproj" />
     <Project Path="src/framework/XiHan.Framework.Observability/XiHan.Framework.Observability.csproj" />
