@@ -20,5 +20,7 @@
     <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Bootstrap\XiHan.Framework.Bootstrap.csproj" />
     <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
     <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Shared\XiHan.Framework.Shared.csproj" />
+    <ProjectReference Include="..\..\..\src\framework\XiHan.Framework.Web\XiHan.Framework.Web.csproj" />
+    <ProjectReference Include="..\..\..\src\hosts\XiHan.Framework.Hosts.Api\XiHan.Framework.Hosts.Api.csproj" />
   </ItemGroup>
 </Project>
