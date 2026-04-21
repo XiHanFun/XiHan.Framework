@@ -58,7 +58,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 添加实体
     /// </summary>
-    public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
@@ -106,7 +106,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 按主键更新实体
     /// </summary>
-    public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
@@ -195,11 +195,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return insertedRows > 0;
         }
 
-        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken);
-        if (beforeEntity is null)
-        {
-            return false;
-        }
+        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken)
+            ?? throw new InvalidOperationException("新增或更新失败：实体不存在或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Updateable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -273,7 +270,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 按实体删除
     /// </summary>
-    public async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public virtual async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
@@ -328,6 +325,20 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+
+        // 租户安全校验：确保所有实体 Id 都在当前租户可见范围内
+        var existingIds = await CreateQueryable()
+            .Where(e => idArray.Contains(e.BasicId))
+            .Select(e => e.BasicId)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingIds.ToHashSet();
+        foreach (var id in idArray)
+        {
+            if (!existingSet.Contains(id))
+            {
+                throw new InvalidOperationException("批量删除失败：存在不在当前租户范围内的实体。");
+            }
+        }
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray)
@@ -389,7 +400,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var result = await DbClient.Ado.UseTranAsync(async () => await action());
-        return result.IsSuccess;
+        if (!result.IsSuccess)
+        {
+            throw new InvalidOperationException("事务执行失败。", result.ErrorException);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -401,7 +417,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var result = await DbClient.Ado.UseTranAsync(async () => await func());
-        return result.IsSuccess ? result.Data : default!;
+        if (!result.IsSuccess)
+        {
+            throw new InvalidOperationException("事务执行失败。", result.ErrorException);
+        }
+
+        return result.Data;
     }
 
     #endregion
