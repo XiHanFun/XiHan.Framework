@@ -12,8 +12,6 @@
 
 #endregion <<版权版本注释>>
 
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Repositories;
@@ -31,22 +29,18 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     where TKey : IEquatable<TKey>
 {
     private readonly IUnitOfWorkManager _unitOfWorkManager;
-    private readonly ILogger _logger;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="clientResolver">SqlSugar 客户端解析器</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
-    /// <param name="logger">日志记录器</param>
     public SqlSugarAggregateRepository(
         ISqlSugarClientResolver clientResolver,
-        IUnitOfWorkManager unitOfWorkManager,
-        ILogger<SqlSugarAggregateRepository<TAggregateRoot, TKey>>? logger = null)
+        IUnitOfWorkManager unitOfWorkManager)
         : base(clientResolver)
     {
         _unitOfWorkManager = unitOfWorkManager;
-        _logger = logger ?? NullLogger<SqlSugarAggregateRepository<TAggregateRoot, TKey>>.Instance;
     }
 
     /// <summary>
@@ -145,15 +139,6 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
         var unitOfWork = UnitOfWork;
         if (unitOfWork == null)
         {
-            var localCount = aggregate.GetLocalEvents().Count;
-            var distributedCount = aggregate.GetDistributedEvents().Count;
-            if (localCount > 0 || distributedCount > 0)
-            {
-                _logger.LogWarning(
-                    "聚合根 {AggregateType} 有 {LocalCount} 个本地事件和 {DistributedCount} 个分布式事件待发布，但当前没有活动的工作单元，事件将被丢弃",
-                    typeof(TAggregateRoot).Name, localCount, distributedCount);
-            }
-
             aggregate.ClearLocalEvents();
             aggregate.ClearDistributedEvents();
             return;
