@@ -354,3 +354,20 @@ Framework 阶段对 BasicApp 的阻塞关系：
 - 每个阶段保持小步提交。
 - Framework 公共契约变更必须有单独提交，便于回退。
 - BasicApp 依赖 Framework 新能力前，先确认 Framework 阶段门禁通过。
+
+## 14. 阶段执行记录
+
+### 2026-04-26 F0 基线与规则冻结
+
+本阶段只做基线验证与文档更新，不修改 Framework 业务代码。
+
+执行结果：
+
+- `dotnet --info`：当前 .NET SDK 为 `10.0.202`，Host 为 `10.0.7`，Framework 仓库未发现 `global.json`。
+- `dotnet build E:\Repository\XiHanFun\XiHan.Framework\framework\XiHan.Framework.slnx`：失败。Restore 显示项目均最新，随后多个项目写入 `obj\Debug\net10.0\*.AssemblyInfoInputs.cache` 被拒绝，错误为 `MSB3491 Access to the path is denied`。该失败属于本地构建输出目录权限/锁定问题，非本阶段代码变更导致。
+- `rg -n "\bBasicApp|\bSaas|\bSysUser|\bSysRole|\bSysTenant" framework/src -g "*.cs"`：0 个匹配，未发现 BasicApp/SaaS 业务概念下沉到 Framework。
+
+协作状态：
+
+- 本阶段检测到 `framework/src/XiHan.Framework.Domain/Aggregates/MultiTenantAggregateRootBase.cs` 存在外部未提交修改，内容涉及 `TenantId` 从 `long?` 改为 `long` 并实现 `IMultiTenantEntity`。该文件不是本阶段修改范围，不纳入本阶段提交。
+- 后续进入 F1/F2 前，需要确认该外部修改是否保留，并补充 Framework 编译门禁。
