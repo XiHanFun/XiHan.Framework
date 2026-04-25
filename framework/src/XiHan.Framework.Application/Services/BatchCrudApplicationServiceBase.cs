@@ -114,10 +114,11 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
                 var entity = await Repository.GetByIdAsync(basicId) ?? throw new KeyNotFoundException($"未找到 ID 为 {basicId} 的实体");
                 if (request.SoftDelete && entity is ISoftDelete)
                 {
-                    var softDeleteRepo = ServiceProvider.GetService<ISoftDeleteRepositoryBase<TEntity, TKey>>();
+                    var softDeleteRepoType = typeof(ISoftDeleteRepositoryBase<,>).MakeGenericType(typeof(TEntity), typeof(TKey));
+                    var softDeleteRepo = ServiceProvider.GetService(softDeleteRepoType);
                     if (softDeleteRepo != null)
                     {
-                        await softDeleteRepo.SoftDeleteAsync(entity);
+                        await ((dynamic)softDeleteRepo).SoftDeleteAsync((dynamic)entity);
                         return true;
                     }
                 }

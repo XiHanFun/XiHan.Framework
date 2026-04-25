@@ -139,10 +139,11 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
 
         if (entity is ISoftDelete)
         {
-            var softDeleteRepo = ServiceProvider.GetService<ISoftDeleteRepositoryBase<TEntity, TKey>>();
+            var softDeleteRepoType = typeof(ISoftDeleteRepositoryBase<,>).MakeGenericType(typeof(TEntity), typeof(TKey));
+            var softDeleteRepo = ServiceProvider.GetService(softDeleteRepoType);
             if (softDeleteRepo != null)
             {
-                await softDeleteRepo.SoftDeleteAsync(entity);
+                await ((dynamic)softDeleteRepo).SoftDeleteAsync((dynamic)entity);
                 return true;
             }
         }
