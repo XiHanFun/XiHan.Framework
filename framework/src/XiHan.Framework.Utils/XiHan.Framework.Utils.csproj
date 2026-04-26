@@ -14,9 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="Text\**" />
-      <EmbeddedResource Remove="Text\**" />
-      <None Remove="Text\**" />
+      <ProjectReference Include="..\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj" />
     </ItemGroup>
 
 </Project>
