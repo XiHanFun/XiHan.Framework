@@ -259,7 +259,7 @@ public static class XiHanDataServiceCollectionExtensions
             HandleSqlDataExecuting(scopeFactory, entityInfo, idGenerator);
         };
 
-        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真·AOP 审计
+        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
         // 仓储层通过 .EnableDiffLogEvent(businessData) 启用，本处理器自动生成审计记录
         if (options.EnableAuditLog)
         {
