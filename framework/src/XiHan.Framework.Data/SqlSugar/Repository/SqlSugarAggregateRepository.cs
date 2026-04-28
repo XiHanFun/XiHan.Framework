@@ -129,22 +129,27 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     }
 
     /// <summary>
-    /// 发布领域事件（无活动 UoW 时跳过并记录警告）
+    /// 将聚合根领域事件登记到当前工作单元。
     /// </summary>
     /// <param name="aggregate">聚合根实例</param>
     private void PublishDomainEvents(TAggregateRoot aggregate)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
 
-        var unitOfWork = UnitOfWork;
-        if (unitOfWork == null)
+        var localEvents = aggregate.GetLocalEvents().ToArray();
+        var distributedEvents = aggregate.GetDistributedEvents().ToArray();
+        if (localEvents.Length == 0 && distributedEvents.Length == 0)
         {
-            aggregate.ClearLocalEvents();
-            aggregate.ClearDistributedEvents();
             return;
         }
 
-        foreach (var localEvent in aggregate.GetLocalEvents())
+        var unitOfWork = UnitOfWork;
+        if (unitOfWork is null || unitOfWork.IsReserved || unitOfWork.IsDisposed || unitOfWork.IsCompleted)
+        {
+            throw new InvalidOperationException("聚合根存在领域事件，但当前没有可用工作单元。请在事务型工作单元中保存聚合根。");
+        }
+
+        foreach (var localEvent in localEvents)
         {
             unitOfWork.AddOrReplaceLocalEvent(new UnitOfWorkEventRecord(
                 localEvent.EventData.GetType(),
@@ -152,7 +157,7 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
                 localEvent.EventOrder));
         }
 
-        foreach (var distributedEvent in aggregate.GetDistributedEvents())
+        foreach (var distributedEvent in distributedEvents)
         {
             unitOfWork.AddOrReplaceDistributedEvent(new UnitOfWorkEventRecord(
                 distributedEvent.EventData.GetType(),
