@@ -371,3 +371,26 @@ Framework 阶段对 BasicApp 的阻塞关系：
 
 - 本阶段检测到 `framework/src/XiHan.Framework.Domain/Aggregates/MultiTenantAggregateRootBase.cs` 存在外部未提交修改，内容涉及 `TenantId` 从 `long?` 改为 `long` 并实现 `IMultiTenantEntity`。该文件不是本阶段修改范围，不纳入本阶段提交。
 - 后续进入 F1/F2 前，需要确认该外部修改是否保留，并补充 Framework 编译门禁。
+
+### 2026-04-28 F1 SqlSugar 仓储与工作单元重建
+
+本阶段参考 `Admin.NET` 分表仓储的简洁写法，并结合 XiHan 现有多租户会话、全局过滤器和 UoW 体系重建 Framework.Data 的 SqlSugar 仓储边界。
+
+执行结果：
+
+- 保留物理只读仓储层：`SqlSugarReadOnlyRepository<TEntity, TKey>` 继续作为 `IReadOnlyRepositoryBase<,>` 的实现，完整保留查询构建、分页、规约、跨租户/含软删查询入口和 XML 注释。
+- 写仓储 `SqlSugarRepositoryBase<TEntity, TKey>` 继承只读仓储，仅承载新增、更新、删除和租户可见性校验；删除仓储内 `UseTranAsync`，事务统一交给工作单元。
+- 新增 `SqlSugarDataExecutingHandler`，从 DI 扩展中拆出主键、审计字段、租户 ID、TraceId 注入逻辑，避免仓储层理解这些基础字段。
+- 新增 `SqlSugarTransactionApi`，由 `SqlSugarClientResolver` 在事务型 UoW 中按连接自动加入 SqlSugar 事务，提交/回滚跟随 UoW。
+- 分表仓储补齐更新、批量更新、实体删除、批量实体删除入口，使用 `SplitTable()` 显式路由，并补齐完整 XML 注释。
+- 聚合仓储领域事件改为登记到当前 UoW；聚合根存在领域事件但无可用 UoW 时直接抛错，避免静默清空事件。
+
+验证结果：
+
+- `dotnet build E:\Repository\XiHanFun\XiHan.Framework\framework\src\XiHan.Framework.Data\XiHan.Framework.Data.csproj --no-restore -m:1 -p:UseSharedCompilation=false`：通过，0 警告，0 错误。
+- `rg -n "inheritdoc" framework/src/XiHan.Framework.Data/SqlSugar/Repository framework/src/XiHan.Framework.Domain/Repositories -g "*.cs"`：0 个匹配，仓储实现和仓储接口范围内未保留简略继承注释。
+- `git diff --check`：通过。
+
+协作状态：
+
+- 代码改动已出现在最新提交 `71c79303 feat: 优化仓储`。本次文档记录作为后续补充提交，不包含 BasicApp 改动。
