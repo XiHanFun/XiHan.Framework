@@ -423,9 +423,11 @@ public class HttpRequestBuilder
     /// <returns></returns>
     public async Task<HttpResult<T>> PutAsync<T>(CancellationToken cancellationToken = default)
     {
-        return _body == null
+        var body = _bodyContent ?? _body;
+
+        return body == null
             ? throw new InvalidOperationException("PUT 请求需要设置请求体")
-            : await _httpService.PutAsync<object, T>(_url, _body, _options, cancellationToken);
+            : await _httpService.PutAsync<object, T>(_url, body, _options, cancellationToken);
     }
 
     /// <summary>
