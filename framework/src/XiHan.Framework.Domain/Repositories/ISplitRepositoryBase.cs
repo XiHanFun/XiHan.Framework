@@ -49,6 +49,20 @@ public interface ISplitRepositoryBase<TEntity>
 
     #endregion
 
+    #region 更新
+
+    /// <summary>
+    /// 更新实体（自动路由到对应分片）
+    /// </summary>
+    Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量更新实体（按分片自动路由）
+    /// </summary>
+    Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+
+    #endregion
+
     #region 按主键查询（雪花 ID 反推时间定位分片）
 
     /// <summary>
@@ -122,6 +136,16 @@ public interface ISplitRepositoryBase<TEntity>
     /// 根据主键删除（通过 ID 反推时间定位分片）
     /// </summary>
     Task<bool> DeleteByIdAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 按实体删除（自动路由到对应分片）
+    /// </summary>
+    Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量按实体删除（按分片自动路由）
+    /// </summary>
+    Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据时间范围 + 条件删除（必填时间范围，避免误全量删除）

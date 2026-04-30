@@ -44,9 +44,9 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     }
 
     /// <summary>
-    /// 工作单元
+    /// 工作单元（无活动 UoW 时返回 null）
     /// </summary>
-    protected IUnitOfWork UnitOfWork => _unitOfWorkManager.Current ?? throw new InvalidOperationException("当前没有活动的工作单元");
+    protected IUnitOfWork? UnitOfWork => _unitOfWorkManager.Current;
 
     /// <summary>
     /// 添加聚合根并触发聚合根上的领域事件
@@ -129,24 +129,37 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     }
 
     /// <summary>
-    /// 发布领域事件
+    /// 将聚合根领域事件登记到当前工作单元。
     /// </summary>
     /// <param name="aggregate">聚合根实例</param>
     private void PublishDomainEvents(TAggregateRoot aggregate)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
 
-        foreach (var localEvent in aggregate.GetLocalEvents())
+        var localEvents = aggregate.GetLocalEvents().ToArray();
+        var distributedEvents = aggregate.GetDistributedEvents().ToArray();
+        if (localEvents.Length == 0 && distributedEvents.Length == 0)
         {
-            UnitOfWork.AddOrReplaceLocalEvent(new UnitOfWorkEventRecord(
+            return;
+        }
+
+        var unitOfWork = UnitOfWork;
+        if (unitOfWork is null || unitOfWork.IsReserved || unitOfWork.IsDisposed || unitOfWork.IsCompleted)
+        {
+            throw new InvalidOperationException("聚合根存在领域事件，但当前没有可用工作单元。请在事务型工作单元中保存聚合根。");
+        }
+
+        foreach (var localEvent in localEvents)
+        {
+            unitOfWork.AddOrReplaceLocalEvent(new UnitOfWorkEventRecord(
                 localEvent.EventData.GetType(),
                 localEvent.EventData,
                 localEvent.EventOrder));
         }
 
-        foreach (var distributedEvent in aggregate.GetDistributedEvents())
+        foreach (var distributedEvent in distributedEvents)
         {
-            UnitOfWork.AddOrReplaceDistributedEvent(new UnitOfWorkEventRecord(
+            unitOfWork.AddOrReplaceDistributedEvent(new UnitOfWorkEventRecord(
                 distributedEvent.EventData.GetType(),
                 distributedEvent.EventData,
                 distributedEvent.EventOrder));
