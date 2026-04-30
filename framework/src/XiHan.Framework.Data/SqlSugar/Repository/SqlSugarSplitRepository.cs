@@ -41,6 +41,11 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
     where TEntity : class, IEntityBase<long>, ISplitTableEntity, new()
 {
     /// <summary>
+    /// 审计开关业务对象：传入实体 Type 供 AOP 辨识该条 Diff 属于哪个实体类型
+    /// </summary>
+    private static readonly Type AuditBusinessData = typeof(TEntity);
+
+    /// <summary>
     /// ID 反推时间后定位分片的窗口半径（考虑分片边界时钟差，双向各扩 1 分钟）
     /// </summary>
     private static readonly TimeSpan LocateWindow = TimeSpan.FromMinutes(1);
@@ -66,19 +71,24 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
     #region 写入
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 添加实体（自动路由到对应分片）
+    /// </summary>
     public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // 分表写入依赖 CreatedTime 路由，为空时先兜底一个当前时间
-        EnsureCreatedTime(entity);
-        await DbClient.Insertable(entity).SplitTable().ExecuteCommandAsync();
+        EnsureCreatedTimeForInsert(entity);
+        await DbClient.Insertable(entity)
+            .SplitTable()
+            .ExecuteCommandAsync();
         return entity;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量添加实体（按分片自动路由）
+    /// </summary>
     public async Task<IReadOnlyList<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -93,10 +103,57 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
         foreach (var entity in array)
         {
-            EnsureCreatedTime(entity);
+            EnsureCreatedTimeForInsert(entity);
         }
 
-        await DbClient.Insertable(array).SplitTable().ExecuteCommandAsync();
+        await DbClient.Insertable(array)
+            .SplitTable()
+            .ExecuteCommandAsync();
+        return array;
+    }
+
+    #endregion
+
+    #region 更新
+
+    /// <summary>
+    /// 更新实体（自动路由到对应分片）
+    /// </summary>
+    public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        EnsureCreatedTimeForExisting(entity);
+        await DbClient.Updateable(entity)
+            .SplitTable()
+            .ExecuteCommandAsync();
+        return entity;
+    }
+
+    /// <summary>
+    /// 批量更新实体（按分片自动路由）
+    /// </summary>
+    public async Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var array = entities.ToArray();
+        if (array.Length == 0)
+        {
+            return [];
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (var entity in array)
+        {
+            EnsureCreatedTimeForExisting(entity);
+        }
+
+        await DbClient.Updateable(array)
+            .SplitTable()
+            .ExecuteCommandAsync();
         return array;
     }
 
@@ -104,7 +161,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
     #region 按主键查询
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据主键获取实体（通过 ID 反推时间定位分片）
+    /// </summary>
     public async Task<TEntity?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -116,7 +175,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
             .FirstAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据主键集合获取实体（最小化扫描分片数量）
+    /// </summary>
     public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<long> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
@@ -145,7 +206,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
     #region 按时间范围查询
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据时间范围获取实体列表（必填时间范围，防止误触发全分片扫描）
+    /// </summary>
     public async Task<IReadOnlyList<TEntity>> GetListByTimeRangeAsync(
         DateTimeOffset beginTime,
         DateTimeOffset endTime,
@@ -159,7 +222,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
         return await queryable.ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据时间范围分页查询
+    /// </summary>
     public async Task<PageResultDtoBase<TEntity>> GetPagedByTimeRangeAsync(
         int pageIndex,
         int pageSize,
@@ -188,7 +253,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据时间范围统计数量
+    /// </summary>
     public async Task<long> CountByTimeRangeAsync(
         DateTimeOffset beginTime,
         DateTimeOffset endTime,
@@ -205,7 +272,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
     #region 全分片扫描
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 全分片扫描获取所有数据（仅用于离线分析等场景，生产环境慎用）
+    /// </summary>
     public async Task<IReadOnlyList<TEntity>> ScanAllAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
         CancellationToken cancellationToken = default)
@@ -220,7 +289,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
         return await queryable.ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 全分片扫描统计
+    /// </summary>
     public async Task<long> ScanCountAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
         CancellationToken cancellationToken = default)
@@ -239,7 +310,9 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
 
     #region 删除
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据主键删除（通过 ID 反推时间定位分片）
+    /// </summary>
     public async Task<bool> DeleteByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -248,13 +321,60 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .Where(entity => entity.BasicId == id)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .SplitTable(tables => tables.Where(t => t.Date >= begin && t.Date <= end).ToList())
             .ExecuteCommandAsync();
 
         return affectedRows > 0;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按实体删除（自动路由到对应分片）
+    /// </summary>
+    public async Task<bool> DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        EnsureCreatedTimeForExisting(entity);
+        var affectedRows = await DbClient.Deleteable(entity)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .SplitTable()
+            .ExecuteCommandAsync();
+
+        return affectedRows > 0;
+    }
+
+    /// <summary>
+    /// 批量按实体删除（按分片自动路由）
+    /// </summary>
+    public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var array = entities.ToArray();
+        if (array.Length == 0)
+        {
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (var entity in array)
+        {
+            EnsureCreatedTimeForExisting(entity);
+        }
+
+        var affectedRows = await DbClient.Deleteable<TEntity>(array.ToList())
+            .SplitTable()
+            .ExecuteCommandAsync();
+
+        return affectedRows > 0;
+    }
+
+    /// <summary>
+    /// 根据时间范围 + 条件删除（必填时间范围，避免误全量删除）
+    /// </summary>
     public async Task<int> DeleteByTimeRangeAsync(
         DateTimeOffset beginTime,
         DateTimeOffset endTime,
@@ -271,6 +391,7 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
         return await DbClient.Deleteable<TEntity>()
             .Where(predicate)
             .EnableQueryFilter()
+            .EnableDiffLogEvent(AuditBusinessData)
             .SplitTable(tables => tables.Where(t => t.Date >= begin && t.Date <= end).ToList())
             .ExecuteCommandAsync();
     }
@@ -293,12 +414,27 @@ public class SqlSugarSplitRepository<TEntity> : ISplitRepositoryBase<TEntity>
     /// <summary>
     /// 确保实体的 CreatedTime 不为默认值（影响分片路由）
     /// </summary>
-    private static void EnsureCreatedTime(TEntity entity)
+    private static void EnsureCreatedTimeForInsert(TEntity entity)
     {
         if (entity.CreatedTime == default)
         {
             entity.CreatedTime = DateTimeOffset.UtcNow;
         }
+    }
+
+    /// <summary>
+    /// 确保已有实体具备 CreatedTime；缺失时从雪花 ID 反推，供更新/删除分片路由使用。
+    /// </summary>
+    private void EnsureCreatedTimeForExisting(TEntity entity)
+    {
+        if (entity.CreatedTime != default)
+        {
+            return;
+        }
+
+        entity.CreatedTime = entity.BasicId == 0
+            ? DateTimeOffset.UtcNow
+            : new DateTimeOffset(DateTime.SpecifyKind(_locator.ExtractTime(entity.BasicId), DateTimeKind.Utc));
     }
 
     /// <summary>

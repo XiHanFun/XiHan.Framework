@@ -26,11 +26,10 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// 设计原则：
 /// <list type="bullet">
 ///   <item>仓储只负责纯持久化 + 租户安全边界（Update/Delete 前的 before 预读用于确保实体在当前租户范围内）。</item>
-///   <item>租户连接/租户过滤/软删过滤 统一由 <see cref="ISqlSugarClientResolver"/> + 全局 QueryFilter AOP 承担。</item>
+///   <item>租户连接/租户过滤/软删过滤统一由 <see cref="ISqlSugarClientResolver"/> + 全局 QueryFilter AOP 承担。</item>
 ///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入。</item>
-///   <item>实体审计日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>
-///   作为"启用开关"，序列化/diff/落库由 <c>SqlSugarAuditLogAop</c> 统一完成，仓储侧零感知。</item>
-///   <item>TraceId 填充通过 <c>DataExecuting</c> AOP 在 InsertByObject 时自动注入，仓储无感知。</item>
+///   <item>实体审计日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>。</item>
+///   <item>事务不在仓储内开启，统一由工作单元接管 SqlSugar 连接事务。</item>
 /// </list>
 /// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
@@ -63,10 +62,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var inserted = await DbClient.Insertable(entity)
+        return await DbClient.Insertable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteReturnEntityAsync();
-        return inserted;
     }
 
     /// <summary>
@@ -92,10 +90,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-
         await DbClient.Insertable(entityArray)
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return entityArray;
     }
 
@@ -111,13 +109,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // 预读仅用于租户安全校验（Updateable(entity) 不走 QueryFilter，防止越权）
         _ = await GetByIdAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
 
         await DbClient.Updateable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return entity;
     }
 
@@ -136,6 +134,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             .EnableQueryFilter()
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
@@ -153,25 +152,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-
-        // 租户安全校验：确保所有实体 Id 都在当前租户可见范围内
-        var idArray = entityArray.Select(e => e.BasicId).Distinct().ToArray();
-        var existingIds = await CreateQueryable()
-            .Where(e => idArray.Contains(e.BasicId))
-            .Select(e => e.BasicId)
-            .ToListAsync(cancellationToken);
-        var existingSet = existingIds.ToHashSet();
-        foreach (var entity in entityArray)
-        {
-            if (!existingSet.Contains(entity.BasicId))
-            {
-                throw new InvalidOperationException("批量更新失败：存在不在当前租户范围内的实体。");
-            }
-        }
+        await EnsureVisibleAsync(entityArray.Select(entity => entity.BasicId), "批量更新失败：存在不在当前租户范围内的实体。", cancellationToken);
 
         await DbClient.Updateable(entityArray)
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return entityArray;
     }
 
@@ -192,15 +178,17 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             var insertedRows = await DbClient.Insertable(entity)
                 .EnableDiffLogEvent(AuditBusinessData)
                 .ExecuteCommandAsync(cancellationToken);
+
             return insertedRows > 0;
         }
 
-        var beforeEntity = await GetByIdAsync(entity.BasicId, cancellationToken)
+        _ = await GetByIdAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("新增或更新失败：实体不存在或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Updateable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
@@ -219,9 +207,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var addEntities = entityArray.Where(e => e.IsTransient()).ToArray();
-        var updateEntities = entityArray.Where(e => !e.IsTransient()).ToArray();
-
+        var addEntities = entityArray.Where(entity => entity.IsTransient()).ToArray();
+        var updateEntities = entityArray.Where(entity => !entity.IsTransient()).ToArray();
         var hasChanges = false;
 
         if (addEntities.Length > 0)
@@ -229,35 +216,19 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             var insertedRows = await DbClient.Insertable(addEntities)
                 .EnableDiffLogEvent(AuditBusinessData)
                 .ExecuteCommandAsync(cancellationToken);
-            if (insertedRows > 0)
-            {
-                hasChanges = true;
-            }
+
+            hasChanges = insertedRows > 0;
         }
 
         if (updateEntities.Length > 0)
         {
-            var updateIds = updateEntities.Select(e => e.BasicId).Distinct().ToArray();
-            var existingIds = await CreateQueryable()
-                .Where(e => updateIds.Contains(e.BasicId))
-                .Select(e => e.BasicId)
-                .ToListAsync(cancellationToken);
-            var existingSet = existingIds.ToHashSet();
-            foreach (var entity in updateEntities)
-            {
-                if (!existingSet.Contains(entity.BasicId))
-                {
-                    throw new InvalidOperationException("批量新增或更新失败：存在不在当前租户范围内的更新实体。");
-                }
-            }
+            await EnsureVisibleAsync(updateEntities.Select(entity => entity.BasicId), "批量新增或更新失败：存在不在当前租户范围内的更新实体。", cancellationToken);
 
             var updatedRows = await DbClient.Updateable(updateEntities)
                 .EnableDiffLogEvent(AuditBusinessData)
                 .ExecuteCommandAsync(cancellationToken);
-            if (updatedRows > 0)
-            {
-                hasChanges = true;
-            }
+
+            hasChanges = hasChanges || updatedRows > 0;
         }
 
         return hasChanges;
@@ -275,14 +246,15 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // 租户安全校验
-        _ = await GetByIdAsync(entity.BasicId, cancellationToken) ?? throw new InvalidOperationException("删除失败：实体不存在或不在当前租户范围内。");
+        _ = await GetByIdAsync(entity.BasicId, cancellationToken)
+            ?? throw new InvalidOperationException("删除失败：实体不存在或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(entity.BasicId!)
             .EnableQueryFilter()
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
@@ -293,7 +265,6 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        // 租户安全校验
         if (await GetByIdAsync(id, cancellationToken) is null)
         {
             return false;
@@ -304,6 +275,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             .EnableQueryFilter()
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
@@ -313,39 +285,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     public async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
-
-        var idArray = entities
-            .Where(e => e.BasicId is not null)
-            .Select(e => e.BasicId!)
-            .ToArray();
-
-        if (idArray.Length == 0)
-        {
-            return false;
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // 租户安全校验：确保所有实体 Id 都在当前租户可见范围内
-        var existingIds = await CreateQueryable()
-            .Where(e => idArray.Contains(e.BasicId))
-            .Select(e => e.BasicId)
-            .ToListAsync(cancellationToken);
-        var existingSet = existingIds.ToHashSet();
-        foreach (var id in idArray)
-        {
-            if (!existingSet.Contains(id))
-            {
-                throw new InvalidOperationException("批量删除失败：存在不在当前租户范围内的实体。");
-            }
-        }
-
-        var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(idArray)
-            .EnableQueryFilter()
-            .EnableDiffLogEvent(AuditBusinessData)
-            .ExecuteCommandAsync(cancellationToken);
-        return affectedRows > 0;
+        return await DeleteRangeAsync(entities.Select(entity => entity.BasicId), cancellationToken);
     }
 
     /// <summary>
@@ -355,19 +295,21 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         ArgumentNullException.ThrowIfNull(ids);
 
-        var idArray = ids.Cast<object>().ToArray();
+        var idArray = ids.ToArray();
         if (idArray.Length == 0)
         {
             return false;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        await EnsureVisibleAsync(idArray, "批量删除失败：存在不在当前租户范围内的实体。", cancellationToken);
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
-            .In(idArray)
+            .In(idArray.Cast<object>().ToArray())
             .EnableQueryFilter()
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
@@ -384,46 +326,34 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             .EnableQueryFilter()
             .EnableDiffLogEvent(AuditBusinessData)
             .ExecuteCommandAsync(cancellationToken);
+
         return affectedRows > 0;
     }
 
     #endregion
 
-    #region 事务
-
     /// <summary>
-    /// 在事务中执行操作（无返回值）
+    /// 校验主键集合是否均在当前查询过滤范围内可见。
     /// </summary>
-    public async Task<bool> UseTranAsync(Func<Task> action, CancellationToken cancellationToken = default)
+    /// <param name="ids">待校验主键集合</param>
+    /// <param name="message">校验失败异常信息</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    private async Task EnsureVisibleAsync(IEnumerable<TKey> ids, string message, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var result = await DbClient.Ado.UseTranAsync(async () => await action());
-        if (!result.IsSuccess)
+        var idArray = ids.Distinct().ToArray();
+        if (idArray.Length == 0)
         {
-            throw new InvalidOperationException("事务执行失败。", result.ErrorException);
+            return;
         }
 
-        return true;
-    }
+        var existingIds = await CreateQueryable()
+            .Where(entity => idArray.Contains(entity.BasicId))
+            .Select(entity => entity.BasicId)
+            .ToListAsync(cancellationToken);
 
-    /// <summary>
-    /// 在事务中执行操作（带返回值）
-    /// </summary>
-    public async Task<TResult> UseTranAsync<TResult>(Func<Task<TResult>> func, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(func);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var result = await DbClient.Ado.UseTranAsync(async () => await func());
-        if (!result.IsSuccess)
+        if (existingIds.Count != idArray.Length)
         {
-            throw new InvalidOperationException("事务执行失败。", result.ErrorException);
+            throw new InvalidOperationException(message);
         }
-
-        return result.Data;
     }
-
-    #endregion
 }
