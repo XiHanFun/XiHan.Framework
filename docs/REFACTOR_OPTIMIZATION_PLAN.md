@@ -394,3 +394,38 @@ Framework 阶段对 BasicApp 的阻塞关系：
 协作状态：
 
 - 代码改动已出现在最新提交 `71c79303 feat: 优化仓储`。本次文档记录作为后续补充提交，不包含 BasicApp 改动。
+
+### 2026-05-02 F2 DynamicApi CancellationToken 参数绑定修复
+
+本阶段在 BasicApp 登录链路联调中发现 DynamicApi 生成控制器会将公开 AppService 方法中的 `CancellationToken` 参数自动标记为 `[FromServices]`，运行时 MVC 尝试从 DI 容器解析 `System.Threading.CancellationToken`，导致接口返回 500。该问题属于通用 DynamicApi 基础设施问题，因此在 Framework 层修复。
+
+执行结果：
+
+- 更新 `framework/src/XiHan.Framework.Web.Api/DynamicApi/Controllers/DynamicApiControllerFactory.cs`：
+  - 生成动态控制器参数绑定特性时，对 `CancellationToken` 保留方法参数但不添加 `[FromServices]`、`[FromQuery]`、`[FromBody]` 等绑定特性。
+  - 让 ASP.NET Core 按内置规则绑定请求中止令牌，避免 DynamicApi 方法因取消令牌参数在运行时解析失败。
+  - 不改变业务 DTO、路由约定、HTTP 方法推断和其他参数绑定规则。
+
+设计约束：
+
+- Framework 修复保持通用，不引入 BasicApp、SaaS、角色、租户等业务概念。
+- 不删除 AppService 中已有 `CancellationToken` 参数，避免破坏应用层异步取消语义。
+- 不修改 DynamicApi 路由生成规则，前端 API 路径不受影响。
+
+验证结果：
+
+- `dotnet build framework/src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj --artifacts-path C:\Users\zhaifanhua\AppData\Local\Temp\XiHanBasicAppCodexArtifacts -m:1 -p:UseSharedCompilation=false --no-restore`：通过；仅保留 `NU1900` 漏洞源连接 `127.0.0.1:9` 警告。
+- `dotnet build E:\Repository\XiHanFun\XiHan.BasicApp\backend\XiHan.BasicApp.slnx --artifacts-path C:\Users\zhaifanhua\AppData\Local\Temp\XiHanBasicAppCodexArtifacts -m:1 -p:UseSharedCompilation=false --no-restore`：通过；仅保留 `NU1900` 和既有 `NU5104` 警告。
+- 启动 BasicApp WebHost artifacts 后实测：
+  - `GET /api/Auth/LoginConfig`：HTTP 200。
+  - `POST /api/Auth/Login`：HTTP 200，返回 Bearer token。
+  - `GET /api/Auth/UserInfo`：HTTP 200。
+  - `GET /api/Auth/Permissions`：HTTP 200。
+  - `POST /api/Auth/RefreshToken`：HTTP 200。
+- `dotnet build WebHost.csproj --no-restore` 使用默认输出目录仍会被本机 Framework `obj` SourceLink 文件写入权限拒绝阻塞；本阶段验证改用隔离 artifacts 路径规避该既有本地输出目录问题。
+
+协作状态：
+
+- `XiHan.Framework` 工作区仍存在未跟踪 `framework/src/analysis.md`，不是本阶段改动，未暂存未提交。
+- 本阶段只提交 DynamicApi 控制器生成器修复和本文档，不推送远端。
+- BasicApp 登录链路改动在 BasicApp 仓库单独提交。
