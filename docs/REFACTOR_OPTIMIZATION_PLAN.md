@@ -429,3 +429,33 @@ Framework 阶段对 BasicApp 的阻塞关系：
 - `XiHan.Framework` 工作区仍存在未跟踪 `framework/src/analysis.md`，不是本阶段改动，未暂存未提交。
 - 本阶段只提交 DynamicApi 控制器生成器修复和本文档，不推送远端。
 - BasicApp 登录链路改动在 BasicApp 仓库单独提交。
+
+### 2026-05-03 F3 EventBus 后台服务取消语义修复
+
+本阶段处理 BasicApp WebHost 启动/停止链路中暴露的 `System.Threading.Tasks.TaskCanceledException`。异常来自 EventBus Outbox 后台服务轮询等待阶段：业务处理段已经按 `stoppingToken` 捕获取消，但循环末尾的 `Task.Delay` 位于保护块外，Host 正常停止或调试停止时取消令牌触发后会把取消异常冒泡到 `BackgroundService`。
+
+执行结果：
+
+- 更新 `framework/src/XiHan.Framework.EventBus/Distributed/EventBoxOutboxSenderHostedService.cs`：
+  - `DelayAsync(stoppingToken)` 增加 `OperationCanceledException` 过滤处理。
+  - 当 `stoppingToken.IsCancellationRequested` 时直接退出后台循环，不再记录为异常。
+- 更新 `framework/src/XiHan.Framework.EventBus/Distributed/EventBoxInboxProcessorHostedService.cs`：
+  - 对称修复 Inbox 轮询等待阶段，避免后续收件箱后台处理在 Host 停止时出现同类取消异常。
+
+设计约束：
+
+- 本阶段只处理通用 EventBus 基础设施，不引入 BasicApp/SaaS 业务概念。
+- 不吞掉业务处理期间的真实异常；非停止令牌触发的异常仍进入原有错误日志流程。
+- 保持 Outbox/Inbox 现有轮询间隔、批量处理、重试和清理逻辑不变。
+
+验证结果：
+
+- `dotnet build framework/src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj --artifacts-path C:\Users\zhaifanhua\AppData\Local\Temp\XiHanBasicAppCodexArtifacts -m:1 -p:UseSharedCompilation=false --no-restore`：通过；仅保留本地漏洞源 `127.0.0.1:9` 导致的既有 `NU1900` 警告。
+- `dotnet build E:\Repository\XiHanFun\XiHan.BasicApp\backend\XiHan.BasicApp.slnx --artifacts-path C:\Users\zhaifanhua\AppData\Local\Temp\XiHanBasicAppEventBusArtifacts -m:1 -p:UseSharedCompilation=false -p:GeneratePackageOnBuild=false --no-restore`：通过，0 警告，0 错误。
+- 使用隔离 artifacts 启动 BasicApp WebHost，访问 `GET /api/Auth/LoginConfig` 返回 HTTP 200，随后停止进程；日志未再出现 `TaskCanceledException`、Outbox/Inbox 后台服务未处理异常或 `Unhandled exception`。
+
+协作状态：
+
+- `XiHan.Framework` 工作区仍存在未跟踪 `framework/src/analysis.md`，不是本阶段改动，未暂存未提交。
+- BasicApp 工作区存在多项并行前端改动，本阶段未暂存未提交。
+- 本阶段只提交 EventBus Outbox/Inbox 后台服务修复和本文档，不推送远端。
