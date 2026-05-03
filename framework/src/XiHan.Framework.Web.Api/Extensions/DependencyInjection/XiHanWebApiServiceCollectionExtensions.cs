@@ -253,16 +253,19 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.AddHostedService<OperationLogQueueWorker>();
         services.AddHostedService<ExceptionLogQueueWorker>();
         services.AddHostedService<ApiLogQueueWorker>();
+        services.AddHostedService<LoginLogQueueWorker>();
         services.AddScoped<IAccessLogPipeline, AccessLogPipeline>();
         services.AddScoped<IOperationLogPipeline, OperationLogPipeline>();
         services.AddScoped<IExceptionLogPipeline, ExceptionLogPipeline>();
         services.AddScoped<IApiLogPipeline, ApiLogPipeline>();
+        services.AddScoped<ILoginLogPipeline, LoginLogPipeline>();
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
         services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
         services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
         services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
         services.TryAddScoped<IApiLogWriter, NullApiLogWriter>();
+        services.TryAddScoped<ILoginLogWriter, NullLoginLogWriter>();
 
         return services;
     }

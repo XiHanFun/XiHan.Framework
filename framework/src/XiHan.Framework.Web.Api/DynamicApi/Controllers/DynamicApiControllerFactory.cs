@@ -616,6 +616,11 @@ public static class DynamicApiControllerFactory
     /// </summary>
     private static void AddParameterBindingAttribute(ParameterBuilder paramBuilder, ParameterDescriptor descriptor)
     {
+        if (descriptor.Type == typeof(CancellationToken))
+        {
+            return;
+        }
+
         // 显式绑定特性优先，保留 Name 等绑定元数据
         if (descriptor.ParameterInfo != null &&
             ParameterSourceResolver.TryGetExplicitBinding(descriptor.ParameterInfo, out var explicitSource, out var explicitBindingName))

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.Logging.Abstractions</AssemblyName>
+    <RootNamespace>XiHan.Framework.Logging.Abstractions</RootNamespace>
+    <PackageId>XiHan.Framework.Logging.Abstractions</PackageId>
+    <Description>曦寒框架日志抽象层。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>

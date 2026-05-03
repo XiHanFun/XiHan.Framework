@@ -21,7 +21,7 @@ namespace XiHan.Framework.Data.SqlSugar.Helpers;
 /// <summary>
 /// SqlSugar 实体类型特征辅助类（带缓存）
 /// </summary>
-internal static class SqlSugarEntityTypeHelper
+public static class SqlSugarEntityTypeHelper
 {
     private static readonly ConcurrentDictionary<Type, EntityTypeMetadata> EntityTypeCache = new();
 
@@ -91,8 +91,7 @@ internal static class SqlSugarEntityTypeHelper
         return EntityTypeCache.GetOrAdd(entityType, static type => new EntityTypeMetadata(
             typeof(IMultiTenantEntity).IsAssignableFrom(type),
             typeof(ISoftDelete).IsAssignableFrom(type),
-            typeof(ISplitTableEntity).IsAssignableFrom(type) ||
-            type.GetCustomAttributes(typeof(SplitTableAttribute), inherit: true).Length > 0));
+            typeof(ISplitTableEntity).IsAssignableFrom(type) || type.GetCustomAttributes(typeof(SplitTableAttribute), inherit: true).Length > 0));
     }
 
     private readonly record struct EntityTypeMetadata(
