@@ -74,7 +74,14 @@ public class EventBoxInboxProcessorHostedService : BackgroundService
                 _logger.LogError(ex, "处理事件收件箱时发生异常。");
             }
 
-            await DelayAsync(stoppingToken);
+            try
+            {
+                await DelayAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
     }
 

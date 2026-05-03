@@ -45,6 +45,11 @@ public class XiHanWebApiLogQueueOptions
     public bool EnableApiLogQueue { get; set; } = false;
 
     /// <summary>
+    /// 是否启用登录日志队列
+    /// </summary>
+    public bool EnableLoginLogQueue { get; set; } = false;
+
+    /// <summary>
     /// 队列容量
     /// </summary>
     public int QueueCapacity { get; set; } = 10000;

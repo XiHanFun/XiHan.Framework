@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities;
@@ -111,17 +112,18 @@ public abstract class BatchCrudApplicationServiceBase<TEntity, TEntityDto, TKey,
             async (basicId, index) =>
             {
                 var entity = await Repository.GetByIdAsync(basicId) ?? throw new KeyNotFoundException($"未找到 ID 为 {basicId} 的实体");
-                if (request.SoftDelete && entity is IDeletionEntity deletionEntity)
+                if (request.SoftDelete && entity is ISoftDelete)
                 {
-                    deletionEntity.IsDeleted = true;
-                    deletionEntity.DeletedTime = DateTimeOffset.UtcNow;
-                    await Repository.UpdateAsync(entity);
-                }
-                else
-                {
-                    await Repository.DeleteAsync(entity);
+                    var softDeleteRepoType = typeof(ISoftDeleteRepositoryBase<,>).MakeGenericType(typeof(TEntity), typeof(TKey));
+                    var softDeleteRepo = ServiceProvider.GetService(softDeleteRepoType);
+                    if (softDeleteRepo != null)
+                    {
+                        await ((dynamic)softDeleteRepo).SoftDeleteAsync((dynamic)entity);
+                        return true;
+                    }
                 }
 
+                await Repository.DeleteAsync(entity);
                 return true;
             },
             index => $"索引 {index} (ID: {request.Ids[index]})"

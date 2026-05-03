@@ -16,6 +16,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using XiHan.Framework.Authorization.Abac;
 using XiHan.Framework.Authorization.Permissions;
+using XiHan.Framework.Security.Claims;
 
 namespace XiHan.Framework.Authorization.AspNetCore;
 
@@ -24,6 +25,8 @@ namespace XiHan.Framework.Authorization.AspNetCore;
 /// </summary>
 public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridPermissionRequirement>
 {
+    private const string WildcardPermission = "*";
+
     private readonly IPermissionChecker _permissionChecker;
     private readonly IAbacAttributeCollector _abacAttributeCollector;
     private readonly IAbacEvaluator _abacEvaluator;
@@ -55,7 +58,8 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
 
         if (!string.IsNullOrWhiteSpace(requirement.PermissionCode))
         {
-            var isGranted = await _permissionChecker.IsGrantedAsync(userId, requirement.PermissionCode);
+            var isGranted = HasPermissionClaim(context.User, requirement.PermissionCode)
+                || await _permissionChecker.IsGrantedAsync(userId, requirement.PermissionCode);
             if (!isGranted)
             {
                 return;
@@ -89,6 +93,43 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
         if (evaluation.IsAllowed)
         {
             context.Succeed(requirement);
+        }
+    }
+
+    private static bool HasPermissionClaim(ClaimsPrincipal principal, string permissionCode)
+    {
+        var normalizedPermissionCode = permissionCode.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedPermissionCode))
+        {
+            return false;
+        }
+
+        return principal.Claims
+            .Where(IsPermissionClaim)
+            .SelectMany(claim => SplitPermissionClaimValue(claim.Value))
+            .Any(permission =>
+                string.Equals(permission, WildcardPermission, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(permission, normalizedPermissionCode, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsPermissionClaim(Claim claim)
+    {
+        return string.Equals(claim.Type, XiHanClaimTypes.Permission, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "permissions", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "scope", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "scp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> SplitPermissionClaimValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            yield break;
+        }
+
+        foreach (var permission in value.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            yield return permission;
         }
     }
 

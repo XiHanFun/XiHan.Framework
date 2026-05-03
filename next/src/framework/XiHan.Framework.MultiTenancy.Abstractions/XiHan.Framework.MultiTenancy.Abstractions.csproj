@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XiHan.Framework.MultiTenancy.Abstractions</AssemblyName>
+    <RootNamespace>XiHan.Framework.MultiTenancy.Abstractions</RootNamespace>
+    <PackageId>XiHan.Framework.MultiTenancy.Abstractions</PackageId>
+    <Description>曦寒框架多租户抽象。</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>

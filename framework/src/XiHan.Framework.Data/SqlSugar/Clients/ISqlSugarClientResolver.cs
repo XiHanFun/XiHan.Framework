@@ -13,7 +13,6 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
-using XiHan.Framework.Uow.Abstracts;
 
 namespace XiHan.Framework.Data.SqlSugar.Clients;
 
@@ -22,11 +21,10 @@ namespace XiHan.Framework.Data.SqlSugar.Clients;
 /// </summary>
 /// <remarks>
 /// 仅负责根据当前租户上下文解析 ConfigId 并返回对应的 <see cref="ISqlSugarClient"/>。
-/// 仓储层直接注入 <see cref="ISqlSugarClient"/> 即可，不需要再看到此解析器。
+/// 若当前存在事务型工作单元，解析器会自动把当前连接加入工作单元事务。
 /// 底层初始化器（DbInitializer/DataSeeder 等）通过 <see cref="GetClient(string)"/>/<see cref="GetAllClients"/> 遍历所有库。
-/// 同时实现 <see cref="IDatabaseApi"/> 以便 UnitOfWork 作为数据库访问句柄注入。
 /// </remarks>
-public interface ISqlSugarClientResolver : IDatabaseApi
+public interface ISqlSugarClientResolver
 {
     /// <summary>
     /// 获取当前租户对应的客户端

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/framework/">
+    <Project Path="src/framework/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <Project Path="src/framework/XiHan.Framework.Shared/XiHan.Framework.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/XiHan.Framework.Tests.Unit/XiHan.Framework.Tests.Unit.csproj" />
+  </Folder>
+</Solution>

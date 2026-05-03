@@ -53,6 +53,11 @@ public static class XiHanClaimTypes
     public static string Role { get; set; } = ClaimTypes.Role;
 
     /// <summary>
+    /// 权限
+    /// </summary>
+    public static string Permission { get; set; } = "permission";
+
+    /// <summary>
     /// 邮箱
     /// </summary>
     public static string Email { get; set; } = ClaimTypes.Email;
