@@ -72,11 +72,6 @@ public class XiHanSqlSugarCoreOptions
     public bool EnableAutoDeleteQueryFilter { get; set; } = true;
 
     /// <summary>
-    /// 分表配置
-    /// </summary>
-    public XiHanSqlSugarSplitTableOptions SplitTable { get; set; } = new();
-
-    /// <summary>
     /// 全局过滤器
     /// </summary>
     public Dictionary<Type, Func<object, bool>> GlobalFilters { get; set; } = [];

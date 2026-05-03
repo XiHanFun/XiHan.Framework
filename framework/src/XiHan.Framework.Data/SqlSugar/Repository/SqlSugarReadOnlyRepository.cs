@@ -17,6 +17,7 @@ using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Helpers;
+using XiHan.Framework.Data.SqlSugar.Repository.Extensions;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -33,9 +34,8 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// <list type="bullet">
 ///   <item>租户连接选择 → 由 <see cref="ISqlSugarClientResolver"/> + <c>ISqlSugarTenantConnectionResolver</c> 自动解析。</item>
 ///   <item>租户行级过滤 + 软删过滤 → 由 <c>QueryFilter.AddTableFilter</c> 全局 AOP 统一注入，仓储无感。</item>
-///   <item>分表实体 → 禁止使用常规仓储，请改用 <see cref="ISplitRepositoryBase{TEntity}"/>。</item>
 /// </list>
-/// 仓储方法专注纯业务 CRUD；跨租户/含软删场景使用 <see cref="CreateNoTenantQueryable"/> / <see cref="CreateWithDeletedQueryable"/>。
+/// 仓储方法专注纯业务查询；跨租户/含软删场景使用 <see cref="CreateNoTenantQueryable"/> / <see cref="CreateWithDeletedQueryable"/>。
 /// </remarks>
 /// <typeparam name="TEntity">实体类型</typeparam>
 /// <typeparam name="TKey">主键类型</typeparam>
@@ -52,7 +52,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public SqlSugarReadOnlyRepository(ISqlSugarClientResolver clientResolver)
     {
         _clientResolver = clientResolver;
-        EnsureNotSplitEntity();
     }
 
     /// <summary>
@@ -76,11 +75,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     protected virtual ISugarQueryable<TEntity> CreateNoTenantQueryable()
     {
         var queryable = DbClient.Queryable<TEntity>();
-        if (SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>())
-        {
-            queryable = queryable.ClearFilter<IMultiTenantEntity>();
-        }
-        return queryable;
+        return SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>()
+            ? queryable.ClearFilter<IMultiTenantEntity>()
+            : queryable;
     }
 
     /// <summary>
@@ -89,11 +86,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     protected virtual ISugarQueryable<TEntity> CreateWithDeletedQueryable()
     {
         var queryable = DbClient.Queryable<TEntity>();
-        if (SqlSugarEntityTypeHelper.IsSoftDeleteEntity<TEntity>())
-        {
-            queryable = queryable.ClearFilter<ISoftDelete>();
-        }
-        return queryable;
+        return SqlSugarEntityTypeHelper.IsSoftDeleteEntity<TEntity>()
+            ? queryable.ClearFilter<ISoftDelete>()
+            : queryable;
     }
 
     /// <summary>
@@ -133,7 +128,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-
         return await CreateQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
@@ -157,8 +151,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     public async Task<TEntity?> GetFirstAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+
+        return await CreateQueryable()
+            .ApplySpecification(specification)
             .FirstAsync(cancellationToken);
     }
 
@@ -204,8 +201,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     public async Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+
+        return await CreateQueryable()
+            .ApplySpecification(specification)
             .ToListAsync(cancellationToken);
     }
 
@@ -236,8 +236,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     public async Task<long> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+
+        return await CreateQueryable()
+            .ApplySpecification(specification)
             .CountAsync(cancellationToken);
     }
 
@@ -259,8 +262,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     /// </summary>
     public async Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
-        return await ApplySpecification(CreateQueryable(), specification)
+
+        return await CreateQueryable()
+            .ApplySpecification(specification)
             .AnyAsync(cancellationToken);
     }
 
@@ -311,6 +317,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         {
             query = query.Where(predicate);
         }
+
         query = isAscending ? query.OrderBy(orderBy) : query.OrderByDescending(orderBy);
 
         RefAsync<int> totalCount = 0;
@@ -328,7 +335,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         cancellationToken.ThrowIfCancellationRequested();
 
         RefAsync<int> totalCount = 0;
-        var items = await ApplySpecification(CreateQueryable(), specification)
+        var items = await CreateQueryable()
+            .ApplySpecification(specification)
             .ToPageListAsync(pageIndex, pageSize, totalCount, cancellationToken);
 
         return new PageResultDtoBase<TEntity>(items, new PageResultMetadata(pageIndex, pageSize, totalCount));
@@ -342,8 +350,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(pageRequestDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateQueryable().ApplyPageRequest(pageRequestDto);
-        return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
+        return await CreateQueryable()
+            .ApplyPageRequest(pageRequestDto)
+            .ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
     /// <summary>
@@ -355,8 +364,10 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = CreateQueryable().Where(predicate).ApplyPageRequest(pageRequestDto);
-        return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
+        return await CreateQueryable()
+            .Where(predicate)
+            .ApplyPageRequest(pageRequestDto)
+            .ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
     /// <summary>
@@ -368,8 +379,10 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = ApplySpecification(CreateQueryable(), specification).ApplyPageRequest(pageRequestDto);
-        return await query.ToPageResultAsync(pageRequestDto, cancellationToken);
+        return await CreateQueryable()
+            .ApplySpecification(specification)
+            .ApplyPageRequest(pageRequestDto)
+            .ToPageResultAsync(pageRequestDto, cancellationToken);
     }
 
     #endregion
@@ -383,6 +396,7 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     {
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
+
         return await CreateQueryable().ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
@@ -395,7 +409,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(predicate);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateQueryable().Where(predicate).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable()
+            .Where(predicate)
+            .ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -407,33 +423,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(specification);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await ApplySpecification(CreateQueryable(), specification).ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable()
+            .ApplySpecification(specification)
+            .ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     #endregion
 
-    #region 规约支持
-
-    /// <summary>
-    /// 应用规约到查询
-    /// </summary>
-    private static ISugarQueryable<TEntity> ApplySpecification(ISugarQueryable<TEntity> query, ISpecification<TEntity> specification)
-    {
-        ArgumentNullException.ThrowIfNull(specification);
-        return query.Where(specification.ToExpression());
-    }
-
-    #endregion
-
-    /// <summary>
-    /// 分表实体防呆：不允许用常规仓储承载
-    /// </summary>
-    private static void EnsureNotSplitEntity()
-    {
-        if (SqlSugarEntityTypeHelper.IsSplitTableEntity<TEntity>())
-        {
-            throw new InvalidOperationException(
-                $"实体 {typeof(TEntity).FullName} 是分表实体，请改用 ISplitRepositoryBase<{typeof(TEntity).Name}>。");
-        }
-    }
 }

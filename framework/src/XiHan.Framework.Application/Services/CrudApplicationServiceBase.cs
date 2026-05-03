@@ -13,11 +13,13 @@
 #endregion <<版权版本注释>>
 
 using Mapster;
+using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
@@ -123,7 +125,7 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
     }
 
     /// <summary>
-    /// 删除
+    /// 删除（自动检测软删除：实体实现 ISoftDelete 时走软删除路径）
     /// </summary>
     /// <param name="id">实体主键</param>
     /// <returns>删除结果</returns>
@@ -133,6 +135,17 @@ public abstract class CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCre
         if (entity == null)
         {
             return false;
+        }
+
+        if (entity is ISoftDelete)
+        {
+            var softDeleteRepoType = typeof(ISoftDeleteRepositoryBase<,>).MakeGenericType(typeof(TEntity), typeof(TKey));
+            var softDeleteRepo = ServiceProvider.GetService(softDeleteRepoType);
+            if (softDeleteRepo != null)
+            {
+                await ((dynamic)softDeleteRepo).SoftDeleteAsync((dynamic)entity);
+                return true;
+            }
         }
 
         await Repository.DeleteAsync(entity);

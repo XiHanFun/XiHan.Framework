@@ -28,13 +28,11 @@ using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Data.SqlSugar.Seeders;
-using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Security.Users;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Data.Extensions.DependencyInjection;
@@ -57,22 +55,19 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
-        // 客户端解析器（同时作为 IDatabaseApi 供 UoW 使用）
+        // 客户端解析器（按当前租户解析连接，并在事务型 UoW 中自动接入事务）
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入
         services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientResolver>().GetCurrentClient());
-        // 分表定位器（基于分布式 ID 时间戳反推分片范围）
-        services.TryAddSingleton<ISplitTableLocator, SplitTableLocator>();
+        // SqlSugar DataExecuting AOP：主键、租户和审计字段注入
+        services.TryAddSingleton<SqlSugarDataExecutingHandler>();
 
-        // 注册常规仓储服务（不处理分表，分表实体请改用 ISplitRepositoryBase<,>）
+        // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
         services.TryAddScoped(typeof(IRepositoryBase<,>), typeof(SqlSugarRepositoryBase<,>));
         services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
-
-        // 注册分表仓储服务（TEntity 单泛型，主键固定为 long 雪花 ID）
-        services.TryAddScoped(typeof(ISplitRepositoryBase<>), typeof(SqlSugarSplitRepository<>));
 
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
         // 默认 Null 实现：未启用审计或业务层未实现时零开销
@@ -130,6 +125,7 @@ public static class XiHanDataServiceCollectionExtensions
         var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
         var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
         var currentTenantAccessor = services.GetRequiredService<ICurrentTenantAccessor>();
+        var dataExecutingHandler = services.GetRequiredService<SqlSugarDataExecutingHandler>();
 
         var connectionConfigs = options.ConnectionConfigs
             .Select(connConfig => new ConnectionConfig
@@ -153,7 +149,7 @@ public static class XiHanDataServiceCollectionExtensions
             {
                 var dbProvider = client.GetConnectionScope(config.ConfigId);
                 ApplySugarGlobalFilters(dbProvider, options, currentTenantAccessor);
-                SetSugarAop(scopeFactory, dbProvider, options, idGenerator);
+                SetSugarAop(scopeFactory, dbProvider, options, dataExecutingHandler);
             }
         });
     }
@@ -218,12 +214,12 @@ public static class XiHanDataServiceCollectionExtensions
     /// <param name="scopeFactory"></param>
     /// <param name="dbProvider"></param>
     /// <param name="options"></param>
-    /// <param name="idGenerator"></param>
+    /// <param name="dataExecutingHandler"></param>
     private static void SetSugarAop(
         IServiceScopeFactory scopeFactory,
         SqlSugarScopeProvider dbProvider,
         XiHanSqlSugarCoreOptions options,
-        IDistributedIdGenerator<long> idGenerator)
+        SqlSugarDataExecutingHandler dataExecutingHandler)
     {
         var config = dbProvider.CurrentConnectionConfig;
 
@@ -256,10 +252,10 @@ public static class XiHanDataServiceCollectionExtensions
 
         dbProvider.Aop.DataExecuting = (_, entityInfo) =>
         {
-            HandleSqlDataExecuting(scopeFactory, entityInfo, idGenerator);
+            dataExecutingHandler.Handle(entityInfo);
         };
 
-        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真·AOP 审计
+        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
         // 仓储层通过 .EnableDiffLogEvent(businessData) 启用，本处理器自动生成审计记录
         if (options.EnableAuditLog)
         {
@@ -329,54 +325,4 @@ public static class XiHanDataServiceCollectionExtensions
         LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlInfo}");
     }
 
-    /// <summary>
-    /// 处理SQL数据执行事件
-    /// </summary>
-    /// <param name="scopeFactory"></param>
-    /// <param name="entityInfo"></param>
-    /// <param name="idGenerator"></param>
-    private static void HandleSqlDataExecuting(IServiceScopeFactory scopeFactory, DataFilterModel entityInfo, IDistributedIdGenerator<long> idGenerator)
-    {
-        if (entityInfo.EntityValue is null)
-        {
-            return;
-        }
-
-        using var scope = scopeFactory.CreateScope();
-        var currentUser = scope.ServiceProvider.GetService<ICurrentUser>();
-        var currentTenant = scope.ServiceProvider.GetService<ICurrentTenant>();
-        var auditContext = EntityAuditContext.From(currentUser, currentTenant?.Id);
-
-        switch (entityInfo.OperationType)
-        {
-            case DataFilterType.InsertByObject:
-                entityInfo.TrySetSnowflakeId(idGenerator.NextId());
-                entityInfo.ToCreated(auditContext);
-                TryFillTraceId(scope.ServiceProvider, entityInfo.EntityValue);
-                break;
-
-            case DataFilterType.UpdateByObject:
-                entityInfo.ToModified(auditContext);
-                entityInfo.ToDeleted(auditContext);
-                break;
-
-            case DataFilterType.DeleteByObject:
-                entityInfo.ToDeleted(auditContext);
-                break;
-        }
-    }
-
-    private static void TryFillTraceId(IServiceProvider serviceProvider, object entity)
-    {
-        if (entity is not ITraceableEntity traceable || !string.IsNullOrWhiteSpace(traceable.TraceId))
-        {
-            return;
-        }
-
-        var traceId = serviceProvider.GetService<ITraceIdProvider>()?.GetCurrentTraceId();
-        if (!string.IsNullOrWhiteSpace(traceId))
-        {
-            traceable.TraceId = traceId.Length > 64 ? traceId[..64] : traceId;
-        }
-    }
 }

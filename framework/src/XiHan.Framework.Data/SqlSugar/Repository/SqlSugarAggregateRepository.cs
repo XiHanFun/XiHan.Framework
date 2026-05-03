@@ -44,9 +44,9 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     }
 
     /// <summary>
-    /// 工作单元
+    /// 工作单元（无活动 UoW 时返回 null）
     /// </summary>
-    protected IUnitOfWork UnitOfWork => _unitOfWorkManager.Current ?? throw new InvalidOperationException("当前没有活动的工作单元");
+    protected IUnitOfWork? UnitOfWork => _unitOfWorkManager.Current;
 
     /// <summary>
     /// 添加聚合根并触发聚合根上的领域事件
@@ -54,10 +54,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>已持久化的聚合根实例</returns>
-    public new async Task<TAggregateRoot> AddAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<TAggregateRoot> AddAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.AddAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return result;
     }
 
@@ -67,10 +67,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>更新后的聚合根实例</returns>
-    public new async Task<TAggregateRoot> UpdateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<TAggregateRoot> UpdateAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var result = await base.UpdateAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return result;
     }
 
@@ -80,10 +80,10 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     /// <param name="aggregate">聚合根实例</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>删除是否成功</returns>
-    public new async Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
+    public override async Task<bool> DeleteAsync(TAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         var deleted = await base.DeleteAsync(aggregate, cancellationToken);
-        await PublishDomainEventsAsync(aggregate);
+        PublishDomainEvents(aggregate);
         return deleted;
     }
 
@@ -129,25 +129,37 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
     }
 
     /// <summary>
-    /// 发布领域事件
+    /// 将聚合根领域事件登记到当前工作单元。
     /// </summary>
     /// <param name="aggregate">聚合根实例</param>
-    /// <returns>表示发布操作的任务</returns>
-    private Task PublishDomainEventsAsync(TAggregateRoot aggregate)
+    private void PublishDomainEvents(TAggregateRoot aggregate)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
 
-        foreach (var localEvent in aggregate.GetLocalEvents())
+        var localEvents = aggregate.GetLocalEvents().ToArray();
+        var distributedEvents = aggregate.GetDistributedEvents().ToArray();
+        if (localEvents.Length == 0 && distributedEvents.Length == 0)
         {
-            UnitOfWork.AddOrReplaceLocalEvent(new UnitOfWorkEventRecord(
+            return;
+        }
+
+        var unitOfWork = UnitOfWork;
+        if (unitOfWork is null || unitOfWork.IsReserved || unitOfWork.IsDisposed || unitOfWork.IsCompleted)
+        {
+            throw new InvalidOperationException("聚合根存在领域事件，但当前没有可用工作单元。请在事务型工作单元中保存聚合根。");
+        }
+
+        foreach (var localEvent in localEvents)
+        {
+            unitOfWork.AddOrReplaceLocalEvent(new UnitOfWorkEventRecord(
                 localEvent.EventData.GetType(),
                 localEvent.EventData,
                 localEvent.EventOrder));
         }
 
-        foreach (var distributedEvent in aggregate.GetDistributedEvents())
+        foreach (var distributedEvent in distributedEvents)
         {
-            UnitOfWork.AddOrReplaceDistributedEvent(new UnitOfWorkEventRecord(
+            unitOfWork.AddOrReplaceDistributedEvent(new UnitOfWorkEventRecord(
                 distributedEvent.EventData.GetType(),
                 distributedEvent.EventData,
                 distributedEvent.EventOrder));
@@ -155,7 +167,5 @@ public class SqlSugarAggregateRepository<TAggregateRoot, TKey> : SqlSugarAudited
 
         aggregate.ClearLocalEvents();
         aggregate.ClearDistributedEvents();
-
-        return Task.CompletedTask;
     }
 }

@@ -178,7 +178,7 @@ public static class EntityAuditExtensions
         {
             if (overrideHandleValue || IsDefaultValue(propertyInfo.GetValue(entityInfo.EntityValue)))
             {
-                entityInfo.SetValue(DateTimeOffset.Now);
+                entityInfo.SetValue(DateTimeOffset.UtcNow);
             }
             return;
         }
@@ -187,7 +187,7 @@ public static class EntityAuditExtensions
         {
             if (overrideHandleValue || IsDefaultValue(propertyInfo.GetValue(entityInfo.EntityValue)))
             {
-                entityInfo.SetValue(DateTime.Now);
+                entityInfo.SetValue(DateTime.UtcNow);
             }
         }
     }
