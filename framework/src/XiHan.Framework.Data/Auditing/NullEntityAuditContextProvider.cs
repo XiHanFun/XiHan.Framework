@@ -20,9 +20,9 @@ namespace XiHan.Framework.Data.Auditing;
 public class NullEntityAuditContextProvider : IEntityAuditContextProvider
 {
     /// <inheritdoc />
-    public EntityAuditLogRecord CreateBaseRecord()
+    public EntityDiffLogRecord CreateBaseRecord()
     {
-        return new EntityAuditLogRecord();
+        return new EntityDiffLogRecord();
     }
 
     /// <inheritdoc />

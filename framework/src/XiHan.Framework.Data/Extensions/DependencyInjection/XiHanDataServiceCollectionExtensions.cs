@@ -72,7 +72,7 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
         // 默认 Null 实现：未启用审计或业务层未实现时零开销
         services.TryAddScoped<IEntityAuditContextProvider, NullEntityAuditContextProvider>();
-        services.TryAddScoped<IEntityAuditLogWriter, NullEntityAuditLogWriter>();
+        services.TryAddScoped<IEntityDiffLogWriter, NullEntityDiffLogWriter>();
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
@@ -255,11 +255,11 @@ public static class XiHanDataServiceCollectionExtensions
             dataExecutingHandler.Handle(entityInfo);
         };
 
-        // 实体审计日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
+        // 实体差异日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
         // 仓储层通过 .EnableDiffLogEvent(businessData) 启用，本处理器自动生成审计记录
         if (options.EnableAuditLog)
         {
-            SqlSugarAuditLogAop.Attach(scopeFactory, dbProvider);
+            SqlSugarDiffLogAop.Attach(scopeFactory, dbProvider);
         }
 
         options.ConfigureDbAction?.Invoke(dbProvider);

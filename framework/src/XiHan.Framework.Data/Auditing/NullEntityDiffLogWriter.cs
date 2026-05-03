@@ -15,12 +15,12 @@
 namespace XiHan.Framework.Data.Auditing;
 
 /// <summary>
-/// 空实体审计日志写入器
+/// 空实体差异日志写入器
 /// </summary>
-public class NullEntityAuditLogWriter : IEntityAuditLogWriter
+public class NullEntityDiffLogWriter : IEntityDiffLogWriter
 {
     /// <inheritdoc />
-    public Task WriteAsync(EntityAuditLogRecord record, CancellationToken cancellationToken = default)
+    public Task WriteAsync(EntityDiffLogRecord record, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }
