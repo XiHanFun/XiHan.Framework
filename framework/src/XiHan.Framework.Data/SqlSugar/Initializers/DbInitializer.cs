@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Helpers;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Entities.Abstracts;
@@ -31,7 +32,7 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 /// <summary>
 /// 数据库初始化器
 /// </summary>
-public class DbInitializer : IDbInitializer, IScopedDependency
+public partial class DbInitializer : IDbInitializer, IScopedDependency
 {
     private readonly ISqlSugarClientResolver _clientResolver;
     private readonly IServiceProvider _serviceProvider;
@@ -257,7 +258,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
                 try
                 {
-                    var isSplitTable = entityType.GetCustomAttribute<SplitTableAttribute>() != null;
+                    var isSplitTable = SqlSugarEntityTypeHelper.IsSplitTableEntity(entityType);
 
                     var tableName = entityType.GetCustomAttribute<SugarTable>()?.TableName;
                     if (string.IsNullOrWhiteSpace(tableName))
@@ -282,7 +283,8 @@ public class DbInitializer : IDbInitializer, IScopedDependency
                         continue;
                     }
 
-                    if (isSplitTable && _options.SplitTable.EnableCodeFirstSplitTableInitialization)
+                    // 创建表结构
+                    if (isSplitTable)
                     {
                         await Task.Run(() => db.CodeFirst.SplitTables().InitTables(entityType));
                         splitTableInitCount++;
@@ -317,7 +319,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
     }
 
     /// <summary>
-    /// 从配置Id中解析租户Id（支持 "1" 或 "Tenant_1" 形式）
+    /// 从配置Id中解析租户Id（支持 "long" 形式）
     /// </summary>
     private static bool TryParseTenantId(string? configId, out long tenantId)
     {
@@ -331,13 +333,6 @@ public class DbInitializer : IDbInitializer, IScopedDependency
         if (long.TryParse(trimmed, out tenantId))
         {
             return true;
-        }
-
-        const string prefix = "Tenant_";
-        if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            var idPart = trimmed.Substring(prefix.Length);
-            return long.TryParse(idPart, out tenantId);
         }
 
         return false;
@@ -399,4 +394,7 @@ public class DbInitializer : IDbInitializer, IScopedDependency
 
         return (null, connectionConfigId, $"连接[{connectionConfigId}]");
     }
+
+    [GeneratedRegex("\\{[^}]+\\}")]
+    private static partial Regex YearMonthDay();
 }

@@ -34,7 +34,6 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// <list type="bullet">
 ///   <item>租户连接选择 → 由 <see cref="ISqlSugarClientResolver"/> + <c>ISqlSugarTenantConnectionResolver</c> 自动解析。</item>
 ///   <item>租户行级过滤 + 软删过滤 → 由 <c>QueryFilter.AddTableFilter</c> 全局 AOP 统一注入，仓储无感。</item>
-///   <item>分表实体 → 禁止使用常规仓储，请改用 <see cref="ISplitRepositoryBase{TEntity}"/>。</item>
 /// </list>
 /// 仓储方法专注纯业务查询；跨租户/含软删场景使用 <see cref="CreateNoTenantQueryable"/> / <see cref="CreateWithDeletedQueryable"/>。
 /// </remarks>
@@ -53,7 +52,6 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public SqlSugarReadOnlyRepository(ISqlSugarClientResolver clientResolver)
     {
         _clientResolver = clientResolver;
-        EnsureNotSplitEntity();
     }
 
     /// <summary>
@@ -432,15 +430,4 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
 
     #endregion
 
-    /// <summary>
-    /// 分表实体防呆：不允许用常规仓储承载
-    /// </summary>
-    private static void EnsureNotSplitEntity()
-    {
-        if (SqlSugarEntityTypeHelper.IsSplitTableEntity<TEntity>())
-        {
-            throw new InvalidOperationException(
-                $"实体 {typeof(TEntity).FullName} 是分表实体，请改用 ISplitRepositoryBase<{typeof(TEntity).Name}>。");
-        }
-    }
 }
