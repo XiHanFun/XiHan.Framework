@@ -15,9 +15,9 @@
 namespace XiHan.Framework.Data.Auditing;
 
 /// <summary>
-/// 实体审计日志记录
+/// 实体差异日志记录
 /// </summary>
-public class EntityAuditLogRecord
+public class EntityDiffLogRecord
 {
     /// <summary>
     /// 审计类型

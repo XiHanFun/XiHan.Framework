@@ -28,7 +28,7 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 ///   <item>仓储只负责纯持久化 + 租户安全边界（Update/Delete 前的 before 预读用于确保实体在当前租户范围内）。</item>
 ///   <item>租户连接/租户过滤/软删过滤统一由 <see cref="ISqlSugarClientResolver"/> + 全局 QueryFilter AOP 承担。</item>
 ///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入。</item>
-///   <item>实体审计日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>。</item>
+///   <item>实体差异日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>。</item>
 ///   <item>事务不在仓储内开启，统一由工作单元接管 SqlSugar 连接事务。</item>
 /// </list>
 /// </remarks>
