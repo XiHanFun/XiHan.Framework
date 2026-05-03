@@ -15,14 +15,14 @@
 namespace XiHan.Framework.Data.Auditing;
 
 /// <summary>
-/// 实体审计日志写入器
+/// 实体差异日志写入器
 /// </summary>
-public interface IEntityAuditLogWriter
+public interface IEntityDiffLogWriter
 {
     /// <summary>
-    /// 写入审计日志
+    /// 写入差异日志
     /// </summary>
     /// <param name="record">审计记录</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteAsync(EntityAuditLogRecord record, CancellationToken cancellationToken = default);
+    Task WriteAsync(EntityDiffLogRecord record, CancellationToken cancellationToken = default);
 }

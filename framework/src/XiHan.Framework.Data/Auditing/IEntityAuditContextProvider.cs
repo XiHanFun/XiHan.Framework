@@ -23,7 +23,7 @@ public interface IEntityAuditContextProvider
     /// 获取当前审计上下文
     /// </summary>
     /// <returns>上下文记录</returns>
-    EntityAuditLogRecord CreateBaseRecord();
+    EntityDiffLogRecord CreateBaseRecord();
 
     /// <summary>
     /// 是否应审计指定实体类型

@@ -22,19 +22,19 @@ using XiHan.Framework.Utils.Logging;
 namespace XiHan.Framework.Data.SqlSugar.Auditing;
 
 /// <summary>
-/// SqlSugar 审计日志 AOP 处理器
+/// SqlSugar 差异日志 AOP 处理器
 /// </summary>
 /// <remarks>
 /// 基于 SqlSugar 原生 <c>Aop.OnDiffLogEvent</c> 机制：
 /// <list type="bullet">
 ///   <item>仓储写操作显式调用 <c>.EnableDiffLogEvent(businessData)</c> 触发 Diff 收集；</item>
 ///   <item>SqlSugar 自动生成 <see cref="DiffLogModel"/>（含 BeforeData/AfterData/DiffType/SQL 等）；</item>
-///   <item>本处理器负责把 Diff 事件转换为 <see cref="EntityAuditLogRecord"/> 并调用 <see cref="IEntityAuditLogWriter"/> 落库；</item>
+///   <item>本处理器负责把 Diff 事件转换为 <see cref="EntityDiffLogRecord"/> 并调用 <see cref="IEntityDiffLogWriter"/> 落库；</item>
 ///   <item>使用 <c>CopyNew()</c> 独立连接写审计，避免自我递归；审计表自身的变更会被过滤。</item>
 /// </list>
 /// 仓储层与审计彻底解耦：仓储只"开启"审计开关，序列化、落库在此完成。
 /// </remarks>
-internal static class SqlSugarAuditLogAop
+internal static class SqlSugarDiffLogAop
 {
     // 审计表自身写入不再触发 Diff 审计，需按表名/实体名过滤
     // 这里按实体类型名比对，具体业务审计表名由 IEntityAuditContextProvider 实现方控制
@@ -63,7 +63,7 @@ internal static class SqlSugarAuditLogAop
             catch (Exception ex)
             {
                 // 审计失败绝不影响主业务，记日志兜底
-                LogHelper.Error(ex, "写入实体审计日志失败");
+                LogHelper.Error(ex, "写入实体差异日志失败");
             }
         };
     }
@@ -86,7 +86,7 @@ internal static class SqlSugarAuditLogAop
 
         using var scope = scopeFactory.CreateScope();
         var contextProvider = scope.ServiceProvider.GetService<IEntityAuditContextProvider>();
-        var writer = scope.ServiceProvider.GetService<IEntityAuditLogWriter>();
+        var writer = scope.ServiceProvider.GetService<IEntityDiffLogWriter>();
         if (contextProvider is null || writer is null)
         {
             return;
