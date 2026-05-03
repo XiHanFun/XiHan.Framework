@@ -28,7 +28,6 @@ using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
 using XiHan.Framework.Data.SqlSugar.Seeders;
-using XiHan.Framework.Data.SqlSugar.SplitTables;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain.Entities.Abstracts;
@@ -60,20 +59,15 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入
         services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientResolver>().GetCurrentClient());
-        // 分表定位器（基于分布式 ID 时间戳反推分片范围）
-        services.TryAddSingleton<ISplitTableLocator, SplitTableLocator>();
         // SqlSugar DataExecuting AOP：主键、租户和审计字段注入
         services.TryAddSingleton<SqlSugarDataExecutingHandler>();
 
-        // 注册常规仓储服务（不处理分表，分表实体请改用 ISplitRepositoryBase<,>）
+        // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
         services.TryAddScoped(typeof(IRepositoryBase<,>), typeof(SqlSugarRepositoryBase<,>));
         services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
-
-        // 注册分表仓储服务（TEntity 单泛型，主键固定为 long 雪花 ID）
-        services.TryAddScoped(typeof(ISplitRepositoryBase<>), typeof(SqlSugarSplitRepository<>));
 
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
         // 默认 Null 实现：未启用审计或业务层未实现时零开销
