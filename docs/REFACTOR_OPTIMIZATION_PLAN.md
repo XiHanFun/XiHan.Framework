@@ -291,7 +291,7 @@ Framework 只提供机制：
 
 优化项：
 
-- DiffLog AOP 与 `IEntityAuditLogWriter` 的边界文档化。
+- DiffLog AOP 与 `IEntityDiffLogWriter` 的边界文档化。
 - 增加敏感字段脱敏接口。
 - 记录跨租户操作上下文：执行人、源租户、目标租户、TraceId、操作类型。
 - SQL 日志避免输出密码、Token、Secret、连接串。
