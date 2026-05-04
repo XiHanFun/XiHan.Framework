@@ -257,7 +257,7 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 实体差异日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
         // 仓储层通过 .EnableDiffLogEvent(businessData) 启用，本处理器自动生成审计记录
-        if (options.EnableAuditLog)
+        if (options.EnableDiffLog)
         {
             SqlSugarDiffLogAop.Attach(scopeFactory, dbProvider);
         }

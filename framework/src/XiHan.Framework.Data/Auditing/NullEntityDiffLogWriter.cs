@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NullEntityAuditLogWriter
+// FileName:NullEntityDiffLogWriter
 // Guid:6484e4d4-bf14-4f10-9f99-2e0673fba826
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com

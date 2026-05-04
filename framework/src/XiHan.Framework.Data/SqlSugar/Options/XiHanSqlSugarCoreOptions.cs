@@ -115,7 +115,7 @@ public class XiHanSqlSugarCoreOptions
     /// 该开关需同时配合业务层实现 <see cref="XiHan.Framework.Data.Auditing.IEntityDiffLogWriter"/>
     /// 与 <see cref="XiHan.Framework.Data.Auditing.IEntityAuditContextProvider"/>；未实现时即便打开也不会产生记录。
     /// </remarks>
-    public bool EnableAuditLog { get; set; } = false;
+    public bool EnableDiffLog { get; set; } = false;
 
     /// <summary>
     /// 是否启用数据库初始化
