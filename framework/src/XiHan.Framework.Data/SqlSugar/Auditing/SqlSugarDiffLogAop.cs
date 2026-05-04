@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarAuditLogAop
+// FileName:SqlSugarDiffLogAop
 // Guid:c7d2a2f0-6b9d-4f7a-9c83-2a6bb3e8f1b4
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
@@ -125,7 +125,7 @@ internal static class SqlSugarDiffLogAop
         record.ChangedFields = changedFields;
 
         // SqlSugar AOP 回调为同步签名，这里走 .GetAwaiter().GetResult()
-        // 审计落库应使用 CopyNew 连接，由 IEntityAuditLogWriter 实现方保证
+        // 审计落库应使用 CopyNew 连接，由 IEntityDiffLogWriter 实现方保证
         writer.WriteAsync(record, CancellationToken.None).GetAwaiter().GetResult();
     }
 
