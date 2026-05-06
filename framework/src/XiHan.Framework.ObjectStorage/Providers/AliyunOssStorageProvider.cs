@@ -259,7 +259,13 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        await DeleteAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
@@ -269,6 +275,8 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
         {
             throw new InvalidOperationException($"删除文件失败: {ex.Message}", ex);
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -276,15 +284,21 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        return await ExistsAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
-            return _client.DoesObjectExist(bucket, objectName);
+            return Task.FromResult(_client.DoesObjectExist(bucket, objectName));
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -293,13 +307,19 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        return await GetMetadataAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
             var metadata = _client.GetObjectMetadata(bucket, objectName);
 
-            return new FileMetadata
+            return Task.FromResult(new FileMetadata
             {
                 Name = Path.GetFileName(objectName),
                 Path = path,
@@ -309,7 +329,7 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
                 ETag = metadata.ETag,
                 IsDirectory = false,
                 Url = GetObjectUrl(bucket, objectName)
-            };
+            });
         }
         catch (Exception ex)
         {
@@ -496,8 +516,13 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
     /// </summary>
     private (string bucket, string objectName) ParsePath(string path)
     {
+        return ParsePath(path, bucketName: null);
+    }
+
+    private (string bucket, string objectName) ParsePath(string path, string? bucketName)
+    {
         var normalizedPath = NormalizePath(path);
-        return (_options.DefaultBucket, normalizedPath);
+        return (string.IsNullOrWhiteSpace(bucketName) ? _options.DefaultBucket : bucketName.Trim(), normalizedPath);
     }
 
     #endregion

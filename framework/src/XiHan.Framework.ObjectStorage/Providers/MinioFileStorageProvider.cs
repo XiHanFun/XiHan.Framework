@@ -158,7 +158,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        await DeleteAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override async Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
@@ -179,7 +185,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        return await ExistsAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override async Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
@@ -201,7 +213,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectName) = ParsePath(path);
+        return await GetMetadataAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override async Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectName) = ParsePath(path, bucketName);
 
         try
         {
@@ -392,8 +410,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
 
     private (string bucket, string objectName) ParsePath(string path)
     {
+        return ParsePath(path, bucketName: null);
+    }
+
+    private (string bucket, string objectName) ParsePath(string path, string? bucketName)
+    {
         var normalizedPath = NormalizePath(path);
-        return (_options.DefaultBucket, normalizedPath);
+        return (string.IsNullOrWhiteSpace(bucketName) ? _options.DefaultBucket : bucketName.Trim(), normalizedPath);
     }
 
     #endregion
