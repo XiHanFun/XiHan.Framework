@@ -36,6 +36,8 @@ bld/
 .vs/
 # idea
 .idea/
+.dotnet/
+.serena/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
