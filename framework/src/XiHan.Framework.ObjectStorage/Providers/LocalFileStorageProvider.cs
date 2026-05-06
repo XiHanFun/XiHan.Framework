@@ -25,6 +25,7 @@ namespace XiHan.Framework.ObjectStorage.Providers;
 public class LocalFileStorageProvider : FileStorageProviderBase
 {
     private readonly string _rootPath;
+    private readonly string _urlPrefix;
     private readonly ConcurrentDictionary<string, ChunkedUploadSession> _uploadSessions = new();
 
     /// <summary>
@@ -35,6 +36,7 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     {
         var storageOptions = options.Value ?? throw new ArgumentNullException(nameof(options));
         _rootPath = Path.GetFullPath(storageOptions.RootPath);
+        _urlPrefix = NormalizeUrlPrefix(storageOptions.UrlPrefix);
         if (!Directory.Exists(_rootPath))
         {
             Directory.CreateDirectory(_rootPath);
@@ -388,22 +390,24 @@ public class LocalFileStorageProvider : FileStorageProviderBase
             };
         }
 
-        using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
-
-        var buffer = new byte[81920]; // 80KB buffer
         long totalBytes = 0;
-        int bytesRead;
-
-        while ((bytesRead = await request.FileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+        await using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
-            await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-            totalBytes += bytesRead;
-            request.ProgressCallback?.Invoke(totalBytes, request.FileStream.Length);
+            var buffer = new byte[81920]; // 80KB buffer
+            int bytesRead;
+
+            while ((bytesRead = await request.FileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+            {
+                await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                totalBytes += bytesRead;
+                request.ProgressCallback?.Invoke(totalBytes, request.FileStream.Length);
+            }
+
+            await fileStream.FlushAsync(cancellationToken);
         }
 
-        await fileStream.FlushAsync(cancellationToken);
-
         var fileInfo = new FileInfo(fullPath);
+        await using var readStream = File.OpenRead(fullPath);
 
         return new FileUploadResult
         {
@@ -412,7 +416,7 @@ public class LocalFileStorageProvider : FileStorageProviderBase
             FullPath = fullPath,
             Url = GetFileUrl(request.StoragePath),
             FileSize = fileInfo.Length,
-            ETag = await ComputeFileHashAsync(File.OpenRead(fullPath), cancellationToken)
+            ETag = await ComputeFileHashAsync(readStream, cancellationToken)
         };
     }
 
@@ -423,7 +427,7 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     /// </summary>
     private string GetFullPath(string relativePath)
     {
-        var normalizedPath = NormalizePath(relativePath);
+        var normalizedPath = NormalizeLocalPath(relativePath);
         return Path.GetFullPath(Path.Combine(_rootPath, normalizedPath));
     }
 
@@ -432,9 +436,54 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     /// </summary>
     private string GetFileUrl(string relativePath)
     {
-        // 对于本地存储，返回相对路径
+        // 对于本地存储，返回 URL 前缀下的相对路径
         // 实际使用时需要配合Web服务器的静态文件服务
-        return "/" + NormalizePath(relativePath);
+        var normalizedPath = NormalizeLocalPath(relativePath);
+        if (string.IsNullOrWhiteSpace(normalizedPath))
+        {
+            return _urlPrefix;
+        }
+
+        return _urlPrefix == "/"
+            ? $"/{normalizedPath}"
+            : $"{_urlPrefix}/{normalizedPath}";
+    }
+
+    /// <summary>
+    /// 规范化本地存储相对路径
+    /// </summary>
+    private string NormalizeLocalPath(string relativePath)
+    {
+        var normalizedPath = NormalizePath(relativePath);
+        var urlPrefixSegment = NormalizePath(_urlPrefix);
+
+        if (string.IsNullOrWhiteSpace(urlPrefixSegment))
+        {
+            return normalizedPath;
+        }
+
+        if (normalizedPath.Equals(urlPrefixSegment, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return normalizedPath.StartsWith($"{urlPrefixSegment}/", StringComparison.OrdinalIgnoreCase)
+            ? normalizedPath[(urlPrefixSegment.Length + 1)..]
+            : normalizedPath;
+    }
+
+    /// <summary>
+    /// 规范化 URL 前缀
+    /// </summary>
+    private static string NormalizeUrlPrefix(string? urlPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(urlPrefix))
+        {
+            return "/";
+        }
+
+        var normalized = "/" + urlPrefix.Trim().Trim('/');
+        return normalized == "/" ? "/" : normalized;
     }
 
     /// <summary>

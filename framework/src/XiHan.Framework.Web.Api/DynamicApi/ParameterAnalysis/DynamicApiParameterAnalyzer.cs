@@ -150,8 +150,8 @@ public class DynamicApiParameterAnalyzer
             return true;
         }
 
-        // Body 参数通常是必需的
-        if (descriptor.Source == ParameterSource.Body)
+        // Body / Form 参数通常是必需的
+        if (descriptor.Source is ParameterSource.Body or ParameterSource.Form)
         {
             return true;
         }

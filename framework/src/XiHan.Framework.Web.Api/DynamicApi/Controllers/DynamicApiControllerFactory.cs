@@ -493,6 +493,12 @@ public static class DynamicApiControllerFactory
         // 添加 HTTP 方法特性（带路由模板）
         AddHttpMethodAttribute(methodBuilder, httpMethod, context.RouteTemplate);
 
+        // 表单文件上传需要声明媒体类型，避免按 JSON Body 绑定。
+        if (parameterDescriptors.Any(descriptor => descriptor.Source == ParameterSource.Form))
+        {
+            AddConsumesAttribute(methodBuilder, "multipart/form-data");
+        }
+
         // 添加方法级别的 ApiExplorerSettings 特性
         AddMethodApiExplorerSettingsAttribute(methodBuilder, serviceMethod);
 
@@ -609,6 +615,22 @@ public static class DynamicApiControllerFactory
         {
             methodBuilder.SetCustomAttribute(new CustomAttributeBuilder(emptyConstructor, []));
         }
+    }
+
+    /// <summary>
+    /// 添加请求媒体类型特性
+    /// </summary>
+    private static void AddConsumesAttribute(MethodBuilder methodBuilder, string contentType)
+    {
+        var constructor = typeof(ConsumesAttribute).GetConstructor([typeof(string), typeof(string[])]);
+        if (constructor == null)
+        {
+            return;
+        }
+
+        methodBuilder.SetCustomAttribute(new CustomAttributeBuilder(
+            constructor,
+            [contentType, Array.Empty<string>()]));
     }
 
     /// <summary>

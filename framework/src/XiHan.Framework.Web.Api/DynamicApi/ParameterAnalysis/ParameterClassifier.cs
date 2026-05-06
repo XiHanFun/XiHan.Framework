@@ -13,8 +13,11 @@
 #endregion <<版权版本注释>>
 
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 
@@ -143,6 +146,77 @@ public static class ParameterClassifier
                type == typeof(HttpContext) ||
                type == typeof(ClaimsPrincipal) ||
                type == typeof(IServiceProvider);
+    }
+
+    /// <summary>
+    /// 判断类型是否包含表单文件。
+    /// </summary>
+    public static bool ContainsFormFile(Type type)
+    {
+        return ContainsFormFile(type, []);
+    }
+
+    private static bool ContainsFormFile(Type type, HashSet<Type> visitedTypes)
+    {
+        var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+
+        if (underlyingType == typeof(IFormFile) ||
+            underlyingType == typeof(IFormFileCollection) ||
+            typeof(IEnumerable<IFormFile>).IsAssignableFrom(underlyingType))
+        {
+            return true;
+        }
+
+        if (underlyingType.IsArray)
+        {
+            var elementType = underlyingType.GetElementType();
+            return elementType != null && ContainsFormFile(elementType, visitedTypes);
+        }
+
+        if (!visitedTypes.Add(underlyingType))
+        {
+            return false;
+        }
+
+        if (GetEnumerableElementTypes(underlyingType).Any(elementType => ContainsFormFile(elementType, visitedTypes)))
+        {
+            return true;
+        }
+
+        if (IsSimpleType(underlyingType) || IsSpecialType(underlyingType))
+        {
+            return false;
+        }
+
+        if (underlyingType.Namespace?.StartsWith("System", StringComparison.Ordinal) == true)
+        {
+            return false;
+        }
+
+        return underlyingType
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(property => property.GetIndexParameters().Length == 0)
+            .Any(property => ContainsFormFile(property.PropertyType, visitedTypes));
+    }
+
+    private static IEnumerable<Type> GetEnumerableElementTypes(Type type)
+    {
+        if (type == typeof(string))
+        {
+            yield break;
+        }
+
+        var candidates = type.IsInterface
+            ? type.GetInterfaces().Prepend(type)
+            : type.GetInterfaces();
+
+        foreach (var candidate in candidates)
+        {
+            if (candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                yield return candidate.GetGenericArguments()[0];
+            }
+        }
     }
 
     /// <summary>

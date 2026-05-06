@@ -136,7 +136,7 @@ public class ParameterRuleValidator
     private void ValidateMultipleComplexParameters(List<ParameterDescriptor> descriptors)
     {
         var complexParams = descriptors
-            .Where(d => d.Kind == ParameterKind.Complex && d.Source != ParameterSource.Body)
+            .Where(d => d.Kind == ParameterKind.Complex && d.Source is not ParameterSource.Body and not ParameterSource.Form)
             .ToList();
 
         if (complexParams.Count > 1)
