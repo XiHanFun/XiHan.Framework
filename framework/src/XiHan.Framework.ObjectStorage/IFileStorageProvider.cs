@@ -91,6 +91,14 @@ public interface IFileStorageProvider
     Task DeleteAsync(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 删除文件
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 检查文件是否存在
     /// </summary>
     /// <param name="path">文件路径</param>
@@ -99,12 +107,30 @@ public interface IFileStorageProvider
     Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 检查文件是否存在
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在</returns>
+    Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 获取文件元数据
     /// </summary>
     /// <param name="path">文件路径</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>文件元数据</returns>
     Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取文件元数据
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>文件元数据</returns>
+    Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 生成预签名URL（用于临时访问）
