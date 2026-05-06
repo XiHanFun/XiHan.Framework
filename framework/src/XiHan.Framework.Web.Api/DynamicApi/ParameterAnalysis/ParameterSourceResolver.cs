@@ -80,14 +80,20 @@ public class ParameterSourceResolver
         // 3.根据 HTTP Method 决策
         var allowBody = IsBodyAllowed();
 
-        // 4.Route 参数推断
+        // 4.表单文件参数推断
+        if (allowBody && ParameterClassifier.ContainsFormFile(descriptor.Type))
+        {
+            return ParameterSource.Form;
+        }
+
+        // 5.Route 参数推断
         if (ShouldBindIdFromRoute(descriptor))
         {
             _routeIdParameterCount++;
             return ParameterSource.Route;
         }
 
-        // 5.Body 参数推断（只能 1 个）
+        // 6.Body 参数推断（只能 1 个）
         if (allowBody && descriptor.Kind == ParameterKind.Complex)
         {
             // 确保只有一个 Body 参数
@@ -101,7 +107,7 @@ public class ParameterSourceResolver
             return ParameterSource.Query;
         }
 
-        // 6.Query 参数兜底规则
+        // 7.Query 参数兜底规则
         return ParameterSource.Query;
     }
 
