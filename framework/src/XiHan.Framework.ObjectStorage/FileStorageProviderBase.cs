@@ -104,15 +104,33 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     /// </summary>
     public abstract Task DeleteAsync(string path, CancellationToken cancellationToken = default);
 
+    /// <inheritdoc />
+    public virtual Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        return DeleteAsync(path, cancellationToken);
+    }
+
     /// <summary>
     /// 检查文件是否存在
     /// </summary>
     public abstract Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default);
 
+    /// <inheritdoc />
+    public virtual Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        return ExistsAsync(path, cancellationToken);
+    }
+
     /// <summary>
     /// 获取文件元数据
     /// </summary>
     public abstract Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <inheritdoc />
+    public virtual Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        return GetMetadataAsync(path, cancellationToken);
+    }
 
     /// <summary>
     /// 生成预签名URL

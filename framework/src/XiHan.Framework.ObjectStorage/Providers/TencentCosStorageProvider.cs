@@ -265,7 +265,13 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        await DeleteAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectKey) = ParsePath(path, bucketName);
 
         try
         {
@@ -276,6 +282,8 @@ public class TencentCosStorageProvider : FileStorageProviderBase
         {
             throw new InvalidOperationException($"删除文件失败: {ex.Message}", ex);
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -283,17 +291,23 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        return await ExistsAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectKey) = ParsePath(path, bucketName);
 
         try
         {
             var headRequest = new HeadObjectRequest(bucket, objectKey);
             _cosXml.HeadObject(headRequest);
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -302,14 +316,20 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default)
     {
-        var (bucket, objectKey) = ParsePath(path);
+        return await GetMetadataAsync(path, bucketName: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
+    {
+        var (bucket, objectKey) = ParsePath(path, bucketName);
 
         try
         {
             var headRequest = new HeadObjectRequest(bucket, objectKey);
             var result = _cosXml.HeadObject(headRequest);
 
-            return new FileMetadata
+            return Task.FromResult(new FileMetadata
             {
                 Name = Path.GetFileName(objectKey),
                 Path = path,
@@ -319,7 +339,7 @@ public class TencentCosStorageProvider : FileStorageProviderBase
                 ETag = result.eTag,
                 IsDirectory = false,
                 Url = GetObjectUrl(bucket, objectKey)
-            };
+            });
         }
         catch (Exception ex)
         {
@@ -548,8 +568,13 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     private (string bucket, string objectKey) ParsePath(string path)
     {
+        return ParsePath(path, bucketName: null);
+    }
+
+    private (string bucket, string objectKey) ParsePath(string path, string? bucketName)
+    {
         var normalizedPath = NormalizePath(path);
-        return (GetFullBucketName(_options.DefaultBucket), normalizedPath);
+        return (string.IsNullOrWhiteSpace(bucketName) ? GetFullBucketName(_options.DefaultBucket) : GetFullBucketName(bucketName.Trim()), normalizedPath);
     }
 
     #endregion
