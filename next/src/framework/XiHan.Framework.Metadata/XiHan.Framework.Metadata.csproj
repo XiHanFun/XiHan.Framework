@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>XiHan.Framework.Metadata</AssemblyName>
-    <RootNamespace>XiHan.Framework.Metadata</RootNamespace>
-    <PackageId>XiHan.Framework.Metadata</PackageId>
-    <Description>曦寒框架元数据与版本信息。</Description>
-  </PropertyGroup>
-</Project>
