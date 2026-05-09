@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel.Hosting</PackageId>
+    <Description>XiHan Framework Hosting — 应用启动主机。提供 Builder 模式应用构建、特性装配和启动/停止生命周期管理。</Description>
+    <PackageTags>XiHan;Framework;Kernel;Hosting</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel.Hosting</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+</Project>
