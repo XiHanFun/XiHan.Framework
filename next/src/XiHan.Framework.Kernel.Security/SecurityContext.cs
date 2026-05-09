@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 安全上下文。携带当前用户、租户、权限集等与安全相关的信息。
+/// 安全上下文。
+/// 携带当前用户、租户、权限集等与安全相关的信息。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public class SecurityContext

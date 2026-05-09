@@ -8,7 +8,8 @@ using XiHan.Framework.Kernel.Pipeline;
 namespace XiHan.Framework.Testing;
 
 /// <summary>
-/// 测试基座。提供无 HTTP 的管道测试能力。
+/// 测试基座。
+/// 提供无 HTTP 的管道测试能力。
 /// </summary>
 public sealed class XiHanTestHost : IAsyncDisposable
 {

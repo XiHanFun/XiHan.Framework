@@ -7,8 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 框架特性契约。任何类实现此接口即可作为一个特性（模块/插件/扩展），
-/// 通过 <c>UseFeature&lt;T&gt;()</c> 注册到应用中。
+/// 框架特性契约。
+/// 任何类实现此接口即可作为一个特性（模块/插件/扩展），通过 <c>UseFeature&lt;T&gt;()</c> 注册到应用中。
 /// 没有强制生命周期钩子，没有依赖声明要求。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]

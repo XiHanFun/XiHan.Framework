@@ -40,7 +40,8 @@ public enum DiagnosticLevel
 }
 
 /// <summary>
-/// 诊断日志接口。框架内置轻量实现，无需外部依赖。
+/// 诊断日志接口。
+/// 框架内置轻量实现，无需外部依赖。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public interface IDiagnosticLogger

@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 管道启动过滤器。特性可实现此接口来声明中间件的插入位置。
+/// 管道启动过滤器。
+/// 特性可实现此接口来声明中间件的插入位置。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public interface IStartupFilter

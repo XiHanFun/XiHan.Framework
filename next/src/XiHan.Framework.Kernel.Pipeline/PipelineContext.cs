@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 管道执行上下文。不绑定 HTTP，可用于消息、后台任务等任何场景。
+/// 管道执行上下文。
+/// 不绑定 HTTP，可用于消息、后台任务等任何场景。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public class PipelineContext

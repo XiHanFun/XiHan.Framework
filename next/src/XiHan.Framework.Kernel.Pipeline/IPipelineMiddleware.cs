@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 管道中间件接口。每个中间件在管道中处理上下文并决定是否调用下一个。
+/// 管道中间件接口。
+/// 每个中间件在管道中处理上下文并决定是否调用下一个。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public interface IPipelineMiddleware
