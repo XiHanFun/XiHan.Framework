@@ -41,7 +41,7 @@ public sealed class XiHanApp : IAsyncDisposable
     /// <summary>
     /// 管道执行入口。为 null 表示未配置管道。
     /// </summary>
-    public PipelineDelegate? Pipeline { get; }
+    public PipelineHandler? Pipeline { get; }
 
     /// <summary>
     /// 创建一个应用构建器。

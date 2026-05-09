@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// <summary>
 /// 特性相关的扩展方法。
 /// </summary>
-public static class FeatureExtensions
+public static class XiHanFeatureExtensions
 {
     /// <summary>
     /// 注册一个特性到服务集合中。

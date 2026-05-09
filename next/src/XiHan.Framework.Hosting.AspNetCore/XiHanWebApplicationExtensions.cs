@@ -9,10 +9,11 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Hosting.AspNetCore;
 
 /// <summary>
-/// ASP.NET Core 的曦寒集成。将框架 Feature 和 Pipeline 注册到 Web 应用中。
+/// ASP.NET Core 的曦寒集成。
+/// 将框架 Feature 和 Pipeline 注册到 Web 应用中。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
-public static class XiHanWebApplicationBuilder
+public static class XiHanWebApplicationExtensions
 {
     /// <summary>
     /// 向 ASP.NET Core WebApplication 注册曦寒框架。

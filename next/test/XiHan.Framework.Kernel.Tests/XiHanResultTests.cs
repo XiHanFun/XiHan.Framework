@@ -10,7 +10,7 @@ public class XiHanResultTests
     [Fact]
     public void Success_ShouldReturnIsSuccessTrue()
     {
-        var result = XiHanResult<int>.Success(42);
+        var result = XiHanResult.Success(42);
         Assert.True(result.IsSuccess);
         Assert.False(result.IsFailure);
         Assert.Equal(42, result.Value);
@@ -20,7 +20,7 @@ public class XiHanResultTests
     public void Failure_ShouldReturnIsFailureTrue()
     {
         var error = XiHanError.Validation("invalid");
-        var result = XiHanResult<int>.Failure(error);
+        var result = XiHanResult.Failure<int>(error);
         Assert.True(result.IsFailure);
         Assert.False(result.IsSuccess);
         Assert.Equal("VALIDATION", result.Error.Code);
@@ -29,21 +29,21 @@ public class XiHanResultTests
     [Fact]
     public void Value_OnFailure_ShouldThrow()
     {
-        var result = XiHanResult<int>.Failure(XiHanError.Unexpected("boom"));
+        var result = XiHanResult.Failure<int>(XiHanError.Unexpected("boom"));
         Assert.Throws<InvalidOperationException>(() => result.Value);
     }
 
     [Fact]
     public void Error_OnSuccess_ShouldThrow()
     {
-        var result = XiHanResult<int>.Success(1);
+        var result = XiHanResult.Success(1);
         Assert.Throws<InvalidOperationException>(() => result.Error);
     }
 
     [Fact]
     public void Map_OnSuccess_ShouldTransform()
     {
-        var result = XiHanResult<int>.Success(10).Map(x => x * 2);
+        var result = XiHanResult.Success(10).Map(x => x * 2);
         Assert.True(result.IsSuccess);
         Assert.Equal(20, result.Value);
     }
@@ -52,7 +52,7 @@ public class XiHanResultTests
     public void Map_OnFailure_ShouldPropagateError()
     {
         var error = XiHanError.NotFound("gone");
-        var result = XiHanResult<int>.Failure(error).Map(x => x + 1);
+        var result = XiHanResult.Failure<int>(error).Map(x => x + 1);
         Assert.True(result.IsFailure);
         Assert.Equal("NOT_FOUND", result.Error.Code);
     }
@@ -60,8 +60,8 @@ public class XiHanResultTests
     [Fact]
     public void Bind_OnSuccess_ShouldChain()
     {
-        var result = XiHanResult<int>.Success(5)
-            .Bind(x => x > 0 ? XiHanResult<string>.Success($"ok:{x}") : XiHanResult<string>.Failure(XiHanError.Validation("negative")));
+        var result = XiHanResult.Success(5)
+            .Bind(x => x > 0 ? XiHanResult.Success($"ok:{x}") : XiHanResult.Failure<string>(XiHanError.Validation("negative")));
         Assert.True(result.IsSuccess);
         Assert.Equal("ok:5", result.Value);
     }
@@ -69,15 +69,15 @@ public class XiHanResultTests
     [Fact]
     public void Bind_OnFailure_ShouldShortCircuit()
     {
-        var result = XiHanResult<int>.Failure(XiHanError.Unexpected("fail"))
-            .Bind(x => XiHanResult<string>.Success("unreachable"));
+        var result = XiHanResult.Failure<int>(XiHanError.Unexpected("fail"))
+            .Bind(x => XiHanResult.Success("unreachable"));
         Assert.True(result.IsFailure);
     }
 
     [Fact]
     public void MapError_OnFailure_ShouldTransformError()
     {
-        var result = XiHanResult<int>.Failure(XiHanError.Validation("old"))
+        var result = XiHanResult.Failure<int>(XiHanError.Validation("old"))
             .MapError(_ => XiHanError.Unexpected("wrapped"));
         Assert.True(result.IsFailure);
         Assert.Equal("UNEXPECTED", result.Error.Code);
@@ -86,10 +86,10 @@ public class XiHanResultTests
     [Fact]
     public void Match_ShouldHandleBothPaths()
     {
-        var success = XiHanResult<int>.Success(3).Match(v => v * 2, _ => -1);
+        var success = XiHanResult.Success(3).Match(v => v * 2, _ => -1);
         Assert.Equal(6, success);
 
-        var failure = XiHanResult<int>.Failure(XiHanError.NotFound("nope")).Match(v => v, _ => -1);
+        var failure = XiHanResult.Failure<int>(XiHanError.NotFound("nope")).Match(v => v, _ => -1);
         Assert.Equal(-1, failure);
     }
 

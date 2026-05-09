@@ -75,7 +75,7 @@ public class XiHanAppBuilderTests
 
     private sealed class EchoMiddleware : IPipelineMiddleware
     {
-        public Task InvokeAsync(PipelineContext context, PipelineDelegate next)
+        public Task InvokeAsync(PipelineContext context, PipelineHandler next)
             => next(context);
     }
 }

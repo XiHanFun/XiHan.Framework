@@ -5,17 +5,30 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace XiHan.Framework.Kernel;
 
-#pragma warning disable CA1000
+/// <summary>
+/// <see cref="XiHanMaybe{T}"/> 的静态工厂方法。
+/// </summary>
+public static class XiHanMaybe
+{
+    /// <summary>
+    /// 创建一个有值的 Maybe。
+    /// </summary>
+    public static XiHanMaybe<T> Some<T>(T value) => new(value);
+
+    /// <summary>
+    /// 无值。
+    /// </summary>
+    public static XiHanMaybe<T> None<T>() => default;
+}
 
 /// <summary>
-/// 曦寒框架可空值的可选容器。
+/// 表示一个可能没有值的可选容器。从类型层面替代 null。
 /// </summary>
 public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
 {
     private readonly T? _value;
 
-    private XiHanMaybe(T value)
-    { _value = value; HasValue = true; }
+    internal XiHanMaybe(T value) { _value = value; HasValue = true; }
 
     /// <summary>
     /// 是否有值。
@@ -24,31 +37,21 @@ public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
     public bool HasValue { get; }
 
     /// <summary>
-    /// 获取值。仅在 <see cref="HasValue"/> 为 <c>true</c> 时安全访问。
+    /// 获取值。仅在 <see cref="HasValue"/> 为 true 时安全访问。
     /// </summary>
     public T Value => HasValue ? _value! : throw new InvalidOperationException("Maybe has no value.");
-
-    /// <summary>
-    /// 创建一个有值的 Maybe。
-    /// </summary>
-    public static XiHanMaybe<T> Some(T value) => new(value);
-
-    /// <summary>
-    /// 无值。
-    /// </summary>
-    public static XiHanMaybe<T> None => default;
 
     /// <summary>
     /// 如果有值则转换。
     /// </summary>
     public XiHanMaybe<TOut> Map<TOut>(Func<T, TOut> mapper)
-        => HasValue ? XiHanMaybe<TOut>.Some(mapper(_value!)) : XiHanMaybe<TOut>.None;
+        => HasValue ? XiHanMaybe.Some(mapper(_value!)) : XiHanMaybe.None<TOut>();
 
     /// <summary>
     /// 如果有值则执行可能无值的操作。
     /// </summary>
     public XiHanMaybe<TOut> Bind<TOut>(Func<T, XiHanMaybe<TOut>> binder)
-        => HasValue ? binder(_value!) : XiHanMaybe<TOut>.None;
+        => HasValue ? binder(_value!) : XiHanMaybe.None<TOut>();
 
     /// <summary>
     /// 解构 Maybe，同时处理有值和无值路径。
@@ -57,7 +60,7 @@ public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
         => HasValue ? onSome(_value!) : onNone();
 
     /// <summary>
-    /// 如果有值则返回值，否则返回 <paramref name="defaultValue"/>。
+    /// 如果有值则返回值，否则返回默认值。
     /// </summary>
     public T ValueOrDefault(T defaultValue) => HasValue ? _value! : defaultValue;
 
@@ -69,7 +72,7 @@ public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
     /// <summary>
     /// 隐式转换：从值创建 Maybe。
     /// </summary>
-    public static implicit operator XiHanMaybe<T>(T value) => Some(value);
+    public static implicit operator XiHanMaybe<T>(T value) => XiHanMaybe.Some(value);
 
     /// <inheritdoc />
     public bool Equals(XiHanMaybe<T> other)

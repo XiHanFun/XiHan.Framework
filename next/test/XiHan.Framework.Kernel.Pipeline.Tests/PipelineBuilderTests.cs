@@ -112,7 +112,7 @@ public class PipelineBuilderTests
 
 internal sealed class CountingMiddleware : IPipelineMiddleware
 {
-    public Task InvokeAsync(PipelineContext context, PipelineDelegate next)
+    public Task InvokeAsync(PipelineContext context, PipelineHandler next)
     {
         context.Set("count", (context.Get("count") as int? ?? 0) + 1);
         return next(context);
@@ -125,7 +125,7 @@ internal sealed class OrderMiddleware : IPipelineMiddleware
 
     public static void ResetCounter() => _counter = 0;
 
-    public Task InvokeAsync(PipelineContext context, PipelineDelegate next)
+    public Task InvokeAsync(PipelineContext context, PipelineHandler next)
     {
         var order = context.Get("order") as List<int> ?? [];
         order.Add(Interlocked.Increment(ref _counter));
@@ -136,13 +136,13 @@ internal sealed class OrderMiddleware : IPipelineMiddleware
 
 internal sealed class ShortCircuitMiddleware : IPipelineMiddleware
 {
-    public Task InvokeAsync(PipelineContext context, PipelineDelegate next)
+    public Task InvokeAsync(PipelineContext context, PipelineHandler next)
         => Task.CompletedTask;
 }
 
 internal sealed class ContextCapturingMiddleware : IPipelineMiddleware
 {
-    public Task InvokeAsync(PipelineContext context, PipelineDelegate next)
+    public Task InvokeAsync(PipelineContext context, PipelineHandler next)
     {
         context.Set("captured.userId", context.UserId);
         context.Set("captured.traceId", context.TraceId);
