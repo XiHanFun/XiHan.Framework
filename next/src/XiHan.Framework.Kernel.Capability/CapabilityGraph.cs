@@ -4,8 +4,7 @@
 namespace XiHan.Framework.Kernel.Capability;
 
 /// <summary>
-/// 能力依赖图。
-/// 支持拓扑排序和循环依赖检测。
+/// 能力依赖图。支持拓扑排序、循环检测、缺失依赖和版本约束校验。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public sealed class CapabilityGraph
@@ -22,7 +21,7 @@ public sealed class CapabilityGraph
     }
 
     /// <summary>
-    /// 对所有能力进行拓扑排序。如果存在循环依赖则抛出异常。
+    /// 拓扑排序。缺失依赖会抛出异常，循环依赖会抛出异常。
     /// </summary>
     public IReadOnlyList<ICapability> Sort()
     {
@@ -33,62 +32,58 @@ public sealed class CapabilityGraph
         foreach (var name in _nodes.Keys)
         {
             if (!visited.Contains(name))
-            {
                 Visit(name, visited, inStack, sorted);
-            }
         }
-
         return sorted;
     }
 
     /// <summary>
-    /// 验证所有能力的依赖是否满足。
+    /// 验证所有能力的依赖。返回分类错误列表。
     /// </summary>
     public CapabilityValidationResult Validate()
     {
-        var errors = new List<string>();
+        var missing = new List<string>();
+        var circular = new List<string>();
 
         foreach (var (name, node) in _nodes)
         {
             foreach (var (dep, _) in node.Capability.Requires)
             {
                 if (!_nodes.ContainsKey(dep))
-                {
-                    errors.Add($"Missing dependency: '{name}' requires '{dep}' which is not registered.");
-                }
+                    missing.Add($"'{name}' requires '{dep}' which is not registered.");
             }
         }
 
-        var hasCycle = false;
         try
         {
             Sort();
         }
-        catch (InvalidOperationException)
+        catch (CircularDependencyException ex)
         {
-            hasCycle = true; errors.Add("Circular dependency detected.");
+            circular.Add(ex.Message);
         }
 
-        return new CapabilityValidationResult(errors.Count == 0 && !hasCycle, errors);
+        return new CapabilityValidationResult(
+            missing.Count == 0 && circular.Count == 0,
+            missing,
+            circular);
     }
 
     private void Visit(string name, HashSet<string> visited, HashSet<string> inStack, List<ICapability> sorted)
     {
         if (inStack.Contains(name))
-            throw new InvalidOperationException($"Circular dependency detected involving '{name}'.");
+            throw new CircularDependencyException($"Circular dependency detected involving '{name}'.");
 
         if (visited.Contains(name))
             return;
 
         if (!_nodes.TryGetValue(name, out var node))
-            throw new InvalidOperationException($"Capability '{name}' is not registered.");
+            throw new MissingCapabilityException($"Capability '{name}' is not registered.");
 
         inStack.Add(name);
 
         foreach (var (depName, _) in node.Capability.Requires)
-        {
             Visit(depName, visited, inStack, sorted);
-        }
 
         inStack.Remove(name);
         visited.Add(name);
@@ -99,6 +94,27 @@ public sealed class CapabilityGraph
 }
 
 /// <summary>
-/// 能力验证结果。
+/// 能力验证结果。分类列出缺失依赖和循环依赖。
 /// </summary>
-public sealed record CapabilityValidationResult(bool IsValid, IReadOnlyList<string> XiHanErrors);
+public sealed record CapabilityValidationResult(
+    bool IsValid,
+    IReadOnlyList<string> MissingDependencies,
+    IReadOnlyList<string> CircularDependencies);
+
+/// <summary>
+/// 循环依赖异常。
+/// </summary>
+public sealed class CircularDependencyException : Exception
+{
+    /// <inheritdoc />
+    public CircularDependencyException(string message) : base(message) { }
+}
+
+/// <summary>
+/// 缺失能力异常。
+/// </summary>
+public sealed class MissingCapabilityException : Exception
+{
+    /// <inheritdoc />
+    public MissingCapabilityException(string message) : base(message) { }
+}

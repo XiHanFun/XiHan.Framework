@@ -6,7 +6,7 @@ using System.Reflection;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 框架元数据。
+/// XiHan 框架元数据。
 /// 提供框架名称、版本、作者、仓库地址等身份标识。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]

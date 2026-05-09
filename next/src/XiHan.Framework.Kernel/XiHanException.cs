@@ -4,17 +4,12 @@
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 曦寒框架基础异常。
-/// 所有曦寒框架抛出的异常都继承自此类型。
+/// XiHan 框架基础异常。
+/// 所有框架内部抛出的异常都继承自此类型。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public class XiHanException : Exception
 {
-    /// <summary>
-    /// 错误码。
-    /// </summary>
-    public string Code { get; }
-
     /// <summary>
     /// 创建一个框架异常。
     /// </summary>
@@ -25,6 +20,11 @@ public class XiHanException : Exception
     /// </summary>
     public XiHanException(string code, string message, Exception innerException) : base(message, innerException) => Code = code;
 
+    /// <summary>
+    /// 错误码。
+    /// </summary>
+    public string Code { get; }
+
     /// <inheritdoc />
-    public override string ToString() => $"[{Code}] {Message}";
+    public override string ToString() => $"[{Code}] {base.ToString()}";
 }

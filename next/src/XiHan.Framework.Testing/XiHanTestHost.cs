@@ -23,6 +23,11 @@ public sealed class XiHanTestHost : IAsyncDisposable
     public IServiceProvider Services => _app.ServiceProvider;
 
     /// <summary>
+    /// 创建一个测试宿主构建器。
+    /// </summary>
+    public static TestHostBuilder CreateBuilder() => new();
+
+    /// <summary>
     /// 通过管道执行一个测试上下文。
     /// </summary>
     public async Task ExecuteAsync(PipelineContext context)
@@ -32,11 +37,6 @@ public sealed class XiHanTestHost : IAsyncDisposable
 
         await _app.Pipeline(context);
     }
-
-    /// <summary>
-    /// 创建一个测试宿主构建器。
-    /// </summary>
-    public static TestHostBuilder CreateBuilder() => new();
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync() => await _app.DisposeAsync();

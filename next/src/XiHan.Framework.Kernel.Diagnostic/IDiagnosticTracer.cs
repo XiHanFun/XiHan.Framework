@@ -10,12 +10,12 @@ namespace XiHan.Framework.Kernel.Diagnostic;
 public interface IDiagnosticTracer
 {
     /// <summary>
-    /// 开始一个新的 Span。
-    /// </summary>
-    IDisposable StartSpan(string name, string? parentTraceId = null);
-
-    /// <summary>
     /// 当前追踪 ID。
     /// </summary>
     string? CurrentTraceId { get; }
+
+    /// <summary>
+    /// 开始一个新的 Span。
+    /// </summary>
+    IDisposable StartSpan(string name, string? parentTraceId = null);
 }
