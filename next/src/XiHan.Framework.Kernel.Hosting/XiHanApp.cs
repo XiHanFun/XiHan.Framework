@@ -6,7 +6,8 @@ using XiHan.Framework.Kernel.Pipeline;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// XiHan 应用实例。持有服务提供器、管道和特性集合。
+/// 曦寒应用实例。
+/// 持有服务提供器、管道和特性集合。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public sealed class XiHanApp : IAsyncDisposable
@@ -58,6 +59,7 @@ public sealed class XiHanApp : IAsyncDisposable
         await Pipeline(context);
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;

@@ -6,8 +6,12 @@ namespace XiHan.Framework.Kernel.Security;
 /// <summary>
 /// 权限原语。定义权限的基本信息。
 /// </summary>
+#pragma warning disable CA1711
+
 [ApiLevel(Stability.Stable, "1.0")]
 public interface IPermission
+
+#pragma warning restore CA1711
 {
     /// <summary>
     /// 权限码，如 "order:read"、"user:create"。
@@ -23,23 +27,4 @@ public interface IPermission
     /// 权限描述。
     /// </summary>
     string? Description { get; }
-}
-
-/// <summary>
-/// 权限检查结果。
-/// </summary>
-public sealed class AuthorizationResult
-{
-    private AuthorizationResult(bool succeeded, string? failureReason = null)
-    {
-        Succeeded = succeeded;
-        FailureReason = failureReason;
-    }
-
-    public bool Succeeded { get; }
-    public string? FailureReason { get; }
-
-    public static AuthorizationResult Success() => new(true);
-
-    public static AuthorizationResult Failure(string reason) => new(false, reason);
 }

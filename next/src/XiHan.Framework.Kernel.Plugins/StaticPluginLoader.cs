@@ -31,7 +31,7 @@ public sealed class StaticPluginLoader
         foreach (var (_, type) in _pluginTypes)
         {
             var plugin = (IPlugin)Activator.CreateInstance(type)!;
-            services.AddSingleton(typeof(IPlugin), plugin);
+            services.AddSingleton<IPlugin>(plugin);
         }
     }
 }
