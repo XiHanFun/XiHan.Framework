@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 曦寒框架基础错误。
+/// XiHan 框架基础错误。
 /// </summary>
 public sealed record XiHanError
 {

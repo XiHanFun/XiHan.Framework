@@ -41,6 +41,15 @@ public enum Stability
 public sealed class ApiLevelAttribute : Attribute
 {
     /// <summary>
+    /// 标记稳定性级别。
+    /// </summary>
+    public ApiLevelAttribute(Stability stability, string since)
+    {
+        Stability = stability;
+        Since = since;
+    }
+
+    /// <summary>
     /// 稳定性级别。
     /// </summary>
     public Stability Stability { get; }
@@ -54,13 +63,4 @@ public sealed class ApiLevelAttribute : Attribute
     /// 计划转为 Stable 的版本（仅 Preview 适用）。
     /// </summary>
     public string? ScheduledStable { get; set; }
-
-    /// <summary>
-    /// 标记稳定性级别。
-    /// </summary>
-    public ApiLevelAttribute(Stability stability, string since)
-    {
-        Stability = stability;
-        Since = since;
-    }
 }

@@ -6,30 +6,27 @@ using XiHan.Framework.Kernel.Pipeline;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 曦寒应用实例。
-/// 持有服务提供器、管道和特性集合。
+/// XiHan 应用实例。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public sealed class XiHanApp : IAsyncDisposable
 {
+    private readonly bool _ownsProvider;
     private bool _disposed;
 
-    internal XiHanApp(
-        IServiceProvider serviceProvider,
-        PipelineBuilder? pipelineBuilder,
-        FeatureCollection features)
+    internal XiHanApp(IServiceProvider serviceProvider, PipelineBuilder? pipelineBuilder,
+        FeatureCollection features, bool ownsProvider)
     {
         ServiceProvider = serviceProvider;
         Features = features;
+        _ownsProvider = ownsProvider;
 
         if (pipelineBuilder is not null)
-        {
             Pipeline = pipelineBuilder.Build();
-        }
     }
 
     /// <summary>
-    /// 应用服务提供器。
+    /// 应用服务提供器。外部容器模式下通过宿主获取服务。
     /// </summary>
     public IServiceProvider ServiceProvider { get; }
 
@@ -39,23 +36,22 @@ public sealed class XiHanApp : IAsyncDisposable
     public FeatureCollection Features { get; }
 
     /// <summary>
-    /// 管道执行入口。为 null 表示未配置管道。
+    /// 管道执行入口。
     /// </summary>
     public PipelineHandler? Pipeline { get; }
 
     /// <summary>
-    /// 创建一个应用构建器。
+    /// 独立创建应用构建器。
     /// </summary>
     public static XiHanAppBuilder CreateBuilder(string[]? args = null) => new(args);
 
     /// <summary>
-    /// 通过管道执行一个上下文。
+    /// 通过管道执行上下文。
     /// </summary>
     public async Task ExecuteAsync(PipelineContext context)
     {
         if (Pipeline is null)
-            throw new InvalidOperationException("No pipeline has been configured.");
-
+            throw new InvalidOperationException("No pipeline configured.");
         await Pipeline(context);
     }
 
@@ -65,9 +61,12 @@ public sealed class XiHanApp : IAsyncDisposable
         if (_disposed) return;
         _disposed = true;
 
-        if (ServiceProvider is IAsyncDisposable asyncDisposable)
-            await asyncDisposable.DisposeAsync();
-        else if (ServiceProvider is IDisposable disposable)
-            disposable.Dispose();
+        if (_ownsProvider)
+        {
+            if (ServiceProvider is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync();
+            else if (ServiceProvider is IDisposable disposable)
+                disposable.Dispose();
+        }
     }
 }

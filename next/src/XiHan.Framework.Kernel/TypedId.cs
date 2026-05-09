@@ -11,11 +11,6 @@ public readonly struct TypedId<TValue> : IEquatable<TypedId<TValue>>, IComparabl
     where TValue : notnull, IEquatable<TValue>, IComparable<TValue>
 {
     /// <summary>
-    /// ID 的值。
-    /// </summary>
-    public TValue Value { get; }
-
-    /// <summary>
     /// 创建一个强类型 ID。
     /// </summary>
     public TypedId(TValue value)
@@ -24,20 +19,10 @@ public readonly struct TypedId<TValue> : IEquatable<TypedId<TValue>>, IComparabl
         Value = value;
     }
 
-    /// <inheritdoc />
-    public bool Equals(TypedId<TValue> other) => Value.Equals(other.Value);
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is TypedId<TValue> other && Equals(other);
-
-    /// <inheritdoc />
-    public override int GetHashCode() => Value.GetHashCode();
-
-    /// <inheritdoc />
-    public int CompareTo(TypedId<TValue> other) => Value.CompareTo(other.Value);
-
-    /// <inheritdoc />
-    public override string ToString() => Value.ToString() ?? string.Empty;
+    /// <summary>
+    /// ID 的值。
+    /// </summary>
+    public TValue Value { get; }
 
     /// <inheritdoc />
     public static bool operator ==(TypedId<TValue> left, TypedId<TValue> right) => left.Equals(right);
@@ -61,4 +46,19 @@ public readonly struct TypedId<TValue> : IEquatable<TypedId<TValue>>, IComparabl
     /// 隐式转换为底层值。
     /// </summary>
     public static implicit operator TValue(TypedId<TValue> id) => id.Value;
+
+    /// <inheritdoc />
+    public bool Equals(TypedId<TValue> other) => Value.Equals(other.Value);
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is TypedId<TValue> other && Equals(other);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => Value.GetHashCode();
+
+    /// <inheritdoc />
+    public int CompareTo(TypedId<TValue> other) => Value.CompareTo(other.Value);
+
+    /// <inheritdoc />
+    public override string ToString() => Value.ToString() ?? string.Empty;
 }

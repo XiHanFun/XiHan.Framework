@@ -3,19 +3,30 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Pipeline;
 
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 曦寒应用构建器。
-/// 提供 Builder 模式的应用构建，支持特性注册和管道配置。
+/// XiHan 应用构建器。支持包装外部 IServiceCollection 和 IConfiguration。
 /// </summary>
 public sealed class XiHanAppBuilder
 {
+    private readonly bool _ownsServices;
+
     /// <summary>
-    /// 创建一个应用构建器。可选传入命令行参数用于配置绑定。
+    /// 使用外部服务集合和配置创建构建器。
+    /// </summary>
+    public XiHanAppBuilder(IServiceCollection externalServices, IConfiguration externalConfiguration)
+    {
+        Services = externalServices;
+        Configuration = externalConfiguration;
+        Features = new FeatureCollection();
+        _ownsServices = false;
+    }
+
+    /// <summary>
+    /// 独立创建构建器，自建 ServiceCollection 和 Configuration。
     /// </summary>
     public XiHanAppBuilder(string[]? args = null)
     {
@@ -25,12 +36,12 @@ public sealed class XiHanAppBuilder
             .AddCommandLine(args ?? [])
             .Build();
 
-        Configuration = configuration;
         Services = new ServiceCollection();
+        Configuration = configuration;
         Features = new FeatureCollection();
+        _ownsServices = true;
 
         Services.AddSingleton<IConfiguration>(configuration);
-        Services.AddLogging(builder => builder.AddConsole());
     }
 
     /// <summary>
@@ -49,7 +60,7 @@ public sealed class XiHanAppBuilder
     public FeatureCollection Features { get; }
 
     /// <summary>
-    /// 管道构建器。为 null 表示尚未配置管道。
+    /// 管道构建器。
     /// </summary>
     public PipelineBuilder? Pipeline { get; private set; }
 
@@ -74,23 +85,22 @@ public sealed class XiHanAppBuilder
     }
 
     /// <summary>
-    /// 构建并初始化应用。
+    /// 构建应用。独立模式创建 ServiceProvider，外部容器模式不创建。
     /// </summary>
     public XiHanApp Build()
     {
-        // 配置每个特性
         var context = new FeatureConfigurationContext(Services, Configuration);
         foreach (var feature in Features)
-        {
             feature.Configure(context);
-        }
 
-        // 注册特性集合到 DI
         Services.AddSingleton(Features);
 
-        // 构建服务提供器
-        var serviceProvider = Services.BuildServiceProvider();
+        if (_ownsServices)
+        {
+            var provider = Services.BuildServiceProvider();
+            return new XiHanApp(provider, Pipeline, Features, ownsProvider: true);
+        }
 
-        return new XiHanApp(serviceProvider, Pipeline, Features);
+        return new XiHanApp(null!, Pipeline, Features, ownsProvider: false);
     }
 }

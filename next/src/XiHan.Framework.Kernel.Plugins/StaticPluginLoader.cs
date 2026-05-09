@@ -6,9 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 静态插件加载器。
-/// 编译时通过源生成器注册，完全 AOT 兼容。
-/// 不需要 AssemblyLoadContext 或运行时反射。
+/// 静态插件加载器。编译时注册，要求插件有无参构造函数。
+/// 完整 AOT 兼容版本需要源生成器生成强类型工厂以消除 Activator.CreateInstance。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public sealed class StaticPluginLoader
@@ -16,9 +15,9 @@ public sealed class StaticPluginLoader
     private readonly Dictionary<string, Type> _pluginTypes = [];
 
     /// <summary>
-    /// 注册一个静态插件类型。
+    /// 注册一个静态插件类型。插件必须有无参构造函数。
     /// </summary>
-    public StaticPluginLoader Register<TPlugin>() where TPlugin : IPlugin
+    public StaticPluginLoader Register<TPlugin>() where TPlugin : IPlugin, new()
     {
         _pluginTypes[typeof(TPlugin).Name] = typeof(TPlugin);
         return this;
@@ -29,7 +28,7 @@ public sealed class StaticPluginLoader
     /// </summary>
     public void LoadAll(IServiceCollection services)
     {
-        foreach (var (_, type) in _pluginTypes)
+        foreach (var type in _pluginTypes.Values)
         {
             var plugin = (IPlugin)Activator.CreateInstance(type)!;
             services.AddSingleton<IPlugin>(plugin);

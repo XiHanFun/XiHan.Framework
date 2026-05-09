@@ -9,12 +9,12 @@ namespace XiHan.Framework.Kernel.Pipeline;
 public enum PipelinePosition
 {
     /// <summary>
-    /// 管道最前端。
+    /// 最前端。
     /// </summary>
     Beginning,
 
     /// <summary>
-    /// 管道最末端。
+    /// 最末端。
     /// </summary>
     End,
 
@@ -30,13 +30,13 @@ public enum PipelinePosition
 }
 
 /// <summary>
-/// 管道构建器。
-/// 支持 <c>Use</c> / <c>UseAt</c> / <c>UseBefore</c> / <c>UseAfter</c> 显式排列中间件。
+/// 管道构建器。支持 Use / UseAt / UseBefore / UseAfter 显式排列中间件。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public sealed class PipelineBuilder
 {
     private readonly List<Func<PipelineHandler, PipelineHandler>> _middlewares = [];
+    private readonly List<Type> _middlewareTypes = [];
 
     /// <summary>
     /// 在管道末尾添加一个中间件。
@@ -54,12 +54,16 @@ public sealed class PipelineBuilder
     /// 在指定位置添加一个中间件。
     /// </summary>
     public PipelineBuilder UseAt<TMiddleware>(PipelinePosition position, Type? relativeTo = null) where TMiddleware : IPipelineMiddleware
-        => position switch
+    {
+        return position switch
         {
             PipelinePosition.Beginning => InsertAt(0, typeof(TMiddleware)),
             PipelinePosition.End => UseType(typeof(TMiddleware)),
+            PipelinePosition.Before => relativeTo is not null ? InsertAt(FindIndexOf(relativeTo), typeof(TMiddleware)) : UseType(typeof(TMiddleware)),
+            PipelinePosition.After => relativeTo is not null ? InsertAt(FindIndexOf(relativeTo) + 1, typeof(TMiddleware)) : UseType(typeof(TMiddleware)),
             _ => UseType(typeof(TMiddleware))
         };
+    }
 
     /// <summary>
     /// 在指定中间件 <typeparamref name="TBefore"/> 之前插入。
@@ -67,8 +71,10 @@ public sealed class PipelineBuilder
     public PipelineBuilder UseBefore<TMiddleware, TBefore>()
         where TMiddleware : IPipelineMiddleware where TBefore : IPipelineMiddleware
     {
-        var index = FindIndex<TBefore>();
-        return index >= 0 ? InsertAt(index, typeof(TMiddleware)) : UseType(typeof(TMiddleware));
+        var index = FindIndexOf<TBefore>();
+        if (index < 0)
+            throw new InvalidOperationException($"Middleware '{typeof(TBefore).Name}' not found in pipeline. Add it before using UseBefore.");
+        return InsertAt(index, typeof(TMiddleware));
     }
 
     /// <summary>
@@ -77,12 +83,14 @@ public sealed class PipelineBuilder
     public PipelineBuilder UseAfter<TMiddleware, TAfter>()
         where TMiddleware : IPipelineMiddleware where TAfter : IPipelineMiddleware
     {
-        var index = FindIndex<TAfter>();
-        return index >= 0 ? InsertAt(index + 1, typeof(TMiddleware)) : UseType(typeof(TMiddleware));
+        var index = FindIndexOf<TAfter>();
+        if (index < 0)
+            throw new InvalidOperationException($"Middleware '{typeof(TAfter).Name}' not found in pipeline. Add it before using UseAfter.");
+        return InsertAt(index + 1, typeof(TMiddleware));
     }
 
     /// <summary>
-    /// 应用所有 <see cref="IStartupFilter"/> 的中间件排序配置。
+    /// 应用所有 IStartupFilter 的中间件排序配置。
     /// </summary>
     public PipelineBuilder ApplyFilters(IEnumerable<IStartupFilter> filters)
     {
@@ -107,29 +115,38 @@ public sealed class PipelineBuilder
         return pipeline;
     }
 
+    private static void ValidateMiddlewareType(Type type)
+    {
+        if (!typeof(IPipelineMiddleware).IsAssignableFrom(type))
+            throw new ArgumentException($"Type {type.Name} must implement {nameof(IPipelineMiddleware)}.");
+    }
+
+    private static Func<PipelineHandler, PipelineHandler> CreateFactory(Type type)
+        => nextHandler => async context =>
+        {
+            var middleware = (IPipelineMiddleware)Activator.CreateInstance(type)!;
+            await middleware.InvokeAsync(context, nextHandler);
+        };
+
     private PipelineBuilder UseType(Type middlewareType)
     {
-        if (!typeof(IPipelineMiddleware).IsAssignableFrom(middlewareType))
-            throw new ArgumentException($"Type {middlewareType.Name} must implement {nameof(IPipelineMiddleware)}.");
-
-        _middlewares.Add(nextHandler => async context =>
-        {
-            var middleware = (IPipelineMiddleware)Activator.CreateInstance(middlewareType)!;
-            await middleware.InvokeAsync(context, nextHandler);
-        });
+        ValidateMiddlewareType(middlewareType);
+        _middlewareTypes.Add(middlewareType);
+        _middlewares.Add(CreateFactory(middlewareType));
         return this;
     }
 
     private PipelineBuilder InsertAt(int index, Type middlewareType)
     {
-        _middlewares.Insert(index, nextHandler => async context =>
-        {
-            var middleware = (IPipelineMiddleware)Activator.CreateInstance(middlewareType)!;
-            await middleware.InvokeAsync(context, nextHandler);
-        });
+        ValidateMiddlewareType(middlewareType);
+        _middlewareTypes.Insert(index, middlewareType);
+        _middlewares.Insert(index, CreateFactory(middlewareType));
         return this;
     }
 
-    private int FindIndex<TMiddleware>() where TMiddleware : IPipelineMiddleware
-        => _middlewares.FindIndex(_ => true);
+    private int FindIndexOf(Type middlewareType)
+        => _middlewareTypes.FindIndex(t => t == middlewareType);
+
+    private int FindIndexOf<TMiddleware>() where TMiddleware : IPipelineMiddleware
+        => FindIndexOf(typeof(TMiddleware));
 }

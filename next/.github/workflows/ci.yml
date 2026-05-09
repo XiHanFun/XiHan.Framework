@@ -9,11 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: XiHan.Framework/next
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - run: dotnet restore XiHan.Next.slnx
-      - run: dotnet build XiHan.Next.slnx --no-restore -c Release
-      - run: dotnet test XiHan.Next.slnx --no-build -c Release --verbosity normal
+      - run: dotnet restore XiHan.Framework.Next.slnx
+      - run: dotnet build XiHan.Framework.Next.slnx --no-restore -c Release
+      - run: dotnet test XiHan.Framework.Next.slnx --no-build -c Release --verbosity normal
