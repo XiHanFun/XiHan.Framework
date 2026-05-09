@@ -12,7 +12,7 @@ public interface IStartupFilter
     /// <summary>
     /// 配置管道中间件的插入位置。
     /// </summary>
-    /// <param name="next">后续配置委托。</param>
+    /// <param name="nextBuilder">后续配置委托。</param>
     /// <returns>包装后的管道配置委托。</returns>
-    Action<PipelineBuilder> Configure(Action<PipelineBuilder> next);
+    Action<PipelineBuilder> Configure(Action<PipelineBuilder> nextBuilder);
 }

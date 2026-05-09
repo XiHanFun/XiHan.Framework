@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Capability;
 
 /// <summary>
-/// 能力依赖图。支持拓扑排序和循环依赖检测。
+/// 能力依赖图。
+/// 支持拓扑排序和循环依赖检测。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public sealed class CapabilityGraph
@@ -59,7 +60,14 @@ public sealed class CapabilityGraph
         }
 
         var hasCycle = false;
-        try { Sort(); } catch (InvalidOperationException) { hasCycle = true; errors.Add("Circular dependency detected."); }
+        try
+        {
+            Sort();
+        }
+        catch (InvalidOperationException)
+        {
+            hasCycle = true; errors.Add("Circular dependency detected.");
+        }
 
         return new CapabilityValidationResult(errors.Count == 0 && !hasCycle, errors);
     }

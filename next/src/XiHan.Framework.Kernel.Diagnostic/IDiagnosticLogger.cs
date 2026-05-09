@@ -8,7 +8,35 @@ namespace XiHan.Framework.Kernel.Diagnostic;
 /// </summary>
 public enum DiagnosticLevel
 {
-    Trace, Debug, Information, Warning, XiHanError, Critical
+    /// <summary>
+    /// 跟踪级别，最详细。
+    /// </summary>
+    Trace,
+
+    /// <summary>
+    /// 调试信息。
+    /// </summary>
+    Debug,
+
+    /// <summary>
+    /// 常规信息。
+    /// </summary>
+    Information,
+
+    /// <summary>
+    /// 警告，非预期但可恢复。
+    /// </summary>
+    Warning,
+
+    /// <summary>
+    /// 错误，需要关注。
+    /// </summary>
+    Error,
+
+    /// <summary>
+    /// 严重错误，系统级故障。
+    /// </summary>
+    Critical
 }
 
 /// <summary>
@@ -27,63 +55,3 @@ public interface IDiagnosticLogger
     /// </summary>
     void Log(DiagnosticLevel level, string message, Exception? exception = null, params (string Key, object? Value)[] properties);
 }
-
-/// <summary>
-/// 诊断指标接口。
-/// </summary>
-[ApiLevel(Stability.Preview, "1.0")]
-public interface IDiagnosticMeter
-{
-    /// <summary>
-    /// 记录一个计数器增量。
-    /// </summary>
-    void Increment(string name, long value = 1, params (string Key, object? Value)[] tags);
-
-    /// <summary>
-    /// 记录一个测量值。
-    /// </summary>
-    void Record(string name, double value, params (string Key, object? Value)[] tags);
-}
-
-/// <summary>
-/// 分布式追踪接口。
-/// </summary>
-[ApiLevel(Stability.Preview, "1.0")]
-public interface IDiagnosticTracer
-{
-    /// <summary>
-    /// 开始一个新的 Span。
-    /// </summary>
-    IDisposable StartSpan(string name, string? parentTraceId = null);
-
-    /// <summary>
-    /// 当前追踪 ID。
-    /// </summary>
-    string? CurrentTraceId { get; }
-}
-
-/// <summary>
-/// 审计事件接收器。
-/// </summary>
-[ApiLevel(Stability.Preview, "1.0")]
-public interface IAuditSink
-{
-    /// <summary>
-    /// 写入审计事件。
-    /// </summary>
-    Task WriteAsync(AuditEvent auditEvent, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// 审计事件模型。
-/// </summary>
-public sealed record AuditEvent(
-    string EventType,
-    string? UserId,
-    string? TenantId,
-    string? ResourceType,
-    string? ResourceId,
-    string? Action,
-    DateTimeOffset Timestamp,
-    IReadOnlyDictionary<string, object?>? Metadata = null
-);

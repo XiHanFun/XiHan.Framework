@@ -3,12 +3,29 @@
 
 namespace XiHan.Framework.Kernel;
 
+/// <summary>
+/// 曦寒框架基础错误。
+/// </summary>
 public sealed record XiHanError
 {
+    /// <summary>
+    /// 错误码
+    /// </summary>
     public string Code { get; }
+
+    /// <summary>
+    /// 错误描述。
+    /// </summary>
     public string Message { get; }
+
+    /// <summary>
+    /// 可选的内部异常。
+    /// </summary>
     public Exception? InnerException { get; }
 
+    /// <summary>
+    /// 创建一个错误。
+    /// </summary>
     public XiHanError(string code, string message, Exception? innerException = null)
     {
         ArgumentNullException.ThrowIfNull(code);
@@ -18,14 +35,24 @@ public sealed record XiHanError
         InnerException = innerException;
     }
 
+    /// <summary>
+    /// 创建一个未预期的内部错误。
+    /// </summary>
     public static XiHanError Unexpected(string message, Exception? innerException = null)
         => new("UNEXPECTED", message, innerException);
 
+    /// <summary>
+    /// 创建一个验证错误。
+    /// </summary>
     public static XiHanError Validation(string message)
         => new("VALIDATION", message);
 
+    /// <summary>
+    /// 创建一个未找到错误。
+    /// </summary>
     public static XiHanError NotFound(string message)
         => new("NOT_FOUND", message);
 
+    /// <inheritdoc />
     public override string ToString() => $"[{Code}] {Message}";
 }

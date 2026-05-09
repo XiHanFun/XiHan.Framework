@@ -6,24 +6,59 @@ using System.Reflection;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 框架元数据。提供框架名称、版本、作者、仓库地址等身份信息。
+/// 框架元数据。
+/// 提供框架名称、版本、作者、仓库地址等身份标识。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public static class XiHanMetadata
 {
+    /// <summary>
+    /// 框架 NuGet 包名前缀。
+    /// </summary>
     public const string Name = "XiHan.Framework";
+
+    /// <summary>
+    /// 框架显示名称。
+    /// </summary>
     public const string DisplayName = "曦寒框架";
+
+    /// <summary>
+    /// 版权及贡献者信息。
+    /// </summary>
     public const string Author = "XiHanFun Contributors";
+
+    /// <summary>
+    /// 组织名称。
+    /// </summary>
     public const string Organization = "XiHanFun";
+
+    /// <summary>
+    /// 仓库地址。
+    /// </summary>
     public const string RepositoryUrl = "https://github.com/XiHanFun/XiHan.Framework";
+
+    /// <summary>
+    /// 文档地址。
+    /// </summary>
     public const string DocumentationUrl = "https://docs.xihanfun.com";
+
+    /// <summary>
+    /// 许可证类型。
+    /// </summary>
     public const string License = "MIT";
+
+    /// <summary>
+    /// 许可证地址。
+    /// </summary>
     public const string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
 
+    /// <summary>
+    /// 支持的平台。
+    /// </summary>
     public static readonly string[] SupportedPlatforms = ["Windows", "Linux", "MacOS"];
 
     /// <summary>
-    /// 框架版本。
+    /// 框架版本号，从程序集信息中读取。
     /// </summary>
     public static string Version => typeof(XiHanMetadata).Assembly
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -31,7 +66,7 @@ public static class XiHanMetadata
         ?? "0.0.0";
 
     /// <summary>
-    /// 运行中应用的入口程序集名称。
+    /// 当前运行中应用的入口程序集名称。
     /// </summary>
     public static string EntryAssemblyName => Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
