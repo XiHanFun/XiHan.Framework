@@ -30,8 +30,11 @@ public readonly struct XiHanResult<T>
     private readonly T? _value;
     private readonly XiHanError? _error;
 
-    internal XiHanResult(T value) { _value = value; _error = null; IsSuccess = true; }
-    internal XiHanResult(XiHanError error) { _value = default; _error = error; IsSuccess = false; }
+    internal XiHanResult(T value)
+    { _value = value; _error = null; IsSuccess = true; }
+
+    internal XiHanResult(XiHanError error)
+    { _value = default; _error = error; IsSuccess = false; }
 
     /// <summary>
     /// 操作是否成功。

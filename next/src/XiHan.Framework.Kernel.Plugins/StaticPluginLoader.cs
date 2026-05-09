@@ -6,7 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 静态插件加载器。编译时通过源生成器注册，完全 AOT 兼容。
+/// 静态插件加载器。
+/// 编译时通过源生成器注册，完全 AOT 兼容。
 /// 不需要 AssemblyLoadContext 或运行时反射。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]

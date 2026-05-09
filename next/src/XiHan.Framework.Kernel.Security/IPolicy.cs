@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 安全策略原语。定义基于策略的授权模型。
+/// 安全策略原语。
+/// 定义基于策略的授权模型。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public interface IPolicy
@@ -19,4 +20,3 @@ public interface IPolicy
     /// </summary>
     Task<AuthorizationResult> EvaluateAsync(SecurityContext context);
 }
-

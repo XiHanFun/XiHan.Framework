@@ -22,13 +22,15 @@ public static class XiHanMaybe
 }
 
 /// <summary>
-/// 表示一个可能没有值的可选容器。从类型层面替代 null。
+/// 表示一个可能没有值的可选容器。
+/// 从类型层面替代 null。
 /// </summary>
 public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
 {
     private readonly T? _value;
 
-    internal XiHanMaybe(T value) { _value = value; HasValue = true; }
+    internal XiHanMaybe(T value)
+    { _value = value; HasValue = true; }
 
     /// <summary>
     /// 是否有值。

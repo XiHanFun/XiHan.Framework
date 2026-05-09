@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件契约。声明插件的名称、版本和依赖。
+/// 插件契约。
+/// 声明插件的名称、版本和依赖。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public interface IPlugin
