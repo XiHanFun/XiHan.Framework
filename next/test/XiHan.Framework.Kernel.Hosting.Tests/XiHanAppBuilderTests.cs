@@ -32,7 +32,7 @@ public class XiHanAppBuilderTests
         builder.UseFeature<TestFeature>();
         var app = builder.Build();
 
-        var service = app.ServiceProvider.GetService<TestService>();
+        var service = app.ServiceProvider!.GetService<TestService>();
         Assert.NotNull(service);
     }
 
