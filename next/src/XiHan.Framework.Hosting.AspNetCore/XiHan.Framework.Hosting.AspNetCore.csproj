@@ -10,7 +10,8 @@
     <ProjectReference Include="..\XiHan.Framework.Kernel.Pipeline\XiHan.Framework.Kernel.Pipeline.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
   </ItemGroup>
 </Project>

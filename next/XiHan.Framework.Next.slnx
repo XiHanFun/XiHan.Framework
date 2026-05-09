@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/1.src/">
+    <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Capability/XiHan.Framework.Kernel.Capability.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Diagnostic/XiHan.Framework.Kernel.Diagnostic.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Hosting/XiHan.Framework.Kernel.Hosting.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Pipeline/XiHan.Framework.Kernel.Pipeline.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Plugins/XiHan.Framework.Kernel.Plugins.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Security/XiHan.Framework.Kernel.Security.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/2.test/">
+    <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Hosting.Tests/XiHan.Framework.Kernel.Hosting.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Pipeline.Tests/XiHan.Framework.Kernel.Pipeline.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Tests/XiHan.Framework.Kernel.Tests.csproj" />
+  </Folder>
+  <Folder Name="/3.docs/" />
+  <Folder Name="/4.samples/" />
+</Solution>
