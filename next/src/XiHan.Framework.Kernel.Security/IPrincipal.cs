@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 安全主体。代表当前操作的主体（用户或系统）。
+/// 安全主体。
+/// 代表当前操作的主体（用户或系统）。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public interface IPrincipal

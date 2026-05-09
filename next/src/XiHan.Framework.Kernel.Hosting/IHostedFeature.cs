@@ -4,8 +4,8 @@
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 需要启动/停止生命周期的特性。实现此接口的特性将在应用启动时调用 StartAsync，
-/// 关闭时调用 StopAsync。
+/// 需要启动/停止生命周期的特性。
+/// 实现此接口的特性将在应用启动时调用 StartAsync，关闭时调用 StopAsync。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public interface IHostedFeature : IXiHanFeature

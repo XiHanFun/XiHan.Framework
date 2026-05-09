@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Capability;
 
 /// <summary>
-/// 能力声明。每个扩展包可通过 manifest.json 或实现此接口来声明自己的能力。
+/// 能力声明。
+/// 每个扩展包可通过 manifest.json 或实现此接口来声明自己的能力。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public interface ICapability

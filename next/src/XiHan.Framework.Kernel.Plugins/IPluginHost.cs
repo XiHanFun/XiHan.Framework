@@ -4,7 +4,8 @@
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件宿主。管理插件的加载、卸载和生命周期。
+/// 插件宿主。
+/// 管理插件的加载、卸载和生命周期。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
 public interface IPluginHost
