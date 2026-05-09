@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel</PackageId>
+    <Description>XiHan Framework Kernel — 微内核。仅提供 Result/Maybe 结果模型、TypedId 强类型 ID、IXiHanFeature 特性契约、基础异常和 API 稳定性标记。零外部依赖。</Description>
+    <PackageTags>XiHan;Framework;Kernel</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

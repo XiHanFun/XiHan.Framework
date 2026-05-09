@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Hosting.AspNetCore</PackageId>
+    <Description>XiHan Framework ASP.NET Core Hosting — ASP.NET Core 适配层。将框架 Pipeline 和 Feature 集成到 ASP.NET Core 中间件管道。</Description>
+    <PackageTags>XiHan;Framework;Hosting;AspNetCore</PackageTags>
+    <RootNamespace>XiHan.Framework.Hosting.AspNetCore</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel.Hosting\XiHan.Framework.Kernel.Hosting.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Kernel.Pipeline\XiHan.Framework.Kernel.Pipeline.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+</Project>

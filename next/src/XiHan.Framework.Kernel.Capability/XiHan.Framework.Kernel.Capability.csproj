@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel.Capability</PackageId>
+    <Description>XiHan Framework Capability — 能力图谱。提供能力声明、发现、协商、依赖约束和版本检查。</Description>
+    <PackageTags>XiHan;Framework;Kernel;Capability</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel.Capability</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>

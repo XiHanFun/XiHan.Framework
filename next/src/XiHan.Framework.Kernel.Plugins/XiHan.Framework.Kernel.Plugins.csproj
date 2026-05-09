@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel.Plugins</PackageId>
+    <Description>XiHan Framework Plugins — 插件系统。提供静态插件（AOT 兼容，编译时注册）和动态插件（运行时 AssemblyLoadContext 隔离）。</Description>
+    <PackageTags>XiHan;Framework;Kernel;Plugins</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel.Plugins</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel.Hosting\XiHan.Framework.Kernel.Hosting.csproj" />
+  </ItemGroup>
+</Project>

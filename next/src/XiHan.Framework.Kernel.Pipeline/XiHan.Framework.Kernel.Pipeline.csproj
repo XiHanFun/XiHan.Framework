@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel.Pipeline</PackageId>
+    <Description>XiHan Framework Pipeline — 执行管线。提供统一请求执行管线、中间件组装和管道上下文。</Description>
+    <PackageTags>XiHan;Framework;Kernel;Pipeline</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel.Pipeline</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>
