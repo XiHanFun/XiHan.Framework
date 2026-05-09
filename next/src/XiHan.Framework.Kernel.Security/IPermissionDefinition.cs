@@ -3,13 +3,12 @@
 
 namespace XiHan.Framework.Kernel.Security;
 
-#pragma warning disable CA1711
-
 /// <summary>
-/// 权限原语。定义权限的基本信息。
+/// 权限原语。
+/// 定义权限的基本信息。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
-public interface IPermission
+public interface IPermissionDefinition
 {
     /// <summary>
     /// 权限码，如 "order:read"、"user:create"。
@@ -26,8 +25,6 @@ public interface IPermission
     /// </summary>
     string? Description { get; }
 }
-
-#pragma warning restore CA1711
 
 /// <summary>
 /// 权限检查结果。
