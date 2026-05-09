@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Testing</PackageId>
+    <Description>XiHan Framework Testing — 测试基座。提供 XiHanTestHost、模拟特性扩展和内联管道测试工具。</Description>
+    <PackageTags>XiHan;Framework;Testing</PackageTags>
+    <RootNamespace>XiHan.Framework.Testing</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel.Hosting\XiHan.Framework.Kernel.Hosting.csproj" />
+    <ProjectReference Include="..\XiHan.Framework.Kernel.Pipeline\XiHan.Framework.Kernel.Pipeline.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

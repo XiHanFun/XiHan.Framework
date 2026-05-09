@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel.Security</PackageId>
+    <Description>XiHan Framework Security — 安全原语。提供权限、策略、主体和声明的基础模型，不包含具体认证/授权实现。</Description>
+    <PackageTags>XiHan;Framework;Kernel;Security</PackageTags>
+    <RootNamespace>XiHan.Framework.Kernel.Security</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XiHan.Framework.Kernel\XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>
