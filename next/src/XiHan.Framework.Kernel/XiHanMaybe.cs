@@ -1,19 +1,21 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// <see cref="XiHanMaybe{T}"/> 的静态工厂方法。
+/// XiHanMaybe 的静态工厂方法。
 /// </summary>
 public static class XiHanMaybe
 {
     /// <summary>
     /// 创建一个有值的 Maybe。
     /// </summary>
-    public static XiHanMaybe<T> Some<T>(T value) => new(value);
+    public static XiHanMaybe<T> Some<T>(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return new XiHanMaybe<T>(value);
+    }
 
     /// <summary>
     /// 无值。
@@ -22,26 +24,36 @@ public static class XiHanMaybe
 }
 
 /// <summary>
-/// 表示一个可能没有值的可选容器。
-/// 从类型层面替代 null。
+/// 表示一个可能没有值的可选容器。从类型层面替代 null。
 /// </summary>
 public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
 {
     private readonly T? _value;
+    private readonly bool _hasValue;
 
     internal XiHanMaybe(T value)
-    { _value = value; HasValue = true; }
+    { _value = value; _hasValue = true; }
 
     /// <summary>
     /// 是否有值。
     /// </summary>
-    [MemberNotNullWhen(true, nameof(Value))]
-    public bool HasValue { get; }
+    public bool HasValue => _hasValue;
 
     /// <summary>
-    /// 获取值。仅在 <see cref="HasValue"/> 为 true 时安全访问。
+    /// 获取值。仅在 HasValue 为 true 时安全访问。
     /// </summary>
     public T Value => HasValue ? _value! : throw new InvalidOperationException("Maybe has no value.");
+
+    /// <summary>
+    /// 隐式转换：从值创建 Maybe。
+    /// </summary>
+    public static implicit operator XiHanMaybe<T>(T value) => XiHanMaybe.Some(value);
+
+    /// <inheritdoc />
+    public static bool operator ==(XiHanMaybe<T> left, XiHanMaybe<T> right) => left.Equals(right);
+
+    /// <inheritdoc />
+    public static bool operator !=(XiHanMaybe<T> left, XiHanMaybe<T> right) => !left.Equals(right);
 
     /// <summary>
     /// 如果有值则转换。
@@ -71,11 +83,6 @@ public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
     /// </summary>
     public T OrElse(Func<T> factory) => HasValue ? _value! : factory();
 
-    /// <summary>
-    /// 隐式转换：从值创建 Maybe。
-    /// </summary>
-    public static implicit operator XiHanMaybe<T>(T value) => XiHanMaybe.Some(value);
-
     /// <inheritdoc />
     public bool Equals(XiHanMaybe<T> other)
         => HasValue == other.HasValue && (!HasValue || EqualityComparer<T>.Default.Equals(_value, other._value));
@@ -84,13 +91,7 @@ public readonly struct XiHanMaybe<T> : IEquatable<XiHanMaybe<T>>
     public override bool Equals(object? obj) => obj is XiHanMaybe<T> other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode() => HasValue ? _value!.GetHashCode() : 0;
-
-    /// <inheritdoc />
-    public static bool operator ==(XiHanMaybe<T> left, XiHanMaybe<T> right) => left.Equals(right);
-
-    /// <inheritdoc />
-    public static bool operator !=(XiHanMaybe<T> left, XiHanMaybe<T> right) => !left.Equals(right);
+    public override int GetHashCode() => HasValue ? _value?.GetHashCode() ?? 0 : 0;
 
     /// <inheritdoc />
     public override string ToString() => HasValue ? $"Some({_value})" : "None";
