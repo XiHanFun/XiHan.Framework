@@ -20,34 +20,3 @@ public interface IPolicy
     Task<AuthorizationResult> EvaluateAsync(SecurityContext context);
 }
 
-/// <summary>
-/// 权限检查结果。
-/// </summary>
-public sealed class AuthorizationResult
-{
-    private AuthorizationResult(bool succeeded, string? failureReason = null)
-    {
-        Succeeded = succeeded;
-        FailureReason = failureReason;
-    }
-
-    /// <summary>
-    /// 权限检查是否通过。
-    /// </summary>
-    public bool Succeeded { get; }
-
-    /// <summary>
-    /// 失败原因。
-    /// </summary>
-    public string? FailureReason { get; }
-
-    /// <summary>
-    /// 创建一个成功的授权结果。
-    /// </summary>
-    public static AuthorizationResult Success() => new(true);
-
-    /// <summary>
-    /// 创建一个失败的授权结果。
-    /// </summary>
-    public static AuthorizationResult Failure(string reason) => new(false, reason);
-}
