@@ -62,11 +62,16 @@ public sealed class CapabilityGraph
         {
             circular.Add(ex.Message);
         }
+        catch (MissingCapabilityException ex)
+        {
+            missing.Add(ex.Message);
+        }
 
         return new CapabilityValidationResult(
             missing.Count == 0 && circular.Count == 0,
             missing,
-            circular);
+            circular,
+            []);
     }
 
     private void Visit(string name, HashSet<string> visited, HashSet<string> inStack, List<ICapability> sorted)
@@ -99,7 +104,8 @@ public sealed class CapabilityGraph
 public sealed record CapabilityValidationResult(
     bool IsValid,
     IReadOnlyList<string> MissingDependencies,
-    IReadOnlyList<string> CircularDependencies);
+    IReadOnlyList<string> CircularDependencies,
+    IReadOnlyList<string> VersionMismatches);
 
 /// <summary>
 /// 循环依赖异常。

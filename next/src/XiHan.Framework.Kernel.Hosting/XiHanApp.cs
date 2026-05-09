@@ -26,9 +26,9 @@ public sealed class XiHanApp : IAsyncDisposable
     }
 
     /// <summary>
-    /// 应用服务提供器。外部容器模式下通过宿主获取服务。
+    /// 应用服务提供器。外部容器模式（UseXiHan/AddXiHan）下为 null，通过宿主获取服务。
     /// </summary>
-    public IServiceProvider ServiceProvider { get; }
+    public IServiceProvider? ServiceProvider { get; }
 
     /// <summary>
     /// 已注册的特性集合。

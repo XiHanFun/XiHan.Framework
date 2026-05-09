@@ -18,9 +18,9 @@ public sealed class XiHanTestHost : IAsyncDisposable
     internal XiHanTestHost(XiHanApp app) => _app = app;
 
     /// <summary>
-    /// 应用服务提供器。
+    /// 应用服务提供器。测试宿主始终拥有独立容器。
     /// </summary>
-    public IServiceProvider Services => _app.ServiceProvider;
+    public IServiceProvider Services => _app.ServiceProvider!;
 
     /// <summary>
     /// 创建一个测试宿主构建器。
