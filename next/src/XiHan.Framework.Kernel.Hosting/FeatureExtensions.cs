@@ -35,7 +35,7 @@ public static class FeatureExtensions
     }
 
     /// <summary>
-    /// 向 Microsoft.Extensions.Hosting 注册 XiHan 应用。
+    /// 向 Microsoft.Extensions.Hosting 注册曦寒应用。
     /// </summary>
     public static IHostBuilder UseXiHan(this IHostBuilder hostBuilder, Action<XiHanAppBuilder> configure)
     {

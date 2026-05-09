@@ -8,19 +8,29 @@ namespace XiHan.Framework.Kernel;
 /// </summary>
 public enum Stability
 {
-    /// <summary>长期兼容，破坏性变更只能进 MAJOR 版本。</summary>
+    /// <summary>
+    /// 长期兼容，破坏性变更只能进 MAJOR 版本。
+    /// </summary>
     Stable = 0,
 
-    /// <summary>允许调整，但必须文档标注。</summary>
+    /// <summary>
+    /// 允许调整，但必须文档标注。
+    /// </summary>
     Preview = 1,
 
-    /// <summary>默认不承诺兼容，可能随时移除。</summary>
+    /// <summary>
+    /// 默认不承诺兼容，可能随时移除。
+    /// </summary>
     Experimental = 2,
 
-    /// <summary>用户不得依赖，分析器会阻止引用。</summary>
+    /// <summary>
+    /// 用户不得依赖，分析器会阻止引用。
+    /// </summary>
     Internal = 3,
 
-    /// <summary>已弃用，将在下一个 MAJOR 版本中移除。</summary>
+    /// <summary>
+    /// 已弃用，将在下一个 MAJOR 版本中移除。
+    /// </summary>
     Deprecated = 4
 }
 

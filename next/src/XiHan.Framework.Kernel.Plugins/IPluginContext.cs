@@ -4,23 +4,18 @@
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件契约。声明插件的名称、版本和依赖。
+/// 插件上下文，为插件提供隔离的执行环境。
 /// </summary>
 [ApiLevel(Stability.Preview, "1.0")]
-public interface IPlugin
+public interface IPluginContext
 {
     /// <summary>
     /// 插件名称。
     /// </summary>
-    string Name { get; }
+    string PluginName { get; }
 
     /// <summary>
-    /// 插件版本。
+    /// 插件的隔离服务提供器。
     /// </summary>
-    string Version { get; }
-
-    /// <summary>
-    /// 插件依赖的其他插件名称。
-    /// </summary>
-    IReadOnlyList<string> Dependencies { get; }
+    IServiceProvider Services { get; }
 }

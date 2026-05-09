@@ -9,10 +9,14 @@ using XiHan.Framework.Kernel.Pipeline;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// XiHan 应用构建器。提供 Builder 模式的应用构建，支持特性注册和管道配置。
+/// 曦寒应用构建器。
+/// 提供 Builder 模式的应用构建，支持特性注册和管道配置。
 /// </summary>
 public sealed class XiHanAppBuilder
 {
+    /// <summary>
+    /// 创建一个应用构建器。可选传入命令行参数用于配置绑定。
+    /// </summary>
     public XiHanAppBuilder(string[]? args = null)
     {
         var configuration = new ConfigurationBuilder()

@@ -13,6 +13,6 @@ public interface IPipelineMiddleware
     /// 执行中间件逻辑。
     /// </summary>
     /// <param name="context">管道上下文。</param>
-    /// <param name="next">下一个中间件委托。</param>
-    Task InvokeAsync(PipelineContext context, PipelineDelegate next);
+    /// <param name="nextHandler">下一个中间件委托。</param>
+    Task InvokeAsync(PipelineContext context, PipelineDelegate nextHandler);
 }

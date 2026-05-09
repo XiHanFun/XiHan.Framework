@@ -24,26 +24,37 @@ public readonly struct TypedId<TValue> : IEquatable<TypedId<TValue>>, IComparabl
         Value = value;
     }
 
+    /// <inheritdoc />
     public bool Equals(TypedId<TValue> other) => Value.Equals(other.Value);
 
+    /// <inheritdoc />
     public override bool Equals(object? obj) => obj is TypedId<TValue> other && Equals(other);
 
+    /// <inheritdoc />
     public override int GetHashCode() => Value.GetHashCode();
 
+    /// <inheritdoc />
     public int CompareTo(TypedId<TValue> other) => Value.CompareTo(other.Value);
 
+    /// <inheritdoc />
     public override string ToString() => Value.ToString() ?? string.Empty;
 
+    /// <inheritdoc />
     public static bool operator ==(TypedId<TValue> left, TypedId<TValue> right) => left.Equals(right);
 
+    /// <inheritdoc />
     public static bool operator !=(TypedId<TValue> left, TypedId<TValue> right) => !left.Equals(right);
 
+    /// <inheritdoc />
     public static bool operator <(TypedId<TValue> left, TypedId<TValue> right) => left.CompareTo(right) < 0;
 
+    /// <inheritdoc />
     public static bool operator >(TypedId<TValue> left, TypedId<TValue> right) => left.CompareTo(right) > 0;
 
+    /// <inheritdoc />
     public static bool operator <=(TypedId<TValue> left, TypedId<TValue> right) => left.CompareTo(right) <= 0;
 
+    /// <inheritdoc />
     public static bool operator >=(TypedId<TValue> left, TypedId<TValue> right) => left.CompareTo(right) >= 0;
 
     /// <summary>

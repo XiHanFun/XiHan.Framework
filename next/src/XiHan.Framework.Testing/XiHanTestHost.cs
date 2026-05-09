@@ -37,6 +37,7 @@ public sealed class XiHanTestHost : IAsyncDisposable
     /// </summary>
     public static TestHostBuilder CreateBuilder() => new();
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync() => await _app.DisposeAsync();
 }
 

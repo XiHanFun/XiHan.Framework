@@ -21,18 +21,33 @@ public interface IPolicy
 }
 
 /// <summary>
-/// 安全主体。代表当前操作的主体（用户或系统）。
+/// 权限检查结果。
 /// </summary>
-[ApiLevel(Stability.Preview, "1.0")]
-public interface IPrincipal
+public sealed class AuthorizationResult
 {
-    /// <summary>
-    /// 主体标识。
-    /// </summary>
-    string Id { get; }
+    private AuthorizationResult(bool succeeded, string? failureReason = null)
+    {
+        Succeeded = succeeded;
+        FailureReason = failureReason;
+    }
 
     /// <summary>
-    /// 主体名称。
+    /// 权限检查是否通过。
     /// </summary>
-    string Name { get; }
+    public bool Succeeded { get; }
+
+    /// <summary>
+    /// 失败原因。
+    /// </summary>
+    public string? FailureReason { get; }
+
+    /// <summary>
+    /// 创建一个成功的授权结果。
+    /// </summary>
+    public static AuthorizationResult Success() => new(true);
+
+    /// <summary>
+    /// 创建一个失败的授权结果。
+    /// </summary>
+    public static AuthorizationResult Failure(string reason) => new(false, reason);
 }
