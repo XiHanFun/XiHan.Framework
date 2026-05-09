@@ -30,12 +30,13 @@ public enum PipelinePosition
 }
 
 /// <summary>
-/// 管道构建器。支持 <c>Use</c> / <c>UseAt</c> / <c>UseBefore</c> / <c>UseAfter</c> 显式排列中间件。
+/// 管道构建器。
+/// 支持 <c>Use</c> / <c>UseAt</c> / <c>UseBefore</c> / <c>UseAfter</c> 显式排列中间件。
 /// </summary>
 [ApiLevel(Stability.Stable, "1.0")]
 public sealed class PipelineBuilder
 {
-    private readonly List<Func<PipelineDelegate, PipelineDelegate>> _middlewares = [];
+    private readonly List<Func<PipelineHandler, PipelineHandler>> _middlewares = [];
 
     /// <summary>
     /// 在管道末尾添加一个中间件。
@@ -98,9 +99,9 @@ public sealed class PipelineBuilder
     /// <summary>
     /// 构建最终的可执行管道委托。
     /// </summary>
-    public PipelineDelegate Build()
+    public PipelineHandler Build()
     {
-        PipelineDelegate pipeline = _ => Task.CompletedTask;
+        PipelineHandler pipeline = _ => Task.CompletedTask;
         for (var i = _middlewares.Count - 1; i >= 0; i--)
             pipeline = _middlewares[i](pipeline);
         return pipeline;
