@@ -8,10 +8,10 @@
     <ProjectReference Include="..\..\src\XiHan.Framework.Testing\XiHan.Framework.Testing.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="Moq" />
-    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageReference Include="xunit" Version="2.*" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.*" />
+    <PackageReference Include="Moq" Version="4.*" />
+    <PackageReference Include="FluentAssertions" Version="8.*" />
   </ItemGroup>
 </Project>
