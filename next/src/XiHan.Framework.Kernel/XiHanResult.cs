@@ -55,7 +55,9 @@ public readonly struct XiHanResult<T>
     /// <summary>
     /// 失败时的错误。仅在 IsFailure 为 true 时安全访问。
     /// </summary>
-    public XiHanError Error => IsFailure ? _error! : throw new InvalidOperationException("Cannot access Error on success.");
+    public XiHanError Error => IsFailure
+        ? _error ?? throw new InvalidOperationException("Result is in an invalid state (default struct). Use XiHanResult.Failure to create errors.")
+        : throw new InvalidOperationException("Cannot access Error on success.");
 
     /// <summary>
     /// 隐式转换：从值创建成功的 Result。

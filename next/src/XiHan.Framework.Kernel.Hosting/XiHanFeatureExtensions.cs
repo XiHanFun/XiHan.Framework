@@ -22,7 +22,10 @@ public static class XiHanFeatureExtensions
             {
                 services.AddSingleton(hosted);
                 var captured = hosted;
-                services.AddHostedService(_ => new HostedFeatureWrapper(captured));
+                services.Add(new ServiceDescriptor(
+                    typeof(IHostedService),
+                    _ => new HostedFeatureWrapper(captured),
+                    ServiceLifetime.Singleton));
             }
         }
         return services;
@@ -48,18 +51,23 @@ public static class XiHanFeatureExtensions
 /// <summary>
 /// 将 IHostedFeature 包装为 BackgroundService。
 /// </summary>
-internal sealed class HostedFeatureWrapper : BackgroundService
+public sealed class HostedFeatureWrapper : BackgroundService
 {
     private readonly IHostedFeature _feature;
 
+    /// <summary>
+    /// 创建 HostedFeature 包装器。
+    /// </summary>
     public HostedFeatureWrapper(IHostedFeature feature) => _feature = feature;
 
+    /// <inheritdoc />
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await _feature.StopAsync(cancellationToken);
         await base.StopAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             => await _feature.StartAsync(stoppingToken);
 }
