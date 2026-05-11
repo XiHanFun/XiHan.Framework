@@ -16,5 +16,7 @@
     <Project Path="test/XiHan.Framework.Kernel.Tests/XiHan.Framework.Kernel.Tests.csproj" />
   </Folder>
   <Folder Name="/3.docs/" />
-  <Folder Name="/4.samples/" />
+  <Folder Name="/4.samples/">
+    <Project Path="samples/SimpleApp/SimpleApp.csproj" />
+  </Folder>
 </Solution>
