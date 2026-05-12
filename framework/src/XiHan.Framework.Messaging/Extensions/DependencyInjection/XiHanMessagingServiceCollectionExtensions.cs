@@ -49,6 +49,10 @@ public static class XiHanMessagingServiceCollectionExtensions
         services.TryAddSingleton<IMessageDispatcher, DefaultMessageDispatcher>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IMessageSender, NotConfiguredMessageSender>());
 
+        services.TryAddSingleton<IMessageOutbox, InMemoryMessageOutbox>();
+        services.TryAddSingleton<IMessageOutboxProcessor, MessageOutboxProcessor>();
+        services.AddHostedService<MessageOutboxBackgroundService>();
+
         return services;
     }
 }
