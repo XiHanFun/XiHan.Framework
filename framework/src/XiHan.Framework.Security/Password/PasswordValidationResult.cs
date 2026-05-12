@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Authentication.Password;
+namespace XiHan.Framework.Security.Password;
 
 /// <summary>
 /// 密码验证结果

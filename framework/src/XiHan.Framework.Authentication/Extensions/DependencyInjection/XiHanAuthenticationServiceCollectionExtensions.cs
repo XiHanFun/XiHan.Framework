@@ -18,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Authentication.Password;
+using XiHan.Framework.Security.Password;
 using XiHan.Framework.Authentication.Users;
 
 namespace XiHan.Framework.Authentication.Extensions.DependencyInjection;
