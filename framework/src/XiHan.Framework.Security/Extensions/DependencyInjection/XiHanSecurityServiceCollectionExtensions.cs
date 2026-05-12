@@ -33,11 +33,11 @@ public static class XiHanSecurityServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // 注册密码策略服务
-        services.TryAddSingleton<IPasswordPolicyService, PasswordPolicyService>();
+        // 注册密码策略服务（Scoped，因消费方可能需要 Scoped 仓储）
+        services.TryAddScoped<IPasswordPolicyService, PasswordPolicyService>();
 
-        // 注册密码历史记录存储
-        services.TryAddSingleton<IPasswordHistoryStore, DefaultPasswordHistoryStore>();
+        // 注册密码历史记录存储（Scoped，默认内存实现，可被应用层替换为数据库实现）
+        services.TryAddScoped<IPasswordHistoryStore, DefaultPasswordHistoryStore>();
 
         return services;
     }
