@@ -80,7 +80,7 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 实体变更拦截器：基于命令级 AOP 自动捕获 INSERT / UPDATE / DELETE 差异日志
         // 无需仓储显式调用 EnableDiffLogEvent，通过 ISqlSugarClient.UseEntityChangeInterceptor() 挂载
-        services.TryAddScoped<EntityChangeInterceptor>();
+        //services.TryAddScoped<EntityChangeInterceptor>();
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
@@ -379,5 +379,4 @@ public static class XiHanDataServiceCollectionExtensions
         var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
         LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlInfo}");
     }
-
 }
