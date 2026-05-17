@@ -15,7 +15,7 @@
 
     <ItemGroup>
       <PackageReference Include="MailKit" Version="4.16.0" />
-      <PackageReference Include="Telegram.Bot" Version="22.9.6.1" />
+      <PackageReference Include="Telegram.Bot" Version="22.10.0.1" />
     </ItemGroup>
 
     <ItemGroup>
