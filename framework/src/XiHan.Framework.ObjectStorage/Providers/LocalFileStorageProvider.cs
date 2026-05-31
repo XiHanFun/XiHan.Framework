@@ -221,6 +221,19 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     }
 
     /// <summary>
+    /// 生成预签名URL
+    /// </summary>
+    /// <remarks>
+    /// 本地存储无对象存储的签名机制，文件经 Web 静态文件服务（UseStaticFiles 暴露 UrlPrefix 目录）公开访问，
+    /// 故直接返回 <see cref="GetFileUrl"/> 的静态可访问 URL；<paramref name="expiresIn"/> 对本地存储无意义，忽略之。
+    /// 调用方若需要鉴权或时效控制，应改用支持真实预签名的云存储 Provider。
+    /// </remarks>
+    public override Task<string> GeneratePresignedUrlAsync(string path, TimeSpan expiresIn, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetFileUrl(path));
+    }
+
+    /// <summary>
     /// 下载文件
     /// </summary>
     public override Task<Stream> DownloadAsync(string path, CancellationToken cancellationToken = default)
