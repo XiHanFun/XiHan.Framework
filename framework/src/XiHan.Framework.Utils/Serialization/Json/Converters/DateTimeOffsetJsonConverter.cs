@@ -30,7 +30,7 @@ public class DateTimeOffsetJsonConverter : JsonConverter<DateTimeOffset>
     /// </summary>
     public DateTimeOffsetJsonConverter()
     {
-        _dateFormatString = "yyyy-MM-dd HH:mm:ss";
+        _dateFormatString = "yyyy-MM-ddTHH:mm:sszzz";
         _isUtc = false;
     }
 
@@ -86,7 +86,7 @@ public class DateTimeOffsetNullableConverter : JsonConverter<DateTimeOffset?>
     /// </summary>
     public DateTimeOffsetNullableConverter()
     {
-        _dateFormatString = "yyyy-MM-dd HH:mm:ss";
+        _dateFormatString = "yyyy-MM-ddTHH:mm:sszzz";
         _isUtc = false;
     }
 

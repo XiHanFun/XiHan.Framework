@@ -68,8 +68,9 @@ public static class JsonConverterFactory
             new TimeOnlyNullableConverter(timeFormat),
             new DateTimeJsonConverter($"{dateFormat} {timeFormat}", isUtc),
             new DateTimeNullableConverter($"{dateFormat} {timeFormat}", isUtc),
-            new DateTimeOffsetJsonConverter($"{dateFormat} {timeFormat}", isUtc),
-            new DateTimeOffsetNullableConverter($"{dateFormat} {timeFormat}", isUtc)
+            // DateTimeOffset 固定按 ISO 8601 带时区偏移序列化（保留时区语义，不受 dateFormat/timeFormat 影响），前端可用标准库稳定解析
+            new DateTimeOffsetJsonConverter("yyyy-MM-ddTHH:mm:sszzz", isUtc),
+            new DateTimeOffsetNullableConverter("yyyy-MM-ddTHH:mm:sszzz", isUtc)
         ];
     }
 
