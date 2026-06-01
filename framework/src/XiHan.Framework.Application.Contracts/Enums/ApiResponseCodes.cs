@@ -13,12 +13,19 @@
 #endregion <<版权版本注释>>
 
 using System.ComponentModel;
+using System.Text.Json.Serialization;
+using XiHan.Framework.Utils.Serialization.Json.Converters;
 
 namespace XiHan.Framework.Application.Contracts.Enums;
 
 /// <summary>
 /// 统一返回码（与常见 HTTP 状态码对齐，便于前后端统一理解）
 /// </summary>
+/// <remarks>
+/// 显式按数值（int）序列化，覆盖全局 <see cref="JsonStringEnumConverter"/> 的按名称序列化，
+/// 与 <c>ApiResponse.Code</c>「序列化到 JSON 为 int」的契约一致，便于前端按数字业务码判断。
+/// </remarks>
+[JsonConverter(typeof(NumericEnumConverter<ApiResponseCodes>))]
 public enum ApiResponseCodes
 {
     /// <summary>
