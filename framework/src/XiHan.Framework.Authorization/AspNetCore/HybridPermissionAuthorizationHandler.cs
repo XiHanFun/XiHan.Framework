@@ -58,7 +58,9 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
 
         if (!string.IsNullOrWhiteSpace(requirement.PermissionCode))
         {
-            var isGranted = HasPermissionClaim(context.User, requirement.PermissionCode)
+            // 仅通配 * 走声明快路径（超管）；具体权限码一律以实时检查器为准，
+            // 确保授权/撤销即时生效，不被登录时冻结在 token 里的旧权限声明干扰。
+            var isGranted = HasWildcardPermissionClaim(context.User)
                 || await _permissionChecker.IsGrantedAsync(userId, requirement.PermissionCode);
             if (!isGranted)
             {
@@ -96,20 +98,15 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
         }
     }
 
-    private static bool HasPermissionClaim(ClaimsPrincipal principal, string permissionCode)
+    /// <summary>
+    /// 是否持有通配权限声明（*）。仅作为超管快路径；具体权限码不再以声明为准，改由实时检查器判定。
+    /// </summary>
+    private static bool HasWildcardPermissionClaim(ClaimsPrincipal principal)
     {
-        var normalizedPermissionCode = permissionCode.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedPermissionCode))
-        {
-            return false;
-        }
-
         return principal.Claims
             .Where(IsPermissionClaim)
             .SelectMany(claim => SplitPermissionClaimValue(claim.Value))
-            .Any(permission =>
-                string.Equals(permission, WildcardPermission, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(permission, normalizedPermissionCode, StringComparison.OrdinalIgnoreCase));
+            .Any(permission => string.Equals(permission, WildcardPermission, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsPermissionClaim(Claim claim)
