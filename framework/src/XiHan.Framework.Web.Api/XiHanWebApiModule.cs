@@ -85,7 +85,7 @@ public class XiHanWebApiModule : XiHanModule
     /// <summary>
     /// 启用本地对象存储静态文件服务。
     /// 与 LocalStorageOptions（配置节 XiHan:ObjectStorage:Local）的 RootPath/UrlPrefix 约定一致，
-    /// 经 IConfiguration 读取以避免对 ObjectStorage 项目产生编译期依赖；无配置时回退默认值（uploads、/uploads）。
+    /// 经 IConfiguration 读取以避免对 ObjectStorage 项目产生编译期依赖；无配置时回退默认值（wwwroot/uploads、/uploads）。
     /// 注册在鉴权中间件之前，使本地存储返回的静态 URL（头像、公开文件等）可匿名直链访问。
     /// </summary>
     private static void UseLocalObjectStorageStaticFiles(ApplicationInitializationContext context)
@@ -97,7 +97,7 @@ public class XiHanWebApiModule : XiHanModule
         var rootPath = configuration["XiHan:ObjectStorage:Local:RootPath"];
         if (string.IsNullOrWhiteSpace(rootPath))
         {
-            rootPath = "uploads";
+            rootPath = "wwwroot/uploads";
         }
 
         var urlPrefix = configuration["XiHan:ObjectStorage:Local:UrlPrefix"];
