@@ -35,6 +35,14 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter
             return;
         }
 
+        // 裸 Stream 返回值（如文件下载接口）转为文件流响应；否则会被包进 ApiResponse 再 JSON 序列化，
+        // 而 Stream.Handle 为 IntPtr 不可序列化，导致 500（System.IntPtr instances ... is not supported）。
+        if (TryConvertStreamToFile(context))
+        {
+            await next();
+            return;
+        }
+
         if (!TryWrapObjectResult(context) &&
             !TryWrapJsonResult(context) &&
             !TryWrapContentResult(context) &&
@@ -67,6 +75,20 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 将裸 Stream 返回值转为文件流响应，避免被统一包装为 ApiResponse 并 JSON 序列化
+    /// </summary>
+    private static bool TryConvertStreamToFile(ResultExecutingContext context)
+    {
+        if (context.Result is not ObjectResult { Value: Stream stream })
+        {
+            return false;
+        }
+
+        context.Result = new FileStreamResult(stream, "application/octet-stream");
+        return true;
     }
 
     private static bool TryWrapObjectResult(ResultExecutingContext context)
