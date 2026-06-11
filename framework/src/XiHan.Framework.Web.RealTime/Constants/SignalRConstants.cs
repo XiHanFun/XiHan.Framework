@@ -63,6 +63,11 @@ public static class SignalRConstants
         /// 强制下线
         /// </summary>
         public const string ForceLogout = "ForceLogout";
+
+        /// <summary>
+        /// 后台任务进度（载荷约定：taskId/label/detail/state[loading|success|error|info]/progress[0-100]/link）
+        /// </summary>
+        public const string TaskProgress = "TaskProgress";
     }
 
     /// <summary>
