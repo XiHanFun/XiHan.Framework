@@ -156,14 +156,56 @@ internal static class SqlSugarDiffLogAop
     /// <summary>
     /// 将 SqlSugar 的 DiffType 映射为项目内的 OperationType 字符串
     /// </summary>
+    /// <remarks>
+    /// 更新操作会进一步检测软删除标记翻转：IsDeleted false→true 视为删除（软删除）、true→false 视为恢复，
+    /// 使数据变更日志能区分 新增 / 修改 / 删除 / 恢复 四种业务语义。
+    /// </remarks>
     private static (string Operation, List<DiffLogTableInfo>? Before, List<DiffLogTableInfo>? After) ExtractChange(DiffLogModel diffModel)
     {
         return diffModel.DiffType switch
         {
             DiffType.insert => ("Create", null, diffModel.AfterData),
-            DiffType.update => ("Update", diffModel.BeforeData, diffModel.AfterData),
+            DiffType.update => (ResolveUpdateOperation(diffModel), diffModel.BeforeData, diffModel.AfterData),
             DiffType.delete => ("Delete", diffModel.BeforeData, null),
             _ => (diffModel.DiffType.ToString(), diffModel.BeforeData, diffModel.AfterData)
+        };
+    }
+
+    /// <summary>
+    /// 解析更新操作语义：软删除标记翻转映射为 Delete / Restore，常规更新保持 Update
+    /// </summary>
+    private static string ResolveUpdateOperation(DiffLogModel diffModel)
+    {
+        var (before, after) = ExtractSoftDeleteFlags(diffModel);
+        return (before, after) switch
+        {
+            (false, true) => "Delete",
+            (true, false) => "Restore",
+            _ => "Update"
+        };
+    }
+
+    /// <summary>
+    /// 提取前后镜像中的软删除标记（IsDeleted 列，不区分大小写；列缺失时视为未翻转）
+    /// </summary>
+    private static (bool? Before, bool? After) ExtractSoftDeleteFlags(DiffLogModel diffModel)
+    {
+        return (ReadSoftDeleteFlag(diffModel.BeforeData), ReadSoftDeleteFlag(diffModel.AfterData));
+    }
+
+    private static bool? ReadSoftDeleteFlag(List<DiffLogTableInfo>? tables)
+    {
+        var column = tables?.FirstOrDefault()?.Columns?
+            .FirstOrDefault(c => string.Equals(c.ColumnName, "IsDeleted", StringComparison.OrdinalIgnoreCase));
+        if (column?.Value is null)
+        {
+            return null;
+        }
+
+        return column.Value switch
+        {
+            bool flag => flag,
+            _ => bool.TryParse(column.Value.ToString(), out var parsed) ? parsed : null
         };
     }
 
