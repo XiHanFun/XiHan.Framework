@@ -30,7 +30,7 @@ public class DefaultDistributedCacheKeyNormalizer(IServiceProvider serviceProvid
     /// <returns></returns>
     public string NormalizeKey(DistributedCacheKeyNormalizeArgs args)
     {
-        var tenantSegment = "Default";
+        var tenantSegment = "0";
         if (!args.IgnoreMultiTenancy)
         {
             var currentTenantAccessor = serviceProvider.GetService<ICurrentTenantAccessor>();
@@ -38,7 +38,6 @@ public class DefaultDistributedCacheKeyNormalizer(IServiceProvider serviceProvid
             if (currentTenant?.TenantId is not null)
             {
                 // 租户段必须使用稳定且不可变的 TenantId：
-                // 租户名称可变（改名会产生孤儿键），且可能含汉字/原始 key 字符串，导致同一逻辑条目写成多个键。
                 tenantSegment = currentTenant.TenantId.Value.ToString();
             }
         }
