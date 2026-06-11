@@ -12,9 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text;
 using XiHan.Framework.Utils.Constants;
-using XiHan.Framework.Utils.Core;
 
 namespace XiHan.Framework.Utils.Security;
 
@@ -115,7 +113,7 @@ public class PasswordStrengthChecker
     }
 
     /// <summary>
-    /// 生成随机密码
+    /// 生成随机密码（加密安全，且保证每个所选字符类型至少出现一次）
     /// </summary>
     /// <param name="length">密码长度</param>
     /// <param name="includeSpecialChars">是否包含特殊字符</param>
@@ -128,14 +126,7 @@ public class PasswordStrengthChecker
             throw new ArgumentException("密码长度必须大于或等于8位", nameof(length));
         }
 
-        var characterPool = new StringBuilder(DefaultConsts.UppercaseLetters + DefaultConsts.LowercaseLetters + DefaultConsts.Digits);
-
-        if (includeSpecialChars)
-        {
-            characterPool.Append(DefaultConsts.SpecialCharacters);
-        }
-
-        return new string([.. Enumerable.Range(0, length).Select(_ => characterPool[RandomHelper.GetRandom(characterPool.Length)])]);
+        return RandomCoder.GetCustom(length, includeNumbers: true, includeUpperLetters: true, includeLowerLetters: true, includeSpecialChars: includeSpecialChars);
     }
 }
 
