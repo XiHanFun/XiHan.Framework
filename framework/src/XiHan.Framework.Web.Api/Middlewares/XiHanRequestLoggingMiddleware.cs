@@ -45,10 +45,11 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
             ?? context.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? context.TraceIdentifier;
         var currentUser = context.RequestServices.GetService<ICurrentUser>();
-        var queryString = context.Request.QueryString.HasValue
+        // 查询串与请求体在捕获点即脱敏（密码/令牌/银行卡/身份证等），下游访问/接口/异常日志均使用脱敏副本
+        var queryString = LogSanitizer.MaskQueryString(context.Request.QueryString.HasValue
             ? context.Request.QueryString.Value
-            : null;
-        var requestBody = await TryReadRequestBodyAsync(context.Request, cancellationToken);
+            : null);
+        var requestBody = LogSanitizer.MaskSensitiveData(await TryReadRequestBodyAsync(context.Request, cancellationToken));
 
         if (!string.IsNullOrWhiteSpace(queryString))
         {
