@@ -287,8 +287,11 @@ public class CompositeJobScheduler : IJobScheduler
                 => CronScheduler.GetNextFireTime(jobInfo.CronExpression),
             JobTriggerType.Interval when jobInfo.Interval.HasValue
                 => IntervalScheduler.GetNextFireTime(jobInfo.Interval.Value),
+            // Delay 为一次性延迟：仅在从未触发过时排期，触发过后不再续排（否则会按 Delay 周期无限重复）
             JobTriggerType.Delay when jobInfo.Delay.HasValue
-                => DateTimeOffset.UtcNow.Add(jobInfo.Delay.Value),
+                => _triggerManager.GetTriggerState(jobInfo.JobName)?.LastFireTime is null
+                    ? DateTimeOffset.UtcNow.Add(jobInfo.Delay.Value)
+                    : null,
             _ => null
         };
 
