@@ -180,6 +180,18 @@ public class CompositeJobScheduler : IJobScheduler
             return false;
         }
 
+        // 截止时间：超过后不再触发
+        if (jobInfo.EndTime.HasValue && DateTimeOffset.UtcNow > jobInfo.EndTime.Value)
+        {
+            return false;
+        }
+
+        // 重复次数上限：达到后不再触发（-1 不限）
+        if (jobInfo.RepeatCount >= 0 && state!.TriggerCount >= jobInfo.RepeatCount)
+        {
+            return false;
+        }
+
         return nextFireTime.Value <= DateTimeOffset.UtcNow;
     }
 
@@ -294,6 +306,23 @@ public class CompositeJobScheduler : IJobScheduler
                     : null,
             _ => null
         };
+
+        // 截止时间之后的排期一律截断
+        if (nextFireTime.HasValue && jobInfo.EndTime.HasValue && nextFireTime.Value > jobInfo.EndTime.Value)
+        {
+            nextFireTime = null;
+        }
+
+        // 可自动调度的触发类型算不出下次时间时显性告警（Cron 解析失败/表达式无解等
+        // 此前被静默吞掉，任务表现为"注册了但永不执行"，无从排障）
+        if (!nextFireTime.HasValue
+            && jobInfo.TriggerType is JobTriggerType.Cron or JobTriggerType.Interval
+            && jobInfo.IsEnabled)
+        {
+            _logger.LogWarning(
+                "任务 {JobName}（{TriggerType}）无法计算下次触发时间，将不会被自动调度；请检查表达式/间隔/截止时间配置（Cron: {Cron}）",
+                jobInfo.JobName, jobInfo.TriggerType, jobInfo.CronExpression);
+        }
 
         _triggerManager.UpdateNextFireTime(jobInfo.JobName, nextFireTime);
     }

@@ -55,6 +55,16 @@ public class JobInfo
     public TimeSpan? Delay { get; set; }
 
     /// <summary>
+    /// 截止时间（超过后不再触发；为空表示不限）
+    /// </summary>
+    public DateTimeOffset? EndTime { get; set; }
+
+    /// <summary>
+    /// 重复次数上限（-1 表示不限；达到次数后不再触发）
+    /// </summary>
+    public int RepeatCount { get; set; } = -1;
+
+    /// <summary>
     /// 优先级
     /// </summary>
     public JobPriority Priority { get; set; } = JobPriority.Normal;

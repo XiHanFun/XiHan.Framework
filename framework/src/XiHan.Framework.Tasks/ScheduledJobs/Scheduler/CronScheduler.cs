@@ -25,13 +25,20 @@ public class CronScheduler
     /// <summary>
     /// 获取下次执行时间
     /// </summary>
+    /// <remarks>
+    /// Cron 按服务器本地时区求值（"0 2 * * *"=本地 02:00），与业务侧直觉及
+    /// 领域层的 LocalDateTime 口径一致；返回值携带本地偏移，调度器内部与
+    /// UtcNow 的比较是绝对时刻比较，不受时区影响。
+    /// </remarks>
     public static DateTimeOffset? GetNextFireTime(string cronExpression, DateTimeOffset? from = null)
     {
         try
         {
-            var fromTime = from ?? DateTimeOffset.UtcNow;
-            var nextTime = CronHelper.GetNextOccurrence(cronExpression, fromTime.DateTime);
-            return nextTime.HasValue ? new DateTimeOffset(nextTime.Value, TimeSpan.Zero) : null;
+            var fromLocal = (from ?? DateTimeOffset.Now).ToLocalTime().DateTime;
+            var nextTime = CronHelper.GetNextOccurrence(cronExpression, fromLocal);
+            return nextTime.HasValue
+                ? new DateTimeOffset(nextTime.Value, TimeZoneInfo.Local.GetUtcOffset(nextTime.Value))
+                : null;
         }
         catch
         {
