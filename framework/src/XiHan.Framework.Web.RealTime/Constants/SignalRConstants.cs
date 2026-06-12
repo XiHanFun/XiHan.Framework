@@ -68,6 +68,11 @@ public static class SignalRConstants
         /// 后台任务进度（载荷约定：taskId/label/detail/state[loading|success|error|info]/progress[0-100]/link）
         /// </summary>
         public const string TaskProgress = "TaskProgress";
+
+        /// <summary>
+        /// 用户设置变更（载荷约定：scene/settingKey/settingValue/sourceClientId，用于同账号多端实时同步）
+        /// </summary>
+        public const string UserSettingChanged = "UserSettingChanged";
     }
 
     /// <summary>
