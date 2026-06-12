@@ -134,6 +134,33 @@ public static class CronHelper
     /// <returns>下一次执行时间</returns>
     public static DateTime? GetNextOccurrence(CronExpression cron, DateTime fromTime)
     {
+        // 6 段表达式按秒推进：逐分钟匹配除秒以外的字段，再在分钟内取首个匹配秒。
+        // 不能沿用"秒归零 + 整体 IsMatch"——秒位不含 0 的表达式会永不命中。
+        if (cron.HasSeconds)
+        {
+            var startSecond = fromTime.Second + 1;
+            var minuteCursor = new DateTime(fromTime.Year, fromTime.Month, fromTime.Day, fromTime.Hour, fromTime.Minute, 0);
+
+            for (var attempts = 0; attempts < 4 * 365 * 24 * 60; attempts++) // 最多查找4年
+            {
+                if (MatchesExceptSeconds(cron, minuteCursor))
+                {
+                    var fromSecond = attempts == 0 ? startSecond : 0;
+                    for (var second = fromSecond; second <= 59; second++)
+                    {
+                        if (IsFieldMatch(cron.Seconds, second, 0, 59))
+                        {
+                            return minuteCursor.AddSeconds(second);
+                        }
+                    }
+                }
+
+                minuteCursor = minuteCursor.AddMinutes(1);
+            }
+
+            return null;
+        }
+
         var current = new DateTime(fromTime.Year, fromTime.Month, fromTime.Day, fromTime.Hour, fromTime.Minute, 0);
         current = current.AddMinutes(1); // 从下一分钟开始查找
 
@@ -169,6 +196,32 @@ public static class CronHelper
     /// <returns>上一次执行时间</returns>
     public static DateTime? GetPreviousOccurrence(CronExpression cron, DateTime fromTime)
     {
+        // 6 段表达式按秒回溯（与 GetNextOccurrence 对称）
+        if (cron.HasSeconds)
+        {
+            var startSecond = fromTime.Second - 1;
+            var minuteCursor = new DateTime(fromTime.Year, fromTime.Month, fromTime.Day, fromTime.Hour, fromTime.Minute, 0);
+
+            for (var attempts = 0; attempts < 4 * 365 * 24 * 60; attempts++) // 最多查找4年
+            {
+                if (MatchesExceptSeconds(cron, minuteCursor))
+                {
+                    var fromSecond = attempts == 0 ? startSecond : 59;
+                    for (var second = fromSecond; second >= 0; second--)
+                    {
+                        if (IsFieldMatch(cron.Seconds, second, 0, 59))
+                        {
+                            return minuteCursor.AddSeconds(second);
+                        }
+                    }
+                }
+
+                minuteCursor = minuteCursor.AddMinutes(-1);
+            }
+
+            return null;
+        }
+
         var current = new DateTime(fromTime.Year, fromTime.Month, fromTime.Day, fromTime.Hour, fromTime.Minute, 0);
         current = current.AddMinutes(-1); // 从上一分钟开始查找
 
@@ -281,6 +334,18 @@ public static class CronHelper
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// 判断指定时间是否匹配除秒以外的全部字段（6 段表达式按秒推进时的分钟级预筛）
+    /// </summary>
+    private static bool MatchesExceptSeconds(CronExpression cron, DateTime dateTime)
+    {
+        return IsFieldMatch(cron.Minutes, dateTime.Minute, 0, 59)
+            && IsFieldMatch(cron.Hours, dateTime.Hour, 0, 23)
+            && IsFieldMatch(cron.Days, dateTime.Day, 1, DateTime.DaysInMonth(dateTime.Year, dateTime.Month))
+            && IsFieldMatch(cron.Months, dateTime.Month, 1, 12)
+            && IsFieldMatch(cron.DaysOfWeek, (int)dateTime.DayOfWeek, 0, 6);
     }
 
     #endregion
