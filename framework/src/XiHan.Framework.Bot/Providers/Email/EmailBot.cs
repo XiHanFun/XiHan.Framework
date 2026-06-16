@@ -86,8 +86,11 @@ public class EmailBot(EmailFromModel fromModel)
         try
         {
             using SmtpClient client = new();
-            // 解决远程证书验证无效
-            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
+            // 默认走 MailKit 系统证书校验；仅当显式允许（开发环境自签证书）时才放开，避免生产被中间人攻击
+            if (fromModel.AcceptInvalidCertificate)
+            {
+                client.ServerCertificateValidationCallback = (_, _, _, _) => true;
+            }
             await client.ConnectAsync(fromModel.SmtpHost, fromModel.SmtpPort, fromModel.UseSsl);
             if (!string.IsNullOrWhiteSpace(fromModel.FromUserName))
             {
