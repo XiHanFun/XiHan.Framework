@@ -61,6 +61,11 @@ public class EmailFromModel
     /// 内容编码
     /// </summary>
     public Encoding Coding { get; set; } = Encoding.UTF8;
+
+    /// <summary>
+    /// 是否接受无效/自签 TLS 证书（默认 false，按系统默认校验；仅开发环境针对自签 SMTP 放开，生产务必为 false）
+    /// </summary>
+    public bool AcceptInvalidCertificate { get; set; }
 }
 
 /// <summary>
