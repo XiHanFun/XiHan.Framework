@@ -14,7 +14,9 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -48,6 +50,16 @@ public class XiHanWebApiModule : XiHanModule
         var services = context.Services;
         var config = services.GetConfiguration();
 
+        // 反向代理（nginx/网关）转发头还原：依据 X-Forwarded-Proto/Host/For 还原真实 scheme/host/client IP。
+        // 否则后端只见反代到 Kestrel 的 http://127.0.0.1，会导致 OAuth 回调等据请求生成的绝对地址 scheme/host 错误。
+        // 默认仅信任本机回环代理（同机 nginx → 127.0.0.1）；反代在其它主机时，应用侧可追加 KnownProxies/KnownNetworks。
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                | ForwardedHeaders.XForwardedProto
+                | ForwardedHeaders.XForwardedHost;
+        });
+
         services.AddXiHanWebApi(config);
     }
 
@@ -59,6 +71,9 @@ public class XiHanWebApiModule : XiHanModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+
+        // 反向代理转发头还原：必须先于一切读取 scheme/host/client IP 的中间件（路由/鉴权/CORS/重定向生成等），故置于管线最前。
+        app.UseForwardedHeaders();
 
         app.UseMiddleware<XiHanTraceIdMiddleware>();
         app.UseMiddleware<XiHanRequestContextMiddleware>();
