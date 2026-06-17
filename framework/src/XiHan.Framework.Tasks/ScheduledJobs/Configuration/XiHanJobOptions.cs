@@ -45,11 +45,6 @@ public class XiHanJobOptions
     public int DefaultTimeoutMilliseconds { get; set; } = 300000; // 5分钟
 
     /// <summary>
-    /// 是否启用分布式锁
-    /// </summary>
-    public bool EnableDistributedLock { get; set; } = false;
-
-    /// <summary>
     /// 历史记录保留天数
     /// </summary>
     public int HistoryRetentionDays { get; set; } = 30;
