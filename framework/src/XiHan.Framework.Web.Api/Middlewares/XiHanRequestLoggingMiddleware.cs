@@ -16,11 +16,13 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Extensions.Options;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Web.Api.Logging.Options;
 using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
@@ -28,9 +30,11 @@ namespace XiHan.Framework.Web.Api.Middlewares;
 /// <summary>
 /// WebApi 请求日志中间件
 /// </summary>
-public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRequestLoggingMiddleware> logger)
+public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRequestLoggingMiddleware> logger, IOptions<XiHanWebApiLogQueueOptions> logQueueOptions)
 {
     private const int RequestBodyLimit = 4096;
+
+    private readonly XiHanWebApiLogQueueOptions _logQueueOptions = logQueueOptions.Value;
 
     /// <summary>
     /// 执行中间件
@@ -39,6 +43,13 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
     /// <returns></returns>
     public async Task InvokeAsync(HttpContext context)
     {
+        // 命中忽略前缀（默认 /hubs：SignalR 协商/长轮询/心跳）则直接放行，不记录访问日志与请求起止日志
+        if (IsIgnoredPath(context.Request.Path))
+        {
+            await next(context);
+            return;
+        }
+
         var cancellationToken = context.RequestAborted;
         var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
         var traceId = requestContext?.TraceId
@@ -121,6 +132,29 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                 logger.LogWarning(ex, "访问日志写入失败，TraceId: {TraceId}", traceId);
             }
         }
+    }
+
+    /// <summary>
+    /// 路径是否命中「不记录日志」前缀（不区分大小写）
+    /// </summary>
+    private bool IsIgnoredPath(PathString path)
+    {
+        var prefixes = _logQueueOptions.IgnoredPathPrefixes;
+        if (prefixes is null || prefixes.Length == 0 || !path.HasValue)
+        {
+            return false;
+        }
+
+        var value = path.Value!;
+        foreach (var prefix in prefixes)
+        {
+            if (!string.IsNullOrWhiteSpace(prefix) && value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
