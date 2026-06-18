@@ -46,12 +46,9 @@ public static class XiHanMessagingServiceCollectionExtensions
             services.Configure<XiHanMessagingOptions>(_ => { });
         }
 
+        // 仅负责路由：消息调度器 + 未配置兜底发送器。具体发送器（邮件/短信）与「后台异步发送（发件箱）」由业务层提供。
         services.TryAddSingleton<IMessageDispatcher, DefaultMessageDispatcher>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IMessageSender, NotConfiguredMessageSender>());
-
-        services.TryAddSingleton<IMessageOutbox, InMemoryMessageOutbox>();
-        services.TryAddSingleton<IMessageOutboxProcessor, MessageOutboxProcessor>();
-        services.AddHostedService<MessageOutboxBackgroundService>();
 
         return services;
     }
