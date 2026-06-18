@@ -28,19 +28,4 @@ public class XiHanMessagingOptions
     /// 找不到发送器时是否抛出异常
     /// </summary>
     public bool ThrowWhenNoSender { get; set; } = false;
-
-    /// <summary>
-    /// 是否启用消息发件箱
-    /// </summary>
-    public bool OutboxEnabled { get; set; } = false;
-
-    /// <summary>
-    /// 发件箱轮询间隔（秒）
-    /// </summary>
-    public int OutboxPollIntervalSeconds { get; set; } = 30;
-
-    /// <summary>
-    /// 发件箱单次处理批次大小
-    /// </summary>
-    public int OutboxBatchSize { get; set; } = 20;
 }
