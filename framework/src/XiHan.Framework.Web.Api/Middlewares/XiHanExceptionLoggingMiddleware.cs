@@ -12,29 +12,23 @@
 
 #endregion <<版权版本注释>>
 
-using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using XiHan.Framework.Application.Contracts.Dtos;
-using XiHan.Framework.Application.Contracts.Enums;
-using XiHan.Framework.Core.Exceptions;
-using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
+using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Logging;
-using XiHan.Framework.Web.Api.Logging.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 
 /// <summary>
-/// WebApi 异常日志中间件
+/// WebApi 异常日志中间件：仅负责日志（ILogger 分级 + 异常日志表落库），不产出响应。
 /// </summary>
+/// <remarks>
+/// 异常响应统一由 <see cref="XiHanApiResponseResultFilter"/>（MVC 异常过滤器）产出，与正常响应同一套序列化
+/// （camelCase + 中文不转义 + 业务码 int）。能到达本中间件的是 MVC 管线之外的异常（鉴权/租户/日志等中间件），
+/// 此处只记录日志，并在响应未开始时回填状态码，避免出现空 200。
+/// </remarks>
 public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHanExceptionLoggingMiddleware> logger)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false
-    };
-
     /// <summary>
     /// 执行中间件
     /// </summary>
@@ -54,11 +48,10 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        var cancellationToken = context.RequestAborted;
         var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
         var traceId = requestContext?.TraceId ?? ResolveTraceId(context);
-        var currentUser = context.RequestServices.GetService<ICurrentUser>();
-        var (statusCode, _, message) = MapException(exception);
+        // 与 MVC 异常过滤器共用同一套异常→状态码映射，保证语义一致（仅取状态码，响应由 MVC 过滤器产出）
+        var (statusCode, _) = XiHanApiResponseResultFilter.MapException(exception);
 
         if (statusCode >= StatusCodes.Status500InternalServerError)
         {
@@ -79,66 +72,13 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
                 context.Request.Path);
         }
 
-        await TryWriteExceptionLogAsync(context, requestContext, currentUser, traceId, exception, statusCode, cancellationToken);
+        await ExceptionLogReporter.ReportAsync(context, exception, statusCode, traceId, context.RequestAborted);
 
-        if (context.Response.HasStarted)
+        // 不写响应体：响应统一由 MVC 异常过滤器产出。到此说明异常发生在 MVC 管线之外，
+        // 仅在响应未开始时回填状态码，避免下游拿到空 200。
+        if (!context.Response.HasStarted)
         {
-            logger.LogWarning("响应已开始，无法写入异常响应，TraceId: {TraceId}", traceId);
-            return;
-        }
-
-        context.Response.Clear();
-        context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/json; charset=utf-8";
-        var payload = ApiResponse.Fail(message, traceId);
-        var json = JsonSerializer.Serialize(payload, JsonOptions);
-        await context.Response.WriteAsync(json, cancellationToken);
-    }
-
-    private async Task TryWriteExceptionLogAsync(
-        HttpContext context,
-        RequestContext? requestContext,
-        ICurrentUser? currentUser,
-        string traceId,
-        Exception exception,
-        int statusCode,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var pipeline = context.RequestServices.GetService<IExceptionLogPipeline>();
-            if (pipeline is null)
-            {
-                return;
-            }
-
-            var actionDescriptor = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
-            var controllerName = actionDescriptor?.ControllerName;
-            var actionName = actionDescriptor?.ActionName;
-
-            await pipeline.WriteAsync(new ExceptionLogRecord
-            {
-                TraceId = traceId,
-                UserId = requestContext?.UserId ?? currentUser?.UserId,
-                UserName = requestContext?.UserName ?? currentUser?.UserName,
-                Path = requestContext?.Path ?? context.Request.Path.ToString(),
-                Method = requestContext?.Method ?? context.Request.Method,
-                ControllerName = controllerName,
-                ActionName = actionName,
-                StatusCode = statusCode,
-                ExceptionType = exception.GetType().FullName ?? exception.GetType().Name,
-                ExceptionMessage = exception.Message,
-                ExceptionStackTrace = exception.StackTrace,
-                RequestHeaders = SafeSerialize(context.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString())),
-                RequestParams = SafeSerialize(BuildRequestParams(context)),
-                RequestBody = ResolveRequestBody(context),
-                RemoteIp = requestContext?.RemoteIp ?? context.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = requestContext?.UserAgent ?? context.Request.Headers.UserAgent.ToString()
-            }, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "异常日志写入失败，TraceId: {TraceId}", traceId);
+            context.Response.StatusCode = statusCode;
         }
     }
 
@@ -152,84 +92,5 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
-    }
-
-    private static object? BuildRequestParams(HttpContext context)
-    {
-        var routeValues = context.Request.RouteValues;
-        var queryValues = context.Request.Query;
-        if (routeValues.Count == 0 && queryValues.Count == 0)
-        {
-            return null;
-        }
-
-        var payload = new Dictionary<string, object?>();
-        if (routeValues.Count > 0)
-        {
-            payload["route"] = routeValues.ToDictionary(item => item.Key, item => item.Value);
-        }
-
-        if (queryValues.Count > 0)
-        {
-            payload["query"] = queryValues.ToDictionary(item => item.Key, item => item.Value.ToString());
-        }
-
-        return payload;
-    }
-
-    private static string? ResolveRequestBody(HttpContext context)
-    {
-        return context.Items.TryGetValue(XiHanWebApiConstants.RequestBodyItemKey, out var requestBody)
-            ? requestBody?.ToString()
-            : null;
-    }
-
-    private static (int StatusCode, ApiResponseCodes Code, string Message) MapException(Exception exception)
-    {
-        return exception switch
-        {
-            UserFriendlyException userFriendlyException => (
-                StatusCodes.Status400BadRequest,
-                ApiResponseCodes.BadRequest,
-                string.IsNullOrWhiteSpace(userFriendlyException.Message) ? "请求失败" : userFriendlyException.Message),
-            BusinessException businessException => (
-                StatusCodes.Status400BadRequest,
-                ApiResponseCodes.BadRequest,
-                string.IsNullOrWhiteSpace(businessException.Message) ? "业务处理失败" : businessException.Message),
-            UnauthorizedAccessException => (
-                StatusCodes.Status401Unauthorized,
-                ApiResponseCodes.Unauthorized,
-                "未授权访问"),
-            KeyNotFoundException => (
-                StatusCodes.Status404NotFound,
-                ApiResponseCodes.NotFound,
-                "资源不存在"),
-            ArgumentException argumentException => (
-                StatusCodes.Status400BadRequest,
-                ApiResponseCodes.BadRequest,
-                string.IsNullOrWhiteSpace(argumentException.Message) ? "请求参数错误" : argumentException.Message),
-            _ => (
-                StatusCodes.Status500InternalServerError,
-                ApiResponseCodes.Failed,
-                "服务端处理异常")
-        };
-    }
-
-    private static string? SafeSerialize(object? value)
-    {
-        if (value is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            var json = JsonSerializer.Serialize(value, JsonOptions);
-            return json.Length > 4000 ? json[..4000] : json;
-        }
-        catch
-        {
-            return value.ToString();
-        }
     }
 }
