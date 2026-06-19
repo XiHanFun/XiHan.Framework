@@ -318,7 +318,9 @@ public static class XiHanWebApiServiceCollectionExtensions
                         ? string.Join("; ", errors)
                         : "请求参数校验失败";
 
-                    return new BadRequestObjectResult(ApiResponse.Fail(message, traceId));
+                    // 模型校验失败为 400：用工厂构造，业务码与状态一致；具体错误置于 Data（前端优先取 data 展示），
+                    // 不再用 ApiResponse.Fail（会写死 500）
+                    return new BadRequestObjectResult(ApiResponse.BadRequest(message, traceId));
                 };
             });
 

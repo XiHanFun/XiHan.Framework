@@ -16,16 +16,44 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Logging;
 
 namespace XiHan.Framework.Web.Api.Filters;
 
 /// <summary>
-/// 统一返回结果过滤器
+/// 统一返回结果过滤器：包装正常返回，并把未处理异常统一转为接口响应（与正常响应同序列化与业务码语义）
 /// </summary>
-public class XiHanApiResponseResultFilter : IAsyncResultFilter
+public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionFilter
 {
+    /// <summary>
+    /// 未处理异常 → 统一接口响应：按异常类型映射 4xx/5xx 业务码，错误信息放 Message 供前端直接展示；
+    /// 经 MVC 输出格式化器序列化（camelCase + 中文不转义 + 业务码 int），与正常响应完全一致。
+    /// 异常日志（异常日志表）经 <see cref="ExceptionLogReporter"/> 落库；ILogger 告警由 ActionLoggingFilter 负责。
+    /// </summary>
+    public async Task OnExceptionAsync(ExceptionContext context)
+    {
+        if (context.ExceptionHandled)
+        {
+            return;
+        }
+
+        var traceId = ResolveTraceId(context.HttpContext);
+        var (statusCode, response) = MapException(context.Exception);
+        response.TraceId = traceId;
+
+        // 异常日志表落库（队列异步），统一由 reporter 承担，避免与中间件重复
+        await ExceptionLogReporter.ReportAsync(context.HttpContext, context.Exception, statusCode, traceId, context.HttpContext.RequestAborted);
+
+        context.Result = new ObjectResult(response)
+        {
+            StatusCode = statusCode
+        };
+        context.ExceptionHandled = true;
+    }
+
     /// <inheritdoc />
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
@@ -277,6 +305,27 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter
         return statusCode >= StatusCodes.Status500InternalServerError
             ? "服务端处理异常"
             : "请求失败";
+    }
+
+    /// <summary>
+    /// 异常类型 → (HTTP 状态码, 统一响应)。业务/输入类错误归 4xx（客户端可纠正），仅真正未预期归 500（不泄露内部细节）。
+    /// 统一经 <see cref="ApiResponse"/> 工厂构造（具体错误置于 Data，Message 为通用码描述），TraceId 由调用方补齐。
+    /// </summary>
+    /// <remarks>公开静态供异常中间件复用，保证异常→状态码/响应映射单一来源。</remarks>
+    public static (int StatusCode, ApiResponse Response) MapException(Exception exception)
+    {
+        return exception switch
+        {
+            UserFriendlyException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
+            BusinessException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
+            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, ApiResponse.Unauthorized("未授权访问")),
+            KeyNotFoundException => (StatusCodes.Status404NotFound, ApiResponse.NotFound()),
+            ArgumentException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
+            // 业务规则冲突（输入合法但当前状态不允许，如密码不合规、验证码失效）→ 422，消息随 Data 回前端
+            InvalidOperationException ex => (StatusCodes.Status422UnprocessableEntity, ApiResponse.UnprocessableEntity(ex.Message)),
+            // 仅真正未预期的异常才 500，Data 留空、不泄露内部细节
+            _ => (StatusCodes.Status500InternalServerError, ApiResponse.Fail())
+        };
     }
 
     private static string ResolveTraceId(HttpContext httpContext)
