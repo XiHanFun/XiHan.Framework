@@ -37,7 +37,6 @@ using XiHan.Framework.Web.Api.Logging.Writers;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.TenantResolvers;
-using XiHan.Framework.Web.Core.Extensions;
 
 namespace XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 
