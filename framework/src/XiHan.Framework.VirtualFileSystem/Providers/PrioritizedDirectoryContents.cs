@@ -47,8 +47,14 @@ public class PrioritizedDirectoryContents : IDirectoryContents
     /// <returns></returns>
     IEnumerator<IFileInfo> IEnumerable<IFileInfo>.GetEnumerator()
     {
+        // 用 f.Name（裸文件名）反查来源 provider 并不总能命中（provider 多按相对路径索引，子目录/合并视图下
+        // GetFileInfo(f.Name) 可能全 false）。原 First 在无匹配时抛 "Sequence contains no matching element"，
+        // 致整个目录枚举（含 JSON 本地化资源加载）崩溃。改 FirstOrDefault：无匹配时按默认优先级 0 包装，
+        // 文件仍正常枚举（该文件确在 _inner 中、本就存在），仅退化优先级信息、不再抛。
         return _inner
-            .Select(f => new PrioritizedFileInfo(f, _providers.First(p => p.Provider.GetFileInfo(f.Name).Exists).Priority))
+            .Select(f => new PrioritizedFileInfo(
+                f,
+                _providers.FirstOrDefault(p => p.Provider.GetFileInfo(f.Name).Exists)?.Priority ?? 0))
             .GetEnumerator();
     }
 
