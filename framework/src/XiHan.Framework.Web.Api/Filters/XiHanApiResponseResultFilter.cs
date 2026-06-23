@@ -409,10 +409,19 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
             return fallback;
         }
 
-        var localizer = _stringLocalizerFactory.Create(ApiResponseResourceName, ApiResponseResourceName);
-        var localized = localizer[key];
-        return localized.ResourceNotFound || string.IsNullOrWhiteSpace(localized.Value)
-            ? fallback
-            : localized.Value;
+        // 本地化查找绝不能让响应构建崩溃：此方法在 BuildResponse 中对每个响应调用，
+        // 任何本地化异常（工厂/资源存储/虚拟文件系统等）都回退到原文，保证响应管线稳定。
+        try
+        {
+            var localizer = _stringLocalizerFactory.Create(ApiResponseResourceName, ApiResponseResourceName);
+            var localized = localizer[key];
+            return localized.ResourceNotFound || string.IsNullOrWhiteSpace(localized.Value)
+                ? fallback
+                : localized.Value;
+        }
+        catch
+        {
+            return fallback;
+        }
     }
 }
