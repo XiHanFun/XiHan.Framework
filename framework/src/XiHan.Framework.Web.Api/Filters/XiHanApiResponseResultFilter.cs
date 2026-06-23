@@ -137,7 +137,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         return true;
     }
 
-    private static bool TryWrapObjectResult(ResultExecutingContext context)
+    private bool TryWrapObjectResult(ResultExecutingContext context)
     {
         if (context.Result is not ObjectResult objectResult)
         {
@@ -160,7 +160,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         return true;
     }
 
-    private static bool TryWrapJsonResult(ResultExecutingContext context)
+    private bool TryWrapJsonResult(ResultExecutingContext context)
     {
         if (context.Result is not JsonResult jsonResult)
         {
@@ -183,7 +183,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         return true;
     }
 
-    private static bool TryWrapContentResult(ResultExecutingContext context)
+    private bool TryWrapContentResult(ResultExecutingContext context)
     {
         if (context.Result is not ContentResult contentResult)
         {
@@ -201,7 +201,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         return true;
     }
 
-    private static bool TryWrapStatusCodeResult(ResultExecutingContext context)
+    private bool TryWrapStatusCodeResult(ResultExecutingContext context)
     {
         if (context.Result is not StatusCodeResult statusResult)
         {
@@ -219,7 +219,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         return true;
     }
 
-    private static bool TryWrapEmptyResult(ResultExecutingContext context)
+    private bool TryWrapEmptyResult(ResultExecutingContext context)
     {
         if (context.Result is not EmptyResult)
         {
@@ -264,11 +264,16 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
             : statusCode;
     }
 
-    private static ApiResponse BuildResponse(object? value, int statusCode, string traceId)
+    private ApiResponse BuildResponse(object? value, int statusCode, string traceId)
     {
-        return statusCode >= StatusCodes.Status400BadRequest
+        var response = statusCode >= StatusCodes.Status400BadRequest
             ? BuildErrorResponse(value, statusCode, traceId)
             : ApiResponse.Success(value, traceId);
+
+        // 按请求文化本地化通用码描述（资源 ApiResponse / 键=语义码名，如 Success/BadRequest/Failed）；
+        // 缺工厂或缺键时回退原 Message（GetDescription 默认中文）。异常路径另由 MapExceptionLocalized 处理。
+        response.Message = LocalizeApiResponseMessage(response.Code.ToString(), response.Message);
+        return response;
     }
 
     private static ApiResponse BuildErrorResponse(object? value, int statusCode, string traceId)
