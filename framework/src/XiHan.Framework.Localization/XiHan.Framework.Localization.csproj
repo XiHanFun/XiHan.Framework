@@ -18,6 +18,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Localization.Abstractions\XiHan.Framework.Localization.Abstractions.csproj" />
         <ProjectReference Include="..\XiHan.Framework.Threading\XiHan.Framework.Threading.csproj" />
 		<ProjectReference Include="..\XiHan.Framework.Settings\XiHan.Framework.Settings.csproj" />

@@ -25,6 +25,11 @@ public sealed class RequestContext
     public string TraceId { get; init; } = string.Empty;
 
     /// <summary>
+    /// 请求文化（如 zh-CN / en-US），由请求文化中间件解析
+    /// </summary>
+    public string? Culture { get; init; }
+
+    /// <summary>
     /// 请求标识
     /// </summary>
     public string? RequestId { get; init; }
