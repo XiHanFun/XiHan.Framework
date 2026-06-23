@@ -44,6 +44,13 @@ public class BusinessException : Exception, IBusinessException, IHasErrorCode, I
     public string? Code { get; set; }
 
     /// <summary>
+    /// 可本地化消息（承载 XiHan.Framework.Localization.Abstractions.ILocalizableString）
+    /// 以 object 弱类型存储以避免 Core 反向依赖本地化抽象包（Abstractions 依赖 Core，强类型会形成循环引用）；
+    /// 由可见 ILocalizableString 的响应过滤器在请求文化下解析为最终消息，缺失时回退 Message。
+    /// </summary>
+    public object? LocalizableMessage { get; set; }
+
+    /// <summary>
     /// 异常详情
     /// </summary>
     public string? Details { get; set; }
