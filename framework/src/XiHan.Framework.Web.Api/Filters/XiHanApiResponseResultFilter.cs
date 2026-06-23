@@ -14,9 +14,11 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Localization;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Logging;
@@ -28,6 +30,22 @@ namespace XiHan.Framework.Web.Api.Filters;
 /// </summary>
 public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionFilter
 {
+    /// <summary>
+    /// 本地化资源名：响应默认消息（对应 JSON 资源 ApiResponse）
+    /// </summary>
+    private const string ApiResponseResourceName = "ApiResponse";
+
+    private readonly IStringLocalizerFactory? _stringLocalizerFactory;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="stringLocalizerFactory">字符串本地化工厂（缺失时回退到非本地化行为）</param>
+    public XiHanApiResponseResultFilter(IStringLocalizerFactory? stringLocalizerFactory = null)
+    {
+        _stringLocalizerFactory = stringLocalizerFactory;
+    }
+
     /// <summary>
     /// 未处理异常 → 统一接口响应：按异常类型映射 4xx/5xx 业务码，错误信息放 Message 供前端直接展示；
     /// 经 MVC 输出格式化器序列化（camelCase + 中文不转义 + 业务码 int），与正常响应完全一致。
@@ -41,7 +59,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         }
 
         var traceId = ResolveTraceId(context.HttpContext);
-        var (statusCode, response) = MapException(context.Exception);
+        var (statusCode, response) = MapExceptionLocalized(context.Exception);
         response.TraceId = traceId;
 
         // 异常日志表落库（队列异步），统一由 reporter 承担，避免与中间件重复
@@ -332,5 +350,64 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
     {
         return httpContext.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? httpContext.TraceIdentifier;
+    }
+
+    /// <summary>
+    /// 异常 → (状态码, 响应) 的本地化变体：
+    /// 在 <see cref="MapException(Exception)"/> 基础上，若异常携带可本地化消息（<c>LocalizableMessage</c>），
+    /// 则按当前请求文化解析其值覆盖 Message；否则保持原行为（回退到异常 <c>.Message</c>）。
+    /// </summary>
+    private (int StatusCode, ApiResponse Response) MapExceptionLocalized(Exception exception)
+    {
+        var (statusCode, response) = MapException(exception);
+
+        // 业务/用户友好异常携带可本地化消息时，按请求文化解析并覆盖面向用户的消息（缺失键回退异常 .Message）。
+        // 注意：4xx 工厂（BadRequest/UnprocessableEntity 等）把用户消息放在 Data、Message 仅为通用码描述，
+        // 且前端 extractBackendMessage 优先读取 Data，故本地化值须覆盖 Data（字符串）；
+        // 若该响应未把消息放 Data（Data 非字符串），则退而覆盖 Message。
+        if (_stringLocalizerFactory is not null
+            && exception is BusinessException { LocalizableMessage: ILocalizableString localizableMessage })
+        {
+            var localized = localizableMessage.LocalizeOrFallback(_stringLocalizerFactory, exception.Message);
+            if (!string.IsNullOrWhiteSpace(localized))
+            {
+                if (response.Data is string)
+                {
+                    response.Data = localized;
+                }
+                else
+                {
+                    response.Message = localized;
+                }
+            }
+
+            return (statusCode, response);
+        }
+
+        // 未携带本地化消息时，对未预期异常（500）的通用提示按请求文化本地化（资源 ApiResponse / 键 ServerError）
+        if (statusCode >= StatusCodes.Status500InternalServerError)
+        {
+            response.Message = LocalizeApiResponseMessage("ServerError", response.Message);
+        }
+
+        return (statusCode, response);
+    }
+
+    /// <summary>
+    /// 按请求文化解析响应默认消息（资源名 ApiResponse，键用语义码名，如 ServerError/BadRequest）；
+    /// 工厂缺失或键缺失时回退到 <paramref name="fallback"/>。
+    /// </summary>
+    private string LocalizeApiResponseMessage(string key, string fallback)
+    {
+        if (_stringLocalizerFactory is null || string.IsNullOrWhiteSpace(key))
+        {
+            return fallback;
+        }
+
+        var localizer = _stringLocalizerFactory.Create(ApiResponseResourceName, ApiResponseResourceName);
+        var localized = localizer[key];
+        return localized.ResourceNotFound || string.IsNullOrWhiteSpace(localized.Value)
+            ? fallback
+            : localized.Value;
     }
 }

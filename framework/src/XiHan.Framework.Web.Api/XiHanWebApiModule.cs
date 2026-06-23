@@ -21,6 +21,7 @@ using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Localization.Extensions.ApplicationBuilder;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
@@ -76,6 +77,8 @@ public class XiHanWebApiModule : XiHanModule
         app.UseForwardedHeaders();
 
         app.UseMiddleware<XiHanTraceIdMiddleware>();
+        // 请求文化：紧跟 TraceId、先于路由/MVC，使后续管线（含请求上下文/控制器/响应过滤器）在请求文化下执行
+        app.UseXiHanRequestCulture();
         app.UseMiddleware<XiHanRequestContextMiddleware>();
         app.UseMiddleware<XiHanExceptionLoggingMiddleware>();
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
