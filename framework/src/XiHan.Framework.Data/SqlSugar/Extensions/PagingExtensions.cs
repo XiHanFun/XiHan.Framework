@@ -331,17 +331,26 @@ public static class PagingExtensions
             return query;
         }
 
-        // 构建排序表达式字符串
-        var orderByFields = orderedSorts.Select(s =>
-            $"{s.Field} {(s.Direction == SortDirection.Ascending ? "ASC" : "DESC")}"
-        );
-
-        var orderByString = string.Join(", ", orderByFields);
-
+        // 将外部传入的排序字段（C# 属性名）解析为实体属性，再通过 OrderByPropertyName 映射为物理列名。
+        // 不能把 s.Field 直接拼进 OrderBy(string)：那会绕过列名映射（列名标准化为 snake_case 后属性名 ≠ 列名，
+        // 会触发“column does not exist”），且原始字符串拼接存在 SQL 注入风险。
         try
         {
-            query = query.OrderBy(orderByString);
-            Console.WriteLine(query.ToSqlString());
+            foreach (var sort in orderedSorts)
+            {
+                var property = typeof(T).GetProperty(sort.Field,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+                // 未知字段直接忽略，与过滤/关键字搜索的容错策略保持一致
+                if (property is null)
+                {
+                    LogHelper.Warn($"[SqlSugar.ApplySorts] 忽略未知排序字段：{sort.Field}");
+                    continue;
+                }
+
+                var orderByType = sort.Direction == SortDirection.Ascending ? OrderByType.Asc : OrderByType.Desc;
+                query = query.OrderByPropertyName(property.Name, orderByType);
+            }
         }
         catch (Exception ex)
         {
