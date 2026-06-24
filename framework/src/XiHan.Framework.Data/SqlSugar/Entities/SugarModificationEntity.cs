@@ -51,30 +51,30 @@ public abstract class SugarModificationEntity<TKey> : ModificationEntityBase<TKe
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发")]
     public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
+    [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
     public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
     /// 修改时间
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改时间")]
+    [SugarColumn(ColumnName = "Modified_Time", IsNullable = true, ColumnDescription = "修改时间")]
     public override DateTimeOffset? ModifiedTime { get; set; }
 
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改者唯一标识")]
+    [SugarColumn(ColumnName = "Modified_Id", IsNullable = true, ColumnDescription = "修改者唯一标识")]
     public override TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改人")]
+    [SugarColumn(ColumnName = "Modified_By", IsNullable = true, ColumnDescription = "修改人")]
     public override string? ModifiedBy { get; set; }
 }
