@@ -278,14 +278,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             return httpMethodAttr.HttpMethods.First();
         }
 
-        // 分页查询统一走 POST：参数为分页请求（PageRequestDtoBase 派生）时强制 POST，
-        // 使过滤/排序/关键字等嵌套查询条件（filters/sorts 数组）经请求体 JSON 传输，
-        // 避免超长且难以表达的 query string（即便方法名以 Get/Query 等 GET 前缀开头亦覆盖）。
-        if (HasPagedRequestParameter(methodInfo))
-        {
-            return "POST";
-        }
-
         // 根据方法名推断 HTTP 方法
         var methodName = methodInfo.Name;
         foreach (var convention in _options.Conventions.HttpMethodConventions)
@@ -298,26 +290,6 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
 
         // 默认为 POST
         return "POST";
-    }
-
-    /// <summary>
-    /// 方法是否含分页请求参数（参数类型自身或其基类链中存在 PageRequestDtoBase）。
-    /// 按类型名匹配以避免对领域共享层的程序集硬依赖。
-    /// </summary>
-    private static bool HasPagedRequestParameter(MethodInfo methodInfo)
-    {
-        return methodInfo.GetParameters().Any(parameter =>
-        {
-            for (var type = parameter.ParameterType; type is not null && type != typeof(object); type = type.BaseType)
-            {
-                if (type.Name == "PageRequestDtoBase")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        });
     }
 
     /// <summary>
