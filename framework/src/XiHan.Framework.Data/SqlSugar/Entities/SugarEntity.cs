@@ -42,12 +42,12 @@ public abstract class SugarEntity<TKey> : EntityBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发")]
     public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键标识")]
+    [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键标识")]
     public override TKey BasicId { get; protected set; } = default!;
 }
