@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.Security.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Security;
 
@@ -30,5 +31,8 @@ public class XiHanSecurityModule : XiHanModule
     {
         var services = context.Services;
         var config = services.GetConfiguration();
+
+        // 使用扩展方法添加安全服务
+        services.AddXiHanSecurityServices();
     }
 }

@@ -82,6 +82,13 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                 traceId);
         }
 
+        // 操作日志只记录业务行为（新增/修改/删除/导入/导出等），查询类请求（GET/HEAD/OPTIONS）不落操作日志
+        var requestMethod = context.HttpContext.Request.Method;
+        if (HttpMethods.IsGet(requestMethod) || HttpMethods.IsHead(requestMethod) || HttpMethods.IsOptions(requestMethod))
+        {
+            return;
+        }
+
         try
         {
             var pipeline = context.HttpContext.RequestServices.GetService<IOperationLogPipeline>();
@@ -95,10 +102,10 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                     UserName = requestContext?.UserName ?? currentUser?.UserName,
                     ControllerName = controllerName,
                     ActionName = actionName,
-                    Method = context.HttpContext.Request.Method,
+                    Method = requestMethod,
                     Path = context.HttpContext.Request.Path.ToString(),
-                    RequestParams = SafeSerialize(context.ActionArguments),
-                    ResponseResult = SafeSerialize(executedContext.Result),
+                    RequestParams = LogSanitizer.MaskSensitiveData(SafeSerialize(context.ActionArguments)),
+                    ResponseResult = LogSanitizer.MaskSensitiveData(SafeSerialize(executedContext.Result)),
                     StatusCode = context.HttpContext.Response.StatusCode,
                     ElapsedMilliseconds = (long)Math.Round(elapsedMs),
                     RemoteIp = context.HttpContext.Connection.RemoteIpAddress?.ToString(),

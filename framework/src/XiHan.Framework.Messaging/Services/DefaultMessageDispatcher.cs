@@ -60,7 +60,10 @@ public class DefaultMessageDispatcher : IMessageDispatcher
             return [];
         }
 
-        var sender = _senders.FirstOrDefault(item => item.CanHandle(envelope.Channel.Trim()));
+        // 优先真实发送器；NotConfiguredMessageSender 的 CanHandle 恒为 true，只能作「无可用发送器」的兜底，不可遮蔽真实发送器
+        var channel = envelope.Channel.Trim();
+        var sender = _senders.FirstOrDefault(item => item is not NotConfiguredMessageSender && item.CanHandle(channel))
+            ?? _senders.FirstOrDefault(item => item.CanHandle(channel));
         if (sender is null)
         {
             var error = $"未找到可用发送器，通道: {envelope.Channel}";

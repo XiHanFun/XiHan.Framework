@@ -16,6 +16,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using StackExchange.Redis;
 using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Caching.Hybrid;
@@ -49,6 +50,9 @@ public static class XiHanCachingServiceCollectionExtensions
         services.AddSingleton(typeof(IHybridCache<>), typeof(XiHanHybridCache<>));
         services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
 
+        // 分布式锁：默认进程内回退（仅单实例）；Redis 启用时下方替换为跨实例的 Redis 实现
+        services.TryAddSingleton<IDistributedLock, InMemoryDistributedLock>();
+
         services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
         {
             cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
@@ -79,6 +83,17 @@ public static class XiHanCachingServiceCollectionExtensions
         });
 
         services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
+
+        // 暴露原生 Redis 连接 + 泛型队列：IConnectionMultiplexer 为长寿命单例（与 XiHanRedisCache 各连各的）。
+        // IRedisStreamQueue<>（Streams 可靠消息队列：消费组+ACK+重投）、IRedisDelayQueue<>（Sorted Set 延迟队列）均为开放泛型，按封闭类型注入。
+        if (!redisOptions.Configuration.IsNullOrEmpty())
+        {
+            services.TryAddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisOptions.Configuration));
+            services.TryAddSingleton(typeof(IRedisStreamQueue<>), typeof(RedisStreamQueue<>));
+            services.TryAddSingleton(typeof(IRedisDelayQueue<>), typeof(RedisDelayQueue<>));
+            // 分布式锁升级为 Redis 跨实例实现（替换上面的进程内回退）
+            services.Replace(ServiceDescriptor.Singleton<IDistributedLock, RedisDistributedLock>());
+        }
 
         return services;
     }

@@ -15,7 +15,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Caching.Distributed;
 
@@ -31,16 +30,15 @@ public class DefaultDistributedCacheKeyNormalizer(IServiceProvider serviceProvid
     /// <returns></returns>
     public string NormalizeKey(DistributedCacheKeyNormalizeArgs args)
     {
-        var tenantSegment = "Default";
+        var tenantSegment = "0";
         if (!args.IgnoreMultiTenancy)
         {
             var currentTenantAccessor = serviceProvider.GetService<ICurrentTenantAccessor>();
             var currentTenant = currentTenantAccessor?.Current;
             if (currentTenant?.TenantId is not null)
             {
-                tenantSegment = currentTenant.Name.IsNullOrWhiteSpace()
-                    ? currentTenant.TenantId.Value.ToString("N")
-                    : currentTenant.Name!;
+                // 租户段必须使用稳定且不可变的 TenantId：
+                tenantSegment = currentTenant.TenantId.Value.ToString();
             }
         }
 

@@ -48,14 +48,24 @@ public class EmailFromModel
     public string FromPassword { get; set; } = string.Empty;
 
     /// <summary>
-    /// 发自名称
+    /// SMTP 认证登录名（多数服务商即发件邮箱；为空则不进行认证）
     /// </summary>
     public string FromUserName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 发件人显示名称（收件箱中展示的名字；为空时回退为发件邮箱）
+    /// </summary>
+    public string FromName { get; set; } = string.Empty;
 
     /// <summary>
     /// 内容编码
     /// </summary>
     public Encoding Coding { get; set; } = Encoding.UTF8;
+
+    /// <summary>
+    /// 是否接受无效/自签 TLS 证书（默认 false，按系统默认校验；仅开发环境针对自签 SMTP 放开，生产务必为 false）
+    /// </summary>
+    public bool AcceptInvalidCertificate { get; set; }
 }
 
 /// <summary>

@@ -51,72 +51,72 @@ public abstract class SugarFullAuditedEntity<TKey> : FullAuditedEntityBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发")]
     public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
+    [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
     public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
+    [SugarColumn(ColumnName = "Created_Time", IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
     public override DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
+    [SugarColumn(ColumnName = "Created_Id", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
     public override TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
+    [SugarColumn(ColumnName = "Created_By", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
     public override string? CreatedBy { get; set; }
 
     /// <summary>
     /// 修改时间
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改时间")]
+    [SugarColumn(ColumnName = "Modified_Time", IsNullable = true, ColumnDescription = "修改时间")]
     public override DateTimeOffset? ModifiedTime { get; set; }
 
     /// <summary>
     /// 修改者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改者唯一标识")]
+    [SugarColumn(ColumnName = "Modified_Id", IsNullable = true, ColumnDescription = "修改者唯一标识")]
     public override TKey? ModifiedId { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "修改人")]
+    [SugarColumn(ColumnName = "Modified_By", IsNullable = true, ColumnDescription = "修改人")]
     public override string? ModifiedBy { get; set; }
 
     /// <summary>
     /// 软删除标记
     /// </summary>
-    [SugarColumn(IsNullable = false, ColumnDescription = "软删除标记")]
+    [SugarColumn(ColumnName = "Is_Deleted", IsNullable = false, ColumnDescription = "软删除标记")]
     public override bool IsDeleted { get; set; } = false;
 
     /// <summary>
     /// 删除时间
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "删除时间")]
+    [SugarColumn(ColumnName = "Deleted_Time", IsNullable = true, ColumnDescription = "删除时间")]
     public override DateTimeOffset? DeletedTime { get; set; }
 
     /// <summary>
     /// 删除者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "删除者唯一标识")]
+    [SugarColumn(ColumnName = "Deleted_Id", IsNullable = true, ColumnDescription = "删除者唯一标识")]
     public override TKey? DeletedId { get; set; }
 
     /// <summary>
     /// 删除者
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "删除者")]
+    [SugarColumn(ColumnName = "Deleted_By", IsNullable = true, ColumnDescription = "删除者")]
     public override string? DeletedBy { get; set; }
 }

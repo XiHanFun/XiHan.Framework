@@ -17,8 +17,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.OAuth;
+using XiHan.Framework.Authentication.OneTimeCode;
 using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Authentication.Password;
+using XiHan.Framework.Security.Password;
 using XiHan.Framework.Authentication.Users;
 
 namespace XiHan.Framework.Authentication.Extensions.DependencyInjection;
@@ -56,6 +57,8 @@ public static class XiHanAuthenticationServiceCollectionExtensions
         services.TryAddSingleton<IJwtTokenService, JwtTokenService>();
         // 注册 OTP 服务
         services.TryAddSingleton<IOtpService, OtpService>();
+        // 注册一次性验证码服务（分布式缓存后端：邮箱/短信验证码等签发与一次性消费）
+        services.TryAddSingleton<IOneTimeCodeService, DistributedOneTimeCodeService>();
         // 注册用户存储
         services.TryAddScoped<IUserStore, DefaultUserStore>();
         // 注册认证服务接口

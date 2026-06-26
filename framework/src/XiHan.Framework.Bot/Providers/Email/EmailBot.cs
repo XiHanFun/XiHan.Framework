@@ -32,13 +32,15 @@ public class EmailBot(EmailFromModel fromModel)
     /// </summary>
     public async Task<bool> SendMail(EmailToModel toModel)
     {
+        // 发件人显示名：优先使用 FromName，缺省回退为发件邮箱
+        var fromDisplayName = string.IsNullOrWhiteSpace(fromModel.FromName) ? fromModel.FromMail : fromModel.FromName;
         MimeMessage message = new()
         {
             // 来源
-            Sender = new MailboxAddress(fromModel.FromMail, fromModel.FromMail)
+            Sender = new MailboxAddress(fromDisplayName, fromModel.FromMail)
         };
         // 发件人地址集合
-        message.From.Add(new MailboxAddress(fromModel.FromMail, fromModel.FromMail));
+        message.From.Add(new MailboxAddress(fromDisplayName, fromModel.FromMail));
         // 收件人地址集合
         toModel.ToMail.ForEach(to => message.To.Add(new MailboxAddress(to, to)));
         // 抄送人地址集合
@@ -84,8 +86,11 @@ public class EmailBot(EmailFromModel fromModel)
         try
         {
             using SmtpClient client = new();
-            // 解决远程证书验证无效
-            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
+            // 默认走 MailKit 系统证书校验；仅当显式允许（开发环境自签证书）时才放开，避免生产被中间人攻击
+            if (fromModel.AcceptInvalidCertificate)
+            {
+                client.ServerCertificateValidationCallback = (_, _, _, _) => true;
+            }
             await client.ConnectAsync(fromModel.SmtpHost, fromModel.SmtpPort, fromModel.UseSsl);
             if (!string.IsNullOrWhiteSpace(fromModel.FromUserName))
             {

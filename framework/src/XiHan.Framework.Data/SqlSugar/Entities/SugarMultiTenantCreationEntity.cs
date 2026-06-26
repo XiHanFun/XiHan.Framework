@@ -50,6 +50,6 @@ public abstract class SugarMultiTenantCreationEntity<TKey> : SugarCreationEntity
     /// <summary>
     /// 租户ID（0=平台租户；业务租户从 1 开始）
     /// </summary>
-    [SugarColumn(ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true)]
+    [SugarColumn(ColumnName = "Tenant_Id", ColumnDescription = "租户ID", IsOnlyIgnoreUpdate = true)]
     public virtual long TenantId { get; set; }
 }

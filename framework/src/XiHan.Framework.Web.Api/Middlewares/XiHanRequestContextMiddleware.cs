@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using System.Globalization;
+using XiHan.Framework.Localization.Middlewares;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
@@ -42,10 +44,13 @@ public class XiHanRequestContextMiddleware(RequestDelegate next)
         var clientInfo = clientInfoProvider.GetCurrent();
         var traceId = context.Items[XiHanWebApiConstants.TraceIdItemKey]?.ToString()
             ?? context.TraceIdentifier;
+        var culture = context.Items[XiHanRequestCultureMiddleware.CultureItemKey]?.ToString()
+            ?? CultureInfo.CurrentUICulture.Name;
 
         requestContextAccessor.Current = new RequestContext
         {
             TraceId = traceId,
+            Culture = culture,
             RequestId = context.TraceIdentifier,
             UserId = currentUser?.UserId,
             UserName = currentUser?.UserName,

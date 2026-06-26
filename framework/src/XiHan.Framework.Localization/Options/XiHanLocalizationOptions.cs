@@ -56,6 +56,18 @@ public class XiHanLocalizationOptions
     public string DefaultCulture { get; set; } = "zh-CN";
 
     /// <summary>
+    /// 受支持的文化列表
+    /// 请求文化中间件仅接受此列表内的文化，列表为空时不做限制（任意有效文化均接受）
+    /// </summary>
+    public IList<string> SupportedCultures { get; set; } = ["zh-CN", "en-US"];
+
+    /// <summary>
+    /// 请求文化解析使用的请求头名称
+    /// 优先级：该请求头 &gt; Accept-Language &gt; 默认文化
+    /// </summary>
+    public string CultureHeaderName { get; set; } = "X-Language";
+
+    /// <summary>
     /// 是否回退到父文化
     /// </summary>
     public bool FallbackToParentCultures { get; set; } = true;

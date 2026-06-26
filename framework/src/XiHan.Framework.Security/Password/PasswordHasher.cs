@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace XiHan.Framework.Authentication.Password;
+namespace XiHan.Framework.Security.Password;
 
 /// <summary>
 /// 密码哈希服务实现

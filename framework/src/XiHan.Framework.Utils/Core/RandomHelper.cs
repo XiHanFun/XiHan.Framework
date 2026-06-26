@@ -20,13 +20,13 @@ namespace XiHan.Framework.Utils.Core;
 /// <summary>
 /// 随机帮助类
 /// </summary>
+/// <remarks>
+/// 基于 <see cref="Random.Shared"/>（线程安全、免锁）的通用伪随机工具，适用于抖动、打散、采样等非安全场景。
+/// 注意：非加密安全。验证码、密钥、盐、密码等安全敏感场景请使用
+/// <see cref="Security.RandomCoder"/>（加密安全 RNG）或 <see cref="System.Security.Cryptography.RandomNumberGenerator"/>。
+/// </remarks>
 public static class RandomHelper
 {
-    // 默认随机数生成器
-    private static readonly Random Rnd = new();
-
-    private static readonly Lock ObjLock = new();
-
     /// <summary>
     /// 根据字符源生成随机字符
     /// </summary>
@@ -38,14 +38,10 @@ public static class RandomHelper
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
         ArgumentException.ThrowIfNullOrEmpty(source, nameof(source));
 
-        StringBuilder result = new();
-
-        lock (ObjLock)
+        StringBuilder result = new(length);
+        for (var i = 0; i < length; i++)
         {
-            for (var i = 0; i < length; i++)
-            {
-                result.Append(source[Rnd.Next(0, source.Length)]);
-            }
+            result.Append(source[Random.Shared.Next(0, source.Length)]);
         }
 
         return result.ToString();
@@ -59,10 +55,7 @@ public static class RandomHelper
     /// <returns></returns>
     public static int GetRandom(int minValue, int maxValue)
     {
-        lock (ObjLock)
-        {
-            return Rnd.Next(minValue, maxValue);
-        }
+        return Random.Shared.Next(minValue, maxValue);
     }
 
     /// <summary>
@@ -75,10 +68,7 @@ public static class RandomHelper
     /// </returns>
     public static int GetRandom(int maxValue)
     {
-        lock (ObjLock)
-        {
-            return Rnd.Next(maxValue);
-        }
+        return Random.Shared.Next(maxValue);
     }
 
     /// <summary>
@@ -87,10 +77,7 @@ public static class RandomHelper
     /// <returns>一个 32 位有符号整数，大于或等于零且小于 <see cref="int.MaxValue"/></returns>
     public static int GetRandom()
     {
-        lock (ObjLock)
-        {
-            return Rnd.Next();
-        }
+        return Random.Shared.Next();
     }
 
     /// <summary>
@@ -127,19 +114,11 @@ public static class RandomHelper
     /// <returns></returns>
     public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)
     {
-        var enumerable = items as T[] ?? [.. items];
-        Guard.NotNull(enumerable, nameof(items));
+        Guard.NotNull(items, nameof(items));
 
-        List<T> currentList = [.. enumerable];
-        List<T> randomList = [];
-
-        while (currentList.Count != 0)
-        {
-            var randomIndex = GetRandom(0, currentList.Count);
-            randomList.Add(currentList[randomIndex]);
-            currentList.RemoveAt(randomIndex);
-        }
-
-        return randomList;
+        // 拷贝后就地洗牌（Fisher-Yates），不改动调用方集合
+        T[] buffer = [.. items];
+        Random.Shared.Shuffle(buffer);
+        return [.. buffer];
     }
 }

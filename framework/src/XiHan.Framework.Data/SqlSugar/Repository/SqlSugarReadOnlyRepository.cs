@@ -210,6 +210,19 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     /// <summary>
+    /// 根据分页请求条件获取实体列表（应用过滤/关键字/排序，但不分页，返回全部匹配项）
+    /// </summary>
+    public async Task<IReadOnlyList<TEntity>> GetListAsync(PageRequestDtoBase pageRequestDto, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(pageRequestDto);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await CreateQueryable()
+            .ApplyPageRequest(pageRequestDto)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// 获取实体总数
     /// </summary>
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)

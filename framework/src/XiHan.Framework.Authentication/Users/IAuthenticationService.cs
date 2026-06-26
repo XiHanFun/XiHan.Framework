@@ -13,7 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Authentication.Password;
+using XiHan.Framework.Security.Password;
 
 namespace XiHan.Framework.Authentication.Users;
 
