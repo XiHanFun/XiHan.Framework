@@ -25,6 +25,14 @@ public class XiHanWebApiLogQueueOptions
     public const string SectionName = "XiHan:Web:Api:LogQueue";
 
     /// <summary>
+    /// 不记录任何请求日志（访问日志 + 请求起止日志）的路径前缀（不区分大小写）。
+    /// </summary>
+    /// <remarks>
+    /// 默认忽略 SignalR 的 <c>/hubs</c>（协商/长轮询/心跳高频且无审计价值）。需要忽略其它前缀时在配置中追加。
+    /// </remarks>
+    public string[] IgnoredPathPrefixes { get; set; } = ["/hubs"];
+
+    /// <summary>
     /// 是否启用访问日志队列
     /// </summary>
     public bool EnableAccessLogQueue { get; set; } = false;

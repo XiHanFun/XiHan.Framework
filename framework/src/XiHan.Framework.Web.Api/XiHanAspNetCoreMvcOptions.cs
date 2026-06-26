@@ -13,12 +13,14 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Utils.Serialization.Json;
+using XiHan.Framework.Utils.Serialization.Json.Converters;
 
 namespace XiHan.Framework.Web.Api;
 
@@ -27,6 +29,12 @@ namespace XiHan.Framework.Web.Api;
 /// </summary>
 public class XiHanWebCoreMvcOptions
 {
+    /// <summary>
+    /// 共享 HttpContext 访问器：HttpContextAccessor 内部为静态 AsyncLocal，任意实例均读取当前请求上下文
+    /// （依赖 AddHttpContextAccessor 已注册，由 Web.Core 提供）。
+    /// </summary>
+    private static readonly IHttpContextAccessor HttpContextAccessor = new HttpContextAccessor();
+
     /// <summary>
     /// 构造函数
     /// </summary>
@@ -127,11 +135,27 @@ public class XiHanWebCoreMvcOptions
         // 忽略空值
         JsonOptions.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 
+        // 用户时区感知 DateTime / DateTimeOffset：按请求头 X-Timezone 把时间换算为用户本地时间后输出。
+        // 须先于默认转换器加入以取得优先（System.Text.Json 取首个匹配类型的转换器）。
+        // 注意：审计/业务时间多为 DateTimeOffset，必须一并覆盖，否则换时区无效（其默认带偏移，前端按浏览器时区渲染）。
+        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter(ResolveUserTimeZone));
+        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeNullableConverter(ResolveUserTimeZone));
+        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeOffsetJsonConverter(ResolveUserTimeZone));
+        JsonOptions.JsonSerializerOptions.Converters.Add(new DateTimeOffsetNullableConverter(ResolveUserTimeZone));
         // 枚举类型
         JsonOptions.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         JsonOptions.JsonSerializerOptions.ConfigureConverters();
 
         return this;
+    }
+
+    /// <summary>
+    /// 解析当前请求的用户时区（请求头 X-Timezone，IANA 标识，如 Asia/Shanghai）；无请求或无头时返回 null。
+    /// </summary>
+    /// <returns>IANA 时区标识或 null</returns>
+    private static string? ResolveUserTimeZone()
+    {
+        return HttpContextAccessor.HttpContext?.Request.Headers["X-Timezone"].ToString();
     }
 
     /// <summary>

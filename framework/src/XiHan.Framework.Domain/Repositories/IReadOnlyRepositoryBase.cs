@@ -93,6 +93,14 @@ public interface IReadOnlyRepositoryBase<TEntity, TKey>
     Task<IReadOnlyList<TEntity>> GetListAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 根据分页请求条件获取实体集合（应用过滤/关键字/排序，但不分页，返回全部匹配项）
+    /// </summary>
+    /// <param name="pageRequestDto">分页请求对象（仅取用其查询条件，忽略分页参数）</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>只读实体集合（提供 Count 和索引访问）</returns>
+    Task<IReadOnlyList<TEntity>> GetListAsync(PageRequestDtoBase pageRequestDto, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 获取总数
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>

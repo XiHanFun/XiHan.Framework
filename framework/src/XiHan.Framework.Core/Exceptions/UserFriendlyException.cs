@@ -34,4 +34,20 @@ public class UserFriendlyException : BusinessException, IUserFriendlyException
     {
         Details = details;
     }
+
+    /// <summary>
+    /// 构造函数（可本地化消息）
+    /// </summary>
+    /// <param name="localizableMessage">可本地化消息（XiHan.Framework.Localization.Abstractions.ILocalizableString），由响应过滤器按请求文化解析</param>
+    /// <param name="fallbackMessage">回退消息（本地化键缺失时使用，也作为非本地化日志/兜底文本）</param>
+    /// <param name="code"></param>
+    /// <param name="details"></param>
+    /// <param name="innerException"></param>
+    /// <param name="logLevel"></param>
+    public UserFriendlyException(object localizableMessage, string? fallbackMessage = null, string? code = null, string? details = null, Exception? innerException = null, LogLevel logLevel = LogLevel.Warning)
+        : base(code, fallbackMessage, details, innerException, logLevel)
+    {
+        Details = details;
+        LocalizableMessage = localizableMessage;
+    }
 }

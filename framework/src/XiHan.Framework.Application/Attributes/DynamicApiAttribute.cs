@@ -93,23 +93,58 @@ public class DynamicApiAttribute : Attribute
     /// </summary>
     public int Order { get; set; }
 
+    private bool? _preserveRoutePredicate;
+
+    private bool? _usePascalCaseRoutes;
+
+    private bool? _useLowercaseRoute;
+
     /// <summary>
     /// 是否保留路由谓词（例如 Get/Create/Delete 前缀）【单值】
-    /// 方法级优先，类级兜底，最终回退全局配置
+    /// 方法级优先，类级兜底，最终回退全局配置。
+    /// 经可空后备字段区分"未设置"：只为 Group/Tag 标注特性时不会以编译期默认值
+    /// 覆盖全局配置（该陷阱曾导致整类路由 404）。读取请用 <see cref="PreserveRoutePredicateOrNull"/>。
     /// </summary>
-    public bool PreserveRoutePredicate { get; set; } = false;
+    public bool PreserveRoutePredicate
+    {
+        get => _preserveRoutePredicate ?? false;
+        set => _preserveRoutePredicate = value;
+    }
+
+    /// <summary>
+    /// 路由谓词设置原值（null=未显式设置，回退下一层级）
+    /// </summary>
+    public bool? PreserveRoutePredicateOrNull => _preserveRoutePredicate;
 
     /// <summary>
     /// 是否使用 PascalCase 路由【单值】
-    /// 方法级优先，类级兜底，最终回退全局配置
+    /// 方法级优先，类级兜底，最终回退全局配置（未设置不覆盖）。读取请用 <see cref="UsePascalCaseRoutesOrNull"/>。
     /// </summary>
-    public bool UsePascalCaseRoutes { get; set; } = true;
+    public bool UsePascalCaseRoutes
+    {
+        get => _usePascalCaseRoutes ?? true;
+        set => _usePascalCaseRoutes = value;
+    }
+
+    /// <summary>
+    /// PascalCase 路由设置原值（null=未显式设置，回退下一层级）
+    /// </summary>
+    public bool? UsePascalCaseRoutesOrNull => _usePascalCaseRoutes;
 
     /// <summary>
     /// 是否使用小写路由【单值】
-    /// 方法级优先，类级兜底，最终回退全局配置
+    /// 方法级优先，类级兜底，最终回退全局配置（未设置不覆盖）。读取请用 <see cref="UseLowercaseRouteOrNull"/>。
     /// </summary>
-    public bool UseLowercaseRoute { get; set; } = false;
+    public bool UseLowercaseRoute
+    {
+        get => _useLowercaseRoute ?? false;
+        set => _useLowercaseRoute = value;
+    }
+
+    /// <summary>
+    /// 小写路由设置原值（null=未显式设置，回退下一层级）
+    /// </summary>
+    public bool? UseLowercaseRouteOrNull => _useLowercaseRoute;
 
     /// <summary>
     /// 是否在 API 浏览器中显示【单值】

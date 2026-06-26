@@ -511,7 +511,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
             serviceType,
             methodInfo,
-            attribute => attribute.UsePascalCaseRoutes,
+            attribute => attribute.UsePascalCaseRoutesOrNull,
             _options.Conventions.UsePascalCaseRoutes);
     }
 
@@ -523,7 +523,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
             serviceType,
             methodInfo,
-            attribute => attribute.UseLowercaseRoute,
+            attribute => attribute.UseLowercaseRouteOrNull,
             _options.Conventions.UseLowercaseRoutes);
     }
 
@@ -535,7 +535,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         return DynamicApiAttributeMergeHelper.ResolveBoolFromMethodThenClass(
             serviceType,
             methodInfo,
-            attribute => attribute.PreserveRoutePredicate,
+            attribute => attribute.PreserveRoutePredicateOrNull,
             _options.Conventions.PreserveRoutePredicate);
     }
 

@@ -43,9 +43,4 @@ public class ExternalLoginInfo
     /// 头像 URL
     /// </summary>
     public string? AvatarUrl { get; set; }
-
-    /// <summary>
-    /// Access Token（提供商颁发的，用于调用提供商 API）
-    /// </summary>
-    public string? AccessToken { get; set; }
 }

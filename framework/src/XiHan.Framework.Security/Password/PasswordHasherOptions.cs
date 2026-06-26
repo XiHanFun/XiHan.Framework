@@ -14,7 +14,7 @@
 
 using System.Security.Cryptography;
 
-namespace XiHan.Framework.Authentication.Password;
+namespace XiHan.Framework.Security.Password;
 
 /// <summary>
 /// 密码哈希配置选项

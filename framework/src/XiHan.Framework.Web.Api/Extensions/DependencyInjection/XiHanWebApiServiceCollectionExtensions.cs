@@ -37,7 +37,6 @@ using XiHan.Framework.Web.Api.Logging.Writers;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.TenantResolvers;
-using XiHan.Framework.Web.Core.Extensions;
 
 namespace XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 
@@ -287,7 +286,10 @@ public static class XiHanWebApiServiceCollectionExtensions
             options.RemoveServiceSuffix = true;
 
             // 约定配置
-            options.Conventions.PreserveRoutePredicate = true;
+            // 全局约定为"剥离动词"路由（CreateXxxAsync → POST /Xxx）：全部前端按此对接。
+            // 历史上此处曾设 true，但被特性 bool 默认值静默压掉从未生效；特性改为
+            // 可空继承后，这里必须与真实生效行为保持一致，否则全部路由翻转。
+            options.Conventions.PreserveRoutePredicate = false;
             options.Conventions.UsePascalCaseRoutes = true;
             options.Conventions.UseLowercaseRoutes = false;
             options.Conventions.RouteSeparator = "";
@@ -315,7 +317,9 @@ public static class XiHanWebApiServiceCollectionExtensions
                         ? string.Join("; ", errors)
                         : "请求参数校验失败";
 
-                    return new BadRequestObjectResult(ApiResponse.Fail(message, traceId));
+                    // 模型校验失败为 400：用工厂构造，业务码与状态一致；具体错误置于 Data（前端优先取 data 展示），
+                    // 不再用 ApiResponse.Fail（会写死 500）
+                    return new BadRequestObjectResult(ApiResponse.BadRequest(message, traceId));
                 };
             });
 
