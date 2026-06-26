@@ -16,6 +16,7 @@ using AspNet.Security.OAuth.GitHub;
 using AspNet.Security.OAuth.QQ;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -74,6 +75,8 @@ public static class XiHanOAuthServiceCollectionExtensions
                     options.ClientSecret = provider.ClientSecret;
                     options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
                     options.SignInScheme = "ExternalCookie";
+                    // 头像：Google 用户信息 picture → 统一头像 Claim
+                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "picture");
                     foreach (var scope in provider.Scopes)
                     {
                         options.Scope.Add(scope);
@@ -88,6 +91,8 @@ public static class XiHanOAuthServiceCollectionExtensions
                     options.ClientSecret = provider.ClientSecret;
                     options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
                     options.SignInScheme = "ExternalCookie";
+                    // 头像：GitHub 用户信息 avatar_url → 统一头像 Claim
+                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
                     foreach (var scope in provider.Scopes)
                     {
                         options.Scope.Add(scope);
@@ -102,6 +107,8 @@ public static class XiHanOAuthServiceCollectionExtensions
                     options.ClientSecret = provider.ClientSecret;
                     options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
                     options.SignInScheme = "ExternalCookie";
+                    // 头像：QQ 用户信息 figureurl_qq_2（100×100）→ 统一头像 Claim
+                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "figureurl_qq_2");
                     foreach (var scope in provider.Scopes)
                     {
                         options.Scope.Add(scope);

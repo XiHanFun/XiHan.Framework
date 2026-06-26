@@ -122,32 +122,43 @@ public static class DynamicApiAttributeMergeHelper
     }
 
     /// <summary>
-    /// 解析布尔值（方法层存在则取方法最后一个，否则取类最后一个，最终回退默认值）
+    /// 解析布尔值（方法层显式设置优先，其次类层显式设置，最终回退默认值）
     /// </summary>
+    /// <remarks>
+    /// 仅"显式设置"的特性值参与覆盖（选择器返回 null 表示该特性未设置此项）：
+    /// 否则只为 Group/Tag 标注特性时，编译期默认值会静默压掉全局配置
+    /// （该陷阱曾导致整类路由 404）。
+    /// </remarks>
     /// <param name="serviceType">服务类型</param>
     /// <param name="methodInfo">方法信息</param>
-    /// <param name="selector">选择器函数</param>
-    /// <param name="defaultValue">默认值</param>
+    /// <param name="selector">选择器函数（返回 null 表示未显式设置）</param>
+    /// <param name="defaultValue">默认值（全局配置）</param>
     /// <returns>解析后的布尔值</returns>
     public static bool ResolveBoolFromMethodThenClass(
         Type serviceType,
         MethodInfo? methodInfo,
-        Func<DynamicApiAttribute, bool> selector,
+        Func<DynamicApiAttribute, bool?> selector,
         bool defaultValue)
     {
         if (methodInfo != null)
         {
             var methodAttributes = GetOrderedMethodAttributes(methodInfo);
-            if (methodAttributes.Count != 0)
+            for (var i = methodAttributes.Count - 1; i >= 0; i--)
             {
-                return selector(methodAttributes[^1]);
+                if (selector(methodAttributes[i]) is { } methodValue)
+                {
+                    return methodValue;
+                }
             }
         }
 
         var classAttributes = GetOrderedClassAttributes(serviceType);
-        if (classAttributes.Count != 0)
+        for (var i = classAttributes.Count - 1; i >= 0; i--)
         {
-            return selector(classAttributes[^1]);
+            if (selector(classAttributes[i]) is { } classValue)
+            {
+                return classValue;
+            }
         }
 
         return defaultValue;

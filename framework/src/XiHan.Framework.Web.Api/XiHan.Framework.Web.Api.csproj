@@ -18,11 +18,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\XiHan.Framework.Application\XiHan.Framework.Application.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />

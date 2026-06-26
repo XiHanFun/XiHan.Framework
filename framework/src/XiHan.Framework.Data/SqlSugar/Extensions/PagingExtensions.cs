@@ -13,7 +13,10 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text.Json;
 using XiHan.Framework.Domain.Shared.Paging.Builders;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Enums;
@@ -151,8 +154,17 @@ public static class PagingExtensions
             return query;
         }
 
+        // 大小写不敏感解析属性；未知字段安全跳过（避免 Expression.Property 抛异常）
+        var propertyInfo = typeof(T).GetProperty(filter.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        if (propertyInfo is null)
+        {
+            LogHelper.Warn($"[SqlSugar.ApplyFilter] 忽略未知过滤字段：{filter.Field}");
+            return query;
+        }
+
         var parameter = Expression.Parameter(typeof(T), "x");
-        var property = Expression.Property(parameter, filter.Field);
+        var property = Expression.Property(parameter, propertyInfo);
+        var propertyType = propertyInfo.PropertyType;
         Expression? predicate = null;
 
         try
@@ -160,50 +172,46 @@ public static class PagingExtensions
             switch (filter.Operator)
             {
                 case QueryOperator.Equal:
-                    predicate = Expression.Equal(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.Equal);
                     break;
 
                 case QueryOperator.NotEqual:
-                    predicate = Expression.NotEqual(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.NotEqual);
                     break;
 
                 case QueryOperator.GreaterThan:
-                    predicate = Expression.GreaterThan(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.GreaterThan);
                     break;
 
                 case QueryOperator.GreaterThanOrEqual:
-                    predicate = Expression.GreaterThanOrEqual(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.GreaterThanOrEqual);
                     break;
 
                 case QueryOperator.LessThan:
-                    predicate = Expression.LessThan(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.LessThan);
                     break;
 
                 case QueryOperator.LessThanOrEqual:
-                    predicate = Expression.LessThanOrEqual(property, Expression.Constant(filter.Value, property.Type));
+                    predicate = BuildComparison(property, propertyType, filter.Value, Expression.LessThanOrEqual);
                     break;
 
                 case QueryOperator.Contains:
-                    if (property.Type == typeof(string))
-                    {
-                        var containsMethod = typeof(string).GetMethod("Contains", [typeof(string)])!;
-                        predicate = Expression.Call(property, containsMethod, Expression.Constant(filter.Value, typeof(string)));
-                    }
-                    break;
-
                 case QueryOperator.StartsWith:
-                    if (property.Type == typeof(string))
-                    {
-                        var startsWithMethod = typeof(string).GetMethod("StartsWith", [typeof(string)])!;
-                        predicate = Expression.Call(property, startsWithMethod, Expression.Constant(filter.Value, typeof(string)));
-                    }
-                    break;
-
                 case QueryOperator.EndsWith:
-                    if (property.Type == typeof(string))
+                    if (propertyType == typeof(string) && filter.Value is not null)
                     {
-                        var endsWithMethod = typeof(string).GetMethod("EndsWith", [typeof(string)])!;
-                        predicate = Expression.Call(property, endsWithMethod, Expression.Constant(filter.Value, typeof(string)));
+                        var methodName = filter.Operator switch
+                        {
+                            QueryOperator.StartsWith => "StartsWith",
+                            QueryOperator.EndsWith => "EndsWith",
+                            _ => "Contains"
+                        };
+                        var stringMethod = typeof(string).GetMethod(methodName, [typeof(string)])!;
+                        var keyword = CoerceValue(filter.Value, typeof(string)) as string;
+                        if (keyword is not null)
+                        {
+                            predicate = Expression.Call(property, stringMethod, Expression.Constant(keyword, typeof(string)));
+                        }
                     }
                     break;
 
@@ -211,37 +219,35 @@ public static class PagingExtensions
                 case QueryOperator.NotIn:
                     if (filter.Values is { Length: > 0 })
                     {
+                        // 构造与属性类型一致的强类型数组（修复旧版 List<object> 与 Contains<T> 类型不匹配导致静默失效的问题）
+                        var typedArray = Array.CreateInstance(propertyType, filter.Values.Length);
+                        for (var index = 0; index < filter.Values.Length; index++)
+                        {
+                            typedArray.SetValue(CoerceValue(filter.Values[index], propertyType), index);
+                        }
                         var containsMethod = typeof(Enumerable).GetMethods()
                             .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
-                            .MakeGenericMethod(property.Type);
-
-                        var convertedValues = filter.Values.Select(v => Convert.ChangeType(v, property.Type)).ToList();
-                        var valuesExpr = Expression.Constant(convertedValues);
-                        var containsPredicate = Expression.Call(containsMethod, valuesExpr, property);
-
-                        predicate = filter.Operator == QueryOperator.In
-                            ? containsPredicate
-                            : Expression.Not(containsPredicate);
+                            .MakeGenericMethod(propertyType);
+                        var containsPredicate = Expression.Call(containsMethod, Expression.Constant(typedArray), property);
+                        predicate = filter.Operator == QueryOperator.In ? containsPredicate : Expression.Not(containsPredicate);
                     }
                     break;
 
                 case QueryOperator.Between:
                     if (filter.Values is { Length: 2 })
                     {
-                        var start = Expression.Constant(Convert.ChangeType(filter.Values[0], property.Type), property.Type);
-                        var end = Expression.Constant(Convert.ChangeType(filter.Values[1], property.Type), property.Type);
-                        predicate = Expression.AndAlso(
-                            Expression.GreaterThanOrEqual(property, start),
-                            Expression.LessThanOrEqual(property, end));
+                        var lower = BuildComparison(property, propertyType, filter.Values[0], Expression.GreaterThanOrEqual);
+                        var upper = BuildComparison(property, propertyType, filter.Values[1], Expression.LessThanOrEqual);
+                        predicate = Expression.AndAlso(lower, upper);
                     }
                     break;
 
                 case QueryOperator.IsNull:
-                    predicate = Expression.Equal(property, Expression.Constant(null, property.Type));
+                    predicate = Expression.Equal(property, Expression.Constant(null, propertyType));
                     break;
 
                 case QueryOperator.IsNotNull:
-                    predicate = Expression.NotEqual(property, Expression.Constant(null, property.Type));
+                    predicate = Expression.NotEqual(property, Expression.Constant(null, propertyType));
                     break;
             }
 
@@ -251,12 +257,107 @@ public static class PagingExtensions
                 query = query.Where(lambda);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略无效的过滤条件
+            LogHelper.Warn($"[SqlSugar.ApplyFilter] 忽略无效过滤条件 {filter.Field} {filter.Operator}：{ex.Message}");
         }
 
         return query;
+    }
+
+    /// <summary>
+    /// 构造单值比较表达式（结果恒为 bool）。可空值类型属性用 HasValue 守卫，避免 bool? 致 Lambda&lt;Func&lt;T,bool&gt;&gt; 构造失败。
+    /// </summary>
+    private static Expression BuildComparison(MemberExpression property, Type propertyType, object? rawValue, Func<Expression, Expression, BinaryExpression> compare)
+    {
+        var underlying = Nullable.GetUnderlyingType(propertyType);
+        if (underlying is not null)
+        {
+            var valueAccess = Expression.Property(property, "Value");
+            var hasValue = Expression.Property(property, "HasValue");
+            var constant = Expression.Constant(CoerceValue(rawValue, underlying), underlying);
+            return Expression.AndAlso(hasValue, compare(valueAccess, constant));
+        }
+
+        var nonNullConstant = Expression.Constant(CoerceValue(rawValue, propertyType), propertyType);
+        return compare(property, nonNullConstant);
+    }
+
+    /// <summary>
+    /// 把过滤值（可能来自 JSON 的 JsonElement / 字符串 / 数字）健壮地强转为目标 CLR 类型。
+    /// 支持 DateTimeOffset/DateTime/枚举/Guid/bool/基础类型，替代过弱的 Convert.ChangeType（其对这些类型会抛异常被吞掉，致过滤静默失效）。
+    /// </summary>
+    private static object? CoerceValue(object? value, Type targetType)
+    {
+        var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (value is JsonElement element)
+        {
+            value = JsonElementToRaw(element);
+            if (value is null)
+            {
+                return null;
+            }
+        }
+
+        if (underlying.IsInstanceOfType(value))
+        {
+            return value;
+        }
+
+        if (underlying.IsEnum)
+        {
+            return value is string enumName
+                ? Enum.Parse(underlying, enumName, ignoreCase: true)
+                : Enum.ToObject(underlying, Convert.ChangeType(value, Enum.GetUnderlyingType(underlying), CultureInfo.InvariantCulture));
+        }
+
+        if (underlying == typeof(DateTimeOffset))
+        {
+            return value is string sdto
+                ? DateTimeOffset.Parse(sdto, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+                : (object)new DateTimeOffset(Convert.ToDateTime(value, CultureInfo.InvariantCulture));
+        }
+
+        if (underlying == typeof(DateTime))
+        {
+            return value is string sdt
+                ? DateTime.Parse(sdt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+        }
+
+        if (underlying == typeof(Guid))
+        {
+            return Guid.Parse(value.ToString()!);
+        }
+
+        if (underlying == typeof(bool))
+        {
+            return value is string sb ? bool.Parse(sb) : Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+        }
+
+        return Convert.ChangeType(value, underlying, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// 取 JsonElement 的原始 CLR 值（字符串/数字/布尔/Null）。
+    /// </summary>
+    private static object? JsonElementToRaw(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDecimal(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null or JsonValueKind.Undefined => null,
+            _ => element.GetRawText()
+        };
     }
 
     /// <summary>
@@ -330,17 +431,26 @@ public static class PagingExtensions
             return query;
         }
 
-        // 构建排序表达式字符串
-        var orderByFields = orderedSorts.Select(s =>
-            $"{s.Field} {(s.Direction == SortDirection.Ascending ? "ASC" : "DESC")}"
-        );
-
-        var orderByString = string.Join(", ", orderByFields);
-
+        // 将外部传入的排序字段（C# 属性名）解析为实体属性，再通过 OrderByPropertyName 映射为物理列名。
+        // 不能把 s.Field 直接拼进 OrderBy(string)：那会绕过列名映射（列名标准化为 snake_case 后属性名 ≠ 列名，
+        // 会触发“column does not exist”），且原始字符串拼接存在 SQL 注入风险。
         try
         {
-            query = query.OrderBy(orderByString);
-            Console.WriteLine(query.ToSqlString());
+            foreach (var sort in orderedSorts)
+            {
+                var property = typeof(T).GetProperty(sort.Field,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+                // 未知字段直接忽略，与过滤/关键字搜索的容错策略保持一致
+                if (property is null)
+                {
+                    LogHelper.Warn($"[SqlSugar.ApplySorts] 忽略未知排序字段：{sort.Field}");
+                    continue;
+                }
+
+                var orderByType = sort.Direction == SortDirection.Ascending ? OrderByType.Asc : OrderByType.Desc;
+                query = query.OrderByPropertyName(property.Name, orderByType);
+            }
         }
         catch (Exception ex)
         {

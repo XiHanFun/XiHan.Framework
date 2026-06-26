@@ -51,30 +51,30 @@ public abstract class SugarCreationEntity<TKey> : CreationEntityBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发")]
     public override long RowVersion { get; set; }
 
     /// <summary>
     /// 主键
     /// </summary>
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
+    [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
     public override TKey BasicId { get; protected set; } = default!;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
+    [SugarColumn(ColumnName = "Created_Time", IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
     public override DateTimeOffset CreatedTime { get; set; }
 
     /// <summary>
     /// 创建者唯一标识
     /// </summary>
-    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
+    [SugarColumn(ColumnName = "Created_Id", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
     public override TKey? CreatedId { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    [SugarColumn(IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
+    [SugarColumn(ColumnName = "Created_By", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
     public override string? CreatedBy { get; set; }
 }

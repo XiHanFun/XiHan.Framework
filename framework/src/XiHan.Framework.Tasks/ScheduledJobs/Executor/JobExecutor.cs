@@ -131,7 +131,15 @@ public class JobExecutor : IJobExecutor
             jobInstance.ErrorMessage = ex.Message;
             jobInstance.StackTrace = ex.StackTrace;
 
-            await _jobStore.UpdateJobStatusAsync(jobInstance.InstanceId, JobStatus.Failed);
+            // 状态回写失败不得吞掉历史落档（否则失败的执行连一条 JobHistory 痕迹都不留，无法排障）
+            try
+            {
+                await _jobStore.UpdateJobStatusAsync(jobInstance.InstanceId, JobStatus.Failed);
+            }
+            catch (Exception storeEx)
+            {
+                _logger.LogError(storeEx, "更新任务失败状态时出错: {JobName} ({InstanceId})", jobInstance.JobName, jobInstance.InstanceId);
+            }
 
             var result = JobResult.Failure(ex.Message, ex, endTime - startTime);
             await SaveHistoryAsync(jobInstance, result);

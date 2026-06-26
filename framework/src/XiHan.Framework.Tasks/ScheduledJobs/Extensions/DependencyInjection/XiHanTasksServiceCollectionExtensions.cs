@@ -15,7 +15,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 using XiHan.Framework.Tasks.ScheduledJobs.Executor;
@@ -62,15 +61,8 @@ public static class XiHanTasksServiceCollectionExtensions
 
         // 注册核心服务
         services.TryAddSingleton<IJobStore, InMemoryJobStore>();
-        services.TryAddSingleton<InMemoryLockProvider>();
-        services.TryAddSingleton<DistributedJobLockProvider>();
-        services.TryAddSingleton<IJobLockProvider>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<XiHanJobOptions>>().Value;
-            return options.EnableDistributedLock
-                ? sp.GetRequiredService<DistributedJobLockProvider>()
-                : sp.GetRequiredService<InMemoryLockProvider>();
-        });
+        // 任务锁：复用 Caching 模块统一的分布式锁（Redis 跨实例 / 进程内回退由其按 Redis 配置自动选择，XiHanJobOptions.EnableDistributedLock 已不再需要）
+        services.TryAddSingleton<IJobLockProvider, CachingJobLockProvider>();
         services.TryAddSingleton<IJobScheduler, CompositeJobScheduler>();
         services.TryAddSingleton<IJobExecutor, JobExecutor>();
         services.TryAddSingleton<JobMetricsProvider>();
@@ -98,20 +90,20 @@ public static class XiHanTasksServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 使用内存锁
+    /// 使用任务锁（兼容旧 API）。实际锁后端（Redis 跨实例 / 进程内回退）由 Caching 统一的分布式锁按 Redis 配置自动选择。
     /// </summary>
     public static XiHanJobBuilder UseInMemoryLock(this XiHanJobBuilder builder)
     {
-        return builder.UseLockProvider<InMemoryLockProvider>();
+        return builder.UseLockProvider<CachingJobLockProvider>();
     }
 
     /// <summary>
-    /// 使用分布式锁（基于 Redis）
+    /// 使用任务锁（兼容旧 API）。实际锁后端（Redis 跨实例 / 进程内回退）由 Caching 统一的分布式锁按 Redis 配置自动选择。
     /// </summary>
     /// <param name="builder">任务构建器</param>
     /// <returns>任务构建器</returns>
     public static XiHanJobBuilder UseDistributedLock(this XiHanJobBuilder builder)
     {
-        return builder.UseLockProvider<DistributedJobLockProvider>();
+        return builder.UseLockProvider<CachingJobLockProvider>();
     }
 }
