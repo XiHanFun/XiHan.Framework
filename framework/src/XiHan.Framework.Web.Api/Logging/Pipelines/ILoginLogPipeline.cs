@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ILoginLogPipeline
-// Guid:d0f5g84b-6g3h-4e9d-ch18-4i6e9d1f5g7h
+// Guid:02ac02fe-1a6d-4ad6-afa2-b580a31ee8ae
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/05/03 23:00:00

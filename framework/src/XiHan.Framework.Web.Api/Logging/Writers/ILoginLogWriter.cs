@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:ILoginLogWriter
-// Guid:b8d3e629-4e1f-4c7b-af96-2g4c7b9d3e5f
+// Guid:a5324b2d-3c1e-4930-ba02-c422bb887198
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/05/03 23:00:00
