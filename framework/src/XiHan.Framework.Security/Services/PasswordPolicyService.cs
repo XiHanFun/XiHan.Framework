@@ -172,14 +172,18 @@ public partial class PasswordPolicyService : IPasswordPolicyService
     /// <summary>
     /// 检查新密码是否与历史密码重复
     /// </summary>
-    /// <param name="newPasswordHash">新密码哈希</param>
+    /// <remarks>
+    /// 入参为新密码<b>明文</b>：历史存储的是 PBKDF2 加盐哈希，必须用 VerifyPassword(历史哈希, 明文) 逐条比对，
+    /// 不能直接比较哈希字符串（同一明文每次哈希结果不同）。
+    /// </remarks>
+    /// <param name="newPassword">新密码明文</param>
     /// <param name="userId">用户标识</param>
     /// <param name="historyCount">历史记录数</param>
     /// <param name="ct">取消令牌</param>
     /// <returns>是否重复使用旧密码</returns>
-    public async Task<bool> IsPasswordReusedAsync(string newPasswordHash, long userId, int historyCount, CancellationToken ct = default)
+    public async Task<bool> IsPasswordReusedAsync(string newPassword, long userId, int historyCount, CancellationToken ct = default)
     {
-        if (string.IsNullOrEmpty(newPasswordHash) || historyCount <= 0)
+        if (string.IsNullOrEmpty(newPassword) || historyCount <= 0)
         {
             return false;
         }
@@ -188,7 +192,7 @@ public partial class PasswordPolicyService : IPasswordPolicyService
 
         foreach (var historicalHash in recentHashes)
         {
-            if (_passwordHasher.VerifyPassword(historicalHash, newPasswordHash))
+            if (_passwordHasher.VerifyPassword(historicalHash, newPassword))
             {
                 return true;
             }

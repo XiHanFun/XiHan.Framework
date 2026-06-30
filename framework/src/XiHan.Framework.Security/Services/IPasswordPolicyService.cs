@@ -31,10 +31,14 @@ public interface IPasswordPolicyService
     /// <summary>
     /// 检查新密码是否与历史密码重复
     /// </summary>
-    /// <param name="newPasswordHash">新密码哈希</param>
+    /// <remarks>
+    /// 入参为新密码<b>明文</b>：历史存储的是 PBKDF2 加盐哈希，同一明文每次哈希结果不同，
+    /// 必须用 <c>VerifyPassword(历史哈希, 明文)</c> 逐条比对，不能直接比较哈希字符串。
+    /// </remarks>
+    /// <param name="newPassword">新密码明文</param>
     /// <param name="userId">用户标识</param>
     /// <param name="historyCount">历史记录数</param>
     /// <param name="ct">取消令牌</param>
     /// <returns>是否重复使用旧密码</returns>
-    Task<bool> IsPasswordReusedAsync(string newPasswordHash, long userId, int historyCount, CancellationToken ct = default);
+    Task<bool> IsPasswordReusedAsync(string newPassword, long userId, int historyCount, CancellationToken ct = default);
 }
