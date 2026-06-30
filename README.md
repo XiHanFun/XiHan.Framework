@@ -345,6 +345,15 @@ dotnet package search XiHan.Framework
 
 欢迎提交 Issue 和 Pull Request。
 
+## 捐赠
+
+<table>
+  <tr>
+    <td align="center"><img src="./assets/alipay.png" width="200" /><br/>支付宝</td>
+    <td align="center"><img src="./assets/weixinpay.png" width="200" /><br/>微信</td>
+  </tr>
+</table>
+
 ## 开源协议
 
 [MIT License](./LICENSE) - Copyright (c) 2021-Present XiHanFun and ZhaiFanhua
