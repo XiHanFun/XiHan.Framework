@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
@@ -26,6 +27,7 @@ using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Middlewares;
+using XiHan.Framework.Web.Api.RateLimiting;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
@@ -62,6 +64,7 @@ public class XiHanWebApiModule : XiHanModule
         });
 
         services.AddXiHanWebApi(config);
+        services.AddXiHanRateLimiting(config);
     }
 
     /// <summary>
@@ -83,6 +86,13 @@ public class XiHanWebApiModule : XiHanModule
         app.UseMiddleware<XiHanExceptionLoggingMiddleware>();
         app.UseMiddleware<XiHanRequestLoggingMiddleware>();
         app.UseRouting();
+
+        // 入站限流：仅 XiHan:Web:RateLimiting:IsEnabled=true 时启用；置于路由后、鉴权前，尽早拒绝超额请求
+        if (context.ServiceProvider.GetRequiredService<IOptions<XiHanRateLimitingOptions>>().Value.IsEnabled)
+        {
+            app.UseRateLimiter();
+        }
+
         app.UseCors();
         // 本地对象存储静态文件服务：在鉴权前注册，使本地存储的公开资源（头像等）可经静态 URL 匿名访问。
         // 目录/路径与 LocalStorageOptions（XiHan:ObjectStorage:Local）约定一致，无配置时回退默认值。
