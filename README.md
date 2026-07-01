@@ -345,6 +345,16 @@ dotnet package search XiHan.Framework
 
 欢迎提交 Issue 和 Pull Request。
 
+## 诚挚致谢
+
+排名不分先后。
+
+| 项目                                                       | 致谢                                           |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| [Abp](https://github.com/abpframework/abp)                 | 作为部分架构和逻辑灵感来源（启蒙项目）         |
+| [Furion](https://gitee.com/dotnetchina/Furion)             | 作为部分架构和逻辑灵感来源                     |
+| 其他第三方依赖                                             | 作为项目功能丰富与拓展的基石                   |
+
 ## 支持&赞助
 
 如果此项目对你的开发有助益，也欢迎请作者一杯咖啡。
@@ -356,6 +366,12 @@ dotnet package search XiHan.Framework
   </tr>
 </table>
 
-## 开源协议
+## 版权&授权
 
-[MIT License](./LICENSE) - Copyright (c) 2021-Present XiHanFun and ZhaiFanhua
+Copyright (c) 2026 XiHanFun and ZhaiFanhua
+
+本项目采用 MIT 授权，详见 [License](./LICENSE)
+
+XiHan.Framework Logo、XiHan.Framework名称归作者所有，第三方依赖和第三方服务分别遵循其各自授权与服务条款。
+
+项目仅供学习参考，作者不承担任何软件的使用风险。
