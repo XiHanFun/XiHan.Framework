@@ -61,6 +61,8 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped(sp => sp.GetRequiredService<ISqlSugarClientResolver>().GetCurrentClient());
         // SqlSugar DataExecuting AOP：主键、租户和审计字段注入
         services.TryAddSingleton<SqlSugarDataExecutingHandler>();
+        // 连接配置器：统一为静态/运行时动态连接装配全局过滤器与 AOP
+        services.TryAddSingleton<ISqlSugarConnectionConfigurator, SqlSugarConnectionConfigurator>();
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
@@ -129,11 +131,9 @@ public static class XiHanDataServiceCollectionExtensions
     /// <returns></returns>
     private static SqlSugarScope CreateScope(IServiceProvider services)
     {
-        var scopeFactory = services.GetRequiredService<IServiceScopeFactory>();
         var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
         var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
-        var currentTenantAccessor = services.GetRequiredService<ICurrentTenantAccessor>();
-        var dataExecutingHandler = services.GetRequiredService<SqlSugarDataExecutingHandler>();
+        var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
 
         var connectionConfigs = options.ConnectionConfigs
             .Select(connConfig => new ConnectionConfig
@@ -156,13 +156,12 @@ public static class XiHanDataServiceCollectionExtensions
             foreach (var config in connectionConfigs)
             {
                 var dbProvider = client.GetConnectionScope(config.ConfigId);
-                ApplySugarGlobalFilters(dbProvider, options, currentTenantAccessor);
-                SetSugarAop(scopeFactory, dbProvider, options, dataExecutingHandler);
+                configurator.Configure(dbProvider);
             }
         });
     }
 
-    private static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
+    internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
     {
         rawSettings ??= new ConnMoreSettings();
         rawSettings.IsAutoUpdateQueryFilter = options.EnableAutoUpdateQueryFilter;
@@ -176,7 +175,7 @@ public static class XiHanDataServiceCollectionExtensions
     /// <param name="provider"></param>
     /// <param name="options"></param>
     /// <param name="currentTenantAccessor"></param>
-    private static void ApplySugarGlobalFilters(
+    internal static void ApplySugarGlobalFilters(
         SqlSugarScopeProvider provider,
         XiHanSqlSugarCoreOptions options,
         ICurrentTenantAccessor currentTenantAccessor)
@@ -223,7 +222,7 @@ public static class XiHanDataServiceCollectionExtensions
     /// <param name="dbProvider"></param>
     /// <param name="options"></param>
     /// <param name="dataExecutingHandler"></param>
-    private static void SetSugarAop(
+    internal static void SetSugarAop(
         IServiceScopeFactory scopeFactory,
         SqlSugarScopeProvider dbProvider,
         XiHanSqlSugarCoreOptions options,
