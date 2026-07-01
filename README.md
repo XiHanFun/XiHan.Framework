@@ -345,7 +345,9 @@ dotnet package search XiHan.Framework
 
 欢迎提交 Issue 和 Pull Request。
 
-## 捐赠
+## 支持&赞助
+
+如果此项目对你的开发有助益，也欢迎请作者一杯咖啡。
 
 <table>
   <tr>
