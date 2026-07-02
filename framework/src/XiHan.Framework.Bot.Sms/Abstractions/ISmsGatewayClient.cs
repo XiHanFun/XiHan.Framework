@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Sms;
+using XiHan.Framework.Bot.Sms.Enums;
+
+namespace XiHan.Framework.Bot.Sms.Abstractions;
 
 /// <summary>
 /// 短信网关客户端（绑定一条 <see cref="SmsChannelConfig"/> 配置，由 <see cref="ISmsGatewayResolver"/> 按指纹构建缓存）

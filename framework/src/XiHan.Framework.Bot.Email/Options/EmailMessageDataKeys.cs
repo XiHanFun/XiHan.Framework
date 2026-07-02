@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Email;
+namespace XiHan.Framework.Bot.Email.Options;
 
 /// <summary>
 /// 邮件消息 Data 键名常量
