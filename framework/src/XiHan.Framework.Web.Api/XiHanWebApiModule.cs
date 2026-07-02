@@ -25,6 +25,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Localization.Extensions.ApplicationBuilder;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.RateLimiting;
@@ -65,6 +66,7 @@ public class XiHanWebApiModule : XiHanModule
 
         services.AddXiHanWebApi(config);
         services.AddXiHanRateLimiting(config);
+        services.AddXiHanCircuitBreaking(config);
     }
 
     /// <summary>
@@ -91,6 +93,12 @@ public class XiHanWebApiModule : XiHanModule
         if (context.ServiceProvider.GetRequiredService<IOptions<XiHanRateLimitingOptions>>().Value.IsEnabled)
         {
             app.UseRateLimiter();
+        }
+
+        // 入站熔断：仅 XiHan:Web:CircuitBreaking:IsEnabled=true 时启用；置于限流后、鉴权前，过载时快速失败保护实例
+        if (context.ServiceProvider.GetRequiredService<IOptions<XiHanCircuitBreakingOptions>>().Value.IsEnabled)
+        {
+            app.UseMiddleware<XiHanCircuitBreakingMiddleware>();
         }
 
         app.UseCors();
