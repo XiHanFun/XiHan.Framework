@@ -31,6 +31,8 @@ public class XiHanBotLarkModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddXiHanBotLark();
+        var services = context.Services;
+
+        services.AddXiHanBotLark();
     }
 }

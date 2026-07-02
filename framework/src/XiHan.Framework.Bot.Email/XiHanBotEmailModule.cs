@@ -31,6 +31,8 @@ public class XiHanBotEmailModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddXiHanBotEmail();
+        var services = context.Services;
+
+        services.AddXiHanBotEmail();
     }
 }
