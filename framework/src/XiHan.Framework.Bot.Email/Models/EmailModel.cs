@@ -15,7 +15,7 @@
 using System.Net.Mail;
 using System.Text;
 
-namespace XiHan.Framework.Bot.Email;
+namespace XiHan.Framework.Bot.Email.Models;
 
 /// <summary>
 /// EmailFromModel

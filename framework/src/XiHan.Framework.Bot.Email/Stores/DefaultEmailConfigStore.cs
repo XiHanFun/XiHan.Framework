@@ -13,8 +13,10 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Bot.Email.Abstractions;
+using XiHan.Framework.Bot.Email.Options;
 
-namespace XiHan.Framework.Bot.Email;
+namespace XiHan.Framework.Bot.Email.Stores;
 
 /// <summary>
 /// 默认邮件配置存储（基于选项）

@@ -16,6 +16,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Extensions;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Sms.Abstractions;
+using XiHan.Framework.Bot.Sms.Messaging;
+using XiHan.Framework.Bot.Sms.Stores;
 
 namespace XiHan.Framework.Bot.Sms.Extensions;
 

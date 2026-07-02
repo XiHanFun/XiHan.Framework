@@ -16,8 +16,10 @@ using TencentCloud.Common;
 using TencentCloud.Common.Profile;
 using TencentCloud.Sms.V20210111;
 using TencentCloud.Sms.V20210111.Models;
+using XiHan.Framework.Bot.Sms.Abstractions;
+using XiHan.Framework.Bot.Sms.Enums;
 
-namespace XiHan.Framework.Bot.Sms;
+namespace XiHan.Framework.Bot.Sms.Messaging;
 
 /// <summary>
 /// 腾讯云短信网关客户端（V20210111 新版接口）

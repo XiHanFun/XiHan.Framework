@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Sms;
+using XiHan.Framework.Bot.Sms.Options;
+
+namespace XiHan.Framework.Bot.Sms.Abstractions;
 
 /// <summary>
 /// 短信网关解析器

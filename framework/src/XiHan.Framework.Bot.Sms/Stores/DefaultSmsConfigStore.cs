@@ -12,7 +12,10 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Sms;
+using XiHan.Framework.Bot.Sms.Abstractions;
+using XiHan.Framework.Bot.Sms.Options;
+
+namespace XiHan.Framework.Bot.Sms.Stores;
 
 /// <summary>
 /// 默认短信配置存储（恒未配置）

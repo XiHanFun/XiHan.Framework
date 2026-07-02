@@ -13,8 +13,11 @@
 #endregion <<版权版本注释>>
 
 using System.Text.Json;
+using XiHan.Framework.Bot.Sms.Abstractions;
+using XiHan.Framework.Bot.Sms.Options;
+using XiHan.Framework.Bot.Sms.Enums;
 
-namespace XiHan.Framework.Bot.Sms;
+namespace XiHan.Framework.Bot.Sms.Messaging;
 
 /// <summary>
 /// 短信模板映射项（内部模板码 → 服务商模板码 + 参数序）
