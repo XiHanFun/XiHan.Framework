@@ -3,49 +3,49 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BotProviderNames
-// Guid:fe0ece21-1c4f-4b71-8d2c-c4fc0e7ef5a2
+// FileName:EmailOptions
+// Guid:2dd34969-3cba-4f78-a411-4471c2d704c9
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2026/03/11 17:44:03
+// CreateTime:2026/03/11 17:48:44
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Consts;
+namespace XiHan.Framework.Bot.Email;
 
 /// <summary>
-/// 提供者名称常量
+/// 邮件提供者配置
 /// </summary>
-public static class BotProviderNames
+public class EmailOptions
 {
     /// <summary>
-    /// 钉钉提供者名称
+    /// 是否启用该提供者
     /// </summary>
-    public const string DingTalk = "DingTalk";
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
-    /// 飞书提供者名称
+    /// 发件人配置
     /// </summary>
-    public const string Lark = "Lark";
+    public EmailFromModel From { get; set; } = new();
 
     /// <summary>
-    /// 企业微信提供者名称
+    /// 默认收件人列表
     /// </summary>
-    public const string WeCom = "WeCom";
+    public List<string> To { get; set; } = [];
 
     /// <summary>
-    /// Telegram提供者名称
+    /// 默认抄送列表
     /// </summary>
-    public const string Telegram = "Telegram";
+    public List<string> Cc { get; set; } = [];
 
     /// <summary>
-    /// 邮件提供者名称
+    /// 默认密送列表
     /// </summary>
-    public const string Email = "Email";
+    public List<string> Bcc { get; set; } = [];
 
     /// <summary>
-    /// 短信提供者名称
+    /// 是否使用 HTML 正文
     /// </summary>
-    public const string Sms = "Sms";
+    public bool IsBodyHtml { get; set; } = true;
 }

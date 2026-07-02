@@ -63,9 +63,14 @@ public class BotResult
     /// <summary>
     /// 成功结果
     /// </summary>
-    public static BotResult Success(object? data, string? provider = null)
+    public static BotResult Success(object? data = null, string? provider = null)
     {
-        return From(Success(data), provider);
+        return new BotResult
+        {
+            Code = BotResultCodes.Success,
+            Data = data,
+            Provider = provider
+        };
     }
 
     /// <summary>
@@ -73,7 +78,12 @@ public class BotResult
     /// </summary>
     public static BotResult BadRequest(string? errorMessage = null, string? provider = null)
     {
-        return From(BadRequest(errorMessage), provider);
+        return new BotResult
+        {
+            Code = BotResultCodes.BadRequest,
+            Message = errorMessage,
+            Provider = provider
+        };
     }
 
     /// <summary>
@@ -81,6 +91,11 @@ public class BotResult
     /// </summary>
     public static BotResult Failed(string? errorMessage = null, string? provider = null)
     {
-        return From(Failed(errorMessage), provider);
+        return new BotResult
+        {
+            Code = BotResultCodes.Failed,
+            Message = errorMessage,
+            Provider = provider
+        };
     }
 }
