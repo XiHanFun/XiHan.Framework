@@ -16,6 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Extensions;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.WeCom.Abstractions;
+using XiHan.Framework.Bot.WeCom.Messaging;
+using XiHan.Framework.Bot.WeCom.Options;
+using XiHan.Framework.Bot.WeCom.Stores;
 
 namespace XiHan.Framework.Bot.WeCom.Extensions;
 
