@@ -15,6 +15,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Telegram.Abstractions;
+using XiHan.Framework.Bot.Telegram.Messaging;
+using XiHan.Framework.Bot.Telegram.Options;
+using XiHan.Framework.Bot.Telegram.Stores;
 
 namespace XiHan.Framework.Bot.Telegram.Extensions.DependencyInjection;
 

@@ -21,8 +21,10 @@ using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Bot.Helpers;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Telegram.Abstractions;
+using XiHan.Framework.Bot.Telegram.Options;
 
-namespace XiHan.Framework.Bot.Telegram;
+namespace XiHan.Framework.Bot.Telegram.Messaging;
 
 /// <summary>
 /// Telegram Bot 提供者

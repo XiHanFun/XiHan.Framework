@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Telegram;
+using XiHan.Framework.Bot.Telegram.Options;
+
+namespace XiHan.Framework.Bot.Telegram.Abstractions;
 
 /// <summary>
 /// Telegram 配置存储
