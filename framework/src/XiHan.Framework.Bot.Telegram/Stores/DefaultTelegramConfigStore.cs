@@ -13,8 +13,10 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Bot.Telegram.Abstractions;
+using XiHan.Framework.Bot.Telegram.Options;
 
-namespace XiHan.Framework.Bot.Telegram;
+namespace XiHan.Framework.Bot.Telegram.Stores;
 
 /// <summary>
 /// 默认 Telegram 配置存储（基于选项）
