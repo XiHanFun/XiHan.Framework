@@ -83,7 +83,8 @@ public sealed class BotAlertBuilder
     /// <summary>
     /// 发送告警
     /// </summary>
-    public Task SendAsync()
+    /// <returns>调度聚合结果</returns>
+    public Task<BotDispatchResult> SendAsync()
     {
         return _channels.Count == 0
             ? _client.SendAsync(_message)

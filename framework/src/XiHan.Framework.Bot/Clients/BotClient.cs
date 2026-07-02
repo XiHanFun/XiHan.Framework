@@ -38,7 +38,7 @@ public class BotClient : IBotClient
     /// <summary>
     /// 向所有提供者发送消息
     /// </summary>
-    public Task SendAsync(BotMessage message)
+    public Task<BotDispatchResult> SendAsync(BotMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
         return _dispatcher.DispatchAsync(message);
@@ -47,7 +47,7 @@ public class BotClient : IBotClient
     /// <summary>
     /// 向指定渠道/提供者发送消息
     /// </summary>
-    public Task SendAsync(BotMessage message, params string[] channels)
+    public Task<BotDispatchResult> SendAsync(BotMessage message, params string[] channels)
     {
         ArgumentNullException.ThrowIfNull(message);
         return _dispatcher.DispatchAsync(message, channels);
@@ -56,28 +56,31 @@ public class BotClient : IBotClient
     /// <summary>
     /// 按模板名称发送
     /// </summary>
-    public async Task SendTemplateAsync(string templateName, object? model = null, params string[] channels)
+    public async Task<BotDispatchResult> SendTemplateAsync(string templateName, object? model = null, params string[] channels)
     {
         var message = await _templateEngine.RenderAsync(templateName, model);
-        await SendAsync(message, channels);
+        return await SendAsync(message, channels);
     }
 
     /// <summary>
-    /// 批量发送消息
+    /// 批量发送消息（逐条发送，返回逐条聚合结果）
     /// </summary>
-    public async Task SendBatchAsync(IEnumerable<BotMessage> messages, params string[] channels)
+    public async Task<IReadOnlyList<BotDispatchResult>> SendBatchAsync(IEnumerable<BotMessage> messages, params string[] channels)
     {
         ArgumentNullException.ThrowIfNull(messages);
+        var results = new List<BotDispatchResult>();
         foreach (var message in messages)
         {
-            await SendAsync(message, channels);
+            results.Add(await SendAsync(message, channels));
         }
+
+        return results;
     }
 
     /// <summary>
     /// 延迟发送消息
     /// </summary>
-    public async Task SendDelayedAsync(BotMessage message, TimeSpan delay, params string[] channels)
+    public async Task<BotDispatchResult> SendDelayedAsync(BotMessage message, TimeSpan delay, params string[] channels)
     {
         ArgumentNullException.ThrowIfNull(message);
         if (delay > TimeSpan.Zero)
@@ -85,6 +88,6 @@ public class BotClient : IBotClient
             await Task.Delay(delay);
         }
 
-        await SendAsync(message, channels);
+        return await SendAsync(message, channels);
     }
 }
