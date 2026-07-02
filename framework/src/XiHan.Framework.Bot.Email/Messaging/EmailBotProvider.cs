@@ -85,7 +85,7 @@ public class EmailBotProvider : IBotProvider
             BccMail = bcc
         };
 
-        var success = await bot.SendMail(toModel);
+        var success = await bot.SendMail(toModel, context.CancellationToken);
         return success
             ? BotResult.Success("Email sent.", Name)
             : BotResult.Failed("Email send failed.", Name);

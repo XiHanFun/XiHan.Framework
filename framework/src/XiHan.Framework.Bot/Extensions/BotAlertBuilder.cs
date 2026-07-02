@@ -83,11 +83,12 @@ public sealed class BotAlertBuilder
     /// <summary>
     /// 发送告警
     /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>调度聚合结果</returns>
-    public Task<BotDispatchResult> SendAsync()
+    public Task<BotDispatchResult> SendAsync(CancellationToken cancellationToken = default)
     {
         return _channels.Count == 0
-            ? _client.SendAsync(_message)
-            : _client.SendAsync(_message, _channels.ToArray());
+            ? _client.SendAsync(_message, cancellationToken)
+            : _client.SendAsync(_message, _channels, cancellationToken);
     }
 }

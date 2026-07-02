@@ -67,27 +67,27 @@ public class LarkBotProvider : IBotProvider
             case BotMessageType.Card:
                 if (BotMessageHelper.TryGetData(message, LarkMessageDataKeys.LarkInterActive, out LarkInterActive? card) && card is not null)
                 {
-                    return BotResult.From(await bot.InterActiveMessage(card), Name);
+                    return BotResult.From(await bot.InterActiveMessage(card, context.CancellationToken), Name);
                 }
                 break;
 
             case BotMessageType.Image:
                 if (BotMessageHelper.TryGetData(message, LarkMessageDataKeys.LarkImage, out LarkImage? image) && image is not null)
                 {
-                    return BotResult.From(await bot.ImageMessage(image), Name);
+                    return BotResult.From(await bot.ImageMessage(image, context.CancellationToken), Name);
                 }
                 break;
         }
 
         if (BotMessageHelper.TryGetData(message, LarkMessageDataKeys.LarkPost, out LarkPost? post) && post is not null)
         {
-            return BotResult.From(await bot.PostMessage(post), Name);
+            return BotResult.From(await bot.PostMessage(post, context.CancellationToken), Name);
         }
 
         var text = new LarkText
         {
             Text = message.Content
         };
-        return BotResult.From(await bot.TextMessage(text), Name);
+        return BotResult.From(await bot.TextMessage(text, context.CancellationToken), Name);
     }
 }

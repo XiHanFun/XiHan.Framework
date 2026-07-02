@@ -50,12 +50,13 @@ public class DingTalkBot
     /// </summary>
     /// <param name="dingTalkText">内容</param>
     /// <param name="dingTalkAt">指定目标人群</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<BotResult> TextMessage(DingTalkText dingTalkText, DingTalkAt? dingTalkAt)
+    public async Task<BotResult> TextMessage(DingTalkText dingTalkText, DingTalkAt? dingTalkAt, CancellationToken cancellationToken = default)
     {
         var msgType = DingTalkMsgTypeEnum.Text.GetDescription();
         dingTalkText.Content = _keyWord + dingTalkText.Content;
-        var result = await Send(new { msgtype = msgType, text = dingTalkText, at = dingTalkAt });
+        var result = await Send(new { msgtype = msgType, text = dingTalkText, at = dingTalkAt }, cancellationToken);
         return result;
     }
 
@@ -63,11 +64,12 @@ public class DingTalkBot
     /// 发送链接消息
     /// </summary>
     /// <param name="dingTalkLink"></param>
-    public async Task<BotResult> LinkMessage(DingTalkLink dingTalkLink)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> LinkMessage(DingTalkLink dingTalkLink, CancellationToken cancellationToken = default)
     {
         var msgType = DingTalkMsgTypeEnum.Link.GetDescription();
         dingTalkLink.Title = _keyWord + dingTalkLink.Title;
-        var result = await Send(new { msgtype = msgType, link = dingTalkLink });
+        var result = await Send(new { msgtype = msgType, link = dingTalkLink }, cancellationToken);
         return result;
     }
 
@@ -76,11 +78,12 @@ public class DingTalkBot
     /// </summary>
     /// <param name="dingTalkMarkdown">Markdown内容</param>
     /// <param name="dingTalkAt">指定目标人群</param>
-    public async Task<BotResult> MarkdownMessage(DingTalkMarkdown dingTalkMarkdown, DingTalkAt? dingTalkAt)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> MarkdownMessage(DingTalkMarkdown dingTalkMarkdown, DingTalkAt? dingTalkAt, CancellationToken cancellationToken = default)
     {
         var msgType = DingTalkMsgTypeEnum.Markdown.GetDescription();
         dingTalkMarkdown.Title = _keyWord + dingTalkMarkdown.Title;
-        var result = await Send(new { msgtype = msgType, markdown = dingTalkMarkdown, at = dingTalkAt });
+        var result = await Send(new { msgtype = msgType, markdown = dingTalkMarkdown, at = dingTalkAt }, cancellationToken);
         return result;
     }
 
@@ -89,12 +92,13 @@ public class DingTalkBot
     /// 按钮方案二选一，设置单个按钮方案后多个按钮方案会无效
     /// </summary>
     /// <param name="dingTalkActionCard">ActionCard内容</param>
-    public async Task<BotResult> ActionCardMessage(DingTalkActionCard dingTalkActionCard)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> ActionCardMessage(DingTalkActionCard dingTalkActionCard, CancellationToken cancellationToken = default)
     {
         var msgType = DingTalkMsgTypeEnum.ActionCard.GetDescription();
         dingTalkActionCard.Title = _keyWord + dingTalkActionCard.Title;
         dingTalkActionCard.Btns?.ForEach(btn => btn.Title = _keyWord + btn.Title);
-        var result = await Send(new { msgtype = msgType, actionCard = dingTalkActionCard });
+        var result = await Send(new { msgtype = msgType, actionCard = dingTalkActionCard }, cancellationToken);
         return result;
     }
 
@@ -102,11 +106,12 @@ public class DingTalkBot
     /// 发送卡片菜单消息
     /// </summary>
     /// <param name="dingTalkFeedCard">FeedCard内容</param>
-    public async Task<BotResult> FeedCardMessage(DingTalkFeedCard dingTalkFeedCard)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> FeedCardMessage(DingTalkFeedCard dingTalkFeedCard, CancellationToken cancellationToken = default)
     {
         var msgType = DingTalkMsgTypeEnum.FeedCard.GetDescription();
         dingTalkFeedCard.Links?.ForEach(link => link.Title = _keyWord + link.Title);
-        var result = await Send(new { msgtype = msgType, feedCard = dingTalkFeedCard });
+        var result = await Send(new { msgtype = msgType, feedCard = dingTalkFeedCard }, cancellationToken);
         return result;
     }
 
@@ -114,8 +119,9 @@ public class DingTalkBot
     /// 钉钉执行发送消息
     /// </summary>
     /// <param name="objSend"></param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    private async Task<BotResult> Send(object objSend)
+    private async Task<BotResult> Send(object objSend, CancellationToken cancellationToken = default)
     {
         // 把 【timestamp + "\n" + 密钥】 当做签名字符串
         var timeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -124,7 +130,7 @@ public class DingTalkBot
 
         // 发起请求
         var url = _url + $"&timestamp={timeStamp}&sign={sign}";
-        var request = await url.AsHttp().SetJsonBody(objSend).PostAsync<DingTalkResultInfoDto>();
+        var request = await url.AsHttp().SetJsonBody(objSend).PostAsync<DingTalkResultInfoDto>(cancellationToken);
 
         if (!request.IsSuccess || request.Data == null)
         {
