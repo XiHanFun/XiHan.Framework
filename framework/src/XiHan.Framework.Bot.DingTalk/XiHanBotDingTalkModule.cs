@@ -31,6 +31,8 @@ public class XiHanBotDingTalkModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddXiHanBotDingTalk();
+        var services = context.Services;
+
+        services.AddXiHanBotDingTalk();
     }
 }
