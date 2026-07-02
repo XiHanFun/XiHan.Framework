@@ -29,6 +29,11 @@
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
     <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.DingTalk/XiHan.Framework.Bot.DingTalk.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.Email/XiHan.Framework.Bot.Email.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.Lark/XiHan.Framework.Bot.Lark.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.Telegram/XiHan.Framework.Bot.Telegram.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.WeCom/XiHan.Framework.Bot.WeCom.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
     <Project Path="src/XiHan.Framework.Castle/XiHan.Framework.Castle.csproj" />
     <Project Path="src/XiHan.Framework.Data/XiHan.Framework.Data.csproj" />

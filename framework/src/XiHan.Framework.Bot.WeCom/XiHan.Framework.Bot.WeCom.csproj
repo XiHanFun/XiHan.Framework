@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Bot.WeCom</Title>
+        <AssemblyName>XiHan.Framework.Bot.WeCom</AssemblyName>
+        <PackageId>XiHan.Framework.Bot.WeCom</PackageId>
+        <Description>曦寒框架机器人企业微信库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+    </ItemGroup>
+
+</Project>
