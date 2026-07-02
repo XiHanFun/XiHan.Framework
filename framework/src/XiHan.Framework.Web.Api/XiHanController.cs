@@ -62,12 +62,12 @@ public abstract class XiHanController : Controller, IAvoidDuplicateCrossCuttingC
     /// <param name="statusCode">HTTP 状态码</param>
     /// <returns></returns>
     protected virtual IActionResult Fail<T>(string message)
-        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.Fail(message, HttpContext.TraceIdentifier));
+        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.BadRequest(message, HttpContext.TraceIdentifier));
 
     /// <summary>
     /// 返回统一失败响应
     /// </summary>
     /// <returns></returns>
     protected virtual IActionResult Fail()
-        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.Fail(null, HttpContext.TraceIdentifier));
+        => StatusCode(StatusCodes.Status400BadRequest, ApiResponse.BadRequest(null, HttpContext.TraceIdentifier));
 }
