@@ -68,37 +68,37 @@ public class WeComBotProvider : IBotProvider
                 {
                     Content = message.Content
                 };
-                return BotResult.From(await bot.MarkdownMessage(markdown), Name);
+                return BotResult.From(await bot.MarkdownMessage(markdown, context.CancellationToken), Name);
 
             case BotMessageType.Image:
                 if (BotMessageHelper.TryGetData(message, WeComMessageDataKeys.WeComImage, out WeComImage? image) && image is not null)
                 {
-                    return BotResult.From(await bot.ImageMessage(image), Name);
+                    return BotResult.From(await bot.ImageMessage(image, context.CancellationToken), Name);
                 }
                 break;
 
             case BotMessageType.File:
                 if (BotMessageHelper.TryGetData(message, WeComMessageDataKeys.WeComFile, out WeComFile? file) && file is not null)
                 {
-                    return BotResult.From(await bot.FileMessage(file), Name);
+                    return BotResult.From(await bot.FileMessage(file, context.CancellationToken), Name);
                 }
                 break;
 
             case BotMessageType.Card:
                 if (BotMessageHelper.TryGetData(message, WeComMessageDataKeys.WeComTemplateCardTextNotice, out WeComTemplateCardTextNotice? textNotice) && textNotice is not null)
                 {
-                    return BotResult.From(await bot.TextNoticeMessage(textNotice), Name);
+                    return BotResult.From(await bot.TextNoticeMessage(textNotice, context.CancellationToken), Name);
                 }
                 if (BotMessageHelper.TryGetData(message, WeComMessageDataKeys.WeComTemplateCardNewsNotice, out WeComTemplateCardNewsNotice? newsNotice) && newsNotice is not null)
                 {
-                    return BotResult.From(await bot.NewsNoticeMessage(newsNotice), Name);
+                    return BotResult.From(await bot.NewsNoticeMessage(newsNotice, context.CancellationToken), Name);
                 }
                 break;
 
             case BotMessageType.Link:
                 if (BotMessageHelper.TryGetData(message, WeComMessageDataKeys.WeComNews, out WeComNews? news) && news is not null)
                 {
-                    return BotResult.From(await bot.NewsMessage(news), Name);
+                    return BotResult.From(await bot.NewsMessage(news, context.CancellationToken), Name);
                 }
                 break;
         }
@@ -108,7 +108,7 @@ public class WeComBotProvider : IBotProvider
             Content = message.Content
         };
         ApplyMentions(text, message);
-        return BotResult.From(await bot.TextMessage(text), Name);
+        return BotResult.From(await bot.TextMessage(text, context.CancellationToken), Name);
     }
 
     private static void ApplyMentions(WeComText text, BotMessage message)

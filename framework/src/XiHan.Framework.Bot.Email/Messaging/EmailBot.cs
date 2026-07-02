@@ -31,7 +31,9 @@ public class EmailBot(EmailFromModel fromModel)
     /// <summary>
     /// 发送邮件
     /// </summary>
-    public async Task<bool> SendMail(EmailToModel toModel)
+    /// <param name="toModel">收件模型</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<bool> SendMail(EmailToModel toModel, CancellationToken cancellationToken = default)
     {
         // 发件人显示名：优先使用 FromName，缺省回退为发件邮箱
         var fromDisplayName = string.IsNullOrWhiteSpace(fromModel.FromName) ? fromModel.FromMail : fromModel.FromName;
@@ -92,15 +94,20 @@ public class EmailBot(EmailFromModel fromModel)
             {
                 client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             }
-            await client.ConnectAsync(fromModel.SmtpHost, fromModel.SmtpPort, fromModel.UseSsl);
+            await client.ConnectAsync(fromModel.SmtpHost, fromModel.SmtpPort, fromModel.UseSsl, cancellationToken);
             if (!string.IsNullOrWhiteSpace(fromModel.FromUserName))
             {
-                await client.AuthenticateAsync(fromModel.FromUserName, fromModel.FromPassword);
+                await client.AuthenticateAsync(fromModel.FromUserName, fromModel.FromPassword, cancellationToken);
             }
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            await client.SendAsync(message, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
 
             return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 调用方取消：原样上抛，不吞成"发送失败"
+            throw;
         }
         catch (Exception ex)
         {

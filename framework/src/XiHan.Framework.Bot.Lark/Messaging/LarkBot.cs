@@ -60,12 +60,13 @@ public class LarkBot
     /// 发送文本消息
     /// </summary>
     /// <param name="larkText">内容</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public async Task<BotResult> TextMessage(LarkText larkText)
+    public async Task<BotResult> TextMessage(LarkText larkText, CancellationToken cancellationToken = default)
     {
         var msgType = LarkMsgTypeEnum.Text.GetDescription();
         larkText.Text = _keyWord + larkText.Text;
-        var result = await Send(msgType, ContentBodyKey, larkText);
+        var result = await Send(msgType, ContentBodyKey, larkText, cancellationToken);
         return result;
     }
 
@@ -73,7 +74,8 @@ public class LarkBot
     /// 发送富文本消息
     /// </summary>
     /// <param name="larkPost">Post内容</param>
-    public async Task<BotResult> PostMessage(LarkPost larkPost)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> PostMessage(LarkPost larkPost, CancellationToken cancellationToken = default)
     {
         var msgType = LarkMsgTypeEnum.Post.GetDescription();
         var objTList = new List<List<object>>();
@@ -115,7 +117,7 @@ public class LarkBot
         // 设置语言
         var post = new { zh_cn = zhCn };
         var postContent = new { post };
-        var result = await Send(msgType, ContentBodyKey, postContent);
+        var result = await Send(msgType, ContentBodyKey, postContent, cancellationToken);
         return result;
     }
 
@@ -123,10 +125,11 @@ public class LarkBot
     /// 发送图片消息
     /// </summary>
     /// <param name="larkImage">Image内容</param>
-    public async Task<BotResult> ImageMessage(LarkImage larkImage)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> ImageMessage(LarkImage larkImage, CancellationToken cancellationToken = default)
     {
         var msgType = LarkMsgTypeEnum.Image.GetDescription();
-        var result = await Send(msgType, ContentBodyKey, larkImage);
+        var result = await Send(msgType, ContentBodyKey, larkImage, cancellationToken);
         return result;
     }
 
@@ -134,11 +137,12 @@ public class LarkBot
     /// 发送消息卡片
     /// </summary>
     /// <param name="larkInterActive">InterActive内容</param>
-    public async Task<BotResult> InterActiveMessage(LarkInterActive larkInterActive)
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task<BotResult> InterActiveMessage(LarkInterActive larkInterActive, CancellationToken cancellationToken = default)
     {
         var msgType = LarkMsgTypeEnum.InterActive.GetDescription();
         larkInterActive.Header.Title.Content = _keyWord + larkInterActive.Header.Title.Content;
-        var result = await Send(msgType, CardBodyKey, larkInterActive);
+        var result = await Send(msgType, CardBodyKey, larkInterActive, cancellationToken);
         return result;
     }
 
@@ -148,8 +152,9 @@ public class LarkBot
     /// <param name="msgType">消息类型</param>
     /// <param name="bodyKey">载荷字段名（普通消息为 content，卡片消息为 card）</param>
     /// <param name="body">载荷内容</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    private async Task<BotResult> Send(string msgType, string bodyKey, object body)
+    private async Task<BotResult> Send(string msgType, string bodyKey, object body, CancellationToken cancellationToken = default)
     {
         // 构造真实载荷对象：签名字段（timestamp/sign）与消息字段平级
         var payload = new Dictionary<string, object>
@@ -168,7 +173,7 @@ public class LarkBot
 
         // 发起请求
         var url = _url;
-        var request = await url.AsHttp().SetJsonBody(payload).PostAsync<LarkResultInfoDto>();
+        var request = await url.AsHttp().SetJsonBody(payload).PostAsync<LarkResultInfoDto>(cancellationToken);
 
         if (!request.IsSuccess || request.Data == null)
         {
