@@ -31,6 +31,8 @@ public class XiHanBotSmsModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddXiHanBotSms();
+        var services = context.Services;
+
+        services.AddXiHanBotSms();
     }
 }
