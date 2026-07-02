@@ -14,13 +14,13 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.Bot.Telegram.Platform.Abstractions;
-using XiHan.Framework.Bot.Telegram.Platform.Core;
-using XiHan.Framework.Bot.Telegram.Platform.Messaging;
-using XiHan.Framework.Bot.Telegram.Platform.MultiBot;
-using XiHan.Framework.Bot.Telegram.Platform.Options;
-using XiHan.Framework.Bot.Telegram.Platform.Routing;
-using XiHan.Framework.Bot.Telegram.Platform.Stores;
+using XiHan.Framework.Bot.Telegram.Abstractions;
+using XiHan.Framework.Bot.Telegram.Core;
+using XiHan.Framework.Bot.Telegram.Messaging;
+using XiHan.Framework.Bot.Telegram.MultiBot;
+using XiHan.Framework.Bot.Telegram.Options;
+using XiHan.Framework.Bot.Telegram.Routing;
+using XiHan.Framework.Bot.Telegram.Stores;
 
 namespace XiHan.Framework.Bot.Telegram.Extensions.DependencyInjection;
 
