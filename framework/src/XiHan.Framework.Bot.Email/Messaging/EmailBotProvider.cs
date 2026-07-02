@@ -17,8 +17,11 @@ using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Helpers;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Email.Abstractions;
+using XiHan.Framework.Bot.Email.Models;
+using XiHan.Framework.Bot.Email.Options;
 
-namespace XiHan.Framework.Bot.Email;
+namespace XiHan.Framework.Bot.Email.Messaging;
 
 /// <summary>
 /// 邮件 Bot 提供者

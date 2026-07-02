@@ -14,7 +14,7 @@
 
 using System.ComponentModel;
 
-namespace XiHan.Framework.Bot.Sms;
+namespace XiHan.Framework.Bot.Sms.Enums;
 
 /// <summary>
 /// 短信服务商类型

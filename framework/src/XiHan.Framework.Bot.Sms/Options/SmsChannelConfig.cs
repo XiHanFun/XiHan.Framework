@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Sms;
+using XiHan.Framework.Bot.Sms.Enums;
+
+namespace XiHan.Framework.Bot.Sms.Options;
 
 /// <summary>
 /// 短信通道配置（框架自有模型，由 <see cref="ISmsConfigStore"/> 提供）

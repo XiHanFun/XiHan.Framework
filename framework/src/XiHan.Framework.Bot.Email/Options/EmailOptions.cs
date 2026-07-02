@@ -12,7 +12,9 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Email;
+using XiHan.Framework.Bot.Email.Models;
+
+namespace XiHan.Framework.Bot.Email.Options;
 
 /// <summary>
 /// 邮件提供者配置

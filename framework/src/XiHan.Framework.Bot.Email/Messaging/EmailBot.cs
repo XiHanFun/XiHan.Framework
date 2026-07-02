@@ -15,8 +15,9 @@
 using MailKit.Net.Smtp;
 using MimeKit;
 using XiHan.Framework.Utils.Logging;
+using XiHan.Framework.Bot.Email.Models;
 
-namespace XiHan.Framework.Bot.Email;
+namespace XiHan.Framework.Bot.Email.Messaging;
 
 /// <summary>
 /// 邮件机器人消息推送

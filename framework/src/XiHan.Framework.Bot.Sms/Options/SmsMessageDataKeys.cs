@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Sms;
+namespace XiHan.Framework.Bot.Sms.Options;
 
 /// <summary>
 /// 短信消息 Data 键名常量
