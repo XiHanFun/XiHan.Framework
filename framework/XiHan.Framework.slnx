@@ -32,6 +32,7 @@
     <Project Path="src/XiHan.Framework.Bot.DingTalk/XiHan.Framework.Bot.DingTalk.csproj" />
     <Project Path="src/XiHan.Framework.Bot.Email/XiHan.Framework.Bot.Email.csproj" />
     <Project Path="src/XiHan.Framework.Bot.Lark/XiHan.Framework.Bot.Lark.csproj" />
+    <Project Path="src/XiHan.Framework.Bot.Sms/XiHan.Framework.Bot.Sms.csproj" />
     <Project Path="src/XiHan.Framework.Bot.Telegram/XiHan.Framework.Bot.Telegram.csproj" />
     <Project Path="src/XiHan.Framework.Bot.WeCom/XiHan.Framework.Bot.WeCom.csproj" />
     <Project Path="src/XiHan.Framework.Caching/XiHan.Framework.Caching.csproj" />
