@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-namespace XiHan.Framework.Bot.Telegram;
+namespace XiHan.Framework.Bot.Telegram.Options;
 
 /// <summary>
 /// Telegram 提供者配置
