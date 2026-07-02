@@ -14,8 +14,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AlibabaCloud.SDK.Dysmsapi20170525" Version="4.1.0" />
-        <PackageReference Include="TencentCloudSDK.Sms" Version="3.0.1355" />
+        <PackageReference Include="AlibabaCloud.SDK.Dysmsapi20170525" Version="4.4.0" />
+        <PackageReference Include="TencentCloudSDK.Sms" Version="3.0.1435" />
     </ItemGroup>
 
     <ItemGroup>
