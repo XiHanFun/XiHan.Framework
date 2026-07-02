@@ -70,23 +70,23 @@ public class DingTalkBotProvider : IBotProvider
                     Title = message.Title ?? "Notification",
                     Text = message.Content
                 };
-                return BotResult.From(await bot.MarkdownMessage(markdown, BuildAt(message)), Name);
+                return BotResult.From(await bot.MarkdownMessage(markdown, BuildAt(message), context.CancellationToken), Name);
 
             case BotMessageType.Link:
                 if (BotMessageHelper.TryGetData(message, DingTalkMessageDataKeys.DingTalkLink, out DingTalkLink? link) && link is not null)
                 {
-                    return BotResult.From(await bot.LinkMessage(link), Name);
+                    return BotResult.From(await bot.LinkMessage(link, context.CancellationToken), Name);
                 }
                 break;
 
             case BotMessageType.Card:
                 if (BotMessageHelper.TryGetData(message, DingTalkMessageDataKeys.DingTalkActionCard, out DingTalkActionCard? card) && card is not null)
                 {
-                    return BotResult.From(await bot.ActionCardMessage(card), Name);
+                    return BotResult.From(await bot.ActionCardMessage(card, context.CancellationToken), Name);
                 }
                 if (BotMessageHelper.TryGetData(message, DingTalkMessageDataKeys.DingTalkFeedCard, out DingTalkFeedCard? feedCard) && feedCard is not null)
                 {
-                    return BotResult.From(await bot.FeedCardMessage(feedCard), Name);
+                    return BotResult.From(await bot.FeedCardMessage(feedCard, context.CancellationToken), Name);
                 }
                 break;
         }
@@ -95,7 +95,7 @@ public class DingTalkBotProvider : IBotProvider
         {
             Content = message.Content
         };
-        return BotResult.From(await bot.TextMessage(text, BuildAt(message)), Name);
+        return BotResult.From(await bot.TextMessage(text, BuildAt(message), context.CancellationToken), Name);
     }
 
     private static DingTalkAt? BuildAt(BotMessage message)

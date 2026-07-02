@@ -38,40 +38,42 @@ public class BotClient : IBotClient
     /// <summary>
     /// 向所有提供者发送消息
     /// </summary>
-    public Task<BotDispatchResult> SendAsync(BotMessage message)
+    public Task<BotDispatchResult> SendAsync(BotMessage message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
-        return _dispatcher.DispatchAsync(message);
+        return _dispatcher.DispatchAsync(message, channels: null, cancellationToken);
     }
 
     /// <summary>
     /// 向指定渠道/提供者发送消息
     /// </summary>
-    public Task<BotDispatchResult> SendAsync(BotMessage message, params string[] channels)
+    public Task<BotDispatchResult> SendAsync(BotMessage message, IReadOnlyList<string>? channels, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
-        return _dispatcher.DispatchAsync(message, channels);
+        return _dispatcher.DispatchAsync(message, channels, cancellationToken);
     }
 
     /// <summary>
     /// 按模板名称发送
     /// </summary>
-    public async Task<BotDispatchResult> SendTemplateAsync(string templateName, object? model = null, params string[] channels)
+    public async Task<BotDispatchResult> SendTemplateAsync(string templateName, object? model = null, IReadOnlyList<string>? channels = null, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var message = await _templateEngine.RenderAsync(templateName, model);
-        return await SendAsync(message, channels);
+        return await SendAsync(message, channels, cancellationToken);
     }
 
     /// <summary>
     /// 批量发送消息（逐条发送，返回逐条聚合结果）
     /// </summary>
-    public async Task<IReadOnlyList<BotDispatchResult>> SendBatchAsync(IEnumerable<BotMessage> messages, params string[] channels)
+    public async Task<IReadOnlyList<BotDispatchResult>> SendBatchAsync(IEnumerable<BotMessage> messages, IReadOnlyList<string>? channels = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(messages);
         var results = new List<BotDispatchResult>();
         foreach (var message in messages)
         {
-            results.Add(await SendAsync(message, channels));
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await SendAsync(message, channels, cancellationToken));
         }
 
         return results;
@@ -80,14 +82,14 @@ public class BotClient : IBotClient
     /// <summary>
     /// 延迟发送消息
     /// </summary>
-    public async Task<BotDispatchResult> SendDelayedAsync(BotMessage message, TimeSpan delay, params string[] channels)
+    public async Task<BotDispatchResult> SendDelayedAsync(BotMessage message, TimeSpan delay, IReadOnlyList<string>? channels = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
         if (delay > TimeSpan.Zero)
         {
-            await Task.Delay(delay);
+            await Task.Delay(delay, cancellationToken);
         }
 
-        return await SendAsync(message, channels);
+        return await SendAsync(message, channels, cancellationToken);
     }
 }
