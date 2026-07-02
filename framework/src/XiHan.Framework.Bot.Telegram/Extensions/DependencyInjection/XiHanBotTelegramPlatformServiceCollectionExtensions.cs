@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Telegram.Abstractions;
 using XiHan.Framework.Bot.Telegram.Core;
+using XiHan.Framework.Bot.Telegram.Handlers.Builtin;
 using XiHan.Framework.Bot.Telegram.Messaging;
 using XiHan.Framework.Bot.Telegram.MultiBot;
 using XiHan.Framework.Bot.Telegram.Options;
@@ -101,6 +102,28 @@ public static class XiHanBotTelegramPlatformServiceCollectionExtensions
                 options.Handlers.Add(typeof(THandler));
             }
         });
+
+        return services;
+    }
+
+    /// <summary>
+    /// 显式注册内置基础命令处理器（/start 欢迎、/help 可见命令列表、/myid 查看 Id）
+    /// </summary>
+    /// <remarks>
+    /// 平台不自动注册任何处理器，需要内置命令时在应用层显式调用：
+    /// <code>services.AddXiHanBotTelegramPlatform().AddTelegramBotBuiltinHandlers();</code>
+    /// 三个命令均在永久放行清单内（仅豁免群组/频道白名单守卫，命令白名单仍然生效）；
+    /// 回复文案可通过 <see cref="TelegramBotTexts"/>（StartReply / HelpHeader / MyIdReply）整体覆盖。
+    /// </remarks>
+    /// <param name="services">服务集合</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddTelegramBotBuiltinHandlers(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        _ = services.AddTelegramBotHandler<StartCommandHandler>();
+        _ = services.AddTelegramBotHandler<HelpCommandHandler>();
+        _ = services.AddTelegramBotHandler<MyIdCommandHandler>();
 
         return services;
     }
