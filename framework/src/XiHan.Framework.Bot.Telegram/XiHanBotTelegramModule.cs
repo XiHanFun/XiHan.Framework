@@ -14,7 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Bot.Telegram.Extensions.DependencyInjection;
-using XiHan.Framework.Bot.Telegram.Platform.Options;
+using XiHan.Framework.Bot.Telegram.Options;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 
