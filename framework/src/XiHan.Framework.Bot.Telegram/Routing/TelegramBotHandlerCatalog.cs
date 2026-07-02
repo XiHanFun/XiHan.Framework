@@ -45,6 +45,21 @@ public sealed record TelegramCommandPatternRoute(TelegramCommandRoute Route, Reg
 public sealed record TelegramCallbackRoute(Type HandlerType, bool AdminOnly);
 
 /// <summary>
+/// 命令描述符（主命令一条一项，可用于生成帮助文本与命令菜单）
+/// </summary>
+/// <param name="Command">主命令（已归一为 / 前缀）</param>
+/// <param name="Description">命令描述</param>
+/// <param name="AdminOnly">是否仅管理员可执行</param>
+/// <param name="Aliases">归一化别名列表</param>
+/// <param name="NormalizedCommands">归一化命令集合（主命令+别名）</param>
+public sealed record TelegramCommandDescriptor(
+    string Command,
+    string Description,
+    bool AdminOnly,
+    string[] Aliases,
+    string[] NormalizedCommands);
+
+/// <summary>
 /// Telegram 机器人处理器目录（从显式注册的 <see cref="TelegramBotHandlerOptions"/> 构建路由表）
 /// </summary>
 /// <remarks>
@@ -55,7 +70,7 @@ public sealed class TelegramBotHandlerCatalog
     private readonly Dictionary<string, TelegramCommandRoute> _commandRoutes = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<TelegramCommandPatternRoute> _commandPatternRoutes = [];
     private readonly Dictionary<string, TelegramCallbackRoute> _callbackRoutes = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<CommandDescriptor> _commandDescriptors = [];
+    private readonly List<TelegramCommandDescriptor> _commandDescriptors = [];
     private readonly List<Type> _messageHandlerTypes = [];
     private readonly List<Type> _replyHandlerTypes = [];
     private readonly List<Type> _stateHandlerTypes = [];
@@ -152,6 +167,38 @@ public sealed class TelegramBotHandlerCatalog
         return commands;
     }
 
+    /// <summary>
+    /// 获取对指定身份可见的命令描述符列表（与命令菜单同一套过滤逻辑：按命令白名单过滤、按主命令去重；用于生成 /help 文本）
+    /// </summary>
+    /// <param name="allowedCommands">命令白名单（null 或空表示不限制）</param>
+    /// <param name="includeAdminOnly">是否包含仅管理员命令（当前用户为管理员时传 true）</param>
+    /// <returns>可见命令描述符列表（按注册顺序）</returns>
+    public IReadOnlyList<TelegramCommandDescriptor> GetVisibleCommands(
+        IEnumerable<string>? allowedCommands = null,
+        bool includeAdminOnly = false)
+    {
+        var allowedCommandSet = BuildAllowedCommandSet(allowedCommands);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var descriptors = new List<TelegramCommandDescriptor>();
+
+        foreach (var descriptor in _commandDescriptors)
+        {
+            if (descriptor.AdminOnly && !includeAdminOnly)
+            {
+                continue;
+            }
+
+            if (!IsMenuRouteAllowed(descriptor.NormalizedCommands, allowedCommandSet) || !seen.Add(descriptor.Command))
+            {
+                continue;
+            }
+
+            descriptors.Add(descriptor);
+        }
+
+        return descriptors;
+    }
+
     private void RegisterHandlerType(Type handlerType)
     {
         ArgumentNullException.ThrowIfNull(handlerType);
@@ -239,7 +286,7 @@ public sealed class TelegramBotHandlerCatalog
                 _commandPatternRoutes.Add(new TelegramCommandPatternRoute(route, regex));
             }
 
-            _commandDescriptors.Add(new CommandDescriptor(
+            _commandDescriptors.Add(new TelegramCommandDescriptor(
                 command,
                 attr.Description?.Trim() ?? string.Empty,
                 attr.AdminOnly,
@@ -322,7 +369,7 @@ public sealed class TelegramBotHandlerCatalog
         return normalizedCommands.Any(allowedCommandSet.Contains);
     }
 
-    private static string BuildCommandDescription(CommandDescriptor descriptor, bool preferAliasDescription)
+    private static string BuildCommandDescription(TelegramCommandDescriptor descriptor, bool preferAliasDescription)
     {
         var normalizedCommand = descriptor.Command.TrimStart('/');
 
@@ -342,11 +389,4 @@ public sealed class TelegramBotHandlerCatalog
         var alias = descriptor.Aliases[0].TrimStart('/');
         return alias.Length >= 3 ? alias : $"{alias} / {normalizedCommand}";
     }
-
-    private sealed record CommandDescriptor(
-        string Command,
-        string Description,
-        bool AdminOnly,
-        string[] Aliases,
-        string[] NormalizedCommands);
 }

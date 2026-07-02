@@ -48,4 +48,19 @@ public class TelegramBotTexts
     /// 消息发送最终失败时通知管理员的告警标题
     /// </summary>
     public string SendFailureAdminNotifyTitle { get; set; } = "消息发送失败告警";
+
+    /// <summary>
+    /// 内置 /start 命令的欢迎文案（支持 {botUsername} 占位符）
+    /// </summary>
+    public string StartReply { get; set; } = "你好，欢迎使用 {botUsername}！发送 /help 查看可用命令。";
+
+    /// <summary>
+    /// 内置 /help 命令列表的头部文案
+    /// </summary>
+    public string HelpHeader { get; set; } = "可用命令：";
+
+    /// <summary>
+    /// 内置 /myid 命令的回复模板（支持 {chatId} / {userId} 占位符）
+    /// </summary>
+    public string MyIdReply { get; set; } = "ChatId：{chatId}\nUserId：{userId}";
 }
