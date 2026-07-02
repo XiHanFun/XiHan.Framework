@@ -22,7 +22,7 @@ namespace XiHan.Framework.Bot.Core;
 /// </summary>
 public class BotContext
 {
-    private readonly List<BotDispatchResult> _results = [];
+    private readonly List<BotResult> _results = [];
     private IReadOnlyList<IBotProvider> _providers = [];
 
     /// <summary>
@@ -61,9 +61,9 @@ public class BotContext
     public IReadOnlyList<IBotProvider> Providers => _providers;
 
     /// <summary>
-    /// 调度结果列表
+    /// 各提供者结果列表（<see cref="BotResult.Provider"/> 标识来源提供者）
     /// </summary>
-    public IReadOnlyList<BotDispatchResult> Results => _results;
+    public IReadOnlyList<BotResult> Results => _results;
 
     /// <summary>
     /// 策略名称
@@ -83,12 +83,12 @@ public class BotContext
     /// <summary>
     /// 是否存在失败
     /// </summary>
-    public bool HasFailures => _results.Any(result => !result.Result.IsSuccess);
+    public bool HasFailures => _results.Any(result => !result.IsSuccess);
 
     /// <summary>
     /// 是否全部成功
     /// </summary>
-    public bool IsSuccess => _results.Count > 0 && _results.All(result => result.Result.IsSuccess);
+    public bool IsSuccess => _results.Count > 0 && _results.All(result => result.IsSuccess);
 
     /// <summary>
     /// 设置提供者列表
@@ -99,15 +99,13 @@ public class BotContext
     }
 
     /// <summary>
-    /// 添加提供者结果
+    /// 添加提供者结果（结果未标注提供者时以传入名补齐）
     /// </summary>
     public void AddResult(string providerName, BotResult result)
     {
-        _results.Add(new BotDispatchResult
-        {
-            ProviderName = providerName,
-            Result = result
-        });
+        ArgumentNullException.ThrowIfNull(result);
+        result.Provider ??= providerName;
+        _results.Add(result);
     }
 
     /// <summary>

@@ -19,30 +19,39 @@ namespace XiHan.Framework.Bot.Clients;
 /// <summary>
 /// Bot 客户端入口
 /// </summary>
+/// <remarks>
+/// 所有发送方法返回 <see cref="BotDispatchResult"/>（整体成败 + 各提供者明细），
+/// 调用方据此实现 fail-closed 判定；无提供者/被管道跳过均体现为 IsSuccess=false。
+/// </remarks>
 public interface IBotClient
 {
     /// <summary>
     /// 向所有提供者发送消息
     /// </summary>
-    Task SendAsync(BotMessage message);
+    /// <returns>调度聚合结果</returns>
+    Task<BotDispatchResult> SendAsync(BotMessage message);
 
     /// <summary>
     /// 向指定渠道/提供者发送消息
     /// </summary>
-    Task SendAsync(BotMessage message, params string[] channels);
+    /// <returns>调度聚合结果</returns>
+    Task<BotDispatchResult> SendAsync(BotMessage message, params string[] channels);
 
     /// <summary>
     /// 按模板名称发送
     /// </summary>
-    Task SendTemplateAsync(string templateName, object? model = null, params string[] channels);
+    /// <returns>调度聚合结果</returns>
+    Task<BotDispatchResult> SendTemplateAsync(string templateName, object? model = null, params string[] channels);
 
     /// <summary>
-    /// 批量发送消息
+    /// 批量发送消息（逐条发送，返回逐条聚合结果）
     /// </summary>
-    Task SendBatchAsync(IEnumerable<BotMessage> messages, params string[] channels);
+    /// <returns>逐条调度聚合结果</returns>
+    Task<IReadOnlyList<BotDispatchResult>> SendBatchAsync(IEnumerable<BotMessage> messages, params string[] channels);
 
     /// <summary>
     /// 延迟发送消息
     /// </summary>
-    Task SendDelayedAsync(BotMessage message, TimeSpan delay, params string[] channels);
+    /// <returns>调度聚合结果</returns>
+    Task<BotDispatchResult> SendDelayedAsync(BotMessage message, TimeSpan delay, params string[] channels);
 }

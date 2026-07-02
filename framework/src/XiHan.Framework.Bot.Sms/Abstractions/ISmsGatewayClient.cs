@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Sms.Enums;
+using XiHan.Framework.Bot.Sms.Options;
 
 namespace XiHan.Framework.Bot.Sms.Abstractions;
 
