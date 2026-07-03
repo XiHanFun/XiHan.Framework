@@ -262,32 +262,6 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     }
 
     /// <summary>
-    /// MySQL：将默认排序规则不是 utf8mb4 的既有表整表转换为 utf8mb4（幂等，已合规的表不重写）
-    /// </summary>
-    private void EnsureMySqlUtf8Mb4Tables(ISqlSugarClient db)
-    {
-        if (!IsMySql(db))
-        {
-            return;
-        }
-
-        try
-        {
-            var tables = db.Ado.SqlQuery<string>(
-                "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND TABLE_COLLATION IS NOT NULL AND TABLE_COLLATION NOT LIKE 'utf8mb4%';");
-            foreach (var tableName in tables)
-            {
-                db.Ado.ExecuteCommand($"ALTER TABLE `{tableName}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-                _logger.LogInformation("已将 MySQL 表转换为 utf8mb4：{TableName}", tableName);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "MySQL 表 utf8mb4 归一化失败，请手工执行：ALTER TABLE `表名` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-        }
-    }
-
-    /// <summary>
     /// 是否 MySQL 连接
     /// </summary>
     private static bool IsMySql(ISqlSugarClient db)
@@ -370,9 +344,6 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                     throw;
                 }
             }
-
-            // 兜底转换存量旧字符集表（历史库建表时库默认还是 utf8mb3 的场景）
-            await Task.Run(() => EnsureMySqlUtf8Mb4Tables(db));
 
             _logger.LogInformation(
                 "表结构创建完成，成功创建 {SuccessCount} 个表（含分表初始化 {SplitTableInitCount} 个），跳过 {SkippedExistsCount} 个已存在表",
