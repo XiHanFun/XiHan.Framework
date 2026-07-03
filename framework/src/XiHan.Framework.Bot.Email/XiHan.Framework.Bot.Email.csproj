@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Bot.Email</Title>
+        <AssemblyName>XiHan.Framework.Bot.Email</AssemblyName>
+        <PackageId>XiHan.Framework.Bot.Email</PackageId>
+        <Description>曦寒框架机器人邮件库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MailKit" Version="4.17.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+    </ItemGroup>
+
+</Project>

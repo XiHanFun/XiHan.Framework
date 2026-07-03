@@ -35,6 +35,7 @@ public class XiHanBotModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var services = context.Services;
+
         services.AddXiHanBot();
     }
 }

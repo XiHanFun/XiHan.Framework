@@ -17,100 +17,14 @@ namespace XiHan.Framework.Bot.Consts;
 /// <summary>
 /// 消息 Data 键名常量
 /// </summary>
+/// <remarks>
+/// 仅保留内核通用键；各提供者专属键由对应子包
+/// （XiHan.Framework.Bot.Email / .DingTalk / .Lark / .WeCom / .Telegram）的 {X}MessageDataKeys 提供。
+/// </remarks>
 public static class BotMessageDataKeys
 {
     /// <summary>
     /// 策略名称
     /// </summary>
     public const string Strategy = "Strategy";
-
-    /// <summary>
-    /// 钉钉链接消息
-    /// </summary>
-    public const string DingTalkLink = "DingTalk.Link";
-
-    /// <summary>
-    /// 钉钉任务卡片
-    /// </summary>
-    public const string DingTalkActionCard = "DingTalk.ActionCard";
-
-    /// <summary>
-    /// 钉钉菜单卡片
-    /// </summary>
-    public const string DingTalkFeedCard = "DingTalk.FeedCard";
-
-    /// <summary>
-    /// 飞书富文本
-    /// </summary>
-    public const string LarkPost = "Lark.Post";
-
-    /// <summary>
-    /// 飞书消息卡片
-    /// </summary>
-    public const string LarkInterActive = "Lark.InterActive";
-
-    /// <summary>
-    /// 飞书图片
-    /// </summary>
-    public const string LarkImage = "Lark.Image";
-
-    /// <summary>
-    /// 企业微信图文
-    /// </summary>
-    public const string WeComNews = "WeCom.News";
-
-    /// <summary>
-    /// 企业微信图片
-    /// </summary>
-    public const string WeComImage = "WeCom.Image";
-
-    /// <summary>
-    /// 企业微信文件
-    /// </summary>
-    public const string WeComFile = "WeCom.File";
-
-    /// <summary>
-    /// 企业微信语音
-    /// </summary>
-    public const string WeComVoice = "WeCom.Voice";
-
-    /// <summary>
-    /// 企业微信文本通知模版卡片
-    /// </summary>
-    public const string WeComTemplateCardTextNotice = "WeCom.TemplateCardTextNotice";
-
-    /// <summary>
-    /// 企业微信图文展示模版卡片
-    /// </summary>
-    public const string WeComTemplateCardNewsNotice = "WeCom.TemplateCardNewsNotice";
-
-    /// <summary>
-    /// 邮件收件人
-    /// </summary>
-    public const string EmailTo = "Email.To";
-
-    /// <summary>
-    /// 邮件抄送
-    /// </summary>
-    public const string EmailCc = "Email.Cc";
-
-    /// <summary>
-    /// 邮件密送
-    /// </summary>
-    public const string EmailBcc = "Email.Bcc";
-
-    /// <summary>
-    /// 邮件是否 HTML 正文
-    /// </summary>
-    public const string EmailIsBodyHtml = "Email.IsBodyHtml";
-
-    /// <summary>
-    /// Telegram 会话 ID
-    /// </summary>
-    public const string TelegramChatId = "Telegram.ChatId";
-
-    /// <summary>
-    /// Telegram 解析模式
-    /// </summary>
-    public const string TelegramParseMode = "Telegram.ParseMode";
 }

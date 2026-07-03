@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Bot.Sms</Title>
+        <AssemblyName>XiHan.Framework.Bot.Sms</AssemblyName>
+        <PackageId>XiHan.Framework.Bot.Sms</PackageId>
+        <Description>曦寒框架机器人短信库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AlibabaCloud.SDK.Dysmsapi20170525" Version="4.4.0" />
+        <PackageReference Include="TencentCloudSDK.Sms" Version="3.0.1435" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+    </ItemGroup>
+
+</Project>

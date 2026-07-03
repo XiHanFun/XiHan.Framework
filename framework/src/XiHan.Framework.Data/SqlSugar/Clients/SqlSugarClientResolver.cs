@@ -14,6 +14,7 @@
 
 using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.Data.SqlSugar.Clients;
@@ -32,6 +33,9 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     private readonly SqlSugarScope _sqlSugarScope;
     private readonly ISqlSugarTenantConnectionResolver _tenantConnectionResolver;
     private readonly IUnitOfWorkManager _unitOfWorkManager;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ISqlSugarConnectionConfigurator _connectionConfigurator;
+    private readonly ISqlSugarTenantConnectionProvider? _connectionProvider;
 
     /// <summary>
     /// 构造函数
@@ -39,19 +43,41 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// <param name="sqlSugarScope">SqlSugar 根作用域</param>
     /// <param name="tenantConnectionResolver">租户连接解析器</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
+    /// <param name="currentTenant">当前租户</param>
+    /// <param name="connectionConfigurator">连接配置器</param>
+    /// <param name="connectionProviders">租户连接提供器（可选，业务层实现库隔离时注册；未注册则退化为静态 ConfigId 解析）</param>
     public SqlSugarClientResolver(
         SqlSugarScope sqlSugarScope,
         ISqlSugarTenantConnectionResolver tenantConnectionResolver,
-        IUnitOfWorkManager unitOfWorkManager)
+        IUnitOfWorkManager unitOfWorkManager,
+        ICurrentTenant currentTenant,
+        ISqlSugarConnectionConfigurator connectionConfigurator,
+        IEnumerable<ISqlSugarTenantConnectionProvider> connectionProviders)
     {
         _sqlSugarScope = sqlSugarScope;
         _tenantConnectionResolver = tenantConnectionResolver;
         _unitOfWorkManager = unitOfWorkManager;
+        _currentTenant = currentTenant;
+        _connectionConfigurator = connectionConfigurator;
+        _connectionProvider = connectionProviders.FirstOrDefault();
     }
 
     /// <inheritdoc />
     public ISqlSugarClient GetCurrentClient()
     {
+        // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立连接
+        // 提供器返回 null → 走静态 ConfigId 解析（字段/行隔离）；抛异常 → fail-closed
+        if (_connectionProvider is not null && _currentTenant.Id is { } tenantId)
+        {
+            var descriptor = _connectionProvider.Resolve(tenantId, _currentTenant.Name);
+            if (descriptor is not null)
+            {
+                var tenantClient = _connectionConfigurator.EnsureTenantConnection(_sqlSugarScope, descriptor);
+                EnlistCurrentUnitOfWork(tenantClient);
+                return tenantClient;
+            }
+        }
+
         var configId = _tenantConnectionResolver.ResolveCurrentConfigId();
         return GetClient(configId);
     }

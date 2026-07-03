@@ -347,7 +347,7 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
             // 业务规则冲突（输入合法但当前状态不允许，如密码不合规、验证码失效）→ 422，消息随 Data 回前端
             InvalidOperationException ex => (StatusCodes.Status422UnprocessableEntity, ApiResponse.UnprocessableEntity(ex.Message)),
             // 仅真正未预期的异常才 500，Data 留空、不泄露内部细节
-            _ => (StatusCodes.Status500InternalServerError, ApiResponse.Fail())
+            _ => (StatusCodes.Status500InternalServerError, ApiResponse.InternalServerError())
         };
     }
 

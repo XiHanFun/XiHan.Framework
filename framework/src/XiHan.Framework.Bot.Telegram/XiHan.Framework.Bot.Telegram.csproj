@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Bot.Telegram</Title>
+        <AssemblyName>XiHan.Framework.Bot.Telegram</AssemblyName>
+        <PackageId>XiHan.Framework.Bot.Telegram</PackageId>
+        <Description>曦寒框架机器人Telegram库</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Telegram.Bot" Version="22.10.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+    </ItemGroup>
+
+</Project>

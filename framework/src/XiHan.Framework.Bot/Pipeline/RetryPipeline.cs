@@ -83,8 +83,8 @@ public class RetryPipeline : IBotPipeline
                 _options.RetryCount);
 
             var failedProviders = context.Results
-                .Where(result => !result.Result.IsSuccess)
-                .Select(result => result.ProviderName)
+                .Where(result => !result.IsSuccess && !string.IsNullOrWhiteSpace(result.Provider))
+                .Select(result => result.Provider!)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             if (failedProviders.Count > 0)

@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Application.Contracts.Dtos;
+using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Security.Cryptography;
 using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Web.Api.Constants;
@@ -933,7 +934,8 @@ public class XiHanOpenApiSecurityMiddleware(
         context.Response.Clear();
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json; charset=utf-8";
-        var payload = ApiResponse.Fail(message, traceId);
+        // 统一响应体业务码与实际 HTTP 状态码对齐（401/403/409 等；未定义的状态码由 Failure 回退通用文案）
+        var payload = ApiResponse.Failure((ApiResponseCodes)statusCode, message, traceId);
         await context.Response.WriteAsync(JsonSerializer.Serialize(payload, JsonOptions), context.RequestAborted);
     }
 

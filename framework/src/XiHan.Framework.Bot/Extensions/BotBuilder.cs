@@ -13,15 +13,8 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Options;
-using XiHan.Framework.Bot.Providers;
-using XiHan.Framework.Bot.Providers.DingTalk;
-using XiHan.Framework.Bot.Providers.Email;
-using XiHan.Framework.Bot.Providers.Lark;
-using XiHan.Framework.Bot.Providers.Telegram;
-using XiHan.Framework.Bot.Providers.WeCom;
 using XiHan.Framework.Bot.Template;
 
 namespace XiHan.Framework.Bot.Extensions;
@@ -29,6 +22,10 @@ namespace XiHan.Framework.Bot.Extensions;
 /// <summary>
 /// Bot 构建器
 /// </summary>
+/// <remarks>
+/// 主包只提供内核配置（选项/渠道/模板）；各提供者的 Use* 注册方法由对应子包
+/// （XiHan.Framework.Bot.Email / .Sms / .Telegram / .DingTalk / .Lark / .WeCom）以扩展方法提供。
+/// </remarks>
 public sealed class BotBuilder
 {
     /// <summary>
@@ -77,56 +74,6 @@ public sealed class BotBuilder
     public BotBuilder AddTemplate(BotTemplate template)
     {
         Services.Configure<XiHanBotOptions>(options => options.AddTemplate(template));
-        return this;
-    }
-
-    /// <summary>
-    /// 注册钉钉提供者
-    /// </summary>
-    public BotBuilder UseDingTalk(Action<DingTalkOptions> configure)
-    {
-        Services.Configure(configure);
-        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IBotProvider, DingTalkBotProvider>());
-        return this;
-    }
-
-    /// <summary>
-    /// 注册飞书提供者
-    /// </summary>
-    public BotBuilder UseLark(Action<LarkOptions> configure)
-    {
-        Services.Configure(configure);
-        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IBotProvider, LarkBotProvider>());
-        return this;
-    }
-
-    /// <summary>
-    /// 注册企业微信提供者
-    /// </summary>
-    public BotBuilder UseWeCom(Action<WeComOptions> configure)
-    {
-        Services.Configure(configure);
-        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IBotProvider, WeComBotProvider>());
-        return this;
-    }
-
-    /// <summary>
-    /// 注册 Telegram 提供者
-    /// </summary>
-    public BotBuilder UseTelegram(Action<TelegramOptions> configure)
-    {
-        Services.Configure(configure);
-        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IBotProvider, TelegramBotProvider>());
-        return this;
-    }
-
-    /// <summary>
-    /// 注册邮件提供者
-    /// </summary>
-    public BotBuilder UseEmail(Action<EmailOptions> configure)
-    {
-        Services.Configure(configure);
-        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IBotProvider, EmailBotProvider>());
         return this;
     }
 }
