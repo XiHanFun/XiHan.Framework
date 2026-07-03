@@ -54,7 +54,8 @@ public class BotDispatcher
     /// <summary>
     /// 调度发送消息
     /// </summary>
-    public async Task DispatchAsync(BotMessage message, IReadOnlyList<string>? channels = null, CancellationToken cancellationToken = default)
+    /// <returns>调度聚合结果（整体成败 + 各提供者明细）</returns>
+    public async Task<BotDispatchResult> DispatchAsync(BotMessage message, IReadOnlyList<string>? channels = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
         cancellationToken.ThrowIfCancellationRequested();
@@ -79,7 +80,7 @@ public class BotDispatcher
                 throw new InvalidOperationException(error);
             }
 
-            return;
+            return BotDispatchResult.NoProvider(error);
         }
 
         context.SetProviders(providers);
@@ -87,6 +88,8 @@ public class BotDispatcher
 
         Func<Task> finalStep = () => strategy.ExecuteAsync(context, context.Providers);
         await InvokePipelinesAsync(context, finalStep);
+
+        return BotDispatchResult.From(context.Results, context.IsSkipped);
     }
 
     private string? ResolveStrategyName(BotMessage message)

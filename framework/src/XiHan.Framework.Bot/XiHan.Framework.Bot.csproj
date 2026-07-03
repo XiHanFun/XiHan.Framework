@@ -14,11 +14,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MailKit" Version="4.17.0" />
-      <PackageReference Include="Telegram.Bot" Version="22.10.1" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
       <ProjectReference Include="..\XiHan.Framework.Templating\XiHan.Framework.Templating.csproj" />
     </ItemGroup>

@@ -76,19 +76,19 @@ public class LoggingPipeline : IBotPipeline
 
             foreach (var result in context.Results)
             {
-                if (result.Result.IsSuccess)
+                if (result.IsSuccess)
                 {
                     _logger.LogInformation(
                         "Bot dispatch success. Provider: {Provider}, Message: {Message}",
-                        result.ProviderName,
-                        result.Result.Message);
+                        result.Provider,
+                        result.Message);
                 }
                 else
                 {
                     _logger.LogWarning(
                         "Bot dispatch failed. Provider: {Provider}, Message: {Message}",
-                        result.ProviderName,
-                        result.Result.Message);
+                        result.Provider,
+                        result.Message);
                 }
             }
         }

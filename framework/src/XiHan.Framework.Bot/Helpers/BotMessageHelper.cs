@@ -12,15 +12,23 @@
 
 #endregion <<版权版本注释>>
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using XiHan.Framework.Bot.Models;
 
 namespace XiHan.Framework.Bot.Helpers;
 
-internal static class BotMessageHelper
+/// <summary>
+/// 消息数据辅助类
+/// </summary>
+public static class BotMessageHelper
 {
+    /// <summary>
+    /// 尝试从消息 Data 中获取指定键的强类型值
+    /// </summary>
+    /// <typeparam name="T">目标类型</typeparam>
+    /// <param name="message">消息</param>
+    /// <param name="key">键名</param>
+    /// <param name="value">获取到的值；不存在或类型不匹配时为默认值</param>
+    /// <returns>是否获取成功</returns>
     public static bool TryGetData<T>(BotMessage message, string key, out T? value)
     {
         if (message.Data is not null && message.Data.TryGetValue(key, out var data) && data is T typed)
