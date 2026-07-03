@@ -43,4 +43,9 @@ public static class BotProviderNames
     /// 邮件提供者名称
     /// </summary>
     public const string Email = "Email";
+
+    /// <summary>
+    /// 短信提供者名称
+    /// </summary>
+    public const string Sms = "Sms";
 }

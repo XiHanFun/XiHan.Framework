@@ -1,0 +1,30 @@
+#region <<版权版本注释>>
+
+// ----------------------------------------------------------------
+// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+// FileName:SqlSugarTenantConnection
+// Guid:2d7c4a10-5e93-4f6b-8b21-9c0a3e6d1f78
+// Author:zhaifanhua
+// Email:me@zhaifanhua.com
+// CreateTime:2026/07/02 09:30:00
+// ----------------------------------------------------------------
+
+#endregion <<版权版本注释>>
+
+using SqlSugar;
+
+namespace XiHan.Framework.Data.SqlSugar.Tenanting;
+
+/// <summary>
+/// SqlSugar 租户连接描述符
+/// </summary>
+/// <param name="ConfigId">连接配置标识（须全局唯一，建议带租户前缀避免与平台连接撞号，如 <c>Tenant_123</c>）</param>
+/// <param name="ConnectionString">数据库连接字符串（明文，调用方负责解密后传入）</param>
+/// <param name="DbType">数据库类型</param>
+/// <param name="IsAutoCloseConnection">是否自动关闭连接</param>
+public sealed record SqlSugarTenantConnection(
+    string ConfigId,
+    string ConnectionString,
+    DbType DbType,
+    bool IsAutoCloseConnection = true);
