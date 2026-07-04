@@ -49,6 +49,10 @@ public static class XiHanAIServiceCollectionExtensions
         services.TryAddSingleton<OpenAiCompatibleChatClientFactory>();
         services.TryAddSingleton<IAiChatClientResolver, AiChatClientResolver>();
 
+        // 嵌入工厂 + 解析器（RAG 用；含 IEmbeddingGenerator 缓存）
+        services.TryAddSingleton<OpenAiEmbeddingGeneratorFactory>();
+        services.TryAddSingleton<IAiEmbeddingGeneratorResolver, AiEmbeddingGeneratorResolver>();
+
         // 会话门面
         services.TryAddSingleton<IXiHanAiService, XiHanAiService>();
 
