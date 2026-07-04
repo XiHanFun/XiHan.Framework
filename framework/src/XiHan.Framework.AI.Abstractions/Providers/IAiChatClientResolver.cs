@@ -29,4 +29,13 @@ public interface IAiChatClientResolver
     /// 解析指定 provider 的 IChatClient（null 取默认 provider）
     /// </summary>
     IChatClient Resolve(string? providerName = null);
+
+    /// <summary>
+    /// 使已缓存的 IChatClient 失效（下次 <see cref="Resolve"/> 按最新配置重建）
+    /// </summary>
+    /// <remarks>
+    /// 配置源（如应用层 DB store）改动 provider 的 key/baseUrl/model 后调用，实现配置热切换；
+    /// <paramref name="providerName"/> 为空则清空全部缓存，否则清指定 provider 及默认槽（默认可能指向它）。
+    /// </remarks>
+    void Invalidate(string? providerName = null);
 }
