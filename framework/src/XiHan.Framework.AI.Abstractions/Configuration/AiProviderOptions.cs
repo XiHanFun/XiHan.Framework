@@ -39,9 +39,14 @@ public class AiProviderOptions
     public string? BaseUrl { get; set; }
 
     /// <summary>
-    /// 模型名
+    /// 模型名（会话模型）
     /// </summary>
     public string Model { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 嵌入模型名（RAG 用；与会话模型同端点同密钥、仅模型 id 不同，如 text-embedding-3-small；空则该 provider 不支持嵌入）
+    /// </summary>
+    public string? EmbeddingModel { get; set; }
 
     /// <summary>
     /// 最大输出 token（空则用模型默认）

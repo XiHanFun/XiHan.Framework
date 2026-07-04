@@ -33,5 +33,6 @@ public class XiHanAIModule : XiHanModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         context.Services.AddXiHanAI();
+        context.Services.AddXiHanRAG();
     }
 }
