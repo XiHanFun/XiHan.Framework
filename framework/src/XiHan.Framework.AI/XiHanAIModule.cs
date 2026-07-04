@@ -12,7 +12,7 @@
 
 #endregion <<版权版本注释>>
 
-using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.AI.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Http;
 
@@ -32,7 +32,6 @@ public class XiHanAIModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        var services = context.Services;
-        var config = services.GetConfiguration();
+        context.Services.AddXiHanAI();
     }
 }
