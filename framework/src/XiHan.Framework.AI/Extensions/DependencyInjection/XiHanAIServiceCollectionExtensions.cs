@@ -14,12 +14,16 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.AI.Abstractions.Agents;
 using XiHan.Framework.AI.Abstractions.Chat;
 using XiHan.Framework.AI.Abstractions.Configuration;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.AI.Abstractions.Skills;
+using XiHan.Framework.AI.Agents;
 using XiHan.Framework.AI.Chat;
 using XiHan.Framework.AI.Configuration;
 using XiHan.Framework.AI.Providers;
+using XiHan.Framework.AI.Skills;
 
 namespace XiHan.Framework.AI.Extensions.DependencyInjection;
 
@@ -55,6 +59,10 @@ public static class XiHanAIServiceCollectionExtensions
 
         // 会话门面
         services.TryAddSingleton<IXiHanAiService, XiHanAiService>();
+
+        // 技能注册表（收纳应用注册的 IAiSkill）+ Agent 工厂（MAF）
+        services.TryAddSingleton<IAiSkillRegistry, DefaultAiSkillRegistry>();
+        services.TryAddSingleton<IXiHanAgentFactory, XiHanAgentFactory>();
 
         return services;
     }
