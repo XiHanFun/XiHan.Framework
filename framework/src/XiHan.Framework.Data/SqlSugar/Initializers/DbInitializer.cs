@@ -198,11 +198,15 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 if (IsDatabaseAccessible(db))
                 {
                     _logger.LogInformation("数据库已存在，跳过创建");
-                    return;
+                }
+                else
+                {
+                    db.DbMaintenance.CreateDatabase();
+                    _logger.LogInformation("数据库创建成功");
                 }
 
-                db.DbMaintenance.CreateDatabase();
-                _logger.LogInformation("数据库创建成功");
+                // MySQL 默认字符集若为 utf8mb3，emoji 等 4 字节字符写入会报 Incorrect string value，统一归一化为 utf8mb4
+                EnsureMySqlUtf8Mb4Database(db);
             });
         }
         catch (Exception ex)
@@ -227,6 +231,42 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// MySQL：确保数据库默认字符集为 utf8mb4（utf8mb3 无法存储 emoji 等 4 字节字符，写入报 Incorrect string value）
+    /// </summary>
+    private void EnsureMySqlUtf8Mb4Database(ISqlSugarClient db)
+    {
+        if (!IsMySql(db))
+        {
+            return;
+        }
+
+        try
+        {
+            var databaseName = db.Ado.Connection.Database;
+            if (string.IsNullOrWhiteSpace(databaseName))
+            {
+                return;
+            }
+
+            db.Ado.ExecuteCommand($"ALTER DATABASE `{databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+            _logger.LogInformation("已确保 MySQL 数据库默认字符集为 utf8mb4：{Database}", databaseName);
+        }
+        catch (Exception ex)
+        {
+            // 缺少 ALTER 权限等场景不阻断启动，但后建的表可能沿用旧字符集，提示手工处理
+            _logger.LogWarning(ex, "设置 MySQL 数据库默认字符集 utf8mb4 失败，请手工执行：ALTER DATABASE `数据库名` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+        }
+    }
+
+    /// <summary>
+    /// 是否 MySQL 连接
+    /// </summary>
+    private static bool IsMySql(ISqlSugarClient db)
+    {
+        return db.CurrentConnectionConfig.DbType is DbType.MySql or DbType.MySqlConnector;
     }
 
     /// <summary>
