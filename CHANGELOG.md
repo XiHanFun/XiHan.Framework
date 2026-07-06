@@ -2,6 +2,18 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.2.0 (2026-07-06)
+
+- **新增** AI 能力体系从零落地：新建 XiHan.Framework.AI.Abstractions 抽象包，OpenAI 兼容 Provider 解析 + 会话门面，Provider 解析支持 Invalidate 配置热切换
+- **新增** RAG 检索增强底座：嵌入 Provider + 向量抽象与默认实现（构建于 Microsoft.Extensions.VectorData）
+- **新增** Agent 与 MCP 桥接：Agent 门面（AsAIAgent/AgentSession）、技能注册表自动收纳并经官方桥接投影为 MCP 工具
+- **新增** AI 横切能力：护栏中间件（DelegatingChatClient fail-closed）、遥测/缓存管道开关（默认关）、提示词库默认源
+- **新增** SqlSugar 主从读写分离配置完整暴露：新增构建前钩子 ConfigureConnectionConfigs 交出原生连接配置供完整定制、AppendDataExecuting 追加式 AOP（核心注入不可覆盖、仅支持追加）、可选从库健康探针（默认关）、租户连接支持从库
+- **修复** 从库读权重 HitRate 无法经 appsettings 绑定导致从库不分担读，现构建时归一化为默认权重
+- **修复** MySQL 初始化强制 utf8mb4，修复 emoji 写入报错
+- **调整** 移除 MySQL 存量表 utf8mb4 兜底转换（前向单一格式）
+- **升级** 升级依赖（CodeAnalysis / SqlSugarCore 等）、统一文件头，发布 v3.2.0
+
 ## v3.1.0 (2026-07-03)
 
 - **新增** Bot.Sms 短信子包与 Telegram 多机器人平台（MultiBot 运行时、Webhook 中间件、内置 /start /help /myid 命令）
