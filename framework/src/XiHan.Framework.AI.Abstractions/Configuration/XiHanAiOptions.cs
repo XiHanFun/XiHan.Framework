@@ -12,6 +12,8 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.AI.Abstractions.Prompts;
+
 namespace XiHan.Framework.AI.Abstractions.Configuration;
 
 /// <summary>
@@ -38,4 +40,14 @@ public class XiHanAiOptions
     /// </summary>
     public IDictionary<string, AiProviderOptions> Providers { get; set; }
         = new Dictionary<string, AiProviderOptions>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 会话管道横切开关（护栏/遥测/缓存；全局，非按 provider）
+    /// </summary>
+    public AiPipelineOptions Pipeline { get; set; } = new();
+
+    /// <summary>
+    /// 提示词模板（Options 兜底源；store 化由应用层 IAiPromptStore 覆盖）
+    /// </summary>
+    public IList<AiPromptTemplate> Prompts { get; set; } = [];
 }
