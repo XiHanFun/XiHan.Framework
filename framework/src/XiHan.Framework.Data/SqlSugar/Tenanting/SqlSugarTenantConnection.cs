@@ -23,8 +23,13 @@ namespace XiHan.Framework.Data.SqlSugar.Tenanting;
 /// <param name="ConnectionString">数据库连接字符串（明文，调用方负责解密后传入）</param>
 /// <param name="DbType">数据库类型</param>
 /// <param name="IsAutoCloseConnection">是否自动关闭连接</param>
+/// <param name="SlaveConnectionConfigs">
+/// 从库连接配置（可选，让库隔离租户也享受读写分离）。
+/// 权重为 0 的从库会被框架按 <c>DefaultSlaveHitRate</c> 归一化；构建前钩子对该租户连接同样生效。
+/// </param>
 public sealed record SqlSugarTenantConnection(
     string ConfigId,
     string ConnectionString,
     DbType DbType,
-    bool IsAutoCloseConnection = true);
+    bool IsAutoCloseConnection = true,
+    List<SlaveConnectionConfig>? SlaveConnectionConfigs = null);

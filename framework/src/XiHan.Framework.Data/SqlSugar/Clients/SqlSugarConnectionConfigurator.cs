@@ -99,14 +99,21 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
 
     private ConnectionConfig BuildConnectionConfig(string configId, SqlSugarTenantConnection descriptor)
     {
-        return new ConnectionConfig
+        var config = new ConnectionConfig
         {
             ConfigId = configId,
             ConnectionString = descriptor.ConnectionString,
             DbType = descriptor.DbType,
             IsAutoCloseConnection = descriptor.IsAutoCloseConnection,
             InitKeyType = InitKeyType.Attribute,
-            MoreSettings = XiHanDataServiceCollectionExtensions.BuildMoreSettings(null, _options)
+            MoreSettings = XiHanDataServiceCollectionExtensions.BuildMoreSettings(null, _options),
+            // 库隔离租户同样支持读写分离，权重按框架默认归一化
+            SlaveConnectionConfigs = XiHanDataServiceCollectionExtensions.NormalizeSlaveHitRates(descriptor.SlaveConnectionConfigs, _options)
         };
+
+        // 租户连接与静态连接一致，构建前交给调用方钩子定制（以单元素列表触发，调用方按 ConfigId 分支处理）
+        _options.ConfigureConnectionConfigs?.Invoke([config]);
+
+        return config;
     }
 }

@@ -23,6 +23,7 @@ using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
+using XiHan.Framework.Data.SqlSugar.HealthCheck;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
@@ -63,6 +64,9 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddSingleton<SqlSugarDataExecutingHandler>();
         // 连接配置器：统一为静态/运行时动态连接装配全局过滤器与 AOP
         services.TryAddSingleton<ISqlSugarConnectionConfigurator, SqlSugarConnectionConfigurator>();
+
+        // 从库健康探针（现成探针，默认关闭；由 EnableSlaveHealthCheck 开关，未开启则空转零成本）
+        services.AddHostedService<SqlSugarSlaveHealthCheckService>();
 
         // 注册仓储服务
         services.TryAddScoped(typeof(IReadOnlyRepositoryBase<,>), typeof(SqlSugarReadOnlyRepository<,>));
@@ -136,20 +140,37 @@ public static class XiHanDataServiceCollectionExtensions
         var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
 
         var connectionConfigs = options.ConnectionConfigs
-            .Select(connConfig => new ConnectionConfig
+            .Select(connConfig =>
             {
-                ConfigId = connConfig.ConfigId,
-                ConnectionString = connConfig.ConnectionString,
-                DbType = connConfig.DbType,
-                IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
-                InitKeyType = connConfig.InitKeyType,
-                MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
-                SlaveConnectionConfigs = connConfig.SlaveConnectionConfigs
+                var config = new ConnectionConfig
+                {
+                    ConfigId = connConfig.ConfigId,
+                    ConnectionString = connConfig.ConnectionString,
+                    DbType = connConfig.DbType,
+                    IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
+                    InitKeyType = connConfig.InitKeyType,
+                    MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
+                    // appsettings 里 HitRate 是字段绑不上（恒为 0），此处归一化为默认权重，否则从库永不被选中
+                    SlaveConnectionConfigs = NormalizeSlaveHitRates(connConfig.SlaveConnectionConfigs, options),
+                    DbLinkName = connConfig.DbLinkName
+                };
+                if (connConfig.LanguageType.HasValue)
+                {
+                    config.LanguageType = connConfig.LanguageType.Value;
+                }
+                if (!string.IsNullOrWhiteSpace(connConfig.IndexSuffix))
+                {
+                    config.IndexSuffix = connConfig.IndexSuffix;
+                }
+                return config;
             })
             .ToList();
 
         // 设置自定义全局雪花ID生成器
         StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
+
+        // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
+        options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
 
         return new SqlSugarScope(connectionConfigs, client =>
         {
@@ -167,6 +188,30 @@ public static class XiHanDataServiceCollectionExtensions
         rawSettings.IsAutoUpdateQueryFilter = options.EnableAutoUpdateQueryFilter;
         rawSettings.IsAutoDeleteQueryFilter = options.EnableAutoDeleteQueryFilter;
         return rawSettings;
+    }
+
+    /// <summary>
+    /// 归一化从库权重：SqlSugar 的 <see cref="SlaveConnectionConfig.HitRate"/> 是字段，无法经 appsettings 绑定（恒为 0）；
+    /// 把 <c>HitRate &lt;= 0</c> 的从库回填为 <see cref="XiHanSqlSugarCoreOptions.DefaultSlaveHitRate"/>，
+    /// 保证经配置文件声明的从库能真正参与读写分离。差异化权重请用 <c>ConfigureConnectionConfigs</c> 代码钩子。
+    /// </summary>
+    internal static List<SlaveConnectionConfig>? NormalizeSlaveHitRates(List<SlaveConnectionConfig>? slaves, XiHanSqlSugarCoreOptions options)
+    {
+        if (slaves is null || slaves.Count == 0)
+        {
+            return slaves;
+        }
+
+        var defaultRate = options.DefaultSlaveHitRate > 0 ? options.DefaultSlaveHitRate : 10;
+        foreach (var slave in slaves)
+        {
+            if (slave.HitRate <= 0)
+            {
+                slave.HitRate = defaultRate;
+            }
+        }
+
+        return slaves;
     }
 
     /// <summary>
@@ -304,9 +349,12 @@ public static class XiHanDataServiceCollectionExtensions
             dbProvider.Aop.OnLogExecuted = onLogExecuted;
         }
 
-        dbProvider.Aop.DataExecuting = (_, entityInfo) =>
+        // 核心焊死、只许追加：框架的雪花主键/审计/租户注入始终先跑且不可覆盖，
+        // 调用方经 options.AppendDataExecuting 仅能在其后追加逻辑（此处为组合式赋值，非直接暴露 Aop 供覆盖）。
+        dbProvider.Aop.DataExecuting = (oldValue, entityInfo) =>
         {
             dataExecutingHandler.Handle(entityInfo);
+            options.AppendDataExecuting?.Invoke(oldValue, entityInfo);
         };
 
         // 实体差异日志 AOP：基于 SqlSugar 原生 OnDiffLogEvent 的真 AOP 审计
