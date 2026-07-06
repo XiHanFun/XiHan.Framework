@@ -52,7 +52,28 @@ public class SqlSugarConnectionConfigOptions
     public ConnMoreSettings? MoreSettings { get; set; }
 
     /// <summary>
-    /// 从库连接配置
+    /// 数据库链接名（原生字段，跨库 DbLink 场景使用，可选）
     /// </summary>
+    public string? DbLinkName { get; set; }
+
+    /// <summary>
+    /// 语言类型（原生字段，影响 SqlSugar 报错信息本地化，可选）
+    /// </summary>
+    public LanguageType? LanguageType { get; set; }
+
+    /// <summary>
+    /// 索引后缀（原生字段，可选）
+    /// </summary>
+    public string? IndexSuffix { get; set; }
+
+    /// <summary>
+    /// 从库连接配置（原生 <see cref="SlaveConnectionConfig"/>）
+    /// </summary>
+    /// <remarks>
+    /// 注意：<c>SlaveConnectionConfig.HitRate</c> 是**字段**而非属性，无法经 appsettings 绑定（恒为 0）；
+    /// 框架在构建时会把 <c>HitRate &lt;= 0</c> 归一化为
+    /// <see cref="XiHanSqlSugarCoreOptions.DefaultSlaveHitRate"/>，保证配置的从库能真正分担读流量。
+    /// 需要差异化权重或更多原生定制时，请使用 <see cref="XiHanSqlSugarCoreOptions.ConfigureConnectionConfigs"/> 代码钩子。
+    /// </remarks>
     public List<SlaveConnectionConfig>? SlaveConnectionConfigs { get; set; }
 }
