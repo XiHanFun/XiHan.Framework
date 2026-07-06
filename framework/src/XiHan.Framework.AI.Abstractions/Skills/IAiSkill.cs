@@ -4,7 +4,7 @@
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 // FileName:IAiSkill
-// Guid:a1b2c3d4-e5f6-4a07-9c07-0a0b0c0d0e07
+// Guid:5d552cba-ee75-4c41-8aa1-f9a7a5864c66
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
 // CreateTime:2026/07/05 10:00:00
