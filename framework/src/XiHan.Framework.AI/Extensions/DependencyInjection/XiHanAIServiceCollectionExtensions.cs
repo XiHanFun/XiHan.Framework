@@ -17,11 +17,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.AI.Abstractions.Agents;
 using XiHan.Framework.AI.Abstractions.Chat;
 using XiHan.Framework.AI.Abstractions.Configuration;
+using XiHan.Framework.AI.Abstractions.Guardrails;
+using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.Abstractions.Skills;
 using XiHan.Framework.AI.Agents;
 using XiHan.Framework.AI.Chat;
 using XiHan.Framework.AI.Configuration;
+using XiHan.Framework.AI.Guardrails;
 using XiHan.Framework.AI.Providers;
 using XiHan.Framework.AI.Skills;
 
@@ -45,9 +48,13 @@ public static class XiHanAIServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddOptions<XiHanAiOptions>().BindConfiguration(XiHanAiOptions.SectionName);
+        services.AddOptions<AiGuardrailOptions>().BindConfiguration(AiGuardrailOptions.SectionName);
 
         // provider 配置源:默认读 Options（appsettings 兜底），应用层可换 DB 源
         services.TryAddSingleton<IAiProviderConfigStore, OptionsAiProviderConfigStore>();
+
+        // 默认护栏（敏感词/注入黑名单；应用可 AddSingleton<IAiGuardrail,X> 追加，全部放行才通过）
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IAiGuardrail, KeywordBlocklistGuardrail>());
 
         // OpenAI 兼容工厂 + 多 provider 解析器（含 IChatClient 缓存）
         services.TryAddSingleton<OpenAiCompatibleChatClientFactory>();
@@ -59,6 +66,9 @@ public static class XiHanAIServiceCollectionExtensions
 
         // 会话门面
         services.TryAddSingleton<IXiHanAiService, XiHanAiService>();
+
+        // 提示词库:默认读 Options（appsettings 兜底），应用层可换 DB 源
+        services.TryAddSingleton<IAiPromptStore, OptionsAiPromptStore>();
 
         // 技能注册表（收纳应用注册的 IAiSkill）+ Agent 工厂（MAF）
         services.TryAddSingleton<IAiSkillRegistry, DefaultAiSkillRegistry>();
