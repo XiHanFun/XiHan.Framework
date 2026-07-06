@@ -82,9 +82,54 @@ public class XiHanSqlSugarCoreOptions
     public Action<string, SugarParameter[]>? SqlLogAction { get; set; }
 
     /// <summary>
+    /// 构建前连接配置钩子：把框架已填好默认值的原生 <see cref="ConnectionConfig"/> 完整交给调用方
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="global::SqlSugar.SqlSugarScope"/> 构造之前触发，参数为**原生** SqlSugar 连接配置列表。
+    /// 调用方可在此完整定制任何原生能力——增删/调整 <c>SlaveConnectionConfigs</c>（含按需设置 <c>HitRate</c> 权重，
+    /// 该字段无法经 appsettings 绑定，只能在此以代码方式赋值）、挂 <c>ConfigureExternalServices</c>（如可空列处理）、
+    /// 写主从探活逻辑等。不设置则一律吃框架默认。
+    /// 该钩子同样会在运行时新增租户连接时以单元素列表形式触发，调用方应按 <c>ConfigId</c> 分支处理，保证幂等。
+    /// </remarks>
+    public Action<List<ConnectionConfig>>? ConfigureConnectionConfigs { get; set; }
+
+    /// <summary>
+    /// 追加式 DataExecuting 钩子：核心焊死、只许追加
+    /// </summary>
+    /// <remarks>
+    /// 框架核心的雪花主键 / 审计字段 / 租户标识注入始终**先于**本委托执行且不可被覆盖；
+    /// 调用方在此仅能追加逻辑（如业务自有字段填充），不会破坏多租户与审计。
+    /// 请勿在 <see cref="ConfigureDbAction"/> 里直接给 <c>Aop.DataExecuting</c> 赋值——SqlSugar 该事件为单次赋值，
+    /// 直接赋值会整体冲掉框架核心注入，务必改用此追加口子。
+    /// </remarks>
+    public Action<object, DataFilterModel>? AppendDataExecuting { get; set; }
+
+    /// <summary>
     /// 配置SqlSugar客户端的动作
     /// </summary>
     public Action<ISqlSugarClient>? ConfigureDbAction { get; set; }
+
+    /// <summary>
+    /// 从库默认权重：appsettings 里 <c>HitRate</c> 因是字段无法绑定，恒为 0 会导致从库永不被选中；
+    /// 框架在构建时把 <c>HitRate &lt;= 0</c> 的从库归一化为此权重，保证经 appsettings 配置的从库能真正分担读流量。
+    /// 需要按从库设置差异化权重时，请改用 <see cref="ConfigureConnectionConfigs"/> 钩子在代码里赋值。）
+    /// </summary>
+    public int DefaultSlaveHitRate { get; set; } = 10;
+
+    /// <summary>
+    /// 是否启用从库健康探测（现成探针，默认关闭；开启后定期探活并对不可用从库摘除权重、恢复期回填）
+    /// </summary>
+    public bool EnableSlaveHealthCheck { get; set; } = false;
+
+    /// <summary>
+    /// 从库健康探测周期（秒）
+    /// </summary>
+    public int SlaveHealthCheckIntervalSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// 从库故障冷却时间（秒）：从库探测失败后，在此窗口内即便恢复也暂不回填权重，避免抖动
+    /// </summary>
+    public int SlaveFailureCooldownSeconds { get; set; } = 120;
 
     /// <summary>
     /// 是否启用SQL日志
