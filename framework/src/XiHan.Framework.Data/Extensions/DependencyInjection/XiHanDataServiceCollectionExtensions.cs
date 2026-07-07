@@ -77,12 +77,8 @@ public static class XiHanDataServiceCollectionExtensions
 
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
 
-        // 审计上下文提供器：默认实现从 ICurrentUser / HTTP 请求填充审计记录
-        // 业务层可通过注册自定义 IEntityAuditContextProvider 覆盖（TryAdd 语义确保不覆盖已注册实例）
-        services.TryAddScoped<IEntityAuditContextProvider, DefaultEntityAuditContextProvider>();
-
-        // 差异日志写入器：默认 Null 实现零开销，业务层须替换为真实落库实现
-        services.TryAddScoped<IEntityDiffLogWriter, NullEntityDiffLogWriter>();
+        // 审计上下文提供器（DefaultEntityAuditContextProvider）与差异日志写入器（NullEntityDiffLogWriter）
+        // 的默认注册已下沉至 XiHanAuditingModule（XiHan.Framework.Auditing）；本模块依赖它。
 
         // 实体变更拦截器：基于命令级 AOP 自动捕获 INSERT / UPDATE / DELETE 差异日志
         // 无需仓储显式调用 EnableDiffLogEvent，通过 ISqlSugarClient.UseEntityChangeInterceptor() 挂载

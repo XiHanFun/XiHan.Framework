@@ -27,6 +27,7 @@
   <Folder Name="/1.src/6.Infrastructure/">
     <Project Path="src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
+    <Project Path="src/XiHan.Framework.Auditing/XiHan.Framework.Auditing.csproj" />
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
     <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
