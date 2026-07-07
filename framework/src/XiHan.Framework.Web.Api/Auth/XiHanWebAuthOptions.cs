@@ -31,7 +31,7 @@ public class XiHanWebAuthOptions
     /// 当为 true 时，所有未标记 [AllowAnonymous] 的端点都需要已认证用户。
     /// 仅在 JwtOptions.SecretKey 配置有效时生效
     /// </remarks>
-    public bool RequireAuthenticatedUser { get; set; } = true;
+    public bool RequireAuthenticatedUser { get; set; } = false;
 
     /// <summary>
     /// SignalR Hub 路径前缀，用于从 query string 提取 access_token
