@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.EventBus.Kafka</Title>
+        <AssemblyName>XiHan.Framework.EventBus.Kafka</AssemblyName>
+        <PackageId>XiHan.Framework.EventBus.Kafka</PackageId>
+        <Description>曦寒框架分布式事件总线 Kafka 提供程序</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Confluent.Kafka" Version="2.15.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+    </ItemGroup>
+
+</Project>
