@@ -33,6 +33,11 @@ public static class XiHanSecurityServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // 注册密码哈希器（IPasswordHasher/PasswordHasher 类型归属本模块，故由本模块自注册以保证自洽；
+        // Authentication 模块亦有等价 TryAdd，幂等不冲突）。修复 PasswordPolicyService 依赖倒置：
+        // 此前仅 Authentication 注册，导致仅加载 Security（未加载 Authentication）时 IPasswordHasher 解析失败。
+        services.TryAddSingleton<IPasswordHasher, PasswordHasher>();
+
         // 注册密码策略服务（Scoped，因消费方可能需要 Scoped 仓储）
         services.TryAddScoped<IPasswordPolicyService, PasswordPolicyService>();
 
