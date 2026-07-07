@@ -26,10 +26,16 @@ public abstract class CurrentPrincipalAccessorBase : ICurrentPrincipalAccessor
     private readonly AsyncLocal<ClaimsPrincipal> _currentPrincipal = new();
 
     /// <summary>
-    /// 获取当前的 ClaimsPrincipal(用户身份信息)
-    /// 如果未显式设置，则通过抽象方法 GetClaimsPrincipal 获取默认值
+    /// 匿名主体兜底：无当前主体（未登录 / 无 HttpContext 等）时返回空 ClaimsPrincipal，
+    /// 保证 Principal 永不为 null，避免 ICurrentUser 等下游在匿名请求下抛 NullReference/ArgumentNull。
     /// </summary>
-    public ClaimsPrincipal Principal => _currentPrincipal.Value ?? GetClaimsPrincipal();
+    private static readonly ClaimsPrincipal AnonymousPrincipal = new(new ClaimsIdentity());
+
+    /// <summary>
+    /// 获取当前的 ClaimsPrincipal(用户身份信息)
+    /// 如果未显式设置，则通过抽象方法 GetClaimsPrincipal 获取；仍为空时回退匿名空主体（永不为 null）
+    /// </summary>
+    public ClaimsPrincipal Principal => _currentPrincipal.Value ?? GetClaimsPrincipal() ?? AnonymousPrincipal;
 
     /// <summary>
     /// 临时更改当前上下文的 ClaimsPrincipal
