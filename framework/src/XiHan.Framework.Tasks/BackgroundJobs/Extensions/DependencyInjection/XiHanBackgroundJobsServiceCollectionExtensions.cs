@@ -54,6 +54,27 @@ public static class XiHanBackgroundJobsServiceCollectionExtensions
     }
 
     /// <summary>
+    /// 使用 Redis 作为后台作业存储（持久化 + 跨实例），替换默认内存存储
+    /// </summary>
+    /// <remarks>
+    /// 需已配置 Redis（复用 Caching 注册的 <c>IConnectionMultiplexer</c>）。在应用模块中调用一次即可启用；
+    /// 启用后作业可跨进程重启与多实例可靠投递（Worker 单活由分布式锁保证）。
+    /// </remarks>
+    /// <param name="services">服务集合</param>
+    /// <param name="configure">可选：自定义 Redis 存储选项（键前缀、放弃保留期等）</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection UseRedisBackgroundJobStore(this IServiceCollection services, Action<RedisBackgroundJobStoreOptions>? configure = null)
+    {
+        if (configure != null)
+        {
+            services.Configure(configure);
+        }
+
+        services.Replace(ServiceDescriptor.Singleton<IBackgroundJobStore, RedisBackgroundJobStore>());
+        return services;
+    }
+
+    /// <summary>
     /// 通过注册钩子自动收集作业处理器类型并填充注册表
     /// </summary>
     /// <param name="services">服务集合</param>
