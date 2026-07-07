@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Auditing;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
@@ -36,7 +37,8 @@ namespace XiHan.Framework.Data;
     typeof(XiHanUowModule),
     typeof(XiHanDistributedIdsModule),
     typeof(XiHanMultiTenancyModule),
-    typeof(XiHanSecurityModule)
+    typeof(XiHanSecurityModule),
+    typeof(XiHanAuditingModule)
     )]
 public class XiHanDataModule : XiHanModule
 {

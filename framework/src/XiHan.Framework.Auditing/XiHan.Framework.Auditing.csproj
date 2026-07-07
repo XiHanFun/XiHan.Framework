@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Auditing</Title>
+        <AssemblyName>XiHan.Framework.Auditing</AssemblyName>
+        <PackageId>XiHan.Framework.Auditing</PackageId>
+        <Description>曦寒框架审计日志库（操作/访问/登录/异常/接口/实体变更日志的采集管道、异步队列、脱敏与写入契约）</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <!-- 原文件在 Web SDK 下靠全局 using 免写这些命名空间；本包为普通 SDK，补全局 using -->
+    <ItemGroup>
+        <Using Include="Microsoft.Extensions.DependencyInjection" />
+        <Using Include="Microsoft.Extensions.Hosting" />
+        <Using Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>

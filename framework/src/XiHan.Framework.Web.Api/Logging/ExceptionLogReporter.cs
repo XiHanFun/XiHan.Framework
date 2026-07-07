@@ -17,7 +17,8 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
-using XiHan.Framework.Web.Api.Logging.Pipelines;
+using XiHan.Framework.Auditing;
+using XiHan.Framework.Auditing.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Logging;
 

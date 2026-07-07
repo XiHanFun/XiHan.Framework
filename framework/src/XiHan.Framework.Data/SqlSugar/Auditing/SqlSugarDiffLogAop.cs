@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Data.Auditing;
+using XiHan.Framework.Auditing;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Data.SqlSugar.Auditing;

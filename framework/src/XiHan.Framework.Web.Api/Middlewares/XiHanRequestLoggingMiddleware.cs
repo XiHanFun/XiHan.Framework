@@ -21,20 +21,20 @@ using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
-using XiHan.Framework.Web.Api.Logging;
-using XiHan.Framework.Web.Api.Logging.Options;
-using XiHan.Framework.Web.Api.Logging.Pipelines;
+using XiHan.Framework.Auditing;
+using XiHan.Framework.Auditing.Options;
+using XiHan.Framework.Auditing.Pipelines;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 
 /// <summary>
 /// WebApi 请求日志中间件
 /// </summary>
-public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRequestLoggingMiddleware> logger, IOptions<XiHanWebApiLogQueueOptions> logQueueOptions)
+public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRequestLoggingMiddleware> logger, IOptions<XiHanAuditingLogQueueOptions> logQueueOptions)
 {
     private const int RequestBodyLimit = 4096;
 
-    private readonly XiHanWebApiLogQueueOptions _logQueueOptions = logQueueOptions.Value;
+    private readonly XiHanAuditingLogQueueOptions _logQueueOptions = logQueueOptions.Value;
 
     /// <summary>
     /// 执行中间件
