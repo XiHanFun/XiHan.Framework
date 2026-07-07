@@ -14,7 +14,6 @@
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Http;
 using XiHan.Framework.Logging;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 
@@ -24,7 +23,6 @@ namespace XiHan.Framework.Integration.Tests;
 /// 曦寒测试应用集成主机
 /// </summary>
 [DependsOn(
-    typeof(XiHanHttpModule),
     typeof(XiHanLoggingModule)
     )]
 public class XiHanTestsIntegrationModule : XiHanModule

@@ -18,6 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\XiHan.Framework.Auditing\XiHan.Framework.Auditing.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Domain\XiHan.Framework.Domain.csproj" />

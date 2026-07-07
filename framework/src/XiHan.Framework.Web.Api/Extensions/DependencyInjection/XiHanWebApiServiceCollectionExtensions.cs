@@ -29,11 +29,11 @@ using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
-using XiHan.Framework.Web.Api.Logging.Options;
-using XiHan.Framework.Web.Api.Logging.Pipelines;
-using XiHan.Framework.Web.Api.Logging.Queues;
-using XiHan.Framework.Web.Api.Logging.Workers;
-using XiHan.Framework.Web.Api.Logging.Writers;
+using XiHan.Framework.Auditing.Options;
+using XiHan.Framework.Auditing.Pipelines;
+using XiHan.Framework.Auditing.Queues;
+using XiHan.Framework.Auditing.Workers;
+using XiHan.Framework.Auditing.Writers;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.TenantResolvers;
@@ -245,26 +245,11 @@ public static class XiHanWebApiServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddXiHanWebApiLogging(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<XiHanWebApiLogQueueOptions>(configuration.GetSection(XiHanWebApiLogQueueOptions.SectionName));
-
-        services.AddSingleton(typeof(ILogQueue<>), typeof(ChannelLogQueue<>));
-        services.AddHostedService<AccessLogQueueWorker>();
-        services.AddHostedService<OperationLogQueueWorker>();
-        services.AddHostedService<ExceptionLogQueueWorker>();
-        services.AddHostedService<ApiLogQueueWorker>();
-        services.AddHostedService<LoginLogQueueWorker>();
-        services.AddScoped<IAccessLogPipeline, AccessLogPipeline>();
-        services.AddScoped<IOperationLogPipeline, OperationLogPipeline>();
-        services.AddScoped<IExceptionLogPipeline, ExceptionLogPipeline>();
-        services.AddScoped<IApiLogPipeline, ApiLogPipeline>();
-        services.AddScoped<ILoginLogPipeline, LoginLogPipeline>();
+        // 审计日志基础设施（Options / 队列 / 后台消费者 / 采集管道 / 空写入器）已下沉至
+        // XiHanAuditingModule（XiHan.Framework.Auditing）；Web.Api 模块依赖它。
+        // 此处仅注册 Web 特有的 MVC 过滤器。
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
-        services.TryAddScoped<IAccessLogWriter, NullAccessLogWriter>();
-        services.TryAddScoped<IOperationLogWriter, NullOperationLogWriter>();
-        services.TryAddScoped<IExceptionLogWriter, NullExceptionLogWriter>();
-        services.TryAddScoped<IApiLogWriter, NullApiLogWriter>();
-        services.TryAddScoped<ILoginLogWriter, NullLoginLogWriter>();
 
         return services;
     }
