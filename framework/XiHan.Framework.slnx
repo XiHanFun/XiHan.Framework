@@ -43,6 +43,9 @@
     <Project Path="src/XiHan.Framework.DistributedIds/XiHan.Framework.DistributedIds.csproj" />
     <Project Path="src/XiHan.Framework.EventBus.Abstractions/XiHan.Framework.EventBus.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.EventBus/XiHan.Framework.EventBus.csproj" />
+    <Project Path="src/XiHan.Framework.EventBus.Kafka/XiHan.Framework.EventBus.Kafka.csproj" />
+    <Project Path="src/XiHan.Framework.EventBus.RabbitMQ/XiHan.Framework.EventBus.RabbitMQ.csproj" />
+    <Project Path="src/XiHan.Framework.EventBus.Redis/XiHan.Framework.EventBus.Redis.csproj" />
     <Project Path="src/XiHan.Framework.Http/XiHan.Framework.Http.csproj" />
     <Project Path="src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Localization/XiHan.Framework.Localization.csproj" />

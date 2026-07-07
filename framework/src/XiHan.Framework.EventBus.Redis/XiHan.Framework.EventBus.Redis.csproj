@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.EventBus.Redis</Title>
+        <AssemblyName>XiHan.Framework.EventBus.Redis</AssemblyName>
+        <PackageId>XiHan.Framework.EventBus.Redis</PackageId>
+        <Description>曦寒框架分布式事件总线 Redis（Streams）提供程序</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+    </ItemGroup>
+
+</Project>
