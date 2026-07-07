@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.EventBus.RabbitMQ</Title>
+        <AssemblyName>XiHan.Framework.EventBus.RabbitMQ</AssemblyName>
+        <PackageId>XiHan.Framework.EventBus.RabbitMQ</PackageId>
+        <Description>曦寒框架分布式事件总线 RabbitMQ 提供程序</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+    </ItemGroup>
+
+</Project>
