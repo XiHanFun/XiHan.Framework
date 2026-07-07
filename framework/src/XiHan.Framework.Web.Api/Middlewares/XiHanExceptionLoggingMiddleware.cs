@@ -16,6 +16,7 @@ using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Logging;
+using XiHan.Framework.Auditing;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
 

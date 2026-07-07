@@ -23,6 +23,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\XiHan.Framework.Application\XiHan.Framework.Application.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Auditing\XiHan.Framework.Auditing.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Localization\XiHan.Framework.Localization.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
