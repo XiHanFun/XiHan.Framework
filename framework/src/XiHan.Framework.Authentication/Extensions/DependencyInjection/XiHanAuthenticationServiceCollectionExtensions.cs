@@ -37,9 +37,6 @@ public static class XiHanAuthenticationServiceCollectionExtensions
     /// <returns>服务集合</returns>
     public static IServiceCollection AddXiHanAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        // 密码哈希/策略选项与 IPasswordHasher 已下沉至 XiHan.Framework.Security 自注册
-        // （类型归属 Security；Authentication [DependsOn Security] 保证其先加载），此处不再重复登记。
-
         // 配置 JWT 服务
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
