@@ -19,6 +19,7 @@
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.9" />
 	  <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+	  <PackageReference Include="AspNet.Security.OAuth.Gitee" Version="10.0.0" />
 	  <PackageReference Include="AspNet.Security.OAuth.QQ" Version="10.0.0" />
 	</ItemGroup>
 
