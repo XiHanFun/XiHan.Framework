@@ -2,6 +2,22 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.4.0 (2026-07-08)
+
+- **修复** 修复多租户行过滤全程失效的严重隔离缺陷：7 个 SqlSugar 多租户基类仅添加 TenantId 列却未实现 IMultiTenantEntity，导致 `AddTableFilter<IMultiTenantEntity>` 全程 no-op（所有租户互相可见）；现补齐接口并将过滤器改为标量哨兵
+- **新增** 新增 Gitee 第三方 OAuth 登录 Provider
+- **升级** 升级依赖，发布 v3.4.0
+
+## v3.3.0 (2026-07-08)
+
+- **新增** 分布式事件总线三 Broker Provider：新增 RabbitMQ / Kafka / Redis 三种跨进程事件传输 Provider，本地事件总线抽象可平滑切换到分布式部署
+- **新增** F3 后台作业管理器：新增 IBackgroundJobManager「即发即忘」一次性作业（轮询 Worker + 默认内存存储），并补齐 Redis 持久化作业存储
+- **调整** 审计日志通用件下沉新包 XiHan.Framework.Auditing：审计写入器 / 上下文从应用层剥离为独立框架包，供各应用复用
+- **调整** 密码哈希器与选项全收归 XiHan.Framework.Security（Authentication 去重），IPasswordHasher 由 Security 自注册，修复跨模块依赖倒置
+- **修复** CurrentPrincipalAccessor.Principal 匿名请求兜底，防匿名访问触发 NRE
+- **优化** 优化默认测试项目
+- **升级** 升级依赖，发布 v3.3.0
+
 ## v3.2.0 (2026-07-06)
 
 - **新增** AI 能力体系从零落地：新建 XiHan.Framework.AI.Abstractions 抽象包，OpenAI 兼容 Provider 解析 + 会话门面，Provider 解析支持 Invalidate 配置热切换
