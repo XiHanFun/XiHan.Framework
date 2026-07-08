@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using AspNet.Security.OAuth.Gitee;
 using AspNet.Security.OAuth.GitHub;
 using AspNet.Security.OAuth.QQ;
 using Microsoft.AspNetCore.Authentication;
@@ -92,6 +93,22 @@ public static class XiHanOAuthServiceCollectionExtensions
                     options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
                     options.SignInScheme = "ExternalCookie";
                     // 头像：GitHub 用户信息 avatar_url → 统一头像 Claim
+                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
+                    foreach (var scope in provider.Scopes)
+                    {
+                        options.Scope.Add(scope);
+                    }
+                });
+                break;
+
+            case "gitee":
+                builder.AddGitee(provider.Name, provider.DisplayName ?? "Gitee", options =>
+                {
+                    options.ClientId = provider.ClientId;
+                    options.ClientSecret = provider.ClientSecret;
+                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
+                    options.SignInScheme = "ExternalCookie";
+                    // 头像：Gitee 用户信息 avatar_url → 统一头像 Claim
                     options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
                     foreach (var scope in provider.Scopes)
                     {
