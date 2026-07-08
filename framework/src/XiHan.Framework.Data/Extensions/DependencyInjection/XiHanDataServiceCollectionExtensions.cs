@@ -228,14 +228,14 @@ public static class XiHanDataServiceCollectionExtensions
 
         if (options.EnableTenantFilter)
         {
-            // 租户过滤策略：
-            // - 当前无租户上下文（跨租户/平台运维）：不过滤
-            // - 当前有租户上下文：只看（自己租户数据 OR 全局模板 TenantId=0）
+            // 租户过滤策略（表达式内只允许出现 long/bool 标量：绝不引用 BasicTenantInfo 复杂对象、不对可空值取 .Value，
+            // 否则 SqlSugar 会把整个 BasicTenantInfo 当 SQL 参数交给驱动，报 “Can't write CLR type BasicTenantInfo”）：
+            // - 平台态（无租户上下文 / 上下文 TenantId 为空）：ResolveTenantScopeId 返回哨兵值 → 首个恒真子句放行全部
+            // - 有租户上下文：只看（本租户数据 OR 全局模板 TenantId=0）
             provider.QueryFilter.AddTableFilter<IMultiTenantEntity>(
-                entity => currentTenantAccessor.Current == null ||
-                          !currentTenantAccessor.Current.TenantId.HasValue ||
-                          entity.TenantId == currentTenantAccessor.Current.TenantId.Value ||
-                          entity.TenantId == 0);
+                entity => ResolveTenantScopeId(currentTenantAccessor) == PlatformTenantScopeSentinel ||
+                          entity.TenantId == 0 ||
+                          entity.TenantId == ResolveTenantScopeId(currentTenantAccessor));
         }
 
         foreach (var filter in options.GlobalFilters)
@@ -254,6 +254,27 @@ public static class XiHanDataServiceCollectionExtensions
             var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
             methodInfo?.Invoke(provider.QueryFilter, [lambda]);
         }
+    }
+
+    /// <summary>
+    /// 平台态（无租户上下文）哨兵值：租户过滤器据此放行全部数据。
+    /// 取 <see cref="long.MinValue"/> 确保不与平台租户(0)或业务租户(≥1)冲突。
+    /// </summary>
+    private const long PlatformTenantScopeSentinel = long.MinValue;
+
+    /// <summary>
+    /// 解析当前租户过滤标量：有租户上下文返回其 TenantId，否则返回平台哨兵值。
+    /// </summary>
+    /// <remarks>
+    /// 供全局租户 QueryFilter 使用：仅返回 <see cref="long"/> 标量，绝不向过滤表达式泄漏 BasicTenantInfo 复杂对象，
+    /// 且对空上下文以哨兵兜底而非取 <c>.Value</c>，从而规避 SqlSugar 表达式翻译期的类型/空值异常。
+    /// SqlSugar 对过滤表达式按查询即时求值，本方法随之每次查询重算，保证租户上下文动态生效。
+    /// </remarks>
+    /// <param name="currentTenantAccessor">当前租户访问器</param>
+    /// <returns>当前租户 Id 或平台哨兵值</returns>
+    private static long ResolveTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
+    {
+        return currentTenantAccessor.Current?.TenantId ?? PlatformTenantScopeSentinel;
     }
 
     /// <summary>
