@@ -15,6 +15,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using XiHan.Framework.Core.Tracing;
@@ -93,7 +94,26 @@ public static class XiHanObservabilityServiceCollectionExtensions
             });
         }
 
-        // Metrics / Logging：Options 已就位，此处暂不接线
+        // 指标（Metrics）：MetricsCollector 的 Meter 直出 OTel，可导 OTLP/Prometheus
+        if (options.EnableMetrics)
+        {
+            otel.WithMetrics(metrics =>
+            {
+                metrics.AddMeter(MetricsCollector.MeterName);
+
+                if (options.ConsoleExporter)
+                {
+                    metrics.AddConsoleExporter();
+                }
+
+                if (!string.IsNullOrWhiteSpace(options.OtlpEndpoint))
+                {
+                    metrics.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(options.OtlpEndpoint));
+                }
+            });
+        }
+
+        // Logging（OTLP logs）：后续增量
 
         return services;
     }
