@@ -40,8 +40,8 @@ public class XiHanLoggingOptions
     /// <summary>
     /// 控制台输出模板
     /// </summary>
-    /// <remarks>{TraceId} 由 Serilog 从 Activity.Current 自动填充（W3C 32-hex），OTel 激活后即与 trace 后端可 join；无链路时渲染为空 []。</remarks>
-    public string ConsoleOutputTemplate { get; set; } = "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} [{TraceId}]: {Message:lj}{NewLine}{Exception}";
+    /// <remarks>{TraceId} 由 Serilog 从 Activity.Current 自动填充（W3C 32-hex），OTel 激活后即与 trace 后端可 join；无链路时渲染为空 []。链路 ID 紧跟级别之后，便于按行首快速对齐同一链路。</remarks>
+    public string ConsoleOutputTemplate { get; set; } = "[{Timestamp:HH:mm:ss} {Level:u3}] [{TraceId}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// 文件输出路径
@@ -51,8 +51,8 @@ public class XiHanLoggingOptions
     /// <summary>
     /// 文件输出模板
     /// </summary>
-    /// <remarks>{TraceId}/{SpanId} 由 Serilog 从 Activity.Current 自动填充（W3C）；无链路时渲染为空。</remarks>
-    public string FileOutputTemplate { get; set; } = "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {SourceContext} [{TraceId} {SpanId}]: {Message:lj}{NewLine}{Exception}";
+    /// <remarks>{TraceId}/{SpanId} 由 Serilog 从 Activity.Current 自动填充（W3C）；无链路时渲染为空。链路 ID 紧跟级别之后，与控制台模板对齐。</remarks>
+    public string FileOutputTemplate { get; set; } = "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] [{TraceId} {SpanId}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// 日志文件滚动间隔
