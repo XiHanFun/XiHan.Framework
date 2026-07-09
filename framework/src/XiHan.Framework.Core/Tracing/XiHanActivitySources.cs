@@ -38,6 +38,9 @@ public static class XiHanActivitySources
     /// <summary>gRPC Span 源</summary>
     public const string Grpc = "XiHan.Grpc";
 
+    /// <summary>缓存（Redis）Span 源</summary>
+    public const string Cache = "XiHan.Cache";
+
     /// <summary>AI 会话管道 Span 源（须与 AiPipelineOptions.TelemetrySourceName 一致）</summary>
     public const string Ai = "XiHan.AI";
 
@@ -53,6 +56,9 @@ public static class XiHanActivitySources
     /// <summary>gRPC Span 源实例</summary>
     public static readonly ActivitySource GrpcSource = new(Grpc);
 
+    /// <summary>缓存（Redis）Span 源实例</summary>
+    public static readonly ActivitySource CacheSource = new(Cache);
+
     /// <summary>框架内置的全部源名（供 OTel AddSource 批量注册）</summary>
-    public static readonly string[] All = [App, Data, EventBus, Grpc, Ai];
+    public static readonly string[] All = [App, Data, EventBus, Grpc, Cache, Ai];
 }
