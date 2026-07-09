@@ -15,6 +15,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -311,6 +312,9 @@ public abstract class BrokerDistributedEventBusBase : DistributedEventBusBase
 
         var eventData = JsonSerializer.Deserialize(body, eventType)!;
 
+        // 消费 Span：以上游 correlationId（W3C trace id）归入同一 trace，令消费端日志/审计/DB 携带同一 TraceId
+        using var activity = StartConsumerActivity(eventName, correlationId);
+
         // 优先走收件箱：保证幂等（按 messageId 去重）与失败重试
         if (await AddToInboxAsync(messageId, eventName, eventType, eventData, correlationId))
         {
@@ -326,6 +330,7 @@ public abstract class BrokerDistributedEventBusBase : DistributedEventBusBase
 
         if (exceptions.Count != 0)
         {
+            activity?.SetStatus(ActivityStatusCode.Error);
             ThrowOriginalExceptions(eventType, exceptions);
         }
     }
@@ -338,4 +343,56 @@ public abstract class BrokerDistributedEventBusBase : DistributedEventBusBase
     /// <param name="messageId">消息唯一标识</param>
     /// <param name="correlationId">关联标识（可空）</param>
     protected abstract Task PublishToBrokerAsync(string eventName, byte[] body, string? messageId, string? correlationId);
+
+    /// <summary>
+    /// 为消费入口创建 Consumer Span（以上游 correlationId 作为 W3C trace id 归入同一 trace）
+    /// </summary>
+    /// <remarks>OTel 未监听时返回 null（零开销）；correlationId 非合法 32-hex 时退化为新根 span。</remarks>
+    private static Activity? StartConsumerActivity(string eventName, string? correlationId)
+    {
+        var source = XiHanActivitySources.EventBusSource;
+        if (!source.HasListeners())
+        {
+            return null;
+        }
+
+        var name = $"eventbus.consume {eventName}";
+        if (TryParseTraceId(correlationId, out var traceId))
+        {
+            var parent = new ActivityContext(traceId, ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, isRemote: true);
+            return source.StartActivity(name, ActivityKind.Consumer, parent);
+        }
+
+        return source.StartActivity(name, ActivityKind.Consumer);
+    }
+
+    /// <summary>
+    /// 尝试把关联标识解析为 W3C ActivityTraceId（须为 32 位十六进制）
+    /// </summary>
+    private static bool TryParseTraceId(string? value, out ActivityTraceId traceId)
+    {
+        traceId = default;
+        if (string.IsNullOrWhiteSpace(value) || value.Length != 32)
+        {
+            return false;
+        }
+
+        foreach (var c in value)
+        {
+            if (c is not (>= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F'))
+            {
+                return false;
+            }
+        }
+
+        try
+        {
+            traceId = ActivityTraceId.CreateFromString(value.AsSpan());
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
