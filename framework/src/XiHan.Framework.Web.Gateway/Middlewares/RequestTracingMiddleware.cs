@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Diagnostics;
 using XiHan.Framework.Web.Gateway.Constants;
 
 namespace XiHan.Framework.Web.Gateway.Middlewares;
@@ -44,8 +45,10 @@ public class RequestTracingMiddleware
     /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
-        // 获取或生成 TraceId
-        var traceId = context.Request.Headers["X-Trace-Id"].FirstOrDefault()
+        // 获取 TraceId：优先 W3C Activity（与 Web.Api 同源），回退 X-Trace-Id 头 / TraceIdentifier
+        var current = Activity.Current;
+        var traceId = (current is not null && current.TraceId != default ? current.TraceId.ToHexString() : null)
+            ?? context.Request.Headers["X-Trace-Id"].FirstOrDefault()
             ?? context.TraceIdentifier;
 
         // 注入到 Response Header
