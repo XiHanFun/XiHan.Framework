@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Web.Api.Constants;
@@ -37,6 +38,14 @@ public class HttpTraceIdProvider : ITraceIdProvider
     /// <inheritdoc />
     public string? GetCurrentTraceId()
     {
+        // 优先 W3C：OTel/ASP.NET Core 已为请求建 Activity 时取其 TraceId（32-hex），跨服务同源可与 trace 后端 join
+        var current = Activity.Current;
+        if (current is not null && current.TraceId != default)
+        {
+            return current.TraceId.ToHexString();
+        }
+
+        // 回退旧口径（OTel 未激活或非 HTTP 上下文）：Items[__XiHanTraceId] ?? Kestrel TraceIdentifier
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext is null)
         {
