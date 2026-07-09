@@ -17,10 +17,12 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using System.Buffers;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Core.Tracing;
 using XiHan.Framework.Utils.Diagnostics;
 using XiHan.Framework.Utils.Objects;
 
@@ -184,6 +186,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
     /// <returns></returns>
     public virtual async Task<byte[]?[]> GetManyAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
+        using var activity = StartRedisActivity("cache.GetMany");
         keys = Guard.NotNull(keys, nameof(keys));
 
         return await GetAndRefreshManyAsync(keys, true, token);
@@ -222,6 +225,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
     /// <returns></returns>
     public virtual async Task SetManyAsync(IEnumerable<KeyValuePair<string, byte[]>> items, DistributedCacheEntryOptions options, CancellationToken token = default)
     {
+        using var activity = StartRedisActivity("cache.SetMany");
         token.ThrowIfCancellationRequested();
 
         var cache = await ConnectAsync(token);
@@ -294,6 +298,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
     /// <returns></returns>
     public virtual async Task RemoveManyAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
+        using var activity = StartRedisActivity("cache.RemoveMany");
         keys = Guard.NotNull(keys, nameof(keys));
 
         token.ThrowIfCancellationRequested();
@@ -439,6 +444,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
             throw new ArgumentException("Lua 脚本不能为空。", nameof(script));
         }
 
+        using var activity = StartRedisActivity("cache.ScriptEvaluate");
         token.ThrowIfCancellationRequested();
         var cache = await ConnectAsync(token);
         try
@@ -815,5 +821,22 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
         return key.StartsWith(InstancePrefixString, StringComparison.Ordinal)
             ? key[InstancePrefixString.Length..]
             : key;
+    }
+
+    /// <summary>
+    /// 创建 Redis 操作 Span（OTel 未监听时返回 null，零开销）
+    /// </summary>
+    /// <remarks>覆盖框架自定义的 Many/Pattern/Lua 异步操作；基类 RedisCache 的单键 Get/Set 如需 span 应接 OTel StackExchange.Redis instrumentation。</remarks>
+    private static Activity? StartRedisActivity(string operation)
+    {
+        var source = XiHanActivitySources.CacheSource;
+        if (!source.HasListeners())
+        {
+            return null;
+        }
+
+        var activity = source.StartActivity(operation, ActivityKind.Client);
+        activity?.SetTag("db.system", "redis");
+        return activity;
     }
 }
