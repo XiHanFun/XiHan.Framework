@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Diagnostics;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Utils.Threading;
 
@@ -32,6 +33,13 @@ public class DefaultCorrelationIdProvider : ICorrelationIdProvider, ISingletonDe
     /// <returns></returns>
     public virtual string? Get()
     {
+        // 优先 W3C：与 Activity 对齐，EventBus 等传播链零改造即携带同一 trace id；无 Activity 时回退显式设置的关联 id
+        var current = Activity.Current;
+        if (current is not null && current.TraceId != default)
+        {
+            return current.TraceId.ToHexString();
+        }
+
         return CorrelationId;
     }
 

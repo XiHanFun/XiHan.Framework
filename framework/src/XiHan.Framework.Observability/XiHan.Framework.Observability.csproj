@@ -18,6 +18,15 @@
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.9" />
 	</ItemGroup>
 
+	<!-- OpenTelemetry：装配总闸；版本内联固定（本仓无中央包管理），与运行时 net10.0 对齐 -->
+	<ItemGroup>
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
+	</ItemGroup>
+
     <ItemGroup>
 		<ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
 	</ItemGroup>

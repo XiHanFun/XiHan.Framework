@@ -40,7 +40,8 @@ public class XiHanLoggingOptions
     /// <summary>
     /// 控制台输出模板
     /// </summary>
-    public string ConsoleOutputTemplate { get; set; } = "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
+    /// <remarks>{TraceId} 由 Serilog 从 Activity.Current 自动填充（W3C 32-hex），OTel 激活后即与 trace 后端可 join；无链路时渲染为空 []。</remarks>
+    public string ConsoleOutputTemplate { get; set; } = "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} [{TraceId}]: {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// 文件输出路径
@@ -50,7 +51,8 @@ public class XiHanLoggingOptions
     /// <summary>
     /// 文件输出模板
     /// </summary>
-    public string FileOutputTemplate { get; set; } = "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
+    /// <remarks>{TraceId}/{SpanId} 由 Serilog 从 Activity.Current 自动填充（W3C）；无链路时渲染为空。</remarks>
+    public string FileOutputTemplate { get; set; } = "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {SourceContext} [{TraceId} {SpanId}]: {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// 日志文件滚动间隔
