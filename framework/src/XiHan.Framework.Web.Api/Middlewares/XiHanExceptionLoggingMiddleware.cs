@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using System.Diagnostics;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Filters;
@@ -49,6 +50,14 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        // 未捕获异常落到当前请求 span：trace 后端可见错误（OTel 未激活时 Activity.Current 为 null，安全跳过）
+        var activity = Activity.Current;
+        if (activity is not null)
+        {
+            activity.AddException(exception);
+            activity.SetStatus(ActivityStatusCode.Error, exception.Message);
+        }
+
         var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
         var traceId = requestContext?.TraceId ?? ResolveTraceId(context);
         // 与 MVC 异常过滤器共用同一套异常→状态码映射，保证语义一致（仅取状态码，响应由 MVC 过滤器产出）
