@@ -17,8 +17,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using SqlSugar;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
+using XiHan.Framework.Core.Tracing;
 using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
@@ -327,13 +329,15 @@ public static class XiHanDataServiceCollectionExtensions
             dbProvider.Aop.OnLogExecuting = onLogExecuting;
         }
 
-        if (options.EnableSqlErrorLog)
+        // OnError：SQL 异常日志（可选）+ DB Span 记录异常（OTel 未监听时零开销）
+        dbProvider.Aop.OnError = ex =>
         {
-            dbProvider.Aop.OnError = ex =>
+            if (options.EnableSqlErrorLog)
             {
                 HandleSqlOnErrorLog(config, ex);
-            };
-        }
+            }
+            RecordDbActivity(dbProvider, config, ex.Sql ?? string.Empty, ex);
+        };
 
         // 组合 OnLogExecuted 处理器（慢 SQL 日志 + 实体变更拦截器）
         Action<string, SugarParameter[]>? onLogExecuted = null;
@@ -359,6 +363,12 @@ public static class XiHanDataServiceCollectionExtensions
             {
                 // 拦截器异常不影响主业务
             }
+        };
+
+        // 数据库 Span：为每条执行完成的 SQL 补记 DB Client span（挂当前请求 span 下；OTel 未监听时零开销）
+        onLogExecuted += (sql, _) =>
+        {
+            RecordDbActivity(dbProvider, config, sql, null);
         };
 
         if (onLogExecuted is not null)
@@ -442,5 +452,48 @@ public static class XiHanDataServiceCollectionExtensions
 
         var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
         LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlInfo}");
+    }
+
+    /// <summary>
+    /// 记录数据库 Span（OpenTelemetry Tracing）
+    /// </summary>
+    /// <remarks>
+    /// 在 OnLogExecuted/OnError 中按已知执行耗时「回溯」创建一个 ActivityKind.Client 子 span（挂当前请求 Activity 下），
+    /// 无跨回调状态、无泄漏；OTel 未激活（无监听者）时直接返回，零开销。不覆盖既有 SQL 日志/实体变更拦截器。
+    /// </remarks>
+    /// <param name="dbProvider">SqlSugar 作用域提供者</param>
+    /// <param name="config">连接配置</param>
+    /// <param name="sql">SQL 语句</param>
+    /// <param name="error">异常（成功路径为 null）</param>
+    private static void RecordDbActivity(SqlSugarScopeProvider dbProvider, ConnectionConfig config, string sql, Exception? error)
+    {
+        if (!XiHanActivitySources.DataSource.HasListeners())
+        {
+            return;
+        }
+
+        var elapsed = dbProvider.Ado.SqlExecutionTime;
+        var end = DateTimeOffset.UtcNow;
+        var start = end - (elapsed > TimeSpan.Zero ? elapsed : TimeSpan.Zero);
+
+        using var activity = XiHanActivitySources.DataSource.StartActivity(
+            "db.query",
+            ActivityKind.Client,
+            Activity.Current?.Context ?? default,
+            startTime: start);
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetTag("db.system", config.DbType.ToString());
+        activity.SetTag("db.statement", sql);
+        activity.SetEndTime(end.UtcDateTime);
+
+        if (error is not null)
+        {
+            activity.SetStatus(ActivityStatusCode.Error, error.Message);
+            activity.AddException(error);
+        }
     }
 }
