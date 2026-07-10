@@ -1,0 +1,68 @@
+---
+name: 🐛 反馈 Bug
+about: 报告一个缺陷或异常行为，帮助我们修复问题
+title: "[Bug] "
+labels: bug
+---
+
+> ⭐ 本仓库为镜像，GitHub 主仓库优先处理，建议优先前往 https://github.com/XiHanFun/XiHan.Framework 提交。
+>
+> 🔒 安全漏洞请勿公开提交，请前往 GitHub 主仓库私密报告：https://github.com/XiHanFun/XiHan.Framework/security/advisories/new
+>
+> 提交前请先搜索现有 Issue，确认不是重复问题。XiHan.Framework 是模块化 .NET 框架，请尽量提供最小可复现示例。
+
+## 前置确认
+
+- [ ] 我已搜索过现有 Issue，确认这不是重复问题
+- [ ] 我已升级到最新的 NuGet 包版本，问题依旧存在
+- [ ] 我确认这是一个 Bug，而非使用方式或配置问题
+
+## 问题描述
+
+<!-- 清晰、简洁地描述这个 Bug 是什么 -->
+
+## 复现步骤 / 最小可复现示例
+
+1.
+2.
+3.
+
+```csharp
+// 最小复现代码（含模块定义 [DependsOn]）
+```
+
+## 期望行为
+
+<!-- 你期望正确的结果应该是什么 -->
+
+## 实际行为
+
+<!-- 实际发生了什么；如有异常，请附完整堆栈 -->
+
+## 所属层
+
+<!-- 公共层 Utils / 元数据 Metadata / 核心层 Core / 领域层 Domain / 应用层 Application / 基础设施层 / Web 层 / 测试 / 文档 / 构建 -->
+
+## 相关模块 / 包名
+
+<!-- 如 XiHan.Framework.Data -->
+
+## 版本
+
+<!-- 出现问题的 NuGet 包版本或 commit，如 2.5.0 -->
+
+## 运行环境
+
+- 操作系统（Windows / Linux / macOS）：
+- .NET SDK：
+- 相关 NuGet 包及版本：
+- 数据库（如涉及 Data，PostgreSQL / MySQL + 版本）：
+- Redis（如涉及 Caching）：
+
+## 日志 / 异常堆栈
+
+<!-- 粘贴相关日志或完整异常堆栈，请用代码块包裹 -->
+
+## 补充说明
+
+<!-- 任何有助于理解问题的额外信息（临时规避方法、影响面等） -->
