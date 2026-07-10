@@ -2,6 +2,17 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.5.0 (2026-07-10)
+
+- **新增** 分布式链路追踪与可观测性对齐 OpenTelemetry / W3C（REQ-012）：Observability 包接入 OTel SDK（AspNetCore / HttpClient / Runtime 埋点 + OTLP / Console Exporter），新增 XiHanObservabilityOptions（配置节 XiHan:Observability，含采样率 / endpoint / service.name / 开关）
+- **新增** SqlSugar DB span：每条 SQL 产出挂在请求 span 下的 Client 子 span（db.system / db.statement / db.name），异常自动 RecordException + SetStatus(Error)
+- **新增** EventBus 消费端 Consumer span（归入上游 trace）、Redis 缓存操作 span、异常落当前 span、Gateway TraceId 对齐 W3C
+- **新增** Serilog 链路富化：日志携带 TraceId / SpanId，可与 trace 关联查询
+- **调整** TraceId 与 EventBus CorrelationId 收敛为同一 W3C TraceId（Activity.Current 优先、旧值回退保底），7 类日志表与审计自动升级 W3C 口径
+- **调整** Metrics 由自研实现改用 System.Diagnostics.Metrics.Meter（IMetricsCollector 接口不变，调用方零改即可经 OTLP / Prometheus 导出）
+- **优化** 控制台 / 文件日志模板将链路 ID 移至日志级别之后
+- **升级** 升级依赖，发布 v3.5.0
+
 ## v3.4.0 (2026-07-08)
 
 - **修复** 修复多租户行过滤全程失效的严重隔离缺陷：7 个 SqlSugar 多租户基类仅添加 TenantId 列却未实现 IMultiTenantEntity，导致 `AddTableFilter<IMultiTenantEntity>` 全程 no-op（所有租户互相可见）；现补齐接口并将过滤器改为标量哨兵
