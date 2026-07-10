@@ -30,12 +30,17 @@ public class ChannelLogQueue<TRecord> : ILogQueue<TRecord>
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
+    /// <remarks>
+    /// 固定使用 <see cref="BoundedChannelFullMode.Wait"/>：队列满时 <see cref="TryEnqueue"/> 返回 false、
+    /// <see cref="EnqueueAsync"/> 等待。满时丢弃与否是调用方（采集管道）按 <c>DropOnFull</c> 选择哪个方法的策略，
+    /// 不能下沉到 Channel——若这里用 DropWrite，TryWrite 满时也返回 true，调用方便无从得知记录已被丢弃。
+    /// </remarks>
     public ChannelLogQueue(IOptions<XiHanAuditingLogQueueOptions> options)
     {
         var queueOptions = options.Value;
         var boundedOptions = new BoundedChannelOptions(queueOptions.QueueCapacity)
         {
-            FullMode = queueOptions.DropOnFull ? BoundedChannelFullMode.DropWrite : BoundedChannelFullMode.Wait,
+            FullMode = BoundedChannelFullMode.Wait,
             SingleReader = false,
             SingleWriter = false
         };
