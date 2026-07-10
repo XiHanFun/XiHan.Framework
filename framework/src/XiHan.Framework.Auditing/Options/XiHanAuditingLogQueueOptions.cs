@@ -65,6 +65,10 @@ public class XiHanAuditingLogQueueOptions
     /// <summary>
     /// 是否在队列满时丢弃
     /// </summary>
+    /// <remarks>
+    /// <c>true</c>：队列满时丢弃当前日志并记一条警告，不阻塞调用方；
+    /// <c>false</c>（默认）：队列满时等待空位，反压到调用方（请求线程）。
+    /// </remarks>
     public bool DropOnFull { get; set; } = false;
 
     /// <summary>

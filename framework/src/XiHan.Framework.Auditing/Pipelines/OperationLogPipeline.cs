@@ -57,12 +57,18 @@ public class OperationLogPipeline : IOperationLogPipeline
             return;
         }
 
-        if (_options.DropOnFull && !_queue.TryEnqueue(record))
+        // 满时丢弃：只尝试一次，不等待
+        if (_options.DropOnFull)
         {
-            _logger.LogWarning("操作日志队列已满，丢弃日志，TraceId: {TraceId}", record.TraceId);
+            if (!_queue.TryEnqueue(record))
+            {
+                _logger.LogWarning("操作日志队列已满，丢弃日志，TraceId: {TraceId}", record.TraceId);
+            }
+
             return;
         }
 
+        // 满时等待：反压到调用方
         try
         {
             await _queue.EnqueueAsync(record, cancellationToken);
