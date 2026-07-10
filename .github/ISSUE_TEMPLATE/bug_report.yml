@@ -1,0 +1,132 @@
+name: 🐛 反馈 Bug
+description: 报告一个缺陷或异常行为，帮助我们修复问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！XiHan.Framework 是模块化 .NET 框架，请尽量提供**最小可复现示例**，这能帮助我们更快地定位并修复问题。
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 前置确认
+      description: 提交前请逐项确认
+      options:
+        - label: 我已搜索过 [现有 Issue](https://github.com/XiHanFun/XiHan.Framework/issues)，确认这不是重复问题
+          required: true
+        - label: 我已升级到最新的 NuGet 包版本，问题依旧存在
+          required: true
+        - label: 我确认这是一个 Bug，而非使用方式或配置问题
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 清晰、简洁地描述这个 Bug 是什么
+      placeholder: 例如：启用多租户后，Data 模块的自动建表未按租户隔离…
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 / 最小可复现示例
+      description: 请提供可稳定复现的步骤，最好附上模块定义（[DependsOn]）与复现代码片段
+      placeholder: |
+        1. 定义模块并 [DependsOn(typeof(XiHanDataModule))]
+        2. 调用 xxx 服务
+        3. 出现异常…
+
+        ```csharp
+        // 最小复现代码
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望正确的结果应该是什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么（如有异常，请附完整堆栈）
+    validations:
+      required: false
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: 所属层
+      description: 该问题主要涉及的架构层
+      options:
+        - 公共层（Utils）
+        - 元数据层（Metadata）
+        - 核心层（Core / 模块系统 / DI / 生命周期）
+        - 领域层（Domain / Domain.Shared）
+        - 应用层（Application / Contracts / MultiTenancy / Validation / Settings）
+        - 基础设施层（Data / Caching / Auth / EventBus / AI / Bot / Tasks 等）
+        - Web 层（Web.Core / Web.Api / Web.Docs / Gateway / Grpc / RealTime）
+        - 测试
+        - 文档
+        - 构建 / 发布（props / scripts / NuGet）
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: module
+    attributes:
+      label: 相关模块 / 包名
+      description: 具体的模块或 NuGet 包名，便于精确定位
+      placeholder: XiHan.Framework.Data
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 出现问题的 NuGet 包版本或 commit（如 2.5.x / 提交短哈希）
+      placeholder: 2.5.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 请填写相关的环境信息（未涉及的可留空）
+      value: |
+        - 操作系统（Windows / Linux / macOS）：
+        - .NET SDK：
+        - 相关 NuGet 包及版本：
+        - 数据库（如涉及 Data，PostgreSQL / MySQL + 版本）：
+        - Redis（如涉及 Caching）：
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 异常堆栈
+      description: 粘贴相关的日志或完整异常堆栈，请用代码块包裹
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充说明
+      description: 任何有助于我们理解问题的额外信息（临时规避方法、影响面等）
+    validations:
+      required: false
