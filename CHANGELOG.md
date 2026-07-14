@@ -2,6 +2,24 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.6.0 (2026-07-15)
+
+- **新增** 缓存 CacheEvict 真正执行失效，授权评估 RequiredClaims，新增设置定义管理器 ISettingDefinitionManager
+- **新增** 流量灰度新增 IP 匹配器 IpAddressGrayMatcher，支持精确 IP 与 CIDR
+- **新增** 安全新增国密 SM4 对称加密 Sm4Helper
+- **新增** 分析器新增 XHFA001 规则，禁止直接 new HttpClient
+- **新增** 开发工具 DevTools 升为一等模块，命令行接入依赖注入
+- **调整** 破坏性变更：移除 QueryBehavior、PageRequestDtoBase.Behavior 与 WithoutPaging()，不分页查询改走仓储 List 方法
+- **调整** 破坏性变更：设置加密改走 XiHanAesOptions.Key，移除硬编码占位密钥，未配置密钥即抛异常
+- **调整** 元数据字段改为 const/readonly，TargetFramework 由程序集特性派生
+- **修复** 分布式 ID 生成器改为从配置构建，修复多节点重复 ID
+- **修复** 审计日志字段级脱敏与请求头脱敏
+- **修复** 差异日志软删除/恢复被误记为更新，超长快照产出非法 JSON
+- **修复** Blowfish 改用随机 IV，修复相同明文产出相同密文及解密未按实际长度截断
+- **修复** 审计日志在 DropOnFull 开启时重复入队
+- **移除** 移除 EntityChangeInterceptor，差异日志统一为单一通道
+- **升级** 升级依赖，发布 v3.6.0
+
 ## v3.5.0 (2026-07-10)
 
 - **新增** 分布式链路追踪与可观测性对齐 OpenTelemetry / W3C（REQ-012）：Observability 包接入 OTel SDK（AspNetCore / HttpClient / Runtime 埋点 + OTLP / Console Exporter），新增 XiHanObservabilityOptions（配置节 XiHan:Observability，含采样率 / endpoint / service.name / 开关）
