@@ -28,6 +28,7 @@ using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
 using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
+using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.RateLimiting;
 using XiHan.Framework.Web.Api.Security.OpenApi;
@@ -111,6 +112,11 @@ public class XiHanWebApiModule : XiHanModule
         app.UseMiddleware<XiHanOpenApiSecurityMiddleware>();
         app.UseAuthentication();
         app.UseMiddleware<XiHanTenantResolveMiddleware>();
+        // 会话闸门：拦截已失效(401)/已锁屏(423)的会话。
+        // 必须在认证之后（要读 session_id claim）、租户解析之后（会话表多为多租户实体，
+        // 租户上下文未解析会被全局过滤器挡掉）、授权之前（423/401 要先于权限评估短路，不与 403 混淆）。
+        // 判定委托应用侧 ISessionStateGate；框架默认实现一律放行。
+        app.UseMiddleware<XiHanSessionStateMiddleware>();
         app.UseAuthorization();
         app.UseEndpoints(endpoints =>
         {
