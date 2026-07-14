@@ -27,10 +27,6 @@ public class PageRequestDtoBase
     /// </summary>
     public QueryConditions Conditions { get; set; } = new();
 
-    /// <summary>
-    /// 查询行为控制（影响查询管道行为）
-    /// </summary>
-    public QueryBehavior Behavior { get; set; } = new();
 
     /// <summary>
     /// 分页参数
@@ -71,15 +67,6 @@ public class PageRequestDtoBase
     {
         Page.PageIndex = pageIndex;
         Page.PageSize = pageSize;
-        return this;
-    }
-
-    /// <summary>
-    /// 禁用分页（返回所有数据）
-    /// </summary>
-    public PageRequestDtoBase WithoutPaging()
-    {
-        Behavior.DisablePaging = true;
         return this;
     }
 

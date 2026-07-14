@@ -485,9 +485,7 @@ public static class PagingExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = request.Behavior.DisablePaging
-            ? await query.ToListAsync(cancellationToken)
-            : await query.Skip(skip).Take(meta.PageSize).ToListAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(meta.PageSize).ToListAsync(cancellationToken);
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -511,9 +509,7 @@ public static class PagingExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = request.Behavior.DisablePaging
-            ? query.ToList()
-            : query.Skip(skip).Take(meta.PageSize).ToList();
+        var items = query.Skip(skip).Take(meta.PageSize).ToList();
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -527,11 +523,6 @@ public static class PagingExtensions
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
-
-        if (request.Behavior.DisablePaging)
-        {
-            return query;
-        }
 
         var meta = request.Page;
         var skip = (meta.PageIndex - 1) * meta.PageSize;
