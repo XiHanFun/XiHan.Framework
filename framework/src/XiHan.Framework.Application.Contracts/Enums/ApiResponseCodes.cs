@@ -172,6 +172,14 @@ public enum ApiResponseCodes
     Gone = 410,
 
     /// <summary>
+    /// 会话已锁屏，资源被锁定。
+    /// 与 401 的区别在于：用户身份仍然有效，只是当前会话被锁住——客户端应展示锁屏并等待解锁，
+    /// <b>而不是</b>跳转登录页。
+    /// </summary>
+    [Description("会话已锁屏")]
+    Locked = 423,
+
+    /// <summary>
     /// 请求携带的媒体类型不受支持。
     /// 例如接口仅接受 application/json 却收到其它 Content-Type。
     /// </summary>
