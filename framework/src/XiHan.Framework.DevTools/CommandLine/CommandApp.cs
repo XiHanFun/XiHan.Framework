@@ -12,6 +12,7 @@
 
 #endregion <<版权版本注释>>
 
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using XiHan.Framework.DevTools.CommandLine.Arguments;
 using XiHan.Framework.DevTools.CommandLine.Commands;
@@ -26,16 +27,34 @@ public class CommandApp
 {
     private readonly List<CommandDescriptor> _commands = [];
     private readonly ParseOptions _parseOptions;
+    private readonly IServiceProvider? _serviceProvider;
     private CommandDescriptor? _defaultCommand;
 
     /// <summary>
-    /// 创建命令行应用程序
+    /// 创建命令行应用程序（无 DI，命令实例走反射构造）
     /// </summary>
     /// <param name="parseOptions">解析配置</param>
     public CommandApp(ParseOptions? parseOptions = null)
     {
+        _serviceProvider = null;
         _parseOptions = parseOptions ?? new ParseOptions();
+        SetAssemblyInfo();
+    }
 
+    /// <summary>
+    /// 创建命令行应用程序（接入 DI，命令实例经 <see cref="ActivatorUtilities"/> 构造，支持构造函数注入）
+    /// </summary>
+    /// <param name="serviceProvider">服务提供者</param>
+    /// <param name="parseOptions">解析配置</param>
+    public CommandApp(IServiceProvider serviceProvider, ParseOptions? parseOptions = null)
+    {
+        _serviceProvider = serviceProvider;
+        _parseOptions = parseOptions ?? new ParseOptions();
+        SetAssemblyInfo();
+    }
+
+    private void SetAssemblyInfo()
+    {
         // 自动获取程序集信息
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
         Name = assembly.GetName().Name;
@@ -147,8 +166,8 @@ public class CommandApp
                 parsedArgs = parser.Parse([.. remainingArgs]);
             }
 
-            // 创建命令实例
-            var commandInstance = command.CreateInstance();
+            // 创建命令实例：接入了 DI 就经容器构造（支持构造函数注入），否则回落反射
+            var commandInstance = CreateCommandInstance(command);
 
             // 绑定参数到命令对象
             var binder = new CommandLineBinder();
@@ -201,6 +220,18 @@ public class CommandApp
     public List<CommandDescriptor> GetVisibleCommands()
     {
         return [.. _commands.Where(cmd => !cmd.Hidden)];
+    }
+
+    /// <summary>
+    /// 创建命令实例（接入 DI 走容器、否则反射）
+    /// </summary>
+    /// <param name="command">命令描述符</param>
+    /// <returns>命令实例</returns>
+    private object CreateCommandInstance(CommandDescriptor command)
+    {
+        return _serviceProvider is not null
+            ? ActivatorUtilities.CreateInstance(_serviceProvider, command.CommandType)
+            : command.CreateInstance();
     }
 
     /// <summary>

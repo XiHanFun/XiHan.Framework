@@ -13,12 +13,14 @@
 #endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
+using XiHan.Framework.Settings.Options;
 using XiHan.Framework.Settings.Stores;
 using XiHan.Framework.Utils.Security.Cryptography;
 
@@ -36,6 +38,10 @@ public class SettingManager : ISettingManager, IScopedDependency
     private readonly ILogger<SettingManager> _logger;
     private readonly ISettingStore _settingStore;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ISettingDefinitionManager _definitionManager;
+    private readonly XiHanAesOptions _aesOptions;
+
+    // 运行时通过 AddDefinition 手动追加的定义（覆盖同名的 provider 定义）
     private readonly ConcurrentDictionary<string, SettingDefinition> _definitions = new();
 
     /// <summary>
@@ -44,14 +50,20 @@ public class SettingManager : ISettingManager, IScopedDependency
     /// <param name="logger"></param>
     /// <param name="settingStore"></param>
     /// <param name="serviceProvider"></param>
+    /// <param name="definitionManager">设置定义管理器（汇总所有 <see cref="ISettingDefinitionProvider"/> 的定义）</param>
+    /// <param name="aesOptions">加密设置项（节名 <see cref="XiHanAesOptions.SectionName"/>）</param>
     public SettingManager(
         ILogger<SettingManager> logger,
         ISettingStore settingStore,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        ISettingDefinitionManager definitionManager,
+        IOptions<XiHanAesOptions> aesOptions)
     {
         _logger = logger;
         _settingStore = settingStore;
         _serviceProvider = serviceProvider;
+        _definitionManager = definitionManager;
+        _aesOptions = aesOptions.Value;
     }
 
     /// <summary>
@@ -79,7 +91,7 @@ public class SettingManager : ISettingManager, IScopedDependency
     /// <returns></returns>
     public IEnumerable<SettingDefinition> GetGroupSettings(string group)
     {
-        return _definitions.Values.Where(d => d.Group == group);
+        return AllDefinitions().Where(d => d.Group == group);
     }
 
     /// <summary>
@@ -90,7 +102,7 @@ public class SettingManager : ISettingManager, IScopedDependency
     public async Task<List<SettingValue>> GetAllValuesAsync(SettingScope scope)
     {
         var result = new List<SettingValue>();
-        foreach (var definition in _definitions.Values)
+        foreach (var definition in AllDefinitions())
         {
             var value = await GetOrNullAsync(definition.Name, scope);
             result.Add(new SettingValue(definition.Name, value));
@@ -107,7 +119,7 @@ public class SettingManager : ISettingManager, IScopedDependency
     /// <exception cref="XiHanException"></exception>
     public async Task<string?> GetOrNullAsync(string name, SettingScope scope = SettingScope.Application)
     {
-        if (!_definitions.TryGetValue(name, out var definition))
+        if (!TryGetDefinition(name, out var definition))
         {
             throw new XiHanException($"Setting '{name}' is not defined.");
         }
@@ -142,7 +154,7 @@ public class SettingManager : ISettingManager, IScopedDependency
     /// <exception cref="XiHanException"></exception>
     public async Task SetValueAsync(string name, string? value, SettingScope scope = SettingScope.Application)
     {
-        if (!_definitions.TryGetValue(name, out var definition))
+        if (!TryGetDefinition(name, out var definition))
         {
             throw new XiHanException($"设置 '{name}' 没有定义");
         }
@@ -171,6 +183,44 @@ public class SettingManager : ISettingManager, IScopedDependency
 
         // 触发变更事件
         OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(name, scope, value));
+    }
+
+    /// <summary>
+    /// 解析设置定义：先查运行时手动追加的，再查定义提供者汇总表
+    /// </summary>
+    private bool TryGetDefinition(string name, out SettingDefinition definition)
+    {
+        if (_definitions.TryGetValue(name, out definition!))
+        {
+            return true;
+        }
+
+        var fromProviders = _definitionManager.GetOrNull(name);
+        if (fromProviders is not null)
+        {
+            definition = fromProviders;
+            return true;
+        }
+
+        definition = null!;
+        return false;
+    }
+
+    /// <summary>
+    /// 全部设置定义（提供者定义 + 运行时手动追加，同名以手动追加为准）
+    /// </summary>
+    private IEnumerable<SettingDefinition> AllDefinitions()
+    {
+        var map = new Dictionary<string, SettingDefinition>();
+        foreach (var definition in _definitionManager.GetAll())
+        {
+            map[definition.Name] = definition;
+        }
+        foreach (var definition in _definitions.Values)
+        {
+            map[definition.Name] = definition;
+        }
+        return map.Values;
     }
 
     /// <summary>
@@ -211,22 +261,37 @@ public class SettingManager : ISettingManager, IScopedDependency
     }
 
     /// <summary>
-    /// 加密值
+    /// 加密值（密钥来自 <see cref="XiHanAesOptions.Key"/>，AES 的 Key/IV 由该密钥经 PBKDF2 派生）
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    private static string EncryptValue(string value)
+    /// <exception cref="XiHanException">未配置加密密钥时抛出，绝不退回内置占位密钥</exception>
+    private string EncryptValue(string value)
     {
-        return AesHelper.Encrypt(value, "dasfdsafwerfawfgafdfd");
+        return AesHelper.Encrypt(value, GetAesKey());
     }
 
     /// <summary>
-    /// 解密值
+    /// 解密值（密钥来自 <see cref="XiHanAesOptions.Key"/>）
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    private static string DecryptValue(string value)
+    /// <exception cref="XiHanException">未配置加密密钥时抛出</exception>
+    private string DecryptValue(string value)
     {
-        return AesHelper.Decrypt(value, "dasfdsafwerfawfgafdfd");
+        return AesHelper.Decrypt(value, GetAesKey());
+    }
+
+    /// <summary>
+    /// 获取加密密钥，未配置则 fail-closed 直接拒绝
+    /// </summary>
+    private string GetAesKey()
+    {
+        if (string.IsNullOrEmpty(_aesOptions.Key))
+        {
+            throw new XiHanException($"启用了加密设置但未配置密钥，请在配置节 '{XiHanAesOptions.SectionName}' 下设置 'Key'。");
+        }
+
+        return _aesOptions.Key;
     }
 }
