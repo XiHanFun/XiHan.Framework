@@ -231,8 +231,10 @@ public sealed class EntityChangeInterceptor
             }
 
             record.EntityId = entityId;
-            record.BeforeData = beforeData;
-            record.AfterData = afterData;
+            // 字段级脱敏只在"落库前"这一步做：前面的快照/差异比对必须拿原值，否则敏感字段前后都成掩码、
+            // 会被判定为"未变更"而丢失记录（改密码将不留任何痕迹）。此处掩码后，值不再明文进审计表。
+            record.BeforeData = LogSanitizer.MaskJsonFields(beforeData);
+            record.AfterData = LogSanitizer.MaskJsonFields(afterData);
             record.ChangedFields = changedFields;
 
             // Fire-and-forget：审计写入不阻塞主业务流程
@@ -540,11 +542,13 @@ public sealed class EntityChangeInterceptor
 
                 if (beforeStr != afterStr)
                 {
+                    // 敏感字段：保留"这个字段变过"的事实（审计价值），但不留新旧值
+                    var isSensitive = LogSanitizer.IsSensitiveName(kvp.Key);
                     changed.Add(new
                     {
                         Field = kvp.Key,
-                        Before = beforeStr,
-                        After = afterStr
+                        Before = isSensitive ? LogSanitizer.Mask : beforeStr,
+                        After = isSensitive ? LogSanitizer.Mask : afterStr
                     });
                 }
             }
