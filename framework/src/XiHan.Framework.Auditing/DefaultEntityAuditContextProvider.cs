@@ -74,21 +74,4 @@ public class DefaultEntityAuditContextProvider : IEntityAuditContextProvider
                !fullName.Contains("AuditLog", StringComparison.Ordinal) &&
                !fullName.Contains("DiffLog", StringComparison.Ordinal);
     }
-
-    /// <summary>
-    /// 按表名判断是否应审计（用于 SQL 级拦截器）
-    /// </summary>
-    /// <param name="tableName">数据库表名</param>
-    /// <returns>是否审计</returns>
-    public bool ShouldAuditByName(string tableName)
-    {
-        if (string.IsNullOrWhiteSpace(tableName))
-        {
-            return false;
-        }
-
-        return !tableName.Contains("AuditLog", StringComparison.OrdinalIgnoreCase) &&
-               !tableName.Contains("DiffLog", StringComparison.OrdinalIgnoreCase) &&
-               !tableName.Contains("SysLog", StringComparison.OrdinalIgnoreCase);
-    }
 }

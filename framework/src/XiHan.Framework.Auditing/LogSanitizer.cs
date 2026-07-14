@@ -37,25 +37,14 @@ public static partial class LogSanitizer
     public const string Mask = "***";
 
     /// <summary>
-    /// 敏感键名（小写比对，键名包含任一关键字即命中）
-    /// </summary>
-    private const string SensitiveKeyPattern =
-        "password|passwd|pwd|secret|token|credential|authorization|otp" +
-        "|verifycode|verificationcode|twofactorcode" +
-        "|bankcard|cardno|cardnumber|accountno" +
-        "|idcard|identitycard|idnumber";
-
-    /// <summary>
-    /// 敏感名（用于<b>请求头名</b>与<b>实体字段/列名</b>；比对前先归一化：去掉分隔符再转小写）
+    /// 敏感名关键字（<b>唯一</b>的敏感判定来源：请求体键、查询串键、请求头名、实体字段/列名共用）
     /// </summary>
     /// <remarks>
-    /// 在通用敏感键之外补充凭证/密钥类命名。归一化让 <c>X-Api-Key</c> → <c>xapikey</c>、
-    /// <c>Connection_String</c> → <c>connectionstring</c>、<c>Two_Factor_Secret</c> → <c>twofactorsecret</c> 都能命中。
+    /// 比对前先归一化（去掉分隔符 + 转小写），使 <c>X-Api-Key</c> → <c>xapikey</c>、
+    /// <c>Connection_String</c> → <c>connectionstring</c>、<c>apiKey</c> → <c>apikey</c> 都能命中同一份规则。
     /// 命中即<b>整体掩码其值</b>——<c>Authorization: Bearer &lt;JWT&gt;</c>、密码哈希这类值一旦落库即等同凭证泄露，保留片段无意义。
-    /// 宁可多掩（如 <c>SignatureType</c> 这种其实不敏感的也会被掩）——审计日志里过度脱敏无害，泄露才致命。
     /// <para>
-    /// 刻意<b>不复用</b> <see cref="SensitiveKeyPattern"/>：后者含裸 <c>otp</c>，而归一化去掉分隔符后
-    /// <c>Not_Processed</c> → <c>notprocessed</c> 会含 <c>otp</c> 而被误伤；这里改用明确的 OTP 命名。
+    /// 不含裸 <c>otp</c>：归一化去掉分隔符后 <c>Not_Processed</c> → <c>notprocessed</c> 会含 <c>otp</c> 而被误伤，故改用明确的 OTP 命名。
     /// </para>
     /// </remarks>
     private const string SensitiveNamePattern =
@@ -66,7 +55,21 @@ public static partial class LogSanitizer
         "|cookie|apikey|accesskey|privatekey|connectionstring|salt|signature|session|recoverycode";
 
     /// <summary>
-    /// 对 JSON / 表单文本做敏感数据脱敏
+    /// 元数据后缀：命中敏感词、但以这些结尾的名字是「关于秘密的元数据」而非秘密本身，<b>不得掩码</b>
+    /// </summary>
+    /// <remarks>
+    /// 反例才是重点：<c>Last_Password_Change_Time</c>（改密时间）、<c>Password_Expiration_Time</c>、
+    /// <c>Token_Type</c>（"Bearer"）、<c>Access_Token_Lifetime</c>、<c>Signature_Type</c>、<c>Max_Output_Tokens</c>（数字 4096）——
+    /// 这些恰恰是审计最需要看的东西，掩掉它们等于把审计价值一起掩掉。
+    /// 「宁可多掩」只在秘密本身上成立，对秘密的元数据不成立。
+    /// </remarks>
+    private const string MetadataSuffixPattern =
+        "time|date|lifetime|expiration|expires|expiry|type|kind" +
+        "|count|total|length|size|status|state|enabled|disabled" +
+        "|algorithm|version|mode|format|policy|strategy|attempts|tokens";
+
+    /// <summary>
+    /// 对 JSON / 表单文本做敏感数据脱敏（键名命中即掩其值）
     /// </summary>
     /// <param name="content">原始文本（JSON 请求体、序列化参数等）</param>
     /// <returns>脱敏后的文本；输入为空时原样返回</returns>
@@ -77,11 +80,19 @@ public static partial class LogSanitizer
             return content;
         }
 
-        // 1) JSON 键值对："password": "xxx" => "password": "***"
-        var masked = SensitiveJsonPairRegex().Replace(content, m => $"{m.Groups["prefix"].Value}\"{Mask}\"");
+        // 1) JSON 键值对（值可为字符串/数字/布尔/null）："apiKey": "sk-xxx" => "apiKey":"***"
+        var masked = JsonPairRegex().Replace(content, static m =>
+        {
+            var key = m.Groups["key"].Value;
+            return IsSensitiveName(key) ? $"\"{key}\":\"{Mask}\"" : m.Value;
+        });
 
         // 2) 表单/查询风格键值对：password=xxx => password=***
-        masked = SensitiveFormPairRegex().Replace(masked, m => $"{m.Groups["key"].Value}={Mask}");
+        masked = FormPairRegex().Replace(masked, static m =>
+        {
+            var key = m.Groups["key"].Value;
+            return IsSensitiveName(key) ? $"{m.Groups["prefix"].Value}{key}={Mask}" : m.Value;
+        });
 
         // 3) 身份证号模式（18 位含出生日期段 / 15 位旧证）
         masked = IdCardRegex().Replace(masked, static m => MaskMiddle(m.Value));
@@ -101,18 +112,34 @@ public static partial class LogSanitizer
             return queryString;
         }
 
-        var masked = SensitiveFormPairRegex().Replace(queryString, m => $"{m.Groups["key"].Value}={Mask}");
+        var masked = FormPairRegex().Replace(queryString, static m =>
+        {
+            var key = m.Groups["key"].Value;
+            return IsSensitiveName(key) ? $"{m.Groups["prefix"].Value}{key}={Mask}" : m.Value;
+        });
+
         return IdCardRegex().Replace(masked, static m => MaskMiddle(m.Value));
     }
 
     /// <summary>
-    /// 判断某个名字（请求头名 / 实体字段名 / 数据库列名）是否敏感
+    /// 判断某个名字（请求体/查询串的键、请求头名、实体字段名、数据库列名）是否敏感
     /// </summary>
+    /// <remarks>
+    /// 全框架敏感判定的<b>唯一入口</b>。两步：归一化后命中 <see cref="SensitiveNamePattern"/>，
+    /// 且<b>不</b>以 <see cref="MetadataSuffixPattern"/> 结尾——后者把「关于秘密的元数据」摘出去
+    /// （<c>Last_Password_Change_Time</c>、<c>Token_Type</c>、<c>Max_Output_Tokens</c> 不是秘密，掩了反而丢审计线索）。
+    /// </remarks>
     /// <param name="name">待判定的名字，比对前会归一化（去分隔符 + 转小写）</param>
     /// <returns>敏感返回 true</returns>
     public static bool IsSensitiveName(string? name)
     {
-        return !string.IsNullOrWhiteSpace(name) && SensitiveNameRegex().IsMatch(NormalizeName(name));
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        var normalized = NormalizeName(name);
+        return SensitiveNameRegex().IsMatch(normalized) && !MetadataSuffixRegex().IsMatch(normalized);
     }
 
     /// <summary>
@@ -211,20 +238,26 @@ public static partial class LogSanitizer
     private static partial Regex SensitiveNameRegex();
 
     /// <summary>
-    /// 敏感键 JSON 键值对（prefix 捕获键与冒号，值部分整体替换）
+    /// 元数据后缀（归一化后以此结尾 → 是关于秘密的元数据，不掩）
     /// </summary>
-    [GeneratedRegex(
-        "(?<prefix>\"[^\"]*(?:" + SensitiveKeyPattern + ")[^\"]*\"\\s*:\\s*)\"(?:[^\"\\\\]|\\\\.)*\"",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex SensitiveJsonPairRegex();
+    [GeneratedRegex("(?:" + MetadataSuffixPattern + ")$", RegexOptions.IgnoreCase)]
+    private static partial Regex MetadataSuffixRegex();
 
     /// <summary>
-    /// 敏感键表单/查询键值对
+    /// JSON 键值对（捕获键名，值可为字符串/数字/布尔/null）；是否掩码交由 <see cref="IsSensitiveName"/> 判定
     /// </summary>
     [GeneratedRegex(
-        "(?<key>[?&]?[^?&=\\s\"]*(?:" + SensitiveKeyPattern + ")[^?&=\\s\"]*)=[^&\\s\"]*",
+        "\"(?<key>[^\"]+)\"\\s*:\\s*(?:\"(?:[^\"\\\\]|\\\\.)*\"|-?\\d+(?:\\.\\d+)?|true|false|null)",
         RegexOptions.IgnoreCase)]
-    private static partial Regex SensitiveFormPairRegex();
+    private static partial Regex JsonPairRegex();
+
+    /// <summary>
+    /// 表单/查询键值对（捕获键名）；是否掩码交由 <see cref="IsSensitiveName"/> 判定
+    /// </summary>
+    [GeneratedRegex(
+        "(?<prefix>[?&]?)(?<key>[^?&=\\s\"]+)=(?<value>[^&\\s\"]*)",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex FormPairRegex();
 
     /// <summary>
     /// 身份证号（18 位：6 位地区 + 8 位出生日期 + 3 位顺序 + 校验位；15 位旧证）
