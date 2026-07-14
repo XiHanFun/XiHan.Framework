@@ -186,7 +186,7 @@ public class AutoQueryBuilder
         foreach (var property in properties)
         {
             // 跳过 PageRequestDtoBase 的内置属性
-            if (property.Name is nameof(PageRequestDtoBase.Conditions) or nameof(PageRequestDtoBase.Behavior) or nameof(PageRequestDtoBase.Page))
+            if (property.Name is nameof(PageRequestDtoBase.Conditions) or nameof(PageRequestDtoBase.Page))
             {
                 continue;
             }
