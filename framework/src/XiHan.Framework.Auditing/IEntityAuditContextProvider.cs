@@ -31,11 +31,4 @@ public interface IEntityAuditContextProvider
     /// <param name="entityType">实体类型</param>
     /// <returns>是否审计</returns>
     bool ShouldAudit(Type entityType);
-
-    /// <summary>
-    /// 按数据库表名判断是否应审计（用于 SQL 命令级拦截器）
-    /// </summary>
-    /// <param name="tableName">数据库表名</param>
-    /// <returns>是否审计</returns>
-    bool ShouldAuditByName(string tableName);
 }

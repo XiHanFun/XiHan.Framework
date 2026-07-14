@@ -30,10 +30,4 @@ public class NullEntityAuditContextProvider : IEntityAuditContextProvider
     {
         return false;
     }
-
-    /// <inheritdoc />
-    public bool ShouldAuditByName(string tableName)
-    {
-        return false;
-    }
 }

@@ -30,15 +30,20 @@ namespace XiHan.Framework.Data.SqlSugar.Auditing;
 ///   <item>仓储写操作显式调用 <c>.EnableDiffLogEvent(businessData)</c> 触发 Diff 收集；</item>
 ///   <item>SqlSugar 自动生成 <see cref="DiffLogModel"/>（含 BeforeData/AfterData/DiffType/SQL 等）；</item>
 ///   <item>本处理器负责把 Diff 事件转换为 <see cref="EntityDiffLogRecord"/> 并调用 <see cref="IEntityDiffLogWriter"/> 落库；</item>
-///   <item>使用 <c>CopyNew()</c> 独立连接写审计，避免自我递归；审计表自身的变更会被过滤。</item>
+///   <item>不会自我递归：审计写入器走裸 <c>Insertable</c>、不挂 <c>EnableDiffLogEvent</c>，SqlSugar 便不会为它再触发 Diff 事件；
+///         审计表自身也在 <see cref="IEntityAuditContextProvider.ShouldAudit"/> 的排除名单里，双重保险。</item>
+///   <item>审计写入<b>与业务同事务</b>（写入器用当前 UoW 连接）：业务回滚时审计行随之回滚。
+///         对「数据变更日志」而言这是正确语义——变更没落库，就不该留下"改过"的记录。</item>
 /// </list>
 /// 仓储层与审计彻底解耦：仓储只"开启"审计开关，序列化、落库在此完成。
 /// </remarks>
 internal static class SqlSugarDiffLogAop
 {
-    // 审计表自身写入不再触发 Diff 审计，需按表名/实体名过滤
-    // 这里按实体类型名比对，具体业务审计表名由 IEntityAuditContextProvider 实现方控制
-    private const string AuditSelfMarker = "AuditSelf";
+    // 快照 JSON 的整体上限；超出则产出合法的截断标记（绝不中途切断）
+    private const int MaxSerializedLength = 8000;
+
+    // 单列值上限，先行裁剪，避免单个大文本列顶爆整条快照
+    private const int MaxColumnValueLength = 1000;
 
     // JSON 序列化配置：紧凑、忽略循环引用
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -74,12 +79,6 @@ internal static class SqlSugarDiffLogAop
     private static void HandleDiffLog(IServiceScopeFactory scopeFactory, DiffLogModel diffModel)
     {
         if (diffModel is null)
-        {
-            return;
-        }
-
-        // 业务对象标记为审计自身则跳过，避免递归
-        if (diffModel.BusinessData is string marker && marker == AuditSelfMarker)
         {
             return;
         }
@@ -195,8 +194,10 @@ internal static class SqlSugarDiffLogAop
 
     private static bool? ReadSoftDeleteFlag(List<DiffLogTableInfo>? tables)
     {
+        // DiffLog 里的 ColumnName 是**数据库列名**（Is_Deleted），不是实体属性名（IsDeleted）。
+        // 直接比 "IsDeleted" 永远匹配不上（下划线），会让软删/恢复全部退化成 Update——必须归一化后比对。
         var column = tables?.FirstOrDefault()?.Columns?
-            .FirstOrDefault(c => string.Equals(c.ColumnName, "IsDeleted", StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(c => IsSoftDeleteColumn(c.ColumnName));
         if (column?.Value is null)
         {
             return null;
@@ -210,7 +211,7 @@ internal static class SqlSugarDiffLogAop
     }
 
     /// <summary>
-    /// 序列化 DiffLog 表行为 JSON（超长截断避免撑爆审计表）
+    /// 序列化 DiffLog 表行为 JSON（敏感列掩码 + 超长处理，且保证产出的始终是<b>合法 JSON</b>）
     /// </summary>
     private static string? SerializeTables(List<DiffLogTableInfo>? tables)
     {
@@ -221,25 +222,54 @@ internal static class SqlSugarDiffLogAop
 
         try
         {
-            // 仅保留列名/值，丢弃表元信息以减小体积；敏感列（密码/密钥/令牌/连接串等）按列名整体掩码，绝不明文进审计
+            // 仅保留列名/值，丢弃表元信息以减小体积；敏感列（密码/密钥/令牌/连接串等）按列名整体掩码，绝不明文进审计。
+            // 单列超长值先行裁剪，避免一个大文本列把整条快照顶爆。
             var simplified = tables.Select(t => new
             {
                 t.TableName,
                 Columns = t.Columns?.Select(c => new
                 {
                     c.ColumnName,
-                    Value = LogSanitizer.MaskFieldValue(c.ColumnName, c.Value)
+                    Value = TruncateValue(LogSanitizer.MaskFieldValue(c.ColumnName, c.Value))
                 })
             });
+
             var json = JsonSerializer.Serialize(simplified, JsonOptions);
-            const int maxLength = 8000;
-            return json.Length > maxLength ? json[..maxLength] : json;
+            if (json.Length <= MaxSerializedLength)
+            {
+                return json;
+            }
+
+            // 裁剪后仍超长：绝不从中间切断（那会产出非法 JSON、前端解析直接炸），改为产出一个合法的截断标记
+            return JsonSerializer.Serialize(
+                new { Truncated = true, OriginalLength = json.Length, Tables = tables.Select(t => t.TableName) },
+                JsonOptions);
         }
         catch (Exception ex)
         {
             LogHelper.Warn($"序列化审计 Diff 表失败：{ex.Message}");
             return null;
         }
+    }
+
+    /// <summary>
+    /// 裁剪超长的单列值（仅对字符串生效）
+    /// </summary>
+    private static object? TruncateValue(object? value)
+    {
+        return value is string text && text.Length > MaxColumnValueLength
+            ? text[..MaxColumnValueLength] + "…"
+            : value;
+    }
+
+    /// <summary>
+    /// 归一化后判断是否软删除列（去分隔符转小写后等于 isdeleted）
+    /// </summary>
+    private static bool IsSoftDeleteColumn(string? columnName)
+    {
+        return !string.IsNullOrWhiteSpace(columnName)
+            && string.Concat(columnName.Where(char.IsLetterOrDigit))
+                .Equals("isdeleted", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

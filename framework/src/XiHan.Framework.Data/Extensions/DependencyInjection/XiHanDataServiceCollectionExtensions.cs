@@ -21,7 +21,6 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Tracing;
-using XiHan.Framework.Data.Auditing;
 using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Extensions;
@@ -81,10 +80,7 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 审计上下文提供器（DefaultEntityAuditContextProvider）与差异日志写入器（NullEntityDiffLogWriter）
         // 的默认注册已下沉至 XiHanAuditingModule（XiHan.Framework.Auditing）；本模块依赖它。
-
-        // 实体变更拦截器：基于命令级 AOP 自动捕获 INSERT / UPDATE / DELETE 差异日志
-        // 无需仓储显式调用 EnableDiffLogEvent，通过 ISqlSugarClient.UseEntityChangeInterceptor() 挂载
-        //services.TryAddScoped<EntityChangeInterceptor>();
+        // 实体差异日志唯一通道：SqlSugarDiffLogAop（仓储写操作挂 .EnableDiffLogEvent，需 EnableDiffLog=true）。
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
@@ -297,7 +293,7 @@ public static class XiHanDataServiceCollectionExtensions
         // 设置超时时间
         dbProvider.Ado.CommandTimeOut = options.SlowSqlThresholdMilliseconds / 1000;
 
-        // 组合 OnLogExecuting 处理器（SQL 日志 + 实体变更拦截器）
+        // 组合 OnLogExecuting 处理器（SQL 日志）
         // 使用本地委托组合后再赋值，避免 SqlSugar 仅写属性无法 += 的问题
         Action<string, SugarParameter[]>? onLogExecuting = null;
 
@@ -308,21 +304,6 @@ public static class XiHanDataServiceCollectionExtensions
                 HandleSqlExecutingLog(config, sql, parameters);
             };
         }
-
-        // 实体变更拦截器：始终附加（解析自 Scope，业务层可通过注册 Null 实现停用）
-        onLogExecuting += (sql, parameters) =>
-        {
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var interceptor = scope.ServiceProvider.GetService<Auditing.EntityChangeInterceptor>();
-                interceptor?.OnDataExecuting(sql, parameters);
-            }
-            catch
-            {
-                // 拦截器异常不影响主业务
-            }
-        };
 
         if (onLogExecuting is not null)
         {
@@ -339,7 +320,7 @@ public static class XiHanDataServiceCollectionExtensions
             RecordDbActivity(dbProvider, config, ex.Sql ?? string.Empty, ex);
         };
 
-        // 组合 OnLogExecuted 处理器（慢 SQL 日志 + 实体变更拦截器）
+        // 组合 OnLogExecuted 处理器（慢 SQL 日志 + DB Span）
         Action<string, SugarParameter[]>? onLogExecuted = null;
 
         if (options.EnableSlowSqlLog)
@@ -349,21 +330,6 @@ public static class XiHanDataServiceCollectionExtensions
                 HandleSqlSlowLog(dbProvider, options, config, sql, parameters);
             };
         }
-
-        // 实体变更拦截器：始终附加
-        onLogExecuted += (sql, parameters) =>
-        {
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var interceptor = scope.ServiceProvider.GetService<Auditing.EntityChangeInterceptor>();
-                interceptor?.OnDataExecuted(sql, parameters);
-            }
-            catch
-            {
-                // 拦截器异常不影响主业务
-            }
-        };
 
         // 数据库 Span：为每条执行完成的 SQL 补记 DB Client span（挂当前请求 span 下；OTel 未监听时零开销）
         onLogExecuted += (sql, _) =>
