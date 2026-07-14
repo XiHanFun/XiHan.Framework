@@ -43,6 +43,7 @@ public static class XiHanTrafficServiceCollectionExtensions
         services.AddSingleton<IGrayMatcher, UserIdGrayMatcher>();
         services.AddSingleton<IGrayMatcher, TenantIdGrayMatcher>();
         services.AddSingleton<IGrayMatcher, HeaderGrayMatcher>();
+        services.AddSingleton<IGrayMatcher, IpAddressGrayMatcher>();
 
         return services;
     }

@@ -14,6 +14,7 @@
 
 using XiHan.Framework.Authorization.Permissions;
 using XiHan.Framework.Authorization.Roles;
+using XiHan.Framework.Security.Users;
 
 namespace XiHan.Framework.Authorization.Policies;
 
@@ -25,6 +26,7 @@ public class DefaultPolicyEvaluator : IPolicyEvaluator
     private readonly IPolicyStore _policyStore;
     private readonly IPermissionChecker _permissionChecker;
     private readonly IRoleStore _roleStore;
+    private readonly ICurrentUser _currentUser;
 
     /// <summary>
     /// 构造函数
@@ -32,14 +34,17 @@ public class DefaultPolicyEvaluator : IPolicyEvaluator
     /// <param name="policyStore">策略存储</param>
     /// <param name="permissionChecker">权限检查器</param>
     /// <param name="roleStore">角色存储</param>
+    /// <param name="currentUser">当前登录主体（用于解析声明要求）</param>
     public DefaultPolicyEvaluator(
         IPolicyStore policyStore,
         IPermissionChecker permissionChecker,
-        IRoleStore roleStore)
+        IRoleStore roleStore,
+        ICurrentUser currentUser)
     {
         _policyStore = policyStore;
         _permissionChecker = permissionChecker;
         _roleStore = roleStore;
+        _currentUser = currentUser;
     }
 
     /// <summary>
@@ -111,14 +116,22 @@ public class DefaultPolicyEvaluator : IPolicyEvaluator
             }
         }
 
-        // 检查声明要求
+        // 检查声明要求（从当前登录主体的声明中解析）
+        // 声明只能来自当前请求的主体（ClaimsPrincipal），因此这里评估的是 _currentUser 的声明；
+        // 未认证时 GetAllClaims() 为空 → 所有声明要求判失败，保持 fail-closed。
         if (policy.RequiredClaims.Count > 0)
         {
-            // 注意：这里需要从某处获取用户的声明信息
-            // 暂时标记为未通过，实际使用时需要扩展此功能
-            foreach (var claim in policy.RequiredClaims)
+            var userClaims = _currentUser.GetAllClaims();
+            foreach (var required in policy.RequiredClaims)
             {
-                failedRequirements.Add($"缺少声明: {claim.Key} = {claim.Value}");
+                var matched = userClaims.Any(c =>
+                    string.Equals(c.Type, required.Key, StringComparison.OrdinalIgnoreCase) &&
+                    (string.IsNullOrEmpty(required.Value) || string.Equals(c.Value, required.Value, StringComparison.Ordinal)));
+
+                if (!matched)
+                {
+                    failedRequirements.Add($"缺少声明: {required.Key} = {required.Value}");
+                }
             }
         }
 
@@ -131,7 +144,11 @@ public class DefaultPolicyEvaluator : IPolicyEvaluator
                 PolicyName = policyName,
                 Resource = resource,
                 UserRoles = [.. (await _roleStore.GetUserRolesAsync(userId, cancellationToken)).Select(r => r.Name)],
-                UserPermissions = [.. (await _permissionChecker.GetGrantedPermissionsAsync(userId, cancellationToken))]
+                UserPermissions = [.. (await _permissionChecker.GetGrantedPermissionsAsync(userId, cancellationToken))],
+                // 把当前主体的声明填进上下文，供自定义要求读取（同类型取首个）
+                UserClaims = _currentUser.GetAllClaims()
+                    .GroupBy(c => c.Type)
+                    .ToDictionary(g => g.Key, g => g.First().Value)
             };
 
             foreach (var requirement in policy.CustomRequirements)

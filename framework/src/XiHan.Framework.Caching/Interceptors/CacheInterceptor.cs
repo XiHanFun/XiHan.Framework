@@ -113,17 +113,14 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
         invocation.ReturnValue = Task.FromResult(result);
     }
 
-    private static async Task HandleCacheEvictAsync(IXiHanMethodInvocation invocation, CacheEvictAttribute[] attrs)
+    private async Task HandleCacheEvictAsync(IXiHanMethodInvocation invocation, CacheEvictAttribute[] attrs)
     {
         foreach (var attr in attrs)
         {
             var cacheKey = CacheKeyBuilder.Build(attr.Key, invocation);
-            // HybridCache 的 RemoveAsync 通过 tag 机制实现
-            // 这里直接通过事件总线处理，具体由 EventHandler 调用 HybridCache.RemoveAsync
-            _ = cacheKey;
+            // 方法执行成功后，按模板构建出的键直接从 HybridCache（L1 内存 + L2 分布式）移除
+            await _hybridCache.RemoveAsync(cacheKey);
         }
-
-        await Task.CompletedTask;
     }
 
     private static CacheableAttribute? GetCacheableAttribute(MethodInfo method)

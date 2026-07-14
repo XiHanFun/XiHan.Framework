@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------
 // Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BlowfishHelper
-// Guid:46b52d28-fbdc-4a47-aa83-81b32bc2b43e
+// FileName:Sm4Helper
+// Guid:9a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
 // Author:zhaifanhua
 // Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 04:15:06
+// CreateTime:2026/07/14 00:00:00
 // ----------------------------------------------------------------
 
 #endregion <<版权版本注释>>
@@ -22,27 +22,32 @@ using System.Text;
 namespace XiHan.Framework.Security.Cryptography;
 
 /// <summary>
-/// Blowfish 加密算法辅助类，用于数据的加密和解密
+/// 国密 SM4 对称加密算法辅助类
 /// </summary>
 /// <remarks>
-/// 是一种对称加密算法，支持从 32 位到 448 位的可变密钥长度
-/// 此实现依赖 BouncyCastle.Cryptography 库。CBC 模式下每次加密使用随机 IV，
+/// SM4 是我国商用密码标准中的分组密码，分组与密钥长度均为 128 位（16 字节）。
+/// 本实现基于 BouncyCastle，采用 CBC 模式 + PKCS7 填充，每次加密使用随机 IV，
 /// IV 前置拼在密文头部一同输出；解密时先从头部读回 IV。
-/// 相同明文 + 相同密钥不会再得到相同密文。
+/// 与 SM2（非对称）、SM3（摘要）搭配可覆盖"签名 + 摘要 + 对称加密"的全链路国密需求。
 /// </remarks>
-public static class BlowfishHelper
+public static class Sm4Helper
 {
     /// <summary>
-    /// Blowfish 分组大小（64 位 = 8 字节），亦即 IV 长度
+    /// SM4 分组大小（128 位 = 16 字节），亦即 IV 长度
     /// </summary>
-    private const int BlockSizeBytes = 8;
+    private const int BlockSizeBytes = 16;
 
     /// <summary>
-    /// 使用 Blowfish 加密数据
+    /// SM4 密钥长度（128 位 = 16 字节）
+    /// </summary>
+    private const int KeySizeBytes = 16;
+
+    /// <summary>
+    /// 使用 SM4 加密数据
     /// </summary>
     /// <param name="data">要加密的明文数据</param>
-    /// <param name="key">密钥(建议 128 位或更长)</param>
-    /// <returns>加密后的数据(Base64 编码)</returns>
+    /// <param name="key">密钥(必须为 16 字节 UTF-8 字符串)</param>
+    /// <returns>加密后的数据(Base64 编码，含前置 IV)</returns>
     public static string Encrypt(string data, string key)
     {
         var dataBytes = Encoding.UTF8.GetBytes(data);
@@ -52,11 +57,11 @@ public static class BlowfishHelper
     }
 
     /// <summary>
-    /// 使用 Blowfish 加密数据(字节级别)，输出为 IV(8 字节) + 密文
+    /// 使用 SM4 加密数据(字节级别)，输出为 IV(16 字节) + 密文
     /// </summary>
     /// <param name="dataBytes">要加密的明文字节数据</param>
-    /// <param name="keyBytes">密钥字节数据</param>
-    /// <returns>加密后的密文字节数据（前 8 字节为随机 IV）</returns>
+    /// <param name="keyBytes">密钥字节数据(必须为 16 字节)</param>
+    /// <returns>加密后的密文字节数据（前 16 字节为随机 IV）</returns>
     public static byte[] EncryptBytes(byte[] dataBytes, byte[] keyBytes)
     {
         // 每次加密生成随机 IV，避免相同明文+密钥产生相同密文
@@ -71,10 +76,10 @@ public static class BlowfishHelper
     }
 
     /// <summary>
-    /// 使用 Blowfish 解密数据
+    /// 使用 SM4 解密数据
     /// </summary>
-    /// <param name="encryptedData">加密的密文数据(Base64 编码)</param>
-    /// <param name="key">密钥(与加密时使用的密钥一致)</param>
+    /// <param name="encryptedData">加密的密文数据(Base64 编码，含前置 IV)</param>
+    /// <param name="key">密钥(与加密时一致，16 字节)</param>
     /// <returns>解密后的明文数据</returns>
     public static string Decrypt(string encryptedData, string key)
     {
@@ -85,10 +90,10 @@ public static class BlowfishHelper
     }
 
     /// <summary>
-    /// 使用 Blowfish 解密数据(字节级别)，输入需为 IV(8 字节) + 密文
+    /// 使用 SM4 解密数据(字节级别)，输入需为 IV(16 字节) + 密文
     /// </summary>
-    /// <param name="cipherBytes">加密的密文字节数据（前 8 字节为 IV）</param>
-    /// <param name="keyBytes">密钥字节数据</param>
+    /// <param name="cipherBytes">加密的密文字节数据（前 16 字节为 IV）</param>
+    /// <param name="keyBytes">密钥字节数据(必须为 16 字节)</param>
     /// <returns>解密后的明文字节数据</returns>
     public static byte[] DecryptBytes(byte[] cipherBytes, byte[] keyBytes)
     {
@@ -112,20 +117,19 @@ public static class BlowfishHelper
     /// </summary>
     /// <param name="inputBytes">输入数据(明文或密文)</param>
     /// <param name="keyBytes">密钥字节数据</param>
-    /// <param name="iv">初始化向量(8 字节)</param>
+    /// <param name="iv">初始化向量(16 字节)</param>
     /// <param name="forEncryption">指示是加密 (true) 还是解密 (false)</param>
     /// <returns>处理后的字节数据</returns>
     private static byte[] ProcessCipher(byte[] inputBytes, byte[] keyBytes, byte[] iv, bool forEncryption)
     {
-        // 限制密钥长度为 448 位以内
-        if (keyBytes.Length > 56)
+        if (keyBytes.Length != KeySizeBytes)
         {
-            throw new ArgumentException("密钥长度必须为 448 位(56 字节)或更少。");
+            throw new ArgumentException($"SM4 密钥长度必须为 {KeySizeBytes} 字节(128 位)。", nameof(keyBytes));
         }
 
-        // 创建加密引擎
-        var engine = new BlowfishEngine();
-        var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(engine)); // 使用 CBC 模式
+        // 创建 SM4 引擎，CBC 模式 + PKCS7 填充
+        var engine = new SM4Engine();
+        var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(engine));
 
         // 使用密钥 + IV 初始化
         cipher.Init(forEncryption, new ParametersWithIV(new KeyParameter(keyBytes), iv));
