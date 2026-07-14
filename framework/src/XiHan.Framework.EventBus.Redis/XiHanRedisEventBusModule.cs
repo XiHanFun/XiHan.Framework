@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
@@ -29,7 +30,8 @@ namespace XiHan.Framework.EventBus.Redis;
 /// 配置节：<c>XiHan:EventBus:Redis</c>。
 /// </remarks>
 [DependsOn(
-    typeof(XiHanEventBusModule)
+    typeof(XiHanEventBusModule),
+    typeof(XiHanCachingModule)
 )]
 public class XiHanRedisEventBusModule : XiHanModule
 {
