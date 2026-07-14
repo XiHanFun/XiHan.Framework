@@ -30,13 +30,13 @@ public sealed class XiHanSessionStateOptions
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
-    /// 锁屏时仍需放行的路径（不区分大小写的前缀匹配）
+    /// 会话<b>锁定</b>时仍需放行的路径（不区分大小写的前缀匹配）
     /// </summary>
     /// <remarks>
-    /// 必须放行：解锁端点（否则永远解不开）、登出端点（锁屏中必须能登出）、
-    /// 刷新令牌（长时间锁屏会跨越 access token 有效期，挡掉会把锁屏打成登出；
-    /// 刷新保留同一 session_id，锁屏位不会因此丢失）。
-    /// <para>注意：这些路径只对<b>锁屏(423)</b>放行；会话失效(401) 一律拦截，不受此列表影响。</para>
+    /// 必须放行：解锁端点（否则永远解不开）、登出端点（锁定中必须能登出）、
+    /// 刷新令牌（长时间锁定会跨越 access token 有效期，挡掉会把锁定页打成登出；
+    /// 刷新保留同一 session_id，锁定位不会因此丢失）。
+    /// <para>注意：这些路径只对<b>锁定(423)</b>放行；会话失效(401) 一律拦截，不受此列表影响。</para>
     /// </remarks>
     public List<string> LockAllowedPaths { get; set; } = [];
 

@@ -30,8 +30,12 @@ public enum SessionGateStatus
     Invalid = 1,
 
     /// <summary>
-    /// 会话已锁屏——应以 423 拒绝，令客户端展示锁屏而<b>不是</b>登出（用户仍是本人）
+    /// 会话已锁定——应以 423 拒绝，令客户端引导解锁而<b>不是</b>登出（用户仍是本人）
     /// </summary>
+    /// <remarks>
+    /// 框架不假设锁定的<b>原因</b>：锁屏只是应用侧可能的一种，也可能是风控挂起、强制改密等。
+    /// 原因与解锁方式均由应用侧定义。
+    /// </remarks>
     Locked = 2
 }
 
@@ -39,10 +43,15 @@ public enum SessionGateStatus
 /// 会话闸门判定
 /// </summary>
 /// <param name="Status">判定结果</param>
-/// <param name="DisplayName">锁屏时回传给前端的展示名（锁屏页要显示"是谁锁的"）</param>
-/// <param name="AvatarUrl">锁屏时回传给前端的头像</param>
+/// <param name="Reason">
+/// 锁定原因标识（由应用侧定义，框架<b>只透传不解释</b>）。
+/// 客户端据此决定引导哪种解锁方式——锁屏走口令解锁，风控挂起可能要走申诉，强制改密要跳改密页。
+/// </param>
+/// <param name="DisplayName">锁定时回传给前端的展示名（解锁页要显示"锁的是谁"；此时用户信息接口本身已被挡）</param>
+/// <param name="AvatarUrl">锁定时回传给前端的头像</param>
 public sealed record SessionGateDecision(
     SessionGateStatus Status,
+    string? Reason = null,
     string? DisplayName = null,
     string? AvatarUrl = null)
 {
@@ -53,7 +62,7 @@ public sealed record SessionGateDecision(
 }
 
 /// <summary>
-/// 会话状态闸门：由应用侧实现，中间件据此在鉴权前拦截失效/锁屏会话
+/// 会话状态闸门：由应用侧实现，中间件据此在鉴权前拦截失效/锁定会话
 /// </summary>
 /// <remarks>
 /// 框架不认识应用的会话模型（如 <c>SysUserSession</c>），故只暴露这层抽象；

@@ -24,21 +24,21 @@ using XiHan.Framework.Web.Api.Constants;
 namespace XiHan.Framework.Web.Api.Session;
 
 /// <summary>
-/// 会话状态中间件：在鉴权前拦截「已失效」与「已锁屏」的会话
+/// 会话状态中间件：在鉴权前拦截「已失效」与「已锁定」的会话
 /// </summary>
 /// <remarks>
 /// 管道位置必须是 <c>UseAuthentication</c> → <c>TenantResolve</c> → <b>本中间件</b> → <c>UseAuthorization</c>：
 /// <list type="bullet">
 ///   <item>在认证之后：要读 <c>session_id</c> claim；</item>
 ///   <item>在租户解析之后：应用侧的会话表通常是多租户实体，租户上下文未解析会被全局过滤器挡掉；</item>
-///   <item>在授权之前：锁屏(423)/失效(401) 要先于任何权限评估短路，避免与 403 语义混淆。</item>
+///   <item>在授权之前：锁定(423)/失效(401) 要先于任何权限评估短路，避免与 403 语义混淆。</item>
 /// </list>
 /// <para>
 /// 判定委托给 <see cref="ISessionStateGate"/>（应用侧实现）。框架默认 <see cref="NullSessionStateGate"/> 一律放行。
 /// </para>
 /// <para>
 /// <b>放行条件</b>：端点标记 <see cref="IAllowAnonymous"/>、未认证、无 <c>session_id</c> claim（如开放接口 AccessKey 客户端）、
-/// SignalR Hub 路径。锁屏另有路径白名单（解锁/登出/刷新）。
+/// SignalR Hub 路径。锁定另有路径白名单（解锁/登出/刷新）。
 /// </para>
 /// </remarks>
 public sealed class XiHanSessionStateMiddleware : IMiddleware
@@ -87,10 +87,13 @@ public sealed class XiHanSessionStateMiddleware : IMiddleware
                 return;
 
             case SessionGateStatus.Locked when !IsLockAllowed(context):
-                // 锁屏：用户身份仍有效，故回 423 而非 401——客户端应展示锁屏，不得跳登录页。
-                // 载荷只带展示名/头像：锁屏页要显示"是谁锁的"，而用户信息接口本身是被挡住的。
-                await WriteAsync(context, ApiResponseCodes.Locked, "会话已锁屏，请先解锁", new
+                // 锁定：用户身份仍有效，故回 423 而非 401——客户端应引导解锁，不得跳登录页。
+                // 框架不关心锁定的原因（锁屏只是应用侧的一种），只负责拦截。
+                // 载荷只带展示名/头像：解锁页要显示"锁的是谁"，而用户信息接口本身是被挡住的。
+                await WriteAsync(context, ApiResponseCodes.Locked, "会话已锁定，请先解锁", new
                 {
+                    // reason 由应用侧定义，框架只透传：客户端据此决定引导哪种解锁方式
+                    reason = decision.Reason,
                     displayName = decision.DisplayName,
                     avatarUrl = decision.AvatarUrl
                 });
@@ -131,7 +134,7 @@ public sealed class XiHanSessionStateMiddleware : IMiddleware
     }
 
     /// <summary>
-    /// 锁屏白名单（仅对 423 生效）
+    /// 锁定白名单（仅对 423 生效）
     /// </summary>
     private bool IsLockAllowed(HttpContext context)
     {
