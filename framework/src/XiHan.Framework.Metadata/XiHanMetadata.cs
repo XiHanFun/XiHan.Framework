@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using System.Reflection;
+using System.Runtime.Versioning;
 
 namespace XiHan.Framework.Metadata;
 
@@ -24,67 +25,62 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架名称
     /// </summary>
-    public static string Name = "XiHan.Framework";
+    public const string Name = "XiHan.Framework";
 
     /// <summary>
     /// 框架显示名称
     /// </summary>
-    public static string DisplayName = "曦寒框架";
+    public const string DisplayName = "曦寒框架";
 
     /// <summary>
     /// 框架版权信息
     /// </summary>
-    public static string Copyright = "Copyright ©2021-Present ZhaiFanhua All Rights Reserved.";
+    public const string Copyright = "Copyright ©2021-Present ZhaiFanhua All Rights Reserved.";
 
     /// <summary>
     /// 框架作者
     /// </summary>
-    public static string Author = "ZhaiFanhua";
+    public const string Author = "ZhaiFanhua";
 
     /// <summary>
     /// 框架作者邮箱
     /// </summary>
-    public static string AuthorEmail = "me@zhaifanhua.com";
+    public const string AuthorEmail = "me@zhaifanhua.com";
 
     /// <summary>
     /// 框架组织
     /// </summary>
-    public static string Organization = "XiHanFun";
+    public const string Organization = "XiHanFun";
 
     /// <summary>
     /// 框架组织网址
     /// </summary>
-    public static string OrganizationUrl = "https://github.com/XiHanFun";
+    public const string OrganizationUrl = "https://github.com/XiHanFun";
 
     /// <summary>
     /// 框架仓库地址
     /// </summary>
-    public static string RepositoryUrl = "https://github.com/XiHanFun/XiHan.Framework";
+    public const string RepositoryUrl = "https://github.com/XiHanFun/XiHan.Framework";
 
     /// <summary>
     /// 框架文档地址
     /// </summary>
-    public static string DocumentationUrl = "https://docs.xihanfun.com";
+    public const string DocumentationUrl = "https://docs.xihanfun.com";
 
     /// <summary>
     /// 框架许可证
     /// </summary>
-    public static string License = "MIT";
+    public const string License = "MIT";
 
     /// <summary>
     /// 框架许可证地址
     /// </summary>
-    public static string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
-
-    /// <summary>
-    /// 框架描述
-    /// </summary>
-    public static string Description = $"快速、轻量、高效、用心的开发框架和组件库。基于 .NET 10 构建。";
+    public const string LicenseUrl = "https://github.com/XiHanFun/XiHan.Framework/blob/main/LICENSE";
 
     /// <summary>
     /// 框架关键词
     /// </summary>
-    public static string[] Keywords =
+    public static readonly string[] Keywords =
     [
         "dotnet",
         "aspnetcore",
@@ -100,22 +96,29 @@ public static class XiHanMetadata
     ];
 
     /// <summary>
-    /// 框架支持的 .NET 版本
-    /// </summary>
-    public static string[] SupportedFrameworks =
-    [
-        "net10.0"
-    ];
-
-    /// <summary>
     /// 框架支持的平台
     /// </summary>
-    public static string[] SupportedPlatforms =
+    public static readonly string[] SupportedPlatforms =
     [
         "Windows",
         "Linux",
         "MacOS"
     ];
+
+    /// <summary>
+    /// 框架当前目标框架标识（从程序集 <see cref="TargetFrameworkAttribute"/> 解析，如 "net10.0"）
+    /// </summary>
+    public static string TargetFramework { get; } = ResolveTargetFramework();
+
+    /// <summary>
+    /// 框架支持的 .NET 版本（由当前目标框架派生，升级大版本无需手改）
+    /// </summary>
+    public static string[] SupportedFrameworks { get; } = [TargetFramework];
+
+    /// <summary>
+    /// 框架描述（.NET 版本由目标框架派生）
+    /// </summary>
+    public static string Description { get; } = $"快速、轻量、高效、用心的开发框架和组件库。基于 {ResolveDotNetDisplay()} 构建。";
 
     /// <summary>
     /// 入口程序名称
@@ -203,5 +206,39 @@ public static class XiHanMetadata
 
             {EntryAssemblyName} v{EntryAssemblyVersion}
             """;
+    }
+
+    /// <summary>
+    /// 从程序集的 <see cref="TargetFrameworkAttribute"/> 解析目标框架标识（如 "net10.0"）
+    /// </summary>
+    private static string ResolveTargetFramework()
+    {
+        // FrameworkName 形如 ".NETCoreApp,Version=v10.0"
+        var frameworkName = Assembly.GetAssembly(typeof(XiHanMetadata))?
+            .GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
+
+        if (!string.IsNullOrEmpty(frameworkName))
+        {
+            const string marker = "Version=v";
+            var idx = frameworkName.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                var version = frameworkName[(idx + marker.Length)..];
+                return $"net{version}";
+            }
+        }
+
+        return "net10.0";
+    }
+
+    /// <summary>
+    /// 把目标框架标识转成友好显示（如 ".NET 10"）
+    /// </summary>
+    private static string ResolveDotNetDisplay()
+    {
+        var tfm = ResolveTargetFramework();
+        var version = tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) ? tfm[3..] : tfm;
+        var major = version.Split('.')[0];
+        return $".NET {major}";
     }
 }
