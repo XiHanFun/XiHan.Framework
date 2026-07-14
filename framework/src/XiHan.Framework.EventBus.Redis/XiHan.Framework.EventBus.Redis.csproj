@@ -14,10 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="StackExchange.Redis" Version="3.0.11" />
-    </ItemGroup>
-
-    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
         <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
     </ItemGroup>
 
