@@ -71,8 +71,11 @@ public static class ExceptionLogReporter
                 ExceptionType = exception.GetType().FullName ?? exception.GetType().Name,
                 ExceptionMessage = exception.Message,
                 ExceptionStackTrace = exception.StackTrace,
-                RequestHeaders = SafeSerialize(context.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString())),
-                RequestParams = SafeSerialize(BuildRequestParams(context)),
+                // 请求头按头名整体掩码（Authorization/Cookie/ApiKey 等），请求参数（route + query）走通用脱敏；
+                // 请求体取的是中间件放进 Items 的副本，上游已脱敏。
+                RequestHeaders = SafeSerialize(LogSanitizer.MaskHeaders(
+                    context.Request.Headers.Select(header => new KeyValuePair<string, string?>(header.Key, header.Value.ToString())))),
+                RequestParams = LogSanitizer.MaskSensitiveData(SafeSerialize(BuildRequestParams(context))),
                 RequestBody = ResolveRequestBody(context),
                 RemoteIp = requestContext?.RemoteIp ?? context.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = requestContext?.UserAgent ?? context.Request.Headers.UserAgent.ToString()

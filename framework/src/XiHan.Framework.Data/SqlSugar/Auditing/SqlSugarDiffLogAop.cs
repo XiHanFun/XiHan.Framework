@@ -221,11 +221,15 @@ internal static class SqlSugarDiffLogAop
 
         try
         {
-            // 仅保留列名/值，丢弃表元信息以减小体积
+            // 仅保留列名/值，丢弃表元信息以减小体积；敏感列（密码/密钥/令牌/连接串等）按列名整体掩码，绝不明文进审计
             var simplified = tables.Select(t => new
             {
                 t.TableName,
-                Columns = t.Columns?.Select(c => new { c.ColumnName, c.Value })
+                Columns = t.Columns?.Select(c => new
+                {
+                    c.ColumnName,
+                    Value = LogSanitizer.MaskFieldValue(c.ColumnName, c.Value)
+                })
             });
             var json = JsonSerializer.Serialize(simplified, JsonOptions);
             const int maxLength = 8000;
@@ -256,16 +260,18 @@ internal static class SqlSugarDiffLogAop
         foreach (var afterCol in after.Columns)
         {
             beforeMap.TryGetValue(afterCol.ColumnName, out var beforeValue);
+            // 变更判定用原值（若先掩码，敏感字段前后都成 ***，会被误判为未变更、改密码将不留痕迹）
             if (Equals(beforeValue, afterCol.Value))
             {
                 continue;
             }
 
+            // 敏感字段：保留"这个字段变过"的事实，但不留新旧值
             changed.Add(new
             {
                 Field = afterCol.ColumnName,
-                Before = beforeValue,
-                After = afterCol.Value
+                Before = LogSanitizer.MaskFieldValue(afterCol.ColumnName, beforeValue),
+                After = LogSanitizer.MaskFieldValue(afterCol.ColumnName, afterCol.Value)
             });
         }
 
