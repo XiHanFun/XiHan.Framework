@@ -1,16 +1,46 @@
-![logo](./assets/banner.png)
+<div align="center">
+<img src="./assets/banner.png" alt="XiHan.Framework" />
 
-[![GitHub Star](https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat&logo=github)](https://github.com/XiHanFun/XiHan.Framework) | [![Gitee Star](https://gitee.com/XiHanFun/XiHan.Framework/badge/star.svg)](https://gitee.com/XiHanFun/XiHan.Framework) | [![AtomGit Star](https://atomgit.com/XiHanFun/XiHan.Framework/star/badge.svg)](https://atomgit.com/XiHanFun/XiHan.Framework)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple)](https://dotnet.microsoft.com/) | [![NuGet](https://img.shields.io/nuget/v/XiHan.Framework.Core?label=NuGet&color=blue)](https://www.nuget.org/packages?q=XiHan.Framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+<h1>XiHan.Framework</h1>
+
+<p><b>快速、轻量、高效、用心的 .NET 模块化开发框架</b></p>
+
+<p>基于 .NET 10 构建 · 61 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+
+<p>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat-square&logo=github&label=Stars&color=1f6feb" /></a>
+  <a href="https://gitee.com/XiHanFun/XiHan.Framework"><img alt="Gitee Stars" src="https://gitee.com/XiHanFun/XiHan.Framework/badge/star.svg" /></a>
+  <a href="https://atomgit.com/XiHanFun/XiHan.Framework"><img alt="AtomGit Stars" src="https://atomgit.com/XiHanFun/XiHan.Framework/star/badge.svg" /></a>
+</p>
+<p>
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+  <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
+  <img alt="Modules" src="https://img.shields.io/badge/Modules-61-1f6feb?style=flat-square" />
+  <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
+  <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
+</p>
 
 
-[曦寒懿官方交流群](https://qm.qq.com/q/qYp1Urv3z2) 462371834 | [在线文档](https://docs.xihanfun.com)
 
-# XiHan.Framework
+<p>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/github/license/XiHanFun/XiHan.Framework?style=flat-square&color=green" /></a>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/commits"><img alt="Last Commit" src="https://img.shields.io/github/last-commit/XiHanFun/XiHan.Framework?style=flat-square&color=blueviolet" /></a>
+  <img alt="Commit Activity" src="https://img.shields.io/github/commit-activity/m/XiHanFun/XiHan.Framework?style=flat-square" />
+  <a href="https://github.com/XiHanFun/XiHan.Framework/issues"><img alt="Issues" src="https://img.shields.io/github/issues/XiHanFun/XiHan.Framework?style=flat-square" /></a>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/graphs/contributors"><img alt="Contributors" src="https://img.shields.io/github/contributors/XiHanFun/XiHan.Framework?style=flat-square" /></a>
+  <img alt="Repo Size" src="https://img.shields.io/github/repo-size/XiHanFun/XiHan.Framework?style=flat-square" />
+</p>
 
-快速、轻量、高效、用心的 .NET 模块化开发框架，基于 .NET 10 构建。
+<p>
+  <a href="https://deepwiki.com/XiHanFun/XiHan.Framework"><img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
+  <a href="https://docs.xihanfun.com"><img alt="Docs" src="https://img.shields.io/badge/Docs-docs.xihanfun.com-2496ED?style=flat-square&logo=readthedocs&logoColor=white" /></a>
+  <a href="https://qm.qq.com/q/qYp1Urv3z2"><img alt="QQ Group" src="https://img.shields.io/badge/QQ_Group-462371834-EB1923?style=flat-square&logo=tencentqq&logoColor=white" /></a>
+</p>
+
+<p>
+  <a href="https://trendshift.io/repositories/83128" target="_blank" rel="noopener noreferrer"><img alt="XiHanFun/XiHan.Framework | Trendshift" src="https://trendshift.io/api/badge/repositories/83128" width="250" height="55" /></a>
+</p>
+</div>
 
 ## 概述
 
@@ -365,6 +395,18 @@ dotnet package search XiHan.Framework
 | [Abp](https://github.com/abpframework/abp)                 | 作为部分架构和逻辑灵感来源（启蒙项目）         |
 | [Furion](https://gitee.com/dotnetchina/Furion)             | 作为部分架构和逻辑灵感来源                     |
 | 其他第三方依赖                                             | 作为项目功能丰富与拓展的基石                   |
+
+## Star History
+
+<div align="center">
+  <a href="https://star-history.com/#XiHanFun/XiHan.Framework&Date" target="_blank">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date" />
+      <img alt="XiHan.Framework Star History Chart" src="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date" width="640" />
+    </picture>
+  </a>
+</div>
 
 ## 支持&赞助
 
