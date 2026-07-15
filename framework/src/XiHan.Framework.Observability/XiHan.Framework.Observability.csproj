@@ -14,8 +14,8 @@
     </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.9" />
-		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.10" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.10" />
 	</ItemGroup>
 
 	<!-- OpenTelemetry：装配总闸；版本内联固定（本仓无中央包管理），与运行时 net10.0 对齐 -->
