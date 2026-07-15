@@ -1,4 +1,4 @@
-![logo](./assets/logo.png)
+![logo](./assets/banner.png)
 
 [![GitHub Star](https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat&logo=github)](https://github.com/XiHanFun/XiHan.Framework) | [![Gitee Star](https://gitee.com/XiHanFun/XiHan.Framework/badge/star.svg)](https://gitee.com/XiHanFun/XiHan.Framework) | [![AtomGit Star](https://atomgit.com/XiHanFun/XiHan.Framework/star/badge.svg)](https://atomgit.com/XiHanFun/XiHan.Framework)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
