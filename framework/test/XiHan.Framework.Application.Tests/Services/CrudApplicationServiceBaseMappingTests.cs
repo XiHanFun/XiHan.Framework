@@ -12,9 +12,9 @@
 
 #endregion <<版权版本注释>>
 
+using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Services;
-using XiHan.Framework.Domain.Entities.Abstracts;
-using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Tests.Services;
@@ -28,7 +28,7 @@ public class CrudApplicationServiceBaseMappingTests
     public async Task MapUpdateDtoToEntity_ShouldMutateExistingInstance()
     {
         var service = new TestCrudService();
-        var entity = new TestEntity { BasicId = 1, Name = "old-name", Age = 18 };
+        var entity = new TestEntity(1) { Name = "old-name", Age = 18 };
         var updateDto = new TestUpdateDto { Name = "new-name", Age = 20 };
 
         var beforeRef = entity;
@@ -43,7 +43,7 @@ public class CrudApplicationServiceBaseMappingTests
     public async Task MapEntityDtoToEntity_ShouldMutateExistingInstance()
     {
         var service = new TestCrudService();
-        var entity = new TestEntity { BasicId = 1, Name = "old-name", Age = 18 };
+        var entity = new TestEntity(1) { Name = "old-name", Age = 18 };
         var dto = new TestEntityDto { Name = "dto-name", Age = 25 };
 
         var beforeRef = entity;
@@ -73,37 +73,37 @@ public class CrudApplicationServiceBaseMappingTests
         }
     }
 
-    private sealed class TestEntity : IEntityBase<long>
+    private sealed class TestEntity : EntityBase<long>
     {
-        public long BasicId { get; set; }
-
-        public long RowVersion { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-
-        public int Age { get; set; }
-
-        public bool IsTransient()
+        public TestEntity()
         {
-            return BasicId <= 0;
         }
+
+        public TestEntity(long basicId)
+            : base(basicId)
+        {
+        }
+
+        public string Name { get; set; } = string.Empty;
+
+        public int Age { get; set; }
     }
 
-    private sealed class TestEntityDto
+    private sealed class TestEntityDto : DtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
         public int Age { get; set; }
     }
 
-    private sealed class TestCreateDto
+    private sealed class TestCreateDto : CreationDtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
         public int Age { get; set; }
     }
 
-    private sealed class TestUpdateDto
+    private sealed class TestUpdateDto : UpdateDtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
