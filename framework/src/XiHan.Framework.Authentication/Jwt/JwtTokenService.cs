@@ -82,7 +82,8 @@ public class JwtTokenService : IJwtTokenService
             ExpiresIn = (int)TimeSpan.FromMinutes(_options.AccessTokenExpirationMinutes).TotalSeconds,
             TokenType = "Bearer",
             IssuedAt = now,
-            ExpiresAt = expires
+            ExpiresAt = expires,
+            RefreshTokenExpiresAt = refreshTokenExpireAt
         };
     }
 

@@ -48,4 +48,13 @@ public class JwtTokenResult
     /// 过期时间
     /// </summary>
     public DateTime ExpiresAt { get; set; }
+
+    /// <summary>
+    /// 刷新令牌过期时间
+    /// </summary>
+    /// <remarks>
+    /// 会话级生命周期应以它为准，而不是 <see cref="ExpiresAt"/>（后者是访问令牌的短过期，
+    /// 拿它当会话生死线会导致访问令牌一到期整个会话即判死、刷新永不可能成功）。
+    /// </remarks>
+    public DateTime RefreshTokenExpiresAt { get; set; }
 }
