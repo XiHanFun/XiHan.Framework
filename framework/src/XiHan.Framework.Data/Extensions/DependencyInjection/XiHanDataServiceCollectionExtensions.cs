@@ -45,6 +45,12 @@ namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 public static class XiHanDataServiceCollectionExtensions
 {
     /// <summary>
+    /// 平台态（无租户上下文）哨兵值：租户过滤器据此放行全部数据。
+    /// 取 <see cref="long.MinValue"/> 确保不与平台租户(0)或业务租户(≥1)冲突。
+    /// </summary>
+    private const long PlatformTenantScopeSentinel = long.MinValue;
+
+    /// <summary>
     /// 添加SqlSugar数据访问服务
     /// </summary>
     /// <param name="services">服务集合</param>
@@ -75,12 +81,7 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
-
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
-
-        // 审计上下文提供器（DefaultEntityAuditContextProvider）与差异日志写入器（NullEntityDiffLogWriter）
-        // 的默认注册已下沉至 XiHanAuditingModule（XiHan.Framework.Auditing）；本模块依赖它。
-        // 实体差异日志唯一通道：SqlSugarDiffLogAop（仓储写操作挂 .EnableDiffLogEvent，需 EnableDiffLog=true）。
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
@@ -120,60 +121,6 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         return services;
-    }
-
-    /// <summary>
-    /// 添加 SqlSugar
-    /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <returns></returns>
-    private static SqlSugarScope CreateScope(IServiceProvider services)
-    {
-        var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
-        var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
-        var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
-
-        var connectionConfigs = options.ConnectionConfigs
-            .Select(connConfig =>
-            {
-                var config = new ConnectionConfig
-                {
-                    ConfigId = connConfig.ConfigId,
-                    ConnectionString = connConfig.ConnectionString,
-                    DbType = connConfig.DbType,
-                    IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
-                    InitKeyType = connConfig.InitKeyType,
-                    MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
-                    // appsettings 里 HitRate 是字段绑不上（恒为 0），此处归一化为默认权重，否则从库永不被选中
-                    SlaveConnectionConfigs = NormalizeSlaveHitRates(connConfig.SlaveConnectionConfigs, options),
-                    DbLinkName = connConfig.DbLinkName
-                };
-                if (connConfig.LanguageType.HasValue)
-                {
-                    config.LanguageType = connConfig.LanguageType.Value;
-                }
-                if (!string.IsNullOrWhiteSpace(connConfig.IndexSuffix))
-                {
-                    config.IndexSuffix = connConfig.IndexSuffix;
-                }
-                return config;
-            })
-            .ToList();
-
-        // 设置自定义全局雪花ID生成器
-        StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
-
-        // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
-        options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
-
-        return new SqlSugarScope(connectionConfigs, client =>
-        {
-            foreach (var config in connectionConfigs)
-            {
-                var dbProvider = client.GetConnectionScope(config.ConfigId);
-                configurator.Configure(dbProvider);
-            }
-        });
     }
 
     internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
@@ -252,27 +199,6 @@ public static class XiHanDataServiceCollectionExtensions
             var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
             methodInfo?.Invoke(provider.QueryFilter, [lambda]);
         }
-    }
-
-    /// <summary>
-    /// 平台态（无租户上下文）哨兵值：租户过滤器据此放行全部数据。
-    /// 取 <see cref="long.MinValue"/> 确保不与平台租户(0)或业务租户(≥1)冲突。
-    /// </summary>
-    private const long PlatformTenantScopeSentinel = long.MinValue;
-
-    /// <summary>
-    /// 解析当前租户过滤标量：有租户上下文返回其 TenantId，否则返回平台哨兵值。
-    /// </summary>
-    /// <remarks>
-    /// 供全局租户 QueryFilter 使用：仅返回 <see cref="long"/> 标量，绝不向过滤表达式泄漏 BasicTenantInfo 复杂对象，
-    /// 且对空上下文以哨兵兜底而非取 <c>.Value</c>，从而规避 SqlSugar 表达式翻译期的类型/空值异常。
-    /// SqlSugar 对过滤表达式按查询即时求值，本方法随之每次查询重算，保证租户上下文动态生效。
-    /// </remarks>
-    /// <param name="currentTenantAccessor">当前租户访问器</param>
-    /// <returns>当前租户 Id 或平台哨兵值</returns>
-    private static long ResolveTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
-    {
-        return currentTenantAccessor.Current?.TenantId ?? PlatformTenantScopeSentinel;
     }
 
     /// <summary>
@@ -358,6 +284,75 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         options.ConfigureDbAction?.Invoke(dbProvider);
+    }
+
+    /// <summary>
+    /// 添加 SqlSugar
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <returns></returns>
+    private static SqlSugarScope CreateScope(IServiceProvider services)
+    {
+        var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
+        var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
+        var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
+
+        var connectionConfigs = options.ConnectionConfigs
+            .Select(connConfig =>
+            {
+                var config = new ConnectionConfig
+                {
+                    ConfigId = connConfig.ConfigId,
+                    ConnectionString = connConfig.ConnectionString,
+                    DbType = connConfig.DbType,
+                    IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
+                    InitKeyType = connConfig.InitKeyType,
+                    MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
+                    // appsettings 里 HitRate 是字段绑不上（恒为 0），此处归一化为默认权重，否则从库永不被选中
+                    SlaveConnectionConfigs = NormalizeSlaveHitRates(connConfig.SlaveConnectionConfigs, options),
+                    DbLinkName = connConfig.DbLinkName
+                };
+                if (connConfig.LanguageType.HasValue)
+                {
+                    config.LanguageType = connConfig.LanguageType.Value;
+                }
+                if (!string.IsNullOrWhiteSpace(connConfig.IndexSuffix))
+                {
+                    config.IndexSuffix = connConfig.IndexSuffix;
+                }
+                return config;
+            })
+            .ToList();
+
+        // 设置自定义全局雪花ID生成器
+        StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
+
+        // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
+        options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
+
+        return new SqlSugarScope(connectionConfigs, client =>
+        {
+            foreach (var config in connectionConfigs)
+            {
+                var dbProvider = client.GetConnectionScope(config.ConfigId);
+                configurator.Configure(dbProvider);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 解析当前租户过滤标量：有租户上下文返回其 TenantId，否则返回平台哨兵值。
+    /// </summary>
+    /// <remarks>
+    /// 供全局租户 QueryFilter 使用：仅返回 <see cref="long"/> 标量，绝不向过滤表达式泄漏 BasicTenantInfo 复杂对象，
+    /// 且对空上下文以哨兵兜底而非取 <c>.Value</c>，从而规避 SqlSugar 表达式翻译期的类型/空值异常。
+    /// SqlSugar 对过滤表达式按查询即时求值，本方法随之每次查询重算，保证租户上下文动态生效。
+    /// </remarks>
+    /// <param name="currentTenantAccessor">当前租户访问器</param>
+    /// <returns>当前租户 Id 或平台哨兵值</returns>
+    private static long ResolveTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
+    {
+        return currentTenantAccessor.Current?.TenantId ?? PlatformTenantScopeSentinel;
     }
 
     /// <summary>
