@@ -228,7 +228,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await CreateQueryable().CountAsync(cancellationToken);
+        return await CreateQueryable()
+            .CountAsync(cancellationToken);
     }
 
     /// <summary>
@@ -410,7 +411,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateQueryable().ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable()
+            .ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -442,5 +444,4 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     #endregion
-
 }

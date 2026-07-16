@@ -32,7 +32,7 @@ namespace XiHan.Framework.Data.SqlSugar.Clients;
 /// </remarks>
 public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigurator
 {
-    private static readonly object AddConnectionLock = new();
+    private static readonly Lock AddConnectionLock = new();
 
     private readonly XiHanSqlSugarCoreOptions _options;
     private readonly ICurrentTenantAccessor _currentTenantAccessor;
