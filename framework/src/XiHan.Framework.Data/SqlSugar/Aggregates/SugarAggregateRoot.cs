@@ -42,7 +42,7 @@ public abstract class SugarAggregateRoot<TKey> : AggregateRootBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发", IsEnableUpdateVersionValidation = true)]
     public override long RowVersion { get; set; }
 
     /// <summary>
