@@ -183,21 +183,47 @@ public static class XiHanDataServiceCollectionExtensions
                           entity.TenantId == ResolveTenantScopeId(currentTenantAccessor));
         }
 
+        // 额外全局过滤器：直接把注册期存下的表达式树交给 SqlSugar 的非泛型重载
+        // AddTableFilter(Type, Expression, FilterJoinPosition)，零反射、可翻译为 SQL。
+        // 此处绝不能抛异常：本方法运行在 SqlSugarScope 的每上下文 configAction 里，
+        // 中途抛出会留下「半配置」客户端（过滤器/AOP 部分缺失）被后续访问静默复用——
+        // 表达式合法性已在 ValidateGlobalFilters（CreateScope 构建期，fail-fast）校验完毕。
         foreach (var filter in options.GlobalFilters)
         {
-            var entityType = filter.Key;
-            var funcType = typeof(Func<,>).MakeGenericType(entityType, typeof(bool));
-            var parameter = Expression.Parameter(entityType, "e");
-            var filterFunc = filter.Value;
-            var convertedParam = Expression.Convert(parameter, typeof(object));
-            var filterCall = Expression.Call(
-                Expression.Constant(filterFunc.Target),
-                filterFunc.Method,
-                convertedParam);
-            var lambda = Expression.Lambda(funcType, filterCall, parameter);
+            provider.QueryFilter.AddTableFilter(filter.Key, filter.Value);
+        }
+    }
 
-            var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
-            methodInfo?.Invoke(provider.QueryFilter, [lambda]);
+    /// <summary>
+    /// 校验额外全局过滤器的表达式与实体类型匹配（构建期 fail-fast）
+    /// </summary>
+    /// <remarks>
+    /// 必须在 <see cref="global::SqlSugar.SqlSugarScope"/> 构建前完成校验：
+    /// 若把非法表达式留到查询期才暴露，异常会发生在每上下文 configAction 内，
+    /// 造成半配置客户端静默降级（无 AOP、后续 ConfigId 无过滤器）。
+    /// </remarks>
+    /// <param name="globalFilters">额外全局过滤器集合</param>
+    /// <exception cref="InvalidOperationException">表达式为空、参数个数不为 1 或参数类型与实体类型不匹配</exception>
+    private static void ValidateGlobalFilters(Dictionary<Type, LambdaExpression> globalFilters)
+    {
+        foreach (var (entityType, expression) in globalFilters)
+        {
+            if (expression is null)
+            {
+                throw new InvalidOperationException($"全局过滤器 [{entityType.FullName}] 的表达式为 null。");
+            }
+
+            if (expression.Parameters.Count != 1 || !expression.Parameters[0].Type.IsAssignableFrom(entityType) && !entityType.IsAssignableFrom(expression.Parameters[0].Type))
+            {
+                throw new InvalidOperationException(
+                    $"全局过滤器 [{entityType.FullName}] 的表达式参数与实体类型不匹配（参数：{string.Join(", ", expression.Parameters.Select(p => p.Type.Name))}）。" +
+                    $"请使用 XiHanSqlSugarCoreOptions.AddGlobalFilter<TEntity>(Expression<Func<TEntity, bool>>) 注册。");
+            }
+
+            if (expression.ReturnType != typeof(bool))
+            {
+                throw new InvalidOperationException($"全局过滤器 [{entityType.FullName}] 的表达式必须返回 bool，实际为 {expression.ReturnType.Name}。");
+            }
         }
     }
 
@@ -332,6 +358,9 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 设置自定义全局雪花ID生成器
         StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
+
+        // 构建期 fail-fast 校验额外全局过滤器：非法表达式绝不能留到每上下文 configAction 里才暴露（会造成半配置客户端静默降级）
+        ValidateGlobalFilters(options.GlobalFilters);
 
         // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
         options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
