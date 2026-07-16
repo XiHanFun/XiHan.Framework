@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\XiHan.Framework.Workflow\XiHan.Framework.Workflow.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="coverlet.collector" Version="10.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    </ItemGroup>
+
+</Project>
