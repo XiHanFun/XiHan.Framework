@@ -124,6 +124,29 @@ public interface ISoftDeleteRepositoryBase<TEntity, TKey> : IRepositoryBase<TEnt
     Task RestoreRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 物理清除单条已软删除的数据（合规/GDPR 场景）
+    /// </summary>
+    /// <remarks>
+    /// 常规删除对已软删行恒 0 行（DELETE 的 WHERE 被自动查询过滤烘入未删除条件），本方法是软删数据的唯一物理清除通路。
+    /// 仅允许作用于已软删除的行：目标为活动数据时抛出异常（先软删除再清除）；行不存在返回 false（目标态已达成）。
+    /// </remarks>
+    /// <param name="id">实体主键</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>是否实际删除了数据行</returns>
+    Task<bool> PurgeAsync(TKey id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量物理清除已软删除的数据（合规/GDPR 场景）
+    /// </summary>
+    /// <remarks>
+    /// 集合中包含未软删除的活动数据时整批拒绝；不存在的主键被忽略。
+    /// </remarks>
+    /// <param name="ids">需要清除的实体主键集合（只需遍历）</param>
+    /// <param name="cancellationToken">用于取消操作的标记</param>
+    /// <returns>实际删除的行数</returns>
+    Task<int> PurgeRangeAsync(IEnumerable<TKey> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 获取包含已删除的所有实体
     /// </summary>
     /// <param name="cancellationToken">用于取消操作的标记</param>
