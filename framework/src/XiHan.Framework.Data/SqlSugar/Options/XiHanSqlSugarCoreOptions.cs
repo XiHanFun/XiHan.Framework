@@ -13,6 +13,7 @@
 #endregion <<版权版本注释>>
 
 using SqlSugar;
+using System.Linq.Expressions;
 
 namespace XiHan.Framework.Data.SqlSugar.Options;
 
@@ -72,9 +73,29 @@ public class XiHanSqlSugarCoreOptions
     public bool EnableAutoDeleteQueryFilter { get; set; } = true;
 
     /// <summary>
-    /// 全局过滤器
+    /// 额外全局过滤器（实体类型 → 过滤表达式树）
     /// </summary>
-    public Dictionary<Type, Func<object, bool>> GlobalFilters { get; set; } = [];
+    /// <remarks>
+    /// 仅支持代码方式注册（表达式树无法经 appsettings 绑定），推荐使用类型安全的
+    /// <see cref="AddGlobalFilter{TEntity}"/> 注册；表达式须为可翻译成 SQL 的形态
+    /// （成员访问/标量比较），不能是编译后委托的调用。
+    /// 框架在构建 SqlSugarScope 前做 fail-fast 校验，非法表达式在启动期即报错。
+    /// </remarks>
+    public Dictionary<Type, LambdaExpression> GlobalFilters { get; set; } = [];
+
+    /// <summary>
+    /// 注册额外全局过滤器（类型安全入口）
+    /// </summary>
+    /// <typeparam name="TEntity">实体类型</typeparam>
+    /// <param name="filter">过滤表达式（须可翻译成 SQL：成员访问/标量比较，勿调用外部方法）</param>
+    /// <returns>选项自身（链式调用）</returns>
+    public XiHanSqlSugarCoreOptions AddGlobalFilter<TEntity>(Expression<Func<TEntity, bool>> filter)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        GlobalFilters[typeof(TEntity)] = filter;
+        return this;
+    }
 
     /// <summary>
     /// SQL日志动作
