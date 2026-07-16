@@ -114,7 +114,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         _ = await GetByIdAsync(entity.BasicId, cancellationToken)
-            ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
+            ?? throw new InvalidOperationException("更新失败：实体不存在、已被软删除或不在当前租户范围内。");
 
         await DbClient.Updateable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -155,7 +155,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await EnsureVisibleAsync(entityArray.Select(entity => entity.BasicId), "批量更新失败：存在不在当前租户范围内的实体。", cancellationToken);
+        await EnsureVisibleAsync(entityArray.Select(entity => entity.BasicId), "批量更新失败：存在不可见的实体（不存在、已被软删除或不在当前租户范围内）。", cancellationToken);
 
         await DbClient.Updateable(entityArray)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -186,7 +186,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         _ = await GetByIdAsync(entity.BasicId, cancellationToken)
-            ?? throw new InvalidOperationException("新增或更新失败：实体不存在或不在当前租户范围内。");
+            ?? throw new InvalidOperationException("新增或更新失败：实体不存在、已被软删除或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Updateable(entity)
             .EnableDiffLogEvent(AuditBusinessData)
@@ -225,7 +225,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
 
         if (updateEntities.Length > 0)
         {
-            await EnsureVisibleAsync(updateEntities.Select(entity => entity.BasicId), "批量新增或更新失败：存在不在当前租户范围内的更新实体。", cancellationToken);
+            await EnsureVisibleAsync(updateEntities.Select(entity => entity.BasicId), "批量新增或更新失败：存在不可见的更新实体（不存在、已被软删除或不在当前租户范围内）。", cancellationToken);
 
             var updatedRows = await DbClient.Updateable(updateEntities)
                 .EnableDiffLogEvent(AuditBusinessData)
@@ -250,7 +250,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         _ = await GetByIdAsync(entity.BasicId, cancellationToken)
-            ?? throw new InvalidOperationException("删除失败：实体不存在或不在当前租户范围内。");
+            ?? throw new InvalidOperationException("删除失败：实体不存在、已被软删除或不在当前租户范围内。");
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(entity.BasicId!)
@@ -303,7 +303,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await EnsureVisibleAsync(idArray, "批量删除失败：存在不在当前租户范围内的实体。", cancellationToken);
+        await EnsureVisibleAsync(idArray, "批量删除失败：存在不可见的实体（不存在、已被软删除或不在当前租户范围内）。", cancellationToken);
 
         var affectedRows = await DbClient.Deleteable<TEntity>()
             .In(idArray.Cast<object>().ToArray())
@@ -355,4 +355,87 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             throw new InvalidOperationException(message);
         }
     }
+
+    #region 含软删写路径（恢复/清除场景专用）
+
+    /// <summary>
+    /// 按主键更新实体，预读校验放行已软删数据（恢复场景专用）
+    /// </summary>
+    /// <remarks>
+    /// 常规 <see cref="UpdateAsync(TEntity, CancellationToken)"/> 的预读带全局软删过滤，对已软删行必失败；
+    /// 本路径预读用 <c>CreateWithDeletedQueryable</c>——保留租户过滤（租户安全边界不放松）、仅忽略软删过滤。
+    /// 随后的对象式 UPDATE 按主键定向命中（对象式更新不吃全局写过滤，SqlSugar 对其调用 <c>EnableQueryFilter</c> 直接抛异常，
+    /// 结构上无法把过滤烘进 WHERE）。0 行受影响按 fail-closed 抛异常（预读与写入之间行被并发物理删除）。
+    /// </remarks>
+    /// <param name="entity">实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新后的实体</returns>
+    protected async Task<TEntity> UpdateIncludingDeletedAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var id = entity.BasicId;
+        var visibleCount = await CreateWithDeletedQueryable()
+            .Where(item => item.BasicId.Equals(id))
+            .CountAsync(cancellationToken);
+        if (visibleCount == 0)
+        {
+            throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
+        }
+
+        var affectedRows = await DbClient.Updateable(entity)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows == 0)
+        {
+            throw new InvalidOperationException("更新失败：目标行已被并发删除（0 行受影响）。");
+        }
+
+        return entity;
+    }
+
+    /// <summary>
+    /// 批量按主键更新实体，预读校验放行已软删数据（批量恢复场景专用）
+    /// </summary>
+    /// <param name="entities">实体集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新后的实体集合</returns>
+    protected async Task<IReadOnlyList<TEntity>> UpdateRangeIncludingDeletedAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var entityArray = entities.ToArray();
+        if (entityArray.Length == 0)
+        {
+            return [];
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var idArray = entityArray.Select(entity => entity.BasicId).Distinct().ToArray();
+        var visibleCount = await CreateWithDeletedQueryable()
+            .Where(entity => idArray.Contains(entity.BasicId))
+            .CountAsync(cancellationToken);
+        if (visibleCount != idArray.Length)
+        {
+            throw new InvalidOperationException("批量更新失败：存在不可见的实体（不存在或不在当前租户范围内）。");
+        }
+
+        var affectedRows = await DbClient.Updateable(entityArray)
+            .EnableDiffLogEvent(AuditBusinessData)
+            .ExecuteCommandAsync(cancellationToken);
+
+        // 只在「全部未命中」时 fail-closed：严格按 Length 比对会误报——
+        // MySQL 连接串 UseAffectedRows=true 时相同值 UPDATE 计 0 行、输入含重复主键时末次更新亦计 0，
+        // 而预读与写入之间被并发物理删除（软删行仅 Purge 能物理删）本就是极窄窗口。
+        if (affectedRows == 0)
+        {
+            throw new InvalidOperationException("批量更新失败：目标行已被并发删除（0 行受影响）。");
+        }
+
+        return entityArray;
+    }
+
+    #endregion
 }
