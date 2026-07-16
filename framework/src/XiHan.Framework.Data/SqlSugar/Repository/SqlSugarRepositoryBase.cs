@@ -12,10 +12,12 @@
 
 #endregion <<版权版本注释>>
 
+using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Helpers;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.Domain.Exceptions;
 using XiHan.Framework.Domain.Repositories;
 using XiHan.Framework.MultiTenancy;
 
@@ -123,10 +125,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             ?? throw new InvalidOperationException("更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
-        await DbClient.Updateable(entity)
-            .EnableDiffLogEvent(AuditBusinessData)
-            .ExecuteCommandAsync(cancellationToken);
-
+        await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
         return entity;
     }
 
@@ -165,6 +164,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <summary>
     /// 批量更新实体
     /// </summary>
+    /// <remarks>
+    /// 批量更新<b>不参与行版本乐观锁</b>：SqlSugar 的 OptLock 仅支持单实体（数组会抛异常）。
+    /// 需要并发冲突拦截的写请走单实体 <see cref="UpdateAsync(TEntity, CancellationToken)"/>。
+    /// </remarks>
     public async Task<IReadOnlyList<TEntity>> UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -210,10 +213,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             ?? throw new InvalidOperationException("新增或更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
-        var affectedRows = await DbClient.Updateable(entity)
-            .EnableDiffLogEvent(AuditBusinessData)
-            .ExecuteCommandAsync(cancellationToken);
-
+        var affectedRows = await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
         return affectedRows > 0;
     }
 
@@ -500,6 +500,47 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             Expression.Constant(tenantId.Value, typeof(long)));
         return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
     }
+
+    #endregion
+
+    #region 乐观并发
+
+    /// <summary>
+    /// 以行版本乐观锁执行单实体更新（Row_Version 不匹配即并发冲突）
+    /// </summary>
+    /// <remarks>
+    /// 实体基类的 Row_Version 列标注 <c>IsEnableUpdateVersionValidation=true</c>，SqlSugar 的
+    /// <c>ExecuteCommandWithOptLockAsync(true)</c> 会把「旧版本值」烘进 UPDATE 的 WHERE、并写入一个新随机版本，
+    /// 从而原子地拦截丢失更新（含并发软删后复活）；版本不一致时受影响 0 行并抛 <see cref="global::SqlSugar.VersionExceptions"/>，
+    /// 本方法将其翻译为框架 <see cref="ConcurrencyConflictException"/>，避免上层耦合 ORM 异常类型。
+    /// <para>
+    /// 契约：调用方必须传入<b>从库中加载</b>（携带当前 Row_Version）后再修改的实体——构造部分实体直接更新会因版本不匹配失败。
+    /// 标准 CRUD（先 GetById 再把 DTO 映射到实体）与领域服务的「加载→改→存」均满足该契约。
+    /// </para>
+    /// </remarks>
+    /// <param name="entity">已加载并修改的实体</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>受影响行数（正常为 1）</returns>
+    /// <exception cref="ConcurrencyConflictException">行版本与数据库不一致（其他请求已抢先修改）</exception>
+    private async Task<int> ExecuteEntityUpdateWithOptLockAsync(TEntity entity, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            return await DbClient.Updateable(entity)
+                .EnableDiffLogEvent(AuditBusinessData)
+                .ExecuteCommandWithOptLockAsync(true);
+        }
+        catch (VersionExceptions ex)
+        {
+            throw new ConcurrencyConflictException(ConcurrencyConflictMessage, ex);
+        }
+    }
+
+    /// <summary>
+    /// 并发冲突提示消息
+    /// </summary>
+    private const string ConcurrencyConflictMessage = "数据已被其他操作修改，请刷新后重试。";
 
     #endregion
 
