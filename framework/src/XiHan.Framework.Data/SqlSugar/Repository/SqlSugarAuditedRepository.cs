@@ -143,10 +143,12 @@ public class SqlSugarAuditedRepository<TEntity, TKey> : SqlSugarSoftDeleteReposi
             .WhereIF(options.ModifiedTimeEnd.HasValue, entity => entity.ModifiedTime <= options.ModifiedTimeEnd)
             .WhereIF(options.DeletedTimeStart.HasValue, entity => entity.DeletedTime >= options.DeletedTimeStart)
             .WhereIF(options.DeletedTimeEnd.HasValue, entity => entity.DeletedTime <= options.DeletedTimeEnd)
-            // 只要只查软删，优先处理
+            // 只查软删优先：OnlySoftDeleted=true 时按选项文档忽略 IncludeSoftDeleted——
+            // 两个 WhereIF 若独立叠加，OnlySoftDeleted=true + IncludeSoftDeleted=false（默认）会生成
+            // IsDeleted AND NOT IsDeleted 的恒假条件，回收站/审计查询恒返回空集
             .WhereIF(options.OnlySoftDeleted, entity => entity.IsDeleted)
-            // 否则，如果不包含软删（即查未软删）
-            .WhereIF(!options.IncludeSoftDeleted, entity => !entity.IsDeleted);
+            // 其余场景：不包含软删（即只查未删）
+            .WhereIF(!options.IncludeSoftDeleted && !options.OnlySoftDeleted, entity => !entity.IsDeleted);
 
         return await query.ToListAsync(cancellationToken);
     }
