@@ -321,6 +321,9 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             throw new InvalidOperationException("物理清除仅允许作用于已软删除的数据；活动数据请先软删除。");
         }
 
+        // 写边界：租户上下文内禁止物理清除全局行/异租户行（读过滤放行 TenantId=0，写路径必须收紧）
+        EnsureWritableInCurrentTenant(entity);
+
         return await ExecutePurgeAsync([id], cancellationToken) > 0;
     }
 
@@ -357,6 +360,12 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         if (entities.Any(entity => !entity.IsDeleted))
         {
             throw new InvalidOperationException("物理清除仅允许作用于已软删除的数据；集合中包含未软删除的活动数据，请先软删除。");
+        }
+
+        // 写边界：租户上下文内禁止物理清除全局行/异租户行（读过滤放行 TenantId=0，写路径必须收紧）
+        foreach (var entity in entities)
+        {
+            EnsureWritableInCurrentTenant(entity);
         }
 
         return await ExecutePurgeAsync([.. entities.Select(entity => entity.BasicId)], cancellationToken);
