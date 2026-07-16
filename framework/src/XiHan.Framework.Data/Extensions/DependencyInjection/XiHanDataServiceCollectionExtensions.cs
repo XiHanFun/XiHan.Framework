@@ -216,8 +216,14 @@ public static class XiHanDataServiceCollectionExtensions
     {
         var config = dbProvider.CurrentConnectionConfig;
 
-        // 设置超时时间
-        dbProvider.Ado.CommandTimeOut = options.SlowSqlThresholdMilliseconds / 1000;
+        // ADO 命令超时（执行语义）与慢 SQL 日志阈值（观测语义）是两个独立职责，绝不能互相挪用：
+        // 曾用「SlowSqlThresholdMilliseconds / 1000」赋值此处——默认把所有 SQL 砍到 10 秒（SqlSugar 出厂默认 300 秒被静默压缩），
+        // 阈值调低到 1 秒以下时整除得 0（ADO.NET 语义 = 无限等待），且超时==阈值使慢 SQL 永远先被驱动杀掉、慢日志形同虚设。
+        // 仅当显式配置了正数才覆盖；0/负值不覆盖，沿用 SqlSugar 默认 300 秒。
+        if (options.CommandTimeoutSeconds > 0)
+        {
+            dbProvider.Ado.CommandTimeOut = options.CommandTimeoutSeconds;
+        }
 
         // 组合 OnLogExecuting 处理器（SQL 日志）
         // 使用本地委托组合后再赋值，避免 SqlSugar 仅写属性无法 += 的问题

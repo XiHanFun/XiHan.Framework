@@ -149,7 +149,22 @@ public class XiHanSqlSugarCoreOptions
     /// <summary>
     /// 慢SQL阈值（毫秒）
     /// </summary>
+    /// <remarks>
+    /// 纯观测用途：仅用于慢 SQL 日志判定（<see cref="EnableSlowSqlLog"/>），不影响语句执行。
+    /// 命令执行超时请配置 <see cref="CommandTimeoutSeconds"/>，两者职责独立；
+    /// 若需超时保护，务必保证超时明显大于本阈值，否则慢 SQL 会先被驱动杀掉、慢日志永远记不到。
+    /// </remarks>
     public int SlowSqlThresholdMilliseconds { get; set; } = 10000;
+
+    /// <summary>
+    /// ADO 命令执行超时（秒）
+    /// </summary>
+    /// <remarks>
+    /// 默认 300 秒（与 SqlSugar 出厂默认一致）；配置 0 或负值表示不覆盖、沿用 SqlSugar 默认。
+    /// 注意 ADO.NET 的 <c>CommandTimeout = 0</c> 语义是无限等待，框架刻意不允许经此选项设置为 0。
+    /// 个别长任务（DDL、批量导入、导出统计）需要更长超时时，在调用点用 <c>db.Ado.CommandTimeOut</c> 临时覆盖。
+    /// </remarks>
+    public int CommandTimeoutSeconds { get; set; } = 300;
 
     /// <summary>
     /// 是否启用实体差异日志
