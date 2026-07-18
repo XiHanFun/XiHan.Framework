@@ -73,4 +73,10 @@ public class OpenApiSecurityClient
     /// 是否启用
     /// </summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// 凭证归属用户标识（数据库凭证有值；配置型固定客户端无归属用户则为空）。
+    /// 供开放接口日志记录"是谁的密钥发起的调用"，签名调用无 JWT 用户时以此作为审计主体。
+    /// </summary>
+    public long? OwnerUserId { get; set; }
 }

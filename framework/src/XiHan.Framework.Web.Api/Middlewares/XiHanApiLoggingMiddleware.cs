@@ -98,11 +98,13 @@ public class XiHanApiLoggingMiddleware(
                     var requestParams = context.Items[XiHanWebApiConstants.RequestQueryItemKey]?.ToString();
                     var (controllerName, actionName) = ResolveAction(context);
                     var responseBody = ResolveResponseBody(context, capture);
+                    var endpoint = context.GetEndpoint();
 
                     await pipeline.WriteAsync(new ApiLogRecord
                     {
                         TraceId = traceId,
-                        UserId = currentUser?.UserId,
+                        // 签名调用无 JWT 用户，回退凭证归属用户作为审计主体（用户名由写入器按 UserId 解析）
+                        UserId = currentUser?.UserId ?? client?.OwnerUserId,
                         UserName = currentUser?.UserName,
                         ClientId = accessKey,
                         AppId = client?.AccessKey,
@@ -110,6 +112,7 @@ public class XiHanApiLoggingMiddleware(
                         SignatureAlgorithm = client?.SignatureAlgorithm,
                         Method = context.Request.Method,
                         Path = context.Request.Path.ToString(),
+                        ApiName = endpoint?.DisplayName,
                         ControllerName = controllerName,
                         ActionName = actionName,
                         RequestParams = requestParams,
