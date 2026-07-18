@@ -65,6 +65,11 @@ public class ApiLogRecord
     public string Path { get; set; } = string.Empty;
 
     /// <summary>
+    /// API 名称（端点显示名，Minimal API 亦有值，作为路径之外的可读标识）
+    /// </summary>
+    public string? ApiName { get; set; }
+
+    /// <summary>
     /// 控制器
     /// </summary>
     public string? ControllerName { get; set; }
