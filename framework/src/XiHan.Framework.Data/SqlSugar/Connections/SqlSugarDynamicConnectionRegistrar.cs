@@ -15,7 +15,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using SqlSugar;
-using XiHan.Framework.Data.SqlSugar.Clients;
 
 namespace XiHan.Framework.Data.SqlSugar.Connections;
 
@@ -23,15 +22,18 @@ namespace XiHan.Framework.Data.SqlSugar.Connections;
 /// 动态连接注册器的 SqlSugar 实现
 /// </summary>
 /// <remarks>
-/// 经 <see cref="ITenant.AddConnection"/> 把连接加入运行中的 SqlSugarScope，
+/// 经 <see cref="ITenant.AddConnection"/> 把连接加入运行中的 <see cref="SqlSugarScope"/>，
 /// 之后即可用 <see cref="ITenant.GetConnectionScope"/> 取到客户端。
-/// 单例注册：注册结果作用于整个 SqlSugarScope，与请求作用域无关。
+/// 单例注册：注册结果作用于整个 <see cref="SqlSugarScope"/>，与请求作用域无关。
+/// 故直接注入单例 <see cref="SqlSugarScope"/>（本身即 <see cref="ITenant"/>），
+/// 不注入作用域级的 <c>ISqlSugarClientResolver</c>——单例消费作用域服务会被 DI 校验拦下，
+/// 且其 <c>AsTenant()</c> 返回的正是同一个 <see cref="SqlSugarScope"/>，行为等价。
 /// </remarks>
 public sealed class SqlSugarDynamicConnectionRegistrar(
-    ISqlSugarClientResolver clientResolver,
+    SqlSugarScope sqlSugarScope,
     ILogger<SqlSugarDynamicConnectionRegistrar> logger) : IDynamicConnectionRegistrar
 {
-    private readonly ISqlSugarClientResolver _clientResolver = clientResolver;
+    private readonly SqlSugarScope _sqlSugarScope = sqlSugarScope;
     private readonly ILogger<SqlSugarDynamicConnectionRegistrar> _logger = logger;
 
     /// <summary>
@@ -64,7 +66,7 @@ public sealed class SqlSugarDynamicConnectionRegistrar(
         {
             // 外部库仅用于读取元数据：不挂全局过滤器、不挂 AOP、不参与多租户解析。
             // 这些是为本系统实体准备的，套在外部表上会直接抛错。
-            _clientResolver.AsTenant().AddConnection(new ConnectionConfig
+            _sqlSugarScope.AsTenant().AddConnection(new ConnectionConfig
             {
                 ConfigId = configId,
                 DbType = descriptor.DbType,
@@ -92,7 +94,7 @@ public sealed class SqlSugarDynamicConnectionRegistrar(
 
         var trimmed = configId.Trim();
         return _registered.ContainsKey(trimmed)
-            ? _clientResolver.AsTenant().GetConnectionScope(trimmed)
+            ? _sqlSugarScope.AsTenant().GetConnectionScope(trimmed)
             : null;
     }
 }
