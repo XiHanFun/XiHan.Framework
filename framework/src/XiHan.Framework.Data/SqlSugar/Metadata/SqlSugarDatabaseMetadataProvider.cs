@@ -166,10 +166,20 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         return null;
     }
 
+    /// <summary>
+    /// 解析元数据读取所用的客户端
+    /// </summary>
+    /// <remarks>
+    /// 显式指定 ConfigId 时直连该连接作用域，**不经 <see cref="ISqlSugarClientResolver.GetClient"/>**：
+    /// 后者会把连接登记进当前事务型工作单元，而元数据读取是目录查询、不属于业务事务；
+    /// 对代码生成器这类指向外部数据库的连接，登记会在别人的库上开启事务并绑定本地 UoW 的
+    /// 提交/回滚生命周期，属于明确的错误行为。
+    /// 未指定 ConfigId 时沿用当前租户客户端（本系统自身的库，保持既有语义）。
+    /// </remarks>
     private ISqlSugarClient ResolveClient(string? connectionConfigId)
     {
         return string.IsNullOrWhiteSpace(connectionConfigId)
             ? _clientResolver.GetCurrentClient()
-            : _clientResolver.GetClient(connectionConfigId);
+            : _clientResolver.AsTenant().GetConnectionScope(connectionConfigId.Trim());
     }
 }
