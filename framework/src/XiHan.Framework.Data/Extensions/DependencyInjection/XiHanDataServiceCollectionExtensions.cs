@@ -23,6 +23,7 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Tracing;
 using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Connections;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.HealthCheck;
 using XiHan.Framework.Data.SqlSugar.Initializers;
@@ -82,6 +83,9 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
+
+        // 动态连接注册器：单例——注册结果作用于整个 SqlSugarScope，与请求作用域无关
+        services.TryAddSingleton<IDynamicConnectionRegistrar, SqlSugarDynamicConnectionRegistrar>();
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
