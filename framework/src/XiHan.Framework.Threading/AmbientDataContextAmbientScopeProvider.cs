@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AmbientDataContextAmbientScopeProvider
-// Guid:118c12ac-962a-4564-83a6-fdf1eab411db
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/14 06:03:51
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;

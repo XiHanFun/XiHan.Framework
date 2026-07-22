@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:WorkflowInstanceEvents
-// Guid:df30b8a6-27c1-4e59-b4f7-08a52d61c9e3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 10:39:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 

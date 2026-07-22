@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DecisionActivity
-// Guid:5b02e8d4-71c9-4fa6-b358-e04d16c92a7f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 11:07:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanRedisCache
-// Guid:6dce35b8-70f1-4853-8c62-616f9b6bf008
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/13 04:54:23
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;

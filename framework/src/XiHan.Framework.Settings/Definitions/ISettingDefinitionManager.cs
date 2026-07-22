@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ISettingDefinitionManager
-// Guid:2b5c8d1e-3f4a-4b6c-8d9e-1a2b3c4d5e6f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/14 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Settings.Definitions;
 

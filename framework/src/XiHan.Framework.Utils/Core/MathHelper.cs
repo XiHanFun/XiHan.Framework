@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MathHelper
-// Guid:ab4d0b35-f577-4c7c-ba03-8b501fe44a1e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/09 06:04:21
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Core;
 

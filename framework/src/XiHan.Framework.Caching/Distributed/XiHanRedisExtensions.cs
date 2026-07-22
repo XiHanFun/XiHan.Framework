@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanRedisExtensions
-// Guid:92f07feb-6bda-48ab-bc1a-ff4d578de58c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/13 05:13:38
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using StackExchange.Redis;
 

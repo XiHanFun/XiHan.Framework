@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DynamicApiXmlCommentsOperationTransformer
-// Guid:3e5d8d7a-1c5e-4e5d-8d7a-1c5e3b1c9f3a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/26 16:45:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;

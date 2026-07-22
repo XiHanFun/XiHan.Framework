@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AutowiredServiceHandler
-// Guid:a896c99b-106a-44b2-921e-a31bdc21882b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 02:23:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
 using System.Reflection;

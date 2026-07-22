@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TemplateScope
-// Guid:5be8eada-758d-4a22-a89c-a9246dd76883
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/23 04:04:29
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 

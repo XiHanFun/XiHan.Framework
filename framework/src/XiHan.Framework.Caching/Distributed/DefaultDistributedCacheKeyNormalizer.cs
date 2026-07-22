@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultDistributedCacheKeyNormalizer
-// Guid:cb8b3556-0df2-4727-a11c-a67033d72bf4
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Distributed.Abstracts;

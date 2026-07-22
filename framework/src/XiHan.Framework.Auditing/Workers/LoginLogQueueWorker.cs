@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LoginLogQueueWorker
-// Guid:45ab0efd-3bb3-4f7c-a7c9-8ca2d6ccdb65
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/05/03 23:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Auditing.Options;

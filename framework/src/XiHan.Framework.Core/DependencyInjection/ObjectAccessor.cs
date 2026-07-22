@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ObjectAccessor
-// Guid:3d52e9f7-5d1e-4255-8f6f-e5a51bd64582
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/26 19:26:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Core.DependencyInjection;
 

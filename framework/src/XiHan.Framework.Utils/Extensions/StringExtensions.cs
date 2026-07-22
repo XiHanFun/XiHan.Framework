@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:StringExtensions
-// Guid:f1a60518-2b84-4da8-81ef-c76b162e4c59
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/07 21:15:43
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;

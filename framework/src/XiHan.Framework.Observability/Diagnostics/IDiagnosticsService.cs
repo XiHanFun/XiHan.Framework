@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDiagnosticsService
-// Guid:e0f1a2b3-c4d5-46e7-f8a9-b0c1d2e3f4a5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/26 04:05:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Observability.Diagnostics;
 

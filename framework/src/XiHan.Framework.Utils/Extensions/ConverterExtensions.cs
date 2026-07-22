@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ConverterExtensions
-// Guid:6f5e4d3c-2b1a-0f9e-8d7c-6b5a4f3e2d1c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/19 23:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 using XiHan.Framework.Utils.Core;

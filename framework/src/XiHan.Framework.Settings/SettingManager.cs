@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SettingManager
-// Guid:7b8c9d0a-1e3d-4a9f-9c1d-6d3f0a8b2c1b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/23 11:15:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

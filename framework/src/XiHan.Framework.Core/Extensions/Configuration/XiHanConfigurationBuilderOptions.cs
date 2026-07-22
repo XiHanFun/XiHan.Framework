@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanConfigurationBuilderOptions
-// Guid:a0553cad-b859-4737-b674-92dd8360334e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/26 19:03:10
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 

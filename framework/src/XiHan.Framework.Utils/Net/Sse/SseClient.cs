@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SseClient
-// Guid:9d8c72f5-3b16-47ea-a604-51e98bf32d71
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/27 09:16:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Net.Sse;
 

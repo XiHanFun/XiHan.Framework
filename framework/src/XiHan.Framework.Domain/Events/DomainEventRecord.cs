@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DomainEventRecord
-// Guid:d192025a-e504-4834-ba1b-ab3b3bbdf1ef
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/20 04:56:36
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Events.Abstracts;
 

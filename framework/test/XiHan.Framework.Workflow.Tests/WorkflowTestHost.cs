@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:WorkflowTestHost
-// Guid:1d5c0e94-72af-4b38-96d1-c05e83f47b26
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 12:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

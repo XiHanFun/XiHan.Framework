@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EmailOptions
-// Guid:2dd34969-3cba-4f78-a411-4471c2d704c9
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/11 17:48:44
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Email.Models;
 

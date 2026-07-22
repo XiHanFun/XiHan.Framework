@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SecurityRiskLevel
-// Guid:02d03184-8fc4-438a-bc28-8bc599cafe35
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/23 04:03:19
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Templating.Security;
 

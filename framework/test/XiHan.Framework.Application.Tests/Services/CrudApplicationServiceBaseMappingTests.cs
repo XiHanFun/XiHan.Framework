@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CrudApplicationServiceBaseMappingTests
-// Guid:8b39870b-0aca-45be-a21d-2e012e95073c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/28 03:36:05
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Services;

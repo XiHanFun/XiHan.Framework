@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NetworkHelper
-// Guid:a230eb0e-b434-4d93-a5ad-ee8f37b4f0a2
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/27 12:28:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net.NetworkInformation;
 using System.Net.Sockets;

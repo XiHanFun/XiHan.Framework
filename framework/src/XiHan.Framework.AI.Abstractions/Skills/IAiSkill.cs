@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IAiSkill
-// Guid:5d552cba-ee75-4c41-8aa1-f9a7a5864c66
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/05 10:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.AI;
 

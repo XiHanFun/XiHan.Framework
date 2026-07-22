@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LocalEventBusWorkflowEventPublisher
-// Guid:f18c62a5-940e-4d73-b5a6-31c08de97f42
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 10:52:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExpressionParser
-// Guid:0e6a54d9-b7f2-4c18-8a35-92e60cd41f87
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 10:46:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 using System.Reflection;

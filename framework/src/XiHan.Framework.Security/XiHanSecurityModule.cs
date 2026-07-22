@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanSecurityModule
-// Guid:60e41b39-5771-461e-95ee-b030a19f2a6a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/25 05:02:48
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;

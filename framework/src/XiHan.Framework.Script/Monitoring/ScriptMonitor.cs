@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptMonitor
-// Guid:49a5bdb7-1075-4aea-9dc4-f6c554e4e5ba
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 06:08:53
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using System.Text.Json;

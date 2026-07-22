@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LongJsonConverter
-// Guid:6ac4a049-d5f6-4bcd-92c3-65b5a3290a6f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/27 12:28:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

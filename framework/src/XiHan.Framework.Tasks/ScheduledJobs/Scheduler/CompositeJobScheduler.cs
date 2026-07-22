@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CompositeJobScheduler
-// Guid:74ea6dfb-4244-4c30-b623-44962dd6dd0f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/07 15:24:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy;

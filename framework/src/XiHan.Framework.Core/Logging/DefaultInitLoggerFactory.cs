@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultInitLoggerFactory
-// Guid:3056dc36-bd12-45bf-b2c3-e3fe675c4f01
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 02:12:32
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Collections;
 

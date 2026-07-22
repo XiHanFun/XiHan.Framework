@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DingTalkBotProvider
-// Guid:02693b94-e451-46bc-b1f6-64c867bc0b23
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/11 17:48:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Core;

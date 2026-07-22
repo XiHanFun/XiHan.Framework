@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:OnServiceRegistredContext
-// Guid:ff581f06-ecca-4a64-b29e-e9edd2ee5d56
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/25 10:46:38
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Collections;
 using XiHan.Framework.Core.DynamicProxy;

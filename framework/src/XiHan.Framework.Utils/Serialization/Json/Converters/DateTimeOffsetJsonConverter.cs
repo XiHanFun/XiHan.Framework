@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DateTimeOffsetJsonConverter
-// Guid:479f8b31-7ad0-4700-a335-b6c8b48a2979
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/27 12:28:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

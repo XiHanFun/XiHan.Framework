@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TemplateExtensions
-// Guid:07ae86c5-b843-49fc-9d6a-e5f8c4d3a2c1
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/27 01:58:23
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Templating.Simple;
 

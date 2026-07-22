@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarDynamicConnectionRegistrar
-// Guid:5b7e1d42-9a08-4c36-af51-2e83b7c04d19
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/20 10:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;

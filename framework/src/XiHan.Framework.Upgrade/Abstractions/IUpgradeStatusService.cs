@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IUpgradeStatusService
-// Guid:b56a2b97-5b87-4b5b-89ad-99e49d946129
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/01 16:25:50
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Upgrade.Enums;
 using XiHan.Framework.Upgrade.Models;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:KeywordBlocklistGuardrail
-// Guid:b2c3d4e5-f6a7-4b30-9d30-1a1b1c1d1e30
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/06 10:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;

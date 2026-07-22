@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDistributedCacheSerializer
-// Guid:c77930ca-b85b-42fc-9817-9149c9531b3c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/13 05:42:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Caching.Distributed.Abstracts;
 

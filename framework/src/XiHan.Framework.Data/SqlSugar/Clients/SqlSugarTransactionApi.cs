@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarTransactionApi
-// Guid:1f206c0f-b7c2-48ac-a7a9-c8ad1be134ad
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/27 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Data;

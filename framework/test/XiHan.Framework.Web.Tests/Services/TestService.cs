@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TestService
-// Guid:1b6be73e-01f6-4031-a583-1d2d72003ec8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/01/27 20:31:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Services;

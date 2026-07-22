@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BotInstance
-// Guid:556ae81b-4de4-40e2-9d26-54d6db3b76fa
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/02 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net;
 using Telegram.Bot;

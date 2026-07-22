@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SequentialGuidGenerator
-// Guid:b535a437-7f12-4979-9621-3471b068ed39
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 05:36:56
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Buffers;
 using System.Security.Cryptography;

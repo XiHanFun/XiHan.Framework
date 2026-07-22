@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DebugOptions
-// Guid:05e3c60b-a738-492d-856d-9ca4f1e76064
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/01 11:02:17
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Script.Debugging;
 using XiHan.Framework.Script.Enums;
