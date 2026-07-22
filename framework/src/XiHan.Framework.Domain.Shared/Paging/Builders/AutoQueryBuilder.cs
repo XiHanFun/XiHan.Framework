@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AutoQueryBuilder
-// Guid:2c3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 18:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections;
 using System.Reflection;

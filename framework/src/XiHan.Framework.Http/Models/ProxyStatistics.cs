@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ProxyStatistics
-// Guid:6b14a727-644d-4dc8-9733-8cd7cbeb8df0
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/20 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Http.Models;
 

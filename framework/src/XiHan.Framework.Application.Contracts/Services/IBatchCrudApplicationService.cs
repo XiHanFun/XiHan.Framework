@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IBatchCrudApplicationService
-// Guid:733e1b05-204a-4ae5-845f-6004d9f6c0ed
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/24 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;

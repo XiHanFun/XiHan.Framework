@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ConfigChangedEventArgs
-// Guid:7f891dd6-b472-49aa-bec2-dc15468621d6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/17 16:08:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Tasks.BackgroundServices;
 

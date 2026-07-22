@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanSessionStateMiddleware
-// Guid:3d7f2a90-4c81-4e56-9b13-8a5c0e2f7d64
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/15 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;

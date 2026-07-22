@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SimpleStateCheckerManager
-// Guid:884a767a-5e97-423a-80c0-4e5575976f91
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/24 23:17:30
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

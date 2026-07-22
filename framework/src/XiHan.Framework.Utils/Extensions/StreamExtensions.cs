@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:StreamExtensions
-// Guid:3d630fac-63f3-43e2-b8bb-0ee7c5f660a8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/23 19:08:09
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Extensions;
 

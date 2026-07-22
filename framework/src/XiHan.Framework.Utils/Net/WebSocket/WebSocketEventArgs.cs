@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:WebSocketEventArgs
-// Guid:cf5fe3b7-e469-40ce-880e-11b0484aca9f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/27 15:29:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net.WebSockets;
 

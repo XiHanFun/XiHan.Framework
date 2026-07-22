@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExceptionLogReporter
-// Guid:6b1f0d2a-9c84-4e57-8d2b-2f4a8c6e1b73
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/19 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Controllers;

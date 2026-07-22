@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LogFileHelper
-// Guid:24e38f75-3d64-4a8c-b21e-cdf5b0ba1ed3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/08 12:40:03
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using System.Text;

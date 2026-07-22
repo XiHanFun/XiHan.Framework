@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IAvoidDuplicateCrossCuttingConcerns
-// Guid:5b17bf36-a246-42bb-a64b-de957f6bfbb6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/13 01:52:55
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Core.Aspects;
 

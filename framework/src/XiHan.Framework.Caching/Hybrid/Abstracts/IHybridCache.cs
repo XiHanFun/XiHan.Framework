@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IHybridCache
-// Guid:d8b3d16b-634e-4833-995c-f298cfabf7eb
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/03/12 19:46:18
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Hybrid;
 

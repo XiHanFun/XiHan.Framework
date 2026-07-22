@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BlowfishHelper
-// Guid:46b52d28-fbdc-4a47-aa83-81b32bc2b43e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 04:15:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;

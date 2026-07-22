@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOpenApiSecurityOptions
-// Guid:a59740a5-765d-48cc-98ed-f0fb25dbb3f5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/13 23:31:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Web.Api.Security.OpenApi;
 

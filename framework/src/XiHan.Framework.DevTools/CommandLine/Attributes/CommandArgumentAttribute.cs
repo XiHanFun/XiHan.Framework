@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CommandArgumentAttribute
-// Guid:d5a5a6b2-bea2-4e96-8e89-4d4a6d9269b7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/17 05:01:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.DevTools.CommandLine.Attributes;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HttpContextCurrentPrincipalAccessor
-// Guid:b5c5807a-bde6-48af-9b57-74d1c846fd30
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/11 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Claims;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;

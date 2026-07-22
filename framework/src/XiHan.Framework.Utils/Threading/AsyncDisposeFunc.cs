@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AsyncDisposeFunc
-// Guid:058ba260-69a1-44f2-985f-27b0ee1859ad
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/28 03:39:27
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Threading;
 

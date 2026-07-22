@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BackgroundJobManager
-// Guid:028f4634-9880-4e6f-a93c-8610202a1ed5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/07 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.MultiTenancy.Abstractions;
