@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanLocalizationOptions
-// Guid:4f191d36-1f73-40dc-8e88-f5d2d95f3816
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/13 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Localization.Options;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:YamlParseOptions
-// Guid:227b7ce1-6bac-4ca3-a89b-4c1359679221
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 08:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Serialization.Yaml;
 

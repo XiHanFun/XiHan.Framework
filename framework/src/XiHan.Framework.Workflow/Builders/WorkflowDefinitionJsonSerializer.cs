@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:WorkflowDefinitionJsonSerializer
-// Guid:4d17f0b6-83c2-4a95-be08-d16e59c02a73
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/16 11:20:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FolderPlugInSource
-// Guid:e5045ebd-415b-4956-815f-6d1e74b5ef89
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/28 09:47:43
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 using System.Runtime.Loader;

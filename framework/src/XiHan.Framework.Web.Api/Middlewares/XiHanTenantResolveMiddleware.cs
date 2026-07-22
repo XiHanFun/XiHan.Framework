@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanTenantResolveMiddleware
-// Guid:7e0c4ced-4bb5-4e8c-95b0-d5de577f3c43
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.MultiTenancy;

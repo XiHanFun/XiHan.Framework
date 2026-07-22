@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanModuleHelper
-// Guid:f32042c8-be86-4a61-9e4a-cad19d38bcba
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/26 08:26:28
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using System.Reflection;

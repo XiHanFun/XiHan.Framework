@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DbInitializer
-// Guid:6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/05 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

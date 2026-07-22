@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EntityAuditContext
-// Guid:58f8f513-d60e-4f38-9f68-bf8b2f885f1e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 14:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Security.Users;
 

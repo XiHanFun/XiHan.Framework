@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EntityBase
-// Guid:01fa143e-06f6-4ce4-a29b-bd2ee3a440b4
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/20 02:51:24
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Entities.Abstracts;
 

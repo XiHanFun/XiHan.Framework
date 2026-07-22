@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LocalEventMessage
-// Guid:6d3fa130-62fa-4b4e-9bdb-434bd4c3dd83
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 05:20:17
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.EventBus.Local;
 

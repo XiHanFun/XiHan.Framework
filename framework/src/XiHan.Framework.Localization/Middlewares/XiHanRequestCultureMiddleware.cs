@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanRequestCultureMiddleware
-// Guid:8f3a1c52-6d74-4b9e-9a21-2c7e5f8b1d40
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/23 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:YamlTest
-// Guid:beb9cbd3-7cdd-4134-b7e3-f7f2dd252b0c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/25 20:34:38
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Serialization.Yaml;
 

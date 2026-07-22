@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JsonDistributedCacheSerializer
-// Guid:5b3f470f-dad6-4ca8-93af-9f2aa5f215ab
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/03 18:45:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using System.Text.Json;

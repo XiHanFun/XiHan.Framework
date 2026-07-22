@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BotStrategyNames
-// Guid:a6248d7c-7196-4aa2-9d1b-1707aed9bb5a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/11 17:44:03
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Bot.Consts;
 

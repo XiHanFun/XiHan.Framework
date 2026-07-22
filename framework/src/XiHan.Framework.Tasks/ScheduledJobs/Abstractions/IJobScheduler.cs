@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IJobScheduler
-// Guid:1e4fa96d-d4b8-4167-a896-4ad58e363927
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/07 16:45:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 

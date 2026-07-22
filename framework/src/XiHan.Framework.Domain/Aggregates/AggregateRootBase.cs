@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AggregateRootBase
-// Guid:375aea3a-e307-440c-b710-52af97f44ecf
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/20 05:17:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Aggregates.Abstracts;
 using XiHan.Framework.Domain.Entities;

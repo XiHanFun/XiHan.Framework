@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EmailModel
-// Guid:1e770e70-0a2a-4f0c-8537-9c1bce1966ef
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/05 01:08:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net.Mail;
 using System.Text;

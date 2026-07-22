@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NullAsyncDisposable
-// Guid:395a3a47-c376-4f77-b47b-39f20cbf74bf
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/28 04:08:20
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Threading;
 

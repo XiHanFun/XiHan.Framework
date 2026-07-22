@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanCastleModule
-// Guid:d4e5f6a7-b8c9-0123-def0-123456789abc
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/05 05:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Castle.Extensions;
 using XiHan.Framework.Core.Modularity;

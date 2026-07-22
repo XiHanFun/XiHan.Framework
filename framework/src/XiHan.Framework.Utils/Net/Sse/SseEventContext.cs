@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SseEventContext
-// Guid:bb8245af-e7a4-4283-a943-35377f7a726b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/27 15:34:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Net.Sse;
 

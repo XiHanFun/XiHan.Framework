@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RandomCoder
-// Guid:7fbc0368-1a12-4a65-bfb6-dcf2f1094f2d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/09 05:17:11
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Cryptography;
 using System.Text;

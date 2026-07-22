@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SettingValueProvider
-// Guid:21fe3485-b1aa-477f-b04f-9143096a9f90
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/25 04:20:07
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Settings.Definitions;

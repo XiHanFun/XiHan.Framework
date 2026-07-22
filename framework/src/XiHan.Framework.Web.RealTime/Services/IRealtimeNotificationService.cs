@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IRealtimeNotificationService
-// Guid:8d2e3f4a-5b6c-4d2e-9f3a-8b9c1d2e3f4a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 04:40:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Web.RealTime.Hubs;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:OsPlatformHelper
-// Guid:6c9f46d9-eaf1-40f5-931a-69aba4369c5c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/07/27 10:21:25
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections;
 using System.Diagnostics;

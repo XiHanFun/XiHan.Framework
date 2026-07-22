@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SequentialGuidOptions
-// Guid:b9e783a0-b90d-4e94-b703-eae69c041fdf
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 05:38:35
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.DistributedIds.Guids;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DistributedEventBusBase
-// Guid:e45e6722-1a00-4483-bdb7-27a86c84e71b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/03 01:48:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

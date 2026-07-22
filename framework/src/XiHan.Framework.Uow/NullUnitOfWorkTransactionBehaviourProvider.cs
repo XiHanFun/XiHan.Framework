@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NullUnitOfWorkTransactionBehaviourProvider
-// Guid:3b99dc5c-d4cd-4271-ac77-36047e206f82
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/02 05:02:31
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Uow.Abstracts;

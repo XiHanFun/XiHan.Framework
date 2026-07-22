@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PagingExtensions
-// Guid:6b502634-a1de-410e-be15-23538f89ed97
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 20:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Globalization;

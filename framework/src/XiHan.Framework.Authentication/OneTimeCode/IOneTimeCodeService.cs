@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IOneTimeCodeService
-// Guid:a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/11 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Authentication.OneTimeCode;
 

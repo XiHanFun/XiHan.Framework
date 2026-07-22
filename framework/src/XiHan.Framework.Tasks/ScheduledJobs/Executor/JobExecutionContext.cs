@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobExecutionContext
-// Guid:28347e45-fdd1-4f4a-b014-4d4a996af9c8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/07 14:24:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;

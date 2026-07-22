@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanCachingServiceCollectionExtensions
-// Guid:b8dc54d7-f848-4a0b-b4c4-c2743cf6eb23
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/26 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanClaimsTransformation
-// Guid:bf65e21c-9742-4a18-aac0-3b8a01122177
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/01 19:41:21
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;

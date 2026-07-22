@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EntityAuditExtensions
-// Guid:5db943aa-c50f-4f98-b330-3aa9b8f907a8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 14:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Reflection;

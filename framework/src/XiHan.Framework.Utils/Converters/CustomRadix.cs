@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CustomRadix
-// Guid:095ba19d-cd90-487b-9b3f-c00416b87c2a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/23 20:50:52
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Buffers;
 using System.Numerics;

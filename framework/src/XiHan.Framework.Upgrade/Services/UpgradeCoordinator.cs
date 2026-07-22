@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UpgradeCoordinator
-// Guid:3b86c2a9-0d7b-4d94-9a15-bf2e5f3b6a0d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/01 16:28:40
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

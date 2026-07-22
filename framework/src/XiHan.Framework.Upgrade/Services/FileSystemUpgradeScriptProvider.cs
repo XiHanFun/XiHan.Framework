@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FileSystemUpgradeScriptProvider
-// Guid:6f9a9b7f-2a7a-4c5c-b5ce-2b2d1b5b4c6b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/01 16:27:40
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Upgrade.Abstractions;

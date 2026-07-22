@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IAmbientScopeProvider
-// Guid:dd4544fe-7812-412f-94ca-b0bc5c01ab4a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/14 06:02:49
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Threading;
 

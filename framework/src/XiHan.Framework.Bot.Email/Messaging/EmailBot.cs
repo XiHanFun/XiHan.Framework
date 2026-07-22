@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EmailBot
-// Guid:83f59035-2972-4c3d-8feb-372d66e871fd
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/05 01:08:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using MailKit.Net.Smtp;
 using MimeKit;

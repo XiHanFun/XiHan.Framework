@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanClientInfoOptions
-// Guid:e04fcb89-29bc-478b-ab22-5854b9b745b7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/07 14:35:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Web.Core.Options;
 

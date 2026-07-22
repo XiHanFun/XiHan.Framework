@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EventHandlerInvokerCacheItem
-// Guid:d1eecf14-3c09-4fff-a19f-99f19cc07d48
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 07:34:09
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.EventBus;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanModuleLifecycleOptions
-// Guid:f9aabfaa-2442-4f35-8ee8-8285b56c0646
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 02:19:13
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Collections;
 

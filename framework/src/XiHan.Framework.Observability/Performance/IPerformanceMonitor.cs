@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IPerformanceMonitor
-// Guid:b7c8d9e0-f1a2-43b4-c5d6-e7f8a9b0c1d2
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/26 04:03:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Observability.Performance;
 

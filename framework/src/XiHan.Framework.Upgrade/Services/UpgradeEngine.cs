@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UpgradeEngine
-// Guid:19c3a7c2-3c24-4d17-8a3a-1b33dc5f0e19
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/01 16:29:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

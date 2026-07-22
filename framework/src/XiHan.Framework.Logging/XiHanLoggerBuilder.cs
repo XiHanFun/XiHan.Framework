@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanLoggerBuilder
-// Guid:cd0ca5ff-940a-41a6-8296-e37433e984da
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/21 15:55:11
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Configuration;
 using Serilog.Core;

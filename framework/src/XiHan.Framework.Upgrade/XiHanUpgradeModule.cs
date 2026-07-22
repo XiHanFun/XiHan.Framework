@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanUpgradeModule
-// Guid:8b2b3b1b-4b3d-4d86-8e7d-1b9f7a6d5e2c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/01 17:20:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

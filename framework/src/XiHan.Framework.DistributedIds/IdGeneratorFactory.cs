@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IdGeneratorFactory
-// Guid:d2e74a0b-8f9c-4a71-b1d5-e89f3c706a12
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/28 19:32:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.DistributedIds.Guids;
 using XiHan.Framework.DistributedIds.NanoIds;

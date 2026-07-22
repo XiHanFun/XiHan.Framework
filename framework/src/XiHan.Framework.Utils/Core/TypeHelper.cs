@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TypeHelper
-// Guid:1e15e82d-4a46-4f37-9f99-f3af5d8da83e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/05 05:00:52
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections;
 using System.ComponentModel;

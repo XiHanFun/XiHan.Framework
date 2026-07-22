@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EnumExtensions
-// Guid:5f4e3d2c-1b0a-9e8d-7c6b-5a4f3e2d1c0b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/19 23:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Enums;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExtensionPropertyFeaturePolicyConfiguration
-// Guid:a52a1166-9e68-4000-9b17-896b764dc435
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/05 07:27:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.ObjectMapping.Modularity;
 

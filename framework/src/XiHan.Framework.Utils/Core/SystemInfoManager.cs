@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SystemInfoManager
-// Guid:d4e5f6a7-b8c9-0123-d4e5-f6a7b8c90123
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/11 13:47:16
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Diagnostics.HardwareInfos;
 using XiHan.Framework.Utils.Runtime;

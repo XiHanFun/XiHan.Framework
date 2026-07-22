@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AuditEvent
-// Guid:f7c619a2-06a7-41e2-a09d-eb83444216a5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/24 06:28:21
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Domain.Events;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExtensibleObjectValidator
-// Guid:9b0b2991-c3ca-47a4-8603-e7944e4a28b2
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/05 06:41:24
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Localization;

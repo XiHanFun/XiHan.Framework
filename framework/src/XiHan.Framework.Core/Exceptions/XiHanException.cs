@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanException
-// Guid:c3257c2c-f925-47b1-9cac-d0814fb4293c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/11 06:58:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Logging;
 

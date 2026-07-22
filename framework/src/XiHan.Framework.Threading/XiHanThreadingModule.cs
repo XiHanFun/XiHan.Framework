@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanThreadingModule
-// Guid:62981b36-b74b-4b1b-8da2-d63cd2f25cfe
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/14 05:57:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Threading.Extensions.DependencyInjection;

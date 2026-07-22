@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TencentCloudSmsGatewayClient
-// Guid:48117b1a-d7eb-4889-b47b-87bee30ec2b6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/02 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using TencentCloud.Common;
 using TencentCloud.Common.Profile;

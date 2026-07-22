@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BackgroundServiceUsageExample
-// Guid:573c52f1-e237-408a-98c6-0e35576d96d7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/17 18:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

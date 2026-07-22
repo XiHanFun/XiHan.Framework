@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AsyncLock
-// Guid:9fa6c135-034d-4fb7-83ed-95d8ff6d20d4
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/09 06:20:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Core.Threading;
 

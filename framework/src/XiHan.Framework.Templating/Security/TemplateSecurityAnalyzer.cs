@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TemplateSecurityAnalyzer
-// Guid:67edbbe4-6023-453d-87e0-3c8cb0fd5c7d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/23 04:07:41
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.RegularExpressions;
 using XiHan.Framework.Templating.Compilers;

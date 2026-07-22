@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HttpClientConfiguration
-// Guid:247575af-f924-4a5d-9495-6a711329c69e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 20:13:26
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
 

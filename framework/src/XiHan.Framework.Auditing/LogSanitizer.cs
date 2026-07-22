@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LogSanitizer
-// Guid:8c1f4f4e-1c1c-4b7e-9a3a-0f2f4f6a9d21
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/11 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.RegularExpressions;

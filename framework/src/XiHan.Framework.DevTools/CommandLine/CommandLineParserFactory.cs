@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CommandLineParserFactory
-// Guid:2d48e6ec-8705-4558-befd-301ea0b0d629
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/17 05:43:18
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.DevTools.CommandLine.Arguments;
 

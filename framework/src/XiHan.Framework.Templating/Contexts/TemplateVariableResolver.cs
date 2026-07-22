@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TemplateVariableResolver
-// Guid:19c9f96b-cd4a-44a3-8b81-00db5b177915
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 03:42:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ISettingManager
-// Guid:df6b00a0-33e4-44de-be1f-4d370abe01f2
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/25 03:34:38
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Settings.Definitions;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarRepositoryBase
-// Guid:165b306d-7a53-4480-9f8c-11b8c271f2c6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/25 05:52:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Linq.Expressions;

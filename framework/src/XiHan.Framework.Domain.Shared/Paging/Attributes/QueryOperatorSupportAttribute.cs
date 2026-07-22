@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:QueryOperatorSupportAttribute
-// Guid:77f496e1-2a36-4271-a1ff-dae6b570dc38
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 13:05:58
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Shared.Paging.Enums;
 

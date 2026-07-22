@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:WebSocketClient
-// Guid:38a6c1d2-5a56-4b0e-9b81-f9e2e8a3d78c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 07:44:28
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net;
 using System.Net.WebSockets;

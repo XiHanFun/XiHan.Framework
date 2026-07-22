@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EventOrderGenerator
-// Guid:68cb449d-661b-4f3e-bde9-388ea791198c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/10 05:45:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Domain.Events;
 

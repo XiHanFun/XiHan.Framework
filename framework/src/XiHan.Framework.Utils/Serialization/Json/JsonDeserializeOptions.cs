@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JsonDeserializeOptions
-// Guid:c9f4e532-ad8f-4b3e-9f7c-2f5d3e4a5b6c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/06 08:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Encodings.Web;
 using System.Text.Json;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HostExtensions
-// Guid:4f030580-c6f5-4bae-8bb2-becab00adafc
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/28 02:47:39
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarConnectionConfigurator
-// Guid:4f9a2c7b-3d10-4e86-9b57-0a8d1f6e5c34
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/02 09:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

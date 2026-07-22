@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IEventBus
-// Guid:4e4a6c35-fce9-4351-8fdb-fcfaedf076dd
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/02 06:50:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.EventBus.Abstractions.Local;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ICacheSupportsMultipleItems
-// Guid:ef8239dc-069b-48c1-a641-c17ebb08f37d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/13 04:55:32
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
 

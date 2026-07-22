@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SseMessageBuilder
-// Guid:e2a47b9c-5f38-42d1-b7c9-83f24096d1ae
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/27 09:16:05
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 

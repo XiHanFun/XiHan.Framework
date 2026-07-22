@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PingHelper
-// Guid:4b03ace8-6bee-43e7-af3a-ee7783ec0f57
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 05:34:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net.NetworkInformation;
 using System.Text;

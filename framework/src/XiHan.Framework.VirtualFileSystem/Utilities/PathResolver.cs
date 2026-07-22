@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PathResolver
-// Guid:35906a83-4e75-42ad-a6bf-ed79114a5bfa
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/23 05:38:49
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.VirtualFileSystem.Utilities;
 

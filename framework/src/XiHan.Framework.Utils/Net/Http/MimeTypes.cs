@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MimeTypes
-// Guid:b9c6842b-fd5e-42a8-afa9-cfd35c1a82a8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/19 00:55:49
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Net.Http;
 

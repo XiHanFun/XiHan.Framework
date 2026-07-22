@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RamHelper
-// Guid:f92bddf7-c544-4602-aa63-e282cddb508b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/27 12:28:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.Caching;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ValidationResult
-// Guid:6051b1ec-eb80-42b7-aa44-bdd651c905f5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 15:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Domain.Shared.Paging.Validators;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DisposeAction
-// Guid:99e15063-fc1a-4d4a-8d28-788cdd49933e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/28 03:40:10
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Threading;
 

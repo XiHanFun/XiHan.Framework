@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarTenantConnection
-// Guid:2d7c4a10-5e93-4f6b-8b21-9c0a3e6d1f78
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/02 09:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 

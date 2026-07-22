@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:I18nFormatHelper
-// Guid:8a7b6c5d-4e3f-2c1b-9a8d-7f6e5d4c3b2a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/29 00:48:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 using System.Text;

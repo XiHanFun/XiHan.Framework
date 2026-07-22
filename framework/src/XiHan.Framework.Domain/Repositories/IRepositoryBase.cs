@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IRepositoryBase
-// Guid:3b5f56c2-6a67-447b-ad9c-d4f004f2c40f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/02 06:24:13
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Entities.Abstracts;

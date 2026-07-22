@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RemoteServiceAttribute
-// Guid:00062b69-fe81-418b-8aff-e4bfae1c8700
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/28 04:09:36
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 using XiHan.Framework.Utils.Reflections;

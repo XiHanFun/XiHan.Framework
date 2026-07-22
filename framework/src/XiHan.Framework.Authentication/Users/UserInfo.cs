@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UserInfo
-// Guid:e7f8a9b0-c1d2-3456-0123-123456789026
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/09 10:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Authentication.Users;
 
