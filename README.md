@@ -421,7 +421,7 @@ dotnet package search XiHan.Framework
 
 ## 版权&授权
 
-Copyright (c) 2026 XiHanFun and ZhaiFanhua
+Copyright (c) 2021-Present XiHanFun and contributors.
 
 本项目采用 MIT 授权，详见 [License](./LICENSE)
 

@@ -1,6 +1,6 @@
 # XiHan.Framework.Analyzers
 
-曦寒框架 Roslyn 分析器，用于检查 C# 文件是否包含标准版权版本注释，并在 IDE 中提供 Code Fix 自动修复。
+曦寒框架 Roslyn 分析器，用于检查 C# 文件是否以标准版权文件头开头，并在 IDE 中提供 Code Fix 自动修复。
 
 ## 规则
 
