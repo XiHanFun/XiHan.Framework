@@ -24,17 +24,12 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架版权信息
     /// </summary>
-    public const string Copyright = "Copyright ©2021-Present ZhaiFanhua All Rights Reserved.";
+    public const string Copyright = "Copyright (c) 2021-Present XiHanFun and contributors.";
 
     /// <summary>
     /// 框架作者
     /// </summary>
-    public const string Author = "ZhaiFanhua";
-
-    /// <summary>
-    /// 框架作者邮箱
-    /// </summary>
-    public const string AuthorEmail = "me@zhaifanhua.com";
+    public const string Author = "XiHanFun";
 
     /// <summary>
     /// 框架组织
@@ -78,7 +73,6 @@ public static class XiHanMetadata
         "webapp",
         "xihan",
         "framework",
-        "zhaifanhua",
         "xihanfun",
         "modular",
         "extensible"
@@ -187,7 +181,7 @@ public static class XiHanMetadata
             {Name} {DisplayName} v{Version}
             {Description}
             {SendWord}
-            作者: {Author} ({AuthorEmail})
+            作者: {Author}
             组织: {Organization} ({OrganizationUrl})
             仓库: {RepositoryUrl}
             文档: {DocumentationUrl}
