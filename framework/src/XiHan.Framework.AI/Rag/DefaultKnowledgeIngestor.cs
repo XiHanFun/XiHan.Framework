@@ -43,9 +43,12 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
             return 0;
         }
 
-        // 批量嵌入（顺序与输入一致）
+        // 批量嵌入（顺序与输入一致）。嵌入排在向量库调用之前，失败必须能与向量库故障区分开。
         var generator = _embeddingResolver.Resolve(request.Provider);
-        var embeddings = await generator.GenerateAsync(pieces, cancellationToken: cancellationToken);
+        var embeddings = await EmbeddingOperation.ExecuteAsync(
+            () => generator.GenerateAsync(pieces, cancellationToken: cancellationToken),
+            request.Provider,
+            generator.GetService<EmbeddingGeneratorMetadata>()?.DefaultModelId);
 
         var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
         await VectorStoreOperation.ExecuteAsync(() => collection.EnsureCollectionExistsAsync(cancellationToken));
