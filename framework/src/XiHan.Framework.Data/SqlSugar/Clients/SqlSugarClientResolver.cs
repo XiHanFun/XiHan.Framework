@@ -148,13 +148,40 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         // 此后同一工作单元内无论异步上下文如何流转，操作与 Commit/Rollback 都作用于它。
         var concreteClient = client is SqlSugarScopeProvider scopeProvider ? scopeProvider.ScopedContext : client;
 
+        // 要求独立连接的工作单元（requiresNew）不能沿用共享上下文：同一 ConfigId 的 ScopedContext 是同一个实例，
+        // 外层工作单元很可能已在它上面开了事务，而同一连接无法嵌套事务。
+        // CopyNew 会按同一 ConfigId 物化一条全新连接，并继承构建期挂载的 AOP 与全局过滤器
+        // （审计列填充、租户与软删过滤照常生效），因此隔离连接上的写入语义与共享连接一致。
+        var requiresIsolation = unitOfWork.Options.RequiresIsolatedConnection;
+        if (requiresIsolation)
+        {
+            concreteClient = concreteClient.CopyNew();
+        }
+
         // 先建事务、成功后再钉住——顺序不可颠倒：若 BeginTran 因瞬时故障抛异常（工厂抛出则事务 API 不落字典），
         // 已钉住的条目会让同一工作单元内的重试在上方命中处短路、永不再尝试开启事务，
         // 整个「事务型」工作单元将静默退化为逐条自动提交。
         var transactionKey = $"{TransactionApiPrefix}:{configId}";
-        unitOfWork.GetOrAddTransactionApi(
-            transactionKey,
-            () => new SqlSugarTransactionApi(concreteClient, unitOfWork.Options.IsolationLevel));
+        try
+        {
+            unitOfWork.GetOrAddTransactionApi(
+                transactionKey,
+                () => new SqlSugarTransactionApi(
+                    concreteClient,
+                    unitOfWork.Options.IsolationLevel,
+                    requireOwnTransaction: requiresIsolation,
+                    ownsClient: requiresIsolation));
+        }
+        catch
+        {
+            // 隔离连接尚未登记进工作单元，异常路径必须就地释放，否则连接泄漏。
+            if (requiresIsolation)
+            {
+                concreteClient.Dispose();
+            }
+
+            throw;
+        }
 
         unitOfWork.Items[itemKey] = concreteClient;
         return concreteClient;

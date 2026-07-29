@@ -19,6 +19,7 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
 {
     private readonly ISqlSugarClient _dbClient;
     private readonly bool _ownsTransaction;
+    private readonly bool _ownsClient;
     private bool _completed;
     private bool _disposed;
 
@@ -27,12 +28,35 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
     /// </summary>
     /// <param name="dbClient">SqlSugar 客户端（须为钉住的具体上下文客户端，见类型注释）</param>
     /// <param name="isolationLevel">事务隔离级别</param>
-    public SqlSugarTransactionApi(ISqlSugarClient dbClient, IsolationLevel? isolationLevel)
+    /// <param name="requireOwnTransaction">
+    /// 是否必须由本适配器开启事务。<see langword="true"/> 时若连接上已有事务则直接抛出，
+    /// 而不是退化为不提交也不回滚的空操作——静默退化会让调用方误以为拿到了独立事务。
+    /// </param>
+    /// <param name="ownsClient">
+    /// 是否由本适配器负责释放 <paramref name="dbClient"/>；用于工作单元独占的隔离连接。
+    /// </param>
+    /// <exception cref="InvalidOperationException">
+    /// <paramref name="requireOwnTransaction"/> 为 <see langword="true"/> 但连接上已存在事务。
+    /// </exception>
+    public SqlSugarTransactionApi(
+        ISqlSugarClient dbClient,
+        IsolationLevel? isolationLevel,
+        bool requireOwnTransaction = false,
+        bool ownsClient = false)
     {
         _dbClient = dbClient;
+        _ownsClient = ownsClient;
 
         if (!_dbClient.Ado.IsNoTran())
         {
+            if (requireOwnTransaction)
+            {
+                // 隔离连接理应是全新的、其上不可能有事务。走到这里说明连接不是独占的，
+                // 继续下去内层提交将是空操作、写入由外层事务决定去留，必须响亮失败。
+                throw new InvalidOperationException(
+                    "要求独立事务的工作单元拿到了一条已存在事务的连接，无法保证独立提交。");
+            }
+
             return;
         }
 
@@ -93,10 +117,21 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
         }
 
         _disposed = true;
-        if (!_completed && _ownsTransaction)
+        try
         {
-            _dbClient.Ado.RollbackTran();
-            _completed = true;
+            if (!_completed && _ownsTransaction)
+            {
+                _dbClient.Ado.RollbackTran();
+                _completed = true;
+            }
+        }
+        finally
+        {
+            // 隔离连接由本适配器独占，必须随工作单元一起释放，否则每次 requiresNew 都会泄漏一条连接。
+            if (_ownsClient)
+            {
+                _dbClient.Dispose();
+            }
         }
     }
 }
