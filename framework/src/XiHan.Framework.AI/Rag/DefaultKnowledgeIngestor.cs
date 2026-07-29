@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.Abstractions.Rag;
@@ -16,6 +17,8 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
     private readonly IChunkingStrategy _chunkingStrategy;
     private readonly IAiEmbeddingGeneratorResolver _embeddingResolver;
     private readonly VectorStore _vectorStore;
+    private readonly KnowledgeVectorOptions _vectorOptions;
+    private readonly VectorStoreCollectionDefinition _definition;
 
     /// <summary>
     /// 构造函数
@@ -23,11 +26,16 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
     public DefaultKnowledgeIngestor(
         IChunkingStrategy chunkingStrategy,
         IAiEmbeddingGeneratorResolver embeddingResolver,
-        VectorStore vectorStore)
+        VectorStore vectorStore,
+        IOptions<KnowledgeVectorOptions> vectorOptions)
     {
+        ArgumentNullException.ThrowIfNull(vectorOptions);
+
         _chunkingStrategy = chunkingStrategy;
         _embeddingResolver = embeddingResolver;
         _vectorStore = vectorStore;
+        _vectorOptions = vectorOptions.Value;
+        _definition = VectorStoreKnowledgeRecord.CreateDefinition(_vectorOptions.Dimensions);
     }
 
     /// <inheritdoc />
@@ -50,7 +58,10 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
             request.Provider,
             generator.GetService<EmbeddingGeneratorMetadata>()?.DefaultModelId);
 
-        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
+        // 维度不符时向量库只会报驱动层错误，这里先拦下并指明是模型与集合配置不一致。
+        VectorStoreKnowledgeRecord.EnsureDimensions(embeddings[0].Vector.Length, _vectorOptions.Dimensions);
+
+        var collection = GetCollection();
         await VectorStoreOperation.ExecuteAsync(() => collection.EnsureCollectionExistsAsync(cancellationToken));
 
         var records = new List<VectorStoreKnowledgeRecord>(pieces.Count);
@@ -84,7 +95,7 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
             return;
         }
 
-        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
+        var collection = GetCollection();
         if (!await VectorStoreOperation.ExecuteAsync(() => collection.CollectionExistsAsync(cancellationToken)))
         {
             return;
@@ -92,5 +103,13 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
 
         var keys = Enumerable.Range(0, chunkCount).Select(i => VectorStoreKnowledgeRecord.MakeId(documentId, i));
         await VectorStoreOperation.ExecuteAsync(() => collection.DeleteAsync(keys, cancellationToken));
+    }
+
+    /// <summary>
+    /// 取知识切片集合（字段模型走运行期定义，维度随配置）
+    /// </summary>
+    private VectorStoreCollection<Guid, VectorStoreKnowledgeRecord> GetCollection()
+    {
+        return _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(_vectorOptions.CollectionName, _definition);
     }
 }

@@ -11,69 +11,95 @@ namespace XiHan.Framework.AI.Rag;
 /// 向量库知识切片记录（Microsoft.Extensions.VectorData 记录模型）
 /// </summary>
 /// <remarks>
-/// 键用 <see cref="Guid"/>（Qdrant 仅支持 Guid/ulong，string 会在建集合时抛异常；Guid 兼容各连接器）。
-/// 过滤字段（DocumentId/TenantId）标 <c>IsIndexed</c> 以支持 pre-filter；向量维度固定为
-/// <see cref="EmbeddingDimensions"/>（对齐 text-embedding-3-small=1536；换维度模型须改此常量并重建集合）。
+/// 键用 <see cref="Guid"/>（Qdrant 仅支持 Guid/ulong）。
+/// 字段模型不走特性而由 <see cref="CreateDefinition"/> 在运行期构建，使向量维度可配置。
 /// </remarks>
 public sealed class VectorStoreKnowledgeRecord
 {
     /// <summary>
-    /// 向量维度（编译期常量，须与嵌入模型输出维度一致）
-    /// </summary>
-    public const int EmbeddingDimensions = 1536;
-
-    /// <summary>
-    /// 集合名
-    /// </summary>
-    public const string CollectionName = "xihan_knowledge";
-
-    /// <summary>
     /// 主键（由 DocumentId + ChunkIndex 确定性派生，便于按文档 upsert/删除）
     /// </summary>
-    [VectorStoreKey]
     public Guid Id { get; set; }
 
     /// <summary>
     /// 所属文档 id（过滤/删除维度）
     /// </summary>
-    [VectorStoreData(IsIndexed = true)]
     public string DocumentId { get; set; } = string.Empty;
 
     /// <summary>
     /// 租户 id（0=平台全局；过滤隔离维度）
     /// </summary>
-    [VectorStoreData(IsIndexed = true)]
     public long TenantId { get; set; }
 
     /// <summary>
     /// 切片序号
     /// </summary>
-    [VectorStoreData]
     public int ChunkIndex { get; set; }
 
     /// <summary>
     /// 切片文本
     /// </summary>
-    [VectorStoreData]
     public string Text { get; set; } = string.Empty;
 
     /// <summary>
     /// 文档标题（引用展示）
     /// </summary>
-    [VectorStoreData]
     public string? Title { get; set; }
 
     /// <summary>
     /// 来源标识（引用溯源）
     /// </summary>
-    [VectorStoreData]
     public string? Source { get; set; }
 
     /// <summary>
     /// 嵌入向量
     /// </summary>
-    [VectorStoreVector(EmbeddingDimensions, DistanceFunction = DistanceFunction.CosineSimilarity, IndexKind = IndexKind.Hnsw)]
     public ReadOnlyMemory<float>? Embedding { get; set; }
+
+    /// <summary>
+    /// 按指定维度构建集合定义（DocumentId/TenantId 建索引以支持 pre-filter）
+    /// </summary>
+    /// <param name="dimensions">向量维度</param>
+    /// <returns>集合定义</returns>
+    public static VectorStoreCollectionDefinition CreateDefinition(int dimensions)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(dimensions, 1);
+
+        return new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty(nameof(Id), typeof(Guid)),
+                new VectorStoreDataProperty(nameof(DocumentId), typeof(string)) { IsIndexed = true },
+                new VectorStoreDataProperty(nameof(TenantId), typeof(long)) { IsIndexed = true },
+                new VectorStoreDataProperty(nameof(ChunkIndex), typeof(int)),
+                new VectorStoreDataProperty(nameof(Text), typeof(string)),
+                new VectorStoreDataProperty(nameof(Title), typeof(string)),
+                new VectorStoreDataProperty(nameof(Source), typeof(string)),
+                new VectorStoreVectorProperty(nameof(Embedding), typeof(ReadOnlyMemory<float>?), dimensions)
+                {
+                    DistanceFunction = DistanceFunction.CosineSimilarity,
+                    IndexKind = IndexKind.Hnsw
+                }
+            ]
+        };
+    }
+
+    /// <summary>
+    /// 校验嵌入模型实际输出维度与集合配置一致
+    /// </summary>
+    /// <param name="actual">嵌入模型实际输出维度</param>
+    /// <param name="expected">集合配置维度</param>
+    /// <exception cref="InvalidOperationException">维度不一致。</exception>
+    public static void EnsureDimensions(int actual, int expected)
+    {
+        if (actual != expected)
+        {
+            throw new InvalidOperationException(
+                $"嵌入维度不匹配：模型输出 {actual} 维，向量集合配置为 {expected} 维。" +
+                "请将配置维度改为模型的实际维度，并更换集合名或删除原集合后重建索引。");
+        }
+    }
 
     /// <summary>
     /// 由文档 id + 切片序号确定性派生主键（同文档同序号恒等，重建即覆盖）
