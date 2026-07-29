@@ -3,6 +3,7 @@
 
 using System.Linq.Expressions;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.Abstractions.Rag;
@@ -17,14 +18,23 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
 {
     private readonly IAiEmbeddingGeneratorResolver _embeddingResolver;
     private readonly VectorStore _vectorStore;
+    private readonly KnowledgeVectorOptions _vectorOptions;
+    private readonly VectorStoreCollectionDefinition _definition;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public DefaultKnowledgeRetriever(IAiEmbeddingGeneratorResolver embeddingResolver, VectorStore vectorStore)
+    public DefaultKnowledgeRetriever(
+        IAiEmbeddingGeneratorResolver embeddingResolver,
+        VectorStore vectorStore,
+        IOptions<KnowledgeVectorOptions> vectorOptions)
     {
+        ArgumentNullException.ThrowIfNull(vectorOptions);
+
         _embeddingResolver = embeddingResolver;
         _vectorStore = vectorStore;
+        _vectorOptions = vectorOptions.Value;
+        _definition = VectorStoreKnowledgeRecord.CreateDefinition(_vectorOptions.Dimensions);
     }
 
     /// <inheritdoc />
@@ -43,7 +53,7 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
             topK = 5;
         }
 
-        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
+        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(_vectorOptions.CollectionName, _definition);
         // 集合不存在返回空结果是合法语义（尚未摄取任何文档）；连不上向量库则是故障，由翻译层区分。
         if (!await VectorStoreOperation.ExecuteAsync(() => collection.CollectionExistsAsync(cancellationToken)))
         {
@@ -55,6 +65,8 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
             () => generator.GenerateVectorAsync(query, cancellationToken: cancellationToken),
             provider,
             generator.GetService<EmbeddingGeneratorMetadata>()?.DefaultModelId);
+
+        VectorStoreKnowledgeRecord.EnsureDimensions(queryVector.Length, _vectorOptions.Dimensions);
 
         var options = BuildOptions(filter);
         var results = new List<RetrievedChunk>();
