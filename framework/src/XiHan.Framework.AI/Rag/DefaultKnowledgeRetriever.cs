@@ -51,7 +51,10 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
         }
 
         var generator = _embeddingResolver.Resolve(provider);
-        var queryVector = await generator.GenerateVectorAsync(query, cancellationToken: cancellationToken);
+        var queryVector = await EmbeddingOperation.ExecuteAsync(
+            () => generator.GenerateVectorAsync(query, cancellationToken: cancellationToken),
+            provider,
+            generator.GetService<EmbeddingGeneratorMetadata>()?.DefaultModelId);
 
         var options = BuildOptions(filter);
         var results = new List<RetrievedChunk>();
