@@ -46,6 +46,14 @@ public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
     public int? Timeout { get; set; }
 
     /// <summary>
+    /// 是否必须使用与外层工作单元互相独立的物理连接
+    /// </summary>
+    /// <remarks>
+    /// 由工作单元管理器在 <c>requiresNew</c> 且已存在环境工作单元时置位，业务代码不应直接设置。
+    /// </remarks>
+    public bool RequiresIsolatedConnection { get; set; }
+
+    /// <summary>
     /// 克隆
     /// </summary>
     /// <returns></returns>
@@ -55,7 +63,8 @@ public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
         {
             IsTransactional = IsTransactional,
             IsolationLevel = IsolationLevel,
-            Timeout = Timeout
+            Timeout = Timeout,
+            RequiresIsolatedConnection = RequiresIsolatedConnection
         };
     }
 }
