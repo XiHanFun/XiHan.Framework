@@ -21,10 +21,17 @@ public static class XiHanRAGServiceCollectionExtensions
     /// 全部 <c>TryAdd</c>，应用层可覆盖任一默认实现。
     /// </remarks>
     /// <param name="services">服务集合</param>
+    /// <param name="configureVector">向量集合配置（集合名与维度），不传用默认值</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanRAG(this IServiceCollection services)
+    public static IServiceCollection AddXiHanRAG(this IServiceCollection services, Action<KnowledgeVectorOptions>? configureVector = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        var vectorOptions = services.AddOptions<KnowledgeVectorOptions>();
+        if (configureVector is not null)
+        {
+            vectorOptions.Configure(configureVector);
+        }
 
         services.TryAddSingleton<IChunkingStrategy, FixedWindowChunkingStrategy>();
         services.TryAddSingleton<IKnowledgeIngestor, DefaultKnowledgeIngestor>();
