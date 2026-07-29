@@ -15,7 +15,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.15.0" />
-        <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.1" />
+        <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
     </ItemGroup>
 
 </Project>
