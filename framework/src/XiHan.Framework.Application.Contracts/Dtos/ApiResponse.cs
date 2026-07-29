@@ -200,12 +200,17 @@ public class ApiResponse
     /// 服务不可用 503：系统维护、服务过载或依赖服务不可用，请稍后重试
     /// </summary>
     /// <returns>统一返回模型</returns>
-    public static ApiResponse ServiceUnavailable()
+    /// <param name="errorMessage">
+    /// 面向运维的排查线索（置于 Data），例如是哪个依赖不可达。
+    /// 与 500 不同，503 的成因是外部依赖而非内部实现细节，因此允许回传；但不要写入主机、端口、凭据等拓扑信息。
+    /// </param>
+    public static ApiResponse ServiceUnavailable(string? errorMessage = null)
     {
         return new ApiResponse
         {
             Code = ApiResponseCodes.ServiceUnavailable,
-            Message = ApiResponseCodes.ServiceUnavailable.GetDescription()
+            Message = ApiResponseCodes.ServiceUnavailable.GetDescription(),
+            Data = errorMessage
         };
     }
 

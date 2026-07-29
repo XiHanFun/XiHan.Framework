@@ -329,6 +329,9 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
     {
         return exception switch
         {
+            // 依赖不可用（外部基础设施连不上）→ 503：依赖恢复后同样的请求即可成功，与 400 的「请求本身有问题」语义不同。
+            // 必须排在 BusinessException 之前——它是 BusinessException 的派生类型，否则会被 400 分支吞掉。
+            ServiceUnavailableException ex => (StatusCodes.Status503ServiceUnavailable, ApiResponse.ServiceUnavailable(ex.Message)),
             UserFriendlyException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
             BusinessException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, ApiResponse.Unauthorized("未授权访问")),

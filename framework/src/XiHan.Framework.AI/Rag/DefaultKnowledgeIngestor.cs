@@ -48,7 +48,7 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
         var embeddings = await generator.GenerateAsync(pieces, cancellationToken: cancellationToken);
 
         var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
-        await collection.EnsureCollectionExistsAsync(cancellationToken);
+        await VectorStoreOperation.ExecuteAsync(() => collection.EnsureCollectionExistsAsync(cancellationToken));
 
         var records = new List<VectorStoreKnowledgeRecord>(pieces.Count);
         for (var i = 0; i < pieces.Count; i++)
@@ -66,7 +66,7 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
             });
         }
 
-        await collection.UpsertAsync(records, cancellationToken);
+        await VectorStoreOperation.ExecuteAsync(() => collection.UpsertAsync(records, cancellationToken));
         return records.Count;
     }
 
@@ -82,12 +82,12 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
         }
 
         var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
-        if (!await collection.CollectionExistsAsync(cancellationToken))
+        if (!await VectorStoreOperation.ExecuteAsync(() => collection.CollectionExistsAsync(cancellationToken)))
         {
             return;
         }
 
         var keys = Enumerable.Range(0, chunkCount).Select(i => VectorStoreKnowledgeRecord.MakeId(documentId, i));
-        await collection.DeleteAsync(keys, cancellationToken);
+        await VectorStoreOperation.ExecuteAsync(() => collection.DeleteAsync(keys, cancellationToken));
     }
 }
