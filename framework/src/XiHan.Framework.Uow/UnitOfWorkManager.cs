@@ -50,8 +50,21 @@ public class UnitOfWorkManager : IUnitOfWorkManager, ISingletonDependency
             return new ChildUnitOfWork(currentUow);
         }
 
+        // requiresNew 必须同时是「新的逻辑工作单元」和「新的物理连接」：
+        // 外层工作单元此刻很可能已经在目标连接上开了事务（任何一次数据访问都会触发登记），
+        // 同一连接无法嵌套事务，复用它会让内层提交退化为空操作、写入仍由外层事务决定去留——
+        // 这正是 requiresNew 长期静默失效的原因。置位后由数据访问层为本工作单元物化独立连接。
+        // 没有外层工作单元时无需隔离：那条连接上不会有框架开启的事务，沿用共享上下文即可，
+        // 免去一条多余的物理连接；真出现意料之外的在位事务，由事务适配器 fail-closed 拦截。
+        var effectiveOptions = options;
+        if (currentUow != null)
+        {
+            effectiveOptions = options.Clone();
+            effectiveOptions.RequiresIsolatedConnection = true;
+        }
+
         var unitOfWork = CreateNewUnitOfWork();
-        unitOfWork.Initialize(options);
+        unitOfWork.Initialize(effectiveOptions);
 
         return unitOfWork;
     }
