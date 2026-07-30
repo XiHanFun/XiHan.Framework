@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CacheStatistics
-// Guid:8b7c6d5e-4f3d-2c1b-0a9f-8e7d6c5b4a3b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/17 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Caching;
 

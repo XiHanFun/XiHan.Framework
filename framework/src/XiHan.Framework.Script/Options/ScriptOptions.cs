@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptOptions
-// Guid:b090a641-b57e-494b-bd01-a354f23815c6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 06:08:31
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.CodeAnalysis;
 using System.Reflection;

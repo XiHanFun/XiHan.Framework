@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RetryCondition
-// Guid:4ff1e8d7-a7ee-4c44-be81-ae228fa27178
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/05 07:30:54
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 

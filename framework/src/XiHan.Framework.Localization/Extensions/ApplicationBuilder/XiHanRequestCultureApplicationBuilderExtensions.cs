@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanRequestCultureApplicationBuilderExtensions
-// Guid:b1d7e904-3c52-4a86-9f17-6e2a8d4c5b31
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/23 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Builder;
 using XiHan.Framework.Localization.Middlewares;

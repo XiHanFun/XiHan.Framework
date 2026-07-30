@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HttpClientHelper
-// Guid:7afa9878-a394-4997-a4cf-3dcc833de591
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/09 06:35:38
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using System.Text.Json;

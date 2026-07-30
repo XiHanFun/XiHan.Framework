@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NanoIdOptions
-// Guid:b5d9b6c1-7e2a-4f9c-8d7e-6e2a9f1c8d7e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/15 10:30:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.DistributedIds.NanoIds;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanLocalizationServiceCollectionExtensions
-// Guid:c7b9e218-a39f-4e5f-bbc4-f8f557f5a7ce
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/13 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

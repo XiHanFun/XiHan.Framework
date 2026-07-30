@@ -329,7 +329,6 @@ var client = new HttpClient(new SocketsHttpHandler()
 
 如有问题或建议，请联系：
 
-- Email: me@zhaifanhua.com
 - GitHub: [Issues](https://github.com/XiHanFun/XiHan.Framework/issues)
 
 ## 版本历史
@@ -343,4 +342,4 @@ var client = new HttpClient(new SocketsHttpHandler()
 
 ## 许可证
 
-MIT License - Copyright ©2021-Present ZhaiFanhua
+MIT License - Copyright (c) 2021-Present XiHanFun and contributors.

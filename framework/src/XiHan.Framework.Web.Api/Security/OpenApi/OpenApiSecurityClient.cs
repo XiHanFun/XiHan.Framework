@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:OpenApiSecurityClient
-// Guid:87c9c1f3-14b4-4d42-8db2-0a6374d7fd39
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/13 23:32:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Web.Api.Security.OpenApi;
 
@@ -73,4 +62,10 @@ public class OpenApiSecurityClient
     /// 是否启用
     /// </summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// 凭证归属用户标识（数据库凭证有值；配置型固定客户端无归属用户则为空）。
+    /// 供开放接口日志记录"是谁的密钥发起的调用"，签名调用无 JWT 用户时以此作为审计主体。
+    /// </summary>
+    public long? OwnerUserId { get; set; }
 }

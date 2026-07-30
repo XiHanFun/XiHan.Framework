@@ -1,17 +1,7 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultCorrelationIdProvider
-// Guid:6f4cd27e-f2de-4e60-a06a-5f7a4674101d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 08:04:50
-// ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>
-
+using System.Diagnostics;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Utils.Threading;
 
@@ -32,6 +22,13 @@ public class DefaultCorrelationIdProvider : ICorrelationIdProvider, ISingletonDe
     /// <returns></returns>
     public virtual string? Get()
     {
+        // 优先 W3C：与 Activity 对齐，EventBus 等传播链零改造即携带同一 trace id；无 Activity 时回退显式设置的关联 id
+        var current = Activity.Current;
+        if (current is not null && current.TraceId != default)
+        {
+            return current.TraceId.ToHexString();
+        }
+
         return CorrelationId;
     }
 

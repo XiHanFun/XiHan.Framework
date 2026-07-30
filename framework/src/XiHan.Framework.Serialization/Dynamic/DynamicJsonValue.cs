@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DynamicJsonValue
-// Guid:a5f8d3e2-9c7b-4d6a-8e1f-2b9c7a6d4e8f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/05 09:35:36
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Dynamic;
 using System.Globalization;

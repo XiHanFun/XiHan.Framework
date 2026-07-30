@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EnumInfo
-// Guid:ee068353-ab88-4140-b766-a2b961ab67c3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/01 05:10:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Enums;
 

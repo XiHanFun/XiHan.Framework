@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LoggingStressTests
-// Guid:a89b567c-23d4-4e5f-9a78-2c1d3e4f5a6b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/18 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using System.Diagnostics;

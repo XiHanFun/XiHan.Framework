@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TZConvertTimezoneProvider
-// Guid:b8f5c142-9d3e-4a89-9c2f-51ebbcf6ce9f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/24 05:25:30
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using TimeZoneConverter;
 using XiHan.Framework.Core;

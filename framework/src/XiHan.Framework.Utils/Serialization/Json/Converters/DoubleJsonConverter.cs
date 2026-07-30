@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DoubleJsonConverter
-// Guid:3f5a8b2c-9d4e-4f1a-8c7b-6e5d4c3b2a19
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/29 10:18:04
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

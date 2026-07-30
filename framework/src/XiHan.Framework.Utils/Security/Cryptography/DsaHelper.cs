@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DsaHelper
-// Guid:02dd6308-130e-43be-8642-48eeae0536e3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 04:10:02
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Cryptography;
 using System.Text;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageExtensions
-// Guid:d95f1fd8-ba4d-4932-b63d-23b6a7d6382b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/03 02:09:58
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
@@ -46,11 +35,6 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.Behavior.DisablePaging)
-        {
-            return query;
-        }
-
         var meta = pageRequest.Page;
         var skip = (meta.PageIndex - 1) * meta.PageSize;
         return query.Skip(skip).Take(meta.PageSize);
@@ -76,9 +60,7 @@ public static class PageExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = pageRequest.Behavior.DisablePaging
-            ? query.ToList()
-            : [.. query.Skip(skip).Take(meta.PageSize)];
+        List<T> items = [.. query.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -102,9 +84,7 @@ public static class PageExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = pageRequest.Behavior.DisablePaging
-            ? query.ToList()
-            : [.. query.Skip(skip).Take(meta.PageSize)];
+        List<T> items = [.. query.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -133,11 +113,6 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
-        if (pageRequest.Behavior.DisablePaging)
-        {
-            return source;
-        }
-
         var meta = pageRequest.Page;
         var skip = (meta.PageIndex - 1) * meta.PageSize;
         return source.Skip(skip).Take(meta.PageSize);
@@ -163,9 +138,7 @@ public static class PageExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = pageRequest.Behavior.DisablePaging
-            ? list
-            : [.. list.Skip(skip).Take(meta.PageSize)];
+        List<T> items = [.. list.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -208,9 +181,7 @@ public static class PageExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = pageRequest.Behavior.DisablePaging
-            ? list
-            : [.. list.Skip(skip).Take(meta.PageSize)];
+        List<T> items = [.. list.Skip(skip).Take(meta.PageSize)];
 
         return PageResultDtoBase<T>.Create(items, pageRequest, totalCount);
     }
@@ -467,10 +438,7 @@ public static class PageExtensions
             query = query.ApplySorts(cond.Sorts);
         }
 
-        if (!pageRequest.Behavior.DisablePaging)
-        {
-            query = query.ApplyPaging(pageRequest);
-        }
+        query = query.ApplyPaging(pageRequest);
 
         return query;
     }

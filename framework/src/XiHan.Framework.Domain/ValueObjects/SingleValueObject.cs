@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SingleValueObject
-// Guid:edf23a4b-5c6d-4e7f-8a9b-1234567890cd
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/12 15:35:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Domain.ValueObjects;
 

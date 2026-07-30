@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CrudApplicationServiceBase
-// Guid:108d8506-b544-42f5-99c4-ddc499bd7f68
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/24 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Mapster;
 using Microsoft.Extensions.DependencyInjection;

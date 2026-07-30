@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IRedisStreamQueue
-// Guid:3f4e5d6c-7a8b-491c-b1d2-3e4f5a6b7c8d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Caching.Distributed.Abstracts;
 

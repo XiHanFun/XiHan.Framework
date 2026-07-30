@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PrioritizedFileInfo
-// Guid:425fb1fc-6c10-4bf9-8479-5712b7b53b43
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/23 06:20:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.FileProviders;
 

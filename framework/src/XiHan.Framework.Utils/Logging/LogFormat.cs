@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LogFormat
-// Guid:529ac4c1-accc-4c90-a63a-30b894bf3d42
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/18 06:14:49
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Logging;
 

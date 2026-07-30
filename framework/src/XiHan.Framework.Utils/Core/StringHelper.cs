@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:StringHelper
-// Guid:be5fec8b-f4aa-4aad-ae31-f2dc5c269fa9
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/21 21:57:05
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using System.Text.RegularExpressions;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TypeFinder
-// Guid:095cacf2-45ef-4715-bef8-27f206c3b423
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/24 23:05:11
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Reflections;
 

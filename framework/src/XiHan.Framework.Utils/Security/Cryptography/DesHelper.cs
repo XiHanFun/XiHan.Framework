@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DesHelper
-// Guid:0be48243-b820-4de9-a46f-77f7e808dd6f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/11 05:28:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Cryptography;
 using System.Text;

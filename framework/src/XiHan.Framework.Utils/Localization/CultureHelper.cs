@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CultureHelper
-// Guid:4d307abc-8706-4e98-8136-9fdfdaf57efd
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/02/26 04:22:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 using XiHan.Framework.Utils.Extensions;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DatabaseColumnMetadata
-// Guid:042d794e-656b-4f6a-9928-81bf5a1bf2e0
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/28 03:11:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Data.SqlSugar.Metadata;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LanguageHelper
-// Guid:2115c528-b5b9-4b7a-938d-65908c5ec334
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/29 00:47:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 using System.Resources;

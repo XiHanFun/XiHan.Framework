@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SugarEntityWithIdentity
-// Guid:e5c26ae2-8f9d-4b17-9689-362b0862f7d9
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/25 05:24:56
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using XiHan.Framework.Domain.Entities;
@@ -34,7 +23,7 @@ public abstract class SugarEntityWithIdentity<TKey> : EntityBase<TKey>
     /// <summary>
     /// 版本控制标识，用于处理并发
     /// </summary>
-    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发")]
+    [SugarColumn(ColumnName = "Row_Version", ColumnDescription = "版本控制标识，用于处理并发", IsEnableUpdateVersionValidation = true)]
     public override long RowVersion { get; set; }
 
     /// <summary>

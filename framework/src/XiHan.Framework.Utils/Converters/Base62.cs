@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:Base62
-// Guid:200dd36c-2d20-40f3-be57-fa44648984f5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/23 20:43:10
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Buffers;
 using System.Numerics;

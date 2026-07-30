@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MethodInfoExtensions
-// Guid:5a581e7a-9038-48c7-b8ba-57bae3321615
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/22 01:09:57
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RedisStreamQueueExtensions
-// Guid:7d8e9f0a-1b2c-4345-b6c7-8d9e0f1a2b3c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Caching.Distributed.Abstracts;
 

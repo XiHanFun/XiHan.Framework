@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DtoBase
-// Guid:7f821e80-1dfc-4ca3-8861-1f5b84c6bce6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/11/16 02:24:42
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Application.Contracts.Dtos;
 

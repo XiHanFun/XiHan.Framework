@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RedisBackgroundJobStoreOptions
-// Guid:8122e11e-49f8-4069-aaf1-8ef07cbfe81d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/07 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Tasks.BackgroundJobs.Options;
 

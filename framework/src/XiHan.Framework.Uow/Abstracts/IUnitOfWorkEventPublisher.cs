@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IUnitOfWorkEventPublisher
-// Guid:79938703-3ec4-45ed-bcb6-dbee5c995b62
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/01 20:48:43
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Uow.Abstracts;
 

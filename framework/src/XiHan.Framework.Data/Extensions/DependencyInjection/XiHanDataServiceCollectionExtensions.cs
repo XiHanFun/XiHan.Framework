@@ -1,27 +1,18 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanDataServiceCollectionExtensions
-// Guid:a7b8c9d0-e1f2-7890-1234-567890123456
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/12 23:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using SqlSugar;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
-using XiHan.Framework.Data.Auditing;
+using XiHan.Framework.Core.Tracing;
 using XiHan.Framework.Data.SqlSugar.Auditing;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Connections;
 using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.HealthCheck;
 using XiHan.Framework.Data.SqlSugar.Initializers;
@@ -43,6 +34,12 @@ namespace XiHan.Framework.Data.Extensions.DependencyInjection;
 /// </summary>
 public static class XiHanDataServiceCollectionExtensions
 {
+    /// <summary>
+    /// 平台态（无租户上下文）哨兵值：租户过滤器据此放行全部数据。
+    /// 取 <see cref="long.MinValue"/> 确保不与平台租户(0)或业务租户(≥1)冲突。
+    /// </summary>
+    private const long PlatformTenantScopeSentinel = long.MinValue;
+
     /// <summary>
     /// 添加SqlSugar数据访问服务
     /// </summary>
@@ -74,15 +71,10 @@ public static class XiHanDataServiceCollectionExtensions
         services.TryAddScoped(typeof(ISoftDeleteRepositoryBase<,>), typeof(SqlSugarSoftDeleteRepository<,>));
         services.TryAddScoped(typeof(IAuditedRepository<,>), typeof(SqlSugarAuditedRepository<,>));
         services.TryAddScoped(typeof(IAggregateRootRepository<,>), typeof(SqlSugarAggregateRepository<,>));
-
         services.TryAddScoped<IDatabaseMetadataProvider, SqlSugarDatabaseMetadataProvider>();
 
-        // 审计上下文提供器（DefaultEntityAuditContextProvider）与差异日志写入器（NullEntityDiffLogWriter）
-        // 的默认注册已下沉至 XiHanAuditingModule（XiHan.Framework.Auditing）；本模块依赖它。
-
-        // 实体变更拦截器：基于命令级 AOP 自动捕获 INSERT / UPDATE / DELETE 差异日志
-        // 无需仓储显式调用 EnableDiffLogEvent，通过 ISqlSugarClient.UseEntityChangeInterceptor() 挂载
-        //services.TryAddScoped<EntityChangeInterceptor>();
+        // 动态连接注册器：单例——注册结果作用于整个 SqlSugarScope，与请求作用域无关
+        services.TryAddSingleton<IDynamicConnectionRegistrar, SqlSugarDynamicConnectionRegistrar>();
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
@@ -122,60 +114,6 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         return services;
-    }
-
-    /// <summary>
-    /// 添加 SqlSugar
-    /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <returns></returns>
-    private static SqlSugarScope CreateScope(IServiceProvider services)
-    {
-        var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
-        var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
-        var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
-
-        var connectionConfigs = options.ConnectionConfigs
-            .Select(connConfig =>
-            {
-                var config = new ConnectionConfig
-                {
-                    ConfigId = connConfig.ConfigId,
-                    ConnectionString = connConfig.ConnectionString,
-                    DbType = connConfig.DbType,
-                    IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
-                    InitKeyType = connConfig.InitKeyType,
-                    MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
-                    // appsettings 里 HitRate 是字段绑不上（恒为 0），此处归一化为默认权重，否则从库永不被选中
-                    SlaveConnectionConfigs = NormalizeSlaveHitRates(connConfig.SlaveConnectionConfigs, options),
-                    DbLinkName = connConfig.DbLinkName
-                };
-                if (connConfig.LanguageType.HasValue)
-                {
-                    config.LanguageType = connConfig.LanguageType.Value;
-                }
-                if (!string.IsNullOrWhiteSpace(connConfig.IndexSuffix))
-                {
-                    config.IndexSuffix = connConfig.IndexSuffix;
-                }
-                return config;
-            })
-            .ToList();
-
-        // 设置自定义全局雪花ID生成器
-        StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
-
-        // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
-        options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
-
-        return new SqlSugarScope(connectionConfigs, client =>
-        {
-            foreach (var config in connectionConfigs)
-            {
-                var dbProvider = client.GetConnectionScope(config.ConfigId);
-                configurator.Configure(dbProvider);
-            }
-        });
     }
 
     internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
@@ -228,31 +166,57 @@ public static class XiHanDataServiceCollectionExtensions
 
         if (options.EnableTenantFilter)
         {
-            // 租户过滤策略：
-            // - 当前无租户上下文（跨租户/平台运维）：不过滤
-            // - 当前有租户上下文：只看（自己租户数据 OR 全局模板 TenantId=0）
+            // 租户过滤策略（表达式内只允许出现 long/bool 标量：绝不引用 BasicTenantInfo 复杂对象、不对可空值取 .Value，
+            // 否则 SqlSugar 会把整个 BasicTenantInfo 当 SQL 参数交给驱动，报 “Can't write CLR type BasicTenantInfo”）：
+            // - 平台态（无租户上下文 / 上下文 TenantId 为空）：ResolveTenantScopeId 返回哨兵值 → 首个恒真子句放行全部
+            // - 有租户上下文：只看（本租户数据 OR 全局模板 TenantId=0）
             provider.QueryFilter.AddTableFilter<IMultiTenantEntity>(
-                entity => currentTenantAccessor.Current == null ||
-                          !currentTenantAccessor.Current.TenantId.HasValue ||
-                          entity.TenantId == currentTenantAccessor.Current.TenantId.Value ||
-                          entity.TenantId == 0);
+                entity => ResolveTenantScopeId(currentTenantAccessor) == PlatformTenantScopeSentinel ||
+                          entity.TenantId == 0 ||
+                          entity.TenantId == ResolveTenantScopeId(currentTenantAccessor));
         }
 
+        // 额外全局过滤器：直接把注册期存下的表达式树交给 SqlSugar 的非泛型重载
+        // AddTableFilter(Type, Expression, FilterJoinPosition)，零反射、可翻译为 SQL。
+        // 此处绝不能抛异常：本方法运行在 SqlSugarScope 的每上下文 configAction 里，
+        // 中途抛出会留下「半配置」客户端（过滤器/AOP 部分缺失）被后续访问静默复用——
+        // 表达式合法性已在 ValidateGlobalFilters（CreateScope 构建期，fail-fast）校验完毕。
         foreach (var filter in options.GlobalFilters)
         {
-            var entityType = filter.Key;
-            var funcType = typeof(Func<,>).MakeGenericType(entityType, typeof(bool));
-            var parameter = Expression.Parameter(entityType, "e");
-            var filterFunc = filter.Value;
-            var convertedParam = Expression.Convert(parameter, typeof(object));
-            var filterCall = Expression.Call(
-                Expression.Constant(filterFunc.Target),
-                filterFunc.Method,
-                convertedParam);
-            var lambda = Expression.Lambda(funcType, filterCall, parameter);
+            provider.QueryFilter.AddTableFilter(filter.Key, filter.Value);
+        }
+    }
 
-            var methodInfo = typeof(QueryFilterProvider).GetMethod("AddTableFilter")?.MakeGenericMethod(entityType);
-            methodInfo?.Invoke(provider.QueryFilter, [lambda]);
+    /// <summary>
+    /// 校验额外全局过滤器的表达式与实体类型匹配（构建期 fail-fast）
+    /// </summary>
+    /// <remarks>
+    /// 必须在 <see cref="global::SqlSugar.SqlSugarScope"/> 构建前完成校验：
+    /// 若把非法表达式留到查询期才暴露，异常会发生在每上下文 configAction 内，
+    /// 造成半配置客户端静默降级（无 AOP、后续 ConfigId 无过滤器）。
+    /// </remarks>
+    /// <param name="globalFilters">额外全局过滤器集合</param>
+    /// <exception cref="InvalidOperationException">表达式为空、参数个数不为 1 或参数类型与实体类型不匹配</exception>
+    private static void ValidateGlobalFilters(Dictionary<Type, LambdaExpression> globalFilters)
+    {
+        foreach (var (entityType, expression) in globalFilters)
+        {
+            if (expression is null)
+            {
+                throw new InvalidOperationException($"全局过滤器 [{entityType.FullName}] 的表达式为 null。");
+            }
+
+            if (expression.Parameters.Count != 1 || !expression.Parameters[0].Type.IsAssignableFrom(entityType) && !entityType.IsAssignableFrom(expression.Parameters[0].Type))
+            {
+                throw new InvalidOperationException(
+                    $"全局过滤器 [{entityType.FullName}] 的表达式参数与实体类型不匹配（参数：{string.Join(", ", expression.Parameters.Select(p => p.Type.Name))}）。" +
+                    $"请使用 XiHanSqlSugarCoreOptions.AddGlobalFilter<TEntity>(Expression<Func<TEntity, bool>>) 注册。");
+            }
+
+            if (expression.ReturnType != typeof(bool))
+            {
+                throw new InvalidOperationException($"全局过滤器 [{entityType.FullName}] 的表达式必须返回 bool，实际为 {expression.ReturnType.Name}。");
+            }
         }
     }
 
@@ -271,10 +235,16 @@ public static class XiHanDataServiceCollectionExtensions
     {
         var config = dbProvider.CurrentConnectionConfig;
 
-        // 设置超时时间
-        dbProvider.Ado.CommandTimeOut = options.SlowSqlThresholdMilliseconds / 1000;
+        // ADO 命令超时（执行语义）与慢 SQL 日志阈值（观测语义）是两个独立职责，绝不能互相挪用：
+        // 曾用「SlowSqlThresholdMilliseconds / 1000」赋值此处——默认把所有 SQL 砍到 10 秒（SqlSugar 出厂默认 300 秒被静默压缩），
+        // 阈值调低到 1 秒以下时整除得 0（ADO.NET 语义 = 无限等待），且超时==阈值使慢 SQL 永远先被驱动杀掉、慢日志形同虚设。
+        // 仅当显式配置了正数才覆盖；0/负值不覆盖，沿用 SqlSugar 默认 300 秒。
+        if (options.CommandTimeoutSeconds > 0)
+        {
+            dbProvider.Ado.CommandTimeOut = options.CommandTimeoutSeconds;
+        }
 
-        // 组合 OnLogExecuting 处理器（SQL 日志 + 实体变更拦截器）
+        // 组合 OnLogExecuting 处理器（SQL 日志）
         // 使用本地委托组合后再赋值，避免 SqlSugar 仅写属性无法 += 的问题
         Action<string, SugarParameter[]>? onLogExecuting = null;
 
@@ -286,35 +256,22 @@ public static class XiHanDataServiceCollectionExtensions
             };
         }
 
-        // 实体变更拦截器：始终附加（解析自 Scope，业务层可通过注册 Null 实现停用）
-        onLogExecuting += (sql, parameters) =>
-        {
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var interceptor = scope.ServiceProvider.GetService<Auditing.EntityChangeInterceptor>();
-                interceptor?.OnDataExecuting(sql, parameters);
-            }
-            catch
-            {
-                // 拦截器异常不影响主业务
-            }
-        };
-
         if (onLogExecuting is not null)
         {
             dbProvider.Aop.OnLogExecuting = onLogExecuting;
         }
 
-        if (options.EnableSqlErrorLog)
+        // OnError：SQL 异常日志（可选）+ DB Span 记录异常（OTel 未监听时零开销）
+        dbProvider.Aop.OnError = ex =>
         {
-            dbProvider.Aop.OnError = ex =>
+            if (options.EnableSqlErrorLog)
             {
                 HandleSqlOnErrorLog(config, ex);
-            };
-        }
+            }
+            RecordDbActivity(dbProvider, config, ex.Sql ?? string.Empty, ex);
+        };
 
-        // 组合 OnLogExecuted 处理器（慢 SQL 日志 + 实体变更拦截器）
+        // 组合 OnLogExecuted 处理器（慢 SQL 日志 + DB Span）
         Action<string, SugarParameter[]>? onLogExecuted = null;
 
         if (options.EnableSlowSqlLog)
@@ -325,19 +282,10 @@ public static class XiHanDataServiceCollectionExtensions
             };
         }
 
-        // 实体变更拦截器：始终附加
-        onLogExecuted += (sql, parameters) =>
+        // 数据库 Span：为每条执行完成的 SQL 补记 DB Client span（挂当前请求 span 下；OTel 未监听时零开销）
+        onLogExecuted += (sql, _) =>
         {
-            try
-            {
-                using var scope = scopeFactory.CreateScope();
-                var interceptor = scope.ServiceProvider.GetService<Auditing.EntityChangeInterceptor>();
-                interceptor?.OnDataExecuted(sql, parameters);
-            }
-            catch
-            {
-                // 拦截器异常不影响主业务
-            }
+            RecordDbActivity(dbProvider, config, sql, null);
         };
 
         if (onLogExecuted is not null)
@@ -361,6 +309,78 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         options.ConfigureDbAction?.Invoke(dbProvider);
+    }
+
+    /// <summary>
+    /// 添加 SqlSugar
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <returns></returns>
+    private static SqlSugarScope CreateScope(IServiceProvider services)
+    {
+        var options = services.GetRequiredService<IOptions<XiHanSqlSugarCoreOptions>>().Value;
+        var idGenerator = services.GetRequiredService<IDistributedIdGenerator<long>>();
+        var configurator = services.GetRequiredService<ISqlSugarConnectionConfigurator>();
+
+        var connectionConfigs = options.ConnectionConfigs
+            .Select(connConfig =>
+            {
+                var config = new ConnectionConfig
+                {
+                    ConfigId = connConfig.ConfigId,
+                    ConnectionString = connConfig.ConnectionString,
+                    DbType = connConfig.DbType,
+                    IsAutoCloseConnection = connConfig.IsAutoCloseConnection,
+                    InitKeyType = connConfig.InitKeyType,
+                    MoreSettings = BuildMoreSettings(connConfig.MoreSettings, options),
+                    // appsettings 里 HitRate 是字段绑不上（恒为 0），此处归一化为默认权重，否则从库永不被选中
+                    SlaveConnectionConfigs = NormalizeSlaveHitRates(connConfig.SlaveConnectionConfigs, options),
+                    DbLinkName = connConfig.DbLinkName
+                };
+                if (connConfig.LanguageType.HasValue)
+                {
+                    config.LanguageType = connConfig.LanguageType.Value;
+                }
+                if (!string.IsNullOrWhiteSpace(connConfig.IndexSuffix))
+                {
+                    config.IndexSuffix = connConfig.IndexSuffix;
+                }
+                return config;
+            })
+            .ToList();
+
+        // 设置自定义全局雪花ID生成器
+        StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;
+
+        // 构建期 fail-fast 校验额外全局过滤器：非法表达式绝不能留到每上下文 configAction 里才暴露（会造成半配置客户端静默降级）
+        ValidateGlobalFilters(options.GlobalFilters);
+
+        // 构建 SqlSugarScope 前，把已填好框架默认值的原生连接配置完整交给调用方定制（想改就改，不改吃默认）
+        options.ConfigureConnectionConfigs?.Invoke(connectionConfigs);
+
+        return new SqlSugarScope(connectionConfigs, client =>
+        {
+            foreach (var config in connectionConfigs)
+            {
+                var dbProvider = client.GetConnectionScope(config.ConfigId);
+                configurator.Configure(dbProvider);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 解析当前租户过滤标量：有租户上下文返回其 TenantId，否则返回平台哨兵值。
+    /// </summary>
+    /// <remarks>
+    /// 供全局租户 QueryFilter 使用：仅返回 <see cref="long"/> 标量，绝不向过滤表达式泄漏 BasicTenantInfo 复杂对象，
+    /// 且对空上下文以哨兵兜底而非取 <c>.Value</c>，从而规避 SqlSugar 表达式翻译期的类型/空值异常。
+    /// SqlSugar 对过滤表达式按查询即时求值，本方法随之每次查询重算，保证租户上下文动态生效。
+    /// </remarks>
+    /// <param name="currentTenantAccessor">当前租户访问器</param>
+    /// <returns>当前租户 Id 或平台哨兵值</returns>
+    private static long ResolveTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
+    {
+        return currentTenantAccessor.Current?.TenantId ?? PlatformTenantScopeSentinel;
     }
 
     /// <summary>
@@ -421,5 +441,48 @@ public static class XiHanDataServiceCollectionExtensions
 
         var sqlInfo = UtilMethods.GetSqlString(config.DbType, sql, parameters);
         LogHelper.Warn($"慢SQL({elapsedMs}ms): {sqlInfo}");
+    }
+
+    /// <summary>
+    /// 记录数据库 Span（OpenTelemetry Tracing）
+    /// </summary>
+    /// <remarks>
+    /// 在 OnLogExecuted/OnError 中按已知执行耗时「回溯」创建一个 ActivityKind.Client 子 span（挂当前请求 Activity 下），
+    /// 无跨回调状态、无泄漏；OTel 未激活（无监听者）时直接返回，零开销。不覆盖既有 SQL 日志/实体变更拦截器。
+    /// </remarks>
+    /// <param name="dbProvider">SqlSugar 作用域提供者</param>
+    /// <param name="config">连接配置</param>
+    /// <param name="sql">SQL 语句</param>
+    /// <param name="error">异常（成功路径为 null）</param>
+    private static void RecordDbActivity(SqlSugarScopeProvider dbProvider, ConnectionConfig config, string sql, Exception? error)
+    {
+        if (!XiHanActivitySources.DataSource.HasListeners())
+        {
+            return;
+        }
+
+        var elapsed = dbProvider.Ado.SqlExecutionTime;
+        var end = DateTimeOffset.UtcNow;
+        var start = end - (elapsed > TimeSpan.Zero ? elapsed : TimeSpan.Zero);
+
+        using var activity = XiHanActivitySources.DataSource.StartActivity(
+            "db.query",
+            ActivityKind.Client,
+            Activity.Current?.Context ?? default,
+            startTime: start);
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetTag("db.system", config.DbType.ToString());
+        activity.SetTag("db.statement", sql);
+        activity.SetEndTime(end.UtcDateTime);
+
+        if (error is not null)
+        {
+            activity.SetStatus(ActivityStatusCode.Error, error.Message);
+            activity.AddException(error);
+        }
     }
 }

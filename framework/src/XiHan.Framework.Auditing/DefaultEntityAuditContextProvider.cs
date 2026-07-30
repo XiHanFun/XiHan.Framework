@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultEntityAuditContextProvider
-// Guid:a1a10747-d886-47e5-bc66-663e6e85bb39
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/05/12 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
@@ -73,22 +62,5 @@ public class DefaultEntityAuditContextProvider : IEntityAuditContextProvider
         return !fullName.StartsWith("XiHan.Framework.Auditing", StringComparison.Ordinal) &&
                !fullName.Contains("AuditLog", StringComparison.Ordinal) &&
                !fullName.Contains("DiffLog", StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// 按表名判断是否应审计（用于 SQL 级拦截器）
-    /// </summary>
-    /// <param name="tableName">数据库表名</param>
-    /// <returns>是否审计</returns>
-    public bool ShouldAuditByName(string tableName)
-    {
-        if (string.IsNullOrWhiteSpace(tableName))
-        {
-            return false;
-        }
-
-        return !tableName.Contains("AuditLog", StringComparison.OrdinalIgnoreCase) &&
-               !tableName.Contains("DiffLog", StringComparison.OrdinalIgnoreCase) &&
-               !tableName.Contains("SysLog", StringComparison.OrdinalIgnoreCase);
     }
 }

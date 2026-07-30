@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IDistributedCacheOptionsConfigurator
-// Guid:9d1d9d15-8d5f-4026-b026-2e4cf3fa116a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/07 17:40:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Distributed;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MessageEnvelope
-// Guid:74526355-04f8-46d9-a3c1-ccf50f9f3327
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/04 14:58:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Messaging.Models;
 

@@ -1,17 +1,7 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanExceptionLoggingMiddleware
-// Guid:3f84c7a1-7ab7-4bd2-9f6c-5a6f6a18e7b4
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/08 21:00:00
-// ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>
-
+using System.Diagnostics;
 using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Filters;
@@ -49,6 +39,14 @@ public class XiHanExceptionLoggingMiddleware(RequestDelegate next, ILogger<XiHan
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        // 未捕获异常落到当前请求 span：trace 后端可见错误（OTel 未激活时 Activity.Current 为 null，安全跳过）
+        var activity = Activity.Current;
+        if (activity is not null)
+        {
+            activity.AddException(exception);
+            activity.SetStatus(ActivityStatusCode.Error, exception.Message);
+        }
+
         var requestContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
         var traceId = requestContext?.TraceId ?? ResolveTraceId(context);
         // 与 MVC 异常过滤器共用同一套异常→状态码映射，保证语义一致（仅取状态码，响应由 MVC 过滤器产出）

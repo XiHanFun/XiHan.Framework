@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanWebApiServiceCollectionExtensions
-// Guid:c9d0e1f2-3456-7890-abcd-ef1234567890
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/06 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -36,6 +25,7 @@ using XiHan.Framework.Auditing.Workers;
 using XiHan.Framework.Auditing.Writers;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Web.Api.Security.OpenApi;
+using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Api.TenantResolvers;
 
 namespace XiHan.Framework.Web.Api.Extensions.DependencyInjection;
@@ -74,6 +64,12 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.TryAddScoped<ITraceIdProvider, HttpTraceIdProvider>();
         services.Configure<XiHanOpenApiSecurityOptions>(configuration.GetSection(XiHanOpenApiSecurityOptions.SectionName));
         services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
+
+        // 会话闸门：默认放行（未接入会话体系的宿主零影响），应用侧用 Replace 注入真实现。
+        // 中间件本身是 IMiddleware，需按类型注册。
+        services.Configure<XiHanSessionStateOptions>(configuration.GetSection(XiHanSessionStateOptions.SectionName));
+        services.TryAddScoped<ISessionStateGate, NullSessionStateGate>();
+        services.TryAddScoped<XiHanSessionStateMiddleware>();
 
         return services;
     }

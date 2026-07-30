@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IEntityAuditContextProvider
-// Guid:c8f577f7-a0eb-4f28-b312-ec3ac2d35d12
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 16:27:30
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Auditing;
 
@@ -31,11 +20,4 @@ public interface IEntityAuditContextProvider
     /// <param name="entityType">实体类型</param>
     /// <returns>是否审计</returns>
     bool ShouldAudit(Type entityType);
-
-    /// <summary>
-    /// 按数据库表名判断是否应审计（用于 SQL 命令级拦截器）
-    /// </summary>
-    /// <param name="tableName">数据库表名</param>
-    /// <returns>是否审计</returns>
-    bool ShouldAuditByName(string tableName);
 }

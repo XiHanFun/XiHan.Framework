@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LarkModel
-// Guid:9fcd68c0-c102-49c9-9ca4-73a6e58c3832
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/05 01:08:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel;
 using System.Text.Json.Serialization;

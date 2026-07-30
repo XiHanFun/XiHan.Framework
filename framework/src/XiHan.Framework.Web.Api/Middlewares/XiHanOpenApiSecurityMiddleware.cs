@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOpenApiSecurityMiddleware
-// Guid:fb5111ef-1775-4ed3-bc0a-b76de69f5f0f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/13 23:36:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Cryptography;
 using System.Text;
@@ -20,6 +9,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
+using XiHan.Framework.Auditing;
 using XiHan.Framework.Security.Cryptography;
 using XiHan.Framework.Utils.Security.Cryptography;
 using XiHan.Framework.Web.Api.Constants;
@@ -226,8 +216,11 @@ public class XiHanOpenApiSecurityMiddleware(
                     encryptedIvHeader,
                     out var resolvedIvBase64);
 
+                // 请求流必须换成明文（后续模型绑定要用），但 Items[RequestBodyItemKey] 是**日志副本**：
+                // 本中间件跑在请求日志中间件之后，直接塞明文会把上游已脱敏的副本覆盖掉，
+                // 导致解密后的明文请求体经异常日志原样落库。故日志副本只放脱敏版。
                 ReplaceRequestBody(context.Request, plaintextBody);
-                context.Items[XiHanWebApiConstants.RequestBodyItemKey] = plaintextBody;
+                context.Items[XiHanWebApiConstants.RequestBodyItemKey] = LogSanitizer.MaskSensitiveData(plaintextBody);
                 if (!string.IsNullOrWhiteSpace(resolvedIvBase64))
                 {
                     context.Response.Headers[OpenApiSecurityConstants.EncryptIvHeaderName] = resolvedIvBase64;

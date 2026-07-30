@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IClock
-// Guid:59166725-1680-4147-b8df-f5fd597abb2b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/24 05:18:55
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Timing;
 

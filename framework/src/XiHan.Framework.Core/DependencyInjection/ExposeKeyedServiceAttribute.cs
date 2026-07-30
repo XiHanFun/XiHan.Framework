@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExposeKeyedServiceAttribute
-// Guid:dc960d76-a572-4d56-8212-23e6c5e4e840
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/27 21:53:57
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Exceptions;
 

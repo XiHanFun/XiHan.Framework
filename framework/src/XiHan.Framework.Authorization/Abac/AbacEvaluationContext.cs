@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AbacEvaluationContext
-// Guid:740fa454-4d7c-4828-b4ad-2ed8f4af67b7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/10 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Authorization.Abac;
 

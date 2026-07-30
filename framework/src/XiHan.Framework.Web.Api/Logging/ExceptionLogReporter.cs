@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExceptionLogReporter
-// Guid:6b1f0d2a-9c84-4e57-8d2b-2f4a8c6e1b73
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/19 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -71,8 +60,11 @@ public static class ExceptionLogReporter
                 ExceptionType = exception.GetType().FullName ?? exception.GetType().Name,
                 ExceptionMessage = exception.Message,
                 ExceptionStackTrace = exception.StackTrace,
-                RequestHeaders = SafeSerialize(context.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString())),
-                RequestParams = SafeSerialize(BuildRequestParams(context)),
+                // 请求头按头名整体掩码（Authorization/Cookie/ApiKey 等），请求参数（route + query）走通用脱敏；
+                // 请求体取的是中间件放进 Items 的副本，上游已脱敏。
+                RequestHeaders = SafeSerialize(LogSanitizer.MaskHeaders(
+                    context.Request.Headers.Select(header => new KeyValuePair<string, string?>(header.Key, header.Value.ToString())))),
+                RequestParams = LogSanitizer.MaskSensitiveData(SafeSerialize(BuildRequestParams(context))),
                 RequestBody = ResolveRequestBody(context),
                 RemoteIp = requestContext?.RemoteIp ?? context.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = requestContext?.UserAgent ?? context.Request.Headers.UserAgent.ToString()

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptCompilationException
-// Guid:bdb5f46a-f8a8-4a0b-b48c-f2d09e6c4466
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 06:17:58
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;

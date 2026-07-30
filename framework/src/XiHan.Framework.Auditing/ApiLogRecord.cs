@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ApiLogRecord
-// Guid:c4d5e6f7-8901-2345-6789-0abcdef12345
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/08 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Auditing;
 
@@ -63,6 +52,11 @@ public class ApiLogRecord
     /// 请求路径
     /// </summary>
     public string Path { get; set; } = string.Empty;
+
+    /// <summary>
+    /// API 名称（端点显示名，Minimal API 亦有值，作为路径之外的可读标识）
+    /// </summary>
+    public string? ApiName { get; set; }
 
     /// <summary>
     /// 控制器

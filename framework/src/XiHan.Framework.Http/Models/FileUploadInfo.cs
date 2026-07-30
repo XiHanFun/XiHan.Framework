@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FileUploadInfo
-// Guid:b69a8917-2aff-4ccd-8ef2-83e83256d941
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/07/05 01:20:41
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Http.Models;
 

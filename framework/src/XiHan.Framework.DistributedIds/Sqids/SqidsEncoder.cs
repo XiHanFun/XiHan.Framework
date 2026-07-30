@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqidsEncoder
-// Guid:639626c9-abd6-4c1b-b633-731cc883a866
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/08 17:42:58
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Numerics;
 using System.Text;

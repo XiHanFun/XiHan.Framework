@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Workflow</Title>
+        <AssemblyName>XiHan.Framework.Workflow</AssemblyName>
+        <PackageId>XiHan.Framework.Workflow</PackageId>
+        <Description>曦寒框架工作流库（图执行引擎、标准活动库、审批任务、表达式求值、定时器调度、内存存储默认实现）</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Caching\XiHan.Framework.Caching.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.DistributedIds\XiHan.Framework.DistributedIds.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.EventBus.Abstractions\XiHan.Framework.EventBus.Abstractions.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Script\XiHan.Framework.Script.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Timing\XiHan.Framework.Timing.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Workflow.Abstractions\XiHan.Framework.Workflow.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>

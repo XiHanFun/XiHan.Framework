@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:AssemblyFinder
-// Guid:f4f61066-31b7-4ef6-acc3-f59ec25af356
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/24 23:02:32
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 using XiHan.Framework.Core.Modularity;

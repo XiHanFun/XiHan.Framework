@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ApiResponseCodes
-// Guid:5ad3b310-4347-4d6e-b9e4-8271db55e01e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -170,6 +159,18 @@ public enum ApiResponseCodes
     /// </summary>
     [Description("资源已永久删除")]
     Gone = 410,
+
+    /// <summary>
+    /// 会话已锁定。
+    /// 与 401 的区别在于：用户身份<b>仍然有效</b>，只是当前会话被锁住——客户端应引导用户解锁，
+    /// <b>而不是</b>跳转登录页。
+    /// <para>
+    /// 框架不假设锁定的<b>原因</b>：锁屏只是应用侧可能的一种，也可能是风控挂起、强制改密、
+    /// 二次验证未完成等。原因与解锁方式由应用侧定义。
+    /// </para>
+    /// </summary>
+    [Description("会话已锁定")]
+    Locked = 423,
 
     /// <summary>
     /// 请求携带的媒体类型不受支持。

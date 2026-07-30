@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CommandLineBinder
-// Guid:a7b983d2-aa3b-41ea-9d02-1b156ae0afcc
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel;
 using System.Reflection;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PageConverter
-// Guid:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 15:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 using XiHan.Framework.Domain.Shared.Paging.Models;
@@ -91,13 +80,6 @@ public static class PageConverter
                 Keyword = cond.Keyword != null
                     ? new QueryKeyword { Value = cond.Keyword.Value, Fields = [.. cond.Keyword.Fields] }
                     : null
-            },
-            Behavior = new QueryBehavior
-            {
-                DisablePaging = request.Behavior.DisablePaging,
-                DisableDefaultSort = request.Behavior.DisableDefaultSort,
-                IgnoreTenant = request.Behavior.IgnoreTenant,
-                IgnoreSoftDelete = request.Behavior.IgnoreSoftDelete
             }
         };
     }
@@ -114,15 +96,6 @@ public static class PageConverter
 
         // 合并分页参数
         merged.Page = new PageRequestMetadata(second.Page.PageIndex, second.Page.PageSize);
-
-        // 合并查询行为
-        merged.Behavior = new QueryBehavior
-        {
-            DisablePaging = second.Behavior.DisablePaging,
-            DisableDefaultSort = second.Behavior.DisableDefaultSort,
-            IgnoreTenant = second.Behavior.IgnoreTenant,
-            IgnoreSoftDelete = second.Behavior.IgnoreSoftDelete
-        };
 
         // 合并过滤条件
         foreach (var filter in second.Conditions.Filters)

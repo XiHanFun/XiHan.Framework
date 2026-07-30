@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ParameterReplacer
-// Guid:c2e7b024-02e7-4d9a-9a43-693c5891da9d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/13 04:19:03
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
 

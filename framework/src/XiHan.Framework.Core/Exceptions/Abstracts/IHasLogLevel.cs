@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IHasLogLevel
-// Guid:379d82c0-7354-45f0-93a8-d271aba2d9b3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/23 00:54:36
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 

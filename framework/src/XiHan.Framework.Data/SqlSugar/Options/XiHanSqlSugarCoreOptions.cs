@@ -1,18 +1,8 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanSqlSugarCoreOptions
-// Guid:e2459dc8-3292-48e6-9955-cae7a0503ad0
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2023/11/15 08:40:52
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
+using System.Linq.Expressions;
 
 namespace XiHan.Framework.Data.SqlSugar.Options;
 
@@ -72,9 +62,29 @@ public class XiHanSqlSugarCoreOptions
     public bool EnableAutoDeleteQueryFilter { get; set; } = true;
 
     /// <summary>
-    /// 全局过滤器
+    /// 额外全局过滤器（实体类型 → 过滤表达式树）
     /// </summary>
-    public Dictionary<Type, Func<object, bool>> GlobalFilters { get; set; } = [];
+    /// <remarks>
+    /// 仅支持代码方式注册（表达式树无法经 appsettings 绑定），推荐使用类型安全的
+    /// <see cref="AddGlobalFilter{TEntity}"/> 注册；表达式须为可翻译成 SQL 的形态
+    /// （成员访问/标量比较），不能是编译后委托的调用。
+    /// 框架在构建 SqlSugarScope 前做 fail-fast 校验，非法表达式在启动期即报错。
+    /// </remarks>
+    public Dictionary<Type, LambdaExpression> GlobalFilters { get; set; } = [];
+
+    /// <summary>
+    /// 注册额外全局过滤器（类型安全入口）
+    /// </summary>
+    /// <typeparam name="TEntity">实体类型</typeparam>
+    /// <param name="filter">过滤表达式（须可翻译成 SQL：成员访问/标量比较，勿调用外部方法）</param>
+    /// <returns>选项自身（链式调用）</returns>
+    public XiHanSqlSugarCoreOptions AddGlobalFilter<TEntity>(Expression<Func<TEntity, bool>> filter)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        GlobalFilters[typeof(TEntity)] = filter;
+        return this;
+    }
 
     /// <summary>
     /// SQL日志动作
@@ -149,7 +159,22 @@ public class XiHanSqlSugarCoreOptions
     /// <summary>
     /// 慢SQL阈值（毫秒）
     /// </summary>
+    /// <remarks>
+    /// 纯观测用途：仅用于慢 SQL 日志判定（<see cref="EnableSlowSqlLog"/>），不影响语句执行。
+    /// 命令执行超时请配置 <see cref="CommandTimeoutSeconds"/>，两者职责独立；
+    /// 若需超时保护，务必保证超时明显大于本阈值，否则慢 SQL 会先被驱动杀掉、慢日志永远记不到。
+    /// </remarks>
     public int SlowSqlThresholdMilliseconds { get; set; } = 10000;
+
+    /// <summary>
+    /// ADO 命令执行超时（秒）
+    /// </summary>
+    /// <remarks>
+    /// 默认 300 秒（与 SqlSugar 出厂默认一致）；配置 0 或负值表示不覆盖、沿用 SqlSugar 默认。
+    /// 注意 ADO.NET 的 <c>CommandTimeout = 0</c> 语义是无限等待，框架刻意不允许经此选项设置为 0。
+    /// 个别长任务（DDL、批量导入、导出统计）需要更长超时时，在调用点用 <c>db.Ado.CommandTimeOut</c> 临时覆盖。
+    /// </remarks>
+    public int CommandTimeoutSeconds { get; set; } = 300;
 
     /// <summary>
     /// 是否启用实体差异日志

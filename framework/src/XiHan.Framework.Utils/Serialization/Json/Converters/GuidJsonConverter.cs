@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:GuidJsonConverter
-// Guid:4a094827-1c6b-0b5a-9948-3d2c1b0a9876
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/29 10:18:04
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultAbacAttributeCollector
-// Guid:5f407a23-2f87-4e1c-ab95-96f9d2711e90
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/10 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 using System.Security.Claims;

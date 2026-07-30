@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PlainTextErrorGenerator
-// Guid:3e4f5a6b-8c9d-0e1f-2a3b-4c5d6e7f8a9b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/01/29 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Security.ErrorObfuscation.Constants;
 using XiHan.Framework.Utils.Security.ErrorObfuscation.Models;

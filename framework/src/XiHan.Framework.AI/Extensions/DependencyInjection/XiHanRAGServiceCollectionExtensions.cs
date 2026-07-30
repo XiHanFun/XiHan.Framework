@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanRAGServiceCollectionExtensions
-// Guid:b2c3d4e5-f6a7-4b15-9d15-1a1b1c1d1e15
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/05 16:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,10 +21,17 @@ public static class XiHanRAGServiceCollectionExtensions
     /// 全部 <c>TryAdd</c>，应用层可覆盖任一默认实现。
     /// </remarks>
     /// <param name="services">服务集合</param>
+    /// <param name="configureVector">向量集合配置（集合名与维度），不传用默认值</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddXiHanRAG(this IServiceCollection services)
+    public static IServiceCollection AddXiHanRAG(this IServiceCollection services, Action<KnowledgeVectorOptions>? configureVector = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        var vectorOptions = services.AddOptions<KnowledgeVectorOptions>();
+        if (configureVector is not null)
+        {
+            vectorOptions.Configure(configureVector);
+        }
 
         services.TryAddSingleton<IChunkingStrategy, FixedWindowChunkingStrategy>();
         services.TryAddSingleton<IKnowledgeIngestor, DefaultKnowledgeIngestor>();

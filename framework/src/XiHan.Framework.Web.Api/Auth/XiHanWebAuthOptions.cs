@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanWebAuthOptions
-// Guid:b8c4d5e6-7f9a-4b1c-8d2e-3f4a5b6c7d8e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/06 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Web.Api.Auth;
 

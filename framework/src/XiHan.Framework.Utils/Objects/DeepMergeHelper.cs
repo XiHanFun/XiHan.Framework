@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DeepMergeHelper
-// Guid:e49e99ba-cfa7-453b-b25f-3aeb949463b6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/03/14 14:09:44
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections;
 using System.Collections.Concurrent;

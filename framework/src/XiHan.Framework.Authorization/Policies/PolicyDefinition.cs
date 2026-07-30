@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PolicyDefinition
-// Guid:a5b6c7d8-e9f0-1234-8901-123456789034
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/06 10:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Authorization.Policies;
 

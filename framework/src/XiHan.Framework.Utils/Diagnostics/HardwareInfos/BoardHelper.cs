@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BoardHelper
-// Guid:18e2a8ac-4000-4726-ad24-60b3e84249e7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2023/10/20 15:00:40
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Runtime.InteropServices;
 using XiHan.Framework.Utils.Caching;

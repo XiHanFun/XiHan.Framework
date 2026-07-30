@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryDistributedLock
-// Guid:5b6c7d8e-9f0a-4bc2-b3d4-5e6f7a8b9c0d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using XiHan.Framework.Caching.Distributed.Abstracts;

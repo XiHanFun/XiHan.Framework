@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LogHelperConcurrencyTests
-// Guid:b78e123f-91c3-4e2f-ba67-1d8a9b6c4e5f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/18 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using XiHan.Framework.Utils.ConsoleTools;

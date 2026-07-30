@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SpecificationExtensions
-// Guid:e5f6a7b8-c9d0-5678-9012-345678901234
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/12 22:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;

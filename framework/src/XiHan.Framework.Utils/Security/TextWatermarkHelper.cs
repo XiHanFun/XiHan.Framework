@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TextWatermarkHelper
-// Guid:e752c4e9-5d23-4c86-8b6c-fb3a9d8e7c5f
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/04 18:57:13
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using System.Text.RegularExpressions;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UsageExample
-// Guid:e6c12f01-7ad5-4de7-ac1b-5c77ffc3a069
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.DevTools.CommandLine;
 using XiHan.Framework.DevTools.CommandLine.Arguments;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ApplicationInitializationContextExtensions
-// Guid:2a868cbd-ce74-4eb0-a130-097955dd029e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/10 06:48:07
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.DependencyInjection;

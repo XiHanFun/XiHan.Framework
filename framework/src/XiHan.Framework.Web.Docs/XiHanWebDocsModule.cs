@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanWebDocsModule
-// Guid:8d8f4d0c-4b66-4d52-b9b7-ef10c658842a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 02:39:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Scalar.AspNetCore;
 using XiHan.Framework.Core.Application;

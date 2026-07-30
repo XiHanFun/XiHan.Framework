@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SimpleBatchStateCheckerContext
-// Guid:1ca1dede-d837-46c3-acee-2067291ad772
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/24 23:23:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Core.SimpleStateChecking;
 

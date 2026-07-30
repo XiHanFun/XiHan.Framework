@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SqlSugarReadOnlyRepository
-// Guid:5f3a1f88-6d0e-4ab3-8f41-3a6d9c2b8e74
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/25 05:52:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Linq.Expressions;
@@ -228,7 +217,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     public async Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await CreateQueryable().CountAsync(cancellationToken);
+        return await CreateQueryable()
+            .CountAsync(cancellationToken);
     }
 
     /// <summary>
@@ -410,7 +400,8 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
         ArgumentNullException.ThrowIfNull(queryDto);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await CreateQueryable().ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
+        return await CreateQueryable()
+            .ToPageResultAutoAsync(queryDto, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -442,5 +433,4 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     #endregion
-
 }

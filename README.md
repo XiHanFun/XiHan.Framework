@@ -1,15 +1,46 @@
-![logo](./assets/logo.png)
+<div align="center">
+<img src="./assets/banner.png" alt="XiHan.Framework" />
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XiHanFun/XiHan.Framework)
-[![NuGet](https://img.shields.io/nuget/v/XiHan.Framework.Core?label=NuGet&color=blue)](https://www.nuget.org/packages?q=XiHan.Framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple)](https://dotnet.microsoft.com/)
+<h1>XiHan.Framework</h1>
 
-[曦寒懿官方交流群](https://qm.qq.com/q/qYp1Urv3z2) 462371834 | [在线文档](https://docs.xihanfun.com)
+<p><b>快速、轻量、高效、用心的 .NET 模块化开发框架</b></p>
 
-# XiHan.Framework
+<p>基于 .NET 10 构建 · 61 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
 
-快速、轻量、高效、用心的 .NET 模块化开发框架，基于 .NET 10 构建。
+<p>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat-square&logo=github&label=Stars&color=1f6feb" /></a>
+  <a href="https://gitee.com/XiHanFun/XiHan.Framework"><img alt="Gitee Stars" src="https://gitee.com/XiHanFun/XiHan.Framework/badge/star.svg" /></a>
+  <a href="https://atomgit.com/XiHanFun/XiHan.Framework"><img alt="AtomGit Stars" src="https://atomgit.com/XiHanFun/XiHan.Framework/star/badge.svg" /></a>
+</p>
+<p>
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+  <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
+  <img alt="Modules" src="https://img.shields.io/badge/Modules-61-1f6feb?style=flat-square" />
+  <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
+  <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
+</p>
+
+
+
+<p>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/github/license/XiHanFun/XiHan.Framework?style=flat-square&color=green" /></a>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/commits"><img alt="Last Commit" src="https://img.shields.io/github/last-commit/XiHanFun/XiHan.Framework?style=flat-square&color=blueviolet" /></a>
+  <img alt="Commit Activity" src="https://img.shields.io/github/commit-activity/m/XiHanFun/XiHan.Framework?style=flat-square" />
+  <a href="https://github.com/XiHanFun/XiHan.Framework/issues"><img alt="Issues" src="https://img.shields.io/github/issues/XiHanFun/XiHan.Framework?style=flat-square" /></a>
+  <a href="https://github.com/XiHanFun/XiHan.Framework/graphs/contributors"><img alt="Contributors" src="https://img.shields.io/github/contributors/XiHanFun/XiHan.Framework?style=flat-square" /></a>
+  <img alt="Repo Size" src="https://img.shields.io/github/repo-size/XiHanFun/XiHan.Framework?style=flat-square" />
+</p>
+
+<p>
+  <a href="https://deepwiki.com/XiHanFun/XiHan.Framework"><img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
+  <a href="https://docs.xihanfun.com"><img alt="Docs" src="https://img.shields.io/badge/Docs-docs.xihanfun.com-2496ED?style=flat-square&logo=readthedocs&logoColor=white" /></a>
+  <a href="https://qm.qq.com/q/qYp1Urv3z2"><img alt="QQ Group" src="https://img.shields.io/badge/QQ_Group-462371834-EB1923?style=flat-square&logo=tencentqq&logoColor=white" /></a>
+</p>
+<p>
+  <a href="https://trendshift.io/repositories/83128?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-83128" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/83128/daily?language=C%23" alt="XiHanFun%2FXiHan.Framework | Trendshift" width="250" height="55"/></a>
+</p>
+
+</div>
 
 ## 概述
 
@@ -30,21 +61,21 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | --- | --- | --- |
 | 运行时 | .NET | 10.0 |
 | 语言 | C# | Latest |
-| ORM | SqlSugar | 5.1.4 |
-| 日志 | Serilog | 10.0.0 |
-| 缓存 | HybridCache + StackExchange.Redis | 10.5.0 |
-| AOP | Castle DynamicProxy | 5.2.1 |
-| 加密 | BouncyCastle | 2.6.2 |
-| 序列化 | System.Text.Json + Newtonsoft.Json | 13.0.4 |
-| 模板引擎 | Scriban | 7.1.0 |
-| AI | Semantic Kernel + MCP | 1.74.0 / 1.2.0 |
-| HTTP 韧性 | Polly | 10.0.6 |
-| gRPC | Grpc.AspNetCore | 2.76.0 |
+| ORM | SqlSugarCore | 5.1.4.216 |
+| 日志 | Serilog.AspNetCore | 10.0.0 |
+| 缓存 | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis | 10.7.0 / 10.0.9 |
+| AOP | Castle.Core (DynamicProxy) | 5.2.1 |
+| 加密 | BouncyCastle.Cryptography | 2.6.2 |
+| 序列化 | System.Text.Json + Newtonsoft.Json | 内置 / 13.0.4 |
+| 模板引擎 | Scriban | 7.2.5 |
+| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.7.0 / 1.13.0 / 1.4.1 |
+| HTTP 韧性 | Microsoft.Extensions.Http.Polly | 10.0.9 |
+| gRPC | Grpc.AspNetCore | 2.80.0 |
 | 实时通信 | ASP.NET Core SignalR | - |
-| API 文档 | Scalar + Swashbuckle | 2.14.1 / 10.1.7 |
-| IP 定位 | ip2region | 3.0.2 |
-| 消息通知 | MailKit + Telegram.Bot | 4.16.0 / 22.9.6 |
-| 测试 | xunit v3 + coverlet | 3.2.2 / 8.0.1 |
+| API 文档 | Scalar.AspNetCore + Swashbuckle.AspNetCore | 2.16.11 / 10.2.3 |
+| IP 定位 | IP2Region.Net | 3.0.2 |
+| 消息通知 | MailKit + Telegram.Bot | 4.17.0 / 22.10.1.1 |
+| 测试 | xunit.v3 + coverlet.collector | 3.2.2 / 8.0.1 |
 
 ## 架构概览
 
@@ -93,7 +124,8 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | --- | --- |
 | `Utils` | 零依赖通用工具库：字符串处理、加密算法、异步编程、序列化、集合操作、反射、网络通信、文件IO、数学计算、时间处理等 |
 | `Metadata` | 框架元数据：名称、版本、作者、组织、支持平台等静态信息 |
-| `Core` | 模块化引擎核心：`IXiHanModule` 基类、`[DependsOn]` 依赖声明、拓扑排序加载、8 个生命周期钩子、DI 扩展、选项模式、异常处理链 |
+| `Core` | 模块化引擎核心：`IXiHanModule` 基类、`[DependsOn]` 依赖声明、拓扑排序加载、7 个生命周期钩子、DI 扩展、选项模式、异常处理链 |
+| `Analyzers` | Roslyn 分析器：文件头规范检查与代码修复（`XiHanFileHeaderAnalyzer` + CodeFixProvider），编译期静态检查 |
 
 ### 领域与应用
 
@@ -113,8 +145,12 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | `Authentication` | 认证：JWT / OAuth2 / OIDC、令牌工厂、MFA、SSO |
 | `Authorization` | 授权：RBAC、策略授权、声明授权 |
 | `Security` | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
-| `EventBus` | 事件总线：本地/分布式事件、Outbox 模式、事件存储 |
+| `Auditing` | 审计日志：操作/访问/登录/异常/接口/实体变更日志的采集管道、异步队列、脱敏与写入契约 |
 | `EventBus.Abstractions` | 事件总线抽象：发布/订阅接口、事件处理管道 |
+| `EventBus` | 事件总线：本地/分布式事件、Outbox 模式、事件存储（内置实现，分布式 Broker 由以下子包提供） |
+| `EventBus.RabbitMQ` | 分布式事件总线 RabbitMQ 提供程序 |
+| `EventBus.Kafka` | 分布式事件总线 Kafka 提供程序 |
+| `EventBus.Redis` | 分布式事件总线 Redis（Streams）提供程序 |
 | `Uow` | 工作单元：AOP 拦截器自动管理事务边界 |
 | `Castle` | AOP 动态代理：Castle DynamicProxy 集成，服务拦截器注册 |
 | `Logging` | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
@@ -138,8 +174,15 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | `Tasks` | 定时任务：调度引擎、后台服务、多租户感知 |
 | `Traffic` | 流量治理：灰度路由、限流、熔断 |
 | `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
-| `AI` | AI 集成：Semantic Kernel、智能代理、MCP 协议支持 |
-| `Bot` | 机器人：Telegram / 邮件（MailKit）/ 微信 / 钉钉 / 飞书 / 短信 多平台接入 |
+| `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
+| `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |
+| `Bot` | 机器人核心：多渠道消息分发管道、策略与模板，渠道能力由以下子包提供 |
+| `Bot.Email` | 机器人邮件渠道：基于 MailKit |
+| `Bot.Sms` | 机器人短信渠道 |
+| `Bot.Telegram` | 机器人 Telegram 渠道：基于 Telegram.Bot |
+| `Bot.DingTalk` | 机器人钉钉渠道 |
+| `Bot.Lark` | 机器人飞书渠道 |
+| `Bot.WeCom` | 机器人企业微信渠道 |
 | `Script` | 脚本引擎：沙箱执行、JS / Python / C# 动态脚本 |
 | `SearchEngines` | 搜索引擎：Elasticsearch 集成抽象、索引构建、全文检索 |
 | `Observability` | 可观测性：健康检查、性能计数器、指标采集 |
@@ -221,7 +264,7 @@ await app.RunAsync();
 
 ### 模块生命周期
 
-每个模块提供 8 个生命周期钩子，按拓扑排序顺序执行：
+每个模块提供 7 个生命周期钩子，按拓扑排序顺序执行：
 
 ```text
 服务注册阶段                          应用初始化阶段
@@ -242,7 +285,7 @@ await app.RunAsync();
 XiHan.Framework/
 ├── framework/
 │   ├── XiHan.Framework.slnx              # 解决方案文件
-│   ├── src/                               # 源码（47 个模块）
+│   ├── src/                               # 源码（61 个模块）
 │   │   ├── XiHan.Framework.Utils/         #   公共工具
 │   │   ├── XiHan.Framework.Metadata/      #   框架元数据
 │   │   ├── XiHan.Framework.Core/          #   模块化核心
@@ -258,7 +301,7 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Grpc/      #   gRPC
 │   │   ├── XiHan.Framework.Web.RealTime/  #   实时通信
 │   │   └── ...                            #   其他模块
-│   ├── test/                              # 测试（9 个项目）
+│   ├── test/                              # 测试（12 个项目）
 │   │   ├── XiHan.Framework.TestsBase/     #   测试基础设施
 │   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
 │   │   ├── XiHan.Framework.Http.Tests/    #   HTTP 测试
@@ -325,7 +368,7 @@ dotnet package search XiHan.Framework
 | `XiHan.Framework.Authentication` | JWT / OAuth2 认证 |
 | `XiHan.Framework.Authorization` | RBAC 授权 |
 | `XiHan.Framework.EventBus` | 事件总线 + Outbox |
-| `XiHan.Framework.AI` | Semantic Kernel + MCP |
+| `XiHan.Framework.AI` | Microsoft.Extensions.AI + MCP |
 
 ## 环境要求
 
@@ -347,26 +390,22 @@ dotnet package search XiHan.Framework
 
 排名不分先后。
 
-| 项目                                                       | 致谢                                           |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| [Abp](https://github.com/abpframework/abp)                 | 作为部分架构和逻辑灵感来源（启蒙项目）         |
-| [Furion](https://gitee.com/dotnetchina/Furion)             | 作为部分架构和逻辑灵感来源                     |
-| 其他第三方依赖                                             | 作为项目功能丰富与拓展的基石                   |
+| 项目                                       | 致谢                                   |
+| ------------------------------------------ | -------------------------------------- |
+| [Abp](https://github.com/abpframework/abp) | 作为部分架构和逻辑灵感来源（启蒙项目） |
+| 其他第三方依赖                             | 作为项目功能丰富与拓展的基石           |
+
 
 ## 支持&赞助
 
 如果此项目对你的开发有助益，也欢迎请作者一杯咖啡。
 
-<table>
-  <tr>
-    <td align="center"><img src="./assets/alipay.png" width="200" /><br/>支付宝</td>
-    <td align="center"><img src="./assets/weixinpay.png" width="200" /><br/>微信</td>
-  </tr>
-</table>
+官方赞助页 https://docs.xihanfun.com/cosmos/sponsor
+
 
 ## 版权&授权
 
-Copyright (c) 2026 XiHanFun and ZhaiFanhua
+Copyright (c) 2021-Present XiHanFun and contributors.
 
 本项目采用 MIT 授权，详见 [License](./LICENSE)
 

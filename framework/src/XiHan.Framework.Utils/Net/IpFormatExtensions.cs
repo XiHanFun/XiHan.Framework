@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IpFormatExtensions
-// Guid:90ce7ed9-3669-4eb7-a295-33155633dd77
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 05:28:19
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Net;
 

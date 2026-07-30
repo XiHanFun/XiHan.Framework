@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ConsoleTableUsageExample
-// Guid:e1f45c21-d35f-4a29-84b7-28fd84218125
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/15 13:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.ConsoleTools;
 using XiHan.Framework.Utils.Logging;

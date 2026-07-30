@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NumberExtensions
-// Guid:4d393136-f9ab-4c92-9464-22cd85f09c75
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/10 14:55:10
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Numerics;
 
