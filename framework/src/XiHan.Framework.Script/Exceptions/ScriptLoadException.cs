@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptLoadException
-// Guid:4bb85015-13e8-45a7-aad9-5f8032036d6e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 06:19:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Script.Exceptions;
 

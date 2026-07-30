@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TimeZoneHelper
-// Guid:9a71c0a1-1180-4a22-9d7a-21063079627e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/29 00:47:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 

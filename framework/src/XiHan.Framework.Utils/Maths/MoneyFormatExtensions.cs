@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MoneyFormatExtensions
-// Guid:76816b67-54c7-4ff0-a582-be0e8faea196
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/11/27 05:29:46
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 

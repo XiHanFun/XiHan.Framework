@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HttpRequestBuilder
-// Guid:1cc8f386-ad8e-421c-b923-ce22d4474224
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 20:14:48
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Http.Models;

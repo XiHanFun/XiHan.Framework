@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:FilePlugInSource
-// Guid:4e8584f1-568a-4e8d-a345-774d80a55ef9
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/28 09:35:17
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Runtime.Loader;
 using XiHan.Framework.Core.Exceptions;

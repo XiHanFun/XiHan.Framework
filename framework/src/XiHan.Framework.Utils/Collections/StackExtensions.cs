@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:StackExtensions
-// Guid:bb74d91c-bf3d-469f-9311-87a63c847883
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/05 02:09:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Collections;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanSignalROptions
-// Guid:8c1a4f3e-6b2d-4e1f-9a3c-7d8e5f4c3b2a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 04:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Web.RealTime.Options;
 

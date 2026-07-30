@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptExecutionStatistics
-// Guid:e89dcc44-2df3-4aed-8cc0-fc2d68bf4cf6
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/01 11:07:06
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Script.Monitoring;
 

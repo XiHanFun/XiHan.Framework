@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanApiResponseResultFilter
-// Guid:9d8a8b7b-2b0e-4da4-8f6f-6b9d7a1f2f3c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/08 21:20:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -340,6 +329,9 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
     {
         return exception switch
         {
+            // 依赖不可用（外部基础设施连不上）→ 503：依赖恢复后同样的请求即可成功，与 400 的「请求本身有问题」语义不同。
+            // 必须排在 BusinessException 之前——它是 BusinessException 的派生类型，否则会被 400 分支吞掉。
+            ServiceUnavailableException ex => (StatusCodes.Status503ServiceUnavailable, ApiResponse.ServiceUnavailable(ex.Message)),
             UserFriendlyException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
             BusinessException ex => (StatusCodes.Status400BadRequest, ApiResponse.BadRequest(ex.Message)),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, ApiResponse.Unauthorized("未授权访问")),

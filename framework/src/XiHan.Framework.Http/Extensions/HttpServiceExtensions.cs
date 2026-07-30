@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:HttpServiceExtensions
-// Guid:eb49c74d-450f-46da-ab34-be16755ac116
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 20:13:54
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using XiHan.Framework.Http.Models;

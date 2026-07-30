@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:LoggerExtensions
-// Guid:4fcb1f02-3139-4378-b14b-3e1985a95451
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/27 01:07:22
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using System.Text;

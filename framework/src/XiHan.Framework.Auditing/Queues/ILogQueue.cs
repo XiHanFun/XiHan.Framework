@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ILogQueue
-// Guid:ad7cb0b3-6c3f-4c0b-8f1a-29cda4d2b287
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/08 22:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Auditing.Queues;
 
@@ -26,17 +15,17 @@ public interface ILogQueue<TRecord>
     int Count { get; }
 
     /// <summary>
-    /// 尝试入队
+    /// 尝试入队（不等待）
     /// </summary>
-    /// <param name="record"></param>
-    /// <returns></returns>
+    /// <param name="record">日志记录</param>
+    /// <returns>入队成功返回 true；队列已满返回 false（记录未入队）</returns>
     bool TryEnqueue(TRecord record);
 
     /// <summary>
-    /// 入队
+    /// 入队（队列满时等待，直到有空位或被取消）
     /// </summary>
-    /// <param name="record"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="record">日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     ValueTask EnqueueAsync(TRecord record, CancellationToken cancellationToken = default);
 
     /// <summary>

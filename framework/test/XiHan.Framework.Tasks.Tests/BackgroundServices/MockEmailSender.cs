@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:MockEmailSender
-// Guid:a7dc96ba-0f57-4060-9796-0b7b5c7e375c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/17 18:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 

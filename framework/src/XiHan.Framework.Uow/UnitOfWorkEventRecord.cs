@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:UnitOfWorkEventRecord
-// Guid:cec11ac9-ba1f-4d54-b43a-d16cfef610df
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 04:09:11
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Uow;
 

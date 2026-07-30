@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RandomHelper
-// Guid:d39bf719-25f6-4131-aaeb-b902ab629636
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/08/27 12:28:33
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text;
 using XiHan.Framework.Utils.Diagnostics;

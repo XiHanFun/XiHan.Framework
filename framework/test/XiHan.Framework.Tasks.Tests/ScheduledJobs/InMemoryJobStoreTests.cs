@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryJobStoreTests
-// Guid:11f2fd20-5855-4122-8e5f-929f7c8c1240
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/10 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 using XiHan.Framework.Tasks.ScheduledJobs.Store;

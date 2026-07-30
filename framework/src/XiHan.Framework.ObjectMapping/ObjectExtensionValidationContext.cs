@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ObjectExtensionValidationContext
-// Guid:e31dcf0f-d466-4706-a805-9abb476e6eef
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/05 06:14:40
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.ObjectMapping.Extensions.Data;

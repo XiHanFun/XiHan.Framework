@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CloneHelper
-// Guid:5f4e3d2c-1b0a-9f8e-7d6c-5b4a3f2e1d0c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/20 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections;
 using System.Reflection;

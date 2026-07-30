@@ -1,17 +1,7 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanOAuthServiceCollectionExtensions
-// Guid:a1b2c3d4-5e6f-7890-abcd-ef1234567806
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/02 00:00:00
-// ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>
-
+using AspNet.Security.OAuth.Gitee;
 using AspNet.Security.OAuth.GitHub;
 using AspNet.Security.OAuth.QQ;
 using Microsoft.AspNetCore.Authentication;
@@ -92,6 +82,22 @@ public static class XiHanOAuthServiceCollectionExtensions
                     options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
                     options.SignInScheme = "ExternalCookie";
                     // 头像：GitHub 用户信息 avatar_url → 统一头像 Claim
+                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
+                    foreach (var scope in provider.Scopes)
+                    {
+                        options.Scope.Add(scope);
+                    }
+                });
+                break;
+
+            case "gitee":
+                builder.AddGitee(provider.Name, provider.DisplayName ?? "Gitee", options =>
+                {
+                    options.ClientId = provider.ClientId;
+                    options.ClientSecret = provider.ClientSecret;
+                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
+                    options.SignInScheme = "ExternalCookie";
+                    // 头像：Gitee 用户信息 avatar_url → 统一头像 Claim
                     options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
                     foreach (var scope in provider.Scopes)
                     {

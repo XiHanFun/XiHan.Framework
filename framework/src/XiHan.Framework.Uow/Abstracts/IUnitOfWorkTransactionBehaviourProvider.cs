@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IUnitOfWorkTransactionBehaviourProvider
-// Guid:e6d49b3c-c158-41e3-8128-71f82130be8a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/04/01 21:09:59
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Uow.Abstracts;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IModuleDescriptor
-// Guid:05eb7550-68d6-4ff9-b6ac-3f96ea153ab1
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/26 08:05:23
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:StopwatchHelper
-// Guid:8a5b2c4d-3e1f-4a5b-9c8d-7e6f5a4b3c2d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/19 10:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using System.Diagnostics;

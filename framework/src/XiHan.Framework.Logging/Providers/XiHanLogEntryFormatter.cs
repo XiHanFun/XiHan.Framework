@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanLogEntryFormatter
-// Guid:2a4f8af0-a5b5-434a-b78e-8e7429ae12d8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/10 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:IRetryStrategy
-// Guid:8f7802bc-ba45-44a1-b5f2-e3797558023b
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/09/05 07:32:21
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Utils.Diagnostics.RetryPolicys;
 

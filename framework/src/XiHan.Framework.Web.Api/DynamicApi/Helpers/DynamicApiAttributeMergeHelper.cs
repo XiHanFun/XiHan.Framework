@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DynamicApiAttributeMergeHelper
-// Guid:6bb045de-2f1f-4a13-8c9a-32b08f4c42a1
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/03 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Reflection;
 using XiHan.Framework.Application.Attributes;

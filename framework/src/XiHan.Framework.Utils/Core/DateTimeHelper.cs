@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DateTimeHelper
-// Guid:3d2e1f0a-9b8c-7d6e-5f4a-3b2c1d0e9f8a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/19 23:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Globalization;
 

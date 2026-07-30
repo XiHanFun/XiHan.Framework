@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ApiResponse
-// Guid:6ea22bcb-c6ee-4eaf-86dc-4f6a11a9d10d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Utils.Extensions;
@@ -211,12 +200,17 @@ public class ApiResponse
     /// 服务不可用 503：系统维护、服务过载或依赖服务不可用，请稍后重试
     /// </summary>
     /// <returns>统一返回模型</returns>
-    public static ApiResponse ServiceUnavailable()
+    /// <param name="errorMessage">
+    /// 面向运维的排查线索（置于 Data），例如是哪个依赖不可达。
+    /// 与 500 不同，503 的成因是外部依赖而非内部实现细节，因此允许回传；但不要写入主机、端口、凭据等拓扑信息。
+    /// </param>
+    public static ApiResponse ServiceUnavailable(string? errorMessage = null)
     {
         return new ApiResponse
         {
             Code = ApiResponseCodes.ServiceUnavailable,
-            Message = ApiResponseCodes.ServiceUnavailable.GetDescription()
+            Message = ApiResponseCodes.ServiceUnavailable.GetDescription(),
+            Data = errorMessage
         };
     }
 

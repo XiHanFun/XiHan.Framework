@@ -67,6 +67,8 @@
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.Upgrade/XiHan.Framework.Upgrade.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
+    <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Workflow/XiHan.Framework.Workflow.csproj" />
   </Folder>
   <Folder Name="/1.src/7.Web/">
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
@@ -81,12 +83,17 @@
     <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
   </Folder>
   <Folder Name="/2.tests/2.UnitTests/">
+    <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.AI.Tests/XiHan.Framework.AI.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
     <Project Path="test/XiHan.Framework.Http.Tests/XiHan.Framework.Http.Tests.csproj" Id="e7a9d4d6-0153-45ed-a7f5-890cd0f51854" />
+    <Project Path="test/XiHan.Framework.Logging.Tests/XiHan.Framework.Logging.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Serialization.Tests/XiHan.Framework.Serialization.Tests.csproj" Id="b4569bd6-5e7d-45bf-9135-17b2c6265439" />
     <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
     <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
+    <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
   </Folder>
   <Folder Name="/2.tests/3.Main/">
     <Project Path="test/XiHan.Framework.Integration.Tests/XiHan.Framework.Integration.Tests.csproj" />

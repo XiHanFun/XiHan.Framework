@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TencentCosStorageProvider
-// Guid:d621c3ba-bd19-49f1-8851-6f0bc6c30973
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/01/10 11:05:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using COSXML;

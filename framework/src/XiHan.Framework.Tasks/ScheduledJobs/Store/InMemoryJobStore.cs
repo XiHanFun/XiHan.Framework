@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:InMemoryJobStore
-// Guid:46d2f81d-26c7-45b3-a54c-91242e9f0b06
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/07 15:21:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;

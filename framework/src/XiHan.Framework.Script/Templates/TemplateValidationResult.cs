@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TemplateValidationResult
-// Guid:84458b8a-7053-4f14-a086-43fcd78dccd7
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/06/02 08:09:56
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Script.Templates;
 

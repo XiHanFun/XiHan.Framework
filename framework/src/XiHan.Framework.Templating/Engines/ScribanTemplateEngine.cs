@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScribanTemplateEngine
-// Guid:66cd4d42-37a5-441d-8a64-51cb1b00e8ea
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/16 03:42:14
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Scriban;
 using XiHan.Framework.Templating.Contexts;

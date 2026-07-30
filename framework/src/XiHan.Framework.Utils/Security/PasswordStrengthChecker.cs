@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PasswordStrengthChecker
-// Guid:779986e5-8d07-4767-879b-83b78f6ed821
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/09 05:26:21
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Utils.Constants;
 

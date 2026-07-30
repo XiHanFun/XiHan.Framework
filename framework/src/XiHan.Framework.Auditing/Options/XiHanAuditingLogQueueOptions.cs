@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanAuditingLogQueueOptions
-// Guid:9bf6f17f-9df3-4d35-9b6c-4c8b97f4214a
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/08 22:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Auditing.Options;
 
@@ -65,6 +54,10 @@ public class XiHanAuditingLogQueueOptions
     /// <summary>
     /// 是否在队列满时丢弃
     /// </summary>
+    /// <remarks>
+    /// <c>true</c>：队列满时丢弃当前日志并记一条警告，不阻塞调用方；
+    /// <c>false</c>（默认）：队列满时等待空位，反压到调用方（请求线程）。
+    /// </remarks>
     public bool DropOnFull { get; set; } = false;
 
     /// <summary>

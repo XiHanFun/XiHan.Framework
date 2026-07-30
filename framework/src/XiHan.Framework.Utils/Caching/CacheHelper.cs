@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CacheHelper
-// Guid:a8c5d7f1-b9e2-4c3a-8f4d-1234567890ab
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/06 04:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:PagingExtensions
-// Guid:6b502634-a1de-410e-be15-23538f89ed97
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/02 20:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Globalization;
@@ -485,9 +474,7 @@ public static class PagingExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = request.Behavior.DisablePaging
-            ? await query.ToListAsync(cancellationToken)
-            : await query.Skip(skip).Take(meta.PageSize).ToListAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(meta.PageSize).ToListAsync(cancellationToken);
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -511,9 +498,7 @@ public static class PagingExtensions
         }
 
         var skip = (meta.PageIndex - 1) * meta.PageSize;
-        var items = request.Behavior.DisablePaging
-            ? query.ToList()
-            : query.Skip(skip).Take(meta.PageSize).ToList();
+        var items = query.Skip(skip).Take(meta.PageSize).ToList();
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -527,11 +512,6 @@ public static class PagingExtensions
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(request);
-
-        if (request.Behavior.DisablePaging)
-        {
-            return query;
-        }
 
         var meta = request.Page;
         var skip = (meta.PageIndex - 1) * meta.PageSize;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ChannelLogQueue
-// Guid:1b1783d2-55c2-4c6f-8b1f-8c62f2d65f2c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/08 22:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
@@ -30,12 +19,17 @@ public class ChannelLogQueue<TRecord> : ILogQueue<TRecord>
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
+    /// <remarks>
+    /// 固定使用 <see cref="BoundedChannelFullMode.Wait"/>：队列满时 <see cref="TryEnqueue"/> 返回 false、
+    /// <see cref="EnqueueAsync"/> 等待。满时丢弃与否是调用方（采集管道）按 <c>DropOnFull</c> 选择哪个方法的策略，
+    /// 不能下沉到 Channel——若这里用 DropWrite，TryWrite 满时也返回 true，调用方便无从得知记录已被丢弃。
+    /// </remarks>
     public ChannelLogQueue(IOptions<XiHanAuditingLogQueueOptions> options)
     {
         var queueOptions = options.Value;
         var boundedOptions = new BoundedChannelOptions(queueOptions.QueueCapacity)
         {
-            FullMode = queueOptions.DropOnFull ? BoundedChannelFullMode.DropWrite : BoundedChannelFullMode.Wait,
+            FullMode = BoundedChannelFullMode.Wait,
             SingleReader = false,
             SingleWriter = false
         };

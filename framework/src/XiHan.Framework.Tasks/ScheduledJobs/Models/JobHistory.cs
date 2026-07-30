@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:JobHistory
-// Guid:3daf1a26-cb51-41a5-a2a3-c6c29d62a883
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/07 15:38:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Tasks.ScheduledJobs.Models;
 

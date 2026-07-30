@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:NanoIdGenerator
-// Guid:a4c8f9e5-c710-4d59-b8d3-e76a12d8c4f3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/15 10:30:01
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Security.Cryptography;
 

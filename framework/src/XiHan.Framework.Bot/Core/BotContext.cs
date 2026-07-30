@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:BotContext
-// Guid:06f1842b-ca12-4409-9904-d5463dc17f23
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/03/11 17:44:18
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers;
