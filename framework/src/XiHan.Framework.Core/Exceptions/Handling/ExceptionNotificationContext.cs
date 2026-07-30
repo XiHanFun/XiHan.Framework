@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ExceptionNotificationContext
-// Guid:bfd0f066-1730-4c0e-a782-fb6bf0432201
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/23 01:03:26
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Core.Extensions.Exceptions;

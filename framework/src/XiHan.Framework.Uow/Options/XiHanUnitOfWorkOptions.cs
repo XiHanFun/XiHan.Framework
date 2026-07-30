@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanUnitOfWorkOptions
-// Guid:410954b7-3cf1-4857-bcd0-7d61f6e0664e
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/12/14 06:32:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Data;
 
@@ -57,6 +46,14 @@ public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
     public int? Timeout { get; set; }
 
     /// <summary>
+    /// 是否必须使用与外层工作单元互相独立的物理连接
+    /// </summary>
+    /// <remarks>
+    /// 由工作单元管理器在 <c>requiresNew</c> 且已存在环境工作单元时置位，业务代码不应直接设置。
+    /// </remarks>
+    public bool RequiresIsolatedConnection { get; set; }
+
+    /// <summary>
     /// 克隆
     /// </summary>
     /// <returns></returns>
@@ -66,7 +63,8 @@ public class XiHanUnitOfWorkOptions : IXiHanUnitOfWorkOptions
         {
             IsTransactional = IsTransactional,
             IsolationLevel = IsolationLevel,
-            Timeout = Timeout
+            Timeout = Timeout,
+            RequiresIsolatedConnection = RequiresIsolatedConnection
         };
     }
 }

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:SnowflakeIdTypes
-// Guid:1ca7ad57-1ac9-4cf8-8e1f-cfe2a8f43ec4
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/19 02:33:58
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.DistributedIds.SnowflakeIds;
 

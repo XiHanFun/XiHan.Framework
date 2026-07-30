@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:EntityAuditExtensions
-// Guid:5db943aa-c50f-4f98-b330-3aa9b8f907a8
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/12 14:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using SqlSugar;
 using System.Reflection;
@@ -165,8 +154,42 @@ public static class EntityAuditExtensions
 
         if (!string.IsNullOrWhiteSpace(propertyMap.TenantId) && propertyName == propertyMap.TenantId)
         {
-            SetValueIfNeeded(entityInfo, propertyInfo, context.TenantId, overrideHandleValue);
+            SetTenantIdValue(entityInfo, propertyInfo, context);
         }
+    }
+
+    /// <summary>
+    /// 写入租户标识（插入语义专用），带跨租户预置值防护
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    ///   <item>平台态（<c>context.TenantId</c> 为 null，播种/平台代管场景）：保留实体预置值——这是合法路径，防护须放行。</item>
+    ///   <item>租户态 + 实体为默认值(0)：注入当前租户标识（原有行为）。</item>
+    ///   <item>租户态 + 实体预置了与当前租户不符的非默认值：<b>fail-closed 抛异常</b>——典型来源是 DTO 误映射/恶意
+    ///         mass-assignment 伪造跨租户数据；列上的 <c>IsOnlyIgnoreUpdate</c> 只防更新、防不了插入，必须在此拦截。</item>
+    /// </list>
+    /// </remarks>
+    private static void SetTenantIdValue(DataFilterModel entityInfo, PropertyInfo propertyInfo, EntityAuditContext context)
+    {
+        if (context.TenantId is null)
+        {
+            return;
+        }
+
+        var currentValue = propertyInfo.GetValue(entityInfo.EntityValue);
+        if (IsDefaultValue(currentValue))
+        {
+            entityInfo.SetValue(context.TenantId.Value);
+            return;
+        }
+
+        if (currentValue is long presetTenantId && presetTenantId == context.TenantId.Value)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"插入失败：实体预置的租户标识（{currentValue}）与当前租户上下文（{context.TenantId}）不一致，禁止跨租户写入；平台代写请在平台态（无租户上下文）执行。");
     }
 
     /// <summary>

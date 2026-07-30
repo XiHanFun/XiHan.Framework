@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:ScriptEngine
-// Guid:a3986aeb-032e-42a0-b75b-435a0a055810
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/05/31 06:06:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

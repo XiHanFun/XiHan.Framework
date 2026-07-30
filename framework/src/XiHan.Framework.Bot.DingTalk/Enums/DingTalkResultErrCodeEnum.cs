@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DingTalkResultErrCodeEnum
-// Guid:d0d63915-9b31-41b2-a074-3b8f6f43c9df
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2023/08/10 02:20:45
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.ComponentModel;
 

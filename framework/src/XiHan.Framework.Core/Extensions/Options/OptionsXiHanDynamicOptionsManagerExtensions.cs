@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:OptionsXiHanDynamicOptionsManagerExtensions
-// Guid:edbd1f43-5245-4793-8a0d-4930c2ac0bd5
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/05/07 00:57:37
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Exceptions;

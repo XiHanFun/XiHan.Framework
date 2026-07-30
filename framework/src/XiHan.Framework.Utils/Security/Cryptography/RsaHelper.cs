@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RsaHelper
-// Guid:915cc6b5-156c-48d4-8dae-5bbf94d0c3d3
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/10/11 06:04:12
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Buffers;
 using System.Security.Cryptography;

@@ -1,19 +1,9 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:DefaultKnowledgeRetriever
-// Guid:b2c3d4e5-f6a7-4b14-9d14-1a1b1c1d1e14
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/07/05 16:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Linq.Expressions;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.Abstractions.Rag;
@@ -28,14 +18,23 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
 {
     private readonly IAiEmbeddingGeneratorResolver _embeddingResolver;
     private readonly VectorStore _vectorStore;
+    private readonly KnowledgeVectorOptions _vectorOptions;
+    private readonly VectorStoreCollectionDefinition _definition;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public DefaultKnowledgeRetriever(IAiEmbeddingGeneratorResolver embeddingResolver, VectorStore vectorStore)
+    public DefaultKnowledgeRetriever(
+        IAiEmbeddingGeneratorResolver embeddingResolver,
+        VectorStore vectorStore,
+        IOptions<KnowledgeVectorOptions> vectorOptions)
     {
+        ArgumentNullException.ThrowIfNull(vectorOptions);
+
         _embeddingResolver = embeddingResolver;
         _vectorStore = vectorStore;
+        _vectorOptions = vectorOptions.Value;
+        _definition = VectorStoreKnowledgeRecord.CreateDefinition(_vectorOptions.Dimensions);
     }
 
     /// <inheritdoc />
@@ -54,18 +53,27 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
             topK = 5;
         }
 
-        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(VectorStoreKnowledgeRecord.CollectionName);
-        if (!await collection.CollectionExistsAsync(cancellationToken))
+        var collection = _vectorStore.GetCollection<Guid, VectorStoreKnowledgeRecord>(_vectorOptions.CollectionName, _definition);
+        // 集合不存在返回空结果是合法语义（尚未摄取任何文档）；连不上向量库则是故障，由翻译层区分。
+        if (!await VectorStoreOperation.ExecuteAsync(() => collection.CollectionExistsAsync(cancellationToken)))
         {
             return [];
         }
 
         var generator = _embeddingResolver.Resolve(provider);
-        var queryVector = await generator.GenerateVectorAsync(query, cancellationToken: cancellationToken);
+        var queryVector = await EmbeddingOperation.ExecuteAsync(
+            () => generator.GenerateVectorAsync(query, cancellationToken: cancellationToken),
+            provider,
+            generator.GetService<EmbeddingGeneratorMetadata>()?.DefaultModelId);
+
+        VectorStoreKnowledgeRecord.EnsureDimensions(queryVector.Length, _vectorOptions.Dimensions);
 
         var options = BuildOptions(filter);
         var results = new List<RetrievedChunk>();
-        await foreach (var result in collection.SearchAsync(queryVector, topK, options, cancellationToken))
+        var matches = VectorStoreOperation.ExecuteStreamAsync(
+            collection.SearchAsync(queryVector, topK, options, cancellationToken),
+            cancellationToken);
+        await foreach (var result in matches)
         {
             var record = result.Record;
             results.Add(new RetrievedChunk

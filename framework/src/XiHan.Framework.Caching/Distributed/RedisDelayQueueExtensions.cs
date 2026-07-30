@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RedisDelayQueueExtensions
-// Guid:8e9f0a1b-2c3d-4456-b7c8-9e0f1a2b3c4d
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/06/16 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.Caching.Distributed.Abstracts;
 

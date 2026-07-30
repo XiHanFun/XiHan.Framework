@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:TenantConfiguration
-// Guid:a7fa1aac-dd4f-4e01-aac1-f9a105638a57
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/10/19 06:48:32
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Core.Data;

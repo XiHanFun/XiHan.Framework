@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:GrayRoutingMiddleware
-// Guid:2f3a4b5c-6d7e-8f9a-0b1c-2d3e4f5a6b7c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/01/22 00:00:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;

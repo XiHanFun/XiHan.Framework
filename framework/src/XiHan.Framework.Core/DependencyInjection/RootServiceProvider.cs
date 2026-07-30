@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:RootServiceProvider
-// Guid:6397c98f-4100-4a27-8a12-a68852ab6d31
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2024/04/27 22:31:19
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;

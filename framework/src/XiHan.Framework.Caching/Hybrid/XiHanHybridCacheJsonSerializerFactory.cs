@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:XiHanHybridCacheJsonSerializerFactory
-// Guid:126f0e98-f081-40f5-ac65-32bf7e4e2958
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2025/03/12 20:51:11
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;

@@ -1,16 +1,5 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CacheEvictAttribute
-// Guid:f6a7b8c9-d0e1-2345-f012-3456789abcde
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/04/05 05:30:00
-// ----------------------------------------------------------------
-
-#endregion <<版权版本注释>>
 
 namespace XiHan.Framework.Caching.Attributes;
 

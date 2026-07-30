@@ -1,20 +1,9 @@
-#region <<版权版本注释>>
-
-// ----------------------------------------------------------------
-// Copyright ©2021-Present ZhaiFanhua All Rights Reserved.
+// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-// FileName:CrudApplicationServiceBaseMappingTests
-// Guid:8b39870b-0aca-45be-a21d-2e012e95073c
-// Author:zhaifanhua
-// Email:me@zhaifanhua.com
-// CreateTime:2026/02/28 03:36:05
-// ----------------------------------------------------------------
 
-#endregion <<版权版本注释>>
-
+using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Services;
-using XiHan.Framework.Domain.Entities.Abstracts;
-using XiHan.Framework.Domain.Repositories;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Shared.Paging.Dtos;
 
 namespace XiHan.Framework.Application.Tests.Services;
@@ -28,7 +17,7 @@ public class CrudApplicationServiceBaseMappingTests
     public async Task MapUpdateDtoToEntity_ShouldMutateExistingInstance()
     {
         var service = new TestCrudService();
-        var entity = new TestEntity { BasicId = 1, Name = "old-name", Age = 18 };
+        var entity = new TestEntity(1) { Name = "old-name", Age = 18 };
         var updateDto = new TestUpdateDto { Name = "new-name", Age = 20 };
 
         var beforeRef = entity;
@@ -43,7 +32,7 @@ public class CrudApplicationServiceBaseMappingTests
     public async Task MapEntityDtoToEntity_ShouldMutateExistingInstance()
     {
         var service = new TestCrudService();
-        var entity = new TestEntity { BasicId = 1, Name = "old-name", Age = 18 };
+        var entity = new TestEntity(1) { Name = "old-name", Age = 18 };
         var dto = new TestEntityDto { Name = "dto-name", Age = 25 };
 
         var beforeRef = entity;
@@ -73,37 +62,37 @@ public class CrudApplicationServiceBaseMappingTests
         }
     }
 
-    private sealed class TestEntity : IEntityBase<long>
+    private sealed class TestEntity : EntityBase<long>
     {
-        public long BasicId { get; set; }
-
-        public long RowVersion { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-
-        public int Age { get; set; }
-
-        public bool IsTransient()
+        public TestEntity()
         {
-            return BasicId <= 0;
         }
+
+        public TestEntity(long basicId)
+            : base(basicId)
+        {
+        }
+
+        public string Name { get; set; } = string.Empty;
+
+        public int Age { get; set; }
     }
 
-    private sealed class TestEntityDto
+    private sealed class TestEntityDto : DtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
         public int Age { get; set; }
     }
 
-    private sealed class TestCreateDto
+    private sealed class TestCreateDto : CreationDtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
         public int Age { get; set; }
     }
 
-    private sealed class TestUpdateDto
+    private sealed class TestUpdateDto : UpdateDtoBase<long>
     {
         public string Name { get; set; } = string.Empty;
 
