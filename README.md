@@ -390,23 +390,11 @@ dotnet package search XiHan.Framework
 
 排名不分先后。
 
-| 项目                                                       | 致谢                                           |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| [Abp](https://github.com/abpframework/abp)                 | 作为部分架构和逻辑灵感来源（启蒙项目）         |
-| [Furion](https://gitee.com/dotnetchina/Furion)             | 作为部分架构和逻辑灵感来源                     |
-| 其他第三方依赖                                             | 作为项目功能丰富与拓展的基石                   |
+| 项目                                       | 致谢                                   |
+| ------------------------------------------ | -------------------------------------- |
+| [Abp](https://github.com/abpframework/abp) | 作为部分架构和逻辑灵感来源（启蒙项目） |
+| 其他第三方依赖                             | 作为项目功能丰富与拓展的基石           |
 
-## Star History
-
-<div align="center">
-  <a href="https://star-history.com/#XiHanFun/XiHan.Framework&Date" target="_blank">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date" />
-      <img alt="XiHan.Framework Star History Chart" src="https://api.star-history.com/svg?repos=XiHanFun/XiHan.Framework&type=Date" width="640" />
-    </picture>
-  </a>
-</div>
 
 ## 支持&赞助
 
