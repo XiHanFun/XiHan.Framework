@@ -76,6 +76,7 @@
     <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" Id="e8a1d021-4093-4e09-b9da-027db1eb90ae" />
     <Project Path="src/XiHan.Framework.Web.Gateway/XiHan.Framework.Web.Gateway.csproj" />
     <Project Path="src/XiHan.Framework.Web.Grpc/XiHan.Framework.Web.Grpc.csproj" Id="5912a65f-1807-4971-9cab-86f8762495fe" />
+    <Project Path="src/XiHan.Framework.Web.Mcp/XiHan.Framework.Web.Mcp.csproj" />
     <Project Path="src/XiHan.Framework.Web.RealTime/XiHan.Framework.Web.RealTime.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
