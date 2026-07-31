@@ -5,7 +5,7 @@
 
 <p><b>快速、轻量、高效、用心的 .NET 模块化开发框架</b></p>
 
-<p>基于 .NET 10 构建 · 61 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+<p>基于 .NET 10 构建 · 64 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
 
 <p>
   <a href="https://github.com/XiHanFun/XiHan.Framework/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat-square&logo=github&label=Stars&color=1f6feb" /></a>
@@ -85,7 +85,7 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 ┌─────────────────────────────────────────────────────────────────┐
 │                         7. Web 层                              │
 │  Web.Docs → Web.Api → Web.Core    Web.Gateway    Web.RealTime │
-│                                    Web.Grpc                    │
+│                                    Web.Grpc      Web.Mcp       │
 ├─────────────────────────────────────────────────────────────────┤
 │                       6. 基础设施层                             │
 │  Data  Authentication  Authorization  Caching  EventBus       │
@@ -197,6 +197,7 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | `Web.Docs` | API 文档：Scalar UI + Swagger UI、动态 API 分组发现 |
 | `Web.Gateway` | API 网关：灰度路由、负载均衡、限流 |
 | `Web.Grpc` | gRPC 服务集成 |
+| `Web.Mcp` | MCP Server：AI 技能经 HTTP 传输暴露为 MCP tools、应用管理 key 鉴权 |
 | `Web.RealTime` | 实时通信：SignalR 集成、JSON 序列化 |
 
 ## 快速开始
@@ -285,7 +286,7 @@ await app.RunAsync();
 XiHan.Framework/
 ├── framework/
 │   ├── XiHan.Framework.slnx              # 解决方案文件
-│   ├── src/                               # 源码（61 个模块）
+│   ├── src/                               # 源码（64 个模块）
 │   │   ├── XiHan.Framework.Utils/         #   公共工具
 │   │   ├── XiHan.Framework.Metadata/      #   框架元数据
 │   │   ├── XiHan.Framework.Core/          #   模块化核心
@@ -299,6 +300,7 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Docs/      #   API 文档
 │   │   ├── XiHan.Framework.Web.Gateway/   #   网关
 │   │   ├── XiHan.Framework.Web.Grpc/      #   gRPC
+│   │   ├── XiHan.Framework.Web.Mcp/       #   MCP Server
 │   │   ├── XiHan.Framework.Web.RealTime/  #   实时通信
 │   │   └── ...                            #   其他模块
 │   ├── test/                              # 测试（12 个项目）
@@ -346,6 +348,7 @@ Utils (零依赖)
                     ├── Web.Api ──→ Web.Docs (Scalar + Swagger)
                     ├── Web.Gateway
                     ├── Web.Grpc
+                    ├── Web.Mcp (MCP Server)
                     └── Web.RealTime (SignalR)
 ```
 
