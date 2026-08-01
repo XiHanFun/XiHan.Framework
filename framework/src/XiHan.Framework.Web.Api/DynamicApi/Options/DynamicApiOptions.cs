@@ -14,6 +14,15 @@ public class DynamicApiOptions
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
+    /// 控制器生成失败时是否抛出异常
+    /// </summary>
+    /// <remarks>
+    /// 为 true 时任一应用服务生成失败都会中断装配并抛出聚合异常；
+    /// 为 false 时仅记录错误日志并跳过，该服务的全部端点不会出现在路由表中。
+    /// </remarks>
+    public bool ThrowOnGenerationFailure { get; set; } = true;
+
+    /// <summary>
     /// 默认路由前缀
     /// </summary>
     public string DefaultRoutePrefix { get; set; } = "api";
