@@ -9,11 +9,14 @@ namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 /// <summary>
 /// 参数来源解析器
 /// </summary>
+/// <remarks>
+/// 绑定位置只有两个来源：参数上的显式绑定特性，以及按 HTTP 方法与参数类型决定的 Body/Query 兜底。
+/// 不按参数名推断路由：名称是实现细节，让它决定 URL 会使「给既有方法加一个参数」变成静默的线上破坏性变更。
+/// </remarks>
 public class ParameterSourceResolver
 {
     private readonly string _httpMethod;
     private int _bodyParameterCount;
-    private int _routeIdParameterCount;
 
     /// <summary>
     /// 构造函数
@@ -23,7 +26,6 @@ public class ParameterSourceResolver
     {
         _httpMethod = httpMethod.ToUpperInvariant();
         _bodyParameterCount = 0;
-        _routeIdParameterCount = 0;
     }
 
     /// <summary>
@@ -51,11 +53,6 @@ public class ParameterSourceResolver
             {
                 _bodyParameterCount++;
             }
-            // 如果显式标注为 Route，计入路由参数计数，避免 PUT/PATCH 继续追加自动 Id 路由
-            else if (explicitSource == ParameterSource.Route)
-            {
-                _routeIdParameterCount++;
-            }
 
             return explicitSource;
         }
@@ -75,14 +72,7 @@ public class ParameterSourceResolver
             return ParameterSource.Form;
         }
 
-        // 5.Route 参数推断
-        if (ShouldBindIdFromRoute(descriptor))
-        {
-            _routeIdParameterCount++;
-            return ParameterSource.Route;
-        }
-
-        // 6.Body 参数推断（只能 1 个）
+        // 5.Body 参数推断（只能 1 个）
         if (allowBody && descriptor.Kind == ParameterKind.Complex)
         {
             // 确保只有一个 Body 参数
@@ -96,7 +86,7 @@ public class ParameterSourceResolver
             return ParameterSource.Query;
         }
 
-        // 7.Query 参数兜底规则
+        // 6.Query 参数兜底规则
         return ParameterSource.Query;
     }
 
@@ -173,21 +163,4 @@ public class ParameterSourceResolver
         return _httpMethod is not "GET" and not "DELETE" and not "HEAD";
     }
 
-    /// <summary>
-    /// 判断是否应将 Id 参数绑定到 Route
-    /// </summary>
-    private bool ShouldBindIdFromRoute(ParameterDescriptor descriptor)
-    {
-        if (descriptor.Role != ParameterRole.Id || descriptor.Kind != ParameterKind.Simple)
-        {
-            return false;
-        }
-
-        return _httpMethod switch
-        {
-            "GET" or "DELETE" or "HEAD" => true,
-            "PUT" or "PATCH" => _routeIdParameterCount == 0,
-            _ => false
-        };
-    }
 }
