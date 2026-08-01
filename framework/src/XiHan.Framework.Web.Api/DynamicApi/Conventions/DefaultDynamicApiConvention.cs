@@ -269,16 +269,57 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
 
         // 根据方法名推断 HTTP 方法
         var methodName = methodInfo.Name;
-        foreach (var convention in _options.Conventions.HttpMethodConventions)
+        foreach (var prefix in OrderedRoutePredicates())
         {
-            if (methodName.StartsWith(convention.Key, StringComparison.OrdinalIgnoreCase))
+            if (IsRoutePredicateMatch(methodName, prefix))
             {
-                return convention.Value;
+                return _options.Conventions.HttpMethodConventions[prefix];
             }
         }
 
         // 默认为 POST
         return "POST";
+    }
+
+    /// <summary>
+    /// 按长度降序枚举动词前缀
+    /// </summary>
+    /// <remarks>
+    /// HTTP 方法推断与前缀剥离共用同一顺序，避免两者对同一方法名得出不一致的结论。
+    /// 长度降序保证 PartialUpdate 先于 Patch 被匹配。
+    /// </remarks>
+    /// <returns></returns>
+    private IEnumerable<string> OrderedRoutePredicates()
+    {
+        return _options.Conventions.HttpMethodConventions.Keys.OrderByDescending(prefix => prefix.Length);
+    }
+
+    /// <summary>
+    /// 判断方法名是否以指定动词前缀开头，且前缀之后是一个新词
+    /// </summary>
+    /// <remarks>
+    /// 要求词边界：前缀之后须为大写字母或下划线，否则 AddressBook 会被 Add 命中而得到
+    /// POST /ressBook、EditorTemplate 会被 Edit 命中而得到 PUT /orTemplate。
+    /// 方法名与前缀完全相等时视为命中。
+    /// </remarks>
+    /// <param name="name">方法名</param>
+    /// <param name="prefix">动词前缀</param>
+    /// <returns></returns>
+    private static bool IsRoutePredicateMatch(string name, string prefix)
+    {
+        if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (name.Length == prefix.Length)
+        {
+            return true;
+        }
+
+        var next = name[prefix.Length];
+
+        return char.IsUpper(next) || next == '_';
     }
 
     /// <summary>
@@ -533,10 +574,9 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// </summary>
     private string RemoveRoutePredicate(string name)
     {
-        foreach (var prefix in _options.Conventions.HttpMethodConventions.Keys
-                     .OrderByDescending(prefix => prefix.Length))
+        foreach (var prefix in OrderedRoutePredicates())
         {
-            if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            if (!IsRoutePredicateMatch(name, prefix))
             {
                 continue;
             }
