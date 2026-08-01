@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using SqlSugar;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
@@ -129,6 +130,14 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
             !unitOfWork.Options.IsTransactional)
         {
             return client;
+        }
+
+        // 事务已被回滚：钉住的连接上事务已失效，此时继续复用会让写入脱离事务被逐条自动提交
+        if (unitOfWork.IsRolledback)
+        {
+            throw new XiHanException(
+                $"工作单元 {unitOfWork.Id} 已被回滚，其事务已失效，不能再执行数据操作。" +
+                "如需在回滚后写入（例如记录失败原因），请经 IUnitOfWorkManager.Begin(requiresNew: true) 另开工作单元。");
         }
 
         var configId = client.CurrentConnectionConfig.ConfigId?.ToString();

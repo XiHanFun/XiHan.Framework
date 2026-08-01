@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
@@ -43,8 +44,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     // 是否正在完成
     private bool _isCompleting;
 
-    // 是否已回滚
-    private bool _isRolledback;
+    // 日志
+    private readonly ILogger<UnitOfWork> _logger;
 
     /// <summary>
     /// 构造函数
@@ -52,14 +53,17 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <param name="serviceProvider"></param>
     /// <param name="unitOfWorkEventPublisher"></param>
     /// <param name="options"></param>
+    /// <param name="logger"></param>
     public UnitOfWork(
         IServiceProvider serviceProvider,
         IUnitOfWorkEventPublisher unitOfWorkEventPublisher,
-        IOptions<XiHanUnitOfWorkDefaultOptions> options)
+        IOptions<XiHanUnitOfWorkDefaultOptions> options,
+        ILogger<UnitOfWork> logger)
     {
         ServiceProvider = serviceProvider;
         UnitOfWorkEventPublisher = unitOfWorkEventPublisher;
         _defaultOptions = options.Value;
+        _logger = logger;
 
         _databaseApis = [];
         _transactionApis = [];
@@ -111,6 +115,11 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// 是否已完成
     /// </summary>
     public bool IsCompleted { get; private set; }
+
+    /// <summary>
+    /// 是否已回滚
+    /// </summary>
+    public bool IsRolledback { get; private set; }
 
     /// <summary>
     /// 预留名称
@@ -203,7 +212,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        if (_isRolledback)
+        if (IsRolledback)
         {
             return;
         }
@@ -224,11 +233,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual async Task CompleteAsync(CancellationToken cancellationToken = default)
     {
-        if (_isRolledback)
-        {
-            return;
-        }
-
+        PreventCompleteAfterRollback();
         PreventMultipleComplete();
 
         try
@@ -292,12 +297,12 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// <returns></returns>
     public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
-        if (_isRolledback)
+        if (IsRolledback)
         {
             return;
         }
 
-        _isRolledback = true;
+        IsRolledback = true;
 
         await RollbackAllAsync(cancellationToken);
     }
@@ -522,7 +527,7 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
     /// </summary>
     protected virtual void OnFailed()
     {
-        Failed.InvokeSafely(this, new UnitOfWorkFailedEventArgs(this, _exception, _isRolledback));
+        Failed.InvokeSafely(this, new UnitOfWorkFailedEventArgs(this, _exception, IsRolledback));
     }
 
     /// <summary>
@@ -551,7 +556,10 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
             {
                 await supportsRollbackDatabaseApi.RollbackAsync(cancellationToken);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "工作单元 {UnitOfWorkId} 回滚数据库 API {DatabaseApi} 失败", Id, databaseApi.GetType().Name);
+            }
         }
 
         foreach (var transactionApi in GetAllActiveTransactionApis())
@@ -565,7 +573,10 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
             {
                 await supportsRollbackTransactionApi.RollbackAsync(cancellationToken);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "工作单元 {UnitOfWorkId} 回滚事务 API {TransactionApi} 失败", Id, transactionApi.GetType().Name);
+            }
         }
     }
 
@@ -593,9 +604,24 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
             {
                 transactionApi.Dispose();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "工作单元 {UnitOfWorkId} 释放事务 API {TransactionApi} 失败", Id, transactionApi.GetType().Name);
             }
+        }
+    }
+
+    /// <summary>
+    /// 防止回滚后再提交
+    /// </summary>
+    /// <exception cref="XiHanException"></exception>
+    private void PreventCompleteAfterRollback()
+    {
+        if (IsRolledback)
+        {
+            throw new XiHanException(
+                $"工作单元 {Id} 已被回滚，不能再提交。内层工作单元的回滚会传导至外层，" +
+                "本次调用之前的所有写入都不会落库。");
         }
     }
 
