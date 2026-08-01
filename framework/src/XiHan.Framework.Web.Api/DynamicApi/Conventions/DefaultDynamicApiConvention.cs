@@ -144,14 +144,16 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
     /// <summary>
     /// 获取路由参数
     /// </summary>
-    private static List<string> GetRouteParameters(MethodInfo methodInfo, string? httpMethod)
+    /// <remarks>
+    /// 只有显式标注 <see cref="Microsoft.AspNetCore.Mvc.FromRouteAttribute"/> 的参数才成为路由段。
+    /// 不按参数名后缀推断：名称是实现细节，让它决定 URL 会使「给既有方法加一个参数」
+    /// 变成静默的线上破坏性变更。
+    /// </remarks>
+    private static List<string> GetRouteParameters(MethodInfo methodInfo)
     {
         var parameters = new List<string>();
-        var methodParameters = methodInfo.GetParameters();
-        var routeIdCount = 0;
-        var normalizedHttpMethod = (httpMethod ?? "POST").ToUpperInvariant();
 
-        foreach (var parameter in methodParameters)
+        foreach (var parameter in methodInfo.GetParameters())
         {
             var paramName = parameter.Name;
             if (string.IsNullOrWhiteSpace(paramName))
@@ -159,39 +161,13 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
                 continue;
             }
 
-            // 显式绑定优先处理，非路由绑定不参与路由参数推断
-            if (ParameterSourceResolver.TryGetExplicitBinding(parameter, out var explicitSource, out var bindingName))
-            {
-                if (explicitSource == ParameterSource.Route)
-                {
-                    var routeParameterName = bindingName ?? paramName;
-                    parameters.Add($"{{{routeParameterName}}}");
-                    routeIdCount++;
-                }
-
-                continue;
-            }
-
-            if (!ParameterClassifier.IsIdParameter(paramName, parameter.ParameterType))
+            if (!ParameterSourceResolver.TryGetExplicitBinding(parameter, out var explicitSource, out var bindingName) ||
+                explicitSource != ParameterSource.Route)
             {
                 continue;
             }
 
-            // 对于 GET 和 DELETE 请求，ID 参数添加到路由
-            if (normalizedHttpMethod is "GET" or "DELETE" or "HEAD")
-            {
-                parameters.Add($"{{{parameter.Name}}}");
-                routeIdCount++;
-            }
-            // 对于 PUT 和 PATCH 请求，通常第一个 ID 参数添加到路由
-            else if (normalizedHttpMethod is "PUT" or "PATCH")
-            {
-                if (routeIdCount == 0)
-                {
-                    parameters.Add($"{{{parameter.Name}}}");
-                    routeIdCount++;
-                }
-            }
+            parameters.Add($"{{{bindingName ?? paramName}}}");
         }
 
         return parameters;
@@ -416,7 +392,7 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
         // 添加路由参数
         if (context.MethodInfo != null)
         {
-            var parameters = GetRouteParameters(context.MethodInfo, context.HttpMethod);
+            var parameters = GetRouteParameters(context.MethodInfo);
             if (parameters.Count != 0)
             {
                 parts.AddRange(parameters);
