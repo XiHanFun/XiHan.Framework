@@ -19,15 +19,16 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 /// </summary>
 public static class DynamicApiControllerFactory
 {
-    private static readonly AssemblyBuilder AssemblyBuilder;
-    private static readonly ModuleBuilder ModuleBuilder;
     private static readonly Dictionary<Type, Type> ControllerTypeCache = [];
+    private static readonly Dictionary<string, Type> ControllerNameOwners = [];
+    private static readonly Lock CacheLock = new();
+
+    private static ModuleBuilder _moduleBuilder;
+    private static int _moduleGeneration;
 
     static DynamicApiControllerFactory()
     {
-        var assemblyName = new AssemblyName("XiHan.Framework.Web.Api.DynamicControllers");
-        AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        ModuleBuilder = AssemblyBuilder.DefineDynamicModule("MainModule");
+        _moduleBuilder = CreateModuleBuilder();
     }
 
     /// <summary>
@@ -41,14 +42,14 @@ public static class DynamicApiControllerFactory
     public static Type? CreateControllerType(Type serviceType, IDynamicApiConvention? convention = null,
         DynamicApiOptions? options = null, ILogger? logger = null)
     {
-        // 首先检查缓存，避免重复创建控制器类型
-        if (ControllerTypeCache.TryGetValue(serviceType, out var cachedType))
+        lock (CacheLock)
         {
-            return cachedType;
-        }
+            // 首先检查缓存，避免重复创建控制器类型
+            if (ControllerTypeCache.TryGetValue(serviceType, out var cachedType))
+            {
+                return cachedType;
+            }
 
-        try
-        {
             logger?.LogDebug("正在为服务创建动态控制器: {ServiceType}", serviceType.FullName);
 
             // 应用约定获取控制器信息
@@ -72,8 +73,10 @@ public static class DynamicApiControllerFactory
             logger?.LogInformation("正在生成控制器 '{ControllerName}'，路由模板: '{RouteTemplate}'",
                 controllerName, routeTemplate);
 
+            EnsureUniqueControllerName(controllerName, serviceType);
+
             // 创建控制器类型
-            var typeBuilder = ModuleBuilder.DefineType(
+            var typeBuilder = _moduleBuilder.DefineType(
                 $"{controllerName}Controller",
                 TypeAttributes.Public | TypeAttributes.Class,
                 typeof(ControllerBase));
@@ -104,28 +107,63 @@ public static class DynamicApiControllerFactory
 
             // 创建类型
             var controllerType = typeBuilder.CreateType();
-            if (controllerType != null)
-            {
-                ControllerTypeCache[serviceType] = controllerType;
-                logger?.LogInformation("成功为服务 '{ServiceName}' 创建了动态控制器，包含 {MethodCount} 个操作方法", serviceType.Name, methodCount);
-            }
+            ControllerTypeCache[serviceType] = controllerType;
+            ControllerNameOwners[controllerName] = serviceType;
+            logger?.LogInformation("成功为服务 '{ServiceName}' 创建了动态控制器，包含 {MethodCount} 个操作方法", serviceType.Name, methodCount);
 
             return controllerType;
         }
-        catch (Exception ex)
+    }
+
+    /// <summary>
+    /// 校验控制器名在动态程序集内唯一
+    /// </summary>
+    /// <remarks>
+    /// 控制器名由服务简名推导、不含命名空间，不同命名空间下的同简名应用服务会在同一动态模块内类型重名。
+    /// </remarks>
+    /// <param name="controllerName">控制器名</param>
+    /// <param name="serviceType">服务类型</param>
+    /// <exception cref="DynamicApiException">控制器名已被其他服务占用</exception>
+    private static void EnsureUniqueControllerName(string controllerName, Type serviceType)
+    {
+        if (ControllerNameOwners.TryGetValue(controllerName, out var owner) && owner != serviceType)
         {
-            logger?.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
-            return null;
+            throw new DynamicApiException(
+                $"检测到动态 API 控制器名冲突：'{controllerName}' 同时来自 '{owner.FullName}' 和 '{serviceType.FullName}'。" +
+                "控制器名由服务简名推导且不含命名空间，请为其中一个服务指定 [DynamicApi(Name = \"...\")]。");
         }
     }
 
     /// <summary>
     /// 清除缓存
     /// </summary>
+    /// <remarks>
+    /// 同时重建动态模块：已发射的类型无法从模块中移除，沿用原模块会让清空后重新生成的同名控制器
+    /// 撞上「Duplicate type name within an assembly」。
+    /// </remarks>
     public static void ClearCache()
     {
-        ControllerTypeCache.Clear();
+        lock (CacheLock)
+        {
+            ControllerTypeCache.Clear();
+            ControllerNameOwners.Clear();
+            _moduleBuilder = CreateModuleBuilder();
+        }
+
         DynamicApiXmlCommentsHelper.ClearCache();
+    }
+
+    /// <summary>
+    /// 创建承载动态控制器的模块构建器
+    /// </summary>
+    /// <returns>模块构建器</returns>
+    private static ModuleBuilder CreateModuleBuilder()
+    {
+        var generation = Interlocked.Increment(ref _moduleGeneration);
+        var assemblyName = new AssemblyName($"XiHan.Framework.Web.Api.DynamicControllers.G{generation}");
+        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+
+        return assemblyBuilder.DefineDynamicModule("MainModule");
     }
 
     #region 辅助方法
