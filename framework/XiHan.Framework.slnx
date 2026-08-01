@@ -86,6 +86,7 @@
   <Folder Name="/2.tests/2.UnitTests/">
     <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
     <Project Path="test/XiHan.Framework.AI.Tests/XiHan.Framework.AI.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
     <Project Path="test/XiHan.Framework.Http.Tests/XiHan.Framework.Http.Tests.csproj" Id="e7a9d4d6-0153-45ed-a7f5-890cd0f51854" />
