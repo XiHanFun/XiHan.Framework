@@ -15,9 +15,16 @@ namespace XiHan.Framework.SearchEngines.Tests;
 /// 断言只写在 <see cref="ISearchEngine"/> 契约上，不依赖任何具体实现的概念，
 /// 因此新增实现包时可直接复用本套用例校验其行为一致性。
 /// </remarks>
-public class SearchEngineContractTests
+public abstract class SearchEngineContractTestsBase
 {
-    private const string Index = "articles";
+    // Elasticsearch 是共享集群，索引名按用例唯一化，避免并行用例互相干扰
+    private readonly string Index = $"articles-{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// 创建被测引擎
+    /// </summary>
+    /// <returns>引擎</returns>
+    protected abstract Task<ISearchEngine> CreateEngineAsync();
 
     /// <summary>
     /// 创建索引后可查到存在
@@ -25,7 +32,7 @@ public class SearchEngineContractTests
     [Fact]
     public async Task CreateIndex_ThenIndexExists()
     {
-        var engine = new InMemorySearchEngine();
+        var engine = await CreateEngineAsync();
 
         Assert.False(await engine.IndexExistsAsync(Index, TestContext.Current.CancellationToken));
         Assert.True(await engine.CreateIndexAsync(BuildDefinition(), TestContext.Current.CancellationToken));
@@ -49,7 +56,7 @@ public class SearchEngineContractTests
     [Fact]
     public async Task DeleteIndex_WhenMissing_ReturnsFalse()
     {
-        var engine = new InMemorySearchEngine();
+        var engine = await CreateEngineAsync();
 
         Assert.False(await engine.DeleteIndexAsync(Index, TestContext.Current.CancellationToken));
     }
@@ -60,7 +67,7 @@ public class SearchEngineContractTests
     [Fact]
     public async Task Index_WhenIndexMissing_Throws()
     {
-        var engine = new InMemorySearchEngine();
+        var engine = await CreateEngineAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1")), TestContext.Current.CancellationToken));
@@ -275,7 +282,12 @@ public class SearchEngineContractTests
             },
             TestContext.Current.CancellationToken);
 
-        Assert.Contains("<em>分布式</em>", result.Hits[0].Highlights["title"][0]);
+        // 片段的切分形状由各实现的分析器决定（Elasticsearch 的默认分析器逐字切分中文），
+        // 契约只保证「命中处被标记」且「去掉标记后即原文」，不约束标记落在哪几个字上
+        var fragment = result.Hits[0].Highlights["title"][0];
+
+        Assert.Contains("<em>", fragment, StringComparison.Ordinal);
+        Assert.Equal("分布式事件总线", fragment.Replace("<em>", string.Empty).Replace("</em>", string.Empty));
     }
 
     /// <summary>
@@ -328,7 +340,7 @@ public class SearchEngineContractTests
     /// 构建索引定义
     /// </summary>
     /// <returns>索引定义</returns>
-    private static SearchIndexDefinition BuildDefinition()
+    private SearchIndexDefinition BuildDefinition()
     {
         return new SearchIndexDefinition(Index,
         [
@@ -342,9 +354,9 @@ public class SearchEngineContractTests
     /// 创建已建索引的引擎
     /// </summary>
     /// <returns>引擎</returns>
-    private static async Task<InMemorySearchEngine> CreateEngineWithIndexAsync()
+    private async Task<ISearchEngine> CreateEngineWithIndexAsync()
     {
-        var engine = new InMemorySearchEngine();
+        var engine = await CreateEngineAsync();
         await engine.CreateIndexAsync(BuildDefinition(), TestContext.Current.CancellationToken);
 
         return engine;
@@ -354,7 +366,7 @@ public class SearchEngineContractTests
     /// 创建已写入样例文档的引擎
     /// </summary>
     /// <returns>引擎</returns>
-    private static async Task<InMemorySearchEngine> CreateSeededEngineAsync()
+    private async Task<ISearchEngine> CreateSeededEngineAsync()
     {
         var engine = await CreateEngineWithIndexAsync();
         await engine.IndexManyAsync(Index,
@@ -363,6 +375,7 @@ public class SearchEngineContractTests
             new SearchDocument<Article>("2", NewArticle("2", "分布式事件总线", "framework", 1200)),
             new SearchDocument<Article>("3", NewArticle("3", "缓存抽象", "framework", 9))
         ], TestContext.Current.CancellationToken);
+        await engine.RefreshAsync(Index, TestContext.Current.CancellationToken);
 
         return engine;
     }

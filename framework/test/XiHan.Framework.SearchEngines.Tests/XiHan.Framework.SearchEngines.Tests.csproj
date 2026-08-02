@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj" />
+        <ProjectReference Include="..\..\src\XiHan.Framework.SearchEngines.Elasticsearch\XiHan.Framework.SearchEngines.Elasticsearch.csproj" />
     </ItemGroup>
 
 </Project>
