@@ -306,7 +306,7 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
             return false;
         }
 
-        var addToInbox = false;
+        var handledByInbox = false;
 
         using (var scope = ServiceScopeFactory.CreateScope())
         {
@@ -321,6 +321,9 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
                     {
                         if (await eventInbox.ExistsByMessageIdAsync(messageId!))
                         {
+                            // 该收件箱已收录同一消息：这正是幂等要拦下的重复投递，必须视为已处理。
+                            // 若在此返回 false，调用方会走「未配置收件箱」的内联分支把重复消息再处理一遍。
+                            handledByInbox = true;
                             continue;
                         }
                     }
@@ -332,14 +335,19 @@ public abstract class DistributedEventBusBase : EventBusBase, IDistributedEventB
                         Serialize(eventData),
                         Clock.Now
                     );
-                    incomingEventInfo.SetCorrelationId(correlationId!);
+                    // 关联标识可缺省（本地总线直发、以及未携带该头的 broker 消息都没有），
+                    // 而 SetCorrelationId 对空值抛异常，故此处按有值才写
+                    if (!correlationId.IsNullOrWhiteSpace())
+                    {
+                        incomingEventInfo.SetCorrelationId(correlationId!);
+                    }
                     await eventInbox.EnqueueAsync(incomingEventInfo);
-                    addToInbox = true;
+                    handledByInbox = true;
                 }
             }
         }
 
-        return addToInbox;
+        return handledByInbox;
     }
 
     /// <summary>
