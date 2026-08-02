@@ -58,6 +58,7 @@
     <Project Path="src/XiHan.Framework.Script/XiHan.Framework.Script.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines.Abstractions/XiHan.Framework.SearchEngines.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.SearchEngines/XiHan.Framework.SearchEngines.csproj" />
+    <Project Path="src/XiHan.Framework.SearchEngines.Elasticsearch/XiHan.Framework.SearchEngines.Elasticsearch.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
     <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
