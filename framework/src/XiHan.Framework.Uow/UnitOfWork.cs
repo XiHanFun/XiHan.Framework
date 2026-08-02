@@ -236,6 +236,11 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
         PreventCompleteAfterRollback();
         PreventMultipleComplete();
 
+        // 分布式事件只在事务提交成功之后才投出去：提交前入队会让回滚掉的事务照样把事件发出去，
+        // 下游据此看到一份从未落库的数据（幽灵事件）。本地事件仍须在提交前发布——
+        // 其处理器可能继续写库，这些写入必须落在同一个事务里。
+        var distributedEventsToPublish = new List<UnitOfWorkEventRecord>();
+
         try
         {
             _isCompleting = true;
@@ -259,11 +264,8 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
 
                 if (DistributedEvents.Count != 0)
                 {
-                    var distributedEventsToBePublished = DistributedEvents.OrderBy(e => e.EventOrder).ToArray();
+                    distributedEventsToPublish.AddRange(DistributedEvents);
                     DistributedEvents.Clear();
-                    await UnitOfWorkEventPublisher.PublishDistributedEventsAsync(
-                        distributedEventsToBePublished
-                    );
                 }
 
                 await SaveChangesAsync(cancellationToken);
@@ -276,7 +278,6 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
 
             await CommitTransactionsAsync(cancellationToken);
             IsCompleted = true;
-            await OnCompletedAsync();
         }
         catch (Exception ex)
         {
@@ -288,6 +289,15 @@ public class UnitOfWork : IUnitOfWork, ITransientDependency
         {
             _isCompleting = false;
         }
+
+        if (distributedEventsToPublish.Count != 0)
+        {
+            await UnitOfWorkEventPublisher.PublishDistributedEventsAsync(
+                [.. distributedEventsToPublish.OrderBy(e => e.EventOrder)]
+            );
+        }
+
+        await OnCompletedAsync();
     }
 
     /// <summary>
