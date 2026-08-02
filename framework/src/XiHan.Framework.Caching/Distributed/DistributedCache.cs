@@ -374,32 +374,6 @@ public class DistributedCache<TCacheItem> : IDistributedCache<TCacheItem>
         return InternalCache.RemoveByPatternAsync(pattern, hideErrors, considerUow, token);
     }
 
-    /// <summary>
-    /// 执行 Lua 脚本
-    /// </summary>
-    /// <param name="script"></param>
-    /// <param name="keys"></param>
-    /// <param name="values"></param>
-    /// <param name="hideErrors"></param>
-    /// <returns></returns>
-    public RedisResult? ScriptEvaluate(string script, IEnumerable<string>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null)
-    {
-        return InternalCache.ScriptEvaluate(script, keys, values, hideErrors);
-    }
-
-    /// <summary>
-    /// 异步执行 Lua 脚本
-    /// </summary>
-    /// <param name="script"></param>
-    /// <param name="keys"></param>
-    /// <param name="values"></param>
-    /// <param name="hideErrors"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<string>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default)
-    {
-        return InternalCache.ScriptEvaluateAsync(script, keys, values, hideErrors, token);
-    }
 }
 
 /// <summary>
@@ -1760,7 +1734,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="values"></param>
     /// <param name="hideErrors"></param>
     /// <returns></returns>
-    public virtual RedisResult? ScriptEvaluate(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null)
+    public virtual CacheScriptResult? ScriptEvaluate(string script, IEnumerable<TCacheKey>? keys = null, object?[]? values = null, bool? hideErrors = null)
     {
         hideErrors ??= _distributedCacheOption.HideErrors;
 
@@ -1777,7 +1751,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
 
             var normalizedKeys = keys?.Select(NormalizeKey).ToArray() ?? [];
-            var args = values?.ToArray() ?? [];
+            var args = values ?? [];
             return cacheSupportsLuaScript.ScriptEvaluate(script, normalizedKeys, args);
         }
         catch (Exception ex)
@@ -1801,7 +1775,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <param name="hideErrors"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default)
+    public virtual async Task<CacheScriptResult?> ScriptEvaluateAsync(string script, IEnumerable<TCacheKey>? keys = null, object?[]? values = null, bool? hideErrors = null, CancellationToken token = default)
     {
         hideErrors ??= _distributedCacheOption.HideErrors;
         token = CancellationTokenProvider.FallbackToProvider(token);
@@ -1819,7 +1793,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             }
 
             var normalizedKeys = keys?.Select(NormalizeKey).ToArray() ?? [];
-            var args = values?.ToArray() ?? [];
+            var args = values ?? [];
             return await cacheSupportsLuaScript.ScriptEvaluateAsync(script, normalizedKeys, args, token);
         }
         catch (Exception ex)

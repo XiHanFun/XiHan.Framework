@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using System.Buffers;
+using System.Globalization;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -397,7 +398,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
     /// <param name="keys"></param>
     /// <param name="values"></param>
     /// <returns></returns>
-    public virtual RedisResult ScriptEvaluate(string script, string[]? keys = null, RedisValue[]? values = null)
+    public virtual CacheScriptResult ScriptEvaluate(string script, string[]? keys = null, object?[]? values = null)
     {
         if (string.IsNullOrWhiteSpace(script))
         {
@@ -409,7 +410,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
         try
         {
             var redisKeys = ToRedisKeys(keys);
-            return cache.ScriptEvaluate(script, redisKeys, values);
+            return ToScriptResult(cache.ScriptEvaluate(script, redisKeys, ToRedisValues(values)));
         }
         catch (Exception ex)
         {
@@ -426,7 +427,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
     /// <param name="values"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public virtual async Task<RedisResult> ScriptEvaluateAsync(string script, string[]? keys = null, RedisValue[]? values = null, CancellationToken token = default)
+    public virtual async Task<CacheScriptResult> ScriptEvaluateAsync(string script, string[]? keys = null, object?[]? values = null, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(script))
         {
@@ -440,7 +441,7 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
         {
             token.ThrowIfCancellationRequested();
             var redisKeys = ToRedisKeys(keys);
-            return await cache.ScriptEvaluateAsync(script, redisKeys, values);
+            return ToScriptResult(await cache.ScriptEvaluateAsync(script, redisKeys, ToRedisValues(values)));
         }
         catch (Exception ex)
         {
@@ -539,6 +540,68 @@ public class XiHanRedisCache : RedisCache, ICacheSupportsMultipleItems, ICacheSu
         }
 
         return [.. keys.Select(key => InstancePrefix.Append(key))];
+    }
+
+    /// <summary>
+    /// 转换为 RedisValue 数组
+    /// </summary>
+    /// <param name="values">中立参数值</param>
+    /// <returns>RedisValue 数组</returns>
+    protected static RedisValue[] ToRedisValues(object?[]? values)
+
+    {
+        if (values is null || values.Length == 0)
+        {
+            return [];
+        }
+
+        return [.. values.Select(ToRedisValue)];
+    }
+
+    /// <summary>
+    /// 转换单个参数值
+    /// </summary>
+    /// <param name="value">中立参数值</param>
+    /// <returns>RedisValue</returns>
+    private static RedisValue ToRedisValue(object? value)
+    {
+        return value switch
+        {
+            null => RedisValue.Null,
+            string text => text,
+            byte[] bytes => bytes,
+            bool boolean => boolean,
+            int number => number,
+            long number => number,
+            double number => number,
+            _ => Convert.ToString(value, CultureInfo.InvariantCulture)
+        };
+    }
+
+    /// <summary>
+    /// 把 Redis 脚本返回值转换为中立结果
+    /// </summary>
+    /// <remarks>
+    /// 转换只发生在此处：抽象层不认识 <see cref="RedisResult"/>，
+    /// 具体缓存实现负责把自己的原生返回值映射为 <see cref="CacheScriptResult"/>。
+    /// </remarks>
+    /// <param name="result">Redis 脚本返回值</param>
+    /// <returns>中立结果</returns>
+    protected static CacheScriptResult ToScriptResult(RedisResult? result)
+    {
+        if (result is null || result.IsNull)
+        {
+            return CacheScriptResult.Null;
+        }
+
+        if (result.Resp2Type == ResultType.Array)
+        {
+            var items = (RedisResult[]?)result ?? [];
+
+            return CacheScriptResult.FromArray([.. items.Select(ToScriptResult)]);
+        }
+
+        return CacheScriptResult.FromValue((string?)result);
     }
 
     /// <summary>
