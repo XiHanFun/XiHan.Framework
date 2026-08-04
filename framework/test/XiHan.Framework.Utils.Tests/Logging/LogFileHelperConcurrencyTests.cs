@@ -10,6 +10,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// <summary>
 /// LogFileHelper 高并发测试
 /// </summary>
+[Collection(LoggingTestCollection.Name)]
 public class LogFileHelperConcurrencyTests : IDisposable
 {
     private readonly string _testLogDirectory;

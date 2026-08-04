@@ -8,6 +8,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// <summary>
 /// LogFileHelper 修复验证测试
 /// </summary>
+[Collection(LoggingTestCollection.Name)]
 public class LogFileHelperFixTests : IDisposable
 {
     private readonly string _testLogDirectory;

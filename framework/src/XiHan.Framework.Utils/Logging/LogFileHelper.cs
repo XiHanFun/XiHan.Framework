@@ -38,6 +38,15 @@ public static class LogFileHelper
     private static ILogFormatter _formatter = new TextLogFormatter();
 
     private static volatile bool _isShutdownRequested = false;
+
+    /// <summary>
+    /// 已出队但尚未写完的批次数
+    /// </summary>
+    /// <remarks>
+    /// 条目一旦被读入批次，通道计数即归零，而落盘发生在其后。
+    /// 仅凭通道计数判断刷新完成会漏掉正在写的那一批，故单独计数。
+    /// </remarks>
+    private static int _pendingBatches;
     private static volatile bool _isWorkerStarted = false;
     private static DateTimeOffset _lastCleanupTime = DateTimeOffset.UtcNow;
 
@@ -275,9 +284,11 @@ public static class LogFileHelper
             return;
         }
 
-        // 等待通道处理完当前所有日志
+        // 等待队列排空且在途批次全部落盘。只等队列会在最后一批正在写时提前返回，
+        // 调用方据此认为日志已持久化，实际可能丢掉那一批。
         var startTime = DateTimeOffset.UtcNow;
-        while (_logChannel.Reader.Count > 0 && (DateTimeOffset.UtcNow - startTime).TotalMilliseconds < 5000)
+        while ((_logChannel.Reader.Count > 0 || Volatile.Read(ref _pendingBatches) > 0)
+               && (DateTimeOffset.UtcNow - startTime).TotalMilliseconds < 5000)
         {
             Task.Delay(10).Wait();
         }
@@ -869,18 +880,28 @@ public static class LogFileHelper
                         break;
                     }
 
-                    batch.Clear();
-
-                    // 批量读取条目
-                    while (batch.Count < Options.BatchSize && _logChannel.Reader.TryRead(out var entry))
+                    // 先登记在途批次再出队：出队会立刻把通道计数清零，
+                    // 若此时才登记，Flush 可能在两者之间看到「队列空且无在途」而提前返回
+                    Interlocked.Increment(ref _pendingBatches);
+                    try
                     {
-                        batch.Add(entry);
+                        batch.Clear();
+
+                        // 批量读取条目
+                        while (batch.Count < Options.BatchSize && _logChannel.Reader.TryRead(out var entry))
+                        {
+                            batch.Add(entry);
+                        }
+
+                        // 批量处理
+                        if (batch.Count > 0)
+                        {
+                            ProcessLogBatch(batch);
+                        }
                     }
-
-                    // 批量处理
-                    if (batch.Count > 0)
+                    finally
                     {
-                        ProcessLogBatch(batch);
+                        Interlocked.Decrement(ref _pendingBatches);
                     }
                 }
                 catch (OperationCanceledException)
