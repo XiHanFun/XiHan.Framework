@@ -8,6 +8,7 @@ namespace XiHan.Framework.Utils.Tests.Caching;
 /// <summary>
 /// CacheHelper 惰性清理机制测试
 /// </summary>
+[Collection(CachingTestCollection.Name)]
 public class CacheHelperLazyCleanupTests
 {
     private readonly ITestOutputHelper _output;

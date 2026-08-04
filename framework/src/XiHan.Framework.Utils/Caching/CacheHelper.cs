@@ -591,8 +591,12 @@ public static class CacheHelper
             return;
         }
 
-        // 需要淘汰一些缓存项
-        var evictCount = Math.Max(1, Cache.Count - Options.MaxCacheSize + 10); // 多淘汰10个，减少频繁淘汰
+        // 一次淘汰到低水位而非刚好卡在上限，摊薄淘汰频率。
+        // 低水位按上限的比例留余量：固定多淘汰若干个会在小容量下把缓存整个清空，
+        // 届时无论配置哪种淘汰策略都失去意义。
+        var headroom = Math.Max(1, Options.MaxCacheSize / 10);
+        var targetSize = Math.Max(1, Options.MaxCacheSize - headroom);
+        var evictCount = Math.Max(1, Cache.Count - targetSize);
         EvictItems(evictCount);
     }
 
