@@ -43,27 +43,12 @@ jobs:
           -p:GeneratePackageOnBuild=false
 
       - name: 测试
-        # 排除 Utils.Tests：该工程存在既有的不稳定用例（见下一步），
-        # 放进来会让流水线从第一天起就是红的，而一条长期红着的流水线等于没有。
-        # 其余全部工程在此为强门禁，失败即中断。
+        # 全部工程均为强门禁，失败即中断。
         run: >
           dotnet test framework/XiHan.Framework.slnx
           --configuration Release
           --no-build
-          --filter "FullyQualifiedName!~XiHan.Framework.Utils.Tests"
           --logger "trx;LogFileName=tests.trx"
-          --results-directory ${{ runner.temp }}/test-results
-
-      - name: 测试（Utils，已知不稳定，不阻断）
-        # 失败数在 14~16 之间浮动，集中在 LogFileHelper / CacheHelper 的并发与挂钟性能用例：
-        # 共享进程级静态状态 + xUnit 默认并行调度互相破坏。次数不稳本身即为证据。
-        # 此处仍然执行并保留结果，只是暂不阻断；修好后删掉 continue-on-error 并入上一步。
-        continue-on-error: true
-        run: >
-          dotnet test framework/test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj
-          --configuration Release
-          --no-build
-          --logger "trx;LogFileName=utils-tests.trx"
           --results-directory ${{ runner.temp }}/test-results
 
       - name: 上传测试结果
