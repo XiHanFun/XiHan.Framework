@@ -77,8 +77,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(3000, TestContext.Current.CancellationToken); // 等待异步写入完成
-
+        
         // Assert
         Assert.Empty(exceptions);
         Assert.Equal(maxThreads, completedThreads);
@@ -146,8 +145,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(2000, TestContext.Current.CancellationToken);
-
+        
         var finalMemory = GC.GetTotalMemory(false);
         var totalMemoryIncrease = (finalMemory - initialMemory) / 1024.0 / 1024.0;
 
@@ -206,8 +204,7 @@ public class LoggingStressTests : IDisposable
         stopwatch.Stop();
 
         LogFileHelper.Flush();
-        await Task.Delay(3000, TestContext.Current.CancellationToken);
-
+        
         // Assert
         var logFiles = Directory.GetFiles(_testLogDirectory, "*error*.log");
 
@@ -279,8 +276,7 @@ public class LoggingStressTests : IDisposable
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(2000, TestContext.Current.CancellationToken);
-
+        
         // Assert
         Console.WriteLine($"Error Recovery Test:");
         Console.WriteLine($"  Total Messages: {messageCount}");
@@ -381,8 +377,7 @@ public class LoggingStressTests : IDisposable
         }
 
         LogFileHelper.Flush();
-        await Task.Delay(2000, TestContext.Current.CancellationToken);
-
+        
         // Assert
         Console.WriteLine($"Resource Contention Test Results:");
         foreach (var op in operations)
@@ -477,8 +472,7 @@ public class LoggingStressTests : IDisposable
         try
         {
             LogFileHelper.Flush();
-            Thread.Sleep(1000);
-            GC.SuppressFinalize(this);
+                        GC.SuppressFinalize(this);
 
             if (Directory.Exists(_testLogDirectory))
             {
