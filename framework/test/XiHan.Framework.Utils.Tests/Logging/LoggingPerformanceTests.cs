@@ -9,6 +9,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// <summary>
 /// Logging 模块性能基准测试
 /// </summary>
+[Collection(LoggingTestCollection.Name)]
 public class LoggingPerformanceTests : IDisposable
 {
     private readonly string _testLogDirectory;

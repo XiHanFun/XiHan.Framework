@@ -10,6 +10,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// <summary>
 /// Logging 模块压力测试
 /// </summary>
+[Collection(LoggingTestCollection.Name)]
 public class LoggingStressTests : IDisposable
 {
     private static readonly int[] Function = [50, 100, 150, 200];

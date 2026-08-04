@@ -10,6 +10,7 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 /// <summary>
 /// LogHelper 高并发测试
 /// </summary>
+[Collection(LoggingTestCollection.Name)]
 public class LogHelperConcurrencyTests
 {
     private readonly LogLevel _originalLogLevel;
