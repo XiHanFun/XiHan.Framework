@@ -1,0 +1,75 @@
+name: CI
+
+# 只做构建与测试，不发布任何包。发布仍由本机脚本执行。
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  # 允许手工触发，便于验证流水线本身
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一分支的新推送取消尚在排队/运行的旧任务，避免堆积
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 构建与测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        run: dotnet restore framework/XiHan.Framework.slnx
+
+      - name: 构建
+        # GeneratePackageOnBuild 在本仓默认开启，CI 不需要产包，关掉省时间
+        run: >
+          dotnet build framework/XiHan.Framework.slnx
+          --configuration Release
+          --no-restore
+          -p:GeneratePackageOnBuild=false
+
+      - name: 测试
+        # 排除 Utils.Tests：该工程存在既有的不稳定用例（见下一步），
+        # 放进来会让流水线从第一天起就是红的，而一条长期红着的流水线等于没有。
+        # 其余全部工程在此为强门禁，失败即中断。
+        run: >
+          dotnet test framework/XiHan.Framework.slnx
+          --configuration Release
+          --no-build
+          --filter "FullyQualifiedName!~XiHan.Framework.Utils.Tests"
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory ${{ runner.temp }}/test-results
+
+      - name: 测试（Utils，已知不稳定，不阻断）
+        # 失败数在 14~16 之间浮动，集中在 LogFileHelper / CacheHelper 的并发与挂钟性能用例：
+        # 共享进程级静态状态 + xUnit 默认并行调度互相破坏。次数不稳本身即为证据。
+        # 此处仍然执行并保留结果，只是暂不阻断；修好后删掉 continue-on-error 并入上一步。
+        continue-on-error: true
+        run: >
+          dotnet test framework/test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=utils-tests.trx"
+          --results-directory ${{ runner.temp }}/test-results
+
+      - name: 上传测试结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore
