@@ -26,7 +26,7 @@ public class XiHanUpgradeOptions
     /// <summary>
     /// 迁移脚本根目录（相对路径将基于应用根目录）
     /// </summary>
-    public string MigrationsRootPath { get; set; } = "migrations";
+    public string MigrationsRootPath { get; set; } = "UpdateScripts";
 
     /// <summary>
     /// 分布式锁资源键

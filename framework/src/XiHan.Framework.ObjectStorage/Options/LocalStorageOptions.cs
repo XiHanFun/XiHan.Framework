@@ -16,7 +16,7 @@ public class LocalStorageOptions
     /// <summary>
     /// 根目录路径（默认置于 Web 根 wwwroot 下，便于静态文件服务托管与直链）
     /// </summary>
-    public string RootPath { get; set; } = "wwwroot/uploads";
+    public string RootPath { get; set; } = "wwwroot/Uploads";
 
     /// <summary>
     /// URL前缀
