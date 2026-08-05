@@ -4,27 +4,27 @@
 
 ## v3.10.0 (2026-08-05)
 
-- **新增** 新增 Web.Mcp 包，MCP Server 的 HTTP 传输、`/mcp` 端点映射与应用管理 key 鉴权下沉至框架，应用只需声明模块依赖
-- **新增** 新增 OpenID Connect 协议层，含 RSA 签名密钥提供者、`id_token` 签发与发现文档，配置节 `XiHan:Authentication:Oidc` 默认关闭
-- **新增** 搜索引擎从空壳改为可用抽象，拆出契约包 SearchEngines.Abstractions 与进程内实现 SearchEngines，核心包不再传递 Elasticsearch 依赖
-- **新增** 新增 SearchEngines.Elasticsearch 实现包，同一套 19 条契约断言在进程内实现与真实 Elasticsearch 上同时通过
-- **新增** 分布式事件 Redis 提供程序接管滞留消息并引入死信，新增接管间隔、最小空闲时长、批量大小、最大投递次数与死信 Stream 五项配置
-- **新增** 动态 API 新增控制器名唯一性校验与 `DynamicApiOptions.ThrowOnGenerationFailure`，装配错误在启动期即暴露
-- **新增** 接入 GitHub Actions 构建与测试流水线，14 个测试工程并入合并门禁，新增 global.json 钉住 SDK 版本
-- **调整** 破坏性变更：路由段只由显式 `[FromRoute]` 产生，参数名不再决定 URL，依赖自动 Id 路由的端点需显式标注，否则 `GET /api/User/User/{id}` 变为 `GET /api/User/User?id=1`
-- **调整** 破坏性变更：`IDistributedCache` 移除两个 Lua 脚本成员，`ICacheSupportsLuaScript` 改用中立签名（`object?[]` 入参、`CacheScriptResult` 返回），缓存抽象不再出现 StackExchange.Redis 类型
-- **调整** 破坏性变更：工作单元回滚后再调 `CompleteAsync` 由静默返回改为抛出，`IUnitOfWork` 新增 `IsRolledback` 成员
-- **修复** 修复约定注册使 Scoped/Singleton 服务的拦截器全体静默失效，`[UnitOfWork]`、`[Cacheable]`、`[CacheEvict]` 与审计拦截恢复生效，键值服务不再被降级为非键值
-- **修复** 回滚后的连接不再被复用，回滚失败改记错误日志，消除「接口返回 200 但一行没写」
-- **修复** 分布式事件改到事务提交成功之后才发布，消除事务回滚了事件照发的幽灵事件
-- **修复** 修复收件箱幂等三处失效：重复消息不再被内联再处理一遍、发件箱重投去重键改取记录标识、默认配置下发布不再抛 `ArgumentException`
-- **修复** 动态 API 装配失败改为 fail-fast，不再静默丢掉整个服务的端点，清缓存后重新生成不再抛重复类型名
-- **修复** 动词前缀按词边界匹配，`AddressBookAsync` 一类方法名不再被腰斩成 `POST /ressBook`
-- **修复** 修复日志缓存容量检查在上限不大于 10 时清空全表，`Flush` 改为真正等到落盘
-- **修复** 切换日志目录与清空日志时重置滚动状态，滚动按已分配字节判断，突发写入不再全落进同一个文件
-- **修复** `ApiResponse.Code` 的数字转换器改标在属性上，Web 管道下 `code` 恒为 int
+- **新增** 新增 Web.Mcp 包，MCP Server 接入下沉至框架，应用只需声明模块依赖
+- **新增** 新增 OpenID Connect 协议层，含签名密钥、id_token 签发与发现文档
+- **新增** 搜索引擎从空壳改为可用抽象，拆出契约包与进程内实现
+- **新增** 新增 Elasticsearch 搜索实现，同一套契约测试在两种实现上通过
+- **新增** Redis 事件总线接管滞留消息并引入死信，消除待处理列表的永久孤儿
+- **新增** 动态 API 新增控制器名唯一性校验，装配错误在启动期暴露
+- **新增** 接入 GitHub Actions 流水线，14 个测试工程并入合并门禁
+- **调整** 破坏性变更：路由段只由显式 [FromRoute] 产生，参数名不再决定 URL
+- **调整** 破坏性变更：缓存抽象移除 Lua 脚本成员并改用中立签名，不再出现 StackExchange.Redis 类型
+- **调整** 破坏性变更：工作单元回滚后再提交改为抛出，IUnitOfWork 新增 IsRolledback
+- **修复** 修复约定注册使 Scoped/Singleton 服务的拦截器全体静默失效
+- **修复** 回滚后的连接不再被复用，消除接口返回 200 但一行没写
+- **修复** 分布式事件改到事务提交成功之后才发布，消除幽灵事件
+- **修复** 修复收件箱幂等三处失效，重复消息不再被内联再处理一遍
+- **修复** 动态 API 装配失败改为 fail-fast，不再静默丢掉整个服务的端点
+- **修复** 动词前缀按词边界匹配，方法名不再被腰斩成错误路由
+- **修复** 修复日志缓存容量检查清空全表，Flush 改为真正等到落盘
+- **修复** 切换日志目录与清空日志时重置滚动状态，滚动按已分配字节判断
+- **修复** ApiResponse.Code 的数字转换器改标在属性上，code 恒为数字
 - **优化** Utils.Tests 断言改为表达真实契约，工程耗时由 3 分 26 秒降至 2 分
-- **移除** 移除 Observability 的数据库与 Redis 健康检查，两者延时后无条件返回健康且全仓无注册点，真实检查属宿主层职责
+- **移除** 移除 Observability 的数据库与 Redis 健康检查，两者从不实际探测
 - **升级** 升级依赖，发布 v3.10.0
 
 ## v3.9.0 (2026-07-30)
