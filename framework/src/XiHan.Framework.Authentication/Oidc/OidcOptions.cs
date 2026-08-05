@@ -37,7 +37,7 @@ public class OidcOptions
     /// RSA 私钥文件路径。文件不存在且 <see cref="AutoGenerateSigningKey"/> 为真时自动生成并写入。
     /// 相对路径相对于应用基目录。
     /// </summary>
-    public string SigningKeyPath { get; set; } = "keys/oidc-signing.pem";
+    public string SigningKeyPath { get; set; } = "Keys/oidc-signing.pem";
 
     /// <summary>
     /// 密钥缺失时是否自动生成。多实例部署必须关闭并预置同一把密钥，

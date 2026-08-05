@@ -35,7 +35,7 @@ public class XiHanLoggingOptions
     /// <summary>
     /// 文件输出路径
     /// </summary>
-    public string FileOutputPath { get; set; } = "logs/xihan-.log";
+    public string FileOutputPath { get; set; } = "Logs/xihan-.log";
 
     /// <summary>
     /// 文件输出模板
