@@ -29,13 +29,23 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
 
     private readonly ConcurrentDictionary<string, SearchIndexState> _indexes = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 判断索引是否存在
+    /// </summary>
+    /// <param name="index">索引名</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在</returns>
     public Task<bool> IndexExistsAsync(string index, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_indexes.ContainsKey(index));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建索引，已存在时不做任何事
+    /// </summary>
+    /// <param name="definition">索引定义</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>本次调用是否实际创建了索引</returns>
     public Task<bool> CreateIndexAsync(SearchIndexDefinition definition, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -45,13 +55,24 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return Task.FromResult(created);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除索引，不存在时不做任何事
+    /// </summary>
+    /// <param name="index">索引名</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>本次调用是否实际删除了索引</returns>
     public Task<bool> DeleteIndexAsync(string index, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_indexes.TryRemove(index, out _));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入单个文档，标识已存在时整体覆盖
+    /// </summary>
+    /// <typeparam name="TDocument">文档类型</typeparam>
+    /// <param name="index">索引名</param>
+    /// <param name="document">文档</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task IndexAsync<TDocument>(string index, SearchDocument<TDocument> document, CancellationToken cancellationToken = default)
         where TDocument : class
     {
@@ -63,7 +84,14 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量写入文档，标识已存在时整体覆盖
+    /// </summary>
+    /// <typeparam name="TDocument">文档类型</typeparam>
+    /// <param name="index">索引名</param>
+    /// <param name="documents">文档集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实际写入的文档数</returns>
     public Task<int> IndexManyAsync<TDocument>(string index, IEnumerable<SearchDocument<TDocument>> documents, CancellationToken cancellationToken = default)
         where TDocument : class
     {
@@ -82,7 +110,13 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return Task.FromResult(count);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按标识删除文档
+    /// </summary>
+    /// <param name="index">索引名</param>
+    /// <param name="id">文档标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>本次调用是否实际删除了文档</returns>
     public Task<bool> DeleteAsync(string index, string id, CancellationToken cancellationToken = default)
     {
         var state = GetIndexOrThrow(index);
@@ -90,7 +124,14 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return Task.FromResult(state.Documents.TryRemove(id, out _));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按标识获取文档
+    /// </summary>
+    /// <typeparam name="TDocument">文档类型</typeparam>
+    /// <param name="index">索引名</param>
+    /// <param name="id">文档标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>文档，不存在时为空</returns>
     public Task<TDocument?> GetAsync<TDocument>(string index, string id, CancellationToken cancellationToken = default)
         where TDocument : class
     {
@@ -101,7 +142,13 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
             : null);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 检索
+    /// </summary>
+    /// <typeparam name="TDocument">文档类型</typeparam>
+    /// <param name="request">检索请求</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>检索结果</returns>
     public Task<SearchResult<TDocument>> SearchAsync<TDocument>(SearchRequest request, CancellationToken cancellationToken = default)
         where TDocument : class
     {
@@ -144,7 +191,11 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return Task.FromResult(new SearchResult<TDocument>(hits, matched.Count));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 使此前的写入立即对检索可见
+    /// </summary>
+    /// <param name="index">索引名</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task RefreshAsync(string index, CancellationToken cancellationToken = default)
     {
         // 进程内实现的写入立即可见，无需刷新

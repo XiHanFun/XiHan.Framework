@@ -62,7 +62,10 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         _connectionProvider = connectionProviders.FirstOrDefault();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前租户对应的客户端，租户声明了独立连接则解析其独立连接，否则按 ConfigId 解析
+    /// </summary>
+    /// <returns>当前 Scope 级客户端</returns>
     public ISqlSugarClient GetCurrentClient()
     {
         // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立连接
@@ -81,7 +84,11 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         return GetClient(configId);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按 ConfigId 获取指定客户端，并登记进当前事务型工作单元
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>Scope 级客户端</returns>
     public ISqlSugarClient GetClient(string configId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(configId);
@@ -89,13 +96,19 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         return EnlistCurrentUnitOfWork(client);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取全部连接配置标识
+    /// </summary>
+    /// <returns>连接配置标识集合</returns>
     public IReadOnlyCollection<string> GetAllConfigIds()
     {
         return _tenantConnectionResolver.GetConfigIds();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按顺序获取所有库的客户端（初始化/种子数据等场景使用）
+    /// </summary>
+    /// <returns>各连接的客户端序列</returns>
     public IEnumerable<ISqlSugarClient> GetAllClients()
     {
         foreach (var configId in GetAllConfigIds())
@@ -104,7 +117,10 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取底层 SqlSugarScope（仅在需要多库切换/租户管理等高级场景使用）
+    /// </summary>
+    /// <returns>多连接容器</returns>
     public ITenant AsTenant()
     {
         return _sqlSugarScope;

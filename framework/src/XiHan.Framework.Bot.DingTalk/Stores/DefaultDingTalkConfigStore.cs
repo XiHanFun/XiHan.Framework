@@ -23,7 +23,11 @@ public class DefaultDingTalkConfigStore : IDingTalkConfigStore
         _options = options;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前生效配置
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选项监视器的当前值</returns>
     public Task<DingTalkOptions?> GetAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult<DingTalkOptions?>(_options.CurrentValue);

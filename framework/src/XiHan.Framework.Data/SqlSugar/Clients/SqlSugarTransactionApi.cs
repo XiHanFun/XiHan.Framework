@@ -72,7 +72,11 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
         _ownsTransaction = true;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步提交事务；非本适配器开启的事务不做任何操作，连接上已无活动事务时抛出异常
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>异步任务</returns>
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
         if (_completed || !_ownsTransaction)
@@ -94,7 +98,11 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
         _completed = true;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步回滚事务；非本适配器开启的事务不做任何操作
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>异步任务</returns>
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         if (_completed || !_ownsTransaction)
@@ -108,7 +116,9 @@ public sealed class SqlSugarTransactionApi : ITransactionApi, ISupportsRollback
         _completed = true;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源，未提交的自有事务先回滚，独占连接随之释放
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)

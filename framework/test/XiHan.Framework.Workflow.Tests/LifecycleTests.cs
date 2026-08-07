@@ -210,7 +210,9 @@ public class LifecycleTests : IDisposable
         Assert.Contains("注定失败", variables.Get<string>(WorkflowConsts.LastErrorVariableName));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

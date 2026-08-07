@@ -12,7 +12,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.Start, DisplayName = "开始", Category = "流程控制")]
 public class StartActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（直接完成节点并流转出边）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         return Task.FromResult(ActivityExecutionResult.Complete());

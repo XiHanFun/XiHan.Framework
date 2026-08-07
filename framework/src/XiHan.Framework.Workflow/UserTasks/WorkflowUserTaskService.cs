@@ -80,7 +80,12 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 查询受理人的待办任务
+    /// </summary>
+    /// <param name="assigneeId">受理人标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>待办任务列表</returns>
     public async Task<List<WorkflowUserTask>> GetPendingAsync(string assigneeId, CancellationToken cancellationToken = default)
     {
         Guard.NotNullOrWhiteSpace(assigneeId, nameof(assigneeId));
@@ -89,7 +94,12 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
         return await BuildTasksAsync(bookmarks, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 查询实例的待办任务
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>待办任务列表</returns>
     public async Task<List<WorkflowUserTask>> GetPendingByInstanceAsync(string instanceId, CancellationToken cancellationToken = default)
     {
         Guard.NotNullOrWhiteSpace(instanceId, nameof(instanceId));
@@ -98,7 +108,16 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
         return await BuildTasksAsync(bookmarks.Where(item => item.Kind == WorkflowBookmarkKinds.UserTask), cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 办理任务（同意/拒绝/自定义结果）
+    /// </summary>
+    /// <param name="taskId">任务标识</param>
+    /// <param name="actorId">办理人标识（须与任务受理人一致）</param>
+    /// <param name="outcome">办理结果</param>
+    /// <param name="comment">办理意见</param>
+    /// <param name="variables">附加变量（合并进恢复输入）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>办理后的流程实例</returns>
     public async Task<WorkflowInstance> CompleteAsync(
         string taskId,
         string actorId,
@@ -130,7 +149,15 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
         return instance;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转办任务（把任务移交给新受理人；目标已在受理人列表中时抛出异常）
+    /// </summary>
+    /// <param name="taskId">任务标识</param>
+    /// <param name="actorId">操作人标识（须与任务受理人一致）</param>
+    /// <param name="targetAssigneeId">新受理人标识</param>
+    /// <param name="comment">转办意见</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public async Task TransferAsync(
         string taskId,
         string actorId,
@@ -169,7 +196,18 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 加签（为当前审批节点追加受理人）
+    /// </summary>
+    /// <remarks>
+    /// 或签/会签模式立即为新增受理人生成待办；依次审批模式把新增受理人插入剩余审批队列末尾。
+    /// </remarks>
+    /// <param name="taskId">任务标识</param>
+    /// <param name="actorId">操作人标识（须与任务受理人一致）</param>
+    /// <param name="assigneeIds">新增受理人标识集合</param>
+    /// <param name="comment">加签意见</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public async Task AddAssigneesAsync(
         string taskId,
         string actorId,

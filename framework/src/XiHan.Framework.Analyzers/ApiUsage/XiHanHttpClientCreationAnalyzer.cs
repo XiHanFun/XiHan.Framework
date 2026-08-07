@@ -17,10 +17,15 @@ public sealed class XiHanHttpClientCreationAnalyzer : DiagnosticAnalyzer
 {
     private const string HttpClientMetadataName = "System.Net.Http.HttpClient";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 本分析器支持的诊断描述符，即直接创建 HttpClient 规则描述符
+    /// </summary>
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [XiHanApiUsageRule.DirectHttpClientCreation];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 初始化分析器，开启并发执行并注册显式与隐式对象创建表达式的分析动作
+    /// </summary>
+    /// <param name="context">分析上下文</param>
     public override void Initialize(AnalysisContext context)
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);

@@ -27,7 +27,15 @@ public class DefaultAbacAttributeCollector : IAbacAttributeCollector
         "tenant"
     ];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 收集 ABAC 属性，分别从用户声明、资源对象及请求上下文取出主体、资源与环境属性
+    /// </summary>
+    /// <param name="principal">当前用户主体</param>
+    /// <param name="resource">请求资源对象</param>
+    /// <param name="permissionCode">权限编码</param>
+    /// <param name="policyCode">ABAC 策略编码</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>属性集合</returns>
     public Task<AbacAttributeSet> CollectAsync(
         ClaimsPrincipal principal,
         object? resource,

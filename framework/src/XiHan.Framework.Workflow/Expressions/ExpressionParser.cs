@@ -64,7 +64,11 @@ internal sealed class LiteralNode : ExpressionNode
         _value = value;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（返回字面量值）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         return _value;
@@ -87,7 +91,11 @@ internal sealed class VariableNode : ExpressionNode
         _name = name;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（读取变量值，变量不存在时抛出异常）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         return context.Variables.TryGetValue(_name, out var value)
@@ -115,7 +123,11 @@ internal sealed class MemberAccessNode : ExpressionNode
         _memberName = memberName;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（按成员名从字典取值，非字典目标走反射读取属性）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         var target = _target.Evaluate(context);
@@ -158,7 +170,11 @@ internal sealed class IndexAccessNode : ExpressionNode
         _index = index;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（按索引从字典取键值或从列表取元素）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         var target = _target.Evaluate(context);
@@ -214,7 +230,11 @@ internal sealed class UnaryNode : ExpressionNode
         _operand = operand;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（对操作数执行逻辑非或取负运算）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         var operand = _operand.Evaluate(context);
@@ -251,7 +271,11 @@ internal sealed class BinaryNode : ExpressionNode
         _right = right;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（逻辑运算短路求值，其余按比较或算术运算符求值）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         // 逻辑运算短路求值
@@ -318,7 +342,11 @@ internal sealed class FunctionCallNode : ExpressionNode
         _arguments = arguments;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值（先求值全部实参，再调用同名内置函数）
+    /// </summary>
+    /// <param name="context">求值上下文</param>
+    /// <returns>求值结果</returns>
     public override object? Evaluate(ExpressionEvaluationContext context)
     {
         var arguments = _arguments.Select(argument => argument.Evaluate(context)).ToArray();

@@ -37,22 +37,36 @@ public class ChannelLogQueue<TRecord> : ILogQueue<TRecord>
         _channel = Channel.CreateBounded<TRecord>(boundedOptions);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 队列中待读取的日志记录数量
+    /// </summary>
     public int Count => _channel.Reader.Count;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试入队，不等待空位
+    /// </summary>
+    /// <param name="record">日志记录</param>
+    /// <returns>入队成功返回 true；队列已满返回 false（记录未入队）</returns>
     public bool TryEnqueue(TRecord record)
     {
         return _channel.Writer.TryWrite(record);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 入队，队列满时等待直到有空位或被取消
+    /// </summary>
+    /// <param name="record">日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public ValueTask EnqueueAsync(TRecord record, CancellationToken cancellationToken = default)
     {
         return _channel.Writer.WriteAsync(record, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 持续出队，直到队列关闭或被取消
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>日志记录的异步序列</returns>
     public IAsyncEnumerable<TRecord> DequeueAllAsync(CancellationToken cancellationToken = default)
     {
         return _channel.Reader.ReadAllAsync(cancellationToken);
