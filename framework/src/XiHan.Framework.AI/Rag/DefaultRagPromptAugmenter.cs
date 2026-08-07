@@ -13,7 +13,12 @@ namespace XiHan.Framework.AI.Rag;
 /// <remarks>不走 Scriban（框架 ITemplateService 的 string 引擎是简单替换，见 framework-templateservice-not-scriban）；直接插值即可。</remarks>
 public sealed class DefaultRagPromptAugmenter : IRagPromptAugmenter
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 用检索到的片段增强用户提问，片段为空则原样返回
+    /// </summary>
+    /// <param name="userPrompt">用户原始提问</param>
+    /// <param name="context">检索到的知识片段</param>
+    /// <returns>带知识片段上下文的最终提示</returns>
     public string Augment(string userPrompt, IReadOnlyList<RetrievedChunk> context)
     {
         ArgumentNullException.ThrowIfNull(context);

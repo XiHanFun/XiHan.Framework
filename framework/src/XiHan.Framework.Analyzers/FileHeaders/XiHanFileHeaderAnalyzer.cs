@@ -14,10 +14,15 @@ namespace XiHan.Framework.Analyzers.FileHeaders;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class XiHanFileHeaderAnalyzer : DiagnosticAnalyzer
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 本分析器支持的诊断描述符，即文件头规则描述符
+    /// </summary>
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [XiHanFileHeaderRule.Descriptor];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 初始化分析器，跳过生成代码、开启并发执行并注册语法树分析动作
+    /// </summary>
+    /// <param name="context">分析上下文</param>
     public override void Initialize(AnalysisContext context)
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);

@@ -30,7 +30,11 @@ public sealed class SmsGatewayResolver : ISmsGatewayResolver
         _configStore = configStore;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 解析当前生效的短信网关客户端，按配置指纹缓存复用，指纹变化时重建
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>网关客户端；无配置或配置未启用时返回 null</returns>
     public async Task<ISmsGatewayClient?> ResolveAsync(CancellationToken cancellationToken = default)
     {
         var config = await _configStore.GetAsync(cancellationToken);

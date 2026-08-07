@@ -16,7 +16,13 @@ public sealed class InMemoryDistributedLock : IDistributedLock
 {
     private readonly ConcurrentDictionary<string, LockEntry> _locks = new(StringComparer.Ordinal);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试在当前进程内获取锁，单次尝试不阻塞不重试，已被其他持有者占用且未过期时返回 <see langword="null"/>
+    /// </summary>
+    /// <param name="resourceKey">资源键，同一键在当前进程内互斥</param>
+    /// <param name="expiry">锁自动过期时间，过期后允许被其他调用方接管</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>锁句柄；获取失败返回 <see langword="null"/></returns>
     public Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expiry, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceKey);

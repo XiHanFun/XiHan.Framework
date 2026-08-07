@@ -15,7 +15,11 @@ namespace XiHan.Framework.Bot.Sms.Stores;
 /// </remarks>
 public class DefaultSmsConfigStore : ISmsConfigStore
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前生效配置，恒返回 null 表示未配置
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>恒为 null</returns>
     public Task<SmsChannelConfig?> GetAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult<SmsChannelConfig?>(null);

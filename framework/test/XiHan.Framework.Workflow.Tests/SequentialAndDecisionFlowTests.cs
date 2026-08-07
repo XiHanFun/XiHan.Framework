@@ -137,7 +137,9 @@ public class SequentialAndDecisionFlowTests : IDisposable
             _host.Engine.StartAsync(new WorkflowStartRequest { DefinitionId = created.Id }));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

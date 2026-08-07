@@ -46,13 +46,23 @@ public sealed class RedisDelayQueue<T> : IRedisDelayQueue<T>
         _connection = connection;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 延迟入队，消息在 <paramref name="delay"/> 之后才可被取出
+    /// </summary>
+    /// <param name="item">消息</param>
+    /// <param name="delay">延迟时长</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task EnqueueAsync(T item, TimeSpan delay, CancellationToken cancellationToken = default)
     {
         return EnqueueAtAsync(item, DateTimeOffset.UtcNow.Add(delay), cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 定时入队，消息到达 <paramref name="dueTime"/> 后才可被取出
+    /// </summary>
+    /// <param name="item">消息</param>
+    /// <param name="dueTime">到期时刻</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task EnqueueAtAsync(T item, DateTimeOffset dueTime, CancellationToken cancellationToken = default)
     {
         // 唯一前缀确保相同载荷也作为不同成员（否则 ZADD 会按成员去重）
@@ -60,7 +70,12 @@ public sealed class RedisDelayQueue<T> : IRedisDelayQueue<T>
         return _connection.GetDatabase().SortedSetAddAsync(ZSetKey, member, dueTime.ToUnixTimeMilliseconds());
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 原子取出已到期的消息，最多 <paramref name="count"/> 条，取出的消息同时从队列移除
+    /// </summary>
+    /// <param name="count">最大取出条数，小于等于零时返回空集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已到期的消息集合</returns>
     public async Task<IReadOnlyList<T>> DequeueDueAsync(int count, CancellationToken cancellationToken = default)
     {
         if (count <= 0)
@@ -95,7 +110,11 @@ public sealed class RedisDelayQueue<T> : IRedisDelayQueue<T>
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取队列消息总数，含未到期的消息
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>队列中的消息条数</returns>
     public Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         return _connection.GetDatabase().SortedSetLengthAsync(ZSetKey);

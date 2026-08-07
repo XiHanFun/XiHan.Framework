@@ -228,7 +228,10 @@ public interface IExplicitSample
 /// </summary>
 public class ScopedSample : IScopedSample, IScopedDependency
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定值
+    /// </summary>
+    /// <returns>固定字符串 raw</returns>
     public string Ping() => "raw";
 }
 
@@ -237,7 +240,10 @@ public class ScopedSample : IScopedSample, IScopedDependency
 /// </summary>
 public class SingletonSample : ISingletonSample, ISingletonDependency
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定值
+    /// </summary>
+    /// <returns>固定字符串 raw</returns>
     public string Ping() => "raw";
 }
 
@@ -246,7 +252,10 @@ public class SingletonSample : ISingletonSample, ISingletonDependency
 /// </summary>
 public class TransientSample : ITransientSample, ITransientDependency
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定值
+    /// </summary>
+    /// <returns>固定字符串 raw</returns>
     public string Ping() => "raw";
 }
 
@@ -256,6 +265,9 @@ public class TransientSample : ITransientSample, ITransientDependency
 [ExposeServices(typeof(IExplicitSample))]
 public class ExplicitSample : IExplicitSample, IScopedDependency
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定值
+    /// </summary>
+    /// <returns>固定字符串 raw</returns>
     public string Ping() => "raw";
 }

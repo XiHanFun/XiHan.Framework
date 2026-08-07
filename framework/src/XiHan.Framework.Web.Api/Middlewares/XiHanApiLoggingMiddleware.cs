@@ -173,55 +173,102 @@ public class XiHanApiLoggingMiddleware(
         /// </summary>
         public long BytesWritten { get; private set; }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 是否支持读取，本流只写不读，始终为 false
+        /// </summary>
         public override bool CanRead => false;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 是否支持定位，始终为 false
+        /// </summary>
         public override bool CanSeek => false;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 是否支持写入，始终为 true
+        /// </summary>
         public override bool CanWrite => true;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 流长度，本流不支持，读取时抛出 <see cref="NotSupportedException"/>
+        /// </summary>
         public override long Length => throw new NotSupportedException();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 流位置，本流不支持，读写时均抛出 <see cref="NotSupportedException"/>
+        /// </summary>
         public override long Position
         {
             get => throw new NotSupportedException();
             set => throw new NotSupportedException();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 刷新内部流的缓冲数据
+        /// </summary>
         public override void Flush() => inner.Flush();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 异步刷新内部流的缓冲数据
+        /// </summary>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>异步任务</returns>
         public override Task FlushAsync(CancellationToken cancellationToken) => inner.FlushAsync(cancellationToken);
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 读取数据，本流不支持，调用时抛出 <see cref="NotSupportedException"/>
+        /// </summary>
+        /// <param name="buffer">接收数据的缓冲区</param>
+        /// <param name="offset">缓冲区中的起始偏移量</param>
+        /// <param name="count">要读取的最大字节数</param>
+        /// <returns>不返回，始终抛出异常</returns>
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 设置流位置，本流不支持，调用时抛出 <see cref="NotSupportedException"/>
+        /// </summary>
+        /// <param name="offset">相对于 <paramref name="origin"/> 的偏移量</param>
+        /// <param name="origin">定位的参考点</param>
+        /// <returns>不返回，始终抛出异常</returns>
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 设置流长度，本流不支持，调用时抛出 <see cref="NotSupportedException"/>
+        /// </summary>
+        /// <param name="value">要设置的长度</param>
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 写入数据，透传到内部流，同时旁路捕获并累计字节数
+        /// </summary>
+        /// <param name="buffer">待写入数据的缓冲区</param>
+        /// <param name="offset">缓冲区中的起始偏移量</param>
+        /// <param name="count">要写入的字节数</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
             Capture(buffer.AsSpan(offset, count));
             inner.Write(buffer, offset, count);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 异步写入数据，透传到内部流，同时旁路捕获并累计字节数
+        /// </summary>
+        /// <param name="buffer">待写入数据的缓冲区</param>
+        /// <param name="offset">缓冲区中的起始偏移量</param>
+        /// <param name="count">要写入的字节数</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>异步任务</returns>
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             Capture(buffer.AsSpan(offset, count));
             await inner.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 异步写入数据，透传到内部流，同时旁路捕获并累计字节数
+        /// </summary>
+        /// <param name="buffer">待写入的数据</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>异步任务</returns>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             Capture(buffer.Span);
@@ -242,7 +289,10 @@ public class XiHanApiLoggingMiddleware(
             return BytesWritten > captureLimit ? text + "...(truncated)" : text;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 释放资源，释放旁路捕获缓冲区
+        /// </summary>
+        /// <param name="disposing">是否释放托管资源</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)

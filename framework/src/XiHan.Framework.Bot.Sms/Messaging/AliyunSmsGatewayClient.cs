@@ -39,10 +39,17 @@ public sealed class AliyunSmsGatewayClient : SmsGatewayClientBase
         });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 服务商类型，固定为阿里云
+    /// </summary>
     public override SmsProviderType Provider => SmsProviderType.Aliyun;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发送短信，按模板映射转换模板码并以命名 JSON 提交模板参数
+    /// </summary>
+    /// <param name="request">发送请求（内部模板码，按配置的模板映射转换为阿里云模板码）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>发送结果，成功时携带 BizId 回执</returns>
     public override async Task<SmsGatewaySendResult> SendAsync(SmsGatewayRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

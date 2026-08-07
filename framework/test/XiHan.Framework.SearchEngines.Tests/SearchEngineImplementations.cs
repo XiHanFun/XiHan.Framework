@@ -13,7 +13,10 @@ namespace XiHan.Framework.SearchEngines.Tests;
 /// </summary>
 public class InMemorySearchEngineContractTests : SearchEngineContractTestsBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建被测引擎
+    /// </summary>
+    /// <returns>进程内引擎</returns>
     protected override Task<ISearchEngine> CreateEngineAsync()
     {
         return Task.FromResult<ISearchEngine>(new InMemorySearchEngine());
@@ -36,7 +39,10 @@ public class ElasticsearchSearchEngineContractTests : SearchEngineContractTestsB
 
     private static readonly Lazy<bool> Reachable = new(ProbeReachable);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建被测引擎，Elasticsearch 不可达时跳过用例
+    /// </summary>
+    /// <returns>Elasticsearch 引擎</returns>
     protected override Task<ISearchEngine> CreateEngineAsync()
     {
         Assert.SkipUnless(Reachable.Value, $"Elasticsearch 不可达（{Uri}），跳过该实现的契约测试。");

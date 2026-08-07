@@ -47,13 +47,19 @@ public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
         _jwksJson = new Lazy<string>(BuildJwks, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得用于签名的 RS256 私钥凭据
+    /// </summary>
+    /// <returns>基于常驻 RSA 私钥的签名凭据</returns>
     public SigningCredentials GetSigningCredentials()
     {
         return new SigningCredentials(_privateKey.Value, SecurityAlgorithms.RsaSha256);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得对外发布的公钥集 JSON，只含公钥部分
+    /// </summary>
+    /// <returns>JWKS 格式的 JSON 字符串</returns>
     public string GetJsonWebKeySetJson()
     {
         return _jwksJson.Value;

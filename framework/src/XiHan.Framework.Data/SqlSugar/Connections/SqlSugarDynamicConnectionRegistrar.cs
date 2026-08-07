@@ -30,13 +30,20 @@ public sealed class SqlSugarDynamicConnectionRegistrar(
     /// </summary>
     private readonly ConcurrentDictionary<string, byte> _registered = new(StringComparer.Ordinal);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 指定连接是否已注册
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>已注册返回 true，否则返回 false</returns>
     public bool IsRegistered(string configId)
     {
         return !string.IsNullOrWhiteSpace(configId) && _registered.ContainsKey(configId.Trim());
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 把连接加入运行中的 SqlSugar 作用域，同一 ConfigId 重复调用为空操作
+    /// </summary>
+    /// <param name="descriptor">连接描述</param>
     public void Register(DynamicConnectionDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
@@ -73,7 +80,11 @@ public sealed class SqlSugarDynamicConnectionRegistrar(
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取已注册连接的客户端
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>客户端；未注册时返回 null</returns>
     public ISqlSugarClient? GetClient(string configId)
     {
         if (string.IsNullOrWhiteSpace(configId))

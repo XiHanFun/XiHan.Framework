@@ -45,7 +45,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         _currentTenant = currentTenant;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建定义草稿（自动分配标识；版本号取编码下最大版本 + 1）
+    /// </summary>
+    /// <param name="definition">定义内容</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>创建后的定义</returns>
     public async Task<WorkflowDefinition> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
         Guard.NotNull(definition, nameof(definition));
@@ -63,7 +68,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return definition;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新草稿定义（仅草稿可更新；编码、版本与创建信息保持不变）
+    /// </summary>
+    /// <param name="definition">定义内容</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>更新后的定义</returns>
     public async Task<WorkflowDefinition> UpdateDraftAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
         Guard.NotNull(definition, nameof(definition));
@@ -86,7 +96,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return definition;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布定义（仅草稿可发布，发布前执行结构校验）
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>发布后的定义</returns>
     public async Task<WorkflowDefinition> PublishAsync(string id, CancellationToken cancellationToken = default)
     {
         var definition = await GetAsync(id, cancellationToken);
@@ -103,7 +118,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return definition;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 基于最新版本创建新草稿版本
+    /// </summary>
+    /// <param name="code">流程编码</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>新草稿定义</returns>
     public async Task<WorkflowDefinition> CreateNewVersionAsync(string code, CancellationToken cancellationToken = default)
     {
         Guard.NotNullOrWhiteSpace(code, nameof(code));
@@ -129,7 +149,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return clone;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 停用定义（仅已发布可停用，不可启动新实例，存量实例不受影响）
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>停用后的定义</returns>
     public async Task<WorkflowDefinition> DisableAsync(string id, CancellationToken cancellationToken = default)
     {
         var definition = await GetAsync(id, cancellationToken);
@@ -143,7 +168,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return definition;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 归档定义
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>归档后的定义</returns>
     public async Task<WorkflowDefinition> ArchiveAsync(string id, CancellationToken cancellationToken = default)
     {
         var definition = await GetAsync(id, cancellationToken);
@@ -152,7 +182,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         return definition;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除定义（仅草稿可删除）
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         var definition = await GetAsync(id, cancellationToken);
@@ -164,7 +199,12 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         await _definitionStore.DeleteAsync(id, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取定义（不存在抛出异常）
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义</returns>
     public async Task<WorkflowDefinition> GetAsync(string id, CancellationToken cancellationToken = default)
     {
         Guard.NotNullOrWhiteSpace(id, nameof(id));
@@ -172,7 +212,13 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
             ?? throw new WorkflowException($"流程定义 {id} 不存在");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取已发布定义（版本为空取最新已发布版本；不存在或未发布抛出异常）
+    /// </summary>
+    /// <param name="code">流程编码</param>
+    /// <param name="version">版本号</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义</returns>
     public async Task<WorkflowDefinition> GetPublishedAsync(string code, int? version = null, CancellationToken cancellationToken = default)
     {
         Guard.NotNullOrWhiteSpace(code, nameof(code));
@@ -190,7 +236,13 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
             ?? throw new WorkflowException($"流程编码 {code} 不存在已发布版本");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 查询定义列表
+    /// </summary>
+    /// <param name="code">流程编码（为空表示不过滤）</param>
+    /// <param name="status">状态（为空表示不过滤）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义列表</returns>
     public async Task<List<WorkflowDefinition>> GetListAsync(
         string? code = null,
         WorkflowDefinitionStatus? status = null,

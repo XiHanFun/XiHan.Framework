@@ -32,7 +32,12 @@ public class LocalEventBusWorkflowEventPublisher : IWorkflowEventPublisher
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布事件（本地事件总线未注册时跳过，发布异常仅记录日志）
+    /// </summary>
+    /// <typeparam name="TEvent">事件类型</typeparam>
+    /// <param name="eventData">事件数据</param>
+    /// <returns>任务</returns>
     public async Task PublishAsync<TEvent>(TEvent eventData) where TEvent : class
     {
         var eventBus = _serviceProvider.GetService<ILocalEventBus>();

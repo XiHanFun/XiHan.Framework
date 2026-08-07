@@ -45,7 +45,12 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
         _connection = connection;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 入队一条消息并广播唤醒信号
+    /// </summary>
+    /// <param name="item">消息</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>Stream 条目 ID</returns>
     public async Task<string> EnqueueAsync(T item, CancellationToken cancellationToken = default)
     {
         var id = await _connection.GetDatabase().StreamAddAsync(StreamKey, DataField, Serialize(item));
@@ -53,7 +58,13 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
         return id.ToString();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 以消费组读取一批新消息，读到的消息进入待确认列表，处理完成后需调用 <see cref="AckAsync"/> 确认
+    /// </summary>
+    /// <param name="consumer">消费者名，同组内唯一</param>
+    /// <param name="count">最大读取条数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>消息列表，空表示当前无新消息</returns>
     public async Task<IReadOnlyList<RedisStreamMessage<T>>> ReadAsync(string consumer, int count, CancellationToken cancellationToken = default)
     {
         await EnsureGroupAsync();
@@ -62,7 +73,11 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
         return Map(entries, deliveryCount: 1);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 确认消息处理完成，把这些消息从待确认列表移除；集合为空时不发起请求
+    /// </summary>
+    /// <param name="messageIds">消息 ID 集合</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task AckAsync(IEnumerable<string> messageIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(messageIds);
@@ -72,7 +87,14 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
             : _connection.GetDatabase().StreamAcknowledgeAsync(StreamKey, GroupName, ids);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 认领空闲超过 <paramref name="minIdle"/> 的待确认消息并重投给当前消费者，用于消费者崩溃后的重试
+    /// </summary>
+    /// <param name="consumer">认领的消费者名</param>
+    /// <param name="minIdle">最小空闲时长，超过才认领，避免抢占正在处理的消息</param>
+    /// <param name="count">最大认领条数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>认领到的消息，含已投递次数</returns>
     public async Task<IReadOnlyList<RedisStreamMessage<T>>> ClaimStaleAsync(string consumer, TimeSpan minIdle, int count, CancellationToken cancellationToken = default)
     {
         await EnsureGroupAsync();
@@ -102,20 +124,30 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取 Stream 当前长度，用于积压估算
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>Stream 当前条目数</returns>
     public Task<long> CountAsync(CancellationToken cancellationToken = default)
     {
         return _connection.GetDatabase().StreamLengthAsync(StreamKey);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 阻塞等待有新消息的信号，首次调用时订阅唤醒频道，被入队唤醒或超过 <paramref name="timeout"/> 后返回
+    /// </summary>
+    /// <param name="timeout">最长等待时间</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task WaitForSignalAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         await EnsureSubscribedAsync();
         await _signal.WaitAsync(timeout, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _signal.Dispose();

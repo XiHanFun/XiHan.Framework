@@ -22,7 +22,11 @@ public class HybridPermissionPolicyProvider : IAuthorizationPolicyProvider
         _fallbackProvider = new DefaultAuthorizationPolicyProvider(options);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按策略名动态构建混合权限策略，无法解析为混合策略名时交由默认提供器处理
+    /// </summary>
+    /// <param name="policyName">策略名称</param>
+    /// <returns>解析出的授权策略，不存在返回 null</returns>
     public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
         if (!HybridAuthorizationPolicyName.TryParse(policyName, out var permissionCode, out var abacPolicyCode))
@@ -36,13 +40,19 @@ public class HybridPermissionPolicyProvider : IAuthorizationPolicyProvider
         return Task.FromResult<AuthorizationPolicy?>(policy);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得默认授权策略，直接委托给默认提供器
+    /// </summary>
+    /// <returns>默认授权策略</returns>
     public Task<AuthorizationPolicy> GetDefaultPolicyAsync()
     {
         return _fallbackProvider.GetDefaultPolicyAsync();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得兜底授权策略，直接委托给默认提供器
+    /// </summary>
+    /// <returns>兜底授权策略，未配置返回 null</returns>
     public Task<AuthorizationPolicy?> GetFallbackPolicyAsync()
     {
         return _fallbackProvider.GetFallbackPolicyAsync();

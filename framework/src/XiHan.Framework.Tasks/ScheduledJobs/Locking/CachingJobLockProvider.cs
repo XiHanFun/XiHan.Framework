@@ -25,7 +25,13 @@ public sealed class CachingJobLockProvider : IJobLockProvider
         _distributedLock = distributedLock;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试获取分布式锁，并把锁句柄包装为锁令牌
+    /// </summary>
+    /// <param name="resourceKey">资源键</param>
+    /// <param name="expiry">过期时间</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>锁令牌，null 表示获取失败</returns>
     public async Task<ILockToken?> TryAcquireLockAsync(string resourceKey, TimeSpan expiry, CancellationToken cancellationToken = default)
     {
         var handle = await _distributedLock.TryAcquireAsync(resourceKey, expiry, cancellationToken);

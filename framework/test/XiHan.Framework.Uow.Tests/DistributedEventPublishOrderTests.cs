@@ -173,19 +173,29 @@ public class DistributedEventPublishOrderTests
 /// </remarks>
 public sealed class FailingTransactionApi : ITransactionApi, ISupportsRollback
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步提交，始终抛出提交失败异常
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>不返回，始终抛出 <see cref="InvalidOperationException"/></returns>
     public Task CommitAsync(CancellationToken cancellationToken = default)
     {
         throw new InvalidOperationException("提交失败");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 回滚，直接返回已完成任务
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已完成的任务</returns>
     public Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
     }
@@ -209,7 +219,11 @@ public class RecordingEventPublisher : IUnitOfWorkEventPublisher
     /// </summary>
     public IReadOnlyList<string> PublishedDistributedEvents => _distributedEvents;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布本地事件，把事件数据按顺序记入本地事件列表
+    /// </summary>
+    /// <param name="localEvents">待发布的本地事件记录</param>
+    /// <returns>已完成的任务</returns>
     public Task PublishLocalEventsAsync(IEnumerable<UnitOfWorkEventRecord> localEvents)
     {
         _localEvents.AddRange(localEvents.Select(record => (string)record.EventData));
@@ -217,7 +231,11 @@ public class RecordingEventPublisher : IUnitOfWorkEventPublisher
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布分布式事件，把事件数据按顺序记入分布式事件列表
+    /// </summary>
+    /// <param name="distributedEvents">待发布的分布式事件记录</param>
+    /// <returns>已完成的任务</returns>
     public Task PublishDistributedEventsAsync(IEnumerable<UnitOfWorkEventRecord> distributedEvents)
     {
         _distributedEvents.AddRange(distributedEvents.Select(record => (string)record.EventData));

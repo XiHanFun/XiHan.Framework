@@ -207,7 +207,9 @@ public class UserTaskTests : IDisposable
         Assert.Empty(await _host.BookmarkStore.GetByInstanceAsync(instance.Id));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

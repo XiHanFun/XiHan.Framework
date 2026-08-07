@@ -35,7 +35,13 @@ public class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         _clock = clock;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值表达式
+    /// </summary>
+    /// <param name="expression">表达式</param>
+    /// <param name="variables">变量上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>求值结果</returns>
     public Task<object?> EvaluateAsync(
         string expression,
         IReadOnlyDictionary<string, object?> variables,
@@ -44,7 +50,14 @@ public class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         return Task.FromResult(EvaluateCore(expression, variables));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值表达式并转换为目标类型
+    /// </summary>
+    /// <typeparam name="T">目标类型</typeparam>
+    /// <param name="expression">表达式</param>
+    /// <param name="variables">变量上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>求值结果</returns>
     public Task<T?> EvaluateAsync<T>(
         string expression,
         IReadOnlyDictionary<string, object?> variables,
@@ -54,7 +67,13 @@ public class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         return Task.FromResult(WorkflowValueConverter.ConvertTo<T>(result));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 求值条件表达式（结果必须为布尔值，否则抛出异常）
+    /// </summary>
+    /// <param name="expression">条件表达式</param>
+    /// <param name="variables">变量上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>条件结果</returns>
     public Task<bool> EvaluateConditionAsync(
         string expression,
         IReadOnlyDictionary<string, object?> variables,
@@ -66,7 +85,13 @@ public class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             : throw new WorkflowException($"条件表达式必须返回布尔值：{expression}");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 渲染模板（把文本中的 <c>{{ 表达式 }}</c> 占位替换为求值结果）
+    /// </summary>
+    /// <param name="template">模板文本</param>
+    /// <param name="variables">变量上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>渲染结果</returns>
     public Task<string> RenderTemplateAsync(
         string template,
         IReadOnlyDictionary<string, object?> variables,

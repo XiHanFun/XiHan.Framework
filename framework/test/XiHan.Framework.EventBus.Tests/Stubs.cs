@@ -18,16 +18,27 @@ namespace XiHan.Framework.EventBus.Tests;
 /// </remarks>
 public sealed class StubCurrentTenant : ICurrentTenant
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前租户是否可用，测试桩恒为 false
+    /// </summary>
     public bool IsAvailable => false;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前租户的唯一标识，测试桩恒为空
+    /// </summary>
     public long? Id => null;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前租户名称，测试桩恒为空
+    /// </summary>
     public string? Name => null;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 临时更改当前租户上下文，测试桩不做任何切换
+    /// </summary>
+    /// <param name="id">要切换到的租户唯一标识</param>
+    /// <param name="name">租户名称</param>
+    /// <returns>空释放器</returns>
     public IDisposable Change(long? id, string? name = null) => new StubDisposable();
 }
 
@@ -39,19 +50,40 @@ public sealed class StubCurrentTenant : ICurrentTenant
 /// </remarks>
 public sealed class StubUnitOfWorkManager : IUnitOfWorkManager
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前工作单元，测试桩恒为空
+    /// </summary>
     public IUnitOfWork? Current => null;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 开始一个新的工作单元，测试桩不实现该操作
+    /// </summary>
+    /// <param name="options">工作单元选项</param>
+    /// <param name="requiresNew">是否要求新的工作单元</param>
+    /// <returns>工作单元实例</returns>
     public IUnitOfWork Begin(XiHanUnitOfWorkOptions options, bool requiresNew = false) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 预留一个工作单元，测试桩不实现该操作
+    /// </summary>
+    /// <param name="reservationName">预留名称</param>
+    /// <param name="requiresNew">是否要求新的工作单元</param>
+    /// <returns>工作单元实例</returns>
     public IUnitOfWork Reserve(string reservationName, bool requiresNew = false) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 开始一个预留的工作单元，测试桩不实现该操作
+    /// </summary>
+    /// <param name="reservationName">预留名称</param>
+    /// <param name="options">工作单元选项</param>
     public void BeginReserved(string reservationName, XiHanUnitOfWorkOptions options) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试开始一个预留的工作单元，测试桩不实现该操作
+    /// </summary>
+    /// <param name="reservationName">预留名称</param>
+    /// <param name="options">工作单元选项</param>
+    /// <returns>是否成功开始</returns>
     public bool TryBeginReserved(string reservationName, XiHanUnitOfWorkOptions options) => throw new NotSupportedException();
 }
 
@@ -60,7 +92,13 @@ public sealed class StubUnitOfWorkManager : IUnitOfWorkManager
 /// </summary>
 public sealed class StubEventHandlerInvoker : IEventHandlerInvoker
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 调用事件处理器，测试桩不做任何处理
+    /// </summary>
+    /// <param name="eventHandler">事件处理器实例</param>
+    /// <param name="eventData">事件数据</param>
+    /// <param name="eventType">事件类型</param>
+    /// <returns>表示异步操作的任务</returns>
     public Task InvokeAsync(IEventHandler eventHandler, object eventData, Type eventType) => Task.CompletedTask;
 }
 
@@ -71,25 +109,47 @@ public sealed class StubClock : IClock
 {
     private static readonly DateTime Fixed = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前时间，测试桩恒为固定时间
+    /// </summary>
     public DateTime Now => Fixed;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 时间类型
+    /// </summary>
     public DateTimeKind Kind => DateTimeKind.Utc;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 是否支持多时区
+    /// </summary>
     public bool SupportsMultipleTimezone => false;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 规范化时间，测试桩原样返回
+    /// </summary>
+    /// <param name="dateTime">时间</param>
+    /// <returns>规范化后的时间</returns>
     public DateTime Normalize(DateTime dateTime) => dateTime;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为用户时间，测试桩原样返回
+    /// </summary>
+    /// <param name="utcDateTime">UTC 时间</param>
+    /// <returns>用户时间</returns>
     public DateTime ConvertToUserTime(DateTime utcDateTime) => utcDateTime;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为用户时间，测试桩原样返回
+    /// </summary>
+    /// <param name="dateTimeOffset">时间偏移</param>
+    /// <returns>用户时间</returns>
     public DateTimeOffset ConvertToUserTime(DateTimeOffset dateTimeOffset) => dateTimeOffset;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为 UTC 时间，测试桩原样返回
+    /// </summary>
+    /// <param name="dateTime">时间</param>
+    /// <returns>UTC 时间</returns>
     public DateTime ConvertToUtc(DateTime dateTime) => dateTime;
 }
 
@@ -100,7 +160,10 @@ public sealed class StubGuidGenerator : IDistributedIdGenerator<Guid>
 {
     private int _counter;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取下一个唯一标识
+    /// </summary>
+    /// <returns>生成的唯一标识</returns>
     public Guid NextId()
     {
         var next = Interlocked.Increment(ref _counter);
@@ -110,43 +173,90 @@ public sealed class StubGuidGenerator : IDistributedIdGenerator<Guid>
         return new Guid(bytes);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取下一个唯一标识(字符串形式)
+    /// </summary>
+    /// <returns>生成的唯一标识字符串</returns>
     public string NextIdString() => NextId().ToString();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量获取唯一标识
+    /// </summary>
+    /// <param name="count">需要获取的唯一标识数量</param>
+    /// <returns>唯一标识数组</returns>
     public Guid[] NextIds(int count) => [.. Enumerable.Range(0, count).Select(_ => NextId())];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量获取唯一标识(字符串形式)
+    /// </summary>
+    /// <param name="count">需要获取的唯一标识数量</param>
+    /// <returns>唯一标识字符串数组</returns>
     public string[] NextIdStrings(int count) => [.. NextIds(count).Select(id => id.ToString())];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步获取下一个唯一标识
+    /// </summary>
+    /// <returns>生成的唯一标识</returns>
     public Task<Guid> NextIdAsync() => Task.FromResult(NextId());
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步获取下一个唯一标识(字符串形式)
+    /// </summary>
+    /// <returns>生成的唯一标识字符串</returns>
     public Task<string> NextIdStringAsync() => Task.FromResult(NextIdString());
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步批量获取唯一标识
+    /// </summary>
+    /// <param name="count">需要获取的唯一标识数量</param>
+    /// <returns>唯一标识数组</returns>
     public Task<Guid[]> NextIdsAsync(int count) => Task.FromResult(NextIds(count));
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 异步批量获取唯一标识(字符串形式)
+    /// </summary>
+    /// <param name="count">需要获取的唯一标识数量</param>
+    /// <returns>唯一标识字符串数组</returns>
     public Task<string[]> NextIdStringsAsync(int count) => Task.FromResult(NextIdStrings(count));
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 从唯一标识中提取时间戳，测试桩不实现该操作
+    /// </summary>
+    /// <param name="id">唯一标识</param>
+    /// <returns>时间戳</returns>
     public DateTime ExtractTime(Guid id) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 从唯一标识中提取工作机器唯一标识，测试桩不实现该操作
+    /// </summary>
+    /// <param name="id">唯一标识</param>
+    /// <returns>工作机器唯一标识</returns>
     public int ExtractWorkerId(Guid id) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 从唯一标识中提取序列号，测试桩不实现该操作
+    /// </summary>
+    /// <param name="id">唯一标识</param>
+    /// <returns>序列号</returns>
     public int ExtractSequence(Guid id) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 从唯一标识中提取数据中心唯一标识，测试桩不实现该操作
+    /// </summary>
+    /// <param name="id">唯一标识</param>
+    /// <returns>数据中心唯一标识</returns>
     public int ExtractDataCenterId(Guid id) => throw new NotSupportedException();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取生成器类型
+    /// </summary>
+    /// <returns>生成器类型名称</returns>
     public string GetGeneratorType() => nameof(StubGuidGenerator);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取生成器状态信息，测试桩返回空字典
+    /// </summary>
+    /// <returns>状态信息字典</returns>
     public Dictionary<string, object> GetStats() => [];
 }
 
@@ -155,7 +265,9 @@ public sealed class StubGuidGenerator : IDistributedIdGenerator<Guid>
 /// </summary>
 public sealed class StubDisposable : IDisposable
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
     }

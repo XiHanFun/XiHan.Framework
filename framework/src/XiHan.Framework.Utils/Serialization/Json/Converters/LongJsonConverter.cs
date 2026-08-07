@@ -11,7 +11,13 @@ namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 /// </summary>
 public class LongJsonConverter : JsonConverter<long>
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 读取 JSON 值并转换为 long，字符串与数字均可解析，其它标记返回 0
+    /// </summary>
+    /// <param name="reader">JSON 读取器</param>
+    /// <param name="typeToConvert">要转换的目标类型</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>转换后的 long 值</returns>
     public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
@@ -22,7 +28,12 @@ public class LongJsonConverter : JsonConverter<long>
         };
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 把 long 值写为 JSON 字符串
+    /// </summary>
+    /// <param name="writer">JSON 写入器</param>
+    /// <param name="value">要写入的值</param>
+    /// <param name="options">序列化选项</param>
     public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
     {
         writer.WriteStringValue(value.ToString());
@@ -34,7 +45,13 @@ public class LongJsonConverter : JsonConverter<long>
 /// </summary>
 public class LongNullableConverter : JsonConverter<long?>
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 读取 JSON 值并转换为可空 long，字符串与数字均可解析，null 及其它标记返回 null
+    /// </summary>
+    /// <param name="reader">JSON 读取器</param>
+    /// <param name="typeToConvert">要转换的目标类型</param>
+    /// <param name="options">序列化选项</param>
+    /// <returns>转换后的可空 long 值</returns>
     public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType switch
@@ -46,7 +63,12 @@ public class LongNullableConverter : JsonConverter<long?>
         };
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 把可空 long 值写为 JSON 字符串，无值时写入 null
+    /// </summary>
+    /// <param name="writer">JSON 写入器</param>
+    /// <param name="value">要写入的值</param>
+    /// <param name="options">序列化选项</param>
     public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
     {
         if (!value.HasValue)

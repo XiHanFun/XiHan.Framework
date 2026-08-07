@@ -37,7 +37,10 @@ public class ExceptionLogQueueWorker : BackgroundService
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 持续消费异常日志队列，按批量大小或批量间隔成批写入，停止时冲刷剩余记录
+    /// </summary>
+    /// <param name="stoppingToken">停止令牌</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_options.EnableExceptionLogQueue)

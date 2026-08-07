@@ -33,7 +33,10 @@ public class LoginLogQueueWorker : BackgroundService
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 持续消费登录日志队列，按批量大小或批量间隔成批写入，停止时冲刷剩余记录
+    /// </summary>
+    /// <param name="stoppingToken">停止令牌</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_options.EnableLoginLogQueue)

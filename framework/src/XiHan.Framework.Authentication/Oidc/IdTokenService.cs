@@ -54,7 +54,11 @@ public sealed class IdTokenService : IIdTokenService
         _options = options.Value;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按请求组装 sub、jti、nonce、auth_time、at_hash 及资料声明，以 RS256 签发 id_token
+    /// </summary>
+    /// <param name="request">id_token 签发请求</param>
+    /// <returns>序列化后的 id_token 字符串</returns>
     public string Issue(IdTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
