@@ -10,7 +10,12 @@ namespace XiHan.Framework.AI.Rag;
 /// </summary>
 public sealed class FixedWindowChunkingStrategy : IChunkingStrategy
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 按固定字符窗口加重叠把长文本切成若干片段
+    /// </summary>
+    /// <param name="text">待切分的文本</param>
+    /// <param name="options">切片参数，含窗口大小与重叠长度</param>
+    /// <returns>切分出的片段列表，文本为空白时返回空列表</returns>
     public IReadOnlyList<string> Chunk(string text, ChunkingOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);

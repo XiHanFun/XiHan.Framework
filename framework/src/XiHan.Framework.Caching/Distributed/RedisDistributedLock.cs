@@ -21,7 +21,13 @@ public sealed class RedisDistributedLock : IDistributedLock
         _connection = connection;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试获取 Redis 分布式锁，单次尝试不阻塞不重试，键已被占用时返回 <see langword="null"/>
+    /// </summary>
+    /// <param name="resourceKey">资源键，同一键跨实例互斥</param>
+    /// <param name="expiry">锁自动过期时间，防止持有者崩溃后死锁</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>锁句柄；获取失败返回 <see langword="null"/></returns>
     public async Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expiry, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceKey);

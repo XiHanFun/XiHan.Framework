@@ -67,7 +67,11 @@ public sealed class SqlSugarSlaveHealthCheckService : BackgroundService
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 后台执行主体，按配置周期循环探测从库；未启用探针时直接退出
+    /// </summary>
+    /// <param name="stoppingToken">停机取消令牌</param>
+    /// <returns>异步任务</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_options.EnableSlaveHealthCheck)

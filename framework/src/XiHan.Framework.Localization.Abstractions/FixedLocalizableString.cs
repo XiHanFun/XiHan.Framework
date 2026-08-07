@@ -35,7 +35,10 @@ public sealed class FixedLocalizableString : ILocalizableString
         return new LocalizedString(Value, Value, resourceNotFound: false);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定文本本身
+    /// </summary>
+    /// <returns>固定文本</returns>
     public override string ToString()
     {
         return Value;

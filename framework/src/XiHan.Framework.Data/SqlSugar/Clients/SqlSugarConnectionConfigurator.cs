@@ -43,7 +43,10 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
         _dataExecutingHandler = dataExecutingHandler;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 为指定连接作用域应用全局过滤器与 AOP
+    /// </summary>
+    /// <param name="provider">连接作用域提供器</param>
     public void Configure(SqlSugarScopeProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);
@@ -51,7 +54,12 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
         XiHanDataServiceCollectionExtensions.SetSugarAop(_scopeFactory, provider, _options, _dataExecutingHandler);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 幂等确保租户连接已注册并完成配置，返回其作用域客户端；ConfigId 或连接字符串为空时抛出异常
+    /// </summary>
+    /// <param name="tenant">SqlSugar 多连接容器</param>
+    /// <param name="descriptor">租户连接描述符</param>
+    /// <returns>该租户连接的作用域客户端</returns>
     public SqlSugarScopeProvider EnsureTenantConnection(ITenant tenant, SqlSugarTenantConnection descriptor)
     {
         ArgumentNullException.ThrowIfNull(tenant);

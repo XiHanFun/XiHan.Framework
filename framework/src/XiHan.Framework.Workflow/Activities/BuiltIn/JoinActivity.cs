@@ -16,7 +16,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.Join, DisplayName = "汇聚网关", Category = "流程控制")]
 public class JoinActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（分支到达计数由引擎维护，本活动触发时直接完成节点）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         return Task.FromResult(ActivityExecutionResult.Complete());

@@ -49,7 +49,12 @@ public sealed class XiHanSessionStateMiddleware : IMiddleware
         _options = options.Value;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 处理请求，会话失效返回 401、会话锁定且不在白名单内返回 423，其余放行到下一个中间件
+    /// </summary>
+    /// <param name="context">HTTP 上下文</param>
+    /// <param name="next">请求管道中的下一个中间件</param>
+    /// <returns>异步任务</returns>
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         if (!_options.IsEnabled)

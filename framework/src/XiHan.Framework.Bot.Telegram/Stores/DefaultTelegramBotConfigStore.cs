@@ -23,7 +23,11 @@ public class DefaultTelegramBotConfigStore : ITelegramBotConfigStore
         _options = options;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前生效的机器人配置列表
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选项监视器当前值中的机器人配置列表</returns>
     public Task<IReadOnlyList<TelegramBotConfig>> GetBotConfigsAsync(CancellationToken cancellationToken = default)
     {
         IReadOnlyList<TelegramBotConfig> configs = [.. _options.CurrentValue.Bots];

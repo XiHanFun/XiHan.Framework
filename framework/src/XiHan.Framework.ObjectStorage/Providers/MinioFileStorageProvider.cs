@@ -150,7 +150,12 @@ public class MinioFileStorageProvider : FileStorageProviderBase
         await DeleteAsync(path, bucketName: null, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除指定存储桶中的对象
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称，为空时使用默认存储桶</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public override async Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         var (bucket, objectName) = ParsePath(path, bucketName);
@@ -177,7 +182,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
         return await ExistsAsync(path, bucketName: null, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 检查指定存储桶中的对象是否存在，查询出错时按不存在处理
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称，为空时使用默认存储桶</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在</returns>
     public override async Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         var (bucket, objectName) = ParsePath(path, bucketName);
@@ -205,7 +216,13 @@ public class MinioFileStorageProvider : FileStorageProviderBase
         return await GetMetadataAsync(path, bucketName: null, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取指定存储桶中对象的元数据，包含大小、内容类型、最后修改时间、ETag 与访问地址
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称，为空时使用默认存储桶</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>文件元数据</returns>
     public override async Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         var (bucket, objectName) = ParsePath(path, bucketName);

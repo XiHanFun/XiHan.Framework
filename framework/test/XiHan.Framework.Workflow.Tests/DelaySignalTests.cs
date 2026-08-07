@@ -89,7 +89,9 @@ public class DelaySignalTests : IDisposable
         Assert.Equal(WorkflowInstanceStatus.Completed, (await _host.ReloadAsync(second.Id)).Status);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

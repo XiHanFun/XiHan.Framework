@@ -35,7 +35,9 @@ public abstract class SmsGatewayClientBase : ISmsGatewayClient
         _templateMap = ParseTemplateMap(templateMapJson);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 服务商类型
+    /// </summary>
     public abstract SmsProviderType Provider { get; }
 
     /// <summary>
@@ -43,7 +45,12 @@ public abstract class SmsGatewayClientBase : ISmsGatewayClient
     /// </summary>
     protected string SignName { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发送短信
+    /// </summary>
+    /// <param name="request">发送请求（内部模板码，由客户端按配置的模板映射转换为服务商模板码）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>发送结果</returns>
     public abstract Task<SmsGatewaySendResult> SendAsync(SmsGatewayRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>

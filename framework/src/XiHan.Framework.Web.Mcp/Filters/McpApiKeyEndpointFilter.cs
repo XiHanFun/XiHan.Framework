@@ -27,7 +27,12 @@ public sealed class McpApiKeyEndpointFilter : IEndpointFilter
         _headerName = headerName;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 校验请求携带的 API Key，通过则继续执行后续过滤器与处理器，否则返回 401
+    /// </summary>
+    /// <param name="context">端点过滤器调用上下文</param>
+    /// <param name="next">后续过滤器委托</param>
+    /// <returns>校验失败返回未授权结果，否则返回后续处理器的结果</returns>
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var request = context.HttpContext.Request;
