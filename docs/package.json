@@ -1,0 +1,33 @@
+{
+  "name": "xihan-framework-docs",
+  "version": "3.10.1",
+  "type": "module",
+  "description": "XiHan.Framework document site. Fast, lightweight, efficient, and dedicated modular development framework built on DotNet.",
+  "author": {
+    "name": "XiHanFun"
+  },
+  "license": "MIT",
+  "homepage": "https://framework.docs.xihanfun.com",
+  "repository": {
+    "url": "https://github.com/XiHanFun/XiHan.Framework"
+  },
+  "bugs": {
+    "url": "https://github.com/XiHanFun/XiHan.Framework/issues"
+  },
+  "scripts": {
+    "bootstrap": "pnpm install",
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "serve": "vitepress serve",
+    "preview": "vitepress preview",
+    "clean": "rimraf .vitepress/dist",
+    "clean:modules": "rimraf node_modules",
+    "upgrade": "pnpm upgrade",
+    "reinstall": "pnpm run clean:modules && pnpm install",
+    "rebuild": "pnpm run clean && pnpm run build"
+  },
+  "dependencies": {
+    "vue": "^3.5.39",
+    "vitepress": "^1.6.4"
+  }
+}
