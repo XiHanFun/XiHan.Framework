@@ -74,17 +74,21 @@ const guideChapters: [text: string, name: string][] = [
   ["常见问题", "faq"],
 ];
 
-const sidebar: DefaultTheme.SidebarItem[] = [
+const startSidebar: DefaultTheme.SidebarItem[] = [
   {
     text: "开始",
     collapsed: false,
     items: [
-      { text: "框架简介", link: "/" },
+      { text: "框架简介", link: "/introduction" },
       { text: "为什么选择曦寒", link: "/why" },
       { text: "框架概述", link: "/overview" },
       { text: "快速上手", link: "/quickstart" },
     ],
   },
+  { text: "更新日志", link: "/changelog" },
+];
+
+const guideSidebar: DefaultTheme.SidebarItem[] = [
   {
     text: "开发指南",
     collapsed: false,
@@ -92,6 +96,9 @@ const sidebar: DefaultTheme.SidebarItem[] = [
       chapter(i + 1, text, `guide/${name}`)
     ),
   },
+];
+
+const packagesSidebar: DefaultTheme.SidebarItem[] = [
   {
     text: "模块总览",
     link: "/packages/",
@@ -225,14 +232,26 @@ const sidebar: DefaultTheme.SidebarItem[] = [
       },
     ],
   },
-  { text: "更新日志", link: "/changelog" },
 ];
+
+// 每个顶部导航板块各自一份侧栏，由路径前缀决定用哪一份；
+// 首页是 layout: home，不落任何一份。
+const sidebar: DefaultTheme.Sidebar = {
+  "/guide/": guideSidebar,
+  "/packages/": packagesSidebar,
+  "/": startSidebar,
+};
 
 const nav: DefaultTheme.NavItem[] = [
   {
     text: withNavBadge("🧩 开发框架", release),
     link: "/",
     activeMatch: "^/$",
+  },
+  {
+    text: "开始",
+    link: "/introduction",
+    activeMatch: "^/(introduction|why|overview|quickstart)$",
   },
   { text: "开发指南", link: "/guide/modularity", activeMatch: "/guide/" },
   { text: "模块总览", link: "/packages/", activeMatch: "/packages/" },
