@@ -244,18 +244,14 @@ const sidebar: DefaultTheme.Sidebar = {
 
 const nav: DefaultTheme.NavItem[] = [
   {
-    text: withNavBadge("🧩 开发框架", release),
-    link: "/",
-    activeMatch: "^/$",
-  },
-  {
     text: "开始",
     link: "/introduction",
     activeMatch: "^/(introduction|why|overview|quickstart)$",
   },
   { text: "开发指南", link: "/guide/modularity", activeMatch: "/guide/" },
   { text: "模块总览", link: "/packages/", activeMatch: "/packages/" },
-  { text: "更新日志", link: "/changelog" },
+  // 版本徽章挂在更新日志上：徽章上的版本号就是本页最新那条
+  { text: withNavBadge("更新日志", release), link: "/changelog" },
   {
     text: "探索未知",
     items: [
