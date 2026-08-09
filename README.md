@@ -33,7 +33,7 @@
 
 <p>
   <a href="https://deepwiki.com/XiHanFun/XiHan.Framework"><img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
-  <a href="https://docs.xihanfun.com"><img alt="Docs" src="https://img.shields.io/badge/Docs-docs.xihanfun.com-2496ED?style=flat-square&logo=readthedocs&logoColor=white" /></a>
+  <a href="https://framework.docs.xihanfun.com"><img alt="Docs" src="https://img.shields.io/badge/Docs-framework.docs.xihanfun.com-2496ED?style=flat-square&logo=readthedocs&logoColor=white" /></a>
   <a href="https://qm.qq.com/q/qYp1Urv3z2"><img alt="QQ Group" src="https://img.shields.io/badge/QQ_Group-462371834-EB1923?style=flat-square&logo=tencentqq&logoColor=white" /></a>
 </p>
 <p>
@@ -312,10 +312,10 @@ XiHan.Framework/
 │   │   └── ...                            #   其他测试
 │   ├── tool/                              # 工具
 │   │   └── Region/                        #   代码规范化工具
-│   ├── docs/                              # 架构文档
 │   ├── props/                             # 共享 MSBuild 属性
 │   ├── scripts/                           # NuGet 发布与运维脚本
 │   └── nupkgs/                            # NuGet 包输出
+├── docs/                                  # 文档站源码（VitePress，部署到 framework.docs.xihanfun.com）
 └── assets/                                # README 资源文件
 ```
 
