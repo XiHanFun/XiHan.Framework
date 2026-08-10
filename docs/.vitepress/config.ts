@@ -30,7 +30,7 @@ function pkg(text: string, name: string): DefaultTheme.SidebarItem {
 function chapter(
   index: number,
   text: string,
-  link: string
+  link: string,
 ): DefaultTheme.SidebarItem {
   return { text: `${index}. ${text}`, link: `/${link}` };
 }
@@ -96,7 +96,7 @@ const guideSidebar: DefaultTheme.SidebarItem[] = [
     text: "开发指南",
     collapsed: false,
     items: guideChapters.map(([text, name], i) =>
-      chapter(i + 1, text, `guide/${name}`)
+      chapter(i + 1, text, `guide/${name}`),
     ),
   },
 ];
