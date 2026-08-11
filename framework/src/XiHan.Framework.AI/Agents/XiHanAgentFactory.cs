@@ -27,7 +27,14 @@ public sealed class XiHanAgentFactory : IXiHanAgentFactory
         _resolver = resolver;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建一个 Agent
+    /// </summary>
+    /// <param name="instructions">系统指令，描述人格与职责</param>
+    /// <param name="name">Agent 名</param>
+    /// <param name="tools">工具集合，可传技能函数或 MCP 客户端工具</param>
+    /// <param name="providerName">provider 配置名，为空取默认 provider</param>
+    /// <returns>基于该 provider 对话客户端构建的 Agent</returns>
     public AIAgent Create(string? instructions = null, string? name = null, IList<AITool>? tools = null, string? providerName = null)
     {
         var chatClient = _resolver.Resolve(providerName);

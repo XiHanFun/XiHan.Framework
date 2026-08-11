@@ -23,7 +23,13 @@ public sealed class OptionsAiPromptStore : IAiPromptStore
         _options = options;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取模板，version 为空则不限定版本，无匹配返回 null
+    /// </summary>
+    /// <param name="name">模板名，大小写不敏感</param>
+    /// <param name="version">模板版本，为空则不限定版本</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>匹配的提示词模板，无匹配返回 null</returns>
     public Task<AiPromptTemplate?> GetAsync(string name, string? version = null, CancellationToken cancellationToken = default)
     {
         var prompts = _options.CurrentValue.Prompts;
@@ -33,7 +39,11 @@ public sealed class OptionsAiPromptStore : IAiPromptStore
         return Task.FromResult(match);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 列出全部模板
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>配置中的全部提示词模板</returns>
     public Task<IReadOnlyList<AiPromptTemplate>> ListAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult<IReadOnlyList<AiPromptTemplate>>(_options.CurrentValue.Prompts.ToList());

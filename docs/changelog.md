@@ -2,28 +2,87 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.11.1 (2026-08-12)
+
+- **修复** Redis 未启用（或启用但未配置连接串）时 `IRedisDelayQueue<>` 完全不注册，注入它的服务在容器解析阶段失败、应用无法启动；现默认注册进程内实现 `InMemoryDelayQueue<>`，Redis 可用时替换为 Redis 实现，单实例部署下延迟队列照常工作
+
+## v3.11.0 (2026-08-11)
+
+- **新增** 新增严格隔离多租户实体标记 `IStrictMultiTenantEntity`，租户态只看本租户、平台态只看平台行
+- **调整** 框架文档迁入本仓 `docs/` 独立成站，更新日志归口文档站，仓库根 `CHANGELOG.md` 移除
+- **调整** 国内镜像由 AtomGit 迁到 GitCode，issue 与 PR 模板目录改为 `.gitcode/`
+- **优化** 383 处 `<inheritdoc />` 替换为完整 XML 文档注释，随包分发的文档不再依赖基类传导
+- **升级** 升级依赖，发布 v3.11.0
+
+## v3.10.1 (2026-08-06)
+
+::: warning 升级须知
+本版把目录类配置的默认值统一改为帕斯卡命名：升级脚本目录 `migrations` → `UpdateScripts`，签名密钥 `keys/` → `Keys/`，日志 `logs/` → `Logs/`，本地存储 `wwwroot/uploads` → `wwwroot/Uploads`。只改默认值、不动读取逻辑，已在配置中显式写死路径的部署不受影响；**依赖默认值且部署在区分大小写的文件系统上的，需要一并迁移这些目录**。`wwwroot` 保持小写不变，它由 ASP.NET 固定解析。
+:::
+
+- **调整** 目录类配置默认值统一帕斯卡命名，升级脚本目录由 `migrations` 改为 `UpdateScripts`
+- **升级** 升级依赖，发布 v3.10.1
+
+## v3.10.0 (2026-08-05)
+
+::: warning 破坏性变更
+本版三处。动态 API 的路由段只认显式 `[FromRoute]`，此前按参数名自动生成的 Id 路由段全部消失（`GET /api/User/User/{id}` 变为 `GET /api/User/User?id=1`），需保持原 URL 的请显式标注。`IDistributedCache` 移除两个 Lua 脚本成员，改用 `ICacheSupportsLuaScript` 的中立签名。工作单元回滚后再调 `CompleteAsync` 由静默返回改为抛出，自行实现 `IUnitOfWork` 的需补 `IsRolledback` 成员。
+:::
+
+- **新增** 新增 `Web.Mcp` 包，MCP Server 接入下沉至框架，应用只需声明模块依赖
+- **新增** 新增 OpenID Connect 协议层，含签名密钥、id_token 签发与发现文档
+- **新增** 搜索引擎从空壳改为可用抽象，拆出契约包与进程内实现
+- **新增** 新增 Elasticsearch 搜索实现，同一套契约测试在两种实现上通过
+- **新增** Redis 事件总线接管滞留消息并引入死信，消除待处理列表的永久孤儿
+- **新增** 动态 API 新增控制器名唯一性校验，装配错误在启动期暴露
+- **新增** 接入 GitHub Actions 流水线，14 个测试工程并入合并门禁
+- **调整** 破坏性变更：路由段只由显式 `[FromRoute]` 产生，参数名不再决定 URL
+- **调整** 破坏性变更：缓存抽象移除 Lua 脚本成员并改用中立签名，不再出现 StackExchange.Redis 类型
+- **调整** 破坏性变更：工作单元回滚后再提交改为抛出，`IUnitOfWork` 新增 `IsRolledback`
+- **修复** 修复约定注册使 Scoped/Singleton 服务的拦截器全体静默失效
+- **修复** 回滚后的连接不再被复用，消除接口返回 200 但一行没写
+- **修复** 分布式事件改到事务提交成功之后才发布，消除幽灵事件
+- **修复** 修复收件箱幂等三处失效，重复消息不再被内联再处理一遍
+- **修复** 动态 API 装配失败改为 fail-fast，不再静默丢掉整个服务的端点
+- **修复** 动词前缀按词边界匹配，方法名不再被腰斩成错误路由
+- **修复** 修复日志缓存容量检查清空全表，`Flush` 改为真正等到落盘
+- **修复** 切换日志目录与清空日志时重置滚动状态，滚动按已分配字节判断
+- **修复** `ApiResponse.Code` 的数字转换器改标在属性上，code 恒为数字
+- **优化** `Utils.Tests` 断言改为表达真实契约，工程耗时由 3 分 26 秒降至 2 分
+- **移除** 移除 `Observability` 的数据库与 Redis 健康检查，两者从不实际探测
+- **升级** 升级依赖，发布 v3.10.0
+
+## v3.9.0 (2026-07-30)
+
+- **新增** 知识向量集合的维度与集合名可配置，不再锁定 1536 维嵌入模型
+- **新增** 向量库不可达翻译为 503 并纳入健康检查，覆盖检索与摄取全部 I/O 点
+- **新增** 嵌入调用失败翻译为可操作消息，带上提供方与模型名
+- **调整** 分析器、元数据与文档署名统一为 XiHanFun and contributors
+- **修复** `requiresNew` 工作单元改用独立物理连接与事务，修复内层提交静默失效
+- **升级** 升级依赖，发布 v3.9.0
+
 ## v3.8.0 (2026-07-23)
 
-- **新增** 新增动态连接注册器，支持运行期登记外部数据库连接并按 ConfigId 解析
+- **新增** 新增动态连接注册器，支持运行期登记外部数据库连接并按 `ConfigId` 解析
 - **调整** 数据库元数据读取显式指定连接时改为直连连接作用域，不再登记进当前工作单元
 - **调整** LICENSE 与 NuGet 包元数据署名统一为 XiHanFun and contributors
-- **修复** 动态连接注册器改注入单例 SqlSugarScope，修复启动期依赖注入生命周期校验崩溃
+- **修复** 动态连接注册器改注入单例 `SqlSugarScope`，修复启动期依赖注入生命周期校验崩溃
 - **优化** 统一文件头
 - **升级** 升级依赖，发布 v3.8.0
 
 ## v3.7.0 (2026-07-18)
 
-- **新增** 新增工作流引擎，含契约包 Workflow.Abstractions 与实现包 Workflow，配套 62 项测试
+- **新增** 新增工作流引擎，含契约包 `Workflow.Abstractions` 与实现包 `Workflow`，配套 62 项测试
 - **新增** 新增会话状态闸门中间件，会话失效返回 401、锁定返回 423，在全部已认证端点生效
 - **新增** 数据层接线行版本乐观锁，修复并发丢失更新与软删行被并发复活
 - **新增** 软删仓储新增含软删写路径与物理清除通路，恢复操作可用化、批量操作幂等化
 - **新增** 开放接口日志记录完整请求与响应内容，并补记凭证归属用户与 API 名称
 - **调整** 会话「锁屏」正名为「锁定」，并透传锁定原因
 - **调整** 解耦 ADO 命令超时与慢 SQL 日志阈值
-- **修复** 修复工作单元事务与 SqlSugarScope 异步上下文脱钩导致的静默丢写
+- **修复** 修复工作单元事务与 `SqlSugarScope` 异步上下文脱钩导致的静默丢写
 - **修复** 写路径租户边界，禁止租户态改写平台全局行与异租户行，并防护插入劫持
 - **修复** 从库全灭时回退主库，消除全零权重导致的读路径崩溃
-- **修复** 重建额外全局过滤器机制 GlobalFilters，修复原实现一经使用即抛异常
+- **修复** 重建额外全局过滤器机制 `GlobalFilters`，修复原实现一经使用即抛异常
 - **修复** 差异日志按主键对齐逐行落库，修复批量写审计只记录首行
 - **修复** 修复按审计查询的仅软删选项恒返回空集
 - **修复** 仓储写操作移除显式查询过滤器，修复与差异日志叠加的参数同名冲突
@@ -32,55 +91,59 @@
 
 ## v3.6.0 (2026-07-15)
 
-- **新增** 缓存 CacheEvict 真正执行失效，授权评估 RequiredClaims，新增设置定义管理器 ISettingDefinitionManager
-- **新增** 流量灰度新增 IP 匹配器 IpAddressGrayMatcher，支持精确 IP 与 CIDR
-- **新增** 安全新增国密 SM4 对称加密 Sm4Helper
-- **新增** 分析器新增 XHFA001 规则，禁止直接 new HttpClient
-- **新增** 开发工具 DevTools 升为一等模块，命令行接入依赖注入
-- **调整** 破坏性变更：移除 QueryBehavior、PageRequestDtoBase.Behavior 与 WithoutPaging()，不分页查询改走仓储 List 方法
-- **调整** 破坏性变更：设置加密改走 XiHanAesOptions.Key，移除硬编码占位密钥，未配置密钥即抛异常
-- **调整** 元数据字段改为 const/readonly，TargetFramework 由程序集特性派生
+::: warning 破坏性变更
+本版移除 `QueryBehavior`、`PageRequestDtoBase.Behavior` 与 `WithoutPaging()`，不分页查询请改走仓储既有的 List 方法（`GetAllAsync` / `GetListAsync`）。设置加密需配置 `XiHanAesOptions.Key`，未配置将抛出异常。
+:::
+
+- **新增** 缓存 `CacheEvict` 真正执行失效，授权评估 `RequiredClaims`，新增设置定义管理器 `ISettingDefinitionManager`
+- **新增** 流量灰度新增 IP 匹配器 `IpAddressGrayMatcher`，支持精确 IP 与 CIDR
+- **新增** 安全新增国密 SM4 对称加密 `Sm4Helper`
+- **新增** 分析器新增 `XHFA001` 规则，禁止直接 new `HttpClient`
+- **新增** 开发工具 `DevTools` 升为一等模块，命令行接入依赖注入
+- **调整** 破坏性变更：移除 `QueryBehavior`、`PageRequestDtoBase.Behavior` 与 `WithoutPaging()`，不分页查询改走仓储 List 方法
+- **调整** 破坏性变更：设置加密改走 `XiHanAesOptions.Key`，移除硬编码占位密钥，未配置密钥即抛异常
+- **调整** 元数据字段改为 const/readonly，`TargetFramework` 由程序集特性派生
 - **修复** 分布式 ID 生成器改为从配置构建，修复多节点重复 ID
 - **修复** 审计日志字段级脱敏与请求头脱敏
 - **修复** 差异日志软删除/恢复被误记为更新，超长快照产出非法 JSON
 - **修复** Blowfish 改用随机 IV，修复相同明文产出相同密文及解密未按实际长度截断
-- **修复** 审计日志在 DropOnFull 开启时重复入队
-- **移除** 移除 EntityChangeInterceptor，差异日志统一为单一通道
+- **修复** 审计日志在 `DropOnFull` 开启时重复入队
+- **移除** 移除 `EntityChangeInterceptor`，差异日志统一为单一通道
 - **升级** 升级依赖，发布 v3.6.0
 
 ## v3.5.0 (2026-07-10)
 
 - **新增** 链路追踪与可观测性对齐 OpenTelemetry 与 W3C 标准
-- **新增** Observability 接入 OTel SDK，支持 OTLP 与 Console 导出，新增配置节 XiHan:Observability
+- **新增** `Observability` 接入 OTel SDK，支持 OTLP 与 Console 导出，新增配置节 `XiHan:Observability`
 - **新增** SqlSugar DB span，每条 SQL 产出挂在请求 span 下的子 span
-- **新增** EventBus 消费端 Consumer span、Redis 缓存操作 span，异常记录到当前 span
-- **新增** Serilog 日志携带 TraceId 与 SpanId，可与链路关联查询
-- **调整** TraceId 与 EventBus CorrelationId 收敛为同一 W3C TraceId
-- **调整** 网关 TraceId 对齐 W3C 标准
-- **调整** Metrics 改用 System.Diagnostics.Metrics.Meter，支持 OTLP 与 Prometheus 导出
+- **新增** `EventBus` 消费端 Consumer span、Redis 缓存操作 span，异常记录到当前 span
+- **新增** Serilog 日志携带 `TraceId` 与 `SpanId`，可与链路关联查询
+- **调整** `TraceId` 与 `EventBus` `CorrelationId` 收敛为同一 W3C `TraceId`
+- **调整** 网关 `TraceId` 对齐 W3C 标准
+- **调整** Metrics 改用 `System.Diagnostics.Metrics.Meter`，支持 OTLP 与 Prometheus 导出
 - **优化** 控制台与文件日志模板将链路 ID 移至日志级别之后
 - **升级** 升级依赖，发布 v3.5.0
 
 ## v3.4.0 (2026-07-08)
 
 - **新增** 新增 Gitee 第三方 OAuth 登录 Provider
-- **修复** 多租户基类补齐 IMultiTenantEntity，修复租户行过滤全程失效
+- **修复** 多租户基类补齐 `IMultiTenantEntity`，修复租户行过滤全程失效
 - **升级** 升级依赖，发布 v3.4.0
 
 ## v3.3.0 (2026-07-08)
 
 - **新增** 分布式事件总线新增 RabbitMQ / Kafka / Redis 三种 Broker Provider
-- **新增** 新增后台作业管理器 IBackgroundJobManager，支持一次性即发即忘作业
+- **新增** 新增后台作业管理器 `IBackgroundJobManager`，支持一次性即发即忘作业
 - **新增** 后台作业新增 Redis 持久化存储
-- **调整** 审计日志通用件下沉至新包 XiHan.Framework.Auditing
-- **调整** 密码哈希器与选项收归 Security 包并由其自注册
+- **调整** 审计日志通用件下沉至新包 `XiHan.Framework.Auditing`
+- **调整** 密码哈希器与选项收归 `Security` 包并由其自注册
 - **优化** 优化默认测试项目
-- **修复** CurrentPrincipalAccessor 匿名请求兜底，修复匿名访问空引用
+- **修复** `CurrentPrincipalAccessor` 匿名请求兜底，修复匿名访问空引用
 - **升级** 升级依赖，发布 v3.3.0
 
 ## v3.2.0 (2026-07-06)
 
-- **新增** 新增 AI 抽象包 XiHan.Framework.AI.Abstractions，支持 OpenAI 兼容 Provider 解析与会话门面
+- **新增** 新增 AI 抽象包 `XiHan.Framework.AI.Abstractions`，支持 OpenAI 兼容 Provider 解析与会话门面
 - **新增** AI Provider 解析支持 Invalidate 配置热切换
 - **新增** 新增 RAG 检索增强底座，含嵌入 Provider 与向量抽象
 - **新增** 新增 Agent 门面与 MCP 工具投影，技能注册表自动收纳
@@ -88,22 +151,22 @@
 - **新增** SqlSugar 主从读写分离配置完整暴露，新增连接配置构建前钩子与追加式 AOP
 - **新增** 从库支持健康探针，租户连接支持从库
 - **调整** 移除 MySQL 存量表 utf8mb4 兜底转换
-- **修复** 从库读权重 HitRate 绑定失效导致从库不分担读
+- **修复** 从库读权重 `HitRate` 绑定失效导致从库不分担读
 - **修复** MySQL 初始化强制 utf8mb4，修复 emoji 写入报错
 - **升级** 升级依赖，统一文件头，发布 v3.2.0
 
 ## v3.1.0 (2026-07-03)
 
-- **新增** 新增 Bot.Sms 短信子包
+- **新增** 新增 `Bot.Sms` 短信子包
 - **新增** Telegram 支持多机器人平台，含 Webhook 中间件与内置 /start /help /myid 命令
 - **新增** 新增入站限流与三态熔断，默认关闭
 - **新增** 支持运行时按租户注册 SqlSugar 连接
 - **调整** Bot 库拆分为 Email / Sms / Telegram / DingTalk / Lark / WeCom 六个 Provider 子包，配置 store 化
 - **调整** 返回码语义化并对齐 HTTP 标准，新增 10000+ 业务码区段
-- **调整** IBotClient 发送方法返回 BotDispatchResult，支持显式通道与取消令牌
-- **修复** BotResult 工厂自递归导致的堆栈溢出
+- **调整** `IBotClient` 发送方法返回 `BotDispatchResult`，支持显式通道与取消令牌
+- **修复** `BotResult` 工厂自递归导致的堆栈溢出
 - **修复** Bot 投递结果被门面丢弃，Email 取消被吞成发送失败
-- **修复** IsPasswordReusedAsync 改为加盐哈希比对，修复历史密码永不命中
+- **修复** `IsPasswordReusedAsync` 改为加盐哈希比对，修复历史密码永不命中
 - **升级** 升级依赖，发布 v3.1.0
 
 ## v3.0.1 (2026-06-27)
@@ -111,19 +174,19 @@
 - **新增** 新增国际化机制，含请求文化中间件、异常可本地化与响应本地化兜底
 - **新增** 支持时区切换
 - **新增** 排序字段由 C# 属性名解析并映射为物理列名，标准化表名与列名
-- **调整** 撤销分页方法统一走 POST 的约定，改由各方法显式标注 HttpPost
+- **调整** 撤销分页方法统一走 POST 的约定，改由各方法显式标注 `HttpPost`
 - **修复** JSON 本地化资源无 backing 程序集时崩溃
-- **修复** ApplyFilter 健壮值强转，修复 In 类型不匹配与可空字段处理
+- **修复** `ApplyFilter` 健壮值强转，修复 In 类型不匹配与可空字段处理
 
 ## v3.0.0 (2026-06-20)
 
 - **新增** 新增分布式锁、队列与延迟队列
-- **新增** 新增一次性验证码服务 IOneTimeCodeService
-- **新增** 实时通信新增后台任务进度事件常量 TaskProgress
+- **新增** 新增一次性验证码服务 `IOneTimeCodeService`
+- **新增** 实时通信新增后台任务进度事件常量 `TaskProgress`
 - **新增** 本地存储 Provider 支持预签名 URL
 - **优化** 日志体系规范化，支持敏感脱敏、查询不落操作日志与软删恢复识别
-- **优化** RandomCoder 全面加密安全化，异常统一化输出
-- **修复** DateTimeOffset 按 ISO 8601 带时区偏移序列化，返回码按数值序列化
+- **优化** `RandomCoder` 全面加密安全化，异常统一化输出
+- **修复** `DateTimeOffset` 按 ISO 8601 带时区偏移序列化，返回码按数值序列化
 - **修复** 本地存储静态文件注册在鉴权前导致上传目录 401
 - **修复** 动态 API 特性布尔默认值覆盖全局配置
 - **修复** Cron 时区统一、六段秒位、调度死亡显性化与一次性触发语义
@@ -132,15 +195,15 @@
 ## v2.5.0 (2026-05-30)
 
 - **新增** 新增混合授权与 ABAC 策略，落地权限体系与登录日志
-- **新增** 新增分析器包 XiHan.Framework.Analyzers
-- **新增** 新增请求链路追踪 ID 与 ApiLog 写入管道
+- **新增** 新增分析器包 `XiHan.Framework.Analyzers`
+- **新增** 新增请求链路追踪 ID 与 `ApiLog` 写入管道
 - **新增** 新增密码策略服务、消息发件箱与实体变更拦截器
 - **新增** 枚举元数据增强，支持动态 JSON 加载与变更重载
 - **调整** 架构重构，内核分层与启动层初始化
-- **调整** 仓储参数注入移入 DataExecuting AOP
+- **调整** 仓储参数注入移入 `DataExecuting` AOP
 - **优化** 收紧 OpenApi 算法基线并强化防重放
-- **优化** AuditLog 更名为 DiffLog，减少歧义
-- **修复** EventBus 后台服务停止异常
+- **优化** `AuditLog` 更名为 `DiffLog`，减少歧义
+- **修复** `EventBus` 后台服务停止异常
 - **修复** 动态 API 取消令牌绑定与命名空间路由、去重、绑定一致性问题
 - **移除** 移除分表仓储与基类索引
 
@@ -150,7 +213,7 @@
 - **新增** 新增 Castle 动态代理集成库与缓存 AOP 拦截
 - **新增** 新增动态 API 权限保护
 - **新增** 数据库初始化下沉到框架
-- **调整** 各模块内联注册提取为 AddXiHanXxx 扩展方法，可脱离模块系统直接注入
+- **调整** 各模块内联注册提取为 `AddXiHanXxx` 扩展方法，可脱离模块系统直接注入
 - **调整** Contracts 接口去除实体泛型参数，消除应用层 HTTP 形状泄漏
 - **修复** long 序列化为字符串，避免 JavaScript 精度溢出
 - **修复** HTTP 请求 string 类型重复序列化
@@ -160,7 +223,7 @@
 - **新增** 实现机器人功能，支持邮件、钉钉、飞书、企业微信与 Telegram
 - **新增** 实现消息模块功能，重写 AI 功能
 - **新增** 新增异步日志管道，中间件与过滤器改为可插拔管道
-- **新增** 新增统一请求上下文 RequestContext
+- **新增** 新增统一请求上下文 `RequestContext`
 - **新增** 新增 OpenAPI 签名加密与分布式安全升级引擎
 - **新增** 新增动态 API 分组、标签能力与数据库元数据能力
 - **调整** 接口返回默认改为 camelCase，统一返回结果封装
@@ -201,7 +264,7 @@
 - **优化** Base 编码转换器性能优化，内存分配减少约 70-80%
 - **优化** 优化分布式 ID 生成库与命名空间
 - **修复** ID 工厂泛型类型与 HTTP 请求序列化问题
-- **修复** VS2026 将 Reverse 扩展误映射为 Span.Reverse
+- **修复** VS2026 将 `Reverse` 扩展误映射为 `Span.Reverse`
 - **移除** 移除旧解决方案、默认 ID 注入与 snk 签名
 - **升级** 升级依赖，发布 v1.4.5
 
@@ -231,7 +294,7 @@
 - **新增** 新增设置中心默认实现，完善本地事件总线
 - **新增** 新增顺序 GUID 生成器与锁扩展方法
 - **优化** 优化日志清理逻辑与整体代码风格
-- **升级** 日志组件升级为 Task + Channel 异步架构，新增可插拔格式化器与背压策略
+- **升级** 日志组件升级为 `Task` + `Channel` 异步架构，新增可插拔格式化器与背压策略
 - **升级** 升级依赖，发布 v1.4.0
 
 ## v1.3.6 (2025-10-17)
@@ -262,12 +325,12 @@
 
 ## v1.3.0 (2025-09-20)
 
-- **新增** 新增领域模块 XiHan.Framework.Domain，完善实体与 ID 建模
+- **新增** 新增领域模块 `XiHan.Framework.Domain`，完善实体与 ID 建模
 - **新增** 新增后台服务基类与配套示例
 - **新增** 新增命令行工具集，含进度条、加载指示器、彩色输出与交互式菜单
 - **新增** 新增表格打印，支持自适应列宽与多种边框样式
-- **新增** 新增 gRPC 库 XiHan.Framework.Web.Grpc
-- **调整** 计划任务相关项目重命名，包名统一，Data 模块结构优化
+- **新增** 新增 gRPC 库 `XiHan.Framework.Web.Grpc`
+- **调整** 计划任务相关项目重命名，包名统一，`Data` 模块结构优化
 - **优化** 重写文件日志，大幅提升写入性能
 - **升级** 多轮升级第三方依赖
 
@@ -279,12 +342,12 @@
 
 ## v1.1.0 (2025-09-07)
 
-- **新增** 新增 Security、Script、DevTools 等模块
+- **新增** 新增 `Security`、`Script`、`DevTools` 等模块
 - **新增** 重写序列化器，新增 JSON 转换器、序列化 Try 方法与动态 JSON
-- **调整** 大规模包重构整合，AspNetCore.Mvc 并入 Web.Api、Serilog 并入 Logging、SqlSugarCore 并入 Data、SignalR 并入 Web.RealTime
-- **调整** 合并 Swagger 与 Scalar 为 Web.Docs，对象映射与后台任务相关包合并
+- **调整** 大规模包重构整合，`AspNetCore.Mvc` 并入 `Web.Api`、Serilog 并入 `Logging`、`SqlSugarCore` 并入 `Data`、SignalR 并入 `Web.RealTime`
+- **调整** 合并 Swagger 与 Scalar 为 `Web.Docs`，对象映射与后台任务相关包合并
 - **优化** 扩充表达式功能，优化重试、系统信息获取与对象映射
-- **移除** 移除 BlobStoring、DataFiltering、AspNetCore.Refit 等模块
+- **移除** 移除 `BlobStoring`、`DataFiltering`、`AspNetCore.Refit` 等模块
 - **升级** 升级依赖，发布 v1.1.0
 
 ## v0.11.7 (2025-08-02)
@@ -292,9 +355,9 @@
 - **新增** 新增渐变控制台打印与项目信息展示
 - **新增** 扩充动态 JSON 与数字扩展方法
 - **新增** 集合新增随机取项能力
-- **调整** AspNetCore.Serilog 更名为 XiHan.Framework.Logging，重构元数据包
+- **调整** `AspNetCore.Serilog` 更名为 `XiHan.Framework.Logging`，重构元数据包
 - **优化** 优化日志模块、应用启动流程与默认序列化选项
-- **移除** 移除 Serializable 标记，统一使用 System.Text.Json
+- **移除** 移除 `Serializable` 标记，统一使用 `System.Text.Json`
 - **升级** 升级依赖，发布 v0.11.7
 
 ## v0.11.3 (2025-07-03)
@@ -307,17 +370,17 @@
 ## v0.11.2 (2025-06-29)
 
 - **修复** 修复 JSON 字符串格式化问题
-- **移除** 移除 EFCore 库，ORM 统一使用 SqlSugarCore
+- **移除** 移除 EFCore 库，ORM 统一使用 `SqlSugarCore`
 - **升级** 升级依赖，发布 v0.11.2
 
 ## v0.11.1 (2025-06-25)
 
 - **新增** 定义事件总线抽象接口，新增事件处理器工厂与事件追踪 ID 接口
 - **新增** 新增对象扩展包、类型辅助类与验证异常
-- **调整** 重构本地化包，AssemblyHelper 更名为 ReflectionHelper
+- **调整** 重构本地化包，`AssemblyHelper` 更名为 `ReflectionHelper`
 - **优化** 优化 HTTP 模块返回结果与序列化
-- **优化** 优化 RSA 加密默认参数、脱敏逻辑与 RandomCoder
-- **修复** 动态 JSON 访问不存在属性时报错，改为返回 null
+- **优化** 优化 RSA 加密默认参数、脱敏逻辑与 `RandomCoder`
+- **修复** 动态 JSON 访问不存在属性时报错，改为返回 `null`
 - **升级** 升级依赖，发布 v0.11.1
 
 ## v0.9.4 (2025-06-05)
@@ -330,7 +393,7 @@
 ## v0.9.3 (2025-06-03)
 
 - **新增** 新增事件总线，支持本地与分布式事件处理器
-- **新增** 新增 XiHan.Framework.Data 包
+- **新增** 新增 `XiHan.Framework.Data` 包
 - **调整** 对象访问器由工具包迁移至核心包
 - **优化** 优化启动日志与解决方案目录
 - **修复** 修复服务提供器为空与 AI 模块注入问题
@@ -342,15 +405,15 @@
 
 ## v0.9.0 (2025-06-02)
 
-- **新增** 新增 XiHan.Framework.Script 包，支持脚本安全执行与调试
-- **调整** 数据检测器 CheckHelper 更名为 Guard
+- **新增** 新增 `XiHan.Framework.Script` 包，支持脚本安全执行与调试
+- **调整** 数据检测器 `CheckHelper` 更名为 `Guard`
 - **优化** 优化 HTTP 包引用与整体包结构
 
 ## v0.8.35 (2025-05-31)
 
-- **新增** 新增 DistributedIds、Validation、Authorization 包，ID 算法补充 NanoId
+- **新增** 新增 `DistributedIds`、`Validation`、`Authorization` 包，ID 算法补充 NanoId
 - **新增** 扩充编码方案，新增 Base32 / Base36 / Base58 / Base62 / Base95 与自定义进制编码
-- **调整** Data 包更名为 DataFiltering，ValidateCoder 更名为 RandomCoder
+- **调整** `Data` 包更名为 `DataFiltering`，`ValidateCoder` 更名为 `RandomCoder`
 - **修复** 修复包引用错误与脚本文件编码问题
 - **移除** 移除旧版解决方案与 UUID 生成器
 - **升级** 升级依赖
@@ -359,7 +422,7 @@
 
 - **修复** 修复 AI 依赖升级后的接口兼容问题
 - **移除** 移除非常用功能
-- **升级** 升级 XiHan.Framework.AI 依赖
+- **升级** 升级 `XiHan.Framework.AI` 依赖
 
 ## v0.8.30 (2025-05-16)
 
@@ -379,9 +442,9 @@
 
 ## v0.8.20 (2025-04-02)
 
-- **新增** 新增 XiHan.Framework.Http.Client 包
+- **新增** 新增 `XiHan.Framework.Http.Client` 包
 - **优化** 优化工作单元处理逻辑
-- **修复** 判空统一改为 is null 写法，规避运算符重载风险
+- **修复** 判空统一改为 `is null` 写法，规避运算符重载风险
 - **升级** 升级依赖
 
 ## v0.8.18 (2025-03-19)
@@ -390,7 +453,7 @@
 
 ## v0.8.17 (2025-03-18)
 
-- **新增** 新增本地化包 XiHan.Framework.Localization
+- **新增** 新增本地化包 `XiHan.Framework.Localization`
 - **新增** 新增混合缓存、深度合并配置与主题枚举
 - **优化** 优化设置与多租户模块引用，更换 Logo
 - **修复** 修复模块间循环依赖
@@ -441,11 +504,11 @@
 
 - **新增** 新增 OTP 与 HMAC 生成能力
 - **优化** 优化构建与发布脚本
-- **移除** 移除 AspNetCore.MVC 目录
+- **移除** 移除 `AspNetCore.MVC` 目录
 
 ## v0.8.0 (2024-12-06)
 
-- **新增** 新增 AspNetCore.MVC 库
+- **新增** 新增 `AspNetCore.MVC` 库
 - **新增** 新增 XML 解析与表达式扩展方法
 - **调整** 拆分 props 文件，统一命名
 - **优化** 优化树节点处理功能

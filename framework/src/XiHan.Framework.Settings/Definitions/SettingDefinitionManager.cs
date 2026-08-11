@@ -35,13 +35,20 @@ public class SettingDefinitionManager : ISettingDefinitionManager, ISingletonDep
         _definitions = new Lazy<IReadOnlyDictionary<string, SettingDefinition>>(BuildDefinitions, isThreadSafe: true);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按名称获取设置定义，不存在返回 null
+    /// </summary>
+    /// <param name="name">设置名称</param>
+    /// <returns>设置定义</returns>
     public SettingDefinition? GetOrNull(string name)
     {
         return _definitions.Value.GetValueOrDefault(name);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取全部设置定义
+    /// </summary>
+    /// <returns>设置定义列表</returns>
     public IReadOnlyList<SettingDefinition> GetAll()
     {
         return [.. _definitions.Value.Values];

@@ -9,16 +9,13 @@
         <Title>XiHan.Framework.SearchEngines</Title>
         <AssemblyName>XiHan.Framework.SearchEngines</AssemblyName>
         <PackageId>XiHan.Framework.SearchEngines</PackageId>
-        <Description>曦寒框架搜索引擎库</Description>
+        <Description>曦寒框架搜索引擎库，含进程内实现；接入具体搜索引擎请引用对应实现包</Description>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.SearchEngines.Abstractions\XiHan.Framework.SearchEngines.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

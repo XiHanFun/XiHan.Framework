@@ -29,7 +29,11 @@ public sealed class AiEmbeddingGeneratorResolver : IAiEmbeddingGeneratorResolver
         _factory = factory;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 解析指定 provider 的嵌入生成器，为空取默认 provider，构建后按名缓存复用
+    /// </summary>
+    /// <param name="providerName">provider 配置名，为空取默认 provider</param>
+    /// <returns>该 provider 的嵌入生成器</returns>
     public IEmbeddingGenerator<string, Embedding<float>> Resolve(string? providerName = null)
     {
         var cacheKey = string.IsNullOrWhiteSpace(providerName) ? DefaultKey : providerName;
@@ -41,7 +45,10 @@ public sealed class AiEmbeddingGeneratorResolver : IAiEmbeddingGeneratorResolver
         });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 使已缓存的嵌入生成器失效并释放，下次解析按最新配置重建
+    /// </summary>
+    /// <param name="providerName">provider 配置名，为空则清空全部缓存，否则清该 provider 及默认槽</param>
     public void Invalidate(string? providerName = null)
     {
         if (string.IsNullOrWhiteSpace(providerName))

@@ -119,7 +119,9 @@ public sealed class WorkflowTestHost : IDisposable
             ?? throw new InvalidOperationException($"实例 {instanceId} 不存在");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         Provider.Dispose();
@@ -138,7 +140,12 @@ public sealed class RecordingEventPublisher : IWorkflowEventPublisher
     /// </summary>
     public IReadOnlyList<object> Published => [.. _events];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布事件，按发布顺序记录到已发布事件列表
+    /// </summary>
+    /// <typeparam name="TEvent">事件类型</typeparam>
+    /// <param name="eventData">事件数据</param>
+    /// <returns>任务</returns>
     public Task PublishAsync<TEvent>(TEvent eventData) where TEvent : class
     {
         _events.Enqueue(eventData);
@@ -163,13 +170,19 @@ public sealed class TestClock : IClock
 {
     private DateTime _now = new(2026, 7, 16, 8, 0, 0, DateTimeKind.Utc);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前时间
+    /// </summary>
     public DateTime Now => _now;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 时间类型，固定为 UTC
+    /// </summary>
     public DateTimeKind Kind => DateTimeKind.Utc;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 是否支持多时区，固定为不支持
+    /// </summary>
     public bool SupportsMultipleTimezone => false;
 
     /// <summary>
@@ -181,25 +194,41 @@ public sealed class TestClock : IClock
         _now = _now.Add(duration);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 规范化时间，原样返回
+    /// </summary>
+    /// <param name="dateTime">时间</param>
+    /// <returns>规范化时间</returns>
     public DateTime Normalize(DateTime dateTime)
     {
         return dateTime;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为用户时间，原样返回
+    /// </summary>
+    /// <param name="utcDateTime">UTC 时间</param>
+    /// <returns>用户时间</returns>
     public DateTime ConvertToUserTime(DateTime utcDateTime)
     {
         return utcDateTime;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为用户时间，原样返回
+    /// </summary>
+    /// <param name="dateTimeOffset">时间偏移</param>
+    /// <returns>用户时间</returns>
     public DateTimeOffset ConvertToUserTime(DateTimeOffset dateTimeOffset)
     {
         return dateTimeOffset;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 转换为 UTC 时间，原样返回
+    /// </summary>
+    /// <param name="dateTime">时间</param>
+    /// <returns>UTC 时间</returns>
     public DateTime ConvertToUtc(DateTime dateTime)
     {
         return dateTime;
@@ -213,16 +242,27 @@ public sealed class TestCurrentTenant : ICurrentTenant
 {
     private readonly AsyncLocal<long?> _id = new();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前租户是否可用
+    /// </summary>
     public bool IsAvailable => Id.HasValue;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前租户标识，无租户时为 null
+    /// </summary>
     public long? Id => _id.Value;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前租户名称，固定为 null
+    /// </summary>
     public string? Name => null;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 临时切换当前租户，释放返回对象时恢复为切换前的租户
+    /// </summary>
+    /// <param name="id">要切换到的租户标识，传入 null 表示无租户状态</param>
+    /// <param name="name">租户名称，此实现忽略该参数</param>
+    /// <returns>用于恢复租户上下文的释放器</returns>
     public IDisposable Change(long? id, string? name = null)
     {
         var previous = _id.Value;
@@ -253,7 +293,13 @@ public sealed class InProcessTestLock : IDistributedLock
 {
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试获取锁，单次不阻塞不重试，未获取到返回 null
+    /// </summary>
+    /// <param name="resourceKey">资源键，同一键进程内互斥</param>
+    /// <param name="expiry">锁过期时间，此实现忽略该参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>锁句柄，获取失败返回 null</returns>
     public async Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expiry, CancellationToken cancellationToken = default)
     {
         var semaphore = _semaphores.GetOrAdd(resourceKey, _ => new SemaphoreSlim(1, 1));

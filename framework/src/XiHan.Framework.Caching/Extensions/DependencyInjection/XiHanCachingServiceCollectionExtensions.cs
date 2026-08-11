@@ -42,6 +42,9 @@ public static class XiHanCachingServiceCollectionExtensions
         // 分布式锁：默认进程内回退（仅单实例）；Redis 启用时下方替换为跨实例的 Redis 实现
         services.TryAddSingleton<IDistributedLock, InMemoryDistributedLock>();
 
+        // 延迟队列：默认进程内回退（仅单实例，进程退出即丢失）；Redis 启用时下方替换为跨实例的 Redis 实现
+        services.TryAddSingleton(typeof(IRedisDelayQueue<>), typeof(InMemoryDelayQueue<>));
+
         services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
         {
             cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
@@ -79,7 +82,8 @@ public static class XiHanCachingServiceCollectionExtensions
         {
             services.TryAddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisOptions.Configuration));
             services.TryAddSingleton(typeof(IRedisStreamQueue<>), typeof(RedisStreamQueue<>));
-            services.TryAddSingleton(typeof(IRedisDelayQueue<>), typeof(RedisDelayQueue<>));
+            // 延迟队列升级为 Redis 跨实例实现（替换上面的进程内回退）
+            services.Replace(ServiceDescriptor.Singleton(typeof(IRedisDelayQueue<>), typeof(RedisDelayQueue<>)));
             // 分布式锁升级为 Redis 跨实例实现（替换上面的进程内回退）
             services.Replace(ServiceDescriptor.Singleton<IDistributedLock, RedisDistributedLock>());
         }

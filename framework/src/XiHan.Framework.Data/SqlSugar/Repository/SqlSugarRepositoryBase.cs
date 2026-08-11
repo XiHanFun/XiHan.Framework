@@ -447,6 +447,13 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var tenantId = GetActiveTenantId();
         if (tenantId is null)
         {
+            // 严格隔离实体：平台态只拥有 TenantId=0 的行，改写租户行同样越界
+            if (entity is IStrictMultiTenantEntity && multiTenantEntity.TenantId != 0)
+            {
+                throw new InvalidOperationException(
+                    $"写入失败：不允许在平台态修改租户级（TenantId={multiTenantEntity.TenantId}）的严格隔离数据；请切换到该租户后执行。");
+            }
+
             return;
         }
 

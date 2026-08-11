@@ -43,10 +43,17 @@ public sealed class TencentCloudSmsGatewayClient : SmsGatewayClientBase
             new ClientProfile { HttpProfile = new HttpProfile { Endpoint = Endpoint } });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 服务商类型，固定为腾讯云
+    /// </summary>
     public override SmsProviderType Provider => SmsProviderType.TencentCloud;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发送短信，按模板映射转换模板码并以位置数组提交模板参数
+    /// </summary>
+    /// <param name="request">发送请求（内部模板码，按配置的模板映射转换为腾讯云模板ID）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>发送结果，成功时携带逗号分隔的 SerialNo 回执；任一手机号回执失败即整体失败</returns>
     public override async Task<SmsGatewaySendResult> SendAsync(SmsGatewayRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

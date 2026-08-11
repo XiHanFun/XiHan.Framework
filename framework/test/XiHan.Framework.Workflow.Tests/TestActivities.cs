@@ -26,7 +26,11 @@ public sealed class CompensationRecorder
 [WorkflowActivity("TestFlaky")]
 public class FlakyActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动，尝试次数未达到指定次数时返回故障，达到后返回完成并写入 flakyDone 变量
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（完成或故障）</returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var succeedOnAttempt = GetProperty<int?>(context, "SucceedOnAttempt") ?? 1;
@@ -42,7 +46,11 @@ public class FlakyActivity : WorkflowActivityBase
 [WorkflowActivity("TestCancellation")]
 public class CancellationThrowingActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动，直接抛出取消异常
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>不会正常返回，始终抛出 <see cref="OperationCanceledException"/></returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         throw new OperationCanceledException();
@@ -66,13 +74,21 @@ public class RecordingCompensableActivity : WorkflowActivityBase, ICompensableWo
         _recorder = recorder;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动，直接返回完成
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（完成）</returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         return Task.FromResult(ActivityExecutionResult.Complete());
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 补偿活动，把被补偿的节点标识追加到补偿记录器
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>任务</returns>
     public Task CompensateAsync(ActivityExecutionContext context)
     {
         _recorder.CompensatedNodeIds.Add(context.Node.Id);

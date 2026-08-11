@@ -33,7 +33,11 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
         _abacEvaluator = abacEvaluator;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 先按权限编码做实时权限检查，再按 ABAC 策略编码收集属性并评估，两者均通过才判定授权成功
+    /// </summary>
+    /// <param name="context">授权处理上下文</param>
+    /// <param name="requirement">混合权限要求</param>
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, HybridPermissionRequirement requirement)
     {
         var userId = ResolveUserId(context.User);

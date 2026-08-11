@@ -27,7 +27,10 @@ public sealed class SkillMcpToolsConfigurator : IConfigureOptions<McpServerOptio
         _registry = registry;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 把注册表内全部技能投影为 MCP 工具，并入选项的工具集合（按工具名去重）
+    /// </summary>
+    /// <param name="options">待配置的 MCP 服务端选项</param>
     public void Configure(McpServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);

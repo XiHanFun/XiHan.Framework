@@ -49,7 +49,16 @@ public sealed class TelegramNotifier : ITelegramNotifier
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发送纯文本消息
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="text">文本内容</param>
+    /// <param name="replyToMessageId">要回复的消息 Id（可选）</param>
+    /// <param name="replyMarkup">键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已发送消息</returns>
     public Task<Message> SendTextAsync(string botName, long chatId, string text, int? replyToMessageId = null, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -57,7 +66,16 @@ public sealed class TelegramNotifier : ITelegramNotifier
         return SendMessageCoreAsync(botName, chatId, text, parseMode: null, replyToMessageId, replyMarkup, notifyAdminsOnFailure: true, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 以 Markdown 解析模式发送消息
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="markdownText">Markdown 文本</param>
+    /// <param name="replyToMessageId">要回复的消息 Id（可选）</param>
+    /// <param name="replyMarkup">键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已发送消息</returns>
     public Task<Message> SendMarkdownAsync(string botName, long chatId, string markdownText, int? replyToMessageId = null, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -65,7 +83,17 @@ public sealed class TelegramNotifier : ITelegramNotifier
         return SendMessageCoreAsync(botName, chatId, markdownText, ParseMode.Markdown, replyToMessageId, replyMarkup, notifyAdminsOnFailure: true, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按指定解析模式发送文本消息，模式名不识别时按纯文本发送
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="text">文本内容</param>
+    /// <param name="parseMode">解析模式（None / Markdown / MarkdownV2 / Html，大小写不敏感；null 或 None 表示纯文本）</param>
+    /// <param name="replyToMessageId">要回复的消息 Id（可选）</param>
+    /// <param name="replyMarkup">键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已发送消息</returns>
     public Task<Message> SendByParseModeAsync(string botName, long chatId, string text, string? parseMode, int? replyToMessageId = null, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -73,7 +101,17 @@ public sealed class TelegramNotifier : ITelegramNotifier
         return SendMessageCoreAsync(botName, chatId, text, ResolveParseMode(parseMode), replyToMessageId, replyMarkup, notifyAdminsOnFailure: true, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 以字节流上传并发送图片消息
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="imageBytes">图片字节</param>
+    /// <param name="caption">图片说明（可选）</param>
+    /// <param name="replyToMessageId">要回复的消息 Id（可选）</param>
+    /// <param name="replyMarkup">键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已发送消息</returns>
     public Task<Message> SendPhotoAsync(string botName, long chatId, byte[] imageBytes, string? caption = null, int? replyToMessageId = null, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -106,7 +144,18 @@ public sealed class TelegramNotifier : ITelegramNotifier
             cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 以字节流上传并发送文件消息
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="fileBytes">文件字节</param>
+    /// <param name="fileName">文件名</param>
+    /// <param name="caption">文件说明（可选）</param>
+    /// <param name="replyToMessageId">要回复的消息 Id（可选）</param>
+    /// <param name="replyMarkup">键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>已发送消息</returns>
     public Task<Message> SendDocumentAsync(string botName, long chatId, byte[] fileBytes, string fileName, string? caption = null, int? replyToMessageId = null, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -144,7 +193,17 @@ public sealed class TelegramNotifier : ITelegramNotifier
             cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 编辑已发送消息的文本
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="messageId">消息 Id</param>
+    /// <param name="text">新文本内容</param>
+    /// <param name="parseMode">解析模式（null 或 None 表示纯文本）</param>
+    /// <param name="replyMarkup">内联键盘标记（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>编辑后的消息</returns>
     public Task<Message> EditMessageTextAsync(string botName, long chatId, int messageId, string text, string? parseMode = null, InlineKeyboardMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -169,7 +228,15 @@ public sealed class TelegramNotifier : ITelegramNotifier
             cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 编辑已发送消息的内联键盘
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">目标会话 Id</param>
+    /// <param name="messageId">消息 Id</param>
+    /// <param name="replyMarkup">内联键盘标记（null 表示移除）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>编辑后的消息</returns>
     public Task<Message> EditMessageReplyMarkupAsync(string botName, long chatId, int messageId, InlineKeyboardMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
     {
         ValidateChatId(chatId);
@@ -190,7 +257,13 @@ public sealed class TelegramNotifier : ITelegramNotifier
             cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 向机器人配置的管理员逐个私发消息，单个失败仅记录警告不中断其余发送
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="text">文本内容</param>
+    /// <param name="parseMode">解析模式（可选）</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task SendToAdminsAsync(string botName, string text, string? parseMode = null, CancellationToken cancellationToken = default)
     {
         ValidateText(text);

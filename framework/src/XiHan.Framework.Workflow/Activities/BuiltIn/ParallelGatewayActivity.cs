@@ -13,7 +13,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
     OutgoingBehavior = ActivityOutgoingBehavior.All)]
 public class ParallelGatewayActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（直接完成节点，由引擎沿所有出边扇出）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         return Task.FromResult(ActivityExecutionResult.Complete());

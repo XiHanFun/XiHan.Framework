@@ -29,10 +29,15 @@ public sealed class DefaultAiSkillRegistry : IAiSkillRegistry
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 全部已注册技能
+    /// </summary>
     public IReadOnlyList<IAiSkill> All => _skills.Values.ToArray();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 注册一个技能，同名覆盖
+    /// </summary>
+    /// <param name="skill">要注册的技能</param>
     public void Register(IAiSkill skill)
     {
         ArgumentNullException.ThrowIfNull(skill);
@@ -40,7 +45,11 @@ public sealed class DefaultAiSkillRegistry : IAiSkillRegistry
         _skills[skill.Name] = skill;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按名查找技能，未注册返回 null
+    /// </summary>
+    /// <param name="name">技能名，大小写不敏感</param>
+    /// <returns>找到的技能，未注册返回 null</returns>
     public IAiSkill? Find(string name)
     {
         return string.IsNullOrWhiteSpace(name) ? null : _skills.GetValueOrDefault(name);

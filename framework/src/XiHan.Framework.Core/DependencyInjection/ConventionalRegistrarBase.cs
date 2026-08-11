@@ -188,6 +188,26 @@ public abstract class ConventionalRegistrarBase : IConventionalRegistrar
     }
 
     /// <summary>
+    /// 登记服务描述器的实现类型
+    /// </summary>
+    /// <remarks>
+    /// 描述器以工厂委托注册时其 <see cref="ServiceDescriptor.ImplementationType"/> 为空，
+    /// 此处写入 <see cref="ServiceImplementationTypeRegistry"/> 供动态代理等环节反查。
+    /// </remarks>
+    /// <param name="services"></param>
+    /// <param name="serviceDescriptor"></param>
+    /// <param name="implementationType"></param>
+    protected virtual void TrackImplementationType(IServiceCollection services, ServiceDescriptor serviceDescriptor, Type implementationType)
+    {
+        if (ServiceImplementationTypeRegistry.GetDeclaredImplementationTypeOrNull(serviceDescriptor) is not null)
+        {
+            return;
+        }
+
+        services.GetImplementationTypeRegistry().Add(serviceDescriptor, implementationType);
+    }
+
+    /// <summary>
     /// 获取重定向类型或空
     /// </summary>
     /// <param name="implementationType"></param>

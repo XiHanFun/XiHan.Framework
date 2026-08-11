@@ -27,7 +27,11 @@ public class ForEachActivity : WorkflowActivityBase, IResumableWorkflowActivity
     private const string ResultsStateKey = "results";
     private const string DefinitionCodeStateKey = "definitionCode";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（求值集合并按顺序或并行启动子流程，挂起等待子流程结束；集合为空直接完成）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var definitionCode = await GetTemplatedStringAsync(context, "DefinitionCode");
@@ -73,7 +77,11 @@ public class ForEachActivity : WorkflowActivityBase, IResumableWorkflowActivity
             });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复活动（累计子流程结果，顺序模式启动下一项，全部完成后输出结果列表）
+    /// </summary>
+    /// <param name="context">恢复上下文</param>
+    /// <returns>执行结果（子流程非正常结束且开启快速失败时返回故障）</returns>
     public Task<ActivityExecutionResult> ResumeAsync(ActivityResumeContext context)
     {
         if (context.Bookmark.Kind == WorkflowBookmarkKinds.NodeTimeout)

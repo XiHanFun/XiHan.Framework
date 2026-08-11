@@ -29,7 +29,11 @@ public class HttpRequestActivity : WorkflowActivityBase
     /// </summary>
     public const string HttpClientName = "XiHanWorkflow";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（发送 HTTP 请求并把状态码与响应内容写入输出）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置地址、请求超时、请求失败或错误状态码时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var url = await GetTemplatedStringAsync(context, "Url");

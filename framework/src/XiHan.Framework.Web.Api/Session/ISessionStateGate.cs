@@ -74,7 +74,12 @@ public interface ISessionStateGate
 /// </summary>
 public sealed class NullSessionStateGate : ISessionStateGate
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 评估会话状态，始终返回放行
+    /// </summary>
+    /// <param name="sessionId">JWT 中的会话标识（session_id claim）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>放行判定</returns>
     public Task<SessionGateDecision> EvaluateAsync(string sessionId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(SessionGateDecision.Allow);

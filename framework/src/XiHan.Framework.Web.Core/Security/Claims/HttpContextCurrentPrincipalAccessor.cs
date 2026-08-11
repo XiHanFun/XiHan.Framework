@@ -22,7 +22,10 @@ public class HttpContextCurrentPrincipalAccessor : CurrentPrincipalAccessorBase,
         _httpContextAccessor = httpContextAccessor;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前 HttpContext 上的 ClaimsPrincipal，无 HttpContext 时返回空主体
+    /// </summary>
+    /// <returns>当前请求的 ClaimsPrincipal</returns>
     protected override ClaimsPrincipal GetClaimsPrincipal()
     {
         var user = _httpContextAccessor.HttpContext?.User;

@@ -70,6 +70,11 @@ internal class ChildUnitOfWork : IUnitOfWork
     public bool IsCompleted => _parent.IsCompleted;
 
     /// <summary>
+    /// 是否已回滚(与父工作单元一致)
+    /// </summary>
+    public bool IsRolledback => _parent.IsRolledback;
+
+    /// <summary>
     /// 当前工作单元的保留名(如果有)
     /// </summary>
     public string? ReservationName => _parent.ReservationName;

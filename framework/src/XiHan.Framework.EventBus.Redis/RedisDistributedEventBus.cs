@@ -214,8 +214,30 @@ public class RedisDistributedEventBus : BrokerDistributedEventBusBase, ISingleto
     {
         var db = _connection!.GetDatabase();
 
+        // 启动即先接管一次：本进程上一轮生命周期崩溃留下的待处理消息，
+        // 换了消费者名之后不会被自动重投，只能靠接管取回
+        var nextClaimAt = DateTimeOffset.MinValue;
+
         while (!cancellationToken.IsCancellationRequested)
         {
+            if (DateTimeOffset.UtcNow >= nextClaimAt)
+            {
+                nextClaimAt = DateTimeOffset.UtcNow.AddMilliseconds(_options.ClaimIntervalMilliseconds);
+
+                try
+                {
+                    await ClaimStaleMessagesAsync(db, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "接管滞留 Redis 事件失败，stream={Stream}", _options.StreamKey);
+                }
+            }
+
             StreamEntry[] entries;
             try
             {
@@ -239,31 +261,145 @@ public class RedisDistributedEventBus : BrokerDistributedEventBusBase, ISingleto
                 continue;
             }
 
-            foreach (var entry in entries)
-            {
-                try
-                {
-                    var eventName = GetField(entry, FieldEvent).ToString();
-                    var messageId = GetField(entry, FieldMessageId);
-                    var correlationId = GetField(entry, FieldCorrelationId);
-                    var body = (byte[]?)GetField(entry, FieldData) ?? [];
+            await ProcessEntriesAsync(db, entries);
+        }
+    }
 
-                    await ProcessIncomingMessageAsync(
-                        messageId.IsNullOrEmpty ? null : messageId.ToString(),
-                        eventName,
-                        correlationId.IsNullOrEmpty ? null : correlationId.ToString(),
-                        body);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "处理 Redis 事件失败，stream={Stream}", _options.StreamKey);
-                    // 仍 XACK：避免毒消息滞留 PEL；可靠重试由收件箱负责（若已配置）
-                }
-                finally
-                {
-                    await db.StreamAcknowledgeAsync(_options.StreamKey, _options.ConsumerGroup, entry.Id);
-                }
+    /// <summary>
+    /// 处理一批条目：成功则确认，失败则留在待处理列表等待重投
+    /// </summary>
+    /// <remarks>
+    /// 失败时不确认是有意的：确认等于宣告这条消息已处理完毕，之后 Redis 不会再投递它，
+    /// 消息随即永久消失。留在待处理列表则会被 <see cref="ClaimStaleMessagesAsync"/> 重新接管，
+    /// 重投次数超过上限后转入死信 Stream，既不会无限重试也不会凭空丢失。
+    /// </remarks>
+    /// <param name="db">数据库</param>
+    /// <param name="entries">条目集合</param>
+    private async Task ProcessEntriesAsync(IDatabase db, StreamEntry[] entries)
+    {
+        foreach (var entry in entries)
+        {
+            try
+            {
+                var eventName = GetField(entry, FieldEvent).ToString();
+                var messageId = GetField(entry, FieldMessageId);
+                var correlationId = GetField(entry, FieldCorrelationId);
+                var body = (byte[]?)GetField(entry, FieldData) ?? [];
+
+                await ProcessIncomingMessageAsync(
+                    messageId.IsNullOrEmpty ? null : messageId.ToString(),
+                    eventName,
+                    correlationId.IsNullOrEmpty ? null : correlationId.ToString(),
+                    body);
+
+                await db.StreamAcknowledgeAsync(_options.StreamKey, _options.ConsumerGroup, entry.Id);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "处理 Redis 事件失败，将等待重投，stream={Stream}，id={Id}", _options.StreamKey, entry.Id);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 接管滞留在其他消费者名下的待处理消息
+    /// </summary>
+    /// <remarks>
+    /// 消费者在读取与确认之间崩溃、或进程重启换了消费者名时，原消息会永远留在旧消费者的
+    /// 待处理列表里，既不会被再次投递也不会被清理。此处按空闲时长把它们接管过来重新处理，
+    /// 投递次数超过上限的转入死信 Stream 后确认，避免毒消息无限占用消费能力。
+    /// </remarks>
+    /// <param name="db">数据库</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    private async Task ClaimStaleMessagesAsync(IDatabase db, CancellationToken cancellationToken)
+    {
+        StreamPendingMessageInfo[] pending;
+
+        try
+        {
+            // 当前客户端版本的 XPENDING 没有最小空闲时长参数，取回后在下面按空闲时长筛选
+            pending = await db.StreamPendingMessagesAsync(
+                _options.StreamKey,
+                _options.ConsumerGroup,
+                _options.ClaimBatchSize,
+                RedisValue.Null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "查询 Redis Stream 待处理消息失败，stream={Stream}", _options.StreamKey);
+            return;
+        }
+
+        if (pending is null || pending.Length == 0)
+        {
+            return;
+        }
+
+        var plan = StaleMessagePlanner.Plan(
+            [.. pending.Select(message => new PendingMessageSnapshot(
+                message.MessageId.ToString(),
+                message.IdleTimeInMilliseconds,
+                message.DeliveryCount))],
+            _options.ClaimMinIdleMilliseconds,
+            _options.MaxDeliveryCount);
+
+        foreach (var message in plan.ToDeadLetter)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await MoveToDeadLetterAsync(db, message);
+        }
+
+        if (plan.ToClaim.Count == 0)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "接管 {Count} 条滞留的 Redis 事件，stream={Stream}，空闲阈值={MinIdle}ms",
+            plan.ToClaim.Count, _options.StreamKey, _options.ClaimMinIdleMilliseconds);
+
+        var claimed = await db.StreamClaimAsync(
+            _options.StreamKey,
+            _options.ConsumerGroup,
+            _consumerName,
+            _options.ClaimMinIdleMilliseconds,
+            [.. plan.ToClaim.Select(id => (RedisValue)id)]);
+
+        await ProcessEntriesAsync(db, claimed);
+    }
+
+    /// <summary>
+    /// 把超过投递次数上限的消息转入死信 Stream 并确认原消息
+    /// </summary>
+    /// <param name="db">数据库</param>
+    /// <param name="message">待处理消息信息</param>
+    private async Task MoveToDeadLetterAsync(IDatabase db, PendingMessageSnapshot message)
+    {
+        try
+        {
+            // 先取回原始内容再确认，确认之后就再也读不到它了
+            var entries = await db.StreamRangeAsync(_options.StreamKey, message.MessageId, message.MessageId, 1);
+            var fields = entries.Length > 0 ? entries[0].Values : [];
+
+            var deadLetterFields = new List<NameValueEntry>(fields)
+            {
+                new("dead_reason", "投递次数超过上限"),
+                new("dead_delivery_count", message.DeliveryCount),
+                new("dead_original_id", message.MessageId),
+                new("dead_time", Clock.Now.ToString("O"))
+            };
+
+            await db.StreamAddAsync(_options.ResolveDeadLetterStreamKey(), [.. deadLetterFields]);
+            await db.StreamAcknowledgeAsync(_options.StreamKey, _options.ConsumerGroup, message.MessageId);
+
+            _logger.LogError(
+                "Redis 事件投递 {DeliveryCount} 次仍失败，已转入死信，stream={Stream}，id={Id}，死信={DeadLetter}",
+                message.DeliveryCount, _options.StreamKey, message.MessageId, _options.ResolveDeadLetterStreamKey());
+        }
+        catch (Exception ex)
+        {
+            // 转移失败时不确认原消息，留待下一轮重试，宁可重复也不丢
+            _logger.LogError(ex, "转移 Redis 死信失败，stream={Stream}，id={Id}", _options.StreamKey, message.MessageId);
         }
     }
 
