@@ -1,0 +1,60 @@
+name: CI
+
+# 只做构建与测试，不发布任何包。发布仍由本机脚本执行。
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  # 允许手工触发，便于验证流水线本身
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一分支的新推送取消尚在排队/运行的旧任务，避免堆积
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 构建与测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        run: dotnet restore framework/XiHan.Framework.slnx
+
+      - name: 构建
+        # GeneratePackageOnBuild 在本仓默认开启，CI 不需要产包，关掉省时间
+        run: >
+          dotnet build framework/XiHan.Framework.slnx
+          --configuration Release
+          --no-restore
+          -p:GeneratePackageOnBuild=false
+
+      - name: 测试
+        # 全部工程均为强门禁，失败即中断。
+        run: >
+          dotnet test framework/XiHan.Framework.slnx
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory ${{ runner.temp }}/test-results
+
+      - name: 上传测试结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore

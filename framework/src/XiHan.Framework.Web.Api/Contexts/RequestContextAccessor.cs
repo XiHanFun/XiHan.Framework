@@ -22,7 +22,9 @@ public sealed class RequestContextAccessor : IRequestContextAccessor
         _httpContextAccessor = httpContextAccessor;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 当前请求上下文，存取于 HttpContext.Items，不在请求中时读取返回 null、写入被忽略
+    /// </summary>
     public RequestContext? Current
     {
         get

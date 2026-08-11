@@ -19,7 +19,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.PublishEvent, DisplayName = "发布事件", Category = "事件")]
 public class PublishEventActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（渲染事件名称与载荷后向事件总线发布自定义事件）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置事件名称时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var eventName = await GetTemplatedStringAsync(context, "EventName");

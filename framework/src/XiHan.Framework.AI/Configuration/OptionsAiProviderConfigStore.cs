@@ -25,7 +25,12 @@ public sealed class OptionsAiProviderConfigStore : IAiProviderConfigStore
         _options = options;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取指定 provider 的生效配置，为空取默认 provider，无匹配返回 null
+    /// </summary>
+    /// <param name="providerName">provider 配置名，为空取默认 provider</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>该 provider 的配置，无匹配返回 null</returns>
     public Task<AiProviderOptions?> GetAsync(string? providerName = null, CancellationToken cancellationToken = default)
     {
         var options = _options.CurrentValue;
@@ -44,7 +49,11 @@ public sealed class OptionsAiProviderConfigStore : IAiProviderConfigStore
         return Task.FromResult<AiProviderOptions?>(provider);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取全部 provider 配置
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>配置中的全部 provider 配置</returns>
     public Task<IReadOnlyList<AiProviderOptions>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var options = _options.CurrentValue;

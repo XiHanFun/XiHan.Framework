@@ -23,7 +23,13 @@ public sealed class XiHanAiService : IXiHanAiService
         _resolver = resolver;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 一次对话
+    /// </summary>
+    /// <param name="messages">对话消息序列</param>
+    /// <param name="options">对话选项，含 provider 名与原生对话参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>模型返回的对话响应</returns>
     public Task<ChatResponse> ChatAsync(
         IEnumerable<ChatMessage> messages,
         XiHanChatOptions? options = null,
@@ -33,7 +39,13 @@ public sealed class XiHanAiService : IXiHanAiService
         return client.GetResponseAsync(messages, options?.ChatOptions, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 流式对话
+    /// </summary>
+    /// <param name="messages">对话消息序列</param>
+    /// <param name="options">对话选项，含 provider 名与原生对话参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>逐段产出的对话响应更新序列</returns>
     public async IAsyncEnumerable<ChatResponseUpdate> ChatStreamAsync(
         IEnumerable<ChatMessage> messages,
         XiHanChatOptions? options = null,

@@ -33,7 +33,15 @@ public sealed class DistributedOneTimeCodeService : IOneTimeCodeService
         _cache = cache;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 签发一次性验证码并写入分布式缓存，同 用途+目标 重复签发将覆盖旧码
+    /// </summary>
+    /// <param name="purpose">用途标识，参与存储键隔离</param>
+    /// <param name="target">目标标识，参与存储键隔离</param>
+    /// <param name="payload">随码暂存的负载，消费成功后返回</param>
+    /// <param name="options">签发选项，缺省取默认码长与有效期</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>签发结果，含验证码明文与有效秒数</returns>
     public async Task<OneTimeCodeIssueResult> IssueAsync(
         string purpose,
         string target,
@@ -72,7 +80,14 @@ public sealed class DistributedOneTimeCodeService : IOneTimeCodeService
         return new OneTimeCodeIssueResult(code, effectiveOptions.ExpiresInSeconds);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 消费一次性验证码，读取后立即从缓存删除，再以恒定时间比较校验
+    /// </summary>
+    /// <param name="purpose">用途标识，须与签发一致</param>
+    /// <param name="target">目标标识，须与签发一致</param>
+    /// <param name="code">用户提交的验证码</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>消费结果，含是否有效及签发时暂存的负载</returns>
     public async Task<OneTimeCodeConsumeResult> TryConsumeAsync(
         string purpose,
         string target,

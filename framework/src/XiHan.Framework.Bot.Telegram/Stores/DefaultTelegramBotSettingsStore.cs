@@ -23,7 +23,11 @@ public class DefaultTelegramBotSettingsStore : ITelegramBotSettingsStore
         _options = options;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取当前生效的平台全局设置
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选项监视器当前值中的平台全局设置</returns>
     public Task<TelegramBotSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_options.CurrentValue.Settings);

@@ -17,7 +17,13 @@ public class InMemoryTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
     private readonly ConcurrentDictionary<string, long> _entries = new(StringComparer.Ordinal);
     private long _lastSweepTicks;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试将指定 Update 标记为已处理，标记前顺带清理过期条目
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="updateId">Update Id</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>true 表示首次处理（已占位成功）；false 表示重复投递（应跳过）</returns>
     public Task<bool> TryMarkProcessedAsync(string botName, int updateId, CancellationToken cancellationToken = default)
     {
         SweepIfDue();
@@ -27,7 +33,12 @@ public class InMemoryTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
         return Task.FromResult(_entries.TryAdd(key, expiresAtTicks));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 移除指定 Update 的幂等标记，允许该 Update 重新被处理
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="updateId">Update Id</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task TryUnmarkAsync(string botName, int updateId, CancellationToken cancellationToken = default)
     {
         _ = _entries.TryRemove($"{botName}:{updateId}", out _);

@@ -174,6 +174,12 @@ public static class XiHanDataServiceCollectionExtensions
                 entity => ResolveTenantScopeId(currentTenantAccessor) == PlatformTenantScopeSentinel ||
                           entity.TenantId == 0 ||
                           entity.TenantId == ResolveTenantScopeId(currentTenantAccessor));
+
+            // 严格隔离实体额外收紧为「相等」：租户态只看本租户，平台态只看 TenantId=0。
+            // 与上面的读共享过滤器 AND 之后两侧都不再跨越——读共享会让平台行在租户里可见，
+            // 而写守卫禁止租户态改写平台行，那类表就会「看得见却写不了」。
+            provider.QueryFilter.AddTableFilter<IStrictMultiTenantEntity>(
+                entity => entity.TenantId == ResolveStrictTenantScopeId(currentTenantAccessor));
         }
 
         // 额外全局过滤器：直接把注册期存下的表达式树交给 SqlSugar 的非泛型重载
@@ -381,6 +387,14 @@ public static class XiHanDataServiceCollectionExtensions
     private static long ResolveTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
     {
         return currentTenantAccessor.Current?.TenantId ?? PlatformTenantScopeSentinel;
+    }
+
+    /// <summary>
+    /// 获取严格隔离口径的租户作用域标识（平台态取 0，与实体在平台态插入时的落值一致）
+    /// </summary>
+    private static long ResolveStrictTenantScopeId(ICurrentTenantAccessor currentTenantAccessor)
+    {
+        return currentTenantAccessor.Current?.TenantId ?? 0;
     }
 
     /// <summary>

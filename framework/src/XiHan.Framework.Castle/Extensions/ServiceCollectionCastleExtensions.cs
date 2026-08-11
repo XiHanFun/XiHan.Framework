@@ -34,76 +34,132 @@ public static class ServiceCollectionCastleExtensions
             return services;
         }
 
-        var descriptorsToProxy = new List<(int index, ServiceDescriptor descriptor, IOnServiceRegistredContext context)>();
+        var implementationTypeRegistry = services.GetImplementationTypeRegistry();
+        var descriptorsToProxy = new List<(int Index, ServiceDescriptor Descriptor, Type ImplementationType, IOnServiceRegistredContext Context)>();
 
         for (var i = 0; i < services.Count; i++)
         {
             var descriptor = services[i];
 
-            if (descriptor.ServiceType.IsInterface &&
-                descriptor.ImplementationType != null &&
-                !DynamicProxyIgnoreTypes.Contains(descriptor.ImplementationType))
+            if (!descriptor.ServiceType.IsInterface)
             {
-                var context = new OnServiceRegistredContext(descriptor.ServiceType, descriptor.ImplementationType);
+                continue;
+            }
 
-                foreach (var action in actionList)
-                {
-                    action(context);
-                }
+            var implementationType = implementationTypeRegistry.ResolveImplementationTypeOrNull(descriptor);
+            if (implementationType is null || DynamicProxyIgnoreTypes.Contains(implementationType))
+            {
+                continue;
+            }
 
-                if (context.Interceptors.Count > 0)
-                {
-                    descriptorsToProxy.Add((i, descriptor, context));
-                }
+            var context = new OnServiceRegistredContext(descriptor.ServiceType, implementationType);
+
+            foreach (var action in actionList)
+            {
+                action(context);
+            }
+
+            if (context.Interceptors.Count > 0)
+            {
+                descriptorsToProxy.Add((i, descriptor, implementationType, context));
             }
         }
 
-        foreach (var (index, descriptor, context) in descriptorsToProxy)
+        foreach (var (index, descriptor, implementationType, context) in descriptorsToProxy)
         {
-            var proxyDescriptor = CreateProxiedDescriptor(descriptor, context);
-            services[index] = proxyDescriptor;
+            services[index] = CreateProxiedDescriptor(descriptor, implementationType, context);
         }
 
         return services;
     }
 
+    /// <summary>
+    /// 创建包装为代理的服务描述器，保持原描述器的生命周期与服务键
+    /// </summary>
+    /// <param name="original"></param>
+    /// <param name="implementationType"></param>
+    /// <param name="context"></param>
+    /// <returns></returns>
     private static ServiceDescriptor CreateProxiedDescriptor(
         ServiceDescriptor original,
+        Type implementationType,
         IOnServiceRegistredContext context)
     {
         var interceptorTypes = context.Interceptors.ToArray();
+        var serviceType = original.ServiceType;
 
-        return ServiceDescriptor.Describe(
-            original.ServiceType,
-            sp =>
-            {
-                var target = CreateOriginalInstance(sp, original);
-                var interceptors = ResolveInterceptors(sp, interceptorTypes);
-                var adapter = new CastleInterceptorAdapter(interceptors);
-
-                return ProxyGeneratorInstance.CreateInterfaceProxyWithTarget(
-                    original.ServiceType,
-                    target,
-                    adapter);
-            },
-            original.Lifetime);
+        return original.IsKeyedService
+            ? ServiceDescriptor.DescribeKeyed(
+                serviceType,
+                original.ServiceKey,
+                (sp, key) => CreateProxy(sp, serviceType, CreateOriginalKeyedInstance(sp, key, original, implementationType), interceptorTypes),
+                original.Lifetime)
+            : ServiceDescriptor.Describe(
+                serviceType,
+                sp => CreateProxy(sp, serviceType, CreateOriginalInstance(sp, original, implementationType), interceptorTypes),
+                original.Lifetime);
     }
 
-    private static object CreateOriginalInstance(IServiceProvider sp, ServiceDescriptor descriptor)
+    /// <summary>
+    /// 以目标实例创建接口代理
+    /// </summary>
+    /// <param name="sp"></param>
+    /// <param name="serviceType"></param>
+    /// <param name="target"></param>
+    /// <param name="interceptorTypes"></param>
+    /// <returns></returns>
+    private static object CreateProxy(IServiceProvider sp, Type serviceType, object target, Type[] interceptorTypes)
     {
-        if (descriptor.ImplementationInstance != null)
+        var adapter = new CastleInterceptorAdapter(ResolveInterceptors(sp, interceptorTypes));
+
+        return ProxyGeneratorInstance.CreateInterfaceProxyWithTarget(serviceType, target, adapter);
+    }
+
+    /// <summary>
+    /// 按原描述器的注册方式创建目标实例
+    /// </summary>
+    /// <param name="sp"></param>
+    /// <param name="descriptor"></param>
+    /// <param name="implementationType"></param>
+    /// <returns></returns>
+    private static object CreateOriginalInstance(IServiceProvider sp, ServiceDescriptor descriptor, Type implementationType)
+    {
+        if (descriptor.ImplementationInstance is not null)
         {
             return descriptor.ImplementationInstance;
         }
 
-        if (descriptor.ImplementationFactory != null)
-        {
-            return descriptor.ImplementationFactory(sp);
-        }
-
-        return ActivatorUtilities.CreateInstance(sp, descriptor.ImplementationType!);
+        return descriptor.ImplementationFactory is not null
+            ? descriptor.ImplementationFactory(sp)
+            : ActivatorUtilities.CreateInstance(sp, implementationType);
     }
 
+    /// <summary>
+    /// 按原键值描述器的注册方式创建目标实例
+    /// </summary>
+    /// <param name="sp"></param>
+    /// <param name="serviceKey"></param>
+    /// <param name="descriptor"></param>
+    /// <param name="implementationType"></param>
+    /// <returns></returns>
+    private static object CreateOriginalKeyedInstance(IServiceProvider sp, object? serviceKey, ServiceDescriptor descriptor, Type implementationType)
+    {
+        if (descriptor.KeyedImplementationInstance is not null)
+        {
+            return descriptor.KeyedImplementationInstance;
+        }
+
+        return descriptor.KeyedImplementationFactory is not null
+            ? descriptor.KeyedImplementationFactory(sp, serviceKey)
+            : ActivatorUtilities.CreateInstance(sp, implementationType);
+    }
+
+    /// <summary>
+    /// 解析拦截器实例
+    /// </summary>
+    /// <param name="sp"></param>
+    /// <param name="interceptorTypes"></param>
+    /// <returns></returns>
     private static IXiHanInterceptor[] ResolveInterceptors(IServiceProvider sp, Type[] interceptorTypes)
     {
         var interceptors = new IXiHanInterceptor[interceptorTypes.Length];

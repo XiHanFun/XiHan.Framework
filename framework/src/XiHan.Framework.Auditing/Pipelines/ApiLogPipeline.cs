@@ -37,7 +37,11 @@ public class ApiLogPipeline : IApiLogPipeline
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入接口日志，未启用队列时直接交给写入器，启用队列时按满时丢弃或满时等待策略入队
+    /// </summary>
+    /// <param name="record">接口日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task WriteAsync(ApiLogRecord record, CancellationToken cancellationToken = default)
     {
         if (!_options.EnableApiLogQueue)

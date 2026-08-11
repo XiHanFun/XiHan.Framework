@@ -135,7 +135,9 @@ public class SubWorkflowForEachTests : IDisposable
         Assert.Equal([2m, 4m, 6m], doubled);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

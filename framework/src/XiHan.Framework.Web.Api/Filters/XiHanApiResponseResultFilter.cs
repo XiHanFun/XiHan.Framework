@@ -62,7 +62,12 @@ public class XiHanApiResponseResultFilter : IAsyncResultFilter, IAsyncExceptionF
         context.ExceptionHandled = true;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 结果执行前把动作返回值统一包装成接口响应，裸 Stream 转为文件流响应，标记忽略的端点原样透传
+    /// </summary>
+    /// <param name="context">结果执行上下文</param>
+    /// <param name="next">结果执行管道中的下一个委托</param>
+    /// <returns>异步任务</returns>
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
         if (ShouldIgnore(context))

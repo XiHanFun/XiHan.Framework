@@ -1,0 +1,11 @@
+node_modules
+pnpm-lock.yaml
+.vitepress/dist
+.vitepress/cache
+.cache
+.temp
+*.local
+*.log
+
+# 逐包文档页：抵消根 .gitignore 的 **/[Pp]ackages/*
+!packages/**

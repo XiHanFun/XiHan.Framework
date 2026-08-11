@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Caching.Distributed;
-using StackExchange.Redis;
 
 namespace XiHan.Framework.Caching.Distributed.Abstracts;
 
@@ -285,24 +284,4 @@ public interface IDistributedCache<TCacheItem, TCacheKey> where TCacheItem : cla
     /// <returns>实际移除的键数量</returns>
     Task<long> RemoveByPatternAsync(string pattern = "*", bool? hideErrors = null, bool considerUow = false, CancellationToken token = default);
 
-    /// <summary>
-    /// 执行 Lua 脚本
-    /// </summary>
-    /// <param name="script">Lua 脚本</param>
-    /// <param name="keys">脚本键集合（业务键）</param>
-    /// <param name="values">脚本参数集合</param>
-    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
-    /// <returns>脚本执行结果</returns>
-    RedisResult? ScriptEvaluate(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null);
-
-    /// <summary>
-    /// 异步执行 Lua 脚本
-    /// </summary>
-    /// <param name="script">Lua 脚本</param>
-    /// <param name="keys">脚本键集合（业务键）</param>
-    /// <param name="values">脚本参数集合</param>
-    /// <param name="hideErrors">是否隐藏分布式缓存异常</param>
-    /// <param name="token">取消令牌</param>
-    /// <returns>脚本执行结果</returns>
-    Task<RedisResult?> ScriptEvaluateAsync(string script, IEnumerable<TCacheKey>? keys = null, IEnumerable<RedisValue>? values = null, bool? hideErrors = null, CancellationToken token = default);
 }

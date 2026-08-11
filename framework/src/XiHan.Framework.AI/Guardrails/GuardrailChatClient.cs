@@ -29,7 +29,13 @@ public sealed class GuardrailChatClient : DelegatingChatClient
         _refusalMessage = refusalMessage;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发起一次对话，入站消息经全部护栏检查放行后才下发内层客户端，被拦截则直接返回拒绝话术
+    /// </summary>
+    /// <param name="messages">入站对话消息</param>
+    /// <param name="options">对话选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>内层客户端的响应，或仅含拒绝话术的响应</returns>
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var blockReason = await InspectAsync(messages, cancellationToken);
@@ -38,7 +44,13 @@ public sealed class GuardrailChatClient : DelegatingChatClient
             : await base.GetResponseAsync(messages, options, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发起一次流式对话，入站消息经全部护栏检查放行后才下发内层客户端，被拦截则只产出拒绝话术
+    /// </summary>
+    /// <param name="messages">入站对话消息</param>
+    /// <param name="options">对话选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>内层客户端的响应更新序列，或仅含拒绝话术的单条更新</returns>
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var blockReason = await InspectAsync(messages, cancellationToken);

@@ -13,7 +13,11 @@ namespace XiHan.Framework.Workflow.Activities;
 /// </summary>
 public abstract class WorkflowActivityBase : IWorkflowActivity
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（完成/挂起/故障）</returns>
     public abstract Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context);
 
     /// <summary>

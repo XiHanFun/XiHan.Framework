@@ -11,7 +11,12 @@ namespace XiHan.Framework.Authorization.Abac;
 /// </summary>
 public class DefaultAbacEvaluator : IAbacEvaluator
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 评估 ABAC 策略，依次匹配空策略、allow、租户一致、仅本人及比较表达式，均不命中则拒绝
+    /// </summary>
+    /// <param name="context">评估上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>评估结果</returns>
     public Task<AbacEvaluationResult> EvaluateAsync(AbacEvaluationContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
