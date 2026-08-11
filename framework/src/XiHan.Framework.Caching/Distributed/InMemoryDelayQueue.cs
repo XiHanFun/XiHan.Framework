@@ -15,7 +15,7 @@ namespace XiHan.Framework.Caching.Distributed;
 /// <typeparam name="T">消息类型</typeparam>
 public sealed class InMemoryDelayQueue<T> : IRedisDelayQueue<T>
 {
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly PriorityQueue<T, (long DueAtMs, long Sequence)> _queue = new();
 
     private long _sequence;
