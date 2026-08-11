@@ -18,7 +18,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.Delay, DisplayName = "延时", Category = "流程控制")]
 public class DelayActivity : WorkflowActivityBase, IResumableWorkflowActivity
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（解析等待秒数并挂起，登记到期时间的定时器书签）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（等待秒数不大于 0 时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         double durationSeconds;
@@ -49,7 +53,11 @@ public class DelayActivity : WorkflowActivityBase, IResumableWorkflowActivity
         });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复活动（定时器到期完成节点，节点超时书签则返回故障）
+    /// </summary>
+    /// <param name="context">恢复上下文</param>
+    /// <returns>执行结果</returns>
     public Task<ActivityExecutionResult> ResumeAsync(ActivityResumeContext context)
     {
         // 节点超时不是正常到期，按故障处理，避免超时被误判为延时结束提前放行

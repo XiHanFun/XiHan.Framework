@@ -93,7 +93,12 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     /// </summary>
     public abstract Task DeleteAsync(string path, CancellationToken cancellationToken = default);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除指定存储桶中的文件，默认忽略存储桶参数、转调默认存储桶的删除实现
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public virtual Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         return DeleteAsync(path, cancellationToken);
@@ -104,7 +109,13 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     /// </summary>
     public abstract Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 检查指定存储桶中的文件是否存在，默认忽略存储桶参数、转调默认存储桶的检查实现
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>是否存在</returns>
     public virtual Task<bool> ExistsAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         return ExistsAsync(path, cancellationToken);
@@ -115,7 +126,13 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     /// </summary>
     public abstract Task<FileMetadata> GetMetadataAsync(string path, CancellationToken cancellationToken = default);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取指定存储桶中文件的元数据，默认忽略存储桶参数、转调默认存储桶的获取实现
+    /// </summary>
+    /// <param name="path">文件路径</param>
+    /// <param name="bucketName">存储桶名称</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>文件元数据</returns>
     public virtual Task<FileMetadata> GetMetadataAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         return GetMetadataAsync(path, cancellationToken);

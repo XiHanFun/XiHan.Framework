@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.SearchEngines.Elasticsearch</Title>
+        <AssemblyName>XiHan.Framework.SearchEngines.Elasticsearch</AssemblyName>
+        <PackageId>XiHan.Framework.SearchEngines.Elasticsearch</PackageId>
+        <Description>曦寒框架搜索引擎的 Elasticsearch 实现</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.SearchEngines\XiHan.Framework.SearchEngines.csproj" />
+    </ItemGroup>
+
+</Project>

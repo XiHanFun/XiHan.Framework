@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.SearchEngines.Abstractions</Title>
+        <AssemblyName>XiHan.Framework.SearchEngines.Abstractions</AssemblyName>
+        <PackageId>XiHan.Framework.SearchEngines.Abstractions</PackageId>
+        <Description>曦寒框架搜索引擎抽象，不含任何搜索引擎实现</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+</Project>

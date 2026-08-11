@@ -26,7 +26,10 @@ public class CastleInterceptorAdapter : IInterceptor
         _interceptors = interceptors;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 拦截方法调用，按返回类型（void、Task、Task&lt;T&gt; 或同步返回值）分派执行拦截器链
+    /// </summary>
+    /// <param name="invocation">Castle 方法调用上下文</param>
     public void Intercept(IInvocation invocation)
     {
         var proceedInfo = invocation.CaptureProceedInfo();

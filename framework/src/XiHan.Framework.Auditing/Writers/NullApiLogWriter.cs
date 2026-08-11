@@ -8,7 +8,11 @@ namespace XiHan.Framework.Auditing.Writers;
 /// </summary>
 public class NullApiLogWriter : IApiLogWriter
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入接口日志，直接丢弃不做任何处理
+    /// </summary>
+    /// <param name="record">接口日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task WriteAsync(ApiLogRecord record, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;

@@ -27,7 +27,11 @@ public class LogActivity : WorkflowActivityBase
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（按配置级别输出渲染后的日志内容）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var message = await GetTemplatedStringAsync(context, "Message") ?? string.Empty;

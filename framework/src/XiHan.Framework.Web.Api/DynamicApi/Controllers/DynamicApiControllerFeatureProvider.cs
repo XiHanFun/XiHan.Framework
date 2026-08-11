@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
+using XiHan.Framework.Web.Api.DynamicApi.Exceptions;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
 using XiHan.Framework.Web.Api.DynamicApi.Options;
 
@@ -60,42 +61,50 @@ public class DynamicApiControllerFeatureProvider : IApplicationFeatureProvider<C
         _logger.LogInformation("找到 {TotalServices} 个应用服务待处理", totalServices);
 
         var successCount = 0;
-        var failCount = 0;
+        var disabledCount = 0;
+        var failures = new List<Exception>();
 
         foreach (var serviceType in serviceTypes)
         {
             try
             {
-                // 创建动态控制器类型
+                // 创建动态控制器类型，返回 null 表示该服务主动禁用了动态 API
                 var controllerType = DynamicApiControllerFactory.CreateControllerType(
                     serviceType.AsType(),
                     _convention,
                     _options,
                     _logger);
 
-                if (controllerType != null)
+                if (controllerType is null)
                 {
-                    var controllerTypeInfo = controllerType.GetTypeInfo();
-                    if (!feature.Controllers.Contains(controllerTypeInfo))
-                    {
-                        feature.Controllers.Add(controllerTypeInfo);
-                        successCount++;
-                    }
+                    disabledCount++;
+                    continue;
                 }
-                else
+
+                var controllerTypeInfo = controllerType.GetTypeInfo();
+                if (!feature.Controllers.Contains(controllerTypeInfo))
                 {
-                    failCount++;
+                    feature.Controllers.Add(controllerTypeInfo);
+                    successCount++;
                 }
             }
             catch (Exception ex)
             {
-                failCount++;
                 _logger.LogError(ex, "为服务 '{ServiceName}' 创建动态控制器失败", serviceType.Name);
+                failures.Add(new DynamicApiException($"服务 '{serviceType.FullName}' 的动态控制器生成失败。", ex));
             }
         }
 
-        _logger.LogInformation("动态 API 生成完成: {SuccessCount} 个成功, {FailCount} 个失败",
-            successCount, failCount);
+        _logger.LogInformation("动态 API 生成完成: {SuccessCount} 个成功, {DisabledCount} 个已禁用, {FailedCount} 个失败",
+            successCount, disabledCount, failures.Count);
+
+        if (failures.Count > 0 && _options.ThrowOnGenerationFailure)
+        {
+            throw new AggregateException(
+                $"{failures.Count} 个应用服务的动态 API 控制器生成失败，其端点不会出现在路由表中。" +
+                "如需降级跳过，请设置 DynamicApiOptions.ThrowOnGenerationFailure = false。",
+                failures);
+        }
     }
 
     /// <summary>

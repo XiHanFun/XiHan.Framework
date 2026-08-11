@@ -491,7 +491,9 @@ public class ReviewHardeningTests : IDisposable
         Assert.Empty(await _host.UserTaskService.GetPendingAsync("u1"));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

@@ -17,7 +17,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.WaitSignal, DisplayName = "等待信号", Category = "事件")]
 public class WaitSignalActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（挂起并登记等待指定信号的书签）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置信号名称，或要求相关性匹配但实例未设置相关性时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var signalName = await GetTemplatedStringAsync(context, "SignalName");

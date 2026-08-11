@@ -21,7 +21,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.SubWorkflow, DisplayName = "子流程", Category = "流程控制")]
 public class SubWorkflowActivity : WorkflowActivityBase, IResumableWorkflowActivity
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（构建子流程启动请求；等待模式挂起等待子流程结束，发后不理模式直接完成）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置子流程编码时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var definitionCode = await GetTemplatedStringAsync(context, "DefinitionCode");
@@ -55,7 +59,11 @@ public class SubWorkflowActivity : WorkflowActivityBase, IResumableWorkflowActiv
             });
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复活动（把子流程变量快照写入输出，并以子流程终态作为流转结果）
+    /// </summary>
+    /// <param name="context">恢复上下文</param>
+    /// <returns>执行结果（等待超时或子流程非正常结束且要求随子流程故障时返回故障）</returns>
     public Task<ActivityExecutionResult> ResumeAsync(ActivityResumeContext context)
     {
         if (context.Bookmark.Kind == WorkflowBookmarkKinds.NodeTimeout)

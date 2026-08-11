@@ -36,13 +36,21 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
         _configIds = _configIdArray.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 解析当前租户的连接配置标识
+    /// </summary>
+    /// <returns>连接配置标识</returns>
     public string ResolveCurrentConfigId()
     {
         return ResolveConfigId(_currentTenant.Id, _currentTenant.Name);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据租户标识解析连接配置标识，依次尝试自定义解析、租户Id、带前缀的租户Id、租户名称，都不命中则回退默认连接
+    /// </summary>
+    /// <param name="tenantId">租户Id</param>
+    /// <param name="tenantName">租户名称</param>
+    /// <returns>连接配置标识</returns>
     public string ResolveConfigId(long? tenantId, string? tenantName = null)
     {
         // 优先走业务自定义解析（若配置）
@@ -80,7 +88,10 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
         return ResolveDefaultConfigId();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取全部连接配置标识
+    /// </summary>
+    /// <returns>连接配置标识集合</returns>
     public IReadOnlyCollection<string> GetConfigIds()
     {
         return _configIdArray;

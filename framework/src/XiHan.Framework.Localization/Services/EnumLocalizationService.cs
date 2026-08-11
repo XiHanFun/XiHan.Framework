@@ -38,7 +38,12 @@ public sealed class EnumLocalizationService : IEnumLocalizationService
         _optionsMonitor = optionsMonitor;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按类型读取枚举本地化描述
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <param name="query">查询参数</param>
+    /// <returns>枚举本地化描述</returns>
     public LocalizedEnumDefinition Get(Type enumType, EnumLocalizationQuery? query = null)
     {
         ArgumentNullException.ThrowIfNull(enumType);
@@ -52,7 +57,12 @@ public sealed class EnumLocalizationService : IEnumLocalizationService
         return BuildDefinition(enumType, normalizedQuery);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按名称读取枚举本地化描述
+    /// </summary>
+    /// <param name="enumTypeName">枚举类型名（支持短名或完整名）</param>
+    /// <param name="query">查询参数</param>
+    /// <returns>枚举本地化描述</returns>
     public LocalizedEnumDefinition Get(string enumTypeName, EnumLocalizationQuery? query = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(enumTypeName);
@@ -60,7 +70,12 @@ public sealed class EnumLocalizationService : IEnumLocalizationService
         return Get(enumType, query);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 批量读取枚举本地化描述，重复名称去重
+    /// </summary>
+    /// <param name="enumTypeNames">枚举类型名列表</param>
+    /// <param name="query">查询参数</param>
+    /// <returns>键为类型名的本地化结果</returns>
     public IReadOnlyDictionary<string, LocalizedEnumDefinition> GetMany(
         IEnumerable<string> enumTypeNames,
         EnumLocalizationQuery? query = null)
@@ -81,7 +96,13 @@ public sealed class EnumLocalizationService : IEnumLocalizationService
         return result;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试按名称读取枚举本地化描述，名称为空或类型解析失败时返回 false
+    /// </summary>
+    /// <param name="enumTypeName">枚举类型名（支持短名或完整名）</param>
+    /// <param name="result">读取结果</param>
+    /// <param name="query">查询参数</param>
+    /// <returns>是否读取成功</returns>
     public bool TryGet(
         string enumTypeName,
         out LocalizedEnumDefinition? result,

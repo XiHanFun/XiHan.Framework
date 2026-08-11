@@ -1,8 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Text.Json.Serialization;
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Utils.Extensions;
+using XiHan.Framework.Utils.Serialization.Json.Converters;
 
 namespace XiHan.Framework.Application.Contracts.Dtos;
 
@@ -19,6 +21,12 @@ public class ApiResponse
     /// <summary>
     /// 业务码（默认 <see cref="ApiResponseCodes.Success"/>，序列化到 JSON 为 int）
     /// </summary>
+    /// <remarks>
+    /// 转换器标在属性上而非仅靠 <see cref="ApiResponseCodes"/> 的类型级标注：
+    /// System.Text.Json 的转换器优先级为「属性特性 &gt; <c>JsonSerializerOptions.Converters</c> 集合 &gt; 类型特性」，
+    /// 而 Web 管道会把 <c>JsonStringEnumConverter</c> 加进该集合，仅有类型级标注时会被压过、输出成员名字符串。
+    /// </remarks>
+    [JsonConverter(typeof(NumericEnumConverter<ApiResponseCodes>))]
     public ApiResponseCodes Code { get; set; } = ApiResponseCodes.Success;
 
     /// <summary>

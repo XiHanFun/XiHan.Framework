@@ -29,6 +29,16 @@ public static class LogFileHelper
     private static readonly Dictionary<string, int> LogFileCounter = [];
     private static readonly ConcurrentDictionary<string, long> FileSizeCache = new();
     private static readonly ConcurrentDictionary<string, string> CurrentLogFiles = new();
+
+    /// <summary>
+    /// 各活跃日志文件已被分配的字节数
+    /// </summary>
+    /// <remarks>
+    /// 文件名在入队时决定，而写入是批量异步的，此刻磁盘上的文件往往还是空的。
+    /// 仅按磁盘大小判断滚动，会让突发写入的全部条目都被分到同一个文件，滚动永不触发。
+    /// 故按「已分配但未必落盘」的字节数累计。
+    /// </remarks>
+    private static readonly ConcurrentDictionary<string, long> CurrentLogFileSizes = new();
     private static readonly LogOptions Options = new();
     private static readonly LogStatistics Statistics = new();
     private static Channel<LogEntry>? _logChannel;
@@ -38,6 +48,15 @@ public static class LogFileHelper
     private static ILogFormatter _formatter = new TextLogFormatter();
 
     private static volatile bool _isShutdownRequested = false;
+
+    /// <summary>
+    /// 已出队但尚未写完的批次数
+    /// </summary>
+    /// <remarks>
+    /// 条目一旦被读入批次，通道计数即归零，而落盘发生在其后。
+    /// 仅凭通道计数判断刷新完成会漏掉正在写的那一批，故单独计数。
+    /// </remarks>
+    private static int _pendingBatches;
     private static volatile bool _isWorkerStarted = false;
     private static DateTimeOffset _lastCleanupTime = DateTimeOffset.UtcNow;
 
@@ -135,7 +154,45 @@ public static class LogFileHelper
             return;
         }
 
-        Options.LogDirectory = directoryPath;
+        lock (ConfigLock)
+        {
+            if (string.Equals(Options.LogDirectory, directoryPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Options.LogDirectory = directoryPath;
+
+            // 滚动状态是按目录成立的：当前文件名、序号与大小都指向旧目录。
+            // 不重置会让新目录沿用旧目录的滚动位置，写出的文件名与实际内容对不上。
+            ResetFileRotationState();
+        }
+    }
+
+    /// <summary>
+    /// 取文件已被分配的字节数，未登记过则回落到磁盘大小
+    /// </summary>
+    /// <remarks>
+    /// 批量异步写入下磁盘大小会长期滞后于已分配量，仅凭磁盘大小判断会一直选中同一个文件。
+    /// </remarks>
+    /// <param name="fileName">文件名</param>
+    /// <returns>字节数</returns>
+    private static long GetAssignedOrDiskSize(string fileName)
+    {
+        return CurrentLogFileSizes.TryGetValue(fileName, out var assigned)
+            ? assigned
+            : GetFileSize(Path.Combine(Options.LogDirectory, fileName));
+    }
+
+    /// <summary>
+    /// 重置文件滚动状态
+    /// </summary>
+    private static void ResetFileRotationState()
+    {
+        CurrentLogFiles.Clear();
+        CurrentLogFileSizes.Clear();
+        LogFileCounter.Clear();
+        FileSizeCache.Clear();
     }
 
     /// <summary>
@@ -275,9 +332,11 @@ public static class LogFileHelper
             return;
         }
 
-        // 等待通道处理完当前所有日志
+        // 等待队列排空且在途批次全部落盘。只等队列会在最后一批正在写时提前返回，
+        // 调用方据此认为日志已持久化，实际可能丢掉那一批。
         var startTime = DateTimeOffset.UtcNow;
-        while (_logChannel.Reader.Count > 0 && (DateTimeOffset.UtcNow - startTime).TotalMilliseconds < 5000)
+        while ((_logChannel.Reader.Count > 0 || Volatile.Read(ref _pendingBatches) > 0)
+               && (DateTimeOffset.UtcNow - startTime).TotalMilliseconds < 5000)
         {
             Task.Delay(10).Wait();
         }
@@ -360,9 +419,9 @@ public static class LogFileHelper
                         File.Delete(file);
                     }
 
-                    // 清除相关缓存
-                    LogFileCounter.Clear();
-                    FileSizeCache.Clear();
+                    // 清除相关缓存。当前文件名与已分配字节数同样要清：
+                    // 文件已被删除，若仍认为它是当前文件且接近上限，后续写入会被误判为需要滚动
+                    ResetFileRotationState();
                 }
             }
             catch (Exception ex)
@@ -869,18 +928,28 @@ public static class LogFileHelper
                         break;
                     }
 
-                    batch.Clear();
-
-                    // 批量读取条目
-                    while (batch.Count < Options.BatchSize && _logChannel.Reader.TryRead(out var entry))
+                    // 先登记在途批次再出队：出队会立刻把通道计数清零，
+                    // 若此时才登记，Flush 可能在两者之间看到「队列空且无在途」而提前返回
+                    Interlocked.Increment(ref _pendingBatches);
+                    try
                     {
-                        batch.Add(entry);
+                        batch.Clear();
+
+                        // 批量读取条目
+                        while (batch.Count < Options.BatchSize && _logChannel.Reader.TryRead(out var entry))
+                        {
+                            batch.Add(entry);
+                        }
+
+                        // 批量处理
+                        if (batch.Count > 0)
+                        {
+                            ProcessLogBatch(batch);
+                        }
                     }
-
-                    // 批量处理
-                    if (batch.Count > 0)
+                    finally
                     {
-                        ProcessLogBatch(batch);
+                        Interlocked.Decrement(ref _pendingBatches);
                     }
                 }
                 catch (OperationCanceledException)
@@ -1043,14 +1112,13 @@ public static class LogFileHelper
             // 检查是否已有当前活跃的文件
             if (CurrentLogFiles.TryGetValue(baseFileName, out var currentFileName))
             {
-                var currentFilePath = Path.Combine(Options.LogDirectory, currentFileName);
-
-                // 获取当前文件大小
-                var currentSize = GetFileSize(currentFilePath);
+                // 取已分配字节数而非磁盘大小：入队时批量写入尚未落盘，磁盘大小会长期停在旧值
+                var assignedSize = GetAssignedOrDiskSize(currentFileName);
 
                 // 如果当前文件加上新内容不会超过限制，继续使用
-                if (currentSize + expectedSize <= maxFileSize)
+                if (assignedSize + expectedSize <= maxFileSize)
                 {
+                    CurrentLogFileSizes[currentFileName] = assignedSize + expectedSize;
                     return currentFileName;
                 }
             }
@@ -1058,6 +1126,8 @@ public static class LogFileHelper
             // 需要创建新文件或这是第一次写入
             var fileName = GetNextAvailableFileName(baseFileName, expectedSize, maxFileSize);
             CurrentLogFiles[baseFileName] = fileName;
+            // 新文件可能已存在（同名续写），基线取磁盘大小再加上本次分配
+            CurrentLogFileSizes[fileName] = GetFileSize(Path.Combine(Options.LogDirectory, fileName)) + expectedSize;
 
             return fileName;
         }

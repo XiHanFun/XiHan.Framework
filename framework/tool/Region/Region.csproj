@@ -10,6 +10,8 @@
         <PackageId>Region</PackageId>
         <Description>曦寒框架文件头统一</Description>
         <OutputType>Exe</OutputType>
+        <!-- 仓库内部的文件头整理工具，不对外发布 -->
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
 </Project>

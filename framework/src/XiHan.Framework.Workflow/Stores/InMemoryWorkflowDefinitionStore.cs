@@ -14,13 +14,24 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
     private readonly ConcurrentDictionary<string, WorkflowDefinition> _definitions = new();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按标识查找定义
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义（不存在返回 null）</returns>
     public Task<WorkflowDefinition?> FindAsync(string id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_definitions.GetValueOrDefault(id));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按编码和版本查找定义
+    /// </summary>
+    /// <param name="code">流程编码</param>
+    /// <param name="version">版本号</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义（不存在返回 null）</returns>
     public Task<WorkflowDefinition?> FindByVersionAsync(string code, int version, CancellationToken cancellationToken = default)
     {
         var definition = _definitions.Values
@@ -28,7 +39,12 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         return Task.FromResult(definition);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 查找编码下最新的已发布定义
+    /// </summary>
+    /// <param name="code">流程编码</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义（不存在返回 null）</returns>
     public Task<WorkflowDefinition?> FindLatestPublishedAsync(string code, CancellationToken cancellationToken = default)
     {
         var definition = _definitions.Values
@@ -38,7 +54,12 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         return Task.FromResult(definition);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取编码下的最大版本号
+    /// </summary>
+    /// <param name="code">流程编码</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>最大版本号（编码不存在返回 0）</returns>
     public Task<int> GetMaxVersionAsync(string code, CancellationToken cancellationToken = default)
     {
         var versions = _definitions.Values
@@ -48,7 +69,13 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         return Task.FromResult(versions.Count == 0 ? 0 : versions.Max());
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 查询定义列表
+    /// </summary>
+    /// <param name="code">流程编码（为空表示不过滤）</param>
+    /// <param name="status">状态（为空表示不过滤）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>定义列表（按编码升序、版本降序）</returns>
     public Task<List<WorkflowDefinition>> GetListAsync(
         string? code = null,
         WorkflowDefinitionStatus? status = null,
@@ -63,21 +90,36 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         return Task.FromResult(list);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 插入定义
+    /// </summary>
+    /// <param name="definition">定义</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public Task InsertAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
         _definitions[definition.Id] = definition;
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 更新定义
+    /// </summary>
+    /// <param name="definition">定义</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public Task UpdateAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
         _definitions[definition.Id] = definition;
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 删除定义
+    /// </summary>
+    /// <param name="id">定义标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>任务</returns>
     public Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         _definitions.TryRemove(id, out _);

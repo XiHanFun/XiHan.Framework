@@ -13,7 +13,14 @@ public class InMemoryConversationStateStore : IConversationStateStore
 {
     private readonly ConcurrentDictionary<string, StateEntry> _states = new(StringComparer.Ordinal);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取指定会话的当前状态，已过期的条目会被移除并按无状态返回
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">会话 Id</param>
+    /// <param name="userId">用户 Id</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>会话状态；null 表示无活跃状态</returns>
     public Task<ConversationState?> GetAsync(string botName, long chatId, long userId, CancellationToken cancellationToken = default)
     {
         var key = BuildKey(botName, chatId, userId);
@@ -31,7 +38,15 @@ public class InMemoryConversationStateStore : IConversationStateStore
         return Task.FromResult<ConversationState?>(entry.State);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 设置指定会话的状态（覆盖已有状态），存活时长非正数时取 10 分钟
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">会话 Id</param>
+    /// <param name="userId">用户 Id</param>
+    /// <param name="state">会话状态</param>
+    /// <param name="ttl">存活时长</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task SetAsync(string botName, long chatId, long userId, ConversationState state, TimeSpan ttl, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -42,7 +57,13 @@ public class InMemoryConversationStateStore : IConversationStateStore
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 清除指定会话的状态
+    /// </summary>
+    /// <param name="botName">机器人名称</param>
+    /// <param name="chatId">会话 Id</param>
+    /// <param name="userId">用户 Id</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task RemoveAsync(string botName, long chatId, long userId, CancellationToken cancellationToken = default)
     {
         _ = _states.TryRemove(BuildKey(botName, chatId, userId), out _);

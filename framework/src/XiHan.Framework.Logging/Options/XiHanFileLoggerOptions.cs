@@ -18,7 +18,7 @@ public class XiHanFileLoggerOptions
     /// <summary>
     /// 文件路径
     /// </summary>
-    public string FilePath { get; set; } = "logs/xihan-.log";
+    public string FilePath { get; set; } = "Logs/xihan-.log";
 
     /// <summary>
     /// 文件大小限制（字节）

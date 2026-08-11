@@ -23,7 +23,12 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         _clientResolver = clientResolver;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取连接下所有表元数据（不包含列）
+    /// </summary>
+    /// <param name="connectionConfigId">连接配置标识，为空表示当前连接</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>表元数据列表</returns>
     public async Task<IReadOnlyList<DatabaseTableMetadata>> GetTablesAsync(string? connectionConfigId = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -38,7 +43,13 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         }, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取指定表的完整元数据（包含列）
+    /// </summary>
+    /// <param name="tableName">表名</param>
+    /// <param name="connectionConfigId">连接配置标识，为空表示当前连接</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>表元数据，表不存在时返回 null</returns>
     public async Task<DatabaseTableMetadata?> GetTableAsync(string tableName, string? connectionConfigId = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
@@ -55,7 +66,13 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         return table;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取指定表的列元数据
+    /// </summary>
+    /// <param name="tableName">表名</param>
+    /// <param name="connectionConfigId">连接配置标识，为空表示当前连接</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>列元数据列表</returns>
     public async Task<IReadOnlyList<DatabaseColumnMetadata>> GetColumnsAsync(string tableName, string? connectionConfigId = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tableName);

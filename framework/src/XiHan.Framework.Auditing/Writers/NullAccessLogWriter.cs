@@ -8,7 +8,11 @@ namespace XiHan.Framework.Auditing.Writers;
 /// </summary>
 public class NullAccessLogWriter : IAccessLogWriter
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入访问日志，直接丢弃不做任何处理
+    /// </summary>
+    /// <param name="record">访问日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task WriteAsync(AccessLogRecord record, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;

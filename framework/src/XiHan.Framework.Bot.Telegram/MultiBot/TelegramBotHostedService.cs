@@ -25,7 +25,10 @@ public sealed class TelegramBotHostedService : IHostedService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 随应用启动机器人管理器，启动失败仅记录错误日志不向外抛出
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
@@ -41,7 +44,10 @@ public sealed class TelegramBotHostedService : IHostedService
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 随应用停止机器人管理器，停止失败仅记录警告日志不向外抛出
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         try

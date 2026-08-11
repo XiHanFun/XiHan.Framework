@@ -43,6 +43,8 @@ public class DefaultConventionalRegistrar : ConventionalRegistrarBase
                                               : [.. exposedServiceAndKeyedServiceTypes.Where(x => x.ServiceKey?.ToString() == exposedServiceType.ServiceKey?.ToString())]
                                           select CreateServiceDescriptor(type, exposedServiceType.ServiceKey, exposedServiceType.ServiceType, allExposingServiceTypes, lifeTime.Value))
         {
+            TrackImplementationType(services, serviceDescriptor, type);
+
             if (dependencyAttribute?.ReplaceServices == true)
             {
                 services.Replace(serviceDescriptor);

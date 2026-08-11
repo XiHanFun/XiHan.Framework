@@ -225,7 +225,9 @@ public class LocalDistributedEventBus : DistributedEventBusBase, ISingletonDepen
         }
 
         var eventData = JsonSerializer.Deserialize(Encoding.UTF8.GetString(outgoingEvent.EventData), eventType)!;
-        if (await AddToInboxAsync(Guid.NewGuid().ToString(), outgoingEvent.EventName, eventType, eventData, null))
+        // 去重键取发件箱记录自身的 Id：同一条发件箱记录被重复投递时（发件箱发送器重试、
+        // 或投递后未及时标记已发送）收件箱据此识别为同一消息。此处若用随机值，去重永不命中。
+        if (await AddToInboxAsync(outgoingEvent.Id.ToString(), outgoingEvent.EventName, eventType, eventData, outgoingEvent.GetCorrelationId()))
         {
             return;
         }

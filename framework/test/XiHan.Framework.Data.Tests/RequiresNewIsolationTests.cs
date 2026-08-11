@@ -173,7 +173,9 @@ public sealed class RequiresNewIsolationTests : IDisposable
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _serviceProvider.Dispose();
@@ -229,29 +231,51 @@ public sealed class RequiresNewIsolationTests : IDisposable
     private sealed class FixedTenantConnectionResolver(string currentConfigId, IReadOnlyCollection<string> configIds)
         : ISqlSugarTenantConnectionResolver
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// 解析当前租户连接配置标识
+        /// </summary>
+        /// <returns>构造时传入的固定连接配置标识</returns>
         public string ResolveCurrentConfigId() => currentConfigId;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 根据租户标识解析连接配置标识
+        /// </summary>
+        /// <param name="tenantId">租户Id</param>
+        /// <param name="tenantName">租户名称</param>
+        /// <returns>构造时传入的固定连接配置标识，忽略租户参数</returns>
         public string ResolveConfigId(long? tenantId, string? tenantName = null) => currentConfigId;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 获取全部连接配置标识
+        /// </summary>
+        /// <returns>构造时传入的连接配置标识集合</returns>
         public IReadOnlyCollection<string> GetConfigIds() => configIds;
     }
 
     /// <summary>无租户上下文替身。</summary>
     private sealed class NoTenant : ICurrentTenant
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// 获取当前租户是否可用，恒为 false
+        /// </summary>
         public bool IsAvailable => false;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 获取当前租户的唯一标识符，恒为 null
+        /// </summary>
         public long? Id => null;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 获取当前租户名称，恒为 null
+        /// </summary>
         public string? Name => null;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 临时更改当前租户信息，返回不做任何切换的空作用域
+        /// </summary>
+        /// <param name="id">要切换到的租户唯一标识</param>
+        /// <param name="name">租户名称</param>
+        /// <returns>释放时不做任何事的空作用域</returns>
         public IDisposable Change(long? id, string? name = null) => new NoopScope();
 
         private sealed class NoopScope : IDisposable
@@ -265,12 +289,20 @@ public sealed class RequiresNewIsolationTests : IDisposable
     /// <summary>不改写连接配置的配置器替身。</summary>
     private sealed class PassThroughConnectionConfigurator : ISqlSugarConnectionConfigurator
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// 为指定连接作用域应用全局过滤器与 AOP，此处不做任何改写
+        /// </summary>
+        /// <param name="provider">连接作用域提供器</param>
         public void Configure(SqlSugarScopeProvider provider)
         {
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 幂等确保租户连接已注册并完成配置，此处直接抛出不支持异常
+        /// </summary>
+        /// <param name="tenant">SqlSugar 多连接容器</param>
+        /// <param name="descriptor">租户连接描述符</param>
+        /// <returns>不返回，始终抛出 <see cref="NotSupportedException"/></returns>
         public SqlSugarScopeProvider EnsureTenantConnection(ITenant tenant, SqlSugarTenantConnection descriptor)
             => throw new NotSupportedException("用例不涉及库隔离租户的动态连接注册。");
     }

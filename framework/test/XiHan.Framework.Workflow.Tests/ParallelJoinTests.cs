@@ -82,7 +82,9 @@ public class ParallelJoinTests : IDisposable
         Assert.Equal(1, nodeInstances.Count(item => item.NodeId == "join"));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

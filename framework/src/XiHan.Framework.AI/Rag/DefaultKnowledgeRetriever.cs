@@ -37,7 +37,15 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
         _definition = VectorStoreKnowledgeRecord.CreateDefinition(_vectorOptions.Dimensions);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 检索与 query 最相近的 topK 个切片
+    /// </summary>
+    /// <param name="query">检索问题文本</param>
+    /// <param name="topK">返回切片数量上限，非正数时按 5 处理</param>
+    /// <param name="filter">检索过滤条件，按租户与文档限定范围</param>
+    /// <param name="provider">嵌入模型 provider 名，为空取默认 provider</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>命中的知识片段列表，集合不存在时返回空列表</returns>
     public async Task<IReadOnlyList<RetrievedChunk>> RetrieveAsync(
         string query,
         int topK = 5,

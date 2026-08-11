@@ -49,10 +49,17 @@ public sealed class KeywordBlocklistGuardrail : IAiGuardrail
             .ToArray();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 护栏名（诊断用）
+    /// </summary>
     public string Name => "keyword_blocklist";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 检查入站消息，仅对用户消息做敏感词子串与提示注入正则匹配，命中即拦截
+    /// </summary>
+    /// <param name="messages">入站对话消息</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>检查结果，命中返回带原因的拦截，否则放行</returns>
     public ValueTask<GuardrailResult> InspectInputAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
     {
         foreach (var message in messages)

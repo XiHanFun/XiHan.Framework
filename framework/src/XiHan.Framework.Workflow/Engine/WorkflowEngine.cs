@@ -99,7 +99,12 @@ public class WorkflowEngine : IWorkflowEngine
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 启动流程实例（仅允许启动已发布定义）
+    /// </summary>
+    /// <param name="request">启动请求</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>启动后的实例（同步链路能走多远走多远，可能已直接完成）</returns>
     public async Task<WorkflowInstance> StartAsync(WorkflowStartRequest request, CancellationToken cancellationToken = default)
     {
         Guard.NotNull(request, nameof(request));
@@ -154,7 +159,15 @@ public class WorkflowEngine : IWorkflowEngine
         return instance;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复书签（消费指定书签并驱动实例继续执行）
+    /// </summary>
+    /// <param name="bookmarkId">书签标识</param>
+    /// <param name="inputs">恢复输入</param>
+    /// <param name="throwIfNotResumable">实例不可恢复（挂起/终态/书签已消费）时是否抛出异常；false 表示静默跳过并保留书签</param>
+    /// <param name="expectedBookmarkKey">期望的书签索引键（非空时在锁内校验，键已变化则拒绝恢复）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>恢复后的实例</returns>
     public async Task<WorkflowInstance> ResumeBookmarkAsync(
         string bookmarkId,
         Dictionary<string, object?>? inputs = null,
@@ -172,7 +185,14 @@ public class WorkflowEngine : IWorkflowEngine
         return instance;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 发布信号（恢复所有匹配的信号书签）
+    /// </summary>
+    /// <param name="signalName">信号名称</param>
+    /// <param name="payload">信号载荷（作为恢复输入）</param>
+    /// <param name="correlationId">业务相关性标识（为空表示广播）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>成功恢复的书签数量</returns>
     public async Task<int> PublishSignalAsync(
         string signalName,
         Dictionary<string, object?>? payload = null,
@@ -224,7 +244,13 @@ public class WorkflowEngine : IWorkflowEngine
         return resumedCount;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 挂起实例（仅运行中实例可挂起；书签保留但拒绝恢复，直至实例恢复运行）
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="reason">挂起原因</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实例</returns>
     public async Task<WorkflowInstance> SuspendAsync(string instanceId, string? reason = null, CancellationToken cancellationToken = default)
     {
         await using (await AcquireInstanceLockAsync(instanceId, cancellationToken))
@@ -242,7 +268,12 @@ public class WorkflowEngine : IWorkflowEngine
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复被挂起的实例（仅挂起实例可恢复运行）
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实例</returns>
     public async Task<WorkflowInstance> ResumeAsync(string instanceId, CancellationToken cancellationToken = default)
     {
         await using (await AcquireInstanceLockAsync(instanceId, cancellationToken))
@@ -260,19 +291,36 @@ public class WorkflowEngine : IWorkflowEngine
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取消实例（删除书签、取消挂起节点；定义启用补偿时按执行逆序补偿）
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="reason">取消原因</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实例（已处于终态时幂等返回）</returns>
     public async Task<WorkflowInstance> CancelAsync(string instanceId, string? reason = null, CancellationToken cancellationToken = default)
     {
         return await FinishForciblyAsync(instanceId, WorkflowInstanceStatus.Canceled, reason, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 终止实例（强制结束，不执行补偿）
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="reason">终止原因</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实例（已处于终态时幂等返回）</returns>
     public async Task<WorkflowInstance> TerminateAsync(string instanceId, string? reason = null, CancellationToken cancellationToken = default)
     {
         return await FinishForciblyAsync(instanceId, WorkflowInstanceStatus.Terminated, reason, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 重试故障实例（仅故障实例可重试，从故障节点重新执行）
+    /// </summary>
+    /// <param name="instanceId">实例标识</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>实例</returns>
     public async Task<WorkflowInstance> RetryAsync(string instanceId, CancellationToken cancellationToken = default)
     {
         var postActions = new List<Func<Task>>();

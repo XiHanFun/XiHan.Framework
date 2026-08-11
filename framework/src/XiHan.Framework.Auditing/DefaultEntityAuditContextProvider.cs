@@ -31,7 +31,10 @@ public class DefaultEntityAuditContextProvider : IEntityAuditContextProvider
         _currentTenant = currentTenant;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 创建审计记录基础对象，填充当前用户与租户信息
+    /// </summary>
+    /// <returns>已填充基础字段的审计记录</returns>
     public EntityDiffLogRecord CreateBaseRecord()
     {
         var record = new EntityDiffLogRecord();
@@ -49,7 +52,11 @@ public class DefaultEntityAuditContextProvider : IEntityAuditContextProvider
         return record;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 判断指定实体类型是否需要审计，框架审计相关实体不审计
+    /// </summary>
+    /// <param name="entityType">实体类型</param>
+    /// <returns>是否审计</returns>
     public bool ShouldAudit(Type entityType)
     {
         if (entityType is null)

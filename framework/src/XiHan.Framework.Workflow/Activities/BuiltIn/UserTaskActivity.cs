@@ -35,7 +35,11 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
     private const string FormDataStateKey = "formData";
     private const string CcUserIdsStateKey = "ccUserIds";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（解析受理人与完成策略，写入节点私有状态并挂起生成待办书签）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置受理人或完成策略未知时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var assignees = await ResolveAssigneesAsync(context);
@@ -75,7 +79,11 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
         return ActivityExecutionResult.Suspend(bookmarks);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 恢复活动（记录审批轨迹并按完成策略判定结束节点、继续等待或生成下一位受理人的待办）
+    /// </summary>
+    /// <param name="context">恢复上下文</param>
+    /// <returns>执行结果（未携带办理结果或结果不在允许列表内时重建待办）</returns>
     public Task<ActivityExecutionResult> ResumeAsync(ActivityResumeContext context)
     {
         var state = context.NodeInstance.State;

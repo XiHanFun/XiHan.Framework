@@ -38,7 +38,12 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
         _definition = VectorStoreKnowledgeRecord.CreateDefinition(_vectorOptions.Dimensions);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 摄取一篇文档：切片、批量嵌入后写入向量库，返回切片数
+    /// </summary>
+    /// <param name="request">摄取请求，含文档标识、正文、租户与切片参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>写入的切片数，文本切不出片段时为 0</returns>
     public async Task<int> IngestAsync(KnowledgeIngestRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -84,7 +89,12 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
         return records.Count;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按文档移除已入库向量，集合不存在时直接返回
+    /// </summary>
+    /// <param name="documentId">文档标识</param>
+    /// <param name="chunkCount">该文档原切片数，非正数时不做任何处理</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(documentId);

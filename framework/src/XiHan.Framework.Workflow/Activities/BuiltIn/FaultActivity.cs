@@ -16,7 +16,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
     OutgoingBehavior = ActivityOutgoingBehavior.None)]
 public class FaultActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（渲染故障信息模板并返回故障结果）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var message = await GetTemplatedStringAsync(context, "Message");

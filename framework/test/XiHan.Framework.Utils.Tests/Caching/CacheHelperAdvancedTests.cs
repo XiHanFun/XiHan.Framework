@@ -8,6 +8,7 @@ namespace XiHan.Framework.Utils.Tests.Caching;
 /// <summary>
 /// CacheHelper 高级功能测试
 /// </summary>
+[Collection(CachingTestCollection.Name)]
 public class CacheHelperAdvancedTests : IDisposable
 {
     private readonly ITestOutputHelper _output;

@@ -6,6 +6,9 @@ namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 /// <summary>
 /// 参数语义角色分类
 /// </summary>
+/// <remarks>
+/// 仅为描述性元数据，不参与绑定位置决策。绑定位置只由显式绑定特性与 HTTP 方法、参数类型决定。
+/// </remarks>
 public enum ParameterRole
 {
     /// <summary>

@@ -28,29 +28,43 @@ public class CastleXiHanMethodInvocation : IXiHanMethodInvocation
         _lazyArgsDictionary = new Lazy<IReadOnlyDictionary<string, object>>(BuildArgumentsDictionary);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 本次调用传入的参数数组
+    /// </summary>
     public object[] Arguments => _invocation.Arguments!;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 以参数名为键的参数字典，首次访问时按方法签名构建
+    /// </summary>
     public IReadOnlyDictionary<string, object> ArgumentsDictionary => _lazyArgsDictionary.Value;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 本次调用的泛型参数，无泛型参数时为空数组
+    /// </summary>
     public Type[] GenericArguments => _invocation.GenericArguments ?? [];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 被调用的目标对象，无目标实例时取代理对象
+    /// </summary>
     public object TargetObject => _invocation.InvocationTarget ?? _invocation.Proxy;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 被调用的方法，优先取目标类型上的实现方法
+    /// </summary>
     public MethodInfo Method => _invocation.MethodInvocationTarget ?? _invocation.Method;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 方法的返回值，可读取也可覆写
+    /// </summary>
     public object ReturnValue
     {
         get => _invocation.ReturnValue!;
         set => _invocation.ReturnValue = value;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 继续执行被拦截的原方法，返回值为 Task 时等待其完成
+    /// </summary>
     public async Task ProceedAsync()
     {
         _proceedInfo.Invoke();

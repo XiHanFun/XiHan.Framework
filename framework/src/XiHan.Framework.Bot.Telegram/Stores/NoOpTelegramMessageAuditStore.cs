@@ -10,7 +10,11 @@ namespace XiHan.Framework.Bot.Telegram.Stores;
 /// </summary>
 public class NoOpTelegramMessageAuditStore : ITelegramMessageAuditStore
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 追加一条出站消息审计记录，本实现不做任何处理直接返回
+    /// </summary>
+    /// <param name="record">审计记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public Task AppendAsync(TelegramMessageAuditRecord record, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;

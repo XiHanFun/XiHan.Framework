@@ -125,7 +125,9 @@ public class DefinitionManagerTests : IDisposable
         await Assert.ThrowsAsync<WorkflowException>(() => _host.DefinitionManager.DeleteAsync(published.Id));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();

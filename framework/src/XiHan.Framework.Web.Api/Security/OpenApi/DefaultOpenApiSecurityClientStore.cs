@@ -21,7 +21,12 @@ public class DefaultOpenApiSecurityClientStore : IOpenApiSecurityClientStore
         _optionsMonitor = optionsMonitor;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据 AccessKey 从配置中查找客户端
+    /// </summary>
+    /// <param name="accessKey">访问键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>匹配的客户端，未配置则返回 null</returns>
     public Task<OpenApiSecurityClient?> FindByAccessKeyAsync(string accessKey, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(accessKey))

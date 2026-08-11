@@ -58,6 +58,15 @@ public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, 
     bool IsCompleted { get; }
 
     /// <summary>
+    /// 是否已回滚
+    /// </summary>
+    /// <remarks>
+    /// 内层工作单元的回滚会传导至外层，置位后本工作单元不可再提交，
+    /// 其后的数据操作也不再登记进已失效的事务。
+    /// </remarks>
+    bool IsRolledback { get; }
+
+    /// <summary>
     /// 订阅名称
     /// </summary>
     string? ReservationName { get; }

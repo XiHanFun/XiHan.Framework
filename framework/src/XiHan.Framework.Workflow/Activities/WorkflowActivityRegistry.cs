@@ -25,7 +25,11 @@ public class WorkflowActivityRegistry : IWorkflowActivityRegistry
         _descriptors = new Lazy<Dictionary<string, WorkflowActivityDescriptor>>(() => Build(options.Value));
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取活动描述符（不存在抛出异常）
+    /// </summary>
+    /// <param name="activityType">活动类型编码</param>
+    /// <returns>活动描述符</returns>
     public WorkflowActivityDescriptor Get(string activityType)
     {
         return TryGet(activityType, out var descriptor)
@@ -33,13 +37,21 @@ public class WorkflowActivityRegistry : IWorkflowActivityRegistry
             : throw new WorkflowException($"未注册的活动类型 {activityType}");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 尝试获取活动描述符
+    /// </summary>
+    /// <param name="activityType">活动类型编码</param>
+    /// <param name="descriptor">活动描述符</param>
+    /// <returns>存在返回 true</returns>
     public bool TryGet(string activityType, out WorkflowActivityDescriptor descriptor)
     {
         return _descriptors.Value.TryGetValue(activityType, out descriptor!);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取全部活动描述符
+    /// </summary>
+    /// <returns>活动描述符列表</returns>
     public IReadOnlyList<WorkflowActivityDescriptor> GetAll()
     {
         return [.. _descriptors.Value.Values];

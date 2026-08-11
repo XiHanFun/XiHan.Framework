@@ -14,6 +14,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="XiHan.Framework.Uow.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
     </ItemGroup>
 

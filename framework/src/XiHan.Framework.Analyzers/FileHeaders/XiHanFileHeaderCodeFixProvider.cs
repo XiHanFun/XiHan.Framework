@@ -19,16 +19,24 @@ public sealed class XiHanFileHeaderCodeFixProvider : CodeFixProvider
 {
     private const string Title = "添加曦寒标准版权文件头";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 本修复器可处理的诊断编号，即文件头规则的诊断编号
+    /// </summary>
     public override ImmutableArray<string> FixableDiagnosticIds { get; } = [XiHanFileHeaderRule.DiagnosticId];
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得批量修复提供器，支持一次性修复文档、项目或解决方案范围内的全部同类诊断
+    /// </summary>
+    /// <returns>内置的批量修复提供器</returns>
     public override FixAllProvider GetFixAllProvider()
     {
         return WellKnownFixAllProviders.BatchFixer;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 为诊断注册「添加曦寒标准版权文件头」的代码修复动作
+    /// </summary>
+    /// <param name="context">代码修复上下文</param>
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         var diagnostic = context.Diagnostics[0];

@@ -115,4 +115,37 @@ public static class ServiceCollectionRegistrationActionExtensions
     }
 
     #endregion 暴露
+
+    #region 实现类型
+
+    /// <summary>
+    /// 获取服务实现类型登记表
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    public static ServiceImplementationTypeRegistry GetImplementationTypeRegistry(this IServiceCollection services)
+    {
+        return GetOrCreateImplementationTypeRegistry(services);
+    }
+
+    /// <summary>
+    /// 获取或创建服务实现类型登记表
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    private static ServiceImplementationTypeRegistry GetOrCreateImplementationTypeRegistry(IServiceCollection services)
+    {
+        var registry = services.GetSingletonInstanceOrNull<IObjectAccessor<ServiceImplementationTypeRegistry>>()?.Value;
+        if (registry is not null)
+        {
+            return registry;
+        }
+
+        registry = new ServiceImplementationTypeRegistry();
+        services.AddObjectAccessor(registry);
+
+        return registry;
+    }
+
+    #endregion 实现类型
 }

@@ -33,7 +33,11 @@ public class LoginLogPipeline : ILoginLogPipeline
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入登录日志，未启用队列时直接交给写入器，启用队列时按满时丢弃或满时等待策略入队
+    /// </summary>
+    /// <param name="record">登录日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task WriteAsync(LoginLogRecord record, CancellationToken cancellationToken = default)
     {
         if (!_options.EnableLoginLogQueue)

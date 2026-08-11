@@ -22,7 +22,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 [WorkflowActivity(WorkflowActivityTypes.Script, DisplayName = "C# 脚本", Category = "集成")]
 public class ScriptActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（把实例变量传入脚本执行，成功后把变量改动与返回值写入输出）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果（未配置代码或脚本执行失败时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var code = GetProperty<string>(context, "Code");

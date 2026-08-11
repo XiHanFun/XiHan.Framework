@@ -37,7 +37,11 @@ public class OperationLogPipeline : IOperationLogPipeline
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 写入操作日志，未启用队列时直接交给写入器，启用队列时按满时丢弃或满时等待策略入队
+    /// </summary>
+    /// <param name="record">操作日志记录</param>
+    /// <param name="cancellationToken">取消令牌</param>
     public async Task WriteAsync(OperationLogRecord record, CancellationToken cancellationToken = default)
     {
         if (!_options.EnableOperationLogQueue)

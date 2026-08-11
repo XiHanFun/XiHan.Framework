@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -113,6 +114,24 @@ public class XiHanWebApiModule : XiHanModule
             endpoints.MapControllers();
             endpoints.MapOpenApi().AllowAnonymous();
         });
+
+        WarmUpActionDescriptors(context);
+    }
+
+    /// <summary>
+    /// 启动期物化一次 ActionDescriptor 集合
+    /// </summary>
+    /// <remarks>
+    /// 动态控制器在 ActionDescriptor 首次物化时生成，默认发生在首个请求。
+    /// 此处启动期主动触发一次，使路由冲突、控制器名冲突、参数规则违规等装配错误
+    /// 在启动时暴露，而不是变成运行期每个请求 500 或端点静默缺失。
+    /// </remarks>
+    /// <param name="context"></param>
+    private static void WarmUpActionDescriptors(ApplicationInitializationContext context)
+    {
+        var provider = context.ServiceProvider.GetRequiredService<IActionDescriptorCollectionProvider>();
+
+        _ = provider.ActionDescriptors;
     }
 
     /// <summary>

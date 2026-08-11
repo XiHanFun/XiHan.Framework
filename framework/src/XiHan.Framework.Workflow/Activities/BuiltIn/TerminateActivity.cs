@@ -17,7 +17,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
     OutgoingBehavior = ActivityOutgoingBehavior.None)]
 public class TerminateActivity : WorkflowActivityBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行活动（把实例状态置为已终止并记录终止原因）
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>执行结果</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
         var reason = await GetTemplatedStringAsync(context, "Reason");
