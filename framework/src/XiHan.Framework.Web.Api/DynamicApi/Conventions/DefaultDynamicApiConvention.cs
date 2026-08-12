@@ -48,10 +48,15 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             context.Metadata["DynamicApi.CustomProperties"] = customProperties;
         }
 
-        // 设置控制器名称
+        // 设置控制器名称（类级 Name 优先，否则从服务简名推导）
         if (string.IsNullOrEmpty(context.ControllerName))
         {
-            context.ControllerName = GetControllerName(context.ServiceType, usePascalCaseRoute, useLowercaseRoute);
+            var classCustomName = DynamicApiAttributeMergeHelper.ResolveStringFromAttributes(
+                DynamicApiAttributeMergeHelper.GetOrderedClassAttributes(context.ServiceType),
+                attribute => attribute.Name);
+            context.ControllerName = !string.IsNullOrWhiteSpace(classCustomName)
+                ? FormatRouteName(classCustomName, usePascalCaseRoute, useLowercaseRoute)
+                : GetControllerName(context.ServiceType, usePascalCaseRoute, useLowercaseRoute);
         }
 
         // 设置 API 版本

@@ -36,13 +36,13 @@ public class DynamicApiAttribute : Attribute
 
     /// <summary>
     /// 路由模板【单值】
-    /// 方法级优先，类级兜底
+    /// 类级替换控制器路由模板，方法级替换动作路由段
     /// </summary>
     public string RouteTemplate { get; set; } = string.Empty;
 
     /// <summary>
     /// API 名称【单值】
-    /// 方法级优先，类级兜底
+    /// 类级定制控制器名，方法级定制动作名
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
