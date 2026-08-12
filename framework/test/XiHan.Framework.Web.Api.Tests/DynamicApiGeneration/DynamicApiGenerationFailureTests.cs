@@ -87,6 +87,41 @@ public class DynamicApiGenerationFailureTests : IDisposable
     }
 
     /// <summary>
+    /// 类级 Name 定制控制器名后，同简名服务不再冲突
+    /// </summary>
+    [Fact]
+    public void CreateControllerType_WithClassLevelCustomName_AvoidsCollision()
+    {
+        var options = new DynamicApiOptions();
+        var convention = new DefaultDynamicApiConvention(options);
+
+        var first = DynamicApiControllerFactory.CreateControllerType(typeof(OrderAppService), convention, options);
+        var second = DynamicApiControllerFactory.CreateControllerType(typeof(Renamed.OrderAppService), convention, options);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal("plugin-orderController", second.Name);
+    }
+
+    /// <summary>
+    /// 控制器名判重忽略大小写
+    /// </summary>
+    [Fact]
+    public void CreateControllerType_OnCaseInsensitiveNameCollision_Throws()
+    {
+        var options = new DynamicApiOptions();
+        var convention = new DefaultDynamicApiConvention(options);
+
+        DynamicApiControllerFactory.CreateControllerType(typeof(OrderAppService), convention, options);
+
+        var exception = Assert.Throws<DynamicApiException>(
+            () => DynamicApiControllerFactory.CreateControllerType(
+                typeof(LowercaseOrderAppService), convention, options));
+
+        Assert.Contains("控制器名冲突", exception.Message);
+    }
+
+    /// <summary>
     /// 同一服务重复生成走缓存，不误判为冲突
     /// </summary>
     [Fact]
@@ -140,4 +175,17 @@ public class DisabledAppService : IApplicationService
     /// </summary>
     /// <returns></returns>
     public Task<string> GetDataAsync() => Task.FromResult(string.Empty);
+}
+
+/// <summary>
+/// 控制器名仅大小写不同的应用服务
+/// </summary>
+[DynamicApi(Name = "order")]
+public class LowercaseOrderAppService : IApplicationService
+{
+    /// <summary>
+    /// 查询订单
+    /// </summary>
+    /// <returns></returns>
+    public Task<string> GetOrderAsync() => Task.FromResult(string.Empty);
 }
