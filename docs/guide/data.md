@@ -133,6 +133,10 @@ public class OrderRepository(ISqlSugarClientResolver resolver)
 | `EnableDbInitialization` | 启动时自动建库 |
 | `EnableTableInitialization` | 启动时 CodeFirst 建表 |
 | `EnableDataSeeding` | 启动时播种 |
+| `TableInitialization` | 建哪些表（特性 `[TableInitialization]` + 分组/名单/委托筛选） |
+| `DataSeeding` | 跑哪些种子（特性 `[DataSeeding]` + 分组/名单/委托筛选） |
+
+开关只管开不开，范围由后两项决定：默认全量，标 `[TableInitialization(false)]` 的实体不建、标 `Target = DbInitializationTarget.Platform` 的实体不进租户独立库；要整体自己实现就 `Replace` 掉 `IDbEntityTypeProvider` / `IDataSeederSelector`。细节见 [XiHan.Framework.Data](../packages/data#选择初始化范围)。
 
 ::: danger `DbInitializer` 表存在就跳过，从不补列
 给既有实体加字段后部署必报「列不存在」。要么重建数据库，要么手动 `ALTER TABLE`。**框架不是迁移工具。**

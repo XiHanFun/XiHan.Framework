@@ -78,6 +78,9 @@ public static class XiHanDataServiceCollectionExtensions
 
         // 注册数据库初始化器
         services.TryAddScoped<IDbInitializer, DbInitializer>();
+        // 建表实体提供器与种子选取器：决定每个库建哪些表、跑哪些种子，业务可用 Replace 整体替换
+        services.TryAddSingleton<IDbEntityTypeProvider, DbEntityTypeProvider>();
+        services.TryAddSingleton<IDataSeederSelector, DataSeederSelector>();
 
         return services;
     }
