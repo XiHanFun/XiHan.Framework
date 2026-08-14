@@ -12,9 +12,7 @@ using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.Data.SqlSugar.Helpers;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Seeders;
-using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.MultiTenancy.Abstractions;
-using XiHan.Framework.Utils.Reflections;
 
 namespace XiHan.Framework.Data.SqlSugar.Initializers;
 
@@ -28,6 +26,8 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     private readonly ILogger<DbInitializer> _logger;
     private readonly XiHanSqlSugarCoreOptions _options;
     private readonly ICurrentTenant _currentTenant;
+    private readonly IDbEntityTypeProvider _entityTypeProvider;
+    private readonly IDataSeederSelector _seederSelector;
 
     /// <summary>
     /// 构造函数
@@ -37,13 +37,17 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         IServiceProvider serviceProvider,
         ILogger<DbInitializer> logger,
         IOptions<XiHanSqlSugarCoreOptions> options,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant,
+        IDbEntityTypeProvider entityTypeProvider,
+        IDataSeederSelector seederSelector)
     {
         _clientResolver = clientResolver;
         _serviceProvider = serviceProvider;
         _logger = logger;
         _options = options.Value;
         _currentTenant = currentTenant;
+        _entityTypeProvider = entityTypeProvider;
+        _seederSelector = seederSelector;
     }
 
     /// <summary>
@@ -107,21 +111,46 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     /// <summary>
     /// 执行种子数据
     /// </summary>
-    public async Task SeedDataAsync()
+    public Task SeedDataAsync()
+    {
+        return SeedDataInternalAsync();
+    }
+
+    /// <summary>
+    /// 执行种子数据（内部）
+    /// </summary>
+    /// <param name="connectionConfigId">连接配置标识，为空表示当前租户上下文解析出的连接</param>
+    private async Task SeedDataInternalAsync(string? connectionConfigId = null)
     {
         try
         {
-            var seeders = _serviceProvider.GetServices<IDataSeeder>()
+            var registeredSeeders = _serviceProvider.GetServices<IDataSeeder>()
                 .OrderBy(s => s.Order)
                 .ToList();
 
-            if (seeders.Count == 0)
+            if (registeredSeeders.Count == 0)
             {
                 _logger.LogInformation("没有找到种子数据提供者");
                 return;
             }
 
-            _logger.LogInformation("开始执行种子数据，共 {Count} 个种子数据提供者", seeders.Count);
+            var context = BuildInitializationContext(connectionConfigId);
+            var seeders = _seederSelector.Select(registeredSeeders, context);
+
+            if (seeders.Count == 0)
+            {
+                _logger.LogInformation(
+                    "已注册 {RegisteredCount} 个种子数据提供者，按选取规则（模式：{Mode}）本次无需执行",
+                    registeredSeeders.Count,
+                    _options.DataSeeding.Mode);
+                return;
+            }
+
+            _logger.LogInformation(
+                "开始执行种子数据，共 {Count} 个种子数据提供者（已注册 {RegisteredCount} 个，跳过 {SkippedCount} 个）",
+                seeders.Count,
+                registeredSeeders.Count,
+                registeredSeeders.Count - seeders.Count);
 
             foreach (var seeder in seeders)
             {
@@ -163,7 +192,7 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
 
         if (_options.EnableDataSeeding)
         {
-            await SeedDataAsync();
+            await SeedDataInternalAsync(normalizedConfigId);
         }
         else
         {
@@ -267,11 +296,14 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         try
         {
             var db = ResolveDbClient(connectionConfigId);
-            var entityTypes = GetEntityTypes();
+            var context = BuildInitializationContext(connectionConfigId, db);
+            var entityTypes = _entityTypeProvider.GetEntityTypes(context);
 
             if (entityTypes.Count == 0)
             {
-                _logger.LogWarning("没有找到需要创建的实体类型");
+                _logger.LogWarning(
+                    "按选取规则（模式：{Mode}）没有需要创建的实体类型",
+                    _options.TableInitialization.Mode);
                 return;
             }
 
@@ -368,18 +400,25 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     }
 
     /// <summary>
-    /// 获取所有实体类型
+    /// 构造当前库上下文，交给建表实体提供器与种子选取器判定初始化范围
     /// </summary>
-    /// <returns></returns>
-    private static List<Type> GetEntityTypes()
+    /// <param name="connectionConfigId">连接配置标识，为空则取客户端当前连接的标识</param>
+    /// <param name="db">已解析的客户端，为空则按 <paramref name="connectionConfigId"/> 解析</param>
+    /// <returns>当前库上下文</returns>
+    private DbInitializationContext BuildInitializationContext(string? connectionConfigId, ISqlSugarClient? db = null)
     {
-        var dbEntities = ReflectionHelper.GetContainsAttributeSubClasses<IEntityBase, SugarTable>().ToList();
-        if (dbEntities.Count > 0)
+        var configId = connectionConfigId?.Trim();
+        if (string.IsNullOrWhiteSpace(configId))
         {
-            return dbEntities;
+            db ??= ResolveDbClient(connectionConfigId);
+            configId = db.CurrentConnectionConfig?.ConfigId?.ToString();
         }
 
-        return [];
+        var isTenantDatabase = !string.IsNullOrWhiteSpace(configId) &&
+                               !string.IsNullOrWhiteSpace(_options.TenantConfigIdPrefix) &&
+                               configId.StartsWith(_options.TenantConfigIdPrefix, StringComparison.OrdinalIgnoreCase);
+
+        return new DbInitializationContext(configId, _currentTenant.Id, isTenantDatabase);
     }
 
     /// <summary>
