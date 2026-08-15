@@ -40,8 +40,8 @@ public Task<UserDto> GetUserAsync(long userId) { … }
 public Task UpdateUserAsync(long userId, UserUpdateDto input) { … }
 ```
 
-::: warning 前提是服务注册为接口
-声明式缓存靠 AOP 实现，**服务的注册类型必须是接口**，否则特性静默失效。见 [AOP 与拦截器](./aop)。
+::: warning 非 HTTP 入口的前提是服务注册为接口
+声明式缓存有两条生效路径：HTTP 请求由 `XiHanCacheFilter` 在 MVC 动作外层处理（动态 API 控制器注入具体类也生效），进程内互调靠 AOP 代理，**此时服务的注册类型必须是接口**，否则特性静默失效。见 [AOP 与拦截器](./aop)。
 :::
 
 ## 缓存条目模式
@@ -111,7 +111,7 @@ if (cache is ICacheSupportsLuaScript lua)
 | --- | --- |
 | 改了数据但读到旧值 | 写侧漏调失效；或键名内联字符串拼错 |
 | 偶发读到旧值且不自愈 | 失效没走 `considerUow: true` |
-| `[Cacheable]` 没生效 | 服务注册类型不是接口 |
+| `[Cacheable]` 没生效 | 非 HTTP 入口（后台作业、事件处理器、Minimal API）且服务注册类型不是接口 |
 | 多实例定时任务重复执行 | Redis 没开，分布式锁退化成进程内锁 |
 | 想执行 Lua 脚本 | 用能力接口 `ICacheSupportsLuaScript`，见上节 |
 

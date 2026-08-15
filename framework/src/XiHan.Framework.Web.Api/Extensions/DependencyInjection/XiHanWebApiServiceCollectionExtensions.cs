@@ -246,6 +246,7 @@ public static class XiHanWebApiServiceCollectionExtensions
         // 此处仅注册 Web 特有的 MVC 过滤器。
         services.AddScoped<XiHanActionLoggingFilter>();
         services.AddScoped<XiHanApiResponseResultFilter>();
+        services.AddScoped<XiHanCacheFilter>();
         services.AddScoped<XiHanUnitOfWorkFilter>();
 
         return services;
@@ -315,6 +316,8 @@ public static class XiHanWebApiServiceCollectionExtensions
         {
             options.Filters.AddService<XiHanActionLoggingFilter>();
             options.Filters.AddService<XiHanApiResponseResultFilter>();
+            // 缓存在工作单元之外：命中缓存不开事务，清除缓存发生在事务提交之后
+            options.Filters.AddService<XiHanCacheFilter>();
             // 排在最后：工作单元是最贴近动作的一层，动作抛出的异常先落到它手里再向外传
             options.Filters.AddService<XiHanUnitOfWorkFilter>();
         })

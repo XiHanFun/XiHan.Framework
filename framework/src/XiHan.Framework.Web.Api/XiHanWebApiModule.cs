@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Auditing;
+using XiHan.Framework.Caching;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
@@ -36,7 +37,8 @@ namespace XiHan.Framework.Web.Api;
     typeof(XiHanMultiTenancyModule),
     typeof(XiHanSerializationModule),
     typeof(XiHanAuditingModule),
-    typeof(XiHanUowModule)
+    typeof(XiHanUowModule),
+    typeof(XiHanCachingModule)
 )]
 public class XiHanWebApiModule : XiHanModule
 {

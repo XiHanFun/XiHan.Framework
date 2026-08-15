@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Concurrent;
 using System.Reflection;
 using XiHan.Framework.Web.Api.DynamicApi.Attributes;
 
@@ -16,6 +17,8 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Helpers;
 /// </remarks>
 public static class OriginalMethodResolver
 {
+    private static readonly ConcurrentDictionary<MethodInfo, MethodInfo> ResolvedMethodCache = new();
+
     /// <summary>
     /// 解析动作方法背后的原始服务方法，非动态控制器或回查失败时返回动作方法本身
     /// </summary>
@@ -25,6 +28,11 @@ public static class OriginalMethodResolver
     {
         ArgumentNullException.ThrowIfNull(actionMethod);
 
+        return ResolvedMethodCache.GetOrAdd(actionMethod, ResolveCore);
+    }
+
+    private static MethodInfo ResolveCore(MethodInfo actionMethod)
+    {
         var originalMethodAttribute = actionMethod.GetCustomAttribute<OriginalMethodAttribute>();
         if (originalMethodAttribute is null)
         {
