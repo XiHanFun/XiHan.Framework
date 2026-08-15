@@ -48,6 +48,8 @@ public class MyModule : XiHanModule;
 
 随后 `OnRegistered(CacheInterceptorRegistrar.RegisterIfNeeded)` 挂上缓存拦截器（为带 `[Cacheable]` 的类型织入 `CacheInterceptor`）。
 
+动态代理只包裹接口注册，HTTP 请求进来的控制器实例不经过它。[XiHan.Framework.Web.Api](./web-api) 的 `XiHanCacheFilter` 补上这条路径：MVC 动作外层按同一套 `CacheAspect` 语义处理 `[Cacheable]` / `[CacheEvict]`，动态 API 的动作先经 `OriginalMethodAttribute` 回查原始应用服务方法再读取特性。它排在工作单元过滤器之外，命中缓存不开启事务、清除缓存发生在事务提交之后。
+
 若 `XiHan:Caching:Redis:IsEnabled = true`，`AddXiHanCaching` 继续：调用 `AddStackExchangeRedisCache`，把 `IDistributedCache` `Replace` 为 `XiHanRedisCache`，并在有连接串时 `TryAdd` 出 `IConnectionMultiplexer`、`IRedisStreamQueue<>`、`IRedisDelayQueue<>`，同时把 `IDistributedLock` `Replace` 为 `RedisDistributedLock`。
 
 ## 工作原理
@@ -151,7 +153,7 @@ Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expir
 
 键模板由 `CacheKeyBuilder.Build(template, invocation)` 渲染：把 `{参数名}` 替换为对应实参 `ToString()`（`null` → `"null"`）。占位符正则为 `\{[a-zA-Z_]\w*\}`。
 
-`CacheInterceptor` 在目标方法成功执行后渲染每个 `[CacheEvict]` 的键模板，并调用底层 `HybridCache.RemoveAsync`，同时清除 L1 与 L2。目标方法抛异常时不会执行清理；同一方法可声明多个 `[CacheEvict]`。
+读写语义由 `CacheAspect` 承载，`CacheInterceptor`（进程内）与 `XiHanCacheFilter`（HTTP）共用它，两条入口的键构建、过期时间与命中判定一致。目标方法成功执行后渲染每个 `[CacheEvict]` 的键模板，并调用底层 `HybridCache.RemoveAsync`，同时清除 L1 与 L2。目标方法抛异常时既不写入缓存也不执行清理；同一方法可声明多个 `[CacheEvict]`。
 
 ## 配置
 
