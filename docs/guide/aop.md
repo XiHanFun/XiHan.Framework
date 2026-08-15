@@ -12,10 +12,16 @@ services.AddScoped<MyService>();               // ❌ 注册为自身类型 → 
 services.AddScoped<IMyService, MyService>();   // ✅ 接口 → 会被代理
 ```
 
-把类注册为它自己，`[UnitOfWork]` / `[Cacheable]` **全部静默失效**——不报错、不记日志。要用 AOP 就走「接口 + 实现」。
+把类注册为它自己，自定义拦截器**全部静默失效**——不报错、不记日志。要用 AOP 就走「接口 + 实现」。
 :::
 
 其次检查：类型有没有被列进 `DynamicProxyIgnoreTypes`。
+
+::: tip HTTP 入口不受这条限制
+控制器由 MVC 自行激活、动态 API 控制器又直接注入应用服务的具体类，两者都不走代理。框架内置的两个横切能力另有 MVC 过滤器覆盖这条路径：`XiHanUnitOfWorkFilter` 处理 `[UnitOfWork]`、`XiHanCacheFilter` 处理 `[Cacheable]` / `[CacheEvict]`，都经动作上的 `OriginalMethodAttribute` 回查应用服务的原始方法读取特性。
+
+所以这两个特性在 HTTP 请求上照常生效；**自定义拦截器没有这层兜底**，只能靠接口代理。
+:::
 
 ## 写一个自己的拦截器
 
@@ -105,7 +111,7 @@ public override void PreConfigureServices(ServiceConfigurationContext context)
 
 | 现象 | 原因 |
 | --- | --- |
-| 特性标了没生效 | 服务注册类型不是接口（最常见）；或类型在 `DynamicProxyIgnoreTypes` 里 |
+| 特性标了没生效 | 服务注册类型不是接口（最常见）；或类型在 `DynamicProxyIgnoreTypes` 里。`[UnitOfWork]` / `[Cacheable]` 走 HTTP 时不受此限，见上方提示 |
 | 目标方法没执行 | 拦截器忘了调 `ProceedAsync()` |
 | 匿名端点调用挂起 | 走了代理，用 `ProxyHelper.UnProxy` |
 | 自定义拦截器不生效 | `OnRegistered` 挂在了 `ConfigureServices`（太晚），改到 `PreConfigureServices` |
