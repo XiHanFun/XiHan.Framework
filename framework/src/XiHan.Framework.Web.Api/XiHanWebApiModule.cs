@@ -16,6 +16,7 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Localization.Extensions.ApplicationBuilder;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Uow;
 using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Session;
@@ -34,7 +35,8 @@ namespace XiHan.Framework.Web.Api;
     typeof(XiHanWebCoreModule),
     typeof(XiHanMultiTenancyModule),
     typeof(XiHanSerializationModule),
-    typeof(XiHanAuditingModule)
+    typeof(XiHanAuditingModule),
+    typeof(XiHanUowModule)
 )]
 public class XiHanWebApiModule : XiHanModule
 {

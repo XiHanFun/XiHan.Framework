@@ -28,6 +28,7 @@
 	  <ProjectReference Include="..\XiHan.Framework.Logging\XiHan.Framework.Logging.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.MultiTenancy\XiHan.Framework.MultiTenancy.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Serialization\XiHan.Framework.Serialization.csproj" />
+	  <ProjectReference Include="..\XiHan.Framework.Uow\XiHan.Framework.Uow.csproj" />
 	  <ProjectReference Include="..\XiHan.Framework.Web.Core\XiHan.Framework.Web.Core.csproj" />
 	</ItemGroup>
 
