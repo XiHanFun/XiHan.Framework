@@ -75,7 +75,7 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 | API 文档 | Scalar.AspNetCore + Swashbuckle.AspNetCore | 2.16.11 / 10.2.3 |
 | IP 定位 | IP2Region.Net | 3.0.2 |
 | 消息通知 | MailKit + Telegram.Bot | 4.17.0 / 22.10.1.1 |
-| 测试 | xunit.v3 + coverlet.collector | 3.2.2 / 8.0.1 |
+| 测试 | xunit.v3 + Microsoft.Testing.Platform（含 CodeCoverage 扩展） | 4.0.0 / 2.3.3 |
 
 ## 架构概览
 
