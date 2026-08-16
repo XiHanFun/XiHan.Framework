@@ -11,7 +11,8 @@ namespace XiHan.Framework.Uow;
 /// </summary>
 public interface IUnitOfWork : IDatabaseApiContainer, ITransactionApiContainer, IDisposable
 {
-    //TODO：切换到 OnFailed(sync) 和 OnDispose(sync) 方法来兼容OnCompleted
+    // 完成通知走 OnCompleted(Func<Task>) 回调注册（可挂多个异步处理器）；
+    // 失败/释放通知走 Failed / Disposed 同步事件（InvokeSafely 逐个调用，异常不中断）。
     /// <summary>
     /// 工作单元失败事件
     /// </summary>
