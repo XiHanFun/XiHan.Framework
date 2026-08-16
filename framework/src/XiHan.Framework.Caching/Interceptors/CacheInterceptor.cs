@@ -1,4 +1,4 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
+﻿// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Caching.Attributes;
@@ -64,7 +64,7 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
 
         var cacheKey = CacheKeyBuilder.Build(attr.Key, invocation);
 
-        invocation.ReturnValue = await _cacheAspect.GetOrCreateAsync(
+        invocation.ReturnValue = (await _cacheAspect.GetOrCreateAsync(
             valueType,
             cacheKey,
             attr.ExpireSeconds,
@@ -74,7 +74,7 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
 
                 // 代理链上的异步方法把结果留在 ReturnValue 里的 Task 上，取值前先解包
                 return invocation.ReturnValue is Task task ? await UnwrapAsync(task) : invocation.ReturnValue;
-            });
+            }))!;
     }
 
     private static async Task<object?> UnwrapAsync(Task task)
