@@ -174,6 +174,20 @@ public sealed class QueryFilter
     }
 
     /// <summary>
+    /// 克隆当前过滤条件（值类型语义，避免克隆件与原件共享可变实例）
+    /// </summary>
+    public QueryFilter Clone()
+    {
+        return new QueryFilter
+        {
+            Field = Field,
+            Value = Value,
+            Values = Values is null ? null : [.. Values],
+            Operator = Operator
+        };
+    }
+
+    /// <summary>
     /// 转换为可读字符串（调试用）
     /// </summary>
     public override string ToString()

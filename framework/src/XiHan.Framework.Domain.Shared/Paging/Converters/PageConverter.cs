@@ -73,14 +73,7 @@ public static class PageConverter
         return new PageRequestDtoBase
         {
             Page = new PageRequestMetadata(request.Page.PageIndex, request.Page.PageSize),
-            Conditions = new QueryConditions
-            {
-                Filters = [.. cond.Filters],
-                Sorts = [.. cond.Sorts],
-                Keyword = cond.Keyword != null
-                    ? new QueryKeyword { Value = cond.Keyword.Value, Fields = [.. cond.Keyword.Fields] }
-                    : null
-            }
+            Conditions = cond.Clone()
         };
     }
 
