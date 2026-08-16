@@ -2,7 +2,11 @@ name: 发布 NuGet
 
 # 手动触发或推送 v* 标签（如 v3.13.1）。版本号取自 framework/props/version.props，
 # 构建产出 66 个包到 framework/nupkgs/，测试通过后统一推送 nuget.org（--skip-duplicate 幂等）。
-# 前置条件：仓库 Secrets 中配置 NUGET_API_KEY（nuget.org 的 API Key）。
+#
+# 认证走 NuGet 可信发布（OIDC），无长期 API Key：
+# 1. nuget.org → 用户名 → 受信任的发布 → 添加策略：
+#    存储库所有者 XiHanFun、存储库 XiHan.Framework、工作流文件 publish.yml、环境留空；
+# 2. 仓库 Settings → Secrets and variables → Actions → Variables 添加 NUGET_USER = nuget.org 用户名。
 on:
   workflow_dispatch:
   push:
@@ -11,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # 颁发 GitHub OIDC 令牌，NuGet/login 用它换取 1 小时有效的临时 API Key
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -50,10 +55,17 @@ jobs:
           --configuration Release
           --no-build
 
+      - name: NuGet 可信发布登录（OIDC 换临时 API Key）
+        # 经 nuget.org 受信任发布策略校验后返回 1 小时有效的临时 Key，无长期机密。
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: 推送 NuGet 包
         # dotnet nuget push 一次只接受一个包，逐个循环推送；--skip-duplicate 保证重跑幂等。
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           for pkg in framework/nupkgs/*.nupkg; do
             dotnet nuget push "$pkg" \
