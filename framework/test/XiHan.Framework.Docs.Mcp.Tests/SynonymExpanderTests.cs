@@ -59,15 +59,25 @@ public class SynonymExpanderTests
     /// 「Redis」内含子串「di」，退回子串匹配的话整组依赖注入术语都会被扩展进来，
     /// 把依赖注入文档推向一个问 Redis 的查询的首屏。其余几条测试用的都是中文术语，
     /// 删掉那个分支照样全绿，所以必须单独有这一条。
+    /// <para>
+    /// 正反两个方向缺一不可：只断言「Redis 不误触发」的话，把拉丁分支改成恒 <c>false</c>
+    /// ——即 DI、MCP、API 这类词条**永远匹配不上**、术语表的拉丁词条整体静默失效——
+    /// 这条断言照样成立。所以下面必须同时断言「DI 确实触发」。
+    /// </para>
     /// </remarks>
     [Fact]
     public void 拉丁术语按词条匹配而非子串()
     {
         var expander = CreateExpander("""[["依赖注入", "DI", "容器"]]""");
 
-        var terms = expander.Expand("Redis 事件总线怎么配");
+        // 反向：Redis 内含子串 di，但词条集合里没有 di，不该触发
+        var substring = expander.Expand("Redis 事件总线怎么配");
+        Assert.DoesNotContain(substring, t => t.Term == "依赖" || t.Term == "容器");
 
-        Assert.DoesNotContain(terms, t => t.Term == "依赖" || t.Term == "容器");
+        // 正向：DI 独立成词，词条匹配得上，整组必须被扩展进来
+        var wholeTerm = expander.Expand("DI 怎么用");
+        Assert.Contains(wholeTerm, t => t.Term == "依赖" && t.Weight == 0.5);
+        Assert.Contains(wholeTerm, t => t.Term == "容器" && t.Weight == 0.5);
     }
 
     /// <summary>

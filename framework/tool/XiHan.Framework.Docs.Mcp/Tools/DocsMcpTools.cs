@@ -117,12 +117,18 @@ public sealed class DocsMcpTools(
                 return $"拒绝访问 `{path}`：路径必须是仓库根内的相对路径。";
             }
 
-            var normalized = path.Replace('\\', '/');
-
             // 仅包含性校验是不够的：通过之后 `.git/config`、任意源码、任意 appsettings 都会被原样读出，
             // 而本工具的契约是「读一篇曦寒框架的文档」。所以再加一道白名单，只放行枚举出来的文档。
             // 白名单里的条目都是真实枚举出来的文件，符号链接是否解析也就不再有意义。
-            if (!snapshot.Files.Any(f => f.RelativePath == normalized))
+            //
+            // 比对的是**解析后的绝对路径**而不是使用者原串：拿原串比的话，`./docs/x.md`、
+            // `docs//x.md`、Windows 上大小写不同的写法都能过包含性校验却匹配不上白名单，
+            // 白白退化成「未找到」；大小写的判定也必须与包含性校验共用同一条 PathComparison，
+            // 否则两道关卡对同一个路径会给出互相矛盾的答案。
+            var indexed = snapshot.Files.FirstOrDefault(
+                f => f.AbsolutePath.Equals(absolutePath, DocSourceLocator.PathComparison));
+
+            if (indexed is null)
             {
                 return BuildPathSuggestion(snapshot, path);
             }
@@ -132,7 +138,8 @@ public sealed class DocsMcpTools(
                 return BuildPathSuggestion(snapshot, path);
             }
 
-            var sections = snapshot.Sections.Where(s => s.RelativePath == normalized).ToList();
+            // 往下一律用白名单里的规范相对路径，不再碰使用者原串
+            var sections = snapshot.Sections.Where(s => s.RelativePath == indexed.RelativePath).ToList();
 
             if (!string.IsNullOrWhiteSpace(section))
             {
