@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: 检出
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 安装 .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -76,7 +76,7 @@ jobs:
 
       - name: 上传包构件
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nupkgs
           path: framework/nupkgs/*.nupkg
