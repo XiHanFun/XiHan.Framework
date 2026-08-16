@@ -240,7 +240,7 @@ public class GoldenQueryTests
             scorer,
             expander,
             gate,
-            new DocsMcpTools(index, locator, expander, scorer, gate, options));
+            new DocsMcpTools(index, locator, expander, scorer, gate, options, NullLogger<DocsMcpTools>.Instance));
     }
 
     /// <summary>

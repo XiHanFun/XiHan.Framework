@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Docs.Mcp.Options;
@@ -90,6 +91,10 @@ public sealed class DocIndex(
     /// </summary>
     private void Rebuild(IReadOnlyList<DocFile> files)
     {
+        // 重建耗时是判断「查询变慢是不是索引在重建」的唯一线索：EnsureFresh 是同步的，
+        // 撞上重建的那一次查询会把整次重建的时间算进自己头上
+        var stopwatch = Stopwatch.StartNew();
+
         var sections = new List<DocSection>();
         var index = new BigramIndex();
 
@@ -112,7 +117,11 @@ public sealed class DocIndex(
         // 三者一次性整体换掉：中途被读到的只会是上一份完全自洽的快照，不会是半新半旧的组合
         Current = new IndexSnapshot(sections, index, files);
 
-        logger.LogInformation("文档索引已重建：{FileCount} 个文件，{SectionCount} 个章节。", files.Count, sections.Count);
+        logger.LogInformation(
+            "文档索引已重建：{FileCount} 个文件，{SectionCount} 个章节，耗时 {ElapsedMs} 毫秒。",
+            files.Count,
+            sections.Count,
+            stopwatch.ElapsedMilliseconds);
     }
 
     /// <summary>

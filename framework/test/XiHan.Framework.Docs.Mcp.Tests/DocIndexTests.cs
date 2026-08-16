@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Docs.Mcp.Indexing;
@@ -105,6 +106,39 @@ public class DocIndexTests : IDisposable
         var snapshot = index.EnsureFresh();
 
         Assert.Contains(snapshot.Sections, s => s.RelativePath == "docs/guide/caching.md");
+    }
+
+    /// <summary>
+    /// 重建索引时记下文件数、章节数与耗时
+    /// </summary>
+    /// <remarks>
+    /// 重建是同步的：撞上它的那次查询要把整次重建的时间算进自己头上。
+    /// 没有 <c>ElapsedMs</c> 这个字段，「今天查询怎么这么慢」就没法回答。
+    /// </remarks>
+    [Fact]
+    public void 重建索引时记下文件数章节数与耗时()
+    {
+        // 再加一篇两节的文档，好让文件数与章节数取到不同的值——
+        // 两者相等的话，把两个字段写反了本用例也照样绿
+        File.WriteAllText(
+            Path.Combine(_root, "docs", "guide", "caching.md"),
+            "# 缓存\n\n## 分布式缓存\n\n正文一。\n\n## 本地缓存\n\n正文二。\n");
+
+        var logger = new CapturingLogger<DocIndex>();
+        var index = new DocIndex(
+            new DocSourceLocator(_root),
+            new DocsMcpOptions(),
+            new FakeTimeProvider(),
+            logger);
+
+        index.EnsureFresh();
+
+        var entry = Assert.Single(logger.Entries);
+
+        Assert.Equal(LogLevel.Information, entry.Level);
+        Assert.Equal(2, entry.Value("FileCount"));
+        Assert.Equal(3, entry.Value("SectionCount"));
+        Assert.NotNull(entry.Value("ElapsedMs"));
     }
 
     /// <summary>

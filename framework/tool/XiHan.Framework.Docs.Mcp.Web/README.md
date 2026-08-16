@@ -108,7 +108,7 @@ dotnet framework/tool/XiHan.Framework.Docs.Mcp.Web/bin/Release/net10.0/XiHan.Fra
 
 ```text
 info: XiHan.Framework.Docs.Mcp.Indexing.DocIndex[0]
-      文档索引已重建：163 个文件，1720 个章节。
+      文档索引已重建：163 个文件，1720 个章节，耗时 412 毫秒。
 info: XiHan.Framework.Docs.Mcp.Web[0]
       文档 MCP 端点已映射到 /mcp，仓库根 /srv/xihan-framework；请求须携带 X-Api-Key 或 Authorization: Bearer。
 ```
@@ -121,6 +121,19 @@ warn: XiHan.Framework.Docs.Mcp.Web[0]
 ```
 
 配了却配错（要暴露但请求头名、路径或密钥不合规）则**根本起不来**，退出前打出的是逐条列明的校验失败，详见上文「启动期校验」。
+
+### 排查远端「它什么都没找到」
+
+工具调用日志来自 `XiHan.Framework.Docs.Mcp`，两个宿主共用，字段表见
+[那个项目的 README](../XiHan.Framework.Docs.Mcp/README.md#日志里能看到什么)。配到 HTTP 之后多出三种只在这一侧才会遇到的情况，注意它们**不产生工具调用日志**：
+
+| 客户端看到 | 服务端日志 | 说明 |
+| --- | --- | --- |
+| 404 | 无 | 端点没映射：没开启或没配密钥（启动时那条 `warn` 已经点名） |
+| 401 | 无 | 密钥不对。过滤器只返回状态码，不记日志也不回显任何密钥信息 |
+| 200 但「什么都没找到」 | 有一条 `search_docs` 零命中或相关性截断记录 | 走到工具里了，按字段表判断是真的没有，还是被 0.90 的阈值挡下 |
+
+换句话说：**远端报「搜不到」而服务端日志里连一条 `search_docs` 都没有，问题就不在检索，而在鉴权或路由。**
 
 ### 用 curl 验证
 

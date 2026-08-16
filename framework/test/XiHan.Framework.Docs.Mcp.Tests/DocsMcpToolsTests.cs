@@ -276,6 +276,7 @@ public class DocsMcpToolsTests : IDisposable
             SynonymExpander.Load(jsonPath: null, NullLogger.Instance),
             new SectionScorer(options),
             new RelevanceGate(options),
-            options);
+            options,
+            NullLogger<DocsMcpTools>.Instance);
     }
 }

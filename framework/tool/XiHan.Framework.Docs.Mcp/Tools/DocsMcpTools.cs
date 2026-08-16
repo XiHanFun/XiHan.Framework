@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using XiHan.Framework.Docs.Mcp.Indexing;
 using XiHan.Framework.Docs.Mcp.Options;
@@ -20,10 +22,22 @@ namespace XiHan.Framework.Docs.Mcp.Tools;
 /// <param name="scorer">排序器</param>
 /// <param name="gate">相关性截断</param>
 /// <param name="options">可调参数</param>
+/// <param name="logger">日志记录器</param>
 /// <remarks>
 /// 工具数量刻意压到三个：工具越多，模型越容易选错或漏用。
 /// 来源区分用参数表达，而不是拆成 search_guide / search_packages 之类的多个工具。
 /// 全部返回 Markdown 文本而非 JSON，因为调用方是语言模型，同等信息量下 Markdown 的 token 消耗更低。
+/// <para>
+/// 每次工具调用都记一条结构化日志（工具名、耗时、结果、结果条数），因为三个工具**从不抛异常给客户端**——
+/// 它们把失败包成一段说明文字返回。这个设计对模型友好，对运维却意味着：远端一句「它什么都没找到」，
+/// 事后可能对应 401、404、工具内部异常、索引正在重建、真的零命中、或者索引是旧的，
+/// 而这些在响应体里长得都差不多。日志是唯一能把它们区分开的地方。
+/// </para>
+/// <para>
+/// 查询串是文档问题不是凭据，记录它是有意的；密钥与任何请求头一律不记。
+/// stdio 宿主的 stdout 是 JSON-RPC 通道，所以这里只用 <see cref="ILogger"/>，绝不写 <c>Console</c>——
+/// 日志走 stderr 由宿主的日志配置保证（见两个 <c>Program.cs</c>）。
+/// </para>
 /// </remarks>
 [McpServerToolType]
 public sealed class DocsMcpTools(
@@ -32,7 +46,8 @@ public sealed class DocsMcpTools(
     SynonymExpander expander,
     SectionScorer scorer,
     RelevanceGate gate,
-    DocsMcpOptions options)
+    DocsMcpOptions options,
+    ILogger<DocsMcpTools> logger)
 {
     /// <summary>
     /// 检索曦寒框架文档，返回最相关的章节原文
@@ -48,10 +63,17 @@ public sealed class DocsMcpTools(
         [Description("来源过滤：guide 使用指南、packages 包文档、readme 包自述、root 全局文档、all 全部。默认 all")] string? source = null,
         [Description("返回的章节数，默认 5，最大 15")] int limit = 5)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             if (string.IsNullOrWhiteSpace(query))
             {
+                logger.LogInformation(
+                    "{Tool} 拒绝空查询，耗时 {ElapsedMs} 毫秒。",
+                    "search_docs",
+                    stopwatch.ElapsedMilliseconds);
+
                 return "查询串为空，请给出要检索的问题或关键词。";
             }
 
@@ -64,10 +86,47 @@ public sealed class DocsMcpTools(
 
             // 命中不为空不等于相关：中文 bigram 总能在高频片段上蹭到几段文字，
             // 所以还要问一句「这个查询里的词，语料到底认不认识」，不认识就走同一条显式否认分支。
-            if (hits.Count == 0 || !gate.IsAboutIndexedDocs(query, snapshot.Index, snapshot.Sections.Count))
+            //
+            // 判定无条件先算出来（而不是靠 || 短路），是为了拿到覆盖率写日志：
+            // 「零命中」与「命中了但被截断拒绝」返回给模型的是同一段文字，事后却要能分得开。
+            var relevant = gate.IsAboutIndexedDocs(query, snapshot.Index, snapshot.Sections.Count, out var coverage);
+
+            if (hits.Count == 0 || !relevant)
             {
+                if (hits.Count > 0)
+                {
+                    logger.LogInformation(
+                        "{Tool} 被相关性截断拒绝：查询「{Query}」命中 {HitCount} 段，覆盖率 {Coverage:F3} 低于阈值 {Threshold:F2}，来源 {Source}，耗时 {ElapsedMs} 毫秒。",
+                        "search_docs",
+                        query,
+                        hits.Count,
+                        coverage,
+                        options.MinKnownTermCoverage,
+                        source ?? "all",
+                        stopwatch.ElapsedMilliseconds);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "{Tool} 零命中：查询「{Query}」，来源 {Source}，语料 {SectionCount} 个章节，耗时 {ElapsedMs} 毫秒。文档确实没涵盖这个主题时，这是正确行为。",
+                        "search_docs",
+                        query,
+                        source ?? "all",
+                        snapshot.Sections.Count,
+                        stopwatch.ElapsedMilliseconds);
+                }
+
                 return BuildEmptyResult(snapshot, query, notice);
             }
+
+            logger.LogInformation(
+                "{Tool} 完成：查询「{Query}」，来源 {Source}，返回 {HitCount} 段，最高分 {TopScore:F2}，耗时 {ElapsedMs} 毫秒。",
+                "search_docs",
+                query,
+                source ?? "all",
+                hits.Count,
+                hits[0].Score,
+                stopwatch.ElapsedMilliseconds);
 
             var builder = new StringBuilder();
             if (notice.Length > 0)
@@ -92,6 +151,16 @@ public sealed class DocsMcpTools(
         }
         catch (Exception ex)
         {
+            logger.LogError(
+                ex,
+                "{Tool} 失败：{ExceptionType} — {ExceptionMessage}；查询「{Query}」，来源 {Source}，耗时 {ElapsedMs} 毫秒。",
+                "search_docs",
+                ex.GetType().FullName,
+                ex.Message,
+                query,
+                source ?? "all",
+                stopwatch.ElapsedMilliseconds);
+
             return $"检索时发生错误：{ex.Message}";
         }
     }
@@ -108,12 +177,22 @@ public sealed class DocsMcpTools(
         [Description("相对仓库根的路径，例如 docs/guide/event-bus.md")] string path,
         [Description("章节标题，只返回该节。留空返回全文；全文过长时会改为返回章节目录")] string? section = null)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var snapshot = index.EnsureFresh();
 
             if (!locator.TryResolveDocumentPath(path, out var absolutePath))
             {
+                // 单独记一条：这是唯一一条「请求被安全策略挡下」的分支，
+                // 与「路径写错了」是两件性质完全不同的事
+                logger.LogWarning(
+                    "{Tool} 拒绝越界路径：请求路径「{Path}」不在仓库根内，耗时 {ElapsedMs} 毫秒。",
+                    "read_doc",
+                    path,
+                    stopwatch.ElapsedMilliseconds);
+
                 return $"拒绝访问 `{path}`：路径必须是仓库根内的相对路径。";
             }
 
@@ -130,11 +209,19 @@ public sealed class DocsMcpTools(
 
             if (indexed is null)
             {
+                LogReadDocOutcome("未在索引内", path, section, stopwatch);
                 return BuildPathSuggestion(snapshot, path);
             }
 
             if (!File.Exists(absolutePath))
             {
+                // 在索引里却读不到文件：索引是旧的。这条与上一条的返回文本一样，日志里必须分开
+                logger.LogWarning(
+                    "{Tool} 命中索引却读不到文件：「{Path}」可能已被删除或改名，索引尚未刷新，耗时 {ElapsedMs} 毫秒。",
+                    "read_doc",
+                    indexed.RelativePath,
+                    stopwatch.ElapsedMilliseconds);
+
                 return BuildPathSuggestion(snapshot, path);
             }
 
@@ -146,9 +233,13 @@ public sealed class DocsMcpTools(
                 var matched = sections.Where(s => s.Heading.Contains(section, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (matched.Count == 0)
                 {
+                    LogReadDocOutcome("章节未找到", indexed.RelativePath, section, stopwatch);
+
                     var available = string.Join("、", sections.Select(s => s.Heading).Distinct());
                     return $"文档 `{path}` 中未找到章节「{section}」。可用章节：{available}";
                 }
+
+                LogReadDocOutcome("返回章节", indexed.RelativePath, section, stopwatch);
 
                 var builder = new StringBuilder();
                 foreach (var item in matched)
@@ -167,8 +258,18 @@ public sealed class DocsMcpTools(
             var content = File.ReadAllText(absolutePath);
             if (content.Length <= options.MaxWholeDocumentLength)
             {
+                LogReadDocOutcome("返回全文", indexed.RelativePath, section, stopwatch);
                 return $"# `{path}`\n\n{content}";
             }
+
+            // 超长改返目录，客户端拿到的不是文档内容。不记的话，「读不到正文」查不出原因
+            logger.LogInformation(
+                "{Tool} 全文超长改返目录：「{Path}」共 {ContentLength} 个字符，超过上限 {MaxLength}，耗时 {ElapsedMs} 毫秒。",
+                "read_doc",
+                indexed.RelativePath,
+                content.Length,
+                options.MaxWholeDocumentLength,
+                stopwatch.ElapsedMilliseconds);
 
             var headings = string.Join("\n", sections.Select(s => $"- {s.Heading}"));
             return $"""
@@ -180,6 +281,16 @@ public sealed class DocsMcpTools(
         }
         catch (Exception ex)
         {
+            logger.LogError(
+                ex,
+                "{Tool} 失败：{ExceptionType} — {ExceptionMessage}；请求路径「{Path}」，章节「{Section}」，耗时 {ElapsedMs} 毫秒。",
+                "read_doc",
+                ex.GetType().FullName,
+                ex.Message,
+                path,
+                section ?? string.Empty,
+                stopwatch.ElapsedMilliseconds);
+
             return $"读取文档时发生错误：{ex.Message}";
         }
     }
@@ -196,6 +307,8 @@ public sealed class DocsMcpTools(
         [Description("来源过滤：guide、packages、readme、root、all。默认 all")] string? source = null,
         [Description("是否展开每篇的章节标题，默认 false")] bool includeSections = false)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var snapshot = index.EnsureFresh();
@@ -240,12 +353,53 @@ public sealed class DocsMcpTools(
                 }
             }
 
+            logger.LogInformation(
+                "{Tool} 完成：来源 {Source}，列出 {FileCount} 篇文档（语料共 {TotalFileCount} 篇），展开章节 {IncludeSections}，耗时 {ElapsedMs} 毫秒。",
+                "list_docs",
+                source ?? "all",
+                files.Count,
+                snapshot.Files.Count,
+                includeSections,
+                stopwatch.ElapsedMilliseconds);
+
             return builder.ToString().TrimEnd();
         }
         catch (Exception ex)
         {
+            logger.LogError(
+                ex,
+                "{Tool} 失败：{ExceptionType} — {ExceptionMessage}；来源 {Source}，耗时 {ElapsedMs} 毫秒。",
+                "list_docs",
+                ex.GetType().FullName,
+                ex.Message,
+                source ?? "all",
+                stopwatch.ElapsedMilliseconds);
+
             return $"列出文档时发生错误：{ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// 记一条 read_doc 的结果日志
+    /// </summary>
+    /// <param name="outcome">结果分类，与返回给客户端的那段文字一一对应</param>
+    /// <param name="path">文档路径</param>
+    /// <param name="section">请求的章节，未指定时记空串</param>
+    /// <param name="stopwatch">本次调用的计时器</param>
+    /// <remarks>
+    /// read_doc 的多条出口返回给模型的都是普通文本，客户端看不出走的是哪一条。
+    /// 性质特殊的三条（路径越界、命中索引却读不到文件、全文超长改返目录）各记各的消息，
+    /// 其余四条共用本方法，靠 <c>Outcome</c> 这个字段区分。
+    /// </remarks>
+    private void LogReadDocOutcome(string outcome, string path, string? section, Stopwatch stopwatch)
+    {
+        logger.LogInformation(
+            "{Tool} 完成：结果 {Outcome}，文档「{Path}」，章节「{Section}」，耗时 {ElapsedMs} 毫秒。",
+            "read_doc",
+            outcome,
+            path,
+            section ?? string.Empty,
+            stopwatch.ElapsedMilliseconds);
     }
 
     /// <summary>

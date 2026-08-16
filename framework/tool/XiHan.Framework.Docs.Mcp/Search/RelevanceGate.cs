@@ -27,12 +27,35 @@ public sealed class RelevanceGate(DocsMcpOptions options)
     /// <returns>落在范围内时为 true；为 false 时调用方应走显式否认分支</returns>
     public bool IsAboutIndexedDocs(string query, BigramIndex index, int totalSections)
     {
+        return IsAboutIndexedDocs(query, index, totalSections, out _);
+    }
+
+    /// <summary>
+    /// 判断查询是否落在已索引文档的范围内，并带出本次判定用的覆盖率
+    /// </summary>
+    /// <param name="query">用户查询串</param>
+    /// <param name="index">倒排索引</param>
+    /// <param name="totalSections">章节总数</param>
+    /// <param name="coverage">本次判定用的覆盖率，供调用方记日志——只在返回 false 时才有诊断意义</param>
+    /// <returns>落在范围内时为 true；为 false 时调用方应走显式否认分支</returns>
+    /// <remarks>
+    /// 有这个重载是为了让调用方能把覆盖率写进日志：0.90 这个阈值是在离线的黄金查询集上标定的，
+    /// 要拿真实流量复核它，就得知道被拒绝的查询实际落在多少。
+    /// <para>
+    /// 语料太小以致判据不生效时，<paramref name="coverage"/> 取 1.0——那条路径必然返回 true，
+    /// 而调用方只在拒绝时才会去看这个值。
+    /// </para>
+    /// </remarks>
+    public bool IsAboutIndexedDocs(string query, BigramIndex index, int totalSections, out double coverage)
+    {
         if (totalSections < options.MinSectionsForRelevanceCutoff)
         {
+            coverage = 1.0;
             return true;
         }
 
-        return MeasureKnownTermCoverage(query, index, totalSections) >= options.MinKnownTermCoverage;
+        coverage = MeasureKnownTermCoverage(query, index, totalSections);
+        return coverage >= options.MinKnownTermCoverage;
     }
 
     /// <summary>

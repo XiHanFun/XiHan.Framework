@@ -21,7 +21,7 @@
 | --- | --- |
 | `XIHAN_DOCS_ROOT` | 环境变量，显式指定仓库根。不设置时从程序集所在目录逐层向上查找同时含 `docs/` 与 `framework/` 的目录；找不到则退出码 1 并在 stderr 给出已尝试路径 |
 | `Resources/synonyms.json` | 术语同义词表，缺失或格式损坏时降级为不扩展，服务照常 |
-| 日志 | 全部写入 stderr。stdout 是 MCP 的 JSON-RPC 协议通道，禁止写入 |
+| 日志 | 全部写入 stderr，且一律为结构化日志（字段名即占位符名）。stdout 是 MCP 的 JSON-RPC 协议通道，禁止写入——代码里不出现任何 `Console.WriteLine`。每次工具调用记一条，字段见下文「日志里能看到什么」 |
 
 排序与截断的可调参数都在 `Options/DocsMcpOptions.cs`：
 
@@ -86,12 +86,32 @@ dotnet framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framewo
 
 ```text
 info: XiHan.Framework.Docs.Mcp.Indexing.DocIndex[0]
-      文档索引已重建：163 个文件，1720 个章节。
+      文档索引已重建：163 个文件，1720 个章节，耗时 412 毫秒。
 ```
 
-随后再打几行宿主启动日志（`transport reading messages`、`Application started`、`Content root path` 等），然后就静静等待 stdin 上的 JSON-RPC 请求——不再有新输出正是正常状态，按 Ctrl+C 结束即可。启动失败则**不会有索引日志**，进程立刻退出并在 stderr 打印原因（最常见的是找不到仓库根，按上文 `XIHAN_DOCS_ROOT` 那一行处理）。
+随后再打几行宿主启动日志（`transport reading messages`、`Application started`、`Content root path` 等），然后就静静等待 stdin 上的 JSON-RPC 请求——除了每次工具调用各记一条（见下节）之外不再有新输出，这正是正常状态，按 Ctrl+C 结束即可。启动失败则**不会有索引日志**，进程立刻退出并在 stderr 打印原因（最常见的是找不到仓库根，按上文 `XIHAN_DOCS_ROOT` 那一行处理）。
 
 两处容易误判：Git Bash 下那行中文可能显示成乱码，认 `163` 与 `1720` 两个数字即可；另外别用 `echo '...' | dotnet ...` 手工试握手——`echo` 立刻关闭管道，stdin 的 EOF 会让传输层在响应写出前就拆掉连接，真实客户端则会一直握着 stdin。
+
+### 日志里能看到什么
+
+三个工具**从不把异常抛给客户端**——失败会被包成一段说明文字返回。这对模型友好，但也意味着「它什么都没找到」这句反馈，背后可能是真的零命中、相关性截断拒绝、工具内部异常、索引正在重建，或者索引是旧的。日志是唯一把这些分开的地方，全部为结构化日志（字段名即占位符名），全部写 stderr：
+
+| 场景 | 级别 | 关键字段 |
+| --- | --- | --- |
+| 检索命中 | Information | `Tool`、`Query`、`Source`、`HitCount`、`TopScore`、`ElapsedMs` |
+| 检索零命中 | Information | `Tool`、`Query`、`Source`、`SectionCount`、`ElapsedMs`（**没有** `HitCount`） |
+| 被相关性截断拒绝 | Information | `Tool`、`Query`、`HitCount`、`Coverage`、`Threshold`、`ElapsedMs` |
+| `read_doc` 各条出口 | Information | `Tool`、`Outcome`（`返回全文` / `返回章节` / `章节未找到` / `未在索引内`）、`Path`、`Section` |
+| `read_doc` 路径越界 | Warning | `Tool`、`Path` |
+| `read_doc` 命中索引却读不到文件（索引已旧） | Warning | `Tool`、`Path` |
+| `list_docs` | Information | `Tool`、`Source`、`FileCount`、`TotalFileCount`、`ElapsedMs` |
+| 工具抛异常 | Error | `Tool`、`ExceptionType`、`ExceptionMessage`，并附异常对象 |
+| 索引重建 | Information | `FileCount`、`SectionCount`、`ElapsedMs` |
+
+`Coverage` 是把 `MinKnownTermCoverage`（默认 0.90）拿真实流量复核的依据：那个阈值是在离线黄金查询集上标定的，只有把被拒绝查询的实际覆盖率记下来，才判断得了它在真实提问上偏紧还是偏松。
+
+查询串是文档问题不是凭据，记录它是有意的；**密钥与任何请求头一律不记**。
 
 ### 两份配置，别拿错
 
