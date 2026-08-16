@@ -91,6 +91,7 @@
     <Project Path="test/XiHan.Framework.Caching.Tests/XiHan.Framework.Caching.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Docs.Mcp.Tests/XiHan.Framework.Docs.Mcp.Tests.csproj" />
     <Project Path="test/XiHan.Framework.EventBus.Tests/XiHan.Framework.EventBus.Tests.csproj" />
     <Project Path="test/XiHan.Framework.EventBus.Redis.Tests/XiHan.Framework.EventBus.Redis.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
@@ -114,6 +115,9 @@
   <Folder Name="/3.tool/" />
   <Folder Name="/3.tool/1.ProjectStandardization/">
     <Project Path="tool/Region/Region.csproj" Id="41b103a1-9eaf-4915-968e-0416ca8773dd" />
+  </Folder>
+  <Folder Name="/3.tool/2.DocsMcp/">
+    <Project Path="tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.csproj" />
   </Folder>
   <Folder Name="/4.others/" />
   <Folder Name="/4.others/1.Props/">

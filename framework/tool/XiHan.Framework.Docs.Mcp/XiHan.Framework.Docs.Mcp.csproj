@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Docs.Mcp</Title>
+        <AssemblyName>XiHan.Framework.Docs.Mcp</AssemblyName>
+        <PackageId>XiHan.Framework.Docs.Mcp</PackageId>
+        <Description>曦寒框架文档 MCP 服务端</Description>
+        <OutputType>Exe</OutputType>
+        <!-- 仓库内部的文档检索工具，不对外发布 -->
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="Resources\synonyms.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>
