@@ -18,6 +18,7 @@ namespace XiHan.Framework.Docs.Mcp.Tools;
 /// <param name="locator">文档来源定位器</param>
 /// <param name="expander">同义词扩展器</param>
 /// <param name="scorer">排序器</param>
+/// <param name="gate">相关性截断</param>
 /// <param name="options">可调参数</param>
 /// <remarks>
 /// 工具数量刻意压到三个：工具越多，模型越容易选错或漏用。
@@ -30,6 +31,7 @@ public sealed class DocsMcpTools(
     DocSourceLocator locator,
     SynonymExpander expander,
     SectionScorer scorer,
+    RelevanceGate gate,
     DocsMcpOptions options)
 {
     /// <summary>
@@ -60,7 +62,9 @@ public sealed class DocsMcpTools(
             var terms = expander.Expand(query);
             var hits = scorer.Rank(terms, index.Sections, index.Index, filter, effectiveLimit);
 
-            if (hits.Count == 0)
+            // 命中不为空不等于相关：中文 bigram 总能在高频片段上蹭到几段文字，
+            // 所以还要问一句「这个查询里的词，语料到底认不认识」，不认识就走同一条显式否认分支。
+            if (hits.Count == 0 || !gate.IsAboutIndexedDocs(query, index.Index, index.Sections.Count))
             {
                 return BuildEmptyResult(query, notice);
             }

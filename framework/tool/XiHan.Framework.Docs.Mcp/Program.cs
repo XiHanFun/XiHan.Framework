@@ -35,6 +35,7 @@ builder.Services.AddSingleton(new DocSourceLocator(repositoryRoot));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<DocIndex>();
 builder.Services.AddSingleton<SectionScorer>();
+builder.Services.AddSingleton<RelevanceGate>();
 builder.Services.AddSingleton(provider => SynonymExpander.Load(
     Path.Combine(AppContext.BaseDirectory, "Resources", "synonyms.json"),
     provider.GetRequiredService<ILoggerFactory>().CreateLogger<SynonymExpander>()));

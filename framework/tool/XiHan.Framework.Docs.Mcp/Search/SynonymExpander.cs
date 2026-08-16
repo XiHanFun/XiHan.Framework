@@ -69,15 +69,17 @@ public sealed class SynonymExpander
     public IReadOnlyList<WeightedTerm> Expand(string query)
     {
         var weights = new Dictionary<string, double>(StringComparer.Ordinal);
+        var queryTerms = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var term in Tokenizer.Tokenize(query))
         {
             weights[term] = 1.0;
+            queryTerms.Add(term);
         }
 
         foreach (var group in _groups)
         {
-            var matched = group.Any(member => query.Contains(member, StringComparison.OrdinalIgnoreCase));
+            var matched = group.Any(member => Mentions(query, queryTerms, member));
             if (!matched)
             {
                 continue;
@@ -85,7 +87,7 @@ public sealed class SynonymExpander
 
             foreach (var member in group)
             {
-                if (query.Contains(member, StringComparison.OrdinalIgnoreCase))
+                if (Mentions(query, queryTerms, member))
                 {
                     continue;
                 }
@@ -101,5 +103,28 @@ public sealed class SynonymExpander
         }
 
         return [.. weights.Select(pair => new WeightedTerm(pair.Key, pair.Value))];
+    }
+
+    /// <summary>
+    /// 判断查询里是否提到了某个术语
+    /// </summary>
+    /// <param name="query">原始查询串</param>
+    /// <param name="queryTerms">查询串切出的词条集合</param>
+    /// <param name="member">术语</param>
+    /// <returns>提到时为 true</returns>
+    /// <remarks>
+    /// 中文没有词边界，只能按子串判断；纯拉丁术语则必须按词条匹配。
+    /// 否则「Redis」会因为内含子串「di」而触发依赖注入术语组，
+    /// 把「Redis 事件总线怎么配」的结果推向依赖注入文档——黄金查询集正是这样发现这条缺陷的。
+    /// </remarks>
+    private static bool Mentions(string query, HashSet<string> queryTerms, string member)
+    {
+        if (member.Any(ch => ch is >= '一' and <= '鿿'))
+        {
+            return query.Contains(member, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var memberTerms = Tokenizer.Tokenize(member);
+        return memberTerms.Count > 0 && memberTerms.All(queryTerms.Contains);
     }
 }
