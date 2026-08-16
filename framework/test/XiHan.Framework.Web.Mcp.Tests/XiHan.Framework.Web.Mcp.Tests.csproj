@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+      <!-- 测试要在进程内把 Kestrel 拉起来跑真实 HTTP，非 Web SDK 项目须显式引用 ASP.NET Core 共享框架 -->
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\XiHan.Framework.Web.Mcp\XiHan.Framework.Web.Mcp.csproj" />
+      <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖测试项目 -->
+      <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+                        OutputItemType="Analyzer"
+                        ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="coverlet.collector" Version="10.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+      <PackageReference Update="xunit.runner.visualstudio" Version="4.0.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Update="xunit.v3" Version="4.0.0" />
+    </ItemGroup>
+
+</Project>
