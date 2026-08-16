@@ -1,8 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using XiHan.Framework.Docs.Mcp.Web.Filters;
 using XiHan.Framework.Docs.Mcp.Web.Options;
+// 过滤器的源文件由 csproj 从 XiHan.Framework.Web.Mcp 链接进来，命名空间跟着源文件走；
+// 命名空间是编译期构造，这里不存在对那个程序集的引用
+using XiHan.Framework.Web.Mcp.Filters;
 
 namespace XiHan.Framework.Docs.Mcp.Web.Extensions;
 

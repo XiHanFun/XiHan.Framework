@@ -9,7 +9,7 @@
 | 与谁 | 关系 |
 | --- | --- |
 | `framework/tool/XiHan.Framework.Docs.Mcp`（stdio 服务端） | **同一套工具、同一套索引，只换传输。**`search_docs` / `read_doc` / `list_docs` 三个工具、bigram 倒排索引、同义词扩展、相关性截断全部来自那个项目，本项目一行检索逻辑都没有。改检索行为要去那边改，改完两个宿主一起生效 |
-| `framework/src/XiHan.Framework.Web.Mcp` | **不相干。**那个包把**宿主应用**的 `IAiSkill` 投影成 MCP 工具，服务的是业务应用；本项目服务的是仓库文档。两者的 fail-closed 与 key 鉴权写法一致（是刻意照搬的范式），但没有任何代码依赖——本项目**不引用**它 |
+| `framework/src/XiHan.Framework.Web.Mcp` | **不相干。**那个包把**宿主应用**的 `IAiSkill` 投影成 MCP 工具，服务的是业务应用；本项目服务的是仓库文档。两者的 fail-closed 写法一致（刻意照搬的范式），鉴权过滤器更是**同一份源文件**（由 csproj 链接进来，不是程序集引用）；除此之外没有任何依赖——本项目**不引用**那个包 |
 | MCP 客户端（Claude Code、Cursor、VS Code…） | 客户端连 `POST /mcp`，带 key。stdio 那套 `.mcp.json` 配置在这里不适用 |
 
 什么时候用哪个：客户端与仓库在同一台机器上，用 stdio 那个，省一次网络往返也不用管密钥；客户端在别处（团队共用一台文档服务器、云端 Agent、CI），才用本项目。
@@ -26,7 +26,7 @@
 
 - `ModelContextProtocol.AspNetCore` 2.2.0：HTTP 传输与 `MapMcp`（`WithHttpTransport` / `MapMcp` 仅此包提供）
 - `XiHan.Framework.Docs.Mcp`（项目引用）：索引、检索与三个工具的全部实现
-- 不引用 `XiHan.Framework.Web.Mcp`，因而也不引入 `XiHan.Framework.AI` 与 `XiHan.Framework.Web.Core`——一个独立的文档服务端不该把整套模块系统拖进来。代价是 `Filters/McpApiKeyEndpointFilter.cs` 是那边同名文件的一份**刻意复制**，两边改动须同步；按住这份复制不漂移的是 `framework/test/XiHan.Framework.Docs.Mcp.Web.Tests/ApiKeyAuthTests.cs`
+- 不引用 `XiHan.Framework.Web.Mcp`，因而也不引入 `XiHan.Framework.AI` 与 `XiHan.Framework.Web.Core`——一个独立的文档服务端不该把整套模块系统拖进来。鉴权过滤器则**链接**自 `framework/src/XiHan.Framework.Web.Mcp/Filters/McpApiKeyEndpointFilter.cs`（csproj 里的 `<Compile Include=... Link=... />`）：同一份源文件编进两个程序集，没有程序集引用，也没有多出来的 NuGet 包，两边不可能漂移。副作用是那份文件一旦用上 `XiHan.Framework.Web.Core` 的类型，本项目立刻编不过——这是刻意留的硬约束
 - 仅把 `XiHan.Framework.Analyzers` 作为分析器引用（`XHFH001` 文件头检查），不进运行期
 
 ## 配置与约定
@@ -196,7 +196,7 @@ XiHan.Framework.Docs.Mcp.Web/
   Options/
     XiHanDocsMcpWebOptions.cs
   Filters/
-    McpApiKeyEndpointFilter.cs
+    McpApiKeyEndpointFilter.cs   ← 链接自 framework/src/XiHan.Framework.Web.Mcp/Filters/，本目录下没有实体文件
   Extensions/
     ApplicationBuilderExtensions.cs
     DependencyInjection/

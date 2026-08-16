@@ -9,9 +9,10 @@ namespace XiHan.Framework.Docs.Mcp.Web.Tests;
 /// 端点鉴权：两种放行写法与四种拒绝情形
 /// </summary>
 /// <remarks>
-/// 本项目的 <c>McpApiKeyEndpointFilter</c> 是
-/// <c>framework/src/XiHan.Framework.Web.Mcp/Filters/McpApiKeyEndpointFilter.cs</c> 的刻意复制，
-/// 按住这份复制不漂移的就是下面这几条：请求头写法、Bearer 回退、多值请求头。
+/// 被测的 <c>McpApiKeyEndpointFilter</c> 不是本项目的文件，而是
+/// <c>framework/src/XiHan.Framework.Web.Mcp/Filters/McpApiKeyEndpointFilter.cs</c> 经 csproj 的
+/// <c>&lt;Compile Link&gt;</c> 编进来的同一份源码。所以下面这几条——请求头写法、Bearer 回退、多值请求头——
+/// 按住的是两个程序集共用的那一份实现，而不是一份副本。
 /// </remarks>
 public class ApiKeyAuthTests : IAsyncLifetime
 {

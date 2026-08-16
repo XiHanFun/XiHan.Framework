@@ -26,6 +26,19 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!--
+            链接源文件而不是复制或抽包：两份手抄的安全代码必然漂移，而这段代码有定长比较与 Bearer 回退，
+            漂移一次就是一个鉴权洞。抽成共享程序集也不行——XiHan.Framework.Web.Mcp 是要发布的包，
+            引不了不可打包的项目，等于为三十行代码多发第 67 个 NuGet 包，还得跟着仓库唯一的版本号走。
+            链接只把源文件编进本程序集，不产生程序集引用，本项目的零框架依赖保持不变；
+            代价是那份文件一旦用上 XiHan.Framework.Web.Core 的类型，这里就编不过——这正是要的效果，
+            逼出一次显式决策，而不是两边默默各改各的。
+        -->
+        <Compile Include="..\..\src\XiHan.Framework.Web.Mcp\Filters\McpApiKeyEndpointFilter.cs"
+                 Link="Filters\McpApiKeyEndpointFilter.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖本项目；不进运行期 -->
         <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
                           OutputItemType="Analyzer"
