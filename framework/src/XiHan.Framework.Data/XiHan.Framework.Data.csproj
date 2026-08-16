@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<Import Project="..\..\props\netcore.props" />
 	<Import Project="..\..\props\common.props" />
@@ -15,6 +15,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.217" />
+		<!-- 传递依赖钉住：SqlSugarCore → Microsoft.Data.Sqlite 10.0.9 → SQLitePCLRaw 2.1.11 存在
+		     高危漏洞 CVE-2025-6965（GHSA-2m69-gcr7-jv3q，2.1.12 起修复）。
+		     最近获胜原则把整条链抬到 2.1.13，上游升级后可移除本行。 -->
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
 	</ItemGroup>
 
 	<ItemGroup>
