@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Data`
 - **模块类**：`XiHanDataModule`
 - **所在层**：基础设施层
-- **关键依赖**：**SqlSugarCore**（`5.1.4.216`，ORM，直接对接数据库）
+- **关键依赖**：**SqlSugarCore**（`5.1.4.217`，ORM，直接对接数据库）
 
 ## 概述
 
@@ -472,7 +472,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - [XiHan.Framework.DistributedIds](./distributed-ids)（雪花 ID 生成器）
 - [XiHan.Framework.Auditing](./auditing)（`IEntityAuditContextProvider`/`IEntityDiffLogWriter` 默认实现来源）
 - [XiHan.Framework.Core](./core)（模块化基础设施，含链路追踪 `XiHanActivitySources`）
-- 第三方核心：**SqlSugarCore** `5.1.4.216`
+- 第三方核心：**SqlSugarCore** `5.1.4.217`
 
 ## 相关模块
 
