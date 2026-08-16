@@ -37,15 +37,72 @@
 **改动上表任何一项后必须重跑黄金查询集**：`framework/test/XiHan.Framework.Docs.Mcp.Tests/GoldenQueryTests.cs` 是唯一能发现「调好了一条、弄坏了四条」的机制。
 
 ## 使用方式
-先构建：
+
+### 首次接入检查
+
+新克隆的仓库里 `bin/` 是空的，而 `.mcp.json` 直接指向构建产物——**没构建过就一定连不上**，客户端通常只回一句语焉不详的错误。第一次接入按下面五步从上往下走一遍，命令都在仓库根执行。
+
+**1. 确认 SDK 版本对得上**
+
+```bash
+dotnet --version
+```
+
+仓库根的 `global.json` 钉的是 `10.0.302` + `rollForward: latestFeature`，因此这里应打印 `10.0.302`，或同属 10.0 而特性带更高的版本（本机实测 `10.0.400`，属正常上滚）。若报错说找不到与 `global.json` 兼容的 SDK，装上 .NET SDK 10.0.302 或更高再继续——SDK 对不上是最常见的失败原因。
+
+**2. 构建服务端**
 
 ```bash
 dotnet build framework/tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.csproj -c Release
 ```
 
-产物在 `framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll`。
+**3. 确认 dll 真的落在预期路径**
 
-**仓库根已内建 `.mcp.json`**，构建完就能用，不需要写任何配置：
+PowerShell：
+
+```powershell
+Test-Path framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll
+```
+
+bash：
+
+```bash
+ls -l framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll
+```
+
+PowerShell 打印 `True`、bash 列出文件即算通过；否则回第 2 步看构建输出。
+
+**4. 确认客户端看得见这个服务端**
+
+重启或重连 MCP 客户端。Claude Code 里执行 `/mcp`，`xihan-docs` 应处于 connected，工具列表里应有 `search_docs`、`read_doc`、`list_docs` 三项，缺一不可。
+
+**5. 连不上就直接在终端跑一次 dll**
+
+```bash
+dotnet framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll
+```
+
+健康的服务端会先把索引日志打到 **stderr**：
+
+```text
+info: XiHan.Framework.Docs.Mcp.Indexing.DocIndex[0]
+      文档索引已重建：163 个文件，1720 个章节。
+```
+
+随后再打几行宿主启动日志（`transport reading messages`、`Application started`、`Content root path` 等），然后就静静等待 stdin 上的 JSON-RPC 请求——不再有新输出正是正常状态，按 Ctrl+C 结束即可。启动失败则**不会有索引日志**，进程立刻退出并在 stderr 打印原因（最常见的是找不到仓库根，按上文 `XIHAN_DOCS_ROOT` 那一行处理）。
+
+两处容易误判：Git Bash 下那行中文可能显示成乱码，认 `163` 与 `1720` 两个数字即可；另外别用 `echo '...' | dotnet ...` 手工试握手——`echo` 立刻关闭管道，stdin 的 EOF 会让传输层在响应写出前就拆掉连接，真实客户端则会一直握着 stdin。
+
+### 两份配置，别拿错
+
+仓库里有两份形态不同的配置，差别在 dll 路径是相对还是绝对：
+
+| 文件 | 路径形态 | 适用场景 | 怎么用 |
+| --- | --- | --- | --- |
+| `.mcp.json` | 相对路径，无 `env` | 客户端以**仓库根**为工作目录（Claude Code 打开本仓库时即是如此） | 已随仓库提供，构建完直接生效，不用改 |
+| `.mcp.json.example` | 绝对路径 + 显式 `XIHAN_DOCS_ROOT` | 客户端工作目录**不在仓库内**：Cursor、VS Code、Windsurf，或全局注册的服务端 | **模板**：复制进客户端自己的配置再把路径改成你机器上的实际路径，不要原样使用 |
+
+`.mcp.json` 走相对路径，客户端工作目录一旦不是仓库根，`dotnet` 就找不到这个 dll：
 
 ```json
 {
@@ -58,9 +115,9 @@ dotnet build framework/tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.cs
 }
 ```
 
-这份配置走相对路径，前提是客户端以仓库根为工作目录（Claude Code 打开本仓库时即是如此）。服务端启动后会从程序集所在目录逐层向上找到仓库根，因此不需要额外指定路径。
+服务端启动后会从程序集所在目录逐层向上找到仓库根，因此这份配置不需要额外指定路径。
 
-**客户端工作目录不在仓库内时**，改用绝对路径并显式指定仓库根——`.mcp.json.example` 就是这个形态，照抄并把路径换成你机器上的实际路径即可：
+`.mcp.json.example` 是给其他客户端抄的模板，文件名带 `.example` 就意味着没有任何客户端会去读它；里面的绝对路径是作者机器上的，必须换成你自己的：
 
 ```json
 {
@@ -74,13 +131,11 @@ dotnet build framework/tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.cs
 }
 ```
 
-也可以用 CLI 一行注册：
+也可以用 CLI 一行注册，同样走绝对路径，仓库根仍由程序集目录向上推断：
 
 ```bash
 claude mcp add xihan-docs -- dotnet <仓库绝对路径>/framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll
 ```
-
-注册后用 `/mcp` 确认 `xihan-docs` 处于 connected，工具列表里应有 `search_docs`、`read_doc`、`list_docs` 三项。
 
 其他 MCP 客户端（Cursor、VS Code、Windsurf 等）配置形式相同：`command` 为 `dotnet`，`args` 指向构建产物的 dll。
 
@@ -89,8 +144,6 @@ claude mcp add xihan-docs -- dotnet <仓库绝对路径>/framework/tool/XiHan.Fr
 本服务端**不需要也不提供**访问令牌，这不是遗漏。stdio 传输下客户端自己拉起这个进程、进程只服务这一个客户端、环境变量也由同一方设置——没有第二方需要被认证，令牌认证不了任何东西，加上去只是装饰。
 
 令牌真正有意义的地方是「扩展点」里提到的网络传输：一旦 `Tools` 层被搬到 HTTP 后面，端点就对整个网络可达，此时必须做鉴权。届时应照搬 `XiHan.Framework.Web.Mcp` 已有的 fail-closed 范式（配置节 `XiHan:AI:Mcp`，`Enabled` + `ApiKey`，未开启或未配密钥时既不注册服务也不映射端点），而不是在 stdio 形态下先放一个不起作用的字段。
-
-排查连接问题时直接在终端跑一次 dll：正常情况下它会静静等待 stdin 上的 JSON-RPC 请求；启动失败则立刻退出并在 stderr 打印原因。注意用 `echo '...' | dotnet ...` 手工试握手会看不到输出——`echo` 立刻关闭管道，stdin 的 EOF 会让传输层在响应写出前就拆掉连接。真实客户端会一直握着 stdin。
 
 ## 扩展点
 - 往 `Resources/synonyms.json` 增补术语组即可改善「换句话说」类提问的召回。纯拉丁术语按词条匹配，中文术语按子串匹配
