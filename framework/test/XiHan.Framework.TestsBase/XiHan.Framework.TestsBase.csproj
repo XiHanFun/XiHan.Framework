@@ -5,6 +5,9 @@
 	<Import Project="..\..\props\test.props" />
 
 	<PropertyGroup>
+		<!-- 共享测试基础库：本身不含测试，不作为测试应用运行，避免 MTP 零测试判失败 -->
+		<IsTestProject>false</IsTestProject>
+		<IsTestingPlatformApplication>false</IsTestingPlatformApplication>
 		<Title>XiHan.Framework.TestsBase</Title>
 		<AssemblyName>XiHan.Framework.TestsBase</AssemblyName>
 		<PackageId>XiHan.Framework.TestsBase</PackageId>
@@ -12,17 +15,5 @@
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
-	<ItemGroup>
-	  <PackageReference Update="coverlet.collector" Version="10.0.1">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-	  <PackageReference Update="xunit.runner.visualstudio" Version="4.0.0">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Update="xunit.v3" Version="4.0.0" />
-	</ItemGroup>
 
 </Project>
