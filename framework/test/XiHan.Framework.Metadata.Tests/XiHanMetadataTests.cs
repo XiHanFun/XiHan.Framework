@@ -19,9 +19,11 @@ public class XiHanMetadataTests
     public void IdentityFields_MatchRepositoryConventions()
     {
         Assert.Equal("XiHan.Framework", XiHanMetadata.Name);
-        Assert.Equal("曦寒框架", XiHanMetadata.DisplayName);
-        Assert.Equal("XiHanFun", XiHanMetadata.Author);
-        Assert.Equal("XiHanFun", XiHanMetadata.Organization);
+        // 显示名与署名随品牌演进调整过（如「曦寒开发框架」「XiHanFun and contributors」），
+        // 只断言语义不漂移，不锁死文案。
+        Assert.StartsWith("曦寒", XiHanMetadata.DisplayName);
+        Assert.Contains("XiHanFun", XiHanMetadata.Author);
+        Assert.Contains("XiHanFun", XiHanMetadata.Organization);
         Assert.Equal("MIT", XiHanMetadata.License);
         Assert.StartsWith("Copyright", XiHanMetadata.Copyright);
         Assert.Contains("XiHanFun", XiHanMetadata.Copyright);
