@@ -49,7 +49,7 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架文档地址
     /// </summary>
-    public const string DocumentationUrl = "https://docs.xihanfun.com";
+    public const string DocumentationUrl = "https://framework.docs.xihanfun.com";
 
     /// <summary>
     /// 框架许可证
