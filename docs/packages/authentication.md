@@ -240,7 +240,7 @@ public class MfaService(IOtpService otp)
 
 - [XiHan.Framework.Core](./core)
 - [XiHan.Framework.Security](./security)（密码哈希、当前用户、`XiHanClaimTypes`）
-- 第三方核心：**Microsoft.AspNetCore.Authentication.JwtBearer** / **.Google** `10.0.9`、**AspNet.Security.OAuth.GitHub** / **.Gitee** / **.QQ** `10.0.0`、**Microsoft.Extensions.Caching.Abstractions** `10.0.9`
+- 第三方核心：**Microsoft.AspNetCore.Authentication.JwtBearer** / **.Google** `10.0.11`、**AspNet.Security.OAuth.GitHub** / **.Gitee** / **.QQ** `10.0.0`、**Microsoft.Extensions.Caching.Abstractions** `10.0.11`
 
 ## 相关模块
 
