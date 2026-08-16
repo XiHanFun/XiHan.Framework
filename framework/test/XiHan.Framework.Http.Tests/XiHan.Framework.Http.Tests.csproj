@@ -4,22 +4,15 @@
 	<Import Project="..\..\props\common.props" />
 	<Import Project="..\..\props\test.props" />
 
+	<PropertyGroup>
+		<!-- 占位工程：暂无 [Fact] 测试（仅有示例代码/空壳），不作为测试应用运行，避免 MTP 零测试判失败 -->
+		<IsTestProject>false</IsTestProject>
+		<IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\XiHan.Framework.Http\XiHan.Framework.Http.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <PackageReference Update="coverlet.collector" Version="10.0.1">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-	  <PackageReference Update="xunit.runner.visualstudio" Version="4.0.0">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Update="xunit.v3" Version="4.0.0" />
-	</ItemGroup>
 
 </Project>
-
