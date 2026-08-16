@@ -4,11 +4,6 @@
 	<Import Project="..\..\props\common.props" />
 	<Import Project="..\..\props\test.props" />
 
-	<PropertyGroup>
-		<!-- 占位工程：暂无 [Fact] 测试（仅有示例代码/空壳），不作为测试应用运行，避免 MTP 零测试判失败 -->
-		<IsTestProject>false</IsTestProject>
-		<IsTestingPlatformApplication>false</IsTestingPlatformApplication>
-	</PropertyGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\XiHan.Framework.DevTools\XiHan.Framework.DevTools.csproj" />
