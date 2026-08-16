@@ -45,14 +45,30 @@ dotnet build framework/tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.cs
 
 产物在 `framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll`。
 
-在 Claude Code 中注册：把下面这段写进仓库根的 `.mcp.json`（项目级，会随仓库共享），或用户级的 `~/.claude.json`。把 `<仓库绝对路径>` 换成实际路径：
+**仓库根已内建 `.mcp.json`**，构建完就能用，不需要写任何配置：
 
 ```json
 {
   "mcpServers": {
     "xihan-docs": {
       "command": "dotnet",
-      "args": ["<仓库绝对路径>/framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll"]
+      "args": ["framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll"]
+    }
+  }
+}
+```
+
+这份配置走相对路径，前提是客户端以仓库根为工作目录（Claude Code 打开本仓库时即是如此）。服务端启动后会从程序集所在目录逐层向上找到仓库根，因此不需要额外指定路径。
+
+**客户端工作目录不在仓库内时**，改用绝对路径并显式指定仓库根——`.mcp.json.example` 就是这个形态，照抄并把路径换成你机器上的实际路径即可：
+
+```json
+{
+  "mcpServers": {
+    "xihan-docs": {
+      "command": "dotnet",
+      "args": ["<仓库绝对路径>/framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll"],
+      "env": { "XIHAN_DOCS_ROOT": "<仓库绝对路径>" }
     }
   }
 }
@@ -66,19 +82,13 @@ claude mcp add xihan-docs -- dotnet <仓库绝对路径>/framework/tool/XiHan.Fr
 
 注册后用 `/mcp` 确认 `xihan-docs` 处于 connected，工具列表里应有 `search_docs`、`read_doc`、`list_docs` 三项。
 
-其他 MCP 客户端（Cursor、VS Code、Windsurf 等）配置形式相同：`command` 为 `dotnet`，`args` 指向构建产物的 dll。若客户端的工作目录不在仓库内，加一条环境变量指向仓库根：
+其他 MCP 客户端（Cursor、VS Code、Windsurf 等）配置形式相同：`command` 为 `dotnet`，`args` 指向构建产物的 dll。
 
-```json
-{
-  "mcpServers": {
-    "xihan-docs": {
-      "command": "dotnet",
-      "args": ["<仓库绝对路径>/framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll"],
-      "env": { "XIHAN_DOCS_ROOT": "<仓库绝对路径>" }
-    }
-  }
-}
-```
+### 关于访问令牌
+
+本服务端**不需要也不提供**访问令牌，这不是遗漏。stdio 传输下客户端自己拉起这个进程、进程只服务这一个客户端、环境变量也由同一方设置——没有第二方需要被认证，令牌认证不了任何东西，加上去只是装饰。
+
+令牌真正有意义的地方是「扩展点」里提到的网络传输：一旦 `Tools` 层被搬到 HTTP 后面，端点就对整个网络可达，此时必须做鉴权。届时应照搬 `XiHan.Framework.Web.Mcp` 已有的 fail-closed 范式（配置节 `XiHan:AI:Mcp`，`Enabled` + `ApiKey`，未开启或未配密钥时既不注册服务也不映射端点），而不是在 stdio 形态下先放一个不起作用的字段。
 
 排查连接问题时直接在终端跑一次 dll：正常情况下它会静静等待 stdin 上的 JSON-RPC 请求；启动失败则立刻退出并在 stderr 打印原因。注意用 `echo '...' | dotnet ...` 手工试握手会看不到输出——`echo` 立刻关闭管道，stdin 的 EOF 会让传输层在响应写出前就拆掉连接。真实客户端会一直握着 stdin。
 

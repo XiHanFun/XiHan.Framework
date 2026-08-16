@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "xihan-docs": {
+      "command": "dotnet",
+      "args": [
+        "E:/source/XiHan/XiHan.Framework/framework/tool/XiHan.Framework.Docs.Mcp/bin/Release/net10.0/XiHan.Framework.Docs.Mcp.dll"
+      ],
+      "env": {
+        "XIHAN_DOCS_ROOT": "E:/source/XiHan/XiHan.Framework"
+      }
+    }
+  }
+}
