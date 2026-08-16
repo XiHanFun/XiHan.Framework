@@ -53,6 +53,7 @@ public class MarkdownSectionSplitterTests
 
             ```bash
             # 安装这个包
+            ## 假章节
             dotnet add package XiHan.Framework.EventBus
             ```
 
@@ -69,8 +70,47 @@ public class MarkdownSectionSplitterTests
 
         Assert.Single(sections);
         Assert.Equal("安装与启用", sections[0].Heading);
+        // 围栏内的一级井号一旦被当成标题，文档标题会被污染成「安装这个包」
+        Assert.Equal("安装", sections[0].DocumentTitle);
+        // 围栏内容必须原样保留，不能被当成标题行吞掉
+        Assert.Contains("# 安装这个包", sections[0].Content);
         Assert.Contains("dotnet add package", sections[0].Content);
         Assert.Contains("#region", sections[0].Content);
+    }
+
+    /// <summary>
+    /// 波浪线围栏同样生效，且两种围栏标记互不闭合
+    /// </summary>
+    [Fact]
+    public void 波浪线围栏与反引号围栏互不闭合()
+    {
+        const string Markdown = """
+            # 围栏
+
+            ## 围栏用法
+
+            ~~~bash
+            # 波浪围栏内的井号
+            ```
+            ## 波浪围栏内的假章节
+            ~~~
+
+            ```text
+            ~~~
+            ## 反引号围栏内的假章节
+            ```
+
+            正文结束。
+            """;
+
+        var sections = MarkdownSectionSplitter.Split("docs/packages/x.md", DocSourceKind.Package, Markdown);
+
+        Assert.Single(sections);
+        Assert.Equal("围栏用法", sections[0].Heading);
+        Assert.Equal("围栏", sections[0].DocumentTitle);
+        Assert.Contains("# 波浪围栏内的井号", sections[0].Content);
+        Assert.Contains("## 波浪围栏内的假章节", sections[0].Content);
+        Assert.Contains("## 反引号围栏内的假章节", sections[0].Content);
     }
 
     /// <summary>

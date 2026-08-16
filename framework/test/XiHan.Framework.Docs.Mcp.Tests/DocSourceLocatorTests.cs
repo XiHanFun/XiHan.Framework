@@ -159,4 +159,55 @@ public class DocSourceLocatorTests : IDisposable
         Assert.True(locator.TryResolveDocumentPath("docs/guide/event-bus.md", out var absolute));
         Assert.True(File.Exists(absolute));
     }
+
+    /// <summary>
+    /// 名称以仓库根名为前缀的兄弟目录必须被拒绝
+    /// </summary>
+    /// <remarks>
+    /// 这是前缀末尾补目录分隔符的意义所在：少了那个分隔符，
+    /// 「xihan-abc-evil」会被当成落在「xihan-abc」之内。
+    /// </remarks>
+    [Fact]
+    public void 拒绝同名前缀的兄弟目录()
+    {
+        var locator = new DocSourceLocator(_root);
+        var sibling = Path.GetFileName(_root) + "-evil";
+
+        Assert.False(locator.TryResolveDocumentPath($"../{sibling}/secret.txt", out _));
+    }
+
+    /// <summary>
+    /// 仅大小写不同的兄弟目录：Windows 上指向同一目录，类 Unix 上是两个目录必须拒绝
+    /// </summary>
+    [Fact]
+    public void 大小写不同的兄弟目录按平台判定()
+    {
+        var locator = new DocSourceLocator(_root);
+        var uppercased = Path.GetFileName(_root).ToUpperInvariant();
+
+        var accepted = locator.TryResolveDocumentPath($"../{uppercased}/secret.txt", out _);
+
+        Assert.Equal(OperatingSystem.IsWindows(), accepted);
+    }
+
+    /// <summary>
+    /// 环境变量指向的目录不是仓库根时直接抛出，不静默回退到逐层向上查找
+    /// </summary>
+    [Fact]
+    public void 环境变量无效时抛出而不回退()
+    {
+        var invalid = Path.Combine(Path.GetTempPath(), "xihan-invalid-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(invalid);
+
+        try
+        {
+            // 起点目录本身就是合法仓库根：一旦实现悄悄回退到向上查找，这里会正常返回而不是抛出
+            Assert.Throws<DocsRootNotFoundException>(
+                () => DocSourceLocator.ResolveRepositoryRoot(_root, invalid));
+        }
+        finally
+        {
+            Directory.Delete(invalid, recursive: true);
+        }
+    }
 }

@@ -108,7 +108,12 @@ public sealed class DocSourceLocator(string repositoryRoot)
         var combined = Path.GetFullPath(Path.Combine(RepositoryRoot, relativePath));
         var prefix = RepositoryRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
-        if (!combined.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        // 比较方式必须随平台而定：Windows 路径大小写不敏感，类 Unix 文件系统区分大小写。
+        // 在后者上若忽略大小写，/tmp/repo 会被误判为落在 /tmp/Repo 之内——那是两个不同目录，
+        // 等于把仓库根外的文件放行了出去。CI 跑在 ubuntu 上，这条判定是唯一的越界拦截点。
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        if (!combined.StartsWith(prefix, comparison))
         {
             return false;
         }
