@@ -23,4 +23,11 @@
         <None Update="Resources\synonyms.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖本项目；不进运行期，保持零框架依赖 -->
+        <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
 </Project>

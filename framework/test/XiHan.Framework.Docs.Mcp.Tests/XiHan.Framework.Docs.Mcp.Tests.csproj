@@ -6,6 +6,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\tool\XiHan.Framework.Docs.Mcp\XiHan.Framework.Docs.Mcp.csproj" />
+      <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖测试项目 -->
+      <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+                        OutputItemType="Analyzer"
+                        ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
