@@ -28,6 +28,10 @@ public class DocSourceLocatorTests : IDisposable
         File.WriteAllText(Path.Combine(_root, "docs", "guide", "event-bus.md"), "# 事件总线");
         File.WriteAllText(Path.Combine(_root, "docs", "packages", "eventbus.md"), "# EventBus");
         File.WriteAllText(Path.Combine(_root, "docs", "quickstart.md"), "# 快速开始");
+
+        // 排序名次（第 1）与收集名次（第 3，顶层 docs 排在 guide、packages 之后）刻意不一致，
+        // 否则收集顺序恰好等于排序结果，排序被删掉也没有任何断言会红
+        File.WriteAllText(Path.Combine(_root, "docs", "changelog.md"), "# 更新日志");
         File.WriteAllText(Path.Combine(_root, "docs", ".vitepress", "config.md"), "# 不该被索引");
         File.WriteAllText(Path.Combine(_root, "framework", "src", "XiHan.Framework.Utils", "README.md"), "# Utils");
         File.WriteAllText(Path.Combine(_root, "framework", "src", "XiHan.Framework.Core", "obj", "README.md"), "# 不该被索引");
@@ -129,12 +133,56 @@ public class DocSourceLocatorTests : IDisposable
     /// <summary>
     /// 相对路径统一使用正斜杠，保证跨平台输出一致
     /// </summary>
+    /// <remarks>
+    /// 断言的是嵌套路径的**完整期望字符串**，而不只是「不含反斜杠」：后者在 Windows 上
+    /// 也能报出问题，但报的是一句「不该有 '\\'」，看不出是哪一段路径拼错；
+    /// 前者直接给出「期望 a，实际 b」。
+    /// <para>
+    /// 这条断言只在 Windows 上真正生效，且只能如此：类 Unix 上
+    /// <c>Path.GetRelativePath</c> 本就返回正斜杠，规范化是一次恒等替换——
+    /// 把它删掉之后，Linux 上没有任何可观测差异，也就不存在能在 Linux 上变红的写法。
+    /// 需要这条断言的平台恰好就是它能生效的平台：CI 跑在 ubuntu 上不会拦住这个退化，
+    /// 本机开发者跑一次就会。
+    /// </para>
+    /// </remarks>
     [Fact]
     public void 相对路径统一正斜杠()
     {
         var files = new DocSourceLocator(_root).Enumerate();
 
+        var readme = Assert.Single(files, f => f.Source == DocSourceKind.PackageReadme);
+        Assert.Equal("framework/src/XiHan.Framework.Utils/README.md", readme.RelativePath);
+
         Assert.All(files, f => Assert.DoesNotContain('\\', f.RelativePath));
+    }
+
+    /// <summary>
+    /// 枚举结果按相对路径的序数序排序
+    /// </summary>
+    /// <remarks>
+    /// 排序不是锦上添花：<c>Directory.EnumerateFiles</c> 的返回顺序由文件系统决定，
+    /// NTFS 上按名字、ext4 上按哈希，不排序的话 <c>list_docs</c> 的输出会随平台甚至
+    /// 随文件创建顺序漂移，两次调用的差异无从解释。
+    /// <para>
+    /// 断言整条序列而不是逐项存在：只用 <c>Assert.Contains</c> 的话，
+    /// 把 <c>OrderBy</c> 整个删掉，一条断言都不会红。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void 枚举结果按相对路径排序()
+    {
+        var files = new DocSourceLocator(_root).Enumerate();
+
+        string[] expected =
+        [
+            "docs/changelog.md",
+            "docs/guide/event-bus.md",
+            "docs/packages/eventbus.md",
+            "docs/quickstart.md",
+            "framework/src/XiHan.Framework.Utils/README.md"
+        ];
+
+        Assert.Equal(expected, files.Select(f => f.RelativePath));
     }
 
     /// <summary>
