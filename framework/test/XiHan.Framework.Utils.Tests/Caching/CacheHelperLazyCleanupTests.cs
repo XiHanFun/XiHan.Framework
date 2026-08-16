@@ -1,4 +1,4 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
+﻿// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Utils.Caching;
@@ -116,6 +116,13 @@ public class CacheHelperLazyCleanupTests
     /// <summary>
     /// 测试滑动过期和惰性清理
     /// </summary>
+    /// <remarks>
+    /// 滑动过期基于真实时钟。dotnet test 会并行运行各测试工程，CPU 争抢下
+    /// Task.Delay 实际返回时间可能数倍于请求值，导致「保持存活」阶段误判过期——
+    /// 因此滑动窗口（10 秒）必须远大于访问间隔（1 秒）。
+    /// 「停止访问后过期」方向是安全的：Task.Delay 保证至少等待指定时长，
+    /// 等到超过窗口再检查，无论被拉伸多久都只会更彻底地过期。
+    /// </remarks>
     [Fact]
     public async Task TestSlidingExpirationWithLazyCleanup()
     {
@@ -123,11 +130,11 @@ public class CacheHelperLazyCleanupTests
         const string Key = "sliding_test";
         const string Value = "sliding_value";
 
-        // 设置滑动过期时间为2秒
-        CacheHelper.SetSliding(Key, Value, TimeSpan.FromSeconds(2));
+        // 设置滑动过期时间为10秒
+        CacheHelper.SetSliding(Key, Value, TimeSpan.FromSeconds(10));
         _output.WriteLine($"✓ 设置滑动过期缓存项: {Key}");
 
-        // Act - 每隔1秒访问一次，保持缓存活跃
+        // Act - 每隔1秒访问一次，保持缓存活跃（重负载下访问间隙也很难突破10秒窗口）
         for (var i = 0; i < 3; i++)
         {
             await Task.Delay(1000, TestContext.Current.CancellationToken);
@@ -136,8 +143,8 @@ public class CacheHelperLazyCleanupTests
             _output.WriteLine($"✓ 第 {i + 1} 次访问成功，缓存仍然有效");
         }
 
-        // 停止访问3秒，让滑动过期生效
-        await Task.Delay(3000, TestContext.Current.CancellationToken);
+        // 停止访问11秒（保证长于10秒窗口），让滑动过期生效
+        await Task.Delay(11000, TestContext.Current.CancellationToken);
 
         // 获取应该返回 null
         var expiredResult = CacheHelper.Get<string>(Key);
