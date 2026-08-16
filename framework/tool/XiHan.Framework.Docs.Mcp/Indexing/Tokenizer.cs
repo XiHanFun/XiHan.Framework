@@ -14,10 +14,23 @@ namespace XiHan.Framework.Docs.Mcp.Indexing;
 public static class Tokenizer
 {
     /// <summary>
-    /// 把文本切分为词条，可能包含重复项（重复本身携带词频信息）
+    /// 把文本切分为词条，结果不保证去重
     /// </summary>
     /// <param name="text">待切分的文本</param>
     /// <returns>词条列表，输入为空时返回空集合</returns>
+    /// <remarks>
+    /// 本方法只保证集合语义：一个词条出现在结果里，当且仅当它能按上述规则从文本中切出来。
+    /// 出现次数不承载任何信息，不要拿来当词频用——重复项的有无是实现细节而非契约：
+    /// 帕斯卡拆词的结果会用 <c>terms.Contains</c> 对已累积的列表去重，
+    /// 而整词与中文 bigram 的追加不去重，两条路径的语义本就不一致。
+    /// <para>
+    /// 现存的消费方也都在自己那一侧去重，没有一处读词频：
+    /// <c>BigramIndex.Add</c> 走 <c>ToHashSet</c>、<c>RelevanceGate</c> 走 <c>Distinct</c>、
+    /// <c>SynonymExpander.Expand</c> 用字典累权重。当前语料下这层不一致无害
+    /// （章节短、词表小，线性 <c>Contains</c> 也谈不上开销），因此保持现状；
+    /// 真要统一，去重该由调用方决定，而不是在这里替所有人做主。
+    /// </para>
+    /// </remarks>
     public static IReadOnlyList<string> Tokenize(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))

@@ -74,12 +74,20 @@ public class GoldenQueryTests
     /// <summary>
     /// 每条查询的期望命中文件必须出现在前三名
     /// </summary>
+    /// <remarks>
+    /// <c>模块的生命周期钩子有哪些</c> 在 <see cref="相关查询不被截断误杀"/> 里期望的是
+    /// <c>docs/guide/lifecycle.md</c>，与这里的 <c>docs/guide/modularity.md</c> 不同——
+    /// 这不是复制粘贴错误，请不要「修正」其中一条。这条查询横跨两篇真实存在的文档，
+    /// 两个 Theory 钉的也是两件事：这里钉 <c>SectionScorer.Rank</c> 的前三名（排序），
+    /// 那里钉 <c>SearchDocs</c> 过了相关性截断之后的前五条（截断）。
+    /// </remarks>
     /// <param name="query">查询串</param>
     /// <param name="expectedPathFragment">期望命中的路径片段</param>
     [Theory]
     [InlineData("分布式事件什么时候发出去", "docs/guide/event-bus.md")]
     [InlineData("动态 API 路由为什么没有动词", "docs/guide/dynamic-api.md")]
     [InlineData("ILocalEventBus", "eventbus")]
+    // 与「相关查询不被截断误杀」里同一条查询期望 lifecycle.md 并不矛盾，见本方法的 remarks
     [InlineData("模块的生命周期钩子有哪些", "docs/guide/modularity.md")]
     [InlineData("多租户怎么隔离数据", "docs/guide/multi-tenancy.md")]
     [InlineData("怎么配置缓存过期时间", "docs/guide/caching.md")]
@@ -113,12 +121,20 @@ public class GoldenQueryTests
     /// <summary>
     /// 相关查询不能被相关性截断误杀，必须拿到带出处的正文
     /// </summary>
+    /// <remarks>
+    /// <c>模块的生命周期钩子有哪些</c> 在 <see cref="期望文件出现在前三名"/> 里期望的是
+    /// <c>docs/guide/modularity.md</c>，与这里的 <c>docs/guide/lifecycle.md</c> 不同——
+    /// 这不是复制粘贴错误，请不要「修正」其中一条。这条查询横跨两篇真实存在的文档，
+    /// 两个 Theory 钉的也是两件事：那里钉 <c>SectionScorer.Rank</c> 的前三名（排序），
+    /// 这里钉 <c>SearchDocs</c> 过了相关性截断之后的前五条（截断）。
+    /// </remarks>
     /// <param name="query">查询串</param>
     /// <param name="expectedPathFragment">期望命中的路径片段</param>
     [Theory]
     [InlineData("分布式事件什么时候发出去", "docs/guide/event-bus.md")]
     [InlineData("动态 API 路由为什么没有动词", "docs/guide/dynamic-api.md")]
     [InlineData("ILocalEventBus", "eventbus")]
+    // 与「期望文件出现在前三名」里同一条查询期望 modularity.md 并不矛盾，见本方法的 remarks
     [InlineData("模块的生命周期钩子有哪些", "docs/guide/lifecycle.md")]
     [InlineData("多租户怎么隔离数据", "docs/guide/multi-tenancy.md")]
     [InlineData("怎么配置缓存过期时间", "docs/guide/caching.md")]

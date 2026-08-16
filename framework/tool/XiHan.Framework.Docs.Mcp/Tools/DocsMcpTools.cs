@@ -203,6 +203,11 @@ public sealed class DocsMcpTools(
             var (filter, notice) = ParseSource(source);
             var files = filter is null ? snapshot.Files : snapshot.Files.Where(f => f.Source == filter).ToList();
 
+            // 按路径建一次索引再进循环：逐篇过滤全表是 O(文件数 × 章节数)，
+            // 当前语料 163 篇 × 1720 个章节 ≈ 28 万次字符串比较，白付一次。
+            // ToLookup 保序，缺键返回空集合，输出与逐篇 Where 完全一致。
+            var sectionsByPath = snapshot.Sections.ToLookup(s => s.RelativePath, StringComparer.Ordinal);
+
             var builder = new StringBuilder();
             if (notice.Length > 0)
             {
@@ -213,7 +218,7 @@ public sealed class DocsMcpTools(
 
             foreach (var file in files)
             {
-                var sections = snapshot.Sections.Where(s => s.RelativePath == file.RelativePath).ToList();
+                var sections = sectionsByPath[file.RelativePath];
                 var title = sections.FirstOrDefault()?.DocumentTitle ?? file.RelativePath;
 
                 builder.AppendLine($"- `{file.RelativePath}` — {title}");
@@ -281,7 +286,7 @@ public sealed class DocsMcpTools(
     /// <summary>
     /// 从概述章节取一句话摘要
     /// </summary>
-    private static string BuildSummary(IReadOnlyList<DocSection> sections)
+    private static string BuildSummary(IEnumerable<DocSection> sections)
     {
         var preamble = sections.FirstOrDefault(s => s.Heading == "概述");
         if (preamble is null)
