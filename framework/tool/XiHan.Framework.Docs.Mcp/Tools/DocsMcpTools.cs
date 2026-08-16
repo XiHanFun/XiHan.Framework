@@ -55,18 +55,18 @@ public sealed class DocsMcpTools(
                 return "查询串为空，请给出要检索的问题或关键词。";
             }
 
-            index.EnsureFresh();
+            var snapshot = index.EnsureFresh();
 
             var (filter, notice) = ParseSource(source);
             var effectiveLimit = Math.Clamp(limit <= 0 ? options.DefaultLimit : limit, 1, options.MaxLimit);
             var terms = expander.Expand(query);
-            var hits = scorer.Rank(terms, index.Sections, index.Index, filter, effectiveLimit);
+            var hits = scorer.Rank(terms, snapshot.Sections, snapshot.Index, filter, effectiveLimit);
 
             // 命中不为空不等于相关：中文 bigram 总能在高频片段上蹭到几段文字，
             // 所以还要问一句「这个查询里的词，语料到底认不认识」，不认识就走同一条显式否认分支。
-            if (hits.Count == 0 || !gate.IsAboutIndexedDocs(query, index.Index, index.Sections.Count))
+            if (hits.Count == 0 || !gate.IsAboutIndexedDocs(query, snapshot.Index, snapshot.Sections.Count))
             {
-                return BuildEmptyResult(query, notice);
+                return BuildEmptyResult(snapshot, query, notice);
             }
 
             var builder = new StringBuilder();
@@ -110,19 +110,29 @@ public sealed class DocsMcpTools(
     {
         try
         {
-            index.EnsureFresh();
+            var snapshot = index.EnsureFresh();
 
             if (!locator.TryResolveDocumentPath(path, out var absolutePath))
             {
                 return $"拒绝访问 `{path}`：路径必须是仓库根内的相对路径。";
             }
 
-            if (!File.Exists(absolutePath))
+            var normalized = path.Replace('\\', '/');
+
+            // 仅包含性校验是不够的：通过之后 `.git/config`、任意源码、任意 appsettings 都会被原样读出，
+            // 而本工具的契约是「读一篇曦寒框架的文档」。所以再加一道白名单，只放行枚举出来的文档。
+            // 白名单里的条目都是真实枚举出来的文件，符号链接是否解析也就不再有意义。
+            if (!snapshot.Files.Any(f => f.RelativePath == normalized))
             {
-                return BuildPathSuggestion(path);
+                return BuildPathSuggestion(snapshot, path);
             }
 
-            var sections = index.Sections.Where(s => s.RelativePath == path.Replace('\\', '/')).ToList();
+            if (!File.Exists(absolutePath))
+            {
+                return BuildPathSuggestion(snapshot, path);
+            }
+
+            var sections = snapshot.Sections.Where(s => s.RelativePath == normalized).ToList();
 
             if (!string.IsNullOrWhiteSpace(section))
             {
@@ -181,10 +191,10 @@ public sealed class DocsMcpTools(
     {
         try
         {
-            index.EnsureFresh();
+            var snapshot = index.EnsureFresh();
 
             var (filter, notice) = ParseSource(source);
-            var files = filter is null ? index.Files : index.Files.Where(f => f.Source == filter).ToList();
+            var files = filter is null ? snapshot.Files : snapshot.Files.Where(f => f.Source == filter).ToList();
 
             var builder = new StringBuilder();
             if (notice.Length > 0)
@@ -196,7 +206,7 @@ public sealed class DocsMcpTools(
 
             foreach (var file in files)
             {
-                var sections = index.Sections.Where(s => s.RelativePath == file.RelativePath).ToList();
+                var sections = snapshot.Sections.Where(s => s.RelativePath == file.RelativePath).ToList();
                 var title = sections.FirstOrDefault()?.DocumentTitle ?? file.RelativePath;
 
                 builder.AppendLine($"- `{file.RelativePath}` — {title}");
@@ -290,9 +300,9 @@ public sealed class DocsMcpTools(
     /// <summary>
     /// 构造零命中时的回复，明确告知文档中没有，避免模型自行编造
     /// </summary>
-    private string BuildEmptyResult(string query, string notice)
+    private static string BuildEmptyResult(IndexSnapshot snapshot, string query, string notice)
     {
-        var candidates = string.Join("\n", index.Files.Take(10).Select(f => $"- `{f.RelativePath}`"));
+        var candidates = string.Join("\n", snapshot.Files.Take(10).Select(f => $"- `{f.RelativePath}`"));
 
         return $"""
             {notice}
@@ -304,12 +314,12 @@ public sealed class DocsMcpTools(
     }
 
     /// <summary>
-    /// 构造路径不存在时的候选建议
+    /// 构造路径不在索引内时的候选建议
     /// </summary>
-    private string BuildPathSuggestion(string path)
+    private static string BuildPathSuggestion(IndexSnapshot snapshot, string path)
     {
         var target = Path.GetFileNameWithoutExtension(path);
-        var suggestions = index.Files
+        var suggestions = snapshot.Files
             .OrderByDescending(f => CountCommonCharacters(Path.GetFileNameWithoutExtension(f.RelativePath), target))
             .Take(3)
             .Select(f => $"- `{f.RelativePath}`");

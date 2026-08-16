@@ -33,31 +33,26 @@ public sealed class DocIndex(
     private string _signature = string.Empty;
 
     /// <summary>
-    /// 当前全部章节，下标与倒排索引中的 SectionId 对应
+    /// 当前索引快照
     /// </summary>
-    public IReadOnlyList<DocSection> Sections { get; private set; } = [];
-
-    /// <summary>
-    /// 当前倒排索引
-    /// </summary>
-    public BigramIndex Index { get; private set; } = new();
-
-    /// <summary>
-    /// 当前被索引的文件列表
-    /// </summary>
-    public IReadOnlyList<DocFile> Files { get; private set; } = [];
+    public IndexSnapshot Current { get; private set; } = new([], new BigramIndex(), []);
 
     /// <summary>
     /// 确保索引是最新的，必要时重建
     /// </summary>
-    public void EnsureFresh()
+    /// <returns>本次调用看到的索引快照</returns>
+    /// <remarks>
+    /// 调用方必须只用这个返回值，不要再去读 <see cref="Current"/>：
+    /// 重建可以插在任意两次读取之间，理由见 <see cref="IndexSnapshot"/> 的说明。
+    /// </remarks>
+    public IndexSnapshot EnsureFresh()
     {
         lock (_gate)
         {
             var now = timeProvider.GetUtcNow();
-            if (Sections.Count > 0 && now - _lastCheck < options.RefreshThrottle)
+            if (Current.Sections.Count > 0 && now - _lastCheck < options.RefreshThrottle)
             {
-                return;
+                return Current;
             }
 
             _lastCheck = now;
@@ -66,11 +61,13 @@ public sealed class DocIndex(
             var signature = ComputeSignature(files);
             if (signature == _signature)
             {
-                return;
+                return Current;
             }
 
             _signature = signature;
             Rebuild(files);
+
+            return Current;
         }
     }
 
@@ -112,9 +109,8 @@ public sealed class DocIndex(
             index.Add(i, sections[i].TitlePath, sections[i].Content);
         }
 
-        Sections = sections;
-        Index = index;
-        Files = files;
+        // 三者一次性整体换掉：中途被读到的只会是上一份完全自洽的快照，不会是半新半旧的组合
+        Current = new IndexSnapshot(sections, index, files);
 
         logger.LogInformation("文档索引已重建：{FileCount} 个文件，{SectionCount} 个章节。", files.Count, sections.Count);
     }

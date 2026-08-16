@@ -7,8 +7,6 @@
     <PropertyGroup>
         <Title>XiHan.Framework.Docs.Mcp</Title>
         <AssemblyName>XiHan.Framework.Docs.Mcp</AssemblyName>
-        <PackageId>XiHan.Framework.Docs.Mcp</PackageId>
-        <Description>曦寒框架文档 MCP 服务端</Description>
         <OutputType>Exe</OutputType>
         <!-- 仓库内部的文档检索工具，不对外发布 -->
         <IsPackable>false</IsPackable>

@@ -33,6 +33,11 @@ public class DocsMcpToolsTests : IDisposable
         File.WriteAllText(
             Path.Combine(_root, "docs", "packages", "caching.md"),
             "# 缓存包\n\n## 配置项\n\n缓存过期时间的配置说明。\n");
+
+        // 仓库根内、但不属于任何一类文档来源的文件，用来验证 read_doc 的白名单
+        File.WriteAllText(
+            Path.Combine(_root, "framework", "src", "appsettings.Production.json"),
+            "{ \"ConnectionString\": \"绝密连接串\" }");
     }
 
     /// <summary>
@@ -136,6 +141,24 @@ public class DocsMcpToolsTests : IDisposable
         var result = CreateTools().ReadDoc("../../secrets.txt", section: null);
 
         Assert.Contains("拒绝", result);
+    }
+
+    /// <summary>
+    /// 仓库根内但未被索引的文件不返回内容
+    /// </summary>
+    /// <remarks>
+    /// 包含性校验只挡得住逃逸仓库根的路径，挡不住仓库内的源码与配置。
+    /// 工具的描述写的是「读取曦寒框架的一篇文档」，能力边界必须与描述一致，
+    /// 否则一旦按 README 的扩展点把 Tools 层搬到网络传输后面，这就是一个仓库外泄端点。
+    /// 断言正文没被带出来，而不只是断言有「未找到」字样——后者一个照读不误但顺手加句提示的实现也能过。
+    /// </remarks>
+    [Fact]
+    public void 拒绝读取未被索引的仓库内文件()
+    {
+        var result = CreateTools().ReadDoc("framework/src/appsettings.Production.json", section: null);
+
+        Assert.DoesNotContain("绝密连接串", result);
+        Assert.Contains("未找到", result);
     }
 
     /// <summary>

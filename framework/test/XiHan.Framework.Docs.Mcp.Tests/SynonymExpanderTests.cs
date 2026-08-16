@@ -52,6 +52,25 @@ public class SynonymExpanderTests
     }
 
     /// <summary>
+    /// 纯拉丁术语按词条匹配而非子串
+    /// </summary>
+    /// <remarks>
+    /// 这条钉的是 <c>SynonymExpander.Mentions</c> 里那个「含中文走子串、纯拉丁走词条」的分支。
+    /// 「Redis」内含子串「di」，退回子串匹配的话整组依赖注入术语都会被扩展进来，
+    /// 把依赖注入文档推向一个问 Redis 的查询的首屏。其余几条测试用的都是中文术语，
+    /// 删掉那个分支照样全绿，所以必须单独有这一条。
+    /// </remarks>
+    [Fact]
+    public void 拉丁术语按词条匹配而非子串()
+    {
+        var expander = CreateExpander("""[["依赖注入", "DI", "容器"]]""");
+
+        var terms = expander.Expand("Redis 事件总线怎么配");
+
+        Assert.DoesNotContain(terms, t => t.Term == "依赖" || t.Term == "容器");
+    }
+
+    /// <summary>
     /// 术语表文件缺失时降级为不扩展，服务照常
     /// </summary>
     [Fact]

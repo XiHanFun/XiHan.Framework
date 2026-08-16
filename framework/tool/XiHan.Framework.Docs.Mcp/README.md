@@ -9,7 +9,7 @@
 - 框架术语同义词扩展，补足纯字面匹配处理不了的「换句话说」提问
 - 相关性截断：问的不是框架文档时，返回明确的「文档中没有，请不要基于猜测作答」，而不是几段蹭词的正文
 - 文档保存后自动热更新（mtime 轮询），无需重启客户端
-- 三个 MCP 工具：`search_docs` / `read_doc` / `list_docs`
+- 三个 MCP 工具：`search_docs` / `read_doc` / `list_docs`。`read_doc` 只放行被索引的那些文档，仓库内的源码与配置文件一律按「未找到」处理，工具的能力边界与它自己的描述一致
 
 ## 依赖关系
 - `ModelContextProtocol` 2.2.0：MCP 协议与 stdio 传输
@@ -89,6 +89,17 @@ claude mcp add xihan-docs -- dotnet <仓库绝对路径>/framework/tool/XiHan.Fr
 - 新增文档来源：扩展 `Sources/DocSourceKind.cs` 与 `DocSourceLocator.Enumerate()`
 - 新增传输方式（如 HTTP）：新建项目复用 `Indexing` / `Search` / `Tools` 三层，不要改检索逻辑
 
+**动排序之前必须先知道这件事：排序层不区分查询词的信息量。** `SectionScorer` 给每个查询词条同样的权重，于是中文 bigram 切出来的 `怎么`、`什么`、`时候` 这类疑问碎片，以及 `线怎`、`么配` 这类跨词边界伪影，和 `Redis`、`收件箱` 一样重；命中标题时还会被 `TitleBoost` 一起放大三倍。截断层用 IDF 解决过同一个问题（`Search/RelevanceGate.cs` 的类注释讲了另一面：排序不需要 IDF、截断才需要），排序层没有跟进是刻意的取舍而不是遗漏——所以上面「调 `TitleBoost` 与 `SourceWeights` 改变排序倾向」这条，能调的只是来源与标题的倾斜，调不动词与词之间的轻重。
+
+代价有据可查：标定时有两条查询因此被放弃，没能写进黄金查询集。
+
+| 被放弃的查询 | 期望文件 | 实测情况 |
+| --- | --- | --- |
+| `Redis 事件总线怎么配` | `docs/packages/eventbus-redis.md` | 只到第 5 名。挡在前面的是标题含 `事件`、`线怎`、`怎么` 的噪声章节——低信息量词条拿满权重再被标题加权放大 |
+| `怎么避免重复消费` | `docs/packages/eventbus.md` | 内容确实在那儿，同义词扩展也生效了，但扩展词只有 0.5 权重，分散在多个章节里，敌不过第一名靠标题里一个 `怎么` 拿到的 1.0 × 3.0 |
+
+最小的改法是把 `SectionScorer` 的词权重乘上 IDF，并复用 `RelevanceGate` 已有的跨词边界伪影剔除逻辑。**动手之前先把这两条查询加回 `GoldenQueryTests` 当验收标准**，否则改完没有任何东西能证明是变好了而不是变坏了。
+
 ## 目录结构
 ```text
 XiHan.Framework.Docs.Mcp/
@@ -105,6 +116,7 @@ XiHan.Framework.Docs.Mcp/
     Tokenizer.cs
     MarkdownSectionSplitter.cs
     BigramIndex.cs
+    IndexSnapshot.cs
     DocIndex.cs
   Search/
     WeightedTerm.cs

@@ -51,10 +51,10 @@ public class DocIndexTests : IDisposable
     {
         var (index, _) = CreateIndex();
 
-        index.EnsureFresh();
+        var snapshot = index.EnsureFresh();
 
-        Assert.NotEmpty(index.Sections);
-        Assert.Contains(index.Sections, s => s.Heading == "本地事件");
+        Assert.NotEmpty(snapshot.Sections);
+        Assert.Contains(snapshot.Sections, s => s.Heading == "本地事件");
     }
 
     /// <summary>
@@ -67,9 +67,9 @@ public class DocIndexTests : IDisposable
         index.EnsureFresh();
 
         File.WriteAllText(_guidePath, "# 事件总线\n\n## 全新章节\n\n改过的内容。\n");
-        index.EnsureFresh();
+        var snapshot = index.EnsureFresh();
 
-        Assert.DoesNotContain(index.Sections, s => s.Heading == "全新章节");
+        Assert.DoesNotContain(snapshot.Sections, s => s.Heading == "全新章节");
     }
 
     /// <summary>
@@ -84,9 +84,9 @@ public class DocIndexTests : IDisposable
         File.WriteAllText(_guidePath, "# 事件总线\n\n## 全新章节\n\n改过的内容。\n");
         File.SetLastWriteTimeUtc(_guidePath, DateTime.UtcNow.AddMinutes(1));
         time.Advance(TimeSpan.FromSeconds(5));
-        index.EnsureFresh();
+        var snapshot = index.EnsureFresh();
 
-        Assert.Contains(index.Sections, s => s.Heading == "全新章节");
+        Assert.Contains(snapshot.Sections, s => s.Heading == "全新章节");
     }
 
     /// <summary>
@@ -102,9 +102,9 @@ public class DocIndexTests : IDisposable
             Path.Combine(_root, "docs", "guide", "caching.md"),
             "# 缓存\n\n## 分布式缓存\n\n缓存正文。\n");
         time.Advance(TimeSpan.FromSeconds(5));
-        index.EnsureFresh();
+        var snapshot = index.EnsureFresh();
 
-        Assert.Contains(index.Sections, s => s.RelativePath == "docs/guide/caching.md");
+        Assert.Contains(snapshot.Sections, s => s.RelativePath == "docs/guide/caching.md");
     }
 
     /// <summary>

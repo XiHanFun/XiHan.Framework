@@ -115,7 +115,9 @@ public sealed class SynonymExpander
     /// <remarks>
     /// 中文没有词边界，只能按子串判断；纯拉丁术语则必须按词条匹配。
     /// 否则「Redis」会因为内含子串「di」而触发依赖注入术语组，
-    /// 把「Redis 事件总线怎么配」的结果推向依赖注入文档——黄金查询集正是这样发现这条缺陷的。
+    /// 把「Redis 事件总线怎么配」的结果推向依赖注入文档——实测时依赖注入文档确实被顶到了第三名。
+    /// 这条分支由 <c>SynonymExpanderTests.拉丁术语按词条匹配而非子串</c> 钉住：
+    /// 把下面的中文判断去掉、全部退回子串匹配，那条测试会红。
     /// </remarks>
     private static bool Mentions(string query, HashSet<string> queryTerms, string member)
     {

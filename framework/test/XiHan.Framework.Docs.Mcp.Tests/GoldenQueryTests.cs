@@ -32,6 +32,16 @@ public class GoldenQueryTests
     /// 断言的是否认文案本身而不是「结果为空」：中文 bigram 在「怎么」「配置」这类
     /// 高频片段上必然与文档有交集，`hits.Count == 0` 在真实语料上几乎不会发生，
     /// 断言空集合等于什么都没测。
+    /// <para>
+    /// 标定时实测的是 18 条不相关查询，这里列出的 12 条全部通过——但不要把这读成
+    /// 「截断判据完美」。已知会漏过的那条以 Skip 的形式留在列表里，不是被悄悄剔除的。
+    /// 另有两点局限同样属于判据本身而非实现缺陷：
+    /// <c>Nginx 的反向代理怎么写</c>（覆盖率 0.760，实际被挡住）的分类有争议——
+    /// 框架确实有网关模块，返回 `docs/guide/gateway.md` 不算离谱，所以不写成断言；
+    /// 以及判据对查询长度敏感，一个未知专有名词大致只扣 0.15–0.25 的覆盖率，
+    /// 查询写得够长时，同一个未知词就压不到阈值以下了。
+    /// 这两点都是词法判据的固有天花板，只能靠语义模型解决，而那是设计明确排除的非目标。
+    /// </para>
     /// </remarks>
     /// <param name="query">查询串</param>
     [Theory]
@@ -47,6 +57,12 @@ public class GoldenQueryTests
     [InlineData("Spring Boot 的自动配置怎么关掉")]
     [InlineData("React 的 useEffect 什么时候执行")]
     [InlineData("曦寒框架支持 GraphQL 吗")]
+    [InlineData(
+        "Vue 的响应式原理是什么",
+        Skip = "已知漏过（覆盖率 1.000）：查询里每个词条在语料中都出现过——文档站基于 VitePress，"
+            + "「响应式」「响应」这类 bigram 在满是「统一响应」的语料里都是常见词。"
+            + "判据的前提是「查询里有语料不认识的词」，这条一个都没有，属词法判据的天花板，"
+            + "只能靠语义模型解决。留在这里是为了让局限和代码放在一起，而不是只写在报告里。")]
     public void 无关查询得到显式否认(string query)
     {
         var result = Shared.Value.Tools.SearchDocs(query, source: null, limit: 5);
@@ -81,12 +97,12 @@ public class GoldenQueryTests
     public void 期望文件出现在前三名(string query, string expectedPathFragment)
     {
         var fixture = Shared.Value;
-        fixture.Index.EnsureFresh();
+        var snapshot = fixture.Index.EnsureFresh();
 
         var hits = fixture.Scorer.Rank(
             fixture.Expander.Expand(query),
-            fixture.Index.Sections,
-            fixture.Index.Index,
+            snapshot.Sections,
+            snapshot.Index,
             sourceFilter: null,
             limit: 3);
 
@@ -130,11 +146,11 @@ public class GoldenQueryTests
     public void 截断判据在正负例之间留有余量()
     {
         var fixture = Shared.Value;
-        fixture.Index.EnsureFresh();
+        var snapshot = fixture.Index.EnsureFresh();
 
         double Coverage(string query)
         {
-            return fixture.Gate.MeasureKnownTermCoverage(query, fixture.Index.Index, fixture.Index.Sections.Count);
+            return fixture.Gate.MeasureKnownTermCoverage(query, snapshot.Index, snapshot.Sections.Count);
         }
 
         string[] relevant =
@@ -173,15 +189,15 @@ public class GoldenQueryTests
     public void 索引覆盖四类来源()
     {
         var fixture = Shared.Value;
-        fixture.Index.EnsureFresh();
+        var snapshot = fixture.Index.EnsureFresh();
 
-        Assert.Contains(fixture.Index.Files, f => f.Source == DocSourceKind.Guide);
-        Assert.Contains(fixture.Index.Files, f => f.Source == DocSourceKind.Package);
-        Assert.Contains(fixture.Index.Files, f => f.Source == DocSourceKind.Root);
-        Assert.Contains(fixture.Index.Files, f => f.Source == DocSourceKind.PackageReadme);
+        Assert.Contains(snapshot.Files, f => f.Source == DocSourceKind.Guide);
+        Assert.Contains(snapshot.Files, f => f.Source == DocSourceKind.Package);
+        Assert.Contains(snapshot.Files, f => f.Source == DocSourceKind.Root);
+        Assert.Contains(snapshot.Files, f => f.Source == DocSourceKind.PackageReadme);
         Assert.True(
-            fixture.Index.Sections.Count > 500,
-            $"章节数只有 {fixture.Index.Sections.Count}，切片器可能出了问题。");
+            snapshot.Sections.Count > 500,
+            $"章节数只有 {snapshot.Sections.Count}，切片器可能出了问题。");
     }
 
     /// <summary>
