@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: 检出
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 安装 .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           # global.json 锁定 10.0.3xx 功能带（latestPatch）并启用 MTP 测试运行器，
           # setup-dotnet 会按其精确安装 10.0.302。
@@ -88,7 +88,7 @@ jobs:
 
       - name: 上传测试结果与覆盖率
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results
           path: |
