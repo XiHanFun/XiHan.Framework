@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 	<!-- 项目属性 -->
 	<PropertyGroup>
 		<!-- 允许将项目打包为 NuGet 包 -->
@@ -35,6 +35,11 @@
 		<PackageOutputPath>..\..\nupkgs</PackageOutputPath>
 	</PropertyGroup>
 	<!-- 其他文件包含 -->
+	<ItemGroup>
+		<!-- SourceLink：把包内 PDB 映射到 GitHub 源码，下游单步调试可直接进入框架源码（配合上方 PublishRepositoryUrl/EmbedUntrackedSources 生效） -->
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.204" PrivateAssets="All" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<!-- 将 readme.png 作为 NuGet 包图标 -->
 		<None Include="..\..\nuget\logo.png" Pack="True" PackagePath="" Visible="false" />
