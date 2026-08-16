@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Templating`
 - **模块类**：`XiHanTemplatingModule`
 - **所在层**：基础设施层
-- **关键依赖**：`Scriban`（7.2.5，模板引擎）+ 框架内部依赖（Core / Serialization / Utils）。
+- **关键依赖**：`Scriban`（7.2.6，模板引擎）+ 框架内部依赖（Core / Serialization / Utils）。
 
 ## 概述
 
@@ -223,7 +223,7 @@ var result = "Hello {{name}}!{{if vip}} VIP{{endif}}"
 - [XiHan.Framework.Core](./core) — 模块化与依赖注入基础。
 - [XiHan.Framework.Serialization](./serialization) — 模块 `[DependsOn]` 依赖。
 - [XiHan.Framework.Utils](./utils) — 通用工具库。
-- 第三方核心依赖：`Scriban`（7.2.5）。
+- 第三方核心依赖：`Scriban`（7.2.6）。
 
 ## 相关模块
 
