@@ -1,0 +1,22 @@
+# 依赖自动更新：NuGet 每月一查、Actions 每周一查，限制并发 PR 数量避免刷屏。
+# 版本号以仓库手工「chore: 升级依赖」为准，Dependabot 只负责发现与提醒。
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/framework"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
