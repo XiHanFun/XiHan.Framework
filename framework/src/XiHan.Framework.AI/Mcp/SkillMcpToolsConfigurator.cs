@@ -15,8 +15,14 @@ namespace XiHan.Framework.AI.Mcp;
 /// 变为 MCP tool,并入 <see cref="McpServerOptions.ToolCollection"/>。注册表构造时已收纳全部技能,
 /// 故此处 <c>All</c> 已就绪。仅当 WebHost 调用 <c>AddMcpServer()</c> 时本配置器才被触发。
 /// <para>
-/// 工具名冲突直接抛异常，不再静默去重：撞名的两个技能里注定有一个既列不出也调不到，
+/// 工具名冲突直接抛异常，不再静默去重。丢能力只是其一：撞名的两个技能里注定有一个既列不出也调不到，
 /// 与其让运维在「注册过的技能凭空不存在」上排查，不如在装配 MCP 选项时就点名说清是谁撞了谁。
+/// </para>
+/// <para>
+/// 更要紧的是**授权语义的歧义**：对外暴露的允许/拒绝清单（如 <c>XiHan.Framework.Web.Mcp</c> 的
+/// <c>AllowedTools</c>）按工具名放行，重名会让同一条「允许 X」指向两个不同的能力，
+/// 具体生效哪一个取决于技能的注册顺序——运维以为放行了甲，实际放行的可能是乙。
+/// 安全配置不能建立在「谁先注册」上，所以这里宁可让宿主起不来。
 /// </para>
 /// </remarks>
 public sealed class SkillMcpToolsConfigurator : IConfigureOptions<McpServerOptions>
@@ -63,7 +69,9 @@ public sealed class SkillMcpToolsConfigurator : IConfigureOptions<McpServerOptio
 
             throw new InvalidOperationException(
                 $"MCP 工具名冲突：技能 {Describe(skill)} 投影出的工具「{toolName}」与{rival}重名。"
-                + "同名工具只有一个能被列出与调用，另一个会无声消失，故此处直接失败；请改掉其中一方的工具名。");
+                + "同名工具只有一个能被列出与调用，另一个会无声消失；且对外暴露的允许/拒绝清单按工具名放行，"
+                + "重名会让同一条清单项指向两个不同的能力，究竟是哪一个取决于注册顺序。"
+                + "故此处直接失败；请改掉其中一方的工具名。");
         }
     }
 
