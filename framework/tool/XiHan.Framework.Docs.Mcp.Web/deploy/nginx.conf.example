@@ -1,0 +1,182 @@
+# =============================================================================
+# XiHan.Framework.Docs.Mcp.Web —— Nginx 反向代理样例
+#
+# 这是起点，不是审计过的配置。原样贴上去就当自己安全了，比没有样例更糟：
+# 它把「还没想过的问题」换成了「以为已经想过的问题」。
+# 部署前必须自己决定的四件事，见 README 的「摆到反向代理后面」一节。
+#
+# 占位符（全部要替换）：
+#   mcp.example.com -> 你的域名
+#   127.0.0.1:5199  -> 文档 MCP 进程实际监听的地址
+#   203.0.113.0/24  -> 允许访问的网段
+#   证书路径        -> 你的证书实际位置
+#
+# 放置位置：/etc/nginx/conf.d/xihan-docs-mcp.conf
+#           （用 sites-available/sites-enabled 布局的发行版则放前者再做软链）
+# 生效前先 nginx -t 语法自检，通过再 systemctl reload nginx
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 以下三段必须位于 http { } 层（conf.d/*.conf 就在 http 里，直接写即可），
+# 不能塞进 server { } —— 塞进去 nginx -t 会直接报错
+# -----------------------------------------------------------------------------
+
+# 限流与限连的共享内存区。10m 约可容纳十几万个 IP 的状态。
+# rate=60r/m 即平均每秒 1 次；下面 limit_req 再配 burst 允许短时突发。
+# 注意计数键是 $binary_remote_addr —— 也就是「直连 nginx 的那个地址」。
+# 如果 nginx 前面还有 CDN 或负载均衡，这个地址是它们的，全世界会被算成同一个 key，
+# 那样限流既误伤所有人又拦不住任何人。这种拓扑必须先用 real_ip 模块还原真实客户端 IP：
+#   set_real_ip_from 203.0.113.10;      # 你的 CDN/LB 出口地址，逐条列全
+#   real_ip_header   X-Forwarded-For;
+#   real_ip_recursive on;
+# 且只有当这些前置节点确实可信时才能这么做：X-Forwarded-For 是客户端可以随便伪造的。
+limit_req_zone  $binary_remote_addr zone=xihan_mcp_req:10m rate=60r/m;
+limit_conn_zone $binary_remote_addr zone=xihan_mcp_conn:10m;
+
+# 触发限制时返回 429 而不是 nginx 默认的 503。
+# 429 的意思是「你太快了，等会儿再来」，503 的意思是「我坏了」——
+# 客户端（含 MCP 客户端的重试逻辑）和你的告警系统对这两者的反应完全不同
+limit_req_status  429;
+limit_conn_status 429;
+
+# 访问日志格式：不含任何鉴权相关的头。
+# 内置的 combined 格式本身就不打印自定义请求头，本来是安全的默认值；
+# 这里显式定义一份，是为了把下面这句警告钉在它旁边：
+#
+#   千万不要为了「方便排查」往格式里加 $http_x_api_key 或 $http_authorization。
+#   加上之后，密钥会明文写进磁盘，并按你的留存策略一直躺在那里，
+#   还会跟着日志进备份、进 ELK/Loki 这类采集系统 —— 那时候撤回的唯一办法是换密钥。
+#   要区分调用方，用 $remote_addr，或让调用方带一个不含密钥的关联 ID。
+#
+# 同理：nginx 的 error_log 开到 debug 级别会打印完整请求头（含密钥），
+# 生产环境务必保持 warn 或更高。
+log_format xihan_mcp '$remote_addr - [$time_local] "$request" '
+                     '$status $body_bytes_sent $request_time '
+                     '"$http_user_agent"';
+
+# -----------------------------------------------------------------------------
+# 80 端口：只做跳转，不代理任何东西
+# -----------------------------------------------------------------------------
+server {
+    listen      80;
+    listen      [::]:80;
+    server_name mcp.example.com;
+
+    # certbot --webroot 续期需要这个口子；用 DNS-01 验证的话可以删掉
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # 其余一律跳 HTTPS。明文端口上不放任何会读到密钥的东西：
+    # 客户端如果对着 http:// 发请求，密钥在跳转发生之前就已经明文出门了，
+    # 因此跳转只是兜底，正确的做法是客户端配置里直接写 https://
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# -----------------------------------------------------------------------------
+# 443 端口：TLS 终结于此，往上游是本机明文
+# -----------------------------------------------------------------------------
+server {
+    listen      443 ssl;
+    listen      [::]:443 ssl;
+    # nginx 1.25.1 起 http2 是独立指令；更早的版本要写成 listen 443 ssl http2;
+    http2       on;
+    server_name mcp.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/mcp.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mcp.example.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # 上游自己不做 TLS。下面 proxy_pass 指向 127.0.0.1，这一跳走的是明文，
+    # 只有当代理与上游在同一台机器（或同一段可信内网）时才成立。
+    # 跨公网转发到上游，等于把密钥明文发出去，这里的 TLS 也就白配了
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    server_tokens off;
+
+    access_log /var/log/nginx/xihan-docs-mcp.access.log xihan_mcp;
+    error_log  /var/log/nginx/xihan-docs-mcp.error.log warn;
+
+    # ---- 请求体与连接层的上限 ----
+    # 实测请求体大小：initialize 152 字节，tools/call 115~550 字节。
+    # 64k 已是几十倍余量，却挡掉了「甩一个超大 body 过来拖垮上游」这种最省事的 DoS。
+    # 超限 nginx 返回 413，请求根本到不了上游
+    client_max_body_size  64k;
+    # 慢速读（Slowloris 一类）：不给它慢慢发的机会
+    client_body_timeout   10s;
+    client_header_timeout 10s;
+    keepalive_timeout     30s;
+
+    # ---- 谁能碰到这个端点（默认注释掉：这是你要自己决定的事）----
+    # 只对已知网段开放，比限流有效得多：密钥泄露之后，网段限制仍然拦得住。
+    # allow 203.0.113.0/24;
+    # allow 198.51.100.7;
+    # deny  all;
+
+    # ---- 只转发 /mcp ----
+    # 用正则而不是 location = /mcp 或 location /mcp，原因是实测出来的：
+    #   * 带尾斜杠的 /mcp/ 同样返回 200，精确匹配 = /mcp 会漏掉它；
+    #   * 前缀匹配 location /mcp 又会把 /mcpx 之类一并收进来（nginx 前缀匹配不按路径段切）。
+    # ^/mcp/?$ 刚好只匹配这两个。上游其余路径（/、/health、/mcp/sse、/mcp/message）
+    # 实测全是 404，在代理这层就掐掉，能让扫描器少拿到一点信息
+    location ~ ^/mcp/?$ {
+        # 单 IP 限流：平均 60r/m，允许 20 个突发且不排队延迟（nodelay），超出即 429。
+        # 说清楚它挡什么、不挡什么：
+        #   挡得住 —— 单一来源的高频请求（脚本跑飞、爬虫、一台机器暴力试 key）。
+        #   挡不住 —— 分布式来源；更挡不住密钥泄露后从很多地址发来的请求，
+        #             那些请求每个来源都在限额内，会一路畅通地走进上游。
+        # 限流是防滥用的减速带，不是访问控制。访问控制是上面的 allow/deny 与密钥本身。
+        # 60r/m + burst 20 只是个保守起点，不是建议值：一个 AI 客户端连着检索几十次很常见，
+        # 定太紧会把正常用法打成 429。按你自己的调用量调，调完实测一遍
+        limit_req  zone=xihan_mcp_req burst=20 nodelay;
+        # 单 IP 并发连接数上限，防止一个来源占满 worker 连接
+        limit_conn xihan_mcp_conn 8;
+
+        # 正则 location 里的 proxy_pass 不能带 URI 部分（带了 nginx -t 直接报错），
+        # 不带 URI 时原始请求路径原样转发，正是我们要的
+        proxy_pass http://127.0.0.1:5199;
+
+        # HTTP/1.1 + 清空 Connection：与上游保持长连接，别把 "Connection: close" 透传过去。
+        # 注意这里**没有** Upgrade/Connection: upgrade 那套 websocket 写法，
+        # 因为实测 GET /mcp 与 DELETE /mcp 都返回 405 Allow: POST ——
+        # 这个传输只用 POST，不存在需要升级协议的长连通道。网上的 MCP 代理模板经常照抄
+        # websocket 段落，抄了不会立刻出错，但那是对这个上游行为的错误描述
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # 其余客户端请求头（含 X-Api-Key、Authorization、Accept）nginx 默认原样透传，
+        # 不用也不要显式转发。两个坑：
+        #   1) 不要改写 Accept —— 少了 text/event-stream，上游返回 406（内容协商失败），
+        #      很容易被误判成 401（鉴权失败）；
+        #   2) 带下划线的头会被 nginx 静默丢弃（默认 underscores_in_headers off）。
+        #      默认头名 X-Api-Key 是连字符，没问题；一旦把 HeaderName 改成 X_Api_Key 之类，
+        #      上游会收不到密钥并稳定返回 401，而且日志里看不出是谁丢的
+
+        # 响应是 text/event-stream（实测），不能被缓冲住等攒满再发。
+        # 上游其实已经在响应里带了 X-Accel-Buffering: no，nginx 会照做；
+        # 这里显式再关一次，是为了不依赖那个头一直存在
+        proxy_buffering off;
+        proxy_cache     off;
+        # SSE 不要压缩：压缩会重新引入缓冲
+        gzip off;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout    60s;
+        # 实测三个工具的响应都在几十毫秒内返回（search_docs 约 30ms），
+        # 60s 是给冷启动建索引之类的意外留的余量，不是给长连流留的
+        proxy_read_timeout    60s;
+    }
+
+    # 其余路径连转发都不转发
+    location / {
+        return 404;
+    }
+}

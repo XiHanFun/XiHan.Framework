@@ -142,12 +142,49 @@ data: {"result":{"protocolVersion":"2025-06-18","capabilities":{"logging":{},"to
 
 这份配置本身也含密钥，放进客户端自己的配置目录，不要提交。
 
+### 摆到反向代理后面
+
+本项目自己不提供任何传输层安全：没有 TLS、没有限流、没有审计日志。要暴露到本机以外，前面必须摆一层反向代理，由它负责这几件事。`deploy/` 下有两份可以直接改用的样例：
+
+| 文件 | 适合谁 |
+| --- | --- |
+| `deploy/Caddyfile.example` | 新部署、没有历史包袱。证书自动申请续期、HTTP→HTTPS 自动跳转都不用写指令，正确配好所需的行数最少 |
+| `deploy/nginx.conf.example` | 机器上已经在跑 Nginx |
+
+一处得提前知道的差别：Caddy 的限流指令 `rate_limit` **不在标准发行版里**，要用 `xcaddy build --with github.com/mholt/caddy-ratelimit` 自行构建；标准版 Caddy 读到这个指令会直接启动失败（而不是静默忽略）。不想自建就删掉那一块，改由防火墙或 WAF 限流。Nginx 的 `limit_req` 是内置模块，没有这个问题。
+
+**这两份是起点，不是审计过的配置。** 一份被原样粘贴、然后被默认「它是安全的」的样例，比没有样例更糟：它把一个还没想过的问题，换成了一个以为已经想过的问题。它们能替你做的，只是那些容易写错、写错了代价又特别大的部分；替不了你做的是这四个决定：
+
+1. **谁能碰到这个端点。** 两份样例里的 IP 白名单都是注释掉的，因为只有你知道调用方在哪。这一条比限流有效得多：密钥泄露之后，网段限制仍然拦得住
+2. **密钥怎么轮换。** 换一次密钥要同时改服务端环境变量和每一个客户端配置，中间必然有一段两者不一致的窗口。多久换、怎么换、谁保管，本项目一行代码都不管
+3. **访问日志留多久。** 样例里写的 30 天是随手填的数字，不是建议值。日志里有客户端 IP，留存期限是合规问题
+4. **这个端点到底该不该上公网。** 它服务的是一份公开仓库的文档，内容泄露本身损失有限；真正的风险是它成了一个能被匿名扫到、可以持续消耗 CPU 的检索入口。摆在 VPN、内网或跳板机后面，通常同样够用，而且比「公网 + 密钥」稳妥得多
+
+部署前提：密钥来自环境变量（`XiHan__Docs__Mcp__ApiKey`，ASP.NET Core 把 `__` 映射成 `:`）或密钥管理服务，**永远不来自随仓库提交的 `appsettings.json`**。仓库里提交的默认值是 `Enabled: false` 且根本没有 `ApiKey` 这个键，这是设计的一部分，不是待填的空。
+
+样例里关于上游的每一条断言都是实测出来的，不是照通用模板抄的：
+
+| 实测到的行为 | 对代理配置的影响 |
+| --- | --- |
+| `/mcp` 与 `/mcp/` 都返回 200；`/`、`/health`、`/mcp/sse`、`/mcp/message` 全是 404 | 只放行这两个路径。Nginx 用 `location ~ ^/mcp/?$`：精确匹配会漏掉尾斜杠，前缀匹配又会把 `/mcpx` 收进来 |
+| `GET /mcp` 与 `DELETE /mcp` 返回 `405 Allow: POST` | 只有 POST，**不需要任何 websocket / Upgrade 配置**。网上的 MCP 代理模板常带这一段，抄了不会报错，但它描述的不是这个上游 |
+| 响应 `Content-Type: text/event-stream`，且上游主动带 `X-Accel-Buffering: no` | 代理不能缓冲响应。Nginx 显式 `proxy_buffering off`；Caddy 对这个 Content-Type 自动立即冲刷，不用配 |
+| 响应里没有 `Mcp-Session-Id`（默认 `Stateless: true`） | 多实例部署不需要会话粘滞，可以随便轮询 |
+| `Accept` 少写 `text/event-stream` 时返回 406 | 代理不要改写 `Accept`。406 是内容协商失败，别误判成鉴权失败 |
+| 请求体极小：initialize 152 字节，tools/call 115~550 字节 | 请求体上限设到 64KB 已是几十倍余量，代价为零，却挡掉了最省事的那类 DoS |
+
+最容易漏、漏掉代价最大的一条单独说：**默认配置下，代理会把密钥写进访问日志。** Caddy 的访问日志默认记录整个请求头集合，自动写成 `REDACTED` 的只有 `Cookie` / `Set-Cookie` / `Authorization` / `Proxy-Authorization`——`X-Api-Key` 不在这个名单里，会原样落盘。Nginx 内置的 `combined` 格式不打印自定义请求头，本来是安全的，但只要有人为了排查方便往 `log_format` 里加一个 `$http_x_api_key`（或 `$http_authorization`），密钥就明文进了磁盘，还会跟着日志进备份、进采集系统，此后唯一的撤回手段是换密钥。两份样例都显式处理了这件事，动日志格式之前先读那几行注释。
+
+改完先自检再重载：Caddy 用 `caddy validate --config ./Caddyfile`，Nginx 用 `nginx -t`。**这两份样例没有在真实的 Caddy / Nginx 上跑过**，指令与参数是逐条对着官方文档核的；上游那一侧的行为则是起进程实测的。
+
+上了代理之后，客户端配置里的 URL 换成 `https://mcp.example.com/mcp`，请求头写法不变。
+
 ## 扩展点
 
 - **换检索行为**：去 `XiHan.Framework.Docs.Mcp` 改，本项目不动。改完必须重跑那边的黄金查询集 `framework/test/XiHan.Framework.Docs.Mcp.Tests/GoldenQueryTests.cs`
 - **加传输方式**：再建一个宿主项目引用 `XiHan.Framework.Docs.Mcp`，照 `Extensions/DependencyInjection/XiHanDocsMcpWebServiceCollectionExtensions.cs` 那几行装配即可。注意 `WithToolsFromAssembly()` 在这种形态下**不管用**——它扫的是调用方所在程序集，而 `DocsMcpTools` 在被引用的程序集里，必须用 `WithTools<DocsMcpTools>()` 显式登记
 - **换鉴权方式**（改成 OAuth、mTLS 或反向代理鉴权）：只需替换 `Extensions/ApplicationBuilderExtensions.cs` 里挂的那个端点过滤器。**fail-closed 判定不要动**：`IsExposable` 同时守着服务注册与端点映射两处，只改一处会退化成「注册了但没暴露」或更糟的「暴露了但没守门」
-- **暴露到公网前**：本项目只做 key 鉴权，没有限流、没有 TLS、没有审计。放到公网应当摆在反向代理后面，由代理负责 TLS 与限流
+- **暴露到公网前**：本项目只做 key 鉴权，没有限流、没有 TLS、没有审计。放到公网应当摆在反向代理后面，由代理负责 TLS 与限流；`deploy/` 下有 Caddy 与 Nginx 两份带注释的样例，配套说明见「摆到反向代理后面」
 
 ## 目录结构
 
@@ -164,4 +201,7 @@ XiHan.Framework.Docs.Mcp.Web/
     ApplicationBuilderExtensions.cs
     DependencyInjection/
       XiHanDocsMcpWebServiceCollectionExtensions.cs
+  deploy/
+    Caddyfile.example
+    nginx.conf.example
 ```
