@@ -151,14 +151,13 @@ public sealed class QueryConditions
     /// </summary>
     public QueryConditions Clone()
     {
-        var cloned = new QueryConditions
+        // 深拷贝：过滤/排序逐项克隆，关键字经 QueryKeyword.Clone() 保留 MatchMode，
+        // 克隆件与原件不共享任何可变实例。
+        return new QueryConditions
         {
-            Filters = [.. Filters],
-            Sorts = [.. Sorts],
-            Keyword = Keyword is not null
-                ? new QueryKeyword { Value = Keyword.Value, Fields = [.. Keyword.Fields] }
-                : null
+            Filters = Filters.Select(f => f.Clone()).ToList(),
+            Sorts = Sorts.Select(s => s.Clone()).ToList(),
+            Keyword = Keyword?.Clone()
         };
-        return cloned;
     }
 }

@@ -81,5 +81,5 @@ public sealed class PageResultMetadata
     /// <summary>
     /// 当前页实际记录数
     /// </summary>
-    public int CurrentPageCount => TotalCount == 0 ? 0 : EndRecord - StartRecord + 1;
+    public int CurrentPageCount => TotalCount == 0 ? 0 : Math.Max(0, EndRecord - StartRecord + 1);
 }
