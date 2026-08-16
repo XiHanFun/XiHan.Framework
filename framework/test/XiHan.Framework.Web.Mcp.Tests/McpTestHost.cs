@@ -72,13 +72,32 @@ internal sealed class McpTestHost : IAsyncDisposable
     public Uri BaseAddress { get; }
 
     /// <summary>
-    /// 按给定配置启动宿主
+    /// 按给定配置启动宿主（不设允许/拒绝清单）
     /// </summary>
     /// <param name="enabled">是否启用 MCP</param>
     /// <param name="apiKey">访问密钥，null 表示配置里根本没有这个键</param>
     /// <param name="skills">要注册进技能注册表的技能</param>
     /// <returns>已启动的宿主</returns>
-    public static async Task<McpTestHost> StartAsync(bool enabled, string? apiKey, params IAiSkill[] skills)
+    public static Task<McpTestHost> StartAsync(bool enabled, string? apiKey, params IAiSkill[] skills)
+    {
+        return StartAsync(enabled, apiKey, [], [], skills);
+    }
+
+    /// <summary>
+    /// 按给定配置启动宿主
+    /// </summary>
+    /// <param name="enabled">是否启用 MCP</param>
+    /// <param name="apiKey">访问密钥，null 表示配置里根本没有这个键</param>
+    /// <param name="allowedTools">工具名允许清单</param>
+    /// <param name="deniedTools">工具名拒绝清单</param>
+    /// <param name="skills">要注册进技能注册表的技能</param>
+    /// <returns>已启动的宿主</returns>
+    public static async Task<McpTestHost> StartAsync(
+        bool enabled,
+        string? apiKey,
+        IReadOnlyList<string> allowedTools,
+        IReadOnlyList<string> deniedTools,
+        params IAiSkill[] skills)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -91,7 +110,7 @@ internal sealed class McpTestHost : IAsyncDisposable
 
         // 放在配置源链的最后，压过开发机上可能存在的 XiHan__AI__Mcp__* 环境变量，
         // 否则测试结果会随执行机器的环境而变
-        builder.Configuration.AddInMemoryCollection(BuildSettings(enabled, apiKey));
+        builder.Configuration.AddInMemoryCollection(BuildSettings(enabled, apiKey, allowedTools, deniedTools));
 
         _ = builder.Services.AddXiHanWebMcp(builder.Configuration);
 
@@ -197,12 +216,29 @@ internal sealed class McpTestHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 组装内存配置项，宿主与「只看服务集合」的测试共用同一套，两边看到的配置必然一致
+    /// 组装内存配置项（不设允许/拒绝清单）
     /// </summary>
     /// <param name="enabled">是否启用</param>
     /// <param name="apiKey">访问密钥，null 表示不写这个键</param>
     /// <returns>配置键值对</returns>
     public static Dictionary<string, string?> BuildSettings(bool enabled, string? apiKey)
+    {
+        return BuildSettings(enabled, apiKey, [], []);
+    }
+
+    /// <summary>
+    /// 组装内存配置项，宿主与「只看服务集合」的测试共用同一套，两边看到的配置必然一致
+    /// </summary>
+    /// <param name="enabled">是否启用</param>
+    /// <param name="apiKey">访问密钥，null 表示不写这个键</param>
+    /// <param name="allowedTools">工具名允许清单，空表示不写这些键</param>
+    /// <param name="deniedTools">工具名拒绝清单，空表示不写这些键</param>
+    /// <returns>配置键值对</returns>
+    public static Dictionary<string, string?> BuildSettings(
+        bool enabled,
+        string? apiKey,
+        IReadOnlyList<string> allowedTools,
+        IReadOnlyList<string> deniedTools)
     {
         var settings = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -214,7 +250,27 @@ internal sealed class McpTestHost : IAsyncDisposable
             settings[XiHanMcpOptions.SectionName + ":ApiKey"] = apiKey;
         }
 
+        AppendListSettings(settings, nameof(XiHanMcpOptions.AllowedTools), allowedTools);
+        AppendListSettings(settings, nameof(XiHanMcpOptions.DeniedTools), deniedTools);
+
         return settings;
+    }
+
+    /// <summary>
+    /// 把一个字符串清单摊成配置绑定认得的下标键（<c>节名:属性:0</c>）
+    /// </summary>
+    /// <param name="settings">配置键值对</param>
+    /// <param name="propertyName">选项类上的属性名</param>
+    /// <param name="values">清单内容</param>
+    private static void AppendListSettings(
+        IDictionary<string, string?> settings,
+        string propertyName,
+        IReadOnlyList<string> values)
+    {
+        for (var index = 0; index < values.Count; index++)
+        {
+            settings[$"{XiHanMcpOptions.SectionName}:{propertyName}:{index}"] = values[index];
+        }
     }
 
     /// <summary>
