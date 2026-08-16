@@ -19,6 +19,7 @@
 - 以流式 HTTP（Streamable HTTP）传输暴露 `search_docs` / `read_doc` / `list_docs` 三个 MCP 工具，能力与 stdio 服务端逐字一致
 - **fail-closed 门控**：没开启或没配密钥时，既不注册 MCP 服务也不映射端点——半配好的部署暴露出来的是 404，而不是一个不设防的 `/mcp`
 - 应用管理的 API Key 鉴权：请求头（默认 `X-Api-Key`）或 `Authorization: Bearer`，定长比较防时序侧信道
+- **启动期校验配置**：要暴露却把请求头名、端点路径写错，或密钥短于 16 字符，进程直接启动失败，不会带着一份配错的配置上线
 - 启动时同步建索引，建完才开始接受请求；此后按文件 mtime 热更新，文档改了不用重启
 - 找不到仓库根时**直接以非零退出码结束**并把原因写进 stderr，不会带着空索引进入「连得上但永远搜不到」的状态
 
@@ -42,6 +43,28 @@
 | `Stateless` | `true` | 无状态 HTTP。三个工具都是纯检索，不需要服务端→客户端回调 |
 
 `Enabled && ApiKey 非空白` 才算「就绪暴露」（`IsExposable`）。两者缺一，进程照常起、照常建索引，但**不注册任何 MCP 服务、不映射任何端点**，并在日志里点名缺的是哪一项。
+
+### 启动期校验
+
+就绪暴露时，配置还要过 `Options/XiHanDocsMcpWebOptionsValidator.cs`（`IValidateOptions` + `ValidateOnStart()`）。以下几项配错会让**进程启动即失败**，而不是等到部署之后表现成 404、恒 401 或路由异常：
+
+| 设置 | 拒绝条件 | 合法示例 |
+| --- | --- | --- |
+| `HeaderName` | 空白，或含 RFC 9110 token 之外的字符（合法字符为字母、数字与 `` !#$%&'*+-.^_`\|~ ``） | `X-Api-Key` |
+| `Path` | 空白、不以 `/` 开头、含空白字符 | `/mcp`、`/docs-mcp` |
+| `ApiKey` | 短于 **16** 个字符（本服务没有限流，短密钥可被在线爆破） | `openssl rand -base64 32` 的输出 |
+
+**未启用的部署不做这些校验**：仓库里提交的默认配置就是「关闭且没有密钥」，一台刻意关掉的服务必须能干干净净地起来，否则 fail-closed 就变成了 fail-always。
+
+生成一把够长的密钥：
+
+```bash
+openssl rand -base64 32
+```
+
+```powershell
+[Convert]::ToBase64String((1..32|%{Get-Random -Max 256}))
+```
 
 环境变量：
 
@@ -96,6 +119,8 @@ info: XiHan.Framework.Docs.Mcp.Web[0]
 warn: XiHan.Framework.Docs.Mcp.Web[0]
       文档 MCP 端点未暴露：XiHan:Docs:Mcp:Enabled 为 false；XiHan:Docs:Mcp:ApiKey 未配置。进程已启动但不提供任何端点，补齐后重启即可。
 ```
+
+配了却配错（要暴露但请求头名、路径或密钥不合规）则**根本起不来**，退出前打出的是逐条列明的校验失败，详见上文「启动期校验」。
 
 ### 用 curl 验证
 
@@ -195,6 +220,7 @@ XiHan.Framework.Docs.Mcp.Web/
   appsettings.json
   Options/
     XiHanDocsMcpWebOptions.cs
+    XiHanDocsMcpWebOptionsValidator.cs
   Filters/
     McpApiKeyEndpointFilter.cs   ← 链接自 framework/src/XiHan.Framework.Web.Mcp/Filters/，本目录下没有实体文件
   Extensions/

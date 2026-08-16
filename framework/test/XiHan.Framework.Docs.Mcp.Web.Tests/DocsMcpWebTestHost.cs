@@ -89,10 +89,20 @@ internal sealed class DocsMcpWebTestHost : IAsyncDisposable
         var app = builder.Build();
         app.Urls.Add("http://127.0.0.1:0");
 
-        var options = app.Services.GetRequiredService<IOptions<XiHanDocsMcpWebOptions>>().Value;
-        _ = app.MapXiHanDocsMcp(options);
+        try
+        {
+            var options = app.Services.GetRequiredService<IOptions<XiHanDocsMcpWebOptions>>().Value;
+            _ = app.MapXiHanDocsMcp(options);
 
-        await app.StartAsync();
+            await app.StartAsync();
+        }
+        catch
+        {
+            // 配置校验不通过时宿主起不来，此处把它清掉再把异常抛给用例；
+            // 不清的话每条「配错应当拒绝启动」的用例都会漏一个 WebApplication
+            await app.DisposeAsync();
+            throw;
+        }
 
         var address = app.Services
             .GetRequiredService<IServer>()

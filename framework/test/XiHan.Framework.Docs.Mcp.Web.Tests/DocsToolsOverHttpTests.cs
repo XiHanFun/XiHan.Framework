@@ -15,7 +15,10 @@ namespace XiHan.Framework.Docs.Mcp.Web.Tests;
 /// </remarks>
 public class DocsToolsOverHttpTests : IAsyncLifetime
 {
-    private const string ApiKey = "docs-http-key";
+    /// <summary>
+    /// 本组共用的密钥，长度须满足 <c>XiHanDocsMcpWebOptionsValidator</c> 的十六字符下限，否则宿主根本起不来
+    /// </summary>
+    private const string ApiKey = "docs-http-transport-key";
 
     private DocsMcpWebTestHost _host = null!;
     private McpClient _client = null!;

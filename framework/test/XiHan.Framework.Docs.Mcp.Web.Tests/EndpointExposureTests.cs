@@ -15,11 +15,16 @@ namespace XiHan.Framework.Docs.Mcp.Web.Tests;
 public class EndpointExposureTests
 {
     /// <summary>
+    /// 本组共用的密钥，长度须满足 <c>XiHanDocsMcpWebOptionsValidator</c> 的十六字符下限，否则宿主根本起不来
+    /// </summary>
+    private const string ApiKey = "endpoint-exposure-test-key";
+
+    /// <summary>
     /// 三种「只配了一半」的组合，逐条都必须不暴露端点
     /// </summary>
     public static TheoryData<string, string, string?> 未就绪的三种配法 => new()
     {
-        { "开关关闭但配了密钥", "false", "secret-key" },
+        { "开关关闭但配了密钥", "false", ApiKey },
         { "开关打开但没有密钥", "true", null },
         { "开关打开但密钥全是空白", "true", "   " }
     };
@@ -59,10 +64,10 @@ public class EndpointExposureTests
     {
         await using var host = await DocsMcpWebTestHost.StartAsync(
             new KeyValuePair<string, string?>("XiHan:Docs:Mcp:Enabled", "true"),
-            new KeyValuePair<string, string?>("XiHan:Docs:Mcp:ApiKey", "secret-key"));
+            new KeyValuePair<string, string?>("XiHan:Docs:Mcp:ApiKey", ApiKey));
 
         using var response = await host.SendInitializeAsync(
-            request => request.Headers.TryAddWithoutValidation("X-Api-Key", "secret-key"));
+            request => request.Headers.TryAddWithoutValidation("X-Api-Key", ApiKey));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -72,7 +77,7 @@ public class EndpointExposureTests
     {
         await using var host = await DocsMcpWebTestHost.StartAsync(
             new KeyValuePair<string, string?>("XiHan:Docs:Mcp:Enabled", "true"),
-            new KeyValuePair<string, string?>("XiHan:Docs:Mcp:ApiKey", "secret-key"),
+            new KeyValuePair<string, string?>("XiHan:Docs:Mcp:ApiKey", ApiKey),
             new KeyValuePair<string, string?>("XiHan:Docs:Mcp:Path", "/docs-mcp"));
 
         using var 默认路径 = await host.Client.SendAsync(
@@ -81,7 +86,7 @@ public class EndpointExposureTests
             TestContext.Current.CancellationToken);
 
         var 自定路径请求 = DocsMcpWebTestHost.CreateInitializeRequest("/docs-mcp");
-        自定路径请求.Headers.TryAddWithoutValidation("X-Api-Key", "secret-key");
+        自定路径请求.Headers.TryAddWithoutValidation("X-Api-Key", ApiKey);
         using var 自定路径 = await host.Client.SendAsync(
             自定路径请求,
             HttpCompletionOption.ResponseHeadersRead,
