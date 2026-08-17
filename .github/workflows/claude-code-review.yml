@@ -1,0 +1,68 @@
+name: Claude Code Review
+
+# PR 开启或更新时自动审查；与 claude.yml 的 @claude 交互流程互补。
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+# 同一 PR 连续推送时，仅保留最新一次审查，避免重复消耗额度。
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      # 未配置密钥时安静跳过，而不是让每个 PR 都挂一个红检查。
+      # 要启用：在仓库 Settings → Secrets 添加 CLAUDE_CODE_OAUTH_TOKEN。
+      - name: 检查密钥是否已配置
+        id: guard
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 CLAUDE_CODE_OAUTH_TOKEN，跳过本次审查。"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 检出
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: 安装 Node.js 24
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Claude Code 审查
+        if: steps.guard.outputs.enabled == 'true'
+        uses: anthropics/claude-code-action@558b1d6cab4085c7753fe402c10bef0fbb92ac7a
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            请审查这个 PR，并以繁体中文留下 review。只指出真正重要的问题，并附上文件、行号与具体修法。
+
+            审查重点：
+            - Bug、逻辑错误、空值与并发等边界情况。
+            - 安全性：输入验证、认证授权、密钥暴露与路径逃逸。
+            - 模块分层：禁止反向依赖或循环依赖；Abstractions 只能放契约，不能依赖实现包。
+            - 模块约定：XiHanModule 只做装配；对外能力采用 fail-closed，未启用或未配置密钥时不注册服务或映射端点。
+            - Web 约定：不要破坏动态 API 路由、MVC 过滤器顺序或中间件顺序。
+            - MCP：工具投影与传输分离；新传输应复用投影层，不应塞进 Web.Mcp。
+            - 测试：公共约定和行为变更须有对应 xunit.v3 测试；外部服务测试须能在无服务环境跳过。
+            - 代码规范：所有 C# 文件须有标准两行文件头，XML 文档与注释使用简体中文。
+
+            不要评论纯格式、命名偏好或已存在且本 PR 未触及的问题。最后使用 gh pr comment 留一则简短总评。
+          claude_args: "--max-turns 5 --model claude-sonnet-4-6"
