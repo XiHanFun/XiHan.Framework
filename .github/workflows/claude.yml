@@ -1,0 +1,73 @@
+name: Claude
+
+# 在 issue、PR 评论或 PR 审查中提到 @claude 时触发；与 claude-code-review.yml 的自动审查互补。
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened, assigned]
+
+# 同一 issue/PR 上连续提及时按顺序处理，避免并发写同一个线程。
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    # 只有正文里确实提到 @claude 才启动，否则每条评论都会拉起一个 runner。
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      # 未配置密钥时安静跳过，而不是给每次 @claude 提及挂一个红检查。
+      # 要启用：在仓库 Settings → Secrets 添加 CLAUDE_CODE_OAUTH_TOKEN。
+      - name: 检查密钥是否已配置
+        id: guard
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 CLAUDE_CODE_OAUTH_TOKEN，跳过本次响应。"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 检出
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: 安装 Node.js 24
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Claude Code 响应
+        if: steps.guard.outputs.enabled == 'true'
+        uses: anthropics/claude-code-action@558b1d6cab4085c7753fe402c10bef0fbb92ac7a
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            请以繁体中文回应本次 @claude 提及。遵循仓库根目录 AGENTS.md 的约定：
+            模块分层不得反向依赖，对外能力采用 fail-closed，行为变更须有 xunit.v3 测试，
+            C# 文件保留标准两行文件头，XML 文档与注释使用简体中文。
+
+            回答要具体：涉及代码时附上文件与行号，不确定的地方直说，不要臆测 API。
+          claude_args: "--max-turns 10 --model claude-sonnet-4-6"
