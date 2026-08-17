@@ -311,7 +311,8 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Integration.Tests/ # 集成测试
 │   │   └── ...                            #   其他测试
 │   ├── tool/                              # 工具
-│   │   └── Region/                        #   代码规范化工具
+│   │   ├── Region/                        #   代码规范化工具
+│   │   └── XiHan.Framework.Docs.Mcp/      #   文档检索 MCP Server（仓库内部，不发包）
 │   ├── props/                             # 共享 MSBuild 属性
 │   ├── scripts/                           # NuGet 发布与运维脚本
 │   └── nupkgs/                            # NuGet 包输出

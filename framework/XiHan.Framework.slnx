@@ -91,6 +91,8 @@
     <Project Path="test/XiHan.Framework.Caching.Tests/XiHan.Framework.Caching.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Docs.Mcp.Tests/XiHan.Framework.Docs.Mcp.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Docs.Mcp.Web.Tests/XiHan.Framework.Docs.Mcp.Web.Tests.csproj" />
     <Project Path="test/XiHan.Framework.EventBus.Tests/XiHan.Framework.EventBus.Tests.csproj" />
     <Project Path="test/XiHan.Framework.EventBus.Redis.Tests/XiHan.Framework.EventBus.Redis.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
@@ -102,6 +104,7 @@
     <Project Path="test/XiHan.Framework.Uow.Tests/XiHan.Framework.Uow.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
     <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
+    <Project Path="test/XiHan.Framework.Web.Mcp.Tests/XiHan.Framework.Web.Mcp.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Domain.Shared.Tests/XiHan.Framework.Domain.Shared.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Tests/XiHan.Framework.Security.Tests.csproj" />
@@ -114,6 +117,12 @@
   <Folder Name="/3.tool/" />
   <Folder Name="/3.tool/1.ProjectStandardization/">
     <Project Path="tool/Region/Region.csproj" Id="41b103a1-9eaf-4915-968e-0416ca8773dd" />
+  </Folder>
+  <Folder Name="/3.tool/2.DocsMcp/">
+    <Project Path="tool/XiHan.Framework.Docs.Mcp/XiHan.Framework.Docs.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/3.tool/3.DocsMcpWeb/">
+    <Project Path="tool/XiHan.Framework.Docs.Mcp.Web/XiHan.Framework.Docs.Mcp.Web.csproj" />
   </Folder>
   <Folder Name="/4.others/" />
   <Folder Name="/4.others/1.Props/">

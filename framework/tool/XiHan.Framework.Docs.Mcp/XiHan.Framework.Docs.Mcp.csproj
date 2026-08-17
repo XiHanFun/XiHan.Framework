@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Docs.Mcp</Title>
+        <AssemblyName>XiHan.Framework.Docs.Mcp</AssemblyName>
+        <OutputType>Exe</OutputType>
+        <!-- 仓库内部的文档检索工具，不对外发布 -->
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="Resources\synonyms.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖本项目；不进运行期，保持零框架依赖 -->
+        <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+</Project>

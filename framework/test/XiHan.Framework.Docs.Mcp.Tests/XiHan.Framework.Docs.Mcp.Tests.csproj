@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\tool\XiHan.Framework.Docs.Mcp\XiHan.Framework.Docs.Mcp.csproj" />
+      <!-- 仅作分析器引用，让 XHFH001 文件头检查覆盖测试项目 -->
+      <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+                        OutputItemType="Analyzer"
+                        ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="coverlet.collector" Version="10.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+      <PackageReference Update="xunit.runner.visualstudio" Version="4.0.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Update="xunit.v3" Version="4.0.0" />
+    </ItemGroup>
+
+</Project>
