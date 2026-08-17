@@ -38,7 +38,10 @@ public interface IXiHanMethodInvocation
     /// <summary>
     /// 返回值
     /// </summary>
-    object ReturnValue { get; set; }
+    /// <remarks>
+    /// 可为 null：<see cref="ProceedAsync"/> 之前目标方法尚未执行、方法无返回值，或方法本身就返回 null。
+    /// </remarks>
+    object? ReturnValue { get; set; }
 
     /// <summary>
     /// 方法调用
