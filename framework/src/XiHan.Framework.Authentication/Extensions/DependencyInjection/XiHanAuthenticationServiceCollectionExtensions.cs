@@ -8,7 +8,6 @@ using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.OAuth;
 using XiHan.Framework.Authentication.OneTimeCode;
 using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Authentication.Social.Extensions.DependencyInjection;
 using XiHan.Framework.Security.Password;
 using XiHan.Framework.Authentication.Users;
 
@@ -63,9 +62,6 @@ public static class XiHanAuthenticationServiceCollectionExtensions
 
         // 注册 OAuth 第三方登录
         services.AddXiHanOAuth(configuration);
-
-        // 注册微信/钉钉/飞书/企业微信三方登录
-        services.AddXiHanSocialLogin(configuration);
 
         return services;
     }

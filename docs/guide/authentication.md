@@ -128,9 +128,87 @@ version:iterations:algorithm:base64(salt):base64(hash)
 | `FrontendCallbackUrl` | 第三方授权完成后跳回的前端页面 |
 | `Providers[]` | 各提供商配置 |
 
-每个 provider 的字段：`Name`（**内部标识，参与回调路由，不要随意改**）、`DisplayName`（前端展示名）、`Enabled`、`ClientId`、`ClientSecret`、`Scopes[]`。
+每个 provider 的字段：
 
-包内建 `github` / `gitee` / `google` / `qq` 四个，按同样的结构可以扩展。绑定关系的读写走 `IExternalLoginStore`。
+| 字段 | 说明 |
+| --- | --- |
+| `Name` | **AuthenticationScheme 名，参与回调路由（默认 `/signin-{Name}`），不要随意改** |
+| `Provider` | 提供商类型；留空时取 `Name`。同一家要同时开两种登录方式时，两条配置用不同的 `Name`、相同的 `Provider` |
+| `Mode` | `QrCode`（默认）/ `Account`，只对微信、企业微信、飞书、钉钉生效 |
+| `DisplayName` | 前端展示名 |
+| `Enabled` / `ClientId` / `ClientSecret` / `CallbackPath` | 同标准 OAuth2 |
+| `Scopes[]` | 申请的权限范围，**非空时整体覆盖**提供商默认值，不做追加 |
+| `AgentId` | 企业微信自建应用 AgentId |
+| `LoadMemberProfile` | 企业微信是否额外读通讯录补姓名 |
+| `CorpId` | 钉钉企业 CorpId，填了授权页锁定到该组织 |
+| `AuthorizationEndpoint` | 逃生舱：直接指定授权页地址，覆盖按 `Provider` + `Mode` 的推导 |
+| `AuthorizationParameters` | 逃生舱：追加到授权地址上的任意参数，如 Google 的 `access_type` |
+
+包内建八个：`google` / `github` / `gitee` / `qq` / `weixin` / `workweixin` / `feishu` / `dingtalk`（微信、企业微信、飞书分别可写成 `wechat` / `wecom` / `lark`）。绑定关系的读写走 `IExternalLoginStore`。
+
+### 账号授权与扫码登录
+
+两种方式**只差授权页地址与申请的权限范围**，换令牌与拉用户信息的接口是同一套，所以不需要另建一条登录路径——同一家注册两个 scheme 就行：
+
+```json
+"Providers": [
+  { "Name": "wechat-qr", "Provider": "wechat", "Mode": "QrCode",  "ClientId": "开放平台网站应用 AppId", "ClientSecret": "..." },
+  { "Name": "wechat-mp", "Provider": "wechat", "Mode": "Account", "ClientId": "公众号 AppId",          "ClientSecret": "..." }
+]
+```
+
+各家两种方式落到的授权页：
+
+| 提供商 | 扫码登录 | 账号授权 |
+| --- | --- | --- |
+| 微信 | 开放平台网站应用 `connect/qrconnect`，`scope=snsapi_login` | 公众号网页授权 `connect/oauth2/authorize`，`scope=snsapi_userinfo` |
+| 企业微信 | `login.work.weixin.qq.com/wwlogin/sso/login` | 应用内网页授权 `connect/oauth2/authorize`，`scope=snsapi_privateinfo` |
+| 钉钉 | `login.dingtalk.com/oauth2/challenge.htm` | `login.dingtalk.com/oauth2/auth` |
+| 飞书 | `passport.feishu.cn/suite/passport/oauth/authorize` | `accounts.feishu.cn/open-apis/authen/v1/authorize` |
+
+::: warning 微信两种方式用的是两个应用
+扫码登录属于**开放平台网站应用**，账号授权属于**公众号**，AppId / AppSecret 不通用，所以要写成两条配置。
+:::
+
+::: warning 飞书两套端点不可交叉
+扫码走 `passport.*`、账号授权走 `accounts/open-apis`，各自的授权、令牌、用户信息三个接口成套；一套拿到的授权码不能拿去另一套换令牌。框架按 `Mode` 整套切换，不必手工拼。
+:::
+
+::: tip 账号授权的地址里 `state=_oauthstate` 不是 bug
+微信公众号与企业微信应用内的网页授权页限制 `state` 长度，容不下受保护的认证属性。框架把真实状态挪进回调地址的 `_oauthstate` 参数、`state` 位上只留一个哨兵，回调时再还原。只在账号授权时出现，扫码链路不受影响。
+:::
+
+### 实现来源
+
+八家**全部由框架自研**，不依赖任何第三方 OAuth 提供商包——认证包现在只剩 `Microsoft.AspNetCore.Authentication.JwtBearer` 一个 NuGet 依赖。
+
+| 分类 | 提供商 | 说明 |
+| --- | --- | --- |
+| 走通用形态 | Google | 直接用基类 `XiHanOAuthHandler<TOptions>`，无需单独的处理器 |
+| 只多一步 | GitHub、Gitee | 覆写 `AfterClaimActionsAsync`，在用户信息没给出邮箱时补取一次 |
+| 协议有偏离 | QQ、微信、企业微信、飞书、钉钉 | 各自覆写 `BuildChallengeUrl` / `ExchangeCodeAsync` / `CreateTicketAsync` |
+
+新增一家的成本按偏离程度递增：只有端点不同 → 只写一个 `Options`；多一跳或字段名不同 → 再写一个 `Handler`；最后在 `RegisterProvider` 里加一个 `case`。
+
+### 各家偏离 OAuth2 通用约定的地方
+
+| 提供商 | 偏离点 |
+| --- | --- |
+| 微信 | 令牌接口用 `appid`/`secret` 而非 `client_id`/`client_secret`；用 `errcode` 而非 HTTP 状态码表达失败；授权地址必须以 `#wechat_redirect` 结尾 |
+| 企业微信 | 换到的是**企业凭证**而不是用户令牌，成员身份要再用授权码换一次，敏感资料还要凭 `user_ticket` 取第三次 |
+| 飞书 | 用响应体里的 `code`/`msg`（开放平台）或 `error`/`error_description`（passport）表达失败；开放平台把用户信息包在 `data` 节点里 |
+| 钉钉 | 令牌接口收 JSON 体、返回 `accessToken`/`expireIn` 小驼峰字段；用户信息接口用 `x-acs-dingtalk-access-token` 私有头而非 `Authorization` |
+| QQ | 令牌与用户标识接口默认返回表单文本与 JSONP，靠 `fmt=json` 换成纯 JSON；要先换 `openid` 再取资料 |
+
+### 已知边界
+
+| 边界 | 说明 |
+| --- | --- |
+| 企业微信要填 `AgentId` | 扫码页与应用内授权页都要带 |
+| 企业微信默认拿不到姓名 | 授权链路只给 `userid`。要姓名就开 `LoadMemberProfile` 走通讯录读取；读不到时姓名为空，**不影响登录本身** |
+| 登录标识优先取 union 类字段 | 微信 `unionid`、钉钉 `unionId`、飞书 `union_id`，缺失时退回 `openid`；企业微信取 `userid`，非企业成员退回 `openid` |
+| 远端失败会抛异常 | 授权码无效、用户信息拉取失败等由 `RemoteAuthenticationHandler` 抛出；要变成跳转到错误页，需在 provider 的 `Events.OnRemoteFailure` 里处理 |
+| `Scopes` 是覆盖语义 | 非空时整体替换提供商默认值，不做追加——避免与按登录方式推导出的范围叠加 |
 
 ::: danger 首次第三方登录不要按邮箱并号
 拿第三方返回的邮箱去匹配既有账号并直接登录，等于把「谁控制这个邮箱」的判断外包给了第三方。第三方邮箱未必经过验证，这会成为账号接管的入口。
