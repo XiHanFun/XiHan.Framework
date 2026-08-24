@@ -47,7 +47,13 @@ public class WeixinAuthenticationHandler : XiHanOAuthHandler<WeixinAuthenticatio
     /// <returns>处理结果</returns>
     protected override Task<HandleRequestResult> HandleRemoteAuthenticateAsync()
     {
-        WeixinShortState.Restore(Request);
+        // 与 BuildChallengeUrl 的判定保持对称：没搬运过就不还原，
+        // 否则扫码链路上一个同名查询参数就能把真实 state 顶掉
+        if (UsesShortState)
+        {
+            WeixinShortState.Restore(Request);
+        }
+
         return base.HandleRemoteAuthenticateAsync();
     }
 
@@ -129,11 +135,17 @@ public class WeixinAuthenticationHandler : XiHanOAuthHandler<WeixinAuthenticatio
         var tokenPayload = tokens.Response?.RootElement ?? default;
         var openId = ReadString(tokenPayload, "openid") ?? throw MissingField("换取访问令牌", "openid");
         var unionId = ReadString(tokenPayload, "unionid");
-        var grantedScope = ReadString(tokenPayload, "scope") ?? string.Empty;
+        var grantedScope = ReadString(tokenPayload, "scope");
 
-        // snsapi_base 只授予 openid，拉取用户资料会被拒绝
-        if (!GrantsUserInfo(grantedScope))
+        // snsapi_base 只授予 openid，拉取用户资料会被拒绝。
+        // 回显缺失时仍去拉：拉不动会由 errcode 明确报错，好过静默留下一个资料全空的账号
+        if (grantedScope is not null && !GrantsUserInfo(grantedScope))
         {
+            Logger.LogWarning(
+                "{Scheme} 授权范围 {GrantedScope} 不含用户资料权限，本次只写入登录标识，姓名与头像声明为空。",
+                Scheme.Name,
+                grantedScope);
+
             AddNameIdentifier(identity, unionId ?? openId);
             return await CreateTicketCoreAsync(identity, properties, tokens, tokenPayload);
         }
