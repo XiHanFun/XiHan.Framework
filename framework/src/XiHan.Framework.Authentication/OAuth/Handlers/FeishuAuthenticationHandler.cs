@@ -50,6 +50,15 @@ public class FeishuAuthenticationHandler : XiHanOAuthHandler<FeishuAuthenticatio
             ["redirect_uri"] = context.RedirectUri
         };
 
+        // 授权地址由基类构造，启用 PKCE 时会带上 code_challenge，这里必须把 code_verifier 配回去；
+        // 用完即从认证属性里移除，避免它随票据序列化进登录 Cookie
+        if (context.Properties.Items.TryGetValue(OAuthConstants.CodeVerifierKey, out var codeVerifier)
+            && !string.IsNullOrEmpty(codeVerifier))
+        {
+            form[OAuthConstants.CodeVerifierKey] = codeVerifier;
+            context.Properties.Items.Remove(OAuthConstants.CodeVerifierKey);
+        }
+
         var payload = Options.UseFormTokenRequest
             ? await PostFormAsync(Options.TokenEndpoint, form, "换取用户令牌")
             : await PostJsonAsync(Options.TokenEndpoint, form, "换取用户令牌");

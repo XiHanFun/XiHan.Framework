@@ -27,6 +27,11 @@ public class OAuthOptions
     /// <summary>
     /// 三方登录完成后前端回调地址（携带 token 参数）
     /// </summary>
+    /// <remarks>
+    /// 令牌经此地址回传给前端。若应用侧把令牌拼在查询串上，它会进 Web 服务器访问日志，
+    /// 并随页面上任何指向外部域的资源作为 Referer 外泄；配成哈希路由（形如
+    /// <c>https://app.example.com/#/auth/oauth-callback</c>）可让参数落在 fragment 里，浏览器不会外发。
+    /// </remarks>
     public string FrontendCallbackUrl { get; set; } = string.Empty;
 
     /// <summary>
