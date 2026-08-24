@@ -76,11 +76,11 @@ public static class XiHanOAuthServiceCollectionExtensions
                 break;
 
             case OAuthProviderNames.Weixin or OAuthProviderNames.WeChat:
-                Add<WeixinAuthenticationOptions, WeixinAuthenticationHandler>(builder, provider, "微信", options => ConfigureWeixin(options, provider));
+                Add<WeixinAuthenticationOptions, WeixinAuthenticationHandler>(builder, provider, "微信", options => ConfigureWeixin(options, provider), scopesReplaceDefaults: true);
                 break;
 
             case OAuthProviderNames.WorkWeixin or OAuthProviderNames.WeCom:
-                Add<WorkWeixinAuthenticationOptions, WorkWeixinAuthenticationHandler>(builder, provider, "企业微信", options => ConfigureWorkWeixin(options, provider));
+                Add<WorkWeixinAuthenticationOptions, WorkWeixinAuthenticationHandler>(builder, provider, "企业微信", options => ConfigureWorkWeixin(options, provider), scopesReplaceDefaults: true);
                 break;
 
             case OAuthProviderNames.Feishu or OAuthProviderNames.Lark:
@@ -101,7 +101,8 @@ public static class XiHanOAuthServiceCollectionExtensions
         AuthenticationBuilder builder,
         OAuthProviderConfig provider,
         string defaultDisplayName,
-        Action<TOptions> configureProvider)
+        Action<TOptions> configureProvider,
+        bool scopesReplaceDefaults = false)
         where TOptions : XiHanOAuthProviderOptions, new()
         where THandler : OAuthHandler<TOptions>
     {
@@ -120,7 +121,7 @@ public static class XiHanOAuthServiceCollectionExtensions
                 options.AuthorizationEndpoint = provider.AuthorizationEndpoint;
             }
 
-            ApplyScopes(options, provider);
+            ApplyScopes(options, provider, scopesReplaceDefaults);
 
             foreach (var parameter in provider.AuthorizationParameters)
             {
@@ -180,18 +181,26 @@ public static class XiHanOAuthServiceCollectionExtensions
         }
     }
 
-    private static void ApplyScopes(AspNetOAuthOptions options, OAuthProviderConfig provider)
+    private static void ApplyScopes(AspNetOAuthOptions options, OAuthProviderConfig provider, bool replaceDefaults)
     {
         if (provider.Scopes.Length == 0)
         {
             return;
         }
 
-        // 显式配置的权限范围覆盖提供商默认值，避免与按登录方式推导出的范围叠加
-        options.Scope.Clear();
+        // 微信系两种登录方式的权限范围互斥，配置值必须整体替换按登录方式推导出的范围；
+        // 其余提供商是追加，配置里只写增量就不会把提供商默认值（如 Gitee 的 emails）挤掉
+        if (replaceDefaults)
+        {
+            options.Scope.Clear();
+        }
+
         foreach (var scope in provider.Scopes)
         {
-            options.Scope.Add(scope);
+            if (!options.Scope.Contains(scope))
+            {
+                options.Scope.Add(scope);
+            }
         }
     }
 

@@ -137,6 +137,9 @@ public static class OAuthClaimTypes
         /// <summary>企业范围内的统一用户标识</summary>
         public const string UnionId = "urn:dingtalk:unionid";
 
+        /// <summary>用户在授权页选定的组织，仅在权限范围含 corpid 时下发</summary>
+        public const string CorpId = "urn:dingtalk:corpid";
+
         /// <summary>头像</summary>
         public const string Avatar = "urn:dingtalk:avatar";
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -49,16 +50,34 @@ public class GitHubAuthenticationHandler : XiHanOAuthHandler<GitHubAuthenticatio
             return;
         }
 
-        using var emails = await GetBearerJsonAsync(Options.UserEmailsEndpoint, tokens.AccessToken, "拉取邮箱列表");
-        if (emails.RootElement.ValueKind != JsonValueKind.Array)
+        JsonDocument emails;
+        try
         {
+            emails = await GetBearerJsonAsync(Options.UserEmailsEndpoint, tokens.AccessToken, "拉取邮箱列表");
+        }
+        catch (AuthenticationFailureException exception)
+        {
+            // 邮箱只是资料补充，应用未获授权时保持邮箱为空，不因此让整个登录失败
+            Logger.LogWarning(exception, "{Scheme} 拉取邮箱列表失败，邮箱声明保持为空。", Scheme.Name);
             return;
         }
 
-        var primary = emails.RootElement.EnumerateArray()
-            .FirstOrDefault(address => address.TryGetProperty("primary", out var flag) && flag.ValueKind == JsonValueKind.True);
+        using (emails)
+        {
+            if (emails.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
 
-        var email = ReadString(primary, "email");
+            var primary = emails.RootElement.EnumerateArray()
+                .FirstOrDefault(address => address.TryGetProperty("primary", out var flag) && flag.ValueKind == JsonValueKind.True);
+
+            AddEmailClaim(identity, ReadString(primary, "email"));
+        }
+    }
+
+    private void AddEmailClaim(ClaimsIdentity identity, string? email)
+    {
         if (!string.IsNullOrEmpty(email))
         {
             identity.AddClaim(new Claim(ClaimTypes.Email, email, ClaimValueTypes.String, Options.ClaimsIssuer));

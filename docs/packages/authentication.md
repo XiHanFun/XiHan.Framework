@@ -86,9 +86,9 @@ public class MyModule : XiHanModule { }
 | `OAuthOptions` | 全局配置：`Enabled`、`FrontendCallbackUrl`、`Providers`；常量 `AvatarClaimType = "urn:xihan:avatar"`（配置节 `XiHan:Authentication:OAuth`） |
 | `OAuthProviderConfig` | 单个提供商：`Name`（=scheme）、`Provider`（提供商类型，留空取 `Name`）、`Mode`、`DisplayName`、`Enabled`、`ClientId`、`ClientSecret`、`AgentId`、`LoadMemberProfile`、`CorpId`、`Scopes`、`AuthorizationEndpoint`、`AuthorizationParameters`、`CallbackPath`（默认 `/signin-{name}`）；`ResolveProviderType()` 返回小写的提供商类型 |
 | `OAuthProviderNames` | 提供商类型常量：`google`、`github`、`gitee`、`qq`、`weixin`（别名 `wechat`）、`workweixin`（别名 `wecom`）、`feishu`（别名 `lark`）、`dingtalk` |
-| `OAuthLoginMode` | `QrCode`（默认）/ `Account`，只对微信、企业微信、飞书、钉钉生效 |
+| `OAuthLoginMode` | `QrCode`（默认）/ `Account`，只对微信、企业微信、飞书、钉钉生效；对微信系与钉钉只换授权页与权限范围，飞书是授权/令牌/用户信息三个接口成套切换 |
 | `OAuthProviderEndpoints` | 八家的全部接口地址常量，区分登录方式的按 `QrCode`/`Account` 各列一条；含微信系要求的 `#wechat_redirect` 锚点 |
-| `OAuthClaimTypes` | 八家的私有声明类型常量，`urn:{provider}:{field}` 命名 |
+| `OAuthClaimTypes` | 八家的私有声明类型常量，`urn:{provider}:{field}` 命名；含钉钉的 `urn:dingtalk:corpid`（权限范围含 `corpid` 时才有） |
 | `XiHanOAuthServiceCollectionExtensions` | `AddXiHanOAuth(services, configuration)`；常量 `ExternalSignInScheme = "ExternalCookie"` |
 
 **提供商处理器（`XiHan.Framework.Authentication.OAuth.Handlers`，八家全部自研）**
@@ -208,7 +208,7 @@ public class MyModule : XiHanModule { }
 | 钉钉 | `login.dingtalk.com/oauth2/challenge.htm` | `login.dingtalk.com/oauth2/auth` |
 | 飞书 | `passport.feishu.cn/suite/passport/oauth/authorize`（不分 `Mode`） | 同左 |
 
-> 微信系的 `Scopes` 是**覆盖**语义——两种登录方式的 scope 互斥，不能在 provider 包默认值上追加；其余提供商的 `Scopes` 仍是追加。`AuthorizationEndpoint` 可直接覆盖上表推导出的地址。
+> 微信与企业微信的 `Scopes` 是**覆盖**语义——两种登录方式的 scope 互斥，不能在按登录方式推导出的范围上追加；其余提供商的 `Scopes` 是**追加**。`AuthorizationEndpoint` 可直接覆盖上表推导出的地址。
 
 ## 使用示例
 
@@ -288,7 +288,7 @@ public class MfaService(IOtpService otp)
 - **密码相关 Options 归属**：`PasswordHasherOptions` / `PasswordPolicyOptions` 类型在 [Security](./security)，但配置绑定在本包完成，节名同为 `XiHan:Authentication:*`。
 - **微信两种登录方式是两个应用**：扫码属于开放平台网站应用、账号授权属于公众号，`ClientId` / `ClientSecret` 不通用，必须写成两条配置。
 - **企业微信要填 `AgentId`**：扫码页与应用内授权页都要带。资料走 `auth/getuserdetail`（凭 `user_ticket`，需 `snsapi_privateinfo`）；姓名不在其中，要姓名得开 `LoadMemberProfile` 走 `cgi-bin/user/get`，读不到时姓名为空但**不影响登录**。
-- **`Scopes` 是覆盖语义**：非空时整体替换提供商默认值，不做追加——两种登录方式的 scope 互斥，追加会拼出非法组合。
+- **`Scopes` 默认是追加语义**：在提供商默认值之外追加，所以配置里只写增量（如 Gitee 只写 `user_info` 不会把默认的 `emails` 挤掉）。微信与企业微信例外：两种登录方式的 scope 互斥，配置非空时整体替换。
 - **账号授权时微信授权地址里 `state=_oauthstate` 是正常的**：微信限制 `state` 长度，框架把真实状态挪进回调地址的 `_oauthstate` 参数，回调时还原。
 
 ## 依赖模块
