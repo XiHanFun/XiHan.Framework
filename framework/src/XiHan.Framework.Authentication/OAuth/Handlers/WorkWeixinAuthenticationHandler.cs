@@ -46,7 +46,13 @@ public class WorkWeixinAuthenticationHandler : XiHanOAuthHandler<WorkWeixinAuthe
     /// <returns>处理结果</returns>
     protected override Task<HandleRequestResult> HandleRemoteAuthenticateAsync()
     {
-        WeixinShortState.Restore(Request);
+        // 与 BuildChallengeUrl 的判定保持对称：没搬运过就不还原，
+        // 否则扫码链路上一个同名查询参数就能把真实 state 顶掉
+        if (UsesAccountAuthorization)
+        {
+            WeixinShortState.Restore(Request);
+        }
+
         return base.HandleRemoteAuthenticateAsync();
     }
 

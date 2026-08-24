@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace XiHan.Framework.Authentication.OAuth.Handlers;
 
@@ -173,7 +174,7 @@ public class XiHanOAuthHandler<TOptions> : OAuthHandler<TOptions>
 
             if (!response.IsSuccessStatusCode)
             {
-                Logger.LogError("{Scheme} {Operation}失败，HTTP 状态 {Status}，响应 {Body}。", Scheme.Name, operation, response.StatusCode, content);
+                Logger.LogError("{Scheme} {Operation}失败，HTTP 状态 {Status}，响应 {Body}。", Scheme.Name, operation, response.StatusCode, RedactForLog(content));
                 throw new AuthenticationFailureException($"{operation}失败，远端返回 {(int)response.StatusCode}。");
             }
 
@@ -183,10 +184,59 @@ public class XiHanOAuthHandler<TOptions> : OAuthHandler<TOptions>
             }
             catch (JsonException exception)
             {
-                Logger.LogError(exception, "{Scheme} {Operation}返回了非 JSON 内容：{Body}。", Scheme.Name, operation, content);
+                Logger.LogError(exception, "{Scheme} {Operation}返回了非 JSON 内容：{Body}。", Scheme.Name, operation, RedactForLog(content));
                 throw new AuthenticationFailureException($"{operation}失败，响应不是合法的 JSON。", exception);
             }
         }
+    }
+
+    /// <summary>
+    /// 日志里记录响应体的长度上限
+    /// </summary>
+    private const int MaxLoggedBodyLength = 512;
+
+    /// <summary>
+    /// 记日志前需要抹掉取值的字段名
+    /// </summary>
+    /// <remarks>令牌接口的响应体本身就是凭据载体，出错日志常被汇聚到访问控制远弱于凭据本身的日志平台。</remarks>
+    private static readonly string[] SensitiveJsonKeys =
+    [
+        "access_token",
+        "refresh_token",
+        "accessToken",
+        "refreshToken",
+        "user_ticket",
+        "client_secret",
+        "corpsecret",
+        "secret"
+    ];
+
+    /// <summary>
+    /// 抹掉响应体里的凭据取值并截断，供日志使用
+    /// </summary>
+    /// <param name="content">响应体原文</param>
+    /// <returns>可安全写入日志的文本</returns>
+    protected static string RedactForLog(string? content)
+    {
+        if (string.IsNullOrEmpty(content))
+        {
+            return string.Empty;
+        }
+
+        var redacted = content;
+        foreach (var key in SensitiveJsonKeys)
+        {
+            redacted = Regex.Replace(
+                redacted,
+                "(\"" + Regex.Escape(key) + "\"\\s*:\\s*\")[^\"]*(\")",
+                "${1}***${2}",
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromSeconds(1));
+        }
+
+        return redacted.Length > MaxLoggedBodyLength
+            ? string.Concat(redacted.AsSpan(0, MaxLoggedBodyLength), "…（已截断）")
+            : redacted;
     }
 
     /// <summary>
