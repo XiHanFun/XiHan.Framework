@@ -33,8 +33,9 @@ public class OAuthProviderConfig
     public bool Enabled { get; set; } = true;
 
     /// <summary>
-    /// 登录方式，仅微信、企业微信、钉钉区分，其余提供商忽略
+    /// 登录方式，仅微信、企业微信、飞书、钉钉区分，其余提供商忽略
     /// </summary>
+    /// <remarks>飞书两种方式的授权、令牌、用户信息三个接口成套不同，只改 <see cref="AuthorizationEndpoint"/> 换不过去。</remarks>
     public OAuthLoginMode Mode { get; set; } = OAuthLoginMode.QrCode;
 
     /// <summary>
@@ -61,13 +62,21 @@ public class OAuthProviderConfig
     public bool LoadMemberProfile { get; set; }
 
     /// <summary>
-    /// 钉钉企业 CorpId，填写后授权页锁定到该组织
+    /// 钉钉企业 CorpId，随授权请求一并带出
     /// </summary>
+    /// <remarks>
+    /// 要拿到用户在授权页选定的组织，须在 <see cref="Scopes"/> 里显式加上 <c>corpid</c>：
+    /// 钉钉只在权限范围含 <c>corpid</c> 时才会在令牌响应里返回组织标识，
+    /// 框架据此写出 <see cref="OAuthClaimTypes.DingTalk.CorpId"/> 声明。只填本项不申请该权限范围拿不到组织。
+    /// </remarks>
     public string? CorpId { get; set; }
 
     /// <summary>
-    /// 申请的权限范围，非空时整体覆盖提供商默认值
+    /// 申请的权限范围，在提供商默认值之外追加
     /// </summary>
+    /// <remarks>
+    /// 微信与企业微信是例外，按登录方式推导出的权限范围与配置值互斥，配置非空时整体替换。
+    /// </remarks>
     public string[] Scopes { get; set; } = [];
 
     /// <summary>
@@ -78,7 +87,12 @@ public class OAuthProviderConfig
     /// <summary>
     /// 追加到授权地址上的额外参数
     /// </summary>
-    /// <remarks>提供商特有的可选参数走这里，如 Google 的 <c>access_type</c>、钉钉的 <c>org_type</c>。</remarks>
+    /// <remarks>
+    /// 提供商特有的可选参数走这里，如 Google 的 <c>access_type</c>、钉钉的 <c>org_type</c>。
+    /// 不要用它覆盖 <c>client_id</c>、<c>redirect_uri</c>、<c>response_type</c>、<c>scope</c>、<c>state</c>
+    /// 这些由处理器自己拼装的参数，也不要覆盖启用 PKCE 时的 <c>code_challenge</c> 与 <c>code_challenge_method</c>：
+    /// 走通用授权地址构造的提供商会在发起挑战时抛出重复键异常。
+    /// </remarks>
     public Dictionary<string, string> AuthorizationParameters { get; set; } = [];
 
     /// <summary>

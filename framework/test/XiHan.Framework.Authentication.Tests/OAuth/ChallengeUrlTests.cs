@@ -264,10 +264,14 @@ public class ChallengeUrlTests
     }
 
     /// <summary>
-    /// 显式配置的权限范围应整体覆盖提供商默认值
+    /// 配置的权限范围应追加在提供商默认值之上，不挤掉默认值
     /// </summary>
+    /// <remarks>
+    /// Gitee 的默认范围含 `emails`，配置里只写 `user_info` 时若整体覆盖，
+    /// 邮箱补取会被静默关掉，用户邮箱退化成兜底值。
+    /// </remarks>
     [Fact]
-    public async Task ExplicitScopes_ReplaceProviderDefaults()
+    public async Task ExplicitScopes_AppendToProviderDefaults()
     {
         var (_, query) = await ChallengeAsync(new OAuthProviderConfig
         {
@@ -277,7 +281,49 @@ public class ChallengeUrlTests
             Scopes = ["user_info"]
         });
 
-        Assert.Equal("user_info", query["scope"]);
+        Assert.Equal("user_info emails", query["scope"]);
+    }
+
+    /// <summary>
+    /// 配置里新增的权限范围应追加到默认值之后
+    /// </summary>
+    [Fact]
+    public async Task ExplicitScopes_AddNewScopeToDefaults()
+    {
+        var (_, query) = await ChallengeAsync(new OAuthProviderConfig
+        {
+            Name = "dingtalk",
+            ClientId = "app-key",
+            ClientSecret = "app-secret",
+            Scopes = ["corpid"]
+        });
+
+        Assert.Equal("openid corpid", query["scope"]);
+    }
+
+    /// <summary>
+    /// 微信系的权限范围互斥，配置值应整体替换按登录方式推导出的范围
+    /// </summary>
+    /// <param name="providerType">提供商类型</param>
+    /// <param name="mode">登录方式</param>
+    [Theory]
+    [InlineData(OAuthProviderNames.WeChat, OAuthLoginMode.Account)]
+    [InlineData(OAuthProviderNames.WeChat, OAuthLoginMode.QrCode)]
+    [InlineData(OAuthProviderNames.WeCom, OAuthLoginMode.Account)]
+    public async Task WeixinFamilyScopes_ReplaceModeDefaults(string providerType, OAuthLoginMode mode)
+    {
+        var (_, query) = await ChallengeAsync(new OAuthProviderConfig
+        {
+            Name = "provider",
+            Provider = providerType,
+            Mode = mode,
+            ClientId = "client",
+            ClientSecret = "secret",
+            AgentId = "1000002",
+            Scopes = ["snsapi_base"]
+        });
+
+        Assert.Equal("snsapi_base", query["scope"]);
     }
 
     /// <summary>

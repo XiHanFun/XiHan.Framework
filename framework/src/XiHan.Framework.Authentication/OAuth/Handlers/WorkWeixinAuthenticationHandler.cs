@@ -146,18 +146,23 @@ public class WorkWeixinAuthenticationHandler : XiHanOAuthHandler<WorkWeixinAuthe
             ["code"] = Request.Query["code"].ToString()
         });
 
+        string? memberId;
+        string? openId;
+        string? userTicket;
+
         using (var member = await GetJsonAsync(identifierUrl, "换取成员身份"))
         {
             EnsureErrCodeSuccess(member.RootElement, "换取成员身份");
+            memberId = ReadString(member.RootElement, "userid");
+            openId = ReadString(member.RootElement, "openid");
+            userTicket = ReadString(member.RootElement, "user_ticket");
             CollectScalars(member.RootElement, fields);
         }
 
         // userid 在企业内唯一；非企业成员（如外部联系人）只有 openid
-        fields.TryGetValue("userid", out var memberId);
-        fields.TryGetValue("openid", out var openId);
         var identifier = memberId ?? openId ?? throw MissingField("换取成员身份", "userid 与 openid");
 
-        if (fields.TryGetValue("user_ticket", out var userTicket))
+        if (userTicket is not null)
         {
             await FillDetailAsync(accessToken, userTicket, fields);
         }
@@ -183,7 +188,17 @@ public class WorkWeixinAuthenticationHandler : XiHanOAuthHandler<WorkWeixinAuthe
         return string.Join(',', scopes);
     }
 
-    private static void CollectScalars(JsonElement element, Dictionary<string, string> fields)
+    /// <summary>
+    /// 不参与声明映射的字段：接口状态码，以及换取敏感信息用的一次性凭据
+    /// </summary>
+    private static readonly HashSet<string> NonProfileFields = new(StringComparer.Ordinal)
+    {
+        "errcode",
+        "errmsg",
+        "user_ticket"
+    };
+
+    private static void CollectScalars(JsonElement element, Dictionary<string, string> fields, bool preferExisting = false)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
@@ -197,11 +212,25 @@ public class WorkWeixinAuthenticationHandler : XiHanOAuthHandler<WorkWeixinAuthe
                 continue;
             }
 
+            if (NonProfileFields.Contains(property.Name))
+            {
+                continue;
+            }
+
             var value = property.Value.ValueKind == JsonValueKind.String
                 ? property.Value.GetString()
                 : property.Value.ToString();
 
-            if (!string.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            if (preferExisting)
+            {
+                fields.TryAdd(property.Name, value);
+            }
+            else
             {
                 fields[property.Name] = value;
             }
@@ -246,6 +275,7 @@ public class WorkWeixinAuthenticationHandler : XiHanOAuthHandler<WorkWeixinAuthe
             return;
         }
 
-        CollectScalars(member.RootElement, fields);
+        // 通讯录接口在无字段权限时会返回 gender="0" 这类占位值，先到先得避免覆盖掉已授权拿到的真实值
+        CollectScalars(member.RootElement, fields, preferExisting: true);
     }
 }

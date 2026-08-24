@@ -52,6 +52,53 @@ public class LoginFlowTests
     }
 
     /// <summary>
+    /// 钉钉在权限范围含 corpid 时，应把令牌响应里的组织标识写成声明
+    /// </summary>
+    /// <remarks>
+    /// corpId 只出现在令牌响应里，用户信息接口不返回它——改写令牌字段名时若整体替换响应就会丢掉。
+    /// </remarks>
+    [Fact]
+    public async Task DingTalk_WithCorpIdScope_EmitsCorpIdClaim()
+    {
+        var handler = new StubHttpMessageHandler()
+            .Respond("/v1.0/oauth2/userAccessToken", """
+                {"accessToken":"user-token","refreshToken":"rt","expireIn":7200,"corpId":"dingA123"}
+                """)
+            .Respond("/v1.0/contact/users/me", """{"nick":"张三","openId":"open-1","unionId":"union-1"}""");
+
+        var claims = await RunAsync<DingTalkAuthenticationOptions>(
+            new OAuthProviderConfig
+            {
+                Name = "dingtalk",
+                ClientId = "app-key",
+                ClientSecret = "app-secret",
+                CorpId = "dingA123",
+                Scopes = ["corpid"]
+            },
+            handler);
+
+        Assert.Equal("dingA123", OAuthTestHost.ReadClaim(claims, OAuthClaimTypes.DingTalk.CorpId));
+        Assert.Equal("union-1", OAuthTestHost.ReadClaim(claims, ClaimTypes.NameIdentifier));
+    }
+
+    /// <summary>
+    /// 令牌响应不含组织标识时不应产生该声明
+    /// </summary>
+    [Fact]
+    public async Task DingTalk_WithoutCorpId_OmitsCorpIdClaim()
+    {
+        var handler = new StubHttpMessageHandler()
+            .Respond("/v1.0/oauth2/userAccessToken", """{"accessToken":"user-token","expireIn":7200}""")
+            .Respond("/v1.0/contact/users/me", """{"nick":"张三","openId":"open-1","unionId":"union-1"}""");
+
+        var claims = await RunAsync<DingTalkAuthenticationOptions>(
+            new OAuthProviderConfig { Name = "dingtalk", ClientId = "app-key", ClientSecret = "app-secret" },
+            handler);
+
+        Assert.Null(OAuthTestHost.ReadClaim(claims, OAuthClaimTypes.DingTalk.CorpId));
+    }
+
+    /// <summary>
     /// 微信应以 appid/secret 换令牌，并以 unionid 作为登录标识
     /// </summary>
     [Fact]
@@ -192,6 +239,31 @@ public class LoginFlowTests
     }
 
     /// <summary>
+    /// 通讯录接口的无权限占位值不应覆盖已授权拿到的真实值
+    /// </summary>
+    /// <remarks>
+    /// 无字段权限时 `user/get` 返回 gender="0"（非空占位），排在 `getuserdetail` 之后按后写覆盖会把真实性别抹掉。
+    /// </remarks>
+    [Fact]
+    public async Task WorkWeixin_MemberProfilePlaceholder_DoesNotOverwriteAuthorizedValue()
+    {
+        var handler = new StubHttpMessageHandler()
+            .Respond("/cgi-bin/gettoken", """{"errcode":0,"access_token":"corp-token","expires_in":7200}""")
+            .Respond("/cgi-bin/auth/getuserinfo", """{"errcode":0,"userid":"zhangsan","user_ticket":"ticket-1"}""")
+            .Respond("/cgi-bin/auth/getuserdetail", """{"errcode":0,"userid":"zhangsan","gender":"1","mobile":"13700000000"}""")
+            .Respond("/cgi-bin/user/get", """{"errcode":0,"userid":"zhangsan","name":"张三","gender":"0"}""");
+
+        var provider = CreateWorkWeixin();
+        provider.LoadMemberProfile = true;
+
+        var claims = await RunAsync<WorkWeixinAuthenticationOptions>(provider, handler);
+
+        Assert.Equal("1", OAuthTestHost.ReadClaim(claims, ClaimTypes.Gender));
+        Assert.Equal("13700000000", OAuthTestHost.ReadClaim(claims, OAuthClaimTypes.WorkWeixin.Mobile));
+        Assert.Equal("张三", OAuthTestHost.ReadClaim(claims, ClaimTypes.Name));
+    }
+
+    /// <summary>
     /// QQ 应先换 openid 再取资料，两次请求都要求返回 JSON
     /// </summary>
     [Fact]
@@ -325,6 +397,32 @@ public class LoginFlowTests
         Assert.Equal("42", OAuthTestHost.ReadClaim(claims, ClaimTypes.NameIdentifier));
         Assert.Equal("octocat", OAuthTestHost.ReadClaim(claims, ClaimTypes.Name));
         Assert.Equal("primary@demo.com", OAuthTestHost.ReadClaim(claims, ClaimTypes.Email));
+    }
+
+    /// <summary>
+    /// 邮箱列表接口失败时不应中断登录，只是拿不到邮箱
+    /// </summary>
+    /// <remarks>邮箱是资料补充，应用实际未获授权时返回 403，不能让它把整个登录带崩。</remarks>
+    [Fact]
+    public async Task GitHub_EmailsEndpointForbidden_StillSignsIn()
+    {
+        var handler = new StubHttpMessageHandler()
+            .Respond("/login/oauth/access_token", """{"access_token":"at","token_type":"bearer"}""")
+            .Respond("/user/emails", """{"message":"Forbidden"}""", HttpStatusCode.Forbidden)
+            .Respond("/user", """{"id":42,"login":"octocat"}""");
+
+        var claims = await RunAsync<GitHubAuthenticationOptions>(
+            new OAuthProviderConfig
+            {
+                Name = "github",
+                ClientId = "github-client",
+                ClientSecret = "github-secret",
+                Scopes = ["user:email"]
+            },
+            handler);
+
+        Assert.Equal("42", OAuthTestHost.ReadClaim(claims, ClaimTypes.NameIdentifier));
+        Assert.Null(OAuthTestHost.ReadClaim(claims, ClaimTypes.Email));
     }
 
     /// <summary>

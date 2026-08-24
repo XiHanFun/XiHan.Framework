@@ -36,7 +36,10 @@ public class DingTalkAuthenticationOptions : XiHanOAuthProviderOptions
     }
 
     /// <summary>
-    /// 企业 CorpId，填写后授权页锁定到该组织
+    /// 企业 CorpId，随授权请求一并带出
     /// </summary>
+    /// <remarks>
+    /// 用户选定的组织由钉钉在令牌响应里返回，且只在权限范围含 <c>corpid</c> 时下发。
+    /// </remarks>
     public string? CorpId { get; set; }
 }

@@ -103,12 +103,16 @@ public class DingTalkAuthenticationHandler : XiHanOAuthHandler<DingTalkAuthentic
                 return OAuthTokenResponse.Failed(new AuthenticationFailureException("换取用户令牌失败：响应缺少 accessToken。"));
             }
 
-            // 钉钉返回 accessToken/refreshToken/expireIn，在此改写为 OAuthTokenResponse 读取的标准字段名
-            var normalized = new Dictionary<string, object?>(StringComparer.Ordinal)
+            // 钉钉返回 accessToken/refreshToken/expireIn，在此补上 OAuthTokenResponse 读取的标准字段名。
+            // 原有字段一并保留：corpId 只在令牌响应里出现，用户信息接口不返回它
+            var normalized = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var property in payload.RootElement.EnumerateObject())
             {
-                ["token_type"] = "Bearer",
-                ["access_token"] = accessToken
-            };
+                normalized[property.Name] = property.Value;
+            }
+
+            normalized["token_type"] = "Bearer";
+            normalized["access_token"] = accessToken;
 
             var refreshToken = ReadString(payload.RootElement, "refreshToken");
             if (refreshToken is not null)
@@ -158,6 +162,13 @@ public class DingTalkAuthenticationHandler : XiHanOAuthHandler<DingTalkAuthentic
             ?? throw MissingField("拉取用户信息", "unionId 与 openId");
 
         AddNameIdentifier(identity, identifier);
+
+        // corpId 只在令牌响应里出现，用户信息接口不返回它
+        var corpId = tokens.Response is null ? null : ReadString(tokens.Response.RootElement, "corpId");
+        if (corpId is not null)
+        {
+            identity.AddClaim(new Claim(OAuthClaimTypes.DingTalk.CorpId, corpId, ClaimValueTypes.String, Options.ClaimsIssuer));
+        }
 
         return await CreateTicketCoreAsync(identity, properties, tokens, payload.RootElement);
     }

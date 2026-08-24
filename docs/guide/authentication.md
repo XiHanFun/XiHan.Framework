@@ -137,10 +137,10 @@ version:iterations:algorithm:base64(salt):base64(hash)
 | `Mode` | `QrCode`（默认）/ `Account`，只对微信、企业微信、飞书、钉钉生效 |
 | `DisplayName` | 前端展示名 |
 | `Enabled` / `ClientId` / `ClientSecret` / `CallbackPath` | 同标准 OAuth2 |
-| `Scopes[]` | 申请的权限范围，**非空时整体覆盖**提供商默认值，不做追加 |
+| `Scopes[]` | 申请的权限范围，在提供商默认值之外**追加**；微信与企业微信例外，两种登录方式的范围互斥，配置非空时整体替换 |
 | `AgentId` | 企业微信自建应用 AgentId |
 | `LoadMemberProfile` | 企业微信是否额外读通讯录补姓名 |
-| `CorpId` | 钉钉企业 CorpId，填了授权页锁定到该组织 |
+| `CorpId` | 钉钉企业 CorpId，随授权请求带出；**要拿到用户选定的组织，还须在 `Scopes` 里加 `corpid`**，钉钉只在权限范围含它时才回传，框架据此写出 `urn:dingtalk:corpid` 声明 |
 | `AuthorizationEndpoint` | 逃生舱：直接指定授权页地址，覆盖按 `Provider` + `Mode` 的推导 |
 | `AuthorizationParameters` | 逃生舱：追加到授权地址上的任意参数，如 Google 的 `access_type` |
 
@@ -208,7 +208,7 @@ version:iterations:algorithm:base64(salt):base64(hash)
 | 企业微信默认拿不到姓名 | 授权链路只给 `userid`。要姓名就开 `LoadMemberProfile` 走通讯录读取；读不到时姓名为空，**不影响登录本身** |
 | 登录标识优先取 union 类字段 | 微信 `unionid`、钉钉 `unionId`、飞书 `union_id`，缺失时退回 `openid`；企业微信取 `userid`，非企业成员退回 `openid` |
 | 远端失败会抛异常 | 授权码无效、用户信息拉取失败等由 `RemoteAuthenticationHandler` 抛出；要变成跳转到错误页，需在 provider 的 `Events.OnRemoteFailure` 里处理 |
-| `Scopes` 是覆盖语义 | 非空时整体替换提供商默认值，不做追加——避免与按登录方式推导出的范围叠加 |
+| `Scopes` 默认是追加语义 | 在提供商默认值之外追加，配置里只写增量即可；微信与企业微信例外，两种方式的范围互斥所以整体替换 |
 
 ::: danger 首次第三方登录不要按邮箱并号
 拿第三方返回的邮箱去匹配既有账号并直接登录，等于把「谁控制这个邮箱」的判断外包给了第三方。第三方邮箱未必经过验证，这会成为账号接管的入口。
