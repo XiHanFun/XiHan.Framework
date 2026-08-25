@@ -54,11 +54,11 @@ public class CastleXiHanMethodInvocation : IXiHanMethodInvocation
     public MethodInfo Method => _invocation.MethodInvocationTarget ?? _invocation.Method;
 
     /// <summary>
-    /// 方法的返回值，可读取也可覆写
+    /// 方法的返回值，可读取也可覆写；目标方法执行前、方法无返回值或返回 null 时为 null
     /// </summary>
-    public object ReturnValue
+    public object? ReturnValue
     {
-        get => _invocation.ReturnValue!;
+        get => _invocation.ReturnValue;
         set => _invocation.ReturnValue = value;
     }
 
