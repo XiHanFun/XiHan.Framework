@@ -49,7 +49,7 @@ jobs:
       - name: 测试（MTP 模式，采集覆盖率）
         # dotnet test 由 global.json 的 test.runner 直接驱动 Microsoft.Testing.Platform
         # 测试应用；--coverage 经 TestingPlatformCommandLineArguments 透传给每个测试程序，
-        # 覆盖率文件统一产出到 framework/TestResults/。失败即中断。
+        # 覆盖率文件产出到工作目录下的 TestResults/。失败即中断。
         run: >
           dotnet test framework/XiHan.Framework.slnx
           --configuration Release
@@ -57,16 +57,16 @@ jobs:
           -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 
       - name: 合并覆盖率报告
-        # MTP 模式下各测试应用的 cobertura 文件统一落在 framework/TestResults/ 下
+        # MTP 的覆盖率产物落在 dotnet test 的工作目录下，即仓库根的 TestResults/
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
           reportgenerator \
-            "-reports:framework/TestResults/*.cobertura.xml" \
+            "-reports:TestResults/*.cobertura.xml" \
             "-targetdir:${{ runner.temp }}/coverage" \
             "-reporttypes:JsonSummary"
 
       - name: 覆盖率门禁
-        # 当前实测（2026-08，补盲后）：行覆盖率 13.3%、覆盖 8157 行。
+        # 当前实测（2026-08-25）：行覆盖率 11.7%、覆盖 6928 行。
         # 阈值只做「防止大幅回退」：覆盖行数与百分比双下限，随测试补齐逐步上调。
         run: |
           python3 - <<'PY'
@@ -92,5 +92,5 @@ jobs:
         with:
           name: test-results
           path: |
-            framework/TestResults/
+            TestResults/
           if-no-files-found: ignore
