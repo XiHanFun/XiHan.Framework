@@ -1,15 +1,13 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using AspNet.Security.OAuth.Gitee;
-using AspNet.Security.OAuth.GitHub;
-using AspNet.Security.OAuth.QQ;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Authentication.OAuth.Handlers;
+using AspNetOAuthOptions = Microsoft.AspNetCore.Authentication.OAuth.OAuthOptions;
 
 namespace XiHan.Framework.Authentication.OAuth;
 
@@ -18,6 +16,11 @@ namespace XiHan.Framework.Authentication.OAuth;
 /// </summary>
 public static class XiHanOAuthServiceCollectionExtensions
 {
+    /// <summary>
+    /// 外部登录中转使用的登录方案名称
+    /// </summary>
+    public const string ExternalSignInScheme = "ExternalCookie";
+
     /// <summary>
     /// 根据配置动态注册 OAuth 提供商
     /// </summary>
@@ -54,77 +57,156 @@ public static class XiHanOAuthServiceCollectionExtensions
 
     private static void RegisterProvider(AuthenticationBuilder builder, OAuthProviderConfig provider)
     {
-        var name = provider.Name.ToLowerInvariant();
-
-        switch (name)
+        switch (provider.ResolveProviderType())
         {
-            case "google":
-                builder.AddGoogle(provider.Name, provider.DisplayName ?? "Google", options =>
-                {
-                    options.ClientId = provider.ClientId;
-                    options.ClientSecret = provider.ClientSecret;
-                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
-                    options.SignInScheme = "ExternalCookie";
-                    // 头像：Google 用户信息 picture → 统一头像 Claim
-                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "picture");
-                    foreach (var scope in provider.Scopes)
-                    {
-                        options.Scope.Add(scope);
-                    }
-                });
+            case OAuthProviderNames.Google:
+                Add<GoogleAuthenticationOptions, XiHanOAuthHandler<GoogleAuthenticationOptions>>(builder, provider, "Google", _ => { });
                 break;
 
-            case "github":
-                builder.AddGitHub(provider.Name, provider.DisplayName ?? "GitHub", options =>
-                {
-                    options.ClientId = provider.ClientId;
-                    options.ClientSecret = provider.ClientSecret;
-                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
-                    options.SignInScheme = "ExternalCookie";
-                    // 头像：GitHub 用户信息 avatar_url → 统一头像 Claim
-                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
-                    foreach (var scope in provider.Scopes)
-                    {
-                        options.Scope.Add(scope);
-                    }
-                });
+            case OAuthProviderNames.GitHub:
+                Add<GitHubAuthenticationOptions, GitHubAuthenticationHandler>(builder, provider, "GitHub", _ => { });
                 break;
 
-            case "gitee":
-                builder.AddGitee(provider.Name, provider.DisplayName ?? "Gitee", options =>
-                {
-                    options.ClientId = provider.ClientId;
-                    options.ClientSecret = provider.ClientSecret;
-                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
-                    options.SignInScheme = "ExternalCookie";
-                    // 头像：Gitee 用户信息 avatar_url → 统一头像 Claim
-                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "avatar_url");
-                    foreach (var scope in provider.Scopes)
-                    {
-                        options.Scope.Add(scope);
-                    }
-                });
+            case OAuthProviderNames.Gitee:
+                Add<GiteeAuthenticationOptions, GiteeAuthenticationHandler>(builder, provider, "Gitee", _ => { });
                 break;
 
-            case "qq":
-                builder.AddQQ(provider.Name, provider.DisplayName ?? "QQ", options =>
-                {
-                    options.ClientId = provider.ClientId;
-                    options.ClientSecret = provider.ClientSecret;
-                    options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
-                    options.SignInScheme = "ExternalCookie";
-                    // 头像：QQ 用户信息 figureurl_qq_2（100×100）→ 统一头像 Claim
-                    options.ClaimActions.MapJsonKey(OAuthOptions.AvatarClaimType, "figureurl_qq_2");
-                    foreach (var scope in provider.Scopes)
-                    {
-                        options.Scope.Add(scope);
-                    }
-                });
+            case OAuthProviderNames.QQ:
+                Add<QQAuthenticationOptions, QQAuthenticationHandler>(builder, provider, "QQ", _ => { });
+                break;
+
+            case OAuthProviderNames.Weixin or OAuthProviderNames.WeChat:
+                Add<WeixinAuthenticationOptions, WeixinAuthenticationHandler>(builder, provider, "微信", options => ConfigureWeixin(options, provider), scopesReplaceDefaults: true);
+                break;
+
+            case OAuthProviderNames.WorkWeixin or OAuthProviderNames.WeCom:
+                Add<WorkWeixinAuthenticationOptions, WorkWeixinAuthenticationHandler>(builder, provider, "企业微信", options => ConfigureWorkWeixin(options, provider), scopesReplaceDefaults: true);
+                break;
+
+            case OAuthProviderNames.Feishu or OAuthProviderNames.Lark:
+                Add<FeishuAuthenticationOptions, FeishuAuthenticationHandler>(builder, provider, "飞书", options => ConfigureFeishu(options, provider));
+                break;
+
+            case OAuthProviderNames.DingTalk:
+                Add<DingTalkAuthenticationOptions, DingTalkAuthenticationHandler>(builder, provider, "钉钉", options => ConfigureDingTalk(options, provider));
                 break;
 
             default:
                 // 未知提供商，跳过
                 break;
         }
+    }
+
+    private static void Add<TOptions, THandler>(
+        AuthenticationBuilder builder,
+        OAuthProviderConfig provider,
+        string defaultDisplayName,
+        Action<TOptions> configureProvider,
+        bool scopesReplaceDefaults = false)
+        where TOptions : XiHanOAuthProviderOptions, new()
+        where THandler : OAuthHandler<TOptions>
+    {
+        builder.AddOAuth<TOptions, THandler>(provider.Name, provider.DisplayName ?? defaultDisplayName, options =>
+        {
+            options.ClientId = provider.ClientId;
+            options.ClientSecret = provider.ClientSecret;
+            options.CallbackPath = provider.CallbackPath ?? $"/signin-{provider.Name}";
+            options.SignInScheme = ExternalSignInScheme;
+
+            configureProvider(options);
+
+            // 显式配置的授权页地址排在按登录方式推导之后，始终以配置为准
+            if (!string.IsNullOrWhiteSpace(provider.AuthorizationEndpoint))
+            {
+                options.AuthorizationEndpoint = provider.AuthorizationEndpoint;
+            }
+
+            ApplyScopes(options, provider, scopesReplaceDefaults);
+
+            foreach (var parameter in provider.AuthorizationParameters)
+            {
+                options.AdditionalAuthorizationParameters[parameter.Key] = parameter.Value;
+            }
+        });
+    }
+
+    private static void ConfigureWeixin(WeixinAuthenticationOptions options, OAuthProviderConfig provider)
+    {
+        if (provider.Mode != OAuthLoginMode.Account)
+        {
+            return;
+        }
+
+        // 账号授权走公众号网页授权页，凭据须填公众号的 AppId 与 AppSecret
+        options.AuthorizationEndpoint = OAuthProviderEndpoints.Weixin.AccountAuthorization;
+        ReplaceScopes(options, OAuthProviderEndpoints.Weixin.AccountScope);
+    }
+
+    private static void ConfigureWorkWeixin(WorkWeixinAuthenticationOptions options, OAuthProviderConfig provider)
+    {
+        options.AgentId = provider.AgentId ?? string.Empty;
+        options.LoadMemberProfile = provider.LoadMemberProfile;
+
+        if (provider.Mode != OAuthLoginMode.Account)
+        {
+            return;
+        }
+
+        // 应用内网页授权要显式申请权限范围，扫码页则不带 scope
+        options.AuthorizationEndpoint = OAuthProviderEndpoints.WorkWeixin.AccountAuthorization;
+        ReplaceScopes(options, OAuthProviderEndpoints.WorkWeixin.AccountScope);
+    }
+
+    private static void ConfigureFeishu(FeishuAuthenticationOptions options, OAuthProviderConfig provider)
+    {
+        if (provider.Mode != OAuthLoginMode.Account)
+        {
+            return;
+        }
+
+        // 两套端点的授权码不可交叉换取，三个地址成套替换
+        options.AuthorizationEndpoint = OAuthProviderEndpoints.Feishu.AccountAuthorization;
+        options.TokenEndpoint = OAuthProviderEndpoints.Feishu.AccountToken;
+        options.UserInformationEndpoint = OAuthProviderEndpoints.Feishu.AccountUserInformation;
+        options.UseFormTokenRequest = false;
+    }
+
+    private static void ConfigureDingTalk(DingTalkAuthenticationOptions options, OAuthProviderConfig provider)
+    {
+        options.CorpId = provider.CorpId;
+
+        if (provider.Mode == OAuthLoginMode.Account)
+        {
+            options.AuthorizationEndpoint = OAuthProviderEndpoints.DingTalk.AccountAuthorization;
+        }
+    }
+
+    private static void ApplyScopes(AspNetOAuthOptions options, OAuthProviderConfig provider, bool replaceDefaults)
+    {
+        if (provider.Scopes.Length == 0)
+        {
+            return;
+        }
+
+        // 微信系两种登录方式的权限范围互斥，配置值必须整体替换按登录方式推导出的范围；
+        // 其余提供商是追加，配置里只写增量就不会把提供商默认值（如 Gitee 的 emails）挤掉
+        if (replaceDefaults)
+        {
+            options.Scope.Clear();
+        }
+
+        foreach (var scope in provider.Scopes)
+        {
+            if (!options.Scope.Contains(scope))
+            {
+                options.Scope.Add(scope);
+            }
+        }
+    }
+
+    private static void ReplaceScopes(AspNetOAuthOptions options, string scope)
+    {
+        options.Scope.Clear();
+        options.Scope.Add(scope);
     }
 }
