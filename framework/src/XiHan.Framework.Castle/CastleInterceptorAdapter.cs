@@ -116,7 +116,7 @@ public class CastleInterceptorAdapter : IInterceptor
         public object TargetObject => _inner.TargetObject;
         public MethodInfo Method => _inner.Method;
 
-        public object ReturnValue
+        public object? ReturnValue
         {
             get => _inner.ReturnValue;
             set => _inner.ReturnValue = value;
