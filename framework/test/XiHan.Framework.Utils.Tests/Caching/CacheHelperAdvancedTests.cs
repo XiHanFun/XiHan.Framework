@@ -13,6 +13,11 @@ public class CacheHelperAdvancedTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
 
+    /// <summary>
+    /// 注册到静态事件 <see cref="CacheHelper.CacheEvent"/> 上的处理器，在 <see cref="Dispose"/> 中摘除
+    /// </summary>
+    private EventHandler<CacheEventArgs>? _cacheEventHandler;
+
     public CacheHelperAdvancedTests(ITestOutputHelper output)
     {
         _output = output;
@@ -100,11 +105,12 @@ public class CacheHelperAdvancedTests : IDisposable
         });
 
         var events = new List<CacheEventArgs>();
-        CacheHelper.CacheEvent += (sender, args) =>
+        _cacheEventHandler = (sender, args) =>
         {
             events.Add(args);
             _output.WriteLine($"事件: {args.EventType} - 键: {args.Key}");
         };
+        CacheHelper.CacheEvent += _cacheEventHandler;
 
         // Act
         CacheHelper.Set("test_key", "test_value", 60); // Added
@@ -304,6 +310,12 @@ public class CacheHelperAdvancedTests : IDisposable
 
     public void Dispose()
     {
+        if (_cacheEventHandler is not null)
+        {
+            CacheHelper.CacheEvent -= _cacheEventHandler;
+            _cacheEventHandler = null;
+        }
+
         CacheHelper.Clear();
         CacheHelper.ResetStatistics();
         // 重置配置
