@@ -149,11 +149,17 @@ public class CommandApp
                 }
             }
 
+            // 回填解析结果中的命令名（此前恒为 null）
+            parsedArgs.Command = command.Name;
+
             // 重新解析剩余参数
             if (remainingArgs.Count > 0)
             {
                 parsedArgs = parser.Parse([.. remainingArgs]);
             }
+
+            // 校验未知选项（AllowUnknownOptions 此前从未生效，未知选项被静默接受）
+            ValidateUnknownOptions(parsedArgs, command);
 
             // 创建命令实例：接入了 DI 就经容器构造（支持构造函数注入），否则回落反射
             var commandInstance = CreateCommandInstance(command);
@@ -307,6 +313,48 @@ public class CommandApp
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 校验未知选项（未开启 AllowUnknownOptions 时，未声明在命令描述符或内置选项里的选项直接报错）
+    /// </summary>
+    /// <param name="parsedArgs">解析结果</param>
+    /// <param name="command">目标命令描述符</param>
+    private void ValidateUnknownOptions(ParsedArguments parsedArgs, CommandDescriptor command)
+    {
+        if (_parseOptions.AllowUnknownOptions)
+        {
+            return;
+        }
+
+        var comparison = _parseOptions.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+        // 已知选项：命令自身的全部选项名 + 内置帮助/版本选项
+        var knownNames = new HashSet<string>(comparison == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        foreach (var name in command.Options.SelectMany(o => o.GetNames()))
+        {
+            knownNames.Add(name);
+        }
+        if (_parseOptions.AutoGenerateHelp)
+        {
+            foreach (var name in _parseOptions.HelpOptions)
+            {
+                knownNames.Add(name);
+            }
+        }
+        if (_parseOptions.AutoGenerateVersion)
+        {
+            foreach (var name in _parseOptions.VersionOptions)
+            {
+                knownNames.Add(name);
+            }
+        }
+
+        var unknown = parsedArgs.Options.Keys.Where(name => !knownNames.Contains(name)).ToList();
+        if (unknown.Count > 0)
+        {
+            throw new ArgumentParseException($"未知选项: {string.Join(", ", unknown)}");
+        }
     }
 
     /// <summary>

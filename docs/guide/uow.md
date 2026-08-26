@@ -27,16 +27,22 @@ public async Task<OrderDto> CreateAsync(OrderCreateDto input)
 }
 ```
 
-## AOP 前提：服务类型必须是接口
+## 两条生效路径：AOP 代理与 MVC 过滤器
 
-工作单元靠 Castle 动态代理实现，而 `AddCastleDynamicProxy` 只处理 **`ServiceType.IsInterface` 为真**的服务描述器：
+`[UnitOfWork]` 有两条互不依赖的生效路径。
+
+**一、AOP 动态代理**（进程内互相调用）。工作单元靠 Castle 动态代理实现，而 `AddCastleDynamicProxy` 只处理 **`ServiceType.IsInterface` 为真**的服务描述器：
 
 ```csharp
-services.AddScoped<MyService>();               // ❌ 注册为自身类型 → 不被代理 → [UnitOfWork] 静默失效
+services.AddScoped<MyService>();               // ❌ 注册为自身类型 → 不被代理 → 这条路径不生效
 services.AddScoped<IMyService, MyService>();   // ✅ 接口 → 会被代理
 ```
 
-标了特性却没生效时，**第一件事就是检查注册类型**。
+**二、MVC 动作过滤器**（HTTP 请求）。`XiHanUnitOfWorkFilter` 在动作外层按同一套规则开启工作单元：动作正常返回才提交，抛出异常（含已被异常过滤器接管的）一律不提交、由工作单元释放时回滚。动态 API 的动作方法经 `OriginalMethodAttribute` 回查应用服务的原始方法后读取特性，因此**动态 API 控制器注入应用服务的具体类（不被代理）也照样有事务**。
+
+::: warning 非 HTTP 入口只有第一条路径
+后台作业、事件处理器、Minimal API 等不走 MVC 动作管道，`[UnitOfWork]` 只能靠接口代理生效。这些入口标了特性却没生效时，**第一件事就是检查注册类型**。
+:::
 
 ## 手动控制
 
@@ -118,7 +124,7 @@ await cache.RemoveByPatternAsync(pattern, hideErrors: true, considerUow: true, t
 | 现象 | 原因 |
 | --- | --- |
 | 接口返回 200 但数据没写 | 方法漏标 `[UnitOfWork]`；或内层回滚过 |
-| `[UnitOfWork]` 标了没生效 | 服务注册类型不是接口 |
+| `[UnitOfWork]` 标了没生效 | 非 HTTP 入口（后台作业、事件处理器、Minimal API）且服务注册类型不是接口 |
 | 匿名端点调应用服务永久挂起 | 匿名端点没有 UoW 中间件，走代理会让拦截器急切开事务而死锁。用 `ProxyHelper.UnProxy` 取真实实例，或直接注入依赖 |
 | 偶发读到旧值且不自愈 | 缓存失效没走 `considerUow: true` |
 | `requiresNew` 好像没独立 | 升级到修复后的版本；注意别对同一批行用 |

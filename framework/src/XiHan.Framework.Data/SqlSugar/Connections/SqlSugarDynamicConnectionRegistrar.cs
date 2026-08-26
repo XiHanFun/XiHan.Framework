@@ -81,6 +81,35 @@ public sealed class SqlSugarDynamicConnectionRegistrar(
     }
 
     /// <summary>
+    /// 从 SqlSugar 作用域移除连接并清除记账，未注册时为空操作
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    public void Unregister(string configId)
+    {
+        if (string.IsNullOrWhiteSpace(configId))
+        {
+            return;
+        }
+
+        var trimmed = configId.Trim();
+        if (!_registered.TryRemove(trimmed, out _))
+        {
+            return;
+        }
+
+        try
+        {
+            _sqlSugarScope.AsTenant().RemoveConnection(trimmed);
+            _logger.LogInformation("已注销动态数据库连接：ConfigId={ConfigId}", trimmed);
+        }
+        catch (Exception ex)
+        {
+            // 记账已清除，下次会按最新信息重新注册；移除失败不该阻断调用方的业务写入
+            _logger.LogWarning(ex, "注销动态数据库连接失败：ConfigId={ConfigId}", trimmed);
+        }
+    }
+
+    /// <summary>
     /// 获取已注册连接的客户端
     /// </summary>
     /// <param name="configId">连接配置标识</param>

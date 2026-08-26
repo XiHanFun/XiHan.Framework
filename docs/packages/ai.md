@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.AI`
 - **模块类**：`XiHanAIModule`（`[DependsOn(typeof(XiHanHttpModule))]`）
 - **所在层**：基础设施层
-- **关键依赖**：**Microsoft.Extensions.AI** / **Microsoft.Extensions.AI.OpenAI**（会话与嵌入，10.7.0）、**Microsoft.Agents.AI**（Agent，1.13.0）、**ModelContextProtocol**（MCP，1.4.1）、**Microsoft.Extensions.VectorData.Abstractions**（向量数据契约，10.7.0）；框架内部依赖 AI.Abstractions / Core / Http
+- **关键依赖**：**Microsoft.Extensions.AI** / **Microsoft.Extensions.AI.OpenAI**（会话与嵌入，10.9.0）、**Microsoft.Agents.AI**（Agent，1.17.0）、**ModelContextProtocol**（MCP，2.2.0）、**Microsoft.Extensions.VectorData.Abstractions**（向量数据契约，10.9.0）；框架内部依赖 AI.Abstractions / Core / Http
 
 ## 概述
 

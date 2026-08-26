@@ -87,6 +87,7 @@
   </Folder>
   <Folder Name="/2.tests/2.UnitTests/">
     <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Authentication.Tests/XiHan.Framework.Authentication.Tests.csproj" />
     <Project Path="test/XiHan.Framework.AI.Tests/XiHan.Framework.AI.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Tests/XiHan.Framework.Caching.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
@@ -103,6 +104,9 @@
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
     <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
     <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Domain.Shared.Tests/XiHan.Framework.Domain.Shared.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Security.Tests/XiHan.Framework.Security.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Metadata.Tests/XiHan.Framework.Metadata.Tests.csproj" />
   </Folder>
   <Folder Name="/2.tests/3.Main/">
     <Project Path="test/XiHan.Framework.Integration.Tests/XiHan.Framework.Integration.Tests.csproj" />

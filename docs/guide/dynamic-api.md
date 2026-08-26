@@ -59,8 +59,8 @@ public class ProductAppService
 | 属性 | 作用 |
 | --- | --- |
 | `IsEnabled` | 是否启用（任一层级为 `false` 即禁用） |
-| `RouteTemplate` | 自定义路由模板 |
-| `Name` | API 名称 |
+| `RouteTemplate` | 自定义路由模板（类级替换控制器路由，方法级替换动作路由段） |
+| `Name` | API 名称（类级定制控制器名，方法级定制动作名；同简名服务冲突时用类级 `Name` 改名） |
 | `Version` | API 版本（可叠加多个，写纯数字不带 `v` 前缀——路由拼接时框架会自动加上） |
 | `Group` / `GroupName` | 文档分组键 / 分组显示名 |
 | `Tag` | API 标签（可叠加） |

@@ -1,6 +1,13 @@
 {
   "sdk": {
     "version": "10.0.302",
-    "rollForward": "latestFeature"
+    // latestFeature 会滚动到 10.0.4xx（实测 10.0.400 下解决方案还原全线失败，NuGet 回归），
+    // 锁定 10.0.3xx 功能带，只允许同带内补丁升级。
+    "rollForward": "latestPatch"
+  },
+  "test": {
+    // .NET 10 的 MTP 模式：dotnet test 直接驱动 Microsoft.Testing.Platform 测试应用。
+    // 没有它，dotnet test 会走 VSTest 目标并被 MTP 在 .NET 10 SDK 下硬性拒绝。
+    "runner": "Microsoft.Testing.Platform"
   }
 }

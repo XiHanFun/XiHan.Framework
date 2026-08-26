@@ -1,4 +1,4 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
+﻿// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Linq.Expressions;
@@ -64,8 +64,11 @@ public class PageQueryExecutor<T> where T : class
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        // 8. 执行查询
-        var items = query.ToList();
+        // 8. 执行查询（应用分页：Skip/Take 之前必须先有排序，EF 等提供器要求有序查询）
+        var items = query
+            .Skip((meta.PageIndex - 1) * meta.PageSize)
+            .Take(meta.PageSize)
+            .ToList();
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }
@@ -108,7 +111,10 @@ public class PageQueryExecutor<T> where T : class
             return PageResultDtoBase<T>.Empty(meta.PageIndex, meta.PageSize);
         }
 
-        var items = query.ToList();
+        var items = query
+            .Skip((meta.PageIndex - 1) * meta.PageSize)
+            .Take(meta.PageSize)
+            .ToList();
 
         return PageResultDtoBase<T>.Create(items, request, totalCount);
     }

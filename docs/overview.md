@@ -9,7 +9,7 @@ XiHan.Framework 是面向企业级应用的**模块化后端框架**，专为前
 - **单一职责** —— 每个包只负责一个特定的功能领域
 - **开闭原则** —— 对扩展开放、对修改关闭，通过接口和抽象类支持自定义
 - **优先 .NET 10** —— 使用内置能力（DI、日志、序列化），仅在必要时引入第三方库
-- **性能优化** —— 利用 .NET 10 高性能特性，目标支持 AOT 编译
+- **性能优化** —— 利用 .NET 10 高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy / Newtonsoft.Json 暂不兼容裁剪）
 
 ## 为什么是"模块化"
 
@@ -81,20 +81,20 @@ XiHan.Framework 是面向企业级应用的**模块化后端框架**，专为前
 | --- | --- | --- |
 | 运行时 | .NET | 10.0 |
 | 语言 | C# | Latest |
-| ORM | SqlSugar | 5.1.4.216 |
+| ORM | SqlSugar | 5.1.4.217 |
 | 日志 | Serilog | 10.0.0 |
-| 缓存 | HybridCache + StackExchange.Redis | 10.7.0 / 10.0.9 |
+| 缓存 | HybridCache + StackExchange.Redis | 10.9.0 / 10.0.11 |
 | AOP | Castle DynamicProxy | 5.2.1 |
-| 加密 | BouncyCastle | 2.6.2 |
+| 加密 | BouncyCastle | 2.7.0 |
 | 序列化 | System.Text.Json + Newtonsoft.Json | 13.0.4 |
-| 模板引擎 | Scriban | 7.2.5 |
-| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.7.0 / 1.13.0 / 1.4.1 |
-| HTTP 韧性 | Polly | 10.0.9 |
-| gRPC | Grpc.AspNetCore | 2.80.0 |
+| 模板引擎 | Scriban | 7.2.6 |
+| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
+| HTTP 韧性 | Polly | 10.0.11 |
+| gRPC | Grpc.AspNetCore | 2.83.0 |
 | 实时通信 | ASP.NET Core SignalR | - |
-| API 文档 | Scalar + Swashbuckle | 2.16.11 / 10.2.3 |
+| API 文档 | Scalar + Swashbuckle | 2.16.20 / 10.2.3 |
 | IP 定位 | ip2region | 3.0.2 |
-| 消息通知 | MailKit + Telegram.Bot | 4.17.0 / 22.10.1.1 |
+| 消息通知 | MailKit + Telegram.Bot | 4.17.0 / 22.10.2.1 |
 
 ## 环境要求
 

@@ -24,6 +24,7 @@ namespace XiHan.Framework.Core.Application;
 public class XiHanApplicationBase : IXiHanApplication
 {
     private bool _configuredServices;
+    private bool _shutdownTriggered;
 
     /// <summary>
     /// 构造函数
@@ -409,6 +410,8 @@ public class XiHanApplicationBase : IXiHanApplication
     /// </summary>
     public virtual async Task ShutdownAsync()
     {
+        _shutdownTriggered = true;
+
         using var scope = ServiceProvider.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IModuleManager>().ShutdownModulesAsync(new ApplicationShutdownContext(scope.ServiceProvider));
     }
@@ -418,6 +421,8 @@ public class XiHanApplicationBase : IXiHanApplication
     /// </summary>
     public virtual void Shutdown()
     {
+        _shutdownTriggered = true;
+
         using var scope = ServiceProvider.CreateScope();
         scope.ServiceProvider.GetRequiredService<IModuleManager>().ShutdownModules(new ApplicationShutdownContext(scope.ServiceProvider));
     }
@@ -427,7 +432,22 @@ public class XiHanApplicationBase : IXiHanApplication
     /// </summary>
     public virtual void Dispose()
     {
-        //TODO: 如果之前没有完成，就进行关闭?
+        // 主机路径由 ApplicationStopping 触发 ShutdownAsync 后才会到 ApplicationStopped 的 Dispose；
+        // 非主机路径（控制台、单元测试等）不会触发 ApplicationStopping，这里兜底关闭一次，
+        // 避免模块的 OnApplicationShutdown 钩子静默丢失。
+        // 兜底失败必须吞掉：宿主可能已先行释放服务提供器，此时创建作用域会抛异常，
+        // 不应让 Dispose 抛错干扰宿主释放流程。
+        if (!_shutdownTriggered && ServiceProvider is not null)
+        {
+            try
+            {
+                Shutdown();
+            }
+            catch
+            {
+                // 忽略：宿主释放顺序导致服务提供器不可用
+            }
+        }
 
         GC.SuppressFinalize(this);
     }

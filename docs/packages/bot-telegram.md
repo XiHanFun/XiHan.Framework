@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Bot.Telegram`
 - **模块类**：`XiHanBotTelegramModule`
 - **所在层**：基础设施层
-- **关键依赖**：`Telegram.Bot`（22.10.1.1，官方 SDK）+ `Microsoft.AspNetCore.App`（`FrameworkReference`，Webhook 端点需要）；框架内部依赖 `XiHan.Framework.Bot`。
+- **关键依赖**：`Telegram.Bot`（22.10.2.1，官方 SDK）+ `Microsoft.AspNetCore.App`（`FrameworkReference`，Webhook 端点需要）；框架内部依赖 `XiHan.Framework.Bot`。
 
 ## 概述
 
@@ -251,7 +251,7 @@ Webhook 模式下别忘了在管道里 `app.UseTelegramBotWebhook();`。
 ## 依赖模块
 
 - [XiHan.Framework.Bot](./bot)（内核，`IBotProvider` / `BotResult` / `BotMessage`）
-- `Telegram.Bot` 22.10.1.1（官方 SDK）、`Microsoft.AspNetCore.App`（Webhook 端点）
+- `Telegram.Bot` 22.10.2.1（官方 SDK）、`Microsoft.AspNetCore.App`（Webhook 端点）
 
 ## 相关模块
 

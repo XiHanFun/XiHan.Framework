@@ -115,17 +115,17 @@ await app.RunAsync();
 | 类别 | 技术 | 版本 |
 | --- | --- | --- |
 | 运行时 | .NET | 10.0 |
-| ORM | SqlSugar | 5.1.4.216 |
+| ORM | SqlSugar | 5.1.4.217 |
 | 日志 | Serilog | 10.0.0 |
-| 缓存 | HybridCache + StackExchange.Redis | 10.7.0 / 10.0.9 |
+| 缓存 | HybridCache + StackExchange.Redis | 10.9.0 / 10.0.11 |
 | AOP | Castle DynamicProxy | 5.2.1 |
-| 加密 | BouncyCastle | 2.6.2 |
+| 加密 | BouncyCastle | 2.7.0 |
 | 序列化 | System.Text.Json + Newtonsoft.Json | 13.0.4 |
-| 模板引擎 | Scriban | 7.2.5 |
-| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.7.0 / 1.13.0 / 1.4.1 |
-| HTTP 韧性 | Polly | 10.0.9 |
-| gRPC | Grpc.AspNetCore | 2.80.0 |
-| API 文档 | Scalar + Swashbuckle | 2.16.11 / 10.2.3 |
+| 模板引擎 | Scriban | 7.2.6 |
+| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
+| HTTP 韧性 | Polly | 10.0.11 |
+| gRPC | Grpc.AspNetCore | 2.83.0 |
+| API 文档 | Scalar + Swashbuckle | 2.16.20 / 10.2.3 |
 
 ## 社区资源
 

@@ -41,7 +41,8 @@ internal static class InternalServiceCollectionExtensions
     {
         var moduleLoader = new ModuleLoader();
         var assemblyFinder = new AssemblyFinder(application);
-        var typeFinder = new TypeFinder(assemblyFinder);
+        var initLoggerFactory = new DefaultInitLoggerFactory();
+        var typeFinder = new TypeFinder(assemblyFinder, initLoggerFactory);
 
         if (!services.IsAdded<IConfiguration>())
         {
@@ -51,7 +52,7 @@ internal static class InternalServiceCollectionExtensions
         // 模块基础服务
         services.TryAddSingleton<IAssemblyFinder>(assemblyFinder);
         services.TryAddSingleton<ITypeFinder>(typeFinder);
-        services.TryAddSingleton<IInitLoggerFactory>(new DefaultInitLoggerFactory());
+        services.TryAddSingleton<IInitLoggerFactory>(initLoggerFactory);
         services.TryAddSingleton<IModuleLoader>(moduleLoader);
 
         // 属性或字段自动注入服务

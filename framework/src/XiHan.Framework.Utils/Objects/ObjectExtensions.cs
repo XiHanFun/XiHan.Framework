@@ -146,16 +146,15 @@ public static class ObjectExtensions
     /// </summary>
     /// <param name="instance">对象</param>
     /// <param name="fieldName">字段名称</param>
-    /// <returns>字段信息</returns>
-    public static FieldInfo GetObjectField(this object? instance, string fieldName)
+    /// <returns>字段信息，字段不存在时返回 null（先调 IsObjectContainField 或判空）</returns>
+    /// <exception cref="ArgumentNullException">当实例为 null 时</exception>
+    /// <exception cref="ArgumentException">当字段名为空时</exception>
+    public static FieldInfo? GetObjectField(this object? instance, string fieldName)
     {
-        if (instance is null || string.IsNullOrEmpty(fieldName))
-        {
-            throw new NotImplementedException(nameof(fieldName));
-        }
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fieldName);
 
-        var foundFieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundFieldInfo ?? throw new NotImplementedException(nameof(fieldName));
+        return instance.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
 
     /// <summary>
@@ -163,15 +162,12 @@ public static class ObjectExtensions
     /// </summary>
     /// <param name="instance">对象</param>
     /// <returns>字段信息</returns>
+    /// <exception cref="ArgumentNullException">当实例为 null 时</exception>
     public static FieldInfo[] GetObjectFields(this object? instance)
     {
-        if (instance is null)
-        {
-            throw new NotImplementedException(nameof(instance));
-        }
+        ArgumentNullException.ThrowIfNull(instance);
 
-        var foundFieldInfos = instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundFieldInfos ?? throw new NotImplementedException(nameof(foundFieldInfos));
+        return instance.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
 
     #endregion 字段信息
@@ -200,32 +196,28 @@ public static class ObjectExtensions
     /// </summary>
     /// <param name="instance">对象</param>
     /// <param name="propertyName">属性名称</param>
-    /// <returns>属性信息</returns>
-    public static PropertyInfo GetObjectProperty(this object? instance, string propertyName)
+    /// <returns>属性信息，属性不存在时返回 null（先调 IsContainObjectProperty 或判空）</returns>
+    /// <exception cref="ArgumentNullException">当实例为 null 时</exception>
+    /// <exception cref="ArgumentException">当属性名为空时</exception>
+    public static PropertyInfo? GetObjectProperty(this object? instance, string propertyName)
     {
-        if (instance is null || string.IsNullOrEmpty(propertyName))
-        {
-            throw new NotImplementedException(nameof(propertyName));
-        }
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
 
-        var foundPropertyInfo = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundPropertyInfo ?? throw new NotImplementedException(nameof(foundPropertyInfo));
+        return instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
 
     /// <summary>
     /// 利用反射来获取对象所有属性信息
-    /// </summary>+
+    /// </summary>
     /// <param name="instance">对象</param>
     /// <returns>属性信息</returns>
+    /// <exception cref="ArgumentNullException">当实例为 null 时</exception>
     public static PropertyInfo[] GetObjectProperties(this object? instance)
     {
-        if (instance is null)
-        {
-            throw new NotImplementedException(nameof(instance));
-        }
+        ArgumentNullException.ThrowIfNull(instance);
 
-        var foundPropertyInfos = instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        return foundPropertyInfos ?? throw new NotImplementedException(nameof(foundPropertyInfos));
+        return instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
 
     #endregion 属性信息

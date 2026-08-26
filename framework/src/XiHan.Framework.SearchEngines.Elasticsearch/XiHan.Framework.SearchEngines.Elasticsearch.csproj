@@ -14,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.5.0" />
     </ItemGroup>
 
     <ItemGroup>

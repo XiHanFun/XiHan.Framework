@@ -33,6 +33,8 @@ public class MyModule : XiHanModule { }
 
 `XiHanUowModule` 在 `PreConfigureServices` 阶段调用 `services.OnRegistered(UnitOfWorkInterceptorRegistrar.RegisterIfNeeded)`：每当有服务被注册，就判断其实现类型是否是"工作单元类型"（打了 `[UnitOfWork]` 特性、或某个方法打了该特性、或实现 `IUnitOfWorkEnabled`），是则为它挂上 `UnitOfWorkInterceptor` 动态代理拦截器。因此工作单元能力靠"注册即织入"生效，业务侧只管打特性。
 
+动态代理只包裹接口注册，HTTP 请求进来的控制器实例不经过它。[XiHan.Framework.Web.Api](./web-api) 的 `XiHanUnitOfWorkFilter` 补上这条路径：MVC 动作外层按同一套 `UnitOfWorkHelper` 规则开启工作单元，动态 API 的动作先经 `OriginalMethodAttribute` 回查原始应用服务方法再读取特性。
+
 ## 工作原理
 
 拦截到一个被标记的方法时，`UnitOfWorkInterceptor.InterceptAsync` 的处理：
@@ -87,7 +89,7 @@ public class MyModule : XiHanModule { }
 | `UnitOfWorkAttribute` | `[UnitOfWork]`，可用于方法/类/接口。构造重载：`()`、`(bool isTransactional)`、`(bool, IsolationLevel)`、`(bool, IsolationLevel, int timeout)`。属性：`bool? IsTransactional`、`int? Timeout`（毫秒）、`IsolationLevel? IsolationLevel`、`bool IsDisabled`。方法级已存在 UoW 时特性对是否"新开"无效（复用当前）。 |
 | `UnitOfWorkInterceptor` | AOP 拦截器（`XiHanInterceptor`，`ITransientDependency`），实现自动事务边界 |
 | `UnitOfWorkInterceptorRegistrar` | `RegisterIfNeeded(context)`：注册期判断并为工作单元类型挂拦截器 |
-| `UnitOfWorkHelper` | `IsUnitOfWorkType(TypeInfo)` / `IsUnitOfWorkMethod(MethodInfo, out attr)` / `GetUnitOfWorkAttributeOrNull(...)` |
+| `UnitOfWorkHelper` | `IsUnitOfWorkType(TypeInfo)` / `IsUnitOfWorkMethod(MethodInfo, out attr)` / `CreateOptions(IServiceProvider, MethodInfo, attr)` / `GetUnitOfWorkAttributeOrNull(...)` |
 
 ### 事务 / 数据库 API 抽象（供数据层实现）
 

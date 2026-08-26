@@ -19,7 +19,7 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架显示名称
     /// </summary>
-    public const string DisplayName = "曦寒框架";
+    public const string DisplayName = "曦寒开发框架";
 
     /// <summary>
     /// 框架版权信息
@@ -29,7 +29,7 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架作者
     /// </summary>
-    public const string Author = "XiHanFun";
+    public const string Author = "XiHanFun and contributors";
 
     /// <summary>
     /// 框架组织
@@ -49,7 +49,7 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架文档地址
     /// </summary>
-    public const string DocumentationUrl = "https://docs.xihanfun.com";
+    public const string DocumentationUrl = "https://framework.docs.xihanfun.com";
 
     /// <summary>
     /// 框架许可证
@@ -101,7 +101,7 @@ public static class XiHanMetadata
     /// <summary>
     /// 框架描述（.NET 版本由目标框架派生）
     /// </summary>
-    public static string Description { get; } = $"快速、轻量、高效、用心的开发框架和组件库。基于 {ResolveDotNetDisplay()} 构建。";
+    public static string Description { get; } = $"快速、轻量、高效、用心的 .NET 现代模块化开发框架。基于 {ResolveDotNetDisplay()} 构建。";
 
     /// <summary>
     /// 入口程序名称

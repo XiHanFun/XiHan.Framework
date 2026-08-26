@@ -20,15 +20,28 @@ public static partial class CacheKeyBuilder
     /// <returns>构建好的缓存键</returns>
     public static string Build(string template, IXiHanMethodInvocation invocation)
     {
-        var parameters = invocation.Method.GetParameters();
-        var arguments = invocation.Arguments;
+        return Build(template, invocation.Method, invocation.Arguments);
+    }
 
+    /// <summary>
+    /// 根据键模板、方法与实参构建缓存键
+    /// </summary>
+    /// <param name="template">键模板，如 "config:{tenantId}:{key}"</param>
+    /// <param name="method">方法，占位符按其形参名匹配</param>
+    /// <param name="arguments">与形参一一对应的实参，短于形参列表时缺位按 null 处理</param>
+    /// <returns>构建好的缓存键</returns>
+    public static string Build(string template, MethodInfo method, IReadOnlyList<object?> arguments)
+    {
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentNullException.ThrowIfNull(arguments);
+
+        var parameters = method.GetParameters();
         var result = template;
 
         for (var i = 0; i < parameters.Length; i++)
         {
             var paramName = parameters[i].Name!;
-            var paramValue = arguments[i]?.ToString() ?? "null";
+            var paramValue = (i < arguments.Count ? arguments[i]?.ToString() : null) ?? "null";
             result = result.Replace($"{{{paramName}}}", paramValue);
         }
 
