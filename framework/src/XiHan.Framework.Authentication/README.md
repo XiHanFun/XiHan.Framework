@@ -6,7 +6,24 @@ XiHan.Framework.Authentication 提供认证相关的基础能力与策略支持�
 ## 核心能力
 - 认证流程与结果模型的统一抽象
 - 用户凭据验证策略与安全策略扩展
+- 第三方登录：Google / GitHub / Gitee / QQ / 微信 / 企业微信 / 飞书 / 钉钉，账号授权与扫码登录两种方式
 - 与授权、日志等基础设施协同
+
+## 第三方登录
+配置节 `XiHan:Authentication:OAuth`，`Providers[]` 逐条注册成独立的 AuthenticationScheme：
+
+```json
+"Providers": [
+  { "Name": "wechat-qr", "Provider": "wechat", "Mode": "QrCode",  "ClientId": "开放平台网站应用 AppId", "ClientSecret": "..." },
+  { "Name": "wechat-mp", "Provider": "wechat", "Mode": "Account", "ClientId": "公众号 AppId",          "ClientSecret": "..." }
+]
+```
+
+`Name` 是方案名（决定回调路径 `/signin-{Name}`），`Provider` 是提供商类型，`Mode` 选账号授权还是扫码登录。
+同一家开两种方式就写两条：`Name` 不同、`Provider` 相同。绑定关系的读写走 `IExternalLoginStore`。
+
+八家处理器全部自研，共用基类 `XiHanOAuthHandler<TOptions>`，本包不引入任何第三方 OAuth 提供商包。
+新增一家：写一个继承 `XiHanOAuthProviderOptions` 的选项类，按需覆写处理器方法，再在 `RegisterProvider` 加一个分支。
 
 ## 依赖关系
 - 通过 `XiHanAuthenticationModule` 参与模块化生命周期

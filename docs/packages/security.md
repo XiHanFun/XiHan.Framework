@@ -235,7 +235,7 @@ public class AccountService(IPasswordHasher hasher, IPasswordPolicyService polic
 ## 依赖模块
 
 - [XiHan.Framework.Core](./core)
-- 第三方核心：**BouncyCastle.Cryptography** `2.6.2`（Blowfish / SM2 / SM3）
+- 第三方核心：**BouncyCastle.Cryptography** `2.7.0`（Blowfish / SM2 / SM3）
 
 ## 相关模块
 

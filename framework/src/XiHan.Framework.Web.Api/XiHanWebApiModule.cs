@@ -10,12 +10,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Auditing;
+using XiHan.Framework.Caching;
 using XiHan.Framework.Core.Application;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Localization.Extensions.ApplicationBuilder;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Serialization;
+using XiHan.Framework.Uow;
 using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Session;
@@ -34,7 +36,9 @@ namespace XiHan.Framework.Web.Api;
     typeof(XiHanWebCoreModule),
     typeof(XiHanMultiTenancyModule),
     typeof(XiHanSerializationModule),
-    typeof(XiHanAuditingModule)
+    typeof(XiHanAuditingModule),
+    typeof(XiHanUowModule),
+    typeof(XiHanCachingModule)
 )]
 public class XiHanWebApiModule : XiHanModule
 {

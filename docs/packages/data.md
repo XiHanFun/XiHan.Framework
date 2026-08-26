@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Data`
 - **模块类**：`XiHanDataModule`
 - **所在层**：基础设施层
-- **关键依赖**：**SqlSugarCore**（`5.1.4.216`，ORM，直接对接数据库）
+- **关键依赖**：**SqlSugarCore**（`5.1.4.217`，ORM，直接对接数据库）
 
 ## 概述
 
@@ -79,7 +79,7 @@ public class MyModule : XiHanModule { }
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
 - **实体差异日志**：可选启用（`EnableDiffLog`），基于 SqlSugar 原生 `OnDiffLogEvent` AOP 生成 before/after 快照，交 `IEntityDiffLogWriter` 落库。
 - **分页 / 规约 / 自动查询**：内置多种分页重载（`pageIndex/pageSize`、`PageRequestDtoBase`、规约 `ISpecification<TEntity>`、`GetPagedAutoAsync` 按 DTO 自动构建条件）。
-- **数据库初始化**：可选建库（自动处理 MySQL utf8mb4 归一化）、`CodeFirst` 建表（含分表 `SplitTables` 识别）、按 `Order` 顺序执行 `IDataSeeder`。
+- **数据库初始化**：可选建库（自动处理 MySQL utf8mb4 归一化）、`CodeFirst` 建表（含分表 `SplitTables` 识别）、按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
 - **雪花 ID**：接入 `XiHan.Framework.DistributedIds`，通过 `StaticConfig.CustomSnowFlakeFunc` 作为 SqlSugar 全局主键生成器。
 - **SQL 日志与慢查询**：可开启 SQL/异常/慢 SQL 日志，慢 SQL 阈值可配。
 - **主从读写分离**：SqlSugar 原生主从能力完整放出，appsettings 声明从库即可分担读；差异化权重与更多原生定制走代码钩子；可选从库健康探针自动摘除/回填权重（详见下文）。
@@ -145,6 +145,11 @@ public class MyModule : XiHanModule { }
 | `IDbInitializer` | `InitializeAsync()`（完整流程）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
+| `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
+| `IDataSeederSelector` | 种子选取器：`Select(seeders, context)` 决定当前库跑哪些种子，默认实现按特性+选项筛选，可 `Replace` |
+| `TableInitializationAttribute` | 实体上声明建表方式：`Enabled` / `Group` / `Target` / `ConnectionConfigIds` |
+| `DataSeedingAttribute` | 种子上声明播种方式：`Enabled` / `Group` / `Target` / `ConnectionConfigIds` |
+| `DbInitializationContext` | 当前库上下文：`ConnectionConfigId` / `TenantId` / `IsTenantDatabase` / `Target` |
 | `IDatabaseMetadataProvider` | 库表结构元数据读取 |
 
 ### 审计
@@ -190,6 +195,8 @@ public class MyModule : XiHanModule { }
 | `EnableDbInitialization` | `bool` | `false` | 启动自动建库总开关 |
 | `EnableTableInitialization` | `bool` | `false` | `CodeFirst` 建表 |
 | `EnableDataSeeding` | `bool` | `false` | 执行种子数据 |
+| `TableInitialization` | `TableInitializationOptions` | 全量 | 建表选取规则（哪些实体真正建表），见[选择初始化范围](#选择初始化范围) |
+| `DataSeeding` | `DataSeedingOptions` | 全量 | 种子选取规则（哪些种子真正执行），见[选择初始化范围](#选择初始化范围) |
 
 `SqlSugarConnectionConfigOptions` 字段：`ConfigId`（默认 `"Default"`）、`ConnectionString`、`DbType`（SqlSugar 枚举）、`IsAutoCloseConnection`（默认 `true`）、`InitKeyType`（默认 `InitKeyType.Attribute`）、`MoreSettings`、`DbLinkName`、`LanguageType`、`IndexSuffix`、`SlaveConnectionConfigs`（主从读写分离，详见下文）。
 
@@ -360,6 +367,78 @@ services.AddDataSeeder<RoleSeeder>();
 // 或批量：services.AddDataSeeders(typeof(RoleSeeder), typeof(MenuSeeder));
 ```
 
+## 选择初始化范围
+
+`EnableTableInitialization` / `EnableDataSeeding` 是总开关，**选哪些表建、哪些种子跑**由两组选取规则决定。默认全量（扫描到的实体都建、注册的种子都跑），与总开关打开时的历史行为一致。
+
+### 特性：在实体/种子上声明
+
+```csharp
+// 这张表由 DBA 维护，框架不要碰
+[SugarTable("sys_partitioned_log")]
+[TableInitialization(false)]
+public class SysPartitionedLog : SugarEntity<long> { }
+
+// 平台库独有，租户独立库不建
+[SugarTable("sys_tenant")]
+[TableInitialization(Target = DbInitializationTarget.Platform)]
+public class SysTenant : SugarEntity<long> { }
+
+// 只在归档库建表
+[SugarTable("sys_archive")]
+[TableInitialization(ConnectionConfigIds = ["Archive"])]
+public class SysArchive : SugarEntity<long> { }
+
+// 整组种子归一个分组，配置里按组开关
+[DataSeeding(Group = "Demo")]
+public abstract class DemoSeederBase : DataSeederBase { }
+```
+
+| 成员 | 说明 |
+| --- | --- |
+| `Enabled` | `false` 表示不参与，该表/该种子交由开发者自己维护 |
+| `Group` | 分组名，配合选项里的 `IncludedGroups`/`ExcludedGroups` 按组开关 |
+| `Target` | `Platform` / `Tenant` / `All`（默认）。租户库指 `ConfigId` 以 `TenantConfigIdPrefix` 开头的运行时连接 |
+| `ConnectionConfigIds` | 仅在这些连接上建表/播种，为空表示不限连接 |
+
+特性标在基类上对派生类型同样生效（`Inherited = true`）。
+
+### 选项：在配置里圈定范围
+
+```json
+{
+  "XiHan": { "Data": { "SqlSugarCore": {
+    "EnableTableInitialization": true,
+    "TableInitialization": {
+      "Mode": "All",
+      "ExcludedTables": [ "sys_diff_log", "XiHan.BasicApp.Cms.*" ]
+    },
+    "EnableDataSeeding": true,
+    "DataSeeding": {
+      "ExcludedGroups": [ "Demo" ]
+    }
+  } } }
+}
+```
+
+- `Mode`：`All`（默认，扫到的都参与，标了 `Enabled = false` 的除外）或 `OptIn`（只有显式标了特性的才参与）。
+- `IncludedGroups` / `ExcludedGroups`：按特性上的 `Group` 圈定。
+- `IncludedTables` / `ExcludedTables`（种子对应 `IncludedSeeders` / `ExcludedSeeders`）：支持 `*` `?` 通配；表按**实体类名、实体全名、表名**任一匹配，种子按 **`Name`、类名、类全名**任一匹配。
+- `Filter`：`Func<Type,bool>?` / `Func<IDataSeeder,bool>?` 代码钩子，只能在 `Configure<XiHanSqlSugarCoreOptions>` 里设置。
+
+判定顺序：特性 → 模式 → 分组 → 名称 → 自定义委托，任一环节否决即不参与。
+
+### 接管：自己实现选取逻辑
+
+想完全自己决定（例如从清单文件、数据库配置表读建表范围）时替换默认实现：
+
+```csharp
+services.Replace(ServiceDescriptor.Singleton<IDbEntityTypeProvider, ManifestEntityTypeProvider>());
+services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSelector>());
+```
+
+两个接口都拿到 `DbInitializationContext`（当前连接标识、租户标识、是否租户独立库），据此对不同库返回不同范围。默认实现的 `ShouldInitialize` / `ShouldSeed` 是 `protected virtual`，只想改一条规则时继承默认实现覆写即可。
+
 ## 扩展点 / 自定义
 
 所有核心服务用 `TryAdd*` 注册，业务层可注册自定义实现覆盖：
@@ -369,11 +448,13 @@ services.AddDataSeeder<RoleSeeder>();
 - **租户库隔离**：注册 `ISqlSugarTenantConnectionProvider`，`Resolve` 返回租户独立连接描述符即启用库级隔离；返回 `null` 退化为 `ConfigId`（行/字段）隔离。
 - **自定义连接解析**：设置 `Options.ResolveConnectionConfigId` 委托，或用 `TenantConfigIdPrefix`/`DefaultConfigId` 约定映射。
 - **额外全局过滤器**：调用 `Options.AddGlobalFilter<TEntity>(expr)` 注册表达式树（须可翻译为 SQL 的成员访问/标量比较，勿调用外部方法；构建期 fail-fast 校验，非法表达式启动即报错）。
+- **初始化范围**：用 `[TableInitialization]`/`[DataSeeding]` 特性与 `TableInitialization`/`DataSeeding` 选项圈定，或 `Replace` 掉 `IDbEntityTypeProvider`/`IDataSeederSelector` 自己实现，见[选择初始化范围](#选择初始化范围)。
 - **客户端级配置**：`Options.ConfigureDbAction` 钩子拿到 `ISqlSugarClient` 做自定义装配。
 
 ## 注意事项与最佳实践
 
 - **默认不建库**：`EnableDbInitialization`/`EnableTableInitialization`/`EnableDataSeeding` 默认全 `false`；本机/首次部署需在配置里显式打开。表已存在会跳过（不做迁移，遵循"重建库、无向后兼容"约定）。
+- **总开关之外还有范围**：打开建表/种子开关后默认全量参与；要挑表挑种子（含平台库与租户独立库分开建）见[选择初始化范围](#选择初始化范围)。
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
 - **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤）/`CreateWithDeletedQueryable()`（清软删过滤），仅用于平台运维/审计恢复且须自行做权限校验。
@@ -391,7 +472,7 @@ services.AddDataSeeder<RoleSeeder>();
 - [XiHan.Framework.DistributedIds](./distributed-ids)（雪花 ID 生成器）
 - [XiHan.Framework.Auditing](./auditing)（`IEntityAuditContextProvider`/`IEntityDiffLogWriter` 默认实现来源）
 - [XiHan.Framework.Core](./core)（模块化基础设施，含链路追踪 `XiHanActivitySources`）
-- 第三方核心：**SqlSugarCore** `5.1.4.216`
+- 第三方核心：**SqlSugarCore** `5.1.4.217`
 
 ## 相关模块
 

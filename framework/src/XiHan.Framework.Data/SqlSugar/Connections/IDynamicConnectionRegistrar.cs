@@ -33,6 +33,16 @@ public interface IDynamicConnectionRegistrar
     void Register(DynamicConnectionDescriptor descriptor);
 
     /// <summary>
+    /// 注销连接（未注册则为空操作）
+    /// </summary>
+    /// <remarks>
+    /// 连接信息（主机/账号/口令）改动或数据源停用、删除后须调用，
+    /// 否则注册记账会让后续请求继续复用旧连接，直到进程重启。
+    /// </remarks>
+    /// <param name="configId">连接配置标识</param>
+    void Unregister(string configId);
+
+    /// <summary>
     /// 获取已注册连接的客户端
     /// </summary>
     /// <remarks>

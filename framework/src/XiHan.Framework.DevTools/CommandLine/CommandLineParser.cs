@@ -30,7 +30,8 @@ public class CommandLineParser
     {
         ArgumentNullException.ThrowIfNull(args);
 
-        var result = new ParsedArguments();
+        // 选项名比较规则跟随 ParseOptions.CaseSensitive（此前字典恒为 OrdinalIgnoreCase，配置无效）
+        var result = new ParsedArguments(_options.CaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
         var tokens = Tokenize(args);
         var position = 0;
 
@@ -41,11 +42,12 @@ public class CommandLineParser
             switch (token.Type)
             {
                 case TokenType.StopParsing:
-                    // 遇到 -- 停止解析，后续所有参数作为普通参数
+                    // 遇到 -- 停止解析，后续所有参数原样进入 Remaining——
+                    // 用原始参数（经 Position 回查 args）而非 token 值，避免 "-x" 被剥成 "x"
                     position++;
                     while (position < tokens.Count)
                     {
-                        result.Remaining.Add(tokens[position].Value);
+                        result.Remaining.Add(args[tokens[position].Position]);
                         position++;
                     }
                     break;

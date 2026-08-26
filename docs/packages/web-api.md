@@ -41,8 +41,8 @@ public class MyModule : XiHanModule { }
 - `AddXiHanWebApiSecurity`：`IRequestContextAccessor`（单例）、`ITraceIdProvider`（Scoped）、绑定 `XiHanOpenApiSecurityOptions`、`IOpenApiSecurityClientStore`（默认 `DefaultOpenApiSecurityClientStore`）。
 - `AddXiHanWebApiCors`：绑定 `XiHanCorsOptions` 并按其构建默认 CORS 策略。
 - `AddXiHanWebApiAuth`：按 `XiHan:Authentication:Jwt` 装配 JWT Bearer；按 `XiHan:Web:Api:Auth` 装配授权（可全局要求登录）；OAuth 启用时追加 `ExternalCookie` 临时 scheme。
-- `AddXiHanWebApiLogging`：仅注册本包两个 MVC 过滤器（`XiHanActionLoggingFilter`、`XiHanApiResponseResultFilter`）。五类日志的 `ILogQueue<>`（单例）+ 五个 `HostedService` Worker + 五个 Pipeline（Scoped）+ 五个 `Null*LogWriter` 默认写入器已下沉至 [XiHan.Framework.Auditing](./auditing) 包的 `AddXiHanAuditing`（随 `XiHanAuditingModule` 依赖自动装配），由上层应用覆盖写入器落库。
-- `AddXiHanWebApiMvc`：`AddDynamicApi`（动态 API 发现与约定）+ `AddControllers`（挂两个全局过滤器、统一 JSON、模型校验失败工厂）+ 两个租户贡献者 + `AddOpenApi`。
+- `AddXiHanWebApiLogging`：仅注册本包四个 MVC 过滤器（`XiHanActionLoggingFilter`、`XiHanApiResponseResultFilter`、`XiHanCacheFilter`、`XiHanUnitOfWorkFilter`）。五类日志的 `ILogQueue<>`（单例）+ 五个 `HostedService` Worker + 五个 Pipeline（Scoped）+ 五个 `Null*LogWriter` 默认写入器已下沉至 [XiHan.Framework.Auditing](./auditing) 包的 `AddXiHanAuditing`（随 `XiHanAuditingModule` 依赖自动装配），由上层应用覆盖写入器落库。
+- `AddXiHanWebApiMvc`：`AddDynamicApi`（动态 API 发现与约定）+ `AddControllers`（按「日志 → 统一响应 → 缓存 → 工作单元」由外到内挂四个全局过滤器、统一 JSON、模型校验失败工厂）+ 两个租户贡献者 + `AddOpenApi`。
 
 ## 中间件管道顺序（`OnApplicationInitialization`）
 
@@ -155,6 +155,9 @@ public class MyModule : XiHanModule { }
 | `XiHanController` | 控制器基类（继承 MVC `Controller`），提供 `Success/Success<T>/Fail/Fail<T>` 统一响应助手。 |
 | `XiHanApiResponseResultFilter` | 统一响应过滤器：包装正常返回、把未处理异常映射为统一 `ApiResponse`（异常→状态码单一来源 `MapException`）。 |
 | `XiHanActionLoggingFilter` | 动作级日志过滤器（操作日志/告警）。 |
+| `XiHanCacheFilter` | 动作级缓存过滤器：按原始应用服务方法上的 `[Cacheable]` / `[CacheEvict]` 命中缓存或清除缓存，补上动态代理够不到的 HTTP 入口。 |
+| `XiHanUnitOfWorkFilter` | 动作级工作单元过滤器：按原始应用服务方法上的 `[UnitOfWork]` 开启工作单元，动作抛异常时不提交、由释放时回滚。 |
+| `OriginalMethodResolver` | 由动态控制器动作回查原始应用服务方法（供上述两个过滤器读取业务特性）。 |
 | `[IgnoreApiResponse]` | 标注类/方法跳过统一响应包装（如自定义流式响应）。 |
 | `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）。 |
 | `ITraceIdProvider` / `HttpTraceIdProvider` | TraceId 提供器。 |

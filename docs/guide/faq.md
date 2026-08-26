@@ -125,6 +125,8 @@ services.AddScoped<IMyService, MyService>();   // ✅ 接口 → 会被代理
 public async Task<InvoiceDto> CreateInvoiceAsync(InvoiceCreateDto input) { … }
 ```
 
+标注在 HTTP 与进程内两条路径上都生效：HTTP 请求由 `XiHanUnitOfWorkFilter` 在 MVC 动作外层开启工作单元，进程内互调由 Castle 接口代理的 `UnitOfWorkInterceptor` 开启。两条路径的判定规则一致，详见 [工作单元与事务](./uow#两条生效路径-aop-代理与-mvc-过滤器)。
+
 ### 内层调了 `RollbackAsync`，外层还能提交吗
 
 不能。回滚之后再提交会抛 `XiHanException`。

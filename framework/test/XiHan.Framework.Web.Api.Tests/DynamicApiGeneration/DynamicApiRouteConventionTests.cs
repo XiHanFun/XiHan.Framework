@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Options;
@@ -118,6 +119,39 @@ public class DynamicApiRouteConventionTests
     }
 
     /// <summary>
+    /// 类级 Name 定制控制器名
+    /// </summary>
+    [Fact]
+    public void ControllerName_HonorsClassLevelCustomName()
+    {
+        var options = new DynamicApiOptions();
+        var context = new DynamicApiConventionContext { ServiceType = typeof(NamedSampleAppService) };
+
+        new DefaultDynamicApiConvention(options).Apply(context);
+
+        Assert.Equal("custom-sample", context.ControllerName);
+    }
+
+    /// <summary>
+    /// 类级 Name 只作用于控制器名，动作名仍由方法名推导
+    /// </summary>
+    [Fact]
+    public void ClassLevelCustomName_DoesNotAffectActionName()
+    {
+        var options = new DynamicApiOptions();
+        var context = new DynamicApiConventionContext
+        {
+            ServiceType = typeof(NamedSampleAppService),
+            MethodInfo = typeof(NamedSampleAppService).GetMethod(nameof(NamedSampleAppService.GetItemAsync))
+        };
+
+        new DefaultDynamicApiConvention(options).Apply(context);
+
+        Assert.Equal("custom-sample", context.ControllerName);
+        Assert.Equal("Item", context.ActionName);
+    }
+
+    /// <summary>
     /// 经约定解析指定方法的 HTTP 方法
     /// </summary>
     /// <param name="methodName">方法名</param>
@@ -227,4 +261,17 @@ public class RouteSampleAppService : IApplicationService
     /// </summary>
     /// <returns></returns>
     public Task<string> ListingDetailAsync() => Task.FromResult(string.Empty);
+}
+
+/// <summary>
+/// 类级 Name 定制控制器名的应用服务
+/// </summary>
+[DynamicApi(Name = "custom-sample")]
+public class NamedSampleAppService : IApplicationService
+{
+    /// <summary>
+    /// 查询条目
+    /// </summary>
+    /// <returns></returns>
+    public Task<string> GetItemAsync() => Task.FromResult(string.Empty);
 }

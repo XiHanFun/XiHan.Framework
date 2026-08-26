@@ -20,7 +20,7 @@ namespace XiHan.Framework.Web.Api.DynamicApi.Controllers;
 public static class DynamicApiControllerFactory
 {
     private static readonly Dictionary<Type, Type> ControllerTypeCache = [];
-    private static readonly Dictionary<string, Type> ControllerNameOwners = [];
+    private static readonly Dictionary<string, Type> ControllerNameOwners = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Lock CacheLock = new();
 
     private static ModuleBuilder _moduleBuilder;
@@ -119,7 +119,9 @@ public static class DynamicApiControllerFactory
     /// 校验控制器名在动态程序集内唯一
     /// </summary>
     /// <remarks>
-    /// 控制器名由服务简名推导、不含命名空间，不同命名空间下的同简名应用服务会在同一动态模块内类型重名。
+    /// 控制器名默认由服务简名推导（可用类级 [DynamicApi(Name)] 定制）、不含命名空间，
+    /// 不同命名空间下的同简名应用服务会在同一动态模块内类型重名。
+    /// 路由匹配不区分大小写，故判重忽略大小写。
     /// </remarks>
     /// <param name="controllerName">控制器名</param>
     /// <param name="serviceType">服务类型</param>

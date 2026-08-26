@@ -8,4 +8,5 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.EventBus.Redis\XiHan.Framework.EventBus.Redis.csproj" />
     </ItemGroup>
 
+
 </Project>
