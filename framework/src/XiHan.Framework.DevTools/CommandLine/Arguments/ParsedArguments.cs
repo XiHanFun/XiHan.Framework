@@ -9,9 +9,26 @@ namespace XiHan.Framework.DevTools.CommandLine.Arguments;
 public class ParsedArguments
 {
     /// <summary>
+    /// 创建解析结果（默认忽略大小写）
+    /// </summary>
+    public ParsedArguments()
+        : this(StringComparer.OrdinalIgnoreCase)
+    {
+    }
+
+    /// <summary>
+    /// 创建解析结果
+    /// </summary>
+    /// <param name="comparer">选项名的比较规则，由 ParseOptions.CaseSensitive 决定</param>
+    internal ParsedArguments(StringComparer comparer)
+    {
+        Options = new Dictionary<string, List<string>>(comparer);
+    }
+
+    /// <summary>
     /// 选项集合（键值对）
     /// </summary>
-    public Dictionary<string, List<string>> Options { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>> Options { get; }
 
     /// <summary>
     /// 位置参数列表

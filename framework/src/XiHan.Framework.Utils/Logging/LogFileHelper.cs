@@ -1126,8 +1126,9 @@ public static class LogFileHelper
             // 需要创建新文件或这是第一次写入
             var fileName = GetNextAvailableFileName(baseFileName, expectedSize, maxFileSize);
             CurrentLogFiles[baseFileName] = fileName;
-            // 新文件可能已存在（同名续写），基线取磁盘大小再加上本次分配
-            CurrentLogFileSizes[fileName] = GetFileSize(Path.Combine(Options.LogDirectory, fileName)) + expectedSize;
+            // 基线同样走已分配字节数：该文件可能刚在上一次调用里被分配过而尚未落盘，
+            // 此时读磁盘会得到 0，把已分配量一笔勾销
+            CurrentLogFileSizes[fileName] = GetAssignedOrDiskSize(fileName) + expectedSize;
 
             return fileName;
         }
@@ -1140,11 +1141,17 @@ public static class LogFileHelper
     /// <param name="expectedSize">预期大小</param>
     /// <param name="maxFileSize">最大文件大小</param>
     /// <returns>可用的文件名</returns>
+    /// <remarks>
+    /// 全程按「已分配字节数」而非磁盘大小挑选，理由见 <see cref="GetAssignedOrDiskSize"/>：
+    /// 文件名是在入队时决定的，而落盘是批量异步的，此刻磁盘上的文件往往还是空的。
+    /// 若在此处退回磁盘大小，「当前文件写满 → 来选新文件 → 磁盘上基础文件看着还很小 →
+    /// 又选回基础文件 → 已分配量被重置回磁盘大小」会形成闭环，突发写入的全部内容
+    /// 都被塞进同一个远超上限的文件，滚动永不触发。
+    /// </remarks>
     private static string GetNextAvailableFileName(string baseFileName, int expectedSize, long maxFileSize)
     {
         // 先检查基础文件名
-        var baseFilePath = Path.Combine(Options.LogDirectory, baseFileName);
-        var baseFileSize = GetFileSize(baseFilePath);
+        var baseFileSize = GetAssignedOrDiskSize(baseFileName);
 
         if (baseFileSize + expectedSize <= maxFileSize)
         {
@@ -1154,7 +1161,6 @@ public static class LogFileHelper
         // 需要创建新的编号文件
         var counter = LogFileCounter.GetValueOrDefault(baseFileName, 0);
         string newFileName;
-        string newFilePath;
 
         do
         {
@@ -1162,9 +1168,8 @@ public static class LogFileHelper
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
             var extension = Path.GetExtension(baseFileName);
             newFileName = $"{fileNameWithoutExt}_{counter}{extension}";
-            newFilePath = Path.Combine(Options.LogDirectory, newFileName);
 
-            var newFileSize = GetFileSize(newFilePath);
+            var newFileSize = GetAssignedOrDiskSize(newFileName);
             if (newFileSize + expectedSize <= maxFileSize)
             {
                 LogFileCounter[baseFileName] = counter;

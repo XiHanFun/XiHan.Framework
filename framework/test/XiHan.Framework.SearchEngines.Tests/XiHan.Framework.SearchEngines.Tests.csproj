@@ -9,4 +9,5 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.SearchEngines.Elasticsearch\XiHan.Framework.SearchEngines.Elasticsearch.csproj" />
     </ItemGroup>
 
+
 </Project>

@@ -67,4 +67,17 @@ public sealed class QuerySort
     /// 验证排序条件是否有效
     /// </summary>
     public bool IsValid() => !string.IsNullOrWhiteSpace(Field);
+
+    /// <summary>
+    /// 克隆当前排序条件
+    /// </summary>
+    public QuerySort Clone()
+    {
+        return new QuerySort
+        {
+            Field = Field,
+            Direction = Direction,
+            Priority = Priority
+        };
+    }
 }

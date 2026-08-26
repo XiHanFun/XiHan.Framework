@@ -1,6 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Globalization;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Utils.Tests.Logging;
@@ -11,6 +13,11 @@ namespace XiHan.Framework.Utils.Tests.Logging;
 [Collection(LoggingTestCollection.Name)]
 public class LogFileHelperFixTests : IDisposable
 {
+    /// <summary>
+    /// 匹配日志文件名结尾的滚动序号，基础文件没有这一段
+    /// </summary>
+    private static readonly Regex RotationIndexPattern = new(@"_(\d+)$");
+
     private readonly string _testLogDirectory;
 
     public LogFileHelperFixTests()
@@ -79,11 +86,12 @@ public class LogFileHelperFixTests : IDisposable
     /// <summary>
     /// 验证文件大小控制机制工作正常
     /// </summary>
-    // 已知失败：达到大小上限后 GetNextAvailableFileName 仍按磁盘大小挑选文件名，
-    // 而批量异步写入下磁盘尚未落盘，于是又选回同一个文件，始终只产出一个日志文件。
-    // 曾尝试让该方法改用「已分配字节数」，结果引入更多失败（见提交 e910eb2e 说明），
-    // 滚动选名需要单独设计，未在此处修复。此标注是为了不让单条已知缺陷长期阻塞整条流水线。
-    [Fact(Skip = "滚动选名按磁盘大小判断，批量异步下无法产生第二个文件，待重新设计")]
+    /// <remarks>
+    /// 这是滚动选名按「已分配字节数」判断的回归防线：一旦 GetNextAvailableFileName
+    /// 退回按磁盘大小挑选，批量异步写入下磁盘尚未落盘，选名会一直选回同一个文件，
+    /// 本用例的「产出多个文件」与「除收尾外每个文件都接近上限」两条断言会同时变红。
+    /// </remarks>
+    [Fact]
     public void FileSizeControl_ShouldWorkCorrectly()
     {
         // Arrange
@@ -108,12 +116,18 @@ public class LogFileHelperFixTests : IDisposable
         // 应该创建多个文件
         Assert.True(logFiles.Length > 1, "Should create multiple files due to size limit");
 
-        // 检查每个文件大小（除最后一个外都应该接近1KB）
-        foreach (var file in logFiles.Take(logFiles.Length - 1))
+        // 检查每个文件大小（除最后一个外都应该接近1KB）。
+        // 「最后一个」必须按文件名里的滚动序号取，不能直接用 Directory.GetFiles 的返回顺序：
+        // 那是字母序，_8.log、_9.log 会排在 _71.log 之后，于是真正收尾、只写了一部分的那个
+        // 文件反而留在中间被校验，断言必然失败。
+        var filesInCreationOrder = logFiles.OrderBy(GetRotationIndex).ToArray();
+
+        foreach (var file in filesInCreationOrder.Take(filesInCreationOrder.Length - 1))
         {
             var fileInfo = new FileInfo(file);
             Console.WriteLine($"  {Path.GetFileName(file)}: {fileInfo.Length} bytes");
-            Assert.True(fileInfo.Length >= 1024 * 0.8, "File should be close to size limit");
+            Assert.True(fileInfo.Length >= 1024 * 0.8,
+                $"File should be close to size limit: {Path.GetFileName(file)} 只有 {fileInfo.Length} 字节");
         }
 
         // 验证消息完整性
@@ -257,7 +271,8 @@ public class LogFileHelperFixTests : IDisposable
             Console.WriteLine($"  {file}");
         }
 
-        // 验证文件命名规律
+        // 验证文件命名规律：文件名可能带日期前缀（如 20260816_error_1.log），
+        // 用包含谓词匹配，避免把「前缀差异」误判为命名错误。
         Assert.Contains(logFiles, f => f.Contains("error.log")); // 基础文件
 
         if (logFiles.Length > 1)
@@ -265,7 +280,7 @@ public class LogFileHelperFixTests : IDisposable
             // 验证编号文件命名正确
             for (var i = 1; i < logFiles.Length; i++)
             {
-                Assert.Contains($"error_{i}.log", logFiles);
+                Assert.Contains(logFiles, f => f.Contains($"error_{i}.log"));
             }
         }
     }
@@ -305,8 +320,26 @@ public class LogFileHelperFixTests : IDisposable
         // 性能应该保持良好
         Assert.True(throughput > 500, $"Throughput too low: {throughput:F0} msg/s");
 
-        // 文件数量应该合理
-        Assert.True(logFiles.Length < 10, $"Too many files created: {logFiles.Length}");
+        // 文件数量应该合理：5000 条消息在 10KB 上限下约产生 30-80 个文件，
+        // 只要没有退化成每条消息一个文件（约 5000 个）就算正常。
+        Assert.True(logFiles.Length < 100, $"Too many files created: {logFiles.Length}");
+    }
+
+    /// <summary>
+    /// 取日志文件名里的滚动序号，基础文件（无序号）记作 0
+    /// </summary>
+    /// <remarks>
+    /// 序号即创建顺序，而 <see cref="Directory.GetFiles(string, string)"/> 给的是字母序，
+    /// _10 排在 _2 之前、_8 排在 _71 之后，拿它当创建顺序会取错「最后一个文件」。
+    /// </remarks>
+    /// <param name="filePath">日志文件路径</param>
+    /// <returns>滚动序号</returns>
+    private static int GetRotationIndex(string filePath)
+    {
+        var match = RotationIndexPattern.Match(Path.GetFileNameWithoutExtension(filePath));
+        return match.Success
+            ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture)
+            : 0;
     }
 
     public void Dispose()

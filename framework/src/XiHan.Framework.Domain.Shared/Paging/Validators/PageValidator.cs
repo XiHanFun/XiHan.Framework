@@ -22,21 +22,8 @@ public static class PageValidator
         var meta = request.Page;
         var cond = request.Conditions;
 
-        if (meta.PageIndex < PageRequestMetadata.DefaultPageIndex)
-        {
-            errors.Add($"页码不能小于 {PageRequestMetadata.DefaultPageIndex}");
-        }
-
-        if (meta.PageSize < PageRequestMetadata.MinPageSize)
-        {
-            errors.Add($"每页大小不能小于 {PageRequestMetadata.MinPageSize}");
-        }
-
-        if (meta.PageSize > PageRequestMetadata.MaxPageSize)
-        {
-            errors.Add($"每页大小不能大于 {PageRequestMetadata.MaxPageSize}");
-        }
-
+        // 页码/页大小越界由 PageRequestMetadata 的 setter 静默夹取（1..500），
+        // 这里无需也无法再触发边界错误，验证器只负责过滤/排序/关键字语义。
         for (var i = 0; i < cond.Filters.Count; i++)
         {
             var filter = cond.Filters[i];
@@ -70,22 +57,8 @@ public static class PageValidator
     {
         ArgumentNullException.ThrowIfNull(metadata);
 
+        // 边界归一化在 PageRequestMetadata setter 完成，此处只返回语义有效的空结果。
         var errors = new List<string>();
-
-        if (metadata.PageIndex < PageRequestMetadata.DefaultPageIndex)
-        {
-            errors.Add($"页码不能小于 {PageRequestMetadata.DefaultPageIndex}");
-        }
-
-        if (metadata.PageSize < PageRequestMetadata.MinPageSize)
-        {
-            errors.Add($"每页大小不能小于 {PageRequestMetadata.MinPageSize}");
-        }
-
-        if (metadata.PageSize > PageRequestMetadata.MaxPageSize)
-        {
-            errors.Add($"每页大小不能大于 {PageRequestMetadata.MaxPageSize}");
-        }
 
         return new ValidationResult(errors.Count == 0, errors);
     }

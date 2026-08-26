@@ -30,9 +30,16 @@ public sealed class QueryKeyword
     /// </summary>
     public QueryKeyword AddField(string field)
     {
-        if (!string.IsNullOrWhiteSpace(field) && !Fields.Contains(field, StringComparer.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(field))
         {
-            Fields.Add(field.Trim());
+            return this;
+        }
+
+        // 先 trim 再去重，避免 " name " 与 "Name" 以不同原始值并存
+        var trimmed = field.Trim();
+        if (!Fields.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+        {
+            Fields.Add(trimmed);
         }
         return this;
     }

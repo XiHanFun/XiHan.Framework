@@ -201,4 +201,14 @@ public class XiHanSqlSugarCoreOptions
     /// 是否启用种子数据
     /// </summary>
     public bool EnableDataSeeding { get; set; } = false;
+
+    /// <summary>
+    /// 建表初始化选取选项：在 <see cref="EnableTableInitialization"/> 打开的前提下，决定哪些实体真正建表
+    /// </summary>
+    public TableInitializationOptions TableInitialization { get; set; } = new();
+
+    /// <summary>
+    /// 种子数据选取选项：在 <see cref="EnableDataSeeding"/> 打开的前提下，决定哪些种子真正执行
+    /// </summary>
+    public DataSeedingOptions DataSeeding { get; set; } = new();
 }

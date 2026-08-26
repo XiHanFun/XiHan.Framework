@@ -1,9 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Reflection;
 using XiHan.Framework.Uow.Abstracts;
 using XiHan.Framework.Uow.Attributes;
+using XiHan.Framework.Uow.Options;
 using XiHan.Framework.Utils.Diagnostics;
 
 namespace XiHan.Framework.Uow;
@@ -68,6 +71,39 @@ public static class UnitOfWorkHelper
 
         unitOfWorkAttribute = null;
         return false;
+    }
+
+    /// <summary>
+    /// 按方法上的工作单元特性与默认配置构建工作单元选项
+    /// </summary>
+    /// <param name="serviceProvider">服务提供器</param>
+    /// <param name="methodInfo">被拦截或被执行的方法</param>
+    /// <param name="unitOfWorkAttribute">方法上解析出的工作单元特性</param>
+    /// <returns>工作单元选项</returns>
+    public static XiHanUnitOfWorkOptions CreateOptions(
+        IServiceProvider serviceProvider,
+        MethodInfo methodInfo,
+        UnitOfWorkAttribute? unitOfWorkAttribute)
+    {
+        Guard.NotNull(serviceProvider, nameof(serviceProvider));
+        Guard.NotNull(methodInfo, nameof(methodInfo));
+
+        var options = new XiHanUnitOfWorkOptions();
+
+        unitOfWorkAttribute?.SetOptions(options);
+
+        if (unitOfWorkAttribute?.IsTransactional != null)
+        {
+            return options;
+        }
+
+        var defaultOptions = serviceProvider.GetRequiredService<IOptions<XiHanUnitOfWorkDefaultOptions>>().Value;
+        options.IsTransactional = defaultOptions.CalculateIsTransactional(
+            autoValue: serviceProvider.GetRequiredService<IUnitOfWorkTransactionBehaviourProvider>().IsTransactional
+            ?? !methodInfo.Name.StartsWith("Get", StringComparison.InvariantCultureIgnoreCase)
+        );
+
+        return options;
     }
 
     /// <summary>

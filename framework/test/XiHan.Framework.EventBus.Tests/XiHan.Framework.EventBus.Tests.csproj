@@ -8,4 +8,5 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
     </ItemGroup>
 
+
 </Project>

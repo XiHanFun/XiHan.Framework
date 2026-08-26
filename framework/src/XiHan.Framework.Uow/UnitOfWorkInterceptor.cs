@@ -2,12 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.DynamicProxy;
-using XiHan.Framework.Uow.Abstracts;
-using XiHan.Framework.Uow.Attributes;
-using XiHan.Framework.Uow.Options;
 
 namespace XiHan.Framework.Uow;
 
@@ -41,7 +37,7 @@ public class UnitOfWorkInterceptor : XiHanInterceptor, ITransientDependency
         }
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var options = CreateOptions(scope.ServiceProvider, invocation, unitOfWorkAttribute);
+        var options = UnitOfWorkHelper.CreateOptions(scope.ServiceProvider, invocation.Method, unitOfWorkAttribute);
 
         var unitOfWorkManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
 
@@ -61,32 +57,5 @@ public class UnitOfWorkInterceptor : XiHanInterceptor, ITransientDependency
         using var uow = unitOfWorkManager.Begin(options);
         await invocation.ProceedAsync();
         await uow.CompleteAsync();
-    }
-
-    /// <summary>
-    /// 创建选项
-    /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="invocation"></param>
-    /// <param name="unitOfWorkAttribute"></param>
-    /// <returns></returns>
-    private static XiHanUnitOfWorkOptions CreateOptions(IServiceProvider serviceProvider, IXiHanMethodInvocation invocation, UnitOfWorkAttribute? unitOfWorkAttribute)
-    {
-        var options = new XiHanUnitOfWorkOptions();
-
-        unitOfWorkAttribute?.SetOptions(options);
-
-        if (unitOfWorkAttribute?.IsTransactional != null)
-        {
-            return options;
-        }
-
-        var defaultOptions = serviceProvider.GetRequiredService<IOptions<XiHanUnitOfWorkDefaultOptions>>().Value;
-        options.IsTransactional = defaultOptions.CalculateIsTransactional(
-            autoValue: serviceProvider.GetRequiredService<IUnitOfWorkTransactionBehaviourProvider>().IsTransactional
-            ?? !invocation.Method.Name.StartsWith("Get", StringComparison.InvariantCultureIgnoreCase)
-        );
-
-        return options;
     }
 }

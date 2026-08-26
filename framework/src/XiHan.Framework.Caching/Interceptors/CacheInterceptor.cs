@@ -1,9 +1,6 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
+﻿// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.Extensions.Caching.Hybrid;
-using System.Collections.Concurrent;
-using System.Reflection;
 using XiHan.Framework.Caching.Attributes;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.DynamicProxy;
@@ -13,23 +10,20 @@ namespace XiHan.Framework.Caching.Interceptors;
 /// <summary>
 /// 缓存拦截器，自动为标记 [Cacheable] 的方法提供 AOP 缓存能力
 /// </summary>
+/// <remarks>
+/// 只作用于经接口动态代理解析出来的服务；HTTP 入口的控制器不经过代理，由 Web 层的 MVC 缓存过滤器覆盖。
+/// </remarks>
 public class CacheInterceptor : XiHanInterceptor, ITransientDependency
 {
-    private readonly HybridCache _hybridCache;
-
-    private static readonly ConcurrentDictionary<MethodInfo, CacheableAttribute?> CacheableAttributeCache = new();
-    private static readonly ConcurrentDictionary<MethodInfo, CacheEvictAttribute[]> CacheEvictAttributeCache = new();
-
-    private static readonly MethodInfo InternalGetOrCreateMethodInfo =
-        typeof(CacheInterceptor).GetMethod(nameof(InternalGetOrCreateAsync), BindingFlags.NonPublic | BindingFlags.Instance)!;
+    private readonly CacheAspect _cacheAspect;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="hybridCache"></param>
-    public CacheInterceptor(HybridCache hybridCache)
+    /// <param name="cacheAspect">缓存切面</param>
+    public CacheInterceptor(CacheAspect cacheAspect)
     {
-        _hybridCache = hybridCache;
+        _cacheAspect = cacheAspect;
     }
 
     /// <summary>
@@ -38,7 +32,7 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
     /// <param name="invocation"></param>
     public override async Task InterceptAsync(IXiHanMethodInvocation invocation)
     {
-        var cacheableAttr = GetCacheableAttribute(invocation.Method);
+        var cacheableAttr = CacheAspect.GetCacheableAttributeOrNull(invocation.Method);
 
         if (cacheableAttr != null)
         {
@@ -46,12 +40,12 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
             return;
         }
 
-        var evictAttrs = GetCacheEvictAttributes(invocation.Method);
+        var evictAttrs = CacheAspect.GetCacheEvictAttributes(invocation.Method);
 
         if (evictAttrs.Length > 0)
         {
             await invocation.ProceedAsync();
-            await HandleCacheEvictAsync(invocation, evictAttrs);
+            await _cacheAspect.EvictAsync(invocation.Method, invocation.Arguments, evictAttrs);
             return;
         }
 
@@ -60,84 +54,33 @@ public class CacheInterceptor : XiHanInterceptor, ITransientDependency
 
     private async Task HandleCacheableAsync(IXiHanMethodInvocation invocation, CacheableAttribute attr)
     {
-        var cacheKey = CacheKeyBuilder.Build(attr.Key, invocation);
-        var returnType = GetActualReturnType(invocation.Method);
+        var valueType = CacheAspect.GetCacheableValueTypeOrNull(invocation.Method);
 
-        if (returnType == null)
+        if (valueType == null)
         {
             await invocation.ProceedAsync();
             return;
         }
 
-        var method = InternalGetOrCreateMethodInfo.MakeGenericMethod(returnType);
-        var task = (Task)method.Invoke(this, [invocation, cacheKey, attr.ExpireSeconds])!;
-        await task;
-    }
+        var cacheKey = CacheKeyBuilder.Build(attr.Key, invocation);
 
-    private async Task InternalGetOrCreateAsync<T>(
-        IXiHanMethodInvocation invocation, string cacheKey, int expireSeconds)
-    {
-        var options = new HybridCacheEntryOptions
-        {
-            Expiration = TimeSpan.FromSeconds(expireSeconds),
-            LocalCacheExpiration = TimeSpan.FromSeconds(Math.Min(expireSeconds, 60))
-        };
-
-        var result = await _hybridCache.GetOrCreateAsync(
+        invocation.ReturnValue = (await _cacheAspect.GetOrCreateAsync(
+            valueType,
             cacheKey,
-            async _ =>
+            attr.ExpireSeconds,
+            async () =>
             {
                 await invocation.ProceedAsync();
-                var returnValue = invocation.ReturnValue;
 
-                if (returnValue is Task<T> task)
-                {
-                    return await task;
-                }
-
-                return returnValue is T typedValue ? typedValue : default!;
-            },
-            options);
-
-        invocation.ReturnValue = Task.FromResult(result);
+                // 代理链上的异步方法把结果留在 ReturnValue 里的 Task 上，取值前先解包
+                return invocation.ReturnValue is Task task ? await UnwrapAsync(task) : invocation.ReturnValue;
+            }))!;
     }
 
-    private async Task HandleCacheEvictAsync(IXiHanMethodInvocation invocation, CacheEvictAttribute[] attrs)
+    private static async Task<object?> UnwrapAsync(Task task)
     {
-        foreach (var attr in attrs)
-        {
-            var cacheKey = CacheKeyBuilder.Build(attr.Key, invocation);
-            // 方法执行成功后，按模板构建出的键直接从 HybridCache（L1 内存 + L2 分布式）移除
-            await _hybridCache.RemoveAsync(cacheKey);
-        }
-    }
+        await task;
 
-    private static CacheableAttribute? GetCacheableAttribute(MethodInfo method)
-    {
-        return CacheableAttributeCache.GetOrAdd(method, m =>
-            m.GetCustomAttribute<CacheableAttribute>());
-    }
-
-    private static CacheEvictAttribute[] GetCacheEvictAttributes(MethodInfo method)
-    {
-        return CacheEvictAttributeCache.GetOrAdd(method, m =>
-            m.GetCustomAttributes<CacheEvictAttribute>().ToArray());
-    }
-
-    private static Type? GetActualReturnType(MethodInfo method)
-    {
-        var returnType = method.ReturnType;
-
-        if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
-        {
-            return returnType.GetGenericArguments()[0];
-        }
-
-        if (returnType != typeof(Task) && returnType != typeof(void))
-        {
-            return returnType;
-        }
-
-        return null;
+        return task.GetType().GetProperty(nameof(Task<object>.Result))?.GetValue(task);
     }
 }
