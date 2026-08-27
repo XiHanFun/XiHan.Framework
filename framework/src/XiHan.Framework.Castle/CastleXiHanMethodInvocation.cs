@@ -15,6 +15,7 @@ public class CastleXiHanMethodInvocation : IXiHanMethodInvocation
     private readonly IInvocation _invocation;
     private readonly IInvocationProceedInfo _proceedInfo;
     private readonly Lazy<IReadOnlyDictionary<string, object>> _lazyArgsDictionary;
+    private bool _returnValueOverridden;
 
     /// <summary>
     /// 构造函数
@@ -59,20 +60,77 @@ public class CastleXiHanMethodInvocation : IXiHanMethodInvocation
     public object? ReturnValue
     {
         get => _invocation.ReturnValue;
-        set => _invocation.ReturnValue = value;
+        set
+        {
+            _returnValueOverridden = true;
+            _invocation.ReturnValue = value;
+        }
     }
+
+    /// <summary>
+    /// 最近一次 <see cref="ProceedAsync"/> 取得的目标返回值；<see cref="Task{TResult}"/> 已拆箱为结果本身
+    /// </summary>
+    /// <remarks>
+    /// 供 <see cref="CastleInterceptorAdapter"/> 取真实结果用。它不能在链路跑完后重读
+    /// <see cref="ReturnValue"/>：Castle 的返回值槽位那时已被适配器写成本次拦截产出的包装任务，
+    /// 目标方法真异步时重读到的就是包装任务自己，await 下去即自己等自己，调用方永久挂死。
+    /// </remarks>
+    internal object? ProceedResult { get; private set; }
+
+    /// <summary>
+    /// 拦截器是否显式覆写过返回值
+    /// </summary>
+    /// <remarks>
+    /// 用来区分「拦截器主动改写了结果」与「没改写，应当采用目标方法的真实结果」，
+    /// 二者都可能落在同一个槽位上，只看值分辨不出来。
+    /// </remarks>
+    internal bool ReturnValueOverridden => _returnValueOverridden;
 
     /// <summary>
     /// 继续执行被拦截的原方法，返回值为 Task 时等待其完成
     /// </summary>
+    /// <remarks>
+    /// 结果同时记进 <see cref="ProceedResult"/>（<see cref="Task{TResult}"/> 已拆箱），
+    /// 但刻意不改写 Castle 的返回值槽位——那个槽位是 Castle 用来取方法最终返回值的，
+    /// 把它改成裸结果值会让直接使用本类型的拦截器路径拿 int 去当 Task&lt;int&gt; 返回，当场类型转换失败。
+    /// </remarks>
     public async Task ProceedAsync()
     {
         _proceedInfo.Invoke();
 
-        if (_invocation.ReturnValue is Task task)
+        ProceedResult = _invocation.ReturnValue;
+
+        if (_invocation.ReturnValue is not Task task)
         {
-            await task;
+            return;
         }
+
+        await task;
+
+        var resultProperty = ResolveTaskResultProperty(task.GetType());
+        ProceedResult = resultProperty?.GetValue(task);
+    }
+
+    /// <summary>
+    /// 沿类型继承链找出 <see cref="Task{TResult}"/> 的 Result 属性，非泛型 Task 返回 null
+    /// </summary>
+    /// <remarks>
+    /// 必须沿继承链找：async 方法实际返回的是运行时内部的状态机装箱类型，
+    /// 它派生自 <see cref="Task{TResult}"/> 而不等于它，直接判泛型定义会漏掉。
+    /// </remarks>
+    private static PropertyInfo? ResolveTaskResultProperty(Type? taskType)
+    {
+        while (taskType is not null)
+        {
+            if (taskType.IsGenericType && taskType.GetGenericTypeDefinition() == typeof(Task<>))
+            {
+                return taskType.GetProperty(nameof(Task<object>.Result));
+            }
+
+            taskType = taskType.BaseType;
+        }
+
+        return null;
     }
 
     private IReadOnlyDictionary<string, object> BuildArgumentsDictionary()
