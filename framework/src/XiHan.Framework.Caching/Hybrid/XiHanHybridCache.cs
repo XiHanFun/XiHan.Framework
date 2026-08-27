@@ -137,7 +137,12 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// <param name="hybridCache"></param>
     /// <param name="distributedCache"></param>
     /// <param name="cancellationTokenProvider"></param>
-    /// <param name="serializer"></param>
+    /// <param name="serializer">
+    /// 分布式缓存序列化器，本类不使用：读写口径必须与底层混合缓存一致，
+    /// 因此工作单元分支直读二级缓存时走的是 <see cref="ResolveSerializer"/> 解析出的
+    /// <c>IHybridCacheSerializer&lt;TCacheItem&gt;</c>，换成这里的分布式序列化器反而会读出乱码。
+    /// 参数仅为保持构造签名兼容而保留，删除属于破坏性变更。
+    /// </param>
     /// <param name="keyNormalizer"></param>
     /// <param name="serviceScopeFactory"></param>
     /// <param name="unitOfWorkManager"></param>
@@ -448,9 +453,15 @@ public class XiHanHybridCache<TCacheItem, TCacheKey> : IHybridCache<TCacheItem, 
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
+    /// <remarks>
+    /// <see cref="XiHanHybridCacheOptions.KeyPrefix"/> 原先全仓没有任何读取点，配了等于没配；
+    /// 这里与分布式缓存用同一套修法，在键规范化器产出的「租户段:缓存名段:业务键」外层拼上应用级前缀，
+    /// 让多个应用共用同一个二级缓存实例时能靠它隔离。混合缓存只有这一处出键，
+    /// 一二级缓存都走它，前缀不会出现两侧不一致。前缀默认为空串，不配置时键与改动前逐字节一致。
+    /// </remarks>
     protected virtual string NormalizeKey(TCacheKey key)
     {
-        return KeyNormalizer.NormalizeKey(
+        return DistributedCacheOption.KeyPrefix + KeyNormalizer.NormalizeKey(
             new DistributedCacheKeyNormalizeArgs(
                 key.ToString()!,
                 CacheName,
