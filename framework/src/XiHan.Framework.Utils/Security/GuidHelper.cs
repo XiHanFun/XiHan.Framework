@@ -97,7 +97,10 @@ public static partial class GuidHelper
         Array.Copy(hashBytes, 0, guidBytes, 0, 16);
 
         // 设置版本为5（基于名称的SHA1）
-        guidBytes[6] = (byte)((guidBytes[6] & 0x0F) | 0x50);
+        // 原缺陷：版本位写在 guidBytes[6]。RFC 4122 的版本位在 .NET Guid 的小端布局下位于下标 7 的高半字节
+        // （Data3 的高字节），本类的 GetVersion 读的正是 bytes[7]，NewCryptoGuid / NewTimeBasedGuid 写的也是 bytes[7]；
+        // 写 bytes[6] 只会覆盖 Data3 的低字节，GetVersion 读到的仍是 SHA1 摘要的残留随机值而不是 5。
+        guidBytes[7] = (byte)((guidBytes[7] & 0x0F) | 0x50);
         // 设置变体
         guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
 
@@ -127,7 +130,9 @@ public static partial class GuidHelper
         var hashBytes = MD5.HashData(combinedBytes);
 
         // 设置版本为3（基于名称的MD5）
-        hashBytes[6] = (byte)((hashBytes[6] & 0x0F) | 0x30);
+        // 原缺陷同 NewDeterministicGuid：版本位写在 hashBytes[6]，而 GetVersion 与 RFC 4122
+        // 在 .NET 小端布局下都取下标 7 的高半字节，写 6 号位读不出版本 3。
+        hashBytes[7] = (byte)((hashBytes[7] & 0x0F) | 0x30);
         // 设置变体
         hashBytes[8] = (byte)((hashBytes[8] & 0x3F) | 0x80);
 

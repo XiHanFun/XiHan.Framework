@@ -63,8 +63,15 @@ public static class RsaHelper
     /// <summary>
     /// 生成 RSA 密钥对（Base64 格式）
     /// </summary>
+    /// <remarks>
+    /// 导出的公钥是 PKCS#1 <c>RSAPublicKey</c> 编码，而本类的 <c>Encrypt</c> / <c>VerifyData</c>
+    /// 一律用 <c>ImportSubjectPublicKeyInfo</c> 导入公钥（X.509 SubjectPublicKeyInfo），
+    /// 两种编码不通用：把这里生成的公钥直接喂给它们会解析失败。这是已记录的既定行为，
+    /// 详见 docs/guide/security.md 的警示块；需要可直接使用的公钥时请自行
+    /// <c>rsa.ExportSubjectPublicKeyInfo()</c> 导出。私钥没有这个问题（导入时先试 PKCS#8 再退回 PKCS#1）。
+    /// </remarks>
     /// <param name="keySize">密钥长度（位），默认为 2048，推荐使用 2048 或 4096</param>
-    /// <returns>返回公钥和私钥对（Base64 编码）</returns>
+    /// <returns>返回公钥和私钥对（Base64 编码，公钥为 PKCS#1 编码）</returns>
     /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
     public static (string publicKey, string privateKey) GenerateKeys(int keySize = DefaultKeySize)
     {
@@ -76,8 +83,12 @@ public static class RsaHelper
     /// <summary>
     /// 生成 RSA 密钥对（字节数组格式）
     /// </summary>
+    /// <remarks>
+    /// 公钥为 PKCS#1 <c>RSAPublicKey</c>、私钥为 PKCS#1 <c>RSAPrivateKey</c>，
+    /// 公钥与本类导入口径不一致的说明见 <c>GenerateKeys</c>。
+    /// </remarks>
     /// <param name="keySize">密钥长度（位），默认为 2048</param>
-    /// <returns>返回公钥和私钥对（字节数组）</returns>
+    /// <returns>返回公钥和私钥对（字节数组，公钥为 PKCS#1 编码）</returns>
     /// <exception cref="ArgumentException">当密钥长度小于最小安全长度时抛出</exception>
     public static (byte[] publicKeyBytes, byte[] privateKeyBytes) GenerateKeysBytes(int keySize = DefaultKeySize)
     {

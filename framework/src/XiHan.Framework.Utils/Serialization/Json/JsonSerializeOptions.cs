@@ -154,7 +154,11 @@ public class JsonSerializeOptions
             Encoder = Encoder,
             MaxDepth = MaxDepth,
             NumberHandling = NumberHandling,
-            DefaultIgnoreCondition = DefaultIgnoreCondition,
+            // IgnoreNullValues 原来根本没有映射进系统选项，Compact / WebApi 两个预设里设的 true 形同虚设，
+            // 调用方以为 null 字段被裁掉、实际仍然全量输出。这里把它折叠进 DefaultIgnoreCondition：
+            // 为 true 时按"写入时忽略 null"，为 false 时保留调用方显式设置的忽略条件，
+            // 避免反过来把调用方设的 WhenWritingDefault 等条件覆盖成 Never。
+            DefaultIgnoreCondition = IgnoreNullValues ? JsonIgnoreCondition.WhenWritingNull : DefaultIgnoreCondition,
             IgnoreReadOnlyProperties = IgnoreReadOnlyProperties
         };
 
