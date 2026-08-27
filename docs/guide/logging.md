@@ -254,7 +254,9 @@ using (logger.BeginScope(new Dictionary<string, object> { ["TenantId"] = tenantI
 | `Filters` | 未转成 `MinimumLevel.Override` | 应用侧自行装配 Serilog |
 | `EnableRequestLogging` / `RequestLoggingExcludePaths` | 无消费方 | 请求日志由 Web.Api 的中间件负责，排除路径见 [Auditing 包](../packages/auditing) 的 `IgnoredPathPrefixes` |
 
-同样地，`XiHanFileLoggerOptions` 的 `BufferSize`、`FlushPeriod`、`EnableAsyncWrite` 与 `XiHanConsoleLoggerOptions` 的 `UseStdErrorForErrors` 也没有被对应的 Provider 读取。
+同样地，`XiHanFileLoggerOptions` 的 `BufferSize`、`FlushPeriod`、`EnableAsyncWrite` 也没有被对应的 Provider 读取：该 Provider 每条日志都同步 `File.AppendAllText`，既无缓冲也无异步，配了不会有效果。高吞吐场景请改用本模块的 Serilog 文件 Sink。
+
+`XiHanConsoleLoggerOptions` 的 `UseStdErrorForErrors` 已经生效：为 `true` 时 `Error` 及以上写标准错误流，其余级别仍写标准输出；默认 `false`，即全部写标准输出。
 
 ## 配置
 
