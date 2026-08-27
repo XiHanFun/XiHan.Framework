@@ -26,7 +26,10 @@ public class JobMetricsProvider
             metrics.LastExecutionTime = DateTimeOffset.UtcNow;
             metrics.LastDurationMs = durationMs;
 
-            if (metrics.MinDurationMs == 0 || durationMs < metrics.MinDurationMs)
+            // 首次记录必须无条件写入最小耗时。原来用 MinDurationMs == 0 当"尚未设置"的哨兵值，
+            // 一次真实的 0ms 执行会被误判成"还没设置过"，之后任何非零耗时都能把最小值顶掉，
+            // 最快的那次反而记不下来。TotalExecutions 在上面刚自增过，等于 1 即本次是第一条记录。
+            if (metrics.TotalExecutions == 1 || durationMs < metrics.MinDurationMs)
             {
                 metrics.MinDurationMs = durationMs;
             }

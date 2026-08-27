@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using XiHan.Framework.Tasks.BackgroundJobs.Abstractions;
 
@@ -13,7 +14,15 @@ public class BackgroundJobSerializer : IBackgroundJobSerializer
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        WriteIndented = false
+        WriteIndented = false,
+
+        // 原来只设了 WriteIndented（本来就是默认值），漏掉了编码器，于是这里用的是 System.Text.Json 的
+        // 默认严格编码器：非 ASCII 一律转义，中文"订单"落库后是两段 uXXXX 转义序列。本仓所有 JSON 出口
+        // （Utils 的 JsonSerializeOptions/JsonDeserializeOptions/JsonHelper、Serialization 的 DynamicJson*、
+        // Web.Api 的 MVC JsonOptions）都统一显式用 UnsafeRelaxedJsonEscaping，唯独这里漏配。
+        // 后果不是数据错误（转义序列可无损还原），而是作业参数在库里/Redis 里全是 \uXXXX，
+        // 运维排查队列时读不了，中文载荷体积还翻三倍。此处补齐以对齐全仓口径。
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     /// <summary>
