@@ -419,7 +419,10 @@ public static class LinkedListExtensions
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return list.Count(predicate);
+        // 原实现写的是 list.Count(predicate)：扩展方法先在本命名空间内找候选，
+        // 本方法对 LinkedList<T> 是恒等转换、优先于 Enumerable.Count 的
+        // LinkedList<T>→IEnumerable<T> 引用转换，于是解析回自身，调用即无限递归、栈溢出杀进程。
+        return Enumerable.Count(list, predicate);
     }
 
     /// <summary>
@@ -435,7 +438,8 @@ public static class LinkedListExtensions
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return list.Any(predicate);
+        // 同 Count：list.Any(predicate) 就是本方法自身，直接自递归
+        return Enumerable.Any(list, predicate);
     }
 
     /// <summary>
@@ -451,7 +455,8 @@ public static class LinkedListExtensions
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return list.All(predicate);
+        // 同 Count：list.All(predicate) 就是本方法自身，直接自递归
+        return Enumerable.All(list, predicate);
     }
 
     /// <summary>
