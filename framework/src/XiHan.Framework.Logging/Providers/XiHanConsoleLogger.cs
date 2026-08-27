@@ -47,7 +47,11 @@ internal class XiHanConsoleLogger : ILogger
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel >= _options.MinLevel;
+        // 原来只做 logLevel >= MinLevel 的数值比较，而 LogLevel.None(6) 是枚举里的最大值，
+        // 于是任何 MinLevel 下 IsEnabled(LogLevel.None) 都返回 true，Log(LogLevel.None, ...) 也会照常输出。
+        // None 是「不写任何日志」的哨兵值（框架自带提供器一律 logLevel != LogLevel.None），必须先排除；
+        // 顺带也让 MinLevel 被设成 None 时等价于「整个提供器关闭」。
+        return logLevel != LogLevel.None && logLevel >= _options.MinLevel;
     }
 
     /// <summary>
