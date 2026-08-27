@@ -85,27 +85,72 @@
     <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
   </Folder>
   <Folder Name="/2.tests/2.UnitTests/">
-    <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Authentication.Tests/XiHan.Framework.Authentication.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.AI.Abstractions.Tests/XiHan.Framework.AI.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.AI.Tests/XiHan.Framework.AI.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Analyzers.Tests/XiHan.Framework.Analyzers.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Application.Contracts.Tests/XiHan.Framework.Application.Contracts.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Auditing.Tests/XiHan.Framework.Auditing.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Authentication.Tests/XiHan.Framework.Authentication.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Authorization.Tests/XiHan.Framework.Authorization.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.DingTalk.Tests/XiHan.Framework.Bot.DingTalk.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.Email.Tests/XiHan.Framework.Bot.Email.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.Lark.Tests/XiHan.Framework.Bot.Lark.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.Sms.Tests/XiHan.Framework.Bot.Sms.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.Telegram.Tests/XiHan.Framework.Bot.Telegram.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.Tests/XiHan.Framework.Bot.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Bot.WeCom.Tests/XiHan.Framework.Bot.WeCom.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Tests/XiHan.Framework.Caching.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Castle.Tests/XiHan.Framework.Castle.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.EventBus.Tests/XiHan.Framework.EventBus.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.EventBus.Redis.Tests/XiHan.Framework.EventBus.Redis.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
-    <Project Path="test/XiHan.Framework.Http.Tests/XiHan.Framework.Http.Tests.csproj" Id="e7a9d4d6-0153-45ed-a7f5-890cd0f51854" />
-    <Project Path="test/XiHan.Framework.Logging.Tests/XiHan.Framework.Logging.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.SearchEngines.Tests/XiHan.Framework.SearchEngines.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Serialization.Tests/XiHan.Framework.Serialization.Tests.csproj" Id="b4569bd6-5e7d-45bf-9135-17b2c6265439" />
-    <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Uow.Tests/XiHan.Framework.Uow.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
-    <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
-    <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.DistributedIds.Tests/XiHan.Framework.DistributedIds.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Domain.Shared.Tests/XiHan.Framework.Domain.Shared.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Security.Tests/XiHan.Framework.Security.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Domain.Tests/XiHan.Framework.Domain.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.EventBus.Abstractions.Tests/XiHan.Framework.EventBus.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.EventBus.Kafka.Tests/XiHan.Framework.EventBus.Kafka.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.EventBus.RabbitMQ.Tests/XiHan.Framework.EventBus.RabbitMQ.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.EventBus.Redis.Tests/XiHan.Framework.EventBus.Redis.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.EventBus.Tests/XiHan.Framework.EventBus.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Http.Tests/XiHan.Framework.Http.Tests.csproj" Id="e7a9d4d6-0153-45ed-a7f5-890cd0f51854" />
+    <Project Path="test/XiHan.Framework.Localization.Abstractions.Tests/XiHan.Framework.Localization.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Localization.Tests/XiHan.Framework.Localization.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Logging.Tests/XiHan.Framework.Logging.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.Tests/XiHan.Framework.Messaging.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Metadata.Tests/XiHan.Framework.Metadata.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.MultiTenancy.Abstractions.Tests/XiHan.Framework.MultiTenancy.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.MultiTenancy.Tests/XiHan.Framework.MultiTenancy.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.ObjectMapping.Tests/XiHan.Framework.ObjectMapping.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.ObjectStorage.Tests/XiHan.Framework.ObjectStorage.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Observability.Tests/XiHan.Framework.Observability.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Script.Tests/XiHan.Framework.Script.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.SearchEngines.Abstractions.Tests/XiHan.Framework.SearchEngines.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.SearchEngines.Elasticsearch.Tests/XiHan.Framework.SearchEngines.Elasticsearch.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.SearchEngines.Tests/XiHan.Framework.SearchEngines.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Security.Tests/XiHan.Framework.Security.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Serialization.Tests/XiHan.Framework.Serialization.Tests.csproj" Id="b4569bd6-5e7d-45bf-9135-17b2c6265439" />
+    <Project Path="test/XiHan.Framework.Settings.Tests/XiHan.Framework.Settings.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Templating.Tests/XiHan.Framework.Templating.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Threading.Tests/XiHan.Framework.Threading.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Timing.Tests/XiHan.Framework.Timing.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Traffic.Tests/XiHan.Framework.Traffic.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Uow.Tests/XiHan.Framework.Uow.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Upgrade.Tests/XiHan.Framework.Upgrade.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
+    <Project Path="test/XiHan.Framework.Validation.Abstractions.Tests/XiHan.Framework.Validation.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Validation.Tests/XiHan.Framework.Validation.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.VirtualFileSystem.Tests/XiHan.Framework.VirtualFileSystem.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
+    <Project Path="test/XiHan.Framework.Web.Core.Tests/XiHan.Framework.Web.Core.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Docs.Tests/XiHan.Framework.Web.Docs.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Gateway.Tests/XiHan.Framework.Web.Gateway.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Grpc.Tests/XiHan.Framework.Web.Grpc.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Mcp.Tests/XiHan.Framework.Web.Mcp.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Web.RealTime.Tests/XiHan.Framework.Web.RealTime.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
   </Folder>
   <Folder Name="/2.tests/3.Main/">
     <Project Path="test/XiHan.Framework.Integration.Tests/XiHan.Framework.Integration.Tests.csproj" />
