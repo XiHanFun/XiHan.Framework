@@ -8,7 +8,7 @@ using XiHan.Framework.Utils.Reflections;
 using XiHan.Framework.Utils.Runtime;
 using XiHan.Framework.Utils.Security.ErrorObfuscation;
 
-namespace XiHan.Framework.Web.Tests.Controllers;
+namespace XiHan.Framework.Web.Host.Controllers;
 
 /// <summary>
 /// HomeController
