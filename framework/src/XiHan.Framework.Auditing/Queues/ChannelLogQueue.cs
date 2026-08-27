@@ -27,6 +27,13 @@ public class ChannelLogQueue<TRecord> : ILogQueue<TRecord>
     public ChannelLogQueue(IOptions<XiHanAuditingLogQueueOptions> options)
     {
         var queueOptions = options.Value;
+
+        // 必须自己拦：BoundedChannelOptions 只拒绝负数，capacity=0 会被它当成合法值收下，
+        // 造出一个「永远是满的」队列——TryEnqueue 恒 false（日志全静默丢弃），
+        // EnqueueAsync 恒等待（反压直接卡死请求线程）。容量 0 的日志队列没有任何合理用途，
+        // 配错就该在装配期炸掉，而不是等到线上开始丢日志才被发现。
+        ArgumentOutOfRangeException.ThrowIfLessThan(queueOptions.QueueCapacity, 1, nameof(queueOptions.QueueCapacity));
+
         var boundedOptions = new BoundedChannelOptions(queueOptions.QueueCapacity)
         {
             FullMode = BoundedChannelFullMode.Wait,
