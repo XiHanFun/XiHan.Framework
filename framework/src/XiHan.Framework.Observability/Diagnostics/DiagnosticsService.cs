@@ -13,6 +13,11 @@ public class DiagnosticsService : IDiagnosticsService
 {
     private static readonly DateTimeOffset ApplicationStartTime = DateTimeOffset.UtcNow;
 
+    // 运行时长必须用单调时钟量，不能拿墙钟相减：DateTimeOffset.UtcNow 会被 NTP 校时回拨，
+    // 一旦在进程启动后发生回拨，UtcNow - ApplicationStartTime 就会算出负的运行时长。
+    // ApplicationStartTime 仍保留墙钟值——它是对外展示的「几点启动的」，语义不同。
+    private static readonly long StartTimestamp = Stopwatch.GetTimestamp();
+
     /// <summary>
     /// 获取系统信息
     /// </summary>
@@ -35,7 +40,7 @@ public class DiagnosticsService : IDiagnosticsService
     public RuntimeInfo GetRuntimeInfo()
     {
         var currentProcess = Process.GetCurrentProcess();
-        var uptime = DateTimeOffset.UtcNow - ApplicationStartTime;
+        var uptime = Stopwatch.GetElapsedTime(StartTimestamp);
 
         return new RuntimeInfo
         {
