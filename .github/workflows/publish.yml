@@ -50,8 +50,9 @@ jobs:
           --no-restore
 
       - name: 测试
+        # MTP 模式下解决方案必须经 --solution 传入，位置参数会被直接拒绝。
         run: >
-          dotnet test framework/XiHan.Framework.slnx
+          dotnet test --solution framework/XiHan.Framework.slnx
           --configuration Release
           --no-build
 
