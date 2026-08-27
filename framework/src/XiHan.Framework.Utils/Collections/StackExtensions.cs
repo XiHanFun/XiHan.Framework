@@ -229,9 +229,18 @@ public static class StackExtensions
     public static Stack<T> Clone<T>(this Stack<T> stack)
     {
         ArgumentNullException.ThrowIfNull(stack);
-        // 保持原始堆栈的顺序
+
+        // 原实现是 new Stack<T>(stack.ToArray())：ToArray 给出的是"栈顶到栈底"顺序，
+        // 而 Stack<T>(IEnumerable<T>) 按枚举顺序逐个 Push，于是原栈顶被压到了新栈底，
+        // 克隆结果与注释承诺的"保持原始堆栈的顺序"正好相反。
+        // 改为按"栈底到栈顶"回压（与同文件 DeepClone 的两次反转等价），枚举顺序才与源栈一致。
         var items = stack.ToArray();
-        return new Stack<T>(items);
+        var result = new Stack<T>(items.Length);
+        for (var i = items.Length - 1; i >= 0; i--)
+        {
+            result.Push(items[i]);
+        }
+        return result;
     }
 
     /// <summary>
@@ -247,7 +256,11 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return stack.Any(predicate);
+        // 原实现写的是 stack.Any(predicate)：扩展方法先在本命名空间内找候选，
+        // 本文件的 Any(Stack<T>, Func<T,bool>) 对 Stack<T> 是恒等转换、优先于 Enumerable.Any
+        // 的 Stack<T>→IEnumerable<T> 引用转换，于是解析回自身，调用即无限递归、栈溢出杀进程。
+        // 本文件所有"与 Enumerable 同名"的谓词重载一律改成 Enumerable.Xxx(...) 限定调用。
+        return Enumerable.Any(stack, predicate);
     }
 
     /// <summary>
@@ -263,7 +276,8 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return stack.Count(predicate);
+        // 同 Contains：stack.Count(predicate) 会解析回本方法，无限递归
+        return Enumerable.Count(stack, predicate);
     }
 
     /// <summary>
@@ -316,8 +330,16 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        var filteredItems = stack.Where(predicate).ToArray();
-        return new Stack<T>(filteredItems);
+        // 同 Contains：stack.Where(predicate) 会解析回本方法，无限递归
+        var filteredItems = Enumerable.Where(stack, predicate).ToArray();
+
+        // filteredItems 是"栈顶到栈底"顺序，按底→顶回压才能让新栈的枚举顺序与源栈一致
+        var result = new Stack<T>(filteredItems.Length);
+        for (var i = filteredItems.Length - 1; i >= 0; i--)
+        {
+            result.Push(filteredItems[i]);
+        }
+        return result;
     }
 
     /// <summary>
@@ -334,8 +356,16 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(selector);
 
-        var transformedItems = stack.Select(selector).ToArray();
-        return new Stack<TResult>(transformedItems);
+        // 同 Contains：stack.Select(selector) 会解析回本方法，无限递归
+        var transformedItems = Enumerable.Select(stack, selector).ToArray();
+
+        // 与 Where 同理：按底→顶回压，保持与源栈一致的枚举顺序
+        var result = new Stack<TResult>(transformedItems.Length);
+        for (var i = transformedItems.Length - 1; i >= 0; i--)
+        {
+            result.Push(transformedItems[i]);
+        }
+        return result;
     }
 
     /// <summary>
@@ -486,7 +516,8 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return stack.All(predicate);
+        // 同 Contains：stack.All(predicate) 会解析回本方法，无限递归
+        return Enumerable.All(stack, predicate);
     }
 
     /// <summary>
@@ -502,7 +533,8 @@ public static class StackExtensions
         ArgumentNullException.ThrowIfNull(stack);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return stack.Any(predicate);
+        // 同 Contains：stack.Any(predicate) 就是本方法自身，直接自递归
+        return Enumerable.Any(stack, predicate);
     }
 
     /// <summary>

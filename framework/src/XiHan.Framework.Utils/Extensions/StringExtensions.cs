@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Utils.Extensions;
 /// <summary>
 /// 字符串扩展方法
 /// </summary>
-public static class StringExtensions
+public static partial class StringExtensions
 {
     /// <summary>
     /// 如果给定字符串不以该字符结尾，则在其末尾添加一个字符
@@ -279,8 +280,22 @@ public static class StringExtensions
     }
 
     /// <summary>
+    /// 帕斯卡/驼峰的切词位置：一个小写字母紧跟一个大写字母
+    /// </summary>
+    /// <remarks>
+    /// ToSentenceCase / ToKebabCase 原本复用的是 <c>RegexHelper.LetterRegex()</c>，
+    /// 那个模式是 <c>^[A-Za-z]+$</c>（整串锚定、且要求全是字母），根本不是切词模式：
+    /// 纯字母串只会整体命中一次，被替换成"首字符 + 分隔符 + 第二个字符的小写"，
+    /// 于是 ToKebabCase("ThisIsSampleSentence") 得到的是 "t-h"；
+    /// 一旦串里有空格或数字则一次都不命中，原样返回；单字母输入还会在 m.Value[1] 处越界。
+    /// 换成本模式后命中长度恒为 2，m.Value[1] 必然存在，也就不需要额外的长度保护。
+    /// </remarks>
+    [GeneratedRegex("[a-z][A-Z]", RegexOptions.Compiled)]
+    private static partial Regex CamelCaseWordBoundaryRegex();
+
+    /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为句子(通过按空格分隔单词)
-    /// 示例:ThisIsSampleSentence被转换为 This is a sample sentence
+    /// 示例:ThisIsSampleSentence 被转换为 This is sample sentence
     /// </summary>
     /// <param name="str">要转换的字符串</param>
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
@@ -289,8 +304,8 @@ public static class StringExtensions
         return string.IsNullOrWhiteSpace(str)
             ? str
             : useCurrentCulture
-                ? RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
-                : RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
+                ? CamelCaseWordBoundaryRegex().Replace(str, m => m.Value[0] + " " + char.ToLower(m.Value[1]))
+                : CamelCaseWordBoundaryRegex().Replace(str, m => m.Value[0] + " " + char.ToLowerInvariant(m.Value[1]));
     }
 
     /// <summary>
@@ -314,7 +329,7 @@ public static class StringExtensions
 
     /// <summary>
     /// 将给定的帕斯卡格式/驼峰格式字符串转换为短横线连接格式
-    /// 例如:ThisIsSampleSentence被转换为this-is-a-sample-sentence
+    /// 例如:ThisIsSampleSentence 被转换为 this-is-sample-sentence
     /// </summary>
     /// <param name="str">要转换的字符串</param>
     /// <param name="useCurrentCulture">设置为 true 以使用当前文化否则，将使用不变文化</param>
@@ -327,9 +342,10 @@ public static class StringExtensions
 
         str = str.ToCamelCase();
 
+        // 切词正则换成 CamelCaseWordBoundaryRegex，缘由见该方法的注释
         return useCurrentCulture
-            ? RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + "-" + char.ToLower(m.Value[1]))
-            : RegexHelper.LetterRegex().Replace(str, m => m.Value[0] + "-" + char.ToLowerInvariant(m.Value[1]));
+            ? CamelCaseWordBoundaryRegex().Replace(str, m => m.Value[0] + "-" + char.ToLower(m.Value[1]))
+            : CamelCaseWordBoundaryRegex().Replace(str, m => m.Value[0] + "-" + char.ToLowerInvariant(m.Value[1]));
     }
 
     /// <summary>

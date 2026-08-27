@@ -195,7 +195,8 @@ public static class TypeExtensions
 
         foreach (var other in allOthers)
         {
-            var cur = other;
+            // 显式声明为可空：下面爬基类链时 BaseType 为 null 即代表本轮走到头
+            Type? cur = other;
             while (cur is not null)
             {
                 if (cur.IsGenericType)
@@ -208,10 +209,14 @@ public static class TypeExtensions
                     return true;
                 }
 
-                if (cur.BaseType is not null)
-                {
-                    cur = cur.BaseType;
-                }
+                // 原实现是 if (cur.BaseType is not null) { cur = cur.BaseType; }：
+                // 一旦 cur 爬到 System.Object（BaseType 为 null）或本身是接口（BaseType 也是 null）
+                // 且仍未命中，cur 就不再前进，而循环条件 cur is not null 永远成立——死循环挂死线程。
+                // 只要 baseType 与 genericType 无关就会触发（如 IsAssignableFromGeneric(typeof(List<>), typeof(string))）；
+                // 接口场景更隐蔽：allOthers 的第一个元素是具体类，爬到 object 就挂了，
+                // 后面那些真正可能命中的接口一个都轮不到。
+                // 改为无条件前进，BaseType 为 null 时自然退出本轮，继续检查 allOthers 的下一个元素。
+                cur = cur.BaseType;
             }
         }
 
@@ -252,7 +257,13 @@ public static class TypeExtensions
     /// 获取指定类型的所有基类
     /// </summary>
     /// <param name="type">要获取其基类的类型</param>
-    /// <param name="stoppingType">停止查找的基类类型，该类型也会包含在返回结果中</param>
+    /// <param name="stoppingType">
+    /// 停止查找的基类类型，<b>该类型本身不包含在返回结果中</b>（遇到它即停止向上回溯）。
+    /// 原注释写的是"该类型也会包含在返回结果中"，与实现相反：
+    /// AddTypeAndBaseTypesRecursively 在 type == stoppingType 时直接 return，停止类型是排他边界。
+    /// "回溯到某个基类为止、不含该基类"是这类 API 的通行语义（把 stoppingType 当作排他上界），
+    /// 实现是刻意的，因此只订正注释、不改行为，以免影响已按此语义写成的调用方与用例。
+    /// </param>
     /// <param name="includeObject">如果为 true，则在返回结果中包含标准的 <see cref="object"/> 类型</param>
     public static Type[] GetBaseClasses(this Type type, Type stoppingType, bool includeObject = true)
     {

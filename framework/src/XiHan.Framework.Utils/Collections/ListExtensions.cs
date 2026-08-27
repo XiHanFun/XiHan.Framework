@@ -251,8 +251,17 @@ public static class ListExtensions
     /// <param name="source">要操作的列表</param>
     /// <param name="selector">用于选择要移动的项的选择器</param>
     /// <param name="targetIndex">项移动到的目标索引位置</param>
+    /// <exception cref="IndexOutOfRangeException">列表为空，或目标索引不在 [0, Count-1] 内时抛出</exception>
+    /// <exception cref="InvalidOperationException">没有任何项匹配选择器时抛出</exception>
     public static void MoveItem<T>(this List<T> source, Predicate<T> selector, int targetIndex)
     {
+        // 空列表要先单独挡掉：否则下面的 IsInRange(0, -1) 会因为"最小值大于最大值"
+        // 先抛 ArgumentException，既不是文档承诺的越界异常，报错也说不清真实原因。
+        if (source.Count == 0)
+        {
+            throw new IndexOutOfRangeException("列表为空，没有可移动的项");
+        }
+
         // 检查目标索引是否在有效范围内
         if (!targetIndex.IsInRange(0, source.Count - 1))
         {
@@ -261,6 +270,16 @@ public static class ListExtensions
 
         // 查找当前项的索引
         var currentIndex = source.FindIndex(0, selector);
+
+        // 原实现找不到项时 currentIndex 是 -1，会一路走到 source[currentIndex]，
+        // 抛出的 ArgumentOutOfRangeException 与"没找到要移动的项"这个真实原因毫无关系，
+        // 也不带任何诊断信息（XiHan.Framework.Core 的 ModuleLoader 因此不得不在调用前自己先判一次）。
+        // 这里把它换成语义明确的异常，缘由直接写在消息里。
+        if (currentIndex < 0)
+        {
+            throw new InvalidOperationException("未找到与选择器匹配的项，无法移动");
+        }
+
         if (currentIndex == targetIndex)
         {
             return;

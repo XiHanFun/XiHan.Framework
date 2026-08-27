@@ -220,7 +220,11 @@ public static class QueueExtensions
         ArgumentNullException.ThrowIfNull(queue);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return queue.Count(predicate);
+        // 原实现写的是 queue.Count(predicate)：扩展方法先在本命名空间内找候选，
+        // 本方法对 Queue<T> 是恒等转换、优先于 Enumerable.Count 的 Queue<T>→IEnumerable<T>
+        // 引用转换，于是解析回自身，调用即无限递归、栈溢出杀进程。改为限定调用 Enumerable。
+        // （同文件 Contains 用的 queue.Any 是安全的：本命名空间没有 Queue 版 Any 候选。）
+        return Enumerable.Count(queue, predicate);
     }
 
     /// <summary>
@@ -274,7 +278,8 @@ public static class QueueExtensions
         ArgumentNullException.ThrowIfNull(predicate);
 
         var result = new Queue<T>();
-        foreach (var item in queue.Where(predicate))
+        // 同 Count：queue.Where(predicate) 会解析回本方法，无限递归
+        foreach (var item in Enumerable.Where(queue, predicate))
         {
             result.Enqueue(item);
         }
@@ -296,7 +301,8 @@ public static class QueueExtensions
         ArgumentNullException.ThrowIfNull(selector);
 
         var result = new Queue<TResult>();
-        foreach (var item in queue.Select(selector))
+        // 同 Count：queue.Select(selector) 会解析回本方法，无限递归
+        foreach (var item in Enumerable.Select(queue, selector))
         {
             result.Enqueue(item);
         }
