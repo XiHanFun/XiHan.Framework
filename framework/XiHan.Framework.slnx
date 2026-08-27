@@ -1,5 +1,4 @@
 <Solution>
-  <Folder Name="/0.docs/" />
   <Folder Name="/1.src/" />
   <Folder Name="/1.src/1.Common/">
     <Project Path="src/XiHan.Framework.Analyzers/XiHan.Framework.Analyzers.csproj" />
