@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\test.props" />
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\XiHan.Framework.Web.Gateway\XiHan.Framework.Web.Gateway.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Traffic\XiHan.Framework.Traffic.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.MultiTenancy.Abstractions\XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
