@@ -2,6 +2,28 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v3.14.0 (2026-08-26)
+
+::: warning 升级须知
+八家 OAuth 提供商改为框架自研实现，认证包不再引用 `AspNet.Security.OAuth.GitHub` / `.Gitee` / `.QQ` 与 `Microsoft.AspNetCore.Authentication.Google`，NuGet 依赖只剩 JwtBearer 与 ASP.NET Core 共享框架。配置节的既有键名保持不变，直接引用过这些第三方包类型的代码需改到框架的 `XiHanOAuthHandler` 一侧。
+:::
+
+- **新增** 八家 OAuth 提供商全部自研，新增微信、企业微信、飞书、钉钉登录；每家支持账号授权与扫码两种登录方式，同一家可用不同 `Name`、相同 `Provider` 注册成两个方案
+- **新增** `OAuthProviderConfig` 增加 `Provider`、`Mode`、`AgentId`、`CorpId`、`LoadMemberProfile`、`AuthorizationEndpoint` 与 `AuthorizationParameters`；端点与声明类型集中登记为 `OAuthProviderEndpoints` 与 `OAuthClaimTypes`
+- **新增** 新增认证测试工程 `XiHan.Framework.Authentication.Tests`，覆盖八家授权地址与六家完整回调流程共 57 例
+- **调整** 移除四个第三方 OAuth 提供商包，企业微信扫码改用新版端点，资料改走 `auth/getuserdetail`，不再强依赖通讯录权限
+- **修复** OAuth 令牌响应体不再原文进日志，按字段名抹掉取值并截断至 512 字
+- **修复** 状态串还原改为与搬运同样门控，扫码回调上多传一个 `_oauthstate` 不再顶掉真实 state 让登录失败
+- **修复** 微信不再按远端回显的权限范围决定是否拉取资料，不再静默产生资料全空的账号
+- **修复** 飞书重写的令牌请求补回 `code_verifier`，启用 PKCE 时不再被直接拒绝，校验串也不再随票据进登录 Cookie
+- **修复** `Scopes` 回到追加语义（微信与企业微信的两种登录方式权限范围互斥，仍整体替换），显式配置不再挤掉提供商默认值导致邮箱补取被静默关闭
+- **修复** 钉钉令牌响应改为在原字段上补标准字段名并写出 corpId 声明；企业微信通讯录占位值不再覆盖真实资料；GitHub 与 Gitee 的邮箱补取失败不再中断登录
+- **修复** 日志滚动选名改按已分配字节数，磁盘大小不足以判断
+- **修复** `IXiHanMethodInvocation.ReturnValue` 改回可空，修正错误的不可空标注
+- **优化** 缓存事件测试摘除静态事件订阅，不再污染后续用例；解除 `FileSizeControl` 的用例跳过
+- **优化** 覆盖率产物路径改回工作目录，合并报告步骤不再空转
+- **升级** 升级依赖，发布 v3.14.0
+
 ## v3.13.1 (2026-08-17)
 
 - **新增** 六个无测试包补盲单元测试 237 例（Http / Domain.Shared / Security / DevTools / Serialization / Metadata），CI 覆盖率门禁随之上调
