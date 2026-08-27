@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Reflection;
 using System.Runtime.Loader;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Utils.Collections;
@@ -37,7 +38,19 @@ public class FilePlugInSource : IPlugInSource
 
         foreach (var filePath in FilePaths)
         {
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+            // 原实现把程序集加载放在 try 之外：相对路径、文件缺失、非托管映像等加载失败会以
+            // ArgumentException / FileNotFoundException / BadImageFormatException 原样抛出，
+            // 与扫描阶段统一包装成 XiHanException 的错误契约不一致，上层也无从知道是哪个插件文件出的问题。
+            // 加载与扫描同属一次插件解析，这里把加载并入同一套包装，并在消息里带上出问题的文件路径。
+            Assembly assembly;
+            try
+            {
+                assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+            }
+            catch (Exception ex)
+            {
+                throw new XiHanException($"无法加载插件程序集文件：{filePath}", ex);
+            }
 
             try
             {

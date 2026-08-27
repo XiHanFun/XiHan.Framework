@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Application;
+using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity.PlugIns;
 using XiHan.Framework.Utils.Collections;
@@ -83,7 +84,19 @@ public class ModuleLoader : IModuleLoader
     protected virtual List<IModuleDescriptor> SortByDependency(List<IModuleDescriptor> modules, Type startupModuleType)
     {
         var sortedModules = modules.SortByDependencies(m => m.Dependencies);
-        sortedModules.MoveItem(m => m.Type == startupModuleType, modules.Count - 1);
+
+        // 原实现用入参 modules 的长度定位末位。拓扑排序会把依赖图上的描述器一并收进结果，
+        // 而 Dependencies 可以通过公开的 AddDependency 追加、SetDependencies 本身也可重写，
+        // 一旦依赖图里混进不在入参列表中的描述器，排序结果就会比入参长，
+        // 起始模块被挪到中间，破坏「起始模块排在最后」的契约。改用排序结果自身的长度定位。
+        // 另外 MoveItem 在找不到目标项时会以 -1 下标访问集合，抛出不带任何诊断信息的越界异常，
+        // 所以先显式判定起始模块是否在列表中，缺失时给出带模块类型名的明确错误。
+        if (sortedModules.All(m => m.Type != startupModuleType))
+        {
+            throw new XiHanException($"起始模块 {startupModuleType.AssemblyQualifiedName} 不在已加载的模块列表中！");
+        }
+
+        sortedModules.MoveItem(m => m.Type == startupModuleType, sortedModules.Count - 1);
         return sortedModules;
     }
 
