@@ -152,9 +152,9 @@
     <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
   </Folder>
-  <Folder Name="/2.tests/3.Main/">
-    <Project Path="test/XiHan.Framework.Integration.Tests/XiHan.Framework.Integration.Tests.csproj" />
-    <Project Path="test/XiHan.Framework.Web.Tests/XiHan.Framework.Web.Tests.csproj" />
+  <Folder Name="/2.tests/3.Hosts/">
+    <Project Path="test/XiHan.Framework.Integration.Host/XiHan.Framework.Integration.Host.csproj" />
+    <Project Path="test/XiHan.Framework.Web.Host/XiHan.Framework.Web.Host.csproj" />
   </Folder>
   <Folder Name="/3.tool/" />
   <Folder Name="/3.tool/1.ProjectStandardization/">

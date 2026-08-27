@@ -309,8 +309,8 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Api.Tests/ #   Web API 测试
 │   │   ├── ...                            #   其余按 <项目名>.Tests 一一对应
 │   │   ├── XiHan.Framework.TestsBase/     #   测试基础设施（共享库，不含用例）
-│   │   ├── XiHan.Framework.Web.Tests/     #   Web 示例宿主（非测试工程，可运行的样例应用）
-│   │   └── XiHan.Framework.Integration.Tests/ # 模块装配示例宿主（非测试工程）
+│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（可运行的样例应用，非测试工程）
+│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主（可运行，非测试工程）
 │   ├── tool/                              # 工具
 │   │   └── Region/                        #   代码规范化工具
 │   ├── props/                             # 共享 MSBuild 属性

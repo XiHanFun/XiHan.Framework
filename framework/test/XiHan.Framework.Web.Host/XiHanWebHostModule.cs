@@ -7,16 +7,16 @@ using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Docs;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 
-namespace XiHan.Framework.Web.Tests;
+namespace XiHan.Framework.Web.Host;
 
 /// <summary>
-/// 曦寒测试应用 Web 主机
+/// 曦寒示例 Web 宿主
 /// </summary>
 [DependsOn(
     typeof(XiHanWebApiModule),
     typeof(XiHanWebDocsModule)
 )]
-public class XiHanTestsWebModule : XiHanModule
+public class XiHanWebHostModule : XiHanModule
 {
     /// <summary>
     /// 服务配置

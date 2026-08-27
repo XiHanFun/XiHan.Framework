@@ -6,15 +6,15 @@ using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Logging;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 
-namespace XiHan.Framework.Integration.Tests;
+namespace XiHan.Framework.Integration.Host;
 
 /// <summary>
-/// 曦寒测试应用集成主机
+/// 曦寒示例模块装配宿主
 /// </summary>
 [DependsOn(
     typeof(XiHanLoggingModule)
     )]
-public class XiHanTestsIntegrationModule : XiHanModule
+public class XiHanIntegrationHostModule : XiHanModule
 {
     /// <summary>
     /// 服务配置

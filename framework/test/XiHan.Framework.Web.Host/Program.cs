@@ -4,13 +4,13 @@
 using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
-using XiHan.Framework.Web.Tests;
+using XiHan.Framework.Web.Host;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    await builder.AddApplicationAsync<XiHanTestsWebModule>();
+    await builder.AddApplicationAsync<XiHanWebHostModule>();
 
     var app = builder.Build();
 
