@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\XiHan.Framework.Validation.Abstractions\XiHan.Framework.Validation.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>
