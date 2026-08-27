@@ -15,10 +15,16 @@ public static class ExceptionExtensions
     /// <summary>
     /// 获取异常的消息，包括内部异常
     /// </summary>
+    /// <remarks>
+    /// 该开关原名 <c>isHideStackTrace</c>、文档写作"是否隐藏异常规模信息"，但它从头到尾没碰过堆栈：
+    /// 本方法只拼消息文本，开关控制的是"还要不要沿 InnerException 链继续往下拼"。
+    /// 按原名调用的人会以为传 true 只是少打堆栈，实际却把内部异常这条真正的根因线索整条丢掉，
+    /// 因此按实际语义改名，行为保持不变。
+    /// </remarks>
     /// <param name="exception">异常</param>
-    /// <param name="isHideStackTrace">是否隐藏异常规模信息</param>
+    /// <param name="isHideInnerException">是否隐藏内部异常（为 true 时只返回最外层异常的消息，不再沿内部异常链展开）</param>
     /// <returns></returns>
-    public static string FormatMessage(this Exception? exception, bool isHideStackTrace = false)
+    public static string FormatMessage(this Exception? exception, bool isHideInnerException = false)
     {
         if (exception is null)
         {
@@ -26,7 +32,7 @@ public static class ExceptionExtensions
         }
 
         var message = exception.Message;
-        if (isHideStackTrace)
+        if (isHideInnerException)
         {
             return message;
         }
