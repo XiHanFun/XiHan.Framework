@@ -48,40 +48,62 @@ public static partial class TextWatermarkHelper
         var watermarkBits = watermarkData.FromStringToBinary();
 
         // 嵌入水印
+        // 原缺陷：句尾位置与后续补位位置都直接按"原始 text 坐标"插进已经变长的 result，
+        // 而补位位置 (i - index + 1) * text.Length / (...) 普遍小于前面的句尾位置，
+        // 于是后嵌入的水印位在最终串里反而排在前面，ExtractWatermark 按出现顺序还原只能拿到乱序位串。
+        // 修复：所有插入点统一用"原始文本坐标 + 已插入水印字符数"换算，并强制原始坐标单调不减，
+        // 保证水印字符在结果串里的先后顺序与 watermarkBits 的下标顺序严格一致。
         var result = new StringBuilder(text);
         var index = 0;
         var sentences = SplitIntoSentences(text);
 
+        // 已插入的水印字符数（原始坐标 -> 结果串坐标的偏移量）
+        var inserted = 0;
+        // 上一次插入所处的原始文本坐标
+        var lastPos = 0;
+        // 句子在原始文本中的搜索游标，避免重复句子每次都定位到首次出现处
+        var searchFrom = 0;
+
         foreach (var sentence in sentences)
         {
-            if (index < watermarkBits.Length && !string.IsNullOrWhiteSpace(sentence))
+            if (index >= watermarkBits.Length)
             {
-                // 在每个句子结尾处嵌入一个水印位
-                var endPos = text.IndexOf(sentence) + sentence.Length;
-                if (endPos < result.Length)
-                {
-                    var bit = watermarkBits[index];
-                    var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
-                    result.Insert(endPos, watermarkChar);
-                    index++;
-                }
+                break;
             }
+
+            var found = text.IndexOf(sentence, searchFrom, StringComparison.Ordinal);
+            if (found < 0)
+            {
+                continue;
+            }
+
+            var endPos = found + sentence.Length;
+            searchFrom = endPos;
+
+            if (string.IsNullOrWhiteSpace(sentence))
+            {
+                continue;
+            }
+
+            // 在每个句子结尾处嵌入一个水印位
+            var bit = watermarkBits[index];
+            var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
+            lastPos = Math.Max(endPos, lastPos);
+            result.Insert(lastPos + inserted, watermarkChar);
+            inserted++;
+            index++;
         }
 
         // 如果句子不够，在文本的其他地方添加剩余的水印信息
-        for (var i = index; i < watermarkBits.Length; i++)
+        var remaining = watermarkBits.Length - index;
+        for (var i = 0; i < remaining; i++)
         {
-            var bit = watermarkBits[i];
+            var bit = watermarkBits[index + i];
             var watermarkChar = WatermarkChars[bit % WatermarkChars.Length];
-            var position = (i - index + 1) * text.Length / (watermarkBits.Length - index + 1);
-            if (position < result.Length)
-            {
-                result.Insert(position, watermarkChar);
-            }
-            else
-            {
-                result.Append(watermarkChar);
-            }
+            // 在最后一个句尾之后的剩余区间里均匀铺开；区间为空（句尾已到文末）时全部顺次追加到末尾
+            var position = lastPos + ((i + 1) * (text.Length - lastPos) / (remaining + 1));
+            result.Insert(position + inserted, watermarkChar);
+            inserted++;
         }
 
         return result.ToString();

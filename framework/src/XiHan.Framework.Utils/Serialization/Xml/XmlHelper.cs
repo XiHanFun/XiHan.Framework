@@ -43,7 +43,10 @@ public static class XmlHelper
             CheckCharacters = options.CheckCharacters
         };
 
-        using var stream = new StringWriter();
+        // XmlWriter 写入 TextWriter 时，声明里的 encoding 取自 TextWriter.Encoding 而不是 XmlWriterSettings.Encoding，
+        // 用默认的 StringWriter（恒为 UTF-16）会让产出的声明恒为 encoding="utf-16"，与 SerializeToFile 落盘的字节编码对不上。
+        // 换成如实报告选项编码的写入器后，声明与落盘编码才是同一个。
+        using var stream = new EncodedStringWriter(options.Encoding);
         using var writer = XmlWriter.Create(stream, settings);
 
         var serializer = new XmlSerializer(typeof(T));
@@ -130,6 +133,10 @@ public static class XmlHelper
     /// <param name="obj">要序列化的对象</param>
     /// <param name="filePath">文件路径</param>
     /// <param name="options">序列化选项</param>
+    /// <remarks>
+    /// 落盘编码取自 <see cref="XmlSerializeOptions.Encoding"/>（默认 UTF-8），与 XML 声明里的编码保持一致。
+    /// 注意 <see cref="DeserializeFromFile{T}"/> 固定按 UTF-8 读取，用非 UTF-8 编码落盘的文件需自行按同一编码读取。
+    /// </remarks>
     public static void SerializeToFile<T>(T obj, string filePath, XmlSerializeOptions? options = null)
     {
         var xml = Serialize(obj, options);
@@ -138,7 +145,9 @@ public static class XmlHelper
         {
             Directory.CreateDirectory(directory);
         }
-        File.WriteAllText(filePath, xml, Encoding.UTF8);
+        // 原来恒用 Encoding.UTF8 落盘，XmlSerializeOptions.Encoding 对文件没有任何影响，
+        // 与 JsonHelper.SerializeToFile 的口径也不一致；这里改为与选项同源。
+        File.WriteAllText(filePath, xml, options?.Encoding ?? Encoding.UTF8);
     }
 
     #region Try 方法
@@ -603,8 +612,15 @@ public static class XmlHelper
             };
 
             using var writer = new StringWriter();
-            using var xmlWriter = XmlWriter.Create(writer, settings);
-            doc.Save(xmlWriter);
+            // xmlWriter 必须在读回字符串之前释放：它自带缓冲，而 XDocument.Save(XmlWriter)
+            // 不会替调用方刷缓冲（XmlSerializer.Serialize 会，所以本文件的 Serialize 侥幸没事）。
+            // 早先写成 using var（作用域到方法结束），ToString() 时缓冲还在 xmlWriter 手里，
+            // 该方法恒返回空字符串——格式化与压缩两个公共 API 实际完全不可用。
+            using (var xmlWriter = XmlWriter.Create(writer, settings))
+            {
+                doc.Save(xmlWriter);
+            }
+
             return writer.ToString();
         }
         catch
@@ -630,8 +646,15 @@ public static class XmlHelper
             };
 
             using var writer = new StringWriter();
-            using var xmlWriter = XmlWriter.Create(writer, settings);
-            doc.Save(xmlWriter);
+            // xmlWriter 必须在读回字符串之前释放：它自带缓冲，而 XDocument.Save(XmlWriter)
+            // 不会替调用方刷缓冲（XmlSerializer.Serialize 会，所以本文件的 Serialize 侥幸没事）。
+            // 早先写成 using var（作用域到方法结束），ToString() 时缓冲还在 xmlWriter 手里，
+            // 该方法恒返回空字符串——格式化与压缩两个公共 API 实际完全不可用。
+            using (var xmlWriter = XmlWriter.Create(writer, settings))
+            {
+                doc.Save(xmlWriter);
+            }
+
             return writer.ToString();
         }
         catch
@@ -970,6 +993,32 @@ public static class XmlHelper
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 对外声明指定编码的字符串写入器
+    /// </summary>
+    /// <remarks>
+    /// <see cref="StringWriter"/> 的 Encoding 恒为 UTF-16 且是只读虚属性，
+    /// 而 XmlWriter 写 XML 声明时只认 TextWriter.Encoding，所以只能靠派生类把选项里的编码报上去。
+    /// </remarks>
+    private sealed class EncodedStringWriter : StringWriter
+    {
+        private readonly Encoding _encoding;
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="encoding">对外声明的编码</param>
+        public EncodedStringWriter(Encoding encoding)
+        {
+            _encoding = encoding;
+        }
+
+        /// <summary>
+        /// 对外声明的编码
+        /// </summary>
+        public override Encoding Encoding => _encoding;
     }
 
     #endregion 辅助功能

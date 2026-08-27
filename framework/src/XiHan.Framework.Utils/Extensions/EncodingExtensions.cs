@@ -157,48 +157,77 @@ public static class EncodingExtensions
     }
 
     /// <summary>
-    /// 将字符串转换为二进制表示
+    /// 位串中每个字节固定占用的字符数（一个字节 = 3 位八进制数字）
     /// </summary>
+    private const int DigitsPerByte = 3;
+
+    /// <summary>
+    /// 将字符串转换为位串表示（UTF-8 逐字节，每字节定长 3 位八进制数字）
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="FromBinaryToString"/> 互为逆运算。数字取值恒为 0-7，
+    /// 正好与文本水印承载用的 8 个不可见字符一一对应，因此不能改成十进制。
+    /// </remarks>
     public static string FromStringToBinary(this string input)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
-        var result = new StringBuilder();
+        var result = new StringBuilder(bytes.Length * DigitsPerByte);
 
         foreach (var b in bytes)
         {
-            result.Append(Convert.ToString(b, 8));
+            // 原缺陷：这里写出的是变长八进制（65 -> "101"、9 -> "11"），
+            // 而解码端按固定 3 字符切片、并用 byte.TryParse 当十进制读回，
+            // 两侧口径完全不同，往返必然乱码（"XIHAN" 的位串会被读成 130/111/110/101/116，
+            // 首字节 130 不是合法 UTF-8 前导字节，最终得到替换字符加 "onet"）。
+            // 修复：补零成定长 3 位八进制，与解码端的 3 字符切片严格对齐。
+            result.Append(Convert.ToString(b, 8).PadLeft(DigitsPerByte, '0'));
         }
 
         return result.ToString();
     }
 
     /// <summary>
-    /// 将二进制表示转换为字符串
+    /// 将位串表示转换回字符串（每 3 位八进制数字还原一个 UTF-8 字节）
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="FromStringToBinary"/> 互为逆运算；不足 3 位的尾部残片、
+    /// 含非八进制字符或超出字节范围的分片一律跳过，保证对任意外来文本都不抛异常。
+    /// </remarks>
     public static string FromBinaryToString(this string binary)
     {
-        try
-        {
-            var byteChunks = new List<byte>();
-
-            for (var i = 0; i < binary.Length; i += 3)
-            {
-                if (i + 3 <= binary.Length)
-                {
-                    var chunk = binary.Substring(i, 3);
-                    if (byte.TryParse(chunk, out var byteValue))
-                    {
-                        byteChunks.Add(byteValue);
-                    }
-                }
-            }
-
-            return Encoding.UTF8.GetString([.. byteChunks]);
-        }
-        catch
+        if (string.IsNullOrEmpty(binary))
         {
             return string.Empty;
         }
+
+        var byteChunks = new List<byte>(binary.Length / DigitsPerByte);
+
+        for (var i = 0; i + DigitsPerByte <= binary.Length; i += DigitsPerByte)
+        {
+            // 原缺陷：这里用 byte.TryParse 把八进制分片当十进制解析（"130" 读成 130 而不是 88）。
+            // 修复：按八进制逐位累加，非 0-7 字符或溢出字节的分片视为无效并跳过。
+            var value = 0;
+            var valid = true;
+
+            for (var j = 0; j < DigitsPerByte; j++)
+            {
+                var digit = binary[i + j] - '0';
+                if (digit is < 0 or > 7)
+                {
+                    valid = false;
+                    break;
+                }
+
+                value = (value * 8) + digit;
+            }
+
+            if (valid && value <= byte.MaxValue)
+            {
+                byteChunks.Add((byte)value);
+            }
+        }
+
+        return Encoding.UTF8.GetString([.. byteChunks]);
     }
 
     /// <summary>

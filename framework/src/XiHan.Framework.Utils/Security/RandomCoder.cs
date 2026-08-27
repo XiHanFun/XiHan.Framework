@@ -17,6 +17,16 @@ namespace XiHan.Framework.Utils.Security;
 public static class RandomCoder
 {
     /// <summary>
+    /// 常用汉字码位区间起点（CJK 统一表意文字「一」U+4E00）
+    /// </summary>
+    private const int ChineseCharacterStart = 0x4E00;
+
+    /// <summary>
+    /// 常用汉字码位区间终点（开区间，末位是「龥」U+9FA5）
+    /// </summary>
+    private const int ChineseCharacterEndExclusive = 0x9FA6;
+
+    /// <summary>
     /// 随机数字
     /// </summary>
     /// <param name="length">生成长度 默认6个字符</param>
@@ -161,15 +171,19 @@ public static class RandomCoder
     /// <returns>随机汉字字符串</returns>
     public static string GetChineseCharacters(int? length = 6)
     {
-        //汉字由区位和码位组成(都为0-94,其中区位16-55为一级汉字区,56-87为二级汉字区,1-9为特殊字符区)
+        // 原缺陷：原实现按 GB2312 区位码取字，走 Encoding.GetEncoding("GB2312")；
+        // 但 .NET Core 起 GB2312 不在内置编码提供程序里，必须引用 System.Text.Encoding.CodePages
+        // 并注册 CodePagesEncodingProvider，本项目两者都没有，于是该方法在任何调用点都直接抛
+        // ArgumentException('GB2312' is not a supported encoding name)，公开 API 完全不可用。
+        // 修复不引入新包，改为直接在 Unicode CJK 统一表意文字基本区 U+4E00~U+9FA5 随机取码位——
+        // 这正是 GB2312 一级/二级汉字映射到的区间，输出仍然全部是常用汉字。
         var strtem = new StringBuilder();
         length ??= 6;
 
         for (var i = 0; i < length; i++)
         {
-            var area = RandomNumberGenerator.GetInt32(16, 88);
-            var code = area == 55 ? RandomNumberGenerator.GetInt32(1, 90) : RandomNumberGenerator.GetInt32(1, 94);
-            strtem.Append(Encoding.GetEncoding("GB2312").GetString([Convert.ToByte(area + 160), Convert.ToByte(code + 160)]));
+            var codePoint = RandomNumberGenerator.GetInt32(ChineseCharacterStart, ChineseCharacterEndExclusive);
+            strtem.Append((char)codePoint);
         }
 
         return strtem.ToString();

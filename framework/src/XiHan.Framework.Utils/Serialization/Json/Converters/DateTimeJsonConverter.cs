@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -59,7 +60,9 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     {
         return reader.TokenType switch
         {
-            JsonTokenType.String when DateTime.TryParse(reader.GetString(), out var value) => _isUtc ? value.ToUniversalTime() : value,
+            // 原来用当前区域性解析，非公历默认日历的区域（如 ar-SA）会把同一串文本解析成完全不同的日期。
+            // JSON 是对外协议，解析口径必须固定为不变区域性，不能随部署环境漂移。
+            JsonTokenType.String when DateTime.TryParse(reader.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) => _isUtc ? value.ToUniversalTime() : value,
             _ => default
         };
     }
@@ -85,13 +88,16 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
     /// <returns>格式化字符串</returns>
     internal static string FormatDateTime(DateTime value, string dateFormatString, bool isUtc, Func<string?>? timeZoneResolver)
     {
+        // 原来用当前区域性格式化：自定义格式里的 ':' 是"时间分隔符占位符"、'/' 是"日期分隔符占位符"，
+        // 会随服务器区域设置被替换掉；非公历默认日历的区域连年份都会变。
+        // JSON 是对外协议，输出格式必须固定为不变区域性，不能随部署环境漂移。
         var timeZoneId = timeZoneResolver?.Invoke();
         if (!string.IsNullOrWhiteSpace(timeZoneId))
         {
-            return ConvertToUserTime(value, timeZoneId).ToString(dateFormatString);
+            return ConvertToUserTime(value, timeZoneId).ToString(dateFormatString, CultureInfo.InvariantCulture);
         }
 
-        return (isUtc ? value.ToUniversalTime() : value).ToString(dateFormatString);
+        return (isUtc ? value.ToUniversalTime() : value).ToString(dateFormatString, CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -165,7 +171,8 @@ public class DateTimeNullableConverter : JsonConverter<DateTime?>
     {
         return reader.TokenType switch
         {
-            JsonTokenType.String when DateTime.TryParse(reader.GetString(), out var value) => _isUtc ? value.ToUniversalTime() : value,
+            // 同 DateTimeJsonConverter.Read：解析口径固定为不变区域性，不随部署环境漂移
+            JsonTokenType.String when DateTime.TryParse(reader.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) => _isUtc ? value.ToUniversalTime() : value,
             JsonTokenType.Null => null,
             _ => null
         };
