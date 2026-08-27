@@ -122,6 +122,15 @@ public class BackgroundJobWorker : BackgroundService
         var currentTenant = serviceProvider.GetRequiredService<ICurrentTenant>();
         var jobOptions = serviceProvider.GetRequiredService<IOptions<BackgroundJobOptions>>().Value;
 
+        // 本轮要串行跑掉刚领到的这一批（MaxJobFetchCount 默认 1000 条）。原实现抢到锁后再不管它，
+        // 一旦本轮总耗时超过锁 TTL，锁自动过期，另一实例抢到后会领到同一批尚未删除的作业重复执行——
+        // 而"多实例单活"正是这把锁存在的全部理由。框架早就提供了 ExtendAsync 却无人调用，
+        // 这里按 TTL 的一半为周期续期，把"单轮耗时必须小于 TTL"这条隐含约束消掉。
+        // 计时用注入的 IClock（与本类其它时间判断同源，也便于用例用可控时钟精确验证）。
+        var lockExpiry = TimeSpan.FromSeconds(_options.DistributedLockExpirySeconds);
+        var renewInterval = lockExpiry / 2;
+        var lastRenewTime = clock.Now;
+
         foreach (var job in jobs)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -129,7 +138,40 @@ public class BackgroundJobWorker : BackgroundService
                 break;
             }
 
+            if (renewInterval > TimeSpan.Zero && clock.Now - lastRenewTime >= renewInterval)
+            {
+                lastRenewTime = clock.Now;
+                if (!await TryExtendLockAsync(handle, lockExpiry, cancellationToken))
+                {
+                    // 已经不确定自己还持有锁，继续跑就可能与抢到锁的另一实例重复执行；
+                    // 剩下的作业留在存储里，下一轮重新抢锁后接着处理
+                    break;
+                }
+            }
+
             await TryExecuteJobAsync(serviceProvider, store, clock, serializer, executer, currentTenant, jobOptions, job, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 容错续期（续不上或续期出错都视为已失去锁，由调用方结束本轮）
+    /// </summary>
+    private async Task<bool> TryExtendLockAsync(IDistributedLockHandle handle, TimeSpan expiry, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (await handle.ExtendAsync(expiry, cancellationToken))
+            {
+                return true;
+            }
+
+            _logger.LogWarning("后台作业分布式锁续期失败（已不再持有），本轮提前结束以避免与其它实例重复执行");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "后台作业分布式锁续期异常，本轮提前结束以避免与其它实例重复执行");
+            return false;
         }
     }
 
