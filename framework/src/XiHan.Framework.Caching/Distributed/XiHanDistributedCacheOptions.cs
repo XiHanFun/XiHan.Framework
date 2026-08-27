@@ -30,6 +30,11 @@ public class XiHanDistributedCacheOptions
     /// <summary>
     /// 缓存键前缀
     /// </summary>
+    /// <remarks>
+    /// 拼在规范化键「租户段:缓存名段:业务键」之前，用于同一缓存实例上多应用互相隔离，例如 <c>"app1:"</c>。
+    /// 分隔符不会自动补，需要什么形状就照原样写进来。默认空串表示不加前缀。
+    /// 该值参与写键、按模式查键与剥前缀还原业务键三条路径，一旦改动，已写入的旧键将读不回来。
+    /// </remarks>
     public string KeyPrefix { get; set; }
 
     /// <summary>
