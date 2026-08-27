@@ -9,7 +9,16 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Crons;
 /// <remarks>
 /// 提供 Cron 表达式的解析、验证、下次执行时间计算等功能
 /// 支持标准的 5 位格式（分 时 日 月 周）和 6 位格式（秒 分 时 日 月 周）
-/// 支持特殊符号：* - , / ? L W # 等
+/// 支持特殊符号：* - , / ?（? 与 * 同义，都表示通配）
+/// <para>
+/// 不支持 Quartz 扩展的 L（月末）、W（最近工作日）、#（第 N 个星期几）：ParseValue 遇到这三个记号
+/// 会抛 ArgumentException，IsValidExpression 相应返回 false。原注释把它们列进"支持"，与实现以及
+/// docs/guide/tasks.md 里的显式警示块相矛盾，会诱导调用方写出运行期才发现无效的表达式，故按实际
+/// 行为修正注释——全仓没有任何调用点依赖 L/W/#，不值得为文案补一套解析实现。
+/// </para>
+/// <para>
+/// 日字段与星期字段都被限定（都不是 * 或 ?）时按标准 cron（Vixie/POSIX）取"或"语义：任一命中即触发。
+/// </para>
 /// </remarks>
 public static class CronHelper
 {
@@ -303,26 +312,14 @@ public static class CronHelper
             return false;
         }
 
-        // 检查日期
-        if (!IsFieldMatch(cron.Days, dateTime.Day, 1, DateTime.DaysInMonth(dateTime.Year, dateTime.Month)))
-        {
-            return false;
-        }
-
         // 检查月份
         if (!IsFieldMatch(cron.Months, dateTime.Month, 1, 12))
         {
             return false;
         }
 
-        // 检查星期
-        var dayOfWeek = (int)dateTime.DayOfWeek;
-        if (!IsFieldMatch(cron.DaysOfWeek, dayOfWeek, 0, 6))
-        {
-            return false;
-        }
-
-        return true;
+        // 检查日与星期（两者都被限定时取"或"，见 IsDayMatch）
+        return IsDayMatch(cron, dateTime);
     }
 
     /// <summary>
@@ -332,9 +329,27 @@ public static class CronHelper
     {
         return IsFieldMatch(cron.Minutes, dateTime.Minute, 0, 59)
             && IsFieldMatch(cron.Hours, dateTime.Hour, 0, 23)
-            && IsFieldMatch(cron.Days, dateTime.Day, 1, DateTime.DaysInMonth(dateTime.Year, dateTime.Month))
             && IsFieldMatch(cron.Months, dateTime.Month, 1, 12)
-            && IsFieldMatch(cron.DaysOfWeek, (int)dateTime.DayOfWeek, 0, 6);
+            && IsDayMatch(cron, dateTime);
+    }
+
+    /// <summary>
+    /// 判断"日"与"星期"两个字段是否命中
+    /// </summary>
+    /// <remarks>
+    /// 标准 cron（Vixie/POSIX）在日与星期都被限定时取逻辑或：任一命中即触发，所以 "0 0 1 * 1"
+    /// 是"每月 1 号或每周一"。原实现对这两个字段一律取逻辑与，把它解释成"1 号且当天是周一"，
+    /// 一年只命中一两次，与本类注释宣称的"标准 5 位格式"以及使用者的直觉都相反。
+    /// 只要有一侧是通配（* 或 ?），说明调用方并未同时限定两者，仍按原来的逐字段与判断。
+    /// </remarks>
+    private static bool IsDayMatch(CronExpression cron, DateTime dateTime)
+    {
+        var dayMatched = IsFieldMatch(cron.Days, dateTime.Day, 1, DateTime.DaysInMonth(dateTime.Year, dateTime.Month));
+        var dayOfWeekMatched = IsFieldMatch(cron.DaysOfWeek, (int)dateTime.DayOfWeek, 0, 6);
+
+        return cron.Days.IsWildcard || cron.DaysOfWeek.IsWildcard
+            ? dayMatched && dayOfWeekMatched
+            : dayMatched || dayOfWeekMatched;
     }
 
     #endregion
@@ -481,6 +496,7 @@ public static class CronHelper
         // 处理步长值 (/)
         var stepParts = field.Split('/');
         var step = 1;
+        var hasStep = false;
         if (stepParts.Length == 2)
         {
             if (!int.TryParse(stepParts[1], out step) || step <= 0)
@@ -488,6 +504,7 @@ public static class CronHelper
                 throw new ArgumentException($"无效的步长值: {stepParts[1]}");
             }
             field = stepParts[0];
+            hasStep = true;
         }
 
         // 处理列表值 (,)
@@ -533,7 +550,21 @@ public static class CronHelper
             else
             {
                 var value = ParseValue(trimmedPart, min, max);
-                values.Add(value);
+
+                if (hasStep)
+                {
+                    // "n/step" 是 Quartz/Spring 的通行写法，语义等价于 "n-max/step"：从 n 起每隔 step 一次。
+                    // 原实现落到这里只取单值，把步长静默丢掉——"0/15 * * * * *" 会退化成每分钟只在第 0 秒
+                    // 触发一次，配置写对了却不按预期跑，且无任何报错可查。
+                    for (var i = value; i <= max; i += step)
+                    {
+                        values.Add(i);
+                    }
+                }
+                else
+                {
+                    values.Add(value);
+                }
             }
         }
 
