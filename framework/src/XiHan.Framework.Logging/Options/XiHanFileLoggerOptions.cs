@@ -33,11 +33,19 @@ public class XiHanFileLoggerOptions
     /// <summary>
     /// 缓冲区大小
     /// </summary>
+    /// <remarks>
+    /// 当前 XiHanFileLogger 并不读取该字段：每条日志都同步 File.AppendAllText，既无缓冲也无定时刷新。
+    /// 这是 docs/guide/logging.md「声明了但当前不生效的选项」已明确写出的既定限制，不是实现遗漏；
+    /// 该提供器定位为不走 Serilog 管道的宿主里的轻量输出，高吞吐场景请改用本模块的 Serilog 文件 Sink。
+    /// </remarks>
     public int BufferSize { get; set; } = 1024;
 
     /// <summary>
     /// 刷新间隔
     /// </summary>
+    /// <remarks>
+    /// 同 <see cref="BufferSize"/>：当前实现每条日志直接落盘，没有需要定时刷新的缓冲区，该字段不生效。
+    /// </remarks>
     public TimeSpan FlushPeriod { get; set; } = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -58,6 +66,9 @@ public class XiHanFileLoggerOptions
     /// <summary>
     /// 是否启用异步写入
     /// </summary>
+    /// <remarks>
+    /// 同 <see cref="BufferSize"/>：当前实现恒为同步写入，该字段不生效，配 false 与 true 行为一致。
+    /// </remarks>
     public bool EnableAsyncWrite { get; set; } = true;
 
     /// <summary>

@@ -105,6 +105,15 @@ public static class XiHanLoggingServiceCollectionExtensions
     /// <param name="services"></param>
     /// <param name="configure"></param>
     /// <returns></returns>
+    /// <remarks>
+    /// 这里刻意只消费 XiHanLoggingOptions 中「当前真正生效」的那批键（MinimumLevel、两套输出模板、
+    /// 文件滚动/保留/大小）。EnableAsyncLogging、AsyncBufferSize、BlockWhenFull、ContextProperties、
+    /// Filters、EnableRequestLogging、RequestLoggingExcludePaths 未参与管道构建，这是既定装配口径而非遗漏：
+    /// docs/guide/logging.md 的「声明了但当前不生效的选项」表已逐条写明现状与替代做法（需要按分类分级、
+    /// 追加 Sink 或调整异步缓冲，请在应用侧自行装配 Serilog 管道）。改动这里等于改变宿主的既有日志行为，
+    /// 应先更新该文档再动实现。
+    /// 另注：EnableStructuredLogging / EnablePerformanceCounters 并非死配置，它们由 XiHanLogger 读取。
+    /// </remarks>
     private static IServiceCollection AddXiHanSerilog(this IServiceCollection services, Action<LoggerConfiguration>? configure = null)
     {
         // 配置 Serilog
