@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
+        <!-- ExportCodeFixProviderAttribute 派生自 System.Composition 的 ExportAttribute。
+             被测分析器把该包标成 PrivateAssets=all，资产不会流到这里，
+             缺了它反射读修复器的导出特性会在运行期抛程序集加载失败。版本与被测项目一致。 -->
+        <PackageReference Include="System.Composition.AttributedModel" Version="10.0.11" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj" />
+    </ItemGroup>
+
+</Project>
