@@ -271,8 +271,21 @@ public class LocalEventBus : EventBusBase, ILocalEventBus, ISingletonDependency
             return iocFactory.HandlerType;
         }
 
-        using var wrapper = factory.GetHandler();
-        return wrapper.EventHandler.GetType();
+        // 这条回退分支只有框架外自定义的工厂会走到，而它仍处在排序阶段：
+        // EventBusBase.TriggerHandlersAsync 里 GetHandlerFactories 的调用点在逐处理器的 try/catch 之外，
+        // 自定义工厂一旦在这里抛出，整条触发链一个处理器都跑不成——正是三个内置工厂已经修掉的那种连坐，
+        // 只是范围收窄到了自定义工厂。所以这一步只负责「尽力取类型」：取不到就按 typeof(IEventHandler) 算，
+        // 读不到顺序特性即顺序 0。异常不会被吞掉，TriggerHandlerAsync 里还要再解析一次，
+        // 那次失败会被它自己的 try/catch 收进 exceptions，由 ThrowOriginalExceptions 统一抛给调用方。
+        try
+        {
+            using var wrapper = factory.GetHandler();
+            return wrapper.EventHandler.GetType();
+        }
+        catch (Exception)
+        {
+            return typeof(IEventHandler);
+        }
     }
 
     /// <summary>
