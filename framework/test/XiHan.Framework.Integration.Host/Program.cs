@@ -5,13 +5,13 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Extensions.Hosting;
-using XiHan.Framework.Integration.Tests;
+using XiHan.Framework.Integration.Host;
 
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
 
-    await builder.Services.AddApplicationAsync<XiHanTestsIntegrationModule>();
+    await builder.Services.AddApplicationAsync<XiHanIntegrationHostModule>();
 
     var host = builder.Build();
 
