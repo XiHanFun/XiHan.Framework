@@ -218,15 +218,61 @@ public class LocalEventBus : EventBusBase, ILocalEventBus, ISingletonDependency
                 handlerFactoryList.Add(new Tuple<IEventHandlerFactory, Type, int>(
                     factory,
                     handlerFactory.Key,
-                    ReflectionHelper.GetAttributesOfMemberOrDeclaringType<LocalEventHandlerOrderAttribute>(
-                        factory.GetHandler().EventHandler.GetType()).FirstOrDefault()?.Order ?? 0
-                        )
-                    );
+                    GetHandlerOrder(factory)));
             }
         }
 
         return [.. handlerFactoryList.OrderBy(x => x.Item3).Select(x =>
             new EventTypeWithEventHandlerFactories(x.Item2, [x.Item1]))];
+    }
+
+    /// <summary>
+    /// 读取事件处理器声明的执行顺序
+    /// </summary>
+    /// <param name="factory">事件处理器工厂</param>
+    /// <returns>顺序值，未声明顺序特性时为 0</returns>
+    private static int GetHandlerOrder(IEventHandlerFactory factory)
+    {
+        return ReflectionHelper
+            .GetAttributesOfMemberOrDeclaringType<LocalEventHandlerOrderAttribute>(ResolveHandlerType(factory))
+            .FirstOrDefault()?.Order ?? 0;
+    }
+
+    /// <summary>
+    /// 在尽量不实例化处理器的前提下取出处理器类型
+    /// </summary>
+    /// <param name="factory">事件处理器工厂</param>
+    /// <returns>处理器类型</returns>
+    /// <remarks>
+    /// 原来排序处直接写 factory.GetHandler().EventHandler.GetType()：仅仅为了读一个顺序特性就把处理器实例化了，
+    /// 而且拿到的 IEventHandlerDisposeWrapper 从不释放。对 IocEventHandlerFactory 而言每次都会
+    /// ScopeFactory.CreateScope() 且永不 Dispose —— 每发布一次事件、每个 IoC 处理器就泄漏一个 DI 作用域
+    /// （连同作用域里的 Scoped 服务）；对 TransientEventHandlerFactory 则每次额外 new 一个处理器实例且不释放，
+    /// 实现了 IDisposable 的处理器不会被清理。GetHandlerFactories 在每次 PublishAsync 都会走到，泄漏随发布量线性增长。
+    /// 三个内置工厂都能在不实例化的前提下给出处理器类型，因此直接取类型；只有外部自定义的工厂拿不到类型，
+    /// 才回退到实例化，并用 using 保证归还。
+    /// 附带效果：处理器解析/构造失败不再发生在这个「取排序」阶段，而是推迟到 TriggerHandlerAsync 的异常隔离范围内，
+    /// 单个处理器建不出来不会再让整条触发链一个处理器都跑不成。
+    /// </remarks>
+    private static Type ResolveHandlerType(IEventHandlerFactory factory)
+    {
+        if (factory is SingleInstanceHandlerFactory singleInstanceFactory)
+        {
+            return singleInstanceFactory.HandlerInstance.GetType();
+        }
+
+        if (factory is TransientEventHandlerFactory transientFactory)
+        {
+            return transientFactory.HandlerType;
+        }
+
+        if (factory is IocEventHandlerFactory iocFactory)
+        {
+            return iocFactory.HandlerType;
+        }
+
+        using var wrapper = factory.GetHandler();
+        return wrapper.EventHandler.GetType();
     }
 
     /// <summary>
