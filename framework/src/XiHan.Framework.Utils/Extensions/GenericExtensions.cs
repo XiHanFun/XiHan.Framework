@@ -1,6 +1,7 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
+﻿// Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using XiHan.Framework.Utils.Serialization.Json;
@@ -248,15 +249,35 @@ public static class GenericExtensions
             return true;
         }
 
-        // 如果为""
-        if (data is not string)
+        // 如果为空字符串（含仅空白）
+        if (data is string text)
         {
-            return data is DBNull;
+            return string.IsNullOrEmpty(text.Trim());
         }
 
-        if (string.IsNullOrEmpty(data.ToString()?.Trim()))
+        // 如果为空集合。
+        // 这一段必须有：本方法是无约束泛型，集合实参也会绑到它而不是 CollectionExtensions
+        // 上更精确的 ICollection<T> 重载——只要调用方没 using XiHan.Framework.Utils.Collections。
+        // 早期版本缺这一段，非 null 的空集合一律被判成"非空"，导致调用方的空集合短路失效
+        // （XiHanValidationException.Log 因此会对 0 个错误照样写一条告警日志）。
+        if (data is ICollection collection)
         {
-            return true;
+            return collection.Count == 0;
+        }
+
+        // 非泛型 IEnumerable 兜底：只取第一个元素判定，不整体枚举。
+        // 惰性序列在此会被推进一步，这是判空的固有代价，与 Enumerable.Any() 一致。
+        if (data is IEnumerable sequence)
+        {
+            var enumerator = sequence.GetEnumerator();
+            try
+            {
+                return !enumerator.MoveNext();
+            }
+            finally
+            {
+                (enumerator as IDisposable)?.Dispose();
+            }
         }
 
         // 如果为 DBNull
