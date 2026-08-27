@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -13,7 +14,12 @@ namespace XiHan.Framework.Core.DependencyInjection;
 public class AutowiredServiceHandler
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly Dictionary<Type, Action<object, IServiceProvider>> _autowiredActions = [];
+
+    // 该处理器在 InternalServiceCollectionExtensions 里以单例注册，同一实例会被多线程并发调用。
+    // 原先是普通 Dictionary，未命中缓存时直接写入且无任何同步，并发写会破坏字典内部结构
+    // （轻则丢失缓存项，重则读取时死循环）。改用 ConcurrentDictionary：
+    // 并发下最多重复编译一次功能等价的赋值委托，属可接受的浪费，但缓存结构不会被写坏。
+    private readonly ConcurrentDictionary<Type, Action<object, IServiceProvider>> _autowiredActions = new();
 
     /// <summary>
     /// 构造函数
