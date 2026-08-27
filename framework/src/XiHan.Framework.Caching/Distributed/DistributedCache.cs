@@ -570,7 +570,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             return ToCacheItemsWithDefaultValues(keyArray);
         }
 
-        return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
+        return AlignWithRequestedKeys(keyArray, cachedValues, ToCacheItems(cachedBytes, readKeys));
     }
 
     /// <summary>
@@ -628,7 +628,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
             return ToCacheItemsWithDefaultValues(keyArray);
         }
 
-        return [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
+        return AlignWithRequestedKeys(keyArray, cachedValues, ToCacheItems(cachedBytes, readKeys));
     }
 
     /// <summary>
@@ -820,7 +820,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 return ToCacheItemsWithDefaultValues(keyArray);
             }
 
-            result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
+            result = AlignWithRequestedKeys(keyArray, cachedValues, ToCacheItems(cachedBytes, readKeys));
         }
 
         if (result.All(x => x.Value is not null))
@@ -911,7 +911,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
                 return ToCacheItemsWithDefaultValues(keyArray);
             }
 
-            result = [.. cachedValues, .. ToCacheItems(cachedBytes, readKeys)];
+            result = AlignWithRequestedKeys(keyArray, cachedValues, ToCacheItems(cachedBytes, readKeys));
         }
 
         if (result.All(x => x.Value is not null))
@@ -1815,7 +1815,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual string NormalizeKey(TCacheKey key)
     {
-        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(key.ToString()!, CacheName, IgnoreMultiTenancy));
+        return ApplyKeyPrefix(KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(key.ToString()!, CacheName, IgnoreMultiTenancy)));
     }
 
     /// <summary>
@@ -1825,7 +1825,7 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual string NormalizePattern(string pattern)
     {
-        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(pattern, CacheName, IgnoreMultiTenancy));
+        return ApplyKeyPrefix(KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(pattern, CacheName, IgnoreMultiTenancy)));
     }
 
     /// <summary>
@@ -1834,7 +1834,24 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
     /// <returns></returns>
     protected virtual string GetNormalizedKeyPrefix()
     {
-        return KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(string.Empty, CacheName, IgnoreMultiTenancy));
+        return ApplyKeyPrefix(KeyNormalizer.NormalizeKey(new DistributedCacheKeyNormalizeArgs(string.Empty, CacheName, IgnoreMultiTenancy)));
+    }
+
+    /// <summary>
+    /// 在规范化键外层拼上选项里配置的应用级键前缀
+    /// </summary>
+    /// <param name="normalizedKey">键规范化器产出的「租户段:缓存名段:业务键」</param>
+    /// <returns>最终写入后端的键</returns>
+    /// <remarks>
+    /// <see cref="XiHanDistributedCacheOptions.KeyPrefix"/> 原先全仓没有任何读取点，配了等于没配，
+    /// 多个应用共用同一个 Redis 实例时无法靠它做隔离。这里把前缀统一收在本方法里，
+    /// 是因为它必须同时作用于「写键」「查键模式」「剥前缀还原业务键」三条路径：
+    /// 只在 NormalizeKey 上拼，GetKeys 取回来的键就剥不掉前缀，按模式清理会误伤。
+    /// 前缀默认为空串，不配置时产出的键与改动前逐字节一致。
+    /// </remarks>
+    protected virtual string ApplyKeyPrefix(string normalizedKey)
+    {
+        return _distributedCacheOption.KeyPrefix + normalizedKey;
     }
 
     /// <summary>
@@ -2079,6 +2096,48 @@ public class DistributedCache<TCacheItem, TCacheKey> : IDistributedCache<TCacheI
         return UnitOfWorkManager.Current is null
             ? throw new XiHanException("没有活跃的 UOW")
             : UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(), key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
+    }
+
+    /// <summary>
+    /// 按入参键的原始顺序装配批量读取结果
+    /// </summary>
+    /// <param name="keyArray">调用方传入的键，结果按其顺序逐位对齐</param>
+    /// <param name="cachedValues">命中工作单元缓存的项</param>
+    /// <param name="fetchedValues">从缓存后端读回的项</param>
+    /// <returns>与 <paramref name="keyArray"/> 严格按位对应的结果</returns>
+    /// <remarks>
+    /// 原来这里是 <c>[.. cachedValues, .. fetchedValues]</c> 直接拼接：
+    /// considerUow=true 且只有部分键命中工作单元缓存时，结果被重排成「先已命中、后未命中」，
+    /// 不再与入参 keyArray 同序。而 GetOrAddMany 随后按 <c>result[i]</c> 是否为空去取 <c>keyArray[i]</c>
+    /// 当作缺失键，两边下标错位，会把已命中的键当缺失键交给工厂，再把工厂结果写回别的键的槽位，
+    /// 最终某个入参键会整个从结果里消失。这也违反 IDistributedCache 接口注释里
+    /// 「返回的列表与提供的键数量相同（且按位对应）」的约定。
+    /// 改为先建 key→value 映射再按 keyArray 投影，顺便也让入参含重复键时长度保持等于 keyArray.Length。
+    /// </remarks>
+    private static KeyValuePair<TCacheKey, TCacheItem?>[] AlignWithRequestedKeys(
+        TCacheKey[] keyArray,
+        List<KeyValuePair<TCacheKey, TCacheItem?>> cachedValues,
+        KeyValuePair<TCacheKey, TCacheItem?>[] fetchedValues)
+    {
+        var valueMap = new Dictionary<TCacheKey, TCacheItem?>();
+        foreach (var pair in cachedValues)
+        {
+            valueMap[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in fetchedValues)
+        {
+            valueMap[pair.Key] = pair.Value;
+        }
+
+        var aligned = new KeyValuePair<TCacheKey, TCacheItem?>[keyArray.Length];
+        for (var i = 0; i < keyArray.Length; i++)
+        {
+            valueMap.TryGetValue(keyArray[i], out var value);
+            aligned[i] = new KeyValuePair<TCacheKey, TCacheItem?>(keyArray[i], value);
+        }
+
+        return aligned;
     }
 
     /// <summary>
