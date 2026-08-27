@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\test.props" />
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\XiHan.Framework.Bot.Telegram\XiHan.Framework.Bot.Telegram.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+	</ItemGroup>
+
+</Project>
