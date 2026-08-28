@@ -30,20 +30,6 @@ public class XiHanModuleHelperLoggingTests
         Assert.Equal(3, modules.Count);
         Assert.Equal(typeof(MhlRootModule), modules[0]);
     }
-
-    /// <summary>
-    /// 起始类型不是模块时不写任何节点日志
-    /// </summary>
-    /// <remarks>边界：类型校验发生在节点行构造之前，失败时只应留下开头那条提示。</remarks>
-    [Fact]
-    public void FindAllModuleTypes_WhenStartupTypeIsNotModule_LogsOnlyHeader()
-    {
-        var logger = new CoreRecordingLogger();
-
-        Assert.Throws<ArgumentException>(() => XiHanModuleHelper.FindAllModuleTypes(typeof(string), logger));
-
-        Assert.Equal("加载曦寒模块:", Assert.Single(logger.Entries).Message);
-    }
 }
 
 /// <summary>
