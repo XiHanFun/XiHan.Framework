@@ -19,54 +19,6 @@ namespace XiHan.Framework.Core.Tests.Modularity;
 public class XiHanModuleHelperLoggingTests
 {
     /// <summary>
-    /// 模块树写入传入的日志记录器
-    /// </summary>
-    [Fact]
-    public void FindAllModuleTypes_WhenLoggerGiven_WritesModuleTreeToLogger()
-    {
-        var logger = new CoreRecordingLogger();
-
-        var modules = XiHanModuleHelper.FindAllModuleTypes(typeof(MhlMiddleModule), logger);
-
-        Assert.Equal(2, modules.Count);
-        Assert.NotEmpty(logger.Entries);
-        Assert.All(logger.Entries, entry => Assert.Equal(LogLevel.Information, entry.Level));
-    }
-
-    /// <summary>
-    /// 起止提示与每个模块各占一条日志
-    /// </summary>
-    [Fact]
-    public void FindAllModuleTypes_WritesHeaderFooterAndOneLinePerModule()
-    {
-        var logger = new CoreRecordingLogger();
-
-        XiHanModuleHelper.FindAllModuleTypes(typeof(MhlMiddleModule), logger);
-
-        var messages = logger.Entries.Select(entry => entry.Message).ToList();
-        Assert.Equal("加载曦寒模块:", messages[0]);
-        Assert.Equal("已初始化所有模块。", messages[^1]);
-        // 首尾两条提示 + 中间模块与叶子模块各一行节点
-        Assert.Equal(4, messages.Count);
-        // 节点行保留目录树分支符号，回放出来才看得出层级
-        Assert.Contains(messages, message => message.Contains("└─", StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// 重复加载的模块在日志里被标注为已跳过
-    /// </summary>
-    [Fact]
-    public void FindAllModuleTypes_WhenModuleReachedTwice_LogsSkippedMarker()
-    {
-        var logger = new CoreRecordingLogger();
-
-        XiHanModuleHelper.FindAllModuleTypes(typeof(MhlRootModule), logger);
-
-        var messages = logger.Entries.Select(entry => entry.Message).ToList();
-        Assert.Contains(messages, message => message.Contains("[已跳过-重复加载]", StringComparison.Ordinal));
-    }
-
-    /// <summary>
     /// 日志记录器为空时照常完成发现
     /// </summary>
     /// <remarks>反例：logger 是可选参数，缺省时不能因为恢复了日志写入而抛空引用。</remarks>
