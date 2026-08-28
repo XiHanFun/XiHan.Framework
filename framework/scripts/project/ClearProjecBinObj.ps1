@@ -42,7 +42,7 @@ $failedCount = 0
 
 # 查找所有 bin 和 obj 文件夹
 $foldersToDelete = Get-ChildItem -Path $RootPaths -Recurse -Directory -Force |
-Where-Object { $_.Name -in "bin", "obj", "public" }
+Where-Object { $_.Name -in "bin", "obj" }
 
 Write-Host "找到 $($foldersToDelete.Count) 个要删除的文件夹" -ForegroundColor Yellow
 
