@@ -85,7 +85,7 @@ public class SqidsOptionsTests
         {
             Alphabet = "abcdefghijklmnopqrstuvwxyz",
             MinLength = 8,
-            BlockList = new HashSet<string> { "banned" }
+            BlockList = ["banned"]
         };
 
         Assert.Equal("abcdefghijklmnopqrstuvwxyz", options.Alphabet);

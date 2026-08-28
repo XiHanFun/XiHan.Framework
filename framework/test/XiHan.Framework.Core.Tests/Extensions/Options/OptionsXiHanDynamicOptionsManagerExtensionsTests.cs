@@ -31,7 +31,7 @@ public class OptionsXiHanDynamicOptionsManagerExtensionsTests
 
         await options.SetAsync();
 
-        Assert.Equal(new[] { string.Empty }, manager.OverriddenNames);
+        Assert.Equal([string.Empty], manager.OverriddenNames);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public class OptionsXiHanDynamicOptionsManagerExtensionsTests
 
         await options.SetAsync("租户甲");
 
-        Assert.Equal(new[] { "租户甲" }, manager.OverriddenNames);
+        Assert.Equal(["租户甲"], manager.OverriddenNames);
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class OptionsXiHanDynamicOptionsManagerExtensionsTests
         await options.SetAsync("租户甲");
         await options.SetAsync("租户乙");
 
-        Assert.Equal(new[] { string.Empty, "租户甲", "租户乙" }, manager.OverriddenNames);
+        Assert.Equal([string.Empty, "租户甲", "租户乙"], manager.OverriddenNames);
     }
 
     /// <summary>

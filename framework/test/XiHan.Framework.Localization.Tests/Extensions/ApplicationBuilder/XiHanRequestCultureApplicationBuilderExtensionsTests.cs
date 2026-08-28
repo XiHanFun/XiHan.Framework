@@ -100,7 +100,7 @@ public class XiHanRequestCultureApplicationBuilderExtensionsTests
         services.AddOptions<XiHanLocalizationOptions>().Configure(options =>
         {
             options.DefaultCulture = "zh-CN";
-            options.SupportedCultures = new List<string> { "zh-CN", "en-US" };
+            options.SupportedCultures = ["zh-CN", "en-US"];
         });
 
         return services.BuildServiceProvider();

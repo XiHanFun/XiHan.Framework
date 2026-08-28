@@ -42,7 +42,7 @@ public class LoggingPipelineTests
     {
         var options = new XiHanBotOptions { EnableLoggingPipeline = true };
         var context = CreateContext();
-        context.SetProviders(new IBotProvider[] { FakeBotProvider.AlwaysSuccess("A") });
+        context.SetProviders([FakeBotProvider.AlwaysSuccess("A")]);
         var called = 0;
 
         await CreatePipeline(options).InvokeAsync(context, () =>
@@ -118,6 +118,6 @@ public class LoggingPipelineTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

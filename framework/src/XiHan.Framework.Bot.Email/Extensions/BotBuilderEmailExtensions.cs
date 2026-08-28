@@ -3,12 +3,12 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.Bot.Extensions;
-using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Email.Abstractions;
 using XiHan.Framework.Bot.Email.Messaging;
 using XiHan.Framework.Bot.Email.Options;
 using XiHan.Framework.Bot.Email.Stores;
+using XiHan.Framework.Bot.Extensions;
+using XiHan.Framework.Bot.Providers;
 
 namespace XiHan.Framework.Bot.Email.Extensions;
 

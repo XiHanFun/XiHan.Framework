@@ -313,9 +313,9 @@ public class DistributedCacheTests
         var cache = context.CreateStringKeyed<SampleCacheItem>();
         cache.Set("b", new SampleCacheItem { Value = "B" });
 
-        var result = cache.GetMany(new[] { "a", "b", "c" });
+        var result = cache.GetMany(["a", "b", "c"]);
 
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Null(result[0].Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Null(result[2].Value);
@@ -336,9 +336,9 @@ public class DistributedCacheTests
         var cache = context.CreateStringKeyed<SampleCacheItem>();
         cache.Set("b", new SampleCacheItem { Value = "B" });
 
-        var result = cache.GetMany(new[] { "a", "b" });
+        var result = cache.GetMany(["a", "b"]);
 
-        Assert.Equal(new[] { "a", "b" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b"], result.Select(pair => pair.Key));
         Assert.Null(result[0].Value);
         Assert.Equal("B", result[1].Value?.Value);
     }
@@ -355,7 +355,7 @@ public class DistributedCacheTests
         var cache = context.CreateStringKeyed<SampleCacheItem>();
         await cache.SetAsync("a", new SampleCacheItem { Value = "A" }, token: token);
 
-        var result = await cache.GetManyAsync(new[] { "a", "z" }, token: token);
+        var result = await cache.GetManyAsync(["a", "z"], token: token);
 
         Assert.Equal("A", result[0].Value?.Value);
         Assert.Null(result[1].Value);
@@ -371,11 +371,11 @@ public class DistributedCacheTests
         using var context = new DistributedCacheTestContext(store);
         var cache = context.CreateStringKeyed<SampleCacheItem>();
 
-        cache.SetMany(new[]
-        {
+        cache.SetMany(
+        [
             new KeyValuePair<string, SampleCacheItem>("a", new SampleCacheItem { Value = "A" }),
             new KeyValuePair<string, SampleCacheItem>("b", new SampleCacheItem { Value = "B" })
-        });
+        ]);
 
         Assert.Equal(1, store.SetManyCount);
         Assert.Equal("A", cache.Get("a")?.Value);
@@ -394,13 +394,13 @@ public class DistributedCacheTests
         cache.Set("a", new SampleCacheItem { Value = "A" });
         var requested = new List<string>();
 
-        var result = cache.GetOrAddMany(new[] { "a", "b" }, keys =>
+        var result = cache.GetOrAddMany(["a", "b"], keys =>
         {
             requested.AddRange(keys);
-            return new List<KeyValuePair<string, SampleCacheItem>>
-            {
+            return
+            [
                 new("b", new SampleCacheItem { Value = "B" })
-            };
+            ];
         });
 
         Assert.Equal(new[] { "b" }, requested);
@@ -422,7 +422,7 @@ public class DistributedCacheTests
         await cache.SetAsync("a", new SampleCacheItem { Value = "A" }, token: token);
         var invoked = false;
 
-        var result = await cache.GetOrAddManyAsync(new[] { "a" }, keys =>
+        var result = await cache.GetOrAddManyAsync(["a"], keys =>
         {
             invoked = true;
             return Task.FromResult(new List<KeyValuePair<string, SampleCacheItem>>());
@@ -444,7 +444,7 @@ public class DistributedCacheTests
 
         cache.Refresh("k1");
 
-        Assert.Equal(new[] { SamplePrefix + "k1" }, store.RefreshedKeys);
+        Assert.Equal([SamplePrefix + "k1"], store.RefreshedKeys);
     }
 
     /// <summary>
@@ -457,10 +457,10 @@ public class DistributedCacheTests
         using var context = new DistributedCacheTestContext(store);
         var cache = context.CreateStringKeyed<SampleCacheItem>();
 
-        cache.RefreshMany(new[] { "a", "b" });
+        cache.RefreshMany(["a", "b"]);
 
         Assert.Equal(1, store.RefreshManyCount);
-        Assert.Equal(new[] { SamplePrefix + "a", SamplePrefix + "b" }, store.RefreshedKeys);
+        Assert.Equal([SamplePrefix + "a", SamplePrefix + "b"], store.RefreshedKeys);
     }
 
     /// <summary>
@@ -473,9 +473,9 @@ public class DistributedCacheTests
         using var context = new DistributedCacheTestContext(store);
         var cache = context.CreateStringKeyed<SampleCacheItem>();
 
-        cache.RefreshMany(new[] { "a", "b" });
+        cache.RefreshMany(["a", "b"]);
 
-        Assert.Equal(new[] { SamplePrefix + "a", SamplePrefix + "b" }, store.RefreshedKeys);
+        Assert.Equal([SamplePrefix + "a", SamplePrefix + "b"], store.RefreshedKeys);
     }
 
     /// <summary>
@@ -490,7 +490,7 @@ public class DistributedCacheTests
         cache.Set("a", new SampleCacheItem { Value = "A" });
         cache.Set("b", new SampleCacheItem { Value = "B" });
 
-        cache.RemoveMany(new[] { "a", "b" });
+        cache.RemoveMany(["a", "b"]);
 
         Assert.Equal(1, store.RemoveManyCount);
         Assert.Null(cache.Get("a"));
@@ -510,9 +510,9 @@ public class DistributedCacheTests
         await cache.SetAsync("a", new SampleCacheItem { Value = "A" }, token: token);
         await cache.SetAsync("b", new SampleCacheItem { Value = "B" }, token: token);
 
-        await cache.RemoveManyAsync(new[] { "a", "b" }, token: token);
+        await cache.RemoveManyAsync(["a", "b"], token: token);
 
-        Assert.Equal(new[] { SamplePrefix + "a", SamplePrefix + "b" }, store.RemovedKeys);
+        Assert.Equal([SamplePrefix + "a", SamplePrefix + "b"], store.RemovedKeys);
     }
 
     /// <summary>

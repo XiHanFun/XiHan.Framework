@@ -213,7 +213,7 @@ public class FileVersioningServiceTests : IDisposable
         var key = GetPhysicalPath("/blob.bin");
 
         _sut.Snapshot(GetFileInfo("/blob.bin"));
-        File.WriteAllBytes(key, new byte[] { 0x42 });
+        File.WriteAllBytes(key, [0x42]);
 
         Assert.True(_sut.Rollback(key));
         Assert.Equal(original, File.ReadAllBytes(key));

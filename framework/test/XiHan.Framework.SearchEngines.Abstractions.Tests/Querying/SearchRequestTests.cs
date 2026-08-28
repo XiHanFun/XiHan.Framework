@@ -97,12 +97,12 @@ public class SearchRequestTests
         };
 
         Assert.Equal("曦寒", request.Keyword);
-        Assert.Equal(new[] { "title", "summary" }, request.Fields);
+        Assert.Equal(["title", "summary"], request.Fields);
         Assert.Single(request.Filters);
         Assert.Same(filter, request.Filters[0]);
         Assert.Single(request.Sorts);
         Assert.Same(SearchSort.ByScore, request.Sorts[0]);
-        Assert.Equal(new[] { "title" }, request.HighlightFields);
+        Assert.Equal(["title"], request.HighlightFields);
         Assert.Equal(20, request.Skip);
         Assert.Equal(10, request.Take);
     }

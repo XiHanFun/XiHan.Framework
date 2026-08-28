@@ -2,9 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Bot.Helpers;
-using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Lark.Models;
 using XiHan.Framework.Bot.Lark.Options;
+using XiHan.Framework.Bot.Models;
 
 namespace XiHan.Framework.Bot.Lark.Tests.Options;
 

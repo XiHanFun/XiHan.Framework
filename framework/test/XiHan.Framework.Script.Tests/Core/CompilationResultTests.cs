@@ -42,7 +42,7 @@ public class CompilationResultTests
     [Fact]
     public void Success_WithoutOptionalParts_KeepsThemNull()
     {
-        var result = CompilationResult.Success(new byte[] { 9 });
+        var result = CompilationResult.Success([9]);
 
         Assert.True(result.IsSuccess);
         Assert.Null(result.Symbols);
@@ -74,7 +74,7 @@ public class CompilationResultTests
     [Fact]
     public void Failure_WithoutDiagnostics_UsesEmptyErrorMessage()
     {
-        var result = CompilationResult.Failure(ImmutableArray<Diagnostic>.Empty);
+        var result = CompilationResult.Failure([]);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(string.Empty, result.ErrorMessage);

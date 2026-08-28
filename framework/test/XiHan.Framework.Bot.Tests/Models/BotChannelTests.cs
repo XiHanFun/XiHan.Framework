@@ -37,7 +37,7 @@ public class BotChannelTests
         var channel = new BotChannel
         {
             Name = "ops",
-            Providers = new List<string> { "DingTalk", "Lark" },
+            Providers = ["DingTalk", "Lark"],
             Description = "运维群"
         };
 

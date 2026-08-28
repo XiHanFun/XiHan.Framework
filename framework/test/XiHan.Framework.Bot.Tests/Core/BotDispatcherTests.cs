@@ -91,7 +91,7 @@ public class BotDispatcherTests
 
         var result = await dispatcher.DispatchAsync(
             new BotMessage { Content = "hi" },
-            new[] { "NotExists" },
+            ["NotExists"],
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
@@ -110,7 +110,7 @@ public class BotDispatcherTests
 
         var result = await dispatcher.DispatchAsync(
             new BotMessage { Content = "hi" },
-            new[] { "B" },
+            ["B"],
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
@@ -131,7 +131,7 @@ public class BotDispatcherTests
 
         var result = await dispatcher.DispatchAsync(
             new BotMessage { Content = "hi" },
-            new[] { "  ", string.Empty },
+            ["  ", string.Empty],
             TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Results.Count);
@@ -218,11 +218,11 @@ public class BotDispatcherTests
     {
         var options = new XiHanBotOptions();
         var wrapped = new TestOptionsWrapper<XiHanBotOptions>(options);
-        var manager = new BotProviderManager(new IBotProvider[] { FakeBotProvider.AlwaysSuccess("A") }, wrapped);
+        var manager = new BotProviderManager([FakeBotProvider.AlwaysSuccess("A")], wrapped);
         var dispatcher = new BotDispatcher(
             manager,
-            Array.Empty<IBotPipeline>(),
-            Array.Empty<IBotStrategy>(),
+            [],
+            [],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
 
@@ -270,15 +270,14 @@ public class BotDispatcherTests
         var options = new XiHanBotOptions();
         var wrapped = new TestOptionsWrapper<XiHanBotOptions>(options);
         var provider = FakeBotProvider.AlwaysSuccess("A");
-        var manager = new BotProviderManager(new IBotProvider[] { provider }, wrapped);
+        var manager = new BotProviderManager([provider], wrapped);
         var dispatcher = new BotDispatcher(
             manager,
-            new IBotPipeline[]
-            {
+            [
                 new RecordingPipeline("outer", trace),
                 new RecordingPipeline("inner", trace)
-            },
-            new IBotStrategy[] { new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance) },
+            ],
+            [new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance)],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
 
@@ -301,11 +300,11 @@ public class BotDispatcherTests
         var options = new XiHanBotOptions();
         var wrapped = new TestOptionsWrapper<XiHanBotOptions>(options);
         var provider = FakeBotProvider.AlwaysSuccess("A");
-        var manager = new BotProviderManager(new IBotProvider[] { provider }, wrapped);
+        var manager = new BotProviderManager([provider], wrapped);
         var dispatcher = new BotDispatcher(
             manager,
-            new IBotPipeline[] { new RecordingPipeline("filter", trace, shortCircuit: true) },
-            new IBotStrategy[] { new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance) },
+            [new RecordingPipeline("filter", trace, shortCircuit: true)],
+            [new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance)],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
 
@@ -399,7 +398,7 @@ public class BotDispatcherTests
 
         await dispatcher.DispatchAsync(
             new BotMessage { Content = "hi" },
-            new[] { "  A  ", "   " },
+            ["  A  ", "   "],
             TestContext.Current.CancellationToken);
 
         var channels = provider.LastContext!.Channels;
@@ -413,13 +412,12 @@ public class BotDispatcherTests
         var manager = new BotProviderManager(providers, wrapped);
         return new BotDispatcher(
             manager,
-            Array.Empty<IBotPipeline>(),
-            new IBotStrategy[]
-            {
+            [],
+            [
                 new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance),
                 new FailoverStrategy(NullLogger<FailoverStrategy>.Instance),
                 new PriorityStrategy(NullLogger<PriorityStrategy>.Instance)
-            },
+            ],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
     }

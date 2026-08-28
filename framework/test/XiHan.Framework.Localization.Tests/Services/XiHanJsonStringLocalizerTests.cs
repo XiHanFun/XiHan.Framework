@@ -156,7 +156,7 @@ public class XiHanJsonStringLocalizerTests : IDisposable
         AddHomeResources();
         var localizer = CreateLocalizer(new StubStringLocalizer(), Chinese);
 
-        var result = localizer["Greeting", Array.Empty<object>()];
+        var result = localizer["Greeting", []];
 
         Assert.Equal("你好，{0}！", result.Value);
         Assert.False(result.ResourceNotFound);

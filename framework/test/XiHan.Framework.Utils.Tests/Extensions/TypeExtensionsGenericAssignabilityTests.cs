@@ -71,7 +71,7 @@ public class TypeExtensionsGenericAssignabilityTests
     {
         var result = typeof(Puppy).GetBaseClasses(typeof(Animal));
 
-        Assert.Equal(new[] { typeof(Dog) }, result);
+        Assert.Equal([typeof(Dog)], result);
         Assert.DoesNotContain(typeof(Animal), result);
         Assert.DoesNotContain(typeof(object), result);
     }
@@ -93,7 +93,7 @@ public class TypeExtensionsGenericAssignabilityTests
     {
         var result = typeof(Puppy).GetBaseClasses(typeof(string));
 
-        Assert.Equal(new[] { typeof(object), typeof(Animal), typeof(Dog) }, result);
+        Assert.Equal([typeof(object), typeof(Animal), typeof(Dog)], result);
     }
 
     /// <summary>

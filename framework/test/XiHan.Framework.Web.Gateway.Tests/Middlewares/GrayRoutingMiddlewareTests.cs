@@ -146,7 +146,7 @@ public class GrayRoutingMiddlewareTests
         var engine = new RecordingGrayRuleEngine();
         var middleware = CreateMiddleware(engine, _ => Task.CompletedTask);
         var context = CreateContext();
-        context.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(claimType, "123456") }));
+        context.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(claimType, "123456")]));
 
         await middleware.InvokeAsync(context);
 
@@ -167,7 +167,7 @@ public class GrayRoutingMiddlewareTests
         var engine = new RecordingGrayRuleEngine();
         var middleware = CreateMiddleware(engine, _ => Task.CompletedTask);
         var context = CreateContext();
-        context.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("sub", "111") }));
+        context.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "111")]));
         context.Request.Headers[GatewayConstants.Headers.UserId] = "222";
 
         await middleware.InvokeAsync(context);

@@ -89,7 +89,7 @@ public class ScriptResultTests
     [Fact]
     public void CompilationFailure_WithoutDiagnostics_UsesEmptyErrorMessage()
     {
-        var result = ScriptResult.CompilationFailure(ImmutableArray<Diagnostic>.Empty);
+        var result = ScriptResult.CompilationFailure([]);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(string.Empty, result.ErrorMessage);

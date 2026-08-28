@@ -149,8 +149,8 @@ public class ExpressionBuilderTests
     [Fact]
     public void InAndNotIn_CheckMembership()
     {
-        var inSet = ExpressionBuilder<Person>.Create().Property(nameof(Person.Age)).In(new[] { 18, 20 }).Compile();
-        var notInSet = ExpressionBuilder<Person>.Create().Property(nameof(Person.Age)).NotIn(new[] { 18, 20 }).Compile();
+        var inSet = ExpressionBuilder<Person>.Create().Property(nameof(Person.Age)).In([18, 20]).Compile();
+        var notInSet = ExpressionBuilder<Person>.Create().Property(nameof(Person.Age)).NotIn([18, 20]).Compile();
 
         Assert.True(inSet(new Person { Age = 18 }));
         Assert.False(inSet(new Person { Age = 19 }));

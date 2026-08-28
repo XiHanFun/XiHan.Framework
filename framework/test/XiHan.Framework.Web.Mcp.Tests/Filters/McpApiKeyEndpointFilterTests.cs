@@ -196,7 +196,7 @@ public class McpApiKeyEndpointFilterTests
     public async Task InvokeAsync_WithDuplicatedHeaderValues_ReturnsUnauthorized()
     {
         var httpContext = CreateHttpContext();
-        httpContext.Request.Headers[DefaultHeaderName] = new StringValues(new[] { ApiKey, "another" });
+        httpContext.Request.Headers[DefaultHeaderName] = new StringValues([ApiKey, "another"]);
 
         var outcome = await RunAsync(CreateFilter(), httpContext);
 

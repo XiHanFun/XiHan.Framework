@@ -77,7 +77,7 @@ public class SmsBotProvider : IBotProvider
                     return [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
 
                 case IEnumerable<string> values:
-                    return values.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+                    return [.. values.Where(item => !string.IsNullOrWhiteSpace(item))];
             }
         }
 

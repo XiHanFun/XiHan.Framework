@@ -259,7 +259,7 @@ public class XiHanObservabilityServiceCollectionExtensionsTests
     private static IConfiguration BuildConfiguration(Dictionary<string, string?>? settings = null)
     {
         return new ConfigurationBuilder()
-            .AddInMemoryCollection(settings ?? new Dictionary<string, string?>())
+            .AddInMemoryCollection(settings ?? [])
             .Build();
     }
 

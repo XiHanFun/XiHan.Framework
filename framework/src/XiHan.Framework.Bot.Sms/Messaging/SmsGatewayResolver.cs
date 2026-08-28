@@ -3,8 +3,8 @@
 
 using System.Collections.Concurrent;
 using XiHan.Framework.Bot.Sms.Abstractions;
-using XiHan.Framework.Bot.Sms.Options;
 using XiHan.Framework.Bot.Sms.Enums;
+using XiHan.Framework.Bot.Sms.Options;
 
 namespace XiHan.Framework.Bot.Sms.Messaging;
 

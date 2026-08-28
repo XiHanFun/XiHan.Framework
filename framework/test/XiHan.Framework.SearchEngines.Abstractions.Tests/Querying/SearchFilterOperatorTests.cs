@@ -41,8 +41,7 @@ public class SearchFilterOperatorTests
     public void Members_AreExactlyTheBackendIntersection()
     {
         Assert.Equal(
-            new[]
-            {
+            [
                 SearchFilterOperator.Equal,
                 SearchFilterOperator.NotEqual,
                 SearchFilterOperator.In,
@@ -52,7 +51,7 @@ public class SearchFilterOperatorTests
                 SearchFilterOperator.LessThanOrEqual,
                 SearchFilterOperator.Exists,
                 SearchFilterOperator.StartsWith
-            },
+            ],
             Enum.GetValues<SearchFilterOperator>());
     }
 

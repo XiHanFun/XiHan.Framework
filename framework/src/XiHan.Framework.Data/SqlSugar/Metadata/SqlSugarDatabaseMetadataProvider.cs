@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using SqlSugar;
+using System.Reflection;
 using XiHan.Framework.Data.SqlSugar.Clients;
 
 namespace XiHan.Framework.Data.SqlSugar.Metadata;
@@ -37,9 +37,7 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         {
             var dbClient = ResolveClient(connectionConfigId);
             var tables = dbClient.DbMaintenance.GetTableInfoList(false);
-            return (IReadOnlyList<DatabaseTableMetadata>)tables
-                .Select(MapTableInfo)
-                .ToList();
+            return (IReadOnlyList<DatabaseTableMetadata>)[.. tables.Select(MapTableInfo)];
         }, cancellationToken);
     }
 
@@ -82,9 +80,7 @@ public sealed class SqlSugarDatabaseMetadataProvider : IDatabaseMetadataProvider
         {
             var dbClient = ResolveClient(connectionConfigId);
             var columns = dbClient.DbMaintenance.GetColumnInfosByTableName(tableName, false);
-            return (IReadOnlyList<DatabaseColumnMetadata>)columns
-                .Select(MapColumnInfo)
-                .ToList();
+            return (IReadOnlyList<DatabaseColumnMetadata>)[.. columns.Select(MapColumnInfo)];
         }, cancellationToken);
     }
 

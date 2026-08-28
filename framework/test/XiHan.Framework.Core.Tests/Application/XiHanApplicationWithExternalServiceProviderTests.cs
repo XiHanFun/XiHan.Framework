@@ -35,7 +35,7 @@ public class XiHanApplicationWithExternalServiceProviderTests
 
         var recorder = services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>();
         Assert.NotNull(recorder);
-        Assert.Equal(new[] { "PreConfigureServices", "ConfigureServices", "PostConfigureServices" }, recorder!.Steps);
+        Assert.Equal(["PreConfigureServices", "ConfigureServices", "PostConfigureServices"], recorder!.Steps);
     }
 
     /// <summary>
@@ -101,15 +101,14 @@ public class XiHanApplicationWithExternalServiceProviderTests
 
         var recorder = services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>()!;
         Assert.Equal(
-            new[]
-            {
+            [
                 "PreConfigureServices",
                 "ConfigureServices",
                 "PostConfigureServices",
                 "OnPreApplicationInitialization",
                 "OnApplicationInitialization",
                 "OnPostApplicationInitialization"
-            },
+            ],
             recorder.Steps);
     }
 
@@ -127,15 +126,14 @@ public class XiHanApplicationWithExternalServiceProviderTests
 
         var recorder = services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>()!;
         Assert.Equal(
-            new[]
-            {
+            [
                 "PreConfigureServices",
                 "ConfigureServices",
                 "PostConfigureServices",
                 "OnPreApplicationInitialization",
                 "OnApplicationInitialization",
                 "OnPostApplicationInitialization"
-            },
+            ],
             recorder.Steps);
     }
 

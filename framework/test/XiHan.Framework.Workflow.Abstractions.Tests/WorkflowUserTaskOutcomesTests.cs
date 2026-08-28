@@ -98,10 +98,9 @@ public class WorkflowUserTaskOutcomesTests
     /// <returns>常量值列表</returns>
     private static List<string> GetConstantValues()
     {
-        return typeof(WorkflowUserTaskOutcomes)
+        return [.. typeof(WorkflowUserTaskOutcomes)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral && field.FieldType == typeof(string))
-            .Select(field => (string)field.GetRawConstantValue()!)
-            .ToList();
+            .Select(field => (string)field.GetRawConstantValue()!)];
     }
 }

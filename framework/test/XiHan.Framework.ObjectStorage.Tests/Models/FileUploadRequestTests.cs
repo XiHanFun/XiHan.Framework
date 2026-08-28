@@ -84,7 +84,7 @@ public class FileUploadRequestTests
     [Fact]
     public void Properties_AreSettable()
     {
-        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+        using var stream = new MemoryStream([1, 2, 3]);
         var request = new FileUploadRequest
         {
             FileStream = stream,

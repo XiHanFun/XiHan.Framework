@@ -100,7 +100,7 @@ public class TextWatermarkOrderTests
     {
         var watermarked = TextWatermarkHelper.EmbedWatermark(text, watermark);
 
-        var visible = new string(watermarked.Where(c => Array.IndexOf(InvisibleChars, c) < 0).ToArray());
+        var visible = new string([.. watermarked.Where(c => Array.IndexOf(InvisibleChars, c) < 0)]);
         Assert.Equal(text, visible);
     }
 
@@ -124,7 +124,7 @@ public class TextWatermarkOrderTests
     private static string ExpectedSequence(string watermark)
     {
         var bits = watermark.FromStringToBinary();
-        return new string(bits.Select(bit => InvisibleChars[bit % InvisibleChars.Length]).ToArray());
+        return new string([.. bits.Select(bit => InvisibleChars[bit % InvisibleChars.Length])]);
     }
 
     /// <summary>
@@ -132,6 +132,6 @@ public class TextWatermarkOrderTests
     /// </summary>
     private static string ExtractSequence(string watermarked)
     {
-        return new string(watermarked.Where(c => Array.IndexOf(InvisibleChars, c) >= 0).ToArray());
+        return new string([.. watermarked.Where(c => Array.IndexOf(InvisibleChars, c) >= 0)]);
     }
 }

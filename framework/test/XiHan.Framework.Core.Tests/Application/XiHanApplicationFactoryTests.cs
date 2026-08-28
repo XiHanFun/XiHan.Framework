@@ -39,7 +39,7 @@ public class XiHanApplicationFactoryTests
 
         var recorder = app.Services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>();
         Assert.NotNull(recorder);
-        Assert.Equal(new[] { "PreConfigureServices", "ConfigureServices", "PostConfigureServices" }, recorder!.Steps);
+        Assert.Equal(["PreConfigureServices", "ConfigureServices", "PostConfigureServices"], recorder!.Steps);
 
         Assert.True(app.Services.IsAdded<ModuleMarkerService>());
     }
@@ -67,7 +67,7 @@ public class XiHanApplicationFactoryTests
 
         var recorder = app.Services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>();
         Assert.NotNull(recorder);
-        Assert.Equal(new[] { "PreConfigureServices", "ConfigureServices", "PostConfigureServices" }, recorder!.Steps);
+        Assert.Equal(["PreConfigureServices", "ConfigureServices", "PostConfigureServices"], recorder!.Steps);
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public class XiHanApplicationFactoryTests
 
         var recorder = services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>();
         Assert.NotNull(recorder);
-        Assert.Equal(new[] { "PreConfigureServices", "ConfigureServices", "PostConfigureServices" }, recorder!.Steps);
+        Assert.Equal(["PreConfigureServices", "ConfigureServices", "PostConfigureServices"], recorder!.Steps);
     }
 
     /// <summary>
@@ -283,7 +283,7 @@ public class XiHanApplicationFactoryTests
 
         var recorder = app.Services.GetSingletonInstanceOrNull<ModuleLifecycleRecorder>();
         Assert.NotNull(recorder);
-        Assert.Equal(new[] { "Dependency:ConfigureServices", "Dependent:ConfigureServices" }, recorder!.Steps);
+        Assert.Equal(["Dependency:ConfigureServices", "Dependent:ConfigureServices"], recorder!.Steps);
     }
 
     /// <summary>

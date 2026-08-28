@@ -54,10 +54,10 @@ public class IHasValidationErrorsTests
     [Fact]
     public void ValidationErrors_ThroughInterface_ReturnsUnderlyingListInstance()
     {
-        IList<ValidationResult> errors = new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" })
-        };
+        IList<ValidationResult> errors =
+        [
+            new ValidationResult("用户名不能为空", ["UserName"])
+        ];
 
         IHasValidationErrors sut = new ValidationErrorsHolder(errors);
 
@@ -71,11 +71,11 @@ public class IHasValidationErrorsTests
     [Fact]
     public void ValidationErrors_ThroughInterface_IsMutable()
     {
-        IHasValidationErrors sut = new ValidationErrorsHolder(new List<ValidationResult>());
+        IHasValidationErrors sut = new ValidationErrorsHolder([]);
 
         Assert.Empty(sut.ValidationErrors);
 
-        sut.ValidationErrors.Add(new ValidationResult("邮箱格式不正确", new[] { "Email" }));
+        sut.ValidationErrors.Add(new ValidationResult("邮箱格式不正确", ["Email"]));
 
         var error = Assert.Single(sut.ValidationErrors);
         Assert.Equal("邮箱格式不正确", error.ErrorMessage);

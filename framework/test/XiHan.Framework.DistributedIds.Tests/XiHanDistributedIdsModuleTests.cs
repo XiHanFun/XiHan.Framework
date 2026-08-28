@@ -33,7 +33,7 @@ public class XiHanDistributedIdsModuleTests
     [Fact]
     public void ConfigureServices_RegistersBothGenerators()
     {
-        var services = BuildServicesWithConfiguration(new Dictionary<string, string?>());
+        var services = BuildServicesWithConfiguration([]);
 
         new XiHanDistributedIdsModule().ConfigureServices(new ServiceConfigurationContext(services));
 

@@ -17,7 +17,7 @@ public class FakeRegularPropertyObject : IHasExtraProperties
     /// <summary>
     /// 额外属性字典
     /// </summary>
-    public ExtraPropertyDictionary ExtraProperties { get; } = new();
+    public ExtraPropertyDictionary ExtraProperties { get; } = [];
 
     /// <summary>
     /// 公有 setter，应被回填

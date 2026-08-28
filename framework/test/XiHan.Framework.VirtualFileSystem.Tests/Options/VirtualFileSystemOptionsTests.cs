@@ -180,7 +180,7 @@ public class VirtualFileSystemOptionsTests : IDisposable
         var second = _temp.CreateSubDirectory("second");
         var options = new VirtualFileSystemOptions();
 
-        options.AddPhysicalRange(new[] { first, "   ", second }, priority: 40);
+        options.AddPhysicalRange([first, "   ", second], priority: 40);
 
         Assert.Equal(2, options.Providers.Count);
         Assert.All(options.Providers, entry => Assert.Equal(40, entry.Priority));

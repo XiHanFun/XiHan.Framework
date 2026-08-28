@@ -155,8 +155,8 @@ public sealed class QueryConditions
         // 克隆件与原件不共享任何可变实例。
         return new QueryConditions
         {
-            Filters = Filters.Select(f => f.Clone()).ToList(),
-            Sorts = Sorts.Select(s => s.Clone()).ToList(),
+            Filters = [.. Filters.Select(f => f.Clone())],
+            Sorts = [.. Sorts.Select(s => s.Clone())],
             Keyword = Keyword?.Clone()
         };
     }

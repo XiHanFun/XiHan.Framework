@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Application.Attributes;
+using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Controllers;
 using XiHan.Framework.Web.Api.DynamicApi.Conventions;
 using XiHan.Framework.Web.Api.DynamicApi.Exceptions;

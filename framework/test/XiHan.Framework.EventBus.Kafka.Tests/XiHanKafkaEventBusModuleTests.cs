@@ -78,7 +78,7 @@ public class XiHanKafkaEventBusModuleTests
     [Fact]
     public void ConfigureServices_WhenSectionAbsent_KeepsDefaultOptions()
     {
-        var context = CreateContext(new Dictionary<string, string?>());
+        var context = CreateContext([]);
 
         new XiHanKafkaEventBusModule().ConfigureServices(context);
 
@@ -129,7 +129,7 @@ public class XiHanKafkaEventBusModuleTests
     [Fact]
     public void ConfigureServices_RegistersNoEventBusImplementation()
     {
-        var context = CreateContext(new Dictionary<string, string?>());
+        var context = CreateContext([]);
 
         new XiHanKafkaEventBusModule().ConfigureServices(context);
 

@@ -6,8 +6,8 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.Otp;
-using XiHan.Framework.Security.Password;
 using XiHan.Framework.Authentication.Users;
+using XiHan.Framework.Security.Password;
 
 namespace XiHan.Framework.Authentication;
 

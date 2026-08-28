@@ -22,7 +22,7 @@ public class Base36ByteOrderTests
     [Fact]
     public void Encode_MultiByte_UsesBigEndianOrder()
     {
-        Assert.Equal("76", Base36.Encode(new byte[] { 0x01, 0x02 }));
+        Assert.Equal("76", Base36.Encode([0x01, 0x02]));
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public class Base36ByteOrderTests
     [Fact]
     public void Encode_TwoByteMaxValue_DoesNotOverflowBuffer()
     {
-        Assert.Equal("1EKF", Base36.Encode(new byte[] { 0xFF, 0xFF }));
+        Assert.Equal("1EKF", Base36.Encode([0xFF, 0xFF]));
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class Base36ByteOrderTests
     [Fact]
     public void Encode_ThreeByteMaxValue_DoesNotOverflowBuffer()
     {
-        var encoded = Base36.Encode(new byte[] { 0xFF, 0xFF, 0xFF });
+        var encoded = Base36.Encode([0xFF, 0xFF, 0xFF]);
 
         Assert.Equal(5, encoded.Length);
         Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF }, Base36.Decode(encoded));
@@ -83,7 +83,7 @@ public class Base36ByteOrderTests
     [Fact]
     public void Encode_LeadingZeroBytes_AreEncodedAsLeadingZeroChars()
     {
-        Assert.Equal("01", Base36.Encode(new byte[] { 0x00, 0x01 }));
+        Assert.Equal("01", Base36.Encode([0x00, 0x01]));
         Assert.Equal(new byte[] { 0x00, 0x01 }, Base36.Decode("01"));
     }
 

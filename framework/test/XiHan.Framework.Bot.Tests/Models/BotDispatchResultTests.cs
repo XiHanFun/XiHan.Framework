@@ -77,7 +77,7 @@ public class BotDispatchResultTests
     [Fact]
     public void From_WhenEmpty_IsFailureWithNoResultMessage()
     {
-        var dispatch = BotDispatchResult.From(Array.Empty<BotResult>(), false);
+        var dispatch = BotDispatchResult.From([], false);
 
         Assert.False(dispatch.IsSuccess);
         Assert.Equal("Bot dispatch finished with no results.", dispatch.ErrorMessage);

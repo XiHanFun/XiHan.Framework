@@ -22,7 +22,7 @@ public class QueueExtensionsTests
     {
         var queue = new Queue<int>();
 
-        queue.EnqueueRange(new[] { 1, 2, 3 });
+        queue.EnqueueRange([1, 2, 3]);
 
         Assert.Equal(new[] { 1, 2, 3 }, queue.ToArray());
     }
@@ -33,7 +33,7 @@ public class QueueExtensionsTests
     [Fact]
     public void EnqueueRange_WhenArgumentIsNull_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => QueueExtensions.EnqueueRange<int>(null!, new[] { 1 }));
+        Assert.Throws<ArgumentNullException>(() => QueueExtensions.EnqueueRange<int>(null!, [1]));
         Assert.Throws<ArgumentNullException>(() => new Queue<int>().EnqueueRange(null!));
     }
 
@@ -43,11 +43,11 @@ public class QueueExtensionsTests
     [Fact]
     public void DequeueRange_TakesItemsFromFront()
     {
-        var queue = new Queue<int>(new[] { 1, 2, 3 });
+        var queue = new Queue<int>([1, 2, 3]);
 
         var taken = queue.DequeueRange(2);
 
-        Assert.Equal(new[] { 1, 2 }, taken);
+        Assert.Equal([1, 2], taken);
         Assert.Equal(new[] { 3 }, queue.ToArray());
     }
 
@@ -57,7 +57,7 @@ public class QueueExtensionsTests
     [Fact]
     public void DequeueRange_WithZeroCount_ChangesNothing()
     {
-        var queue = new Queue<int>(new[] { 1 });
+        var queue = new Queue<int>([1]);
 
         var taken = queue.DequeueRange(0);
 
@@ -71,7 +71,7 @@ public class QueueExtensionsTests
     [Fact]
     public void DequeueRange_WhenCountInvalid_Throws()
     {
-        var queue = new Queue<int>(new[] { 1 });
+        var queue = new Queue<int>([1]);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => queue.DequeueRange(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => queue.DequeueRange(2));
@@ -83,12 +83,12 @@ public class QueueExtensionsTests
     [Fact]
     public void TryDequeueRange_WhenCountValid_ReturnsTrue()
     {
-        var queue = new Queue<string>(new[] { "a", "b", "c" });
+        var queue = new Queue<string>(["a", "b", "c"]);
 
         var success = queue.TryDequeueRange(2, out var items);
 
         Assert.True(success);
-        Assert.Equal(new[] { "a", "b" }, items);
+        Assert.Equal(["a", "b"], items);
         Assert.Equal(new[] { "c" }, queue.ToArray());
     }
 
@@ -98,7 +98,7 @@ public class QueueExtensionsTests
     [Fact]
     public void TryDequeueRange_WhenCountInvalid_ReturnsFalseAndKeepsQueue()
     {
-        var queue = new Queue<string>(new[] { "a" });
+        var queue = new Queue<string>(["a"]);
 
         var tooMany = queue.TryDequeueRange(5, out var items);
         var negative = queue.TryDequeueRange(-1, out var negativeItems);
@@ -116,11 +116,11 @@ public class QueueExtensionsTests
     [Fact]
     public void DrainToList_EmptiesQueueAndReturnsAllItems()
     {
-        var queue = new Queue<int>(new[] { 1, 2 });
+        var queue = new Queue<int>([1, 2]);
 
         var drained = queue.DrainToList();
 
-        Assert.Equal(new[] { 1, 2 }, drained);
+        Assert.Equal([1, 2], drained);
         Assert.Empty(queue);
     }
 
@@ -139,7 +139,7 @@ public class QueueExtensionsTests
     [Fact]
     public void TryPeek_WhenNotEmpty_ReturnsHeadWithoutRemoving()
     {
-        var queue = new Queue<string>(new[] { "a", "b" });
+        var queue = new Queue<string>(["a", "b"]);
 
         var success = QueueExtensions.TryPeek(queue, out var item);
 
@@ -169,7 +169,7 @@ public class QueueExtensionsTests
     public void IsEmptyAndIsNotEmpty_AreComplementary()
     {
         var empty = new Queue<int>();
-        var filled = new Queue<int>(new[] { 1 });
+        var filled = new Queue<int>([1]);
 
         Assert.True(empty.IsEmpty());
         Assert.False(empty.IsNotEmpty());
@@ -183,7 +183,7 @@ public class QueueExtensionsTests
     [Fact]
     public void ToArrayPreserveOrder_KeepsFifoOrder()
     {
-        var queue = new Queue<int>(new[] { 1, 2, 3 });
+        var queue = new Queue<int>([1, 2, 3]);
 
         Assert.Equal(new[] { 1, 2, 3 }, queue.ToArrayPreserveOrder());
     }
@@ -194,7 +194,7 @@ public class QueueExtensionsTests
     [Fact]
     public void Clone_ReturnsIndependentCopyWithSameOrder()
     {
-        var queue = new Queue<int>(new[] { 1, 2 });
+        var queue = new Queue<int>([1, 2]);
 
         var clone = queue.Clone();
         clone.Enqueue(3);
@@ -210,7 +210,7 @@ public class QueueExtensionsTests
     [Fact]
     public void Contains_WithPredicate_DetectsMatchingElement()
     {
-        var queue = new Queue<int>(new[] { 1, 2, 3 });
+        var queue = new Queue<int>([1, 2, 3]);
 
         Assert.True(queue.Contains(x => x == 2));
         Assert.False(queue.Contains(x => x > 100));
@@ -233,7 +233,7 @@ public class QueueExtensionsTests
     [Fact]
     public void ForEach_VisitsInFifoOrder()
     {
-        var queue = new Queue<string>(new[] { "a", "b" });
+        var queue = new Queue<string>(["a", "b"]);
         List<string> visited = [];
         List<int> indexes = [];
 
@@ -254,7 +254,7 @@ public class QueueExtensionsTests
     [Fact]
     public void LimitSize_DropsOldestItems()
     {
-        var queue = new Queue<int>(new[] { 1, 2, 3, 4 });
+        var queue = new Queue<int>([1, 2, 3, 4]);
 
         queue.LimitSize(2);
 
@@ -267,7 +267,7 @@ public class QueueExtensionsTests
     [Fact]
     public void LimitSize_WhenAlreadyWithinLimit_ChangesNothing()
     {
-        var queue = new Queue<int>(new[] { 1, 2 });
+        var queue = new Queue<int>([1, 2]);
 
         queue.LimitSize(5);
 
@@ -291,7 +291,7 @@ public class QueueExtensionsTests
     [Fact]
     public void EnqueueWithLimit_EvictsOldestWhenFull()
     {
-        var queue = new Queue<string>(new[] { "a", "b" });
+        var queue = new Queue<string>(["a", "b"]);
 
         var noEviction = queue.EnqueueWithLimit("c", 3);
         var evicted = queue.EnqueueWithLimit("d", 3);

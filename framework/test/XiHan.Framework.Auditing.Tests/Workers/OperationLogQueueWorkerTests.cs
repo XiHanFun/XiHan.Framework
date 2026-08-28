@@ -27,7 +27,7 @@ public class OperationLogQueueWorkerTests
     {
         var writer = new RecordingOperationLogWriter();
         var queue = new ScriptedLogQueue<OperationLogRecord>(
-            new[] { new OperationLogRecord { TraceId = "t1" } },
+            [new OperationLogRecord { TraceId = "t1" }],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -53,12 +53,11 @@ public class OperationLogQueueWorkerTests
     {
         var writer = new RecordingOperationLogWriter();
         var queue = new ScriptedLogQueue<OperationLogRecord>(
-            new[]
-            {
+            [
                 new OperationLogRecord { TraceId = "t1" },
                 new OperationLogRecord { TraceId = "t2" },
                 new OperationLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -89,12 +88,11 @@ public class OperationLogQueueWorkerTests
     {
         var writer = new RecordingOperationLogWriter();
         var queue = new ScriptedLogQueue<OperationLogRecord>(
-            new[]
-            {
+            [
                 new OperationLogRecord { TraceId = "t1" },
                 new OperationLogRecord { TraceId = "t2" },
                 new OperationLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -121,11 +119,10 @@ public class OperationLogQueueWorkerTests
     public async Task ExecuteAsync_WhenWriterNotRegistered_CompletesWithoutThrowing()
     {
         var queue = new ScriptedLogQueue<OperationLogRecord>(
-            new[]
-            {
+            [
                 new OperationLogRecord { TraceId = "t1" },
                 new OperationLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = new ServiceCollection().BuildServiceProvider();
@@ -152,11 +149,10 @@ public class OperationLogQueueWorkerTests
     {
         var writer = new RecordingOperationLogWriter();
         var queue = new ScriptedLogQueue<OperationLogRecord>(
-            new[]
-            {
+            [
                 new OperationLogRecord { TraceId = "t1" },
                 new OperationLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: true);
 
         using var provider = BuildProvider(writer);

@@ -189,12 +189,11 @@ public static class DynamicApiAttributeMergeHelper
     /// <returns>排序后的特性列表</returns>
     private static List<DynamicApiAttribute> OrderAttributes(IEnumerable<DynamicApiAttribute> attributes)
     {
-        return attributes
+        return [.. attributes
             .Select((attribute, index) => new { Attribute = attribute, Index = index })
             .OrderBy(item => item.Attribute.Order)
             .ThenBy(item => item.Index)
-            .Select(item => item.Attribute)
-            .ToList();
+            .Select(item => item.Attribute)];
     }
 
     /// <summary>

@@ -38,7 +38,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "A", "B");
 
-        var providers = manager.ResolveProviders(Array.Empty<string>());
+        var providers = manager.ResolveProviders([]);
 
         Assert.Equal(2, providers.Count);
     }
@@ -62,7 +62,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "B" });
+        var providers = manager.ResolveProviders(["B"]);
 
         Assert.Single(providers);
         Assert.Equal("B", providers[0].Name);
@@ -76,7 +76,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "DingTalk");
 
-        var providers = manager.ResolveProviders(new[] { "dingtalk" });
+        var providers = manager.ResolveProviders(["dingtalk"]);
 
         Assert.Single(providers);
     }
@@ -88,10 +88,10 @@ public class BotProviderManagerTests
     public void ResolveProviders_WhenChannelMapped_ExpandsToProviders()
     {
         var options = new XiHanBotOptions();
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { "A", "C" } });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = ["A", "C"] });
         var manager = CreateManager(options, "A", "B", "C");
 
-        var providers = manager.ResolveProviders(new[] { "ops" });
+        var providers = manager.ResolveProviders(["ops"]);
 
         Assert.Equal(2, providers.Count);
         Assert.Contains(providers, provider => provider.Name == "A");
@@ -105,10 +105,10 @@ public class BotProviderManagerTests
     public void ResolveProviders_ChannelNameMatchIsCaseInsensitive()
     {
         var options = new XiHanBotOptions();
-        options.AddChannel(new BotChannel { Name = "Ops", Providers = new List<string> { "A" } });
+        options.AddChannel(new BotChannel { Name = "Ops", Providers = ["A"] });
         var manager = CreateManager(options, "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "OPS" });
+        var providers = manager.ResolveProviders(["OPS"]);
 
         Assert.Single(providers);
         Assert.Equal("A", providers[0].Name);
@@ -121,10 +121,10 @@ public class BotProviderManagerTests
     public void ResolveProviders_TrimsChannelName()
     {
         var options = new XiHanBotOptions();
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { "A" } });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = ["A"] });
         var manager = CreateManager(options, "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "  ops  " });
+        var providers = manager.ResolveProviders(["  ops  "]);
 
         Assert.Single(providers);
     }
@@ -136,10 +136,10 @@ public class BotProviderManagerTests
     public void ResolveProviders_IgnoresBlankProviderNamesInChannel()
     {
         var options = new XiHanBotOptions();
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { " ", "  A  ", string.Empty } });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = [" ", "  A  ", string.Empty] });
         var manager = CreateManager(options, "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "ops" });
+        var providers = manager.ResolveProviders(["ops"]);
 
         Assert.Single(providers);
         Assert.Equal("A", providers[0].Name);
@@ -155,7 +155,7 @@ public class BotProviderManagerTests
         options.AddChannel(new BotChannel { Name = "ops", Providers = null! });
         var manager = CreateManager(options, "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "ops" });
+        var providers = manager.ResolveProviders(["ops"]);
 
         Assert.Empty(providers);
     }
@@ -168,7 +168,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "   ", string.Empty });
+        var providers = manager.ResolveProviders(["   ", string.Empty]);
 
         Assert.Empty(providers);
     }
@@ -181,7 +181,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "A", "B");
 
-        var providers = manager.ResolveProviders(new[] { "NotExists" });
+        var providers = manager.ResolveProviders(["NotExists"]);
 
         Assert.Empty(providers);
     }
@@ -193,10 +193,10 @@ public class BotProviderManagerTests
     public void ResolveProviders_MixedChannelAndProviderNames_AreDeduplicated()
     {
         var options = new XiHanBotOptions();
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { "A", "B" } });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = ["A", "B"] });
         var manager = CreateManager(options, "A", "B", "C");
 
-        var providers = manager.ResolveProviders(new[] { "ops", "A", "C" });
+        var providers = manager.ResolveProviders(["ops", "A", "C"]);
 
         Assert.Equal(3, providers.Count);
     }
@@ -209,7 +209,7 @@ public class BotProviderManagerTests
     {
         var manager = CreateManager(new XiHanBotOptions(), "A", "B", "C");
 
-        var providers = manager.ResolveProviders(new[] { "C", "A" });
+        var providers = manager.ResolveProviders(["C", "A"]);
 
         Assert.Equal(2, providers.Count);
         Assert.Equal("A", providers[0].Name);

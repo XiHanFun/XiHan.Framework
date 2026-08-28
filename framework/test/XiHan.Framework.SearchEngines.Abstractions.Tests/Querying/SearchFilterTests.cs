@@ -88,7 +88,7 @@ public class SearchFilterTests
 
         Assert.Equal(SearchFilterOperator.In, filter.Operator);
         Assert.Null(filter.Value);
-        Assert.Equal(new object[] { "guide", "framework" }, filter.Values);
+        Assert.Equal(["guide", "framework"], filter.Values);
     }
 
     /// <summary>

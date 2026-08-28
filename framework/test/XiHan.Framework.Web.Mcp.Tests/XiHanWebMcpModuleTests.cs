@@ -212,7 +212,7 @@ public class XiHanWebMcpModuleTests
         /// <summary>
         /// 已注册的端点数据源
         /// </summary>
-        public ICollection<EndpointDataSource> DataSources { get; } = new List<EndpointDataSource>();
+        public ICollection<EndpointDataSource> DataSources { get; } = [];
 
         /// <summary>
         /// 端点路由构建器使用的服务提供者

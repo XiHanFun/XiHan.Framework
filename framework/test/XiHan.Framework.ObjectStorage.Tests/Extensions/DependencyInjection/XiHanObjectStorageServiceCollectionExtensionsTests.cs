@@ -251,7 +251,7 @@ public sealed class XiHanObjectStorageServiceCollectionExtensionsTests : IDispos
     [Fact]
     public void AddXiHanObjectStorage_WithEmptyConfiguration_RegistersLocalProviderByDefault()
     {
-        var configuration = BuildConfiguration(new Dictionary<string, string?>());
+        var configuration = BuildConfiguration([]);
         var services = new ServiceCollection();
 
         services.AddXiHanObjectStorage(configuration);

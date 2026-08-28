@@ -257,7 +257,7 @@ public class MorseHelperTests
 
         Assert.Equal(54, characters.Count);
         Assert.DoesNotContain(' ', characters);
-        Assert.Equal(characters.OrderBy(c => c).ToList(), characters);
+        Assert.Equal([.. characters.OrderBy(c => c)], characters);
         Assert.All(characters, c => Assert.NotNull(MorseHelper.GetMorseCode(c)));
     }
 

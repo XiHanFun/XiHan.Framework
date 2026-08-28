@@ -287,6 +287,6 @@ public class WeComModelJsonTests
     private static string[] ToStringArray(JsonNode? node)
     {
         Assert.NotNull(node);
-        return node!.AsArray().Select(item => item!.GetValue<string>()).ToArray();
+        return [.. node!.AsArray().Select(item => item!.GetValue<string>())];
     }
 }

@@ -280,7 +280,7 @@ public class HubExceptionFilterTests
             serviceProvider,
             hub,
             hubMethod,
-            new object?[] { "公告" });
+            ["公告"]);
     }
 
     /// <summary>

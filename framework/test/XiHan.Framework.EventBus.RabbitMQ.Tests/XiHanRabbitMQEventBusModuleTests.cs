@@ -52,7 +52,7 @@ public class XiHanRabbitMQEventBusModuleTests
     [Fact]
     public void ConfigureServices_RegistersOptionsConfiguration()
     {
-        var context = CreateContext(new Dictionary<string, string?>());
+        var context = CreateContext([]);
 
         new XiHanRabbitMQEventBusModule().ConfigureServices(context);
 

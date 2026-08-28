@@ -105,7 +105,7 @@ public class ActivityExecutionResultTests
         var child = new WorkflowStartRequest { DefinitionCode = "sub", CorrelationId = "biz-1" };
         var outputs = new Dictionary<string, object?> { ["count"] = 1 };
 
-        var result = ActivityExecutionResult.CompleteWithChildren(new[] { child }, outputs, "spawned");
+        var result = ActivityExecutionResult.CompleteWithChildren([child], outputs, "spawned");
 
         Assert.Equal(ActivityExecutionResultKind.Completed, result.Kind);
         Assert.Equal("spawned", result.Outcome);
@@ -124,7 +124,7 @@ public class ActivityExecutionResultTests
         var child = new WorkflowStartRequest { DefinitionId = "def-2" };
         var bookmark = new WorkflowBookmarkRequest { Kind = WorkflowBookmarkKinds.SubWorkflow, Key = "ni-1" };
 
-        var result = ActivityExecutionResult.SuspendWithChildren(new[] { child }, bookmark);
+        var result = ActivityExecutionResult.SuspendWithChildren([child], bookmark);
 
         Assert.Equal(ActivityExecutionResultKind.Suspended, result.Kind);
         Assert.Single(result.Bookmarks);

@@ -227,7 +227,7 @@ public class ComparableExtensionsTests
     public void IsInAndIsNotIn_CheckMembership()
     {
         var value = 3;
-        IEnumerable<int> collection = new[] { 1, 2, 3 };
+        IEnumerable<int> collection = [1, 2, 3];
 
         Assert.True(value.IsIn(collection));
         Assert.True(value.IsIn(1, 2, 3));
@@ -243,7 +243,7 @@ public class ComparableExtensionsTests
     public void IsIn_WhenCollectionEmpty_ReturnsFalse()
     {
         var value = 3;
-        IEnumerable<int> empty = Array.Empty<int>();
+        IEnumerable<int> empty = [];
 
         Assert.False(value.IsIn(empty));
     }

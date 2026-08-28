@@ -220,7 +220,7 @@ public class ExtraPropertyDictionaryExtensionsTests
     [Fact]
     public void HasSameItems_WhenBothEmpty_ReturnsTrue()
     {
-        Assert.True(new ExtraPropertyDictionary().HasSameItems(new ExtraPropertyDictionary()));
+        Assert.True(new ExtraPropertyDictionary().HasSameItems([]));
     }
 
     /// <summary>
