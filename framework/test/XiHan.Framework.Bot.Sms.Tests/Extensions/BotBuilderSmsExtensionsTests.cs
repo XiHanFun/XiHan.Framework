@@ -57,7 +57,7 @@ public class BotBuilderSmsExtensionsTests
         Assert.IsType<DefaultSmsConfigStore>(provider.GetRequiredService<ISmsConfigStore>());
         Assert.IsType<SmsGatewayResolver>(provider.GetRequiredService<ISmsGatewayResolver>());
         var providers = provider.GetServices<IBotProvider>().ToList();
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
         Assert.IsType<SmsBotProvider>(providers[0]);
     }
 
@@ -90,7 +90,7 @@ public class BotBuilderSmsExtensionsTests
         builder.UseSms();
 
         using var provider = services.BuildServiceProvider();
-        Assert.Equal(1, provider.GetServices<IBotProvider>().Count());
+        Assert.Single(provider.GetServices<IBotProvider>());
     }
 
     /// <summary>

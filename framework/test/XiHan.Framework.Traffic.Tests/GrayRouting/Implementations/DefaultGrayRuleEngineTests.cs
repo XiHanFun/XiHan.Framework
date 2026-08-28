@@ -65,7 +65,7 @@ public class DefaultGrayRuleEngineTests
         Assert.True(decision.IsGray);
         Assert.Equal("rule-high", decision.MatchedRuleId);
         Assert.Equal("v-high", decision.TargetVersion);
-        Assert.Equal(1, matcher.InvokedRuleIds.Count);
+        Assert.Single(matcher.InvokedRuleIds);
         Assert.Equal("rule-high", matcher.InvokedRuleIds[0]);
     }
 
@@ -119,7 +119,7 @@ public class DefaultGrayRuleEngineTests
         var decision = await engine.DecideAsync(new GrayContext(), TestContext.Current.CancellationToken);
 
         Assert.Equal("rule-active", decision.MatchedRuleId);
-        Assert.Equal(1, matcher.InvokedRuleIds.Count);
+        Assert.Single(matcher.InvokedRuleIds);
         Assert.Equal("rule-active", matcher.InvokedRuleIds[0]);
     }
 
@@ -176,7 +176,7 @@ public class DefaultGrayRuleEngineTests
 
         Assert.False(decision.IsGray);
         Assert.Equal("未命中任何灰度规则", decision.Reason);
-        Assert.Equal(0, matcher.InvokedRuleIds.Count);
+        Assert.Empty(matcher.InvokedRuleIds);
     }
 
     /// <summary>
@@ -245,8 +245,8 @@ public class DefaultGrayRuleEngineTests
         var decision = await engine.DecideAsync(new GrayContext(), TestContext.Current.CancellationToken);
 
         Assert.True(decision.IsGray);
-        Assert.Equal(0, headerMatcher.InvokedRuleIds.Count);
-        Assert.Equal(1, userMatcher.InvokedRuleIds.Count);
+        Assert.Empty(headerMatcher.InvokedRuleIds);
+        Assert.Single(userMatcher.InvokedRuleIds);
     }
 
     /// <summary>
@@ -327,7 +327,7 @@ public class DefaultGrayRuleEngineTests
         await engine.DecideAsync(new GrayContext(), cts.Token);
 
         Assert.Equal(cts.Token, repository.LastToken);
-        Assert.Equal(1, matcher.ReceivedTokens.Count);
+        Assert.Single(matcher.ReceivedTokens);
         Assert.Equal(cts.Token, matcher.ReceivedTokens[0]);
     }
 

@@ -148,7 +148,7 @@ public class TelegramCommandRouterTests
 
         Assert.True(handled);
         Assert.Empty(recorder.Invocations);
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().CommandDisabledReply, notifier.SentTexts[0].Text);
         Assert.Equal(100L, notifier.SentTexts[0].ChatId);
         Assert.Equal(11, notifier.SentTexts[0].ReplyToMessageId);
@@ -198,7 +198,7 @@ public class TelegramCommandRouterTests
         var handled = await router.HandleAsync(context, provider, TestContext.Current.CancellationToken);
 
         Assert.True(handled);
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().CommandDisabledReply, notifier.SentTexts[0].Text);
     }
 
@@ -217,7 +217,7 @@ public class TelegramCommandRouterTests
 
         Assert.True(handled);
         Assert.Empty(recorder.Invocations);
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().AdminOnlyCommandReply, notifier.SentTexts[0].Text);
     }
 

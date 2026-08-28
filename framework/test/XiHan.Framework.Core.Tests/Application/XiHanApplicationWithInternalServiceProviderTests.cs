@@ -184,7 +184,7 @@ public class XiHanApplicationWithInternalServiceProviderTests
 
         app.Shutdown();
 
-        Assert.Single(recorder.Steps.Where(step => step == "OnApplicationShutdown"));
+        Assert.Single(recorder.Steps, step => step == "OnApplicationShutdown");
     }
 
     /// <summary>
@@ -199,7 +199,7 @@ public class XiHanApplicationWithInternalServiceProviderTests
 
         await app.ShutdownAsync();
 
-        Assert.Single(recorder.Steps.Where(step => step == "OnApplicationShutdown"));
+        Assert.Single(recorder.Steps, step => step == "OnApplicationShutdown");
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ public class XiHanApplicationWithInternalServiceProviderTests
 
         app.Dispose();
 
-        Assert.Single(recorder.Steps.Where(step => step == "OnApplicationShutdown"));
+        Assert.Single(recorder.Steps, step => step == "OnApplicationShutdown");
     }
 
     /// <summary>
@@ -234,7 +234,7 @@ public class XiHanApplicationWithInternalServiceProviderTests
         app.Shutdown();
         app.Dispose();
 
-        Assert.Single(recorder.Steps.Where(step => step == "OnApplicationShutdown"));
+        Assert.Single(recorder.Steps, step => step == "OnApplicationShutdown");
     }
 
     /// <summary>

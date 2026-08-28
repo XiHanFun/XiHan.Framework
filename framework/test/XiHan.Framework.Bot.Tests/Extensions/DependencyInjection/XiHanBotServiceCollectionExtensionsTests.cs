@@ -142,7 +142,7 @@ public class XiHanBotServiceCollectionExtensionsTests
 
         Assert.Equal(3, provider.GetServices<IBotStrategy>().Count());
         Assert.Equal(4, provider.GetServices<IBotPipeline>().Count());
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IBotClient)));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IBotClient));
     }
 
     /// <summary>

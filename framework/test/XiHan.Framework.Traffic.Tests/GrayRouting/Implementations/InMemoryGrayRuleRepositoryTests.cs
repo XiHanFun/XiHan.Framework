@@ -87,7 +87,7 @@ public class InMemoryGrayRuleRepositoryTests
 
         var rules = await repository.GetEnabledRulesAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, rules.Count);
+        Assert.Single(rules);
         Assert.Equal("rule-enabled", rules[0].RuleId);
     }
 
@@ -107,7 +107,7 @@ public class InMemoryGrayRuleRepositoryTests
 
         Assert.NotNull(found);
         Assert.Equal("新规则", found.RuleName);
-        Assert.Equal(1, rules.Count);
+        Assert.Single(rules);
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ public class InMemoryGrayRuleRepositoryTests
 
         Assert.Null(await repository.GetRuleByIdAsync("rule-1", token));
         var rules = await repository.GetEnabledRulesAsync(token);
-        Assert.Equal(1, rules.Count);
+        Assert.Single(rules);
         Assert.Equal("rule-2", rules[0].RuleId);
     }
 
@@ -155,7 +155,7 @@ public class InMemoryGrayRuleRepositoryTests
         repository.RemoveRule("missing");
         repository.RemoveRule("missing");
 
-        Assert.Equal(1, (await repository.GetEnabledRulesAsync(TestContext.Current.CancellationToken)).Count);
+        Assert.Single((await repository.GetEnabledRulesAsync(TestContext.Current.CancellationToken)));
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public class InMemoryGrayRuleRepositoryTests
         await repository.RefreshAsync(token);
         await repository.RefreshAsync(token);
 
-        Assert.Equal(1, (await repository.GetEnabledRulesAsync(token)).Count);
+        Assert.Single((await repository.GetEnabledRulesAsync(token)));
     }
 
     /// <summary>

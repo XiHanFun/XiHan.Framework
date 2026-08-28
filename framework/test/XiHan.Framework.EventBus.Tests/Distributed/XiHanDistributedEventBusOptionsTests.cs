@@ -27,9 +27,9 @@ public class XiHanDistributedEventBusOptionsTests
         Assert.NotNull(options.Handlers);
         Assert.Empty(options.Handlers);
         Assert.NotNull(options.Outboxes);
-        Assert.Equal(0, options.Outboxes.Count);
+        Assert.Empty(options.Outboxes);
         Assert.NotNull(options.Inboxes);
-        Assert.Equal(0, options.Inboxes.Count);
+        Assert.Empty(options.Inboxes);
     }
 
     /// <summary>
@@ -46,11 +46,11 @@ public class XiHanDistributedEventBusOptionsTests
         first.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
 
         Assert.Single(first.Handlers);
-        Assert.Equal(1, first.Outboxes.Count);
-        Assert.Equal(1, first.Inboxes.Count);
+        Assert.Single(first.Outboxes);
+        Assert.Single(first.Inboxes);
         Assert.Empty(second.Handlers);
-        Assert.Equal(0, second.Outboxes.Count);
-        Assert.Equal(0, second.Inboxes.Count);
+        Assert.Empty(second.Outboxes);
+        Assert.Empty(second.Inboxes);
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public class XiHanDistributedEventBusOptionsTests
         options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox));
         options.Outboxes.Configure(config => config.IsSendingEnabled = false);
 
-        Assert.Equal(1, options.Outboxes.Count);
+        Assert.Single(options.Outboxes);
         var config = options.Outboxes["Default"];
         Assert.Equal(typeof(InMemoryEventOutbox), config.ImplementationType);
         Assert.False(config.IsSendingEnabled);

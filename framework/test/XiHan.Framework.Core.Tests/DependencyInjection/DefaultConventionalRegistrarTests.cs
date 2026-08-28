@@ -353,7 +353,7 @@ public class DefaultConventionalRegistrarTests
     /// <returns>唯一描述器</returns>
     private static ServiceDescriptor SingleDescriptorFor(IServiceCollection services, Type serviceType)
     {
-        return Assert.Single(services.Where(d => d.ServiceType == serviceType));
+        return Assert.Single(services, d => d.ServiceType == serviceType);
     }
 }
 

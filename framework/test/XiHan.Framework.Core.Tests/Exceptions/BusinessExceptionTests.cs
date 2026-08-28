@@ -109,7 +109,7 @@ public class BusinessExceptionTests
         exception.WithData("userId", 1).WithData("userId", 2);
 
         Assert.Equal(2, (int)exception.Data["userId"]!);
-        Assert.Equal(1, exception.Data.Count);
+        Assert.Single(exception.Data);
     }
 
     /// <summary>

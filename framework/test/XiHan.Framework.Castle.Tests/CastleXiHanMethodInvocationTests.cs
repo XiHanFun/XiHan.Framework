@@ -136,7 +136,7 @@ public class CastleXiHanMethodInvocationTests
         var result = proxy.Describe(42);
 
         Assert.Equal("Int32", result);
-        Assert.Equal(1, captured.Length);
+        Assert.Single(captured);
         Assert.Equal(typeof(int), captured[0]);
     }
 

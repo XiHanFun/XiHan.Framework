@@ -85,7 +85,7 @@ public class LocalizedEnumDefinitionTests
         Assert.True(restored.IsFlags);
         Assert.Equal("Int32", restored.UnderlyingTypeName);
         Assert.Equal("Enums", restored.ResourceName);
-        Assert.Equal(1, restored.Items.Count);
+        Assert.Single(restored.Items);
         Assert.Equal("Active", restored.Items[0].Name);
         Assert.Equal("启用", restored.Items[0].Label);
         Assert.Equal(1, restored.Items[0].Order);

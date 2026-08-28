@@ -60,7 +60,7 @@ public class ModuleLoaderTests
 
         var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), new PlugInSourceList());
 
-        Assert.Single(modules.Where(m => m.Type == typeof(MlLeafModule)));
+        Assert.Single(modules, m => m.Type == typeof(MlLeafModule));
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public class ModuleLoaderTests
 
         foreach (var module in modules)
         {
-            var descriptor = Assert.Single(services.Where(d => d.ServiceType == module.Type));
+            var descriptor = Assert.Single(services, d => d.ServiceType == module.Type);
             Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
             Assert.Same(module.Instance, descriptor.ImplementationInstance);
         }

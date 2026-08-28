@@ -40,7 +40,7 @@ public class TelegramKeyboardBuilderTests
 
         var rows = ToRows(markup);
 
-        Assert.Equal(1, rows.Count);
+        Assert.Single(rows);
         Assert.Equal(2, rows[0].Count);
         Assert.Equal("确认", rows[0][0].Text);
         Assert.Equal("confirm:1", rows[0][0].CallbackData);
@@ -83,8 +83,8 @@ public class TelegramKeyboardBuilderTests
 
         var rows = ToRows(markup);
 
-        Assert.Equal(1, rows.Count);
-        Assert.Equal(1, rows[0].Count);
+        Assert.Single(rows);
+        Assert.Single(rows[0]);
     }
 
     /// <summary>
@@ -244,7 +244,7 @@ public class TelegramKeyboardBuilderTests
     {
         var rows = ToRows(TelegramKeyboardBuilder.ConfirmCancel("A-1"));
 
-        Assert.Equal(1, rows.Count);
+        Assert.Single(rows);
         Assert.Equal(2, rows[0].Count);
         Assert.Equal("确认", rows[0][0].Text);
         Assert.Equal("confirm:A-1", rows[0][0].CallbackData);
@@ -294,8 +294,8 @@ public class TelegramKeyboardBuilderTests
     {
         var rows = ToRows(TelegramKeyboardBuilder.Single("刷新", "refresh:A-1"));
 
-        Assert.Equal(1, rows.Count);
-        Assert.Equal(1, rows[0].Count);
+        Assert.Single(rows);
+        Assert.Single(rows[0]);
         Assert.Equal("刷新", rows[0][0].Text);
         Assert.Equal("refresh:A-1", rows[0][0].CallbackData);
     }

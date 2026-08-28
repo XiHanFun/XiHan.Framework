@@ -91,7 +91,7 @@ public class TelegramMessageRouterTests
         var context = TelegramTestFactory.CreateContext(bot, TelegramTestFactory.CreateMessageUpdate());
 
         Assert.True(await router.HandleAsync(context, provider, TestContext.Current.CancellationToken));
-        Assert.Equal(1, recorder.Invocations.Count);
+        Assert.Single(recorder.Invocations);
         Assert.Equal(TestEarlyMessageHandler.HandlerName, recorder.Invocations[0].Handler);
     }
 
