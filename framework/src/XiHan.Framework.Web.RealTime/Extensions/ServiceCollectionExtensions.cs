@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.RealTime.Options;
 using XiHan.Framework.Web.RealTime.Services;
+using XiHan.Framework.Web.RealTime.Filters;
 
 namespace XiHan.Framework.Web.RealTime.Extensions;
 
@@ -107,6 +108,10 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static void ApplySignalROptions(IServiceCollection services)
     {
+        // 会话闸门：Hub 路径整体绕过 XiHanSessionStateMiddleware，失效会话在此拦下
+        services.AddOptions<HubOptions>().Configure(hubOptions => hubOptions.AddFilter<SessionStateHubFilter>());
+        services.AddSingleton<SessionStateHubFilter>();
+
         services.AddOptions<HubOptions>()
             .Configure<IOptions<XiHanSignalROptions>>((hubOptions, xihanOptions) =>
             {
