@@ -5,7 +5,7 @@
 
 <p><b>快速、轻量、高效、用心的 .NET 模块化开发框架</b></p>
 
-<p>基于 .NET 10 构建 · 64 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+<p>基于 .NET 10 构建 · 66 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
 
 <p>
   <a href="https://github.com/XiHanFun/XiHan.Framework/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat-square&logo=github&label=Stars&color=1f6feb" /></a>
@@ -15,7 +15,7 @@
 <p>
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <img alt="Modules" src="https://img.shields.io/badge/Modules-61-1f6feb?style=flat-square" />
+  <img alt="Modules" src="https://img.shields.io/badge/Modules-66-1f6feb?style=flat-square" />
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
   <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
@@ -46,6 +46,15 @@
 
 XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后端分离的 ASP.NET Core 应用设计。框架优先使用 .NET 原生功能，减少第三方依赖，强调模块清晰、依赖可控、扩展可维护。通过 `[DependsOn]` 属性声明模块依赖，自动拓扑排序加载，以应用服务与动态 API 约定统一接口暴露方式。
 
+## 文档
+
+| 去处 | 内容 |
+| --- | --- |
+| [文档站](https://framework.docs.xihanfun.com) | 完整指南与 66 个包的逐包 API 文档 |
+| [框架工程说明](./framework/README.md) | 分层架构、模块清单、目录结构、依赖关系 |
+| [更新日志](https://framework.docs.xihanfun.com/changelog) | 各版本变更与升级须知 |
+| [贡献指南](./CONTRIBUTING.md) | 分支约定、提交规范、本地构建与测试 |
+
 ## 设计原则
 
 - **分层架构** - 遵循清晰的分层原则，避免循环依赖
@@ -57,148 +66,28 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 
 ## 技术栈
 
-| 类别 | 技术 | 版本 |
-| --- | --- | --- |
-| 运行时 | .NET | 10.0 |
-| 语言 | C# | Latest |
-| ORM | SqlSugarCore | 5.1.4.217 |
-| 日志 | Serilog.AspNetCore | 10.0.0 |
-| 缓存 | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis | 10.9.0 / 10.0.11 |
-| AOP | Castle.Core (DynamicProxy) | 5.2.1 |
-| 加密 | BouncyCastle.Cryptography | 2.7.0 |
-| 序列化 | System.Text.Json + Newtonsoft.Json | 内置 / 13.0.4 |
-| 模板引擎 | Scriban | 7.2.6 |
-| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
-| HTTP 韧性 | Microsoft.Extensions.Http.Polly | 10.0.11 |
-| gRPC | Grpc.AspNetCore | 2.83.0 |
-| 实时通信 | ASP.NET Core SignalR | - |
-| API 文档 | Scalar.AspNetCore + Swashbuckle.AspNetCore | 2.16.20 / 10.2.3 |
-| IP 定位 | IP2Region.Net | 3.0.2 |
-| 消息通知 | MailKit + Telegram.Bot | 4.17.0 / 22.10.2.1 |
-| 测试 | xunit.v3 + Microsoft.Testing.Platform（含 CodeCoverage 扩展） | 4.0.0 / 2.3.3 |
-
-## 架构概览
-
-框架采用严格的模块化分层组织，通过 `[DependsOn]` 属性强制模块依赖关系，自动拓扑排序加载：
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         7. Web 层                              │
-│  Web.Docs → Web.Api → Web.Core    Web.Gateway    Web.RealTime │
-│                                    Web.Grpc      Web.Mcp       │
-├─────────────────────────────────────────────────────────────────┤
-│                       6. 基础设施层                             │
-│  Data  Authentication  Authorization  Caching  EventBus       │
-│  AI  Bot  Tasks  Traffic  Upgrade  Messaging  ObjectStorage   │
-│  Logging  Observability  SearchEngines  Script  Http  Castle  │
-├─────────────────────────────────────────────────────────────────┤
-│                        5. 应用层                               │
-│  Application → Application.Contracts                           │
-│  MultiTenancy → MultiTenancy.Abstractions                     │
-│  Validation → Validation.Abstractions    Settings              │
-├─────────────────────────────────────────────────────────────────┤
-│                        4. 领域层                               │
-│  Domain → Domain.Shared                                        │
-├─────────────────────────────────────────────────────────────────┤
-│                        3. 核心层                               │
-│  Core (模块系统 / DI / 生命周期 / 选项模式 / 异常处理)          │
-├─────────────────────────────────────────────────────────────────┤
-│                      2. 元数据层                               │
-│  Metadata (框架信息 / 版本 / 平台)                              │
-├─────────────────────────────────────────────────────────────────┤
-│                      1. 公共层                                 │
-│  Utils (零依赖通用工具库)                                       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 命名约定
-
-- `XiHan.Framework.[ModuleName]` — 通用类库，使用 `Microsoft.NET.Sdk`
-- `XiHan.Framework.Web.[ModuleName]` — Web 相关功能，使用 `Microsoft.NET.Sdk.Web`
-
-## 模块清单
-
-### 公共与核心
-
-| 模块 | 说明 |
+| 类别 | 技术 |
 | --- | --- |
-| `Utils` | 零依赖通用工具库：字符串处理、加密算法、异步编程、序列化、集合操作、反射、网络通信、文件IO、数学计算、时间处理等 |
-| `Metadata` | 框架元数据：名称、版本、作者、组织、支持平台等静态信息 |
-| `Core` | 模块化引擎核心：`IXiHanModule` 基类、`[DependsOn]` 依赖声明、拓扑排序加载、7 个生命周期钩子、DI 扩展、选项模式、异常处理链 |
-| `Analyzers` | Roslyn 分析器：文件头规范检查与代码修复（`XiHanFileHeaderAnalyzer` + CodeFixProvider），编译期静态检查 |
+| 运行时 | .NET |
+| 语言 | C# |
+| ORM | SqlSugarCore |
+| 日志 | Serilog.AspNetCore |
+| 缓存 | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis |
+| AOP | Castle.Core (DynamicProxy) |
+| 加密 | BouncyCastle.Cryptography |
+| 序列化 | System.Text.Json（内置）+ Newtonsoft.Json |
+| 模板引擎 | Scriban |
+| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP |
+| HTTP 韧性 | Microsoft.Extensions.Http.Polly |
+| gRPC | Grpc.AspNetCore |
+| 实时通信 | ASP.NET Core SignalR |
+| API 文档 | Scalar.AspNetCore + Swashbuckle.AspNetCore |
+| IP 定位 | IP2Region.Net |
+| 消息通知 | MailKit + Telegram.Bot |
+| 搜索 | Elastic.Clients.Elasticsearch |
+| 测试 | xunit.v3 + Microsoft.Testing.Platform（含 CodeCoverage 扩展） |
 
-### 领域与应用
-
-| 模块 | 说明 |
-| --- | --- |
-| `Domain.Shared` | 领域共享模型：基础实体类型、枚举、常量、值对象、异常 |
-| `Domain` | DDD 领域层：聚合根、实体、领域服务、领域事件、规约、仓储抽象、业务规则引擎 |
-| `Application.Contracts` | 应用服务契约：DTO 定义、应用服务接口 |
-| `Application` | 应用层实现：应用服务基类、CQRS 调度、请求管道、DTO 映射 |
-
-### 基础设施
-
-| 模块 | 说明 |
-| --- | --- |
-| `Data` | SqlSugar 数据访问：仓储模式、工作单元集成、多租户数据隔离、启动自动建表 |
-| `Caching` | 混合缓存：HybridCache（内存 + Redis）、缓存拦截器、租户感知 |
-| `Authentication` | 认证：JWT / OAuth2 / OIDC、令牌工厂、MFA、SSO |
-| `Authorization` | 授权：RBAC、策略授权、声明授权 |
-| `Security` | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
-| `Auditing` | 审计日志：操作/访问/登录/异常/接口/实体变更日志的采集管道、异步队列、脱敏与写入契约 |
-| `EventBus.Abstractions` | 事件总线抽象：发布/订阅接口、事件处理管道 |
-| `EventBus` | 事件总线：本地/分布式事件、Outbox 模式、事件存储（内置实现，分布式 Broker 由以下子包提供） |
-| `EventBus.RabbitMQ` | 分布式事件总线 RabbitMQ 提供程序 |
-| `EventBus.Kafka` | 分布式事件总线 Kafka 提供程序 |
-| `EventBus.Redis` | 分布式事件总线 Redis（Streams）提供程序 |
-| `Uow` | 工作单元：AOP 拦截器自动管理事务边界 |
-| `Castle` | AOP 动态代理：Castle DynamicProxy 集成，服务拦截器注册 |
-| `Logging` | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
-| `Serialization` | 序列化：System.Text.Json + Newtonsoft.Json 双引擎、策略管理 |
-| `Http` | HTTP 客户端：Polly 韧性策略（重试/熔断）、请求管道 |
-| `Localization` | 国际化：多语言资源文件、动态文化切换 |
-| `Localization.Abstractions` | 国际化抽象：`IStringLocalizer` 抽象层 |
-| `MultiTenancy` | 多租户：租户解析中间件、数据隔离、租户配置管理、生命周期 |
-| `MultiTenancy.Abstractions` | 多租户抽象：租户上下文接口、解析链 |
-| `Settings` | 设置管理：设置定义提供者模式、动态配置、多来源（租户级别） |
-| `Validation` | 数据校验：校验实现 |
-| `Validation.Abstractions` | 校验抽象：校验工厂、规则构建器接口 |
-| `ObjectMapping` | 对象映射：Mapster 集成 |
-| `ObjectStorage` | 对象存储：OSS / MinIO / S3 适配抽象 |
-| `VirtualFileSystem` | 虚拟文件系统：本地/云存储适配、文件元数据、版本控制 |
-| `Messaging` | 消息处理：消息代理抽象（发布/消费/路由） |
-| `DistributedIds` | 分布式 ID：Snowflake / ULID / SQID / NanoID 多算法支持 |
-| `Threading` | 并发控制：异步信号量、读写锁、优先级任务调度、背压控制 |
-| `Timing` | 时间策略：时区管理、时间抽象 |
-| `Templating` | 模板渲染：Scriban 引擎、模板注册表 |
-| `Tasks` | 定时任务：调度引擎、后台服务、多租户感知 |
-| `Traffic` | 流量治理：灰度路由、限流、熔断 |
-| `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
-| `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
-| `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |
-| `Bot` | 机器人核心：多渠道消息分发管道、策略与模板，渠道能力由以下子包提供 |
-| `Bot.Email` | 机器人邮件渠道：基于 MailKit |
-| `Bot.Sms` | 机器人短信渠道 |
-| `Bot.Telegram` | 机器人 Telegram 渠道：基于 Telegram.Bot |
-| `Bot.DingTalk` | 机器人钉钉渠道 |
-| `Bot.Lark` | 机器人飞书渠道 |
-| `Bot.WeCom` | 机器人企业微信渠道 |
-| `Script` | 脚本引擎：沙箱执行、JS / Python / C# 动态脚本 |
-| `SearchEngines` | 搜索引擎：Elasticsearch 集成抽象、索引构建、全文检索 |
-| `Observability` | 可观测性：健康检查、性能计数器、指标采集 |
-| `DevTools` | 开发工具：开发期辅助与调试能力 |
-
-### Web 层
-
-| 模块 | 说明 |
-| --- | --- |
-| `Web.Core` | Web 基础设施：托管环境、中间件管道、CORS、IP 地理定位（ip2region）、UA 解析 |
-| `Web.Api` | 动态 API：自动 API 发现与注册、OpenAPI 安全、完整中间件管道（TraceId → 请求上下文 → 异常日志 → 路由 → CORS → 认证 → 租户解析 → 授权 → 控制器） |
-| `Web.Docs` | API 文档：Scalar UI + Swagger UI、动态 API 分组发现 |
-| `Web.Gateway` | API 网关：灰度路由、负载均衡、限流 |
-| `Web.Grpc` | gRPC 服务集成 |
-| `Web.Mcp` | MCP Server：AI 技能经 HTTP 传输暴露为 MCP tools、应用管理 key 鉴权 |
-| `Web.RealTime` | 实时通信：SignalR 集成、JSON 序列化 |
+各依赖的具体版本以 `framework/src` 下各工程的 `PackageReference` 为准。
 
 ## 快速开始
 
@@ -280,79 +169,6 @@ await app.RunAsync();
                                     └───────────────────────────────┘
 ```
 
-## 项目结构
-
-```text
-XiHan.Framework/
-├── framework/
-│   ├── XiHan.Framework.slnx              # 解决方案文件
-│   ├── src/                               # 源码（64 个模块）
-│   │   ├── XiHan.Framework.Utils/         #   公共工具
-│   │   ├── XiHan.Framework.Metadata/      #   框架元数据
-│   │   ├── XiHan.Framework.Core/          #   模块化核心
-│   │   ├── XiHan.Framework.Domain.Shared/ #   领域共享
-│   │   ├── XiHan.Framework.Domain/        #   领域层
-│   │   ├── XiHan.Framework.Application.Contracts/ # 应用契约
-│   │   ├── XiHan.Framework.Application/   #   应用层
-│   │   ├── XiHan.Framework.Data/          #   数据访问
-│   │   ├── XiHan.Framework.Web.Core/      #   Web 核心
-│   │   ├── XiHan.Framework.Web.Api/       #   动态 API
-│   │   ├── XiHan.Framework.Web.Docs/      #   API 文档
-│   │   ├── XiHan.Framework.Web.Gateway/   #   网关
-│   │   ├── XiHan.Framework.Web.Grpc/      #   gRPC
-│   │   ├── XiHan.Framework.Web.Mcp/       #   MCP Server
-│   │   ├── XiHan.Framework.Web.RealTime/  #   实时通信
-│   │   └── ...                            #   其他模块
-│   ├── test/                              # 测试（src 下每个项目一一对应，共 66 个单测工程）
-│   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
-│   │   ├── XiHan.Framework.Core.Tests/    #   内核测试
-│   │   ├── XiHan.Framework.Web.Api.Tests/ #   Web API 测试
-│   │   └── ...                            #   其余按 <项目名>.Tests 一一对应
-│   ├── sample/                            # 可运行示例宿主（非测试工程）
-│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（动态 API + 文档站）
-│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主
-│   ├── tool/                              # 工具
-│   │   └── Region/                        #   代码规范化工具
-│   ├── props/                             # 共享 MSBuild 属性
-│   ├── scripts/                           # NuGet 发布与运维脚本
-│   └── nupkgs/                            # NuGet 包输出
-├── docs/                                  # 文档站源码（VitePress，部署到 framework.docs.xihanfun.com）
-└── assets/                                # README 资源文件
-```
-
-## 模块依赖关系
-
-核心依赖链（从底层到上层）：
-
-```text
-Utils (零依赖)
-  └── Metadata (零依赖)
-        └── Core
-              ├── Serialization
-              ├── Security ──→ Authentication ──→ Authorization
-              ├── Threading
-              ├── Timing
-              ├── DistributedIds
-              ├── VirtualFileSystem ──→ Localization
-              ├── Uow
-              │     ├── Caching (+ Redis)
-              │     └── EventBus
-              ├── Domain.Shared ──→ Domain ──→ Data (SqlSugar)
-              │     └── Application.Contracts ──→ Application
-              ├── MultiTenancy.Abstractions ──→ MultiTenancy
-              │     ├── Tasks
-              │     ├── Traffic
-              │     └── Upgrade
-              ├── Http (+ Polly) ──→ AI (SemanticKernel + MCP)
-              │     └── Bot (MailKit + Telegram)
-              └── Web.Core
-                    ├── Web.Api ──→ Web.Docs (Scalar + Swagger)
-                    ├── Web.Gateway
-                    ├── Web.Grpc
-                    ├── Web.Mcp (MCP Server)
-                    └── Web.RealTime (SignalR)
-```
-
 ## NuGet 包
 
 所有模块均发布至 [NuGet.org](https://www.nuget.org/packages?q=XiHan.Framework)，包名与项目名一致：
@@ -374,6 +190,8 @@ dotnet package search XiHan.Framework
 | `XiHan.Framework.EventBus` | 事件总线 + Outbox |
 | `XiHan.Framework.AI` | Microsoft.Extensions.AI + MCP |
 
+完整模块清单见[框架工程说明](./framework/README.md#模块清单)。
+
 ## 环境要求
 
 | 依赖 | 版本 |
@@ -382,13 +200,15 @@ dotnet package search XiHan.Framework
 | C# | Latest |
 | 支持平台 | Windows / Linux / macOS |
 
-## 相关项目
+## 项目生态
 
-- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - 基于 XiHan.Framework 构建的企业级管理系统
+- [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) - 快速、轻量、高效、用心的 .NET 现代模块化开发框架
+- [XiHan.UI](https://github.com/XiHanFun/XiHan.UI) - 快速、轻量、高效、用心的框架无关 Headless UI 组件库
+- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - 基于 .Net（XiHan.Framework） + TS（XiHan.UI） 的超高颜值企业通用中后台内核
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request。
+欢迎提交 Issue 和 Pull Request，详见[贡献指南](./CONTRIBUTING.md)。
 
 ## 诚挚致谢
 
