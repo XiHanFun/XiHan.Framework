@@ -10,7 +10,6 @@ using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Lark.Abstractions;
 using XiHan.Framework.Bot.Lark.Models;
 using XiHan.Framework.Bot.Lark.Options;
-using XiHan.Framework.Bot.Lark.Enums;
 
 namespace XiHan.Framework.Bot.Lark.Messaging;
 

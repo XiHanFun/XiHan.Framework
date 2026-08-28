@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Utils.Extensions;

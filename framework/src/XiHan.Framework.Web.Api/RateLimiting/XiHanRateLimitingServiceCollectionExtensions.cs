@@ -3,10 +3,6 @@
 
 using System.Globalization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Api.RateLimiting;
 

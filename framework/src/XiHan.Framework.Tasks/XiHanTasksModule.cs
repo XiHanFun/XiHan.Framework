@@ -7,7 +7,6 @@ using XiHan.Framework.Caching;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Tasks.BackgroundJobs.Extensions.DependencyInjection;
-using XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 using XiHan.Framework.Tasks.ScheduledJobs.Extensions.DependencyInjection;
 using XiHan.Framework.Timing;
 

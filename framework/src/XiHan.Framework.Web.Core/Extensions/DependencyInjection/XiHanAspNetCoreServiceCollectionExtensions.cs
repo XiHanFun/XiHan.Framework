@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Web.Core.Clients;

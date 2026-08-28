@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
-using XiHan.Framework.Bot;
 using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Sms.Abstractions;
 using XiHan.Framework.Bot.Sms.Messaging;
