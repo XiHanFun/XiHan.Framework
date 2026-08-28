@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
@@ -69,6 +70,7 @@ public sealed class RequiresNewIsolationTests : IDisposable
         _resolver = new SqlSugarClientResolver(
             _scope,
             new FixedTenantConnectionResolver(OuterConfigId, [OuterConfigId, InnerConfigId]),
+            new EntityDataSourceResolver(),
             _unitOfWorkManager,
             new NoTenant(),
             new PassThroughConnectionConfigurator(),
