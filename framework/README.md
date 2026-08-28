@@ -1,150 +1,152 @@
 ![logo](../assets/logo.png)
 
-# XiHan.Framework 工程说明
+[中文](README_cn.md)
 
-本文件面向框架的开发者与贡献者，记录**框架自身的组织方式**：分层架构、模块清单、目录结构与依赖关系。
+# XiHan.Framework Engineering Notes
 
-想快速上手用框架搭应用，请看[仓库根 README](../README.md)；完整 API 与逐包文档见[文档站](https://framework.docs.xihanfun.com)。
+This file is for framework developers and contributors. It documents **how the framework itself is organized**: layered architecture, module catalog, directory layout and dependencies.
 
-## 架构概览
+If you just want to build an application with the framework, start from the [repository README](../README.md); full API and per-package documentation lives on the [documentation site](https://framework.docs.xihanfun.com).
 
-框架采用严格的模块化分层组织，通过 `[DependsOn]` 属性强制模块依赖关系，自动拓扑排序加载：
+## Architecture Overview
+
+The framework is organized into strict modular layers. Dependencies between modules are enforced by the `[DependsOn]` attribute and loaded in topological order:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                            7. Web 层                            │
+│                          7. Web Layer                           │
 │  Web.Docs → Web.Api → Web.Core    Web.Gateway    Web.RealTime   │
 │                                   Web.Grpc       Web.Mcp        │
 ├─────────────────────────────────────────────────────────────────┤
-│                          6. 基础设施层                          │
+│                     6. Infrastructure Layer                     │
 │  Data  Uow  Caching  EventBus  Auditing  Logging                │
 │  Authentication  Authorization  AI  Bot  Workflow  Tasks        │
 │  Traffic  Upgrade  Messaging  ObjectStorage  SearchEngines      │
 │  Observability  Serialization  Script  Http  Castle             │
 ├─────────────────────────────────────────────────────────────────┤
-│                            5. 应用层                            │
+│                      5. Application Layer                       │
 │  Application → Application.Contracts                            │
 │  MultiTenancy → MultiTenancy.Abstractions                       │
 │  Validation → Validation.Abstractions   Settings   Security     │
 ├─────────────────────────────────────────────────────────────────┤
-│                            4. 领域层                            │
+│                         4. Domain Layer                         │
 │  Domain → Domain.Shared                                         │
 ├─────────────────────────────────────────────────────────────────┤
-│                            3. 核心层                            │
-│  Core (模块系统 / DI / 生命周期 / 选项模式 / 异常处理)          │
+│                          3. Core Layer                          │
+│  Core (module system / DI / lifecycle / options / exceptions)   │
 ├─────────────────────────────────────────────────────────────────┤
-│                           2. 元数据层                           │
-│  Metadata (框架信息 / 版本 / 平台)                              │
+│                        2. Metadata Layer                        │
+│  Metadata (framework info / version / platform)                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                            1. 公共层                            │
-│  Utils (通用工具库，零第三方依赖)                               │
+│                         1. Common Layer                         │
+│  Utils (general-purpose utilities, zero third-party deps)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 命名约定
+### Naming Conventions
 
-- `XiHan.Framework.[ModuleName]` — 通用类库，使用 `Microsoft.NET.Sdk`
-- `XiHan.Framework.Web.[ModuleName]` — Web 相关功能，使用 `Microsoft.NET.Sdk.Web`
-- `XiHan.Framework.[ModuleName].Abstractions` — 只含契约、不含实现的抽象包，供第三方实现替换
-- `XiHan.Framework.[ModuleName].[Provider]` — 某个抽象包的具体提供程序实现（如 `EventBus.Kafka`）
+- `XiHan.Framework.[ModuleName]` — general-purpose library, uses `Microsoft.NET.Sdk`
+- `XiHan.Framework.Web.[ModuleName]` — web-facing feature, uses `Microsoft.NET.Sdk.Web`
+- `XiHan.Framework.[ModuleName].Abstractions` — contracts only, no implementation, so third parties can supply their own
+- `XiHan.Framework.[ModuleName].[Provider]` — a concrete provider for one abstraction package (e.g. `EventBus.Kafka`)
 
-## 模块清单
+## Module Catalog
 
-共 66 个模块，与 `framework/src` 下的工程一一对应，包名与工程名一致。
+66 modules, one per project under `framework/src`; package names match project names.
 
-### 公共与核心
+### Common and Core
 
-| 模块 | 说明 |
+| Module | Description |
 | --- | --- |
-| `Metadata` | 框架元数据：名称、版本、作者、组织、支持平台等静态信息 |
-| `Utils` | 通用工具库（零第三方依赖）：字符串处理、加密算法、异步编程、序列化、集合操作、反射、网络通信、文件 IO、数学计算、时间处理等 |
-| `Analyzers` | Roslyn 分析器：文件头规范检查与代码修复（`XiHanFileHeaderAnalyzer` + CodeFixProvider），编译期静态检查 |
-| `Core` | 模块化引擎核心：`IXiHanModule` 基类、`[DependsOn]` 依赖声明、拓扑排序加载、7 个生命周期钩子、DI 扩展、选项模式、异常处理链 |
+| `Metadata` | Framework metadata: name, version, author, organization, supported platforms |
+| `Utils` | General-purpose utilities (zero third-party dependencies): strings, cryptography, async, serialization, collections, reflection, networking, file IO, math, time |
+| `Analyzers` | Roslyn analyzers: file-header convention check with a code fix (`XiHanFileHeaderAnalyzer` + CodeFixProvider), enforced at compile time |
+| `Core` | Modularity engine: `IXiHanModule` base type, `[DependsOn]` declarations, topological loading, 7 lifecycle hooks, DI extensions, options pattern, exception handling chain |
 
-### 领域与应用
+### Domain and Application
 
-| 模块 | 说明 |
+| Module | Description |
 | --- | --- |
-| `Domain.Shared` | 领域共享模型：基础实体类型、枚举、常量、值对象、异常 |
-| `Domain` | DDD 领域层：聚合根、实体、领域服务、领域事件、规约、仓储抽象、业务规则引擎 |
-| `Application.Contracts` | 应用服务契约：DTO 定义、应用服务接口 |
-| `Application` | 应用层实现：应用服务基类、CRUD / 批量 CRUD 基类、`[DynamicApi]` 特性、Mapster DTO 映射 |
+| `Domain.Shared` | Shared domain models: base entity types, enums, constants, value objects, exceptions |
+| `Domain` | DDD domain layer: aggregate roots, entities, domain services, domain events, specifications, repository abstractions, business rule engine |
+| `Application.Contracts` | Application service contracts: DTO definitions and service interfaces |
+| `Application` | Application layer: application service base types, CRUD / batch CRUD bases, the `[DynamicApi]` attribute, Mapster DTO mapping |
 
-### 基础设施
+### Infrastructure
 
-| 模块 | 说明 |
+| Module | Description |
 | --- | --- |
-| `Data` | SqlSugar 数据访问：仓储模式、工作单元集成、多租户数据隔离、模块分库、启动自动建表 |
-| `Uow` | 工作单元：AOP 拦截器自动管理事务边界 |
-| `Caching` | 混合缓存：HybridCache（内存 + Redis）、缓存拦截器、租户感知 |
-| `Authentication` | 认证：JWT / OAuth2 / OIDC、令牌工厂、MFA、SSO |
-| `Authorization` | 授权：RBAC、策略授权、声明授权 |
-| `Security` | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
-| `Auditing` | 审计日志：操作/访问/登录/异常/接口/实体变更日志的采集管道、异步队列、脱敏与写入契约 |
-| `EventBus.Abstractions` | 事件总线抽象：发布/订阅接口、事件处理管道 |
-| `EventBus` | 事件总线：本地/分布式事件、Outbox 模式、事件存储（内置实现，分布式 Broker 由以下子包提供） |
-| `EventBus.RabbitMQ` | 分布式事件总线 RabbitMQ 提供程序 |
-| `EventBus.Kafka` | 分布式事件总线 Kafka 提供程序 |
-| `EventBus.Redis` | 分布式事件总线 Redis（Streams）提供程序 |
-| `Workflow.Abstractions` | 工作流抽象：流程定义模型、活动契约、运行时实例与书签模型、存储端口、人工任务契约，不含执行实现 |
-| `Workflow` | 工作流引擎：图执行引擎、内置活动集、人工任务（审批）、表达式求值、定时器调度、内存存储默认实现 |
-| `Castle` | AOP 动态代理：Castle DynamicProxy 集成，服务拦截器注册 |
-| `Logging` | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
-| `Serialization` | 序列化：System.Text.Json + Newtonsoft.Json 双引擎、策略管理 |
-| `Http` | HTTP 客户端：Polly 韧性策略（重试/熔断）、请求管道 |
-| `Localization.Abstractions` | 国际化抽象：`IStringLocalizer` 抽象层 |
-| `Localization` | 国际化：多语言资源文件、动态文化切换 |
-| `MultiTenancy.Abstractions` | 多租户抽象：租户上下文接口、解析链 |
-| `MultiTenancy` | 多租户：租户解析中间件、数据隔离、租户配置管理、生命周期 |
-| `Settings` | 设置管理：设置定义提供者模式、动态配置、多来源（租户级别） |
-| `Validation.Abstractions` | 校验抽象：校验错误契约 `IHasValidationErrors` 与 `XiHanValidationException` |
-| `Validation` | 数据校验集成入口：当前为薄占位，仅模块类 |
-| `ObjectMapping` | 对象映射：Mapster 集成 |
-| `ObjectStorage` | 对象存储：本地磁盘 / 阿里云 OSS / MinIO / 腾讯云 COS 四种后端的统一抽象 |
-| `VirtualFileSystem` | 虚拟文件系统：本地物理目录 + 程序集嵌入资源按优先级统一挂载、文件监控、版本快照与回滚（不含云存储适配，那是 `ObjectStorage`） |
-| `Messaging` | 消息路由抽象：消息信封 → 按通道路由 → 交给发送器投递，不含具体通道实现 |
-| `DistributedIds` | 分布式 ID：Snowflake / NanoId / SequentialGuid 生成器 + Sqids 短码编码，零第三方依赖 |
-| `Threading` | 并发上下文：`CancellationToken` 统一获取与临时覆盖、基于 `AsyncLocal` 的环境数据上下文与可嵌套环境作用域 |
-| `Timing` | 时间策略：时区管理、时间抽象 |
-| `Templating` | 模板渲染：Scriban 引擎、模板注册表 |
-| `Tasks` | 定时任务与后台作业：调度引擎、后台服务、多租户感知 |
-| `Traffic` | 流量治理：灰度路由（规则引擎 + Header / IP / 百分比 / 租户 / 用户 匹配器）；限流与熔断仅提供策略接口 |
-| `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
-| `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
-| `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |
-| `Bot` | 机器人核心：多渠道消息分发管道、策略与模板，渠道能力由以下子包提供 |
-| `Bot.Email` | 机器人邮件渠道：基于 MailKit |
-| `Bot.Sms` | 机器人短信渠道 |
-| `Bot.Telegram` | 机器人 Telegram 渠道：基于 Telegram.Bot |
-| `Bot.DingTalk` | 机器人钉钉渠道 |
-| `Bot.Lark` | 机器人飞书渠道 |
-| `Bot.WeCom` | 机器人企业微信渠道 |
-| `Script` | C# 脚本引擎：Roslyn 内存编译、编译缓存、执行超时、编译后静态安全校验（非进程级沙箱，仅支持 C#） |
-| `SearchEngines.Abstractions` | 搜索引擎抽象：索引、文档、检索请求与结果的统一契约，零第三方依赖 |
-| `SearchEngines` | 搜索引擎进程内兜底实现：索引管理、关键字匹配、过滤与排序，不做分词与相关度模型 |
-| `SearchEngines.Elasticsearch` | 搜索引擎契约的 Elasticsearch 实现 |
-| `Observability` | 可观测性：健康检查、性能计数器、指标采集、OpenTelemetry 链路 |
-| `DevTools` | 开发工具：开发期辅助与调试能力 |
+| `Data` | SqlSugar data access: repositories, unit-of-work integration, multi-tenant data isolation, per-module databases, automatic table creation on startup |
+| `Uow` | Unit of work: AOP interceptors manage transaction boundaries |
+| `Caching` | Hybrid caching: HybridCache (memory + Redis), caching interceptor, tenant awareness |
+| `Authentication` | Authentication: JWT / OAuth2 / OIDC, token factory, MFA, SSO |
+| `Authorization` | Authorization: RBAC, policy-based, claims-based |
+| `Security` | Security and cryptography: BouncyCastle primitives, key management, password hashing, data protection |
+| `Auditing` | Audit logging: collection pipeline for operation / access / login / exception / API / entity-change logs, async queue, masking and write contracts |
+| `EventBus.Abstractions` | Event bus abstractions: publish/subscribe interfaces, handler pipeline |
+| `EventBus` | Event bus: local and distributed events, outbox pattern, event store (built-in implementation; brokers come from the sub-packages below) |
+| `EventBus.RabbitMQ` | RabbitMQ provider for the distributed event bus |
+| `EventBus.Kafka` | Kafka provider for the distributed event bus |
+| `EventBus.Redis` | Redis (Streams) provider for the distributed event bus |
+| `Workflow.Abstractions` | Workflow abstractions: definition model, activity contracts, runtime instance and bookmark models, storage ports, human-task contracts; no execution logic |
+| `Workflow` | Workflow engine: graph execution engine, built-in activity set, human tasks (approvals), expression evaluation, timer scheduling, in-memory store by default |
+| `Castle` | AOP dynamic proxy: Castle DynamicProxy integration and interceptor registration |
+| `Logging` | Structured logging: Serilog integration, file/console sinks, async writes |
+| `Serialization` | Serialization: dual engines (System.Text.Json + Newtonsoft.Json) with policy management |
+| `Http` | HTTP client: Polly resilience (retry / circuit breaker), request pipeline |
+| `Localization.Abstractions` | Localization abstractions: the `IStringLocalizer` layer |
+| `Localization` | Localization: multi-language resource files, runtime culture switching |
+| `MultiTenancy.Abstractions` | Multi-tenancy abstractions: tenant context interfaces, resolution chain |
+| `MultiTenancy` | Multi-tenancy: tenant resolution middleware, data isolation, tenant configuration, lifecycle |
+| `Settings` | Settings management: definition-provider pattern, dynamic configuration, multiple sources (including tenant level) |
+| `Validation.Abstractions` | Validation abstractions: the `IHasValidationErrors` contract and `XiHanValidationException` |
+| `Validation` | Validation integration entry point: currently a thin placeholder, module class only |
+| `ObjectMapping` | Object mapping: Mapster integration |
+| `ObjectStorage` | Object storage: one abstraction over local disk, Aliyun OSS, MinIO and Tencent COS |
+| `VirtualFileSystem` | Virtual file system: physical directories and embedded assembly resources mounted by priority, file watching, in-memory version snapshots and rollback (no cloud storage — that is `ObjectStorage`) |
+| `Messaging` | Message routing abstraction: envelope → channel routing → hand off to a sender; no channel implementations |
+| `DistributedIds` | Distributed IDs: Snowflake / NanoId / SequentialGuid generators plus Sqids short-code encoding, zero third-party dependencies |
+| `Threading` | Concurrency context: unified `CancellationToken` access with temporary overrides, `AsyncLocal`-based ambient data context and nestable ambient scopes |
+| `Timing` | Time policy: time zone management, time abstraction |
+| `Templating` | Template rendering: Scriban engine, template registry |
+| `Tasks` | Scheduled tasks and background jobs: scheduling engine, background services, tenant awareness |
+| `Traffic` | Traffic governance: gray routing (rule engine with header / IP / percentage / tenant / user matchers); rate limiting and circuit breaking are policy interfaces only |
+| `Upgrade` | Upgrade engine: version store, migration execution, distributed lock, automatic check on startup |
+| `AI.Abstractions` | AI abstractions: agents, chat, configuration, guardrails, prompts, RAG, skills |
+| `AI` | AI integration: Microsoft.Extensions.AI model abstraction, Microsoft.Agents.AI agent framework, MCP protocol support |
+| `Bot` | Bot core: multi-channel dispatch pipeline, policies and templates; channels come from the sub-packages below |
+| `Bot.Email` | Bot email channel, built on MailKit |
+| `Bot.Sms` | Bot SMS channel |
+| `Bot.Telegram` | Bot Telegram channel, built on Telegram.Bot |
+| `Bot.DingTalk` | Bot DingTalk channel |
+| `Bot.Lark` | Bot Lark channel |
+| `Bot.WeCom` | Bot WeCom channel |
+| `Script` | C# scripting engine: Roslyn in-memory compilation, compilation cache, execution timeout, post-compile static safety checks (not a process-level sandbox; C# only) |
+| `SearchEngines.Abstractions` | Search abstractions: one contract for indexes, documents, queries and results; zero third-party dependencies |
+| `SearchEngines` | In-process fallback search: index management, keyword matching, filtering and sorting; no tokenization or relevance model |
+| `SearchEngines.Elasticsearch` | Elasticsearch implementation of the search contracts |
+| `Observability` | Observability: health checks, performance counters, metrics, OpenTelemetry tracing |
+| `DevTools` | Development tooling: helpers and debugging aids for development time |
 
-### Web 层
+### Web Layer
 
-| 模块 | 说明 |
+| Module | Description |
 | --- | --- |
-| `Web.Core` | Web 基础设施：托管环境、中间件管道、CORS、IP 地理定位（ip2region）、UA 解析 |
-| `Web.Api` | 动态 API：自动 API 发现与注册、OpenAPI 安全、完整中间件管道（TraceId → 请求上下文 → 异常日志 → 路由 → CORS → 认证 → 租户解析 → 授权 → 控制器） |
-| `Web.Docs` | API 文档：Scalar UI + Swagger UI、动态 API 分组发现 |
-| `Web.Gateway` | API 网关：灰度路由、请求追踪、网关级异常处理；限流与熔断为配置开关 |
-| `Web.Grpc` | gRPC 服务集成 |
-| `Web.Mcp` | MCP Server：AI 技能经 HTTP 传输暴露为 MCP tools、应用管理 key 鉴权 |
-| `Web.RealTime` | 实时通信：SignalR 集成、JSON 序列化 |
+| `Web.Core` | Web infrastructure: hosting environment, middleware pipeline, CORS, IP geolocation (ip2region), user-agent parsing |
+| `Web.Api` | Dynamic APIs: automatic discovery and registration, OpenAPI security, full middleware pipeline (TraceId → request context → exception logging → routing → CORS → authentication → tenant resolution → authorization → controllers) |
+| `Web.Docs` | API documentation: Scalar UI + Swagger UI, dynamic API group discovery |
+| `Web.Gateway` | API gateway: gray routing, request tracing, gateway-level exception handling; rate limiting and circuit breaking are configuration switches |
+| `Web.Grpc` | gRPC service integration |
+| `Web.Mcp` | MCP server: AI skills exposed as MCP tools over HTTP, authenticated with an application management key |
+| `Web.RealTime` | Realtime communication: SignalR integration, JSON serialization |
 
-## 模块依赖关系
+## Module Dependencies
 
-核心依赖链（从底层到上层）：
+The core dependency chain, bottom-up:
 
 ```text
-Utils (零第三方依赖)
-  └── Metadata (零第三方依赖)
+Utils (zero third-party deps)
+  └── Metadata (zero third-party deps)
         └── Core
               ├── Serialization
               ├── Security ──→ Authentication ──→ Authorization
@@ -173,51 +175,51 @@ Utils (零第三方依赖)
                     └── Web.RealTime (SignalR)
 ```
 
-## 项目结构
+## Repository Layout
 
 ```text
 XiHan.Framework/
 ├── framework/
-│   ├── XiHan.Framework.slnx              # 解决方案文件
-│   ├── src/                               # 源码（66 个模块）
-│   │   ├── XiHan.Framework.Utils/         #   公共工具
-│   │   ├── XiHan.Framework.Metadata/      #   框架元数据
-│   │   ├── XiHan.Framework.Core/          #   模块化核心
-│   │   ├── XiHan.Framework.Domain.Shared/ #   领域共享
-│   │   ├── XiHan.Framework.Domain/        #   领域层
-│   │   ├── XiHan.Framework.Application.Contracts/ # 应用契约
-│   │   ├── XiHan.Framework.Application/   #   应用层
-│   │   ├── XiHan.Framework.Data/          #   数据访问
-│   │   ├── XiHan.Framework.Web.Core/      #   Web 核心
-│   │   ├── XiHan.Framework.Web.Api/       #   动态 API
-│   │   └── ...                            #   其他模块
-│   ├── test/                              # 测试（src 下每个项目一一对应，共 66 个单测工程）
-│   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
-│   │   ├── XiHan.Framework.Core.Tests/    #   内核测试
-│   │   └── ...                            #   其余按 <项目名>.Tests 一一对应
-│   ├── sample/                            # 可运行示例宿主（非测试工程）
-│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（动态 API + 文档站）
-│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主
-│   ├── tool/                              # 工具
-│   │   └── Region/                        #   代码规范化工具
-│   ├── props/                             # 共享 MSBuild 属性
-│   ├── scripts/                           # NuGet 发布与运维脚本
-│   └── nupkgs/                            # NuGet 包输出
-├── docs/                                  # 文档站源码（VitePress，部署到 framework.docs.xihanfun.com）
-└── assets/                                # README 资源文件
+│   ├── XiHan.Framework.slnx               # solution file
+│   ├── src/                               # sources (66 modules)
+│   │   ├── XiHan.Framework.Utils/         #   utilities
+│   │   ├── XiHan.Framework.Metadata/      #   framework metadata
+│   │   ├── XiHan.Framework.Core/          #   modularity core
+│   │   ├── XiHan.Framework.Domain.Shared/ #   shared domain
+│   │   ├── XiHan.Framework.Domain/        #   domain layer
+│   │   ├── XiHan.Framework.Application.Contracts/ # application contracts
+│   │   ├── XiHan.Framework.Application/   #   application layer
+│   │   ├── XiHan.Framework.Data/          #   data access
+│   │   ├── XiHan.Framework.Web.Core/      #   web core
+│   │   ├── XiHan.Framework.Web.Api/       #   dynamic APIs
+│   │   └── ...                            #   other modules
+│   ├── test/                              # tests (one per src project, 66 unit-test projects)
+│   │   ├── XiHan.Framework.Utils.Tests/   #   utilities tests
+│   │   ├── XiHan.Framework.Core.Tests/    #   core tests
+│   │   └── ...                            #   the rest follow <Project>.Tests
+│   ├── sample/                            # runnable sample hosts (not test projects)
+│   │   ├── XiHan.Framework.Web.Host/      #   web sample host (dynamic APIs + docs)
+│   │   └── XiHan.Framework.Integration.Host/ # module composition sample host
+│   ├── tool/                              # tooling
+│   │   └── Region/                        #   code normalization tool
+│   ├── props/                             # shared MSBuild properties
+│   ├── scripts/                           # NuGet publishing and ops scripts
+│   └── nupkgs/                            # NuGet package output
+├── docs/                                  # documentation site (VitePress, framework.docs.xihanfun.com)
+└── assets/                                # README assets
 ```
 
-## 本地构建与测试
+## Building and Testing Locally
 
-> 需要 .NET SDK **10.0.1xx** 功能带（`global.json` 以 `rollForward: latestPatch` 锁定）。装的是 10.0.4xx 会直接报 SDK not found、整仓无法构建。
+> Requires the .NET SDK **10.0.1xx** feature band (`global.json` pins it with `rollForward: latestPatch`). With 10.0.4xx installed you will get "SDK not found" and nothing builds.
 
 ```bash
-# 还原与构建
+# Restore and build
 dotnet restore framework/XiHan.Framework.slnx
 dotnet build framework/XiHan.Framework.slnx --configuration Release
 
-# 全量测试（MTP 模式）
+# Full test run (MTP mode)
 dotnet test --solution framework/XiHan.Framework.slnx --configuration Release
 ```
 
-CI 会在此基础上采集覆盖率并跑覆盖率门禁，详见 [.github/workflows/ci.yml](../.github/workflows/ci.yml)。
+CI additionally collects coverage and enforces a coverage gate — see [.github/workflows/ci.yml](../.github/workflows/ci.yml).

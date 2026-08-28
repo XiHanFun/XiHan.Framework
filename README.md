@@ -1,11 +1,13 @@
-﻿<div align="center">
+<div align="center">
 <img src="./assets/banner.png" alt="XiHan.Framework" />
 
 <h1>XiHan.Framework</h1>
 
-<p><b>快速、轻量、高效、用心的 .NET 模块化开发框架</b></p>
+<p><b>A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET</b></p>
 
-<p>基于 .NET 10 构建 · 66 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+<p>Built on .NET 10 · 66 modular components · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
+
+<p><b>English</b> | <a href="./README_cn.md">简体中文</a></p>
 
 <p>
   <a href="https://github.com/XiHanFun/XiHan.Framework/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/XiHanFun/XiHan.Framework?style=flat-square&logo=github&label=Stars&color=1f6feb" /></a>
@@ -42,76 +44,76 @@
 
 </div>
 
-## 概述
+## Overview
 
-XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后端分离的 ASP.NET Core 应用设计。框架优先使用 .NET 原生功能，减少第三方依赖，强调模块清晰、依赖可控、扩展可维护。通过 `[DependsOn]` 属性声明模块依赖，自动拓扑排序加载，以应用服务与动态 API 约定统一接口暴露方式。
+XiHan.Framework is a modular backend framework for enterprise applications, designed for ASP.NET Core services in a decoupled frontend/backend setup. It prefers what .NET already provides over third-party libraries, and puts the emphasis on clear module boundaries, controlled dependencies and maintainable extension points. Modules declare their dependencies with the `[DependsOn]` attribute and are loaded in topological order; application services plus dynamic API conventions give every module the same way to expose its endpoints.
 
-## 文档
+## Documentation
 
-| 去处 | 内容 |
+| Destination | Contents |
 | --- | --- |
-| [文档站](https://framework.docs.xihanfun.com) | 完整指南与 66 个包的逐包 API 文档 |
-| [框架工程说明](./framework/README.md) | 分层架构、模块清单、目录结构、依赖关系 |
-| [更新日志](https://framework.docs.xihanfun.com/changelog) | 各版本变更与升级须知 |
-| [贡献指南](./CONTRIBUTING.md) | 分支约定、提交规范、本地构建与测试 |
+| [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs for all 66 packages |
+| [Framework engineering notes](./framework/README.md) | Layered architecture, module catalog, directory layout, dependencies |
+| [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
+| [Contributing guide](./CONTRIBUTING.md) | Branch conventions, commit rules, local build and test |
 
-## 设计原则
+## Design Principles
 
-- **分层架构** - 遵循清晰的分层原则，避免循环依赖
-- **依赖倒置** - 高层模块不依赖低层模块，都依赖抽象接口
-- **单一职责** - 每个包只负责一个特定的功能领域
-- **开闭原则** - 对扩展开放，对修改关闭，通过接口和抽象类支持自定义
-- **优先 .NET 10** - 使用内置功能（DI、日志、序列化），仅在必要时引入第三方库
-- **性能优化** - 利用 .NET 10 高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy / Newtonsoft.Json 暂不兼容裁剪）
+- **Layered architecture** — follow clear layering, no circular dependencies
+- **Dependency inversion** — higher layers do not depend on lower ones; both depend on abstractions
+- **Single responsibility** — each package owns exactly one functional area
+- **Open/closed** — open for extension, closed for modification, customizable through interfaces and base classes
+- **.NET 10 first** — use the built-ins (DI, logging, serialization) and reach for third-party libraries only when necessary
+- **Performance** — built on .NET 10's high-performance features; AOT is out of scope (SqlSugar / Castle DynamicProxy / Newtonsoft.Json are not trimming-compatible yet)
 
-## 技术栈
+## Tech Stack
 
-| 类别 | 技术 |
+| Category | Technology |
 | --- | --- |
-| 运行时 | .NET |
-| 语言 | C# |
+| Runtime | .NET |
+| Language | C# |
 | ORM | SqlSugarCore |
-| 日志 | Serilog.AspNetCore |
-| 缓存 | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis |
+| Logging | Serilog.AspNetCore |
+| Caching | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis |
 | AOP | Castle.Core (DynamicProxy) |
-| 加密 | BouncyCastle.Cryptography |
-| 序列化 | System.Text.Json（内置）+ Newtonsoft.Json |
-| 模板引擎 | Scriban |
+| Cryptography | BouncyCastle.Cryptography |
+| Serialization | System.Text.Json (built-in) + Newtonsoft.Json |
+| Templating | Scriban |
 | AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP |
-| HTTP 韧性 | Microsoft.Extensions.Http.Polly |
+| HTTP resilience | Microsoft.Extensions.Http.Polly |
 | gRPC | Grpc.AspNetCore |
-| 实时通信 | ASP.NET Core SignalR |
-| API 文档 | Scalar.AspNetCore + Swashbuckle.AspNetCore |
-| IP 定位 | IP2Region.Net |
-| 消息通知 | MailKit + Telegram.Bot |
-| 搜索 | Elastic.Clients.Elasticsearch |
-| 测试 | xunit.v3 + Microsoft.Testing.Platform（含 CodeCoverage 扩展） |
+| Realtime | ASP.NET Core SignalR |
+| API docs | Scalar.AspNetCore + Swashbuckle.AspNetCore |
+| IP geolocation | IP2Region.Net |
+| Notifications | MailKit + Telegram.Bot |
+| Search | Elastic.Clients.Elasticsearch |
+| Testing | xunit.v3 + Microsoft.Testing.Platform (with the CodeCoverage extension) |
 
-各依赖的具体版本以 `framework/src` 下各工程的 `PackageReference` 为准。
+Exact versions live in the `PackageReference` entries under `framework/src`.
 
-## 快速开始
+## Getting Started
 
-### 安装
+### Install
 
-通过 NuGet 安装所需模块：
+Install the modules you need from NuGet:
 
 ```bash
-# 安装核心模块
+# Core module
 dotnet add package XiHan.Framework.Core
 
-# 安装 Web API 模块（包含完整中间件管道）
+# Web API module (includes the full middleware pipeline)
 dotnet add package XiHan.Framework.Web.Api
 
-# 安装 API 文档模块
+# API documentation module
 dotnet add package XiHan.Framework.Web.Docs
 
-# 安装数据访问模块
+# Data access module
 dotnet add package XiHan.Framework.Data
 ```
 
-### 定义模块
+### Define a Module
 
-每个模块继承 `XiHanModule`，通过 `[DependsOn]` 声明依赖：
+Every module derives from `XiHanModule` and declares its dependencies with `[DependsOn]`:
 
 ```csharp
 using XiHan.Framework.Core.Modularity;
@@ -126,19 +128,19 @@ public class MyAppModule : XiHanModule
 {
     public override Task ConfigureServicesAsync(ServiceConfigurationContext context)
     {
-        // 注册服务
+        // Register services
         return Task.CompletedTask;
     }
 
     public override Task OnApplicationInitializationAsync(ApplicationInitializationContext context)
     {
-        // 应用初始化
+        // Initialize the application
         return Task.CompletedTask;
     }
 }
 ```
 
-### 启动应用
+### Bootstrap the Application
 
 ```csharp
 using XiHan.Framework.Core.Extensions.DependencyInjection;
@@ -152,12 +154,12 @@ await app.InitializeApplicationAsync();
 await app.RunAsync();
 ```
 
-### 模块生命周期
+### Module Lifecycle
 
-每个模块提供 7 个生命周期钩子，按拓扑排序顺序执行：
+Each module exposes 7 lifecycle hooks, executed in topological order:
 
 ```text
-服务注册阶段                          应用初始化阶段
+Service registration                  Application initialization
 ┌──────────────────────┐            ┌────────────────────────────────┐
 │ PreConfigureServices │            │ OnPreApplicationInitialization │
 │ ConfigureServices    │     →      │ OnApplicationInitialization    │
@@ -169,70 +171,70 @@ await app.RunAsync();
                                     └────────────────────────────────┘
 ```
 
-## NuGet 包
+## NuGet Packages
 
-所有模块均发布至 [NuGet.org](https://www.nuget.org/packages?q=XiHan.Framework)，包名与项目名一致：
+Every module is published to [NuGet.org](https://www.nuget.org/packages?q=XiHan.Framework); package names match project names:
 
 ```bash
-# 搜索所有 XiHan.Framework 包
+# Search all XiHan.Framework packages
 dotnet package search XiHan.Framework
 ```
 
-| 常用包 | 用途 |
+| Common package | Purpose |
 | --- | --- |
-| `XiHan.Framework.Core` | 模块化核心（必装） |
-| `XiHan.Framework.Web.Api` | Web API 全套中间件 |
-| `XiHan.Framework.Web.Docs` | Scalar + Swagger 文档 |
-| `XiHan.Framework.Data` | SqlSugar 数据访问 |
+| `XiHan.Framework.Core` | Modularity core (required) |
+| `XiHan.Framework.Web.Api` | Full Web API middleware pipeline |
+| `XiHan.Framework.Web.Docs` | Scalar + Swagger documentation |
+| `XiHan.Framework.Data` | SqlSugar data access |
 | `XiHan.Framework.Caching` | HybridCache + Redis |
-| `XiHan.Framework.Authentication` | JWT / OAuth2 认证 |
-| `XiHan.Framework.Authorization` | RBAC 授权 |
-| `XiHan.Framework.EventBus` | 事件总线 + Outbox |
+| `XiHan.Framework.Authentication` | JWT / OAuth2 authentication |
+| `XiHan.Framework.Authorization` | RBAC authorization |
+| `XiHan.Framework.EventBus` | Event bus + outbox |
 | `XiHan.Framework.AI` | Microsoft.Extensions.AI + MCP |
 
-完整模块清单见[框架工程说明](./framework/README.md#模块清单)。
+The full module catalog lives in the [framework engineering notes](./framework/README.md#module-catalog).
 
-## 环境要求
+## Requirements
 
-| 依赖 | 版本 |
+| Dependency | Version |
 | --- | --- |
 | .NET SDK | 10.0+ |
 | C# | Latest |
-| 支持平台 | Windows / Linux / macOS |
+| Platforms | Windows / Linux / macOS |
 
-## 项目生态
+## Ecosystem
 
-- [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) - 快速、轻量、高效、用心的 .NET 现代模块化开发框架
-- [XiHan.UI](https://github.com/XiHanFun/XiHan.UI) - 快速、轻量、高效、用心的框架无关 Headless UI 组件库
-- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - 基于 .Net（XiHan.Framework） + TS（XiHan.UI） 的超高颜值企业通用中后台内核
+- [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) - A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET
+- [XiHan.UI](https://github.com/XiHanFun/XiHan.UI) - A fast, lightweight, efficient and thoughtfully built framework-agnostic headless UI component library
+- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - A beautifully crafted general-purpose admin kernel built on .NET (XiHan.Framework) and TypeScript (XiHan.UI)
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request，详见[贡献指南](./CONTRIBUTING.md)。
+Issues and pull requests are welcome — see the [contributing guide](./CONTRIBUTING.md).
 
-## 诚挚致谢
+## Acknowledgements
 
-排名不分先后。
+In no particular order.
 
-| 项目                                       | 致谢                                   |
-| ------------------------------------------ | -------------------------------------- |
-| [Abp](https://github.com/abpframework/abp) | 作为部分架构和逻辑灵感来源（启蒙项目） |
-| 其他第三方依赖                             | 作为项目功能丰富与拓展的基石           |
-
-
-## 支持&赞助
-
-如果此项目对你的开发有助益，也欢迎请作者一杯咖啡。
-
-官方赞助页 https://docs.xihanfun.com/cosmos/sponsor
+| Project                                    | Thanks for                                        |
+| ------------------------------------------ | ------------------------------------------------- |
+| [Abp](https://github.com/abpframework/abp) | Inspiring parts of the architecture and design    |
+| Other third-party dependencies             | Being the foundation this project is built upon   |
 
 
-## 版权&授权
+## Support & Sponsorship
+
+If this project helps your work, feel free to buy the author a coffee.
+
+Official sponsorship page: https://docs.xihanfun.com/cosmos/sponsor
+
+
+## License
 
 Copyright (c) 2021-Present XiHanFun and contributors.
 
-本项目采用 MIT 授权，详见 [License](./LICENSE)
+Released under the MIT License — see [License](./LICENSE).
 
-XiHan.Framework Logo、XiHan.Framework名称归作者所有，第三方依赖和第三方服务分别遵循其各自授权与服务条款。
+The XiHan.Framework logo and name belong to the author; third-party dependencies and services are governed by their own licenses and terms.
 
-项目仅供学习参考，作者不承担任何软件的使用风险。
+This project is provided for study and reference; the author assumes no liability for any use of the software.
