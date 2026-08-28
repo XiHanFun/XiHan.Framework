@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.DependencyInjection;
-using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Tests.Fakes;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;

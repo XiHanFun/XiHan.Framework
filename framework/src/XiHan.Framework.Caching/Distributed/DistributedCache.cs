@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using StackExchange.Redis;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Caching.Attributes;
 using XiHan.Framework.Caching.Distributed.Abstracts;

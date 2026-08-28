@@ -1,8 +1,6 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
-
 namespace XiHan.Framework.EventBus.Abstractions.Tests;
 
 /// <summary>

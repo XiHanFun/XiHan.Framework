@@ -5,7 +5,6 @@ using System.Collections;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using XiHan.Framework.Web.Docs;
 
 namespace XiHan.Framework.Web.Docs.Tests.Swagger;
 

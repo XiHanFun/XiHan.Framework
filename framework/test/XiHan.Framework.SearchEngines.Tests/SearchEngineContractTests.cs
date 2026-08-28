@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.InMemory;
 using XiHan.Framework.SearchEngines.Indexing;
 using XiHan.Framework.SearchEngines.Querying;
 

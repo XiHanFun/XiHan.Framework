@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
