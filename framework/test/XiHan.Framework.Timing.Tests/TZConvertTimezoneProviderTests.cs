@@ -43,7 +43,7 @@ public class TZConvertTimezoneProviderTests
 
         var names = provider.GetWindowsTimezones().Select(item => item.Name).ToList();
 
-        Assert.Equal(names.OrderBy(name => name).ToList(), names);
+        Assert.Equal([.. names.OrderBy(name => name)], names);
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class TZConvertTimezoneProviderTests
 
         var names = provider.GetIanaTimezones().Select(item => item.Name).ToList();
 
-        Assert.Equal(names.OrderBy(name => name).ToList(), names);
+        Assert.Equal([.. names.OrderBy(name => name)], names);
     }
 
     /// <summary>

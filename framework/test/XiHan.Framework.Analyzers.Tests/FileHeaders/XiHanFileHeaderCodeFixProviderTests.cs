@@ -1,12 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
+using System.Reflection;
 using XiHan.Framework.Analyzers.FileHeaders;
 
-namespace XiHan.Framework.Analyzers.Tests;
+namespace XiHan.Framework.Analyzers.Tests.FileHeaders;
 
 /// <summary>
 /// 曦寒标准版权文件头代码修复器测试

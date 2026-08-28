@@ -27,7 +27,7 @@ public class ModuleLoaderTests
     {
         var services = CreateServices();
 
-        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), new PlugInSourceList());
+        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), []);
 
         var order = modules.Select(m => m.Type).ToList();
         Assert.Equal(3, order.Count);
@@ -58,7 +58,7 @@ public class ModuleLoaderTests
     {
         var services = CreateServices();
 
-        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), new PlugInSourceList());
+        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), []);
 
         Assert.Single(modules, m => m.Type == typeof(MlLeafModule));
     }
@@ -71,7 +71,7 @@ public class ModuleLoaderTests
     {
         var services = CreateServices();
 
-        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), new PlugInSourceList());
+        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), []);
 
         var middle = modules.Single(m => m.Type == typeof(MlMiddleModule));
         Assert.Equal(typeof(MlLeafModule), Assert.Single(middle.Dependencies).Type);
@@ -88,7 +88,7 @@ public class ModuleLoaderTests
     {
         var services = CreateServices();
 
-        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), new PlugInSourceList());
+        var modules = new ModuleLoader().LoadModules(services, typeof(MlStartupModule), []);
 
         foreach (var module in modules)
         {
@@ -139,7 +139,7 @@ public class ModuleLoaderTests
         var services = CreateServices();
 
         var exception = Assert.Throws<ArgumentException>(() =>
-            new ModuleLoader().LoadModules(services, typeof(MlCycleAModule), new PlugInSourceList()));
+            new ModuleLoader().LoadModules(services, typeof(MlCycleAModule), []));
 
         Assert.Contains("循环依赖", exception.Message);
     }
@@ -153,7 +153,7 @@ public class ModuleLoaderTests
         var services = CreateServices();
 
         var exception = Assert.Throws<ArgumentException>(() =>
-            new ModuleLoader().LoadModules(services, typeof(ModuleLoaderTests), new PlugInSourceList()));
+            new ModuleLoader().LoadModules(services, typeof(ModuleLoaderTests), []));
 
         Assert.Contains("不是曦寒模块", exception.Message);
     }
@@ -165,7 +165,7 @@ public class ModuleLoaderTests
     public void LoadModules_WhenServicesNull_Throws()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new ModuleLoader().LoadModules(null!, typeof(MlLeafModule), new PlugInSourceList()));
+            new ModuleLoader().LoadModules(null!, typeof(MlLeafModule), []));
     }
 
     /// <summary>
@@ -177,7 +177,7 @@ public class ModuleLoaderTests
         var services = CreateServices();
 
         Assert.Throws<ArgumentNullException>(() =>
-            new ModuleLoader().LoadModules(services, null!, new PlugInSourceList()));
+            new ModuleLoader().LoadModules(services, null!, []));
     }
 
     /// <summary>

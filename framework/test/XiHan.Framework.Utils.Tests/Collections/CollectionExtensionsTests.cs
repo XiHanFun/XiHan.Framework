@@ -156,9 +156,9 @@ public class CollectionExtensionsTests
     {
         var source = new List<int> { 1, 2 };
 
-        var added = source.AddIfNotContains(new[] { 2, 3, 4 });
+        var added = source.AddIfNotContains([2, 3, 4]);
 
-        Assert.Equal(new[] { 3, 4 }, added);
+        Assert.Equal([3, 4], added);
         Assert.Equal(new[] { 1, 2, 3, 4 }, source);
     }
 
@@ -170,7 +170,7 @@ public class CollectionExtensionsTests
     {
         var source = new List<int> { 1 };
 
-        var added = source.AddIfNotContains(Array.Empty<int>());
+        var added = source.AddIfNotContains([]);
 
         Assert.Empty(added);
         Assert.Equal(new[] { 1 }, source);
@@ -212,7 +212,7 @@ public class CollectionExtensionsTests
 
         var removed = source.RemoveAllWhere(x => x % 2 == 0);
 
-        Assert.Equal(new[] { 2, 4 }, removed);
+        Assert.Equal([2, 4], removed);
         Assert.Equal(new[] { 1, 3, 5 }, source);
     }
 
@@ -260,7 +260,7 @@ public class CollectionExtensionsTests
     {
         var source = new List<int> { 1, 2, 2, 3 };
 
-        source.RemoveAll(new[] { 2, 99 });
+        source.RemoveAll([2, 99]);
 
         Assert.Equal(new[] { 1, 2, 3 }, source);
     }
@@ -273,7 +273,7 @@ public class CollectionExtensionsTests
     {
         var source = new List<int> { 1, 2 };
 
-        source.RemoveAll(Array.Empty<int>());
+        source.RemoveAll([]);
 
         Assert.Equal(new[] { 1, 2 }, source);
     }
@@ -284,6 +284,6 @@ public class CollectionExtensionsTests
     [Fact]
     public void RemoveAll_WhenSourceIsNull_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => FrameworkCollectionExtensions.RemoveAll<int>(null!, new[] { 1 }));
+        Assert.Throws<ArgumentNullException>(() => FrameworkCollectionExtensions.RemoveAll<int>(null!, [1]));
     }
 }

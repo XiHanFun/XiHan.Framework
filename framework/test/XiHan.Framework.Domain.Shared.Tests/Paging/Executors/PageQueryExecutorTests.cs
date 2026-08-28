@@ -22,9 +22,7 @@ public class PageQueryExecutorTests
     /// </summary>
     private static List<QuerySampleEntity> BuildSamples()
     {
-        return Enumerable.Range(1, 25)
-            .Select(i => new QuerySampleEntity { Name = $"user-{i:D2}", Title = "user" })
-            .ToList();
+        return [.. Enumerable.Range(1, 25).Select(i => new QuerySampleEntity { Name = $"user-{i:D2}", Title = "user" })];
     }
 
     /// <summary>

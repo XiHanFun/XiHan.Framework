@@ -1,10 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Globalization;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Globalization;
+using System.Reflection;
 using XiHan.Framework.Analyzers.FileHeaders;
 
 namespace XiHan.Framework.Analyzers.Tests;

@@ -2,10 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Bot.Models;
-using XiHan.Framework.Http.Extensions;
-using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Bot.WeCom.Models;
 using XiHan.Framework.Bot.WeCom.Options;
+using XiHan.Framework.Http.Extensions;
+using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Bot.WeCom.Messaging;
 

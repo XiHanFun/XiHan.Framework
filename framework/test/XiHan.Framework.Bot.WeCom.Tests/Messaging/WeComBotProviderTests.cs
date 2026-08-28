@@ -113,7 +113,7 @@ public class WeComBotProviderTests
         var store = new FakeWeComConfigStore(null);
         var provider = new WeComBotProvider(store);
         var message = new BotMessage { Content = "x" };
-        var context = new BotContext(message, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(message, [], cts.Token);
 
         await provider.SendAsync(message, context);
 
@@ -406,12 +406,12 @@ public class WeComBotProviderTests
 
     private static BotContext CreateContext(BotMessage message)
     {
-        return new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        return new BotContext(message, [], TestContext.Current.CancellationToken);
     }
 
     private static string[] ToStringArray(JsonNode? node)
     {
         Assert.NotNull(node);
-        return node!.AsArray().Select(item => item!.GetValue<string>()).ToArray();
+        return [.. node!.AsArray().Select(item => item!.GetValue<string>())];
     }
 }

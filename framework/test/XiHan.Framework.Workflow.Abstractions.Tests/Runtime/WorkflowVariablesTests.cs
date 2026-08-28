@@ -65,7 +65,7 @@ public class WorkflowVariablesTests
     [Fact]
     public void Names_ReflectsCurrentKeys()
     {
-        var variables = new WorkflowVariables(new Dictionary<string, object?>());
+        var variables = new WorkflowVariables([]);
 
         variables.Set("a", 1);
         variables.Set("b", 2);
@@ -93,7 +93,7 @@ public class WorkflowVariablesTests
     [Fact]
     public void Get_WithMissingName_ReturnsNull()
     {
-        var variables = new WorkflowVariables(new Dictionary<string, object?>());
+        var variables = new WorkflowVariables([]);
 
         Assert.Null(variables.Get("missing"));
     }
@@ -139,7 +139,7 @@ public class WorkflowVariablesTests
     [Fact]
     public void GetOfT_WithMissingName_ReturnsDefault()
     {
-        var variables = new WorkflowVariables(new Dictionary<string, object?>());
+        var variables = new WorkflowVariables([]);
 
         Assert.Equal(0, variables.Get<int>("missing"));
         Assert.Null(variables.Get<string>("missing"));
@@ -164,7 +164,7 @@ public class WorkflowVariablesTests
     [Fact]
     public void TryGet_WithMissingName_ReturnsFalseAndDefault()
     {
-        var variables = new WorkflowVariables(new Dictionary<string, object?>());
+        var variables = new WorkflowVariables([]);
 
         Assert.False(variables.TryGet<string>("missing", out var text));
         Assert.Null(text);
@@ -202,7 +202,7 @@ public class WorkflowVariablesTests
     {
         var variables = new WorkflowVariables(new Dictionary<string, object?> { ["a"] = 1 });
 
-        variables.Merge(Array.Empty<KeyValuePair<string, object?>>());
+        variables.Merge([]);
 
         Assert.Single(variables.Names);
         Assert.Equal(1, variables.Get("a"));

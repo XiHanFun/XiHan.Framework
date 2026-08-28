@@ -43,7 +43,7 @@ public class BusinessRuleValidationResultTests
     [Fact]
     public void Failure_WithMultipleErrors_KeepsOrder()
     {
-        var result = BusinessRuleValidationResult.Failure(new[] { "一", "二", "三" });
+        var result = BusinessRuleValidationResult.Failure(["一", "二", "三"]);
 
         Assert.False(result.IsValid);
         Assert.Equal(3, result.Errors.Count);
@@ -61,7 +61,7 @@ public class BusinessRuleValidationResultTests
     [Fact]
     public void Failure_WithEmptyErrors_IsStillInvalid()
     {
-        var result = BusinessRuleValidationResult.Failure(Array.Empty<string>());
+        var result = BusinessRuleValidationResult.Failure([]);
 
         Assert.False(result.IsValid);
         Assert.Empty(result.Errors);
@@ -96,7 +96,7 @@ public class BusinessRuleValidationResultTests
     [Fact]
     public void ToString_WhenInvalid_JoinsErrorsWithSemicolon()
     {
-        var result = BusinessRuleValidationResult.Failure(new[] { "一", "二" });
+        var result = BusinessRuleValidationResult.Failure(["一", "二"]);
 
         Assert.Equal("Validation failed: 一; 二", result.ToString());
     }

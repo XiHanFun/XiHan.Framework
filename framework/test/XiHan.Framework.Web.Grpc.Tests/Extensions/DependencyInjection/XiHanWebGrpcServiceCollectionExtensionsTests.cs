@@ -56,7 +56,7 @@ public class XiHanWebGrpcServiceCollectionExtensionsTests
 
         services.AddXiHanWebGrpc();
 
-        List<ServiceDescriptor> descriptors = services.Where(item => item.ServiceType == typeof(IGrpcServiceActivator<>)).ToList();
+        List<ServiceDescriptor> descriptors = [.. services.Where(item => item.ServiceType == typeof(IGrpcServiceActivator<>))];
         ServiceDescriptor descriptor = Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
@@ -74,7 +74,7 @@ public class XiHanWebGrpcServiceCollectionExtensionsTests
 
         services.AddXiHanWebGrpc();
 
-        List<ServiceDescriptor> descriptors = services.Where(item => item.ServiceType == typeof(IServiceMethodProvider<>)).ToList();
+        List<ServiceDescriptor> descriptors = [.. services.Where(item => item.ServiceType == typeof(IServiceMethodProvider<>))];
         Assert.NotEmpty(descriptors);
         Assert.All(descriptors, item => Assert.Equal(ServiceLifetime.Singleton, item.Lifetime));
     }

@@ -117,7 +117,7 @@ public class FileVersionTests : IDisposable
         var version = new FileVersion(FakeFileInfo.ForContent("empty.txt", string.Empty));
 
         Assert.Empty(version.Content);
-        Assert.Equal(Convert.ToHexString(SHA256.HashData(Array.Empty<byte>())), version.ContentHash);
+        Assert.Equal(Convert.ToHexString(SHA256.HashData([])), version.ContentHash);
     }
 
     /// <summary>

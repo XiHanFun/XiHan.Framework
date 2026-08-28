@@ -122,7 +122,7 @@ public class XiHanObservabilityModuleTests
     private static IServiceCollection CreateServicesWithConfiguration(Dictionary<string, string?>? settings = null)
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(settings ?? new Dictionary<string, string?>())
+            .AddInMemoryCollection(settings ?? [])
             .Build();
 
         var services = new ServiceCollection();

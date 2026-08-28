@@ -87,7 +87,7 @@ public class EciesHelperRoundTripTests
     {
         var (_, publicKeyBytes) = EciesHelper.GenerateKeyPairBytes();
 
-        var encrypted = EciesHelper.EncryptBytes(publicKeyBytes, new byte[] { 1, 2, 3 });
+        var encrypted = EciesHelper.EncryptBytes(publicKeyBytes, [1, 2, 3]);
         var header = encrypted[..publicKeyBytes.Length];
 
         using var senderPublicKey = ECDiffieHellman.Create();

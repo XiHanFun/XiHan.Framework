@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.VectorData;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.VectorData;
 
 namespace XiHan.Framework.AI.Rag;
 

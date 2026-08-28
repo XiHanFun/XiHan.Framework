@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Reflection;
 using XiHan.Framework.Bot.DingTalk.Abstractions;
 using XiHan.Framework.Bot.DingTalk.Messaging;
 using XiHan.Framework.Bot.DingTalk.Options;

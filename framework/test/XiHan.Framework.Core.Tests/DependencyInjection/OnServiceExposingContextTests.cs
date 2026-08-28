@@ -20,7 +20,7 @@ public class OnServiceExposingContextTests
     [Fact]
     public void Constructor_WithTypeList_ConvertsToKeylessIdentifiers()
     {
-        var context = new OnServiceExposingContext(typeof(OseService), new List<Type> { typeof(IOseContract), typeof(OseService) });
+        var context = new OnServiceExposingContext(typeof(OseService), [typeof(IOseContract), typeof(OseService)]);
 
         Assert.Equal(typeof(OseService), context.ImplementationType);
         Assert.Equal(2, context.ExposedTypes.Count);
@@ -64,7 +64,7 @@ public class OnServiceExposingContextTests
     {
         Assert.Throws<ArgumentNullException>(() =>
         {
-            _ = new OnServiceExposingContext(null!, new List<Type> { typeof(IOseContract) });
+            _ = new OnServiceExposingContext(null!, [typeof(IOseContract)]);
         });
     }
 
@@ -91,7 +91,7 @@ public class OnServiceExposingContextTests
         list.Add(_ => calls.Add("first"));
         list.Add(_ => calls.Add("second"));
 
-        var context = new OnServiceExposingContext(typeof(OseService), new List<Type> { typeof(IOseContract) });
+        var context = new OnServiceExposingContext(typeof(OseService), [typeof(IOseContract)]);
         foreach (var action in list)
         {
             action(context);

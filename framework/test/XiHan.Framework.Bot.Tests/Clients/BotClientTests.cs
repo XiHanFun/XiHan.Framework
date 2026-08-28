@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 using XiHan.Framework.Bot.Clients;
 using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Models;
@@ -43,7 +43,7 @@ public class BotClientTests
         var client = CreateClient(out _, FakeBotProvider.AlwaysSuccess("A"));
 
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => client.SendAsync(null!, new[] { "A" }, TestContext.Current.CancellationToken));
+            () => client.SendAsync(null!, ["A"], TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public class BotClientTests
         var second = FakeBotProvider.AlwaysSuccess("B");
         var client = CreateClient(out _, first, second);
 
-        var result = await client.SendAsync(new BotMessage { Content = "hi" }, new[] { "A" }, TestContext.Current.CancellationToken);
+        var result = await client.SendAsync(new BotMessage { Content = "hi" }, ["A"], TestContext.Current.CancellationToken);
 
         Assert.Single(result.Results);
         Assert.Equal(1, first.CallCount);
@@ -177,7 +177,7 @@ public class BotClientTests
         var provider = FakeBotProvider.AlwaysSuccess("A");
         var client = CreateClient(out _, provider);
 
-        var results = await client.SendBatchAsync(Array.Empty<BotMessage>(), null, TestContext.Current.CancellationToken);
+        var results = await client.SendBatchAsync([], null, TestContext.Current.CancellationToken);
 
         Assert.Empty(results);
         Assert.Equal(0, provider.CallCount);
@@ -195,7 +195,7 @@ public class BotClientTests
         await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => client.SendBatchAsync(new[] { new BotMessage { Content = "hi" } }, null, cts.Token));
+            () => client.SendBatchAsync([new BotMessage { Content = "hi" }], null, cts.Token));
 
         Assert.Equal(0, provider.CallCount);
     }
@@ -256,8 +256,8 @@ public class BotClientTests
         var manager = new BotProviderManager(providers, wrapped);
         var dispatcher = new BotDispatcher(
             manager,
-            Array.Empty<IBotPipeline>(),
-            new IBotStrategy[] { new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance) },
+            [],
+            [new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance)],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
 

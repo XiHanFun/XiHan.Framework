@@ -123,7 +123,7 @@ internal sealed class DistributedCacheTestContext : IDisposable
 /// </summary>
 internal sealed class RecordingExceptionNotifier : IExceptionNotifier
 {
-    private readonly ConcurrentBag<Exception> _exceptions = new();
+    private readonly ConcurrentBag<Exception> _exceptions = [];
 
     /// <summary>
     /// 已记录的异常

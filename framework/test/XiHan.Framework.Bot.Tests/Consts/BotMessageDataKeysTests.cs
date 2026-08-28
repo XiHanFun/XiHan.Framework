@@ -40,15 +40,14 @@ public class BotMessageDataKeysTests
         var wrapped = new TestOptionsWrapper<XiHanBotOptions>(options);
         var primary = FakeBotProvider.AlwaysSuccess("A");
         var secondary = FakeBotProvider.AlwaysSuccess("B");
-        var manager = new BotProviderManager(new IBotProvider[] { primary, secondary }, wrapped);
+        var manager = new BotProviderManager([primary, secondary], wrapped);
         var dispatcher = new BotDispatcher(
             manager,
-            Array.Empty<IBotPipeline>(),
-            new IBotStrategy[]
-            {
+            [],
+            [
                 new BroadcastStrategy(wrapped, NullLogger<BroadcastStrategy>.Instance),
                 new PriorityStrategy(NullLogger<PriorityStrategy>.Instance)
-            },
+            ],
             wrapped,
             NullLogger<BotDispatcher>.Instance);
 

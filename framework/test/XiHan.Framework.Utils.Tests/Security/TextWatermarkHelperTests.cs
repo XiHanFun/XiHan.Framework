@@ -249,7 +249,7 @@ public class TextWatermarkHelperTests
     /// </summary>
     private static string StripInvisibleChars(string text)
     {
-        return new string(text.Where(c => Array.IndexOf(InvisibleChars, c) < 0).ToArray());
+        return new string([.. text.Where(c => Array.IndexOf(InvisibleChars, c) < 0)]);
     }
 
     /// <summary>

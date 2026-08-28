@@ -295,12 +295,12 @@ public class AmbientDataContextAmbientScopeProviderTests
     /// </summary>
     private sealed class RecordingAmbientDataContext : IAmbientDataContext
     {
-        private readonly Dictionary<string, object?> _store = new();
+        private readonly Dictionary<string, object?> _store = [];
 
         /// <summary>
         /// 按顺序记录的写入序列
         /// </summary>
-        public List<KeyValuePair<string, object?>> Writes { get; } = new();
+        public List<KeyValuePair<string, object?>> Writes { get; } = [];
 
         /// <summary>
         /// 设置数据

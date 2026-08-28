@@ -153,6 +153,6 @@ public class EnvironmentFilterPipelineTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

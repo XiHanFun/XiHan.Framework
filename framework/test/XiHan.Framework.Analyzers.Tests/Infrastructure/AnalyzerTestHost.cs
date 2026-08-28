@@ -1,15 +1,15 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Immutable;
-using System.Globalization;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using System.Collections.Immutable;
+using System.Globalization;
+using System.Text;
 
 namespace XiHan.Framework.Analyzers.Tests;
 
@@ -146,7 +146,7 @@ internal static class AnalyzerTestHost
     {
         var withAnalyzers = compilation.WithAnalyzers(
             ImmutableArray.Create(analyzer),
-            new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty));
+            new AnalyzerOptions([]));
 
         var diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync(cancellationToken);
 
@@ -195,7 +195,7 @@ internal static class AnalyzerTestHost
                 documentId,
                 documentName,
                 SourceText.From(code, Encoding.UTF8, SourceHashAlgorithm.Sha256),
-                Array.Empty<string>(),
+                [],
                 filePath,
                 false);
 

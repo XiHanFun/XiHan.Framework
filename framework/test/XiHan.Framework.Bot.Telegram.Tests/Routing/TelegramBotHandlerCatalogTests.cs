@@ -235,11 +235,11 @@ public class TelegramBotHandlerCatalogTests
             typeof(TestInlineQueryHandler),
             typeof(TestStartPayloadHandler));
 
-        Assert.Equal(new[] { typeof(TestEarlyMessageHandler) }, catalog.MessageHandlerTypes);
-        Assert.Equal(new[] { typeof(TestReplyHandler) }, catalog.ReplyHandlerTypes);
-        Assert.Equal(new[] { typeof(TestStateHandler) }, catalog.StateHandlerTypes);
-        Assert.Equal(new[] { typeof(TestInlineQueryHandler) }, catalog.InlineQueryHandlerTypes);
-        Assert.Equal(new[] { typeof(TestStartPayloadHandler) }, catalog.StartPayloadHandlerTypes);
+        Assert.Equal([typeof(TestEarlyMessageHandler)], catalog.MessageHandlerTypes);
+        Assert.Equal([typeof(TestReplyHandler)], catalog.ReplyHandlerTypes);
+        Assert.Equal([typeof(TestStateHandler)], catalog.StateHandlerTypes);
+        Assert.Equal([typeof(TestInlineQueryHandler)], catalog.InlineQueryHandlerTypes);
+        Assert.Equal([typeof(TestStartPayloadHandler)], catalog.StartPayloadHandlerTypes);
     }
 
     /// <summary>

@@ -61,10 +61,12 @@ public class DynamicJsonNodeTests
     [Fact]
     public void DynamicJsonArray_ElementAccessAndModify()
     {
-        var array = new DynamicJsonArray();
-        array.Add(1);
-        array.Add("two");
-        array.Add(true);
+        var array = new DynamicJsonArray
+        {
+            1,
+            "two",
+            true
+        };
 
         Assert.Equal(3, array.Count);
         Assert.Equal(1, Assert.IsType<DynamicJsonValue>(array[0]).ToObject<int>());

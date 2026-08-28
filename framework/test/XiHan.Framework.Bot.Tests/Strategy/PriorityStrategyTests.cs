@@ -39,7 +39,7 @@ public class PriorityStrategyTests
         var third = FakeBotProvider.AlwaysSuccess("C");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { first, second, third });
+        await CreateStrategy().ExecuteAsync(context, [first, second, third]);
 
         Assert.Equal(1, first.CallCount);
         Assert.Equal(0, second.CallCount);
@@ -58,7 +58,7 @@ public class PriorityStrategyTests
         var second = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { second, first });
+        await CreateStrategy().ExecuteAsync(context, [second, first]);
 
         Assert.Equal(1, second.CallCount);
         Assert.Equal(0, first.CallCount);
@@ -75,7 +75,7 @@ public class PriorityStrategyTests
         var healthy = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { failing, healthy });
+        await CreateStrategy().ExecuteAsync(context, [failing, healthy]);
 
         Assert.Equal(0, healthy.CallCount);
         Assert.Single(context.Results);
@@ -91,7 +91,7 @@ public class PriorityStrategyTests
         var throwing = FakeBotProvider.AlwaysThrows("A", "dns failure");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { throwing });
+        await CreateStrategy().ExecuteAsync(context, [throwing]);
 
         Assert.Single(context.Results);
         Assert.False(context.Results[0].IsSuccess);
@@ -107,7 +107,7 @@ public class PriorityStrategyTests
     {
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, Array.Empty<IBotProvider>());
+        await CreateStrategy().ExecuteAsync(context, []);
 
         Assert.Empty(context.Results);
     }
@@ -120,9 +120,9 @@ public class PriorityStrategyTests
     {
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
-        var context = new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(new BotMessage { Content = "hi" }, [], cts.Token);
 
-        await CreateStrategy().ExecuteAsync(context, Array.Empty<IBotProvider>());
+        await CreateStrategy().ExecuteAsync(context, []);
 
         Assert.Empty(context.Results);
     }
@@ -136,10 +136,10 @@ public class PriorityStrategyTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var provider = FakeBotProvider.AlwaysSuccess("A");
-        var context = new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(new BotMessage { Content = "hi" }, [], cts.Token);
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => CreateStrategy().ExecuteAsync(context, new IBotProvider[] { provider }));
+            () => CreateStrategy().ExecuteAsync(context, [provider]));
         Assert.Equal(0, provider.CallCount);
     }
 
@@ -150,6 +150,6 @@ public class PriorityStrategyTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

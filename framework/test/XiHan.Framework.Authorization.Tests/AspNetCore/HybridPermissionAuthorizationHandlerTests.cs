@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
+using System.Security.Claims;
 using XiHan.Framework.Authorization.AspNetCore;
 using XiHan.Framework.Authorization.Tests.Infrastructure;
 
@@ -215,7 +215,7 @@ public class HybridPermissionAuthorizationHandlerTests
             new FakeAbacAttributeCollector(),
             new FakeAbacEvaluator(true));
         var context = new AuthorizationHandlerContext(
-            new IAuthorizationRequirement[] { requirement, foreign },
+            [requirement, foreign],
             CreateUserPrincipal(),
             null);
 
@@ -232,7 +232,7 @@ public class HybridPermissionAuthorizationHandlerTests
         ClaimsPrincipal user,
         object? resource = null)
     {
-        return new AuthorizationHandlerContext(new IAuthorizationRequirement[] { requirement }, user, resource);
+        return new AuthorizationHandlerContext([requirement], user, resource);
     }
 
     private static ClaimsPrincipal CreateUserPrincipal()

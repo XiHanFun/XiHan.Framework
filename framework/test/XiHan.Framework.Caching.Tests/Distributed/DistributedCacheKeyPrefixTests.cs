@@ -132,6 +132,6 @@ public class DistributedCacheKeyPrefixTests
 
         cache.Remove("k1");
 
-        Assert.Equal(new[] { "app1:0:sample:k1" }, store.RemovedKeys);
+        Assert.Equal(["app1:0:sample:k1"], store.RemovedKeys);
     }
 }

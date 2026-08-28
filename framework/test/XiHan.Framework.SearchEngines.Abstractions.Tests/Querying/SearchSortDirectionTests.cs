@@ -34,7 +34,7 @@ public class SearchSortDirectionTests
     public void Members_AreAscendingAndDescending()
     {
         Assert.Equal(
-            new[] { SearchSortDirection.Ascending, SearchSortDirection.Descending },
+            [SearchSortDirection.Ascending, SearchSortDirection.Descending],
             Enum.GetValues<SearchSortDirection>());
         Assert.Equal(new[] { "Ascending", "Descending" }, Enum.GetNames<SearchSortDirection>());
     }

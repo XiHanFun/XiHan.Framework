@@ -1,12 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
+using System.Runtime.CompilerServices;
 using XiHan.Framework.Web.Docs.Swagger;
 
 namespace XiHan.Framework.Web.Docs.Tests.Swagger;

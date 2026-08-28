@@ -46,5 +46,5 @@ public class XiHanGatewayOptions
     /// <summary>
     /// 全局 Header
     /// </summary>
-    public Dictionary<string, string> GlobalHeaders { get; set; } = new();
+    public Dictionary<string, string> GlobalHeaders { get; set; } = [];
 }

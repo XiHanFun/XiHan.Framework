@@ -142,7 +142,7 @@ public class BotContextTests
         var first = FakeBotProvider.AlwaysSuccess("A");
         var second = FakeBotProvider.AlwaysSuccess("B");
 
-        context.SetProviders(new IBotProvider[] { first, second });
+        context.SetProviders([first, second]);
 
         Assert.Equal(2, context.Providers.Count);
         Assert.Same(first, context.Providers[0]);
@@ -156,7 +156,7 @@ public class BotContextTests
     public void SetProviders_WhenNull_BecomesEmpty()
     {
         var context = CreateContext();
-        context.SetProviders(new IBotProvider[] { FakeBotProvider.AlwaysSuccess("A") });
+        context.SetProviders([FakeBotProvider.AlwaysSuccess("A")]);
 
         context.SetProviders(null!);
 
@@ -194,6 +194,6 @@ public class BotContextTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

@@ -133,7 +133,7 @@ internal sealed class FakeScriptEngine : IScriptEngine
         CompiledScripts.Add(scriptCode);
 
         var result = CompileHandler is null
-            ? CompilationResult.Success(new byte[] { 1, 2, 3 }, null, "FakeAssembly")
+            ? CompilationResult.Success([1, 2, 3], null, "FakeAssembly")
             : CompileHandler(scriptCode, options);
 
         return Task.FromResult(result);

@@ -225,7 +225,7 @@ public class CompositeJobSchedulerFireClaimTests
 
             await _gate.Task;
 
-            return Array.Empty<JobInstance>();
+            return [];
         }
 
         /// <summary>
@@ -265,7 +265,7 @@ public class CompositeJobSchedulerFireClaimTests
         /// </summary>
         public Task<IReadOnlyList<JobHistory>> GetJobHistoryAsync(string jobName, int pageIndex = 1, int pageSize = 20)
         {
-            return Task.FromResult<IReadOnlyList<JobHistory>>(Array.Empty<JobHistory>());
+            return Task.FromResult<IReadOnlyList<JobHistory>>([]);
         }
 
         /// <summary>
@@ -319,7 +319,7 @@ public class CompositeJobSchedulerFireClaimTests
         /// </summary>
         public Task<IReadOnlyList<JobHistory>> GetJobHistoryAsync(string jobName, int pageIndex = 1, int pageSize = 20)
         {
-            return Task.FromResult<IReadOnlyList<JobHistory>>(Array.Empty<JobHistory>());
+            return Task.FromResult<IReadOnlyList<JobHistory>>([]);
         }
 
         /// <summary>
@@ -327,7 +327,7 @@ public class CompositeJobSchedulerFireClaimTests
         /// </summary>
         public Task<IReadOnlyList<JobInstance>> GetRunningInstancesAsync(string jobName)
         {
-            return Task.FromResult<IReadOnlyList<JobInstance>>(Array.Empty<JobInstance>());
+            return Task.FromResult<IReadOnlyList<JobInstance>>([]);
         }
 
         /// <summary>

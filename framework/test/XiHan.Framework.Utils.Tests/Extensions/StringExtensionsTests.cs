@@ -340,13 +340,13 @@ public class StringExtensionsTests
     {
         var source = "hello world";
 
-        Assert.True(source.ContainsAny(new[] { "zzz", "world" }));
-        Assert.False(source.ContainsAny(new[] { "zzz" }));
-        Assert.True(source.ContainsAll(new[] { "hello", "world" }));
-        Assert.False(source.ContainsAll(new[] { "hello", "zzz" }));
-        Assert.True(source.ContainsAll(Array.Empty<string>()));
-        Assert.False(source.ContainsAny(Array.Empty<string>()));
-        Assert.True(source.ContainsAny(new[] { "WORLD" }, StringComparison.OrdinalIgnoreCase));
+        Assert.True(source.ContainsAny(["zzz", "world"]));
+        Assert.False(source.ContainsAny(["zzz"]));
+        Assert.True(source.ContainsAll(["hello", "world"]));
+        Assert.False(source.ContainsAll(["hello", "zzz"]));
+        Assert.True(source.ContainsAll([]));
+        Assert.False(source.ContainsAny([]));
+        Assert.True(source.ContainsAny(["WORLD"], StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -365,8 +365,8 @@ public class StringExtensionsTests
     [Fact]
     public void SplitInParts_SplitsIntoFixedSizeChunks()
     {
-        Assert.Equal(new[] { "abc", "def", "g" }, "abcdefg".SplitInParts(3));
-        Assert.Equal(new[] { "abc" }, "abc".SplitInParts(5));
+        Assert.Equal(["abc", "def", "g"], "abcdefg".SplitInParts(3));
+        Assert.Equal(["abc"], "abc".SplitInParts(5));
         Assert.Empty(string.Empty.SplitInParts(3));
     }
 

@@ -269,7 +269,7 @@ public class ConventionalRegistrarBaseTests
         IOnServiceExposingContext? captured = null;
         services.OnExposing(context => captured = context);
 
-        registrar.TriggerExposing(services, typeof(CrbContractImplementation), new List<Type> { typeof(ICrbContract) });
+        registrar.TriggerExposing(services, typeof(CrbContractImplementation), [typeof(ICrbContract)]);
 
         Assert.NotNull(captured);
         Assert.Equal(typeof(CrbContractImplementation), captured.ImplementationType);

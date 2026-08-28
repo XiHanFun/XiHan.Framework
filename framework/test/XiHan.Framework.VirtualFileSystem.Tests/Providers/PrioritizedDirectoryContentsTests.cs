@@ -24,7 +24,7 @@ public class PrioritizedDirectoryContentsTests
     [InlineData(false)]
     public void Exists_DelegatesToInner(bool exists)
     {
-        var sut = new PrioritizedDirectoryContents(new FakeDirectoryContents(exists), new List<PrioritizedFileProvider>());
+        var sut = new PrioritizedDirectoryContents(new FakeDirectoryContents(exists), []);
 
         Assert.Equal(exists, sut.Exists);
     }
@@ -104,7 +104,7 @@ public class PrioritizedDirectoryContentsTests
     {
         IDirectoryContents sut = new PrioritizedDirectoryContents(
             new FakeDirectoryContents(true, FakeFileInfo.ForContent("a.txt", "x")),
-            new List<PrioritizedFileProvider>());
+            []);
 
         var prioritized = Assert.IsType<PrioritizedFileInfo>(Assert.Single(sut));
 
@@ -123,7 +123,7 @@ public class PrioritizedDirectoryContentsTests
                 FakeFileInfo.ForContent("z.txt", "z"),
                 FakeFileInfo.ForDirectory("sub"),
                 FakeFileInfo.ForContent("a.txt", "a")),
-            new List<PrioritizedFileProvider>());
+            []);
 
         var names = sut.Select(x => x.Name).ToArray();
 
@@ -138,7 +138,7 @@ public class PrioritizedDirectoryContentsTests
     {
         IDirectoryContents sut = new PrioritizedDirectoryContents(
             new FakeDirectoryContents(false),
-            new List<PrioritizedFileProvider>());
+            []);
 
         Assert.Empty(sut);
     }

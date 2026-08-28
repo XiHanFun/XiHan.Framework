@@ -170,8 +170,8 @@ public class ExpressionExtensionsTests
 
         var projected = source.SelectProperties<Person, Person>(nameof(Person.Name)).ToArray();
 
-        Assert.Equal(new[] { "a", "b" }, projected.Select(p => p.Name));
-        Assert.Equal(new[] { 0, 0 }, projected.Select(p => p.Age));
+        Assert.Equal(["a", "b"], projected.Select(p => p.Name));
+        Assert.Equal([0, 0], projected.Select(p => p.Age));
     }
 
     /// <summary>
