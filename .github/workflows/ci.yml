@@ -67,28 +67,44 @@ jobs:
           reportgenerator \
             "-reports:framework/test/**/TestResults/*.cobertura.xml" \
             "-targetdir:${{ runner.temp }}/coverage" \
-            "-reporttypes:JsonSummary"
+            "-reporttypes:JsonSummary;Html"
 
       - name: 覆盖率门禁
-        # 当前实测（2026-08-28，补齐 66 个单测工程 + 两轮缺陷修复后）：
-        # 行覆盖率 45.8%、覆盖 49080 行、分支覆盖 42.7%（基线曾为 11.7% / 6928 行）。
+        # 基线取自 CI run 33190021582（2026-08-29，dev 分支）：
+        # 行覆盖率 45.1%、覆盖 34236 行、可覆盖 75774 行、分支覆盖 43.6%、66 个程序集。
         # 阈值只做「防止大幅回退」：覆盖行数与百分比双下限，各留约一成裕度，随测试补齐逐步上调。
+        #
+        # 重新标定一律以本步骤在 CI 上打印的值为准，并把来源 run 号写进本注释；
+        # 不要拿本机跑出来的数字设阈值——上一版 41% / 44000 行就是这么来的：
+        # 它在 CI 上从未通过过一次（设定它的那次运行自己在测试步就失败、门禁步被 skip），
+        # 而 44000 比 CI 实测高出 28.5%，结构上不可能通过。
         run: |
           python3 - <<'PY'
           import json
           with open("${{ runner.temp }}/coverage/Summary.json", encoding="utf-8") as f:
               data = json.load(f)
           summary = data["summary"]
+          parser = summary["parser"]
+          assemblies = int(summary["assemblies"])
           line_coverage = float(summary["linecoverage"])
           covered_lines = int(summary["coveredlines"])
-          min_covered_lines = 44000
+          coverable_lines = int(summary["coverablelines"])
+          branch_coverage = float(summary["branchcoverage"])
+          min_covered_lines = 30000
           min_line_coverage = 41.0
-          print(f"Line coverage: {line_coverage}%, covered lines: {covered_lines}")
+          # 分母（可覆盖行）与程序集数一并打印：只看分子无法区分「测试变差」与「统计范围缩小」，
+          # 这两种故障的百分比表现可以完全一样。
+          print(f"Parser: {parser}, assemblies: {assemblies}")
+          print(f"Line coverage: {line_coverage}%, covered lines: {covered_lines}, coverable lines: {coverable_lines}")
+          print(f"Branch coverage: {branch_coverage}%")
           print(f"Thresholds: >= {min_line_coverage}% and >= {min_covered_lines} covered lines")
-          if covered_lines < min_covered_lines or line_coverage < min_line_coverage:
-              raise SystemExit(
-                  f"Coverage regressed: {line_coverage}% / {covered_lines} lines is below "
-                  f"{min_line_coverage}% / {min_covered_lines} lines")
+          failures = []
+          if line_coverage < min_line_coverage:
+              failures.append(f"行覆盖率 {line_coverage}% 低于下限 {min_line_coverage}%")
+          if covered_lines < min_covered_lines:
+              failures.append(f"覆盖行数 {covered_lines} 低于下限 {min_covered_lines}")
+          if failures:
+              raise SystemExit("覆盖率门禁未通过：" + "；".join(failures))
           PY
 
       - name: 上传测试结果与覆盖率
@@ -98,4 +114,14 @@ jobs:
           name: test-results
           path: |
             framework/test/**/TestResults/
+          if-no-files-found: ignore
+
+      - name: 上传合并后的覆盖率报告
+        # 门禁一红就得有据可查：没有这份合并报告，排查只能回到本机复现，
+        # 而本机复现正是上一版错误基线的来源。
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: ${{ runner.temp }}/coverage/
           if-no-files-found: ignore
