@@ -243,18 +243,13 @@ public static class ErrorObfuscationHelper
 
         if (options.Format.HasValue)
         {
-            return options.Format.Value switch
-            {
-                ErrorFormat.JsonObject => ConvertToJsonDictionary(JsonErrorGenerator.GenerateJsonObject(error)),
-                ErrorFormat.JsonArray => ConvertToJsonArray(JsonErrorGenerator.GenerateJsonArray([error])),
-                ErrorFormat.PlainText => PlainTextErrorGenerator.GeneratePlainText(error).ToString(),
-                ErrorFormat.Xml => ErrorResponseSerializer.Serialize(XmlErrorGenerator.GenerateXml(error)),
-                ErrorFormat.Html => ErrorResponseSerializer.Serialize(HtmlErrorGenerator.GenerateHtml(error)),
-                _ => ConvertToJsonDictionary(JsonErrorGenerator.GenerateJsonObject(error))
-            };
+            return GenerateByFormat(error, options.Format.Value);
         }
 
-        return GenerateObfuscatedError();
+        // 原缺陷：Format 未指定时直接 return GenerateObfuscatedError()（全随机），
+        // 把上面按 options.Language 取到的 error 整个丢弃，于是 WithLanguage 单独使用时语言被静默忽略。
+        // 修复：格式仍然随机挑（与全随机重载一致的 0~4 五种），但沿用已按语言取到的 error。
+        return GenerateByFormat(error, (ErrorFormat)Random.Shared.Next(0, 5));
     }
 
     /// <summary>
@@ -286,6 +281,26 @@ public static class ErrorObfuscationHelper
     }
 
     #region 私有方法
+
+    /// <summary>
+    /// 按指定格式渲染同一份错误信息
+    /// </summary>
+    /// <remarks>
+    /// 抽出来是为了让「按选项生成」在指定格式与随机格式两条分支上复用同一份 error，
+    /// 避免随机分支重新取一个不带语言的 error。
+    /// </remarks>
+    private static object GenerateByFormat(ErrorInfo error, ErrorFormat format)
+    {
+        return format switch
+        {
+            ErrorFormat.JsonObject => ConvertToJsonDictionary(JsonErrorGenerator.GenerateJsonObject(error)),
+            ErrorFormat.JsonArray => ConvertToJsonArray(JsonErrorGenerator.GenerateJsonArray([error])),
+            ErrorFormat.PlainText => PlainTextErrorGenerator.GeneratePlainText(error).ToString(),
+            ErrorFormat.Xml => ErrorResponseSerializer.Serialize(XmlErrorGenerator.GenerateXml(error)),
+            ErrorFormat.Html => ErrorResponseSerializer.Serialize(HtmlErrorGenerator.GenerateHtml(error)),
+            _ => ConvertToJsonDictionary(JsonErrorGenerator.GenerateJsonObject(error))
+        };
+    }
 
     /// <summary>
     /// 生成 JSON 对象（Dictionary）
@@ -361,6 +376,9 @@ public static class ErrorObfuscationHelper
             ["requestId"] = response.RequestId,
             ["path"] = response.Path,
             ["method"] = response.Method,
+            // 原缺陷：逐字段拷贝时漏了 Language（JsonErrorGenerator 明确设置了它），
+            // 导致 JSON 对象格式是唯一不带语言的输出，混淆信息在各格式间不一致。
+            ["language"] = response.Language,
             ["server"] = response.Server,
             ["database"] = response.Database,
             ["stackTrace"] = response.StackTrace,

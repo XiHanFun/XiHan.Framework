@@ -214,14 +214,13 @@ public static class DeepMergeHelper
             return false;
         }
 
-        var type = value.GetType();
-
-        // 数组或实现了泛型集合接口的类型
-        return type.IsArray || (type.IsGenericType && (
-            typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
-            typeof(ICollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()) ||
-            typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition())
-        ));
+        // 原实现是 type.IsArray || (type.IsGenericType && typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition()) || ...)：
+        // 开放泛型类型之间的 IsAssignableFrom 恒为 false（typeof(IList<>).IsAssignableFrom(typeof(List<>)) 就是 false），
+        // 于是 List<T>/HashSet<T> 等一律被判成"不可合并"，类注释承诺的"合并集合"对泛型集合完全失效，
+        // 只有数组能进合并分支——而数组进去以后 MergeCollections 产出的是 List<T>，
+        // 回写数组属性时 SetValue 抛 ArgumentException 被 ProcessProperty 吞掉，属性最终一个值都没设上。
+        // 改为按运行时接口判定：是可枚举的、且不是字符串、也不是字典（字典有 MergeDictionaries 专门处理）。
+        return value is IEnumerable and not string && !IsDictionary(value);
     }
 
     /// <summary>
@@ -283,7 +282,9 @@ public static class DeepMergeHelper
             return target ?? source;
         }
 
-        // 处理列表类型
+        // 处理列表类型。
+        // 注意：HashSet<T> 之类不实现非泛型 IList 的集合走不到下面的合并，只能保留高优先级值，
+        // 这是 MergeCollections 的固有能力边界，与本次修复无关。
         if (target is not IList targetList || source is not IList sourceList)
         {
             return DeepClone(target);
@@ -329,6 +330,17 @@ public static class DeepMergeHelper
             {
                 resultList.Add(DeepClone(item));
             }
+        }
+
+        // 目标本身是数组时必须还原成数组再返回：
+        // 调用方 ProcessProperty / MergeComplexObjects 会把结果 SetValue 回原属性，
+        // 回一个 List<T> 会抛 ArgumentException 并被 catch 吞掉，属性最终一个值都没设上
+        // （这正是"数组进得了合并分支却永远设不回去"的后半段）。
+        if (targetType.IsArray)
+        {
+            var resultArray = Array.CreateInstance(elementType, resultList.Count);
+            resultList.CopyTo(resultArray, 0);
+            return resultArray;
         }
 
         return resultList;

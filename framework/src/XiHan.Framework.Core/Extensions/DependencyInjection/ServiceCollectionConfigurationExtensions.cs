@@ -45,8 +45,12 @@ public static class ServiceCollectionConfigurationExtensions
     public static IConfiguration? GetConfigurationOrNull(this IServiceCollection services)
     {
         var hostBuilderContext = services.GetSingletonInstanceOrNull<HostBuilderContext>();
-        return hostBuilderContext?.Configuration is not null
-            ? hostBuilderContext.Configuration as IConfigurationRoot
-            : services.GetSingletonInstanceOrNull<IConfiguration>();
+
+        // 原写法是 `Configuration is not null ? Configuration as IConfigurationRoot : 已登记的单例`：
+        // 主机上下文带了配置、但那份配置不是 IConfigurationRoot（被宿主换成某个 IConfigurationSection
+        // 或自定义实现）时，as 得到 null，方法就此返回 null，也不再回落到已登记的 IConfiguration 单例，
+        // GetConfiguration() 随之抛 XiHanException。本方法的返回类型本来就是 IConfiguration，
+        // 没有"必须是根"这个要求，这里改成两级回落：主机上下文优先，其次已登记的单例。
+        return hostBuilderContext?.Configuration ?? services.GetSingletonInstanceOrNull<IConfiguration>();
     }
 }

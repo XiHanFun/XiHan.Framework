@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using System.Runtime.CompilerServices;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 
 namespace XiHan.Framework.AI.Guardrails;

@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.Http;
 using System.Reflection;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 
 namespace XiHan.Framework.Authorization.Abac;
 

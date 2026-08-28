@@ -63,7 +63,14 @@ public class CastleInterceptorAdapter : IInterceptor
     {
         await adapter.ExecuteRecursiveAsync(invocation, 0);
 
-        return invocation.ReturnValue switch
+        // 取值口径：拦截器显式覆写过就用覆写值，否则用 ProceedAsync 记下的目标真实结果。
+        // 这里绝不能直接重读 invocation.ReturnValue —— Intercept 已经把本方法产出的包装任务
+        // 写进了 Castle 的返回值槽位。目标方法同步完成时本方法早已跑完，读到的还是目标任务，
+        // 侥幸正确；目标方法一旦真异步（体内有 await），本方法会先在挂起处把自己写进槽位，
+        // 恢复后读到的就是自己，await 下去即自己等自己，调用方永久挂死。
+        var value = invocation.ReturnValueOverridden ? invocation.ReturnValue : invocation.ProceedResult;
+
+        return value switch
         {
             Task<TResult> taskWithResult => await taskWithResult,
             TResult result => result,

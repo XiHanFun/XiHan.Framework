@@ -204,12 +204,18 @@ public static class JsonExtensions
     }
 
     /// <summary>
-    /// 从字典中获取嵌套键的值
+    /// 从扁平化字典中按嵌套键取值
     /// </summary>
-    /// <param name="dictionary">字典</param>
-    /// <param name="nestedKey">嵌套键（如 "parent.child.grandchild"）</param>
+    /// <remarks>
+    /// 这里的字典是 JsonHelper.JsonToDictionary / ToDictionary 扁平化的产物，层级已经被拼进键里
+    /// （如 "parent.child.grandchild"），因此"层级查找"就等于一次完整键的直接查找，不需要再拆分下钻。
+    /// separator 只是声明 nestedKey 使用的分隔符必须与扁平化时用的一致，本身不参与运算；
+    /// 保留该参数是为了不破坏既有调用方的签名。
+    /// </remarks>
+    /// <param name="dictionary">扁平化字典</param>
+    /// <param name="nestedKey">扁平化后的完整键（如 "parent.child.grandchild"）</param>
     /// <param name="defaultValue">默认值</param>
-    /// <param name="separator">分隔符</param>
+    /// <param name="separator">nestedKey 所用的层级分隔符，须与扁平化时一致</param>
     /// <returns>值或默认值</returns>
     public static string GetNestedValue(this Dictionary<string, string> dictionary, string nestedKey, string defaultValue = "", string separator = ".")
     {
@@ -217,10 +223,13 @@ public static class JsonExtensions
     }
 
     /// <summary>
-    /// 设置嵌套键的值
+    /// 按嵌套键写入扁平化字典
     /// </summary>
-    /// <param name="dictionary">字典</param>
-    /// <param name="nestedKey">嵌套键</param>
+    /// <remarks>
+    /// 与 GetNestedValue 对称：键就是扁平化后的完整键，直接整键写入，不会展开成多层字典。
+    /// </remarks>
+    /// <param name="dictionary">扁平化字典</param>
+    /// <param name="nestedKey">扁平化后的完整键</param>
     /// <param name="value">值</param>
     public static void SetNestedValue(this Dictionary<string, string> dictionary, string nestedKey, string value)
     {

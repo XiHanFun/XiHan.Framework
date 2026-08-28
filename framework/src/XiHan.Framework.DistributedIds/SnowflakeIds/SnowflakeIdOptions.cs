@@ -476,8 +476,15 @@ public class SnowflakeIdOptions
     /// 克隆当前配置
     /// </summary>
     /// <returns>克隆的配置对象</returns>
+    /// <remarks>
+    /// 早先实现是 <c>return this</c>，根本没克隆：调用方改「副本」会直接改到原对象，
+    /// 而克隆的典型用途正是「拿一份配置改几项再喂给另一个生成器」，
+    /// 这种别名会让两个生成器共用 WorkerId，直接导致 ID 冲突。
+    /// 本类属性全是数值/字符串/枚举等简单值，浅拷贝即可；
+    /// 走 MemberwiseClone 而不是逐个属性赋值，还能绕开各 setter 的重复校验与赋值顺序依赖。
+    /// </remarks>
     public SnowflakeIdOptions Clone()
     {
-        return this;
+        return (SnowflakeIdOptions)MemberwiseClone();
     }
 }

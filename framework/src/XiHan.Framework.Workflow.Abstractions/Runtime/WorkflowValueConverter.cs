@@ -52,7 +52,12 @@ public static class WorkflowValueConverter
     /// <exception cref="InvalidCastException">无法转换时抛出</exception>
     public static T? ConvertTo<T>(object? value)
     {
-        return (T?)ConvertTo(value, typeof(T));
+        var converted = ConvertTo(value, typeof(T));
+
+        // 不能直接 (T?)converted：T 无约束时 T? 对值类型仍是 T 本身，
+        // 空值走到这里就是把 null 拆箱成 int/bool 之类，当场 NullReferenceException。
+        // 按本方法文档承诺的语义返回默认值：值类型得 0/false，引用类型得 null。
+        return converted is null ? default : (T?)converted;
     }
 
     /// <summary>

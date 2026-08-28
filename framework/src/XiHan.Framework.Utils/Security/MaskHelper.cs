@@ -102,22 +102,29 @@ public static partial class MaskHelper
     }
 
     /// <summary>
-    /// 脱敏邮箱：保留邮箱前缀部分的前1-2个字符，其余部分用星号替换，再拼接邮箱域名
-    /// 例如：test@example.com -> te**@example.com
+    /// 脱敏邮箱：用户名与域名主体各自按通用规则遮蔽中段，@ 与顶级后缀原样保留
+    /// 例如：test@example.com -> t**t@e**mple.com
     /// </summary>
     /// <param name="email">邮箱地址</param>
     /// <returns>脱敏后的邮箱地址</returns>
     public static string MaskEmail(string email)
     {
         var emailRegex = RegexHelper.EmailRegex();
-        var match = emailRegex.Match(email);
-        if (!match.Success)
+        if (!emailRegex.IsMatch(email))
         {
             return email;
         }
-        var userName = match.Groups[1].Value;
-        var domain = match.Groups[2].Value;
-        var suffix = match.Groups[3].Value;
+
+        // 原缺陷：这里从 EmailRegex 的第 1/2/3 个捕获组取用户名、域名主体、后缀，
+        // 但该正则 ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ 通篇没有捕获组，
+        // 三个 Groups[n].Value 全是空串，任何合法邮箱都被脱敏成 "@."，原始信息全丢。
+        // RegexHelper.EmailRegex 是全仓公用的"是否合法邮箱"校验正则，不宜为一处脱敏改成带捕获组，
+        // 因此改为在本方法内按 @ 与最后一个 . 自行切分：正则只负责判定，切分由调用方自己做。
+        var atIndex = email.LastIndexOf('@');
+        var dotIndex = email.LastIndexOf('.');
+        var userName = email[..atIndex];
+        var domain = email[(atIndex + 1)..dotIndex];
+        var suffix = email[(dotIndex + 1)..];
 
         userName = userName.Length <= 3 ? userName.Mask(3 - userName.Length, 0) : userName.Mask(1, userName.Length - 3);
         domain = domain.Length <= 3 ? domain.Mask(3 - domain.Length, 0) : domain.Mask(1, domain.Length - 3);

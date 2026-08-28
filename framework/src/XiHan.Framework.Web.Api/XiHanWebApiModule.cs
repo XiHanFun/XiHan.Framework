@@ -1,12 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Auditing;
@@ -20,10 +16,9 @@ using XiHan.Framework.Serialization;
 using XiHan.Framework.Uow;
 using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
-using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.RateLimiting;
-using XiHan.Framework.Web.Api.Security.OpenApi;
+using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
 

@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using XiHan.Framework.ObjectStorage.Models;
 using XiHan.Framework.ObjectStorage.Options;
 
@@ -92,9 +92,15 @@ public class LocalFileStorageProvider : FileStorageProviderBase
         {
             var chunkPath = Path.Combine(session.TempDirectory, $"chunk_{request.ChunkNumber:D4}");
 
-            using var fileStream = new FileStream(chunkPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            await request.ChunkData.CopyToAsync(fileStream, cancellationToken);
-            await fileStream.FlushAsync(cancellationToken);
+            // 写入流必须在算哈希之前就释放：它是 FileShare.None 独占持有的，
+            // 早先这里写成 using var（作用域到方法结束），下面的 File.OpenRead 读的正是同一个文件，
+            // 必然抛「文件正被另一进程使用」，再被下面的 catch 吞成 Success=false ——
+            // 结果是本地存储的分片上传每一次都失败，功能实际不可用。
+            await using (var fileStream = new FileStream(chunkPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await request.ChunkData.CopyToAsync(fileStream, cancellationToken);
+                await fileStream.FlushAsync(cancellationToken);
+            }
 
             // 计算分片哈希
             string etag;
@@ -147,26 +153,31 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 Directory.CreateDirectory(directory);
             }
 
-            // 合并所有分片
-            using var outputStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
-
-            foreach (var chunkInfo in request.ChunkInfos.OrderBy(c => c.ChunkNumber))
+            // 合并所有分片。
+            // 输出流的作用域必须收在这里：它是 FileShare.None 独占持有的，
+            // 早先写成 using var（作用域到方法结束），下面读回算哈希的 File.OpenRead 打的是同一个文件，
+            // 必然抛「文件正被另一进程使用」并被兜底 catch 吞成 Success=false；
+            // 顺带 FileInfo.Length 也得在流关闭后取，否则读到的可能不是最终长度。
+            await using (var outputStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                var chunkPath = Path.Combine(session.TempDirectory, $"chunk_{chunkInfo.ChunkNumber:D4}");
-                if (!File.Exists(chunkPath))
+                foreach (var chunkInfo in request.ChunkInfos.OrderBy(c => c.ChunkNumber))
                 {
-                    return new FileUploadResult
+                    var chunkPath = Path.Combine(session.TempDirectory, $"chunk_{chunkInfo.ChunkNumber:D4}");
+                    if (!File.Exists(chunkPath))
                     {
-                        Success = false,
-                        ErrorMessage = $"Chunk {chunkInfo.ChunkNumber} not found"
-                    };
+                        return new FileUploadResult
+                        {
+                            Success = false,
+                            ErrorMessage = $"Chunk {chunkInfo.ChunkNumber} not found"
+                        };
+                    }
+
+                    using var chunkStream = File.OpenRead(chunkPath);
+                    await chunkStream.CopyToAsync(outputStream, cancellationToken);
                 }
 
-                using var chunkStream = File.OpenRead(chunkPath);
-                await chunkStream.CopyToAsync(outputStream, cancellationToken);
+                await outputStream.FlushAsync(cancellationToken);
             }
-
-            await outputStream.FlushAsync(cancellationToken);
 
             var fileInfo = new FileInfo(fullPath);
 

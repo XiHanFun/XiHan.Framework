@@ -2,6 +2,44 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.0.0 (2026-08-28)
+
+::: warning 升级须知
+本次为主版本升级，含多处破坏性变更：
+
+- `XiHan.Framework.SearchEngines.Abstractions` 包内类型的命名空间补上 `Abstractions` 段，与程序集名一致（如 `XiHan.Framework.SearchEngines.ISearchEngine` → `XiHan.Framework.SearchEngines.Abstractions.ISearchEngine`）
+- `YamlHelper` 由 `XiHan.Framework.Utils.Text.Yaml` 移到 `XiHan.Framework.Utils.Serialization.Yaml`，与同组 Yaml 类型归并；未提供过渡类型转发，按旧命名空间 `using` 的代码需同步调整
+- Base36 / Base58 / Base62 / Base95 与自定义进制的 `Encode` 改为大端读入，多字节编码结果与此前不同，已落库的旧编码需按旧规则重算（单字节编码不受影响）
+- `Stack` 扩展 `Clone` / `Where` / `Select` 的返回栈顺序由「与源栈相反」改为「与源栈一致」；属性差异比较由「恒返回空列表」变为返回真实差异
+- 分布式与混合缓存的 `KeyPrefix` 由死配置变为真正生效。未配置该项的部署产出的键与此前逐字节一致；已配过该项的部署键名会多出前缀，旧键读不回来、等其自然过期
+- 示例宿主工程更名：`XiHan.Framework.Web.Tests` → `XiHan.Framework.Web.Host`、`XiHan.Framework.Integration.Tests` → `XiHan.Framework.Integration.Host`，模块类同步更名为 `XiHanWebHostModule` / `XiHanIntegrationHostModule`
+:::
+
+- **新增** 单元测试工程补齐至 66 个，与 `framework/src` 下的包一一对应，全量 11257 个用例；行覆盖率由最初基线 11.7% / 6928 行升至 45.8% / 49080 行，分支覆盖 42.7%，CI 门禁随之上调至 41% / 44000 行
+- **修复** Castle 拦截器上真异步 `Task<T>` 方法被拦截即死锁：包装任务写回 Castle 返回值槽位后又从同一槽位读回 await，等的是它自己
+- **修复** 本地对象存储的分片上传每次都失败：独占写入流未释放即对同一路径读回算哈希，异常被兜底 catch 吞成 `Success=false`
+- **修复** Scriban 模板上下文桥接从未生效：类型别名遮蔽导致交给 Scriban 的是框架自己的上下文对象，模板里取不到任何变量、渲染结果全空
+- **修复** 脚本执行的 `TimeoutMs` 形同虚设，改为竞速等待并抛 `ScriptTimeoutException`
+- **修复** Sqids 默认配置下编码不可逆（补位处 `char + char` 走整数加法，拼进去的是码点之和的十进制文本），`SnowflakeIdOptions.Clone` 直接返回自身的假克隆会让两个生成器共用 WorkerId
+- **修复** 缓存 5 处缺陷：`GetMany` / `GetOrAddMany` 在工作单元部分命中时结果与入参键错位、`KeyPrefix` 全 src 无读取点、Redis 启用后容器里存在两条 `IDistributedCache` 注册、`CacheAspect` 不识别 `ValueTask`、`XiHanHybridCache` 构造函数的无用形参
+- **修复** 集合扩展的谓词重载解析回自身导致无限递归（调用即 `StackOverflowException`），进制编解码字节序不一致，`CustomRadix` 缓冲区容量公式的底数与真数写反，属性差异比较因重载绑错恒返回空列表
+- **修复** `IsNullOrEmpty` 泛型重载把非 null 的空集合判成「非空」，调用方的空集合短路全部失效
+- **修复** 工具库一批公共 API 实际不可用：`FormatXml` / `CompressXml` 恒返回空串、二进制文本编解码不可逆致水印往返拿回乱码、`CompareJson` 对标量比原文、`MaskEmail` 正则无捕获组把邮箱脱敏成 `@.`、确定性 GUID 版本位写错字节、ECIES 解密按错误曲线推算临时公钥长度、JSON 选项 `IgnoreNullValues` 从未被读取与 `MergeJson` 的类型降级
+- **修复** 六个机器人子包（DingTalk / Email / Lark / Sms / Telegram / WeCom）的注册扩展不传 `configure` 时选项服务无人登记，容器构建期即失败；飞书 `TagButton.Type` 默认值拼写为 `defult`
+- **修复** 事件总线自定义处理器工厂解析失败不再让整条触发链连坐，本地事件总线的处理器生命周期缺陷
+- **修复** Serilog 异步管道的 `EnableAsyncLogging` / `AsyncBufferSize` / `BlockWhenFull` 三个选项接入实现，此前全仓零读取点、配了等于没配
+- **修复** 文件日志编码与日志配置构建器缺陷、后台服务统计与优雅停止缺陷、配置扩展与异常扩展及日志扩展缺陷
+- **修复** 运行时长改用单调时钟，NTP 校时回拨后不再算出负的运行时长
+- **修复** 分页异步入口的取消令牌不再被忽略（`PageQueryExecutor.ExecuteAsync`、`PageExtensions.ToPageResultAsync`、`PageConverter.ConvertItemsAsync`）
+- **修复** Web.Docs 生成的 XML 文档 ID 缺方法泛型参数个数标记，泛型方法的注释在 Swagger 上永远查不到
+- **修复** Web.Core 的声明转换改为幂等，`IClaimsTransformation` 被多次调用不再累积重复声明
+- **修复** 审计日志队列容量补下界校验，`capacity=0` 不再造出「永远是满的」队列（日志静默丢弃、反压卡死请求线程）
+- **修复** `Workflow.Abstractions` 的 `ConvertTo<T>` 传入空值不再对值类型抛空引用
+- **调整** `SearchEngines.Abstractions` 与 `YamlHelper` 的命名空间归位，示例宿主工程由 `.Tests` 更名为 `.Host`
+- **优化** CI 修正 MTP 模式下 `dotnet test` 的解决方案传参与覆盖率产物路径，此前测试步骤必然失败、覆盖率门禁等于从未生效；`global.json` 改锁 SDK 10.0.111（原锁 10.0.302 开发机普遍装不到，整仓不可构建）
+- **优化** 清零编译器与 xUnit 分析器建议（冗余 using、测试工程可空性警告、192 条断言写法），解决方案登记全部 66 个单测工程
+- **升级** 升级依赖，发布 v4.0.0
+
 ## v3.14.0 (2026-08-26)
 
 ::: warning 升级须知

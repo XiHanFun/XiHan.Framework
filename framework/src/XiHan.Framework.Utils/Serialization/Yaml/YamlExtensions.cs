@@ -1,8 +1,6 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using XiHan.Framework.Utils.Text.Yaml;
-
 namespace XiHan.Framework.Utils.Serialization.Yaml;
 
 /// <summary>

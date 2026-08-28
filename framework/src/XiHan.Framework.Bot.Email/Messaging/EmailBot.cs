@@ -3,8 +3,8 @@
 
 using MailKit.Net.Smtp;
 using MimeKit;
-using XiHan.Framework.Utils.Logging;
 using XiHan.Framework.Bot.Email.Models;
+using XiHan.Framework.Utils.Logging;
 
 namespace XiHan.Framework.Bot.Email.Messaging;
 

@@ -82,21 +82,24 @@ public static class MemberInfoExtensions
     public static TAttribute? GetSingleAttributeOfTypeOrBaseTypesOrNull<TAttribute>(this Type? type)
         where TAttribute : Attribute
     {
-        while (true)
+        // 原实现是 while (true) 配一个 `if (type is not null && BaseType is null) return null;` 的退出条件：
+        // 签名写的是 Type?、null 是合法入参，可一旦真的传进 null，
+        // attr 为 null、退出条件因为 type is not null 为假而不成立、
+        // 末尾 type = type?.GetTypeInfo().BaseType 又把 null 原样赋回自己——循环永远不退出，挂死线程。
+        // 改成以"type 非空"作为循环条件：爬到 object 之上（BaseType 为 null）或入参本就是 null，
+        // 都自然退出并返回 null。非 null 入参的查找顺序与返回值与原来完全一致。
+        while (type is not null)
         {
-            var attr = type?.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
+            var attr = type.GetTypeInfo().GetSingleAttributeOrNull<TAttribute>();
             if (attr is not null)
             {
                 return attr;
             }
 
-            if (type is not null && type.GetTypeInfo().BaseType is null)
-            {
-                return null;
-            }
-
-            type = type?.GetTypeInfo().BaseType;
+            type = type.GetTypeInfo().BaseType;
         }
+
+        return null;
     }
 
     #endregion 特性信息

@@ -88,7 +88,14 @@ internal static class XmlCommentsNodeNameHelper
             ? $"({string.Join(",", parameterTypeNames)})"
             : string.Empty;
 
-        return $"M:{declaringTypeName}.{method.Name}{parameters}";
+        // 泛型方法的文档 ID 规范要求在方法名后跟 ``N（N 为方法泛型参数个数）。
+        // 漏掉它生成出来的键与编译器写进 XML 文档的键对不上，
+        // 泛型方法的注释在 Swagger 上就永远查不到——参数位置的 ``0 已经处理了，方法名这一处此前是缺的。
+        var genericArity = method.IsGenericMethod
+            ? $"``{method.GetGenericArguments().Length}"
+            : string.Empty;
+
+        return $"M:{declaringTypeName}.{method.Name}{genericArity}{parameters}";
     }
 
     private static string GetDeclaringTypeName(Type? type)

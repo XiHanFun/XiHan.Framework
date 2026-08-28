@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Scriban;
+using Scriban.Runtime;
 using XiHan.Framework.Templating.Contexts;
-using TemplateContext = XiHan.Framework.Templating.Contexts.TemplateContext;
 
 namespace XiHan.Framework.Templating.Engines;
 
@@ -85,15 +85,22 @@ public class ScribanTemplateEngine : ITemplateEngine<Template>
     /// </summary>
     /// <param name="templateContext">模板上下文</param>
     /// <returns>Scriban 上下文</returns>
-    private static TemplateContext CreateScribanContext(ITemplateContext templateContext)
+    /// <remarks>
+    /// 返回类型必须写全限定的 <see cref="Scriban.TemplateContext"/>：本文件顶部有
+    /// <c>using TemplateContext = XiHan.Framework.Templating.Contexts.TemplateContext;</c> 别名，
+    /// 早先这里写裸名 TemplateContext，实际 new 出来的是框架自己的上下文对象，
+    /// 交给 Scriban 后被当成一个普通模型对象按属性名取值，
+    /// 于是上下文里 SetVariable 进去的变量在模板里一个也取不到，渲染结果里全是空——
+    /// 上下文到 Scriban 的桥接等于从未生效。
+    /// </remarks>
+    private static Scriban.TemplateContext CreateScribanContext(ITemplateContext templateContext)
     {
-        var scribanContext = new TemplateContext();
+        var globals = new ScriptObject();
 
         // 添加变量
         foreach (var variableName in templateContext.GetVariableNames())
         {
-            var value = templateContext.GetVariable(variableName);
-            scribanContext.SetVariable(variableName, value);
+            globals[variableName] = templateContext.GetVariable(variableName);
         }
 
         // 添加函数
@@ -102,9 +109,12 @@ public class ScribanTemplateEngine : ITemplateEngine<Template>
             var function = templateContext.GetFunction(variableName);
             if (function != null)
             {
-                scribanContext.SetFunction(variableName, function);
+                globals.Import(variableName, function);
             }
         }
+
+        var scribanContext = new Scriban.TemplateContext();
+        scribanContext.PushGlobal(globals);
 
         return scribanContext;
     }

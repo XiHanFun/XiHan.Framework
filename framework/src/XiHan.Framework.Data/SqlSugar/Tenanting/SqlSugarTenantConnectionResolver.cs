@@ -28,11 +28,10 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     {
         _options = options.Value;
         _currentTenant = currentTenant;
-        _configIdArray = _options.ConnectionConfigs
+        _configIdArray = [.. _options.ConnectionConfigs
             .Select(x => x.ConfigId)
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
         _configIds = _configIdArray.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.Uow.Options;
 

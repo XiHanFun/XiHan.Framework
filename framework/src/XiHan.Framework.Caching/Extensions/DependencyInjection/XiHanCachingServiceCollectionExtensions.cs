@@ -74,7 +74,13 @@ public static class XiHanCachingServiceCollectionExtensions
             }
         });
 
-        services.Replace(ServiceDescriptor.Singleton<IDistributedCache, XiHanRedisCache>());
+        // 先清空再注册，而不是 Replace：Replace 只移除第一条匹配项，
+        // 上面 AddStackExchangeRedisCache 内部是用 services.Add（非 TryAdd）追加的 RedisCache，
+        // 于是 Replace 只换掉了 AddDistributedMemoryCache 那条，集合里会同时留下 RedisCache 与 XiHanRedisCache。
+        // 按最后一条生效时注入拿到的确实是 XiHanRedisCache，但 GetServices<IDistributedCache>() 会多出一个
+        // 游离的 RedisCache，任何枚举全部注册的代码都会额外建一个 Redis 客户端。
+        services.RemoveAll<IDistributedCache>();
+        services.AddSingleton<IDistributedCache, XiHanRedisCache>();
 
         // 暴露原生 Redis 连接 + 泛型队列：IConnectionMultiplexer 为长寿命单例（与 XiHanRedisCache 各连各的）。
         // IRedisStreamQueue<>（Streams 可靠消息队列：消费组+ACK+重投）、IRedisDelayQueue<>（Sorted Set 延迟队列）均为开放泛型，按封闭类型注入。

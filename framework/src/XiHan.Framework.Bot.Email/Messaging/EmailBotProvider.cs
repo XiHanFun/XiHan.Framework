@@ -3,12 +3,12 @@
 
 using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Core;
-using XiHan.Framework.Bot.Helpers;
-using XiHan.Framework.Bot.Models;
-using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Email.Abstractions;
 using XiHan.Framework.Bot.Email.Models;
 using XiHan.Framework.Bot.Email.Options;
+using XiHan.Framework.Bot.Helpers;
+using XiHan.Framework.Bot.Models;
+using XiHan.Framework.Bot.Providers;
 
 namespace XiHan.Framework.Bot.Email.Messaging;
 
@@ -90,7 +90,7 @@ public class EmailBotProvider : IBotProvider
                     return [value];
 
                 case IEnumerable<string> values:
-                    return values.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+                    return [.. values.Where(item => !string.IsNullOrWhiteSpace(item))];
             }
         }
 

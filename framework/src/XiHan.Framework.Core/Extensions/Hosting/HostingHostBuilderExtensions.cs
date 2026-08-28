@@ -32,7 +32,12 @@ public static class HostingHostBuilderExtensions
     {
         return hostBuilder.ConfigureAppConfiguration((_, builder) =>
         {
-            _ = (HostBuilderContext)builder.AddJsonFile(path, optional, reloadOnChange);
+            // 原写法是 `_ = (HostBuilderContext)builder.AddJsonFile(...)`：这里的 `_` 是 lambda 的第一个形参
+            // （HostBuilderContext），不是弃元，于是那行把 AddJsonFile 返回的 IConfigurationBuilder 强转成
+            // HostBuilderContext，运行期必抛 InvalidCastException。委托是延迟执行的，调用扩展本身不炸，
+            // 直到 hostBuilder.Build() 才炸，等于任何用了这个扩展的宿主都起不来。
+            // 该扩展的职责只是把 JSON 源追加进应用配置，返回值无需接收，更无需强转。
+            builder.AddJsonFile(path, optional, reloadOnChange);
         });
     }
 }

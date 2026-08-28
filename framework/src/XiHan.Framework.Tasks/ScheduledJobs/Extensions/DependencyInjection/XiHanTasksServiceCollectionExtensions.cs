@@ -43,6 +43,14 @@ public static class XiHanTasksServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         // 配置选项
+        // 选项容器必须无条件登记：原来只在 configureOptions 非空时才走 services.Configure，
+        // 而 AddOptions 的注册（IOptions<>/IOptionsFactory<> 等开放泛型）恰恰是被 Configure 顺带带进来的。
+        // 于是三条入口里只有「传配置节」与「传委托」两条能解析出 IOptions<XiHanJobOptions>，
+        // 无参调用 AddXiHanTasks() 之后 GetRequiredService<IOptions<XiHanJobOptions>>() 直接抛
+        // 「No service for type ... has been registered」——同一个扩展方法给出了三种不一致的容器状态。
+        // AddOptions 幂等，且不会覆盖调用方后续追加的任何 Configure，安全地补齐默认值这条路径。
+        services.AddOptions<XiHanJobOptions>();
+
         if (configureOptions != null)
         {
             services.Configure(configureOptions);
@@ -57,14 +65,18 @@ public static class XiHanTasksServiceCollectionExtensions
         services.TryAddSingleton<JobMetricsProvider>();
         services.TryAddSingleton<IJobEventPublisher, DefaultJobEventPublisher>();
 
-        // 注册中间件（按顺序）
-        services.AddSingleton<IJobMiddleware, LoggingMiddleware>();
-        services.AddSingleton<IJobMiddleware, TimeoutMiddleware>();
-        services.AddSingleton<IJobMiddleware, LockMiddleware>();
-        services.AddSingleton<IJobMiddleware, RetryMiddleware>();
-        services.AddSingleton<IJobMiddleware, MetricsMiddleware>();
+        // 注册中间件（按顺序，顺序即洋葱层次）
+        // 用 TryAddEnumerable 而不是 AddSingleton：核心服务都是 TryAddSingleton 幂等的，唯独这五条走的是
+        // 普通 Add。AddXiHanTasks 被调用两次（模块装配 XiHanTasksModule 与业务侧显式调用叠加）就会得到
+        // 10 条 IJobMiddleware 注册，整条执行管道被跑两遍。TryAddEnumerable 按"服务类型 + 实现类型"去重，
+        // 既保持首次注册的顺序，又不影响调用方追加自定义中间件。
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IJobMiddleware, LoggingMiddleware>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IJobMiddleware, TimeoutMiddleware>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IJobMiddleware, LockMiddleware>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IJobMiddleware, RetryMiddleware>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IJobMiddleware, MetricsMiddleware>());
 
-        // 注册后台服务
+        // 注册后台服务（AddHostedService<T> 内部就是 TryAddEnumerable，重复调用天然幂等，无需额外处理）
         services.AddHostedService<JobHostedService>();
 
         return new XiHanJobBuilder(services);

@@ -4,16 +4,17 @@
 
 ## 环境准备
 
-- **.NET SDK 10.0.302**（`global.json` 锁定 10.0.3xx 功能带，仓库内 `dotnet --version` 应解析为 10.0.302）
+- **.NET SDK 10.0.111**（`global.json` 锁定 10.0.1xx 功能带，仓库内 `dotnet --version` 应解析为 10.0.111 或同带更高补丁）
 - 拉取代码后在 `framework/` 下执行：
 
 ```bash
 dotnet restore XiHan.Framework.slnx
 dotnet build XiHan.Framework.slnx --configuration Release -p:GeneratePackageOnBuild=false
-dotnet test XiHan.Framework.slnx --configuration Release --no-build
+dotnet test --solution XiHan.Framework.slnx --configuration Release --no-build
 ```
 
-> 测试由 global.json 的 `test.runner` 以 Microsoft.Testing.Platform（MTP）模式驱动，不要用 VSTest 时代的 `--logger trx` 等参数。
+> 测试由 global.json 的 `test.runner` 以 Microsoft.Testing.Platform（MTP）模式驱动，不要用 VSTest 时代的 `--logger trx` 等参数；
+> 解决方案必须经 `--solution` 传入，写成位置参数会被 MTP 直接拒绝。
 
 ## 提交约定
 

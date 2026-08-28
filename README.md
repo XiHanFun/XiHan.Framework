@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 <img src="./assets/banner.png" alt="XiHan.Framework" />
 
 <h1>XiHan.Framework</h1>
@@ -303,13 +303,14 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Mcp/       #   MCP Server
 │   │   ├── XiHan.Framework.Web.RealTime/  #   实时通信
 │   │   └── ...                            #   其他模块
-│   ├── test/                              # 测试（12 个项目）
-│   │   ├── XiHan.Framework.TestsBase/     #   测试基础设施
+│   ├── test/                              # 测试（src 下每个项目一一对应，共 66 个单测工程）
 │   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
-│   │   ├── XiHan.Framework.Http.Tests/    #   HTTP 测试
+│   │   ├── XiHan.Framework.Core.Tests/    #   内核测试
 │   │   ├── XiHan.Framework.Web.Api.Tests/ #   Web API 测试
-│   │   ├── XiHan.Framework.Integration.Tests/ # 集成测试
-│   │   └── ...                            #   其他测试
+│   │   ├── ...                            #   其余按 <项目名>.Tests 一一对应
+│   │   ├── XiHan.Framework.TestsBase/     #   测试基础设施（共享库，不含用例）
+│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（可运行的样例应用，非测试工程）
+│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主（可运行，非测试工程）
 │   ├── tool/                              # 工具
 │   │   └── Region/                        #   代码规范化工具
 │   ├── props/                             # 共享 MSBuild 属性

@@ -35,6 +35,12 @@ public static class Base62
     /// </summary>
     public static string Encode(byte[] input)
     {
+        // 原实现直接取 input.Length，null 入参抛的是 NullReferenceException；
+        // 与同组 Base32/Base36/Base58/Base95/CustomRadix 对齐成标准守卫，统一本组的空值契约。
+        // 注：本类 Encode/Decode 两端都按小端处理（Decode 直接返回 ToByteArray 的结果、
+        // 不像其他几个那样反转），字节序本身是自洽的，故不动。
+        ArgumentNullException.ThrowIfNull(input);
+
         // 使用 ArrayPool 租用缓冲区
         var tempBuffer = ArrayPool<byte>.Shared.Rent(input.Length + 1);
         try
@@ -78,6 +84,9 @@ public static class Base62
     /// </summary>
     public static byte[] Decode(string input)
     {
+        // 原实现直接 foreach 入参，null 时抛 NullReferenceException
+        ArgumentNullException.ThrowIfNull(input);
+
         BigInteger intData = 0;
         foreach (var c in input)
         {

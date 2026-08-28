@@ -65,7 +65,7 @@ public sealed class TencentCloudSmsGatewayClient : SmsGatewayClientBase
 
         var sendRequest = new SendSmsRequest
         {
-            PhoneNumberSet = request.PhoneNumbers.Select(NormalizePhone).ToArray(),
+            PhoneNumberSet = [.. request.PhoneNumbers.Select(NormalizePhone)],
             SmsSdkAppId = _sdkAppId,
             SignName = SignName,
             TemplateId = mapping.TemplateCode,

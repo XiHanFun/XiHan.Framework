@@ -226,10 +226,9 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
             };
         }
 
-        return assignees
+        return [.. assignees
             .Where(assignee => !string.IsNullOrWhiteSpace(assignee))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
+            .Distinct(StringComparer.Ordinal)];
     }
 
     private static bool TryResolvePolicy(string? text, out UserTaskCompletionPolicy policy)

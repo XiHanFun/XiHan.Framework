@@ -393,29 +393,52 @@ public abstract class EventBusBase : IEventBus
     protected virtual async Task TriggerHandlerAsync(IEventHandlerFactory asyncHandlerFactory, Type eventType,
         object eventData, List<Exception> exceptions, InboxConfig? inboxConfig = null)
     {
-        using var eventHandlerWrapper = asyncHandlerFactory.GetHandler();
+        IEventHandlerDisposeWrapper eventHandlerWrapper;
         try
         {
-            var handlerType = eventHandlerWrapper.EventHandler.GetType();
-
-            if (inboxConfig?.HandlerSelector != null &&
-                !inboxConfig.HandlerSelector(handlerType))
-            {
-                return;
-            }
-
-            using (CurrentTenant.Change(GetEventDataTenantId(eventData)))
-            {
-                await InvokeEventHandlerAsync(eventHandlerWrapper.EventHandler, eventData, eventType);
-            }
+            // 原来 GetHandler() 写在 try 之外：只要有一个处理器解析不出来（IocEventHandlerFactory 未注册、
+            // TransientEventHandlerFactory 没有无参构造函数，两者都抛 InvalidOperationException），
+            // 异常就会直接穿出 TriggerHandlersAsync 与 PublishAsync，同一事件的其余处理器一个都不会被触发。
+            // 处理器「建不出来」和「执行失败」对调用方是同一类局部故障，应当同样收进 exceptions 交由
+            // ThrowOriginalExceptions 统一抛出，与本方法既有的逐个处理器异常隔离契约保持一致。
+            eventHandlerWrapper = asyncHandlerFactory.GetHandler();
         }
         catch (TargetInvocationException ex)
         {
             exceptions.Add(ex.InnerException!);
+            return;
         }
         catch (Exception ex)
         {
             exceptions.Add(ex);
+            return;
+        }
+
+        using (eventHandlerWrapper)
+        {
+            try
+            {
+                var handlerType = eventHandlerWrapper.EventHandler.GetType();
+
+                if (inboxConfig?.HandlerSelector != null &&
+                    !inboxConfig.HandlerSelector(handlerType))
+                {
+                    return;
+                }
+
+                using (CurrentTenant.Change(GetEventDataTenantId(eventData)))
+                {
+                    await InvokeEventHandlerAsync(eventHandlerWrapper.EventHandler, eventData, eventType);
+                }
+            }
+            catch (TargetInvocationException ex)
+            {
+                exceptions.Add(ex.InnerException!);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
         }
     }
 

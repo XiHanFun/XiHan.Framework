@@ -3,6 +3,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -61,7 +62,11 @@ public static class JsonHelper
 
         try
         {
-            if (options.ValidateJson && !IsValidJson(json))
+            // 预校验原来调用的是无参 IsValidJson，内部走默认 JsonDocumentOptions（不认尾随逗号、注释一律报错），
+            // 而 ValidateJson 默认为 true，于是 Lenient / WebApi 预设上的 AllowTrailingCommas、ReadCommentHandling
+            // 根本走不到真正的反序列化就被这道门拦掉，容错开关成了死开关。
+            // 这里改成与 ToSystemOptions() 同源的文档解析选项，预校验与实际解析用同一把尺子。
+            if (options.ValidateJson && !IsValidJson(json, ToDocumentOptions(options)))
             {
                 throw new JsonException("无效的 JSON 格式");
             }
@@ -88,18 +93,43 @@ public static class JsonHelper
     /// <summary>
     /// 从文件反序列化对象
     /// </summary>
+    /// <remarks>
+    /// 按 UTF-8 读取并保留 BOM 探测，所以 SerializeToFile 用带前导码的编码（UTF-8 / UTF-16 / UTF-32）
+    /// 写出的文件都能自动识别读回。写入端若用了不带前导码的非 UTF-8 编码（如 Latin1、代码页编码），
+    /// 必须改用显式传 encoding 的重载并传入与 JsonSerializeOptions.Encoding 相同的编码。
+    /// </remarks>
     /// <typeparam name="T">目标对象类型</typeparam>
     /// <param name="filePath">文件路径</param>
     /// <param name="options">反序列化选项</param>
     /// <returns>反序列化的对象</returns>
     public static T DeserializeFromFile<T>(string filePath, JsonDeserializeOptions? options = null)
     {
+        return DeserializeFromFile<T>(filePath, Encoding.UTF8, options);
+    }
+
+    /// <summary>
+    /// 从文件反序列化对象（显式指定文件编码）
+    /// </summary>
+    /// <remarks>
+    /// 补这个重载是因为读写两侧的编码来源原来不对称：SerializeToFile 用 JsonSerializeOptions.Encoding 落盘，
+    /// 读取侧却硬编码 Encoding.UTF8，导致用不带前导码的非 UTF-8 编码写出的文件无法被同一套 API 读回。
+    /// 调用方在这里传入与写入时相同的编码即可闭环。
+    /// </remarks>
+    /// <typeparam name="T">目标对象类型</typeparam>
+    /// <param name="filePath">文件路径</param>
+    /// <param name="encoding">读取文件使用的编码，应与写入时的编码一致</param>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>反序列化的对象</returns>
+    public static T DeserializeFromFile<T>(string filePath, Encoding encoding, JsonDeserializeOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(encoding);
+
         if (!File.Exists(filePath))
         {
             throw new FileNotFoundException($"文件不存在：{filePath}");
         }
 
-        var json = File.ReadAllText(filePath, Encoding.UTF8);
+        var json = File.ReadAllText(filePath, encoding);
         return Deserialize<T>(json, options);
     }
 
@@ -170,7 +200,11 @@ public static class JsonHelper
 
         try
         {
-            result = Deserialize<T>(json, options);
+            // 原来直接把调用方的 options 透传给 Deserialize：当 ErrorHandling 是 UseDefault/Ignore/Log 时，
+            // Deserialize 会吞掉异常返回 default，于是这里对着一段非法 JSON 也会返回 true、out 参数为 null，
+            // Try 语义被错误处理策略架空。改用"强制抛异常"的选项副本，让失败以异常形式冒出来再转成 false；
+            // 复制而不是就地改写，是为了不污染调用方传进来的实例。
+            result = Deserialize<T>(json, WithThrowOnError(options ?? new JsonDeserializeOptions()));
             return true;
         }
         catch
@@ -477,7 +511,14 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = new JsonSerializerOptions { WriteIndented = indent };
+            // 不指定 Encoder 会走默认严格编码器，把中文等非 ASCII 字符转义成 \uXXXX，
+            // 而同一个 Helper 的 Serialize 默认用 UnsafeRelaxedJsonEscaping 输出原样中文，两条路径对中文的处理不一致
+            // （语义无损但文本差异明显，日志/配置比对场景会踩坑）。这里与 Serialize 的默认行为对齐。
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = indent,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
             return JsonSerializer.Serialize(document.RootElement, options);
         }
         catch
@@ -496,7 +537,12 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            var options = new JsonSerializerOptions { WriteIndented = false };
+            // 同 FormatJson：显式使用宽松编码器，避免压缩顺带把中文转义成 \uXXXX
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
             return JsonSerializer.Serialize(document.RootElement, options);
         }
         catch
@@ -546,23 +592,25 @@ public static class JsonHelper
     /// <param name="json2">第二个 JSON</param>
     /// <param name="overwrite">是否覆盖重复键</param>
     /// <returns>合并后的 JSON 字符串</returns>
+    /// <remarks>
+    /// 原实现先 JsonToDictionary 扁平化再 BuildNestedStructure 重建，结构与类型双双失真：
+    /// 所有标量被降级为字符串（数字 1 变 "1"、布尔 true 变 "True"），数组被重建成以下标为键的对象
+    /// （[a,b] 变 {"0":"a","1":"b"}），合并结果与两个输入的 JSON 都不同构。
+    /// 现在改为在 JsonNode 层面递归合并，原始值类型与数组结构原样保留。
+    /// </remarks>
     public static string MergeJson(string json1, string json2, bool overwrite = true)
     {
         try
         {
-            var dict1 = JsonToDictionary(json1);
-            var dict2 = JsonToDictionary(json2);
+            var node1 = JsonNode.Parse(json1);
+            var node2 = JsonNode.Parse(json2);
 
-            foreach (var kvp in dict2)
+            var merged = MergeNode(node1, node2, overwrite);
+            if (merged is null)
             {
-                if (overwrite || !dict1.ContainsKey(kvp.Key))
-                {
-                    dict1[kvp.Key] = kvp.Value;
-                }
+                return "null";
             }
 
-            // 重建嵌套结构
-            var merged = BuildNestedStructure(dict1);
             return Serialize(merged);
         }
         catch (Exception ex)
@@ -622,7 +670,13 @@ public static class JsonHelper
         try
         {
             using var document = JsonDocument.Parse(json);
-            return JsonSerializer.Serialize(document.RootElement);
+            // 同 FormatJson：显式使用宽松编码器，避免克隆顺带把中文转义成 \uXXXX
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            return JsonSerializer.Serialize(document.RootElement, options);
         }
         catch
         {
@@ -852,35 +906,123 @@ public static class JsonHelper
     }
 
     /// <summary>
-    /// 从扁平化字典重建嵌套结构
+    /// 在 JsonNode 层面递归合并两个节点
     /// </summary>
-    private static object BuildNestedStructure(Dictionary<string, string> flatDict, string separator = ".")
+    /// <remarks>
+    /// 只有两侧同为对象时才逐键下钻；只要有一侧是数组、标量或缺失，就整体取胜方，
+    /// 因为对象与数组之间不存在"逐键合并"的语义。
+    /// 每次写入都用 DeepClone，避免把仍挂在原文档上的节点直接挂到新对象下（JsonNode 不允许一个节点有两个父级）。
+    /// </remarks>
+    /// <param name="target">基准节点（来自第一个 JSON）</param>
+    /// <param name="source">要合并进来的节点（来自第二个 JSON）</param>
+    /// <param name="overwrite">同名键冲突时是否用 source 覆盖 target</param>
+    /// <returns>合并后的新节点</returns>
+    private static JsonNode? MergeNode(JsonNode? target, JsonNode? source, bool overwrite)
     {
-        var result = new Dictionary<string, object>();
-
-        foreach (var kvp in flatDict)
+        if (target is not JsonObject targetObject || source is not JsonObject sourceObject)
         {
-            var keys = kvp.Key.Split(separator);
-            var current = result;
+            return overwrite ? source?.DeepClone() : (target?.DeepClone() ?? source?.DeepClone());
+        }
 
-            for (var i = 0; i < keys.Length - 1; i++)
+        var result = (JsonObject)targetObject.DeepClone();
+
+        foreach (var property in sourceObject)
+        {
+            // 目标侧没有的键无条件补齐：overwrite 只决定"冲突时谁赢"，不决定"要不要合并新键"
+            if (!result.TryGetPropertyValue(property.Key, out var existing))
             {
-                if (!current.ContainsKey(keys[i]))
-                {
-                    current[keys[i]] = new Dictionary<string, object>();
-                }
-                current = (Dictionary<string, object>)current[keys[i]];
+                result[property.Key] = property.Value?.DeepClone();
+                continue;
             }
 
-            current[keys[^1]] = kvp.Value;
+            result[property.Key] = MergeNode(existing, property.Value, overwrite);
         }
 
         return result;
     }
 
     /// <summary>
+    /// 按反序列化选项构造同源的 JSON 文档解析选项
+    /// </summary>
+    /// <param name="options">反序列化选项</param>
+    /// <returns>与 ToSystemOptions() 口径一致的文档解析选项</returns>
+    private static JsonDocumentOptions ToDocumentOptions(JsonDeserializeOptions options)
+    {
+        return new JsonDocumentOptions
+        {
+            AllowTrailingCommas = options.AllowTrailingCommas,
+            CommentHandling = options.ReadCommentHandling ? JsonCommentHandling.Skip : JsonCommentHandling.Disallow,
+            MaxDepth = options.MaxDepth
+        };
+    }
+
+    /// <summary>
+    /// 按指定文档解析选项检查 JSON 是否有效
+    /// </summary>
+    /// <param name="json">JSON 字符串</param>
+    /// <param name="documentOptions">文档解析选项</param>
+    /// <returns>是否有效</returns>
+    private static bool IsValidJson(string json, JsonDocumentOptions documentOptions)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(json, documentOptions);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 复制一份反序列化选项，并把错误处理策略强制为抛出异常
+    /// </summary>
+    /// <remarks>
+    /// 供 Try 方法使用：Try 方法用返回值表达成败，不能再让 UseDefault/Ignore/Log 把失败吞成"成功且结果为 null"。
+    /// 复制而不是就地改写，避免污染调用方持有的选项实例。
+    /// </remarks>
+    /// <param name="options">调用方给定的反序列化选项</param>
+    /// <returns>错误处理策略为 ThrowException 的副本</returns>
+    private static JsonDeserializeOptions WithThrowOnError(JsonDeserializeOptions options)
+    {
+        return new JsonDeserializeOptions
+        {
+            PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive,
+            AllowTrailingCommas = options.AllowTrailingCommas,
+            ReadCommentHandling = options.ReadCommentHandling,
+            IgnoreUnknownProperties = options.IgnoreUnknownProperties,
+            UseDefaultValues = options.UseDefaultValues,
+            PropertyNamingPolicy = options.PropertyNamingPolicy,
+            NumberHandling = options.NumberHandling,
+            MaxDepth = options.MaxDepth,
+            Encoder = options.Encoder,
+            DefaultIgnoreCondition = options.DefaultIgnoreCondition,
+            CustomConverters = options.CustomConverters,
+            ValidateJson = options.ValidateJson,
+            MaxStringLength = options.MaxStringLength,
+            MaxArrayLength = options.MaxArrayLength,
+            ErrorHandling = JsonErrorHandling.ThrowException
+        };
+    }
+
+    /// <summary>
     /// 比较两个 JsonElement 是否相等
     /// </summary>
+    /// <remarks>
+    /// 字符串原来和其他标量一样走 GetRawText 比对，比的是"原文里的转义形式"而不是字符串的值：
+    /// 同一个中文既可能以原样出现，也可能以严格编码器写出的 \uXXXX 形式出现
+    /// （JsonNode.ToJsonString 没有指定 Encoder，RemoveNode / AddNode / UpdateNode 的返回值就是后者），
+    /// 两者语义完全相同却被判为不等，与 CompareJson 承诺的"结构化比较"相悖
+    /// （该方法已明确忽略属性顺序与空白，转义形式同属文本层差异，应当一并忽略）。
+    /// 因此字符串改为比较解码后的值；数字、布尔与 null 继续按原文比对：
+    /// 布尔与 null 的原文本身唯一，数字则只有原文能无损表达（转成 decimal/double 会引入精度与溢出问题）。
+    /// </remarks>
     private static bool JsonElementEquals(JsonElement element1, JsonElement element2)
     {
         if (element1.ValueKind != element2.ValueKind)
@@ -892,6 +1034,7 @@ public static class JsonHelper
         {
             JsonValueKind.Object => CompareJsonObjects(element1, element2),
             JsonValueKind.Array => CompareJsonArrays(element1, element2),
+            JsonValueKind.String => element1.ValueEquals(element2.GetString()),
             _ => element1.GetRawText() == element2.GetRawText()
         };
     }

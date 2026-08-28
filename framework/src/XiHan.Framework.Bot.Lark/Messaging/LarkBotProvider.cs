@@ -5,12 +5,11 @@ using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Bot.Helpers;
-using XiHan.Framework.Bot.Models;
-using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Lark.Abstractions;
 using XiHan.Framework.Bot.Lark.Models;
 using XiHan.Framework.Bot.Lark.Options;
-using XiHan.Framework.Bot.Lark.Enums;
+using XiHan.Framework.Bot.Models;
+using XiHan.Framework.Bot.Providers;
 
 namespace XiHan.Framework.Bot.Lark.Messaging;
 

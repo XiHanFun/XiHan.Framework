@@ -132,9 +132,9 @@ public sealed class SqlSugarSlaveHealthCheckService : BackgroundService
             // 首次快照：原始权重（已被 NormalizeSlaveHitRates 归一化）、原始从库连接串、主库连接串
             if (!_originalWeights.TryGetValue(configId, out var originalWeights))
             {
-                originalWeights = slaves.Select(s => s.HitRate).ToList();
+                originalWeights = [.. slaves.Select(s => s.HitRate)];
                 _originalWeights[configId] = originalWeights;
-                _originalSlaveConnections[configId] = slaves.Select(s => s.ConnectionString).ToList();
+                _originalSlaveConnections[configId] = [.. slaves.Select(s => s.ConnectionString)];
                 _masterConnections[configId] = liveConfig!.ConnectionString;
             }
 

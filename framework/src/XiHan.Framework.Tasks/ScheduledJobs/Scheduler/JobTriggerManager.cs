@@ -15,24 +15,23 @@ public class JobTriggerManager
     /// <summary>
     /// 记录触发
     /// </summary>
+    /// <remarks>
+    /// 原实现把 TriggerCount++ 写在 AddOrUpdate 的 updateValueFactory 里。该委托在竞争下可能被重复
+    /// 执行（ConcurrentDictionary 不保证只调一次），且 ++ 本身也不是原子操作；调度定时器回调
+    /// （CheckAndFireJobs → ExecuteJobAsync）与手动 TriggerJobAsync 会同时进入这条路径，于是计数
+    /// 时多时少，CompositeJobScheduler.ShouldFire 里的 RepeatCount 上限判断随之失准（任务被多触发）。
+    /// 改为先 GetOrAdd 取到唯一的状态对象（工厂无副作用，重复执行也安全），再锁住该对象写入；
+    /// 锁粒度与写法与 JobMetricsProvider.RecordExecution 保持一致。
+    /// </remarks>
     public void RecordTrigger(string jobName, DateTimeOffset fireTime)
     {
-        _triggerStates.AddOrUpdate(
-            jobName,
-            _ => new JobTriggerState
-            {
-                JobName = jobName,
-                LastFireTime = fireTime,
-                NextFireTime = null,
-                TriggerCount = 1,
-                IsPaused = false
-            },
-            (_, state) =>
-            {
-                state.LastFireTime = fireTime;
-                state.TriggerCount++;
-                return state;
-            });
+        var state = GetOrAddState(jobName);
+
+        lock (state)
+        {
+            state.LastFireTime = fireTime;
+            state.TriggerCount++;
+        }
     }
 
     /// <summary>
@@ -40,19 +39,12 @@ public class JobTriggerManager
     /// </summary>
     public void UpdateNextFireTime(string jobName, DateTimeOffset? nextFireTime)
     {
-        _triggerStates.AddOrUpdate(
-            jobName,
-            _ => new JobTriggerState
-            {
-                JobName = jobName,
-                NextFireTime = nextFireTime,
-                IsPaused = false
-            },
-            (_, state) =>
-            {
-                state.NextFireTime = nextFireTime;
-                return state;
-            });
+        var state = GetOrAddState(jobName);
+
+        lock (state)
+        {
+            state.NextFireTime = nextFireTime;
+        }
     }
 
     /// <summary>
@@ -62,7 +54,10 @@ public class JobTriggerManager
     {
         if (_triggerStates.TryGetValue(jobName, out var state))
         {
-            state.IsPaused = true;
+            lock (state)
+            {
+                state.IsPaused = true;
+            }
         }
     }
 
@@ -73,7 +68,10 @@ public class JobTriggerManager
     {
         if (_triggerStates.TryGetValue(jobName, out var state))
         {
-            state.IsPaused = false;
+            lock (state)
+            {
+                state.IsPaused = false;
+            }
         }
     }
 
@@ -99,6 +97,18 @@ public class JobTriggerManager
     public void RemoveTriggerState(string jobName)
     {
         _triggerStates.TryRemove(jobName, out _);
+    }
+
+    /// <summary>
+    /// 取到任务对应的触发状态，没有则新建一个空状态
+    /// </summary>
+    /// <remarks>
+    /// 工厂不带任何副作用，因此即便在竞争下被重复调用也不会多算；所有调用方拿到的都是字典里
+    /// 最终留存的那一个实例，可以安全地作为写入锁的锁对象。
+    /// </remarks>
+    private JobTriggerState GetOrAddState(string jobName)
+    {
+        return _triggerStates.GetOrAdd(jobName, name => new JobTriggerState { JobName = name });
     }
 }
 

@@ -29,8 +29,8 @@ jobs:
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          # global.json 锁定 10.0.3xx 功能带（latestPatch）并启用 MTP 测试运行器，
-          # setup-dotnet 会按其精确安装 10.0.302。
+          # global.json 锁定 10.0.1xx 功能带（latestPatch）并启用 MTP 测试运行器，
+          # setup-dotnet 会按其精确安装对应补丁。
           global-json-file: global.json
 
       - name: 还原
@@ -50,24 +50,29 @@ jobs:
         # dotnet test 由 global.json 的 test.runner 直接驱动 Microsoft.Testing.Platform
         # 测试应用；--coverage 经 TestingPlatformCommandLineArguments 透传给每个测试程序，
         # 覆盖率文件产出到工作目录下的 TestResults/。失败即中断。
+        # MTP 模式下解决方案必须经 --solution 传入，位置参数会被直接拒绝。
         run: >
-          dotnet test framework/XiHan.Framework.slnx
+          dotnet test --solution framework/XiHan.Framework.slnx
           --configuration Release
           --no-build
           -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 
       - name: 合并覆盖率报告
-        # MTP 的覆盖率产物落在 dotnet test 的工作目录下，即仓库根的 TestResults/
+        # 覆盖率产物并不落在 dotnet test 的工作目录，而是每个测试工程各自的
+        # bin/<配置>/<TFM>/TestResults/ 下，因此必须递归匹配。
+        # 早先这里只在仓库根的 TestResults/ 里找，一个文件都匹配不到，
+        # 合并出来的 Summary.json 是空的，下面的门禁等于从未生效。
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
           reportgenerator \
-            "-reports:TestResults/*.cobertura.xml" \
+            "-reports:framework/test/**/TestResults/*.cobertura.xml" \
             "-targetdir:${{ runner.temp }}/coverage" \
             "-reporttypes:JsonSummary"
 
       - name: 覆盖率门禁
-        # 当前实测（2026-08-25）：行覆盖率 11.7%、覆盖 6928 行。
-        # 阈值只做「防止大幅回退」：覆盖行数与百分比双下限，随测试补齐逐步上调。
+        # 当前实测（2026-08-28，补齐 66 个单测工程 + 两轮缺陷修复后）：
+        # 行覆盖率 45.8%、覆盖 49080 行、分支覆盖 42.7%（基线曾为 11.7% / 6928 行）。
+        # 阈值只做「防止大幅回退」：覆盖行数与百分比双下限，各留约一成裕度，随测试补齐逐步上调。
         run: |
           python3 - <<'PY'
           import json
@@ -76,8 +81,8 @@ jobs:
           summary = data["summary"]
           line_coverage = float(summary["linecoverage"])
           covered_lines = int(summary["coveredlines"])
-          min_covered_lines = 6800
-          min_line_coverage = 11.0
+          min_covered_lines = 44000
+          min_line_coverage = 41.0
           print(f"Line coverage: {line_coverage}%, covered lines: {covered_lines}")
           print(f"Thresholds: >= {min_line_coverage}% and >= {min_covered_lines} covered lines")
           if covered_lines < min_covered_lines or line_coverage < min_line_coverage:
@@ -92,5 +97,5 @@ jobs:
         with:
           name: test-results
           path: |
-            TestResults/
+            framework/test/**/TestResults/
           if-no-files-found: ignore

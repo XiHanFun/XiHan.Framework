@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.RealTime.Options;
 using XiHan.Framework.Web.RealTime.Services;
