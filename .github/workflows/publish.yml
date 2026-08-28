@@ -3,10 +3,9 @@ name: 发布 NuGet
 # 手动触发或推送 v* 标签（如 v3.13.1）。版本号取自 framework/props/version.props，
 # 构建产出 66 个包到 framework/nupkgs/，测试通过后统一推送 nuget.org（--skip-duplicate 幂等）。
 #
-# 认证走 NuGet 可信发布（OIDC），无长期 API Key：
-# 1. nuget.org → 用户名 → 受信任的发布 → 添加策略：
-#    存储库所有者 XiHanFun、存储库 XiHan.Framework、工作流文件 publish.yml、环境留空；
-# 2. 仓库 Settings → Secrets and variables → Actions → Variables 添加 NUGET_USER = nuget.org 用户名。
+# 认证走 NuGet 可信发布（OIDC），无长期 API Key。
+# nuget.org → 受信任的发布 → 添加策略：存储库所有者 XiHanFun、存储库 XiHan.Framework、
+# 工作流文件 publish.yml、环境留空。
 on:
   workflow_dispatch:
   push:
@@ -61,7 +60,7 @@ jobs:
         id: nuget-login
         uses: NuGet/login@v1
         with:
-          user: ${{ vars.NUGET_USER }}
+          user: zhaifanhua
 
       - name: 推送 NuGet 包
         # dotnet nuget push 一次只接受一个包，逐个循环推送；--skip-duplicate 保证重跑幂等。
