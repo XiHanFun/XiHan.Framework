@@ -16,12 +16,12 @@ namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 public class KnowledgeVectorOptionsTests
 {
     /// <summary>
-    /// 默认集合名锁定为 xihan_knowledge
+    /// 默认集合名锁定为 default_knowledge
     /// </summary>
     [Fact]
     public void DefaultCollectionName_IsStablePhysicalName()
     {
-        Assert.Equal("xihan_knowledge", KnowledgeVectorOptions.DefaultCollectionName);
+        Assert.Equal("default_knowledge", KnowledgeVectorOptions.DefaultCollectionName);
     }
 
     /// <summary>

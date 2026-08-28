@@ -319,7 +319,7 @@ public sealed class KnowledgeSample(
 
 几个必须知道的约定：
 
-- **维度必须与嵌入模型一致**。`KnowledgeVectorOptions` 默认集合名 `xihan_knowledge`、维度 `1536`。维度对不上时摄取与检索都会在 upsert / 向量检索**之前**抛出明确异常（`EnsureDimensions`），而不是丢一个驱动层报错。换模型要同时改维度并更换集合名或删除原集合重建。
+- **维度必须与嵌入模型一致**。`KnowledgeVectorOptions` 默认集合名 `default_knowledge`、维度 `1536`。维度对不上时摄取与检索都会在 upsert / 向量检索**之前**抛出明确异常（`EnsureDimensions`），而不是丢一个驱动层报错。换模型要同时改维度并更换集合名或删除原集合重建。
 - **这份 Options 不绑配置节**。`AddXiHanRAG(Action<KnowledgeVectorOptions>)` 只接受代码配置；要从 appsettings 读，应用侧自行 `services.Configure<KnowledgeVectorOptions>(configuration.GetSection("..."))`。
 - **切片主键是确定性的**。由 `documentId:index` 派生，重复摄取同一文档即覆盖，天然幂等。
 - **删除要传原切片数**。`RemoveDocumentAsync(documentId, chunkCount)` 靠枚举 `0..chunkCount-1` 生成键来删，`chunkCount` 传小了会留孤儿向量——摄取返回的切片数要存下来。

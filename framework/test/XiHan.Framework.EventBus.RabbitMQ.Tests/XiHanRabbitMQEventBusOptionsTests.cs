@@ -46,9 +46,9 @@ public class XiHanRabbitMQEventBusOptionsTests
     {
         var options = new XiHanRabbitMQEventBusOptions();
 
-        Assert.Equal("XiHan", options.ExchangeName);
+        Assert.Equal("Default", options.ExchangeName);
         Assert.Equal("direct", options.ExchangeType);
-        Assert.Equal("XiHan.EventBus", options.QueueName);
+        Assert.Equal("Default.EventBus", options.QueueName);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public class XiHanRabbitMQEventBusOptionsTests
         var options = new XiHanRabbitMQEventBusOptions();
 
         Assert.Equal((ushort)50, options.PrefetchCount);
-        Assert.Equal("XiHan.EventBus", options.ClientProvidedName);
+        Assert.Equal("Default.EventBus", options.ClientProvidedName);
     }
 
     /// <summary>
