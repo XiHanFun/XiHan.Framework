@@ -101,8 +101,8 @@ public class XiHanTrafficServiceCollectionExtensionsTests
         var engineDescriptors = services.Where(descriptor => descriptor.ServiceType == typeof(IGrayRuleEngine)).ToList();
         var repositoryDescriptors = services.Where(descriptor => descriptor.ServiceType == typeof(IGrayRuleRepository)).ToList();
 
-        Assert.Equal(1, engineDescriptors.Count);
-        Assert.Equal(1, repositoryDescriptors.Count);
+        Assert.Single(engineDescriptors);
+        Assert.Single(repositoryDescriptors);
     }
 
     /// <summary>
@@ -163,7 +163,7 @@ public class XiHanTrafficServiceCollectionExtensionsTests
 
         var descriptors = services.ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(typeof(IGrayMatcher), descriptors[0].ServiceType);
         Assert.Equal(typeof(StubGrayMatcher), descriptors[0].ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
@@ -183,7 +183,7 @@ public class XiHanTrafficServiceCollectionExtensionsTests
 
         var descriptors = services.Where(descriptor => descriptor.ServiceType == typeof(IGrayRuleRepository)).ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(typeof(StubGrayRuleRepository), descriptors[0].ImplementationType);
 
         using var provider = services.BuildServiceProvider();
@@ -203,7 +203,7 @@ public class XiHanTrafficServiceCollectionExtensionsTests
 
         var descriptors = services.ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(typeof(IGrayRuleRepository), descriptors[0].ServiceType);
         Assert.Equal(typeof(StubGrayRuleRepository), descriptors[0].ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);

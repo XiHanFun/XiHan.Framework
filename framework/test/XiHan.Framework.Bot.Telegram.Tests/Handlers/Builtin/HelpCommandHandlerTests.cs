@@ -59,7 +59,7 @@ public class HelpCommandHandlerTests
 
         await handler.HandleAsync(context, [], TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal(
             "可用命令：" + Environment.NewLine + "/order - 下单",
             notifier.SentTexts[0].Text);

@@ -54,7 +54,7 @@ public class SmsGatewayContractsTests
 
         var (phones, templateCode, paramsJson, content) = request;
 
-        Assert.Equal(1, phones.Count);
+        Assert.Single(phones);
         Assert.Equal("13800000000", phones[0]);
         Assert.Equal("auth-login", templateCode);
         Assert.Equal("""{"code":"1"}""", paramsJson);

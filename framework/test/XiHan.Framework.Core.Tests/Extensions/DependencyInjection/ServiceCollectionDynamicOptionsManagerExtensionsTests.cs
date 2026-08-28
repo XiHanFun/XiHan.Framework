@@ -58,8 +58,8 @@ public class ServiceCollectionDynamicOptionsManagerExtensionsTests
 
         services.AddXiHanDynamicOptions<DynamicSampleOptions, SampleDynamicOptionsManager>();
 
-        var optionsDescriptor = Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IOptions<DynamicSampleOptions>)));
-        var snapshotDescriptor = Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IOptionsSnapshot<DynamicSampleOptions>)));
+        var optionsDescriptor = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IOptions<DynamicSampleOptions>));
+        var snapshotDescriptor = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IOptionsSnapshot<DynamicSampleOptions>));
 
         Assert.Equal(ServiceLifetime.Scoped, optionsDescriptor.Lifetime);
         Assert.Equal(typeof(SampleDynamicOptionsManager), optionsDescriptor.ImplementationType);
@@ -78,7 +78,7 @@ public class ServiceCollectionDynamicOptionsManagerExtensionsTests
 
         services.AddXiHanDynamicOptions<DynamicSampleOptions, SampleDynamicOptionsManager>();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IOptions<DynamicSampleOptions>)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IOptions<DynamicSampleOptions>));
 
         Assert.Equal(typeof(SampleDynamicOptionsManager), descriptor.ImplementationType);
     }

@@ -74,7 +74,7 @@ public class BotBuilderLarkExtensionsTests
         var services = new ServiceCollection();
         new BotBuilder(services).UseLark(options => options.AccessToken = "abc-token");
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(ILarkConfigStore)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(ILarkConfigStore));
 
         Assert.Equal(typeof(DefaultLarkConfigStore), descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
@@ -89,7 +89,7 @@ public class BotBuilderLarkExtensionsTests
         var services = new ServiceCollection();
         new BotBuilder(services).UseLark(options => options.AccessToken = "abc-token");
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
 
         Assert.Equal(typeof(LarkBotProvider), descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
@@ -107,8 +107,8 @@ public class BotBuilderLarkExtensionsTests
         builder.UseLark(options => options.AccessToken = "abc-token");
         builder.UseLark(options => options.AccessToken = "abc-token");
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(ILarkConfigStore)));
+        Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
+        Assert.Single(services, item => item.ServiceType == typeof(ILarkConfigStore));
     }
 
     /// <summary>

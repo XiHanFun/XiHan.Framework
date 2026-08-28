@@ -54,7 +54,7 @@ public class XiHanBotTelegramServiceCollectionExtensionsTests
         _ = services.AddXiHanBotTelegram();
 
         var descriptors = services.Where(x => x.ServiceType == typeof(ITelegramConfigStore)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(typeof(DefaultTelegramConfigStore), descriptors[0].ImplementationType);
     }
@@ -70,7 +70,7 @@ public class XiHanBotTelegramServiceCollectionExtensionsTests
         _ = services.AddXiHanBotTelegram();
 
         var descriptors = services.Where(x => x.ServiceType == typeof(IBotProvider)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(typeof(TelegramBotProvider), descriptors[0].ImplementationType);
     }
@@ -89,7 +89,7 @@ public class XiHanBotTelegramServiceCollectionExtensionsTests
         var providers = provider.GetServices<IBotProvider>().ToList();
 
         Assert.IsType<DefaultTelegramConfigStore>(store);
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
         Assert.IsType<TelegramBotProvider>(providers[0]);
         Assert.Same(store, provider.GetRequiredService<ITelegramConfigStore>());
     }
@@ -164,6 +164,6 @@ public class XiHanBotTelegramServiceCollectionExtensionsTests
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Equal(1, provider.GetServices<IBotProvider>().Count());
+        Assert.Single(provider.GetServices<IBotProvider>());
     }
 }

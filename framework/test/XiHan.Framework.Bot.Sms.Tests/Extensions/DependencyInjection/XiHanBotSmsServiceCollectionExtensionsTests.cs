@@ -53,7 +53,7 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(ISmsConfigStore)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(typeof(DefaultSmsConfigStore), descriptors[0].ImplementationType);
     }
@@ -72,7 +72,7 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(ISmsGatewayResolver)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(typeof(SmsGatewayResolver), descriptors[0].ImplementationType);
     }
@@ -88,7 +88,7 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(IBotProvider)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(typeof(SmsBotProvider), descriptors[0].ImplementationType);
     }
@@ -109,7 +109,7 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
 
         Assert.IsType<DefaultSmsConfigStore>(store);
         Assert.IsType<SmsGatewayResolver>(resolver);
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
         Assert.IsType<SmsBotProvider>(providers[0]);
         Assert.Same(store, provider.GetRequiredService<ISmsConfigStore>());
         Assert.Same(resolver, provider.GetRequiredService<ISmsGatewayResolver>());
@@ -145,7 +145,7 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         using var provider = services.BuildServiceProvider();
         var providers = provider.GetServices<IBotProvider>().ToList();
 
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
     }
 
     /// <summary>

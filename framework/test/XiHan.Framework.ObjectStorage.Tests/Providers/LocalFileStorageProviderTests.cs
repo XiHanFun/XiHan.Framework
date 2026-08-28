@@ -370,7 +370,7 @@ public sealed class LocalFileStorageProviderTests : IDisposable
         var topLevel = await provider.ListFilesAsync(string.Empty, false, token);
         var recursive = await provider.ListFilesAsync(string.Empty, true, token);
 
-        Assert.Equal(1, topLevel.Count);
+        Assert.Single(topLevel);
         Assert.Equal("root.txt", topLevel[0].Path);
         Assert.Equal(2, recursive.Count);
         Assert.Contains(recursive, item => item.Path == "sub/child.txt");
@@ -388,7 +388,7 @@ public sealed class LocalFileStorageProviderTests : IDisposable
 
         var files = await provider.ListFilesAsync("sub", false, token);
 
-        Assert.Equal(1, files.Count);
+        Assert.Single(files);
         Assert.Equal("child.txt", files[0].Name);
         Assert.Equal("sub/child.txt", files[0].Path);
         Assert.Equal(5L, files[0].Size);

@@ -194,7 +194,7 @@ public class ScriptResultTests
         Assert.Equal("曦寒", converted.Value);
         Assert.Equal("无", converted.ErrorMessage);
         Assert.Same(exception, converted.Exception);
-        Assert.Equal(1, converted.Diagnostics.Length);
+        Assert.Single(converted.Diagnostics);
         Assert.Equal(11, converted.ExecutionTimeMs);
         Assert.Equal(22, converted.CompilationTimeMs);
         Assert.Same(memory, converted.MemoryUsage);

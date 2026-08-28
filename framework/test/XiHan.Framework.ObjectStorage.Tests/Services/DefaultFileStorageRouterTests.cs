@@ -204,7 +204,7 @@ public class DefaultFileStorageRouterTests
         var provider = router.Route("avatar");
 
         Assert.Same(expected, provider);
-        Assert.Equal(1, _manager.RequestedProviderNames.Count);
+        Assert.Single(_manager.RequestedProviderNames);
         Assert.Equal("MinIO", _manager.RequestedProviderNames[0]);
     }
 

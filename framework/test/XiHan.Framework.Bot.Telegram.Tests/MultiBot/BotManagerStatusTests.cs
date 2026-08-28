@@ -102,7 +102,7 @@ public class BotManagerStatusTests
         Assert.True(restored!.IsStarted);
         Assert.Equal("webhook", restored.TransportMode);
         Assert.Equal(1, restored.TotalBots);
-        Assert.Equal(1, restored.Bots.Count);
+        Assert.Single(restored.Bots);
         Assert.Equal("main-bot", restored.Bots[0].Name);
         Assert.Equal(123456L, restored.Bots[0].BotId);
         Assert.True(restored.Bots[0].IsRunning);

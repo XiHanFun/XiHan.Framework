@@ -219,7 +219,7 @@ public class DynamicServiceConfigTests
             });
 
         Assert.All(observed, value => Assert.True(allowedValues.Contains(value), $"读到了非法的中间值：{value}"));
-        Assert.True(allowedValues.Contains(config.IdleDelayMilliseconds));
+        Assert.Contains(config.IdleDelayMilliseconds, allowedValues);
     }
 
     /// <summary>

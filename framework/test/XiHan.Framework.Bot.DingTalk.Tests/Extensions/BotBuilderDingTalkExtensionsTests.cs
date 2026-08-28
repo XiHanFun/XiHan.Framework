@@ -68,7 +68,7 @@ public class BotBuilderDingTalkExtensionsTests
 
         new BotBuilder(services).UseDingTalk(_ => { });
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
 
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Equal(typeof(DingTalkBotProvider), descriptor.ImplementationType);
@@ -84,7 +84,7 @@ public class BotBuilderDingTalkExtensionsTests
 
         new BotBuilder(services).UseDingTalk(_ => { });
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
 
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Equal(typeof(DefaultDingTalkConfigStore), descriptor.ImplementationType);
@@ -102,8 +102,8 @@ public class BotBuilderDingTalkExtensionsTests
         builder.UseDingTalk(_ => { });
         builder.UseDingTalk(_ => { });
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
+        Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
+        Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class BotBuilderDingTalkExtensionsTests
 
         new BotBuilder(services).UseDingTalk(_ => { });
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
 
         Assert.Same(custom, descriptor.ImplementationInstance);
     }
