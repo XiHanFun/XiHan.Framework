@@ -34,9 +34,9 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.Set("b", new SampleCacheItem { Value = "B" });
         cache.UnitOfWorkCache["c"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "C" });
 
-        var result = cache.GetMany(new[] { "a", "b", "c" }, considerUow: true);
+        var result = cache.GetMany(["a", "b", "c"], considerUow: true);
 
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Null(result[0].Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Equal("C", result[2].Value?.Value);
@@ -55,9 +55,9 @@ public class DistributedCacheUnitOfWorkOrderingTests
         await cache.SetAsync("b", new SampleCacheItem { Value = "B" }, token: token);
         cache.UnitOfWorkCache["c"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "C" });
 
-        var result = await cache.GetManyAsync(new[] { "a", "b", "c" }, considerUow: true, token: token);
+        var result = await cache.GetManyAsync(["a", "b", "c"], considerUow: true, token: token);
 
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Null(result[0].Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Equal("C", result[2].Value?.Value);
@@ -80,17 +80,15 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.UnitOfWorkCache["c"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "C" });
         var requested = new List<string>();
 
-        var result = cache.GetOrAddMany(new[] { "a", "b", "c" }, keys =>
+        var result = cache.GetOrAddMany(["a", "b", "c"], keys =>
         {
             requested.AddRange(keys);
 
-            return keys
-                .Select(key => new KeyValuePair<string, SampleCacheItem>(key, new SampleCacheItem { Value = "built-" + key }))
-                .ToList();
+            return [.. keys.Select(key => new KeyValuePair<string, SampleCacheItem>(key, new SampleCacheItem { Value = "built-" + key }))];
         }, considerUow: true);
 
         Assert.Equal(new[] { "a" }, requested);
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Equal("built-a", result[0].Value?.Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Equal("C", result[2].Value?.Value);
@@ -111,7 +109,7 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.UnitOfWorkCache["c"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "C" });
         var requested = new List<string>();
 
-        var result = await cache.GetOrAddManyAsync(new[] { "a", "b", "c" }, keys =>
+        var result = await cache.GetOrAddManyAsync(["a", "b", "c"], keys =>
         {
             requested.AddRange(keys);
 
@@ -121,7 +119,7 @@ public class DistributedCacheUnitOfWorkOrderingTests
         }, considerUow: true, token: token);
 
         Assert.Equal(new[] { "a" }, requested);
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Equal("built-a", result[0].Value?.Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Equal("C", result[2].Value?.Value);
@@ -143,16 +141,16 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.UnitOfWorkCache["b"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "B" });
         var invoked = false;
 
-        var result = cache.GetOrAddMany(new[] { "b", "a" }, keys =>
+        var result = cache.GetOrAddMany(["b", "a"], keys =>
         {
             invoked = true;
 
-            return new List<KeyValuePair<string, SampleCacheItem>>();
+            return [];
         }, considerUow: true);
 
         Assert.False(invoked);
         Assert.Equal(0, store.GetManyCount);
-        Assert.Equal(new[] { "b", "a" }, result.Select(pair => pair.Key));
+        Assert.Equal(["b", "a"], result.Select(pair => pair.Key));
         Assert.Equal("B", result[0].Value?.Value);
         Assert.Equal("A", result[1].Value?.Value);
     }
@@ -169,9 +167,9 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.Set("b", new SampleCacheItem { Value = "B" });
         cache.UnitOfWorkCache["a"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "A" });
 
-        var result = cache.GetMany(new[] { "a", "b", "a" }, considerUow: true);
+        var result = cache.GetMany(["a", "b", "a"], considerUow: true);
 
-        Assert.Equal(new[] { "a", "b", "a" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "a"], result.Select(pair => pair.Key));
         Assert.Equal("A", result[0].Value?.Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Equal("A", result[2].Value?.Value);
@@ -192,9 +190,9 @@ public class DistributedCacheUnitOfWorkOrderingTests
         cache.Set("b", new SampleCacheItem { Value = "B" });
         cache.UnitOfWorkCache["c"] = new UnitOfWorkCacheItem<SampleCacheItem>(new SampleCacheItem { Value = "C" });
 
-        var result = cache.GetMany(new[] { "a", "b", "c" });
+        var result = cache.GetMany(["a", "b", "c"]);
 
-        Assert.Equal(new[] { "a", "b", "c" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b", "c"], result.Select(pair => pair.Key));
         Assert.Null(result[0].Value);
         Assert.Equal("B", result[1].Value?.Value);
         Assert.Null(result[2].Value);

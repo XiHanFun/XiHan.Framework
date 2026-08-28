@@ -58,7 +58,7 @@ public class XiHanLoggerTests
         var entry = Assert.Single(sink.Entries);
         Assert.Equal("hello", entry.GetProperty("Message"));
         var args = Assert.IsType<object[]>(entry.GetProperty("Args"));
-        Assert.Equal(new object[] { "a", "b" }, args);
+        Assert.Equal(["a", "b"], args);
     }
 
     /// <summary>

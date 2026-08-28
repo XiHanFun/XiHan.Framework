@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Options;
 using XiHan.Framework.Bot.Telegram.Core;
 using XiHan.Framework.Bot.Telegram.Handlers;
 using XiHan.Framework.Bot.Telegram.Options;

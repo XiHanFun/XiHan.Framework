@@ -1,10 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 
 namespace XiHan.Framework.Web.Docs.Tests.Swagger;
 

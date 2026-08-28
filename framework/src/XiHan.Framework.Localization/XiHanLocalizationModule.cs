@@ -3,8 +3,8 @@
 
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Localization.Extensions.DependencyInjection;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Extensions.DependencyInjection;
 using XiHan.Framework.Settings;
 using XiHan.Framework.Threading;
 using XiHan.Framework.VirtualFileSystem;

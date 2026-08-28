@@ -1,12 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Concurrent;
-using System.Globalization;
-using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text.Json;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.SearchEngines.Documents;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;

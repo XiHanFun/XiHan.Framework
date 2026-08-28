@@ -286,7 +286,7 @@ public class ExtensibleObjectValidatorTests
     public void AddValidationErrors_WhenExtensibleObjectNull_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(
-            () => ExtensibleObjectValidator.AddValidationErrors(null!, new List<ValidationResult>()));
+            () => ExtensibleObjectValidator.AddValidationErrors(null!, []));
 
         Assert.Equal("extensibleObject", exception.ParamName);
     }
@@ -314,7 +314,7 @@ public class ExtensibleObjectValidatorTests
         var target = new NullArgumentTarget();
 
         var exception = Assert.Throws<ArgumentException>(
-            () => ExtensibleObjectValidator.AddValidationErrors(target, new List<ValidationResult>(), "   ", null));
+            () => ExtensibleObjectValidator.AddValidationErrors(target, [], "   ", null));
 
         Assert.Equal("propertyName", exception.ParamName);
     }

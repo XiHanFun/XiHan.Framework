@@ -65,10 +65,10 @@ public class XiHanValidationExceptionTests
     [Fact]
     public void Constructor_WithValidationErrors_KeepsSameListInstanceAndDefaultMessage()
     {
-        IList<ValidationResult> errors = new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" })
-        };
+        IList<ValidationResult> errors =
+        [
+            new ValidationResult("用户名不能为空", ["UserName"])
+        ];
 
         var exception = new XiHanValidationException(errors);
 
@@ -84,10 +84,10 @@ public class XiHanValidationExceptionTests
     [Fact]
     public void Constructor_WithMessageAndValidationErrors_KeepsBoth()
     {
-        IList<ValidationResult> errors = new List<ValidationResult>
-        {
-            new ValidationResult("邮箱格式不正确", new[] { "Email" })
-        };
+        IList<ValidationResult> errors =
+        [
+            new ValidationResult("邮箱格式不正确", ["Email"])
+        ];
 
         var exception = new XiHanValidationException("模型校验失败", errors);
 
@@ -140,7 +140,7 @@ public class XiHanValidationExceptionTests
         Assert.Null(property.SetMethod);
 
         var exception = new XiHanValidationException();
-        exception.ValidationErrors.Add(new ValidationResult("用户名不能为空", new[] { "UserName" }));
+        exception.ValidationErrors.Add(new ValidationResult("用户名不能为空", ["UserName"]));
 
         Assert.Single(exception.ValidationErrors);
     }
@@ -180,10 +180,10 @@ public class XiHanValidationExceptionTests
     [Fact]
     public void Log_WhenLoggerIsNull_ThrowsArgumentNullException()
     {
-        var exception = new XiHanValidationException("模型校验失败", new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" })
-        });
+        var exception = new XiHanValidationException("模型校验失败",
+        [
+            new ValidationResult("用户名不能为空", ["UserName"])
+        ]);
 
         var thrown = Assert.Throws<ArgumentNullException>(() => exception.Log(null!));
 
@@ -197,11 +197,11 @@ public class XiHanValidationExceptionTests
     public void Log_WithMultipleErrors_WritesSingleAggregatedEntry()
     {
         var logger = new RecordingLogger();
-        var exception = new XiHanValidationException("模型校验失败", new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" }),
-            new ValidationResult("邮箱格式不正确", new[] { "Email", "Contact" })
-        });
+        var exception = new XiHanValidationException("模型校验失败",
+        [
+            new ValidationResult("用户名不能为空", ["UserName"]),
+            new ValidationResult("邮箱格式不正确", ["Email", "Contact"])
+        ]);
 
         exception.Log(logger);
 
@@ -219,10 +219,10 @@ public class XiHanValidationExceptionTests
     public void Log_WhenMemberNamesEmpty_OmitsParentheses()
     {
         var logger = new RecordingLogger();
-        var exception = new XiHanValidationException(new List<ValidationResult>
-        {
+        var exception = new XiHanValidationException(
+        [
             new ValidationResult("整体校验未通过")
-        });
+        ]);
 
         exception.Log(logger);
 
@@ -239,10 +239,10 @@ public class XiHanValidationExceptionTests
     public void Log_WhenErrorMessageIsNull_StillRendersMemberNames()
     {
         var logger = new RecordingLogger();
-        var exception = new XiHanValidationException(new List<ValidationResult>
-        {
-            new ValidationResult(null, new[] { "UserName" })
-        });
+        var exception = new XiHanValidationException(
+        [
+            new ValidationResult(null, ["UserName"])
+        ]);
 
         exception.Log(logger);
 
@@ -269,10 +269,10 @@ public class XiHanValidationExceptionTests
     public void Log_UsesConfiguredLogLevel(LogLevel configured, LogLevel expected)
     {
         var logger = new RecordingLogger();
-        var exception = new XiHanValidationException("模型校验失败", new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" })
-        })
+        var exception = new XiHanValidationException("模型校验失败",
+        [
+            new ValidationResult("用户名不能为空", ["UserName"])
+        ])
         {
             LogLevel = configured
         };
@@ -294,11 +294,11 @@ public class XiHanValidationExceptionTests
     public void Log_ReflectsErrorsAddedAfterConstruction()
     {
         var logger = new RecordingLogger();
-        IList<ValidationResult> errors = new List<ValidationResult>();
+        IList<ValidationResult> errors = [];
         var exception = new XiHanValidationException("模型校验失败", errors);
 
-        errors.Add(new ValidationResult("用户名不能为空", new[] { "UserName" }));
-        exception.ValidationErrors.Add(new ValidationResult("邮箱格式不正确", new[] { "Email" }));
+        errors.Add(new ValidationResult("用户名不能为空", ["UserName"]));
+        exception.ValidationErrors.Add(new ValidationResult("邮箱格式不正确", ["Email"]));
 
         exception.Log(logger);
 
@@ -341,10 +341,10 @@ public class XiHanValidationExceptionTests
     public void LogException_DispatchesSelfLoggingWithValidationDetails()
     {
         var logger = new RecordingLogger();
-        var exception = new XiHanValidationException("模型校验失败", new List<ValidationResult>
-        {
-            new ValidationResult("用户名不能为空", new[] { "UserName" })
-        });
+        var exception = new XiHanValidationException("模型校验失败",
+        [
+            new ValidationResult("用户名不能为空", ["UserName"])
+        ]);
 
         logger.LogException(exception);
 
@@ -364,10 +364,10 @@ public class XiHanValidationExceptionTests
 
         try
         {
-            throw new XiHanValidationException("模型校验失败", new List<ValidationResult>
-            {
-                new ValidationResult("用户名不能为空", new[] { "UserName" })
-            });
+            throw new XiHanValidationException("模型校验失败",
+            [
+                new ValidationResult("用户名不能为空", ["UserName"])
+            ]);
         }
         catch (XiHanException thrown)
         {

@@ -1,14 +1,14 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using XiHan.Framework.Bot.Providers;
+using System.Reflection;
 using XiHan.Framework.Bot.Lark.Abstractions;
 using XiHan.Framework.Bot.Lark.Messaging;
 using XiHan.Framework.Bot.Lark.Options;
 using XiHan.Framework.Bot.Lark.Stores;
+using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Core.Modularity;
 
 namespace XiHan.Framework.Bot.Lark.Tests;

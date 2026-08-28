@@ -135,6 +135,6 @@ public class RateLimitPipelineTests
 
     private static BotContext CreateContext(CancellationToken cancellationToken)
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cancellationToken);
+        return new BotContext(new BotMessage { Content = "hi" }, [], cancellationToken);
     }
 }

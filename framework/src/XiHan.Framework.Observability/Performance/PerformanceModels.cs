@@ -31,12 +31,12 @@ public class PerformanceRecord
     /// <summary>
     /// 标签
     /// </summary>
-    public Dictionary<string, string> Tags { get; set; } = new();
+    public Dictionary<string, string> Tags { get; set; } = [];
 
     /// <summary>
     /// 检查点
     /// </summary>
-    public List<Checkpoint> Checkpoints { get; set; } = new();
+    public List<Checkpoint> Checkpoints { get; set; } = [];
 
     /// <summary>
     /// 是否成功
@@ -123,7 +123,7 @@ public class PerformanceStatistics
     /// <summary>
     /// 操作统计
     /// </summary>
-    public Dictionary<string, OperationStatistics> OperationStats { get; set; } = new();
+    public Dictionary<string, OperationStatistics> OperationStats { get; set; } = [];
 }
 
 /// <summary>

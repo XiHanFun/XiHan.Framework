@@ -1,13 +1,13 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.ClientModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
+using System.ClientModel;
 using XiHan.Framework.AI.Abstractions.Configuration;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 using XiHan.Framework.AI.Extensions;

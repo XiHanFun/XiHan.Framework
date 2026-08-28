@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Text;
 using Microsoft.Extensions.Options;
+using System.Text;
 using XiHan.Framework.ObjectStorage.Models;
 using XiHan.Framework.ObjectStorage.Options;
 using XiHan.Framework.ObjectStorage.Providers;

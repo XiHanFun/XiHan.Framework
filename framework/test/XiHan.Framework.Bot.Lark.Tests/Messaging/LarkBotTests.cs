@@ -176,7 +176,7 @@ public class LarkBotTests
         var method = typeof(LarkBot).GetMethod("GenSign", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.SkipUnless(method is not null, "LarkBot.GenSign 已重命名或移除，跳过签名算法验证。");
 
-        var value = method!.Invoke(bot, new object?[] { timeStamp });
+        var value = method!.Invoke(bot, [timeStamp]);
         Assert.NotNull(value);
 
         return (string)value;

@@ -23,7 +23,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, new object?[] { 1024L, "theme" });
+        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, [1024L, "theme"]);
 
         Assert.Equal("config:1024:theme", key);
     }
@@ -36,7 +36,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        var key = CacheKeyBuilder.Build("{tenantId}-{tenantId}", method, new object?[] { 7L, "theme" });
+        var key = CacheKeyBuilder.Build("{tenantId}-{tenantId}", method, [7L, "theme"]);
 
         Assert.Equal("7-7", key);
     }
@@ -49,7 +49,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, new object?[] { 1L, null });
+        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, [1L, null]);
 
         Assert.Equal("config:1:null", key);
     }
@@ -62,7 +62,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, new object?[] { 1L });
+        var key = CacheKeyBuilder.Build("config:{tenantId}:{key}", method, [1L]);
 
         Assert.Equal("config:1:null", key);
     }
@@ -75,7 +75,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        Assert.Equal("config:all", CacheKeyBuilder.Build("config:all", method, new object?[] { 1L, "theme" }));
+        Assert.Equal("config:all", CacheKeyBuilder.Build("config:all", method, [1L, "theme"]));
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public class CacheKeyBuilderTests
     {
         var method = GetMethod(nameof(Target.Query));
 
-        var key = CacheKeyBuilder.Build("config:{unknown}", method, new object?[] { 1L, "theme" });
+        var key = CacheKeyBuilder.Build("config:{unknown}", method, [1L, "theme"]);
 
         Assert.Equal("config:{unknown}", key);
     }
@@ -109,7 +109,7 @@ public class CacheKeyBuilderTests
     public void Build_WithNullMethod_Throws()
     {
         Assert.Throws<ArgumentNullException>(
-            () => CacheKeyBuilder.Build("config:{tenantId}", null!, new object?[] { 1L }));
+            () => CacheKeyBuilder.Build("config:{tenantId}", null!, [1L]));
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public class CacheKeyBuilderTests
         var invocation = new FakeMethodInvocation(method, [1024L, "theme"]);
 
         Assert.Equal(
-            CacheKeyBuilder.Build("config:{tenantId}:{key}", method, new object?[] { 1024L, "theme" }),
+            CacheKeyBuilder.Build("config:{tenantId}:{key}", method, [1024L, "theme"]),
             CacheKeyBuilder.Build("config:{tenantId}:{key}", invocation));
     }
 

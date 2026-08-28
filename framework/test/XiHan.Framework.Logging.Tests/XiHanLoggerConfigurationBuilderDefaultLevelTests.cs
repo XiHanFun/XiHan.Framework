@@ -93,7 +93,7 @@ public class XiHanLoggerConfigurationBuilderDefaultLevelTests
         }
 
         Assert.Equal(
-            new[] { LogEventLevel.Information, LogEventLevel.Warning, LogEventLevel.Error, LogEventLevel.Fatal },
+            [LogEventLevel.Information, LogEventLevel.Warning, LogEventLevel.Error, LogEventLevel.Fatal],
             sink.Events.Select(evt => evt.Level));
     }
 

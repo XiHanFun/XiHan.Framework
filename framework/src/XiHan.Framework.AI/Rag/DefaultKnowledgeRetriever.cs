@@ -1,10 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Linq.Expressions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.VectorData;
+using System.Linq.Expressions;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.Abstractions.Rag;
 using XiHan.Framework.AI.Abstractions.Rag.Models;

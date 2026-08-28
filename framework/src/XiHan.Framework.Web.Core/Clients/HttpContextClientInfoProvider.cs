@@ -1,11 +1,11 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Net;
-using System.Net.Sockets;
 using IP2Region.Net.Abstractions;
 using IP2Region.Net.XDB;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Sockets;
 using UAParser;
 using XiHan.Framework.Web.Core.Options;
 

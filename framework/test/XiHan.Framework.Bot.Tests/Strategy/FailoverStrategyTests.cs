@@ -38,7 +38,7 @@ public class FailoverStrategyTests
         var backup = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { primary, backup });
+        await CreateStrategy().ExecuteAsync(context, [primary, backup]);
 
         Assert.Equal(1, primary.CallCount);
         Assert.Equal(0, backup.CallCount);
@@ -56,7 +56,7 @@ public class FailoverStrategyTests
         var backup = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { primary, backup });
+        await CreateStrategy().ExecuteAsync(context, [primary, backup]);
 
         Assert.Equal(1, primary.CallCount);
         Assert.Equal(1, backup.CallCount);
@@ -79,7 +79,7 @@ public class FailoverStrategyTests
         var last = FakeBotProvider.AlwaysSuccess("C");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { primary, backup, last });
+        await CreateStrategy().ExecuteAsync(context, [primary, backup, last]);
 
         Assert.Equal(1, backup.CallCount);
         Assert.Equal(0, last.CallCount);
@@ -97,7 +97,7 @@ public class FailoverStrategyTests
         var third = FakeBotProvider.AlwaysFailed("C");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { first, second, third });
+        await CreateStrategy().ExecuteAsync(context, [first, second, third]);
 
         Assert.Equal(1, first.CallCount);
         Assert.Equal(1, second.CallCount);
@@ -117,7 +117,7 @@ public class FailoverStrategyTests
         var backup = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, new IBotProvider[] { throwing, backup });
+        await CreateStrategy().ExecuteAsync(context, [throwing, backup]);
 
         Assert.Equal(1, backup.CallCount);
         Assert.Equal(2, context.Results.Count);
@@ -134,7 +134,7 @@ public class FailoverStrategyTests
     {
         var context = CreateContext();
 
-        await CreateStrategy().ExecuteAsync(context, Array.Empty<IBotProvider>());
+        await CreateStrategy().ExecuteAsync(context, []);
 
         Assert.Empty(context.Results);
     }
@@ -148,10 +148,10 @@ public class FailoverStrategyTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var provider = FakeBotProvider.AlwaysSuccess("A");
-        var context = new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(new BotMessage { Content = "hi" }, [], cts.Token);
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => CreateStrategy().ExecuteAsync(context, new IBotProvider[] { provider }));
+            () => CreateStrategy().ExecuteAsync(context, [provider]));
         Assert.Equal(0, provider.CallCount);
     }
 
@@ -162,6 +162,6 @@ public class FailoverStrategyTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

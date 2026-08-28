@@ -26,7 +26,7 @@ public class RedisStreamQueueExtensionsTests
 
         await queue.EnqueueRangeAsync([new StreamPayload(1), new StreamPayload(2)], token);
 
-        Assert.Equal(new[] { 1, 2 }, queue.Enqueued.Select(item => item.Id));
+        Assert.Equal([1, 2], queue.Enqueued.Select(item => item.Id));
     }
 
     /// <summary>

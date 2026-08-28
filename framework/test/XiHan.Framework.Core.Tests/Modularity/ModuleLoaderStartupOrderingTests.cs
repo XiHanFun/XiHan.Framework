@@ -29,7 +29,7 @@ public class ModuleLoaderStartupOrderingTests
     {
         var services = CreateServices();
 
-        var modules = new MlsGhostDependencyModuleLoader().LoadModules(services, typeof(MlsSoloModule), new PlugInSourceList());
+        var modules = new MlsGhostDependencyModuleLoader().LoadModules(services, typeof(MlsSoloModule), []);
 
         // 排序结果比填充出来的模块列表多了一个幽灵依赖，目标下标若沿用入参长度就会把起始模块挪到最前
         Assert.Equal(2, modules.Length);
@@ -44,7 +44,7 @@ public class ModuleLoaderStartupOrderingTests
     {
         var services = CreateServices();
 
-        var modules = new MlsGhostDependencyModuleLoader().LoadModules(services, typeof(MlsStartupModule), new PlugInSourceList());
+        var modules = new MlsGhostDependencyModuleLoader().LoadModules(services, typeof(MlsStartupModule), []);
 
         var order = modules.Select(m => m.Type).ToList();
         Assert.Equal(3, order.Count);
@@ -62,7 +62,7 @@ public class ModuleLoaderStartupOrderingTests
         var services = CreateServices();
 
         var exception = Assert.Throws<XiHanException>(() =>
-            new MlsMissingStartupModuleLoader().LoadModules(services, typeof(MlsStartupModule), new PlugInSourceList()));
+            new MlsMissingStartupModuleLoader().LoadModules(services, typeof(MlsStartupModule), []));
 
         Assert.Contains(nameof(MlsStartupModule), exception.Message, StringComparison.Ordinal);
     }
@@ -76,7 +76,7 @@ public class ModuleLoaderStartupOrderingTests
     {
         var services = CreateServices();
 
-        var modules = new ModuleLoader().LoadModules(services, typeof(MlsStartupModule), new PlugInSourceList());
+        var modules = new ModuleLoader().LoadModules(services, typeof(MlsStartupModule), []);
 
         Assert.Equal(2, modules.Length);
         Assert.Equal(typeof(MlsStartupModule), modules[^1].Type);

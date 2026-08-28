@@ -160,8 +160,8 @@ public class TypeExtensionsTests
     [Fact]
     public void GetBaseClasses_ReturnsChainFromRootToDirectBase()
     {
-        Assert.Equal(new[] { typeof(object), typeof(Animal), typeof(Dog) }, typeof(Puppy).GetBaseClasses());
-        Assert.Equal(new[] { typeof(Animal), typeof(Dog) }, typeof(Puppy).GetBaseClasses(false));
+        Assert.Equal([typeof(object), typeof(Animal), typeof(Dog)], typeof(Puppy).GetBaseClasses());
+        Assert.Equal([typeof(Animal), typeof(Dog)], typeof(Puppy).GetBaseClasses(false));
     }
 
     /// <summary>

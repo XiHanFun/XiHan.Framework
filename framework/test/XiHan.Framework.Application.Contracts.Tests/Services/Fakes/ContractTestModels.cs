@@ -76,7 +76,7 @@ internal sealed class ContractTestPageRequestDto : PageRequestDtoBase
 internal sealed class FakeBatchCrudApplicationService
     : IBatchCrudApplicationService<ContractTestEntityDto, long, ContractTestCreateDto, ContractTestUpdateDto, ContractTestPageRequestDto>
 {
-    private readonly Dictionary<long, ContractTestEntityDto> _store = new();
+    private readonly Dictionary<long, ContractTestEntityDto> _store = [];
     private long _lastId;
 
     /// <summary>

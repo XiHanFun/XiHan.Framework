@@ -52,7 +52,7 @@ public class UnitOfWorkEventPublisherTests
             new UnitOfWorkEventRecord(typeof(PlainNoticeEvent), new PlainNoticeEvent { Message = "第二条" }, 2)
         ]);
 
-        Assert.Equal(new[] { "第一条", "第二条" }, handler.Received.Select(item => item.Message));
+        Assert.Equal(["第一条", "第二条"], handler.Received.Select(item => item.Message));
     }
 
     /// <summary>

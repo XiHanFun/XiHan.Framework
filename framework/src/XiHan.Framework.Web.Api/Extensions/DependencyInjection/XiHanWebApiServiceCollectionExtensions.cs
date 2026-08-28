@@ -1,22 +1,22 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Authentication.Jwt;
 using XiHan.Framework.Authentication.OAuth;
-using XiHan.Framework.Web.Api.Auth;
 using XiHan.Framework.Domain.Entities.Abstracts;
+using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.Web.Api.Auth;
 using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
-using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Api.TenantResolvers;

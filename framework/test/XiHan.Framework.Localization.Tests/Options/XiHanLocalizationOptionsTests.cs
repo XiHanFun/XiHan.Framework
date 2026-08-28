@@ -53,7 +53,7 @@ public class XiHanLocalizationOptionsTests
     {
         var options = new XiHanLocalizationOptions();
 
-        Assert.Equal(new[] { "zh-CN", "en-US" }, options.SupportedCultures);
+        Assert.Equal(["zh-CN", "en-US"], options.SupportedCultures);
     }
 
     /// <summary>

@@ -38,7 +38,7 @@ public class ExceptionNotifierTests
         await notifier.NotifyAsync(context);
 
         Assert.Equal(
-            new[] { nameof(FirstRecordingSubscriber), nameof(SecondRecordingSubscriber) },
+            [nameof(FirstRecordingSubscriber), nameof(SecondRecordingSubscriber)],
             log.HandlerNames);
         Assert.All(log.Contexts, handled => Assert.Same(context, handled));
     }
@@ -61,7 +61,7 @@ public class ExceptionNotifierTests
         await notifier.NotifyAsync(new ExceptionNotificationContext(new InvalidOperationException("底层失败")));
 
         Assert.Equal(
-            new[] { nameof(ThrowingSubscriber), nameof(SecondRecordingSubscriber) },
+            [nameof(ThrowingSubscriber), nameof(SecondRecordingSubscriber)],
             log.HandlerNames);
     }
 

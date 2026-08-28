@@ -238,7 +238,7 @@ public class XiHanEventBusServiceCollectionExtensionsTests
     /// <returns>配置</returns>
     private static IConfiguration BuildConfiguration(Dictionary<string, string?>? values = null)
     {
-        var initialData = values ?? new Dictionary<string, string?>();
+        var initialData = values ?? [];
 
         return new ConfigurationBuilder()
             .AddInMemoryCollection(initialData)

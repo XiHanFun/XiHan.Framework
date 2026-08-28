@@ -49,7 +49,7 @@ public class XiHanBotOptionsTests
     {
         var options = new XiHanBotOptions();
 
-        options.AddChannel(new BotChannel { Name = "  ops  ", Providers = new List<string> { "DingTalk" } });
+        options.AddChannel(new BotChannel { Name = "  ops  ", Providers = ["DingTalk"] });
 
         Assert.True(options.Channels.ContainsKey("ops"));
         Assert.Single(options.Channels["ops"].Providers);
@@ -63,7 +63,7 @@ public class XiHanBotOptionsTests
     {
         var options = new XiHanBotOptions();
 
-        options.AddChannel(new BotChannel { Name = "Ops", Providers = new List<string> { "Lark" } });
+        options.AddChannel(new BotChannel { Name = "Ops", Providers = ["Lark"] });
 
         Assert.True(options.Channels.ContainsKey("OPS"));
         Assert.True(options.Channels.ContainsKey("ops"));
@@ -77,8 +77,8 @@ public class XiHanBotOptionsTests
     {
         var options = new XiHanBotOptions();
 
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { "DingTalk" } });
-        options.AddChannel(new BotChannel { Name = "ops", Providers = new List<string> { "Lark", "WeCom" } });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = ["DingTalk"] });
+        options.AddChannel(new BotChannel { Name = "ops", Providers = ["Lark", "WeCom"] });
 
         Assert.Single(options.Channels);
         Assert.Equal(2, options.Channels["ops"].Providers.Count);

@@ -131,7 +131,7 @@ public class XiHanRequestCultureMiddlewareTests
     public async Task InvokeAsync_WhenSupportedCulturesEmpty_AcceptsAnyValidCulture()
     {
         var options = CreateOptions();
-        options.SupportedCultures = new List<string>();
+        options.SupportedCultures = [];
 
         var result = await InvokeAsync(
             options,
@@ -147,7 +147,7 @@ public class XiHanRequestCultureMiddlewareTests
     public async Task InvokeAsync_WhenSupportedCulturesEmptyAndCultureInvalid_UsesDefaultCulture()
     {
         var options = CreateOptions();
-        options.SupportedCultures = new List<string>();
+        options.SupportedCultures = [];
         options.DefaultCulture = "en-US";
 
         var result = await InvokeAsync(
@@ -321,7 +321,7 @@ public class XiHanRequestCultureMiddlewareTests
         return new XiHanLocalizationOptions
         {
             DefaultCulture = "zh-CN",
-            SupportedCultures = new List<string> { "zh-CN", "en-US" }
+            SupportedCultures = ["zh-CN", "en-US"]
         };
     }
 

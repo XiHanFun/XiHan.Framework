@@ -11,7 +11,7 @@ namespace XiHan.Framework.Observability.Performance;
 /// </summary>
 public class PerformanceMonitor : IPerformanceMonitor
 {
-    private readonly ConcurrentBag<PerformanceRecord> _records = new();
+    private readonly ConcurrentBag<PerformanceRecord> _records = [];
 
     /// <summary>
     /// 开始监控操作

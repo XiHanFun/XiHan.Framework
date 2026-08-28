@@ -2,14 +2,14 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Text;
+using XiHan.Framework.Bot.Lark.Enums;
+using XiHan.Framework.Bot.Lark.Models;
+using XiHan.Framework.Bot.Lark.Options;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Security.Cryptography;
-using XiHan.Framework.Bot.Lark.Models;
-using XiHan.Framework.Bot.Lark.Options;
-using XiHan.Framework.Bot.Lark.Enums;
 
 namespace XiHan.Framework.Bot.Lark.Messaging;
 

@@ -17,7 +17,7 @@ public sealed class FakeBotClient : IBotClient
     /// <summary>
     /// 预置返回结果
     /// </summary>
-    public BotDispatchResult Result { get; set; } = BotDispatchResult.From(new[] { BotResult.Success(provider: "Fake") }, false);
+    public BotDispatchResult Result { get; set; } = BotDispatchResult.From([BotResult.Success(provider: "Fake")], false);
 
     /// <summary>
     /// 最后一次发送的消息

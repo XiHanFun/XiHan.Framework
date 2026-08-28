@@ -61,7 +61,7 @@ public class RecordingFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override Task<Stream> DownloadAsync(string path, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<Stream>(new MemoryStream(new byte[] { 1, 2, 3 }));
+        return Task.FromResult<Stream>(new MemoryStream([1, 2, 3]));
     }
 
     /// <summary>

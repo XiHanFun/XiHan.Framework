@@ -39,7 +39,7 @@ public class BroadcastStrategyTests
         var second = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, new IBotProvider[] { first, second });
+        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, [first, second]);
 
         Assert.Equal(1, first.CallCount);
         Assert.Equal(1, second.CallCount);
@@ -59,7 +59,7 @@ public class BroadcastStrategyTests
         var healthy = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, new IBotProvider[] { failing, healthy });
+        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, [failing, healthy]);
 
         Assert.Equal(1, failing.CallCount);
         Assert.Equal(1, healthy.CallCount);
@@ -79,7 +79,7 @@ public class BroadcastStrategyTests
         var context = CreateContext();
         var options = new XiHanBotOptions { ContinueOnError = false };
 
-        await CreateStrategy(options).ExecuteAsync(context, new IBotProvider[] { failing, healthy });
+        await CreateStrategy(options).ExecuteAsync(context, [failing, healthy]);
 
         Assert.Equal(1, failing.CallCount);
         Assert.Equal(0, healthy.CallCount);
@@ -97,7 +97,7 @@ public class BroadcastStrategyTests
         var context = CreateContext();
         var options = new XiHanBotOptions { ContinueOnError = false };
 
-        await CreateStrategy(options).ExecuteAsync(context, new IBotProvider[] { first, second });
+        await CreateStrategy(options).ExecuteAsync(context, [first, second]);
 
         Assert.Equal(1, first.CallCount);
         Assert.Equal(1, second.CallCount);
@@ -114,7 +114,7 @@ public class BroadcastStrategyTests
         var healthy = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
 
-        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, new IBotProvider[] { throwing, healthy });
+        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, [throwing, healthy]);
 
         Assert.Equal(2, context.Results.Count);
         Assert.False(context.Results[0].IsSuccess);
@@ -131,7 +131,7 @@ public class BroadcastStrategyTests
     {
         var context = CreateContext();
 
-        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, Array.Empty<IBotProvider>());
+        await CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, []);
 
         Assert.Empty(context.Results);
         Assert.False(context.IsSuccess);
@@ -146,10 +146,10 @@ public class BroadcastStrategyTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var provider = FakeBotProvider.AlwaysSuccess("A");
-        var context = new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(new BotMessage { Content = "hi" }, [], cts.Token);
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, new IBotProvider[] { provider }));
+            () => CreateStrategy(new XiHanBotOptions()).ExecuteAsync(context, [provider]));
         Assert.Equal(0, provider.CallCount);
     }
 
@@ -162,6 +162,6 @@ public class BroadcastStrategyTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

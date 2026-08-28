@@ -32,7 +32,7 @@ public class DefaultPasswordHistoryStore : IPasswordHistoryStore
             return Task.FromResult<IReadOnlyList<string>>(recent);
         }
 
-        return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        return Task.FromResult<IReadOnlyList<string>>([]);
     }
 
     /// <summary>

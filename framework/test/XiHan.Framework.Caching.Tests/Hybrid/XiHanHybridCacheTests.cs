@@ -144,7 +144,7 @@ public class XiHanHybridCacheTests
         await cache.SetAsync("k1", new SampleCacheItem { Value = "a" }, token: token);
         await cache.SetAsync("k2", new SampleCacheItem { Value = "b" }, token: token);
 
-        await cache.RemoveManyAsync(new[] { "k1", "k2" }, token: token);
+        await cache.RemoveManyAsync(["k1", "k2"], token: token);
 
         var first = await cache.GetOrCreateAsync("k1", () => Task.FromResult(new SampleCacheItem { Value = "a2" }), token: token);
         var second = await cache.GetOrCreateAsync("k2", () => Task.FromResult(new SampleCacheItem { Value = "b2" }), token: token);

@@ -70,12 +70,12 @@ public class ObjectExtensionsTests
     public void IsIn_ChecksMembership()
     {
         var value = 3;
-        IEnumerable<int> sequence = new[] { 1, 2, 3 };
+        IEnumerable<int> sequence = [1, 2, 3];
 
         Assert.True(value.IsIn(1, 2, 3));
         Assert.False(value.IsIn(4, 5));
         Assert.True(value.IsIn(sequence));
-        Assert.False(value.IsIn(Array.Empty<int>()));
+        Assert.False(value.IsIn([]));
     }
 
     /// <summary>

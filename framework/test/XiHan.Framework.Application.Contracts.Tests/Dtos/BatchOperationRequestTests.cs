@@ -150,7 +150,7 @@ public class BatchOperationRequestTests
         var restored = JsonSerializer.Deserialize<BatchDeleteRequest<long>>(json);
 
         Assert.NotNull(restored);
-        Assert.Equal(new List<long> { 10L, 20L }, restored!.Ids);
+        Assert.Equal([10L, 20L], restored!.Ids);
         Assert.False(restored.SoftDelete);
     }
 }

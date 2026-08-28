@@ -77,9 +77,9 @@ public class ExtensionPropertyPolicyCheckerTests
     {
         var sut = new ExtensionPropertyPolicyChecker();
         var policy = CreatePolicy(
-            globalFeatures: new[] { "G1" },
-            features: new[] { "F1" },
-            permissions: new[] { "P1" });
+            globalFeatures: ["G1"],
+            features: ["F1"],
+            permissions: ["P1"]);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
     }
@@ -92,7 +92,7 @@ public class ExtensionPropertyPolicyCheckerTests
     {
         var sut = new FakePolicyChecker();
         sut.GrantedFeatures.Add("F1");
-        var policy = CreatePolicy(features: new[] { "F1", "F2" }, featuresRequiresAll: false);
+        var policy = CreatePolicy(features: ["F1", "F2"], featuresRequiresAll: false);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "F1" }, sut.CheckedFeatures.ToArray());
@@ -106,7 +106,7 @@ public class ExtensionPropertyPolicyCheckerTests
     {
         var sut = new FakePolicyChecker();
         sut.GrantedFeatures.Add("F2");
-        var policy = CreatePolicy(features: new[] { "F1", "F2" }, featuresRequiresAll: false);
+        var policy = CreatePolicy(features: ["F1", "F2"], featuresRequiresAll: false);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "F1", "F2" }, sut.CheckedFeatures.ToArray());
@@ -119,7 +119,7 @@ public class ExtensionPropertyPolicyCheckerTests
     public async Task CheckPolicyAsync_WhenRequiresAnyAndNoneGranted_ReturnsFalse()
     {
         var sut = new FakePolicyChecker();
-        var policy = CreatePolicy(features: new[] { "F1", "F2" }, featuresRequiresAll: false);
+        var policy = CreatePolicy(features: ["F1", "F2"], featuresRequiresAll: false);
 
         Assert.False(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "F1", "F2" }, sut.CheckedFeatures.ToArray());
@@ -134,7 +134,7 @@ public class ExtensionPropertyPolicyCheckerTests
         var sut = new FakePolicyChecker();
         sut.GrantedFeatures.Add("F1");
         sut.GrantedFeatures.Add("F2");
-        var policy = CreatePolicy(features: new[] { "F1", "F2" }, featuresRequiresAll: true);
+        var policy = CreatePolicy(features: ["F1", "F2"], featuresRequiresAll: true);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "F1", "F2" }, sut.CheckedFeatures.ToArray());
@@ -148,7 +148,7 @@ public class ExtensionPropertyPolicyCheckerTests
     {
         var sut = new FakePolicyChecker();
         sut.GrantedFeatures.Add("F2");
-        var policy = CreatePolicy(features: new[] { "F1", "F2" }, featuresRequiresAll: true);
+        var policy = CreatePolicy(features: ["F1", "F2"], featuresRequiresAll: true);
 
         Assert.False(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "F1" }, sut.CheckedFeatures.ToArray());
@@ -164,9 +164,9 @@ public class ExtensionPropertyPolicyCheckerTests
         sut.GrantedFeatures.Add("F1");
         sut.GrantedPermissions.Add("P1");
         var policy = CreatePolicy(
-            globalFeatures: new[] { "G1" },
-            features: new[] { "F1" },
-            permissions: new[] { "P1" });
+            globalFeatures: ["G1"],
+            features: ["F1"],
+            permissions: ["P1"]);
 
         Assert.False(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "G1" }, sut.CheckedGlobalFeatures.ToArray());
@@ -184,9 +184,9 @@ public class ExtensionPropertyPolicyCheckerTests
         sut.GrantedGlobalFeatures.Add("G1");
         sut.GrantedPermissions.Add("P1");
         var policy = CreatePolicy(
-            globalFeatures: new[] { "G1" },
-            features: new[] { "F1" },
-            permissions: new[] { "P1" });
+            globalFeatures: ["G1"],
+            features: ["F1"],
+            permissions: ["P1"]);
 
         Assert.False(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "G1" }, sut.CheckedGlobalFeatures.ToArray());
@@ -204,9 +204,9 @@ public class ExtensionPropertyPolicyCheckerTests
         sut.GrantedGlobalFeatures.Add("G1");
         sut.GrantedFeatures.Add("F1");
         var policy = CreatePolicy(
-            globalFeatures: new[] { "G1" },
-            features: new[] { "F1" },
-            permissions: new[] { "P1" });
+            globalFeatures: ["G1"],
+            features: ["F1"],
+            permissions: ["P1"]);
 
         Assert.False(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "P1" }, sut.CheckedPermissions.ToArray());
@@ -223,9 +223,9 @@ public class ExtensionPropertyPolicyCheckerTests
         sut.GrantedFeatures.Add("F1");
         sut.GrantedPermissions.Add("P1");
         var policy = CreatePolicy(
-            globalFeatures: new[] { "G1" },
-            features: new[] { "F1" },
-            permissions: new[] { "P1" });
+            globalFeatures: ["G1"],
+            features: ["F1"],
+            permissions: ["P1"]);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
         Assert.Equal(new[] { "G1" }, sut.CheckedGlobalFeatures.ToArray());
@@ -241,7 +241,7 @@ public class ExtensionPropertyPolicyCheckerTests
     {
         var sut = new FakePolicyChecker();
         sut.GrantedPermissions.Add("P1");
-        var policy = CreatePolicy(permissions: new[] { "P1" });
+        var policy = CreatePolicy(permissions: ["P1"]);
 
         Assert.True(await sut.CheckPolicyAsync(policy));
         Assert.Empty(sut.CheckedGlobalFeatures);

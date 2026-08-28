@@ -163,7 +163,7 @@ public sealed class RecordingBackgroundService : XiHanBackgroundServiceBase<Reco
         {
             _fetchCallCount++;
             _requestedMaxCounts.Add(maxCount);
-            batch = _batches.Count > 0 ? _batches.Dequeue() : new List<IBackgroundTaskItem>();
+            batch = _batches.Count > 0 ? _batches.Dequeue() : [];
         }
 
         return Task.FromResult<IEnumerable<IBackgroundTaskItem>>(batch);

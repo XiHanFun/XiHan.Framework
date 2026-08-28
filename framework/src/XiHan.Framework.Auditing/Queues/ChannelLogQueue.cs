@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Threading.Channels;
 using Microsoft.Extensions.Options;
+using System.Threading.Channels;
 using XiHan.Framework.Auditing.Options;
 
 namespace XiHan.Framework.Auditing.Queues;

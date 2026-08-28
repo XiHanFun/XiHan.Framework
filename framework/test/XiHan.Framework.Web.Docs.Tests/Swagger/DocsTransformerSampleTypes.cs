@@ -47,7 +47,7 @@ public class DocsGeneratedController
     /// </summary>
     /// <param name="id">标识</param>
     /// <returns>标识回显</returns>
-    [OriginalMethod(typeof(DocsTransformerAppService), nameof(DocsTransformerAppService.GetDescribedAsync), new Type[] { typeof(string) })]
+    [OriginalMethod(typeof(DocsTransformerAppService), nameof(DocsTransformerAppService.GetDescribedAsync), [typeof(string)])]
     public Task<string> GetDescribed(string id)
     {
         return Task.FromResult(id);
@@ -58,7 +58,7 @@ public class DocsGeneratedController
     /// </summary>
     /// <param name="id">标识</param>
     /// <returns>标识回显</returns>
-    [OriginalMethod(typeof(DocsTransformerAppService), nameof(DocsTransformerAppService.GetPlainAsync), new Type[] { typeof(string) })]
+    [OriginalMethod(typeof(DocsTransformerAppService), nameof(DocsTransformerAppService.GetPlainAsync), [typeof(string)])]
     public Task<string> GetPlain(string id)
     {
         return Task.FromResult(id);
@@ -69,7 +69,7 @@ public class DocsGeneratedController
     /// </summary>
     /// <param name="id">标识</param>
     /// <returns>标识回显</returns>
-    [OriginalMethod(typeof(DocsTransformerAppService), "GetNotExistsAsync", new Type[] { typeof(string) })]
+    [OriginalMethod(typeof(DocsTransformerAppService), "GetNotExistsAsync", [typeof(string)])]
     public Task<string> GetUnresolvable(string id)
     {
         return Task.FromResult(id);

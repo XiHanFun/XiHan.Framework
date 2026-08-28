@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using System.Reflection;
 using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Helpers;
@@ -67,7 +67,7 @@ internal static class DynamicApiSwaggerGroupHelper
             }
             catch (ReflectionTypeLoadException ex)
             {
-                types = ex.Types.Where(type => type != null).Cast<Type>().ToArray();
+                types = [.. ex.Types.Where(type => type != null).Cast<Type>()];
             }
             catch
             {

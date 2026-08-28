@@ -375,14 +375,13 @@ public class DefaultGrayRuleEngineTests
 
         var engine = new DefaultGrayRuleEngine(
             repository,
-            new IGrayMatcher[]
-            {
+            [
                 new PercentageGrayMatcher(),
                 new UserIdGrayMatcher(),
                 new TenantIdGrayMatcher(),
                 new HeaderGrayMatcher(),
                 new IpAddressGrayMatcher()
-            },
+            ],
             NullLogger<DefaultGrayRuleEngine>.Instance);
 
         var hit = await engine.DecideAsync(new GrayContext { UserId = 1001L }, token);
@@ -415,7 +414,7 @@ public class DefaultGrayRuleEngineTests
 
         var engine = new DefaultGrayRuleEngine(
             repository,
-            new IGrayMatcher[] { new UserIdGrayMatcher() },
+            [new UserIdGrayMatcher()],
             NullLogger<DefaultGrayRuleEngine>.Instance);
 
         var decision = await engine.DecideAsync(new GrayContext { UserId = 1001L }, TestContext.Current.CancellationToken);

@@ -30,7 +30,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
 
-        var result = services.AddXiHanDistributedIds(BuildConfiguration(new Dictionary<string, string?>()));
+        var result = services.AddXiHanDistributedIds(BuildConfiguration([]));
 
         Assert.Same(services, result);
     }
@@ -41,7 +41,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     [Fact]
     public void AddXiHanDistributedIds_RegistersSnowflakeGeneratorAsSingleton()
     {
-        using var provider = BuildProvider(new Dictionary<string, string?>());
+        using var provider = BuildProvider([]);
 
         var first = provider.GetRequiredService<IDistributedIdGenerator<long>>();
         var second = provider.GetRequiredService<IDistributedIdGenerator<long>>();
@@ -56,7 +56,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     [Fact]
     public void AddXiHanDistributedIds_RegistersSequentialGuidGeneratorAsSingleton()
     {
-        using var provider = BuildProvider(new Dictionary<string, string?>());
+        using var provider = BuildProvider([]);
 
         var first = provider.GetRequiredService<IDistributedIdGenerator<Guid>>();
         var second = provider.GetRequiredService<IDistributedIdGenerator<Guid>>();
@@ -71,7 +71,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     [Fact]
     public void AddXiHanDistributedIds_WithEmptyConfiguration_AppliesHighWorkloadBaseline()
     {
-        using var provider = BuildProvider(new Dictionary<string, string?>());
+        using var provider = BuildProvider([]);
 
         var options = provider.GetRequiredService<IOptions<SnowflakeIdOptions>>().Value;
 
@@ -138,7 +138,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     [Fact]
     public void AddXiHanDistributedIds_WithoutGuidType_FallsBackToAtEnd()
     {
-        using var provider = BuildProvider(new Dictionary<string, string?>());
+        using var provider = BuildProvider([]);
 
         var generator = provider.GetRequiredService<IDistributedIdGenerator<Guid>>();
 
@@ -151,7 +151,7 @@ public class XiHanDistributedIdsServiceCollectionExtensionsTests
     [Fact]
     public void AddXiHanDistributedIds_RegistersNanoIdAndSqidsOptions()
     {
-        using var provider = BuildProvider(new Dictionary<string, string?>());
+        using var provider = BuildProvider([]);
 
         var nanoIdOptions = provider.GetRequiredService<IOptions<NanoIdOptions>>().Value;
         var sqidsOptions = provider.GetRequiredService<IOptions<SqidsOptions>>().Value;

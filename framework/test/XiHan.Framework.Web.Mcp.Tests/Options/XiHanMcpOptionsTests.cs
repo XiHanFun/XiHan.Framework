@@ -150,7 +150,7 @@ public class XiHanMcpOptionsTests
     [Fact]
     public void Bind_FromAbsentSection_ReturnsNull()
     {
-        var configuration = BuildConfiguration(new Dictionary<string, string?>());
+        var configuration = BuildConfiguration([]);
 
         var options = configuration.GetSection(XiHanMcpOptions.SectionName).Get<XiHanMcpOptions>();
 

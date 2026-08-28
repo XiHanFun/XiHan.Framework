@@ -269,7 +269,7 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
     private static IConfiguration CreateConfiguration(Dictionary<string, string?>? settings = null)
     {
         return new ConfigurationBuilder()
-            .AddInMemoryCollection(settings ?? new Dictionary<string, string?>())
+            .AddInMemoryCollection(settings ?? [])
             .Build();
     }
 

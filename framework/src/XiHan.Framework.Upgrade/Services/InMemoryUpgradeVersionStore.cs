@@ -229,7 +229,7 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
         {
             if (!MigrationHistories.TryGetValue(tenantKey, out var histories))
             {
-                histories = new List<UpgradeMigrationHistory>();
+                histories = [];
                 MigrationHistories[tenantKey] = histories;
             }
 

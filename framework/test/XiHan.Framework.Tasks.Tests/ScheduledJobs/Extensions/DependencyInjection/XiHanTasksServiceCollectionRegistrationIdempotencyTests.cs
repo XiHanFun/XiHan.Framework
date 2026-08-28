@@ -145,10 +145,9 @@ public class XiHanTasksServiceCollectionRegistrationIdempotencyTests
     /// </summary>
     private static List<Type> MiddlewareImplementationTypes(IServiceCollection services)
     {
-        return services
+        return [.. services
             .Where(item => item.ServiceType == typeof(IJobMiddleware))
-            .Select(item => item.ImplementationType!)
-            .ToList();
+            .Select(item => item.ImplementationType!)];
     }
 
     /// <summary>

@@ -53,8 +53,8 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(ISmsConfigStore)).ToList();
-        Assert.Single(descriptors);
-        Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
+        var item = Assert.Single(descriptors);
+        Assert.Equal(ServiceLifetime.Singleton, item.Lifetime);
         Assert.Equal(typeof(DefaultSmsConfigStore), descriptors[0].ImplementationType);
     }
 
@@ -72,8 +72,8 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(ISmsGatewayResolver)).ToList();
-        Assert.Single(descriptors);
-        Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
+        var item = Assert.Single(descriptors);
+        Assert.Equal(ServiceLifetime.Singleton, item.Lifetime);
         Assert.Equal(typeof(SmsGatewayResolver), descriptors[0].ImplementationType);
     }
 
@@ -88,8 +88,8 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
         services.AddXiHanBotSms();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(IBotProvider)).ToList();
-        Assert.Single(descriptors);
-        Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
+        var item = Assert.Single(descriptors);
+        Assert.Equal(ServiceLifetime.Singleton, item.Lifetime);
         Assert.Equal(typeof(SmsBotProvider), descriptors[0].ImplementationType);
     }
 
@@ -109,8 +109,8 @@ public class XiHanBotSmsServiceCollectionExtensionsTests
 
         Assert.IsType<DefaultSmsConfigStore>(store);
         Assert.IsType<SmsGatewayResolver>(resolver);
-        Assert.Single(providers);
-        Assert.IsType<SmsBotProvider>(providers[0]);
+        var item = Assert.Single(providers);
+        Assert.IsType<SmsBotProvider>(item);
         Assert.Same(store, provider.GetRequiredService<ISmsConfigStore>());
         Assert.Same(resolver, provider.GetRequiredService<ISmsGatewayResolver>());
     }

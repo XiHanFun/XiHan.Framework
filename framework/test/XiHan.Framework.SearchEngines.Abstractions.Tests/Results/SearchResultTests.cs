@@ -69,7 +69,7 @@ public class SearchResultTests
     {
         var result = new SearchResult<SearchTestDocument>([NewHit("3"), NewHit("1"), NewHit("2")], 3);
 
-        Assert.Equal(new[] { "3", "1", "2" }, result.Hits.Select(hit => hit.Id));
+        Assert.Equal(["3", "1", "2"], result.Hits.Select(hit => hit.Id));
     }
 
     /// <summary>

@@ -28,7 +28,7 @@ public class CustomRadixByteOrderTests
     {
         var radix = new CustomRadix("01");
 
-        Assert.Equal("11111111", radix.Encode(new byte[] { 0xFF }));
+        Assert.Equal("11111111", radix.Encode([0xFF]));
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class CustomRadixByteOrderTests
     {
         var radix = new CustomRadix(Base36Alphabet);
 
-        var encoded = radix.Encode(new byte[] { 0xFF, 0xFF, 0xFF });
+        var encoded = radix.Encode([0xFF, 0xFF, 0xFF]);
 
         Assert.Equal(5, encoded.Length);
     }
@@ -67,8 +67,8 @@ public class CustomRadixByteOrderTests
     {
         var radix = new CustomRadix(Base36Alphabet);
 
-        Assert.Equal("76", radix.Encode(new byte[] { 0x01, 0x02 }));
-        Assert.Equal(Base36.Encode(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF }), radix.Encode(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF }));
+        Assert.Equal("76", radix.Encode([0x01, 0x02]));
+        Assert.Equal(Base36.Encode([0xDE, 0xAD, 0xBE, 0xEF]), radix.Encode([0xDE, 0xAD, 0xBE, 0xEF]));
     }
 
     /// <summary>

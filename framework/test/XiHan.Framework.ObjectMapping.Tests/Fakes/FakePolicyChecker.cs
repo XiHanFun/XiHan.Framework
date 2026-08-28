@@ -15,32 +15,32 @@ public class FakePolicyChecker : ExtensionPropertyPolicyChecker
     /// <summary>
     /// 允许通过的全局功能白名单
     /// </summary>
-    public HashSet<string> GrantedGlobalFeatures { get; } = new();
+    public HashSet<string> GrantedGlobalFeatures { get; } = [];
 
     /// <summary>
     /// 允许通过的功能白名单
     /// </summary>
-    public HashSet<string> GrantedFeatures { get; } = new();
+    public HashSet<string> GrantedFeatures { get; } = [];
 
     /// <summary>
     /// 允许通过的权限白名单
     /// </summary>
-    public HashSet<string> GrantedPermissions { get; } = new();
+    public HashSet<string> GrantedPermissions { get; } = [];
 
     /// <summary>
     /// 按调用顺序记录被检查的全局功能名
     /// </summary>
-    public List<string> CheckedGlobalFeatures { get; } = new();
+    public List<string> CheckedGlobalFeatures { get; } = [];
 
     /// <summary>
     /// 按调用顺序记录被检查的功能名
     /// </summary>
-    public List<string> CheckedFeatures { get; } = new();
+    public List<string> CheckedFeatures { get; } = [];
 
     /// <summary>
     /// 按调用顺序记录被检查的权限名
     /// </summary>
-    public List<string> CheckedPermissions { get; } = new();
+    public List<string> CheckedPermissions { get; } = [];
 
     /// <summary>
     /// 全局功能检查

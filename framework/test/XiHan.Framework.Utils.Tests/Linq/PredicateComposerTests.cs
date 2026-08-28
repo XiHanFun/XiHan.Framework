@@ -249,7 +249,7 @@ public class PredicateComposerTests
     [Fact]
     public void In_ChecksMembership()
     {
-        var predicate = PredicateComposer.In<Person, int>(nameof(Person.Age), new[] { 18, 20 }).Compile();
+        var predicate = PredicateComposer.In<Person, int>(nameof(Person.Age), [18, 20]).Compile();
 
         Assert.True(predicate(new Person { Age = 18 }));
         Assert.True(predicate(new Person { Age = 20 }));
@@ -262,7 +262,7 @@ public class PredicateComposerTests
     [Fact]
     public void In_WithEmptyValues_IsAlwaysFalse()
     {
-        var predicate = PredicateComposer.In<Person, int>(nameof(Person.Age), Array.Empty<int>()).Compile();
+        var predicate = PredicateComposer.In<Person, int>(nameof(Person.Age), []).Compile();
 
         Assert.False(predicate(new Person { Age = 18 }));
     }

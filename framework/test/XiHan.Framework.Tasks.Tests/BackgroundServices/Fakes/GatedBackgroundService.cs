@@ -80,7 +80,7 @@ public sealed class GatedBackgroundService : XiHanBackgroundServiceBase<GatedBac
 
         lock (_gate)
         {
-            batch = _batches.Count > 0 ? _batches.Dequeue() : new List<IBackgroundTaskItem>();
+            batch = _batches.Count > 0 ? _batches.Dequeue() : [];
         }
 
         return Task.FromResult<IEnumerable<IBackgroundTaskItem>>(batch);

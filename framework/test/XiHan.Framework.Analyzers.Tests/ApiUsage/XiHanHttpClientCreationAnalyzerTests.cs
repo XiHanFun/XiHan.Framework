@@ -1,12 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Reflection;
 using XiHan.Framework.Analyzers.ApiUsage;
 
-namespace XiHan.Framework.Analyzers.Tests;
+namespace XiHan.Framework.Analyzers.Tests.ApiUsage;
 
 /// <summary>
 /// 直接创建 HttpClient 分析器（XHFA001）测试

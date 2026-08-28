@@ -2,10 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Core.Application;
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Api;
 using XiHan.Framework.Web.Docs;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Web.Host;
 

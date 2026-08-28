@@ -39,11 +39,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
     {
         var low = new FakeFileProvider().WithFile("/app.json", FakeFileInfo.ForContent("app.json", "low"));
         var high = new FakeFileProvider().WithFile("/app.json", FakeFileInfo.ForContent("app.json", "high"));
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(low, 10),
             new PrioritizedFileProvider(high, 90)
-        });
+        ]);
 
         var file = sut.GetFileInfo("/app.json");
 
@@ -60,11 +60,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
     {
         var low = new FakeFileProvider().WithFile("/only-low.json", FakeFileInfo.ForContent("only-low.json", "low"));
         var high = new FakeFileProvider().WithFile("/only-high.json", FakeFileInfo.ForContent("only-high.json", "high"));
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(high, 90),
             new PrioritizedFileProvider(low, 10)
-        });
+        ]);
 
         var file = sut.GetFileInfo("/only-low.json");
 
@@ -79,10 +79,10 @@ public class VirtualCompositeFileProviderTests : IDisposable
     [Fact]
     public void GetFileInfo_WhenNoProviderHasFile_ReturnsNotFound()
     {
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(new FakeFileProvider(), 10)
-        });
+        ]);
 
         var file = sut.GetFileInfo("/missing.json");
 
@@ -97,7 +97,7 @@ public class VirtualCompositeFileProviderTests : IDisposable
     [Fact]
     public void GetFileInfo_WhenNoProviders_ReturnsNotFound()
     {
-        var sut = new VirtualCompositeFileProvider(Array.Empty<PrioritizedFileProvider>());
+        var sut = new VirtualCompositeFileProvider([]);
 
         Assert.False(sut.GetFileInfo("/a.txt").Exists);
     }
@@ -109,10 +109,10 @@ public class VirtualCompositeFileProviderTests : IDisposable
     public void GetDirectoryContents_ReturnsPrioritizedView()
     {
         var provider = new FakeFileProvider().WithDirectory(true, FakeFileInfo.ForContent("a.txt", "a"));
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(provider, 10)
-        });
+        ]);
 
         var contents = sut.GetDirectoryContents("/");
 
@@ -135,11 +135,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
 
         using var high = new VirtualPhysicalFileProvider(highRoot, 100);
         using var low = new VirtualPhysicalFileProvider(lowRoot, 10);
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(high, 100),
             new PrioritizedFileProvider(low, 10)
-        });
+        ]);
 
         var names = sut.GetDirectoryContents("/").Select(x => x.Name).ToArray();
 
@@ -162,11 +162,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
 
         using var high = new VirtualPhysicalFileProvider(highRoot, 100);
         using var low = new VirtualPhysicalFileProvider(lowRoot, 10);
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(low, 10),
             new PrioritizedFileProvider(high, 100)
-        });
+        ]);
 
         Assert.Equal("high-shared", ReadAllText(sut.GetFileInfo("/shared.txt")));
     }
@@ -180,11 +180,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
         var quiet = new FakeFileProvider();
         var noisy = new FakeFileProvider();
         noisy.ChangeToken.HasChanged = true;
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(quiet, 10),
             new PrioritizedFileProvider(noisy, 20)
-        });
+        ]);
 
         var token = sut.Watch("**/*.json");
 
@@ -199,11 +199,11 @@ public class VirtualCompositeFileProviderTests : IDisposable
     [Fact]
     public void Watch_WhenNoProviderChanged_TokenIsUnchanged()
     {
-        var sut = new VirtualCompositeFileProvider(new[]
-        {
+        var sut = new VirtualCompositeFileProvider(
+        [
             new PrioritizedFileProvider(new FakeFileProvider(), 10),
             new PrioritizedFileProvider(new FakeFileProvider(), 20)
-        });
+        ]);
 
         Assert.False(sut.Watch("*").HasChanged);
     }

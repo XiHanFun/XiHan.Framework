@@ -472,7 +472,7 @@ public sealed class RecordingLocalEventBus : ILocalEventBus
     /// <param name="factory">事件处理器工厂</param>
     public void RegisterFactory(Type eventType, IEventHandlerFactory factory)
     {
-        var list = _factories.GetOrAdd(eventType, _ => new List<IEventHandlerFactory>());
+        var list = _factories.GetOrAdd(eventType, _ => []);
         lock (list)
         {
             list.Add(factory);

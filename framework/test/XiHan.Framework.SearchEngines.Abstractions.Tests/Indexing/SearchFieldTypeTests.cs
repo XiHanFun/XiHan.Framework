@@ -39,15 +39,14 @@ public class SearchFieldTypeTests
     public void Members_AreExactlyTheBackendIntersection()
     {
         Assert.Equal(
-            new[]
-            {
+            [
                 SearchFieldType.Text,
                 SearchFieldType.Keyword,
                 SearchFieldType.Integer,
                 SearchFieldType.Double,
                 SearchFieldType.Boolean,
                 SearchFieldType.DateTime
-            },
+            ],
             Enum.GetValues<SearchFieldType>());
     }
 

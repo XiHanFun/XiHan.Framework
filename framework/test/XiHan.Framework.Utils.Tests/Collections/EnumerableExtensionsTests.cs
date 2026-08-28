@@ -48,11 +48,11 @@ public class EnumerableExtensionsTests
     [Fact]
     public void WhereIf_WhenConditionTrue_AppliesPredicate()
     {
-        IEnumerable<int> source = new[] { 1, 2, 3, 4 };
+        IEnumerable<int> source = [1, 2, 3, 4];
 
         var result = source.WhereIf(true, x => x > 2);
 
-        Assert.Equal(new[] { 3, 4 }, result);
+        Assert.Equal([3, 4], result);
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void WhereIf_WhenConditionFalse_ReturnsSameSequence()
     {
-        IEnumerable<int> source = new[] { 1, 2, 3, 4 };
+        IEnumerable<int> source = [1, 2, 3, 4];
 
         var result = source.WhereIf(false, x => x > 2);
 
@@ -74,11 +74,11 @@ public class EnumerableExtensionsTests
     [Fact]
     public void WhereIf_WithIndexedPredicate_FiltersByIndex()
     {
-        IEnumerable<string> source = new[] { "a", "b", "c", "d" };
+        IEnumerable<string> source = ["a", "b", "c", "d"];
 
         var result = source.WhereIf(true, (_, index) => index % 2 == 0);
 
-        Assert.Equal(new[] { "a", "c" }, result);
+        Assert.Equal(["a", "c"], result);
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void WhereIf_WithIndexedPredicate_WhenConditionFalse_ReturnsSameSequence()
     {
-        IEnumerable<string> source = new[] { "a", "b" };
+        IEnumerable<string> source = ["a", "b"];
 
         var result = source.WhereIf(false, (_, index) => index == 0);
 
@@ -100,7 +100,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void GetRandom_ReturnsElementFromSource()
     {
-        IEnumerable<int> source = new[] { 1, 2, 3 };
+        IEnumerable<int> source = [1, 2, 3];
 
         for (var i = 0; i < 20; i++)
         {
@@ -114,7 +114,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void GetRandom_WhenSingleElement_ReturnsIt()
     {
-        IEnumerable<string> source = new[] { "only" };
+        IEnumerable<string> source = ["only"];
 
         Assert.Equal("only", source.GetRandom());
     }
@@ -125,7 +125,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void GetRandom_WhenEmpty_Throws()
     {
-        IEnumerable<int> source = Array.Empty<int>();
+        IEnumerable<int> source = [];
 
         Assert.Throws<ArgumentException>(() => source.GetRandom());
     }
@@ -166,7 +166,7 @@ public class EnumerableExtensionsTests
     {
         var source = new[] { "x", "y", "z" };
 
-        var sorted = source.SortByDependencies(_ => Array.Empty<string>());
+        var sorted = source.SortByDependencies(_ => []);
 
         Assert.Equal(new[] { "x", "y", "z" }, sorted);
     }
@@ -177,7 +177,7 @@ public class EnumerableExtensionsTests
     [Fact]
     public void SortByDependencies_WhenEmpty_ReturnsEmpty()
     {
-        var sorted = Array.Empty<string>().SortByDependencies(_ => Array.Empty<string>());
+        var sorted = Array.Empty<string>().SortByDependencies(_ => []);
 
         Assert.Empty(sorted);
     }
@@ -207,7 +207,7 @@ public class EnumerableExtensionsTests
     {
         var source = new[] { "A", "a" };
 
-        var sorted = source.SortByDependencies(_ => Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+        var sorted = source.SortByDependencies(_ => [], StringComparer.OrdinalIgnoreCase);
 
         Assert.Equal(new[] { "A" }, sorted);
     }

@@ -471,13 +471,12 @@ public class EnumLocalizationServiceTests : IDisposable
         var service = CreateService();
 
         var result = service.GetMany(
-            new[]
-            {
+            [
                 nameof(LocalizationTestOrderStatus),
                 nameof(LocalizationTestOrderStatus).ToUpperInvariant(),
                 "   ",
                 nameof(LocalizationTestPermission)
-            },
+            ],
             ChineseQuery());
 
         Assert.Equal(2, result.Count);

@@ -1,12 +1,12 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Text;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using XiHan.Framework.Security.Users;
-using XiHan.Framework.Web.Api.Constants;
+using System.Text;
 using XiHan.Framework.Auditing;
 using XiHan.Framework.Auditing.Pipelines;
+using XiHan.Framework.Security.Users;
+using XiHan.Framework.Web.Api.Constants;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 
 namespace XiHan.Framework.Web.Api.Middlewares;

@@ -23,7 +23,7 @@ public class StackExtensionsTests
     {
         var stack = new Stack<int>();
 
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         Assert.Equal(new[] { 3, 2, 1 }, stack.ToArray());
     }
@@ -34,7 +34,7 @@ public class StackExtensionsTests
     [Fact]
     public void PushRange_WhenArgumentIsNull_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => StackExtensions.PushRange<int>(null!, new[] { 1 }));
+        Assert.Throws<ArgumentNullException>(() => StackExtensions.PushRange<int>(null!, [1]));
         Assert.Throws<ArgumentNullException>(() => new Stack<int>().PushRange(null!));
     }
 
@@ -46,7 +46,7 @@ public class StackExtensionsTests
     {
         var stack = new Stack<int>();
 
-        stack.PushRangeReversed(new[] { 1, 2, 3 });
+        stack.PushRangeReversed([1, 2, 3]);
 
         Assert.Equal(new[] { 1, 2, 3 }, stack.ToArray());
     }
@@ -58,11 +58,11 @@ public class StackExtensionsTests
     public void PopRange_TakesFromTop()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         var popped = stack.PopRange(2);
 
-        Assert.Equal(new[] { 3, 2 }, popped);
+        Assert.Equal([3, 2], popped);
         Assert.Equal(new[] { 1 }, stack.ToArray());
     }
 
@@ -86,12 +86,12 @@ public class StackExtensionsTests
     public void TryPopRange_WhenCountValid_ReturnsTrue()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         var success = stack.TryPopRange(2, out var items);
 
         Assert.True(success);
-        Assert.Equal(new[] { 3, 2 }, items);
+        Assert.Equal([3, 2], items);
         Assert.Equal(new[] { 1 }, stack.ToArray());
     }
 
@@ -121,11 +121,11 @@ public class StackExtensionsTests
     public void DrainToList_EmptiesStackFromTop()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2 });
+        stack.PushRange([1, 2]);
 
         var drained = stack.DrainToList();
 
-        Assert.Equal(new[] { 2, 1 }, drained);
+        Assert.Equal([2, 1], drained);
         Assert.Empty(stack);
     }
 
@@ -136,7 +136,7 @@ public class StackExtensionsTests
     public void TryPeek_WhenNotEmpty_ReturnsTopWithoutPopping()
     {
         var stack = new Stack<string>();
-        stack.PushRange(new[] { "a", "b" });
+        stack.PushRange(["a", "b"]);
 
         var success = StackExtensions.TryPeek(stack, out var item);
 
@@ -166,11 +166,11 @@ public class StackExtensionsTests
     public void PeekRange_ReturnsTopItemsWithoutPopping()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         var peeked = stack.PeekRange(2);
 
-        Assert.Equal(new[] { 3, 2 }, peeked);
+        Assert.Equal([3, 2], peeked);
         Assert.Equal(3, stack.Count);
     }
 
@@ -222,7 +222,7 @@ public class StackExtensionsTests
     public void ToArrayPreserveOrder_KeepsTopFirst()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         Assert.Equal(new[] { 3, 2, 1 }, stack.ToArrayPreserveOrder());
     }
@@ -234,7 +234,7 @@ public class StackExtensionsTests
     public void DeepClone_ReturnsIndependentCopyWithSameOrder()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         var clone = stack.DeepClone();
         clone.Push(4);
@@ -251,7 +251,7 @@ public class StackExtensionsTests
     public void ForEach_VisitsFromTopToBottom()
     {
         var stack = new Stack<string>();
-        stack.PushRange(new[] { "a", "b" });
+        stack.PushRange(["a", "b"]);
         List<string> visited = [];
         List<int> indexes = [];
 
@@ -273,7 +273,7 @@ public class StackExtensionsTests
     public void Reverse_MakesBottomBecomeTop()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3 });
+        stack.PushRange([1, 2, 3]);
 
         stack.Reverse();
 
@@ -304,7 +304,7 @@ public class StackExtensionsTests
     public void LimitSize_KeepsNewestItems()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2, 3, 4 });
+        stack.PushRange([1, 2, 3, 4]);
 
         stack.LimitSize(2);
 
@@ -318,7 +318,7 @@ public class StackExtensionsTests
     public void LimitSize_WhenAlreadyWithinLimit_ChangesNothing()
     {
         var stack = new Stack<int>();
-        stack.PushRange(new[] { 1, 2 });
+        stack.PushRange([1, 2]);
 
         stack.LimitSize(5);
 
@@ -343,7 +343,7 @@ public class StackExtensionsTests
     public void PushWithLimit_EvictsBottomWhenFull()
     {
         var stack = new Stack<string>();
-        stack.PushRange(new[] { "a", "b" });
+        stack.PushRange(["a", "b"]);
 
         var noEviction = stack.PushWithLimit("c", 3);
         var evicted = stack.PushWithLimit("d", 3);
@@ -371,9 +371,9 @@ public class StackExtensionsTests
     public void Concat_PutsSecondStackOnTop()
     {
         var first = new Stack<int>();
-        first.PushRange(new[] { 1, 2 });
+        first.PushRange([1, 2]);
         var second = new Stack<int>();
-        second.PushRange(new[] { 8, 9 });
+        second.PushRange([8, 9]);
 
         var merged = first.Concat(second);
 

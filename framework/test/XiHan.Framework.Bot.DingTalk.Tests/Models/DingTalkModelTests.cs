@@ -167,11 +167,11 @@ public class DingTalkModelTests
             Title = "审批请求",
             Text = "请审批发布单",
             BtnOrientation = "1",
-            Btns = new List<DingTalkBtnInfo>
-            {
+            Btns =
+            [
                 new() { Title = "同意", ActionUrl = "https://example.invalid/approve" },
                 new() { Title = "驳回", ActionUrl = "https://example.invalid/reject" }
-            }
+            ]
         };
 
         var json = JsonSerializer.Serialize(card);
@@ -220,15 +220,15 @@ public class DingTalkModelTests
     {
         var feedCard = new DingTalkFeedCard
         {
-            Links = new List<DingTalkFeedCardLink>
-            {
+            Links =
+            [
                 new()
                 {
                     Title = "构建日志",
                     PicUrl = "https://example.invalid/build.png",
                     MessageUrl = "https://example.invalid/build/1"
                 }
-            }
+            ]
         };
 
         var json = JsonSerializer.Serialize(feedCard);
@@ -266,8 +266,8 @@ public class DingTalkModelTests
     {
         var at = new DingTalkAt
         {
-            AtMobiles = new List<string> { "13800000000" },
-            AtUserIds = new List<string> { "user01" },
+            AtMobiles = ["13800000000"],
+            AtUserIds = ["user01"],
             IsAtAll = true
         };
 
@@ -290,7 +290,7 @@ public class DingTalkModelTests
     {
         var at = new DingTalkAt
         {
-            AtMobiles = new List<string> { "13800000000", "13900000000" },
+            AtMobiles = ["13800000000", "13900000000"],
             IsAtAll = false
         };
 

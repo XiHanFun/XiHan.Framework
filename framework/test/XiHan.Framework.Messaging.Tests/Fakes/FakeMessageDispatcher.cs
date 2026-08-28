@@ -22,6 +22,6 @@ internal sealed class FakeMessageDispatcher : IMessageDispatcher
     /// <returns>空结果集合</returns>
     public Task<IReadOnlyList<MessageSendResult>> DispatchAsync(MessageEnvelope envelope, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<MessageSendResult>>(Array.Empty<MessageSendResult>());
+        return Task.FromResult<IReadOnlyList<MessageSendResult>>([]);
     }
 }

@@ -23,7 +23,7 @@ public class SearchHitTests
         var document = new SearchTestDocument { Title = "分布式事件总线", Views = 1200 };
         var highlights = new Dictionary<string, IReadOnlyList<string>>
         {
-            ["title"] = new[] { "<em>分布式</em>事件总线" }
+            ["title"] = ["<em>分布式</em>事件总线"]
         };
 
         var hit = new SearchHit<SearchTestDocument>("2", document, 1.5d, highlights);
@@ -31,7 +31,7 @@ public class SearchHitTests
         Assert.Equal("2", hit.Id);
         Assert.Same(document, hit.Document);
         Assert.Equal(1.5d, hit.Score);
-        Assert.Equal(new[] { "<em>分布式</em>事件总线" }, hit.Highlights["title"]);
+        Assert.Equal(["<em>分布式</em>事件总线"], hit.Highlights["title"]);
     }
 
     /// <summary>
@@ -56,8 +56,8 @@ public class SearchHitTests
     {
         var highlights = new Dictionary<string, IReadOnlyList<string>>
         {
-            ["title"] = new[] { "<em>曦寒</em>", "框架<em>曦寒</em>" },
-            ["summary"] = new[] { "<em>曦寒</em>框架简介" }
+            ["title"] = ["<em>曦寒</em>", "框架<em>曦寒</em>"],
+            ["summary"] = ["<em>曦寒</em>框架简介"]
         };
 
         var hit = new SearchHit<SearchTestDocument>("1", new SearchTestDocument(), 0.8d, highlights);

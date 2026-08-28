@@ -220,7 +220,7 @@ public class TreeExtensionsTests
         var path = root.GetPath(new Item(4, 2));
 
         Assert.NotNull(path);
-        Assert.Equal(new[] { 1, 2, 4 }, path!.Select(node => node.Value.Id));
+        Assert.Equal([1, 2, 4], path!.Select(node => node.Value.Id));
     }
 
     /// <summary>

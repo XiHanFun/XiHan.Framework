@@ -23,9 +23,9 @@ public class LinkedListExtensionsTests
         var list = new LinkedList<int>();
         list.AddLast(1);
 
-        list.AddRange(new[] { 2, 3 });
+        list.AddRange([2, 3]);
 
-        Assert.Equal(new[] { 1, 2, 3 }, list);
+        Assert.Equal([1, 2, 3], list);
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void AddRange_WhenArgumentIsNull_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => LinkedListExtensions.AddRange<int>(null!, new[] { 1 }));
+        Assert.Throws<ArgumentNullException>(() => LinkedListExtensions.AddRange<int>(null!, [1]));
         Assert.Throws<ArgumentNullException>(() => new LinkedList<int>().AddRange(null!));
     }
 
@@ -47,9 +47,9 @@ public class LinkedListExtensionsTests
         var list = new LinkedList<int>();
         list.AddLast(9);
 
-        list.AddRangeFirst(new[] { 1, 2 });
+        list.AddRangeFirst([1, 2]);
 
-        Assert.Equal(new[] { 1, 2, 9 }, list);
+        Assert.Equal([1, 2, 9], list);
     }
 
     /// <summary>
@@ -58,12 +58,12 @@ public class LinkedListExtensionsTests
     [Fact]
     public void AddRangeAfter_InsertsAfterGivenNode()
     {
-        var list = new LinkedList<int>(new[] { 1, 4 });
+        var list = new LinkedList<int>([1, 4]);
         var node = list.GetNodeAt(0);
 
-        list.AddRangeAfter(node, new[] { 2, 3 });
+        list.AddRangeAfter(node, [2, 3]);
 
-        Assert.Equal(new[] { 1, 2, 3, 4 }, list);
+        Assert.Equal([1, 2, 3, 4], list);
     }
 
     /// <summary>
@@ -72,12 +72,12 @@ public class LinkedListExtensionsTests
     [Fact]
     public void AddRangeBefore_InsertsBeforeGivenNodePreservingOrder()
     {
-        var list = new LinkedList<int>(new[] { 1, 4 });
+        var list = new LinkedList<int>([1, 4]);
         var node = list.GetNodeAt(1);
 
-        list.AddRangeBefore(node, new[] { 2, 3 });
+        list.AddRangeBefore(node, [2, 3]);
 
-        Assert.Equal(new[] { 1, 2, 3, 4 }, list);
+        Assert.Equal([1, 2, 3, 4], list);
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void FindFirstAndFindLast_ReturnMatchingNodes()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3, 2 });
+        var list = new LinkedList<int>([1, 2, 3, 2]);
 
         var first = list.FindFirst(x => x == 2);
         var last = list.FindLast(x => x == 2);
@@ -103,7 +103,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void FindFirstAndFindLast_WhenNoMatch_ReturnNull()
     {
-        var list = new LinkedList<int>(new[] { 1 });
+        var list = new LinkedList<int>([1]);
 
         Assert.Null(list.FindFirst(x => x == 99));
         Assert.Null(list.FindLast(x => x == 99));
@@ -115,12 +115,12 @@ public class LinkedListExtensionsTests
     [Fact]
     public void FindAll_ReturnsEveryMatchingNode()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3, 4 });
+        var list = new LinkedList<int>([1, 2, 3, 4]);
 
         var matched = list.FindAll(x => x % 2 == 0).ToList();
 
         Assert.Equal(2, matched.Count);
-        Assert.Equal(new[] { 2, 4 }, matched.Select(node => node.Value));
+        Assert.Equal([2, 4], matched.Select(node => node.Value));
     }
 
     /// <summary>
@@ -129,12 +129,12 @@ public class LinkedListExtensionsTests
     [Fact]
     public void RemoveAll_RemovesMatchesAndReturnsCount()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3, 4 });
+        var list = new LinkedList<int>([1, 2, 3, 4]);
 
         var removed = list.RemoveAll(x => x % 2 == 0);
 
         Assert.Equal(2, removed);
-        Assert.Equal(new[] { 1, 3 }, list);
+        Assert.Equal([1, 3], list);
     }
 
     /// <summary>
@@ -143,10 +143,10 @@ public class LinkedListExtensionsTests
     [Fact]
     public void RemoveAll_WhenNoMatch_ReturnsZero()
     {
-        var list = new LinkedList<int>(new[] { 1, 3 });
+        var list = new LinkedList<int>([1, 3]);
 
         Assert.Equal(0, list.RemoveAll(x => x > 100));
-        Assert.Equal(new[] { 1, 3 }, list);
+        Assert.Equal([1, 3], list);
     }
 
     /// <summary>
@@ -155,11 +155,11 @@ public class LinkedListExtensionsTests
     [Fact]
     public void Reverse_ReversesElementOrder()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3 });
+        var list = new LinkedList<int>([1, 2, 3]);
 
         list.Reverse();
 
-        Assert.Equal(new[] { 3, 2, 1 }, list);
+        Assert.Equal([3, 2, 1], list);
     }
 
     /// <summary>
@@ -169,13 +169,13 @@ public class LinkedListExtensionsTests
     public void Reverse_WhenAtMostOneElement_ChangesNothing()
     {
         var empty = new LinkedList<int>();
-        var single = new LinkedList<int>(new[] { 7 });
+        var single = new LinkedList<int>([7]);
 
         empty.Reverse();
         single.Reverse();
 
         Assert.Empty(empty);
-        Assert.Equal(new[] { 7 }, single);
+        Assert.Equal([7], single);
     }
 
     /// <summary>
@@ -184,7 +184,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void GetNodeAt_ReturnsNodeForBothHalves()
     {
-        var list = new LinkedList<int>(new[] { 10, 20, 30, 40 });
+        var list = new LinkedList<int>([10, 20, 30, 40]);
 
         Assert.Equal(10, list.GetNodeAt(0).Value);
         Assert.Equal(20, list.GetNodeAt(1).Value);
@@ -198,7 +198,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void GetNodeAt_WhenIndexOutOfRange_Throws()
     {
-        var list = new LinkedList<int>(new[] { 1 });
+        var list = new LinkedList<int>([1]);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => list.GetNodeAt(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => list.GetNodeAt(1));
@@ -210,7 +210,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void TryGetNodeAt_ReturnsFalseWhenOutOfRange()
     {
-        var list = new LinkedList<int>(new[] { 1, 2 });
+        var list = new LinkedList<int>([1, 2]);
 
         Assert.True(list.TryGetNodeAt(1, out var node));
         Assert.NotNull(node);
@@ -227,7 +227,7 @@ public class LinkedListExtensionsTests
     public void IsEmptyAndIsNotEmpty_AreComplementary()
     {
         var empty = new LinkedList<int>();
-        var filled = new LinkedList<int>(new[] { 1 });
+        var filled = new LinkedList<int>([1]);
 
         Assert.True(empty.IsEmpty());
         Assert.False(empty.IsNotEmpty());
@@ -241,7 +241,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void ToArrayPreserveOrder_KeepsOrder()
     {
-        var list = new LinkedList<string>(new[] { "a", "b" });
+        var list = new LinkedList<string>(["a", "b"]);
 
         Assert.Equal(new[] { "a", "b" }, list.ToArrayPreserveOrder());
     }
@@ -252,14 +252,14 @@ public class LinkedListExtensionsTests
     [Fact]
     public void Clone_ReturnsIndependentCopy()
     {
-        var list = new LinkedList<int>(new[] { 1, 2 });
+        var list = new LinkedList<int>([1, 2]);
 
         var clone = list.Clone();
         clone.AddLast(3);
 
         Assert.NotSame(list, clone);
-        Assert.Equal(new[] { 1, 2 }, list);
-        Assert.Equal(new[] { 1, 2, 3 }, clone);
+        Assert.Equal([1, 2], list);
+        Assert.Equal([1, 2, 3], clone);
     }
 
     /// <summary>
@@ -268,7 +268,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void ForEach_VisitsEveryElementWithOptionalIndex()
     {
-        var list = new LinkedList<string>(new[] { "a", "b" });
+        var list = new LinkedList<string>(["a", "b"]);
         List<string> visited = [];
         List<int> indexes = [];
 
@@ -289,7 +289,7 @@ public class LinkedListExtensionsTests
     [Fact]
     public void ForEachNode_AllowsRemovingCurrentNode()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3 });
+        var list = new LinkedList<int>([1, 2, 3]);
 
         list.ForEachNode(node =>
         {
@@ -299,7 +299,7 @@ public class LinkedListExtensionsTests
             }
         });
 
-        Assert.Equal(new[] { 1, 3 }, list);
+        Assert.Equal([1, 3], list);
     }
 
     /// <summary>
@@ -308,12 +308,12 @@ public class LinkedListExtensionsTests
     [Fact]
     public void Where_ReturnsNewLinkedListWithoutTouchingSource()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3, 4 });
+        var list = new LinkedList<int>([1, 2, 3, 4]);
 
         var filtered = list.Where(x => x % 2 == 0);
 
-        Assert.Equal(new[] { 2, 4 }, filtered);
-        Assert.Equal(new[] { 1, 2, 3, 4 }, list);
+        Assert.Equal([2, 4], filtered);
+        Assert.Equal([1, 2, 3, 4], list);
     }
 
     /// <summary>
@@ -322,11 +322,11 @@ public class LinkedListExtensionsTests
     [Fact]
     public void Select_ProjectsIntoNewLinkedList()
     {
-        var list = new LinkedList<int>(new[] { 1, 2 });
+        var list = new LinkedList<int>([1, 2]);
 
         var projected = list.Select(x => x * 10);
 
-        Assert.Equal(new[] { 10, 20 }, projected);
+        Assert.Equal([10, 20], projected);
     }
 
     /// <summary>
@@ -335,14 +335,14 @@ public class LinkedListExtensionsTests
     [Fact]
     public void Concat_MergesIntoNewLinkedList()
     {
-        var first = new LinkedList<int>(new[] { 1, 2 });
-        var second = new LinkedList<int>(new[] { 3 });
+        var first = new LinkedList<int>([1, 2]);
+        var second = new LinkedList<int>([3]);
 
         var merged = first.Concat(second);
 
-        Assert.Equal(new[] { 1, 2, 3 }, merged);
-        Assert.Equal(new[] { 1, 2 }, first);
-        Assert.Equal(new[] { 3 }, second);
+        Assert.Equal([1, 2, 3], merged);
+        Assert.Equal([1, 2], first);
+        Assert.Equal([3], second);
     }
 
     /// <summary>
@@ -351,11 +351,11 @@ public class LinkedListExtensionsTests
     [Fact]
     public void LimitSize_DropsFromFront()
     {
-        var list = new LinkedList<int>(new[] { 1, 2, 3, 4, 5 });
+        var list = new LinkedList<int>([1, 2, 3, 4, 5]);
 
         list.LimitSize(3);
 
-        Assert.Equal(new[] { 3, 4, 5 }, list);
+        Assert.Equal([3, 4, 5], list);
     }
 
     /// <summary>
@@ -364,11 +364,11 @@ public class LinkedListExtensionsTests
     [Fact]
     public void LimitSize_WhenAlreadyWithinLimit_ChangesNothing()
     {
-        var list = new LinkedList<int>(new[] { 1, 2 });
+        var list = new LinkedList<int>([1, 2]);
 
         list.LimitSize(5);
 
-        Assert.Equal(new[] { 1, 2 }, list);
+        Assert.Equal([1, 2], list);
     }
 
     /// <summary>
@@ -388,14 +388,14 @@ public class LinkedListExtensionsTests
     [Fact]
     public void AddLastWithLimit_EvictsHeadWhenFull()
     {
-        var list = new LinkedList<string>(new[] { "a", "b" });
+        var list = new LinkedList<string>(["a", "b"]);
 
         var noEviction = list.AddLastWithLimit("c", 3);
         var evicted = list.AddLastWithLimit("d", 3);
 
         Assert.Null(noEviction);
         Assert.Equal("a", evicted);
-        Assert.Equal(new[] { "b", "c", "d" }, list);
+        Assert.Equal(["b", "c", "d"], list);
     }
 
     /// <summary>

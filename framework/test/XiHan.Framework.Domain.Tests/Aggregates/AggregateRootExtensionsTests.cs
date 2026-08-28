@@ -292,7 +292,7 @@ public class AggregateRootExtensionsTests
         Assert.Equal(12, snapshot.EventStatistics.TotalEventCount);
 
         var orders = snapshot.RecentEvents.Select(item => item.EventOrder).ToList();
-        Assert.Equal(orders.OrderByDescending(order => order).ToList(), orders);
+        Assert.Equal([.. orders.OrderByDescending(order => order)], orders);
     }
 
     /// <summary>

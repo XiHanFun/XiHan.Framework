@@ -248,12 +248,12 @@ public class DistributedCachePatternTests
         using var context = new DistributedCacheTestContext(store);
         var cache = context.CreateStringKeyed<SampleCacheItem>();
 
-        var result = cache.ScriptEvaluate("return 1", new[] { "k1", "k2" }, new object?[] { "a", 2 });
+        var result = cache.ScriptEvaluate("return 1", ["k1", "k2"], ["a", 2]);
 
         Assert.Equal(7L, result?.AsInt64());
         Assert.Equal("return 1", store.LastScript);
         Assert.Equal(new[] { SamplePrefix + "k1", SamplePrefix + "k2" }, store.LastScriptKeys);
-        Assert.Equal(new object?[] { "a", 2 }, store.LastScriptValues);
+        Assert.Equal(["a", 2], store.LastScriptValues);
     }
 
     /// <summary>

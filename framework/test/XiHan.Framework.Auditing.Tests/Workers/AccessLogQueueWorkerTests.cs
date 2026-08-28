@@ -29,7 +29,7 @@ public class AccessLogQueueWorkerTests
     {
         var writer = new RecordingAccessLogWriter();
         var queue = new ScriptedLogQueue<AccessLogRecord>(
-            new[] { new AccessLogRecord { TraceId = "t1" } },
+            [new AccessLogRecord { TraceId = "t1" }],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -55,12 +55,11 @@ public class AccessLogQueueWorkerTests
     {
         var writer = new RecordingAccessLogWriter();
         var queue = new ScriptedLogQueue<AccessLogRecord>(
-            new[]
-            {
+            [
                 new AccessLogRecord { TraceId = "t1" },
                 new AccessLogRecord { TraceId = "t2" },
                 new AccessLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -91,12 +90,11 @@ public class AccessLogQueueWorkerTests
     {
         var writer = new RecordingAccessLogWriter();
         var queue = new ScriptedLogQueue<AccessLogRecord>(
-            new[]
-            {
+            [
                 new AccessLogRecord { TraceId = "t1" },
                 new AccessLogRecord { TraceId = "t2" },
                 new AccessLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -123,11 +121,10 @@ public class AccessLogQueueWorkerTests
     public async Task ExecuteAsync_WhenWriterNotRegistered_CompletesWithoutThrowing()
     {
         var queue = new ScriptedLogQueue<AccessLogRecord>(
-            new[]
-            {
+            [
                 new AccessLogRecord { TraceId = "t1" },
                 new AccessLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = new ServiceCollection().BuildServiceProvider();
@@ -154,11 +151,10 @@ public class AccessLogQueueWorkerTests
     {
         var writer = new RecordingAccessLogWriter();
         var queue = new ScriptedLogQueue<AccessLogRecord>(
-            new[]
-            {
+            [
                 new AccessLogRecord { TraceId = "t1" },
                 new AccessLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: true);
 
         using var provider = BuildProvider(writer);

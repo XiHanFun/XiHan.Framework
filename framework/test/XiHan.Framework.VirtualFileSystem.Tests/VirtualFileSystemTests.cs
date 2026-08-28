@@ -165,7 +165,7 @@ public class VirtualFileSystemTests : IDisposable
     {
         using var sut = CreateSut(options => options.AddPhysical(_root, 100));
 
-        Assert.Equal(new[] { "/a.txt", "/sub/b.json", "/sub/c.txt" }, sut.EnumerateFiles("/"));
+        Assert.Equal(["/a.txt", "/sub/b.json", "/sub/c.txt"], sut.EnumerateFiles("/"));
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ public class VirtualFileSystemTests : IDisposable
     {
         using var sut = CreateSut(options => options.AddPhysical(_root, 100));
 
-        Assert.Equal(new[] { "/a.txt" }, sut.EnumerateFiles("/", "*", recursive: false));
+        Assert.Equal(["/a.txt"], sut.EnumerateFiles("/", "*", recursive: false));
     }
 
     /// <summary>
@@ -187,7 +187,7 @@ public class VirtualFileSystemTests : IDisposable
     {
         using var sut = CreateSut(options => options.AddPhysical(_root, 100));
 
-        Assert.Equal(new[] { "/sub/b.json" }, sut.EnumerateFiles("/", "*.json"));
+        Assert.Equal(["/sub/b.json"], sut.EnumerateFiles("/", "*.json"));
     }
 
     /// <summary>
@@ -198,7 +198,7 @@ public class VirtualFileSystemTests : IDisposable
     {
         using var sut = CreateSut(options => options.AddPhysical(_root, 100));
 
-        Assert.Equal(new[] { "/sub/b.json" }, sut.EnumerateFiles("/", "**/*.json"));
+        Assert.Equal(["/sub/b.json"], sut.EnumerateFiles("/", "**/*.json"));
     }
 
     /// <summary>
@@ -209,7 +209,7 @@ public class VirtualFileSystemTests : IDisposable
     {
         using var sut = CreateSut(options => options.AddPhysical(_root, 100));
 
-        Assert.Equal(new[] { "/sub/b.json", "/sub/c.txt" }, sut.EnumerateFiles("/sub"));
+        Assert.Equal(["/sub/b.json", "/sub/c.txt"], sut.EnumerateFiles("/sub"));
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public class VirtualFileSystemTests : IDisposable
             options.AddPhysical(second, 10);
         });
 
-        Assert.Equal(new[] { "/a.txt", "/d.txt" }, sut.EnumerateFiles("/", "*", recursive: false));
+        Assert.Equal(["/a.txt", "/d.txt"], sut.EnumerateFiles("/", "*", recursive: false));
     }
 
     /// <summary>

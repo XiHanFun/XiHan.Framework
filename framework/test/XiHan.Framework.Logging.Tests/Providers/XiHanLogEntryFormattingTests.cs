@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Globalization;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using XiHan.Framework.Logging.Options;
 using XiHan.Framework.Logging.Providers;
 

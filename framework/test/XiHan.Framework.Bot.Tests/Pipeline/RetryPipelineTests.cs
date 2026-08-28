@@ -138,7 +138,7 @@ public class RetryPipelineTests
         var healthy = FakeBotProvider.AlwaysSuccess("A");
         var failing = FakeBotProvider.AlwaysFailed("B", "down");
         var context = CreateContext();
-        context.SetProviders(new IBotProvider[] { healthy, failing });
+        context.SetProviders([healthy, failing]);
         var observed = new List<string>();
 
         await CreatePipeline(options).InvokeAsync(context, () =>
@@ -169,7 +169,7 @@ public class RetryPipelineTests
         var first = FakeBotProvider.AlwaysSuccess("A");
         var second = FakeBotProvider.AlwaysSuccess("B");
         var context = CreateContext();
-        context.SetProviders(new IBotProvider[] { first, second });
+        context.SetProviders([first, second]);
         var observed = new List<string>();
 
         await CreatePipeline(options).InvokeAsync(context, () =>
@@ -259,7 +259,7 @@ public class RetryPipelineTests
     {
         var options = new XiHanBotOptions { EnableRetryPipeline = true, RetryCount = 3, RetryDelay = TimeSpan.FromSeconds(30) };
         using var cts = new CancellationTokenSource();
-        var context = new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), cts.Token);
+        var context = new BotContext(new BotMessage { Content = "hi" }, [], cts.Token);
         var attempts = 0;
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -280,6 +280,6 @@ public class RetryPipelineTests
 
     private static BotContext CreateContext()
     {
-        return new BotContext(new BotMessage { Content = "hi" }, Array.Empty<string>(), CancellationToken.None);
+        return new BotContext(new BotMessage { Content = "hi" }, [], CancellationToken.None);
     }
 }

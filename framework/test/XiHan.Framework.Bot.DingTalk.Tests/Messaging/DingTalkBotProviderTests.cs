@@ -56,7 +56,7 @@ public class DingTalkBotProviderTests
         var store = new FakeDingTalkConfigStore(null);
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        var context = new BotContext(message, [], TestContext.Current.CancellationToken);
 
         var result = await provider.SendAsync(message, context);
 
@@ -81,7 +81,7 @@ public class DingTalkBotProviderTests
         });
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        var context = new BotContext(message, [], TestContext.Current.CancellationToken);
 
         var result = await provider.SendAsync(message, context);
 
@@ -109,7 +109,7 @@ public class DingTalkBotProviderTests
         });
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        var context = new BotContext(message, [], TestContext.Current.CancellationToken);
 
         var result = await provider.SendAsync(message, context);
 
@@ -135,7 +135,7 @@ public class DingTalkBotProviderTests
         });
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        var context = new BotContext(message, [], TestContext.Current.CancellationToken);
 
         var result = await provider.SendAsync(message, context);
 
@@ -152,7 +152,7 @@ public class DingTalkBotProviderTests
         var store = new FakeDingTalkConfigStore(null);
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), cancellation.Token);
+        var context = new BotContext(message, [], cancellation.Token);
 
         await provider.SendAsync(message, context);
 
@@ -169,7 +169,7 @@ public class DingTalkBotProviderTests
         var store = new FakeDingTalkConfigStore(null);
         var provider = new DingTalkBotProvider(store);
         var message = new BotMessage { Content = "构建失败" };
-        var context = new BotContext(message, Array.Empty<string>(), TestContext.Current.CancellationToken);
+        var context = new BotContext(message, [], TestContext.Current.CancellationToken);
 
         var result = await provider.SendAsync(message, context);
         context.AddResult(provider.Name, result);

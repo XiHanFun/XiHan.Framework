@@ -20,11 +20,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertRange_InsertsItemsInOrderAtIndex()
     {
-        IList<string> source = new List<string> { "a", "d" };
+        IList<string> source = ["a", "d"];
 
-        source.InsertRange(1, new[] { "b", "c" });
+        source.InsertRange(1, ["b", "c"]);
 
-        Assert.Equal(new[] { "a", "b", "c", "d" }, source);
+        Assert.Equal(["a", "b", "c", "d"], source);
     }
 
     /// <summary>
@@ -33,11 +33,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertRange_WithEmptyItems_ChangesNothing()
     {
-        IList<string> source = new List<string> { "a" };
+        IList<string> source = ["a"];
 
-        source.InsertRange(0, Array.Empty<string>());
+        source.InsertRange(0, []);
 
-        Assert.Equal(new[] { "a" }, source);
+        Assert.Equal(["a"], source);
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public class ListExtensionsTests
     [Fact]
     public void FindIndex_ReturnsMatchedIndexOrMinusOne()
     {
-        IList<int> source = new List<int> { 10, 20, 30 };
+        IList<int> source = [10, 20, 30];
 
         Assert.Equal(1, source.FindIndex(x => x == 20));
         Assert.Equal(-1, source.FindIndex(x => x == 99));
@@ -58,7 +58,7 @@ public class ListExtensionsTests
     [Fact]
     public void FindIndex_WhenEmpty_ReturnsMinusOne()
     {
-        IList<int> source = new List<int>();
+        IList<int> source = [];
 
         Assert.Equal(-1, source.FindIndex(_ => true));
     }
@@ -69,12 +69,12 @@ public class ListExtensionsTests
     [Fact]
     public void AddFirstAndAddLast_AppendToBothEnds()
     {
-        IList<string> source = new List<string> { "m" };
+        IList<string> source = ["m"];
 
         source.AddFirst("f");
         source.AddLast("l");
 
-        Assert.Equal(new[] { "f", "m", "l" }, source);
+        Assert.Equal(["f", "m", "l"], source);
     }
 
     /// <summary>
@@ -83,11 +83,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertAfter_WithExistingItem_InsertsRightAfterIt()
     {
-        IList<string> source = new List<string> { "a", "c" };
+        IList<string> source = ["a", "c"];
 
         source.InsertAfter("a", "b");
 
-        Assert.Equal(new[] { "a", "b", "c" }, source);
+        Assert.Equal(["a", "b", "c"], source);
     }
 
     /// <summary>
@@ -96,11 +96,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertAfter_WhenExistingItemMissing_AddsToFront()
     {
-        IList<string> source = new List<string> { "a" };
+        IList<string> source = ["a"];
 
         source.InsertAfter("missing", "x");
 
-        Assert.Equal(new[] { "x", "a" }, source);
+        Assert.Equal(["x", "a"], source);
     }
 
     /// <summary>
@@ -109,11 +109,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertAfter_WithSelector_InsertsRightAfterMatch()
     {
-        IList<string> source = new List<string> { "a", "c" };
+        IList<string> source = ["a", "c"];
 
         source.InsertAfter(x => x == "a", "b");
 
-        Assert.Equal(new[] { "a", "b", "c" }, source);
+        Assert.Equal(["a", "b", "c"], source);
     }
 
     /// <summary>
@@ -122,11 +122,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertAfter_WithSelector_WhenNoMatch_AddsToFront()
     {
-        IList<string> source = new List<string> { "a" };
+        IList<string> source = ["a"];
 
         source.InsertAfter(x => x == "zzz", "x");
 
-        Assert.Equal(new[] { "x", "a" }, source);
+        Assert.Equal(["x", "a"], source);
     }
 
     /// <summary>
@@ -135,11 +135,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertBefore_WithExistingItem_InsertsRightBeforeIt()
     {
-        IList<string> source = new List<string> { "a", "c" };
+        IList<string> source = ["a", "c"];
 
         source.InsertBefore("c", "b");
 
-        Assert.Equal(new[] { "a", "b", "c" }, source);
+        Assert.Equal(["a", "b", "c"], source);
     }
 
     /// <summary>
@@ -148,11 +148,11 @@ public class ListExtensionsTests
     [Fact]
     public void InsertBefore_WhenExistingItemMissing_AddsToEnd()
     {
-        IList<string> source = new List<string> { "a" };
+        IList<string> source = ["a"];
 
         source.InsertBefore("missing", "x");
 
-        Assert.Equal(new[] { "a", "x" }, source);
+        Assert.Equal(["a", "x"], source);
     }
 
     /// <summary>
@@ -161,14 +161,14 @@ public class ListExtensionsTests
     [Fact]
     public void InsertBefore_WithSelector_InsertsBeforeMatchOrAppends()
     {
-        IList<string> matched = new List<string> { "a", "c" };
-        IList<string> unmatched = new List<string> { "a" };
+        IList<string> matched = ["a", "c"];
+        IList<string> unmatched = ["a"];
 
         matched.InsertBefore(x => x == "c", "b");
         unmatched.InsertBefore(x => x == "zzz", "x");
 
-        Assert.Equal(new[] { "a", "b", "c" }, matched);
-        Assert.Equal(new[] { "a", "x" }, unmatched);
+        Assert.Equal(["a", "b", "c"], matched);
+        Assert.Equal(["a", "x"], unmatched);
     }
 
     /// <summary>
@@ -177,11 +177,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceWhile_ReplacesEveryMatch()
     {
-        IList<int> source = new List<int> { 1, 2, 3, 2 };
+        IList<int> source = [1, 2, 3, 2];
 
         source.ReplaceWhile(x => x == 2, 9);
 
-        Assert.Equal(new[] { 1, 9, 3, 9 }, source);
+        Assert.Equal([1, 9, 3, 9], source);
     }
 
     /// <summary>
@@ -190,11 +190,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceWhile_WithFactory_UsesOriginalValue()
     {
-        IList<int> source = new List<int> { 1, 2, 3 };
+        IList<int> source = [1, 2, 3];
 
         source.ReplaceWhile(x => x % 2 == 1, x => x * 10);
 
-        Assert.Equal(new[] { 10, 2, 30 }, source);
+        Assert.Equal([10, 2, 30], source);
     }
 
     /// <summary>
@@ -203,11 +203,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceOne_WithSelector_ReplacesOnlyFirstMatch()
     {
-        IList<int> source = new List<int> { 2, 2, 3 };
+        IList<int> source = [2, 2, 3];
 
         source.ReplaceOne(x => x == 2, 9);
 
-        Assert.Equal(new[] { 9, 2, 3 }, source);
+        Assert.Equal([9, 2, 3], source);
     }
 
     /// <summary>
@@ -216,11 +216,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceOne_WithFactory_ReplacesOnlyFirstMatch()
     {
-        IList<int> source = new List<int> { 2, 2 };
+        IList<int> source = [2, 2];
 
         source.ReplaceOne(x => x == 2, x => x + 100);
 
-        Assert.Equal(new[] { 102, 2 }, source);
+        Assert.Equal([102, 2], source);
     }
 
     /// <summary>
@@ -229,11 +229,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceOne_WithValue_ReplacesFirstEqualItem()
     {
-        IList<string> source = new List<string> { "a", "b", "a" };
+        IList<string> source = ["a", "b", "a"];
 
         source.ReplaceOne("a", "z");
 
-        Assert.Equal(new[] { "z", "b", "a" }, source);
+        Assert.Equal(["z", "b", "a"], source);
     }
 
     /// <summary>
@@ -242,11 +242,11 @@ public class ListExtensionsTests
     [Fact]
     public void ReplaceOne_WhenNoMatch_ChangesNothing()
     {
-        IList<int> source = new List<int> { 1, 2 };
+        IList<int> source = [1, 2];
 
         source.ReplaceOne(x => x == 99, 0);
 
-        Assert.Equal(new[] { 1, 2 }, source);
+        Assert.Equal([1, 2], source);
     }
 
     /// <summary>
@@ -293,7 +293,7 @@ public class ListExtensionsTests
     [Fact]
     public void GetOrAdd_WhenMatchExists_ReturnsExistingWithoutAdding()
     {
-        IList<string> source = new List<string> { "abc" };
+        IList<string> source = ["abc"];
         var factoryCalls = 0;
 
         var value = source.GetOrAdd(x => x.StartsWith('a'), () =>
@@ -313,12 +313,12 @@ public class ListExtensionsTests
     [Fact]
     public void GetOrAdd_WhenNoMatch_CreatesAndAppends()
     {
-        IList<string> source = new List<string> { "abc" };
+        IList<string> source = ["abc"];
 
         var value = source.GetOrAdd(x => x.StartsWith('z'), () => "zzz");
 
         Assert.Equal("zzz", value);
-        Assert.Equal(new[] { "abc", "zzz" }, source);
+        Assert.Equal(["abc", "zzz"], source);
     }
 
     /// <summary>
@@ -336,7 +336,7 @@ public class ListExtensionsTests
     [Fact]
     public void GetRandom_ReturnsElementFromList()
     {
-        IList<int> source = new List<int> { 1, 2, 3 };
+        IList<int> source = [1, 2, 3];
 
         for (var i = 0; i < 20; i++)
         {
@@ -350,7 +350,7 @@ public class ListExtensionsTests
     [Fact]
     public void GetRandom_WhenEmpty_Throws()
     {
-        IList<int> source = new List<int>();
+        IList<int> source = [];
 
         Assert.Throws<ArgumentException>(() => source.GetRandom());
     }
@@ -370,7 +370,7 @@ public class ListExtensionsTests
     [Fact]
     public void TryGetRandom_WhenNotEmpty_ReturnsTrueWithElement()
     {
-        IList<string> source = new List<string> { "only" };
+        IList<string> source = ["only"];
 
         var success = source.TryGetRandom(out var result);
 
@@ -384,7 +384,7 @@ public class ListExtensionsTests
     [Fact]
     public void TryGetRandom_WhenEmpty_ReturnsFalseWithDefault()
     {
-        IList<string> source = new List<string>();
+        IList<string> source = [];
 
         var success = source.TryGetRandom(out var result);
 

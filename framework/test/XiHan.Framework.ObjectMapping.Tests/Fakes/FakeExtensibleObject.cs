@@ -18,5 +18,5 @@ public class FakeExtensibleObject : IHasExtraProperties
     /// <summary>
     /// 额外属性字典
     /// </summary>
-    public ExtraPropertyDictionary ExtraProperties { get; } = new();
+    public ExtraPropertyDictionary ExtraProperties { get; } = [];
 }

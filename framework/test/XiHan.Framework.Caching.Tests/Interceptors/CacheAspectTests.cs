@@ -194,7 +194,7 @@ public class CacheAspectTests
         }
 
         var before = await aspect.GetOrCreateAsync(typeof(string), "cfg:1", 60, Factory);
-        await aspect.EvictAsync(method, new object?[] { 1 }, attributes);
+        await aspect.EvictAsync(method, [1], attributes);
         var after = await aspect.GetOrCreateAsync(typeof(string), "cfg:1", 60, Factory);
 
         Assert.Equal("v1", before);
@@ -213,7 +213,7 @@ public class CacheAspectTests
         var method = GetMethod(nameof(Target.UpdateAsync));
 
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => aspect.EvictAsync(method, new object?[] { 1 }, null!));
+            () => aspect.EvictAsync(method, [1], null!));
     }
 
     /// <summary>

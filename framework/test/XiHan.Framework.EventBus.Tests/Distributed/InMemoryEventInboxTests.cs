@@ -73,7 +73,7 @@ public class InMemoryEventInboxTests
 
         var waiting = await inbox.GetWaitingEventsAsync(2, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(new[] { "early", "middle" }, waiting.Select(item => item.MessageId));
+        Assert.Equal(["early", "middle"], waiting.Select(item => item.MessageId));
     }
 
     /// <summary>

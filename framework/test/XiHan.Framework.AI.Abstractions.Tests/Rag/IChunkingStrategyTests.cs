@@ -65,7 +65,7 @@ public class IChunkingStrategyTests
         Assert.Equal("第三段", chunks[2]);
 
         // 两次枚举必须得到同一序列：切片序号靠下标推导，惰性序列会让序号与内容对不上
-        Assert.Equal(chunks.ToList(), chunks.ToList());
+        Assert.Equal(chunks.ToList(), [.. chunks]);
     }
 
     /// <summary>

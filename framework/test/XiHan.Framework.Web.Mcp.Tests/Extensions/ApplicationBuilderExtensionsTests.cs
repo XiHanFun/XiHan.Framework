@@ -126,7 +126,7 @@ public class ApplicationBuilderExtensionsTests
         /// <summary>
         /// 已注册的端点数据源
         /// </summary>
-        public ICollection<EndpointDataSource> DataSources { get; } = new List<EndpointDataSource>();
+        public ICollection<EndpointDataSource> DataSources { get; } = [];
 
         /// <summary>
         /// 创建应用程序构建器

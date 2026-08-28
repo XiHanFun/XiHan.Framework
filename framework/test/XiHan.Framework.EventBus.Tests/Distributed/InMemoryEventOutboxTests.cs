@@ -74,7 +74,7 @@ public class InMemoryEventOutboxTests
         var waiting = await outbox.GetWaitingEventsAsync(2, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            new[] { "xihan.tests.early", "xihan.tests.middle" },
+            ["xihan.tests.early", "xihan.tests.middle"],
             waiting.Select(item => item.EventName));
     }
 

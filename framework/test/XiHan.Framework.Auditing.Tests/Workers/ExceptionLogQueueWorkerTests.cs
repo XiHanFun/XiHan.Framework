@@ -27,7 +27,7 @@ public class ExceptionLogQueueWorkerTests
     {
         var writer = new RecordingExceptionLogWriter();
         var queue = new ScriptedLogQueue<ExceptionLogRecord>(
-            new[] { new ExceptionLogRecord { TraceId = "t1" } },
+            [new ExceptionLogRecord { TraceId = "t1" }],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -53,12 +53,11 @@ public class ExceptionLogQueueWorkerTests
     {
         var writer = new RecordingExceptionLogWriter();
         var queue = new ScriptedLogQueue<ExceptionLogRecord>(
-            new[]
-            {
+            [
                 new ExceptionLogRecord { TraceId = "t1" },
                 new ExceptionLogRecord { TraceId = "t2" },
                 new ExceptionLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -89,12 +88,11 @@ public class ExceptionLogQueueWorkerTests
     {
         var writer = new RecordingExceptionLogWriter();
         var queue = new ScriptedLogQueue<ExceptionLogRecord>(
-            new[]
-            {
+            [
                 new ExceptionLogRecord { TraceId = "t1" },
                 new ExceptionLogRecord { TraceId = "t2" },
                 new ExceptionLogRecord { TraceId = "t3" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = BuildProvider(writer);
@@ -121,11 +119,10 @@ public class ExceptionLogQueueWorkerTests
     public async Task ExecuteAsync_WhenWriterNotRegistered_CompletesWithoutThrowing()
     {
         var queue = new ScriptedLogQueue<ExceptionLogRecord>(
-            new[]
-            {
+            [
                 new ExceptionLogRecord { TraceId = "t1" },
                 new ExceptionLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: false);
 
         using var provider = new ServiceCollection().BuildServiceProvider();
@@ -152,11 +149,10 @@ public class ExceptionLogQueueWorkerTests
     {
         var writer = new RecordingExceptionLogWriter();
         var queue = new ScriptedLogQueue<ExceptionLogRecord>(
-            new[]
-            {
+            [
                 new ExceptionLogRecord { TraceId = "t1" },
                 new ExceptionLogRecord { TraceId = "t2" }
-            },
+            ],
             blockAfterDrain: true);
 
         using var provider = BuildProvider(writer);

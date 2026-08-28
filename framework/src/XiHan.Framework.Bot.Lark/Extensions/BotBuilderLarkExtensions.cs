@@ -4,11 +4,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Bot.Extensions;
-using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Lark.Abstractions;
 using XiHan.Framework.Bot.Lark.Messaging;
 using XiHan.Framework.Bot.Lark.Options;
 using XiHan.Framework.Bot.Lark.Stores;
+using XiHan.Framework.Bot.Providers;
 
 namespace XiHan.Framework.Bot.Lark.Extensions;
 

@@ -101,7 +101,7 @@ public class DefaultPermissionStore : IPermissionStore
 
         lock (_lockObject)
         {
-            var permissions = _userPermissions.GetOrAdd(userId, _ => new HashSet<string>());
+            var permissions = _userPermissions.GetOrAdd(userId, _ => []);
             permissions.Add(permissionName);
         }
 
@@ -147,7 +147,7 @@ public class DefaultPermissionStore : IPermissionStore
 
         lock (_lockObject)
         {
-            var permissions = _rolePermissions.GetOrAdd(roleId, _ => new HashSet<string>());
+            var permissions = _rolePermissions.GetOrAdd(roleId, _ => []);
             permissions.Add(permissionName);
         }
 

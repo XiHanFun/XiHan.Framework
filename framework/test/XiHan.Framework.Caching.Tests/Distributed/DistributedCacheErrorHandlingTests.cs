@@ -183,9 +183,9 @@ public class DistributedCacheErrorHandlingTests
         using var context = new DistributedCacheTestContext(new FailingDistributedCacheStore());
         var cache = context.CreateStringKeyed<SampleCacheItem>();
 
-        var result = cache.GetMany(new[] { "a", "b" }, hideErrors: true);
+        var result = cache.GetMany(["a", "b"], hideErrors: true);
 
-        Assert.Equal(new[] { "a", "b" }, result.Select(pair => pair.Key));
+        Assert.Equal(["a", "b"], result.Select(pair => pair.Key));
         Assert.All(result, pair => Assert.Null(pair.Value));
         Assert.Single(context.Notifier.Exceptions);
     }

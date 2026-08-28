@@ -192,7 +192,7 @@ public class EnumExtensionsTests
     [Fact]
     public void GetAllValuesAndNames_ReturnEveryMember()
     {
-        Assert.Equal(new[] { Status.Idle, Status.Running, Status.Stopped }, Status.Idle.GetAllValues());
+        Assert.Equal([Status.Idle, Status.Running, Status.Stopped], Status.Idle.GetAllValues());
         Assert.Equal(
             new[] { nameof(Status.Idle), nameof(Status.Running), nameof(Status.Stopped) },
             Status.Idle.GetAllNames());
