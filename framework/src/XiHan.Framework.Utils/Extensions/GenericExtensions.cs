@@ -1,8 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
+using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Serialization.Json;
 
 namespace XiHan.Framework.Utils.Extensions;
@@ -62,6 +64,12 @@ public static class GenericExtensions
             {
                 return entity;
             }
+
+            // 原实现循环体内既不更新 entity 也不更新 propertyName：
+            // 只要该属性值非 null 就会拿同一个 entity 反复取同一个属性，永远转不出去（挂死线程）。
+            // 这里按同名属性逐级下钻，直到某一级为 null，返回最后一个非 null 的实体，
+            // 与方法名"递归获取最深层次"的承诺一致。
+            entity = value;
         }
     }
 
@@ -169,8 +177,19 @@ public static class GenericExtensions
         foreach (var variance in propertyInfo)
         {
             var type = variance.PropertyType;
-            var before = variance.GetValue(oldEntity, null).ConvertTo(type);
-            var after = variance.GetValue(newEntity, null).ConvertTo(type);
+
+            // 原实现写的是 xxx.ConvertTo(type)，本意是"转成 type 指定的类型"，
+            // 实际绑定到 ConverterExtensions.ConvertTo<T>(object?, T defaultValue)：
+            // T 被推断成 System.Type、type 变成了 defaultValue，转换必然失败并回退，
+            // 于是 before/after 恒等于同一个 Type 对象，任何差异都比不出来（返回空列表）；
+            // 一侧为 null 时又会把类型名当成属性值写进差异记录。
+            // 改用以 Type 为目标类型的非泛型重载，比较的才是属性真实值。
+            // 第三个实参 null 不能省：泛型重载是 (object?, T) 两个形参，非泛型是
+            // (object?, Type, object?) 三个形参且第三个有默认值；只传两个实参时，
+            // C# 的择优规则是「不需要使用可选参数的候选优先」，仍会选中泛型版，
+            // 修了等于没修。显式补满第三个实参才能锁定非泛型重载。
+            var before = ConvertHelper.ConvertTo(variance.GetValue(oldEntity, null), type, null);
+            var after = ConvertHelper.ConvertTo(variance.GetValue(newEntity, null), type, null);
 
             // 使用 Equals 进行值比较，处理值类型和引用类型
             if (before is not null && after is not null)
@@ -248,15 +267,35 @@ public static class GenericExtensions
             return true;
         }
 
-        // 如果为""
-        if (data is not string)
+        // 如果为空字符串（含仅空白）
+        if (data is string text)
         {
-            return data is DBNull;
+            return string.IsNullOrEmpty(text.Trim());
         }
 
-        if (string.IsNullOrEmpty(data.ToString()?.Trim()))
+        // 如果为空集合。
+        // 这一段必须有：本方法是无约束泛型，集合实参也会绑到它而不是 CollectionExtensions
+        // 上更精确的 ICollection<T> 重载——只要调用方没 using XiHan.Framework.Utils.Collections。
+        // 早期版本缺这一段，非 null 的空集合一律被判成"非空"，导致调用方的空集合短路失效
+        // （XiHanValidationException.Log 因此会对 0 个错误照样写一条告警日志）。
+        if (data is ICollection collection)
         {
-            return true;
+            return collection.Count == 0;
+        }
+
+        // 非泛型 IEnumerable 兜底：只取第一个元素判定，不整体枚举。
+        // 惰性序列在此会被推进一步，这是判空的固有代价，与 Enumerable.Any() 一致。
+        if (data is IEnumerable sequence)
+        {
+            var enumerator = sequence.GetEnumerator();
+            try
+            {
+                return !enumerator.MoveNext();
+            }
+            finally
+            {
+                (enumerator as IDisposable)?.Dispose();
+            }
         }
 
         // 如果为 DBNull

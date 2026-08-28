@@ -118,11 +118,14 @@ public class SqidsEncoder<T> where T : INumber<T>
                 offset++;
             }
 
-            // 提取后缀
-            if (chunk.Length > 0)
+            // 空块是补位哨兵（见 PadId）：其后全是为满足 MinLength 追加的填充字符，
+            // 继续解下去会凭空多出数字，这里必须停止。
+            if (chunk.Length == 0)
             {
-                result.Add(ToNumber(chunk, alphabet[1..]));
+                break;
             }
+
+            result.Add(ToNumber(chunk, alphabet[1..]));
 
             // 跳过分隔符
             offset++;
@@ -134,18 +137,26 @@ public class SqidsEncoder<T> where T : INumber<T>
     /// <summary>
     /// 填充唯一标识至指定长度
     /// </summary>
+    /// <remarks>
+    /// 这里原有两处缺陷，合起来使得默认配置（MinLength = 5）下的编码结果根本解不回来：
+    /// 其一，<c>separator + alphabet[1]</c> 是 char 与 char 相加，在 C# 里走的是 int 加法，
+    /// 拼进字符串的是两个码点之和的十进制文本（如 "195"），而不是那两个字母；
+    /// 其二，补位内容会被解码端当成普通数字块解出来，多出凭空的数字。
+    /// 现在改为先追加两个连续分隔符构成「空块」哨兵，解码端读到空块即停止解析，
+    /// 其后的填充字符不再参与解码；同时去掉按 minLength 截断的分支——
+    /// MinLength 是下限不是定长，截断会砍掉哨兵甚至数字本身，直接破坏可逆性。
+    /// </remarks>
     private static string PadId(string id, int minLength, string alphabet)
     {
         var separator = alphabet[0];
+        var filler = alphabet[1];
+
+        id += separator;
+        id += separator;
 
         while (id.Length < minLength)
         {
-            id += separator + alphabet[1];
-        }
-
-        if (id.Length > minLength)
-        {
-            id = id[..minLength];
+            id += filler;
         }
 
         return id;

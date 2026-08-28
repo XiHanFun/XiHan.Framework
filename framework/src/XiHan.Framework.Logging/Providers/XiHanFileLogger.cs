@@ -13,6 +13,12 @@ namespace XiHan.Framework.Logging.Providers;
 internal class XiHanFileLogger : ILogger
 {
     private static readonly Lock FileWriteLock = new();
+
+    /// <summary>
+    /// 不带 BOM 前导码的 UTF-8 编码
+    /// </summary>
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+
     private readonly string _categoryName;
     private readonly XiHanFileLoggerOptions _options;
     private readonly IExternalScopeProvider _scopeProvider;
@@ -50,7 +56,11 @@ internal class XiHanFileLogger : ILogger
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel >= _options.MinLevel;
+        // 原来只做 logLevel >= MinLevel 的数值比较，而 LogLevel.None(6) 是枚举里的最大值，
+        // 于是任何 MinLevel 下 IsEnabled(LogLevel.None) 都返回 true，Log(LogLevel.None, ...) 也会照常落盘。
+        // None 是「不写任何日志」的哨兵值（框架自带提供器一律 logLevel != LogLevel.None），必须先排除；
+        // 顺带也让 MinLevel 被设成 None 时等价于「整个提供器关闭」。
+        return logLevel != LogLevel.None && logLevel >= _options.MinLevel;
     }
 
     /// <summary>
@@ -195,16 +205,23 @@ internal class XiHanFileLogger : ILogger
     {
         if (string.IsNullOrWhiteSpace(encodingName))
         {
-            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            return Utf8WithoutBom;
         }
 
         try
         {
-            return Encoding.GetEncoding(encodingName);
+            var encoding = Encoding.GetEncoding(encodingName);
+
+            // 原来默认值 "UTF-8" 走 Encoding.GetEncoding 拿到的是带 BOM 前导码的实例，File.AppendAllText 在
+            // 文件偏移为 0（首次创建）时会把 EF BB BF 写进去；而编码名为空或非法的两条回退路径用的是
+            // UTF8Encoding(false)，同一个提供器产出的文件字节前缀因此不一致。日志文件带 BOM 会干扰按行采集的
+            // 日志管道与 tail / grep 类工具，所以把 UTF-8 统一收敛到不带 BOM 的实例。
+            // 其余编码（如 UTF-16）的前导码是其自身可解析性所必需的，保持原样不动。
+            return encoding.CodePage == Utf8WithoutBom.CodePage ? Utf8WithoutBom : encoding;
         }
         catch (ArgumentException)
         {
-            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            return Utf8WithoutBom;
         }
     }
 }

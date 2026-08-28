@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using XiHan.Framework.MultiTenancy;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
@@ -21,6 +22,12 @@ public class CompositeJobScheduler : IJobScheduler
     private readonly IServiceProvider _serviceProvider;
 
     private readonly Lock _lock = new();
+
+    /// <summary>
+    /// 已经抢到触发权、正在走"记录触发 + 重排下次时间 + 派发执行"这一段的任务名
+    /// </summary>
+    private readonly ConcurrentDictionary<string, byte> _firingJobs = new();
+
     private Timer? _schedulerTimer;
     private bool _isRunning;
 
@@ -206,20 +213,38 @@ public class CompositeJobScheduler : IJobScheduler
             }
 
             // 检查是否需要触发
-            if (ShouldFire(jobInfo, state))
+            if (!ShouldFire(jobInfo, state))
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await ExecuteJobAsync(jobInfo, jobInfo.TriggerType, jobInfo.DefaultParameters);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "执行任务失败: {JobName}", jobInfo.JobName);
-                    }
-                });
+                continue;
             }
+
+            // 触发权抢占：ShouldFire 的判定在定时器线程，而"记录触发 + 重排下次触发时间"原来发生在
+            // Task.Run 的异步体内部（ExecuteJobAsync 里）。定时器每秒一跳，上一跳派出去的执行体只要还没
+            // 跑到重排（例如 AllowConcurrent=false 时要先 await 存储查运行中实例，线程池繁忙时也会延迟），
+            // 下一跳就会读到没被推进的 NextFireTime，把同一次排期重复触发。
+            // 这里先在定时器线程内独占触发权，执行体整体结束（含重排）后再释放，把那段窗口封死。
+            // 注意释放而不是"清掉 NextFireTime"：ExecuteJobAsync 因并发控制跳过本次时不会重排，
+            // 保留原有的 NextFireTime 才能维持"下一跳继续重试"的既有行为。
+            if (!_firingJobs.TryAdd(jobInfo.JobName, 0))
+            {
+                continue;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await ExecuteJobAsync(jobInfo, jobInfo.TriggerType, jobInfo.DefaultParameters);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "执行任务失败: {JobName}", jobInfo.JobName);
+                }
+                finally
+                {
+                    _firingJobs.TryRemove(jobInfo.JobName, out _);
+                }
+            });
         }
     }
 

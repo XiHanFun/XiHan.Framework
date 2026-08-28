@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <!-- 嵌入式提供器用例需要一个真实的嵌入资源；用例内已用 Assert.SkipUnless 兜底，资源缺失不会导致失败 -->
+        <EmbeddedResource Include="Resources\embedded-sample.txt" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\XiHan.Framework.VirtualFileSystem\XiHan.Framework.VirtualFileSystem.csproj" />
+    </ItemGroup>
+
+</Project>

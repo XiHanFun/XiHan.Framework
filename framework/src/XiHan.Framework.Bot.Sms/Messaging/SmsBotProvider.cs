@@ -8,7 +8,6 @@ using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Sms.Abstractions;
 using XiHan.Framework.Bot.Sms.Options;
-using XiHan.Framework.Bot.Sms.Enums;
 
 namespace XiHan.Framework.Bot.Sms.Messaging;
 
@@ -78,7 +77,7 @@ public class SmsBotProvider : IBotProvider
                     return [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
 
                 case IEnumerable<string> values:
-                    return values.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+                    return [.. values.Where(item => !string.IsNullOrWhiteSpace(item))];
             }
         }
 

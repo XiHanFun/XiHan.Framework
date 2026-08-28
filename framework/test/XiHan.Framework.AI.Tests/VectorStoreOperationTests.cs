@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Net.Sockets;
 using Microsoft.Extensions.VectorData;
+using System.Net.Sockets;
 using XiHan.Framework.AI.Rag;
 using XiHan.Framework.Core.Exceptions;
 

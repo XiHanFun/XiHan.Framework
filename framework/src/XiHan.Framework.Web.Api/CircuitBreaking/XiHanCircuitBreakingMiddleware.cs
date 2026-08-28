@@ -1,9 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Globalization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using System.Globalization;
 
 namespace XiHan.Framework.Web.Api.CircuitBreaking;
 

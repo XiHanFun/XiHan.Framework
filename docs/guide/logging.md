@@ -224,7 +224,7 @@ using (logger.BeginScope(new Dictionary<string, object> { ["TenantId"] = tenantI
 | 目标 | 说明 |
 | --- | --- |
 | 控制台 | 模板取 `ConsoleOutputTemplate` |
-| 文件 | 经 `WriteTo.Async` 异步写入，模板取 `FileOutputTemplate`，滚动/保留/大小按配置 |
+| 文件 | 默认经 `WriteTo.Async` 异步写入（`EnableAsyncLogging` 配 `false` 时改挂同步文件 Sink），模板取 `FileOutputTemplate`，滚动/保留/大小按配置 |
 
 统一附加：`Enrich.FromLogContext()` 与固定属性 `Application = "XiHanFramework"`（不可配置）。
 
@@ -248,13 +248,15 @@ using (logger.BeginScope(new Dictionary<string, object> { ["TenantId"] = tenantI
 
 | 字段 | 现状 | 替代做法 |
 | --- | --- | --- |
-| `EnableAsyncLogging` | 文件 Sink 恒定走 `WriteTo.Async`，不受此开关影响 | 无需配置 |
-| `AsyncBufferSize` / `BlockWhenFull` | 未传给 `WriteTo.Async` | 应用侧自行装配 Serilog |
 | `ContextProperties` | 未加入 enricher | `Serilog.Context.LogContext.PushProperty` |
 | `Filters` | 未转成 `MinimumLevel.Override` | 应用侧自行装配 Serilog |
 | `EnableRequestLogging` / `RequestLoggingExcludePaths` | 无消费方 | 请求日志由 Web.Api 的中间件负责，排除路径见 [Auditing 包](../packages/auditing) 的 `IgnoredPathPrefixes` |
 
-同样地，`XiHanFileLoggerOptions` 的 `BufferSize`、`FlushPeriod`、`EnableAsyncWrite` 与 `XiHanConsoleLoggerOptions` 的 `UseStdErrorForErrors` 也没有被对应的 Provider 读取。
+同样地，`XiHanFileLoggerOptions` 的 `BufferSize`、`FlushPeriod`、`EnableAsyncWrite` 也没有被对应的 Provider 读取：该 Provider 每条日志都同步 `File.AppendAllText`，既无缓冲也无异步，配了不会有效果。高吞吐场景请改用本模块的 Serilog 文件 Sink。
+
+`XiHanConsoleLoggerOptions` 的 `UseStdErrorForErrors` 已经生效：为 `true` 时 `Error` 及以上写标准错误流，其余级别仍写标准输出；默认 `false`，即全部写标准输出。
+
+`XiHanLoggingOptions` 的 `EnableAsyncLogging`、`AsyncBufferSize`、`BlockWhenFull` 也已经生效：`EnableAsyncLogging` 为 `true`（默认）时文件 Sink 包一层 `WriteTo.Async`，`AsyncBufferSize` 与 `BlockWhenFull` 分别透传为它的 `bufferSize` 与 `blockWhenFull`；为 `false` 时直接挂同步文件 Sink，写调用返回即落盘。默认值 `true` / `10000` / `false` 与 `WriteTo.Async` 的默认值一致，因此不改这三个键的宿主行为不变。
 
 ## 配置
 
@@ -273,6 +275,9 @@ using (logger.BeginScope(new Dictionary<string, object> { ["TenantId"] = tenantI
       "RetainedFileCountLimit": 31,
       "FileSizeLimitBytes": 104857600,
       "RollOnFileSizeLimit": true,
+      "EnableAsyncLogging": true,
+      "AsyncBufferSize": 10000,
+      "BlockWhenFull": false,
       "EnableStructuredLogging": true,
       "EnablePerformanceCounters": false
     }

@@ -1,9 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.ObjectMapping;
-using XiHan.Framework.Core.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.EventBus.Abstractions;
 

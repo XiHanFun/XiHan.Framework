@@ -30,7 +30,7 @@ public class DefaultPasswordHistoryStoreTests
 
         var recent = await store.GetRecentPasswordHashesAsync(userId, 10, TestContext.Current.CancellationToken);
 
-        Assert.Equal(new[] { "hash-3", "hash-4", "hash-5" }, recent);
+        Assert.Equal(["hash-3", "hash-4", "hash-5"], recent);
     }
 
     /// <summary>

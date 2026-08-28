@@ -26,7 +26,7 @@ public class MetricData
     /// <summary>
     /// 标签
     /// </summary>
-    public Dictionary<string, string> Tags { get; set; } = new();
+    public Dictionary<string, string> Tags { get; set; } = [];
 
     /// <summary>
     /// 时间戳

@@ -105,7 +105,7 @@ public class DefaultRoleStore : IRoleStore
 
         lock (_lockObject)
         {
-            var roles = _userRoles.GetOrAdd(userId, _ => new HashSet<string>());
+            var roles = _userRoles.GetOrAdd(userId, _ => []);
             roles.Add(roleName);
         }
 

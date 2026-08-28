@@ -114,7 +114,13 @@ public static class TreeExtensions
                 .FirstOrDefault(node => keySelector(node.Value).Equals(keySelector(parent)))
             ?? throw new InvalidOperationException("在树中未找到父节点");
 
-        parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
+        // 这里原本有一行 parentKeySelector.Invoke(child).SetPropertyValue("Children", keySelector(parent));
+        // Invoke 的返回值静态类型是 object，SetPropertyValue 的 TEntity 就被推断成 object，
+        // 而 typeof(object) 上没有 Children 属性，因此只要真的找到了父节点，这行必抛 ArgumentException——
+        // 也就是说这个重载在找到父节点之后永远走不到下面的 Children.Add，等于完全不可用。
+        // 其意图应是"回填子节点的父键"，但本方法只拿到 Func<T, object> 选择器、拿不到属性名，
+        // 无法反向定位要写哪个属性；而"把子节点挂到父节点下"由下一行即可完成，
+        // 故直接删除该行，不猜测替代写法。调用方若需要同步父键，请在传入 child 前自行设置。
         parentNode.Children.Add(new TreeNode<T>(child));
     }
 
