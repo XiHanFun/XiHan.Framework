@@ -18,6 +18,7 @@ using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.DistributedIds;
@@ -52,6 +53,8 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
+        // 实体数据源解析器：决定实体固定落在哪个连接（模块分库），仓储路由与建表初始化共用
+        services.TryAddSingleton<IEntityDataSourceResolver, EntityDataSourceResolver>();
         // 客户端解析器（按当前租户解析连接，并在事务型 UoW 中自动接入事务）
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入

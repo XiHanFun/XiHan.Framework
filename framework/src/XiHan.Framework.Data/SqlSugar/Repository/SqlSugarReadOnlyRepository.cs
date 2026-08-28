@@ -21,7 +21,8 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// <remarks>
 /// 架构分层：
 /// <list type="bullet">
-///   <item>租户连接选择 → 由 <see cref="ISqlSugarClientResolver"/> + <c>ISqlSugarTenantConnectionResolver</c> 自动解析。</item>
+///   <item>连接选择 → 由 <see cref="ISqlSugarClientResolver"/> 自动解析：实体标注 <c>[DataSource("XXX")]</c> 固定落该库，
+///         未标注则由 <c>ISqlSugarTenantConnectionResolver</c> 按当前租户解析。</item>
 ///   <item>租户行级过滤 + 软删过滤 → 由 <c>QueryFilter.AddTableFilter</c> 全局 AOP 统一注入，仓储无感。</item>
 /// </list>
 /// 仓储方法专注纯业务查询；跨租户/含软删场景使用 <see cref="CreateNoTenantQueryable"/> / <see cref="CreateWithDeletedQueryable"/>。
@@ -44,9 +45,9 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     /// <summary>
-    /// 当前租户对应的 SqlSugar 客户端（每次访问都按当前租户上下文解析）
+    /// 实体对应的 SqlSugar 客户端（每次访问都重新解析：实体声明了数据源取该库，否则按当前租户上下文解析）
     /// </summary>
-    protected ISqlSugarClient DbClient => _clientResolver.GetCurrentClient();
+    protected ISqlSugarClient DbClient => _clientResolver.GetClientForEntity(typeof(TEntity));
 
     #region 查询构建
 
@@ -81,11 +82,11 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     /// <summary>
-    /// 创建辅助实体类型的查询（跨实体联查场景）
+    /// 创建辅助实体类型的查询（跨实体联查场景），客户端按该实体自身的数据源解析
     /// </summary>
     protected ISugarQueryable<T> CreateQueryable<T>() where T : class, new()
     {
-        return DbClient.Queryable<T>();
+        return _clientResolver.GetClientForEntity(typeof(T)).Queryable<T>();
     }
 
     #endregion
