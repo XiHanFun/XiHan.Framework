@@ -23,14 +23,9 @@ public static class XiHanModuleHelper
     public static List<Type> FindAllModuleTypes(Type startupModuleType, ILogger? logger)
     {
         List<Type> moduleTypes = [];
-        // 这几行原先被注释掉，使得 logger 参数彻底空转：模块树只落到静态 LogHelper 的控制台输出，
-        // 既进不到应用配置的日志管道，也进不到 IInitLogger.Entries，启动期日志回放整段丢失模块树。
-        // 这里恢复写入；文本一律走结构化占位符，避免模块名里的字符被当成消息模板参数解析。
         LogHelper.Handle("加载曦寒模块:");
-        logger?.LogInformation("{ModuleLoadingMessage}", "加载曦寒模块:");
         AddModuleAndDependenciesRecursively(moduleTypes, startupModuleType, logger);
         LogHelper.Handle("已初始化所有模块。");
-        logger?.LogInformation("{ModuleLoadingMessage}", "已初始化所有模块。");
         return moduleTypes;
     }
 
@@ -129,8 +124,6 @@ public static class XiHanModuleHelper
         var nodeLine = BuildModuleNodeLine(moduleType, prefix, isLast, isAlreadyLoaded);
 
         LogHelper.Handle(nodeLine);
-        // 同上：节点行也要进日志管道，否则调用方传进来的 logger 只是个摆设
-        logger?.LogInformation("{ModuleNodeLine}", nodeLine);
 
         if (isAlreadyLoaded)
         {
