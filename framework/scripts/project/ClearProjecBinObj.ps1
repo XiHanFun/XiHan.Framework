@@ -13,32 +13,35 @@ if (-not $isAdmin) {
 $ScriptDirectory = $PSScriptRoot
 Write-Host "脚本目录: $ScriptDirectory" -ForegroundColor Cyan
 
-# 构建相对路径的目标目录
-$RootPath = Join-Path -Path $ScriptDirectory -ChildPath "..\..\src"
-Write-Host "相对路径: $RootPath" -ForegroundColor Cyan
+# 构建相对路径的目标目录，覆盖全部代码根：源码、单测、示例宿主、工具
+$RelativeRoots = @("..\..\src", "..\..\test", "..\..\sample", "..\..\tool")
+$RootPaths = @()
 
-# 解析相对路径为绝对路径
-try {
-    $RootPath = Resolve-Path -Path $RootPath -ErrorAction Stop | Select-Object -ExpandProperty Path
-    Write-Host "目标目录绝对路径: $RootPath" -ForegroundColor Green
+foreach ($RelativeRoot in $RelativeRoots) {
+    $Candidate = Join-Path -Path $ScriptDirectory -ChildPath $RelativeRoot
+    $Resolved = Resolve-Path -Path $Candidate -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path
+
+    # 目录不存在只跳过、不中断，便于按需增删代码根
+    if ($Resolved) {
+        $RootPaths += $Resolved
+        Write-Host "目标目录: $Resolved" -ForegroundColor Green
+    }
+    else {
+        Write-Host "跳过不存在的目录: $Candidate" -ForegroundColor DarkGray
+    }
 }
-catch {
-    Write-Host "无法解析路径: $($_.Exception.Message)" -ForegroundColor Red
+
+if ($RootPaths.Count -eq 0) {
+    Write-Host "没有可清理的目录" -ForegroundColor Red
     exit
 }
 
-# 检查目标目录是否存在
-if (-Not (Test-Path -Path $RootPath)) {
-    Write-Host "路径不存在: $RootPath" -ForegroundColor Red
-    exit
-}
-
-Write-Host "开始清理目录: $RootPath" -ForegroundColor Yellow
+Write-Host "开始清理 $($RootPaths.Count) 个目录" -ForegroundColor Yellow
 $deletedCount = 0
 $failedCount = 0
 
 # 查找所有 bin 和 obj 文件夹
-$foldersToDelete = Get-ChildItem -Path $RootPath -Recurse -Directory -Force |
+$foldersToDelete = Get-ChildItem -Path $RootPaths -Recurse -Directory -Force |
 Where-Object { $_.Name -in "bin", "obj", "public" }
 
 Write-Host "找到 $($foldersToDelete.Count) 个要删除的文件夹" -ForegroundColor Yellow
