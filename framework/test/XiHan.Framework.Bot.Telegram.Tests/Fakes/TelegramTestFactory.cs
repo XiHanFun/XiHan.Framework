@@ -173,7 +173,9 @@ internal static class TelegramTestFactory
             InlineQuery = new InlineQuery
             {
                 Id = inlineQueryId,
-                Query = query,
+                // 本工厂刻意允许传 null 查询文本，用于覆盖分发器对空查询的处理分支；
+                // InlineQuery.Query 声明为非空，这里用 null! 表明是测试有意为之。
+                Query = query!,
                 Offset = string.Empty,
                 From = new User { Id = userId, IsBot = false, FirstName = "tester" }
             }
