@@ -122,7 +122,7 @@ public class TelegramBotHandlerCatalogTests
         var catalog = TelegramTestFactory.CreateCatalog(typeof(TestOrderCommandHandler), typeof(TestOrderCommandHandler));
 
         Assert.Equal(2, catalog.CommandRoutes.Count);
-        Assert.Equal(1, catalog.GetVisibleCommands().Count);
+        Assert.Single(catalog.GetVisibleCommands());
     }
 
     /// <summary>
@@ -202,9 +202,9 @@ public class TelegramBotHandlerCatalogTests
     {
         var catalog = TelegramTestFactory.CreateCatalog(typeof(TestOrderCommandHandler), typeof(TestPatternCommandHandler));
 
-        Assert.Equal(1, catalog.CommandPatternRoutes.Count);
+        Assert.Single(catalog.CommandPatternRoutes);
         Assert.Equal(typeof(TestPatternCommandHandler), catalog.CommandPatternRoutes[0].Route.HandlerType);
-        Assert.True(catalog.CommandPatternRoutes[0].Regex.IsMatch("查单 12345"));
+        Assert.Matches(catalog.CommandPatternRoutes[0].Regex, "查单 12345");
     }
 
     /// <summary>
@@ -264,7 +264,7 @@ public class TelegramBotHandlerCatalogTests
 
         var commands = catalog.GetPublicCommands();
 
-        Assert.Equal(1, commands.Count);
+        Assert.Single(commands);
         Assert.Equal("order", commands[0].Command);
     }
 
@@ -297,7 +297,7 @@ public class TelegramBotHandlerCatalogTests
 
         var commands = catalog.GetPublicCommands();
 
-        Assert.Equal(1, commands.Count);
+        Assert.Single(commands);
         Assert.Equal("ok", commands[0].Command);
         Assert.Equal("好 / ok", commands[0].Description);
     }
@@ -312,7 +312,7 @@ public class TelegramBotHandlerCatalogTests
 
         var commands = catalog.GetPublicCommands();
 
-        Assert.Equal(1, commands.Count);
+        Assert.Single(commands);
         Assert.Equal("ping", commands[0].Command);
         Assert.Equal("ping", commands[0].Description);
     }
@@ -327,7 +327,7 @@ public class TelegramBotHandlerCatalogTests
 
         var commands = catalog.GetPublicCommands(preferAliasDescription: true);
 
-        Assert.Equal(1, commands.Count);
+        Assert.Single(commands);
         Assert.Equal("pong", commands[0].Description);
     }
 
@@ -341,7 +341,7 @@ public class TelegramBotHandlerCatalogTests
 
         var commands = catalog.GetPublicCommands(preferAliasDescription: true);
 
-        Assert.Equal(1, commands.Count);
+        Assert.Single(commands);
         Assert.Equal("order", commands[0].Command);
         Assert.Equal("下单 / order", commands[0].Description);
     }
@@ -354,7 +354,7 @@ public class TelegramBotHandlerCatalogTests
     {
         var catalog = TelegramTestFactory.CreateCatalog(typeof(TestOrderCommandHandler), typeof(TestNoDescriptionCommandHandler));
 
-        Assert.Equal(1, catalog.GetPublicCommands(["/order"]).Count);
+        Assert.Single(catalog.GetPublicCommands(["/order"]));
         Assert.Equal("order", catalog.GetPublicCommands(["/order"])[0].Command);
 
         // 命中别名同样保留主命令
@@ -383,9 +383,9 @@ public class TelegramBotHandlerCatalogTests
     {
         var catalog = TelegramTestFactory.CreateCatalog(typeof(TestOrderCommandHandler));
 
-        Assert.Equal(1, catalog.GetPublicCommands(null).Count);
-        Assert.Equal(1, catalog.GetPublicCommands([]).Count);
-        Assert.Equal(1, catalog.GetPublicCommands([string.Empty, "   "]).Count);
+        Assert.Single(catalog.GetPublicCommands(null));
+        Assert.Single(catalog.GetPublicCommands([]));
+        Assert.Single(catalog.GetPublicCommands([string.Empty, "   "]));
     }
 
     /// <summary>
@@ -398,7 +398,7 @@ public class TelegramBotHandlerCatalogTests
 
         var descriptors = catalog.GetVisibleCommands();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal("/order", descriptors[0].Command);
         Assert.Equal("下单", descriptors[0].Description);
         Assert.False(descriptors[0].AdminOnly);
@@ -431,7 +431,7 @@ public class TelegramBotHandlerCatalogTests
 
         var descriptors = catalog.GetVisibleCommands(["/ping"]);
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal("/ping", descriptors[0].Command);
     }
 
@@ -480,7 +480,7 @@ public class TelegramBotHandlerCatalogTests
         var catalog = new TelegramBotHandlerCatalog(Microsoft.Extensions.Options.Options.Create(options));
 
         Assert.Equal(2, catalog.CommandRoutes.Count);
-        Assert.Equal(1, catalog.CallbackRoutes.Count);
-        Assert.Equal(1, catalog.MessageHandlerTypes.Count);
+        Assert.Single(catalog.CallbackRoutes);
+        Assert.Single(catalog.MessageHandlerTypes);
     }
 }

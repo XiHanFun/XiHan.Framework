@@ -46,8 +46,8 @@ public class ConventionalRegistrarKeyedExposureTests
 
         new DefaultConventionalRegistrar().AddType(services, typeof(CkxDualService));
 
-        var keyedDescriptor = Assert.Single(services.Where(d => d.ServiceType == typeof(ICkxKeyed)));
-        var plainDescriptor = Assert.Single(services.Where(d => d.ServiceType == typeof(ICkxPlain)));
+        var keyedDescriptor = Assert.Single(services, d => d.ServiceType == typeof(ICkxKeyed));
+        var plainDescriptor = Assert.Single(services, d => d.ServiceType == typeof(ICkxPlain));
         // 单组只有一个暴露类型时不触发重定向，描述器直接携带实现类型而不是工厂
         Assert.Equal(typeof(CkxDualService), keyedDescriptor.KeyedImplementationType);
         Assert.Equal(typeof(CkxDualService), plainDescriptor.ImplementationType);

@@ -46,7 +46,7 @@ public class XiHanCastleModuleTests
         Assert.Equal("你好，曦寒", text);
 
         var log = provider.GetRequiredService<CallLog>();
-        Assert.Equal(1, log.Entries.Count);
+        Assert.Single(log.Entries);
         Assert.Equal("日志:Greet", log.Entries[0]);
     }
 

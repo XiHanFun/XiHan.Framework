@@ -95,7 +95,7 @@ public class DictionaryExtensionsTests
         Assert.Equal(11, first);
         Assert.Equal(11, second);
         Assert.Equal(1, calls);
-        Assert.Equal(1, dictionary.Count);
+        Assert.Single(dictionary);
     }
 
     /// <summary>

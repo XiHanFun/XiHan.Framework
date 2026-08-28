@@ -100,7 +100,7 @@ public class CastleInterceptorAdapterTests
 
         proxy.Append("x");
 
-        Assert.Equal(1, target.Appended.Count);
+        Assert.Single(target.Appended);
         Assert.Equal("x", target.Appended[0]);
         Assert.Equal(2, log.Entries.Count);
         Assert.Equal("记录:进入:Append", log.Entries[0]);
@@ -147,7 +147,7 @@ public class CastleInterceptorAdapterTests
         var result = proxy.Describe(42);
 
         Assert.Equal("Int32", result);
-        Assert.Equal(1, captured.Length);
+        Assert.Single(captured);
         Assert.Equal(typeof(int), captured[0]);
     }
 
@@ -330,7 +330,7 @@ public class CastleInterceptorAdapterTests
         Assert.Equal(SyncSampleService.FailureMessage, exception.Message);
 
         // 异常打断了链，"离开"那一条不应该被记下来
-        Assert.Equal(1, log.Entries.Count);
+        Assert.Single(log.Entries);
         Assert.Equal("记录:进入:Fail", log.Entries[0]);
     }
 

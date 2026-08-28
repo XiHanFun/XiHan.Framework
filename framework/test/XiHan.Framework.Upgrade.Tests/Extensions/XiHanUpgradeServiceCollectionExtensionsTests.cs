@@ -167,7 +167,7 @@ public class XiHanUpgradeServiceCollectionExtensionsTests
     /// <returns>服务描述</returns>
     private static ServiceDescriptor DescriptorOf(IServiceCollection services, Type serviceType)
     {
-        return Assert.Single(services.Where(descriptor => descriptor.ServiceType == serviceType));
+        return Assert.Single(services, descriptor => descriptor.ServiceType == serviceType);
     }
 
     /// <summary>

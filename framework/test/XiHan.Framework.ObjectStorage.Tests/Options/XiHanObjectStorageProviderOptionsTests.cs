@@ -70,7 +70,7 @@ public class XiHanObjectStorageProviderOptionsTests
         options.AddProvider("Local", typeof(RecordingFileStorageProvider));
         options.AddProvider("local", typeof(AlternateFileStorageProvider));
 
-        Assert.Equal(1, options.ProviderTypes.Count);
+        Assert.Single(options.ProviderTypes);
         Assert.Equal(typeof(AlternateFileStorageProvider), options.ProviderTypes["Local"]);
     }
 

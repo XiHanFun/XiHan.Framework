@@ -179,7 +179,7 @@ public class BotCommandAttributeTests
         var match = regex!.Match("查单 12345");
         Assert.True(match.Success);
         Assert.Equal("12345", match.Groups[1].Value);
-        Assert.False(regex.IsMatch("查单"));
+        Assert.DoesNotMatch(regex, "查单");
     }
 
     /// <summary>

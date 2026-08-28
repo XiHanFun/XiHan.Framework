@@ -154,7 +154,7 @@ public class TelegramCallbackRouterTests
 
         Assert.True(handled);
         Assert.Empty(recorder.Invocations);
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().AdminOnlyCallbackReply, notifier.SentTexts[0].Text);
     }
 

@@ -71,7 +71,7 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
 
         var descriptors = services.Where(x => x.ServiceType == serviceType).ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(implementationType, descriptors[0].ImplementationType);
     }
@@ -110,7 +110,7 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
 
         var descriptors = services.Where(x => x.ServiceType == typeof(IHostedService)).ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(typeof(TelegramBotHostedService), descriptors[0].ImplementationType);
     }
 
@@ -235,12 +235,12 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
         _ = services.AddTelegramBotHandler<TestOrderCommandHandler>();
 
         var descriptors = services.Where(x => x.ServiceType == typeof(TestOrderCommandHandler)).ToList();
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Transient, descriptors[0].Lifetime);
 
         using var provider = services.BuildServiceProvider();
         var handlerOptions = provider.GetRequiredService<IOptions<TelegramBotHandlerOptions>>().Value;
-        Assert.Equal(1, handlerOptions.Handlers.Count);
+        Assert.Single(handlerOptions.Handlers);
         Assert.Equal(typeof(TestOrderCommandHandler), handlerOptions.Handlers[0]);
     }
 
@@ -258,7 +258,7 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
         Assert.Equal(1, services.Count(x => x.ServiceType == typeof(TestOrderCommandHandler)));
 
         using var provider = services.BuildServiceProvider();
-        Assert.Equal(1, provider.GetRequiredService<IOptions<TelegramBotHandlerOptions>>().Value.Handlers.Count);
+        Assert.Single(provider.GetRequiredService<IOptions<TelegramBotHandlerOptions>>().Value.Handlers);
     }
 
     /// <summary>
@@ -362,7 +362,7 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
     {
         var descriptors = services.Where(x => x.ServiceType == serviceType).ToList();
 
-        Assert.Equal(1, descriptors.Count);
+        Assert.Single(descriptors);
         Assert.Equal(ServiceLifetime.Singleton, descriptors[0].Lifetime);
         Assert.Equal(serviceType, descriptors[0].ImplementationType);
     }

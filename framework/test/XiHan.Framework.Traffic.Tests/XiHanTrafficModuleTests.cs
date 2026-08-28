@@ -39,7 +39,7 @@ public class XiHanTrafficModuleTests
             .Cast<DependsOnAttribute>()
             .ToList();
 
-        Assert.Equal(1, attributes.Count);
+        Assert.Single(attributes);
         Assert.Contains(typeof(XiHanMultiTenancyAbstractionsModule), attributes[0].GetDependedTypes());
     }
 
@@ -79,8 +79,8 @@ public class XiHanTrafficModuleTests
         var engineDescriptors = services.Where(descriptor => descriptor.ServiceType == typeof(IGrayRuleEngine)).ToList();
         var repositoryDescriptors = services.Where(descriptor => descriptor.ServiceType == typeof(IGrayRuleRepository)).ToList();
 
-        Assert.Equal(1, engineDescriptors.Count);
-        Assert.Equal(1, repositoryDescriptors.Count);
+        Assert.Single(engineDescriptors);
+        Assert.Single(repositoryDescriptors);
     }
 
     /// <summary>

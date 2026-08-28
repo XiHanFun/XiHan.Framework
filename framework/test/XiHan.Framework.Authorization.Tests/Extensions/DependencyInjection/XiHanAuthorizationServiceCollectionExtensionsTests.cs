@@ -63,7 +63,7 @@ public class XiHanAuthorizationServiceCollectionExtensionsTests
     {
         var services = CreateServices();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == serviceType));
+        var descriptor = Assert.Single(services, item => item.ServiceType == serviceType);
         Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
     }
 
@@ -75,7 +75,7 @@ public class XiHanAuthorizationServiceCollectionExtensionsTests
     {
         var services = CreateServices();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IAuthorizationPolicyProvider)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IAuthorizationPolicyProvider));
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
 
@@ -91,8 +91,8 @@ public class XiHanAuthorizationServiceCollectionExtensionsTests
         services.AddXiHanAuthorization(configuration);
         services.AddXiHanAuthorization(configuration);
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IAuthorizationHandler)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IPermissionChecker)));
+        Assert.Single(services, item => item.ServiceType == typeof(IAuthorizationHandler));
+        Assert.Single(services, item => item.ServiceType == typeof(IPermissionChecker));
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public class XiHanAuthorizationServiceCollectionExtensionsTests
 
         services.AddXiHanAuthorization(new ConfigurationBuilder().Build());
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IRoleStore)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IRoleStore));
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.IsType<FaultInjectingRoleStore>(descriptor.ImplementationInstance);
     }

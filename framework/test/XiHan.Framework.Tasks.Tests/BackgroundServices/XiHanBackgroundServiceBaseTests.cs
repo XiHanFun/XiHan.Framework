@@ -322,7 +322,7 @@ public class XiHanBackgroundServiceBaseTests
         await WaitUntilAsync(() => service.GetStatistics().TotalTasksFailed == 1, "任务应被判失败");
         await service.StopAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, service.ProcessedTaskIds.Count);
+        Assert.Single(service.ProcessedTaskIds);
         Assert.Equal(0, service.GetStatistics().TotalTasksRetried);
     }
 

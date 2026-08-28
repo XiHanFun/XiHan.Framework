@@ -157,9 +157,9 @@ public class ServiceCollectionRegistrationActionExtensionsTests
         services.GetImplementationTypeRegistry();
         services.GetImplementationTypeRegistry();
 
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceRegistrationActionList>)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceExposingActionList>)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceImplementationTypeRegistry>)));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceRegistrationActionList>));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceExposingActionList>));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(ObjectAccessor<ServiceImplementationTypeRegistry>));
     }
 
     /// <summary>

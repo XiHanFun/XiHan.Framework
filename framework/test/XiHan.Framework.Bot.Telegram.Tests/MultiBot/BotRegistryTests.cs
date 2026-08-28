@@ -162,7 +162,7 @@ public class BotRegistryTests
 
         Assert.Equal(1, registry.Count);
         Assert.Same(second, registry.GetRequired("main-bot"));
-        Assert.Equal(1, registry.GetAll().Count);
+        Assert.Single(registry.GetAll());
 
         first.Dispose();
     }

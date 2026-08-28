@@ -49,11 +49,11 @@ public class FileStorageProviderContractTests
     {
         ConstructorInfo[] constructors = providerType.GetConstructors();
 
-        Assert.Equal(1, constructors.Length);
+        Assert.Single(constructors);
 
         ParameterInfo[] parameters = constructors[0].GetParameters();
 
-        Assert.Equal(1, parameters.Length);
+        Assert.Single(parameters);
         Assert.Equal(typeof(IOptions<>).MakeGenericType(optionsType), parameters[0].ParameterType);
     }
 

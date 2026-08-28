@@ -71,7 +71,7 @@ public class BotBuilderTelegramExtensionsTests
         var providers = provider.GetServices<IBotProvider>().ToList();
 
         Assert.IsType<DefaultTelegramConfigStore>(provider.GetRequiredService<ITelegramConfigStore>());
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
         Assert.IsType<TelegramBotProvider>(providers[0]);
     }
 
@@ -128,7 +128,7 @@ public class BotBuilderTelegramExtensionsTests
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Equal(1, provider.GetServices<IBotProvider>().Count());
+        Assert.Single(provider.GetServices<IBotProvider>());
     }
 
     /// <summary>

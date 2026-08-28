@@ -147,7 +147,7 @@ public class FileStorageProviderBaseTests
 
         await provider.DeleteAsync("img/a.png", "assets", TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, provider.DeletedPaths.Count);
+        Assert.Single(provider.DeletedPaths);
         Assert.Equal("img/a.png", provider.DeletedPaths[0]);
     }
 
@@ -162,7 +162,7 @@ public class FileStorageProviderBaseTests
         var exists = await provider.ExistsAsync("img/a.png", "assets", TestContext.Current.CancellationToken);
 
         Assert.False(exists);
-        Assert.Equal(1, provider.ExistsPaths.Count);
+        Assert.Single(provider.ExistsPaths);
         Assert.Equal("img/a.png", provider.ExistsPaths[0]);
     }
 
@@ -177,7 +177,7 @@ public class FileStorageProviderBaseTests
         var metadata = await provider.GetMetadataAsync("img/a.png", "assets", TestContext.Current.CancellationToken);
 
         Assert.Equal("img/a.png", metadata.Path);
-        Assert.Equal(1, provider.MetadataPaths.Count);
+        Assert.Single(provider.MetadataPaths);
         Assert.Equal("img/a.png", provider.MetadataPaths[0]);
     }
 
@@ -192,7 +192,7 @@ public class FileStorageProviderBaseTests
         var exists = await provider.ExistsAsync("img/a.png", null, TestContext.Current.CancellationToken);
 
         Assert.True(exists);
-        Assert.Equal(1, provider.ExistsPaths.Count);
+        Assert.Single(provider.ExistsPaths);
     }
 
     /// <summary>

@@ -66,7 +66,7 @@ public class DefaultTelegramBotConfigStoreTests
         options.CurrentValue.Bots.Add(TelegramTestFactory.CreateConfig(name: "bot-b"));
         var second = await store.GetBotConfigsAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, first.Count);
+        Assert.Single(first);
         Assert.Equal(2, second.Count);
         Assert.NotSame(first, second);
     }
@@ -87,7 +87,7 @@ public class DefaultTelegramBotConfigStoreTests
 
         var configs = await store.GetBotConfigsAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, configs.Count);
+        Assert.Single(configs);
         Assert.Equal("bot-new", configs[0].Name);
     }
 

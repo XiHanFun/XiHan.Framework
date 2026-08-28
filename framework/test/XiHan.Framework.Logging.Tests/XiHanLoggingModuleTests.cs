@@ -63,8 +63,8 @@ public class XiHanLoggingModuleTests
 
         new XiHanLoggingModule().PreConfigureServices(new ServiceConfigurationContext(services));
 
-        Assert.Empty(services.Where(descriptor => descriptor.ServiceType == typeof(IXiHanLoggerFactory)));
-        Assert.Empty(services.Where(descriptor => descriptor.ServiceType == typeof(ILogContext)));
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IXiHanLoggerFactory));
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(ILogContext));
     }
 
     /// <summary>
@@ -90,11 +90,11 @@ public class XiHanLoggingModuleTests
 
         new XiHanLoggingModule().ConfigureServices(new ServiceConfigurationContext(services));
 
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IXiHanLoggerFactory)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IXiHanLogger)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IStructuredLogger)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(IPerformanceLogger)));
-        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(ILogContext)));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IXiHanLoggerFactory));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IXiHanLogger));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IStructuredLogger));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IPerformanceLogger));
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(ILogContext));
     }
 
     /// <summary>

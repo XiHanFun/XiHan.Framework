@@ -97,8 +97,8 @@ public class XiHanBotWeComServiceCollectionExtensionsTests
         services.AddXiHanBotWeCom(options => options.Key = "k1");
         services.AddXiHanBotWeCom(options => options.Key = "k2");
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IWeComConfigStore)));
+        Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
+        Assert.Single(services, item => item.ServiceType == typeof(IWeComConfigStore));
     }
 
     /// <summary>

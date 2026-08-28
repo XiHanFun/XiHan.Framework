@@ -139,7 +139,7 @@ public class XiHanBackgroundServiceBaseShutdownTests
         Assert.True(elapsed < 1_500, $"退避等待应随停止令牌立即中断，实际等了 {elapsed} 毫秒");
 
         // 退避被打断意味着第二次尝试根本没发生，任务以"被取消"收场而不是走失败回调
-        Assert.Equal(1, service.ProcessedTaskIds.Count);
+        Assert.Single(service.ProcessedTaskIds);
         Assert.Empty(service.Failures);
         Assert.Equal(1, service.GetStatistics().TotalTasksFailed);
         Assert.NotNull(service.ExecuteTask);

@@ -55,9 +55,9 @@ public class SqidsOptionsTests
 
         Assert.NotEmpty(options.BlockList);
         // 直接走集合自身的比较器，才能验证 OrdinalIgnoreCase 真的生效
-        Assert.True(options.BlockList.Contains("fuck"));
-        Assert.True(options.BlockList.Contains("FUCK"));
-        Assert.True(options.BlockList.Contains("FuCk"));
+        Assert.Contains("fuck", options.BlockList);
+        Assert.Contains("FUCK", options.BlockList);
+        Assert.Contains("FuCk", options.BlockList);
     }
 
     /// <summary>

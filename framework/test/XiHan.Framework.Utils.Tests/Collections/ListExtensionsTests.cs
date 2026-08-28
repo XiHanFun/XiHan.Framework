@@ -304,7 +304,7 @@ public class ListExtensionsTests
 
         Assert.Equal("abc", value);
         Assert.Equal(0, factoryCalls);
-        Assert.Equal(1, source.Count);
+        Assert.Single(source);
     }
 
     /// <summary>

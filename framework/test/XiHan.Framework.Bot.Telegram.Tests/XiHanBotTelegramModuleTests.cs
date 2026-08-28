@@ -43,7 +43,7 @@ public class XiHanBotTelegramModuleTests
     {
         var attributes = typeof(XiHanBotTelegramModule).GetCustomAttributes<DependsOnAttribute>().ToList();
 
-        Assert.Equal(1, attributes.Count);
+        Assert.Single(attributes);
         Assert.Contains(typeof(XiHanBotModule), attributes[0].GetDependedTypes());
     }
 
@@ -58,7 +58,7 @@ public class XiHanBotTelegramModuleTests
         var providers = provider.GetServices<IBotProvider>().ToList();
 
         Assert.IsType<DefaultTelegramConfigStore>(provider.GetRequiredService<ITelegramConfigStore>());
-        Assert.Equal(1, providers.Count);
+        Assert.Single(providers);
         Assert.IsType<TelegramBotProvider>(providers[0]);
     }
 
@@ -130,7 +130,7 @@ public class XiHanBotTelegramModuleTests
         Assert.Equal(17, options.Settings.ManagerRefreshSeconds);
         Assert.Equal(9, options.Retry.MaxRetries);
         Assert.Equal("指令：", options.Texts.HelpHeader);
-        Assert.Equal(1, options.Bots.Count);
+        Assert.Single(options.Bots);
         Assert.Equal("main-bot", options.Bots[0].Name);
     }
 
@@ -164,8 +164,8 @@ public class XiHanBotTelegramModuleTests
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Equal(1, provider.GetServices<IBotProvider>().Count());
-        Assert.Equal(1, provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().Count());
+        Assert.Single(provider.GetServices<IBotProvider>());
+        Assert.Single(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>());
     }
 
     /// <summary>

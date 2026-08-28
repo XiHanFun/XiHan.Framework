@@ -75,7 +75,7 @@ public class XiHanObjectStorageOptionsTests
         options.RouteProviderMappings["Avatar"] = ObjectStorageProviderNames.Minio;
         options.RouteProviderMappings["avatar"] = ObjectStorageProviderNames.AliyunOss;
 
-        Assert.Equal(1, options.RouteProviderMappings.Count);
+        Assert.Single(options.RouteProviderMappings);
         Assert.Equal(ObjectStorageProviderNames.AliyunOss, options.RouteProviderMappings["Avatar"]);
     }
 

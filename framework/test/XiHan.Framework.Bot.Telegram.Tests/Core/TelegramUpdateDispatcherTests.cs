@@ -95,7 +95,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, update, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Deduplicator.Marked.Count);
+        Assert.Single(harness.Deduplicator.Marked);
         Assert.Equal(1, harness.Recorder.CountOf(TestEarlyMessageHandler.HandlerName));
     }
 
@@ -116,7 +116,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, update, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Deduplicator.Marked.Count);
+        Assert.Single(harness.Deduplicator.Marked);
     }
 
     /// <summary>
@@ -144,7 +144,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(updateId: 4242), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Deduplicator.Marked.Count);
+        Assert.Single(harness.Deduplicator.Marked);
         Assert.Equal(TelegramTestFactory.BotName, harness.Deduplicator.Marked[0].BotName);
         Assert.Equal(4242, harness.Deduplicator.Marked[0].UpdateId);
     }
@@ -182,7 +182,7 @@ public class TelegramUpdateDispatcherTests
 
         Assert.Equal(1, harness.Recorder.CountOf(TestInlineQueryHandler.HandlerName));
         Assert.Equal(0, harness.Recorder.CountOf(TestEarlyMessageHandler.HandlerName));
-        Assert.Equal(1, harness.Deduplicator.Marked.Count);
+        Assert.Single(harness.Deduplicator.Marked);
     }
 
     /// <summary>
@@ -458,7 +458,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "无人处理"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Notifier.SentTexts.Count);
+        Assert.Single(harness.Notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().UnhandledMessageReply, harness.Notifier.SentTexts[0].Text);
         Assert.Equal(100L, harness.Notifier.SentTexts[0].ChatId);
         Assert.Equal(11, harness.Notifier.SentTexts[0].ReplyToMessageId);
@@ -476,7 +476,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "无人处理"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Notifier.SentTexts.Count);
+        Assert.Single(harness.Notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().UnhandledMessageReply, harness.Notifier.SentTexts[0].Text);
     }
 
@@ -492,7 +492,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "无人处理"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Notifier.SentTexts.Count);
+        Assert.Single(harness.Notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().UnhandledMessageReply, harness.Notifier.SentTexts[0].Text);
     }
 
@@ -507,7 +507,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "无人处理"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Notifier.SentTexts.Count);
+        Assert.Single(harness.Notifier.SentTexts);
     }
 
     /// <summary>
@@ -549,7 +549,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "/order A-1"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, harness.Notifier.SentTexts.Count);
+        Assert.Single(harness.Notifier.SentTexts);
         Assert.Equal(new TelegramBotTexts().InternalErrorReply, harness.Notifier.SentTexts[0].Text);
     }
 
@@ -589,7 +589,7 @@ public class TelegramUpdateDispatcherTests
 
         await harness.Dispatcher.DispatchAsync(bot, TelegramTestFactory.CreateMessageUpdate(text: "/order A-1", updateId: 77), cts.Token);
 
-        Assert.Equal(1, harness.Deduplicator.Unmarked.Count);
+        Assert.Single(harness.Deduplicator.Unmarked);
         Assert.Equal(TelegramTestFactory.BotName, harness.Deduplicator.Unmarked[0].BotName);
         Assert.Equal(77, harness.Deduplicator.Unmarked[0].UpdateId);
         Assert.False(harness.Deduplicator.LastUnmarkCancellationToken.CanBeCanceled);

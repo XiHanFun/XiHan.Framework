@@ -242,7 +242,7 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
     /// <param name="lifetime">期望的生命周期</param>
     private static void AssertSingleDescriptor(IServiceCollection services, Type serviceType, Type implementationType, ServiceLifetime lifetime)
     {
-        var descriptor = Assert.Single(services.Where(x => x.ServiceType == serviceType));
+        var descriptor = Assert.Single(services, x => x.ServiceType == serviceType);
 
         Assert.Equal(implementationType, descriptor.ImplementationType);
         Assert.Equal(lifetime, descriptor.Lifetime);

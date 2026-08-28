@@ -26,7 +26,7 @@ public class IEnumLocalizationServiceTests
 
         _ = service.Get("UserStatus");
 
-        Assert.Equal(1, service.ReceivedQueries.Count);
+        Assert.Single(service.ReceivedQueries);
         Assert.Null(service.ReceivedQueries[0]);
     }
 
@@ -41,7 +41,7 @@ public class IEnumLocalizationServiceTests
 
         _ = service.Get("UserStatus", query);
 
-        Assert.Equal(1, service.ReceivedQueries.Count);
+        Assert.Single(service.ReceivedQueries);
         Assert.Same(query, service.ReceivedQueries[0]);
     }
 
@@ -97,7 +97,7 @@ public class IEnumLocalizationServiceTests
 
         var many = service.GetMany(["UserStatus", "NotRegistered"]);
 
-        Assert.Equal(1, many.Count);
+        Assert.Single(many);
         Assert.True(many.ContainsKey("UserStatus"));
         Assert.False(many.ContainsKey("NotRegistered"));
     }

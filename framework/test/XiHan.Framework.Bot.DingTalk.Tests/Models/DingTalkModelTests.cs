@@ -30,7 +30,7 @@ public class DingTalkModelTests
         var root = document.RootElement;
 
         Assert.Equal("构建失败", root.GetProperty("content").GetString());
-        Assert.Equal(1, root.EnumerateObject().Count());
+        Assert.Single(root.EnumerateObject());
     }
 
     /// <summary>

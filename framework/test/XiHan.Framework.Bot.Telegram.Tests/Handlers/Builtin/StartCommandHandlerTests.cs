@@ -59,7 +59,7 @@ public class StartCommandHandlerTests
 
         await handler.HandleAsync(context, [], TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Equal("main-bot", notifier.SentTexts[0].BotName);
         Assert.Equal(100L, notifier.SentTexts[0].ChatId);
         Assert.Equal(11, notifier.SentTexts[0].ReplyToMessageId);
@@ -157,7 +157,7 @@ public class StartCommandHandlerTests
 
         await handler.HandleAsync(context, ["invite-A1"], TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Contains("main-bot", notifier.SentTexts[0].Text, StringComparison.Ordinal);
     }
 

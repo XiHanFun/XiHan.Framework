@@ -161,7 +161,7 @@ public class XiHanLoggingServiceCollectionExtensionsTests
 
         services.AddXiHanLogging();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == serviceType));
+        var descriptor = Assert.Single(services, item => item.ServiceType == serviceType);
         Assert.Equal(implementationType, descriptor.ImplementationType);
         Assert.Equal(lifetime, descriptor.Lifetime);
     }
@@ -176,7 +176,7 @@ public class XiHanLoggingServiceCollectionExtensionsTests
 
         services.AddXiHanLogging();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IXiHanLogger<>)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IXiHanLogger<>));
         Assert.Equal(typeof(XiHanLogger<>), descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
     }
@@ -196,7 +196,7 @@ public class XiHanLoggingServiceCollectionExtensionsTests
 
         services.AddXiHanLogging();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(ILogContext)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(ILogContext));
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
 

@@ -53,8 +53,8 @@ public class XiHanBotDingTalkServiceCollectionExtensionsTests
 
         services.AddXiHanBotDingTalk();
 
-        var store = Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
-        var provider = Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
+        var store = Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
+        var provider = Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
 
         Assert.Equal(typeof(DefaultDingTalkConfigStore), store.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, store.Lifetime);
@@ -99,8 +99,8 @@ public class XiHanBotDingTalkServiceCollectionExtensionsTests
         services.AddXiHanBotDingTalk();
         services.AddXiHanBotDingTalk();
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
+        Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
+        Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public class XiHanBotDingTalkServiceCollectionExtensionsTests
 
         services.AddXiHanBotDingTalk();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IDingTalkConfigStore)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IDingTalkConfigStore));
 
         Assert.Same(custom, descriptor.ImplementationInstance);
     }

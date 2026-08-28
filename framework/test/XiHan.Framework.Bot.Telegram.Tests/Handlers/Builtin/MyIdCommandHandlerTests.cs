@@ -58,7 +58,7 @@ public class MyIdCommandHandlerTests
 
         await handler.HandleAsync(context, [], TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, notifier.SentTexts.Count);
+        Assert.Single(notifier.SentTexts);
         Assert.Contains("100", notifier.SentTexts[0].Text, StringComparison.Ordinal);
         Assert.Contains("200", notifier.SentTexts[0].Text, StringComparison.Ordinal);
         Assert.DoesNotContain("{chatId}", notifier.SentTexts[0].Text, StringComparison.Ordinal);

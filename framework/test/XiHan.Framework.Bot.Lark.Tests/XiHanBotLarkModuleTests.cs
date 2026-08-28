@@ -53,8 +53,8 @@ public class XiHanBotLarkModuleTests
 
         new XiHanBotLarkModule().ConfigureServices(new ServiceConfigurationContext(services));
 
-        var store = Assert.Single(services.Where(item => item.ServiceType == typeof(ILarkConfigStore)));
-        var provider = Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
+        var store = Assert.Single(services, item => item.ServiceType == typeof(ILarkConfigStore));
+        var provider = Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
 
         Assert.Equal(typeof(DefaultLarkConfigStore), store.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, store.Lifetime);
@@ -91,8 +91,8 @@ public class XiHanBotLarkModuleTests
         module.ConfigureServices(new ServiceConfigurationContext(services));
         module.ConfigureServices(new ServiceConfigurationContext(services));
 
-        Assert.Single(services.Where(item => item.ServiceType == typeof(ILarkConfigStore)));
-        Assert.Single(services.Where(item => item.ServiceType == typeof(IBotProvider)));
+        Assert.Single(services, item => item.ServiceType == typeof(ILarkConfigStore));
+        Assert.Single(services, item => item.ServiceType == typeof(IBotProvider));
     }
 
     /// <summary>

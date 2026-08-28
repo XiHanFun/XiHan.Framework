@@ -168,7 +168,7 @@ public class GenericExtensionsTests
         var result = GenericExtensions.IsNullOrEmpty(CountingSequence(pulled));
 
         Assert.False(result);
-        Assert.Equal(1, pulled.Count);
+        Assert.Single(pulled);
     }
 
     /// <summary>

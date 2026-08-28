@@ -151,7 +151,7 @@ public class ServiceCollectionConventionalRegistrationExtensionsTests
 
         services.AddType<ConventionSampleService>();
 
-        var descriptor = Assert.Single(services.Where(item => item.ServiceType == typeof(IConventionSampleService)));
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IConventionSampleService));
         Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
         Assert.True(services.IsAdded<ConventionSampleService>());
     }
