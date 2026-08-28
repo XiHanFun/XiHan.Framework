@@ -67,10 +67,20 @@ public static class CurrentUserExtensions
     /// </summary>
     /// <param name="currentUser"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorUserId(this ICurrentUser currentUser)
+    public static long? FindImpersonatorUserId(this ICurrentUser currentUser)
     {
         var impersonatorUserId = currentUser.FindClaimValue(XiHanClaimTypes.ImpersonatorUserId);
-        return impersonatorUserId.IsNullOrWhiteSpace() ? null : Guid.TryParse(impersonatorUserId, out var guid) ? guid : null;
+        return impersonatorUserId.IsNullOrWhiteSpace() ? null : long.TryParse(impersonatorUserId, out var id) ? id : null;
+    }
+
+    /// <summary>
+    /// 是否处于模仿态（当前主体由他人以模仿方式登录得到）
+    /// </summary>
+    /// <param name="currentUser"></param>
+    /// <returns></returns>
+    public static bool IsImpersonating(this ICurrentUser currentUser)
+    {
+        return currentUser.FindImpersonatorUserId().HasValue;
     }
 
     /// <summary>
