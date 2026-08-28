@@ -5,7 +5,7 @@ using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 using XiHan.Framework.Workflow.Abstractions.UserTasks;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.UserTasks;
 
 /// <summary>
 /// 人工任务完成策略枚举测试

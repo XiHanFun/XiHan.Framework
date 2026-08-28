@@ -4,8 +4,9 @@
 using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
 using XiHan.Framework.VirtualFileSystem.Services;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Services;
 
 /// <summary>
 /// 文件版本控制服务测试

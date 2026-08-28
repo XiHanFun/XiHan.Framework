@@ -4,7 +4,7 @@
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 恒定返回「未命中灰度」的规则引擎替身

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Rag.Models;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Rag.Models;
 
 /// <summary>
 /// 入库前文本切片测试

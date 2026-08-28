@@ -12,6 +12,7 @@ using XiHan.Framework.Upgrade.Enums;
 using XiHan.Framework.Upgrade.Models;
 using XiHan.Framework.Upgrade.Options;
 using XiHan.Framework.Upgrade.Services;
+using XiHan.Framework.Upgrade.Tests.Fakes;
 
 namespace XiHan.Framework.Upgrade.Tests;
 

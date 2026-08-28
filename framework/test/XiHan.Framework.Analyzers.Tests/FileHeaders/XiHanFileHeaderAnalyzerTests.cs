@@ -6,8 +6,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using XiHan.Framework.Analyzers.FileHeaders;
+using XiHan.Framework.Analyzers.Tests.Infrastructure;
 
-namespace XiHan.Framework.Analyzers.Tests;
+namespace XiHan.Framework.Analyzers.Tests.FileHeaders;
 
 /// <summary>
 /// 曦寒标准版权文件头分析器（XHFH001）测试

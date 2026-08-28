@@ -4,8 +4,9 @@
 using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Caching.Distributed;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 基于 System.Text.Json 的分布式缓存序列化器测试

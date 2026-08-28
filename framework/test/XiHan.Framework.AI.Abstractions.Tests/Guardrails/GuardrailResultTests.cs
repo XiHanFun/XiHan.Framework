@@ -3,7 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Guardrails;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Guardrails;
 
 /// <summary>
 /// 护栏检查结果测试

@@ -2,8 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Bot.Extensions;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Extensions;
 
 /// <summary>
 /// <see cref="BotClientExtensions"/> 测试

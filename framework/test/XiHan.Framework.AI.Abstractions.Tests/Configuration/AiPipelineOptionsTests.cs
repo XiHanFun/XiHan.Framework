@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Configuration;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Configuration;
 
 /// <summary>
 /// AI 会话管道横切开关配置测试

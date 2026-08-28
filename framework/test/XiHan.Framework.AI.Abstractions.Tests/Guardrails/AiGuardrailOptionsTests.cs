@@ -5,7 +5,7 @@ using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Configuration;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Guardrails;
 
 /// <summary>
 /// 护栏配置测试

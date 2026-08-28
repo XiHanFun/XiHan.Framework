@@ -1,9 +1,10 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
 
 namespace XiHan.Framework.SearchEngines.Tests;
 
@@ -17,13 +18,7 @@ namespace XiHan.Framework.SearchEngines.Tests;
 public abstract class SearchEngineContractTestsBase
 {
     // Elasticsearch 是共享集群，索引名按用例唯一化，避免并行用例互相干扰
-    private readonly string Index = $"articles-{Guid.NewGuid():N}";
-
-    /// <summary>
-    /// 创建被测引擎
-    /// </summary>
-    /// <returns>引擎</returns>
-    protected abstract Task<ISearchEngine> CreateEngineAsync();
+    private readonly string _index = $"articles-{Guid.NewGuid():N}";
 
     /// <summary>
     /// 创建索引后可查到存在
@@ -33,9 +28,9 @@ public abstract class SearchEngineContractTestsBase
     {
         var engine = await CreateEngineAsync();
 
-        Assert.False(await engine.IndexExistsAsync(Index, TestContext.Current.CancellationToken));
+        Assert.False(await engine.IndexExistsAsync(_index, TestContext.Current.CancellationToken));
         Assert.True(await engine.CreateIndexAsync(BuildDefinition(), TestContext.Current.CancellationToken));
-        Assert.True(await engine.IndexExistsAsync(Index, TestContext.Current.CancellationToken));
+        Assert.True(await engine.IndexExistsAsync(_index, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -57,7 +52,7 @@ public abstract class SearchEngineContractTestsBase
     {
         var engine = await CreateEngineAsync();
 
-        Assert.False(await engine.DeleteIndexAsync(Index, TestContext.Current.CancellationToken));
+        Assert.False(await engine.DeleteIndexAsync(_index, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -69,7 +64,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateEngineAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1")), TestContext.Current.CancellationToken));
+            () => engine.IndexAsync(_index, new SearchDocument<Article>("1", NewArticle("1")), TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -79,9 +74,9 @@ public abstract class SearchEngineContractTestsBase
     public async Task Index_ThenGetById()
     {
         var engine = await CreateEngineWithIndexAsync();
-        await engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1", title: "曦寒框架")), TestContext.Current.CancellationToken);
+        await engine.IndexAsync(_index, new SearchDocument<Article>("1", NewArticle("1", title: "曦寒框架")), TestContext.Current.CancellationToken);
 
-        var article = await engine.GetAsync<Article>(Index, "1", TestContext.Current.CancellationToken);
+        var article = await engine.GetAsync<Article>(_index, "1", TestContext.Current.CancellationToken);
 
         Assert.NotNull(article);
         Assert.Equal("曦寒框架", article.Title);
@@ -94,10 +89,10 @@ public abstract class SearchEngineContractTestsBase
     public async Task Index_WithSameId_Overwrites()
     {
         var engine = await CreateEngineWithIndexAsync();
-        await engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1", title: "旧标题")), TestContext.Current.CancellationToken);
-        await engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1", title: "新标题")), TestContext.Current.CancellationToken);
+        await engine.IndexAsync(_index, new SearchDocument<Article>("1", NewArticle("1", title: "旧标题")), TestContext.Current.CancellationToken);
+        await engine.IndexAsync(_index, new SearchDocument<Article>("1", NewArticle("1", title: "新标题")), TestContext.Current.CancellationToken);
 
-        var article = await engine.GetAsync<Article>(Index, "1", TestContext.Current.CancellationToken);
+        var article = await engine.GetAsync<Article>(_index, "1", TestContext.Current.CancellationToken);
 
         Assert.Equal("新标题", article!.Title);
     }
@@ -109,11 +104,11 @@ public abstract class SearchEngineContractTestsBase
     public async Task Delete_ThenGetReturnsNull()
     {
         var engine = await CreateEngineWithIndexAsync();
-        await engine.IndexAsync(Index, new SearchDocument<Article>("1", NewArticle("1")), TestContext.Current.CancellationToken);
+        await engine.IndexAsync(_index, new SearchDocument<Article>("1", NewArticle("1")), TestContext.Current.CancellationToken);
 
-        Assert.True(await engine.DeleteAsync(Index, "1", TestContext.Current.CancellationToken));
-        Assert.Null(await engine.GetAsync<Article>(Index, "1", TestContext.Current.CancellationToken));
-        Assert.False(await engine.DeleteAsync(Index, "1", TestContext.Current.CancellationToken));
+        Assert.True(await engine.DeleteAsync(_index, "1", TestContext.Current.CancellationToken));
+        Assert.Null(await engine.GetAsync<Article>(_index, "1", TestContext.Current.CancellationToken));
+        Assert.False(await engine.DeleteAsync(_index, "1", TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -125,7 +120,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index) { Keyword = "分布式" },
+            new SearchRequest(_index) { Keyword = "分布式" },
             TestContext.Current.CancellationToken);
 
         Assert.Equal(1, result.TotalCount);
@@ -141,7 +136,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index) { Keyword = "XIHAN" },
+            new SearchRequest(_index) { Keyword = "XIHAN" },
             TestContext.Current.CancellationToken);
 
         Assert.Equal(1, result.TotalCount);
@@ -156,7 +151,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Filters = [new SearchFilter("category", SearchFilterOperator.Equal, "framework")]
             },
@@ -174,7 +169,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Filters =
                 [
@@ -197,7 +192,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Filters = [new SearchFilter("category", SearchFilterOperator.In, values: ["guide", "framework"])]
             },
@@ -215,7 +210,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Filters = [new SearchFilter("views", SearchFilterOperator.GreaterThanOrEqual, 90)]
             },
@@ -234,7 +229,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Sorts = [new SearchSort("views", SearchSortDirection.Ascending)]
             },
@@ -252,7 +247,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Sorts = [new SearchSort("views", SearchSortDirection.Ascending)],
                 Skip = 1,
@@ -274,7 +269,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index)
+            new SearchRequest(_index)
             {
                 Keyword = "分布式",
                 HighlightFields = ["title"]
@@ -298,7 +293,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateSeededEngineAsync();
 
         var result = await engine.SearchAsync<Article>(
-            new SearchRequest(Index) { Keyword = "分布式" },
+            new SearchRequest(_index) { Keyword = "分布式" },
             TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Hits[0].Highlights);
@@ -313,7 +308,7 @@ public abstract class SearchEngineContractTestsBase
         var engine = await CreateEngineWithIndexAsync();
 
         var count = await engine.IndexManyAsync(
-            Index,
+            _index,
             [new SearchDocument<Article>("1", NewArticle("1")), new SearchDocument<Article>("2", NewArticle("2"))],
             TestContext.Current.CancellationToken);
 
@@ -327,12 +322,31 @@ public abstract class SearchEngineContractTestsBase
     public async Task DeleteIndex_DropsDocuments()
     {
         var engine = await CreateSeededEngineAsync();
-        await engine.DeleteIndexAsync(Index, TestContext.Current.CancellationToken);
+        await engine.DeleteIndexAsync(_index, TestContext.Current.CancellationToken);
         await engine.CreateIndexAsync(BuildDefinition(), TestContext.Current.CancellationToken);
 
-        var result = await engine.SearchAsync<Article>(new SearchRequest(Index), TestContext.Current.CancellationToken);
+        var result = await engine.SearchAsync<Article>(new SearchRequest(_index), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, result.TotalCount);
+    }
+
+    /// <summary>
+    /// 创建被测引擎
+    /// </summary>
+    /// <returns>引擎</returns>
+    protected abstract Task<ISearchEngine> CreateEngineAsync();
+
+    /// <summary>
+    /// 构造样例文档
+    /// </summary>
+    /// <param name="id">标识</param>
+    /// <param name="title">标题</param>
+    /// <param name="category">分类</param>
+    /// <param name="views">浏览量</param>
+    /// <returns>文档</returns>
+    private static Article NewArticle(string id, string title = "标题", string category = "guide", int views = 0)
+    {
+        return new Article { Id = id, Title = title, Category = category, Views = views };
     }
 
     /// <summary>
@@ -341,7 +355,7 @@ public abstract class SearchEngineContractTestsBase
     /// <returns>索引定义</returns>
     private SearchIndexDefinition BuildDefinition()
     {
-        return new SearchIndexDefinition(Index,
+        return new SearchIndexDefinition(_index,
         [
             new SearchFieldDefinition("title", SearchFieldType.Text, Searchable: true),
             new SearchFieldDefinition("category", SearchFieldType.Keyword),
@@ -368,28 +382,15 @@ public abstract class SearchEngineContractTestsBase
     private async Task<ISearchEngine> CreateSeededEngineAsync()
     {
         var engine = await CreateEngineWithIndexAsync();
-        await engine.IndexManyAsync(Index,
+        await engine.IndexManyAsync(_index,
         [
             new SearchDocument<Article>("1", NewArticle("1", "XiHan 入门", "guide", 90)),
             new SearchDocument<Article>("2", NewArticle("2", "分布式事件总线", "framework", 1200)),
             new SearchDocument<Article>("3", NewArticle("3", "缓存抽象", "framework", 9))
         ], TestContext.Current.CancellationToken);
-        await engine.RefreshAsync(Index, TestContext.Current.CancellationToken);
+        await engine.RefreshAsync(_index, TestContext.Current.CancellationToken);
 
         return engine;
-    }
-
-    /// <summary>
-    /// 构造样例文档
-    /// </summary>
-    /// <param name="id">标识</param>
-    /// <param name="title">标题</param>
-    /// <param name="category">分类</param>
-    /// <param name="views">浏览量</param>
-    /// <returns>文档</returns>
-    private static Article NewArticle(string id, string title = "标题", string category = "guide", int views = 0)
-    {
-        return new Article { Id = id, Title = title, Category = category, Views = views };
     }
 }
 

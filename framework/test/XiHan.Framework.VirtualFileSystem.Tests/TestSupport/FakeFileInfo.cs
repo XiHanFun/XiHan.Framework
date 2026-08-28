@@ -4,7 +4,7 @@
 using Microsoft.Extensions.FileProviders;
 using System.Text;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
 /// <summary>
 /// 手写的文件信息替身

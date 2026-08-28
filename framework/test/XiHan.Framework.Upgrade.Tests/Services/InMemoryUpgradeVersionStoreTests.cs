@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Upgrade.Models;
 using XiHan.Framework.Upgrade.Services;
+using XiHan.Framework.Upgrade.Tests.Fakes;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 内存升级版本存储测试

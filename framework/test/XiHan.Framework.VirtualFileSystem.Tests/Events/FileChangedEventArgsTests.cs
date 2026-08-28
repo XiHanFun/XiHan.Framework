@@ -3,7 +3,7 @@
 
 using XiHan.Framework.VirtualFileSystem.Events;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Events;
 
 /// <summary>
 /// 文件变化事件参数测试

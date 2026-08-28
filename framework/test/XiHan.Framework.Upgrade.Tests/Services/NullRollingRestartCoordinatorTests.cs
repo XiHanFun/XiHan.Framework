@@ -2,8 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Upgrade.Services;
+using XiHan.Framework.Upgrade.Tests.Fakes;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 滚动重启空实现测试

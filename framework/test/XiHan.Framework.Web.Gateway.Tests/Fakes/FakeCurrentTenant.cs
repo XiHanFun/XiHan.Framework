@@ -3,7 +3,7 @@
 
 using XiHan.Framework.MultiTenancy.Abstractions;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Fakes;
 
 /// <summary>
 /// 固定租户信息的当前租户替身

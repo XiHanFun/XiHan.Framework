@@ -3,8 +3,9 @@
 
 using Microsoft.Extensions.Caching.Hybrid;
 using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Hybrid;
 
 /// <summary>
 /// 曦寒混合缓存选项测试

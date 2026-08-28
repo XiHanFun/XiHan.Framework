@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Runtime;
 
 /// <summary>
 /// 节点实例状态枚举测试

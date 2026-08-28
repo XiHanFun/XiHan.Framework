@@ -2,8 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Caching.Distributed.Abstracts;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 分布式缓存的键模式与脚本能力测试

@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
+using XiHan.Framework.Workflow.Abstractions.Tests.Fakes;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Activities;
 
 /// <summary>
 /// 工作流活动接口族测试

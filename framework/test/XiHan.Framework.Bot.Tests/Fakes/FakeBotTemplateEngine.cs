@@ -4,7 +4,7 @@
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Template;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Fakes;
 
 /// <summary>
 /// 手写的 <see cref="IBotTemplateEngine"/> 替身

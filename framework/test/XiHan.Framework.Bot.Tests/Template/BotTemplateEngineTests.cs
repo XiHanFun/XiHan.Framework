@@ -5,9 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Bot.Options;
 using XiHan.Framework.Bot.Template;
+using XiHan.Framework.Bot.Tests.Fakes;
 using XiHan.Framework.Templating.Services;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Template;
 
 /// <summary>
 /// <see cref="BotTemplateEngine"/> 测试

@@ -8,7 +8,7 @@ using System.Text.Json;
 using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Middlewares;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Middlewares;
 
 /// <summary>
 /// 网关异常处理中间件测试

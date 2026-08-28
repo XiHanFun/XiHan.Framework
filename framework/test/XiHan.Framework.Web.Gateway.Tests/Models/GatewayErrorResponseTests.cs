@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Web.Gateway.Models;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Models;
 
 /// <summary>
 /// 网关错误响应契约测试

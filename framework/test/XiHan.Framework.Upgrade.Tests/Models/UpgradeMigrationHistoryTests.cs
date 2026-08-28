@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Upgrade.Models;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Models;
 
 /// <summary>
 /// 升级迁移历史测试

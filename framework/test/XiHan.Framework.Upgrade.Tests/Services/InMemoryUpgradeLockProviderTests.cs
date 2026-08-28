@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Upgrade.Services;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 内存升级锁提供者测试

@@ -3,8 +3,9 @@
 
 using System.Reflection;
 using XiHan.Framework.Caching.Interceptors;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Interceptors;
 
 /// <summary>
 /// 缓存键构建器测试
