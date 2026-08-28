@@ -57,8 +57,12 @@ public static class PageConverter
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(converter);
 
+        // 取消令牌此前被整个忽略。converter 的签名不带令牌，无法把取消传进每个转换任务，
+        // 但至少要保证：已取消时不再启动转换，等待期间也能被取消唤醒。
+        cancellationToken.ThrowIfCancellationRequested();
+
         var tasks = source.Items.Select(converter);
-        var convertedItems = await Task.WhenAll(tasks);
+        var convertedItems = await Task.WhenAll(tasks).WaitAsync(cancellationToken);
 
         return new PageResultDtoBase<TTarget>(convertedItems, source.Page);
     }
