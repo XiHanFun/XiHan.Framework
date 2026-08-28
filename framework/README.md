@@ -1,3 +1,5 @@
+![logo](../assets/logo.png)
+
 # XiHan.Framework 工程说明
 
 本文件面向框架的开发者与贡献者，记录**框架自身的组织方式**：分层架构、模块清单、目录结构与依赖关系。
@@ -10,32 +12,32 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                         7. Web 层                               │
+│                            7. Web 层                            │
 │  Web.Docs → Web.Api → Web.Core    Web.Gateway    Web.RealTime   │
 │                                   Web.Grpc       Web.Mcp        │
 ├─────────────────────────────────────────────────────────────────┤
-│                       6. 基础设施层                              │
-│  Data  Uow  Caching  EventBus  Auditing  Security               │
+│                          6. 基础设施层                          │
+│  Data  Uow  Caching  EventBus  Auditing  Logging                │
 │  Authentication  Authorization  AI  Bot  Workflow  Tasks        │
 │  Traffic  Upgrade  Messaging  ObjectStorage  SearchEngines      │
-│  Logging  Observability  Serialization  Script  Http  Castle    │
+│  Observability  Serialization  Script  Http  Castle             │
 ├─────────────────────────────────────────────────────────────────┤
-│                        5. 应用层                                 │
+│                            5. 应用层                            │
 │  Application → Application.Contracts                            │
 │  MultiTenancy → MultiTenancy.Abstractions                       │
-│  Validation → Validation.Abstractions    Settings               │
+│  Validation → Validation.Abstractions   Settings   Security     │
 ├─────────────────────────────────────────────────────────────────┤
-│                        4. 领域层                                 │
+│                            4. 领域层                            │
 │  Domain → Domain.Shared                                         │
 ├─────────────────────────────────────────────────────────────────┤
-│                        3. 核心层                                 │
-│  Core (模块系统 / DI / 生命周期 / 选项模式 / 异常处理)             │
+│                            3. 核心层                            │
+│  Core (模块系统 / DI / 生命周期 / 选项模式 / 异常处理)          │
 ├─────────────────────────────────────────────────────────────────┤
-│                      2. 元数据层                                 │
-│  Metadata (框架信息 / 版本 / 平台)                                │
+│                           2. 元数据层                           │
+│  Metadata (框架信息 / 版本 / 平台)                              │
 ├─────────────────────────────────────────────────────────────────┤
-│                      1. 公共层                                   │
-│  Utils (零依赖通用工具库)                                         │
+│                            1. 公共层                            │
+│  Utils (通用工具库，零第三方依赖)                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,7 +57,7 @@
 | 模块 | 说明 |
 | --- | --- |
 | `Metadata` | 框架元数据：名称、版本、作者、组织、支持平台等静态信息 |
-| `Utils` | 零依赖通用工具库：字符串处理、加密算法、异步编程、序列化、集合操作、反射、网络通信、文件IO、数学计算、时间处理等 |
+| `Utils` | 通用工具库（零第三方依赖）：字符串处理、加密算法、异步编程、序列化、集合操作、反射、网络通信、文件 IO、数学计算、时间处理等 |
 | `Analyzers` | Roslyn 分析器：文件头规范检查与代码修复（`XiHanFileHeaderAnalyzer` + CodeFixProvider），编译期静态检查 |
 | `Core` | 模块化引擎核心：`IXiHanModule` 基类、`[DependsOn]` 依赖声明、拓扑排序加载、7 个生命周期钩子、DI 扩展、选项模式、异常处理链 |
 
@@ -66,7 +68,7 @@
 | `Domain.Shared` | 领域共享模型：基础实体类型、枚举、常量、值对象、异常 |
 | `Domain` | DDD 领域层：聚合根、实体、领域服务、领域事件、规约、仓储抽象、业务规则引擎 |
 | `Application.Contracts` | 应用服务契约：DTO 定义、应用服务接口 |
-| `Application` | 应用层实现：应用服务基类、CQRS 调度、请求管道、DTO 映射 |
+| `Application` | 应用层实现：应用服务基类、CRUD / 批量 CRUD 基类、`[DynamicApi]` 特性、Mapster DTO 映射 |
 
 ### 基础设施
 
@@ -95,18 +97,18 @@
 | `MultiTenancy.Abstractions` | 多租户抽象：租户上下文接口、解析链 |
 | `MultiTenancy` | 多租户：租户解析中间件、数据隔离、租户配置管理、生命周期 |
 | `Settings` | 设置管理：设置定义提供者模式、动态配置、多来源（租户级别） |
-| `Validation.Abstractions` | 校验抽象：校验工厂、规则构建器接口 |
-| `Validation` | 数据校验：校验实现 |
+| `Validation.Abstractions` | 校验抽象：校验错误契约 `IHasValidationErrors` 与 `XiHanValidationException` |
+| `Validation` | 数据校验集成入口：当前为薄占位，仅模块类 |
 | `ObjectMapping` | 对象映射：Mapster 集成 |
-| `ObjectStorage` | 对象存储：OSS / MinIO / S3 适配抽象 |
-| `VirtualFileSystem` | 虚拟文件系统：本地/云存储适配、文件元数据、版本控制 |
-| `Messaging` | 消息处理：消息代理抽象（发布/消费/路由） |
-| `DistributedIds` | 分布式 ID：Snowflake / ULID / SQID / NanoID 多算法支持 |
-| `Threading` | 并发控制：异步信号量、读写锁、优先级任务调度、背压控制 |
+| `ObjectStorage` | 对象存储：本地磁盘 / 阿里云 OSS / MinIO / 腾讯云 COS 四种后端的统一抽象 |
+| `VirtualFileSystem` | 虚拟文件系统：本地物理目录 + 程序集嵌入资源按优先级统一挂载、文件监控、版本快照与回滚（不含云存储适配，那是 `ObjectStorage`） |
+| `Messaging` | 消息路由抽象：消息信封 → 按通道路由 → 交给发送器投递，不含具体通道实现 |
+| `DistributedIds` | 分布式 ID：Snowflake / NanoId / SequentialGuid 生成器 + Sqids 短码编码，零第三方依赖 |
+| `Threading` | 并发上下文：`CancellationToken` 统一获取与临时覆盖、基于 `AsyncLocal` 的环境数据上下文与可嵌套环境作用域 |
 | `Timing` | 时间策略：时区管理、时间抽象 |
 | `Templating` | 模板渲染：Scriban 引擎、模板注册表 |
 | `Tasks` | 定时任务与后台作业：调度引擎、后台服务、多租户感知 |
-| `Traffic` | 流量治理：灰度路由、限流、熔断 |
+| `Traffic` | 流量治理：灰度路由（规则引擎 + Header / IP / 百分比 / 租户 / 用户 匹配器）；限流与熔断仅提供策略接口 |
 | `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
 | `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
 | `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |
@@ -117,9 +119,9 @@
 | `Bot.DingTalk` | 机器人钉钉渠道 |
 | `Bot.Lark` | 机器人飞书渠道 |
 | `Bot.WeCom` | 机器人企业微信渠道 |
-| `Script` | 脚本引擎：沙箱执行、JS / Python / C# 动态脚本 |
+| `Script` | C# 脚本引擎：Roslyn 内存编译、编译缓存、执行超时、编译后静态安全校验（非进程级沙箱，仅支持 C#） |
 | `SearchEngines.Abstractions` | 搜索引擎抽象：索引、文档、检索请求与结果的统一契约，零第三方依赖 |
-| `SearchEngines` | 搜索引擎：契约的内存实现与索引构建、全文检索的公共能力 |
+| `SearchEngines` | 搜索引擎进程内兜底实现：索引管理、关键字匹配、过滤与排序，不做分词与相关度模型 |
 | `SearchEngines.Elasticsearch` | 搜索引擎契约的 Elasticsearch 实现 |
 | `Observability` | 可观测性：健康检查、性能计数器、指标采集、OpenTelemetry 链路 |
 | `DevTools` | 开发工具：开发期辅助与调试能力 |
@@ -131,7 +133,7 @@
 | `Web.Core` | Web 基础设施：托管环境、中间件管道、CORS、IP 地理定位（ip2region）、UA 解析 |
 | `Web.Api` | 动态 API：自动 API 发现与注册、OpenAPI 安全、完整中间件管道（TraceId → 请求上下文 → 异常日志 → 路由 → CORS → 认证 → 租户解析 → 授权 → 控制器） |
 | `Web.Docs` | API 文档：Scalar UI + Swagger UI、动态 API 分组发现 |
-| `Web.Gateway` | API 网关：灰度路由、负载均衡、限流 |
+| `Web.Gateway` | API 网关：灰度路由、请求追踪、网关级异常处理；限流与熔断为配置开关 |
 | `Web.Grpc` | gRPC 服务集成 |
 | `Web.Mcp` | MCP Server：AI 技能经 HTTP 传输暴露为 MCP tools、应用管理 key 鉴权 |
 | `Web.RealTime` | 实时通信：SignalR 集成、JSON 序列化 |
@@ -141,8 +143,8 @@
 核心依赖链（从底层到上层）：
 
 ```text
-Utils (零依赖)
-  └── Metadata (零依赖)
+Utils (零第三方依赖)
+  └── Metadata (零第三方依赖)
         └── Core
               ├── Serialization
               ├── Security ──→ Authentication ──→ Authorization
@@ -206,6 +208,8 @@ XiHan.Framework/
 ```
 
 ## 本地构建与测试
+
+> 需要 .NET SDK **10.0.1xx** 功能带（`global.json` 以 `rollForward: latestPatch` 锁定）。装的是 10.0.4xx 会直接报 SDK not found、整仓无法构建。
 
 ```bash
 # 还原与构建
