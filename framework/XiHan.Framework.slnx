@@ -81,10 +81,7 @@
     <Project Path="src/XiHan.Framework.Web.RealTime/XiHan.Framework.Web.RealTime.csproj" />
   </Folder>
   <Folder Name="/2.tests/" />
-  <Folder Name="/2.tests/1.Base/">
-    <Project Path="test/XiHan.Framework.TestsBase/XiHan.Framework.TestsBase.csproj" />
-  </Folder>
-  <Folder Name="/2.tests/2.UnitTests/">
+  <Folder Name="/2.tests/1.UnitTests/">
     <Project Path="test/XiHan.Framework.AI.Abstractions.Tests/XiHan.Framework.AI.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.AI.Tests/XiHan.Framework.AI.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Analyzers.Tests/XiHan.Framework.Analyzers.Tests.csproj" />
@@ -152,16 +149,17 @@
     <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
   </Folder>
-  <Folder Name="/2.tests/3.Hosts/">
-    <Project Path="test/XiHan.Framework.Integration.Host/XiHan.Framework.Integration.Host.csproj" />
-    <Project Path="test/XiHan.Framework.Web.Host/XiHan.Framework.Web.Host.csproj" />
+  <Folder Name="/3.samples/" />
+  <Folder Name="/3.samples/1.Hosts/">
+    <Project Path="sample/XiHan.Framework.Integration.Host/XiHan.Framework.Integration.Host.csproj" />
+    <Project Path="sample/XiHan.Framework.Web.Host/XiHan.Framework.Web.Host.csproj" />
   </Folder>
-  <Folder Name="/3.tool/" />
-  <Folder Name="/3.tool/1.ProjectStandardization/">
+  <Folder Name="/4.tool/" />
+  <Folder Name="/4.tool/1.ProjectStandardization/">
     <Project Path="tool/Region/Region.csproj" Id="41b103a1-9eaf-4915-968e-0416ca8773dd" />
   </Folder>
-  <Folder Name="/4.others/" />
-  <Folder Name="/4.others/1.Props/">
+  <Folder Name="/5.others/" />
+  <Folder Name="/5.others/1.Props/">
     <File Path="props/common.props" />
     <File Path="props/netcore.props" />
     <File Path="props/netstandard.props" />
@@ -169,15 +167,12 @@
     <File Path="props/test.props" />
     <File Path="props/version.props" />
   </Folder>
-  <Folder Name="/4.others/2.Scripts/">
-    <File Path="scripts/editor/CopyFile.ps1" />
-    <File Path="scripts/nuget/PushNugetPackages.ps1" />
-    <File Path="scripts/nuget/SaveNugetApiKey.ps1" />
+  <Folder Name="/5.others/2.Scripts/">
     <File Path="scripts/nuget/UnlistNugetPackages.ps1" />
     <File Path="scripts/nuget/VersionUpgrade.ps1" />
     <File Path="scripts/project/ClearProjecBinObj.ps1" />
   </Folder>
-  <Folder Name="/4.others/3.Root/">
+  <Folder Name="/5.others/3.Root/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />

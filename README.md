@@ -307,10 +307,10 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
 │   │   ├── XiHan.Framework.Core.Tests/    #   内核测试
 │   │   ├── XiHan.Framework.Web.Api.Tests/ #   Web API 测试
-│   │   ├── ...                            #   其余按 <项目名>.Tests 一一对应
-│   │   ├── XiHan.Framework.TestsBase/     #   测试基础设施（共享库，不含用例）
-│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（可运行的样例应用，非测试工程）
-│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主（可运行，非测试工程）
+│   │   └── ...                            #   其余按 <项目名>.Tests 一一对应
+│   ├── sample/                            # 可运行示例宿主（非测试工程）
+│   │   ├── XiHan.Framework.Web.Host/      #   Web 示例宿主（动态 API + 文档站）
+│   │   └── XiHan.Framework.Integration.Host/ # 模块装配示例宿主
 │   ├── tool/                              # 工具
 │   │   └── Region/                        #   代码规范化工具
 │   ├── props/                             # 共享 MSBuild 属性
