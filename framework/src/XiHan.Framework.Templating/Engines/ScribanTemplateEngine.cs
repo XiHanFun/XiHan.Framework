@@ -4,7 +4,6 @@
 using Scriban;
 using Scriban.Runtime;
 using XiHan.Framework.Templating.Contexts;
-using TemplateContext = XiHan.Framework.Templating.Contexts.TemplateContext;
 
 namespace XiHan.Framework.Templating.Engines;
 

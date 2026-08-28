@@ -10,7 +10,6 @@ using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.DingTalk.Abstractions;
 using XiHan.Framework.Bot.DingTalk.Models;
 using XiHan.Framework.Bot.DingTalk.Options;
-using XiHan.Framework.Bot.DingTalk.Enums;
 
 namespace XiHan.Framework.Bot.DingTalk.Messaging;
 

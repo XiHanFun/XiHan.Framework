@@ -4,7 +4,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using XiHan.Framework.Bot;
 using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Lark.Abstractions;
 using XiHan.Framework.Bot.Lark.Messaging;

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Reflection;
-using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 

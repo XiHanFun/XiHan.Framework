@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Executor;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
 using XiHan.Framework.Tasks.ScheduledJobs.Pipeline;

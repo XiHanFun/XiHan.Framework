@@ -6,7 +6,6 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.RealTime.Extensions;
-using XiHan.Framework.Web.RealTime.Options;
 
 namespace XiHan.Framework.Web.RealTime;
 

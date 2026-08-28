@@ -4,7 +4,6 @@
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Application.Contracts;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Domain.Shared;
 
