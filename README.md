@@ -158,15 +158,15 @@ await app.RunAsync();
 
 ```text
 服务注册阶段                          应用初始化阶段
-┌──────────────────────┐            ┌───────────────────────────────┐
+┌──────────────────────┐            ┌────────────────────────────────┐
 │ PreConfigureServices │            │ OnPreApplicationInitialization │
 │ ConfigureServices    │     →      │ OnApplicationInitialization    │
 │ PostConfigureServices│            │ OnPostApplicationInitialization│
-└──────────────────────┘            └───────────────────────────────┘
+└──────────────────────┘            └────────────────────────────────┘
                                                   ↓
-                                    ┌───────────────────────────────┐
+                                    ┌────────────────────────────────┐
                                     │ OnApplicationShutdown          │
-                                    └───────────────────────────────┘
+                                    └────────────────────────────────┘
 ```
 
 ## NuGet 包
