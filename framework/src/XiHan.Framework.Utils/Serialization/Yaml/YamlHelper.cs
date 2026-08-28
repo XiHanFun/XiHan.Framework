@@ -6,13 +6,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using XiHan.Framework.Utils.Serialization.Yaml;
 
-// 注意：本类型的命名空间与同目录（Serialization/Yaml）其余类型不一致，属历史遗留。
-// 统一为 XiHan.Framework.Utils.Serialization.Yaml 是破坏性改名：现有调用方（含既有测试）都写着旧命名空间，
-// 而同程序集内无法用 TypeForwardedTo 做过渡，补一个同名转发类型又会让同时 using 两个命名空间的文件产生歧义。
-// 因此本次保留旧命名空间，改名需由主控连同全部调用方一次性完成。
-namespace XiHan.Framework.Utils.Text.Yaml;
+namespace XiHan.Framework.Utils.Serialization.Yaml;
 
 /// <summary>
 /// YAML 操作帮助类
@@ -20,10 +15,10 @@ namespace XiHan.Framework.Utils.Text.Yaml;
 /// </summary>
 public static partial class YamlHelper
 {
-    private static readonly string[] Separator = ["\r\n", "\n"];
-
     // ParseNestedYaml 使用默认解析选项时的层级分隔符，格式化侧要按同一个分隔符拆键
     private const string DefaultKeySeparator = ".";
+
+    private static readonly string[] Separator = ["\r\n", "\n"];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
