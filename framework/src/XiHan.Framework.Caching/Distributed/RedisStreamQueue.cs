@@ -11,7 +11,7 @@ namespace XiHan.Framework.Caching.Distributed;
 /// <see cref="IRedisStreamQueue{T}"/> 的实现：Redis Streams 承载消息，消费组 + ACK + XCLAIM 提供可靠投递。
 /// </summary>
 /// <remarks>
-/// - 键：<c>xihan:stream:{类型全名}</c>；唯一消费组 <c>xihan</c>；唤醒频道 <c>xihan:stream-wake:{类型全名}</c>。
+/// - 键：<c>default:stream:{类型全名}</c>；唯一消费组 <c>default</c>；唤醒频道 <c>default:stream-wake:{类型全名}</c>。
 /// - 入队 XADD；消费 XREADGROUP（"&gt;" 读新消息，进 PEL）；确认 XACK；重投 XPENDING 筛空闲 + XCLAIM。
 /// - 等待：首次惰性订阅唤醒频道 + 本地信号量合并；被入队唤醒或超时返回，空闲不轮询。
 /// 注册为单例（每个封闭类型一个实例）。
@@ -20,7 +20,7 @@ namespace XiHan.Framework.Caching.Distributed;
 public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
 {
     private const string DataField = "data";
-    private const string GroupName = "xihan";
+    private const string GroupName = "default";
     private static readonly RedisValue NewMessages = ">";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -29,8 +29,8 @@ public sealed class RedisStreamQueue<T> : IRedisStreamQueue<T>, IDisposable
     };
 
     private static readonly string TypeKey = typeof(T).FullName ?? typeof(T).Name;
-    private static readonly RedisKey StreamKey = $"xihan:stream:{TypeKey}";
-    private static readonly RedisChannel WakeChannel = RedisChannel.Literal($"xihan:stream-wake:{TypeKey}");
+    private static readonly RedisKey StreamKey = $"default:stream:{TypeKey}";
+    private static readonly RedisChannel WakeChannel = RedisChannel.Literal($"default:stream-wake:{TypeKey}");
 
     private readonly IConnectionMultiplexer _connection;
     private readonly SemaphoreSlim _signal = new(0, 1);

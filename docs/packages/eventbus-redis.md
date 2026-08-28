@@ -107,8 +107,8 @@ public class MyModule : XiHanModule { }
 | 字段 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
 | `Configuration` | `string` | `localhost:6379` | StackExchange.Redis 连接串（独立于缓存连接） |
-| `StreamKey` | `string` | `XiHan:EventBus:Stream` | 事件流键（所有事件写入同一 Stream） |
-| `ConsumerGroup` | `string` | `XiHan.EventBus` | 消费者组名称（同组内竞争消费） |
+| `StreamKey` | `string` | `Default:EventBus:Stream` | 事件流键（所有事件写入同一 Stream） |
+| `ConsumerGroup` | `string` | `Default.EventBus` | 消费者组名称（同组内竞争消费） |
 | `ReadBatchSize` | `int` | `10` | 单次读取批量大小 |
 | `PollIntervalMilliseconds` | `int` | `1000` | 无消息时的轮询间隔（毫秒） |
 | `MaxStreamLength` | `int` | `100000` | Stream 近似最大长度，自动裁剪；`<= 0` 表示不裁剪 |

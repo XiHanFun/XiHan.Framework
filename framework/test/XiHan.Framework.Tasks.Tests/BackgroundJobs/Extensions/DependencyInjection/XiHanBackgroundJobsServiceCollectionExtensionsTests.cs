@@ -229,7 +229,7 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
         using var provider = services.BuildServiceProvider();
         var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<RedisBackgroundJobStoreOptions>>().Value;
 
-        Assert.Equal("XiHan:BackgroundJobs", options.KeyPrefix);
+        Assert.Equal("Default:BackgroundJobs", options.KeyPrefix);
         Assert.Equal(4, options.FetchMultiplier);
     }
 

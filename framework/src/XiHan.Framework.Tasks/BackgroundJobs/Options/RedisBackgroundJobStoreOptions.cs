@@ -11,7 +11,7 @@ public class RedisBackgroundJobStoreOptions
     /// <summary>
     /// 键前缀（作业体键 <c>{Prefix}:job:{id}</c>；活跃索引有序集合 <c>{Prefix}:index</c>）
     /// </summary>
-    public string KeyPrefix { get; set; } = "XiHan:BackgroundJobs";
+    public string KeyPrefix { get; set; } = "Default:BackgroundJobs";
 
     /// <summary>
     /// 已放弃作业的保留天数（放弃后从活跃索引移除，作业体设 TTL 便于事后排查，到期自动清理）
