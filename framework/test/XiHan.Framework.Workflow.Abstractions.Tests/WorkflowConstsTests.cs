@@ -23,7 +23,7 @@ public class WorkflowConstsTests
     [Fact]
     public void InstanceLockKeyPrefix_IsLocked()
     {
-        Assert.Equal("xihan:workflow:lock:instance:", WorkflowConsts.InstanceLockKeyPrefix);
+        Assert.Equal("default:workflow:lock:instance:", WorkflowConsts.InstanceLockKeyPrefix);
         Assert.EndsWith(":", WorkflowConsts.InstanceLockKeyPrefix);
     }
 

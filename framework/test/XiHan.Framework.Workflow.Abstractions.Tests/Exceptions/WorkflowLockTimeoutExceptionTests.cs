@@ -87,6 +87,6 @@ public class WorkflowLockTimeoutExceptionTests
 
         var lockKey = WorkflowConsts.InstanceLockKeyPrefix + exception.InstanceId;
 
-        Assert.Equal("xihan:workflow:lock:instance:ins-7", lockKey);
+        Assert.Equal("default:workflow:lock:instance:ins-7", lockKey);
     }
 }

@@ -100,8 +100,8 @@ public class MyModule : XiHanModule { }
 | 字段 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
 | `BootstrapServers` | `string` | `localhost:9092` | 集群地址（逗号分隔，如 `host1:9092,host2:9092`） |
-| `TopicName` | `string` | `XiHan.EventBus` | 主题名称（所有事件写入同一主题） |
-| `GroupId` | `string` | `XiHan.EventBus` | 消费者组 Id（同组内竞争消费） |
+| `TopicName` | `string` | `Default.EventBus` | 主题名称（所有事件写入同一主题） |
+| `GroupId` | `string` | `Default.EventBus` | 消费者组 Id（同组内竞争消费） |
 | `AutoOffsetReset` | `string` | `earliest` | 首次消费的偏移策略（`earliest` / `latest` / `error`） |
 | `EnsureTopicExists` | `bool` | `true` | 初始化时是否自动建主题 |
 | `TopicPartitionCount` | `int` | `1` | 自动建主题时的分区数 |

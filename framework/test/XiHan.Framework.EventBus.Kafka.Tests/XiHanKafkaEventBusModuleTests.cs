@@ -85,7 +85,7 @@ public class XiHanKafkaEventBusModuleTests
         var options = ResolveOptions(context);
 
         Assert.Equal("localhost:9092", options.BootstrapServers);
-        Assert.Equal("XiHan.EventBus", options.TopicName);
+        Assert.Equal("Default.EventBus", options.TopicName);
         Assert.True(options.EnsureTopicExists);
     }
 

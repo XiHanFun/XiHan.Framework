@@ -21,12 +21,12 @@ public class XiHanKafkaEventBusOptions
     /// <summary>
     /// 主题名称（所有事件写入同一主题，以事件名作为消息 Key）
     /// </summary>
-    public string TopicName { get; set; } = "XiHan.EventBus";
+    public string TopicName { get; set; } = "Default.EventBus";
 
     /// <summary>
     /// 消费者组 Id（同组内竞争消费，保证分布式事件在集群中只被处理一次）
     /// </summary>
-    public string GroupId { get; set; } = "XiHan.EventBus";
+    public string GroupId { get; set; } = "Default.EventBus";
 
     /// <summary>
     /// 首次消费的偏移策略（earliest / latest）

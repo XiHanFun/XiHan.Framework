@@ -46,7 +46,7 @@ public class XiHanRabbitMQEventBusOptions
     /// <summary>
     /// 交换机名称
     /// </summary>
-    public string ExchangeName { get; set; } = "XiHan";
+    public string ExchangeName { get; set; } = "Default";
 
     /// <summary>
     /// 交换机类型（direct / topic / fanout），默认 direct
@@ -56,7 +56,7 @@ public class XiHanRabbitMQEventBusOptions
     /// <summary>
     /// 队列名称（同一应用的多个实例共享同一队列 → 竞争消费，保证分布式事件在集群中只被处理一次）
     /// </summary>
-    public string QueueName { get; set; } = "XiHan.EventBus";
+    public string QueueName { get; set; } = "Default.EventBus";
 
     /// <summary>
     /// 消费者预取数量（QoS）
@@ -66,7 +66,7 @@ public class XiHanRabbitMQEventBusOptions
     /// <summary>
     /// 客户端连接名称（便于在 RabbitMQ 管理台识别）
     /// </summary>
-    public string ClientProvidedName { get; set; } = "XiHan.EventBus";
+    public string ClientProvidedName { get; set; } = "Default.EventBus";
 
     /// <summary>
     /// 获取交换机类型（空则回退 direct）

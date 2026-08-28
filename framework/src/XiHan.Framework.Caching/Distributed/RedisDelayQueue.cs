@@ -11,7 +11,7 @@ namespace XiHan.Framework.Caching.Distributed;
 /// <see cref="IRedisDelayQueue{T}"/> 的实现：Redis Sorted Set 承载延迟消息，score 为到期时间戳(ms)。
 /// </summary>
 /// <remarks>
-/// - 键：<c>xihan:delay:{类型全名}</c>；成员为 <c>{唯一前缀}|{JSON}</c>（前缀避免相同载荷被 ZADD 去重）。
+/// - 键：<c>default:delay:{类型全名}</c>；成员为 <c>{唯一前缀}|{JSON}</c>（前缀避免相同载荷被 ZADD 去重）。
 /// - 入队：ZADD（score=到期 ms）。领取：Lua 原子 ZRANGEBYSCORE(-inf, now) + ZREM，多消费者不重复领取。
 /// 注册为单例（每个封闭类型一个实例）。
 /// </remarks>
@@ -34,7 +34,7 @@ public sealed class RedisDelayQueue<T> : IRedisDelayQueue<T>
     };
 
     private static readonly string TypeKey = typeof(T).FullName ?? typeof(T).Name;
-    private static readonly RedisKey ZSetKey = $"xihan:delay:{TypeKey}";
+    private static readonly RedisKey ZSetKey = $"default:delay:{TypeKey}";
 
     private readonly IConnectionMultiplexer _connection;
 

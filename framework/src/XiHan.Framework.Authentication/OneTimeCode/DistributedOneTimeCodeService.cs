@@ -20,7 +20,7 @@ namespace XiHan.Framework.Authentication.OneTimeCode;
 /// </remarks>
 public sealed class DistributedOneTimeCodeService : IOneTimeCodeService
 {
-    private const string KeyPrefix = "xihan:auth:otc";
+    private const string KeyPrefix = "default:auth:otc";
 
     private readonly IDistributedCache _cache;
 
