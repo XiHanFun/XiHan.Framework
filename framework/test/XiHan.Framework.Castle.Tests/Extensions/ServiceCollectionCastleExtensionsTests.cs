@@ -86,11 +86,15 @@ public class ServiceCollectionCastleExtensionsTests
         var text = greeting.Greet("曦寒");
 
         Assert.True(ProxyUtil.IsProxy(greeting));
-        Assert.Same(typeof(GreetingService), ProxyUtil.GetUnproxiedInstance(greeting).GetType());
+        // GetUnproxiedInstance 的返回类型是 object?，直接 .GetType() 会触发 CS8602；
+        // 这里先断言拿得到真身，断言失败时的报错也比空引用异常清楚。
+        var unproxied = ProxyUtil.GetUnproxiedInstance(greeting);
+        Assert.NotNull(unproxied);
+        Assert.Same(typeof(GreetingService), unproxied.GetType());
         Assert.Equal("你好，曦寒", text);
 
         var log = provider.GetRequiredService<CallLog>();
-        Assert.Equal(1, log.Entries.Count);
+        Assert.Single(log.Entries);
         Assert.Equal("日志:Greet", log.Entries[0]);
     }
 
@@ -347,7 +351,7 @@ public class ServiceCollectionCastleExtensionsTests
 
         Assert.True(ProxyUtil.IsProxy(greeting));
         Assert.False(ProxyUtil.IsProxy(ProxyUtil.GetUnproxiedInstance(greeting)));
-        Assert.Equal(1, provider.GetRequiredService<CallLog>().Entries.Count);
+        Assert.Single(provider.GetRequiredService<CallLog>().Entries);
     }
 
     /// <summary>
