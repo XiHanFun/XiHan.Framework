@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Auditing.Tests.Fakes;
+using SampleDomain.Entities;
 
 namespace XiHan.Framework.Auditing.Tests;
 

@@ -43,7 +43,7 @@ public class CacheNameAttributeTests
     {
         var cacheName = CacheNameAttribute.GetCacheName<PlainSampleCacheItem>();
 
-        Assert.Equal("XiHan.Framework.Caching.Tests.PlainSample", cacheName);
+        Assert.Equal("XiHan.Framework.Caching.Tests.Fakes.PlainSample", cacheName);
         Assert.DoesNotContain("CacheItem", cacheName, StringComparison.Ordinal);
     }
 
