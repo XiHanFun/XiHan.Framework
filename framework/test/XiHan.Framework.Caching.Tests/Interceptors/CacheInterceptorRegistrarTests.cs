@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Caching.Attributes;
 using XiHan.Framework.Caching.Interceptors;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Interceptors;
 
 /// <summary>
 /// 缓存拦截器注册器测试

@@ -3,9 +3,10 @@
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-using XiHan.Framework.SearchEngines.Documents;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
-using XiHan.Framework.SearchEngines.Querying;
 
 namespace XiHan.Framework.SearchEngines.Elasticsearch.Tests;
 

@@ -4,7 +4,7 @@
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 只实现 <see cref="IGrayRule"/> 接口、不继承 GrayRule 的最小规则替身

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Web.Gateway.Constants;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Constants;
 
 /// <summary>
 /// 网关常量测试

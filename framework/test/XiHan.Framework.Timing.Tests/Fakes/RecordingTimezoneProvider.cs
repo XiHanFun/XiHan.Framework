@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Core;
 
-namespace XiHan.Framework.Timing.Tests;
+namespace XiHan.Framework.Timing.Tests.Fakes;
 
 /// <summary>
 /// 时区提供器的手写替身

@@ -4,7 +4,7 @@
 using System.Reflection;
 using XiHan.Framework.Caching.Attributes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Attributes;
 
 /// <summary>
 /// 缓存清除方法特性测试

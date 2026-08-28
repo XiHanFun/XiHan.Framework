@@ -3,7 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Configuration;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Configuration;
 
 /// <summary>
 /// AI Provider 配置来源契约测试

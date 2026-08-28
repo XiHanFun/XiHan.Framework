@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Caching.Distributed.Abstracts;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Fakes;
 
 /// <summary>
 /// Stream 可靠队列替身

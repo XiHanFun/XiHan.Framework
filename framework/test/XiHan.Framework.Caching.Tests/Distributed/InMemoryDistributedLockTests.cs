@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Caching.Distributed;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 进程内分布式锁回退实现测试

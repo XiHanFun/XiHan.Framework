@@ -6,7 +6,7 @@ using XiHan.Framework.Core.Collections;
 using XiHan.Framework.Core.DependencyInjection;
 using XiHan.Framework.Core.DynamicProxy;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Fakes;
 
 /// <summary>
 /// 方法调用上下文替身

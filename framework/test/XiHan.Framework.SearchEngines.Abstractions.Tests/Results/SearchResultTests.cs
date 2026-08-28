@@ -1,7 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using XiHan.Framework.SearchEngines.Results;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 
 namespace XiHan.Framework.SearchEngines.Abstractions.Tests.Results;
 

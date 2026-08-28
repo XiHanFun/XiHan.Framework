@@ -5,7 +5,7 @@ using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Template;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Template;
 
 /// <summary>
 /// <see cref="BotTemplate"/> 测试

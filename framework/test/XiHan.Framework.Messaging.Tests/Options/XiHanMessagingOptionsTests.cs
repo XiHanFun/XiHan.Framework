@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Messaging.Options;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Options;
 
 /// <summary>
 /// 消息模块配置测试

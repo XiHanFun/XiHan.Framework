@@ -6,8 +6,9 @@ using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Models;
 using XiHan.Framework.Messaging.Options;
 using XiHan.Framework.Messaging.Services;
+using XiHan.Framework.Messaging.Tests.Fakes;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Services;
 
 /// <summary>
 /// 默认消息调度器测试

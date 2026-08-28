@@ -5,7 +5,7 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 带公共无参构造函数的自定义匹配器替身，专供依赖注入装配测试使用

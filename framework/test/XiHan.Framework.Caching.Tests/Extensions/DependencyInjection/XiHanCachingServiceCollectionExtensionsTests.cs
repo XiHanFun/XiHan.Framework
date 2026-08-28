@@ -13,7 +13,7 @@ using XiHan.Framework.Caching.Hybrid;
 using XiHan.Framework.Caching.Hybrid.Abstracts;
 using XiHan.Framework.Caching.Options;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 曦寒缓存服务注册扩展测试

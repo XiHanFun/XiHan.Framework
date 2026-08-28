@@ -4,7 +4,7 @@
 using System.Reflection;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Activities;
 
 /// <summary>
 /// 工作流活动元数据特性测试

@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
+using XiHan.Framework.Workflow.Abstractions.Tests.Fakes;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Engine;
 
 /// <summary>
 /// 工作流引擎接口契约测试

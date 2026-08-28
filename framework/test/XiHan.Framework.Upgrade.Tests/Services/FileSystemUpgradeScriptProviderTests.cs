@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.Upgrade.Options;
 using XiHan.Framework.Upgrade.Services;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 文件系统升级脚本提供者测试

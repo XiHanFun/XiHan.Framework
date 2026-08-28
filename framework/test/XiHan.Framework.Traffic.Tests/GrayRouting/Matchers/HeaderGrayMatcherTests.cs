@@ -4,8 +4,9 @@
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Matchers;
 using XiHan.Framework.Traffic.GrayRouting.Models;
+using XiHan.Framework.Traffic.Tests.Fakes;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.GrayRouting.Matchers;
 
 /// <summary>
 /// 请求头灰度匹配器测试

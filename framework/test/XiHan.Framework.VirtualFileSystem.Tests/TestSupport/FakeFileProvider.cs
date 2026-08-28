@@ -4,7 +4,7 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
 /// <summary>
 /// 手写的文件提供程序替身

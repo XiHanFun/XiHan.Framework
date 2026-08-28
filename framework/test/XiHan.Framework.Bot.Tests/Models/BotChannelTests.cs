@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Bot.Models;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Models;
 
 /// <summary>
 /// <see cref="BotChannel"/> 测试

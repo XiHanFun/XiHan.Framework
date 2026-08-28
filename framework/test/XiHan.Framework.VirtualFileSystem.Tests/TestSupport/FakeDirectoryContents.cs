@@ -4,7 +4,7 @@
 using Microsoft.Extensions.FileProviders;
 using System.Collections;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
 /// <summary>
 /// 手写的目录内容替身

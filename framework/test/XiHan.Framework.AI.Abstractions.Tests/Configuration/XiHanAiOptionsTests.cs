@@ -5,7 +5,7 @@ using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Configuration;
 using XiHan.Framework.AI.Abstractions.Prompts;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Configuration;
 
 /// <summary>
 /// XiHan AI 根配置测试

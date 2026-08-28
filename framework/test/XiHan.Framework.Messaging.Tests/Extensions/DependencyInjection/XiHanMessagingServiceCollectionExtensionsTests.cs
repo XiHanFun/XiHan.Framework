@@ -8,8 +8,9 @@ using XiHan.Framework.Messaging.Extensions.DependencyInjection;
 using XiHan.Framework.Messaging.Models;
 using XiHan.Framework.Messaging.Options;
 using XiHan.Framework.Messaging.Services;
+using XiHan.Framework.Messaging.Tests.Fakes;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 消息服务注册扩展测试

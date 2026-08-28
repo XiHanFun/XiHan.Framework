@@ -5,8 +5,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Options;
 using XiHan.Framework.Bot.Strategy;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Consts;
 
 /// <summary>
 /// <see cref="BotStrategyNames"/> 常量测试

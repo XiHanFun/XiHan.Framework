@@ -5,8 +5,9 @@ using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Hybrid;
 
 /// <summary>
 /// 混合缓存 Json 序列化器与其工厂测试

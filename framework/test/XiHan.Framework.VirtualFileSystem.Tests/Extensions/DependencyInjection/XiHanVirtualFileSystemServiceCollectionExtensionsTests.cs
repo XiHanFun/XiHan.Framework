@@ -7,9 +7,10 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.VirtualFileSystem.Extensions.DependencyInjection;
 using XiHan.Framework.VirtualFileSystem.Options;
 using XiHan.Framework.VirtualFileSystem.Services;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 using VirtualFileSystemCore = XiHan.Framework.VirtualFileSystem.VirtualFileSystem;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 虚拟文件系统服务注册扩展测试

@@ -5,7 +5,7 @@ using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Helpers;
 using XiHan.Framework.Bot.Models;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Helpers;
 
 /// <summary>
 /// <see cref="BotMessageHelper"/> 测试

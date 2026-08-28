@@ -5,7 +5,7 @@ using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Models;
 using XiHan.Framework.Messaging.Services;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Services;
 
 /// <summary>
 /// 未配置发送器兜底实现测试

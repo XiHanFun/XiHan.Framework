@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Primitives;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
 /// <summary>
 /// 手写的变更令牌替身

@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Options;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Fakes;
 
 /// <summary>
 /// 最小 <see cref="IOptions{TOptions}"/> 包装

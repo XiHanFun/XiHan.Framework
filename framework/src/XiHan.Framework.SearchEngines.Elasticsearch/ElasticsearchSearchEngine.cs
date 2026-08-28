@@ -8,13 +8,14 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-using XiHan.Framework.SearchEngines.Documents;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
-using XiHan.Framework.SearchEngines.Results;
 using HttpMethod = Elastic.Transport.HttpMethod;
-using SearchRequest = XiHan.Framework.SearchEngines.Querying.SearchRequest;
+using SearchRequest = XiHan.Framework.SearchEngines.Abstractions.Querying.SearchRequest;
 
 namespace XiHan.Framework.SearchEngines.Elasticsearch;
 

@@ -8,7 +8,7 @@ using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Options;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 分布式缓存注册唯一性测试

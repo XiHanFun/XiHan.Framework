@@ -5,7 +5,7 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 可编排结果并记录调用轨迹的灰度匹配器替身

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.GrayRouting.Enums;
 
 /// <summary>
 /// 灰度规则类型枚举测试

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 带公共无参构造函数的仓储替身，专供依赖注入装配测试使用

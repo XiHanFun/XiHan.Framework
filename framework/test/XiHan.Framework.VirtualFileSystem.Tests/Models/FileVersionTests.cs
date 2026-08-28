@@ -6,8 +6,9 @@ using System.Security.Cryptography;
 using System.Text;
 using XiHan.Framework.VirtualFileSystem.Models;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Models;
 
 /// <summary>
 /// 文件版本快照测试

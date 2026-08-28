@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Upgrade.Models;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Models;
 
 /// <summary>
 /// 升级版本状态测试

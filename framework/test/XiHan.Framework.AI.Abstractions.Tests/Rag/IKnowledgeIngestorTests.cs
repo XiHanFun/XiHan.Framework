@@ -3,7 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Rag;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 
 /// <summary>
 /// 知识摄取器契约测试

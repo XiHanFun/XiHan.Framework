@@ -4,7 +4,7 @@
 using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Guardrails;
 
 /// <summary>
 /// AI 输入护栏契约测试

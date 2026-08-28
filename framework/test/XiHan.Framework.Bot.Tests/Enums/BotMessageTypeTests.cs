@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Bot.Enums;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Enums;
 
 /// <summary>
 /// <see cref="BotMessageType"/> 枚举测试

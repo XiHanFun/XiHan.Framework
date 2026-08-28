@@ -3,9 +3,10 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Distributed;
+using XiHan.Framework.Caching.Tests.Fakes;
 using XiHan.Framework.MultiTenancy.Abstractions;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 默认分布式缓存键规范化器测试

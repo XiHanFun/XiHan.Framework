@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Upgrade.Services;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 默认升级迁移执行器测试

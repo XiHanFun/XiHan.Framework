@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Reflection;
 using XiHan.Framework.Analyzers.ApiUsage;
+using XiHan.Framework.Analyzers.Tests.Infrastructure;
 
 namespace XiHan.Framework.Analyzers.Tests.ApiUsage;
 

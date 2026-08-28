@@ -3,7 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Rag;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 
 /// <summary>
 /// 文本切片策略契约测试

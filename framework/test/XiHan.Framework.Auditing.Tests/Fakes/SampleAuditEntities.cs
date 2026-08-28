@@ -5,7 +5,7 @@
 // DefaultEntityAuditContextProvider.ShouldAudit 以 FullName 前缀 "XiHan.Framework.Auditing" 排除框架自身类型，
 // 若样例类型落在测试工程默认命名空间（XiHan.Framework.Auditing.Tests）会被该前缀先行命中，
 // 就无法分别验证 AuditLog / DiffLog 关键字这两条独立分支。
-namespace SampleDomain.Entities;
+namespace XiHan.Framework.Auditing.Tests.Fakes;
 
 /// <summary>
 /// 普通业务实体样例，应当被审计

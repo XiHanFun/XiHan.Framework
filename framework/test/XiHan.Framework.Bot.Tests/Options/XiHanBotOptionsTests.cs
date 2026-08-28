@@ -7,7 +7,7 @@ using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Options;
 using XiHan.Framework.Bot.Template;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Options;
 
 /// <summary>
 /// <see cref="XiHanBotOptions"/> 测试

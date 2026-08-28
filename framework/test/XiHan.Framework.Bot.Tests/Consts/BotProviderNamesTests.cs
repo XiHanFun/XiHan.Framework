@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Bot.Consts;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Consts;
 
 /// <summary>
 /// <see cref="BotProviderNames"/> 常量测试

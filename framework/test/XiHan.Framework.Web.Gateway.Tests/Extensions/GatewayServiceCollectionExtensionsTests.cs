@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.Web.Gateway.Extensions;
 using XiHan.Framework.Web.Gateway.Options;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Extensions;
 
 /// <summary>
 /// 网关服务集合扩展测试

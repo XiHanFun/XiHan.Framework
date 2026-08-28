@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Messaging.Models;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Models;
 
 /// <summary>
 /// 消息接收人测试

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Upgrade.Enums;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Enums;
 
 /// <summary>
 /// 升级状态枚举测试

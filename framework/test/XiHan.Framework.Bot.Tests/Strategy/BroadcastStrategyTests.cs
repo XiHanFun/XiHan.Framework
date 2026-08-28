@@ -6,10 +6,10 @@ using XiHan.Framework.Bot.Consts;
 using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Options;
-using XiHan.Framework.Bot.Providers;
 using XiHan.Framework.Bot.Strategy;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Strategy;
 
 /// <summary>
 /// <see cref="BroadcastStrategy"/> 测试

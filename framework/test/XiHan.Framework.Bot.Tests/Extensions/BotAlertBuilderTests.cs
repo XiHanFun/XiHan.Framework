@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Bot.Enums;
 using XiHan.Framework.Bot.Extensions;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Extensions;
 
 /// <summary>
 /// <see cref="BotAlertBuilder"/> 测试

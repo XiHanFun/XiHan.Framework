@@ -3,8 +3,9 @@
 
 using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.VirtualFileSystem.Providers;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Providers;
 
 /// <summary>
 /// 优先级目录内容包装器测试

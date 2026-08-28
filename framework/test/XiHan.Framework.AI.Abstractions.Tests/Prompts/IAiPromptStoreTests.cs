@@ -3,7 +3,7 @@
 
 using XiHan.Framework.AI.Abstractions.Prompts;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Prompts;
 
 /// <summary>
 /// 提示词库契约测试

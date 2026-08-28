@@ -15,7 +15,7 @@ using XiHan.Framework.Threading;
 using XiHan.Framework.Uow;
 using XiHan.Framework.Uow.Options;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Fakes;
 
 /// <summary>
 /// 组装 <see cref="DistributedCache{TCacheItem, TCacheKey}"/> 所需协作者的测试上下文

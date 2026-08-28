@@ -4,7 +4,7 @@
 using System.Reflection;
 using XiHan.Framework.EventBus.Abstractions.Local;
 
-namespace XiHan.Framework.EventBus.Abstractions.Tests;
+namespace XiHan.Framework.EventBus.Abstractions.Tests.Local;
 
 /// <summary>
 /// 本地事件处理器顺序特性测试

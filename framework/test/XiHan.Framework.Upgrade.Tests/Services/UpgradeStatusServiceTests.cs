@@ -8,7 +8,7 @@ using XiHan.Framework.Upgrade.Models;
 using XiHan.Framework.Upgrade.Options;
 using XiHan.Framework.Upgrade.Services;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Services;
 
 /// <summary>
 /// 升级状态服务测试

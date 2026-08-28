@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Bot.Models;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Models;
 
 /// <summary>
 /// <see cref="BotDispatchResult"/> 测试

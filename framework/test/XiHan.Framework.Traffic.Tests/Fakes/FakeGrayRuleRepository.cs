@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Fakes;
 
 /// <summary>
 /// 可编排返回值与故障的灰度规则仓储替身

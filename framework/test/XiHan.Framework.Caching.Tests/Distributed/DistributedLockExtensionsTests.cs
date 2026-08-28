@@ -4,7 +4,7 @@
 using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 分布式锁便捷扩展测试

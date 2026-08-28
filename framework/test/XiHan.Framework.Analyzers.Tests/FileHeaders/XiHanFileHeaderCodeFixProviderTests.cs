@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using System.Reflection;
 using XiHan.Framework.Analyzers.FileHeaders;
+using XiHan.Framework.Analyzers.Tests.Infrastructure;
 
 namespace XiHan.Framework.Analyzers.Tests.FileHeaders;
 

@@ -7,8 +7,9 @@ using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Implementations;
 using XiHan.Framework.Traffic.GrayRouting.Matchers;
 using XiHan.Framework.Traffic.GrayRouting.Models;
+using XiHan.Framework.Traffic.Tests.Fakes;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.GrayRouting.Implementations;
 
 /// <summary>
 /// 默认灰度规则引擎测试

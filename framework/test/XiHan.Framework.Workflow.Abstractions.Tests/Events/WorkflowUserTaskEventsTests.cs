@@ -4,7 +4,7 @@
 using XiHan.Framework.Workflow.Abstractions.Events;
 using XiHan.Framework.Workflow.Abstractions.UserTasks;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Events;
 
 /// <summary>
 /// 人工任务事件契约测试

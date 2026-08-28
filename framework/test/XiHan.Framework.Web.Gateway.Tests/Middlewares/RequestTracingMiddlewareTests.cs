@@ -8,7 +8,7 @@ using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Helpers;
 using XiHan.Framework.Web.Gateway.Middlewares;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Middlewares;
 
 /// <summary>
 /// 请求追踪中间件测试

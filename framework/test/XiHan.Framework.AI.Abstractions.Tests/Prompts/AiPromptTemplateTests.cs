@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Prompts;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Prompts;
 
 /// <summary>
 /// AI 提示词模板测试

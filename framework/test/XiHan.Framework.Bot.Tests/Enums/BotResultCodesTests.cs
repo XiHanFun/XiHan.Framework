@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text.Json;
 using XiHan.Framework.Bot.Enums;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Enums;
 
 /// <summary>
 /// <see cref="BotResultCodes"/> 枚举测试

@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Rag;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 
 /// <summary>
 /// 知识向量集合配置测试

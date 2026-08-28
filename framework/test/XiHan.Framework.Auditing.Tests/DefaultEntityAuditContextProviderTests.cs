@@ -1,7 +1,6 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using SampleDomain.Entities;
 using XiHan.Framework.Auditing.Tests.Fakes;
 
 namespace XiHan.Framework.Auditing.Tests;

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Core.Application;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Fakes;
 
 /// <summary>
 /// 应用信息访问器的手写替身

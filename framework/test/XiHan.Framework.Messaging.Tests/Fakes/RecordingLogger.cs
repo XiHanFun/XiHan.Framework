@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Fakes;
 
 /// <summary>
 /// 手写的日志器替身

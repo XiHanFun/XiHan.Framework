@@ -8,8 +8,9 @@ using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Implementations;
 using XiHan.Framework.Traffic.GrayRouting.Matchers;
 using XiHan.Framework.Traffic.GrayRouting.Models;
+using XiHan.Framework.Traffic.Tests.Fakes;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 流量治理服务集合扩展测试

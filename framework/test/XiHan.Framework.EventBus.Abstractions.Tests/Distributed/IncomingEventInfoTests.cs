@@ -6,7 +6,7 @@ using System.Text.Json;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 using XiHan.Framework.ObjectMapping.Extensions.Data;
 
-namespace XiHan.Framework.EventBus.Abstractions.Tests;
+namespace XiHan.Framework.EventBus.Abstractions.Tests.Distributed;
 
 /// <summary>
 /// 入站事件记录测试

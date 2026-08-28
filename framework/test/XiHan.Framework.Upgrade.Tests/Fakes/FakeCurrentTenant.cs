@@ -3,7 +3,7 @@
 
 using XiHan.Framework.MultiTenancy.Abstractions;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Fakes;
 
 /// <summary>
 /// 当前租户的手写替身

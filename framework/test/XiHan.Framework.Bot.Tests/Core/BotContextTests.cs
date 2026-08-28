@@ -4,8 +4,9 @@
 using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Core;
 
 /// <summary>
 /// <see cref="BotContext"/> 测试

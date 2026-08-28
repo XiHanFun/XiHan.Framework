@@ -4,7 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Caching.Options;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Options;
 
 /// <summary>
 /// 曦寒 Redis 缓存配置选项测试

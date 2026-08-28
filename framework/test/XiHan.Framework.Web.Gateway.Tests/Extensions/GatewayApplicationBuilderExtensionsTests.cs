@@ -11,8 +11,9 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Extensions;
+using XiHan.Framework.Web.Gateway.Tests.Fakes;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Extensions;
 
 /// <summary>
 /// 网关应用构建器扩展测试

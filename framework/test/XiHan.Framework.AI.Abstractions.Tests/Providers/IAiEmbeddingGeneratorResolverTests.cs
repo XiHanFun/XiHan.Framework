@@ -4,7 +4,7 @@
 using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Providers;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Providers;
 
 /// <summary>
 /// 多 provider 嵌入生成器解析契约测试

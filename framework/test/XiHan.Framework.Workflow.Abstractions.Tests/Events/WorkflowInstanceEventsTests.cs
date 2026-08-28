@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Workflow.Abstractions.Events;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
+using XiHan.Framework.Workflow.Abstractions.Tests.Fakes;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Events;
 
 /// <summary>
 /// 流程实例事件契约测试
