@@ -4,7 +4,7 @@
 using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Pipeline;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Fakes;
 
 /// <summary>
 /// 记录进出顺序的管道替身

@@ -1,7 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace XiHan.Framework.SearchEngines.Results;
+namespace XiHan.Framework.SearchEngines.Abstractions.Results;
 
 /// <summary>
 /// 检索命中项

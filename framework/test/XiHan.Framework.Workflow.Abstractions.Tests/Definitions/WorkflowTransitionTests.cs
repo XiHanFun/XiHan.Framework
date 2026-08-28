@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Definitions;
 
 /// <summary>
 /// 流程连线模型测试

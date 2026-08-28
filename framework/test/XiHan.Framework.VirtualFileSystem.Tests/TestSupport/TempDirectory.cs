@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
 /// <summary>
 /// 用例专属临时目录

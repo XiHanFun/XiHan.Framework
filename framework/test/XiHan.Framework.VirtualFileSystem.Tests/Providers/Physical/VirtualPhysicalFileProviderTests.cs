@@ -4,8 +4,9 @@
 using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Providers.Physical;
 
 /// <summary>
 /// 带优先级的物理文件提供程序测试

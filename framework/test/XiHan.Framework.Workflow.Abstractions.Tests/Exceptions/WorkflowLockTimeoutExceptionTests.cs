@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Workflow.Abstractions.Exceptions;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Exceptions;
 
 /// <summary>
 /// 实例锁获取超时异常测试

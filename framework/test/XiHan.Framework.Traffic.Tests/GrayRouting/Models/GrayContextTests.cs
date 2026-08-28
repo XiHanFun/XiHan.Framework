@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.GrayRouting.Models;
 
 /// <summary>
 /// 灰度上下文测试

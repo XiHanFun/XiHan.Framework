@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Concurrent;
 using XiHan.Framework.Caching.Distributed.Abstracts;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Fakes;
 
 /// <summary>
 /// 只实现基础分布式缓存契约的内存替身

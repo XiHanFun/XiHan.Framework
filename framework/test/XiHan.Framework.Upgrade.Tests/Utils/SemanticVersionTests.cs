@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Upgrade.Utils;
 
-namespace XiHan.Framework.Upgrade.Tests;
+namespace XiHan.Framework.Upgrade.Tests.Utils;
 
 /// <summary>
 /// 语义化版本解析与比较测试

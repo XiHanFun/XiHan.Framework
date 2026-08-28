@@ -11,7 +11,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
 
-namespace XiHan.Framework.Analyzers.Tests;
+namespace XiHan.Framework.Analyzers.Tests.Infrastructure;
 
 /// <summary>
 /// Roslyn 分析器与代码修复的内存驱动器

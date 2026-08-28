@@ -5,10 +5,11 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Distributed.Abstracts;
+using XiHan.Framework.Caching.Tests.Fakes;
 using XiHan.Framework.Threading;
 using XiHan.Framework.Uow;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 工作单元参与批量读取时的结果对齐测试

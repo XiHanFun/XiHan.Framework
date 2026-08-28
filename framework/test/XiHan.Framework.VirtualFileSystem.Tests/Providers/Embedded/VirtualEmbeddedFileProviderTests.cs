@@ -6,7 +6,7 @@ using System.Reflection;
 using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Providers.Embedded;
 
 /// <summary>
 /// 带优先级的嵌入式文件提供程序测试

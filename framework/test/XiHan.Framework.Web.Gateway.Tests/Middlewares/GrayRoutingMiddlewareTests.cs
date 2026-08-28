@@ -10,8 +10,9 @@ using XiHan.Framework.Traffic.GrayRouting.Models;
 using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Helpers;
 using XiHan.Framework.Web.Gateway.Middlewares;
+using XiHan.Framework.Web.Gateway.Tests.Fakes;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Middlewares;
 
 /// <summary>
 /// 灰度路由中间件测试

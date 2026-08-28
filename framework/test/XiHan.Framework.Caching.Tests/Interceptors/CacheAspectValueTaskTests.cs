@@ -5,7 +5,7 @@ using System.Reflection;
 using XiHan.Framework.Caching.Attributes;
 using XiHan.Framework.Caching.Interceptors;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Interceptors;
 
 /// <summary>
 /// 缓存切面对 ValueTask 返回形态的解析测试

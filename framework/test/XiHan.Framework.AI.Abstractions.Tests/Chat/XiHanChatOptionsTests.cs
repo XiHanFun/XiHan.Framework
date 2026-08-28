@@ -4,7 +4,7 @@
 using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Chat;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Chat;
 
 /// <summary>
 /// XiHan 会话选项测试

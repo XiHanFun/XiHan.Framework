@@ -6,7 +6,7 @@ using XiHan.Framework.Traffic.GrayRouting.Models;
 using XiHan.Framework.Web.Gateway.Constants;
 using XiHan.Framework.Web.Gateway.Helpers;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Helpers;
 
 /// <summary>
 /// 网关上下文帮助类测试

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.VirtualFileSystem.Utilities;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Utilities;
 
 /// <summary>
 /// 虚拟路径解析器测试

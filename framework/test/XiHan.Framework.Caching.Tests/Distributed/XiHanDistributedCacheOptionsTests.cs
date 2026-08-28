@@ -3,8 +3,9 @@
 
 using Microsoft.Extensions.Caching.Distributed;
 using XiHan.Framework.Caching.Distributed;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// 曦寒分布式缓存选项测试

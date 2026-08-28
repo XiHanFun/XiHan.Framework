@@ -5,7 +5,7 @@ using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Definitions;
 
 /// <summary>
 /// 流程变量声明模型测试

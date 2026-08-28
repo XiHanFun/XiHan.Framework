@@ -3,7 +3,7 @@
 
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 
-namespace XiHan.Framework.EventBus.Abstractions.Tests;
+namespace XiHan.Framework.EventBus.Abstractions.Tests.Distributed;
 
 /// <summary>
 /// 发件箱配置字典测试

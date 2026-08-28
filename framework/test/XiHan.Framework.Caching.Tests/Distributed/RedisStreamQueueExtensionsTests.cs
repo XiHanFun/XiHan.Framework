@@ -3,8 +3,9 @@
 
 using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Distributed.Abstracts;
+using XiHan.Framework.Caching.Tests.Fakes;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Distributed;
 
 /// <summary>
 /// Stream 可靠队列便捷扩展测试

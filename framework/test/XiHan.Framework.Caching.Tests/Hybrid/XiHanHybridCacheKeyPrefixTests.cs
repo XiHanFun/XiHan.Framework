@@ -7,11 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using XiHan.Framework.Caching.Distributed;
 using XiHan.Framework.Caching.Hybrid;
+using XiHan.Framework.Caching.Tests.Fakes;
 using XiHan.Framework.Core.Exceptions.Abstracts;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Threading;
 
-namespace XiHan.Framework.Caching.Tests;
+namespace XiHan.Framework.Caching.Tests.Hybrid;
 
 /// <summary>
 /// 曦寒混合缓存应用级键前缀测试

@@ -2,8 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.VirtualFileSystem.Providers;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Providers;
 
 /// <summary>
 /// 带优先级的提供程序包装测试

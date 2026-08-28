@@ -5,7 +5,7 @@ using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 using XiHan.Framework.AI.Abstractions.Chat;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Chat;
 
 /// <summary>
 /// AI 会话服务门面契约测试

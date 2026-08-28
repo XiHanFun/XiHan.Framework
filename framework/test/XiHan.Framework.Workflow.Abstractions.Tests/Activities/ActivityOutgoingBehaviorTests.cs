@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Workflow.Abstractions.Activities;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Activities;
 
 /// <summary>
 /// 活动出边流转行为枚举测试

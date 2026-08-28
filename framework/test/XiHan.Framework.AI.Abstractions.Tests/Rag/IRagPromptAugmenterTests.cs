@@ -4,7 +4,7 @@
 using XiHan.Framework.AI.Abstractions.Rag;
 using XiHan.Framework.AI.Abstractions.Rag.Models;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 
 /// <summary>
 /// RAG 提示增强器契约测试

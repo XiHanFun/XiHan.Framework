@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Definitions;
 
 /// <summary>
 /// 节点重试策略模型测试

@@ -5,7 +5,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Agents;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Agents;
 
 /// <summary>
 /// XiHan Agent 工厂契约测试

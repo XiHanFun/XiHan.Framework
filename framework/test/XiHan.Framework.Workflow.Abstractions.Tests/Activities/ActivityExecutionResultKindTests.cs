@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Activities;
 
 /// <summary>
 /// 活动执行结果种类枚举测试

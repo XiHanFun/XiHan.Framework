@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.AI.Abstractions.Configuration;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Configuration;
 
 /// <summary>
 /// 单个 AI Provider 配置测试

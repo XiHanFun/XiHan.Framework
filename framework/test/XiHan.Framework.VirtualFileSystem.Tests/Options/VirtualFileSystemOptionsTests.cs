@@ -5,8 +5,9 @@ using Microsoft.Extensions.FileProviders;
 using XiHan.Framework.VirtualFileSystem.Options;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 
-namespace XiHan.Framework.VirtualFileSystem.Tests;
+namespace XiHan.Framework.VirtualFileSystem.Tests.Options;
 
 /// <summary>
 /// 虚拟文件系统配置选项测试

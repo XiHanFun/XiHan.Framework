@@ -4,7 +4,7 @@
 using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Web.Gateway.Tests;
+namespace XiHan.Framework.Web.Gateway.Tests.Fakes;
 
 /// <summary>
 /// 总是抛异常的灰度规则引擎替身

@@ -4,7 +4,7 @@
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Models;
 
-namespace XiHan.Framework.Messaging.Tests;
+namespace XiHan.Framework.Messaging.Tests.Fakes;
 
 /// <summary>
 /// 手写的消息发送器替身

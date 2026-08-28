@@ -4,7 +4,7 @@
 using System.Text.Json;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 
-namespace XiHan.Framework.EventBus.Abstractions.Tests;
+namespace XiHan.Framework.EventBus.Abstractions.Tests.Distributed;
 
 /// <summary>
 /// 分布式事件发送信息测试

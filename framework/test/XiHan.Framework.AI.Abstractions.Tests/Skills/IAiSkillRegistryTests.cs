@@ -4,7 +4,7 @@
 using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Skills;
 
-namespace XiHan.Framework.AI.Abstractions.Tests;
+namespace XiHan.Framework.AI.Abstractions.Tests.Skills;
 
 /// <summary>
 /// AI 技能注册表契约测试

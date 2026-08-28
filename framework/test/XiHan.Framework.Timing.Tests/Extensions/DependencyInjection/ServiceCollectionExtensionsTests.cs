@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Timing.Extensions.DependencyInjection;
 
-namespace XiHan.Framework.Timing.Tests;
+namespace XiHan.Framework.Timing.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// 时间服务注册扩展测试

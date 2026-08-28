@@ -4,7 +4,7 @@
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 using XiHan.Framework.Workflow.Abstractions.Stores;
 
-namespace XiHan.Framework.Workflow.Abstractions.Tests;
+namespace XiHan.Framework.Workflow.Abstractions.Tests.Stores;
 
 /// <summary>
 /// 流程实例存储契约测试

@@ -10,7 +10,7 @@ using XiHan.Framework.Bot.Strategy;
 using XiHan.Framework.Bot.Template;
 using XiHan.Framework.Templating.Services;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Extensions.DependencyInjection;
 
 /// <summary>
 /// <see cref="XiHanBotServiceCollectionExtensions"/> 测试
@@ -203,7 +203,7 @@ public class XiHanBotServiceCollectionExtensionsTests
         var client = BuildProvider().GetRequiredService<IBotClient>();
 
         var result = await client.SendAsync(
-            new XiHan.Framework.Bot.Models.BotMessage { Content = "hi" },
+            new Bot.Models.BotMessage { Content = "hi" },
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);

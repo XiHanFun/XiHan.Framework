@@ -6,7 +6,7 @@ using XiHan.Framework.Templating.Contexts;
 using XiHan.Framework.Templating.Engines;
 using XiHan.Framework.Templating.Services;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Fakes;
 
 /// <summary>
 /// 手写的 <see cref="ITemplateService"/> 替身

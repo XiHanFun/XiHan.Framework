@@ -6,9 +6,9 @@ using XiHan.Framework.Bot.Core;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Bot.Options;
 using XiHan.Framework.Bot.Pipeline;
-using XiHan.Framework.Bot.Providers;
+using XiHan.Framework.Bot.Tests.Fakes;
 
-namespace XiHan.Framework.Bot.Tests;
+namespace XiHan.Framework.Bot.Tests.Pipeline;
 
 /// <summary>
 /// <see cref="LoggingPipeline"/> 测试

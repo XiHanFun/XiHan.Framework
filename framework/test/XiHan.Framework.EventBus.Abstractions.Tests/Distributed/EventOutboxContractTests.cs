@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using XiHan.Framework.EventBus.Abstractions.Distributed;
 
-namespace XiHan.Framework.EventBus.Abstractions.Tests;
+namespace XiHan.Framework.EventBus.Abstractions.Tests.Distributed;
 
 /// <summary>
 /// 发件箱契约测试

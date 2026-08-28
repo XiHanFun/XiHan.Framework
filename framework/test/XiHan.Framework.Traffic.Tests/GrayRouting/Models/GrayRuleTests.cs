@@ -6,7 +6,7 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 using XiHan.Framework.Traffic.GrayRouting.Enums;
 using XiHan.Framework.Traffic.GrayRouting.Models;
 
-namespace XiHan.Framework.Traffic.Tests;
+namespace XiHan.Framework.Traffic.Tests.GrayRouting.Models;
 
 /// <summary>
 /// 灰度规则模型测试

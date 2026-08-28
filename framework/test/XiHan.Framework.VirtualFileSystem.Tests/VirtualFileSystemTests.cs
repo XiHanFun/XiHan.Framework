@@ -7,6 +7,7 @@ using System.Text;
 using XiHan.Framework.Core.Exceptions;
 using XiHan.Framework.VirtualFileSystem.Options;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
+using XiHan.Framework.VirtualFileSystem.Tests.TestSupport;
 using VirtualFileSystemCore = XiHan.Framework.VirtualFileSystem.VirtualFileSystem;
 
 namespace XiHan.Framework.VirtualFileSystem.Tests;
