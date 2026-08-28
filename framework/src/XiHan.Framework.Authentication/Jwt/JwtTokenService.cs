@@ -131,6 +131,36 @@ public class JwtTokenService : IJwtTokenService
     }
 
     /// <summary>
+    /// 从令牌中提取声明，签名与发行者/受众照常校验，只放过有效期
+    /// </summary>
+    /// <param name="token">JWT Token</param>
+    /// <returns>声明集合</returns>
+    public List<Claim>? GetClaimsIgnoringLifetime(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var validationParameters = _tokenValidationParameters.Clone();
+            validationParameters.ValidateLifetime = false;
+
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+            return validatedToken is not JwtSecurityToken jwtToken ||
+                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase)
+                ? null
+                : principal.Claims.ToList();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 检查令牌是否过期
     /// </summary>
     /// <param name="token">JWT Token</param>

@@ -19,6 +19,7 @@ using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.RateLimiting;
 using XiHan.Framework.Web.Api.Session;
+using XiHan.Framework.Web.Core.Session;
 using XiHan.Framework.Web.Core;
 using XiHan.Framework.Web.Core.Extensions;
 

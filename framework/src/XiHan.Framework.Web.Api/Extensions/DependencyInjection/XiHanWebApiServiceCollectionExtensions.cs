@@ -19,6 +19,7 @@ using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.Session;
+using XiHan.Framework.Web.Core.Session;
 using XiHan.Framework.Web.Api.TenantResolvers;
 
 namespace XiHan.Framework.Web.Api.Extensions.DependencyInjection;
