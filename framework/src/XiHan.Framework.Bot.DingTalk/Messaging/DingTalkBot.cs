@@ -1,14 +1,14 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using XiHan.Framework.Bot.DingTalk.Enums;
+using XiHan.Framework.Bot.DingTalk.Models;
+using XiHan.Framework.Bot.DingTalk.Options;
 using XiHan.Framework.Bot.Models;
 using XiHan.Framework.Http.Extensions;
 using XiHan.Framework.Utils.Core;
 using XiHan.Framework.Utils.Extensions;
 using XiHan.Framework.Utils.Security.Cryptography;
-using XiHan.Framework.Bot.DingTalk.Models;
-using XiHan.Framework.Bot.DingTalk.Options;
-using XiHan.Framework.Bot.DingTalk.Enums;
 
 namespace XiHan.Framework.Bot.DingTalk.Messaging;
 

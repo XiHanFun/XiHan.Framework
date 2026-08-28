@@ -340,8 +340,15 @@ public class ExpressionBuilder<T>
     /// <returns>当前构建器实例</returns>
     public ExpressionBuilder<T> And(ExpressionBuilder<T> other)
     {
-        var otherExpression = other.Build();
-        _body = _body == null ? otherExpression.Body : Expression.AndAlso(_body, otherExpression.Body);
+        // 原实现直接搬用 other.Build().Body：other 有自己的 ParameterExpression 实例，
+        // 与本构建器的 _parameter 不是同一个对象（表达式树的形参按引用identity 匹配），
+        // 拼出来的 Lambda 里会出现一个未声明的自由变量，Compile() 时抛
+        // InvalidOperationException（variable 'x' of type ... is not defined）。
+        // 与下面的 Lambda 重载一样，先把外来 Body 的形参重写到 _parameter 上。
+        var visitor = new ParameterReplacer(_parameter);
+        var otherBody = visitor.Visit(other.Build().Body);
+
+        _body = _body == null ? otherBody : Expression.AndAlso(_body, otherBody);
         return this;
     }
 
@@ -366,8 +373,12 @@ public class ExpressionBuilder<T>
     /// <returns>当前构建器实例</returns>
     public ExpressionBuilder<T> Or(ExpressionBuilder<T> other)
     {
-        var otherExpression = other.Build();
-        _body = _body == null ? otherExpression.Body : Expression.OrElse(_body, otherExpression.Body);
+        // 同 And(ExpressionBuilder<T>)：外来 Body 的形参必须重写到本构建器的 _parameter 上，
+        // 否则 Build().Compile() 会因为存在未声明的自由变量抛 InvalidOperationException
+        var visitor = new ParameterReplacer(_parameter);
+        var otherBody = visitor.Visit(other.Build().Body);
+
+        _body = _body == null ? otherBody : Expression.OrElse(_body, otherBody);
         return this;
     }
 
@@ -447,10 +458,14 @@ public class ExpressionBuilder<T>
     /// <returns>表达式构建器实例</returns>
     public static ExpressionBuilder<T> FromExpression(Expression<Func<T, bool>> expression)
     {
-        var builder = new ExpressionBuilder<T>
-        {
-            _body = expression.Body
-        };
+        // 原实现只把外部 Lambda 的 Body 搬进 _body，Body 里引用的仍是外部 Lambda 自己的
+        // ParameterExpression（与 builder._parameter 是两个不同实例），
+        // Build() 出来的 Lambda 因此含未声明的自由变量，Compile() 必抛
+        // InvalidOperationException（variable 'x' of type ... is not defined）。
+        // 这里复用同文件的 ParameterReplacer，把形参统一重写到 builder 自己的参数上。
+        var builder = new ExpressionBuilder<T>();
+        var visitor = new ParameterReplacer(builder._parameter);
+        builder._body = visitor.Visit(expression.Body);
         return builder;
     }
 

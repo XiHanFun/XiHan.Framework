@@ -49,9 +49,7 @@ public sealed class BotBuilder
             options.AddChannel(new BotChannel
             {
                 Name = name,
-                Providers = providers.Where(item => !string.IsNullOrWhiteSpace(item))
-                    .Select(item => item.Trim())
-                    .ToList()
+                Providers = [.. providers.Where(item => !string.IsNullOrWhiteSpace(item)).Select(item => item.Trim())]
             });
         });
         return this;

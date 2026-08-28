@@ -554,11 +554,32 @@ public class ScriptEngine : IScriptEngine, IDisposable
                 return ScriptResult.Success(result);
             }, cts.Token);
 
+            // 只把令牌交给 Task.Run 是拦不住超时的：令牌只能阻止任务「启动」，
+            // 一旦入口点开始执行，令牌无法中断其中的同步阻塞代码（托管环境没有安全的线程中止手段），
+            // 于是 TimeoutMs 形同虚设——睡够时长的脚本照样返回成功。
+            // 这里改为竞速等待，超时即让调用方拿到 ScriptTimeoutException，不再被脚本无限期挂住。
+            // 残留代价要如实说明：被判超时的脚本线程仍会在后台跑完，
+            // 真正的强隔离需要独立进程或带配额的加载上下文，不在本层的能力范围内。
+            using var timeoutCts = new CancellationTokenSource();
+            var timeoutTask = Task.Delay(options.TimeoutMs, timeoutCts.Token);
+
+            if (await Task.WhenAny(task, timeoutTask).ConfigureAwait(false) != task)
+            {
+                throw new ScriptTimeoutException(options.TimeoutMs);
+            }
+
+            // 竞速已分出胜负，及时取消计时器，避免长超时配置下堆积定时器
+            await timeoutCts.CancelAsync().ConfigureAwait(false);
+
             return await task;
         }
         catch (OperationCanceledException)
         {
             throw new ScriptTimeoutException(options.TimeoutMs);
+        }
+        catch (ScriptTimeoutException)
+        {
+            throw; // 竞速判定出的超时，原样上抛，别被下面的兜底 catch 包成执行异常
         }
         catch (ScriptSecurityException)
         {

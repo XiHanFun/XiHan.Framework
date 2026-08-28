@@ -294,8 +294,12 @@ public class TagButton : IInterActiveTag
     /// <summary>
     /// 类型
     /// </summary>
+    /// <remarks>
+    /// 飞书交互元素的合法样式只有 default / primary / danger，此处曾误拼为 defult，
+    /// 会被飞书当作未知样式处理，按钮渲染不出预期外观。
+    /// </remarks>
     [JsonPropertyName("type")]
-    public string Type { set; get; } = "defult";
+    public string Type { set; get; } = "default";
 
     /// <summary>
     /// 值

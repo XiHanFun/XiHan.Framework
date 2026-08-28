@@ -41,8 +41,8 @@ public class QueryFilterTests
     [Fact]
     public void In_RequiresAtLeastOneValue()
     {
-        Assert.False(new QueryFilter("Id", Array.Empty<object>(), QueryOperator.In).IsValid());
-        Assert.True(new QueryFilter("Id", new object[] { 1 }, QueryOperator.In).IsValid());
+        Assert.False(new QueryFilter("Id", [], QueryOperator.In).IsValid());
+        Assert.True(new QueryFilter("Id", [1], QueryOperator.In).IsValid());
     }
 
     /// <summary>
@@ -51,8 +51,8 @@ public class QueryFilterTests
     [Fact]
     public void Between_RequiresExactlyTwoValues()
     {
-        Assert.False(new QueryFilter("Age", new object[] { 1 }, QueryOperator.Between).IsValid());
-        Assert.True(new QueryFilter("Age", new object[] { 1, 10 }, QueryOperator.Between).IsValid());
+        Assert.False(new QueryFilter("Age", [1], QueryOperator.Between).IsValid());
+        Assert.True(new QueryFilter("Age", [1, 10], QueryOperator.Between).IsValid());
     }
 
     /// <summary>

@@ -2,7 +2,7 @@
     <PropertyGroup>
         <!-- 全局警告抑制 -->
         <!-- xUnit1051：建议改用 TestContext 取消令牌的风格规则，非缺陷，量大约 170 处，暂抑制；NU1903/1904 由 common.props 升级为错误 -->
-        <NoWarn>$(NoWarn);1591;1701;1702;1816;8603;8604;8625;xUnit1051</NoWarn>
+        <NoWarn>$(NoWarn);1591;1701;1702;1816;8603;8604;8625;xUnit1051;xUnit1069</NoWarn>
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>

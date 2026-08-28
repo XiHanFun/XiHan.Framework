@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Concurrent;
 using SqlSugar;
+using System.Collections.Concurrent;
 using XiHan.Framework.Domain.Entities.Abstracts;
 
 namespace XiHan.Framework.Data.SqlSugar.Helpers;

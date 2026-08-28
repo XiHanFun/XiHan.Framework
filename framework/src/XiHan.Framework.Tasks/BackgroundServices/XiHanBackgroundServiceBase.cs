@@ -231,14 +231,26 @@ public abstract class XiHanBackgroundServiceBase<T> : BackgroundService, IBackgr
             Logger.LogInformation("后台服务 {ServiceType} 停止，等待 {Count} 个任务收尾", typeof(T).Name, _runningTasks.Count);
 
             // 等待所有任务完成，带超时控制
+            // 原写法把 stoppingToken 传给了 WaitAsync：走到这里时它必然已经取消（正是它触发的停机），
+            // 而 Task.WaitAsync 在目标任务尚未完成时先看令牌，直接返回 Task.FromCanceled，
+            // 于是只要还有一个在途任务就立刻抛 OperationCanceledException，被只收 TimeoutException 的
+            // catch 漏掉、穿出 finally——ShutdownTimeoutMilliseconds 一毫秒都等不到、下面的"已停止"
+            // 日志永远打不出、ExecuteAsync 以 Canceled 收场（在途任务为空时 WaitAsync 先判 IsCompleted
+            // 才侥幸不触发，所以问题只在真有在途任务时暴露）。
+            // 等在途任务收尾本就不该受停止令牌约束，这里只保留超时这一个约束。
             try
             {
                 await Task.WhenAll(_runningTasks.Values).WaitAsync(
-                    TimeSpan.FromMilliseconds(Options.ShutdownTimeoutMilliseconds), stoppingToken);
+                    TimeSpan.FromMilliseconds(Options.ShutdownTimeoutMilliseconds), CancellationToken.None);
             }
             catch (TimeoutException)
             {
                 Logger.LogWarning("等待任务完成超时，强制停止服务");
+            }
+            catch (OperationCanceledException)
+            {
+                // 在途任务自身因停止令牌而取消，是优雅停止的正常结局，不应让 ExecuteAsync 以 Canceled 收场
+                Logger.LogInformation("等待期间在途任务已被取消");
             }
 
             Logger.LogInformation("后台服务 {ServiceType} 已停止", typeof(T).Name);
@@ -273,10 +285,13 @@ public abstract class XiHanBackgroundServiceBase<T> : BackgroundService, IBackgr
                 if (RetryPolicy != null)
                 {
                     // 使用重试策略执行任务
+                    // 令牌必须一并传给 RetryPolicy：它两次重试之间是 await Task.Delay(delay, cancellationToken)，
+                    // 原先没传，退避等待拿到的是 default(CancellationToken)。默认策略是指数退避、上限 5 分钟，
+                    // 于是服务停止时正卡在退避等待里的任务不会被打断，最坏能把停机拖到分钟级。
                     var retryResult = await RetryPolicy.ExecuteAsync(async () =>
                     {
                         await ProcessItemAsync(item, combinedCts.Token);
-                    });
+                    }, combinedCts.Token);
 
                     // 记录重试次数
                     if (retryResult.TotalAttempts > 1)

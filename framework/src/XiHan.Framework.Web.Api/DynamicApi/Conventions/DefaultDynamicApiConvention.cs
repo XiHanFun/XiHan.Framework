@@ -423,11 +423,10 @@ public class DefaultDynamicApiConvention : IDynamicApiConvention
             return [];
         }
 
-        return namespaceName
+        return [.. namespaceName
             .Split('.', StringSplitOptions.RemoveEmptyEntries)
             .Select(segment => FormatRouteName(segment, usePascalCaseRoute, useLowercaseRoute))
-            .Where(segment => !string.IsNullOrWhiteSpace(segment))
-            .ToList();
+            .Where(segment => !string.IsNullOrWhiteSpace(segment))];
     }
 
     /// <summary>

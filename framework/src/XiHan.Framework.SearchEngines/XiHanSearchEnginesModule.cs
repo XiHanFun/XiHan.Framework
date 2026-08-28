@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Modularity;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.InMemory;
 
 namespace XiHan.Framework.SearchEngines;

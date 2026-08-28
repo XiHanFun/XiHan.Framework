@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\props\netcore.props" />
+	<Import Project="..\..\props\common.props" />
+	<Import Project="..\..\props\test.props" />
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\XiHan.Framework.Bot.Lark\XiHan.Framework.Bot.Lark.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Bot\XiHan.Framework.Bot.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
+		<ProjectReference Include="..\..\src\XiHan.Framework.Utils\XiHan.Framework.Utils.csproj" />
+	</ItemGroup>
+
+</Project>

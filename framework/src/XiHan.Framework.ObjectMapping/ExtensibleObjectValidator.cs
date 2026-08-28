@@ -1,8 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Localization;
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Core.DynamicProxy;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectMapping.Extensions;

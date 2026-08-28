@@ -105,22 +105,30 @@ public static class EciesHelper
     /// <returns>解密后的明文消息</returns>
     public static byte[] DecryptBytes(byte[] receiverPrivateKeyBytes, byte[] encryptedMessage)
     {
+        // 先用接收方私钥恢复接收方密钥实例
+        using var receiverEcdh = ECDiffieHellman.Create();
+        receiverEcdh.ImportECPrivateKey(receiverPrivateKeyBytes, out _);
+
         // 提取发送方公钥
-        using var senderEcdh = ECDiffieHellman.Create();
-        var keySize = senderEcdh.KeySize / 8;
-        var senderPublicKey = new byte[keySize];
-        Buffer.BlockCopy(encryptedMessage, 0, senderPublicKey, 0, keySize);
+        // 原缺陷：这里按 ECDiffieHellman.Create().KeySize / 8 推算头部长度，拿到的是默认曲线
+        // (nistP521)的 65 字节；而 EncryptBytes 写进头部的是 nistP256 的 SubjectPublicKeyInfo(91 字节)，
+        // 切片位置全错，后面导入发送方公钥必然抛 CryptographicException。
+        // 密文格式(公钥 + IV + 密文，无长度前缀)不能改，所以改为按"同曲线的 SubjectPublicKeyInfo 编码等长"
+        // 这一事实取长度：ECDH 要求收发双方在同一条曲线上，直接用接收方自己的公钥编码长度即可，
+        // 既不改密文格式，也不把 nistP256 的 91 字节写死。
+        var senderPublicKeyLength = receiverEcdh.ExportSubjectPublicKeyInfo().Length;
+        var senderPublicKey = new byte[senderPublicKeyLength];
+        Buffer.BlockCopy(encryptedMessage, 0, senderPublicKey, 0, senderPublicKeyLength);
 
         // 提取 AES IV 和密文
         const int IvSize = 16; // AES 固定的 IV 长度
         var iv = new byte[IvSize];
-        var cipherBytes = new byte[encryptedMessage.Length - keySize - IvSize];
-        Buffer.BlockCopy(encryptedMessage, keySize, iv, 0, IvSize);
-        Buffer.BlockCopy(encryptedMessage, keySize + IvSize, cipherBytes, 0, cipherBytes.Length);
+        var cipherBytes = new byte[encryptedMessage.Length - senderPublicKeyLength - IvSize];
+        Buffer.BlockCopy(encryptedMessage, senderPublicKeyLength, iv, 0, IvSize);
+        Buffer.BlockCopy(encryptedMessage, senderPublicKeyLength + IvSize, cipherBytes, 0, cipherBytes.Length);
 
         // 使用接收方私钥和发送方公钥生成共享密钥
-        using var receiverEcdh = ECDiffieHellman.Create();
-        receiverEcdh.ImportECPrivateKey(receiverPrivateKeyBytes, out _);
+        using var senderEcdh = ECDiffieHellman.Create();
         senderEcdh.ImportSubjectPublicKeyInfo(senderPublicKey, out _);
         var sharedSecret = receiverEcdh.DeriveKeyMaterial(senderEcdh.PublicKey);
 

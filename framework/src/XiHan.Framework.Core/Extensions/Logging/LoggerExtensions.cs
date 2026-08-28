@@ -63,33 +63,37 @@ public static class LoggerExtensions
     /// <param name="exception"></param>
     public static void LogWithLevel(this ILogger logger, LogLevel logLevel, string message, Exception exception)
     {
+        // 原先七个分支都写成 logger.LogXxx("{exception}{message}", exception, message)：异常被当成模板的
+        // 第一个格式化参数，而不是 ILogger 的 exception 形参。结果 ILogger.Log 收到的 exception 恒为 null，
+        // 异常只以 ToString() 文本混进消息里，Serilog / OTel / AppInsights 这类结构化接收端拿不到异常对象，
+        // 堆栈与异常类型无法被索引。改为走带异常形参的重载，消息模板只留 {message}。
         switch (logLevel)
         {
             case LogLevel.Critical:
-                logger.LogCritical("{exception}{message}", exception, message);
+                logger.LogCritical(exception, "{message}", message);
                 break;
 
             case LogLevel.Error:
-                logger.LogError("{exception}{message}", exception, message);
+                logger.LogError(exception, "{message}", message);
                 break;
 
             case LogLevel.Warning:
-                logger.LogWarning("{exception}{message}", exception, message);
+                logger.LogWarning(exception, "{message}", message);
                 break;
 
             case LogLevel.Information:
-                logger.LogInformation("{exception}{message}", exception, message);
+                logger.LogInformation(exception, "{message}", message);
                 break;
 
             case LogLevel.Trace:
-                logger.LogTrace("{exception}{message}", exception, message);
+                logger.LogTrace(exception, "{message}", message);
                 break;
 
             // LogLevel.Debug || LogLevel.None
             case LogLevel.Debug:
             case LogLevel.None:
             default:
-                logger.LogDebug("{exception}{message}", exception, message);
+                logger.LogDebug(exception, "{message}", message);
                 break;
         }
     }

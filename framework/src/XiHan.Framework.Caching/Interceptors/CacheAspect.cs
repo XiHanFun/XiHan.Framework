@@ -60,7 +60,7 @@ public class CacheAspect : ITransientDependency
     }
 
     /// <summary>
-    /// 获取方法可缓存的值类型，无返回值（void / Task）时为 null
+    /// 获取方法可缓存的值类型，无返回值（void / Task）或返回 ValueTask 形态时为 null
     /// </summary>
     /// <param name="method">方法</param>
     /// <returns>值类型</returns>
@@ -73,6 +73,17 @@ public class CacheAspect : ITransientDependency
         if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
         {
             return returnType.GetGenericArguments()[0];
+        }
+
+        // ValueTask / ValueTask<T> 一律判为不可缓存。原来它们会落到下面的「返回类型即值类型」分支：
+        // ValueTask<T> 结构本身被当成缓存值序列化下来，命中时还回去的是一个反序列化出来的空句柄，
+        // 而不是真正的结果。也不能改成取 ValueTask<T> 的类型实参——动态代理适配器只按
+        // void / Task / Task<T> 分派，ValueTask<T> 方法走的是同步分支，
+        // 把裸 T 写回返回值槽位会在返回时当场类型转换失败。返回 null 让这类方法退回不缓存直连执行。
+        if (returnType == typeof(ValueTask) ||
+            (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(ValueTask<>)))
+        {
+            return null;
         }
 
         return returnType != typeof(Task) && returnType != typeof(void) ? returnType : null;

@@ -51,6 +51,12 @@ public static class PageExtensions
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(pageRequest);
 
+        // 取消令牌此前被整个忽略：调用方（如 SqlSugarReadOnlyRepository 的三个分页方法）
+        // 一路把令牌传进来，却在这里被丢掉，取消请求对分页查询完全不起作用。
+        // IQueryable 的实际执行是同步阻塞的，无法在执行途中中断，所以这里能做的是
+        // 在每个阻塞点之前检查一次：已取消时立刻抛出，而不是白跑一次全表统计与取页。
+        cancellationToken.ThrowIfCancellationRequested();
+
         var totalCount = query.Count();
         var meta = pageRequest.Page;
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Options;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
 using XiHan.Framework.SearchEngines.InMemory;

@@ -55,11 +55,17 @@ public class XiHanLoggerConfigurationBuilder
     /// <returns></returns>
     public XiHanLoggerConfigurationBuilder MinimumLevelDefault()
     {
+        // 原来 #if DEBUG 里的 Debug() 之后还无条件执行了一次 Information()。Serilog 的 MinimumLevel 是
+        // 「后设者覆盖前者」，所以 DEBUG 分支是死代码，调试构建与发布构建的最小级别完全相同。
+        // 更要命的是同一个构建器里的 WriteToConsoleDefault / WriteToFileDefault 都在 #if DEBUG 下额外挂了
+        // Debug 级接收器，那两处接收器因为总开关停在 Information 而永远收不到事件。
+        // 把 Information() 挪进 #else，让调试构建真正放行 Debug 级，与那两处 #if DEBUG 的意图对齐。
 #if DEBUG
         // 最小记录级别
         _loggerConfiguration.MinimumLevel.Debug();
-#endif
+#else
         _loggerConfiguration.MinimumLevel.Information();
+#endif
         return this;
     }
 

@@ -337,7 +337,7 @@ public sealed class EnumLocalizationService : IEnumLocalizationService
             }
             catch (ReflectionTypeLoadException ex)
             {
-                types = ex.Types.Where(static x => x != null).Cast<Type>().ToArray();
+                types = [.. ex.Types.Where(static x => x != null).Cast<Type>()];
             }
             catch
             {

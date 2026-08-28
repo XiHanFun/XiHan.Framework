@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
@@ -236,15 +237,33 @@ public static class ObjectExtensions
             return true;
         }
 
-        // 如果为""
-        if (data is not string)
+        // 如果为空字符串（含仅空白）
+        if (data is string text)
         {
-            return data is DBNull;
+            return string.IsNullOrEmpty(text.Trim());
         }
 
-        if (string.IsNullOrEmpty(data.ToString()?.Trim()))
+        // 原实现在这里直接 `if (data is not string) return data is DBNull;` 就结束了，
+        // 于是任何非 null 非字符串对象（空 List、空数组、空字典……）一律被判成"非空"。
+        // 这与 GenericExtensions.IsNullOrEmpty 已修掉的缺陷同源，语义在此对齐。
+        if (data is ICollection collection)
         {
-            return true;
+            return collection.Count == 0;
+        }
+
+        // 非泛型 IEnumerable 兜底：只取第一个元素判定，不整体枚举。
+        // 惰性序列在此会被推进一步，这是判空的固有代价，与 Enumerable.Any() 一致。
+        if (data is IEnumerable sequence)
+        {
+            var enumerator = sequence.GetEnumerator();
+            try
+            {
+                return !enumerator.MoveNext();
+            }
+            finally
+            {
+                (enumerator as IDisposable)?.Dispose();
+            }
         }
 
         // 如果为 DBNull
