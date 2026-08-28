@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Entities.Abstracts;
 
@@ -170,7 +171,9 @@ public sealed class DbInitializationSelectionTests
 
     private static DbEntityTypeProvider CreateEntityTypeProvider(TableInitializationOptions selection)
     {
-        return new DbEntityTypeProvider(Options.Create(new XiHanSqlSugarCoreOptions { TableInitialization = selection }));
+        return new DbEntityTypeProvider(
+            Options.Create(new XiHanSqlSugarCoreOptions { TableInitialization = selection }),
+            new EntityDataSourceResolver());
     }
 
     private static DataSeederSelector CreateSeederSelector(DataSeedingOptions selection)

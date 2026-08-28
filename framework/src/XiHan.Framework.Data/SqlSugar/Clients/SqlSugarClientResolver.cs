@@ -3,6 +3,8 @@
 
 using SqlSugar;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
@@ -32,6 +34,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
 
     private readonly SqlSugarScope _sqlSugarScope;
     private readonly ISqlSugarTenantConnectionResolver _tenantConnectionResolver;
+    private readonly IEntityDataSourceResolver _entityDataSourceResolver;
     private readonly IUnitOfWorkManager _unitOfWorkManager;
     private readonly ICurrentTenant _currentTenant;
     private readonly ISqlSugarConnectionConfigurator _connectionConfigurator;
@@ -42,6 +45,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// </summary>
     /// <param name="sqlSugarScope">SqlSugar 根作用域</param>
     /// <param name="tenantConnectionResolver">租户连接解析器</param>
+    /// <param name="entityDataSourceResolver">实体数据源解析器</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
     /// <param name="currentTenant">当前租户</param>
     /// <param name="connectionConfigurator">连接配置器</param>
@@ -49,6 +53,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     public SqlSugarClientResolver(
         SqlSugarScope sqlSugarScope,
         ISqlSugarTenantConnectionResolver tenantConnectionResolver,
+        IEntityDataSourceResolver entityDataSourceResolver,
         IUnitOfWorkManager unitOfWorkManager,
         ICurrentTenant currentTenant,
         ISqlSugarConnectionConfigurator connectionConfigurator,
@@ -56,6 +61,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     {
         _sqlSugarScope = sqlSugarScope;
         _tenantConnectionResolver = tenantConnectionResolver;
+        _entityDataSourceResolver = entityDataSourceResolver;
         _unitOfWorkManager = unitOfWorkManager;
         _currentTenant = currentTenant;
         _connectionConfigurator = connectionConfigurator;
@@ -82,6 +88,36 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
 
         var configId = _tenantConnectionResolver.ResolveCurrentConfigId();
         return GetClient(configId);
+    }
+
+    /// <summary>
+    /// 获取实体对应的客户端：实体声明了数据源取该库，否则按当前租户上下文解析
+    /// </summary>
+    /// <remarks>
+    /// 数据源声明优先于租户连接解析：模块库由所有租户共用，实体行级租户隔离仍由全局过滤器承担。
+    /// 声明的 ConfigId 未注册连接时 fail-closed 抛异常，避免静默落到默认库造成跨库串写。
+    /// </remarks>
+    /// <param name="entityType">实体类型</param>
+    /// <returns>Scope 级客户端</returns>
+    public ISqlSugarClient GetClientForEntity(Type entityType)
+    {
+        ArgumentNullException.ThrowIfNull(entityType);
+
+        var configId = _entityDataSourceResolver.ResolveConfigId(entityType);
+        if (string.IsNullOrWhiteSpace(configId))
+        {
+            return GetCurrentClient();
+        }
+
+        var normalizedConfigId = configId.Trim();
+        if (!_sqlSugarScope.IsAnyConnection(normalizedConfigId))
+        {
+            throw new XiHanException(
+                $"实体 {entityType.FullName} 声明的数据源 [{normalizedConfigId}] 没有对应的连接配置，已按 fail-closed 拒绝请求。" +
+                $"请在 {XiHanSqlSugarCoreOptions.SectionName}:ConnectionConfigs 中补齐该 ConfigId 的连接。");
+        }
+
+        return GetClient(normalizedConfigId);
     }
 
     /// <summary>
