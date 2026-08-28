@@ -142,13 +142,15 @@ internal class AwsTarget
     /// <summary>
     /// 带标记的字段
     /// </summary>
+    // 显式初始化为 null 只为消除 CS0649：这两个字段本就靠 AutowiredServiceHandler
+    // 反射注入，编译期看不到任何赋值点，而「注入前为 null」正是被测语义。
     [AutowiredService]
-    public IAwsDependency? MarkedField;
+    public IAwsDependency? MarkedField = null;
 
     /// <summary>
     /// 未带标记的字段
     /// </summary>
-    public IAwsDependency? PlainField;
+    public IAwsDependency? PlainField = null;
 
     /// <summary>
     /// 带标记的属性
