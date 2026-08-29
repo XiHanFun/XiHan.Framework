@@ -8,6 +8,7 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Upgrade.Abstractions;
+using XiHan.Framework.Upgrade.Enums;
 using XiHan.Framework.Upgrade.Extensions;
 using XiHan.Framework.Upgrade.Options;
 
@@ -34,8 +35,12 @@ public class XiHanUpgradeModule : XiHanModule
     }
 
     /// <summary>
-    /// 应用初始化后自动检查升级状态
+    /// 应用初始化后建立版本记录并执行待执行的升级脚本
     /// </summary>
+    /// <remarks>
+    /// 走引擎而不是 <see cref="IUpgradeCoordinator"/>：后者把执行丢进 <c>Task.Run</c> 且吞掉异常，
+    /// 应用会带着半迁移的结构开始对外服务。这里同步执行并在失败时抛出，让启动直接中断。
+    /// </remarks>
     /// <param name="context"></param>
     /// <returns></returns>
     public override async Task OnPostApplicationInitializationAsync(ApplicationInitializationContext context)
@@ -60,5 +65,17 @@ public class XiHanUpgradeModule : XiHanModule
         }
 
         await statusService.EnsureInitializedAsync();
+
+        var engine = scope.ServiceProvider.GetService<IUpgradeEngine>();
+        if (engine == null)
+        {
+            return;
+        }
+
+        var result = await engine.ExecuteAsync();
+        if (result.Status == UpgradeStatus.Failed)
+        {
+            throw new InvalidOperationException($"数据库升级失败，已中断启动：{result.Message}");
+        }
     }
 }
