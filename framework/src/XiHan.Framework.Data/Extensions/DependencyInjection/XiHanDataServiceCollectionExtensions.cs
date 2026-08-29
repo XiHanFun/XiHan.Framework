@@ -150,9 +150,8 @@ public static class XiHanDataServiceCollectionExtensions
             IsAutoCloseConnection = moduleConfig.IsAutoCloseConnection ?? parent.IsAutoCloseConnection,
             InitKeyType = moduleConfig.InitKeyType ?? parent.InitKeyType,
             MoreSettings = BuildMoreSettings(moduleConfig.MoreSettings, options),
-            // 从库是「替换」不是「合并」：把父库的从库照搬到另一个物理库上是错的
             SlaveConnectionConfigs = NormalizeSlaveHitRates(
-                moduleConfig.SlaveConnectionConfigs ?? parent.SlaveConnectionConfigs, options),
+                ResolveModuleSlaveConfigs(parent, moduleConfig), options),
             DbLinkName = moduleConfig.DbLinkName ?? parent.DbLinkName,
             LanguageType = moduleConfig.LanguageType ?? parent.LanguageType
         };
@@ -164,6 +163,30 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         return config;
+    }
+
+    /// <summary>
+    /// 解析模块库的从库配置
+    /// </summary>
+    /// <remarks>
+    /// 模块显式声明了从库就用它。没声明时按模块是否分库区分：连接串留空说明模块与父连接是<b>同一个物理库</b>，
+    /// 从库照样有效，继承；连接串另指一个库时不继承——把父库的从库挂到另一个物理库上，读到的是别的库的数据。
+    /// </remarks>
+    /// <param name="parent">父连接的原生配置</param>
+    /// <param name="moduleConfig">模块数据源配置</param>
+    /// <returns>模块库的从库配置</returns>
+    private static List<SlaveConnectionConfig>? ResolveModuleSlaveConfigs(
+        ConnectionConfig parent,
+        SqlSugarModuleDataSourceConfigOptions moduleConfig)
+    {
+        if (moduleConfig.SlaveConnectionConfigs is not null)
+        {
+            return moduleConfig.SlaveConnectionConfigs;
+        }
+
+        return string.IsNullOrWhiteSpace(moduleConfig.ConnectionString)
+            ? parent.SlaveConnectionConfigs
+            : null;
     }
 
     internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
