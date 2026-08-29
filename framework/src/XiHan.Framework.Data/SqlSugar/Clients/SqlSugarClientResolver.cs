@@ -34,8 +34,8 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
 
     private readonly SqlSugarScope _sqlSugarScope;
     private readonly ISqlSugarTenantConnectionResolver _tenantConnectionResolver;
-    private readonly IEntityDataSourceResolver _entityDataSourceResolver;
-    private readonly IDataSourceConnectionResolver _dataSourceConnectionResolver;
+    private readonly IEntityModuleDataSourceResolver _entityModuleDataSourceResolver;
+    private readonly IModuleDataSourceConnectionResolver _moduleDataSourceConnectionResolver;
     private readonly IUnitOfWorkManager _unitOfWorkManager;
     private readonly ICurrentTenant _currentTenant;
     private readonly ISqlSugarConnectionConfigurator _connectionConfigurator;
@@ -46,8 +46,8 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// </summary>
     /// <param name="sqlSugarScope">SqlSugar 根作用域</param>
     /// <param name="tenantConnectionResolver">租户连接解析器</param>
-    /// <param name="entityDataSourceResolver">实体数据源解析器</param>
-    /// <param name="dataSourceConnectionResolver">数据源连接解析器</param>
+    /// <param name="entityModuleDataSourceResolver">实体模块数据源解析器</param>
+    /// <param name="moduleDataSourceConnectionResolver">模块数据源连接解析器</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
     /// <param name="currentTenant">当前租户</param>
     /// <param name="connectionConfigurator">连接配置器</param>
@@ -55,8 +55,8 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     public SqlSugarClientResolver(
         SqlSugarScope sqlSugarScope,
         ISqlSugarTenantConnectionResolver tenantConnectionResolver,
-        IEntityDataSourceResolver entityDataSourceResolver,
-        IDataSourceConnectionResolver dataSourceConnectionResolver,
+        IEntityModuleDataSourceResolver entityModuleDataSourceResolver,
+        IModuleDataSourceConnectionResolver moduleDataSourceConnectionResolver,
         IUnitOfWorkManager unitOfWorkManager,
         ICurrentTenant currentTenant,
         ISqlSugarConnectionConfigurator connectionConfigurator,
@@ -64,8 +64,8 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     {
         _sqlSugarScope = sqlSugarScope;
         _tenantConnectionResolver = tenantConnectionResolver;
-        _entityDataSourceResolver = entityDataSourceResolver;
-        _dataSourceConnectionResolver = dataSourceConnectionResolver;
+        _entityModuleDataSourceResolver = entityModuleDataSourceResolver;
+        _moduleDataSourceConnectionResolver = moduleDataSourceConnectionResolver;
         _unitOfWorkManager = unitOfWorkManager;
         _currentTenant = currentTenant;
         _connectionConfigurator = connectionConfigurator;
@@ -78,28 +78,42 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// <returns>当前 Scope 级客户端</returns>
     public ISqlSugarClient GetCurrentClient()
     {
-        // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立连接
+        return GetClient(ResolveCurrentLayoutConfigId());
+    }
+
+    /// <summary>
+    /// 解析当前租户所在的那套数据库布局的父连接 ConfigId
+    /// </summary>
+    /// <remarks>
+    /// 「布局」= 一个主库加上它下面的若干模块库。租户维度只决定用哪一套布局；
+    /// 模块维度在布局内部选库。两者分别住在父 ConfigId 与模块名里，结构上不相交。
+    /// 库隔离租户的连接由提供器给出并在此按需建连（描述符自带的模块库一并注册）。
+    /// </remarks>
+    /// <returns>父连接 ConfigId</returns>
+    private string ResolveCurrentLayoutConfigId()
+    {
+        // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立布局
         // 提供器返回 null → 走静态 ConfigId 解析（字段/行隔离）；抛异常 → fail-closed
         if (_connectionProvider is not null && _currentTenant.Id is { } tenantId)
         {
             var descriptor = _connectionProvider.Resolve(tenantId, _currentTenant.Name);
             if (descriptor is not null)
             {
-                var tenantClient = _connectionConfigurator.EnsureTenantConnection(_sqlSugarScope, descriptor);
-                return EnlistCurrentUnitOfWork(tenantClient);
+                _ = _connectionConfigurator.EnsureTenantConnection(_sqlSugarScope, descriptor);
+                return descriptor.ConfigId.Trim();
             }
         }
 
-        var configId = _tenantConnectionResolver.ResolveCurrentConfigId();
-        return GetClient(configId);
+        return _tenantConnectionResolver.ResolveCurrentConfigId();
     }
 
     /// <summary>
-    /// 获取实体对应的客户端：实体声明了数据源取该库，否则按当前租户上下文解析
+    /// 获取实体对应的客户端：未声明模块数据源取当前租户主库，声明了则取该布局下的模块库
     /// </summary>
     /// <remarks>
-    /// 数据源声明优先于租户连接解析：模块库由所有租户共用，实体行级租户隔离仍由全局过滤器承担。
-    /// 声明的 ConfigId 未注册连接时 fail-closed 抛异常，避免静默落到默认库造成跨库串写。
+    /// 两条维度在此交汇：租户维度先定「哪一套布局」，模块维度再在布局内选库。
+    /// 模块数据源在当前布局与默认布局里都没有配置时 fail-closed 抛异常，
+    /// 避免静默落到主库造成跨库串写。
     /// </remarks>
     /// <param name="entityType">实体类型</param>
     /// <returns>Scope 级客户端</returns>
@@ -107,15 +121,15 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     {
         ArgumentNullException.ThrowIfNull(entityType);
 
-        var dataSourceName = _entityDataSourceResolver.ResolveDataSourceName(entityType);
-        if (string.IsNullOrWhiteSpace(dataSourceName))
+        var parentConfigId = ResolveCurrentLayoutConfigId();
+
+        var moduleDataSource = _entityModuleDataSourceResolver.ResolveModuleDataSource(entityType);
+        if (string.IsNullOrWhiteSpace(moduleDataSource))
         {
-            return GetCurrentClient();
+            return GetClient(parentConfigId);
         }
 
-        // 声明了数据源：交由数据源解析器按「数据源名 + 当前租户」定连接，
-        // 两条维度在那里交汇，本方法只负责把结果登记进当前工作单元事务
-        var client = _dataSourceConnectionResolver.ResolveClient(dataSourceName);
+        var client = _moduleDataSourceConnectionResolver.ResolveClient(moduleDataSource, parentConfigId);
         return EnlistCurrentUnitOfWork(client);
     }
 

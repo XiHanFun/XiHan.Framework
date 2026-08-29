@@ -9,7 +9,6 @@ using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.Data.Extensions.DependencyInjection;
 using XiHan.Framework.Data.SqlSugar.Initializers;
-using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.DistributedIds;
 using XiHan.Framework.Domain;
 using XiHan.Framework.MultiTenancy;
@@ -53,10 +52,6 @@ public class XiHanDataModule : XiHanModule
     {
         using var scope = context.ServiceProvider.CreateScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<IDbInitializer>>();
-
-        // 数据源命名与租户槽位的冲突必须在建表/写数据之前拦下：
-        // 撞名的运行期表现是「数据静默写进另一个库」，事后极难排查
-        scope.ServiceProvider.GetRequiredService<DataSourceNamingValidator>().Validate();
 
         try
         {
