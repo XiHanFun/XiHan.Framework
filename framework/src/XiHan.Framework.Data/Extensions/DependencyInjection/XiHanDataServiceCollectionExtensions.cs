@@ -53,8 +53,14 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
-        // 实体数据源解析器：决定实体固定落在哪个连接（模块分库），仓储路由与建表初始化共用
+        // 实体数据源解析器：实体 → 逻辑数据源名，仓储路由与建表初始化共用
         services.TryAddSingleton<IEntityDataSourceResolver, EntityDataSourceResolver>();
+        // 数据源注册表：全仓声明过的数据源名，用于把数据源槽位排除在租户解析之外
+        services.TryAddSingleton<IDataSourceRegistry, DataSourceRegistry>();
+        // 数据源命名校验器：启动期拒绝与租户槽位冲突的数据源名
+        services.TryAddSingleton<DataSourceNamingValidator>();
+        // 数据源连接解析器：数据源名 + 当前租户 → 实际连接，两条维度在此交汇
+        services.TryAddScoped<IDataSourceConnectionResolver, DataSourceConnectionResolver>();
         // 客户端解析器（按当前租户解析连接，并在事务型 UoW 中自动接入事务）
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入
