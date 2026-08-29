@@ -70,8 +70,8 @@ public sealed class RequiresNewIsolationTests : IDisposable
         _resolver = new SqlSugarClientResolver(
             _scope,
             new FixedTenantConnectionResolver(OuterConfigId, [OuterConfigId, InnerConfigId]),
-            new EntityDataSourceResolver(),
-            new StubDataSourceConnectionResolver(),
+            new EntityModuleDataSourceResolver(),
+            new StubModuleDataSourceConnectionResolver(),
             _unitOfWorkManager,
             new NoTenant(),
             new PassThroughConnectionConfigurator(),
@@ -311,11 +311,11 @@ public sealed class RequiresNewIsolationTests : IDisposable
     }
 
     /// <summary>
-    /// 数据源连接解析器桩：本用例不涉及实体数据源，被调用即说明路由走错了分支。
+    /// 模块数据源连接解析器桩：本用例不涉及模块数据源，被调用即说明路由走错了分支。
     /// </summary>
-    private sealed class StubDataSourceConnectionResolver : IDataSourceConnectionResolver
+    private sealed class StubModuleDataSourceConnectionResolver : IModuleDataSourceConnectionResolver
     {
-        public ISqlSugarClient ResolveClient(string dataSourceName) =>
-            throw new InvalidOperationException("本用例不应触发数据源路由。");
+        public ISqlSugarClient ResolveClient(string moduleDataSource, string parentConfigId) =>
+            throw new InvalidOperationException("本用例不应触发模块数据源路由。");
     }
 }

@@ -85,13 +85,55 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
             {
                 if (!tenant.IsAnyConnection(configId))
                 {
-                    tenant.AddConnection(BuildConnectionConfig(configId, descriptor));
+                    var parentConfig = BuildConnectionConfig(configId, descriptor);
+                    tenant.AddConnection(parentConfig);
                     Configure(tenant.GetConnectionScope(configId));
+
+                    // 该租户自带的模块库与主库一并建连：一条描述符给出的是整套布局，
+                    // 分两次注册会让「主库已在、模块库还没在」的中间态被并发请求看到
+                    EnsureModuleConnections(tenant, parentConfig, descriptor);
                 }
             }
         }
 
         return tenant.GetConnectionScope(configId);
+    }
+
+    /// <summary>
+    /// 为租户连接注册其自带的模块库
+    /// </summary>
+    /// <remarks>
+    /// 调用方已持有注册锁。模块库的 ConfigId 由父连接派生，未填的字段继承父连接，
+    /// 与静态配置里派生模块库的规则完全一致。
+    /// </remarks>
+    /// <param name="tenant">SqlSugar 多连接容器</param>
+    /// <param name="parentConfig">已注册的父连接原生配置</param>
+    /// <param name="descriptor">租户连接描述符</param>
+    private void EnsureModuleConnections(ITenant tenant, ConnectionConfig parentConfig, SqlSugarTenantConnection descriptor)
+    {
+        if (descriptor.ModuleDataSourceConfigs is not { Count: > 0 })
+        {
+            return;
+        }
+
+        foreach (var moduleConfig in descriptor.ModuleDataSourceConfigs)
+        {
+            if (string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
+            {
+                continue;
+            }
+
+            var moduleNativeConfig = XiHanDataServiceCollectionExtensions.BuildModuleConnectionConfig(
+                parentConfig, moduleConfig, _options);
+            var moduleConfigId = moduleNativeConfig.ConfigId?.ToString();
+            if (string.IsNullOrWhiteSpace(moduleConfigId) || tenant.IsAnyConnection(moduleConfigId))
+            {
+                continue;
+            }
+
+            tenant.AddConnection(moduleNativeConfig);
+            Configure(tenant.GetConnectionScope(moduleConfigId));
+        }
     }
 
     private ConnectionConfig BuildConnectionConfig(string configId, SqlSugarTenantConnection descriptor)
