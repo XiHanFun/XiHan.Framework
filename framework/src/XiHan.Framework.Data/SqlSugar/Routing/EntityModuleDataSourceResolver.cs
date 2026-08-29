@@ -7,38 +7,39 @@ using System.Reflection;
 namespace XiHan.Framework.Data.SqlSugar.Routing;
 
 /// <summary>
-/// 实体数据源解析器默认实现
+/// 实体模块数据源解析器默认实现
 /// </summary>
 /// <remarks>
-/// 先读框架的 <see cref="DataSourceAttribute"/>，未标注再读 SqlSugar 原生的
-/// <see cref="global::SqlSugar.TenantAttribute"/>，两者都没有则返回 null。解析结果按实体类型缓存。
+/// 先读框架的 <see cref="ModuleDataSourceAttribute"/>，未标注再读 SqlSugar 原生的
+/// <see cref="global::SqlSugar.TenantAttribute"/>（兼容既有写法），两者都没有则返回 null。
+/// 解析结果按实体类型缓存。
 /// </remarks>
-public class EntityDataSourceResolver : IEntityDataSourceResolver
+public class EntityModuleDataSourceResolver : IEntityModuleDataSourceResolver
 {
     private static readonly ConcurrentDictionary<Type, string?> NameCache = new();
 
     /// <summary>
-    /// 解析实体声明的逻辑数据源名
+    /// 解析实体声明的模块数据源名
     /// </summary>
     /// <param name="entityType">实体类型</param>
-    /// <returns>逻辑数据源名；未声明返回 null</returns>
-    public virtual string? ResolveDataSourceName(Type entityType)
+    /// <returns>模块数据源名；未声明返回 null</returns>
+    public virtual string? ResolveModuleDataSource(Type entityType)
     {
         ArgumentNullException.ThrowIfNull(entityType);
         return NameCache.GetOrAdd(entityType, static type => ReadDeclaredName(type));
     }
 
     /// <summary>
-    /// 读取实体特性上声明的逻辑数据源名
+    /// 读取实体特性上声明的模块数据源名
     /// </summary>
     /// <param name="entityType">实体类型</param>
-    /// <returns>逻辑数据源名；未声明返回 null</returns>
+    /// <returns>模块数据源名；未声明返回 null</returns>
     private static string? ReadDeclaredName(Type entityType)
     {
-        var dataSource = entityType.GetCustomAttribute<DataSourceAttribute>(inherit: true);
-        if (dataSource is not null)
+        var moduleDataSource = entityType.GetCustomAttribute<ModuleDataSourceAttribute>(inherit: true);
+        if (moduleDataSource is not null)
         {
-            return dataSource.Name;
+            return moduleDataSource.Name;
         }
 
         var name = entityType.GetCustomAttribute<global::SqlSugar.TenantAttribute>(inherit: true)?.configId?.ToString();

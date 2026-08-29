@@ -15,29 +15,38 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
 {
     private readonly XiHanSqlSugarCoreOptions _options;
     private readonly ICurrentTenant _currentTenant;
-    private readonly IDataSourceRegistry _dataSourceRegistry;
     private readonly HashSet<string> _configIds;
     private readonly string[] _configIdArray;
+    private readonly string[] _allConfigIdArray;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="options"></param>
     /// <param name="currentTenant"></param>
-    /// <param name="dataSourceRegistry">数据源注册表，用于把数据源槽位排除在租户解析之外</param>
     public SqlSugarTenantConnectionResolver(
         IOptions<XiHanSqlSugarCoreOptions> options,
-        ICurrentTenant currentTenant,
-        IDataSourceRegistry dataSourceRegistry)
+        ICurrentTenant currentTenant)
     {
         _options = options.Value;
         _currentTenant = currentTenant;
-        _dataSourceRegistry = dataSourceRegistry;
         _configIdArray = [.. _options.ConnectionConfigs
             .Select(x => x.ConfigId)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)];
         _configIds = _configIdArray.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 模块库不参与租户解析（上面的集合），但要参与「遍历所有库」——建表初始化与种子靠它找到模块库
+        var moduleConfigIds = _options.ConnectionConfigs
+            .Where(connectionConfig => !string.IsNullOrWhiteSpace(connectionConfig.ConfigId) &&
+                                       connectionConfig.ModuleDataSourceConfigs is { Count: > 0 })
+            .SelectMany(connectionConfig => connectionConfig.ModuleDataSourceConfigs!
+                .Where(moduleConfig => !string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
+                .Select(moduleConfig => ModuleDataSourceConfigIds.Build(connectionConfig.ConfigId, moduleConfig.ModuleDataSource)));
+
+        _allConfigIdArray = [.. _configIdArray
+            .Concat(moduleConfigIds)
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
     /// <summary>
@@ -93,12 +102,15 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     }
 
     /// <summary>
-    /// 获取全部连接配置标识
+    /// 获取全部连接配置标识，含各连接下派生出的模块库
     /// </summary>
+    /// <remarks>
+    /// 供建表初始化与种子遍历所有库使用；租户解析只认顶层连接标识，不会命中模块库。
+    /// </remarks>
     /// <returns>连接配置标识集合</returns>
     public IReadOnlyCollection<string> GetConfigIds()
     {
-        return _configIdArray;
+        return _allConfigIdArray;
     }
 
     private string ResolveDefaultConfigId()
@@ -108,14 +120,12 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
             return defaultConfigId;
         }
 
-        // 兜底同样不能落进数据源槽位，否则「配错了默认连接」会静默变成「所有租户写进某个模块库」
-        var firstTenantSlot = Array.Find(_configIdArray, configId => !_dataSourceRegistry.IsDataSource(configId));
-        if (firstTenantSlot is not null)
+        if (_configIdArray.Length > 0)
         {
-            return firstTenantSlot;
+            return _configIdArray[0];
         }
 
-        throw new InvalidOperationException("SqlSugar 没有可用于租户解析的连接配置（连接为空，或全部已被声明为数据源）。");
+        throw new InvalidOperationException("SqlSugar 连接配置为空，无法解析默认连接。");
     }
 
     private bool TryResolveConfigId(string? configId, out string resolvedConfigId)
@@ -129,14 +139,6 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
 
         var normalizedConfigId = configId.Trim();
         if (!_configIds.Contains(normalizedConfigId))
-        {
-            return false;
-        }
-
-        // 维度边界：ConfigId 命名空间分「租户槽位」与「数据源槽位」，租户解析只在前者里挑。
-        // 少了这条判断，租户 Id 或租户名恰好等于某个数据源名时（本方法会拿两者去匹配 ConfigId），
-        // 该租户未声明数据源的实体会被静默路由进那个模块库。
-        if (_dataSourceRegistry.IsDataSource(normalizedConfigId))
         {
             return false;
         }

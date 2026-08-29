@@ -53,14 +53,10 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
-        // 实体数据源解析器：实体 → 逻辑数据源名，仓储路由与建表初始化共用
-        services.TryAddSingleton<IEntityDataSourceResolver, EntityDataSourceResolver>();
-        // 数据源注册表：全仓声明过的数据源名，用于把数据源槽位排除在租户解析之外
-        services.TryAddSingleton<IDataSourceRegistry, DataSourceRegistry>();
-        // 数据源命名校验器：启动期拒绝与租户槽位冲突的数据源名
-        services.TryAddSingleton<DataSourceNamingValidator>();
-        // 数据源连接解析器：数据源名 + 当前租户 → 实际连接，两条维度在此交汇
-        services.TryAddScoped<IDataSourceConnectionResolver, DataSourceConnectionResolver>();
+        // 实体模块数据源解析器：实体 → 模块数据源名，仓储路由与建表初始化共用
+        services.TryAddSingleton<IEntityModuleDataSourceResolver, EntityModuleDataSourceResolver>();
+        // 模块数据源连接解析器：模块名 + 当前布局 → 实际连接，两条维度在此交汇
+        services.TryAddScoped<IModuleDataSourceConnectionResolver, ModuleDataSourceConnectionResolver>();
         // 客户端解析器（按当前租户解析连接，并在事务型 UoW 中自动接入事务）
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入
@@ -125,6 +121,49 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// 按父连接派生模块库的原生连接配置：除模块名与显式覆盖项外，其余字段一律继承父连接
+    /// </summary>
+    /// <remarks>
+    /// <c>ConnectionString</c> 留空表示该模块不分库——直接复用父连接的主库连接串，
+    /// 于是模块库与主库指向同一个物理库，路由仍然成立、只是没有分开。
+    /// </remarks>
+    /// <param name="parent">父连接的原生配置（已填好框架默认值）</param>
+    /// <param name="moduleConfig">模块数据源配置</param>
+    /// <param name="options">SqlSugarCore 选项</param>
+    /// <returns>模块库的原生连接配置</returns>
+    internal static ConnectionConfig BuildModuleConnectionConfig(
+        ConnectionConfig parent,
+        SqlSugarModuleDataSourceConfigOptions moduleConfig,
+        XiHanSqlSugarCoreOptions options)
+    {
+        var parentConfigId = parent.ConfigId?.ToString() ?? string.Empty;
+        var config = new ConnectionConfig
+        {
+            ConfigId = ModuleDataSourceConfigIds.Build(parentConfigId, moduleConfig.ModuleDataSource),
+            ConnectionString = string.IsNullOrWhiteSpace(moduleConfig.ConnectionString)
+                ? parent.ConnectionString
+                : moduleConfig.ConnectionString,
+            DbType = moduleConfig.DbType ?? parent.DbType,
+            IsAutoCloseConnection = moduleConfig.IsAutoCloseConnection ?? parent.IsAutoCloseConnection,
+            InitKeyType = moduleConfig.InitKeyType ?? parent.InitKeyType,
+            MoreSettings = BuildMoreSettings(moduleConfig.MoreSettings, options),
+            // 从库是「替换」不是「合并」：把父库的从库照搬到另一个物理库上是错的
+            SlaveConnectionConfigs = NormalizeSlaveHitRates(
+                moduleConfig.SlaveConnectionConfigs ?? parent.SlaveConnectionConfigs, options),
+            DbLinkName = moduleConfig.DbLinkName ?? parent.DbLinkName,
+            LanguageType = moduleConfig.LanguageType ?? parent.LanguageType
+        };
+
+        var indexSuffix = moduleConfig.IndexSuffix ?? parent.IndexSuffix;
+        if (!string.IsNullOrWhiteSpace(indexSuffix))
+        {
+            config.IndexSuffix = indexSuffix;
+        }
+
+        return config;
     }
 
     internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
@@ -365,6 +404,19 @@ public static class XiHanDataServiceCollectionExtensions
                 return config;
             })
             .ToList();
+
+        // 派生模块库连接：一条连接配置描述的是「主库 + 若干模块库」一整套布局，
+        // 模块库的 ConfigId 由父连接派生，不占用顶层命名空间
+        var moduleConnectionConfigs = options.ConnectionConfigs
+            .Where(connConfig => connConfig.ModuleDataSourceConfigs is { Count: > 0 })
+            .SelectMany(connConfig => connConfig.ModuleDataSourceConfigs!
+                .Where(moduleConfig => !string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
+                .Select(moduleConfig => BuildModuleConnectionConfig(
+                    connectionConfigs.First(config => Equals(config.ConfigId, connConfig.ConfigId)),
+                    moduleConfig,
+                    options)))
+            .ToList();
+        connectionConfigs.AddRange(moduleConnectionConfigs);
 
         // 设置自定义全局雪花ID生成器
         StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;

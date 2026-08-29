@@ -20,7 +20,7 @@ namespace XiHan.Framework.Data.Tests;
 /// </remarks>
 public sealed class DbInitializationSelectionTests
 {
-    private static readonly EntityDataSourceResolver Resolver = new();
+    private static readonly EntityModuleDataSourceResolver Resolver = new();
 
     private static readonly DbInitializationContext PlatformContext = new("Default", null, isTenantDatabase: false);
     private static readonly DbInitializationContext TenantContext = new("Tenant_5", 5, isTenantDatabase: true);
@@ -175,8 +175,7 @@ public sealed class DbInitializationSelectionTests
     {
         return new DbEntityTypeProvider(
             Options.Create(new XiHanSqlSugarCoreOptions { TableInitialization = selection }),
-            Resolver,
-            new DataSourceRegistry(Resolver));
+            Resolver);
     }
 
     private static DataSeederSelector CreateSeederSelector(DataSeedingOptions selection)
