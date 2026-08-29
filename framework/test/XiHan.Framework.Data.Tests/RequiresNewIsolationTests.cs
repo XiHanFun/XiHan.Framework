@@ -71,6 +71,7 @@ public sealed class RequiresNewIsolationTests : IDisposable
             _scope,
             new FixedTenantConnectionResolver(OuterConfigId, [OuterConfigId, InnerConfigId]),
             new EntityDataSourceResolver(),
+            new StubDataSourceConnectionResolver(),
             _unitOfWorkManager,
             new NoTenant(),
             new PassThroughConnectionConfigurator(),
@@ -307,5 +308,14 @@ public sealed class RequiresNewIsolationTests : IDisposable
         /// <returns>不返回，始终抛出 <see cref="NotSupportedException"/></returns>
         public SqlSugarScopeProvider EnsureTenantConnection(ITenant tenant, SqlSugarTenantConnection descriptor)
             => throw new NotSupportedException("用例不涉及库隔离租户的动态连接注册。");
+    }
+
+    /// <summary>
+    /// 数据源连接解析器桩：本用例不涉及实体数据源，被调用即说明路由走错了分支。
+    /// </summary>
+    private sealed class StubDataSourceConnectionResolver : IDataSourceConnectionResolver
+    {
+        public ISqlSugarClient ResolveClient(string dataSourceName) =>
+            throw new InvalidOperationException("本用例不应触发数据源路由。");
     }
 }

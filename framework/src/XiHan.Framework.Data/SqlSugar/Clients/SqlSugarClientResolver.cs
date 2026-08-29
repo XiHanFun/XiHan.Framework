@@ -35,6 +35,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     private readonly SqlSugarScope _sqlSugarScope;
     private readonly ISqlSugarTenantConnectionResolver _tenantConnectionResolver;
     private readonly IEntityDataSourceResolver _entityDataSourceResolver;
+    private readonly IDataSourceConnectionResolver _dataSourceConnectionResolver;
     private readonly IUnitOfWorkManager _unitOfWorkManager;
     private readonly ICurrentTenant _currentTenant;
     private readonly ISqlSugarConnectionConfigurator _connectionConfigurator;
@@ -46,6 +47,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// <param name="sqlSugarScope">SqlSugar 根作用域</param>
     /// <param name="tenantConnectionResolver">租户连接解析器</param>
     /// <param name="entityDataSourceResolver">实体数据源解析器</param>
+    /// <param name="dataSourceConnectionResolver">数据源连接解析器</param>
     /// <param name="unitOfWorkManager">工作单元管理器</param>
     /// <param name="currentTenant">当前租户</param>
     /// <param name="connectionConfigurator">连接配置器</param>
@@ -54,6 +56,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         SqlSugarScope sqlSugarScope,
         ISqlSugarTenantConnectionResolver tenantConnectionResolver,
         IEntityDataSourceResolver entityDataSourceResolver,
+        IDataSourceConnectionResolver dataSourceConnectionResolver,
         IUnitOfWorkManager unitOfWorkManager,
         ICurrentTenant currentTenant,
         ISqlSugarConnectionConfigurator connectionConfigurator,
@@ -62,6 +65,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
         _sqlSugarScope = sqlSugarScope;
         _tenantConnectionResolver = tenantConnectionResolver;
         _entityDataSourceResolver = entityDataSourceResolver;
+        _dataSourceConnectionResolver = dataSourceConnectionResolver;
         _unitOfWorkManager = unitOfWorkManager;
         _currentTenant = currentTenant;
         _connectionConfigurator = connectionConfigurator;
@@ -103,21 +107,16 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     {
         ArgumentNullException.ThrowIfNull(entityType);
 
-        var configId = _entityDataSourceResolver.ResolveConfigId(entityType);
-        if (string.IsNullOrWhiteSpace(configId))
+        var dataSourceName = _entityDataSourceResolver.ResolveDataSourceName(entityType);
+        if (string.IsNullOrWhiteSpace(dataSourceName))
         {
             return GetCurrentClient();
         }
 
-        var normalizedConfigId = configId.Trim();
-        if (!_sqlSugarScope.IsAnyConnection(normalizedConfigId))
-        {
-            throw new XiHanException(
-                $"实体 {entityType.FullName} 声明的数据源 [{normalizedConfigId}] 没有对应的连接配置，已按 fail-closed 拒绝请求。" +
-                $"请在 {XiHanSqlSugarCoreOptions.SectionName}:ConnectionConfigs 中补齐该 ConfigId 的连接。");
-        }
-
-        return GetClient(normalizedConfigId);
+        // 声明了数据源：交由数据源解析器按「数据源名 + 当前租户」定连接，
+        // 两条维度在那里交汇，本方法只负责把结果登记进当前工作单元事务
+        var client = _dataSourceConnectionResolver.ResolveClient(dataSourceName);
+        return EnlistCurrentUnitOfWork(client);
     }
 
     /// <summary>

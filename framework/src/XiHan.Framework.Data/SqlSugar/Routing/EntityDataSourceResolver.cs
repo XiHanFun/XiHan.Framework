@@ -15,33 +15,33 @@ namespace XiHan.Framework.Data.SqlSugar.Routing;
 /// </remarks>
 public class EntityDataSourceResolver : IEntityDataSourceResolver
 {
-    private static readonly ConcurrentDictionary<Type, string?> ConfigIdCache = new();
+    private static readonly ConcurrentDictionary<Type, string?> NameCache = new();
 
     /// <summary>
-    /// 解析实体声明的连接配置标识
+    /// 解析实体声明的逻辑数据源名
     /// </summary>
     /// <param name="entityType">实体类型</param>
-    /// <returns>连接配置标识；未声明数据源返回 null</returns>
-    public virtual string? ResolveConfigId(Type entityType)
+    /// <returns>逻辑数据源名；未声明返回 null</returns>
+    public virtual string? ResolveDataSourceName(Type entityType)
     {
         ArgumentNullException.ThrowIfNull(entityType);
-        return ConfigIdCache.GetOrAdd(entityType, static type => ReadDeclaredConfigId(type));
+        return NameCache.GetOrAdd(entityType, static type => ReadDeclaredName(type));
     }
 
     /// <summary>
-    /// 读取实体特性上声明的连接配置标识
+    /// 读取实体特性上声明的逻辑数据源名
     /// </summary>
     /// <param name="entityType">实体类型</param>
-    /// <returns>连接配置标识；未声明返回 null</returns>
-    private static string? ReadDeclaredConfigId(Type entityType)
+    /// <returns>逻辑数据源名；未声明返回 null</returns>
+    private static string? ReadDeclaredName(Type entityType)
     {
         var dataSource = entityType.GetCustomAttribute<DataSourceAttribute>(inherit: true);
         if (dataSource is not null)
         {
-            return dataSource.ConfigId;
+            return dataSource.Name;
         }
 
-        var configId = entityType.GetCustomAttribute<global::SqlSugar.TenantAttribute>(inherit: true)?.configId?.ToString();
-        return string.IsNullOrWhiteSpace(configId) ? null : configId.Trim();
+        var name = entityType.GetCustomAttribute<global::SqlSugar.TenantAttribute>(inherit: true)?.configId?.ToString();
+        return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 }
