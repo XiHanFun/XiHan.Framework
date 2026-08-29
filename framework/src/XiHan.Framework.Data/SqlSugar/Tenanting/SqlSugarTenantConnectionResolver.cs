@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Tenanting;
@@ -14,6 +15,7 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
 {
     private readonly XiHanSqlSugarCoreOptions _options;
     private readonly ICurrentTenant _currentTenant;
+    private readonly IDataSourceRegistry _dataSourceRegistry;
     private readonly HashSet<string> _configIds;
     private readonly string[] _configIdArray;
 
@@ -22,12 +24,15 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     /// </summary>
     /// <param name="options"></param>
     /// <param name="currentTenant"></param>
+    /// <param name="dataSourceRegistry">数据源注册表，用于把数据源槽位排除在租户解析之外</param>
     public SqlSugarTenantConnectionResolver(
         IOptions<XiHanSqlSugarCoreOptions> options,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant,
+        IDataSourceRegistry dataSourceRegistry)
     {
         _options = options.Value;
         _currentTenant = currentTenant;
+        _dataSourceRegistry = dataSourceRegistry;
         _configIdArray = [.. _options.ConnectionConfigs
             .Select(x => x.ConfigId)
             .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -103,12 +108,14 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
             return defaultConfigId;
         }
 
-        if (_configIdArray.Length > 0)
+        // 兜底同样不能落进数据源槽位，否则「配错了默认连接」会静默变成「所有租户写进某个模块库」
+        var firstTenantSlot = Array.Find(_configIdArray, configId => !_dataSourceRegistry.IsDataSource(configId));
+        if (firstTenantSlot is not null)
         {
-            return _configIdArray[0];
+            return firstTenantSlot;
         }
 
-        throw new InvalidOperationException("SqlSugar 连接配置为空，无法解析默认连接。");
+        throw new InvalidOperationException("SqlSugar 没有可用于租户解析的连接配置（连接为空，或全部已被声明为数据源）。");
     }
 
     private bool TryResolveConfigId(string? configId, out string resolvedConfigId)
@@ -122,6 +129,14 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
 
         var normalizedConfigId = configId.Trim();
         if (!_configIds.Contains(normalizedConfigId))
+        {
+            return false;
+        }
+
+        // 维度边界：ConfigId 命名空间分「租户槽位」与「数据源槽位」，租户解析只在前者里挑。
+        // 少了这条判断，租户 Id 或租户名恰好等于某个数据源名时（本方法会拿两者去匹配 ConfigId），
+        // 该租户未声明数据源的实体会被静默路由进那个模块库。
+        if (_dataSourceRegistry.IsDataSource(normalizedConfigId))
         {
             return false;
         }

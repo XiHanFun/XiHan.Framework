@@ -22,31 +22,27 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
 {
     private readonly IOptions<XiHanSqlSugarCoreOptions> _options;
     private readonly IEntityDataSourceResolver _dataSourceResolver;
+    private readonly IDataSourceRegistry _dataSourceRegistry;
     private readonly Lazy<IReadOnlyList<Type>> _candidateEntityTypes;
-    private readonly Lazy<HashSet<string>> _dataSourceConfigIds;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="options">SqlSugarCore 选项</param>
     /// <param name="dataSourceResolver">实体数据源解析器</param>
-    public DbEntityTypeProvider(IOptions<XiHanSqlSugarCoreOptions> options, IEntityDataSourceResolver dataSourceResolver)
+    /// <param name="dataSourceRegistry">数据源注册表</param>
+    public DbEntityTypeProvider(IOptions<XiHanSqlSugarCoreOptions> options, IEntityDataSourceResolver dataSourceResolver, IDataSourceRegistry dataSourceRegistry)
     {
         _options = options;
         _dataSourceResolver = dataSourceResolver;
+        _dataSourceRegistry = dataSourceRegistry;
         _candidateEntityTypes = new Lazy<IReadOnlyList<Type>>(ScanEntityTypes, LazyThreadSafetyMode.ExecutionAndPublication);
-        _dataSourceConfigIds = new Lazy<HashSet<string>>(ScanDataSourceConfigIds, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
     /// 全部候选实体类型（未经选取规则筛选）
     /// </summary>
     public IReadOnlyList<Type> CandidateEntityTypes => _candidateEntityTypes.Value;
-
-    /// <summary>
-    /// 被候选实体声明为数据源的连接配置标识（即模块专属库）
-    /// </summary>
-    public IReadOnlyCollection<string> DataSourceConfigIds => _dataSourceConfigIds.Value;
 
     /// <summary>
     /// 获取当前库需要建表的实体类型
@@ -120,7 +116,7 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     /// <returns>匹配返回 true</returns>
     protected virtual bool IsDataSourceAllowed(Type entityType, TableInitializationOptions selection, DbInitializationContext context)
     {
-        var declaredConfigId = _dataSourceResolver.ResolveConfigId(entityType)?.Trim();
+        var declaredName = _dataSourceResolver.ResolveDataSourceName(entityType)?.Trim();
         var currentConfigId = context.ConnectionConfigId?.Trim();
 
         if (string.IsNullOrWhiteSpace(currentConfigId))
@@ -128,13 +124,40 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(declaredConfigId))
+        if (!string.IsNullOrWhiteSpace(declaredName))
         {
-            return string.Equals(declaredConfigId, currentConfigId, StringComparison.OrdinalIgnoreCase);
+            // 共享模块库；以及租户级模块库（约定 ConfigId 形如 Erp_Tenant_1001）——
+            // 两条维度组合后，同一个数据源在不同租户下对应不同连接，建表要在每一处都建
+            return string.Equals(declaredName, currentConfigId, StringComparison.OrdinalIgnoreCase) ||
+                   IsTenantScopedDataSource(declaredName, currentConfigId);
         }
 
-        return !_dataSourceConfigIds.Value.Contains(currentConfigId) ||
+        return !_dataSourceRegistry.IsDataSource(currentConfigId) &&
+               !IsAnyTenantScopedDataSource(currentConfigId) ||
                DbInitializationFilters.MatchesAny(selection.SharedConnectionConfigIds, currentConfigId);
+    }
+
+    /// <summary>
+    /// 判断某个连接标识是否为指定数据源的租户级模块库
+    /// </summary>
+    /// <param name="dataSourceName">逻辑数据源名</param>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>是返回 true</returns>
+    private bool IsTenantScopedDataSource(string dataSourceName, string configId)
+    {
+        var prefix = $"{dataSourceName}_{_options.Value.TenantConfigIdPrefix}";
+        return configId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+               configId.Length > prefix.Length;
+    }
+
+    /// <summary>
+    /// 判断某个连接标识是否为任一数据源的租户级模块库
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>是返回 true</returns>
+    private bool IsAnyTenantScopedDataSource(string configId)
+    {
+        return _dataSourceRegistry.DataSourceNames.Any(name => IsTenantScopedDataSource(name, configId));
     }
 
     /// <summary>
@@ -146,17 +169,4 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
         return [.. ReflectionHelper.GetContainsAttributeSubClasses<IEntityBase, SugarTable>()];
     }
 
-    /// <summary>
-    /// 扫描候选实体声明的全部数据源连接配置标识
-    /// </summary>
-    /// <returns>连接配置标识集合</returns>
-    private HashSet<string> ScanDataSourceConfigIds()
-    {
-        return new HashSet<string>(
-            CandidateEntityTypes
-                .Select(entityType => _dataSourceResolver.ResolveConfigId(entityType)?.Trim())
-                .Where(configId => !string.IsNullOrWhiteSpace(configId))
-                .Select(configId => configId!),
-            StringComparer.OrdinalIgnoreCase);
-    }
 }
