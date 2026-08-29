@@ -253,6 +253,12 @@ public sealed class RequiresNewIsolationTests : IDisposable
         /// </summary>
         /// <returns>构造时传入的连接配置标识集合</returns>
         public IReadOnlyCollection<string> GetConfigIds() => configIds;
+
+        /// <summary>
+        /// 获取配置中出现过的全部模块数据源名
+        /// </summary>
+        /// <returns>空集合，本用例不涉及模块数据源</returns>
+        public IReadOnlyCollection<string> GetModuleDataSourceNames() => [];
     }
 
     /// <summary>无租户上下文替身。</summary>

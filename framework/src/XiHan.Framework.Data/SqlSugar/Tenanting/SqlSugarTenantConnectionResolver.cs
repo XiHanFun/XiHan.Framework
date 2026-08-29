@@ -18,6 +18,7 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     private readonly HashSet<string> _configIds;
     private readonly string[] _configIdArray;
     private readonly string[] _allConfigIdArray;
+    private readonly string[] _moduleDataSourceNameArray;
 
     /// <summary>
     /// 构造函数
@@ -37,15 +38,20 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
         _configIds = _configIdArray.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 模块库不参与租户解析（上面的集合），但要参与「遍历所有库」——建表初始化与种子靠它找到模块库
-        var moduleConfigIds = _options.ConnectionConfigs
+        var declaredModuleConfigs = _options.ConnectionConfigs
             .Where(connectionConfig => !string.IsNullOrWhiteSpace(connectionConfig.ConfigId) &&
                                        connectionConfig.ModuleDataSourceConfigs is { Count: > 0 })
             .SelectMany(connectionConfig => connectionConfig.ModuleDataSourceConfigs!
                 .Where(moduleConfig => !string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
-                .Select(moduleConfig => ModuleDataSourceConfigIds.Build(connectionConfig.ConfigId, moduleConfig.ModuleDataSource)));
+                .Select(moduleConfig => (connectionConfig.ConfigId, moduleConfig.ModuleDataSource)))
+            .ToArray();
 
         _allConfigIdArray = [.. _configIdArray
-            .Concat(moduleConfigIds)
+            .Concat(declaredModuleConfigs.Select(pair => ModuleDataSourceConfigIds.Build(pair.ConfigId, pair.ModuleDataSource)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+
+        _moduleDataSourceNameArray = [.. declaredModuleConfigs
+            .Select(pair => pair.ModuleDataSource.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
@@ -111,6 +117,15 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     public IReadOnlyCollection<string> GetConfigIds()
     {
         return _allConfigIdArray;
+    }
+
+    /// <summary>
+    /// 获取配置中出现过的全部模块数据源名
+    /// </summary>
+    /// <returns>模块数据源名集合</returns>
+    public IReadOnlyCollection<string> GetModuleDataSourceNames()
+    {
+        return _moduleDataSourceNameArray;
     }
 
     private string ResolveDefaultConfigId()

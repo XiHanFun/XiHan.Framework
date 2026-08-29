@@ -134,7 +134,7 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库）、`AsTenant()` |
+| `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库，含派生出的模块库）、`GetCurrentLayoutConfigIds()`（当前这一套布局有哪些库）、`AsTenant()` |
 | `ModuleDataSourceAttribute` | 实体上声明所属模块数据源：`[ModuleDataSource("Erp")]`，标在基类上对派生实体生效；SqlSugar 原生 `[Tenant("Erp")]` 同样被识别 |
 | `IEntityModuleDataSourceResolver` | 实体模块数据源解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；默认实现读特性并缓存，可 `Replace` |
 | `IModuleDataSourceConnectionResolver` | 模块数据源连接解析器：`ResolveClient(moduleDataSource, parentConfigId)` 按「模块名 + 当前布局」定连接，两条维度在此交汇 |
@@ -147,7 +147,7 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `IDbInitializer` | `InitializeAsync()`（完整流程）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
+| `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
@@ -425,6 +425,7 @@ public class ErpOrderAppService(IRepositoryBase<ErpOrder, long> orderRepository,
 - **连接串留空表示不分库**：模块条目写了名字、连接串留空，即该模块直接用父连接的主库；条目<b>整条缺失</b>才是未配置。
 - **fail-closed**：实体声明的模块数据源在当前布局与默认布局里都没有配置时直接抛异常，绝不回退主库造成跨库串写。
 - **建表口径一致**：声明了模块数据源的实体只在自己的模块库建表（每套布局各建一份）；未声明的实体不进模块库，需要模块库里也建框架公共表时把该 `ConfigId` 列入 `TableInitialization.SharedConnectionConfigIds`。
+- **模块库跟着启动一起建**：启动时的建库建表遍历的是全量连接标识（含派生出的模块库），模块库不存在会被自动创建；库隔离租户开通时走 `IDbInitializer.InitializeCurrentLayoutAsync()`，把该租户的主库与它自带的模块库一起建出来。
 - **种子按连接圈定**：模块自带的种子标 `[DataSeeding(ConnectionConfigIds = ["Default_Erp"])]`，避免在遍历每个库时重复执行。
 - **兼容 SqlSugar 原生特性**：实体已标了 SqlSugar 的 `[Tenant("Erp")]` 时同样被识别，此时声明的是连接标识本身，按相等匹配。
 - **跨库写不是一个事务**：同一工作单元跨多个库写入时，每个 `ConfigId` 各开一个本地事务，框架不提供跨库分布式事务；需要强一致时把跨库步骤拆成可补偿的流程。

@@ -55,6 +55,12 @@ public interface ISqlSugarClientResolver
     IReadOnlyCollection<string> GetAllConfigIds();
 
     /// <summary>
+    /// 获取当前租户所在布局的全部连接配置标识：主库在前，其下已建连的模块库在后
+    /// </summary>
+    /// <returns>连接配置标识集合</returns>
+    IReadOnlyList<string> GetCurrentLayoutConfigIds();
+
+    /// <summary>
     /// 按顺序获取所有库的客户端（初始化/种子数据等场景使用）
     /// </summary>
     IEnumerable<ISqlSugarClient> GetAllClients();

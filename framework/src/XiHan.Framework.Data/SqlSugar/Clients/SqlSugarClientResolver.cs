@@ -92,6 +92,15 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// <returns>父连接 ConfigId</returns>
     private string ResolveCurrentLayoutConfigId()
     {
+        return ResolveCurrentLayout().ParentConfigId;
+    }
+
+    /// <summary>
+    /// 解析当前租户所在的那套数据库布局
+    /// </summary>
+    /// <returns>父连接 ConfigId 与该租户自带的模块库配置（无则为 null）</returns>
+    private (string ParentConfigId, List<SqlSugarModuleDataSourceConfigOptions>? ModuleConfigs) ResolveCurrentLayout()
+    {
         // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立布局
         // 提供器返回 null → 走静态 ConfigId 解析（字段/行隔离）；抛异常 → fail-closed
         if (_connectionProvider is not null && _currentTenant.Id is { } tenantId)
@@ -100,11 +109,11 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
             if (descriptor is not null)
             {
                 _ = _connectionConfigurator.EnsureTenantConnection(_sqlSugarScope, descriptor);
-                return descriptor.ConfigId.Trim();
+                return (descriptor.ConfigId.Trim(), descriptor.ModuleDataSourceConfigs);
             }
         }
 
-        return _tenantConnectionResolver.ResolveCurrentConfigId();
+        return (_tenantConnectionResolver.ResolveCurrentConfigId(), null);
     }
 
     /// <summary>
@@ -152,6 +161,39 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     public IReadOnlyCollection<string> GetAllConfigIds()
     {
         return _tenantConnectionResolver.GetConfigIds();
+    }
+
+    /// <summary>
+    /// 获取当前租户所在布局的全部连接配置标识：主库在前，其下已建连的模块库在后
+    /// </summary>
+    /// <remarks>
+    /// 给「只初始化这一个租户」的场景用（如库隔离租户开通时建库建表）：
+    /// <see cref="GetAllConfigIds"/> 给的是静态配置里的全量库，覆盖不到运行时才建连的租户库；
+    /// 本方法给的是当前上下文这一套布局，租户自带的模块库也在内。
+    /// </remarks>
+    /// <returns>连接配置标识集合</returns>
+    public IReadOnlyList<string> GetCurrentLayoutConfigIds()
+    {
+        var (parentConfigId, moduleConfigs) = ResolveCurrentLayout();
+        var configIds = new List<string> { parentConfigId };
+
+        // 模块名两处来源：静态配置里出现过的（平台布局），以及该租户描述符自带的
+        var moduleDataSources = _tenantConnectionResolver.GetModuleDataSourceNames()
+            .Concat(moduleConfigs?.Select(moduleConfig => moduleConfig.ModuleDataSource) ?? [])
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var moduleDataSource in moduleDataSources)
+        {
+            var moduleConfigId = ModuleDataSourceConfigIds.Build(parentConfigId, moduleDataSource);
+            if (_sqlSugarScope.IsAnyConnection(moduleConfigId))
+            {
+                configIds.Add(moduleConfigId);
+            }
+        }
+
+        return configIds;
     }
 
     /// <summary>
