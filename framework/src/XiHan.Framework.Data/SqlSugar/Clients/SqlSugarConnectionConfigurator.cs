@@ -85,13 +85,20 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
             {
                 if (!tenant.IsAnyConnection(configId))
                 {
+                    // 整套布局先算齐再落地：模块库派生失败必须抛在主库注册之前，
+                    // 否则主库已在、IsAnyConnection 为真，重试会整段跳过，模块库静默缺席
+                    var moduleConfigs = TenantModuleDataSourceConvention.Merge(
+                        descriptor,
+                        ResolveDefaultLayoutModuleConfigs(),
+                        _options.EnableTenantModuleDatabaseConvention);
+
                     var parentConfig = BuildConnectionConfig(configId, descriptor);
                     tenant.AddConnection(parentConfig);
                     Configure(tenant.GetConnectionScope(configId));
 
-                    // 该租户自带的模块库与主库一并建连：一条描述符给出的是整套布局，
+                    // 该租户的模块库与主库一并建连：一条描述符给出的是整套布局，
                     // 分两次注册会让「主库已在、模块库还没在」的中间态被并发请求看到
-                    EnsureModuleConnections(tenant, parentConfig, descriptor);
+                    EnsureModuleConnections(tenant, parentConfig, moduleConfigs);
                 }
             }
         }
@@ -100,7 +107,7 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
     }
 
     /// <summary>
-    /// 为租户连接注册其自带的模块库
+    /// 为租户连接注册其整套模块库
     /// </summary>
     /// <remarks>
     /// 调用方已持有注册锁。模块库的 ConfigId 由父连接派生，未填的字段继承父连接，
@@ -108,15 +115,10 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
     /// </remarks>
     /// <param name="tenant">SqlSugar 多连接容器</param>
     /// <param name="parentConfig">已注册的父连接原生配置</param>
-    /// <param name="descriptor">租户连接描述符</param>
-    private void EnsureModuleConnections(ITenant tenant, ConnectionConfig parentConfig, SqlSugarTenantConnection descriptor)
+    /// <param name="moduleConfigs">该租户这套布局下的全部模块库配置</param>
+    private void EnsureModuleConnections(ITenant tenant, ConnectionConfig parentConfig, List<SqlSugarModuleDataSourceConfigOptions> moduleConfigs)
     {
-        if (descriptor.ModuleDataSourceConfigs is not { Count: > 0 })
-        {
-            return;
-        }
-
-        foreach (var moduleConfig in descriptor.ModuleDataSourceConfigs)
+        foreach (var moduleConfig in moduleConfigs)
         {
             if (string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
             {
@@ -134,6 +136,22 @@ public sealed class SqlSugarConnectionConfigurator : ISqlSugarConnectionConfigur
             tenant.AddConnection(moduleNativeConfig);
             Configure(tenant.GetConnectionScope(moduleConfigId));
         }
+    }
+
+    /// <summary>
+    /// 取默认布局（<see cref="XiHanSqlSugarCoreOptions.DefaultConfigId"/> 那条连接）下声明的模块库
+    /// </summary>
+    private IEnumerable<SqlSugarModuleDataSourceConfigOptions>? ResolveDefaultLayoutModuleConfigs()
+    {
+        var defaultConfigId = _options.DefaultConfigId?.Trim();
+        if (string.IsNullOrWhiteSpace(defaultConfigId))
+        {
+            return null;
+        }
+
+        return _options.ConnectionConfigs
+            .Find(config => string.Equals(config.ConfigId?.Trim(), defaultConfigId, StringComparison.OrdinalIgnoreCase))
+            ?.ModuleDataSourceConfigs;
     }
 
     private ConnectionConfig BuildConnectionConfig(string configId, SqlSugarTenantConnection descriptor)
