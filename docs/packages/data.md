@@ -184,6 +184,7 @@ public class MyModule : XiHanModule { }
 | `DefaultConfigId` | `string` | `"Default"` | 默认连接标识 |
 | `TenantConfigIdPrefix` | `string` | `"Tenant_"` | 租户连接标识前缀（解析 `前缀+tenantId`） |
 | `ThrowIfTenantConnectionNotFound` | `bool` | `false` | 租户有值但找不到连接时是否抛异常 |
+| `EnableTenantModuleDatabaseConvention` | `bool` | `true` | 库隔离租户按默认布局镜像出自带的整套模块库（库名从租户主库名派生） |
 | `ResolveConnectionConfigId` | `Func<long?,string?,string?>?` | `null` | 自定义租户连接解析委托 |
 | `EnableTenantFilter` | `bool` | `true` | 启用租户行级过滤器 |
 | `EnableSoftDeleteFilter` | `bool` | `true` | 启用软删除过滤器 |
@@ -421,7 +422,7 @@ public class ErpOrderAppService(IRepositoryBase<ErpOrder, long> orderRepository,
 
 - **模块名不是连接标识**：模块库的 `ConfigId` 由父连接派生（`{父连接}_{模块名}`），上例即 `Default_Erp`。因此模块名不占用顶层 `ConfigId` 命名空间，跟租户连接标识撞不上。
 - **两条维度正交**：租户维度先定「用哪一套布局」（主库加它下面的模块库），模块维度再在布局内选库。库隔离租户的模块表落 `Tenant_{租户Id}_Erp`，字段隔离租户落共享的 `Default_Erp`，实体一个字都不用改。
-- **模块库默认共享**：租户连接描述符里没声明该模块时，回落默认布局下的共享模块库——所以「租户主库独立、模块库仍共享」是默认行为，不需要额外配置。
+- **库隔离租户自带整套模块库**：租户连接描述符没声明模块库时，框架按默认布局逐条镜像给它——默认布局给某模块分了库，该租户也分，库名由租户主库名派生成 `{租户库名}_{模块名}`（SQLite 是库文件名）；默认布局那条连接串留空（该模块不分库）时租户同样不分，模块表落它自己的主库。于是「租户声明了库隔离」就意味着它的数据都在自己的库里，不会有一部分悄悄落回公共模块库。开关是 `EnableTenantModuleDatabaseConvention`（默认 `true`），关掉即退回旧行为（模块表回落共享模块库，按 `TenantId` 行过滤区分）。派生不出库名（如 Oracle 这类连接串里没有库名字段）时抛异常，且抛在主库注册之前——整套布局要么一起落地要么都不落地。
 - **连接串留空表示不分库**：模块条目写了名字、连接串留空，即该模块直接用父连接的主库；条目<b>整条缺失</b>才是未配置。
 - **fail-closed**：实体声明的模块数据源在当前布局与默认布局里都没有配置时直接抛异常，绝不回退主库造成跨库串写。
 - **建表口径一致**：声明了模块数据源的实体只在自己的模块库建表（每套布局各建一份）；未声明的实体不进模块库，需要模块库里也建框架公共表时把该 `ConfigId` 列入 `TableInitialization.SharedConnectionConfigIds`。
@@ -430,7 +431,7 @@ public class ErpOrderAppService(IRepositoryBase<ErpOrder, long> orderRepository,
 - **兼容 SqlSugar 原生特性**：实体已标了 SqlSugar 的 `[Tenant("Erp")]` 时同样被识别，此时声明的是连接标识本身，按相等匹配。
 - **跨库写不是一个事务**：同一工作单元跨多个库写入时，每个 `ConfigId` 各开一个本地事务，框架不提供跨库分布式事务；需要强一致时把跨库步骤拆成可补偿的流程。
 
-给某个租户单独开模块库，在它的租户连接描述符里补一条即可：
+要把某个租户的某个模块库指到别处（另一台机器、另一种库），在它的租户连接描述符里显式写出来即可——显式的优先，上面的约定只补它没提到的模块：
 
 ```csharp
 return descriptor with
