@@ -76,11 +76,16 @@ public static partial class StringExtensions
     }
 
     /// <summary>
-    /// 将字符串中的行结尾转换为 <see cref="Environment.NewLine"/>
+    /// 将字符串中的行结尾统一为 <c>\n</c>
     /// </summary>
+    /// <remarks>
+    /// 归一化的产物必须与运行平台无关：原先最后一步替换成 <see cref="Environment.NewLine"/>，
+    /// 于是同一段文本在 Windows 与 Linux 上"归一化"出两种结果，拿去比对或算摘要必然分叉。
+    /// 需要平台原生换行的场景（写本机文本文件、控制台输出）自行再替换成 <see cref="Environment.NewLine"/>。
+    /// </remarks>
     public static string NormalizeLineEndings(this string str)
     {
-        return str.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
+        return str.Replace("\r\n", "\n").Replace('\r', '\n');
     }
 
     /// <summary>
@@ -263,19 +268,26 @@ public static partial class StringExtensions
     }
 
     /// <summary>
-    /// 使用字符串的 Split 方法按 <see cref="Environment.NewLine"/> 拆分给定字符串
+    /// 按行拆分给定字符串，CRLF / LF / CR 三种行尾都认
     /// </summary>
+    /// <remarks>
+    /// 不按 <see cref="Environment.NewLine"/> 拆：文本的行尾取决于它是谁写的，不取决于谁在读。
+    /// 按平台换行符拆，会让 Linux 上读 CRLF 文本时每行尾留一个 <c>\r</c>，
+    /// Windows 上读纯 LF 文本时整段拆不开、只返回一个元素。
+    /// </remarks>
     public static string[] SplitToLines(this string str)
     {
-        return str.Split(Environment.NewLine);
+        return str.NormalizeLineEndings().Split('\n');
     }
 
     /// <summary>
-    /// 使用字符串的"Split"方法，根据 <see cref="Environment.NewLine"/> 来拆分给定的字符串
+    /// 按行拆分给定字符串，CRLF / LF / CR 三种行尾都认
     /// </summary>
+    /// <param name="str">要拆分的字符串</param>
+    /// <param name="options">拆分选项</param>
     public static string[] SplitToLines(this string str, StringSplitOptions options)
     {
-        return str.Split(Environment.NewLine, options);
+        return str.NormalizeLineEndings().Split('\n', options);
     }
 
     /// <summary>

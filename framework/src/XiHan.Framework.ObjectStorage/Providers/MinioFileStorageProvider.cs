@@ -237,7 +237,7 @@ public class MinioFileStorageProvider : FileStorageProviderBase
 
             return new FileMetadata
             {
-                Name = Path.GetFileName(objectName),
+                Name = GetObjectName(objectName),
                 Path = path,
                 Size = stat.Size,
                 ContentType = stat.ContentType,
@@ -335,7 +335,7 @@ public class MinioFileStorageProvider : FileStorageProviderBase
                 {
                     files.Add(new FileMetadata
                     {
-                        Name = Path.GetFileName(item.Key),
+                        Name = GetObjectName(item.Key),
                         Path = item.Key,
                         Size = (long)item.Size,
                         LastModified = item.LastModifiedDateTime ?? DateTimeOffset.MinValue,

@@ -175,11 +175,37 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     }
 
     /// <summary>
+    /// 取对象键的最后一段作为文件名
+    /// </summary>
+    /// <remarks>
+    /// 对象键是协议数据，分隔符只有 <c>/</c>；<c>\</c> 在 S3/OSS/COS 的键里是<b>合法字符</b>。
+    /// 走 <see cref="Path.GetFileName(string)"/> 会按运行平台的分隔符语义拆——Windows 把 <c>\</c>
+    /// 当分隔符、Linux 不当，同一个桶列出来的名字在两个平台就不一样。
+    /// </remarks>
+    /// <param name="objectKey">对象键</param>
+    /// <returns>对象键的最后一段</returns>
+    protected static string GetObjectName(string objectKey)
+    {
+        if (string.IsNullOrEmpty(objectKey))
+        {
+            return string.Empty;
+        }
+
+        var separatorIndex = objectKey.LastIndexOf('/');
+        return separatorIndex < 0 ? objectKey : objectKey[(separatorIndex + 1)..];
+    }
+
+    /// <summary>
     /// 获取文件扩展名
     /// </summary>
+    /// <remarks>
+    /// 同 <see cref="GetObjectName(string)"/>：只认 <c>/</c>，不看运行平台。
+    /// </remarks>
     protected virtual string GetFileExtension(string fileName)
     {
-        return Path.GetExtension(fileName).TrimStart('.');
+        var name = GetObjectName(fileName);
+        var extensionIndex = name.LastIndexOf('.');
+        return extensionIndex > 0 ? name[(extensionIndex + 1)..] : string.Empty;
     }
 
     /// <summary>
