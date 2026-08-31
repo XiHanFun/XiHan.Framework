@@ -327,7 +327,7 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
 
             return Task.FromResult(new FileMetadata
             {
-                Name = Path.GetFileName(objectName),
+                Name = GetObjectName(objectName),
                 Path = path,
                 Size = metadata.ContentLength,
                 ContentType = metadata.ContentType,
@@ -418,7 +418,7 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
                 {
                     files.Add(new FileMetadata
                     {
-                        Name = Path.GetFileName(obj.Key),
+                        Name = GetObjectName(obj.Key),
                         Path = obj.Key,
                         Size = obj.Size,
                         LastModified = obj.LastModified,
