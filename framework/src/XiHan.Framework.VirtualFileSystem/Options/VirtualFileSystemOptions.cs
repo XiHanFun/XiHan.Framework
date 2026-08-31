@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
+using XiHan.Framework.Utils.IO;
 using XiHan.Framework.VirtualFileSystem.Providers;
 using XiHan.Framework.VirtualFileSystem.Providers.Embedded;
 using XiHan.Framework.VirtualFileSystem.Providers.Physical;
@@ -145,10 +146,25 @@ public class VirtualFileSystemOptions
         };
     }
 
+    /// <summary>
+    /// 归一化物理目录，用作 provider 去重键
+    /// </summary>
+    /// <remarks>
+    /// 原先无条件 ToUpperInvariant，那是 Windows 文件系统的语义：Linux 上 <c>/app/Data</c> 与
+    /// <c>/app/data</c> 是两个不同目录，折叠后会被判成同一个 provider，先注册的那个被静默移除、整个挂载根消失。
+    /// 折叠与否按 <see cref="PathHelper.PathComparison"/> 由平台决定。
+    /// </remarks>
+    /// <param name="path">物理目录</param>
+    /// <returns>归一化后的物理目录</returns>
     private static string NormalizePath(string path)
     {
-        return Path.GetFullPath(path)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-            .ToUpperInvariant();
+        var fullPath = Path.GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        // 折叠与否交给平台：Windows 上 C:\App 与 C:\app 是同一个目录，必须折叠才不会重复挂载；
+        // Linux 上是两个目录，折叠会让先注册的那个被静默移除
+        return PathHelper.PathComparison == StringComparison.OrdinalIgnoreCase
+            ? fullPath.ToUpperInvariant()
+            : fullPath;
     }
 }

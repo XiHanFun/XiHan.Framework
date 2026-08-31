@@ -82,15 +82,19 @@ public class StringExtensionsTests
     }
 
     /// <summary>
-    /// 行尾统一为当前平台换行符
+    /// 行尾统一为 \n，且产物与运行平台无关
     /// </summary>
+    /// <remarks>
+    /// 期望值必须是字面量而不是 <see cref="Environment.NewLine"/>：拿平台换行符去验按平台换行符
+    /// 归一化的实现，两边永远自洽，正是这种写法让「归一化产物随平台变」一直没被发现。
+    /// </remarks>
     [Fact]
     public void NormalizeLineEndings_UnifiesAllLineBreaks()
     {
-        var input = "a\r\nb\rc\nd";
-        var expected = string.Join(Environment.NewLine, "a", "b", "c", "d");
-
-        Assert.Equal(expected, input.NormalizeLineEndings());
+        Assert.Equal("a\nb\nc\nd", "a\r\nb\rc\nd".NormalizeLineEndings());
+        Assert.Equal("a\nb", "a\r\nb".NormalizeLineEndings());
+        Assert.Equal("a\nb", "a\rb".NormalizeLineEndings());
+        Assert.Equal("a\nb", "a\nb".NormalizeLineEndings());
     }
 
     /// <summary>
@@ -174,6 +178,23 @@ public class StringExtensionsTests
 
         Assert.Equal(new[] { "a", "b", string.Empty }, input.SplitToLines());
         Assert.Equal(new[] { "a", "b" }, input.SplitToLines(StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    /// <summary>
+    /// 三种行尾都认，且拆分结果与运行平台无关
+    /// </summary>
+    /// <remarks>
+    /// 文本的行尾取决于它是谁写的，不取决于谁在读：按 <see cref="Environment.NewLine"/> 拆，
+    /// Linux 上读 CRLF 文本每行尾会留一个 \r，Windows 上读纯 LF 文本整段拆不开。
+    /// </remarks>
+    [Fact]
+    public void SplitToLines_HandlesAllLineEndingsRegardlessOfPlatform()
+    {
+        Assert.Equal(new[] { "a", "b", "c" }, "a\r\nb\r\nc".SplitToLines());
+        Assert.Equal(new[] { "a", "b", "c" }, "a\nb\nc".SplitToLines());
+        Assert.Equal(new[] { "a", "b", "c" }, "a\rb\rc".SplitToLines());
+        Assert.Equal(new[] { "a", "b", "c" }, "a\r\nb\nc".SplitToLines());
+        Assert.Equal(new[] { "a", "b" }, "a\r\n\r\nb".SplitToLines(StringSplitOptions.RemoveEmptyEntries));
     }
 
     /// <summary>
