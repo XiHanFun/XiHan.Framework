@@ -12,7 +12,7 @@ public sealed class KnowledgeVectorOptions
     /// <summary>
     /// 默认集合名
     /// </summary>
-    public const string DefaultCollectionName = "xihan_knowledge";
+    public const string DefaultCollectionName = "default_knowledge";
 
     /// <summary>
     /// 默认向量维度（text-embedding-3-small）

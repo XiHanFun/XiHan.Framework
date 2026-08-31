@@ -65,4 +65,23 @@ public class SqlSugarConnectionConfigOptions
     /// 需要差异化权重或更多原生定制时，请使用 <see cref="XiHanSqlSugarCoreOptions.ConfigureConnectionConfigs"/> 代码钩子。
     /// </remarks>
     public List<SlaveConnectionConfig>? SlaveConnectionConfigs { get; set; }
+
+    /// <summary>
+    /// 模块数据源连接配置：本套布局下各模块数据源分别用哪个库
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 一条 <see cref="SqlSugarConnectionConfigOptions"/> 描述的是<b>一整套数据库布局</b>——
+    /// 主库（本条自身）加上若干模块库（本属性）。实体标 <c>[ModuleDataSource("Erp")]</c> 即落进对应的模块库。
+    /// </para>
+    /// <para>
+    /// 模块库的实际 ConfigId 由框架派生为 <c>{父ConfigId}_{模块数据源名}</c>，配置里无需书写。
+    /// 因此模块名不占用顶层 ConfigId 命名空间，与租户连接的命名结构上不相交。
+    /// </para>
+    /// <para>
+    /// 租户独立库时，该租户自成一条连接配置并带上自己的模块库；未声明的模块回退到默认连接的同名模块库，
+    /// 于是「租户主库独立、模块库仍共享」这种组合也能表达。
+    /// </para>
+    /// </remarks>
+    public List<SqlSugarModuleDataSourceConfigOptions>? ModuleDataSourceConfigs { get; set; }
 }

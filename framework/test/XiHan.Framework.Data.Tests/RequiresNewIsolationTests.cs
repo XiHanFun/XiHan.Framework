@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Uow;
@@ -69,6 +70,8 @@ public sealed class RequiresNewIsolationTests : IDisposable
         _resolver = new SqlSugarClientResolver(
             _scope,
             new FixedTenantConnectionResolver(OuterConfigId, [OuterConfigId, InnerConfigId]),
+            new EntityModuleDataSourceResolver(),
+            new StubModuleDataSourceConnectionResolver(),
             _unitOfWorkManager,
             new NoTenant(),
             new PassThroughConnectionConfigurator(),
@@ -250,6 +253,12 @@ public sealed class RequiresNewIsolationTests : IDisposable
         /// </summary>
         /// <returns>构造时传入的连接配置标识集合</returns>
         public IReadOnlyCollection<string> GetConfigIds() => configIds;
+
+        /// <summary>
+        /// 获取配置中出现过的全部模块数据源名
+        /// </summary>
+        /// <returns>空集合，本用例不涉及模块数据源</returns>
+        public IReadOnlyCollection<string> GetModuleDataSourceNames() => [];
     }
 
     /// <summary>无租户上下文替身。</summary>
@@ -305,5 +314,14 @@ public sealed class RequiresNewIsolationTests : IDisposable
         /// <returns>不返回，始终抛出 <see cref="NotSupportedException"/></returns>
         public SqlSugarScopeProvider EnsureTenantConnection(ITenant tenant, SqlSugarTenantConnection descriptor)
             => throw new NotSupportedException("用例不涉及库隔离租户的动态连接注册。");
+    }
+
+    /// <summary>
+    /// 模块数据源连接解析器桩：本用例不涉及模块数据源，被调用即说明路由走错了分支。
+    /// </summary>
+    private sealed class StubModuleDataSourceConnectionResolver : IModuleDataSourceConnectionResolver
+    {
+        public ISqlSugarClient ResolveClient(string moduleDataSource, string parentConfigId) =>
+            throw new InvalidOperationException("本用例不应触发模块数据源路由。");
     }
 }

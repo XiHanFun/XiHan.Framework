@@ -27,4 +27,10 @@ public interface ISqlSugarTenantConnectionResolver
     /// </summary>
     /// <returns></returns>
     IReadOnlyCollection<string> GetConfigIds();
+
+    /// <summary>
+    /// 获取配置中出现过的全部模块数据源名
+    /// </summary>
+    /// <returns>模块数据源名集合</returns>
+    IReadOnlyCollection<string> GetModuleDataSourceNames();
 }

@@ -11,7 +11,7 @@ public static class WorkflowConsts
     /// <summary>
     /// 实例执行锁资源键前缀（单实例单写者保证）
     /// </summary>
-    public const string InstanceLockKeyPrefix = "xihan:workflow:lock:instance:";
+    public const string InstanceLockKeyPrefix = "default:workflow:lock:instance:";
 
     /// <summary>
     /// 出边条件求值时注入的活动结果变量名

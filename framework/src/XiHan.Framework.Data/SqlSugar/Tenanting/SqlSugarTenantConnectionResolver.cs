@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.MultiTenancy.Abstractions;
 
 namespace XiHan.Framework.Data.SqlSugar.Tenanting;
@@ -16,6 +17,8 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     private readonly ICurrentTenant _currentTenant;
     private readonly HashSet<string> _configIds;
     private readonly string[] _configIdArray;
+    private readonly string[] _allConfigIdArray;
+    private readonly string[] _moduleDataSourceNameArray;
 
     /// <summary>
     /// 构造函数
@@ -33,6 +36,23 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)];
         _configIds = _configIdArray.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 模块库不参与租户解析（上面的集合），但要参与「遍历所有库」——建表初始化与种子靠它找到模块库
+        var declaredModuleConfigs = _options.ConnectionConfigs
+            .Where(connectionConfig => !string.IsNullOrWhiteSpace(connectionConfig.ConfigId) &&
+                                       connectionConfig.ModuleDataSourceConfigs is { Count: > 0 })
+            .SelectMany(connectionConfig => connectionConfig.ModuleDataSourceConfigs!
+                .Where(moduleConfig => !string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
+                .Select(moduleConfig => (connectionConfig.ConfigId, moduleConfig.ModuleDataSource)))
+            .ToArray();
+
+        _allConfigIdArray = [.. _configIdArray
+            .Concat(declaredModuleConfigs.Select(pair => ModuleDataSourceConfigIds.Build(pair.ConfigId, pair.ModuleDataSource)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+
+        _moduleDataSourceNameArray = [.. declaredModuleConfigs
+            .Select(pair => pair.ModuleDataSource.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
     /// <summary>
@@ -88,12 +108,24 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     }
 
     /// <summary>
-    /// 获取全部连接配置标识
+    /// 获取全部连接配置标识，含各连接下派生出的模块库
     /// </summary>
+    /// <remarks>
+    /// 供建表初始化与种子遍历所有库使用；租户解析只认顶层连接标识，不会命中模块库。
+    /// </remarks>
     /// <returns>连接配置标识集合</returns>
     public IReadOnlyCollection<string> GetConfigIds()
     {
-        return _configIdArray;
+        return _allConfigIdArray;
+    }
+
+    /// <summary>
+    /// 获取配置中出现过的全部模块数据源名
+    /// </summary>
+    /// <returns>模块数据源名集合</returns>
+    public IReadOnlyCollection<string> GetModuleDataSourceNames()
+    {
+        return _moduleDataSourceNameArray;
     }
 
     private string ResolveDefaultConfigId()

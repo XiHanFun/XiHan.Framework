@@ -38,6 +38,17 @@ public interface IJwtTokenService
     List<Claim>? GetClaimsFromToken(string token);
 
     /// <summary>
+    /// 从令牌中提取声明，签名与发行者/受众照常校验，只放过有效期
+    /// </summary>
+    /// <remarks>
+    /// 供刷新令牌一类「令牌已过期才会被调用」的场景解析身份。
+    /// 用 <see cref="GetClaimsFromToken"/> 在这类场景恒返回 null，挂在其结果上的判定会整条空转。
+    /// </remarks>
+    /// <param name="token">JWT Token</param>
+    /// <returns>声明集合</returns>
+    List<Claim>? GetClaimsIgnoringLifetime(string token);
+
+    /// <summary>
     /// 检查令牌是否过期
     /// </summary>
     /// <param name="token">JWT Token</param>

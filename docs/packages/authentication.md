@@ -56,7 +56,7 @@ public class MyModule : XiHanModule { }
 
 **第三方登录**：八家提供商都是 ASP.NET Core 的 `OAuthHandler<TOptions>` 实现，由框架自研而非引入 provider 包。共同部分收在基类 `XiHanOAuthHandler<TOptions>`：默认的 `CreateTicketAsync` 走「Bearer 令牌 GET 用户信息接口 → `RunClaimActions` → `AfterClaimActionsAsync` 钩子 → `Events.CreatingTicket`」，另提供 JSON/表单请求与字段读取助手。偏离通用约定的提供商各自覆写 `BuildChallengeUrl`（授权地址参数）、`ExchangeCodeAsync`（令牌请求与响应字段名）、`CreateTicketAsync`（额外跳数与错误判定）。登录标识统一手动写入 `NameIdentifier`，优先取跨应用唯一的 union 类标识。
 
-**一次性验证码**：`DistributedOneTimeCodeService` 用加密安全随机数生成纯数字码，以 `IDistributedCache`（接入 Redis 即多实例水平扩展）按 `xihan:auth:otc:{purpose}:{target}` 为键存储，可携带一段 `payload`（如换绑场景暂存的新邮箱）。消费时**先删除再校验**（消费即销毁），码不存在/过期/不匹配都返回失败，杜绝重放与穷举；比较用恒定时间函数。
+**一次性验证码**：`DistributedOneTimeCodeService` 用加密安全随机数生成纯数字码，以 `IDistributedCache`（接入 Redis 即多实例水平扩展）按 `default:auth:otc:{purpose}:{target}` 为键存储，可携带一段 `payload`（如换绑场景暂存的新邮箱）。消费时**先删除再校验**（消费即销毁），码不存在/过期/不匹配都返回失败，杜绝重放与穷举；比较用恒定时间函数。
 
 ## 核心能力
 
