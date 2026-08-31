@@ -2,6 +2,43 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.1.0 (2026-08-31)
+
+::: warning 升级须知
+本次含多处破坏性变更：
+
+- 默认节点命名统一为 `Default`：EventBus 的 RabbitMQ `ExchangeName=Default`、`QueueName` / `ClientProvidedName=Default.EventBus`，Kafka `TopicName` / `GroupId=Default.EventBus`，Redis `StreamKey=Default:EventBus:Stream`、`ConsumerGroup=Default.EventBus`；Tasks 的 Redis 作业存储 `KeyPrefix=Default:BackgroundJobs`；Caching / Authentication / Workflow 内部 Redis 键前缀由 `xihan:` 改为 `default:`；AI 知识库默认集合名改为 `default_knowledge`。升级后旧队列里未消费的消息、旧键上的锁与待处理作业不会自动迁移，需要沿用旧名的在 `appsettings` 里显式配置回去；知识库集合改名后须重建或重新摄取
+- 模块分库配置从顶层 `ConnectionConfigs` 条目改为父连接下的 `ModuleDataSourceConfigs`，条目只写模块名与连接串、其余字段继承父连接，`ConfigId` 由框架派生为 `{父连接}_{模块名}`（原 `Erp` 变为 `Default_Erp`）；实体特性 `[DataSource]` 更名为 `[ModuleDataSource]`
+- 库隔离租户的模块表落点从共享模块库（`Default_{模块名}`）改为该租户自己的模块库（库名 `{租户库名}_{模块名}`）。升级后这些是新建的空库，共享模块库里属于这些租户的存量行需自行搬迁；不想迁的把 `XiHan:Data:SqlSugarCore:EnableTenantModuleDatabaseConvention` 置为 `false` 即可维持原状
+- 三个数据访问接口新增成员，自定义实现需补齐：`ISqlSugarClientResolver.GetCurrentLayoutConfigIds()`、`ISqlSugarTenantConnectionResolver.GetModuleDataSourceNames()`、`IDbInitializer.InitializeCurrentLayoutAsync()`
+- `EnableAutoCheckOnStartup` 现在真的会执行迁移。此前 `UpdateScripts` 下的脚本一条都没跑过，升级到本版后它们会在启动时按序全部执行，升级前请先备份数据库
+:::
+
+- **新增** 实体按模块数据源分库路由：实体标 `[ModuleDataSource("Erp")]` 即固定落在该模块库上，租户上下文保持统一；仓储 `DbClient` 与 `CreateQueryable<T>` 改为按实体解析，声明的库无对应连接时 fail-closed；建表初始化同口径收窄（声明了模块库的实体只在自己的库建表），`DataSeederBase` 增加 `DbClientFor<T>()`
+- **新增** 模块分库与租户分库两条维度正交化：实体只声明逻辑模块名，落到哪条连接由「模块名 + 当前租户」共同决定；模块名不再占用顶层 `ConfigId` 命名空间，撞名问题结构性消失
+- **新增** 库隔离租户按约定自带整套模块库：租户连接描述符没声明模块库时，按默认布局逐条镜像给它，库名由租户主库名派生（`TenantModuleConnectionStringDeriver` / `TenantModuleDataSourceConvention`）；显式声明优先于约定，认不出库名字段（如 Oracle）直接抛而不静默回落公共模块库；开关 `EnableTenantModuleDatabaseConvention` 默认开
+- **新增** SignalR 会话闸门 `SessionStateHubFilter`：建连与方法调用走与 HTTP 侧同一个 `ISessionStateGate`，已登出、被踢下线、已过期的会话不再能收实时推送；会话抽象由 `Web.Api/Session` 下沉到 `Web.Core/Session`，HTTP 中间件与选项仍留在 `Web.Api`
+- **新增** `GetClaimsIgnoringLifetime`：只放过有效期，签名与发行者 / 受众照验；刷新令牌只在令牌过期后才被调用，挂在旧解析路径上的会话有效性与模仿态判定此前恒空转
+- **新增** 模仿态原语 `ICurrentUser` / `ClaimsPrincipal` 的 `IsImpersonating()` 与 `XiHanClaimsIdentityExtensions.BuildImpersonatorClaims(...)`，调用方不必手拼声明字符串
+- **修复** 启动自检只建版本记录、从不执行迁移：`IUpgradeEngine.ExecuteAsync` 全仓零调用方，`UpdateScripts` 下的脚本写下去就没跑过、`sys_version.db_version` 恒停在 `0.0.0`，给既有实体加字段后部署即 42703 且不报任何错。改为自检之后同步执行迁移，失败抛出中断启动；未注册引擎时安静跳过
+- **修复** 建库建表遍历漏掉模块库：`DbInitializer` 自己拼的名单只有顶层 `ConfigId`，派生出的模块库整批掉出循环且全程零异常，改为走 `ISqlSugarClientResolver.GetAllConfigIds()`；库隔离租户开通时只初始化主库，补 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局把主库与模块库一起建
+- **修复** 模块另指一个物理库却没声明从库时照搬父库从库，读会落到别的库上；改为只在模块不分库时才继承
+- **修复** 模仿者用户标识三处用 `Guid.TryParse` 解析，而系统用户主键全链路是 `long`，写进去后恒解析成 `null`——不抛异常、不报编译错，模仿态判定静默失效
+- **调整** 删除只有 csproj、零源文件的空壳 `XiHan.Framework.TestsBase`；两个可运行示例宿主由 `framework/test/` 移到新建的 `framework/sample/`，清理后 `framework/test` 下正好 66 个目录且与 `src` 严格一一对应
+- **优化** 覆盖率门禁按 CI 实测重新标定：覆盖行数下限 44000 → 30000（实测 34236，原值高出 28.5%、结构上不可能通过），百分比下限保持 41.0；两个条件分开判分开报，并打印 parser / assemblies / coverablelines / branchcoverage，另新增一步上传合并后的覆盖率报告
+- **优化** bin/obj 清理脚本的清理根由写死的 `src` 扩为 `src` / `test` / `sample` / `tool` 四个，过滤条件由 `bin/obj/public` 收窄为 `bin/obj`——`public` 不是构建产物，未提交的文件会被直接删掉
+- **优化** 版本升级脚本新增「按提交推导」升级类型：从最近一个版本标签数到 HEAD，约定式提交的类型即级别；脚本标题与全部功能挪进 `.ps1`，`.bat` 只管快捷调用
+- **优化** 文档部署工作流的 `setup-node` 升到 v7，与本仓另外两条工作流取齐
+- **调整** README 改造为双语（`README.md` 英文 / `README_cn.md` 中文），并逐条 grep 核实后修正一批与代码不符的模块描述、把 `Security` 在分层图上从第 6 层移到第 5 层
+- **升级** 发布 v4.1.0
+
+## v4.0.1 (2026-08-28)
+
+- **修复** NuGet 可信发布登录在 `vars.NUGET_USER` 未配置时展开为空串，必填校验失败
+- **修复** 移除模块加载日志
+- **优化** 移除过时脚本与过时测试，清理编辑器配置
+- **升级** 升级依赖，发布 v4.0.1
+
 ## v4.0.0 (2026-08-28)
 
 ::: warning 升级须知
