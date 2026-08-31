@@ -37,8 +37,8 @@ public class XiHanKafkaEventBusOptionsTests
         var options = new XiHanKafkaEventBusOptions();
 
         Assert.Equal("localhost:9092", options.BootstrapServers);
-        Assert.Equal("XiHan.EventBus", options.TopicName);
-        Assert.Equal("XiHan.EventBus", options.GroupId);
+        Assert.Equal("Default.EventBus", options.TopicName);
+        Assert.Equal("Default.EventBus", options.GroupId);
         Assert.Equal("earliest", options.AutoOffsetReset);
         Assert.True(options.EnsureTopicExists);
         Assert.Equal(1, options.TopicPartitionCount);
@@ -128,8 +128,8 @@ public class XiHanKafkaEventBusOptionsTests
         });
 
         Assert.Equal("kafka-1:9092", options.BootstrapServers);
-        Assert.Equal("XiHan.EventBus", options.TopicName);
-        Assert.Equal("XiHan.EventBus", options.GroupId);
+        Assert.Equal("Default.EventBus", options.TopicName);
+        Assert.Equal("Default.EventBus", options.GroupId);
         Assert.Equal("earliest", options.AutoOffsetReset);
         Assert.True(options.EnsureTopicExists);
         Assert.Equal(1, options.TopicPartitionCount);
@@ -148,7 +148,7 @@ public class XiHanKafkaEventBusOptionsTests
         });
 
         Assert.Equal("localhost:9092", options.BootstrapServers);
-        Assert.Equal("XiHan.EventBus", options.TopicName);
+        Assert.Equal("Default.EventBus", options.TopicName);
         Assert.True(options.EnsureTopicExists);
     }
 

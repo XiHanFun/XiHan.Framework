@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using SqlSugar;
 using System.Reflection;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Utils.Reflections;
 
@@ -15,21 +16,26 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 /// </summary>
 /// <remarks>
 /// 扫描全部标注 <see cref="SugarTable"/> 的 <see cref="IEntityBase"/> 实体作为候选（扫描结果缓存），
-/// 再按 <see cref="TableInitializationAttribute"/> 与 <see cref="TableInitializationOptions"/> 逐个筛选。
+/// 再按模块数据源声明、<see cref="TableInitializationAttribute"/> 与 <see cref="TableInitializationOptions"/> 逐个筛选。
 /// </remarks>
 public class DbEntityTypeProvider : IDbEntityTypeProvider
 {
     private readonly IOptions<XiHanSqlSugarCoreOptions> _options;
+    private readonly IEntityModuleDataSourceResolver _moduleDataSourceResolver;
     private readonly Lazy<IReadOnlyList<Type>> _candidateEntityTypes;
+    private readonly Lazy<IReadOnlyList<string>> _moduleDataSourceNames;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="options">SqlSugarCore 选项</param>
-    public DbEntityTypeProvider(IOptions<XiHanSqlSugarCoreOptions> options)
+    /// <param name="moduleDataSourceResolver">实体模块数据源解析器</param>
+    public DbEntityTypeProvider(IOptions<XiHanSqlSugarCoreOptions> options, IEntityModuleDataSourceResolver moduleDataSourceResolver)
     {
         _options = options;
+        _moduleDataSourceResolver = moduleDataSourceResolver;
         _candidateEntityTypes = new Lazy<IReadOnlyList<Type>>(ScanEntityTypes, LazyThreadSafetyMode.ExecutionAndPublication);
+        _moduleDataSourceNames = new Lazy<IReadOnlyList<string>>(CollectModuleDataSourceNames, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -59,6 +65,11 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     /// <returns>参与返回 true</returns>
     protected virtual bool ShouldInitialize(Type entityType, TableInitializationOptions selection, DbInitializationContext context)
     {
+        if (!IsModuleDataSourceAllowed(entityType, selection, context))
+        {
+            return false;
+        }
+
         var attribute = entityType.GetCustomAttribute<TableInitializationAttribute>(inherit: true);
         if (attribute is not null)
         {
@@ -91,6 +102,78 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     }
 
     /// <summary>
+    /// 判断实体与当前库的模块数据源归属是否匹配
+    /// </summary>
+    /// <remarks>
+    /// 模块库的 ConfigId 由父连接派生（形如 <c>Default_Erp</c>、<c>Tenant_1001_Erp</c>），
+    /// 所以声明了模块数据源的实体，在所有以该模块名结尾的连接上都要建表——每套布局各建一份；
+    /// 未声明的实体不进模块库，除非该连接被 <see cref="TableInitializationOptions.SharedConnectionConfigIds"/> 放行。
+    /// 当前连接标识未知时一律放行。
+    /// </remarks>
+    /// <param name="entityType">实体类型</param>
+    /// <param name="selection">建表选取选项</param>
+    /// <param name="context">当前库上下文</param>
+    /// <returns>匹配返回 true</returns>
+    protected virtual bool IsModuleDataSourceAllowed(Type entityType, TableInitializationOptions selection, DbInitializationContext context)
+    {
+        var declaredName = _moduleDataSourceResolver.ResolveModuleDataSource(entityType)?.Trim();
+        var currentConfigId = context.ConnectionConfigId?.Trim();
+
+        if (string.IsNullOrWhiteSpace(currentConfigId))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(declaredName))
+        {
+            // 相等一条留给 SqlSugar 原生 TenantAttribute：它声明的本就是连接标识本身
+            return IsModuleConnection(currentConfigId, declaredName) ||
+                   string.Equals(declaredName, currentConfigId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return !IsAnyModuleConnection(currentConfigId) ||
+               DbInitializationFilters.MatchesAny(selection.SharedConnectionConfigIds, currentConfigId);
+    }
+
+    /// <summary>
+    /// 判断某个连接标识是否为指定模块数据源派生出的模块库
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <param name="moduleDataSource">模块数据源名</param>
+    /// <returns>是返回 true</returns>
+    private static bool IsModuleConnection(string configId, string moduleDataSource)
+    {
+        var suffix = $"{ModuleDataSourceConfigIds.Separator}{moduleDataSource}";
+        return configId.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) &&
+               configId.Length > suffix.Length;
+    }
+
+    /// <summary>
+    /// 判断某个连接标识是否为任一模块数据源派生出的模块库
+    /// </summary>
+    /// <param name="configId">连接配置标识</param>
+    /// <returns>是返回 true</returns>
+    private bool IsAnyModuleConnection(string configId)
+    {
+        return _moduleDataSourceNames.Value.Any(name => IsModuleConnection(configId, name));
+    }
+
+    /// <summary>
+    /// 收集配置中出现过的全部模块数据源名
+    /// </summary>
+    /// <returns>模块数据源名集合</returns>
+    private IReadOnlyList<string> CollectModuleDataSourceNames()
+    {
+        return [.. _options.Value.ConnectionConfigs
+            .Where(connectionConfig => connectionConfig.ModuleDataSourceConfigs is { Count: > 0 })
+            .SelectMany(connectionConfig => connectionConfig.ModuleDataSourceConfigs!)
+            .Select(moduleConfig => moduleConfig.ModuleDataSource?.Trim())
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
+    /// <summary>
     /// 扫描全部候选实体类型
     /// </summary>
     /// <returns>实体类型集合</returns>
@@ -98,4 +181,5 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     {
         return [.. ReflectionHelper.GetContainsAttributeSubClasses<IEntityBase, SugarTable>()];
     }
+
 }

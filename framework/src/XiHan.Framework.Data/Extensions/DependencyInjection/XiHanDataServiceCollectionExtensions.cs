@@ -18,6 +18,7 @@ using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Metadata;
 using XiHan.Framework.Data.SqlSugar.Options;
 using XiHan.Framework.Data.SqlSugar.Repository;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Data.SqlSugar.Tenanting;
 using XiHan.Framework.DistributedIds;
@@ -52,6 +53,10 @@ public static class XiHanDataServiceCollectionExtensions
         // 注册核心服务
         services.TryAddSingleton(CreateScope);
         services.TryAddScoped<ISqlSugarTenantConnectionResolver, SqlSugarTenantConnectionResolver>();
+        // 实体模块数据源解析器：实体 → 模块数据源名，仓储路由与建表初始化共用
+        services.TryAddSingleton<IEntityModuleDataSourceResolver, EntityModuleDataSourceResolver>();
+        // 模块数据源连接解析器：模块名 + 当前布局 → 实际连接，两条维度在此交汇
+        services.TryAddScoped<IModuleDataSourceConnectionResolver, ModuleDataSourceConnectionResolver>();
         // 客户端解析器（按当前租户解析连接，并在事务型 UoW 中自动接入事务）
         services.TryAddScoped<ISqlSugarClientResolver, SqlSugarClientResolver>();
         // 当前租户对应的 ISqlSugarClient 直接注入
@@ -116,6 +121,72 @@ public static class XiHanDataServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// 按父连接派生模块库的原生连接配置：除模块名与显式覆盖项外，其余字段一律继承父连接
+    /// </summary>
+    /// <remarks>
+    /// <c>ConnectionString</c> 留空表示该模块不分库——直接复用父连接的主库连接串，
+    /// 于是模块库与主库指向同一个物理库，路由仍然成立、只是没有分开。
+    /// </remarks>
+    /// <param name="parent">父连接的原生配置（已填好框架默认值）</param>
+    /// <param name="moduleConfig">模块数据源配置</param>
+    /// <param name="options">SqlSugarCore 选项</param>
+    /// <returns>模块库的原生连接配置</returns>
+    internal static ConnectionConfig BuildModuleConnectionConfig(
+        ConnectionConfig parent,
+        SqlSugarModuleDataSourceConfigOptions moduleConfig,
+        XiHanSqlSugarCoreOptions options)
+    {
+        var parentConfigId = parent.ConfigId?.ToString() ?? string.Empty;
+        var config = new ConnectionConfig
+        {
+            ConfigId = ModuleDataSourceConfigIds.Build(parentConfigId, moduleConfig.ModuleDataSource),
+            ConnectionString = string.IsNullOrWhiteSpace(moduleConfig.ConnectionString)
+                ? parent.ConnectionString
+                : moduleConfig.ConnectionString,
+            DbType = moduleConfig.DbType ?? parent.DbType,
+            IsAutoCloseConnection = moduleConfig.IsAutoCloseConnection ?? parent.IsAutoCloseConnection,
+            InitKeyType = moduleConfig.InitKeyType ?? parent.InitKeyType,
+            MoreSettings = BuildMoreSettings(moduleConfig.MoreSettings, options),
+            SlaveConnectionConfigs = NormalizeSlaveHitRates(
+                ResolveModuleSlaveConfigs(parent, moduleConfig), options),
+            DbLinkName = moduleConfig.DbLinkName ?? parent.DbLinkName,
+            LanguageType = moduleConfig.LanguageType ?? parent.LanguageType
+        };
+
+        var indexSuffix = moduleConfig.IndexSuffix ?? parent.IndexSuffix;
+        if (!string.IsNullOrWhiteSpace(indexSuffix))
+        {
+            config.IndexSuffix = indexSuffix;
+        }
+
+        return config;
+    }
+
+    /// <summary>
+    /// 解析模块库的从库配置
+    /// </summary>
+    /// <remarks>
+    /// 模块显式声明了从库就用它。没声明时按模块是否分库区分：连接串留空说明模块与父连接是<b>同一个物理库</b>，
+    /// 从库照样有效，继承；连接串另指一个库时不继承——把父库的从库挂到另一个物理库上，读到的是别的库的数据。
+    /// </remarks>
+    /// <param name="parent">父连接的原生配置</param>
+    /// <param name="moduleConfig">模块数据源配置</param>
+    /// <returns>模块库的从库配置</returns>
+    private static List<SlaveConnectionConfig>? ResolveModuleSlaveConfigs(
+        ConnectionConfig parent,
+        SqlSugarModuleDataSourceConfigOptions moduleConfig)
+    {
+        if (moduleConfig.SlaveConnectionConfigs is not null)
+        {
+            return moduleConfig.SlaveConnectionConfigs;
+        }
+
+        return string.IsNullOrWhiteSpace(moduleConfig.ConnectionString)
+            ? parent.SlaveConnectionConfigs
+            : null;
     }
 
     internal static ConnMoreSettings BuildMoreSettings(ConnMoreSettings? rawSettings, XiHanSqlSugarCoreOptions options)
@@ -356,6 +427,19 @@ public static class XiHanDataServiceCollectionExtensions
                 return config;
             })
             .ToList();
+
+        // 派生模块库连接：一条连接配置描述的是「主库 + 若干模块库」一整套布局，
+        // 模块库的 ConfigId 由父连接派生，不占用顶层命名空间
+        var moduleConnectionConfigs = options.ConnectionConfigs
+            .Where(connConfig => connConfig.ModuleDataSourceConfigs is { Count: > 0 })
+            .SelectMany(connConfig => connConfig.ModuleDataSourceConfigs!
+                .Where(moduleConfig => !string.IsNullOrWhiteSpace(moduleConfig.ModuleDataSource))
+                .Select(moduleConfig => BuildModuleConnectionConfig(
+                    connectionConfigs.First(config => Equals(config.ConfigId, connConfig.ConfigId)),
+                    moduleConfig,
+                    options)))
+            .ToList();
+        connectionConfigs.AddRange(moduleConnectionConfigs);
 
         // 设置自定义全局雪花ID生成器
         StaticConfig.CustomSnowFlakeFunc = idGenerator.NextId;

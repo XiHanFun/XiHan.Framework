@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using SqlSugar;
 using XiHan.Framework.Data.SqlSugar.Initializers;
 using XiHan.Framework.Data.SqlSugar.Options;
+using XiHan.Framework.Data.SqlSugar.Routing;
 using XiHan.Framework.Data.SqlSugar.Seeders;
 using XiHan.Framework.Domain.Entities.Abstracts;
 
@@ -19,6 +20,8 @@ namespace XiHan.Framework.Data.Tests;
 /// </remarks>
 public sealed class DbInitializationSelectionTests
 {
+    private static readonly EntityModuleDataSourceResolver Resolver = new();
+
     private static readonly DbInitializationContext PlatformContext = new("Default", null, isTenantDatabase: false);
     private static readonly DbInitializationContext TenantContext = new("Tenant_5", 5, isTenantDatabase: true);
 
@@ -170,7 +173,9 @@ public sealed class DbInitializationSelectionTests
 
     private static DbEntityTypeProvider CreateEntityTypeProvider(TableInitializationOptions selection)
     {
-        return new DbEntityTypeProvider(Options.Create(new XiHanSqlSugarCoreOptions { TableInitialization = selection }));
+        return new DbEntityTypeProvider(
+            Options.Create(new XiHanSqlSugarCoreOptions { TableInitialization = selection }),
+            Resolver);
     }
 
     private static DataSeederSelector CreateSeederSelector(DataSeedingOptions selection)

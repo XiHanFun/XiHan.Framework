@@ -233,7 +233,7 @@ public class MyModule : XiHanModule { }
 
 | 字段 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
-| `KeyPrefix` | `string` | `"XiHan:BackgroundJobs"` | 键前缀：作业体键 `{Prefix}:job:{id}`，活跃索引有序集合 `{Prefix}:index` |
+| `KeyPrefix` | `string` | `"Default:BackgroundJobs"` | 键前缀：作业体键 `{Prefix}:job:{id}`，活跃索引有序集合 `{Prefix}:index` |
 | `AbandonedRetentionDays` | `int` | `7` | 已放弃作业的保留天数（移出活跃索引，作业体设 TTL 便于事后排查） |
 | `FetchMultiplier` | `int` | `4` | 候选加载倍数：每轮从索引取 `maxResultCount × 本值` 条到期候选，内存二次排序后再取 `maxResultCount` |
 

@@ -182,7 +182,7 @@ Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expir
       "Redis": {
         "IsEnabled": true,
         "Configuration": "127.0.0.1:6379,password=mypassword,defaultDatabase=0,abortConnect=false",
-        "InstanceName": "xihan:"
+        "InstanceName": "Default:"
       }
     }
   }

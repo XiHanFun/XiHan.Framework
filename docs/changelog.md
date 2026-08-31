@@ -15,7 +15,7 @@
 - 示例宿主工程更名：`XiHan.Framework.Web.Tests` → `XiHan.Framework.Web.Host`、`XiHan.Framework.Integration.Tests` → `XiHan.Framework.Integration.Host`，模块类同步更名为 `XiHanWebHostModule` / `XiHanIntegrationHostModule`
 :::
 
-- **新增** 单元测试工程补齐至 66 个，与 `framework/src` 下的包一一对应，全量 11257 个用例；行覆盖率由最初基线 11.7% / 6928 行升至 45.8% / 49080 行，分支覆盖 42.7%，CI 门禁随之上调至 41% / 44000 行
+- **新增** 单元测试工程补齐至 66 个，与 `framework/src` 下的包一一对应，全量 11257 个用例；CI 实测行覆盖率 45.1% / 34236 行、分支覆盖 43.6%（66 个程序集，可覆盖 75774 行），CI 门禁随之上调至 41% / 30000 行
 - **修复** Castle 拦截器上真异步 `Task<T>` 方法被拦截即死锁：包装任务写回 Castle 返回值槽位后又从同一槽位读回 await，等的是它自己
 - **修复** 本地对象存储的分片上传每次都失败：独占写入流未释放即对同一路径读回算哈希，异常被兜底 catch 吞成 `Success=false`
 - **修复** Scriban 模板上下文桥接从未生效：类型别名遮蔽导致交给 Scriban 的是框架自己的上下文对象，模板里取不到任何变量、渲染结果全空

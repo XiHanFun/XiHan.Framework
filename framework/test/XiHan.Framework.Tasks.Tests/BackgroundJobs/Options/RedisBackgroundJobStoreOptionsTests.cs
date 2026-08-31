@@ -21,7 +21,7 @@ public class RedisBackgroundJobStoreOptionsTests
     [Fact]
     public void Defaults_KeyPrefixIsStable()
     {
-        Assert.Equal("XiHan:BackgroundJobs", new RedisBackgroundJobStoreOptions().KeyPrefix);
+        Assert.Equal("Default:BackgroundJobs", new RedisBackgroundJobStoreOptions().KeyPrefix);
     }
 
     /// <summary>

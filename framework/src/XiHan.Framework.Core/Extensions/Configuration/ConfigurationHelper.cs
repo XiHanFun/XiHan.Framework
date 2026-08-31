@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Utils.Extensions;
 
 namespace XiHan.Framework.Core.Extensions.Configuration;
@@ -40,7 +41,7 @@ public static class ConfigurationHelper
         }
 
         // 开发环境，加载用户机密
-        if (options.EnvironmentName == "Development")
+        if (options.EnvironmentName == Environments.Development)
         {
             if (options.UserSecretsId is not null)
             {

@@ -37,6 +37,26 @@ public class XiHanSqlSugarCoreOptions
     public bool ThrowIfTenantConnectionNotFound { get; set; } = false;
 
     /// <summary>
+    /// 库隔离租户是否按约定自带整套模块库
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 开启时，租户连接提供器没有显式给出 <c>ModuleDataSourceConfigs</c> 的库隔离租户，
+    /// 其模块库按默认布局逐条镜像出来：默认布局给某模块单独分了库，该租户也分，库名由租户主库名派生
+    /// （见 <see cref="Tenanting.TenantModuleConnectionStringDeriver"/>）；默认布局那条连接串留空
+    /// （即该模块不分库），该租户同样不分，模块表落进它自己的主库。
+    /// </para>
+    /// <para>
+    /// 于是「租户声明了库隔离」就意味着它的全部数据都在它自己的库里，不会有一部分悄悄落回公共模块库。
+    /// 提供器显式给出的 <c>ModuleDataSourceConfigs</c> 优先，本约定只补它没说的部分。
+    /// </para>
+    /// <para>
+    /// 关闭则退回旧行为：库隔离租户只有主库独立，模块表落默认布局下的共享模块库，按 <c>TenantId</c> 行过滤区分。
+    /// </para>
+    /// </remarks>
+    public bool EnableTenantModuleDatabaseConvention { get; set; } = true;
+
+    /// <summary>
     /// 自定义租户连接解析
     /// </summary>
     public Func<long?, string?, string?>? ResolveConnectionConfigId { get; set; }

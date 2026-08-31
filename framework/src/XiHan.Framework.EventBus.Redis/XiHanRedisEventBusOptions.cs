@@ -21,12 +21,12 @@ public class XiHanRedisEventBusOptions
     /// <summary>
     /// 事件流键（所有事件写入同一 Stream，以字段区分事件名）
     /// </summary>
-    public string StreamKey { get; set; } = "XiHan:EventBus:Stream";
+    public string StreamKey { get; set; } = "Default:EventBus:Stream";
 
     /// <summary>
     /// 消费者组名称（同组内竞争消费，保证分布式事件在集群中只被处理一次）
     /// </summary>
-    public string ConsumerGroup { get; set; } = "XiHan.EventBus";
+    public string ConsumerGroup { get; set; } = "Default.EventBus";
 
     /// <summary>
     /// 单次读取批量大小

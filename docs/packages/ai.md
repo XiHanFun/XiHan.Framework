@@ -114,7 +114,7 @@ MCP 工具桥接 `AddXiHanMcpServerTools()` 不在模块内自动调用，须配
 
 `DefaultKnowledgeIngestor` / `DefaultKnowledgeRetriever` 用固定的记录模型：
 
-- 集合名常量 `CollectionName = "xihan_knowledge"`
+- 集合名常量 `CollectionName = "default_knowledge"`
 - 主键 `Guid Id`，由 `MakeId(documentId, index)` 用 `MD5(documentId:index)` 确定性派生（同文档同序号恒等，重建即覆盖）。用 `Guid` 是因为 Qdrant 只支持 `Guid`/`ulong` 键，`Guid` 兼容各连接器
 - 过滤字段 `DocumentId` / `TenantId` 标 `IsIndexed = true` 以支持 pre-filter
 - 向量维度编译期常量 `EmbeddingDimensions = 1536`（对齐 `text-embedding-3-small`）；换维度的嵌入模型须改此常量并重建集合。距离函数 `CosineSimilarity`，索引 `Hnsw`

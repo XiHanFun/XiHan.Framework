@@ -14,6 +14,16 @@ public interface IDbInitializer
     Task InitializeAsync();
 
     /// <summary>
+    /// 初始化当前租户所在的这一整套布局：主库加上该租户自带的模块库
+    /// </summary>
+    /// <remarks>
+    /// 给「只初始化这一个租户」的场景用（如库隔离租户开通时建库建表）。
+    /// 与 <see cref="InitializeAsync"/> 的区别是不遍历静态配置里的全部库，
+    /// 也不改动当前租户上下文——调用方切到目标租户后调它即可。
+    /// </remarks>
+    Task InitializeCurrentLayoutAsync();
+
+    /// <summary>
     /// 创建数据库（如果不存在）
     /// </summary>
     Task CreateDatabaseAsync();

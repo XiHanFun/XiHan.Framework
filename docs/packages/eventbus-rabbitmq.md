@@ -103,11 +103,11 @@ public class MyModule : XiHanModule { }
 | `UserName` | `string` | `guest` | 用户名 |
 | `Password` | `string` | `guest` | 密码 |
 | `VirtualHost` | `string` | `/` | 虚拟主机 |
-| `ExchangeName` | `string` | `XiHan` | 交换机名称 |
+| `ExchangeName` | `string` | `Default` | 交换机名称 |
 | `ExchangeType` | `string` | `direct` | 交换机类型（`direct` / `topic` / `fanout`），空值回退 `direct` |
-| `QueueName` | `string` | `XiHan.EventBus` | 队列名称（同一应用的多实例共享 → 竞争消费） |
+| `QueueName` | `string` | `Default.EventBus` | 队列名称（同一应用的多实例共享 → 竞争消费） |
 | `PrefetchCount` | `ushort` | `50` | 消费者预取数量（QoS） |
-| `ClientProvidedName` | `string` | `XiHan.EventBus` | 客户端连接名（便于在管理台识别） |
+| `ClientProvidedName` | `string` | `Default.EventBus` | 客户端连接名（便于在管理台识别） |
 
 ```json
 {
@@ -119,7 +119,7 @@ public class MyModule : XiHanModule { }
         "UserName": "guest",
         "Password": "guest",
         "VirtualHost": "/",
-        "ExchangeName": "XiHan",
+        "ExchangeName": "MyApp",
         "ExchangeType": "direct",
         "QueueName": "MyApp.EventBus",
         "PrefetchCount": 50,
