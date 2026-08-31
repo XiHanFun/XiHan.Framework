@@ -36,7 +36,7 @@ public sealed class RedisDistributedLock : IDistributedLock
             throw new ArgumentOutOfRangeException(nameof(expiry), "锁过期时间必须大于零。");
         }
 
-        var key = (RedisKey)$"xihan:lock:{resourceKey.Trim()}";
+        var key = (RedisKey)$"default:lock:{resourceKey.Trim()}";
         var lockId = Guid.NewGuid().ToString("N");
         var db = _connection.GetDatabase();
 

@@ -65,8 +65,9 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 return;
             }
 
-            var configIds = _options.ConnectionConfigs
-                .Select(c => c.ConfigId)
+            // 取全量连接标识而不是原始配置里的顶层条目：模块库挂在父连接下面、ConfigId 由框架派生，
+            // 只枚举顶层就会把它们整批漏掉——既不建库也不建表，且全程无异常
+            var configIds = _clientResolver.GetAllConfigIds()
                 .Where(c => !string.IsNullOrWhiteSpace(c))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -89,6 +90,41 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         {
             _logger.LogError(ex, "数据库初始化失败: {Error}", ex.Message);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 初始化当前租户所在的这一整套布局：主库加上该租户自带的模块库
+    /// </summary>
+    /// <remarks>
+    /// 不改动当前租户上下文——调用方已经切到目标租户，这里再切一次会把上下文清掉、
+    /// 把连接解析回平台库。所以逐个 ConfigId 直接调内部方法，不走 <c>InitializeForConfigAsync</c>。
+    /// </remarks>
+    public async Task InitializeCurrentLayoutAsync()
+    {
+        if (!_options.EnableDbInitialization)
+        {
+            _logger.LogInformation("数据库初始化已禁用（EnableDbInitialization = false），跳过初始化");
+            return;
+        }
+
+        foreach (var configId in _clientResolver.GetCurrentLayoutConfigIds())
+        {
+            _logger.LogInformation("开始初始化数据库连接: 连接[{ConfigId}]", configId);
+
+            await CreateDatabaseInternalAsync(configId);
+
+            if (_options.EnableTableInitialization)
+            {
+                await CreateTablesInternalAsync(configId);
+            }
+
+            if (_options.EnableDataSeeding)
+            {
+                await SeedDataInternalAsync(configId);
+            }
+
+            _logger.LogInformation("数据库连接初始化完成: 连接[{ConfigId}]", configId);
         }
     }
 

@@ -47,6 +47,16 @@ public abstract class DataSeederBase : IDataSeeder
     protected ISqlSugarClient DbClient => ClientResolver.GetCurrentClient();
 
     /// <summary>
+    /// 实体对应的 SqlSugar 客户端：实体声明了数据源取该库，否则按当前租户上下文解析
+    /// </summary>
+    /// <typeparam name="T">实体类型</typeparam>
+    /// <returns>Scope 级客户端</returns>
+    protected ISqlSugarClient DbClientFor<T>()
+    {
+        return ClientResolver.GetClientForEntity(typeof(T));
+    }
+
+    /// <summary>
     /// 种子数据优先级（数字越小优先级越高）
     /// </summary>
     public abstract int Order { get; }
@@ -87,7 +97,7 @@ public abstract class DataSeederBase : IDataSeeder
     /// <returns></returns>
     protected async Task<bool> HasDataAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
     {
-        return await DbClient.Queryable<T>().AnyAsync(predicate);
+        return await DbClientFor<T>().Queryable<T>().AnyAsync(predicate);
     }
 
     /// <summary>
@@ -102,7 +112,7 @@ public abstract class DataSeederBase : IDataSeeder
             return;
         }
 
-        await DbClient.Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
+        await DbClientFor<T>().Insertable(entities).ExecuteReturnSnowflakeIdListAsync();
         Logger.LogInformation("已插入 {Count} 条 {EntityType} 数据", entities.Count, typeof(T).Name);
     }
 }

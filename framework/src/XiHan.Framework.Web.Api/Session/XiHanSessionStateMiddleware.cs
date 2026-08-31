@@ -9,6 +9,7 @@ using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Core.Session;
 
 namespace XiHan.Framework.Web.Api.Session;
 

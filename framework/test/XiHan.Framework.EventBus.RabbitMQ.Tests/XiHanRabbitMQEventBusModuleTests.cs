@@ -119,8 +119,8 @@ public class XiHanRabbitMQEventBusModuleTests
         Assert.Null(options.Uri);
         Assert.Equal("localhost", options.HostName);
         Assert.Equal(5672, options.Port);
-        Assert.Equal("XiHan", options.ExchangeName);
-        Assert.Equal("XiHan.EventBus", options.QueueName);
+        Assert.Equal("Default", options.ExchangeName);
+        Assert.Equal("Default.EventBus", options.QueueName);
         Assert.Equal((ushort)50, options.PrefetchCount);
     }
 

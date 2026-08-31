@@ -175,14 +175,14 @@ public static class XiHanClaimsIdentityExtensions
     /// </summary>
     /// <param name="principal"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorUserId(this ClaimsPrincipal principal)
+    public static long? FindImpersonatorUserId(this ClaimsPrincipal principal)
     {
         Guard.NotNull(principal, nameof(principal));
 
         var impersonatorUserIdOrNull = principal.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorUserId);
         return impersonatorUserIdOrNull is null || impersonatorUserIdOrNull.Value.IsNullOrWhiteSpace()
             ? null
-            : Guid.TryParse(impersonatorUserIdOrNull.Value, out var guid) ? guid : null;
+            : long.TryParse(impersonatorUserIdOrNull.Value, out var id) ? id : null;
     }
 
     /// <summary>
@@ -190,7 +190,7 @@ public static class XiHanClaimsIdentityExtensions
     /// </summary>
     /// <param name="identity"></param>
     /// <returns></returns>
-    public static Guid? FindImpersonatorUserId(this IIdentity identity)
+    public static long? FindImpersonatorUserId(this IIdentity identity)
     {
         Guard.NotNull(identity, nameof(identity));
 
@@ -199,7 +199,62 @@ public static class XiHanClaimsIdentityExtensions
         var impersonatorUserIdOrNull = claimsIdentity?.Claims.FirstOrDefault(c => c.Type == XiHanClaimTypes.ImpersonatorUserId);
         return impersonatorUserIdOrNull is null || impersonatorUserIdOrNull.Value.IsNullOrWhiteSpace()
             ? null
-            : Guid.TryParse(impersonatorUserIdOrNull.Value, out var guid) ? guid : null;
+            : long.TryParse(impersonatorUserIdOrNull.Value, out var id) ? id : null;
+    }
+
+    /// <summary>
+    /// 是否处于模仿态
+    /// </summary>
+    /// <param name="principal"></param>
+    /// <returns></returns>
+    public static bool IsImpersonating(this ClaimsPrincipal principal)
+    {
+        return principal.FindImpersonatorUserId().HasValue;
+    }
+
+    /// <summary>
+    /// 构建模仿者声明集合
+    /// </summary>
+    /// <remarks>
+    /// 用户标识不大于 0、或可选项为空白时，对应声明不产出。
+    /// </remarks>
+    /// <param name="impersonatorUserId">模仿者用户标识</param>
+    /// <param name="impersonatorUserName">模仿者用户名</param>
+    /// <param name="impersonatorTenantId">模仿者租户标识</param>
+    /// <param name="impersonatorTenantName">模仿者租户名称</param>
+    /// <returns>模仿者声明集合</returns>
+    public static IReadOnlyList<Claim> BuildImpersonatorClaims(
+        long impersonatorUserId,
+        string? impersonatorUserName = null,
+        long? impersonatorTenantId = null,
+        string? impersonatorTenantName = null)
+    {
+        if (impersonatorUserId <= 0)
+        {
+            return [];
+        }
+
+        var claims = new List<Claim>
+        {
+            new(XiHanClaimTypes.ImpersonatorUserId, impersonatorUserId.ToString())
+        };
+
+        if (!impersonatorUserName.IsNullOrWhiteSpace())
+        {
+            claims.Add(new Claim(XiHanClaimTypes.ImpersonatorUserName, impersonatorUserName));
+        }
+
+        if (impersonatorTenantId.HasValue)
+        {
+            claims.Add(new Claim(XiHanClaimTypes.ImpersonatorTenantId, impersonatorTenantId.Value.ToString()));
+        }
+
+        if (!impersonatorTenantName.IsNullOrWhiteSpace())
+        {
+            claims.Add(new Claim(XiHanClaimTypes.ImpersonatorTenantName, impersonatorTenantName));
+        }
+
+        return claims;
     }
 
     /// <summary>
