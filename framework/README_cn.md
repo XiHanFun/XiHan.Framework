@@ -92,7 +92,7 @@
 | `Workflow` | 工作流引擎：图执行引擎、内置活动集、人工任务（审批）、表达式求值、定时器调度、内存存储默认实现 |
 | `Castle` | AOP 动态代理：Castle DynamicProxy 集成，服务拦截器注册 |
 | `Logging` | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
-| `Serialization` | 序列化：System.Text.Json + Newtonsoft.Json 双引擎、策略管理 |
+| `Serialization` | 序列化：基于 System.Text.Json 的动态 JSON 操作、序列化选项组合 |
 | `Http` | HTTP 客户端：Polly 韧性策略（重试/熔断）、请求管道 |
 | `Localization.Abstractions` | 国际化抽象：`IStringLocalizer` 抽象层 |
 | `Localization` | 国际化：多语言资源文件、动态文化切换 |

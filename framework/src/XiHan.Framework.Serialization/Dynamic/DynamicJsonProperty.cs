@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.Serialization.Dynamic;
 
 /// <summary>
-/// 动态 JSON 属性，类似 Newtonsoft.Json 的 JProperty
+/// 动态 JSON 属性，承载 JSON 对象中的一对键与值
 /// </summary>
 public class DynamicJsonProperty : DynamicObject, IEquatable<DynamicJsonProperty>
 {
