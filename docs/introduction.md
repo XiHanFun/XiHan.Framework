@@ -120,7 +120,7 @@ await app.RunAsync();
 | 缓存 | HybridCache + StackExchange.Redis | 10.9.0 / 10.0.11 |
 | AOP | Castle DynamicProxy | 5.2.1 |
 | 加密 | BouncyCastle | 2.7.0 |
-| 序列化 | System.Text.Json + Newtonsoft.Json | 13.0.4 |
+| 序列化 | System.Text.Json | 10.0 |
 | 模板引擎 | Scriban | 7.2.6 |
 | AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
 | HTTP 韧性 | Polly | 10.0.11 |
