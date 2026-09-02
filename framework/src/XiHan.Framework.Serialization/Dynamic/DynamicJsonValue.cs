@@ -10,7 +10,7 @@ using XiHan.Framework.Utils.Extensions;
 namespace XiHan.Framework.Serialization.Dynamic;
 
 /// <summary>
-/// 动态 JSON 值，类似 Newtonsoft.Json 的 JValue
+/// 动态 JSON 值，基于 System.Text.Json.Nodes 的 JsonValue 承载
 /// </summary>
 public class DynamicJsonValue : DynamicObject, IEquatable<DynamicJsonValue>
 {
