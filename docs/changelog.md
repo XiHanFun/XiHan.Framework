@@ -5,7 +5,7 @@
 ## v4.2.0 (2026-09-04)
 
 ::: warning 升级须知
-`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`——该包只用 `System.Text.Json`，那条引用一直是死引用。此前靠它传递拿到 `Newtonsoft.Json` 的下游工程将拿不到，需自行声明。用到 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
+`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`，只用 `System.Text.Json`。此前靠它传递拿到 `Newtonsoft.Json` 的下游工程将拿不到，需自行声明。用到 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
 
 另有两处产物与运行平台脱钩，输出可能与上一版不同：`NormalizeLineEndings` 固定产出 `\n`（此前在 Windows 上产出 `\r\n`），`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只挡 `\0` 与 `/`）。
 :::
