@@ -9,4 +9,8 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.ObjectStorage\XiHan.Framework.ObjectStorage.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    </ItemGroup>
+
 </Project>

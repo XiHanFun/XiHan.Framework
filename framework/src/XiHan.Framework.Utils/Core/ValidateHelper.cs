@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Mail;
 using System.Text.Json;
+using XiHan.Framework.Utils.IO;
 
 namespace XiHan.Framework.Utils.Core;
 
@@ -398,13 +399,9 @@ public static class ValidateHelper
     /// <returns></returns>
     public static bool IsValidFileName(string checkValue)
     {
-        if (string.IsNullOrWhiteSpace(checkValue))
-        {
-            return false;
-        }
-
-        var invalidChars = Path.GetInvalidFileNameChars();
-        return !checkValue.Any(c => invalidChars.Contains(c));
+        // 走 PathHelper 的平台无关判定：Path.GetInvalidFileNameChars() 的集合随平台变
+        // （Windows 41 个字符、Linux 只有 \0 与 /），同一个文件名在两个平台会得到相反的结论
+        return PathHelper.IsValidFileName(checkValue);
     }
 
     /// <summary>

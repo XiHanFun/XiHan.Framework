@@ -11,7 +11,7 @@ using XiHan.Framework.Utils.Serialization.Json;
 namespace XiHan.Framework.Serialization.Dynamic;
 
 /// <summary>
-/// 动态 JSON 对象，类似 Newtonsoft.Json 的 JObject
+/// 动态 JSON 对象，基于 System.Text.Json.Nodes 的 JsonObject 承载，支持动态成员访问
 /// </summary>
 public class DynamicJsonObject : DynamicObject, IEnumerable<DynamicJsonProperty>, IEquatable<DynamicJsonObject>
 {

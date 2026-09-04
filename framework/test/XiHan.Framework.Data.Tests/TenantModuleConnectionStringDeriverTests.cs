@@ -58,9 +58,38 @@ public sealed class TenantModuleConnectionStringDeriverTests
             DbType.Sqlite,
             "Erp");
 
-        var path = ValueOf(derived, "DataSource");
-        Assert.Equal("qqq_Erp.db", Path.GetFileName(path));
-        Assert.Equal(@"C:\data", Path.GetDirectoryName(path));
+        Assert.Equal(@"C:\data\qqq_Erp.db", ValueOf(derived, "DataSource"));
+        Assert.Equal("False", ValueOf(derived, "Pooling"));
+    }
+
+    [Theory]
+    [InlineData(@"C:\data\qqq.db", @"C:\data\qqq_Erp.db")]
+    [InlineData("/var/lib/xihan/qqq.db", "/var/lib/xihan/qqq_Erp.db")]
+    [InlineData("./data/qqq.db", "./data/qqq_Erp.db")]
+    [InlineData("qqq.db", "qqq_Erp.db")]
+    [InlineData("qqq", "qqq_Erp")]
+    [InlineData("qqq.sqlite3", "qqq_Erp.sqlite3")]
+    public void Sqlite_派生结果不随运行平台变化(string original, string expected)
+    {
+        // 连接串是配置数据，不是本地文件系统路径。Path.* 用的是运行平台的语义——
+        // Linux 上 \ 不算分隔符，Windows 路径会被整串当文件名；Path.Combine 还会替换分隔符。
+        // 这组用例在 Windows 与 Linux 上必须给出同一个答案，否则本地绿、CI 红。
+        var derived = TenantModuleConnectionStringDeriver.Derive(
+            $"DataSource={original};Pooling=False",
+            DbType.Sqlite,
+            "Erp");
+
+        Assert.Equal(expected, ValueOf(derived, "DataSource"));
+    }
+
+    [Fact]
+    public void Sqlite_路径以分隔符结尾时拒绝派生()
+    {
+        // 没有文件名可换，派生出来的是个目录，连不上——按 fail-closed 拒绝
+        _ = Assert.Throws<NotSupportedException>(() => TenantModuleConnectionStringDeriver.Derive(
+            "DataSource=/var/lib/xihan/",
+            DbType.Sqlite,
+            "Erp"));
     }
 
     [Fact]

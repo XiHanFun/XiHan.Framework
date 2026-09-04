@@ -92,7 +92,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Workflow` | Workflow engine: graph execution engine, built-in activity set, human tasks (approvals), expression evaluation, timer scheduling, in-memory store by default |
 | `Castle` | AOP dynamic proxy: Castle DynamicProxy integration and interceptor registration |
 | `Logging` | Structured logging: Serilog integration, file/console sinks, async writes |
-| `Serialization` | Serialization: dual engines (System.Text.Json + Newtonsoft.Json) with policy management |
+| `Serialization` | Serialization: dynamic JSON manipulation and `JsonSerializerOptions` composition on System.Text.Json |
 | `Http` | HTTP client: Polly resilience (retry / circuit breaker), request pipeline |
 | `Localization.Abstractions` | Localization abstractions: the `IStringLocalizer` layer |
 | `Localization` | Localization: multi-language resource files, runtime culture switching |

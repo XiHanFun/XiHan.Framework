@@ -68,8 +68,9 @@ public class MemoryUsageTests
     {
         var usage = MemoryUsage.Create();
 
-        // 强制一次完整回收，三代计数都会推进，增量必须能反映出来
-        GC.Collect();
+        // 必须显式 Forced：无参 GC.Collect() 走 GCCollectionMode.Default，运行时可以判断「没必要」
+        // 而不真回收，gen2 计数便不推进——用例随机红，且只在机器空闲/刚回收过时才复现
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true);
         GC.WaitForPendingFinalizers();
         usage.Complete();
 

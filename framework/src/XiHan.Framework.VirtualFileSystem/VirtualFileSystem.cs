@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.Utils.IO;
 using XiHan.Framework.Utils.Threading;
 using XiHan.Framework.VirtualFileSystem.Events;
 using XiHan.Framework.VirtualFileSystem.Options;
@@ -26,10 +27,10 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 {
     private readonly Lock _syncLock = new();
     private readonly List<PrioritizedFileProvider> _providers = [];
-    private readonly HashSet<string> _physicalPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _physicalPaths = new(PathHelper.PathComparer);
     private readonly HashSet<Assembly> _embeddedAssemblies = [];
-    private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, Regex> _watchRegexCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, DateTime> _fileStateCache = new(PathHelper.PathComparer);
+    private readonly ConcurrentDictionary<string, Regex> _watchRegexCache = new(StringComparer.Ordinal);
     private readonly Debouncer _changeDebouncer;
     private readonly bool _enableChangeTracking;
     private IFileProvider _compositeProvider = new NullFileProvider();
@@ -126,7 +127,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
         var normalizedRoot = PathResolver.ResolveVirtualPath(virtualPath);
         var normalizedPattern = NormalizeFilter(searchPattern);
-        var results = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var results = new HashSet<string>(StringComparer.Ordinal);
         var pendingDirectories = new Stack<string>();
         pendingDirectories.Push(normalizedRoot);
 
@@ -159,7 +160,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             }
         }
 
-        return results.OrderBy(static x => x, StringComparer.OrdinalIgnoreCase).ToArray();
+        return results.OrderBy(static x => x, StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>
@@ -262,7 +263,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             .Replace(@"\*", @"[^/]*")
             .Replace(@"\?", ".");
 
-        return new Regex($"^{regexPattern}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        return new Regex($"^{regexPattern}$", RegexOptions.Compiled);
     }
 
     private static string NormalizeFilter(string filter)
@@ -462,7 +463,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
 
             var currentFiles = new HashSet<string>(
                 files.Select(NormalizePhysicalPath),
-                StringComparer.OrdinalIgnoreCase
+                PathHelper.PathComparer
             );
 
             foreach (var file in currentFiles)
@@ -486,7 +487,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             }
 
             var deletedFiles = _fileStateCache.Keys
-                .Where(x => x.StartsWith(physicalPath, StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.StartsWith(physicalPath, PathHelper.PathComparison))
                 .Where(x => !currentFiles.Contains(x))
                 .Where(x => IsPhysicalFileMatchFilter(physicalPath, x, normalizedFilter))
                 .ToList();
@@ -502,7 +503,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
         {
             var currentResourceNames = assembly.GetManifestResourceNames()
                 .Where(x => IsEmbeddedResourceMatchFilter(x, normalizedFilter))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet(StringComparer.Ordinal);
 
             foreach (var resourceName in currentResourceNames)
             {
@@ -517,7 +518,7 @@ public class VirtualFileSystem : IVirtualFileSystem, IDisposable
             }
 
             var deletedResources = _fileStateCache.Keys
-                .Where(x => x.StartsWith($"{assembly.FullName}::", StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.StartsWith($"{assembly.FullName}::", StringComparison.Ordinal))
                 .Where(x => !currentResourceNames.Contains(GetEmbeddedResourceNameFromCacheKey(x)))
                 .ToList();
 

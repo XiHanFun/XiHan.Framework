@@ -39,6 +39,29 @@ public static class PathHelper
     private static readonly char[] PathSeparators = ['/', '\\'];
 
     /// <summary>
+    /// 本机文件系统路径的比较方式：Windows 与 macOS 默认不区分大小写，类 Unix 区分
+    /// </summary>
+    /// <remarks>
+    /// 只用于比较<b>本机文件系统路径</b>——大小写规则本就由运行平台的文件系统决定，
+    /// 硬编码 <see cref="StringComparison.OrdinalIgnoreCase"/> 会在 Linux 上把
+    /// <c>/app/Data</c> 与 <c>/app/data</c> 这两个不同目录判成同一个。
+    /// 净化后的文件名、对象存储的键、配置里的路径字符串这些是<b>数据</b>不是本机路径，
+    /// 一律用 <see cref="StringComparison.Ordinal"/>，不要用这个。
+    /// </remarks>
+    public static StringComparison PathComparison { get; } =
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+    /// <summary>
+    /// 本机文件系统路径的比较器，语义同 <see cref="PathComparison"/>
+    /// </summary>
+    public static StringComparer PathComparer { get; } =
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+
+    /// <summary>
     /// 无效路径字符正则表达式
     /// </summary>
     private static readonly Regex InvalidPathCharsRegex = new(@"[<>:""/\\|?*\x00-\x1f]", RegexOptions.Compiled);
@@ -112,26 +135,12 @@ public static class PathHelper
             return false;
         }
 
-        // 检查 Windows 保留名称
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName).ToUpperInvariant();
-            if (WindowsReservedNames.Contains(nameWithoutExtension))
-            {
-                return false;
-            }
-        }
-
-        // 检查是否以点或空格结尾（Windows 限制）
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            if (fileName.EndsWith('.') || fileName.EndsWith(' '))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        // 保留名与末尾点/空格是 Windows 的限制，但判定不看运行平台：
+        // 同一个文件名在两个平台给出相反结论，会让「本地能建、部署后建不了」这类问题晚一步才暴露
+        var nameWithoutExtension = GetFileNameWithoutExtensionOrdinal(fileName).ToUpperInvariant();
+        return !WindowsReservedNames.Contains(nameWithoutExtension) &&
+               !fileName.EndsWith('.') &&
+               !fileName.EndsWith(' ');
     }
 
     /// <summary>
@@ -172,12 +181,43 @@ public static class PathHelper
             var fullPath = Path.GetFullPath(Path.Combine(basePath, path));
             var fullBasePath = Path.GetFullPath(basePath);
 
-            return fullPath.StartsWith(fullBasePath, StringComparison.OrdinalIgnoreCase);
+            return IsWithin(fullBasePath, fullPath);
         }
         catch
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// 判断一个已展开的绝对路径是否落在基准目录之内（含基准目录自身）
+    /// </summary>
+    /// <remarks>
+    /// 必须卡在分隔符边界上：裸前缀匹配会把 <c>/app/database/secret</c> 判成 <c>/app/data</c> 的子路径，
+    /// 目录穿越就是这么放行的。大小写按运行平台的文件系统语义判定，见 <see cref="PathComparison"/>。
+    /// </remarks>
+    /// <param name="fullBasePath">基准目录的绝对路径</param>
+    /// <param name="fullPath">待判定的绝对路径</param>
+    /// <returns>落在基准目录之内返回 true</returns>
+    private static bool IsWithin(string fullBasePath, string fullPath)
+    {
+        var normalizedBase = fullBasePath.TrimEnd(PathSeparators);
+        var normalizedPath = fullPath.TrimEnd(PathSeparators);
+
+        // 基准目录是根（TrimEnd 后为空或形如 C:）时，同盘任何路径都在其内
+        if (normalizedBase.Length == 0)
+        {
+            return true;
+        }
+
+        if (string.Equals(normalizedBase, normalizedPath, PathComparison))
+        {
+            return true;
+        }
+
+        return normalizedPath.Length > normalizedBase.Length &&
+               normalizedPath.StartsWith(normalizedBase, PathComparison) &&
+               PathSeparators.Contains(normalizedPath[normalizedBase.Length]);
     }
 
     #endregion
@@ -250,28 +290,20 @@ public static class PathHelper
             return string.Empty;
         }
 
-        var sanitized = fileName;
+        // 按各平台限制的并集净化，不看运行平台：净化产物要落库、进 URL、跨平台流转，
+        // 用 Path.GetInvalidFileNameChars() 会让同一个文件名在 Windows（41 个非法字符）
+        // 与 Linux（只有 \0 和 /）上被清洗成两个不同的字符串
+        var sanitized = InvalidFileNameCharsRegex.Replace(fileName, replacement.ToString());
 
-        // 替换无效字符
-        foreach (var invalidChar in Path.GetInvalidFileNameChars())
+        // 保留名与末尾点/空格是 Windows 的限制，但同样无条件处理：
+        // 取最严格的规则，产物才能在任何平台上都是合法文件名
+        var nameWithoutExtension = GetFileNameWithoutExtensionOrdinal(sanitized);
+        if (WindowsReservedNames.Contains(nameWithoutExtension.ToUpperInvariant()))
         {
-            sanitized = sanitized.Replace(invalidChar, replacement);
+            sanitized = $"{nameWithoutExtension}{replacement}{GetExtensionOrdinal(sanitized)}";
         }
 
-        // Windows 特殊处理
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            // 处理保留名称
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
-            if (WindowsReservedNames.Contains(nameWithoutExtension.ToUpperInvariant()))
-            {
-                var extension = Path.GetExtension(sanitized);
-                sanitized = $"{nameWithoutExtension}{replacement}{extension}";
-            }
-
-            // 移除末尾的点和空格
-            sanitized = sanitized.TrimEnd('.', ' ');
-        }
+        sanitized = sanitized.TrimEnd('.', ' ');
 
         // 确保文件名不为空
         if (string.IsNullOrWhiteSpace(sanitized))
@@ -463,7 +495,7 @@ public static class PathHelper
 
         for (var i = 0; i < minLength; i++)
         {
-            if (string.Equals(parts1[i], parts2[i], StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(parts1[i], parts2[i], PathComparison))
             {
                 commonParts.Add(parts1[i]);
             }
@@ -501,7 +533,7 @@ public static class PathHelper
         var normalized1 = NormalizePath(path1);
         var normalized2 = NormalizePath(path2);
 
-        return string.Equals(normalized1, normalized2, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(normalized1, normalized2, PathComparison);
     }
 
     /// <summary>
@@ -519,11 +551,7 @@ public static class PathHelper
 
         try
         {
-            var fullParentPath = Path.GetFullPath(parentPath);
-            var fullChildPath = Path.GetFullPath(childPath);
-
-            return fullChildPath.StartsWith(fullParentPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-                   PathEquals(fullParentPath, fullChildPath);
+            return IsWithin(Path.GetFullPath(parentPath), Path.GetFullPath(childPath));
         }
         catch
         {
@@ -648,7 +676,14 @@ public static class PathHelper
             return string.Empty;
         }
 
-        var normalizedPath = NormalizePath(path).ToLowerInvariant();
+        // 分隔符统一成 '/'（不取平台分隔符），大小写按平台的文件系统语义折叠：
+        // 同一个路径在同一台机器上必须得到同一个哈希，而 Windows 上 C:\A 与 C:\a 就是同一个路径
+        var normalizedPath = NormalizePath(path, '/');
+        if (PathComparison == StringComparison.OrdinalIgnoreCase)
+        {
+            normalizedPath = normalizedPath.ToLowerInvariant();
+        }
+
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath));
         return Convert.ToHexString(hashBytes);
     }
@@ -690,6 +725,49 @@ public static class PathHelper
 
         // 如果无法智能截断，直接截断
         return path[..(maxLength - ellipsis.Length)] + ellipsis;
+    }
+
+    #endregion
+
+    #region 平台无关的名称拆分
+
+    /// <summary>
+    /// 取文件名中扩展名之前的部分，两种分隔符都认，不看运行平台
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Path.GetFileNameWithoutExtension(string)"/> 按运行平台的分隔符语义拆分，
+    /// 处理「要跨平台流转的名字」时会给出不同结果，故此处自行按字符拆。
+    /// </remarks>
+    /// <param name="fileName">文件名或路径</param>
+    /// <returns>扩展名之前的部分</returns>
+    private static string GetFileNameWithoutExtensionOrdinal(string fileName)
+    {
+        var name = GetFileNameOrdinal(fileName);
+        var extensionIndex = name.LastIndexOf('.');
+        return extensionIndex > 0 ? name[..extensionIndex] : name;
+    }
+
+    /// <summary>
+    /// 取文件名的扩展名（含点），两种分隔符都认，不看运行平台
+    /// </summary>
+    /// <param name="fileName">文件名或路径</param>
+    /// <returns>扩展名，无扩展名时为空串</returns>
+    private static string GetExtensionOrdinal(string fileName)
+    {
+        var name = GetFileNameOrdinal(fileName);
+        var extensionIndex = name.LastIndexOf('.');
+        return extensionIndex > 0 ? name[extensionIndex..] : string.Empty;
+    }
+
+    /// <summary>
+    /// 取路径最后一段，两种分隔符都认，不看运行平台
+    /// </summary>
+    /// <param name="path">文件名或路径</param>
+    /// <returns>最后一段</returns>
+    private static string GetFileNameOrdinal(string path)
+    {
+        var separatorIndex = path.LastIndexOfAny(PathSeparators);
+        return separatorIndex < 0 ? path : path[(separatorIndex + 1)..];
     }
 
     #endregion

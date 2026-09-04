@@ -64,7 +64,7 @@ XiHan.Framework is a modular backend framework for enterprise applications, desi
 - **Single responsibility** — each package owns exactly one functional area
 - **Open/closed** — open for extension, closed for modification, customizable through interfaces and base classes
 - **.NET 10 first** — use the built-ins (DI, logging, serialization) and reach for third-party libraries only when necessary
-- **Performance** — built on .NET 10's high-performance features; AOT is out of scope (SqlSugar / Castle DynamicProxy / Newtonsoft.Json are not trimming-compatible yet)
+- **Performance** — built on .NET 10's high-performance features; AOT is out of scope (SqlSugar / Castle DynamicProxy, plus Newtonsoft.Json pulled in transitively by SqlSugar, are not trimming-compatible yet)
 
 ## Tech Stack
 
@@ -77,7 +77,7 @@ XiHan.Framework is a modular backend framework for enterprise applications, desi
 | Caching | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis |
 | AOP | Castle.Core (DynamicProxy) |
 | Cryptography | BouncyCastle.Cryptography |
-| Serialization | System.Text.Json (built-in) + Newtonsoft.Json |
+| Serialization | System.Text.Json (built-in) |
 | Templating | Scriban |
 | AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP |
 | HTTP resilience | Microsoft.Extensions.Http.Polly |

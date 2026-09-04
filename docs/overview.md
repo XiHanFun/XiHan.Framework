@@ -9,7 +9,7 @@ XiHan.Framework 是面向企业级应用的**模块化后端框架**，专为前
 - **单一职责** —— 每个包只负责一个特定的功能领域
 - **开闭原则** —— 对扩展开放、对修改关闭，通过接口和抽象类支持自定义
 - **优先 .NET 10** —— 使用内置能力（DI、日志、序列化），仅在必要时引入第三方库
-- **性能优化** —— 利用 .NET 10 高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy / Newtonsoft.Json 暂不兼容裁剪）
+- **性能优化** —— 利用 .NET 10 高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy，以及 SqlSugar 传递引入的 Newtonsoft.Json 暂不兼容裁剪）
 
 ## 为什么是"模块化"
 
@@ -86,7 +86,7 @@ XiHan.Framework 是面向企业级应用的**模块化后端框架**，专为前
 | 缓存 | HybridCache + StackExchange.Redis | 10.9.0 / 10.0.11 |
 | AOP | Castle DynamicProxy | 5.2.1 |
 | 加密 | BouncyCastle | 2.7.0 |
-| 序列化 | System.Text.Json + Newtonsoft.Json | 13.0.4 |
+| 序列化 | System.Text.Json | 10.0 |
 | 模板引擎 | Scriban | 7.2.6 |
 | AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
 | HTTP 韧性 | Polly | 10.0.11 |
