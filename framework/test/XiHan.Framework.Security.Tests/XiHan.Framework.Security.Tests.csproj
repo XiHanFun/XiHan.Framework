@@ -8,4 +8,8 @@
       <ProjectReference Include="..\..\src\XiHan.Framework.Security\XiHan.Framework.Security.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    </ItemGroup>
+
 </Project>
