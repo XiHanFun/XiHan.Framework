@@ -2,6 +2,21 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.2.0 (2026-09-04)
+
+::: warning 升级须知
+`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`——该包只用 `System.Text.Json`，那条引用一直是死引用。此前靠它传递拿到 `Newtonsoft.Json` 的下游工程将拿不到，需自行声明。用到 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
+
+另有两处产物与运行平台脱钩，输出可能与上一版不同：`NormalizeLineEndings` 固定产出 `\n`（此前在 Windows 上产出 `\r\n`），`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只挡 `\0` 与 `/`）。
+:::
+
+- **新增** `PathHelper.PathComparison` / `PathComparer`：本机文件系统路径的大小写口径改由运行平台决定，`PathEquals` / `IsSubPath` / `GetCommonPath` 与虚拟文件系统的物理路径去重键、变更追踪缓存都改走它——此前硬编码 `OrdinalIgnoreCase`，在 Linux 上会把 `/app/Data` 与 `/app/data` 两个不同目录判成同一个；虚拟路径与嵌入资源名是逻辑标识不是本机路径，一律 `Ordinal`
+- **新增** 建表扫描不再要求实体继承 `IEntityBase`，标了 `[SugarTable]` 即是候选
+- **修复** `IsPathSafe` 与 `IsSubPath` 用裸前缀匹配判目录穿越：`basePath` 为 `/app/data` 时 `/app/database/secret` 前缀成立即被判为安全，改为卡在分隔符边界上
+- **修复** 要跨平台流转的数据不再跟着运行平台走：净化后的文件名按各平台限制的并集处理（保留名与末尾的点、空格无条件判定），对象存储的键只认 `/`（`\` 在 S3 / OSS / COS 的键里是合法字符），`SplitToLines` 三种行尾都认、`NormalizeLineEndings` 产物固定为 `\n`
+- **调整** `XiHan.Framework.Serialization` 移除 `Newtonsoft.Json` 引用
+- **升级** 升级依赖，发布 v4.2.0
+
 ## v4.1.0 (2026-08-31)
 
 ::: warning 升级须知
@@ -23,6 +38,7 @@
 - **修复** 建库建表遍历漏掉模块库：`DbInitializer` 自己拼的名单只有顶层 `ConfigId`，派生出的模块库整批掉出循环且全程零异常，改为走 `ISqlSugarClientResolver.GetAllConfigIds()`；库隔离租户开通时只初始化主库，补 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局把主库与模块库一起建
 - **修复** 模块另指一个物理库却没声明从库时照搬父库从库，读会落到别的库上；改为只在模块不分库时才继承
 - **修复** 模仿者用户标识三处用 `Guid.TryParse` 解析，而系统用户主键全链路是 `long`，写进去后恒解析成 `null`——不抛异常、不报编译错，模仿态判定静默失效
+- **修复** 模块库派生出的 SQLite 库文件名跟着运行平台走：连接串是配置数据，却按 `Path.*` 的平台语义解析——Linux 上反斜杠不算分隔符，`C:\data\qqq.db` 被整串当文件名，派生成 `C:\data\qqq_Erp.db`；`Path.Combine` 还会把分隔符换成当前平台的，改掉原连接串的风格。改为按字符切分，两种分隔符都认，目录段连分隔符一起原样保留
 - **升级** 发布 v4.1.0
 
 ## v4.0.1 (2026-08-28)
