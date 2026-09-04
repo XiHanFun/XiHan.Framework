@@ -8,5 +8,9 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    </ItemGroup>
+
 
 </Project>
