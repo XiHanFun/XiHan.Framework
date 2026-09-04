@@ -337,7 +337,7 @@ public class TencentCosStorageProvider : FileStorageProviderBase
 
             return Task.FromResult(new FileMetadata
             {
-                Name = Path.GetFileName(objectKey),
+                Name = GetObjectName(objectKey),
                 Path = path,
                 Size = result.size,
                 ContentType = result.cosStorageClass,
@@ -446,7 +446,7 @@ public class TencentCosStorageProvider : FileStorageProviderBase
                     {
                         files.Add(new FileMetadata
                         {
-                            Name = Path.GetFileName(content.key),
+                            Name = GetObjectName(content.key),
                             Path = content.key,
                             Size = content.size,
                             LastModified = DateTimeOffset.TryParse(content.lastModified, out var lm) ? lm : DateTimeOffset.MinValue,

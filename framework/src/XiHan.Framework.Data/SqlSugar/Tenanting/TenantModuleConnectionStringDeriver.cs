@@ -34,6 +34,11 @@ public static class TenantModuleConnectionStringDeriver
     private static readonly string[] FileKeys = ["Data Source", "DataSource", "FileName", "Filename"];
 
     /// <summary>
+    /// 路径分隔符：两种都认，不看运行平台
+    /// </summary>
+    private static readonly char[] PathSeparators = ['/', '\\'];
+
+    /// <summary>
     /// 按约定派生模块库连接串
     /// </summary>
     /// <param name="tenantConnectionString">租户主库连接串（明文）</param>
@@ -73,6 +78,13 @@ public static class TenantModuleConnectionStringDeriver
     /// <summary>
     /// SQLite：换库文件名，保留原目录与扩展名
     /// </summary>
+    /// <remarks>
+    /// 按字符切分而不是走 <see cref="Path"/>：连接串是配置数据，不是本地文件系统路径。
+    /// <see cref="Path"/> 用的是<b>运行平台</b>的路径语义——Linux 上 <c>\</c> 不算分隔符，
+    /// <c>C:\data\qqq.db</c> 会被整串当成文件名，派生出 <c>C:\data\qqq_Erp.db</c> 这种东西；
+    /// <see cref="Path.Combine(string, string)"/> 还会把分隔符换成当前平台的，改掉原连接串的风格。
+    /// 同一个连接串在哪个平台上都必须派生出同样的结果。
+    /// </remarks>
     private static string DeriveFilePath(DbConnectionStringBuilder builder, string suffix, DbType dbType, string moduleDataSource)
     {
         var key = FindKey(builder, FileKeys) ?? throw BuildNotSupported(dbType, moduleDataSource, "库文件路径");
@@ -82,9 +94,21 @@ public static class TenantModuleConnectionStringDeriver
             throw BuildNotSupported(dbType, moduleDataSource, "库文件路径");
         }
 
-        var directory = Path.GetDirectoryName(path);
-        var fileName = $"{Path.GetFileNameWithoutExtension(path)}{suffix}{Path.GetExtension(path)}";
-        builder[key] = string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+        // 目录段连分隔符一起原样保留，两种分隔符都认
+        var separatorIndex = path.LastIndexOfAny(PathSeparators);
+        var directory = separatorIndex < 0 ? string.Empty : path[..(separatorIndex + 1)];
+        var fileName = path[(separatorIndex + 1)..];
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            throw BuildNotSupported(dbType, moduleDataSource, "库文件路径");
+        }
+
+        // 首字符的点属于文件名（.db 是文件名不是扩展名），与 Path.GetExtension 的判定一致
+        var extensionIndex = fileName.LastIndexOf('.');
+        var stem = extensionIndex > 0 ? fileName[..extensionIndex] : fileName;
+        var extension = extensionIndex > 0 ? fileName[extensionIndex..] : string.Empty;
+
+        builder[key] = $"{directory}{stem}{suffix}{extension}";
         return builder.ConnectionString;
     }
 

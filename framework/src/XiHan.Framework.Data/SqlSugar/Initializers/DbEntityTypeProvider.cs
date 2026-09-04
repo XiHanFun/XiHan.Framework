@@ -149,6 +149,15 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     }
 
     /// <summary>
+    /// 扫描全部候选实体类型
+    /// </summary>
+    /// <returns>实体类型集合</returns>
+    private static IReadOnlyList<Type> ScanEntityTypes()
+    {
+        return [.. ReflectionHelper.GetContainsAttributeTypes<SugarTable>()];
+    }
+
+    /// <summary>
     /// 判断某个连接标识是否为任一模块数据源派生出的模块库
     /// </summary>
     /// <param name="configId">连接配置标识</param>
@@ -172,14 +181,4 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
             .Select(name => name!)
             .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
-
-    /// <summary>
-    /// 扫描全部候选实体类型
-    /// </summary>
-    /// <returns>实体类型集合</returns>
-    private static IReadOnlyList<Type> ScanEntityTypes()
-    {
-        return [.. ReflectionHelper.GetContainsAttributeSubClasses<IEntityBase, SugarTable>()];
-    }
-
 }

@@ -89,7 +89,7 @@ DDD 分层与应用服务契约。
 
 | 模块 | 说明 |
 | --- | --- |
-| [Serialization](./serialization) | 序列化：System.Text.Json + Newtonsoft.Json 双引擎、策略管理 |
+| [Serialization](./serialization) | 序列化：基于 System.Text.Json 的动态 JSON 操作、序列化选项组合 |
 | [ObjectMapping](./objectmapping) | 对象映射：Mapster 集成 |
 | [Localization.Abstractions](./localization-abstractions) | 国际化抽象：`IStringLocalizer` 抽象层 |
 | [Localization](./localization) | 国际化：多语言资源文件、动态文化切换 |

@@ -11,7 +11,7 @@ using XiHan.Framework.Utils.Serialization.Json;
 namespace XiHan.Framework.Serialization.Dynamic;
 
 /// <summary>
-/// 动态 JSON 数组，类似 Newtonsoft.Json 的 JArray
+/// 动态 JSON 数组，基于 System.Text.Json.Nodes 的 JsonArray 承载，支持动态索引与集合操作
 /// </summary>
 public class DynamicJsonArray : DynamicObject, IEnumerable<object?>, IList<object?>, IEquatable<DynamicJsonArray>
 {
