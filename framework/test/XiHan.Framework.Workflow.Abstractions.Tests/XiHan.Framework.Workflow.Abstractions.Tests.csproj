@@ -8,4 +8,8 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.Workflow.Abstractions\XiHan.Framework.Workflow.Abstractions.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    </ItemGroup>
+
 </Project>

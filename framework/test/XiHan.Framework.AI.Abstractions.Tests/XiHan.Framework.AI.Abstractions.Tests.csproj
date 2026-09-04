@@ -8,4 +8,8 @@
 		<ProjectReference Include="..\..\src\XiHan.Framework.AI.Abstractions\XiHan.Framework.AI.Abstractions.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+	</ItemGroup>
+
 </Project>
