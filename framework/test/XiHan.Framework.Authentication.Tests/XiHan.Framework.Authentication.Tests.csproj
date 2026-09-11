@@ -5,15 +5,11 @@
     <Import Project="..\..\props\test.props" />
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.11" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.Authentication\XiHan.Framework.Authentication.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
     </ItemGroup>
 
 </Project>
