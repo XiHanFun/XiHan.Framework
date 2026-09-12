@@ -12,7 +12,7 @@ namespace XiHan.Framework.Caching.Tests.Distributed;
 /// 只断言互斥、过期接管、幂等释放与续期这四类语义契约，不锁死内部数据结构。
 /// 该实现明确只在单进程内互斥，测试也只在单进程范围内验证。
 /// </remarks>
-public class InMemoryDistributedLockTests
+public class DefaultDistributedLockTests
 {
     private static readonly TimeSpan LongExpiry = TimeSpan.FromMinutes(5);
 
@@ -23,7 +23,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_WhenFree_ReturnsHandle()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await using var handle = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
 
@@ -40,7 +40,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_WhenHeld_ReturnsNull()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var first = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
 
         var second = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
@@ -56,7 +56,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_ForDifferentResources_BothSucceed()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await using var first = await distributedLock.TryAcquireAsync("a", LongExpiry, token);
         await using var second = await distributedLock.TryAcquireAsync("b", LongExpiry, token);
@@ -72,7 +72,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_TrimsResourceKey()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await using var first = await distributedLock.TryAcquireAsync("  resource  ", LongExpiry, token);
         var second = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
@@ -89,7 +89,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_AfterRelease_Succeeds()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var first = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(first);
 
@@ -109,7 +109,7 @@ public class InMemoryDistributedLockTests
     public async Task Dispose_ReleasesLock()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var first = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(first);
 
@@ -130,7 +130,7 @@ public class InMemoryDistributedLockTests
     public async Task ReleaseAsync_CalledTwice_DoesNotRevokeTakenOverLock()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var first = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(first);
         await first.ReleaseAsync();
@@ -150,7 +150,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_AfterExpiry_AllowsTakeOver()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var first = await distributedLock.TryAcquireAsync("resource", TimeSpan.FromMilliseconds(1), token);
         Assert.NotNull(first);
 
@@ -169,7 +169,7 @@ public class InMemoryDistributedLockTests
     public async Task ExtendAsync_WhileHeld_ReturnsTrue()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var handle = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(handle);
 
@@ -183,7 +183,7 @@ public class InMemoryDistributedLockTests
     public async Task ExtendAsync_AfterRelease_ReturnsFalse()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var handle = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(handle);
         await handle.ReleaseAsync();
@@ -198,7 +198,7 @@ public class InMemoryDistributedLockTests
     public async Task ExtendAsync_AfterTakenOver_ReturnsFalse()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var first = await distributedLock.TryAcquireAsync("resource", TimeSpan.FromMilliseconds(1), token);
         Assert.NotNull(first);
 
@@ -216,7 +216,7 @@ public class InMemoryDistributedLockTests
     public async Task ExtendAsync_WithNonPositiveExpiry_Throws()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var handle = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(handle);
 
@@ -234,7 +234,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_WithBlankResourceKey_Throws(string? resourceKey)
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await Assert.ThrowsAnyAsync<ArgumentException>(
             () => distributedLock.TryAcquireAsync(resourceKey!, LongExpiry, token));
@@ -247,7 +247,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_WithNonPositiveExpiry_Throws()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => distributedLock.TryAcquireAsync("resource", TimeSpan.Zero, token));
@@ -260,7 +260,7 @@ public class InMemoryDistributedLockTests
     public async Task TryAcquireAsync_WithConcurrentCallers_GrantsExactlyOne()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         var tasks = Enumerable.Range(0, 32)
             .Select(_ => Task.Run(() => distributedLock.TryAcquireAsync("resource", LongExpiry, token), token))

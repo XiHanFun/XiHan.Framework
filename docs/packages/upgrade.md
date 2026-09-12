@@ -36,8 +36,8 @@ public class MyModule : XiHanModule { }
 | 接口 | 默认实现 | 生命周期 | 生产可用性 |
 | --- | --- | --- | --- |
 | `IUpgradeScriptProvider` | `FileSystemUpgradeScriptProvider` | Singleton | 可用（从文件系统扫描 SQL） |
-| `IUpgradeVersionStore` | `InMemoryUpgradeVersionStore` | Scoped | **需替换为数据库实现** |
-| `IUpgradeLockProvider` | `InMemoryUpgradeLockProvider` | Singleton | **需替换为分布式锁（进程内锁多节点无效）** |
+| `IUpgradeVersionStore` | `DefaultUpgradeVersionStore` | Scoped | 最多 10000 个租户、每租户 10000 条迁移历史；生产需替换为数据库实现 |
+| `IUpgradeLockProvider` | `DefaultUpgradeLockProvider` | Singleton | 最多 10000 个锁条目；多节点需替换为应用级分布式锁 |
 | `IUpgradeMigrationExecutor` | `DefaultUpgradeMigrationExecutor` | Singleton | **必须替换**（默认直接抛异常，见下） |
 | `IUpgradeTenantProvider` | `DefaultUpgradeTenantProvider` | Scoped | 视多租户需求替换（默认只返回当前 `ICurrentTenant`，不会遍历租户库） |
 | `IUpgradeStatusService` | `UpgradeStatusService` | Scoped | 可用 |
@@ -184,7 +184,7 @@ public async Task<UpgradeStartResult> TriggerUpgrade(IUpgradeCoordinator coordin
 
 ## 扩展点 / 自定义
 
-- **数据库版本存储**：实现 `IUpgradeVersionStore`（建表 / 版本记录 / 状态 / 迁移历史），替换默认 `InMemoryUpgradeVersionStore`。
+- **数据库版本存储**：实现 `IUpgradeVersionStore`（建表 / 版本记录 / 状态 / 迁移历史），替换默认 `DefaultUpgradeVersionStore`。
 - **分布式锁**：实现 `IUpgradeLockProvider` + `IUpgradeLockToken`（如基于 Redis），替换默认进程内实现——**多节点部署下这是必换项**。
 - **迁移执行器**：实现 `IUpgradeMigrationExecutor.ExecuteAsync(sql)` 并保证事务——**必换**（默认实现直接抛 `InvalidOperationException`）。
 - **脚本来源**：多来源可用 `AddUpgradeScriptProvider<T>()` 追加（引擎会合并所有 provider 的脚本）；也可实现 `IUpgradeScriptProvider` 从数据库 / 嵌入资源读取。
@@ -193,8 +193,8 @@ public async Task<UpgradeStartResult> TriggerUpgrade(IUpgradeCoordinator coordin
 ## 注意事项与最佳实践
 
 - **默认 `IUpgradeMigrationExecutor` 会直接抛异常**（"未配置 IUpgradeMigrationExecutor 实现"），未替换就启用数据库升级必失败——务必由应用层注册真实执行器。
-- **默认锁是进程内内存锁**，多节点部署下形同虚设，无法保证「集群内单节点升级」——生产必须换成 Redis 等分布式锁。
-- **默认 `InMemoryUpgradeVersionStore` 虽注册为 Scoped，但内部用 `static` 字典（按租户键分区）保存版本状态与迁移历史**，本质是进程级共享存储：同进程内跨请求 / 跨 Scope 均可见，但进程重启即丢失——这也是为什么它「生产环境必须换成数据库实现」。
+- **默认锁是有界进程内锁**，最多 10000 个条目；多节点部署下无法保证「集群内单节点升级」，生产必须由应用替换为分布式锁。
+- **默认 `DefaultUpgradeVersionStore` 虽注册为 Scoped，但内部用有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史）保存状态**；同进程内跨请求 / 跨 Scope 可见，进程重启即丢失，因此生产仍须换成数据库实现。
 - 迁移**幂等**依赖 `HasMigrationHistoryAsync` 去重，去重键是 `(version, scriptName)`——**不要在已发布版本目录里改动已执行脚本的内容**（内容变了但脚本名没变会被判为已执行而跳过）。
 - 迁移脚本失败即中止并置失败状态，历史记录会留下 `ErrorMessage`；单版本内多脚本非全事务，注意脚本自身的可回滚 / 可重入设计。
 - 单节点升级：不配 `PrimaryNodeName` 时每个节点都视为主节点，靠分布式锁串行化；配了则仅指定节点执行。

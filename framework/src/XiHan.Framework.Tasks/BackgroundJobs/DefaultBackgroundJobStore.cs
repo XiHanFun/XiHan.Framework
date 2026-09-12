@@ -9,21 +9,24 @@ using XiHan.Framework.Timing;
 namespace XiHan.Framework.Tasks.BackgroundJobs;
 
 /// <summary>
-/// 进程内内存后台作业存储（默认实现，单实例）
+/// 默认后台作业存储（有界进程内实现）
 /// </summary>
 /// <remarks>
 /// 进程重启后作业丢失、且不跨实例。要持久化与跨实例可靠投递，请实现 <see cref="IBackgroundJobStore"/>
 /// （基于数据库 / Redis）并在 DI 中替换本默认实现；其 GetWaitingJobsAsync 须做原子领取。
 /// </remarks>
-public class InMemoryBackgroundJobStore : IBackgroundJobStore
+public class DefaultBackgroundJobStore : IBackgroundJobStore
 {
+    private const int MaxJobCount = 100000;
+
     private readonly ConcurrentDictionary<Guid, BackgroundJobInfo> _jobs = new();
     private readonly IClock _clock;
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public InMemoryBackgroundJobStore(IClock clock)
+    public DefaultBackgroundJobStore(IClock clock)
     {
         _clock = clock;
     }
@@ -42,7 +45,15 @@ public class InMemoryBackgroundJobStore : IBackgroundJobStore
     public Task InsertAsync(BackgroundJobInfo jobInfo)
     {
         ArgumentNullException.ThrowIfNull(jobInfo);
-        _jobs[jobInfo.Id] = jobInfo;
+        lock (_writeLock)
+        {
+            if (!_jobs.ContainsKey(jobInfo.Id) && _jobs.Count >= MaxJobCount)
+            {
+                throw new InvalidOperationException($"默认后台作业存储已达到 {MaxJobCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _jobs[jobInfo.Id] = jobInfo;
+        }
         return Task.CompletedTask;
     }
 
@@ -80,7 +91,13 @@ public class InMemoryBackgroundJobStore : IBackgroundJobStore
     public Task UpdateAsync(BackgroundJobInfo jobInfo)
     {
         ArgumentNullException.ThrowIfNull(jobInfo);
-        _jobs[jobInfo.Id] = jobInfo;
-        return Task.CompletedTask;
+
+        if (jobInfo.IsAbandoned)
+        {
+            _jobs.TryRemove(jobInfo.Id, out _);
+            return Task.CompletedTask;
+        }
+
+        return InsertAsync(jobInfo);
     }
 }

@@ -7,13 +7,13 @@ using XiHan.Framework.Tasks.ScheduledJobs.Store;
 namespace XiHan.Framework.Tasks.Tests.ScheduledJobs.Store;
 
 /// <summary>
-/// InMemoryJobStore 参数校验与写入语义测试
+/// DefaultJobStore 参数校验与写入语义测试
 /// </summary>
 /// <remarks>
-/// 与 ScheduledJobs/InMemoryJobStoreTests 互补：那边覆盖历史清理、分页排序与运行中实例筛选，
+/// 与 ScheduledJobs/DefaultJobStoreTests 互补：那边覆盖历史清理、分页排序与运行中实例筛选，
 /// 这里补齐参数校验、实例覆盖写、状态回写对完成时间的影响，以及并发写入。
 /// </remarks>
-public class InMemoryJobStoreContractTests
+public class DefaultJobStoreContractTests
 {
     /// <summary>
     /// 并发用例的兜底超时
@@ -26,7 +26,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task SaveJobInstanceAsync_WhenInstanceIsNull_ThrowsArgumentNullException()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => store.SaveJobInstanceAsync(null!));
     }
@@ -37,7 +37,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task SaveJobHistoryAsync_WhenHistoryIsNull_ThrowsArgumentNullException()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => store.SaveJobHistoryAsync(null!));
     }
@@ -48,7 +48,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task SaveJobInstanceAsync_ThenGetJobInstanceAsync_ReturnsSameInstance()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var instance = CreateInstance("job-a", JobStatus.Pending);
 
         await store.SaveJobInstanceAsync(instance);
@@ -62,7 +62,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task SaveJobInstanceAsync_WithSameInstanceId_OverwritesPrevious()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var first = CreateInstance("job-a", JobStatus.Pending);
         var second = CreateInstance("job-a", JobStatus.Running);
         second.InstanceId = first.InstanceId;
@@ -79,7 +79,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetJobInstanceAsync_WhenInstanceUnknown_ReturnsNull()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         Assert.Null(await store.GetJobInstanceAsync("not-exists"));
     }
@@ -90,7 +90,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task UpdateJobStatusAsync_WhenInstanceUnknown_DoesNothing()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await store.UpdateJobStatusAsync("not-exists", JobStatus.Succeeded);
 
@@ -106,7 +106,7 @@ public class InMemoryJobStoreContractTests
     [InlineData(JobStatus.Canceled)]
     public async Task UpdateJobStatusAsync_WithTerminalStatus_StampsCompletedAt(JobStatus status)
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var instance = CreateInstance("job-a", JobStatus.Running);
         await store.SaveJobInstanceAsync(instance);
 
@@ -125,7 +125,7 @@ public class InMemoryJobStoreContractTests
     [InlineData(JobStatus.Paused)]
     public async Task UpdateJobStatusAsync_WithNonTerminalStatus_LeavesCompletedAtNull(JobStatus status)
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var instance = CreateInstance("job-a", JobStatus.Pending);
         await store.SaveJobInstanceAsync(instance);
 
@@ -143,7 +143,7 @@ public class InMemoryJobStoreContractTests
     [InlineData("   ")]
     public async Task SaveJobHistoryAsync_WhenHistoryIdIsBlank_GeneratesOne(string historyId)
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var first = CreateHistory("job-a", DateTimeOffset.UtcNow.AddMinutes(-2));
         first.HistoryId = historyId;
         var second = CreateHistory("job-a", DateTimeOffset.UtcNow.AddMinutes(-1));
@@ -163,7 +163,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task SaveJobHistoryAsync_WithSameHistoryId_OverwritesPrevious()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var first = CreateHistory("job-a", DateTimeOffset.UtcNow.AddMinutes(-2));
         var second = CreateHistory("job-a", DateTimeOffset.UtcNow.AddMinutes(-1));
         second.HistoryId = first.HistoryId;
@@ -181,7 +181,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetJobHistoryAsync_WhenJobNameIsWhitespace_ThrowsArgumentException()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await Assert.ThrowsAsync<ArgumentException>(() => store.GetJobHistoryAsync("   "));
     }
@@ -192,7 +192,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetJobHistoryAsync_WhenJobNameIsNull_ThrowsArgumentNullException()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => store.GetJobHistoryAsync(null!));
     }
@@ -205,7 +205,7 @@ public class InMemoryJobStoreContractTests
     [InlineData(-1)]
     public async Task GetJobHistoryAsync_WhenPageIndexIsInvalid_ThrowsArgumentOutOfRangeException(int pageIndex)
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => store.GetJobHistoryAsync("job-a", pageIndex));
@@ -221,7 +221,7 @@ public class InMemoryJobStoreContractTests
     [InlineData(-5)]
     public async Task GetJobHistoryAsync_WhenPageSizeIsInvalid_ThrowsArgumentOutOfRangeException(int pageSize)
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => store.GetJobHistoryAsync("job-a", 1, pageSize));
@@ -235,7 +235,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetJobHistoryAsync_WithPaging_ReturnsRemainderAndEmptyBeyondEnd()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var now = DateTimeOffset.UtcNow;
         await store.SaveJobHistoryAsync(CreateHistory("job-a", now.AddMinutes(-3)));
         await store.SaveJobHistoryAsync(CreateHistory("job-a", now.AddMinutes(-2)));
@@ -254,7 +254,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetJobHistoryAsync_WhenJobHasNoHistory_ReturnsEmptyList()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         var histories = await store.GetJobHistoryAsync("job-without-history");
 
@@ -268,7 +268,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetRunningInstancesAsync_WhenJobNameIsWhitespace_ThrowsArgumentException()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
 
         await Assert.ThrowsAsync<ArgumentException>(() => store.GetRunningInstancesAsync(" "));
     }
@@ -279,7 +279,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task GetRunningInstancesAsync_AfterStatusUpdated_ExcludesFinishedInstance()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var instance = CreateInstance("job-a", JobStatus.Running);
         await store.SaveJobInstanceAsync(instance);
         Assert.Single(await store.GetRunningInstancesAsync("job-a"));
@@ -295,7 +295,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task CleanupHistoryAsync_WithZeroRetention_RemovesEverythingBeforeNow()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         await store.SaveJobHistoryAsync(CreateHistory("job-a", DateTimeOffset.UtcNow.AddSeconds(-5)));
 
         await store.CleanupHistoryAsync(0);
@@ -309,7 +309,7 @@ public class InMemoryJobStoreContractTests
     [Fact]
     public async Task CleanupHistoryAsync_DoesNotTouchInstances()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var instance = CreateInstance("job-a", JobStatus.Running);
         await store.SaveJobInstanceAsync(instance);
         await store.SaveJobHistoryAsync(CreateHistory("job-a", DateTimeOffset.UtcNow.AddDays(-30)));
@@ -326,7 +326,7 @@ public class InMemoryJobStoreContractTests
     [Fact(Timeout = TimeoutMilliseconds)]
     public async Task SaveAsync_UnderConcurrentWriters_KeepsEveryRecord()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         const int WriterCount = 100;
         var now = DateTimeOffset.UtcNow;
 
@@ -373,7 +373,7 @@ public class InMemoryJobStoreContractTests
             JobInfo = new JobInfo
             {
                 JobName = jobName,
-                JobType = typeof(InMemoryJobStoreContractTests),
+                JobType = typeof(DefaultJobStoreContractTests),
                 TriggerType = JobTriggerType.Manual
             }
         };

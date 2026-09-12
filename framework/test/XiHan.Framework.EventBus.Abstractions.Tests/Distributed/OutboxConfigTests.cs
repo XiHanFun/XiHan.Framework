@@ -158,10 +158,10 @@ public class OutboxConfigTests
     {
         var config = new OutboxConfig("Default")
         {
-            ImplementationType = typeof(InMemoryEventOutbox)
+            ImplementationType = typeof(DefaultEventOutbox)
         };
 
-        Assert.Same(typeof(InMemoryEventOutbox), config.ImplementationType);
+        Assert.Same(typeof(DefaultEventOutbox), config.ImplementationType);
     }
 
     /// <summary>

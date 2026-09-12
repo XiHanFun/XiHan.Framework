@@ -39,7 +39,7 @@ public class MyModule : XiHanModule { }
 `XiHanTrafficModule.ConfigureServices` 默认调用 `AddGrayRouting()`，注册（`TryAdd` 语义，可被替换）：
 
 - `IGrayRuleEngine` → `DefaultGrayRuleEngine`
-- `IGrayRuleRepository` → `InMemoryGrayRuleRepository`（**生产环境应替换为数据库实现**）
+- `IGrayRuleRepository` → `DefaultGrayRuleRepository`（**生产环境应替换为数据库实现**）
 - 四个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`
 
 > 限流 `IRateLimitPolicy` 与熔断 `ICircuitBreakerPolicy` **不会**被模块自动注册任何实现——它们是留给上层接入的策略契约。
@@ -72,7 +72,7 @@ public class MyModule : XiHanModule { }
 | `IGrayRuleEngine` / `DefaultGrayRuleEngine` | 灰度规则引擎：`Task<IGrayDecision> DecideAsync(GrayContext, CancellationToken)` |
 | `IGrayMatcher` | 匹配器契约：`GrayRuleType RuleType { get; }`、`bool IsMatch(GrayContext, IGrayRule)`、`Task<bool> IsMatchAsync(...)` |
 | `PercentageGrayMatcher` / `UserIdGrayMatcher` / `TenantIdGrayMatcher` / `HeaderGrayMatcher` | 四个内置匹配器 |
-| `IGrayRuleRepository` / `InMemoryGrayRuleRepository` | 规则仓储（**只读**）：`GetEnabledRulesAsync(...)`、`GetRuleByIdAsync(id, ...)`、`RefreshAsync(...)`；`InMemoryGrayRuleRepository` 另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员，仅供测试直接灌规则用） |
+| `IGrayRuleRepository` / `DefaultGrayRuleRepository` | 规则仓储（**只读**）；默认实现最多 10000 条，另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员） |
 | `IGrayRule` / `GrayRule` | 灰度规则契约与实现（字段见下） |
 | `IGrayDecision` / `GrayDecision` | 决策结果契约与实现，工厂 `GrayDecision.Gray(...)` / `GrayDecision.NotGray(reason)` |
 | `GrayContext` | 灰度上下文（字段见下） |
@@ -158,7 +158,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 
 - 灰度规则**按 `Priority` 升序**匹配，命中即短路——把更具体、更高优先的规则设更小的 `Priority`。
 - `PercentageGrayMatcher` 基于每次请求的随机数判断，**同一用户多次请求可能落在不同分支**；需要稳定分流请自行实现基于用户/租户哈希的匹配器。
-- 默认 `InMemoryGrayRuleRepository` 是进程内存储，多实例不共享、重启丢失——生产务必替换为数据库仓储。
+- 默认 `DefaultGrayRuleRepository` 是进程内存储，多实例不共享、重启丢失——生产务必替换为数据库仓储。
 - 决策异常被吞并降级为「未命中」（fail-open），不会因规则问题阻断主请求；但要留意日志排查。
 - `IpAddress` / `Custom` 枚举值已预留，但**无对应内置匹配器**，直接使用会因「找不到匹配器」被跳过。
 

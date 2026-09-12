@@ -22,7 +22,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task EnqueueRangeAsync_EnqueuesEveryItem()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
 
         await queue.EnqueueRangeAsync([new DelayMessage(1), new DelayMessage(2), new DelayMessage(3)], TimeSpan.Zero, token);
 
@@ -36,7 +36,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task EnqueueRangeAsync_WithEmptyItems_EnqueuesNothing()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
 
         await queue.EnqueueRangeAsync([], TimeSpan.Zero, token);
 
@@ -61,7 +61,7 @@ public class RedisDelayQueueExtensionsTests
     [Fact]
     public async Task EnqueueRangeAsync_WithNullItems_Throws()
     {
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         IEnumerable<DelayMessage>? items = null;
 
         await Assert.ThrowsAsync<ArgumentNullException>(
@@ -75,7 +75,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ProcessDueAsync_HandlesDueItemsAndReturnsCount()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
         await queue.EnqueueAsync(new DelayMessage(2), TimeSpan.Zero, token);
         await queue.EnqueueAsync(new DelayMessage(3), TimeSpan.FromMinutes(10), token);
@@ -103,7 +103,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ProcessDueAsync_WhenHandlerFailsWithRetryDelay_ReEnqueuesItem()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
 
         var processed = await queue.ProcessDueAsync(
@@ -124,7 +124,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ProcessDueAsync_WhenHandlerFailsWithoutRetryDelay_DropsItem()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
 
         var processed = await queue.ProcessDueAsync(
@@ -143,7 +143,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ProcessDueAsync_WithNullArguments_Throws()
     {
         IRedisDelayQueue<DelayMessage>? nullQueue = null;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         Func<DelayMessage, CancellationToken, Task>? handler = null;
 
         await Assert.ThrowsAsync<ArgumentNullException>(
@@ -159,7 +159,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ConsumeDueAsync_WithCancelledToken_ReturnsWithoutHandling()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -182,7 +182,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ConsumeDueAsync_ProcessesDueItemsUntilCancelled()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
         using var cts = new CancellationTokenSource();
         var handled = new List<int>();
@@ -205,7 +205,7 @@ public class RedisDelayQueueExtensionsTests
     public async Task ConsumeDueAsync_WithNullArguments_Throws()
     {
         IRedisDelayQueue<DelayMessage>? nullQueue = null;
-        var queue = new InMemoryDelayQueue<DelayMessage>();
+        var queue = new DefaultDelayQueue<DelayMessage>();
         Func<DelayMessage, CancellationToken, Task>? handler = null;
 
         await Assert.ThrowsAsync<ArgumentNullException>(

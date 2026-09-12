@@ -13,6 +13,8 @@ namespace XiHan.Framework.ObjectStorage.Providers;
 /// </summary>
 public class LocalFileStorageProvider : FileStorageProviderBase
 {
+    private static readonly TimeSpan UploadSessionTtl = TimeSpan.FromHours(24);
+
     private readonly string _rootPath;
     private readonly string _urlPrefix;
     private readonly ConcurrentDictionary<string, ChunkedUploadSession> _uploadSessions = new();
@@ -52,6 +54,8 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
     {
+        CleanupExpiredChunkedUploads();
+
         var uploadId = Guid.NewGuid().ToString("N");
         var tempDir = Path.Combine(Path.GetTempPath(), "chunked-uploads", uploadId);
         Directory.CreateDirectory(tempDir);
@@ -65,7 +69,7 @@ public class LocalFileStorageProvider : FileStorageProviderBase
             ChunkSize = request.ChunkSize,
             TempDirectory = tempDir,
             UploadedChunks = new ConcurrentDictionary<int, string>(),
-            CreatedTime = DateTimeOffset.Now
+            LastActivityUtcTicks = DateTimeOffset.UtcNow.UtcTicks
         };
 
         _uploadSessions[uploadId] = session;
@@ -87,6 +91,8 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 ErrorMessage = "Upload session not found"
             };
         }
+
+        Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
 
         try
         {
@@ -539,6 +545,18 @@ public class LocalFileStorageProvider : FileStorageProviderBase
         }
     }
 
+    private void CleanupExpiredChunkedUploads()
+    {
+        var cutoffTicks = DateTimeOffset.UtcNow.Subtract(UploadSessionTtl).UtcTicks;
+        foreach (var session in _uploadSessions)
+        {
+            if (Interlocked.Read(ref session.Value.LastActivityUtcTicks) <= cutoffTicks)
+            {
+                CleanupChunkedUpload(session.Key);
+            }
+        }
+    }
+
     #endregion
 
     /// <summary>
@@ -553,6 +571,6 @@ public class LocalFileStorageProvider : FileStorageProviderBase
         public int ChunkSize { get; set; }
         public string TempDirectory { get; set; } = string.Empty;
         public ConcurrentDictionary<int, string> UploadedChunks { get; set; } = new();
-        public DateTimeOffset CreatedTime { get; set; }
+        public long LastActivityUtcTicks;
     }
 }

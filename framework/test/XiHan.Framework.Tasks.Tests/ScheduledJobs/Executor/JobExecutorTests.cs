@@ -15,7 +15,7 @@ namespace XiHan.Framework.Tasks.Tests.ScheduledJobs.Executor;
 /// </summary>
 /// <remarks>
 /// 执行器负责：落库实例 → 开作用域 → 反射造任务体 → 串中间件 → 回写状态与历史。
-/// 用真实的 InMemoryJobStore 作为协作者，方便直接读回历史断言字段映射；
+/// 用真实的 DefaultJobStore 作为协作者，方便直接读回历史断言字段映射；
 /// 任务体全部是同步返回的假实现，不引入任何等待。
 /// </remarks>
 public class JobExecutorTests
@@ -28,7 +28,7 @@ public class JobExecutorTests
     {
         var serviceProvider = new ServiceCollection().BuildServiceProvider();
         var logger = NullLogger<JobExecutor>.Instance;
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var middlewares = new List<IJobMiddleware>();
 
         Assert.Throws<ArgumentNullException>(() => new JobExecutor(null!, logger, store, middlewares));
@@ -43,7 +43,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenWorkerSucceeds_MarksInstanceSucceeded()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(SucceedingWorker));
 
@@ -65,7 +65,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_PersistsInstanceAndUpdatesItsStatus()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(SucceedingWorker));
 
@@ -82,7 +82,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenWorkerSucceeds_WritesHistoryWithMappedFields()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(SucceedingWorker));
         instance.TenantId = 66L;
@@ -111,7 +111,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenInstanceHasParameters_SerializesThemIntoHistory()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(SucceedingWorker));
         instance.Parameters = new Dictionary<string, object?> { ["batchSize"] = 100 };
@@ -129,7 +129,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenWorkerReturnsFailure_MarksInstanceFailed()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(FailingWorker));
 
@@ -152,7 +152,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenWorkerThrows_ReturnsFailureInsteadOfPropagating()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(ThrowingWorker));
 
@@ -170,7 +170,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenJobTypeIsNotWorker_ReturnsFailureWithDiagnosticMessage()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(NotAWorker));
 
@@ -188,7 +188,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_WhenJobTypeIsNotWorker_StillWritesFailureHistory()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var instance = CreateInstance(typeof(NotAWorker));
 
@@ -207,7 +207,7 @@ public class JobExecutorTests
     public async Task ExecuteAsync_AppliesRegisteredMiddlewaresInOrder()
     {
         var trace = new List<string>();
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = new JobExecutor(
             new ServiceCollection().BuildServiceProvider(),
             NullLogger<JobExecutor>.Instance,
@@ -225,7 +225,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_RecordsRetryCountFromContextAttemptCount()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = new JobExecutor(
             new ServiceCollection().BuildServiceProvider(),
             NullLogger<JobExecutor>.Instance,
@@ -250,7 +250,7 @@ public class JobExecutorTests
         var services = new ServiceCollection();
         services.AddScoped<ScopedProbe>();
         var rootProvider = services.BuildServiceProvider();
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = new JobExecutor(rootProvider, NullLogger<JobExecutor>.Instance, store, []);
 
         ProbeCapturingWorker.Reset();
@@ -267,7 +267,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_PassesParametersIntoContext()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         var parameters = new Dictionary<string, object?> { ["mode"] = "full" };
 
@@ -284,7 +284,7 @@ public class JobExecutorTests
     [Fact]
     public async Task ExecuteAsync_PassesCancellationTokenIntoContext()
     {
-        var store = new InMemoryJobStore();
+        var store = new DefaultJobStore();
         var executor = CreateExecutor(store);
         using var cts = new CancellationTokenSource();
 
@@ -298,7 +298,7 @@ public class JobExecutorTests
     /// <summary>
     /// 组装一个不带中间件的执行器
     /// </summary>
-    private static JobExecutor CreateExecutor(InMemoryJobStore store)
+    private static JobExecutor CreateExecutor(DefaultJobStore store)
     {
         return new JobExecutor(
             new ServiceCollection().BuildServiceProvider(),

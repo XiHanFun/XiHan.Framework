@@ -52,7 +52,7 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
         services.AddXiHanBackgroundJobs(CreateConfiguration());
 
         AssertSingleDescriptor(services, typeof(IBackgroundJobSerializer), typeof(BackgroundJobSerializer), ServiceLifetime.Singleton);
-        AssertSingleDescriptor(services, typeof(IBackgroundJobStore), typeof(InMemoryBackgroundJobStore), ServiceLifetime.Singleton);
+        AssertSingleDescriptor(services, typeof(IBackgroundJobStore), typeof(DefaultBackgroundJobStore), ServiceLifetime.Singleton);
         AssertSingleDescriptor(services, typeof(IBackgroundJobManager), typeof(BackgroundJobManager), ServiceLifetime.Transient);
         AssertSingleDescriptor(services, typeof(IBackgroundJobExecuter), typeof(BackgroundJobExecuter), ServiceLifetime.Transient);
     }
@@ -66,7 +66,7 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
         using var provider = BuildProvider();
 
         Assert.IsType<BackgroundJobSerializer>(provider.GetRequiredService<IBackgroundJobSerializer>());
-        Assert.IsType<InMemoryBackgroundJobStore>(provider.GetRequiredService<IBackgroundJobStore>());
+        Assert.IsType<DefaultBackgroundJobStore>(provider.GetRequiredService<IBackgroundJobStore>());
         Assert.IsType<BackgroundJobManager>(provider.GetRequiredService<IBackgroundJobManager>());
         Assert.IsType<BackgroundJobExecuter>(provider.GetRequiredService<IBackgroundJobExecuter>());
     }

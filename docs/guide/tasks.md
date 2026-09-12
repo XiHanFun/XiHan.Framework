@@ -395,9 +395,9 @@ services.AddXiHanTasks(config).AddMiddleware<TracingMiddleware>();
 
 | 存的是什么 | 默认实现 | 换成别的 |
 | --- | --- | --- |
-| 任务实例与执行历史 | `InMemoryJobStore` | `AddXiHanTasks(config).UseStore<MyJobStore>()` |
+| 任务实例与执行历史 | `DefaultJobStore` | `AddXiHanTasks(config).UseStore<MyJobStore>()` |
 | 任务锁提供者 | `CachingJobLockProvider` | `.UseLockProvider<MyLockProvider>()` |
-| 待执行的后台作业 | `InMemoryBackgroundJobStore` | `services.UseRedisBackgroundJobStore()`，或自实现 `IBackgroundJobStore` |
+| 待执行的后台作业 | `DefaultBackgroundJobStore` | `services.UseRedisBackgroundJobStore()`，或自实现 `IBackgroundJobStore` |
 
 框架侧用的是 `TryAdd` 语义，业务模块的 `ConfigureServices` 在框架模块之后执行，后注册者胜出。
 
@@ -472,7 +472,7 @@ services.UseRedisBackgroundJobStore(o =>
 | `[JobTimeout]` 设了 5 分钟，任务却跑了 15 分钟才超时 | 超时是「首次 + 全部重试」的总预算，与重试次数无关；实际观感差异来自重试间隔 |
 | 任务里的 `[UnitOfWork]` / `[Cacheable]` 不生效 | 任务实例由 `ActivatorUtilities.CreateInstance` 构造，不经容器代理；把逻辑挪进注入的服务 |
 | 任务构造函数里查不到租户数据 | 租户上下文在构造之后才切换，把逻辑挪进 `ExecuteAsync` |
-| 重启后待执行的后台作业全没了 | 默认 `InMemoryBackgroundJobStore` 是进程内的，换 `UseRedisBackgroundJobStore()` 或自实现 |
+| 重启后待执行的后台作业全没了 | 默认 `DefaultBackgroundJobStore` 是进程内的，换 `UseRedisBackgroundJobStore()` 或自实现 |
 | 入队的作业迟迟不执行 | `IsJobExecutionEnabled = false`；或首轮等待 5 秒 + 轮询间隔 5 秒的正常延迟；或多实例下锁被别的实例持有 |
 | 作业只试了一次就被放弃 | 属于致命错误：作业名找不到配置（改过参数类型名且没标 `[BackgroundJobName]`），或参数反序列化失败 |
 | 作业反复重试很久才放弃 | 没有次数上限，只有累计耗时上限 `DefaultTimeoutSeconds`（默认 2 天） |

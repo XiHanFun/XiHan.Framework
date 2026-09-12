@@ -15,7 +15,7 @@ namespace XiHan.Framework.Tasks.Tests.BackgroundJobs;
 /// 内存实现是这份契约的参考实现，因此逐条覆盖：应用名按序数比较、放弃的不取、
 /// 未到时间的不取、优先级降序 → 尝试次数升序 → 下次执行时间升序、超出上限截断。
 /// </remarks>
-public class InMemoryBackgroundJobStoreTests
+public class DefaultBackgroundJobStoreTests
 {
     private static readonly DateTime Now = new(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
 
@@ -25,7 +25,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task InsertThenFind_ReturnsSameInstance()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var job = CreateJob();
 
         await store.InsertAsync(job);
@@ -40,7 +40,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task Find_WhenMissing_ReturnsNull()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
 
         Assert.Null(await store.FindAsync(Guid.NewGuid()));
     }
@@ -51,7 +51,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task Insert_WhenJobNull_ThrowsArgumentNullException()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => store.InsertAsync(null!));
     }
@@ -62,7 +62,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task Update_WhenJobNull_ThrowsArgumentNullException()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => store.UpdateAsync(null!));
     }
@@ -73,7 +73,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task Delete_RemovesJobAndIsIdempotent()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var job = CreateJob();
         await store.InsertAsync(job);
 
@@ -89,7 +89,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task Update_ReplacesStoredJob()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var job = CreateJob();
         await store.InsertAsync(job);
 
@@ -105,12 +105,28 @@ public class InMemoryBackgroundJobStoreTests
     }
 
     /// <summary>
+    /// 放弃的作业不会永久滞留在默认内存存储中
+    /// </summary>
+    [Fact]
+    public async Task Update_WhenJobAbandoned_RemovesIt()
+    {
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
+        var job = CreateJob();
+        await store.InsertAsync(job);
+        job.IsAbandoned = true;
+
+        await store.UpdateAsync(job);
+
+        Assert.Null(await store.FindAsync(job.Id));
+    }
+
+    /// <summary>
     /// 应用名按序数比较：大小写不同视为不同实例，互不串扰
     /// </summary>
     [Fact]
     public async Task GetWaitingJobs_MatchesApplicationNameOrdinally()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         await store.InsertAsync(CreateJob(applicationName: "OrderService"));
         await store.InsertAsync(CreateJob(applicationName: "orderservice"));
         await store.InsertAsync(CreateJob(applicationName: null));
@@ -130,7 +146,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task GetWaitingJobs_SkipsAbandonedJobs()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var abandoned = CreateJob();
         abandoned.IsAbandoned = true;
         await store.InsertAsync(abandoned);
@@ -149,7 +165,7 @@ public class InMemoryBackgroundJobStoreTests
     public async Task GetWaitingJobs_SkipsJobsScheduledInFuture()
     {
         var clock = new FakeClock(Now);
-        var store = new InMemoryBackgroundJobStore(clock);
+        var store = new DefaultBackgroundJobStore(clock);
         var delayed = CreateJob();
         delayed.NextTryTime = Now.AddMinutes(5);
         await store.InsertAsync(delayed);
@@ -167,7 +183,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task GetWaitingJobs_IncludesJobDueExactlyNow()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var job = CreateJob();
         job.NextTryTime = Now;
         await store.InsertAsync(job);
@@ -181,7 +197,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task GetWaitingJobs_OrdersByPriorityThenTryCountThenNextTryTime()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
 
         var lowPriority = CreateJob(jobName: "low");
         lowPriority.Priority = BackgroundJobPriority.Low;
@@ -219,7 +235,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task GetWaitingJobs_TakesAtMostMaxResultCount()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
 
         var high = CreateJob(jobName: "high");
         high.Priority = BackgroundJobPriority.High;
@@ -242,7 +258,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact]
     public async Task GetWaitingJobs_WhenMaxResultCountIsZero_ReturnsEmpty()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         await store.InsertAsync(CreateJob());
 
         Assert.Empty(await store.GetWaitingJobsAsync(null, 0));
@@ -254,7 +270,7 @@ public class InMemoryBackgroundJobStoreTests
     [Fact(Timeout = 60_000)]
     public async Task InsertAsync_UnderConcurrency_KeepsAllJobs()
     {
-        var store = new InMemoryBackgroundJobStore(new FakeClock(Now));
+        var store = new DefaultBackgroundJobStore(new FakeClock(Now));
         var jobs = Enumerable.Range(0, 200).Select(_ => CreateJob()).ToArray();
 
         await Parallel.ForEachAsync(

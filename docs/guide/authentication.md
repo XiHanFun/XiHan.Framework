@@ -51,7 +51,7 @@ public class MyAppModule : XiHanModule { }
 | `IsTokenExpired(string)` | 是否已过期 |
 | `RefreshAccessToken(accessToken, refreshToken)` | 用旧访问令牌 + 刷新令牌换新的一套 |
 
-刷新令牌的持久化走 `IRefreshTokenStore`——框架给了默认实现，需要落库时 `Replace` 掉。
+刷新令牌的持久化走 `IRefreshTokenStore`。默认 `DefaultRefreshTokenStore` 是可直接使用的单实例实现：最多保留 100000 条，并在写入过程中批量清理过期项；达到上限后明确拒绝新增，不会继续挤占进程内存。框架不提供该端口的 Redis 实现，多实例共享或持久化由应用层实现 `IRefreshTokenStore` 后 `Replace` 默认注册。
 
 ::: tip 别把权限码冻结进令牌
 把权限清单写进 JWT 有两个后果：授予或回收后要等令牌过期才生效；权限清单随令牌一起泄露。

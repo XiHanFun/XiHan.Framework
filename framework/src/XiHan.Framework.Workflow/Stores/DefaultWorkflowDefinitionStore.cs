@@ -8,11 +8,14 @@ using XiHan.Framework.Workflow.Abstractions.Stores;
 namespace XiHan.Framework.Workflow.Stores;
 
 /// <summary>
-/// 内存流程定义存储（进程内单实例场景的默认实现）
+/// 默认流程定义存储（有界进程内实现）
 /// </summary>
-public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
+public class DefaultWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
+    private const int MaxDefinitionCount = 10000;
+
     private readonly ConcurrentDictionary<string, WorkflowDefinition> _definitions = new();
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 按标识查找定义
@@ -98,7 +101,15 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     /// <returns>任务</returns>
     public Task InsertAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
-        _definitions[definition.Id] = definition;
+        lock (_writeLock)
+        {
+            if (!_definitions.ContainsKey(definition.Id) && _definitions.Count >= MaxDefinitionCount)
+            {
+                throw new InvalidOperationException($"默认流程定义存储已达到 {MaxDefinitionCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _definitions[definition.Id] = definition;
+        }
         return Task.CompletedTask;
     }
 
@@ -110,8 +121,7 @@ public class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     /// <returns>任务</returns>
     public Task UpdateAsync(WorkflowDefinition definition, CancellationToken cancellationToken = default)
     {
-        _definitions[definition.Id] = definition;
-        return Task.CompletedTask;
+        return InsertAsync(definition, cancellationToken);
     }
 
     /// <summary>

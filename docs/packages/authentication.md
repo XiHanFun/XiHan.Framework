@@ -42,7 +42,7 @@ public class MyModule : XiHanModule { }
 - **绑定配置**：`PasswordHasherOptions` / `PasswordPolicyOptions`（来自 Security）、`JwtOptions`、`OtpOptions`、`OAuthOptions`
 - **注册服务（`TryAdd`）**：
   - `IPasswordHasher` → `PasswordHasher`（Singleton）
-  - `IRefreshTokenStore` → `InMemoryRefreshTokenStore`（Singleton）
+  - `IRefreshTokenStore` → `DefaultRefreshTokenStore`（Singleton；最多 100000 条，写入期批量清理过期项）
   - `IJwtTokenService` → `JwtTokenService`（Singleton）
   - `IOtpService` → `OtpService`（Singleton）
   - `IOneTimeCodeService` → `DistributedOneTimeCodeService`（Singleton）
@@ -77,7 +77,7 @@ public class MyModule : XiHanModule { }
 | `IJwtTokenService` / `JwtTokenService` | `JwtTokenResult GenerateAccessToken(List<Claim>)`、`string GenerateRefreshToken()`、`ClaimsPrincipal? ValidateToken(string)`、`List<Claim>? GetClaimsFromToken(string)`、`bool IsTokenExpired(string)`、`JwtTokenResult? RefreshAccessToken(string accessToken, string refreshToken)` |
 | `JwtTokenResult` | `AccessToken`、`RefreshToken`、`TokenType`（`"Bearer"`）、`ExpiresIn`（秒）、`IssuedAt`、`ExpiresAt` |
 | `JwtOptions` | JWT 配置（配置节 `XiHan:Authentication:Jwt`） |
-| `IRefreshTokenStore` / `InMemoryRefreshTokenStore` | `void Save(string token, string? subject, DateTime expiresAt)`、`bool Validate(string token, string? subject = null)`、`void Remove(string token)`（默认内存实现，生产替换） |
+| `IRefreshTokenStore` / `DefaultRefreshTokenStore` | `void Save(string token, string? subject, DateTime expiresAt)`、`bool Validate(string token, string? subject = null)`、`void Remove(string token)`；默认实现最多 100000 条，写入期清理过期项，满载时拒绝新增 |
 
 ### OAuth2
 
@@ -272,7 +272,7 @@ public class MfaService(IOtpService otp)
 
 ## 扩展点 / 自定义
 
-- **刷新令牌存储**：`InMemoryRefreshTokenStore` 是进程内存实现，多实例部署或需要吊销时应自实现 `IRefreshTokenStore`（Redis/数据库）并在 DI 覆盖（扩展方法用 `TryAddSingleton`）。
+- **刷新令牌存储**：`DefaultRefreshTokenStore` 是有界进程内默认实现，可在不接 Redis 时直接使用；框架不提供 Redis 版本，多实例共享或数据库审计由应用层实现 `IRefreshTokenStore` 后覆盖。
 - **用户存储**：`DefaultUserStore` 仅供开发/测试；生产必须实现 `IUserStore`（读写真实用户表、失败次数、锁定时间）覆盖它，否则 `IAuthenticationService` 无真实数据可依。
 - **外部登录持久化**：`IExternalLoginStore` 需业务层实现，把 `(provider, providerKey)` 映射到内部用户并记录绑定。
 - **新增 OAuth 提供商**：内置分支覆盖 google/github/gitee/qq/weixin/workweixin/feishu/dingtalk。接入其它家按偏离程度递增：只有端点与声明映射不同 → 只写一个继承 `XiHanOAuthProviderOptions` 的 Options，直接搭 `XiHanOAuthHandler<TOptions>`；要多调一次接口补声明 → 覆写 `AfterClaimActionsAsync`；令牌或用户信息形态不同 → 覆写 `ExchangeCodeAsync` / `CreateTicketAsync`。最后在 `RegisterProvider` 加一个 `case`。

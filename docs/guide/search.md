@@ -7,7 +7,7 @@
 | 包 | 内容 | 何时引用 |
 | --- | --- | --- |
 | `XiHan.Framework.SearchEngines.Abstractions` | 契约本体：`ISearchEngine`、请求/结果/索引定义类型。**无任何实现、无第三方依赖** | 只想依赖契约的类库项目 |
-| `XiHan.Framework.SearchEngines` | `XiHanSearchEnginesModule` + `InMemorySearchEngine`（进程内兜底实现） | 应用宿主，必引 |
+| `XiHan.Framework.SearchEngines` | `XiHanSearchEnginesModule` + `DefaultSearchEngine`（进程内兜底实现） | 应用宿主，必引 |
 | `XiHan.Framework.SearchEngines.Elasticsearch` | `ElasticsearchSearchEngine` + `ElasticsearchOptions`。**没有模块类** | 生产接 Elasticsearch 时追加 |
 
 ## 契约是「交集」，不是「并集」
@@ -44,15 +44,15 @@ dotnet add package XiHan.Framework.SearchEngines
 public class MyModule : XiHanModule { }
 ```
 
-依赖上模块后即可无条件注入 `ISearchEngine`，此时拿到的是 `InMemorySearchEngine`。模块自身只做兜底注册：
+依赖上模块后即可无条件注入 `ISearchEngine`，此时拿到的是 `DefaultSearchEngine`。模块自身只做兜底注册：
 
 ```csharp
-context.Services.TryAddSingleton<InMemorySearchEngine>();
-context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<InMemorySearchEngine>());
+context.Services.TryAddSingleton<DefaultSearchEngine>();
+context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<DefaultSearchEngine>());
 ```
 
 ::: warning 进程内实现能做什么、不能做什么
-`InMemorySearchEngine` 面向**单机开发与自动化测试**：索引状态放在并发字典里，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每索引 100000 条文档；索引状态放在进程内，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
 
 用它验证「链路通不通」可以，验证「搜得准不准」不行。生产必须换实现。
 :::

@@ -9,11 +9,14 @@ using XiHan.Framework.Workflow.Abstractions.Stores;
 namespace XiHan.Framework.Workflow.Stores;
 
 /// <summary>
-/// 内存流程书签存储（进程内单实例场景的默认实现）
+/// 默认流程书签存储（有界进程内实现）
 /// </summary>
-public class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
+public class DefaultWorkflowBookmarkStore : IWorkflowBookmarkStore
 {
+    private const int MaxBookmarkCount = 500000;
+
     private readonly ConcurrentDictionary<string, WorkflowBookmark> _bookmarks = new();
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 按标识查找书签
@@ -114,7 +117,15 @@ public class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     /// <returns>任务</returns>
     public Task InsertAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken = default)
     {
-        _bookmarks[bookmark.Id] = bookmark;
+        lock (_writeLock)
+        {
+            if (!_bookmarks.ContainsKey(bookmark.Id) && _bookmarks.Count >= MaxBookmarkCount)
+            {
+                throw new InvalidOperationException($"默认流程书签存储已达到 {MaxBookmarkCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _bookmarks[bookmark.Id] = bookmark;
+        }
         return Task.CompletedTask;
     }
 
@@ -126,8 +137,7 @@ public class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     /// <returns>任务</returns>
     public Task UpdateAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken = default)
     {
-        _bookmarks[bookmark.Id] = bookmark;
-        return Task.CompletedTask;
+        return InsertAsync(bookmark, cancellationToken);
     }
 
     /// <summary>

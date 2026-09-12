@@ -8,10 +8,13 @@ using XiHan.Framework.Upgrade.Models;
 namespace XiHan.Framework.Upgrade.Services;
 
 /// <summary>
-/// 基于内存的升级版本存储（默认实现）
+/// 默认升级版本存储（有界进程内实现）
 /// </summary>
-public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
+public class DefaultUpgradeVersionStore : IUpgradeVersionStore
 {
+    private const int MaxTenantCount = 10000;
+    private const int MaxMigrationHistoryCountPerTenant = 10000;
+
     private static readonly object SyncRoot = new();
     private static readonly Dictionary<string, UpgradeVersionState> VersionStates = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, List<UpgradeMigrationHistory>> MigrationHistories = new(StringComparer.Ordinal);
@@ -23,7 +26,7 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
     /// 构造函数
     /// </summary>
     /// <param name="currentTenant">当前租户（可选）</param>
-    public InMemoryUpgradeVersionStore(ICurrentTenant? currentTenant = null)
+    public DefaultUpgradeVersionStore(ICurrentTenant? currentTenant = null)
     {
         _currentTenant = currentTenant;
     }
@@ -56,6 +59,7 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
         {
             if (!VersionStates.TryGetValue(tenantKey, out var state))
             {
+                EnsureTenantCapacity(tenantKey);
                 state = new UpgradeVersionState
                 {
                     Id = Interlocked.Increment(ref _idSeed),
@@ -229,8 +233,15 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
         {
             if (!MigrationHistories.TryGetValue(tenantKey, out var histories))
             {
+                EnsureTenantCapacity(tenantKey);
                 histories = [];
                 MigrationHistories[tenantKey] = histories;
+            }
+
+            if (histories.Count >= MaxMigrationHistoryCountPerTenant)
+            {
+                throw new InvalidOperationException(
+                    $"默认升级历史存储的单租户记录已达到 {MaxMigrationHistoryCountPerTenant} 条上限，请替换为应用级持久化实现。");
             }
 
             var snapshot = CloneHistory(history);
@@ -297,6 +308,7 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
 
         if (!VersionStates.TryGetValue(tenantKey, out var state))
         {
+            EnsureTenantCapacity(tenantKey);
             state = new UpgradeVersionState
             {
                 Id = source.Id > 0 ? source.Id : Interlocked.Increment(ref _idSeed),
@@ -313,6 +325,16 @@ public class InMemoryUpgradeVersionStore : IUpgradeVersionStore
         }
 
         return state;
+    }
+
+    private static void EnsureTenantCapacity(string tenantKey)
+    {
+        if (!VersionStates.ContainsKey(tenantKey)
+            && !MigrationHistories.ContainsKey(tenantKey)
+            && VersionStates.Keys.Concat(MigrationHistories.Keys).Distinct(StringComparer.Ordinal).Count() >= MaxTenantCount)
+        {
+            throw new InvalidOperationException($"默认升级存储已达到 {MaxTenantCount} 个租户上限，请替换为应用级持久化实现。");
+        }
     }
 
     /// <summary>

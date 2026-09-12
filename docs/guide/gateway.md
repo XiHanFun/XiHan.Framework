@@ -198,7 +198,7 @@ public class GrayVersionHeaderMiddleware(RequestDelegate next)
 
 ## 生产化：换掉内存规则仓储
 
-默认的 `InMemoryGrayRuleRepository` 是单例 `ConcurrentDictionary`，源码注释写明「仅用于演示和测试」：规则重启即丢、多实例各存各的、没有任何管理入口（`AddRule` / `RemoveRule` / `Clear` 不在 `IGrayRuleRepository` 接口上）。
+默认的 `DefaultGrayRuleRepository` 是最多保存 10000 条规则的单例进程内仓储：规则重启即丢、多实例各存各的、没有任何管理入口（`AddRule` / `RemoveRule` / `Clear` 不在 `IGrayRuleRepository` 接口上）。
 
 生产要实现三个只读方法后替换：
 

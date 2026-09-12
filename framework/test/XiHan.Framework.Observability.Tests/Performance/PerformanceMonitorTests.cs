@@ -15,6 +15,8 @@ namespace XiHan.Framework.Observability.Tests.Performance;
 /// </remarks>
 public class PerformanceMonitorTests
 {
+    private const int MaxRecordCount = 10000;
+
     /// <summary>
     /// 性能监控实现监控接口
     /// </summary>
@@ -76,6 +78,32 @@ public class PerformanceMonitorTests
         Assert.Equal(0d, statistics.P99DurationMs);
         Assert.NotNull(statistics.OperationStats);
         Assert.Empty(statistics.OperationStats);
+    }
+
+    /// <summary>
+    /// 长期运行时只保留最近的固定数量记录
+    /// </summary>
+    [Fact]
+    public void Dispose_AfterRecordLimit_EvictsOldestRecords()
+    {
+        var monitor = new PerformanceMonitor();
+
+        using (monitor.BeginOperation("oldest"))
+        {
+        }
+
+        for (var index = 0; index < MaxRecordCount; index++)
+        {
+            using (monitor.BeginOperation("retained"))
+            {
+            }
+        }
+
+        var statistics = monitor.GetStatistics();
+
+        Assert.Equal(MaxRecordCount, statistics.TotalOperations);
+        Assert.DoesNotContain("oldest", statistics.OperationStats.Keys);
+        Assert.Equal(MaxRecordCount, statistics.OperationStats["retained"].Count);
     }
 
     /// <summary>

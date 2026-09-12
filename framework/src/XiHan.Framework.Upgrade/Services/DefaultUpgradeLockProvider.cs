@@ -7,10 +7,12 @@ using XiHan.Framework.Upgrade.Abstractions;
 namespace XiHan.Framework.Upgrade.Services;
 
 /// <summary>
-/// 基于内存的升级锁提供者（默认实现）
+/// 默认升级锁提供者（有界进程内实现）
 /// </summary>
-public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
+public class DefaultUpgradeLockProvider : IUpgradeLockProvider
 {
+    private const int MaxLockCount = 10000;
+
     private readonly ConcurrentDictionary<string, LockEntry> _locks = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -35,6 +37,23 @@ public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
             throw new ArgumentOutOfRangeException(nameof(expiry), "升级锁过期时间必须大于 0。");
         }
 
+        var capacityCheckTime = DateTimeOffset.UtcNow;
+        if (!_locks.ContainsKey(resourceKey) && _locks.Count >= MaxLockCount)
+        {
+            foreach (var item in _locks)
+            {
+                if (item.Value.IsExpired(capacityCheckTime))
+                {
+                    _locks.TryRemove(item.Key, out _);
+                }
+            }
+
+            if (_locks.Count >= MaxLockCount)
+            {
+                return Task.FromResult<IUpgradeLockToken?>(null);
+            }
+        }
+
         for (var attempt = 0; attempt < 3; attempt++)
         {
             var now = DateTimeOffset.UtcNow;
@@ -45,7 +64,7 @@ public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
             {
                 if (_locks.TryAdd(resourceKey, entry))
                 {
-                    return Task.FromResult<IUpgradeLockToken?>(new InMemoryUpgradeLockToken(resourceKey, lockId, this));
+                    return Task.FromResult<IUpgradeLockToken?>(new DefaultUpgradeLockToken(resourceKey, lockId, this));
                 }
 
                 continue;
@@ -58,7 +77,7 @@ public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
 
             if (_locks.TryUpdate(resourceKey, entry, existing))
             {
-                return Task.FromResult<IUpgradeLockToken?>(new InMemoryUpgradeLockToken(resourceKey, lockId, this));
+                return Task.FromResult<IUpgradeLockToken?>(new DefaultUpgradeLockToken(resourceKey, lockId, this));
             }
         }
 
@@ -101,9 +120,9 @@ public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
     /// <summary>
     /// 内存升级锁令牌
     /// </summary>
-    private sealed class InMemoryUpgradeLockToken : IUpgradeLockToken
+    private sealed class DefaultUpgradeLockToken : IUpgradeLockToken
     {
-        private readonly InMemoryUpgradeLockProvider _provider;
+        private readonly DefaultUpgradeLockProvider _provider;
         private int _isReleased;
 
         /// <summary>
@@ -112,7 +131,7 @@ public class InMemoryUpgradeLockProvider : IUpgradeLockProvider
         /// <param name="resourceKey">资源键</param>
         /// <param name="lockId">锁标识</param>
         /// <param name="provider">锁提供者</param>
-        public InMemoryUpgradeLockToken(string resourceKey, string lockId, InMemoryUpgradeLockProvider provider)
+        public DefaultUpgradeLockToken(string resourceKey, string lockId, DefaultUpgradeLockProvider provider)
         {
             ResourceKey = resourceKey;
             LockId = lockId;

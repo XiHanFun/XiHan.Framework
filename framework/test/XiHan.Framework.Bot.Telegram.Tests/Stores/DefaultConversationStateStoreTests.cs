@@ -7,14 +7,14 @@ using XiHan.Framework.Bot.Telegram.Stores;
 namespace XiHan.Framework.Bot.Telegram.Tests.Stores;
 
 /// <summary>
-/// <see cref="InMemoryConversationStateStore"/> 进程内会话状态存储测试
+/// <see cref="DefaultConversationStateStore"/> 进程内会话状态存储测试
 /// </summary>
 /// <remarks>
 /// 状态键是「机器人 + 会话 + 用户」三元组：同一个群里两个用户各自的多步流程不能互相踩，
 /// 同一个用户在两个机器人里的流程也不能串。过期条目必须在读取时被清掉并按无状态返回，
 /// 否则用户会被永久困在一个早就该失效的步骤里。
 /// </remarks>
-public class InMemoryConversationStateStoreTests
+public class DefaultConversationStateStoreTests
 {
     /// <summary>
     /// 没有设置过状态时读到 null
@@ -22,7 +22,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task GetAsync_WhenNoState_ReturnsNull()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
 
         Assert.Null(await store.GetAsync("main-bot", 100, 200, TestContext.Current.CancellationToken));
     }
@@ -33,7 +33,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task SetAsync_ThenGetAsync_ReturnsSameState()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         var state = new ConversationState { Step = "awaiting_amount", Payload = """{"orderId":"A-1"}""" };
 
         await store.SetAsync("main-bot", 100, 200, state, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
@@ -49,7 +49,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task SetAsync_WhenStateNull_Throws()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
 
         await Assert.ThrowsAsync<ArgumentNullException>(
             async () => await store.SetAsync("main-bot", 100, 200, null!, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken));
@@ -61,7 +61,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task SetAsync_OverwritesExistingState()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "step-1" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
         var second = new ConversationState { Step = "step-2" };
@@ -79,7 +79,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task RemoveAsync_ClearsState()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "step-1" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
         await store.RemoveAsync("main-bot", 100, 200, TestContext.Current.CancellationToken);
@@ -93,7 +93,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task RemoveAsync_WhenNoState_IsNoOp()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
 
         await store.RemoveAsync("main-bot", 100, 200, TestContext.Current.CancellationToken);
 
@@ -106,7 +106,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task States_AreIsolatedByBotName()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("bot-a", 100, 200, new ConversationState { Step = "a" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
         Assert.Null(await store.GetAsync("bot-b", 100, 200, TestContext.Current.CancellationToken));
@@ -119,7 +119,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task States_AreIsolatedByUserId()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "user-200" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
         await store.SetAsync("main-bot", 100, 300, new ConversationState { Step = "user-300" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
@@ -133,7 +133,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task States_AreIsolatedByChatId()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "chat-100" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
         await store.SetAsync("main-bot", 101, 200, new ConversationState { Step = "chat-101" }, TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
@@ -150,7 +150,7 @@ public class InMemoryConversationStateStoreTests
     [InlineData(-60)]
     public async Task SetAsync_WhenTtlNotPositive_UsesDefaultTenMinutes(int ttlSeconds)
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
 
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "step-1" }, TimeSpan.FromSeconds(ttlSeconds), TestContext.Current.CancellationToken);
 
@@ -163,7 +163,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task GetAsync_WhenExpired_ReturnsNullAndEvictsEntry()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "step-1" }, TimeSpan.FromMilliseconds(1), TestContext.Current.CancellationToken);
 
         await Task.Delay(TimeSpan.FromMilliseconds(120), TestContext.Current.CancellationToken);
@@ -178,7 +178,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task SetAsync_AfterExpiration_RestoresState()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "old" }, TimeSpan.FromMilliseconds(1), TestContext.Current.CancellationToken);
         await Task.Delay(TimeSpan.FromMilliseconds(120), TestContext.Current.CancellationToken);
         Assert.Null(await store.GetAsync("main-bot", 100, 200, TestContext.Current.CancellationToken));
@@ -194,7 +194,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public void Type_ImplementsConversationStateStoreAbstraction()
     {
-        Assert.IsAssignableFrom<IConversationStateStore>(new InMemoryConversationStateStore());
+        Assert.IsAssignableFrom<IConversationStateStore>(new DefaultConversationStateStore());
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public class InMemoryConversationStateStoreTests
     [Fact]
     public async Task Api_WithoutCancellationToken_Works()
     {
-        var store = new InMemoryConversationStateStore();
+        var store = new DefaultConversationStateStore();
 
         await store.SetAsync("main-bot", 100, 200, new ConversationState { Step = "step-1" }, TimeSpan.FromMinutes(5));
         Assert.NotNull(await store.GetAsync("main-bot", 100, 200));

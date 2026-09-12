@@ -14,7 +14,7 @@ namespace XiHan.Framework.Traffic.Tests.GrayRouting.Implementations;
 /// 该仓储被注册为单例并被引擎并发读取，因此除了增删改查语义，还要覆盖两条隐式契约：
 /// GetEnabledRulesAsync 返回的是快照而非活视图；写入在并发下不丢数据。
 /// </remarks>
-public class InMemoryGrayRuleRepositoryTests
+public class DefaultGrayRuleRepositoryTests
 {
     /// <summary>
     /// 新建仓储没有任何规则
@@ -22,7 +22,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetEnabledRulesAsync_OnEmptyRepository_ReturnsEmptyList()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
 
         var rules = await repository.GetEnabledRulesAsync(TestContext.Current.CancellationToken);
 
@@ -36,7 +36,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task AddRule_ThenGetRuleByIdAsync_ReturnsSameInstance()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var rule = CreateRule("rule-1", true);
         repository.AddRule(rule);
 
@@ -51,7 +51,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetRuleByIdAsync_WithUnknownId_ReturnsNull()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(CreateRule("rule-1", true));
 
         Assert.Null(await repository.GetRuleByIdAsync("missing", TestContext.Current.CancellationToken));
@@ -66,7 +66,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetRuleByIdAsync_ReturnsDisabledRuleAsWell()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(CreateRule("rule-1", false));
 
         var found = await repository.GetRuleByIdAsync("rule-1", TestContext.Current.CancellationToken);
@@ -81,7 +81,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetEnabledRulesAsync_FiltersOutDisabledRules()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(CreateRule("rule-enabled", true));
         repository.AddRule(CreateRule("rule-disabled", false));
 
@@ -97,7 +97,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task AddRule_WithExistingRuleId_ReplacesPreviousRule()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true, "旧规则"));
         repository.AddRule(CreateRule("rule-1", true, "新规则"));
@@ -116,7 +116,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task AddRule_CanFlipRuleFromEnabledToDisabled()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true));
         repository.AddRule(CreateRule("rule-1", false));
@@ -130,7 +130,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task RemoveRule_DropsRuleFromBothQueries()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true));
         repository.AddRule(CreateRule("rule-2", true));
@@ -149,7 +149,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task RemoveRule_WithUnknownId_IsSilentNoOp()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(CreateRule("rule-1", true));
 
         repository.RemoveRule("missing");
@@ -164,7 +164,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task Clear_RemovesEveryRuleIncludingDisabledOnes()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true));
         repository.AddRule(CreateRule("rule-2", false));
@@ -184,7 +184,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task RefreshAsync_IsNoOpAndKeepsRules()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true));
 
@@ -200,7 +200,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetEnabledRulesAsync_ReturnsDetachedSnapshot()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
         repository.AddRule(CreateRule("rule-1", true));
 
@@ -221,7 +221,7 @@ public class InMemoryGrayRuleRepositoryTests
     {
         const int count = 500;
 
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
 
         Parallel.For(0, count, index => repository.AddRule(CreateRule("rule-" + index, true)));
 
@@ -239,7 +239,7 @@ public class InMemoryGrayRuleRepositoryTests
     {
         const int count = 200;
 
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         for (var index = 0; index < count; index++)
         {
             repository.AddRule(CreateRule("rule-" + index, true));
@@ -263,7 +263,7 @@ public class InMemoryGrayRuleRepositoryTests
     [Fact]
     public async Task GetEnabledRulesAsync_WhileWriting_DoesNotThrow()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         var token = TestContext.Current.CancellationToken;
 
         var writer = Task.Run(() =>

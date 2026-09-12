@@ -16,7 +16,7 @@ namespace XiHan.Framework.Caching.Tests;
 /// <remarks>
 /// 覆盖延迟队列的到期语义，以及「Redis 未启用时 <see cref="IRedisDelayQueue{T}"/> 仍可解析」这一注册契约。
 /// </remarks>
-public class InMemoryDelayQueueTests
+public class DefaultDelayQueueTests
 {
     /// <summary>
     /// 未到期的消息不会被取出，但计入队列总数
@@ -25,7 +25,7 @@ public class InMemoryDelayQueueTests
     public async Task DequeueDueAsync_ItemNotDue_ReturnsEmptyButStaysQueued()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<TestMessage>();
+        var queue = new DefaultDelayQueue<TestMessage>();
         await queue.EnqueueAsync(new TestMessage(1), TimeSpan.FromMinutes(5), token);
 
         var due = await queue.DequeueDueAsync(10, token);
@@ -41,7 +41,7 @@ public class InMemoryDelayQueueTests
     public async Task DequeueDueAsync_ItemDue_IsRemovedAfterDequeue()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<TestMessage>();
+        var queue = new DefaultDelayQueue<TestMessage>();
         await queue.EnqueueAsync(new TestMessage(1), TimeSpan.Zero, token);
 
         var first = await queue.DequeueDueAsync(10, token);
@@ -59,7 +59,7 @@ public class InMemoryDelayQueueTests
     public async Task DequeueDueAsync_RespectsCountAndEnqueueOrder()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<TestMessage>();
+        var queue = new DefaultDelayQueue<TestMessage>();
         var dueTime = DateTimeOffset.UtcNow.AddSeconds(-1);
         await queue.EnqueueAtAsync(new TestMessage(1), dueTime, token);
         await queue.EnqueueAtAsync(new TestMessage(2), dueTime, token);
@@ -78,7 +78,7 @@ public class InMemoryDelayQueueTests
     public async Task DequeueDueAsync_OrdersByDueTimeBeforeEnqueueOrder()
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<TestMessage>();
+        var queue = new DefaultDelayQueue<TestMessage>();
         await queue.EnqueueAtAsync(new TestMessage(1), DateTimeOffset.UtcNow.AddSeconds(-1), token);
         await queue.EnqueueAtAsync(new TestMessage(2), DateTimeOffset.UtcNow.AddSeconds(-30), token);
 
@@ -96,7 +96,7 @@ public class InMemoryDelayQueueTests
     public async Task DequeueDueAsync_NonPositiveCount_ReturnsEmpty(int count)
     {
         var token = TestContext.Current.CancellationToken;
-        var queue = new InMemoryDelayQueue<TestMessage>();
+        var queue = new DefaultDelayQueue<TestMessage>();
         await queue.EnqueueAsync(new TestMessage(1), TimeSpan.Zero, token);
 
         var due = await queue.DequeueDueAsync(count, token);
@@ -109,7 +109,7 @@ public class InMemoryDelayQueueTests
     /// Redis 未启用时延迟队列仍可从容器解析，落到进程内回退实现
     /// </summary>
     [Fact]
-    public void AddXiHanCaching_RedisDisabled_ResolvesInMemoryDelayQueue()
+    public void AddXiHanCaching_RedisDisabled_ResolvesDefaultDelayQueue()
     {
         var services = new ServiceCollection();
         services.AddXiHanCaching(BuildConfiguration(redisEnabled: false));
@@ -117,7 +117,7 @@ public class InMemoryDelayQueueTests
 
         var queue = provider.GetService<IRedisDelayQueue<TestMessage>>();
 
-        Assert.IsType<InMemoryDelayQueue<TestMessage>>(queue);
+        Assert.IsType<DefaultDelayQueue<TestMessage>>(queue);
     }
 
     /// <summary>
