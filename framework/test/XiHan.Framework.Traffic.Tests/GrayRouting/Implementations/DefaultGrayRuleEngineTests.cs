@@ -362,7 +362,7 @@ public class DefaultGrayRuleEngineTests
     public async Task DecideAsync_WithBuiltInMatchers_RoutesByUserIdRule()
     {
         var token = TestContext.Current.CancellationToken;
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(new GrayRule
         {
             RuleId = "user-rule",
@@ -401,7 +401,7 @@ public class DefaultGrayRuleEngineTests
     [Fact]
     public async Task DecideAsync_WithDisabledRuleInRepository_ReturnsNoEnabledRules()
     {
-        var repository = new InMemoryGrayRuleRepository();
+        var repository = new DefaultGrayRuleRepository();
         repository.AddRule(new GrayRule
         {
             RuleId = "user-rule",

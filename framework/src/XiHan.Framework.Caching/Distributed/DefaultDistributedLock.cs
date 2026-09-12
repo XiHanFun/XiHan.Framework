@@ -7,13 +7,15 @@ using XiHan.Framework.Caching.Distributed.Abstracts;
 namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
-/// 进程内分布式锁回退实现（Redis 未启用时使用）。
+/// 默认分布式锁（有界进程内实现）。
 /// </summary>
 /// <remarks>
 /// 仅在当前进程内互斥，<b>不跨实例</b>；多实例部署务必启用 Redis 改用 <see cref="RedisDistributedLock"/>。
 /// </remarks>
-public sealed class InMemoryDistributedLock : IDistributedLock
+public sealed class DefaultDistributedLock : IDistributedLock
 {
+    private const int MaxEntryCount = 10000;
+
     private readonly ConcurrentDictionary<string, LockEntry> _locks = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -32,6 +34,23 @@ public sealed class InMemoryDistributedLock : IDistributedLock
         }
 
         var key = resourceKey.Trim();
+        var nowTicks = DateTime.UtcNow.Ticks;
+        if (!_locks.ContainsKey(key) && _locks.Count >= MaxEntryCount)
+        {
+            foreach (var item in _locks)
+            {
+                if (item.Value.ExpiresAtUtcTicks <= nowTicks)
+                {
+                    _locks.TryRemove(item.Key, out _);
+                }
+            }
+
+            if (_locks.Count >= MaxEntryCount)
+            {
+                return Task.FromResult<IDistributedLockHandle?>(null);
+            }
+        }
+
         var entry = new LockEntry(Guid.NewGuid().ToString("N"), DateTime.UtcNow.Add(expiry).Ticks);
 
         while (true)
@@ -55,7 +74,7 @@ public sealed class InMemoryDistributedLock : IDistributedLock
                 continue;
             }
 
-            return Task.FromResult<IDistributedLockHandle?>(new InMemoryDistributedLockHandle(_locks, key, entry));
+            return Task.FromResult<IDistributedLockHandle?>(new DefaultDistributedLockHandle(_locks, key, entry));
         }
     }
 
@@ -70,16 +89,16 @@ public sealed class InMemoryDistributedLock : IDistributedLock
 /// <summary>
 /// 进程内分布式锁句柄。
 /// </summary>
-internal sealed class InMemoryDistributedLockHandle : IDistributedLockHandle
+internal sealed class DefaultDistributedLockHandle : IDistributedLockHandle
 {
-    private readonly ConcurrentDictionary<string, InMemoryDistributedLock.LockEntry> _locks;
-    private readonly InMemoryDistributedLock.LockEntry _entry;
+    private readonly ConcurrentDictionary<string, DefaultDistributedLock.LockEntry> _locks;
+    private readonly DefaultDistributedLock.LockEntry _entry;
     private int _released;
 
-    public InMemoryDistributedLockHandle(
-        ConcurrentDictionary<string, InMemoryDistributedLock.LockEntry> locks,
+    public DefaultDistributedLockHandle(
+        ConcurrentDictionary<string, DefaultDistributedLock.LockEntry> locks,
         string resourceKey,
-        InMemoryDistributedLock.LockEntry entry)
+        DefaultDistributedLock.LockEntry entry)
     {
         _locks = locks;
         _entry = entry;
@@ -98,7 +117,7 @@ internal sealed class InMemoryDistributedLockHandle : IDistributedLockHandle
         if (Interlocked.Exchange(ref _released, 1) == 0)
         {
             // 仅当字典里仍是本句柄持有的条目时删除（引用相等），避免删掉接管者的锁
-            _locks.TryRemove(new KeyValuePair<string, InMemoryDistributedLock.LockEntry>(ResourceKey, _entry));
+            _locks.TryRemove(new KeyValuePair<string, DefaultDistributedLock.LockEntry>(ResourceKey, _entry));
         }
 
         return Task.CompletedTask;

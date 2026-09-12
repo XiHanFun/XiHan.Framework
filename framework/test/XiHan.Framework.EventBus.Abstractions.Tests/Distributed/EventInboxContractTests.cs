@@ -24,7 +24,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task GetWaitingEvents_AfterEnqueue_ReturnsEnqueuedEvent()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = EventInfoFactory.CreateIncoming();
 
         await inbox.EnqueueAsync(incoming);
@@ -39,7 +39,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task MarkAsProcessed_RemovesEventFromWaitingList()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = EventInfoFactory.CreateIncoming();
 
         await inbox.EnqueueAsync(incoming);
@@ -55,7 +55,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task MarkAsDiscard_RemovesEventFromWaitingList()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = EventInfoFactory.CreateIncoming();
 
         await inbox.EnqueueAsync(incoming);
@@ -71,7 +71,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task RetryLater_KeepsEventWaitingAndRecordsSchedule()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = EventInfoFactory.CreateIncoming();
         var nextRetryTime = EventInfoFactory.FixedCreatedTime.AddMinutes(5);
 
@@ -92,7 +92,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task RetryLater_AcceptsNullNextRetryTime()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = EventInfoFactory.CreateIncoming();
 
         await inbox.EnqueueAsync(incoming);
@@ -107,7 +107,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task ExistsByMessageId_UsesMessageIdAsDeduplicationKey()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
 
         await inbox.EnqueueAsync(EventInfoFactory.CreateIncoming("message-1"));
 
@@ -124,7 +124,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task ExistsByMessageId_IgnoresEventId()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var first = EventInfoFactory.CreateIncoming("message-1");
         var second = EventInfoFactory.CreateIncoming("message-1");
 
@@ -140,7 +140,7 @@ public class EventInboxContractTests
     [Fact]
     public async Task DeleteOldEvents_KeepsWaitingEvents()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var processed = EventInfoFactory.CreateIncoming("message-1");
         var waitingEvent = EventInfoFactory.CreateIncoming("message-2");
 

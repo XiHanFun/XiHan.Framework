@@ -43,7 +43,8 @@ public class MyModule : XiHanModule;
 - `IDistributedCacheSerializer` → `JsonDistributedCacheSerializer`（JSON 序列化）。
 - 开放泛型 `IDistributedCache<>` / `IDistributedCache<,>` → `DistributedCache<>` / `DistributedCache<,>`。
 - `AddHybridCache()` + 开放泛型 `IHybridCache<>` / `IHybridCache<,>` → `XiHanHybridCache<>` / `XiHanHybridCache<,>`。
-- `IDistributedLock` → `InMemoryDistributedLock`（`TryAdd`，进程内回退）。
+- `IDistributedLock` → `DefaultDistributedLock`（`TryAdd`，最多 10000 个锁条目，满载时获取失败）。
+- 开放泛型 `IRedisDelayQueue<>` → `DefaultDelayQueue<>`（最多 100000 条，满载时拒绝入队）。
 - `XiHanDistributedCacheOptions`（全局条目默认 `SlidingExpiration = 20min`）与 `XiHanRedisCacheOptions`（绑定配置节）。
 
 随后 `OnRegistered(CacheInterceptorRegistrar.RegisterIfNeeded)` 挂上缓存拦截器（为带 `[Cacheable]` 的类型织入 `CacheInterceptor`）。

@@ -57,8 +57,8 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
     [Theory]
     [InlineData(typeof(ITelegramBotConfigStore), typeof(DefaultTelegramBotConfigStore))]
     [InlineData(typeof(ITelegramBotSettingsStore), typeof(DefaultTelegramBotSettingsStore))]
-    [InlineData(typeof(ITelegramUpdateDeduplicator), typeof(InMemoryTelegramUpdateDeduplicator))]
-    [InlineData(typeof(IConversationStateStore), typeof(InMemoryConversationStateStore))]
+    [InlineData(typeof(ITelegramUpdateDeduplicator), typeof(DefaultTelegramUpdateDeduplicator))]
+    [InlineData(typeof(IConversationStateStore), typeof(DefaultConversationStateStore))]
     [InlineData(typeof(ITelegramMessageAuditStore), typeof(NoOpTelegramMessageAuditStore))]
     [InlineData(typeof(ITelegramNotifier), typeof(TelegramNotifier))]
     public void AddXiHanBotTelegramPlatform_RegistersReplaceableServicesAsSingletons(
@@ -127,8 +127,8 @@ public class XiHanBotTelegramPlatformServiceCollectionExtensionsTests
 
         Assert.IsType<DefaultTelegramBotConfigStore>(provider.GetRequiredService<ITelegramBotConfigStore>());
         Assert.IsType<DefaultTelegramBotSettingsStore>(provider.GetRequiredService<ITelegramBotSettingsStore>());
-        Assert.IsType<InMemoryTelegramUpdateDeduplicator>(provider.GetRequiredService<ITelegramUpdateDeduplicator>());
-        Assert.IsType<InMemoryConversationStateStore>(provider.GetRequiredService<IConversationStateStore>());
+        Assert.IsType<DefaultTelegramUpdateDeduplicator>(provider.GetRequiredService<ITelegramUpdateDeduplicator>());
+        Assert.IsType<DefaultConversationStateStore>(provider.GetRequiredService<IConversationStateStore>());
         Assert.IsType<NoOpTelegramMessageAuditStore>(provider.GetRequiredService<ITelegramMessageAuditStore>());
         Assert.IsType<TelegramNotifier>(provider.GetRequiredService<ITelegramNotifier>());
 

@@ -72,8 +72,8 @@ public class XiHanBotTelegramModuleTests
 
         Assert.IsType<DefaultTelegramBotConfigStore>(provider.GetRequiredService<ITelegramBotConfigStore>());
         Assert.IsType<DefaultTelegramBotSettingsStore>(provider.GetRequiredService<ITelegramBotSettingsStore>());
-        Assert.IsType<InMemoryTelegramUpdateDeduplicator>(provider.GetRequiredService<ITelegramUpdateDeduplicator>());
-        Assert.IsType<InMemoryConversationStateStore>(provider.GetRequiredService<IConversationStateStore>());
+        Assert.IsType<DefaultTelegramUpdateDeduplicator>(provider.GetRequiredService<ITelegramUpdateDeduplicator>());
+        Assert.IsType<DefaultConversationStateStore>(provider.GetRequiredService<IConversationStateStore>());
         Assert.IsType<NoOpTelegramMessageAuditStore>(provider.GetRequiredService<ITelegramMessageAuditStore>());
         Assert.IsType<TelegramNotifier>(provider.GetRequiredService<ITelegramNotifier>());
         Assert.NotNull(provider.GetRequiredService<TelegramBotHandlerCatalog>());

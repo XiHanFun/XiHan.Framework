@@ -14,7 +14,7 @@ namespace XiHan.Framework.EventBus.Tests.Distributed;
 /// 发件箱是「先落库再投递」的缓冲区，发送成功后由发送器批量删除，
 /// 因此队列语义（先进先出、批量上限、按标识删除）是它唯一的公共契约。
 /// </remarks>
-public class InMemoryEventOutboxTests
+public class DefaultEventOutboxTests
 {
     /// <summary>
     /// 入队空事件时抛出参数异常
@@ -22,7 +22,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task EnqueueAsync_WhenEventNull_Throws()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => outbox.EnqueueAsync(null!));
     }
@@ -36,7 +36,7 @@ public class InMemoryEventOutboxTests
     [InlineData(-1)]
     public async Task GetWaitingEventsAsync_WhenMaxCountNotPositive_ReturnsEmpty(int maxCount)
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         await outbox.EnqueueAsync(CreateEvent());
 
         var waiting = await outbox.GetWaitingEventsAsync(maxCount, cancellationToken: TestContext.Current.CancellationToken);
@@ -50,7 +50,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_ReturnsEnqueuedEvents()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var outgoing = CreateEvent();
         await outbox.EnqueueAsync(outgoing);
 
@@ -65,7 +65,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_OrdersByCreatedTimeAndRespectsMaxCount()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var baseTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.late", baseTime.AddMinutes(20)));
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.early", baseTime));
@@ -84,7 +84,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_AppliesFilter()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.kept"));
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.filtered"));
 
@@ -102,7 +102,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_WhenCancelled_Throws()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         await outbox.EnqueueAsync(CreateEvent());
         using var cancellation = new CancellationTokenSource();
         await cancellation.CancelAsync();
@@ -117,7 +117,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task EnqueueAsync_WithSameId_KeepsSingleEntry()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var id = Guid.NewGuid();
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.first", id: id));
         await outbox.EnqueueAsync(CreateEvent("xihan.tests.second", id: id));
@@ -133,7 +133,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task DeleteAsync_RemovesEvent()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var outgoing = CreateEvent();
         await outbox.EnqueueAsync(outgoing);
 
@@ -148,7 +148,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task DeleteAsync_WithUnknownId_DoesNotThrow()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
 
         await outbox.DeleteAsync(Guid.NewGuid());
     }
@@ -159,7 +159,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task DeleteManyAsync_RemovesOnlyListedEvents()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var first = CreateEvent("xihan.tests.first");
         var second = CreateEvent("xihan.tests.second");
         var kept = CreateEvent("xihan.tests.kept");
@@ -179,7 +179,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task DeleteManyAsync_WithDuplicateIds_IsIdempotent()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var outgoing = CreateEvent();
         await outbox.EnqueueAsync(outgoing);
 
@@ -194,7 +194,7 @@ public class InMemoryEventOutboxTests
     [Fact]
     public async Task DeleteManyAsync_WhenIdsNull_Throws()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => outbox.DeleteManyAsync(null!));
     }

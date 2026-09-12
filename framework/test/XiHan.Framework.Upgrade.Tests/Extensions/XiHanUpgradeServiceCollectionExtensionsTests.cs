@@ -34,8 +34,8 @@ public class XiHanUpgradeServiceCollectionExtensionsTests
         var scopedProvider = scope.ServiceProvider;
 
         Assert.IsType<FileSystemUpgradeScriptProvider>(scopedProvider.GetRequiredService<IUpgradeScriptProvider>());
-        Assert.IsType<InMemoryUpgradeVersionStore>(scopedProvider.GetRequiredService<IUpgradeVersionStore>());
-        Assert.IsType<InMemoryUpgradeLockProvider>(scopedProvider.GetRequiredService<IUpgradeLockProvider>());
+        Assert.IsType<DefaultUpgradeVersionStore>(scopedProvider.GetRequiredService<IUpgradeVersionStore>());
+        Assert.IsType<DefaultUpgradeLockProvider>(scopedProvider.GetRequiredService<IUpgradeLockProvider>());
         Assert.IsType<DefaultUpgradeTenantProvider>(scopedProvider.GetRequiredService<IUpgradeTenantProvider>());
         Assert.IsType<DefaultUpgradeMigrationExecutor>(scopedProvider.GetRequiredService<IUpgradeMigrationExecutor>());
         Assert.IsType<UpgradeStatusService>(scopedProvider.GetRequiredService<IUpgradeStatusService>());

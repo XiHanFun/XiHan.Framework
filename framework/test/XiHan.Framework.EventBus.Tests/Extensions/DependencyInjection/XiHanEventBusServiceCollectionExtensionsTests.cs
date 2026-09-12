@@ -35,11 +35,11 @@ public class XiHanEventBusServiceCollectionExtensionsTests
         services.AddXiHanEventBus(BuildConfiguration());
         using var provider = services.BuildServiceProvider();
 
-        var outbox = provider.GetRequiredService<InMemoryEventOutbox>();
-        var inbox = provider.GetRequiredService<InMemoryEventInbox>();
+        var outbox = provider.GetRequiredService<DefaultEventOutbox>();
+        var inbox = provider.GetRequiredService<DefaultEventInbox>();
 
-        Assert.Same(outbox, provider.GetRequiredService<InMemoryEventOutbox>());
-        Assert.Same(inbox, provider.GetRequiredService<InMemoryEventInbox>());
+        Assert.Same(outbox, provider.GetRequiredService<DefaultEventOutbox>());
+        Assert.Same(inbox, provider.GetRequiredService<DefaultEventInbox>());
         Assert.Same(outbox, provider.GetRequiredService<IEventOutbox>());
         Assert.Same(inbox, provider.GetRequiredService<IEventInbox>());
     }
@@ -58,8 +58,8 @@ public class XiHanEventBusServiceCollectionExtensionsTests
 
         Assert.True(options.Outboxes.ContainsKey("Default"));
         Assert.True(options.Inboxes.ContainsKey("Default"));
-        Assert.Equal(typeof(InMemoryEventOutbox), options.Outboxes["Default"].ImplementationType);
-        Assert.Equal(typeof(InMemoryEventInbox), options.Inboxes["Default"].ImplementationType);
+        Assert.Equal(typeof(DefaultEventOutbox), options.Outboxes["Default"].ImplementationType);
+        Assert.Equal(typeof(DefaultEventInbox), options.Inboxes["Default"].ImplementationType);
         Assert.Equal("Default", options.Outboxes["Default"].DatabaseName);
         Assert.Equal("Default", options.Inboxes["Default"].DatabaseName);
     }
@@ -115,8 +115,8 @@ public class XiHanEventBusServiceCollectionExtensionsTests
         services.AddXiHanEventBus(configuration);
 
         Assert.Equal(2, CountDescriptors(services, typeof(IHostedService)));
-        Assert.Equal(1, CountDescriptors(services, typeof(InMemoryEventOutbox)));
-        Assert.Equal(1, CountDescriptors(services, typeof(InMemoryEventInbox)));
+        Assert.Equal(1, CountDescriptors(services, typeof(DefaultEventOutbox)));
+        Assert.Equal(1, CountDescriptors(services, typeof(DefaultEventInbox)));
         Assert.Equal(1, CountDescriptors(services, typeof(IEventOutbox)));
         Assert.Equal(1, CountDescriptors(services, typeof(IEventInbox)));
     }

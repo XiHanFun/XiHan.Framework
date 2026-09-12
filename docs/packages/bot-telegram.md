@@ -132,8 +132,8 @@ Webhook 模式还需在应用管道里 `app.UseTelegramBotWebhook()`（映射 We
 | --- | --- | --- |
 | `ITelegramBotConfigStore` | `DefaultTelegramBotConfigStore` | `Task<IReadOnlyList<TelegramBotConfig>> GetBotConfigsAsync(ct)`；默认读选项 `.Bots` |
 | `ITelegramBotSettingsStore` | `DefaultTelegramBotSettingsStore` | `Task<TelegramBotSettings> GetSettingsAsync(ct)`；默认读选项 `.Settings` |
-| `IConversationStateStore` | `InMemoryConversationStateStore` | 多轮会话状态（key `"{botName}:{chatId}:{userId}"`，默认 TTL 10 分钟） |
-| `ITelegramUpdateDeduplicator` | `InMemoryTelegramUpdateDeduplicator` | 更新去重（`TryMarkProcessedAsync`/`TryUnmarkAsync`，TTL 30 分钟） |
+| `IConversationStateStore` | `DefaultConversationStateStore` | 多轮会话状态（默认 TTL 10 分钟，最多 50000 条） |
+| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 更新去重（TTL 30 分钟，最多 100000 条） |
 | `ITelegramMessageAuditStore` | `NoOpTelegramMessageAuditStore` | 出站审计（`AppendAsync(TelegramMessageAuditRecord, ct)`） |
 
 `ConversationState`：`Step`（当前步骤）/ `Payload`（上下文 JSON）/ `CreateTime`。

@@ -12,8 +12,8 @@
 | 脚本发现（按版本目录扫 `*.sql`） | `FileSystemUpgradeScriptProvider` | 可用 |
 | 后台触发与进程内防重入 | `UpgradeCoordinator` | 可用 |
 | 状态查询 | `UpgradeStatusService` | 可用 |
-| **版本存储** | `InMemoryUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现** |
-| **分布式锁** | `InMemoryUpgradeLockProvider`（进程内） | **多节点必须换** |
+| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现** |
+| **分布式锁** | `DefaultUpgradeLockProvider`（进程内） | **多节点必须换** |
 | **迁移执行器** | `DefaultUpgradeMigrationExecutor` | **必须换**，默认直接抛异常 |
 | 维护模式 | `DefaultUpgradeMaintenanceModeManager` | 只写日志，不拦请求 |
 | 程序文件替换 / 滚动重启 | `NullUpgradeFileUpdater` / `NullRollingRestartCoordinator` | 空实现 |
@@ -322,7 +322,7 @@ services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeV
 ```
 
 ::: danger 默认存储进程重启即丢
-`InMemoryUpgradeVersionStore` 虽然注册为 Scoped，内部却是 `static` 字典（按 `tenant:{id}` / `host` 分区）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
+`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
 :::
 
 ## 常见问题

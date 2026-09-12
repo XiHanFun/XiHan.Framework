@@ -6,11 +6,17 @@ using System.Collections.Concurrent;
 namespace XiHan.Framework.Authentication.Jwt;
 
 /// <summary>
-/// 基于内存的刷新令牌存储
+/// 默认刷新令牌存储（有界进程内实现）
 /// </summary>
-public class InMemoryRefreshTokenStore : IRefreshTokenStore
+public class DefaultRefreshTokenStore : IRefreshTokenStore
 {
+    private const int CleanupFrequency = 256;
+    private const int MaxEntryCount = 100000;
+
     private readonly ConcurrentDictionary<string, RefreshTokenEntry> _tokens = new(StringComparer.Ordinal);
+    private readonly Lock _syncRoot = new();
+
+    private int _saveCount;
 
     /// <summary>
     /// 保存刷新令牌
@@ -22,7 +28,28 @@ public class InMemoryRefreshTokenStore : IRefreshTokenStore
             return;
         }
 
-        _tokens[refreshToken] = new RefreshTokenEntry(subject, expiresAt);
+        var now = DateTime.UtcNow;
+        if (expiresAt <= now)
+        {
+            _tokens.TryRemove(refreshToken, out _);
+            return;
+        }
+
+        lock (_syncRoot)
+        {
+            _saveCount++;
+            if (_saveCount % CleanupFrequency == 0 || _tokens.Count >= MaxEntryCount)
+            {
+                CleanupExpired(now);
+            }
+
+            if (!_tokens.ContainsKey(refreshToken) && _tokens.Count >= MaxEntryCount)
+            {
+                throw new InvalidOperationException($"默认刷新令牌存储已达到 {MaxEntryCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _tokens[refreshToken] = new RefreshTokenEntry(subject, expiresAt);
+        }
     }
 
     /// <summary>
@@ -66,6 +93,17 @@ public class InMemoryRefreshTokenStore : IRefreshTokenStore
         }
 
         _tokens.TryRemove(refreshToken, out _);
+    }
+
+    private void CleanupExpired(DateTime now)
+    {
+        foreach (var entry in _tokens)
+        {
+            if (entry.Value.ExpiresAt <= now)
+            {
+                _tokens.TryRemove(entry.Key, out _);
+            }
+        }
     }
 
     private sealed record RefreshTokenEntry(string? Subject, DateTime ExpiresAt);

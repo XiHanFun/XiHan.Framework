@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.Options;
+using System.Collections;
+using System.Reflection;
 using System.Text;
 using XiHan.Framework.ObjectStorage.Models;
 using XiHan.Framework.ObjectStorage.Options;
@@ -652,6 +654,37 @@ public sealed class LocalFileStorageProviderTests : IDisposable
     }
 
     /// <summary>
+    /// 新上传开始时会清理超过 24 小时无活动的遗留会话及临时目录
+    /// </summary>
+    [Fact]
+    public async Task InitiateChunkedUploadAsync_CleansExpiredSessions()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var expiredUploadId = await _provider.InitiateChunkedUploadAsync(new ChunkedUploadInitRequest
+        {
+            FileName = "expired.bin",
+            StoragePath = "video/expired.bin",
+            TotalSize = 3L,
+            ChunkSize = 3
+        }, token);
+        var tempDirectory = AgeUploadSession(_provider, expiredUploadId, DateTimeOffset.UtcNow.AddHours(-25));
+
+        var activeUploadId = await _provider.InitiateChunkedUploadAsync(new ChunkedUploadInitRequest
+        {
+            FileName = "active.bin",
+            StoragePath = "video/active.bin",
+            TotalSize = 3L,
+            ChunkSize = 3
+        }, token);
+
+        Assert.False(Directory.Exists(tempDirectory));
+        var expiredResult = await UploadChunkAsync(_provider, expiredUploadId, 1, "AAA");
+        Assert.False(expiredResult.Success);
+
+        await _provider.AbortChunkedUploadAsync(activeUploadId, token);
+    }
+
+    /// <summary>
     /// 清理当前用例的临时目录
     /// </summary>
     public void Dispose()
@@ -681,6 +714,18 @@ public sealed class LocalFileStorageProviderTests : IDisposable
         };
 
         return new LocalFileStorageProvider(new OptionsWrapper<LocalStorageOptions>(options));
+    }
+
+    private static string AgeUploadSession(LocalFileStorageProvider provider, string uploadId, DateTimeOffset lastActivity)
+    {
+        var sessionsField = typeof(LocalFileStorageProvider)
+            .GetField("_uploadSessions", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var sessions = (IEnumerable)sessionsField.GetValue(provider)!;
+        var entry = sessions.Cast<object>().Single(item =>
+            string.Equals(item.GetType().GetProperty("Key")!.GetValue(item)?.ToString(), uploadId, StringComparison.Ordinal));
+        var session = entry.GetType().GetProperty("Value")!.GetValue(entry)!;
+        session.GetType().GetField("LastActivityUtcTicks")!.SetValue(session, lastActivity.UtcTicks);
+        return (string)session.GetType().GetProperty("TempDirectory")!.GetValue(session)!;
     }
 
     /// <summary>

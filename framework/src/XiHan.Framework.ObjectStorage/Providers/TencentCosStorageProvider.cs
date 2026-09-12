@@ -23,6 +23,8 @@ namespace XiHan.Framework.ObjectStorage.Providers;
 /// </remarks>
 public class TencentCosStorageProvider : FileStorageProviderBase
 {
+    private static readonly TimeSpan UploadSessionTtl = TimeSpan.FromHours(24);
+
     private readonly TencentCosStorageOptions _options;
     private readonly CosXml _cosXml;
     private readonly ConcurrentDictionary<string, MultipartUploadSession> _uploadSessions = new();
@@ -69,6 +71,8 @@ public class TencentCosStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
     {
+        CleanupExpiredUploadSessions();
+
         var bucket = request.BucketName ?? GetFullBucketName(_options.DefaultBucket);
         var objectKey = NormalizePath(request.StoragePath);
 
@@ -89,7 +93,8 @@ public class TencentCosStorageProvider : FileStorageProviderBase
                 UploadId = uploadId,
                 BucketName = bucket,
                 ObjectKey = objectKey,
-                PartETags = new ConcurrentDictionary<int, string>()
+                PartETags = new ConcurrentDictionary<int, string>(),
+                LastActivityUtcTicks = DateTimeOffset.UtcNow.UtcTicks
             };
 
             return uploadId;
@@ -114,6 +119,8 @@ public class TencentCosStorageProvider : FileStorageProviderBase
                 ErrorMessage = "上传会话不存在"
             };
         }
+
+        Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
 
         var bucket = request.BucketName ?? _options.DefaultBucket;
         var key = NormalizePath(request.StoragePath);
@@ -583,6 +590,18 @@ public class TencentCosStorageProvider : FileStorageProviderBase
         return (string.IsNullOrWhiteSpace(bucketName) ? GetFullBucketName(_options.DefaultBucket) : GetFullBucketName(bucketName.Trim()), normalizedPath);
     }
 
+    private void CleanupExpiredUploadSessions()
+    {
+        var cutoffTicks = DateTimeOffset.UtcNow.Subtract(UploadSessionTtl).UtcTicks;
+        foreach (var session in _uploadSessions)
+        {
+            if (Interlocked.Read(ref session.Value.LastActivityUtcTicks) <= cutoffTicks)
+            {
+                _uploadSessions.TryRemove(session.Key, out _);
+            }
+        }
+    }
+
     #endregion
 
     /// <summary>
@@ -594,5 +613,6 @@ public class TencentCosStorageProvider : FileStorageProviderBase
         public string BucketName { get; set; } = string.Empty;
         public string ObjectKey { get; set; } = string.Empty;
         public ConcurrentDictionary<int, string> PartETags { get; set; } = new();
+        public long LastActivityUtcTicks;
     }
 }
