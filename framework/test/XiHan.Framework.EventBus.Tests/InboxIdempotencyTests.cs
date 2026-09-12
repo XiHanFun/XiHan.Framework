@@ -90,7 +90,7 @@ public class InboxIdempotencyTests
     /// <returns>事件总线</returns>
     private static TestDistributedEventBus CreateBus(bool withInbox)
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var services = new ServiceCollection();
         services.AddSingleton(inbox);
         var provider = services.BuildServiceProvider();
@@ -98,7 +98,7 @@ public class InboxIdempotencyTests
         var options = new XiHanDistributedEventBusOptions();
         if (withInbox)
         {
-            options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
+            options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox));
         }
 
         return new TestDistributedEventBus(
@@ -122,7 +122,7 @@ public sealed class TestDistributedEventBus : DistributedEventBusBase
     public TestDistributedEventBus(
         IServiceScopeFactory serviceScopeFactory,
         IOptions<XiHanDistributedEventBusOptions> options,
-        InMemoryEventInbox inbox)
+        DefaultEventInbox inbox)
         : base(
             serviceScopeFactory,
             new StubCurrentTenant(),
@@ -140,7 +140,7 @@ public sealed class TestDistributedEventBus : DistributedEventBusBase
     /// <summary>
     /// 收件箱
     /// </summary>
-    public InMemoryEventInbox Inbox { get; }
+    public DefaultEventInbox Inbox { get; }
 
     /// <summary>
     /// 以指定消息标识写入收件箱

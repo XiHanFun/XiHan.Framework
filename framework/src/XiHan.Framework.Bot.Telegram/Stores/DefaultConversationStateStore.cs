@@ -7,11 +7,15 @@ using XiHan.Framework.Bot.Telegram.Abstractions;
 namespace XiHan.Framework.Bot.Telegram.Stores;
 
 /// <summary>
-/// 进程内会话状态存储（TTL 字典；多实例部署请以分布式实现覆盖）
+/// 默认会话状态存储（有界 TTL 进程内实现）
 /// </summary>
-public class InMemoryConversationStateStore : IConversationStateStore
+public class DefaultConversationStateStore : IConversationStateStore
 {
+    private const int CleanupFrequency = 256;
+    private const int MaxEntryCount = 50000;
+
     private readonly ConcurrentDictionary<string, StateEntry> _states = new(StringComparer.Ordinal);
+    private int _setCount;
 
     /// <summary>
     /// 获取指定会话的当前状态，已过期的条目会被移除并按无状态返回
@@ -52,6 +56,16 @@ public class InMemoryConversationStateStore : IConversationStateStore
         ArgumentNullException.ThrowIfNull(state);
 
         var key = BuildKey(botName, chatId, userId);
+        if (Interlocked.Increment(ref _setCount) % CleanupFrequency == 0 || _states.Count >= MaxEntryCount)
+        {
+            CleanupExpired();
+        }
+
+        if (!_states.ContainsKey(key) && _states.Count >= MaxEntryCount)
+        {
+            throw new InvalidOperationException($"默认会话状态存储已达到 {MaxEntryCount} 条上限，请替换为应用级持久化实现。");
+        }
+
         var effectiveTtl = ttl > TimeSpan.Zero ? ttl : TimeSpan.FromMinutes(10);
         _states[key] = new StateEntry(state, DateTimeOffset.UtcNow.Add(effectiveTtl));
         return Task.CompletedTask;
@@ -73,6 +87,18 @@ public class InMemoryConversationStateStore : IConversationStateStore
     private static string BuildKey(string botName, long chatId, long userId)
     {
         return $"{botName}:{chatId}:{userId}";
+    }
+
+    private void CleanupExpired()
+    {
+        var now = DateTimeOffset.UtcNow;
+        foreach (var entry in _states)
+        {
+            if (entry.Value.ExpirationTime <= now)
+            {
+                _states.TryRemove(entry.Key, out _);
+            }
+        }
     }
 
     private sealed record StateEntry(ConversationState State, DateTimeOffset ExpirationTime);

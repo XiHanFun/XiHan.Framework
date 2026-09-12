@@ -28,10 +28,10 @@ public class EventBoxHostedServicesTests
     public async Task OutboxSender_SendsWaitingEventsAndDeletesThem()
     {
         var distributedOptions = new XiHanDistributedEventBusOptions();
-        distributedOptions.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox));
+        distributedOptions.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox));
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
-        var outbox = provider.GetRequiredService<InMemoryEventOutbox>();
+        var outbox = provider.GetRequiredService<DefaultEventOutbox>();
         await outbox.EnqueueAsync(CreateOutgoing());
 
         using var hostedService = new EventBoxOutboxSenderHostedService(
@@ -62,7 +62,7 @@ public class EventBoxHostedServicesTests
         var distributedOptions = new XiHanDistributedEventBusOptions();
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
-        var outbox = provider.GetRequiredService<InMemoryEventOutbox>();
+        var outbox = provider.GetRequiredService<DefaultEventOutbox>();
         await outbox.EnqueueAsync(CreateOutgoing());
 
         using var hostedService = new EventBoxOutboxSenderHostedService(
@@ -95,12 +95,12 @@ public class EventBoxHostedServicesTests
         var distributedOptions = new XiHanDistributedEventBusOptions();
         distributedOptions.Outboxes.Configure(config =>
         {
-            config.ImplementationType = typeof(InMemoryEventOutbox);
+            config.ImplementationType = typeof(DefaultEventOutbox);
             config.IsSendingEnabled = false;
         });
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
-        var outbox = provider.GetRequiredService<InMemoryEventOutbox>();
+        var outbox = provider.GetRequiredService<DefaultEventOutbox>();
         await outbox.EnqueueAsync(CreateOutgoing());
 
         using var hostedService = new EventBoxOutboxSenderHostedService(
@@ -130,10 +130,10 @@ public class EventBoxHostedServicesTests
     public async Task InboxProcessor_ProcessesWaitingEventsAndMarksThemDone()
     {
         var distributedOptions = new XiHanDistributedEventBusOptions();
-        distributedOptions.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
+        distributedOptions.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox));
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
-        var inbox = provider.GetRequiredService<InMemoryEventInbox>();
+        var inbox = provider.GetRequiredService<DefaultEventInbox>();
         await inbox.EnqueueAsync(CreateIncoming());
 
         using var hostedService = new EventBoxInboxProcessorHostedService(
@@ -165,11 +165,11 @@ public class EventBoxHostedServicesTests
     public async Task InboxProcessor_WhenProcessingKeepsFailing_DiscardsAfterRetryLimit()
     {
         var distributedOptions = new XiHanDistributedEventBusOptions();
-        distributedOptions.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
+        distributedOptions.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox));
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
         bus.FailInboxProcessing = true;
-        var inbox = provider.GetRequiredService<InMemoryEventInbox>();
+        var inbox = provider.GetRequiredService<DefaultEventInbox>();
         var incoming = CreateIncoming();
         await inbox.EnqueueAsync(incoming);
 
@@ -205,12 +205,12 @@ public class EventBoxHostedServicesTests
         var distributedOptions = new XiHanDistributedEventBusOptions();
         distributedOptions.Inboxes.Configure(config =>
         {
-            config.ImplementationType = typeof(InMemoryEventInbox);
+            config.ImplementationType = typeof(DefaultEventInbox);
             config.IsProcessingEnabled = false;
         });
         using var provider = BuildProvider(distributedOptions);
         var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
-        var inbox = provider.GetRequiredService<InMemoryEventInbox>();
+        var inbox = provider.GetRequiredService<DefaultEventInbox>();
         await inbox.EnqueueAsync(CreateIncoming());
 
         using var hostedService = new EventBoxInboxProcessorHostedService(
@@ -241,8 +241,8 @@ public class EventBoxHostedServicesTests
     private static ServiceProvider BuildProvider(XiHanDistributedEventBusOptions distributedOptions)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<InMemoryEventOutbox>();
-        services.AddSingleton<InMemoryEventInbox>();
+        services.AddSingleton<DefaultEventOutbox>();
+        services.AddSingleton<DefaultEventInbox>();
         services.AddSingleton<IDistributedEventBus>(serviceProvider => new RecordingDistributedEventBus(
             serviceProvider.GetRequiredService<IServiceScopeFactory>(),
             new FakeCurrentTenant(),

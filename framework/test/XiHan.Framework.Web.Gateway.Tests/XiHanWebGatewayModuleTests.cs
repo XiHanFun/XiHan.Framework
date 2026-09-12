@@ -91,7 +91,7 @@ public class XiHanWebGatewayModuleTests
         Assert.Equal(ServiceLifetime.Singleton, engine.Lifetime);
         Assert.Equal(ServiceLifetime.Singleton, repository.Lifetime);
         Assert.Equal(typeof(DefaultGrayRuleEngine), engine.ImplementationType);
-        Assert.Equal(typeof(InMemoryGrayRuleRepository), repository.ImplementationType);
+        Assert.Equal(typeof(DefaultGrayRuleRepository), repository.ImplementationType);
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public class XiHanWebGatewayModuleTests
         var matchers = provider.GetServices<IGrayMatcher>().ToList();
 
         Assert.IsType<DefaultGrayRuleEngine>(engine);
-        Assert.IsType<InMemoryGrayRuleRepository>(repository);
+        Assert.IsType<DefaultGrayRuleRepository>(repository);
         Assert.Equal(5, matchers.Count);
     }
 

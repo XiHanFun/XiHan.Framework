@@ -2,6 +2,17 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## 未发布
+
+::: warning 升级须知
+所有公开 `InMemoryXxx` 默认实现统一更名为 `DefaultXxx`，不保留旧类型别名；`XiHanJobBuilder.UseInMemoryStore/UseInMemoryLock` 同步更名为 `UseDefaultStore/UseDefaultLock`，`DefaultSearchEngine` 命名空间迁到 `XiHan.Framework.SearchEngines.Default`。应用若直接引用旧具体类型，升级时需同步改名；只依赖接口与模块默认注册的不受影响。
+:::
+
+- **调整** 认证、Telegram、缓存锁/延迟队列、EventBox、Workflow、Tasks、Upgrade、Traffic、Search 的 16 组进程内默认实现统一采用 `DefaultXxx` 命名
+- **修复** 所有上述默认存储增加容量或 TTL 边界：缓存型数据先清理过期项，锁满载时返回获取失败，队列及事实数据存储满载时明确拒绝新增，不再允许进程长期运行时无界占用内存
+- **新增** Framework 的刷新令牌默认实现保持零外部依赖；多实例或持久化实现继续由应用层实现 `IRefreshTokenStore` 并覆盖默认注册
+- **优化** `PerformanceMonitor` 由无界记录集合改为只保留最近 10000 条；Local / OSS / COS 分片上传回收 24 小时无活动的进程内会话
+
 ## v4.2.0 (2026-09-04)
 
 ::: warning 升级须知

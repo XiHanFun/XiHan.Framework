@@ -8,12 +8,17 @@ using XiHan.Framework.Workflow.Abstractions.Stores;
 namespace XiHan.Framework.Workflow.Stores;
 
 /// <summary>
-/// 内存流程实例存储（进程内单实例场景的默认实现）
+/// 默认流程实例存储（有界进程内实现）
 /// </summary>
-public class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
+public class DefaultWorkflowInstanceStore : IWorkflowInstanceStore
 {
+    private const int MaxInstanceCount = 100000;
+    private const int MaxNodeInstanceCount = 500000;
+
     private readonly ConcurrentDictionary<string, WorkflowInstance> _instances = new();
     private readonly ConcurrentDictionary<string, WorkflowNodeInstance> _nodeInstances = new();
+    private readonly Lock _instanceWriteLock = new();
+    private readonly Lock _nodeInstanceWriteLock = new();
 
     /// <summary>
     /// 按标识查找实例
@@ -75,7 +80,15 @@ public class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     /// <returns>任务</returns>
     public Task InsertAsync(WorkflowInstance instance, CancellationToken cancellationToken = default)
     {
-        _instances[instance.Id] = instance;
+        lock (_instanceWriteLock)
+        {
+            if (!_instances.ContainsKey(instance.Id) && _instances.Count >= MaxInstanceCount)
+            {
+                throw new InvalidOperationException($"默认流程实例存储已达到 {MaxInstanceCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _instances[instance.Id] = instance;
+        }
         return Task.CompletedTask;
     }
 
@@ -87,8 +100,7 @@ public class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     /// <returns>任务</returns>
     public Task UpdateAsync(WorkflowInstance instance, CancellationToken cancellationToken = default)
     {
-        _instances[instance.Id] = instance;
-        return Task.CompletedTask;
+        return InsertAsync(instance, cancellationToken);
     }
 
     /// <summary>
@@ -145,7 +157,15 @@ public class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     /// <returns>任务</returns>
     public Task InsertNodeInstanceAsync(WorkflowNodeInstance nodeInstance, CancellationToken cancellationToken = default)
     {
-        _nodeInstances[nodeInstance.Id] = nodeInstance;
+        lock (_nodeInstanceWriteLock)
+        {
+            if (!_nodeInstances.ContainsKey(nodeInstance.Id) && _nodeInstances.Count >= MaxNodeInstanceCount)
+            {
+                throw new InvalidOperationException($"默认流程节点实例存储已达到 {MaxNodeInstanceCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _nodeInstances[nodeInstance.Id] = nodeInstance;
+        }
         return Task.CompletedTask;
     }
 
@@ -157,7 +177,6 @@ public class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     /// <returns>任务</returns>
     public Task UpdateNodeInstanceAsync(WorkflowNodeInstance nodeInstance, CancellationToken cancellationToken = default)
     {
-        _nodeInstances[nodeInstance.Id] = nodeInstance;
-        return Task.CompletedTask;
+        return InsertNodeInstanceAsync(nodeInstance, cancellationToken);
     }
 }

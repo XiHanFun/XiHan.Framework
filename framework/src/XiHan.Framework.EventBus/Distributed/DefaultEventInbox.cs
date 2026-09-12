@@ -8,12 +8,15 @@ using XiHan.Framework.EventBus.Abstractions.Distributed;
 namespace XiHan.Framework.EventBus.Distributed;
 
 /// <summary>
-/// 基于内存的事件收件箱实现
+/// 默认事件收件箱（有界进程内实现）
 /// </summary>
-public class InMemoryEventInbox : IEventInbox
+public class DefaultEventInbox : IEventInbox
 {
+    private const int MaxEventCount = 100000;
+
     private static readonly TimeSpan RetentionPeriod = TimeSpan.FromDays(7);
     private readonly ConcurrentDictionary<Guid, InboxEntry> _incomingEvents = new();
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 加入入站事件
@@ -23,7 +26,19 @@ public class InMemoryEventInbox : IEventInbox
     public Task EnqueueAsync(IncomingEventInfo incomingEvent)
     {
         ArgumentNullException.ThrowIfNull(incomingEvent);
-        _incomingEvents[incomingEvent.Id] = new InboxEntry(incomingEvent);
+        lock (_writeLock)
+        {
+            if (!_incomingEvents.ContainsKey(incomingEvent.Id) && _incomingEvents.Count >= MaxEventCount)
+            {
+                DeleteOldEvents();
+                if (_incomingEvents.Count >= MaxEventCount)
+                {
+                    throw new InvalidOperationException($"默认事件收件箱已达到 {MaxEventCount} 条上限，请替换为应用级持久化实现。");
+                }
+            }
+
+            _incomingEvents[incomingEvent.Id] = new InboxEntry(incomingEvent);
+        }
         return Task.CompletedTask;
     }
 
@@ -137,6 +152,12 @@ public class InMemoryEventInbox : IEventInbox
     /// <returns></returns>
     public Task DeleteOldEventsAsync()
     {
+        DeleteOldEvents();
+        return Task.CompletedTask;
+    }
+
+    private void DeleteOldEvents()
+    {
         var cutoff = DateTime.UtcNow - RetentionPeriod;
         foreach (var pair in _incomingEvents)
         {
@@ -150,8 +171,6 @@ public class InMemoryEventInbox : IEventInbox
                 _incomingEvents.TryRemove(pair.Key, out _);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     private sealed class InboxEntry

@@ -8,11 +8,14 @@ using XiHan.Framework.EventBus.Abstractions.Distributed;
 namespace XiHan.Framework.EventBus.Distributed;
 
 /// <summary>
-/// 基于内存的事件发件箱实现
+/// 默认事件发件箱（有界进程内实现）
 /// </summary>
-public class InMemoryEventOutbox : IEventOutbox
+public class DefaultEventOutbox : IEventOutbox
 {
+    private const int MaxEventCount = 100000;
+
     private readonly ConcurrentDictionary<Guid, OutgoingEventInfo> _outgoingEvents = new();
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 加入出站事件
@@ -22,7 +25,15 @@ public class InMemoryEventOutbox : IEventOutbox
     public Task EnqueueAsync(OutgoingEventInfo outgoingEvent)
     {
         ArgumentNullException.ThrowIfNull(outgoingEvent);
-        _outgoingEvents[outgoingEvent.Id] = outgoingEvent;
+        lock (_writeLock)
+        {
+            if (!_outgoingEvents.ContainsKey(outgoingEvent.Id) && _outgoingEvents.Count >= MaxEventCount)
+            {
+                throw new InvalidOperationException($"默认事件发件箱已达到 {MaxEventCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _outgoingEvents[outgoingEvent.Id] = outgoingEvent;
+        }
         return Task.CompletedTask;
     }
 

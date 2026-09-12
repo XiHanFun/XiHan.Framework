@@ -169,7 +169,7 @@ public class BrokerDistributedEventBusBaseTests
     public async Task ProcessIncomingMessage_WithInbox_WritesToInboxInsteadOfTriggering()
     {
         using var harness = BrokerBusHarness.Create(
-            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
 
@@ -190,7 +190,7 @@ public class BrokerDistributedEventBusBaseTests
     public async Task ProcessIncomingMessage_WithSameMessageIdTwice_DeduplicatesInInbox()
     {
         using var harness = BrokerBusHarness.Create(
-            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
         harness.Bus.Subscribe<NamedNoticeEvent>(new RecordingDistributedHandler<NamedNoticeEvent>());
 
         await harness.Bus.ProcessIncomingMessageForTestAsync("message-1", NamedNoticeEvent.DeclaredEventName, null, Serialize("第一次"));
@@ -545,8 +545,8 @@ public sealed class BrokerBusHarness : IDisposable
         string? correlationId = null)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<InMemoryEventInbox>();
-        services.AddSingleton<InMemoryEventOutbox>();
+        services.AddSingleton<DefaultEventInbox>();
+        services.AddSingleton<DefaultEventOutbox>();
         var provider = services.BuildServiceProvider();
 
         var options = new XiHanDistributedEventBusOptions();
@@ -570,7 +570,7 @@ public sealed class BrokerBusHarness : IDisposable
     /// 获取默认收件箱
     /// </summary>
     /// <returns>收件箱</returns>
-    public InMemoryEventInbox GetInbox() => _provider.GetRequiredService<InMemoryEventInbox>();
+    public DefaultEventInbox GetInbox() => _provider.GetRequiredService<DefaultEventInbox>();
 
     /// <summary>
     /// 释放资源

@@ -8,12 +8,20 @@ using XiHan.Framework.Tasks.ScheduledJobs.Models;
 namespace XiHan.Framework.Tasks.ScheduledJobs.Store;
 
 /// <summary>
-/// 内存任务存储（默认实现）
+/// 默认任务存储（有界进程内实现）
 /// </summary>
-public class InMemoryJobStore : IJobStore
+public class DefaultJobStore : IJobStore
 {
+    private const int MaxCompletedInstanceCount = 10000;
+    private const int MaxInstanceCount = 20000;
+    private const int MaxHistoryCount = 100000;
+
     private readonly ConcurrentDictionary<string, JobInstance> _instances = new();
     private readonly ConcurrentDictionary<string, JobHistory> _histories = new();
+    private readonly ConcurrentDictionary<string, byte> _completedInstanceIds = new();
+    private readonly ConcurrentQueue<string> _completedInstanceOrder = new();
+    private readonly Lock _instanceWriteLock = new();
+    private readonly Lock _historyWriteLock = new();
 
     /// <summary>
     /// 保存任务实例
@@ -22,7 +30,24 @@ public class InMemoryJobStore : IJobStore
     {
         ArgumentNullException.ThrowIfNull(jobInstance);
 
-        _instances.AddOrUpdate(jobInstance.InstanceId, jobInstance, (_, _) => jobInstance);
+        lock (_instanceWriteLock)
+        {
+            if (!_instances.ContainsKey(jobInstance.InstanceId) && _instances.Count >= MaxInstanceCount)
+            {
+                throw new InvalidOperationException($"默认任务实例存储已达到 {MaxInstanceCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _instances.AddOrUpdate(jobInstance.InstanceId, jobInstance, (_, _) => jobInstance);
+        }
+        if (jobInstance.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled)
+        {
+            jobInstance.CompletedAt ??= DateTimeOffset.UtcNow;
+            TrackCompletedInstance(jobInstance.InstanceId);
+        }
+        else
+        {
+            _completedInstanceIds.TryRemove(jobInstance.InstanceId, out _);
+        }
         return Task.CompletedTask;
     }
 
@@ -37,6 +62,7 @@ public class InMemoryJobStore : IJobStore
             if (status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled)
             {
                 instance.CompletedAt = DateTimeOffset.UtcNow;
+                TrackCompletedInstance(instanceId);
             }
         }
 
@@ -55,7 +81,15 @@ public class InMemoryJobStore : IJobStore
             : history.HistoryId;
 
         history.HistoryId = historyId;
-        _histories.AddOrUpdate(historyId, history, (_, _) => history);
+        lock (_historyWriteLock)
+        {
+            if (!_histories.ContainsKey(historyId) && _histories.Count >= MaxHistoryCount)
+            {
+                throw new InvalidOperationException($"默认任务历史存储已达到 {MaxHistoryCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _histories.AddOrUpdate(historyId, history, (_, _) => history);
+        }
         return Task.CompletedTask;
     }
 
@@ -130,5 +164,21 @@ public class InMemoryJobStore : IJobStore
         }
 
         return Task.CompletedTask;
+    }
+
+    private void TrackCompletedInstance(string instanceId)
+    {
+        if (_completedInstanceIds.TryAdd(instanceId, 0))
+        {
+            _completedInstanceOrder.Enqueue(instanceId);
+        }
+
+        while (_completedInstanceIds.Count > MaxCompletedInstanceCount && _completedInstanceOrder.TryDequeue(out var oldestId))
+        {
+            if (_completedInstanceIds.TryRemove(oldestId, out _))
+            {
+                _instances.TryRemove(oldestId, out _);
+            }
+        }
     }
 }

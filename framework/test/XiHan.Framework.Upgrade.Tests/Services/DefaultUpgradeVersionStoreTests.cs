@@ -14,7 +14,7 @@ namespace XiHan.Framework.Upgrade.Tests.Services;
 /// 该实现的状态字典是静态的（进程级共享），因此每个用例都用独占的租户标识建仓，
 /// 避免用例之间互相污染；这也顺带覆盖了「按租户隔离版本状态与迁移历史」的契约。
 /// </remarks>
-public class InMemoryUpgradeVersionStoreTests
+public class DefaultUpgradeVersionStoreTests
 {
     private static long _tenantSeed = 900_000_000L;
 
@@ -372,9 +372,9 @@ public class InMemoryUpgradeVersionStoreTests
     /// </summary>
     /// <param name="tenantId">租户标识</param>
     /// <returns>版本存储</returns>
-    private static InMemoryUpgradeVersionStore CreateStore(long tenantId)
+    private static DefaultUpgradeVersionStore CreateStore(long tenantId)
     {
-        return new InMemoryUpgradeVersionStore(new FakeCurrentTenant(tenantId, $"tenant-{tenantId}"));
+        return new DefaultUpgradeVersionStore(new FakeCurrentTenant(tenantId, $"tenant-{tenantId}"));
     }
 
     /// <summary>

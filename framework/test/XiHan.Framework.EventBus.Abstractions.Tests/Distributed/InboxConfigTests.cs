@@ -196,9 +196,9 @@ public class InboxConfigTests
     {
         var config = new InboxConfig("Default")
         {
-            ImplementationType = typeof(InMemoryEventInbox)
+            ImplementationType = typeof(DefaultEventInbox)
         };
 
-        Assert.Same(typeof(InMemoryEventInbox), config.ImplementationType);
+        Assert.Same(typeof(DefaultEventInbox), config.ImplementationType);
     }
 }

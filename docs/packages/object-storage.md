@@ -53,7 +53,7 @@ public class MyModule : XiHanModule { }
 - **能力自描述**：每个 Provider 通过 `SupportChunkedUpload` / `SupportResumableUpload` 声明是否支持分片/断点续传。基类默认二者为 `false`，不支持的方法调用会抛 `NotSupportedException`。
 - **多提供程序管理**：`IFileStorageProviderManager` 按名称取出提供程序（带缓存），可 `TryGetProvider` 安全获取、`GetRegisteredProviderNames` 查询已注册名单。
 - **业务路由**：`IFileStorageRouter` 按业务路由键（如 `avatar`、`attachment`）解析并选择目标提供程序，支持严格匹配开关 `StrictRouteMatch`。
-- **分片与断点续传**：`InitiateChunkedUploadAsync` / `UploadChunkAsync` / `CompleteChunkedUploadAsync` / `AbortChunkedUploadAsync` 覆盖大文件分片上传全流程。
+- **分片与断点续传**：`InitiateChunkedUploadAsync` / `UploadChunkAsync` / `CompleteChunkedUploadAsync` / `AbortChunkedUploadAsync` 覆盖大文件分片上传全流程；Local / OSS / COS 会在新上传开始时回收超过 24 小时无活动的进程内会话，本地实现同时删除临时分片目录。
 - **预签名 URL**：`GeneratePresignedUrlAsync(path, expiresIn)` 生成带过期时间的临时访问链接（云存储提供真实签名；本地存储直接返回静态可访问 URL）。
 - **本地存储直链**：本地提供程序默认落在 `wwwroot/Uploads` 下，配合 Web.Api 静态文件服务可直接通过 URL 前缀访问（见「配置」）。
 
@@ -248,6 +248,7 @@ public class DownloadService
 
 - **上传不抛异常**：`UploadAsync` 内部把异常收敛为 `FileUploadResult { Success=false, ErrorMessage=... }`。调用方务必检查 `result.Success`，不要只 `try/catch`。
 - **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；不支持的后端（如当前的 MinIO）会抛 `NotSupportedException`。
+- **云端未完成分片仍需生命周期策略**：框架会回收 24 小时无活动的进程内 OSS/COS 会话，但不会在请求线程批量调用远端 Abort；生产桶应配置清理未完成 Multipart Upload 的生命周期规则。
 - **本地预签名无时效**：`LocalFileStorageProvider.GeneratePresignedUrlAsync` 只是返回静态直链，`expiresIn` 被忽略，也没有鉴权。需要真实时效/鉴权控制请改用云存储 Provider。
 - **提供程序名称大小写**：Manager/Router 内部用大小写不敏感比较，但常量值有固定拼写（`MinIO`/`AliyunOSS`/`TencentCOS`），配置里建议直接用 `ObjectStorageProviderNames` 的常量拼写以免误配。
 - **未注册即用会抛异常**：只有出现在 `EnabledProviders`/`DefaultProvider` 里（或经 `AddFileStorageProvider` 显式注册）的 Provider 才可被解析；`GetProvider` 未注册名称会抛 `InvalidOperationException`，需要静默判断请用 `TryGetProvider`。

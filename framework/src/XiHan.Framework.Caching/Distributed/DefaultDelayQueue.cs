@@ -6,15 +6,17 @@ using XiHan.Framework.Caching.Distributed.Abstracts;
 namespace XiHan.Framework.Caching.Distributed;
 
 /// <summary>
-/// 进程内延迟队列回退实现（Redis 未启用时使用）。
+/// 默认延迟队列（有界进程内实现）。
 /// </summary>
 /// <remarks>
 /// 消息仅驻留当前进程内存，<b>不跨实例、进程退出即丢失</b>；多实例部署或需要消息持久化时启用 Redis 改用 <see cref="RedisDelayQueue{T}"/>。
 /// 优先级为 <c>(到期时间戳ms, 入队序号)</c>，同一到期时刻按入队先后取出。注册为单例（每个封闭类型一个实例）。
 /// </remarks>
 /// <typeparam name="T">消息类型</typeparam>
-public sealed class InMemoryDelayQueue<T> : IRedisDelayQueue<T>
+public sealed class DefaultDelayQueue<T> : IRedisDelayQueue<T>
 {
+    private const int MaxItemCount = 100000;
+
     private readonly Lock _gate = new();
     private readonly PriorityQueue<T, (long DueAtMs, long Sequence)> _queue = new();
 
@@ -41,6 +43,11 @@ public sealed class InMemoryDelayQueue<T> : IRedisDelayQueue<T>
     {
         lock (_gate)
         {
+            if (_queue.Count >= MaxItemCount)
+            {
+                throw new InvalidOperationException($"默认延迟队列已达到 {MaxItemCount} 条上限，请替换为应用级持久化实现。");
+            }
+
             _queue.Enqueue(item, (dueTime.ToUnixTimeMilliseconds(), _sequence++));
         }
 

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.SearchEngines.Abstractions;
-using XiHan.Framework.SearchEngines.InMemory;
+using XiHan.Framework.SearchEngines.Default;
 
 namespace XiHan.Framework.SearchEngines;
 
@@ -24,7 +24,7 @@ public class XiHanSearchEnginesModule : XiHanModule
     /// <param name="context"></param>
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.TryAddSingleton<InMemorySearchEngine>();
-        context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<InMemorySearchEngine>());
+        context.Services.TryAddSingleton<DefaultSearchEngine>();
+        context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<DefaultSearchEngine>());
     }
 }

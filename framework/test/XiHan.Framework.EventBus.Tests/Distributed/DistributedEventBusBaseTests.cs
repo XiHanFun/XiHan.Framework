@@ -83,7 +83,7 @@ public class DistributedEventBusBaseTests
     public async Task PublishAsync_WithOutbox_EnqueuesAndSkipsEventBus()
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
         harness.StartUnitOfWork();
 
         await harness.Bus.PublishAsync(typeof(NamedNoticeEvent), new NamedNoticeEvent(), onUnitOfWorkComplete: false, useOutbox: true);
@@ -100,7 +100,7 @@ public class DistributedEventBusBaseTests
     public async Task AddToOutbox_WithCorrelationId_PersistsIt()
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)),
+            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)),
             correlationId: "corr-outbox");
         harness.StartUnitOfWork();
 
@@ -117,7 +117,7 @@ public class DistributedEventBusBaseTests
     public async Task AddToOutbox_WithoutCorrelationId_LeavesItUnset()
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
         harness.StartUnitOfWork();
 
         await harness.Bus.AddToOutboxForTestAsync(typeof(NamedNoticeEvent), new NamedNoticeEvent());
@@ -133,7 +133,7 @@ public class DistributedEventBusBaseTests
     public async Task AddToOutbox_WithoutUnitOfWork_ReturnsFalse()
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
 
         Assert.False(await harness.Bus.AddToOutboxForTestAsync(typeof(NamedNoticeEvent), new NamedNoticeEvent()));
     }
@@ -158,7 +158,7 @@ public class DistributedEventBusBaseTests
     {
         using var harness = RecordingBusHarness.Create(options =>
         {
-            options.Outboxes.Configure("Default", config => config.ImplementationType = typeof(InMemoryEventOutbox));
+            options.Outboxes.Configure("Default", config => config.ImplementationType = typeof(DefaultEventOutbox));
             options.Outboxes.Configure("Secondary", config =>
             {
                 config.ImplementationType = typeof(SecondaryEventOutbox);
@@ -181,7 +181,7 @@ public class DistributedEventBusBaseTests
     {
         using var harness = RecordingBusHarness.Create(options =>
         {
-            options.Outboxes.Configure("Default", config => config.ImplementationType = typeof(InMemoryEventOutbox));
+            options.Outboxes.Configure("Default", config => config.ImplementationType = typeof(DefaultEventOutbox));
             options.Outboxes.Configure("Secondary", config =>
             {
                 config.ImplementationType = typeof(SecondaryEventOutbox);
@@ -219,7 +219,7 @@ public class DistributedEventBusBaseTests
     public async Task AddToInbox_WithCorrelationId_PersistsIt()
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
 
         await harness.Bus.AddToInboxForTestAsync(
             "message-1",
@@ -247,7 +247,7 @@ public class DistributedEventBusBaseTests
     public async Task AddToInbox_WithBlankCorrelationId_LeavesItUnset(string? correlationId)
     {
         using var harness = RecordingBusHarness.Create(
-            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
 
         await harness.Bus.AddToInboxForTestAsync(
             "message-1",
@@ -268,7 +268,7 @@ public class DistributedEventBusBaseTests
     {
         using var harness = RecordingBusHarness.Create(options => options.Inboxes.Configure(config =>
         {
-            config.ImplementationType = typeof(InMemoryEventInbox);
+            config.ImplementationType = typeof(DefaultEventInbox);
             config.EventSelector = eventType => eventType == typeof(PlainNoticeEvent);
         }));
 
@@ -289,7 +289,7 @@ public class DistributedEventBusBaseTests
     {
         using var harness = RecordingBusHarness.Create(options =>
         {
-            options.Inboxes.Configure("Default", config => config.ImplementationType = typeof(InMemoryEventInbox));
+            options.Inboxes.Configure("Default", config => config.ImplementationType = typeof(DefaultEventInbox));
             options.Inboxes.Configure("Secondary", config =>
             {
                 config.ImplementationType = typeof(SecondaryEventInbox);
@@ -706,9 +706,9 @@ public sealed class RecordingBusHarness : IDisposable
         string? correlationId = null)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<InMemoryEventOutbox>();
+        services.AddSingleton<DefaultEventOutbox>();
         services.AddSingleton<SecondaryEventOutbox>();
-        services.AddSingleton<InMemoryEventInbox>();
+        services.AddSingleton<DefaultEventInbox>();
         services.AddSingleton<SecondaryEventInbox>();
         var provider = services.BuildServiceProvider();
 
@@ -733,7 +733,7 @@ public sealed class RecordingBusHarness : IDisposable
     /// 获取默认发件箱
     /// </summary>
     /// <returns>发件箱</returns>
-    public InMemoryEventOutbox GetOutbox() => _provider.GetRequiredService<InMemoryEventOutbox>();
+    public DefaultEventOutbox GetOutbox() => _provider.GetRequiredService<DefaultEventOutbox>();
 
     /// <summary>
     /// 获取第二个发件箱
@@ -745,7 +745,7 @@ public sealed class RecordingBusHarness : IDisposable
     /// 获取默认收件箱
     /// </summary>
     /// <returns>收件箱</returns>
-    public InMemoryEventInbox GetInbox() => _provider.GetRequiredService<InMemoryEventInbox>();
+    public DefaultEventInbox GetInbox() => _provider.GetRequiredService<DefaultEventInbox>();
 
     /// <summary>
     /// 获取第二个收件箱

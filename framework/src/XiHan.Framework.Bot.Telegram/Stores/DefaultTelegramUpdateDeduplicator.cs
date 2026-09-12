@@ -7,10 +7,12 @@ using XiHan.Framework.Bot.Telegram.Abstractions;
 namespace XiHan.Framework.Bot.Telegram.Stores;
 
 /// <summary>
-/// 进程内 Telegram Update 幂等去重器（TTL 字典；多实例部署请以分布式实现覆盖）
+/// 默认 Telegram Update 幂等去重器（有界 TTL 进程内实现）
 /// </summary>
-public class InMemoryTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
+public class DefaultTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
 {
+    private const int MaxEntryCount = 100000;
+
     private static readonly TimeSpan EntryTtl = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(5);
 
@@ -29,6 +31,15 @@ public class InMemoryTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
         SweepIfDue();
 
         var key = $"{botName}:{updateId}";
+        if (!_entries.ContainsKey(key) && _entries.Count >= MaxEntryCount)
+        {
+            SweepExpired(DateTimeOffset.UtcNow.UtcTicks);
+            if (_entries.Count >= MaxEntryCount)
+            {
+                throw new InvalidOperationException($"默认 Telegram 去重存储已达到 {MaxEntryCount} 条上限，请替换为应用级持久化实现。");
+            }
+        }
+
         var expiresAtTicks = DateTimeOffset.UtcNow.Add(EntryTtl).UtcTicks;
         return Task.FromResult(_entries.TryAdd(key, expiresAtTicks));
     }
@@ -59,6 +70,11 @@ public class InMemoryTelegramUpdateDeduplicator : ITelegramUpdateDeduplicator
             return;
         }
 
+        SweepExpired(nowTicks);
+    }
+
+    private void SweepExpired(long nowTicks)
+    {
         foreach (var entry in _entries)
         {
             if (entry.Value < nowTicks)

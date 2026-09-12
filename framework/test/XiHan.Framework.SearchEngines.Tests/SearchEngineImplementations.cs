@@ -5,14 +5,14 @@ using Microsoft.Extensions.Options;
 using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
-using XiHan.Framework.SearchEngines.InMemory;
+using XiHan.Framework.SearchEngines.Default;
 
 namespace XiHan.Framework.SearchEngines.Tests;
 
 /// <summary>
 /// 进程内实现的契约测试
 /// </summary>
-public class InMemorySearchEngineContractTests : SearchEngineContractTestsBase
+public class DefaultSearchEngineContractTests : SearchEngineContractTestsBase
 {
     /// <summary>
     /// 创建被测引擎
@@ -20,7 +20,7 @@ public class InMemorySearchEngineContractTests : SearchEngineContractTestsBase
     /// <returns>进程内引擎</returns>
     protected override Task<ISearchEngine> CreateEngineAsync()
     {
-        return Task.FromResult<ISearchEngine>(new InMemorySearchEngine());
+        return Task.FromResult<ISearchEngine>(new DefaultSearchEngine());
     }
 }
 

@@ -57,7 +57,7 @@ public static class XiHanTasksServiceCollectionExtensions
         }
 
         // 注册核心服务
-        services.TryAddSingleton<IJobStore, InMemoryJobStore>();
+        services.TryAddSingleton<IJobStore, DefaultJobStore>();
         // 任务锁：复用 Caching 模块统一的分布式锁（Redis 跨实例 / 进程内回退由其按 Redis 配置自动选择，XiHanJobOptions.EnableDistributedLock 已不再需要）
         services.TryAddSingleton<IJobLockProvider, CachingJobLockProvider>();
         services.TryAddSingleton<IJobScheduler, CompositeJobScheduler>();
@@ -83,17 +83,17 @@ public static class XiHanTasksServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 使用内存存储
+    /// 使用默认任务存储
     /// </summary>
-    public static XiHanJobBuilder UseInMemoryStore(this XiHanJobBuilder builder)
+    public static XiHanJobBuilder UseDefaultStore(this XiHanJobBuilder builder)
     {
-        return builder.UseStore<InMemoryJobStore>();
+        return builder.UseStore<DefaultJobStore>();
     }
 
     /// <summary>
     /// 使用任务锁（兼容旧 API）。实际锁后端（Redis 跨实例 / 进程内回退）由 Caching 统一的分布式锁按 Redis 配置自动选择。
     /// </summary>
-    public static XiHanJobBuilder UseInMemoryLock(this XiHanJobBuilder builder)
+    public static XiHanJobBuilder UseDefaultLock(this XiHanJobBuilder builder)
     {
         return builder.UseLockProvider<CachingJobLockProvider>();
     }

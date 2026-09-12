@@ -24,7 +24,7 @@ public class EventOutboxContractTests
     [Fact]
     public async Task GetWaitingEvents_AfterEnqueue_ReturnsEnqueuedEvent()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var outgoing = EventInfoFactory.CreateOutgoing();
 
         await outbox.EnqueueAsync(outgoing);
@@ -39,7 +39,7 @@ public class EventOutboxContractTests
     [Fact]
     public async Task GetWaitingEvents_RespectsMaxCount()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         for (var index = 0; index < 5; index++)
         {
             await outbox.EnqueueAsync(EventInfoFactory.CreateOutgoing($"sample.event.{index}"));
@@ -56,7 +56,7 @@ public class EventOutboxContractTests
     [Fact]
     public async Task GetWaitingEvents_WithFilter_FiltersByReadOnlyContract()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         await outbox.EnqueueAsync(EventInfoFactory.CreateOutgoing("sample.event"));
         await outbox.EnqueueAsync(EventInfoFactory.CreateOutgoing("audit.event"));
 
@@ -72,7 +72,7 @@ public class EventOutboxContractTests
     [Fact]
     public async Task OutboxFlow_PublishThenDeleteMany_DrainsOutbox()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var bus = new RecordingEventBoxesBus();
         var outboxConfig = new OutboxConfig("Default");
 
@@ -109,7 +109,7 @@ public class EventOutboxContractTests
     [Fact]
     public async Task Delete_ById_RemovesMatchingEventOnly()
     {
-        var outbox = new InMemoryEventOutbox();
+        var outbox = new DefaultEventOutbox();
         var target = EventInfoFactory.CreateOutgoing("sample.event");
         var survivor = EventInfoFactory.CreateOutgoing("audit.event");
 

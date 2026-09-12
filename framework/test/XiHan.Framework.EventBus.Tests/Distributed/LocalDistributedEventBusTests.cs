@@ -129,7 +129,7 @@ public class LocalDistributedEventBusTests
     public async Task PublishAsync_WithOutbox_EnqueuesInsteadOfDelivering()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)),
+            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)),
             correlationId: "corr-outbox");
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
@@ -158,7 +158,7 @@ public class LocalDistributedEventBusTests
     public async Task PublishAsync_WithOutboxButNoUnitOfWork_FallsBackToDirectDelivery()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
 
@@ -181,7 +181,7 @@ public class LocalDistributedEventBusTests
         using var harness = LocalDistributedEventBusHarness.Create(
             configureOptions: options => options.Outboxes.Configure(config =>
             {
-                config.ImplementationType = typeof(InMemoryEventOutbox);
+                config.ImplementationType = typeof(DefaultEventOutbox);
                 config.Selector = eventType => eventType == typeof(PlainNoticeEvent);
             }));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
@@ -205,7 +205,7 @@ public class LocalDistributedEventBusTests
     public async Task PublishAsync_WithInbox_RoutesThroughInboxInsteadOfDelivering()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
 
@@ -262,7 +262,7 @@ public class LocalDistributedEventBusTests
     public async Task PublishFromOutboxAsync_WithSameRecordTwice_DeduplicatesInInbox()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
         harness.Bus.Subscribe<NamedNoticeEvent>(new RecordingDistributedHandler<NamedNoticeEvent>());
         var outgoing = CreateOutgoing("重复投递");
         var outboxConfig = new OutboxConfig("Default");
@@ -280,7 +280,7 @@ public class LocalDistributedEventBusTests
     public async Task PublishFromOutboxAsync_WithDistinctRecords_EnqueuesEach()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox)));
+            configureOptions: options => options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox)));
         harness.Bus.Subscribe<NamedNoticeEvent>(new RecordingDistributedHandler<NamedNoticeEvent>());
         var outboxConfig = new OutboxConfig("Default");
 
