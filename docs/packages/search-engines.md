@@ -11,11 +11,11 @@
 
 本包做两件事：
 
-1. 注册 `InMemorySearchEngine` 作为 `ISearchEngine` 的**默认兜底实现**——开发期不装 Elasticsearch 也能跑通检索链路，测试里不需要真实引擎。
+1. 注册 `DefaultSearchEngine` 作为 `ISearchEngine` 的**默认兜底实现**——开发期不装 Elasticsearch 也能跑通检索链路，测试里不需要真实引擎。
 2. 让契约始终有**第二个实现**来校验自己——只有一个实现的抽象无法证明自己没有泄漏该实现的概念。
 
 ::: warning 进程内实现的定位
-`InMemorySearchEngine` 面向**单机开发与自动化测试**：数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须引用具体搜索引擎的实现包。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每个索引 100000 条文档；数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须由应用替换为具体搜索引擎实现。
 :::
 
 ## 何时使用
@@ -38,8 +38,8 @@ public class MyModule : XiHanModule { }
 模块的 `ConfigureServices` 只做两行注册（**`TryAdd` 语义**）：
 
 ```csharp
-context.Services.TryAddSingleton<InMemorySearchEngine>();
-context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<InMemorySearchEngine>());
+context.Services.TryAddSingleton<DefaultSearchEngine>();
+context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<DefaultSearchEngine>());
 ```
 
 接入真实引擎时，由实现包（或你自己）以 **`Replace`** 覆盖 `ISearchEngine` 的注册——`TryAdd` 一个新实现会被静默忽略。
@@ -49,7 +49,7 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<InMe
 | 类型 | 说明 |
 | --- | --- |
 | `XiHanSearchEnginesModule` | 模块入口，注册进程内实现作为兜底 |
-| `InMemorySearchEngine` | 进程内 `ISearchEngine` 实现（`ISingletonDependency`），索引状态存于并发字典 |
+| `DefaultSearchEngine` | 有界进程内 `ISearchEngine` 实现：最多 100 个索引、每索引 100000 条文档 |
 
 检索契约本身（`ISearchEngine`、`SearchRequest`、`SearchFilter`、`SearchIndexDefinition` 等）在 [Abstractions 包](./search-engines-abstractions)。
 

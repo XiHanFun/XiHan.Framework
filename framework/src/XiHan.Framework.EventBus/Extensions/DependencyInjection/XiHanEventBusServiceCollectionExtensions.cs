@@ -81,7 +81,7 @@ public static class XiHanEventBusServiceCollectionExtensions
             {
                 if (config.ImplementationType == default)
                 {
-                    config.ImplementationType = typeof(InMemoryEventOutbox);
+                    config.ImplementationType = typeof(DefaultEventOutbox);
                 }
 
                 if (string.IsNullOrWhiteSpace(config.DatabaseName))
@@ -94,7 +94,7 @@ public static class XiHanEventBusServiceCollectionExtensions
             {
                 if (config.ImplementationType == default)
                 {
-                    config.ImplementationType = typeof(InMemoryEventInbox);
+                    config.ImplementationType = typeof(DefaultEventInbox);
                 }
 
                 if (string.IsNullOrWhiteSpace(config.DatabaseName))
@@ -111,10 +111,10 @@ public static class XiHanEventBusServiceCollectionExtensions
     /// <param name="services"></param>
     private static void RegisterDefaultEventBoxServices(IServiceCollection services)
     {
-        services.TryAddSingleton<InMemoryEventOutbox>();
-        services.TryAddSingleton<InMemoryEventInbox>();
-        services.TryAddSingleton<IEventOutbox>(sp => sp.GetRequiredService<InMemoryEventOutbox>());
-        services.TryAddSingleton<IEventInbox>(sp => sp.GetRequiredService<InMemoryEventInbox>());
+        services.TryAddSingleton<DefaultEventOutbox>();
+        services.TryAddSingleton<DefaultEventInbox>();
+        services.TryAddSingleton<IEventOutbox>(sp => sp.GetRequiredService<DefaultEventOutbox>());
+        services.TryAddSingleton<IEventInbox>(sp => sp.GetRequiredService<DefaultEventInbox>());
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, EventBoxOutboxSenderHostedService>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, EventBoxInboxProcessorHostedService>());

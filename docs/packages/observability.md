@@ -66,7 +66,7 @@ public class MyModule : XiHanModule { }
 ## 核心能力
 
 - **指标采集（`IMetricsCollector` / `MetricsCollector`）**：记录计数器、测量值、直方图，`BeginTimer` 返回可释放计时器（`Dispose` 时以 `{name}.duration` 记录耗时直方图）。底层基于 `System.Diagnostics.Metrics.Meter`（`MeterName = "XiHan.Metrics"`）直出 OTel 指标管道——`RecordMeasurement` 内部委托给 `RecordHistogram`（无 pull 型 Gauge 回调上下文）；**不再内存留存**，`GetMetrics()` 恒返回空列表、`Clear()` 为空操作（仅为接口向后兼容保留）。是否真正被导出取决于「配置项」一节的 `Enabled`/`EnableMetrics` 是否开启。
-- **性能监控（`IPerformanceMonitor` / `PerformanceMonitor`）**：`BeginOperation` 返回 `IPerformanceTracker`，支持打标签与记录检查点；记录保存在进程内 `ConcurrentBag<PerformanceRecord>`，汇总为 `PerformanceStatistics`（含成功/失败计数、平均/最小/最大耗时与 P50/P95/P99），并可按阈值筛出慢操作。与 OTel 装配无关，不受 `Enabled` 影响。
+- **性能监控（`IPerformanceMonitor` / `PerformanceMonitor`）**：`BeginOperation` 返回 `IPerformanceTracker`，支持打标签与记录检查点；记录保存在独立进程内队列并只保留最近 10000 条，汇总为 `PerformanceStatistics`（含成功/失败计数、平均/最小/最大耗时与 P50/P95/P99），并可按阈值筛出慢操作。与 OTel 装配无关，不受 `Enabled` 影响。
 - **运行时诊断（`IDiagnosticsService` / `DiagnosticsService`）**：读取系统、运行时、内存、线程信息，强制触发 GC，或一次性生成 `DiagnosticsReport` 完整报告。
 - **健康检查（`IHealthCheck` 实现）**：`MemoryHealthCheck` 为真实实现——按内存阈值判定 `Healthy`/`Degraded` 并附带 GC 明细。
 - **链路追踪源（`XiHan.Framework.Core.Tracing.XiHanActivitySources`）**：框架共享的 `ActivitySource` 名与实例，定义在 `Core` 而非本包（避免 Data/EventBus/Http/Web 等既依赖 Core 又要发 Span 却不能反向依赖 Observability）；内置 `App`/`Data`/`EventBus`/`Grpc`/`Cache`/`Ai` 六个源，`All` 汇总供 OTel `AddSource` 一次性注册。
@@ -186,7 +186,7 @@ activity?.SetTag("order.id", orderId);
 
 - **OpenTelemetry 默认关闭**：`XiHanObservabilityOptions.Enabled` 默认 `false`，`AddXiHanObservability` 不装配 OTel SDK，`IMetricsCollector` 的 `Meter` 调用是「装配即孤儿」——数据既不落内存也不导出，唯一开销是 API 调用本身；需要链路追踪/指标导出时在 `XiHan:Observability` 节显式开启。
 - **指标不再内存留存**：`MetricsCollector` 改为直接对接 `System.Diagnostics.Metrics.Meter`，`GetMetrics()` 恒返回空列表、`Clear()` 为空操作——若需要查看指标数据，必须开启 OTel 装配并接入导出器（控制台/OTLP），不能再通过 `GetMetrics()` 在进程内读取。
-- **性能/诊断仍是内存存储、非持久**：`PerformanceMonitor` 的记录保存在进程内 `ConcurrentBag<PerformanceRecord>`，进程重启即丢失，且会持续累积，长时间运行需自行择机调用 `Clear()`；此行为与 OTel 开关无关。
+- **性能/诊断仍是内存存储、非持久**：`PerformanceMonitor` 只保留最近 10000 条记录，进程重启即丢失；仍可调用 `Clear()` 主动清空。此行为与 OTel 开关无关。
 - **依赖检查由应用实现**：本包不提供数据库或 Redis 检查；应使用应用实际注册的数据库、缓存与向量库客户端做真实探测。
 - **健康检查需手动注册**：模块只注册了基础设施，不含任何检查项——不 `AddCheck` 则 `/health` 端点不会体现内存/依赖状态。
 - **OTLP Logs 尚未接入**：`EnableLogging` 配置项存在，但扩展方法当前没有对应的 `WithLogging(...)` 装配代码，开启该项目前不会产生任何日志导出效果。

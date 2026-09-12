@@ -48,9 +48,9 @@ public static class XiHanWorkflowServiceCollectionExtensions
         services.TryAddSingleton<IWorkflowExpressionEvaluator, WorkflowExpressionEvaluator>();
         services.TryAddSingleton<IWorkflowActivityRegistry, WorkflowActivityRegistry>();
         services.TryAddSingleton<IWorkflowEventPublisher, LocalEventBusWorkflowEventPublisher>();
-        services.TryAddSingleton<IWorkflowDefinitionStore, InMemoryWorkflowDefinitionStore>();
-        services.TryAddSingleton<IWorkflowInstanceStore, InMemoryWorkflowInstanceStore>();
-        services.TryAddSingleton<IWorkflowBookmarkStore, InMemoryWorkflowBookmarkStore>();
+        services.TryAddSingleton<IWorkflowDefinitionStore, DefaultWorkflowDefinitionStore>();
+        services.TryAddSingleton<IWorkflowInstanceStore, DefaultWorkflowInstanceStore>();
+        services.TryAddSingleton<IWorkflowBookmarkStore, DefaultWorkflowBookmarkStore>();
         services.TryAddTransient<IWorkflowEngine, WorkflowEngine>();
         services.TryAddTransient<IWorkflowDefinitionManager, WorkflowDefinitionManager>();
         services.TryAddTransient<IWorkflowUserTaskService, WorkflowUserTaskService>();

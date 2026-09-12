@@ -25,7 +25,7 @@ public static class XiHanTrafficServiceCollectionExtensions
         services.TryAddSingleton<IGrayRuleEngine, DefaultGrayRuleEngine>();
 
         // 注册默认的内存规则仓储（生产环境应替换为数据库实现）
-        services.TryAddSingleton<IGrayRuleRepository, InMemoryGrayRuleRepository>();
+        services.TryAddSingleton<IGrayRuleRepository, DefaultGrayRuleRepository>();
 
         // 注册所有内置的灰度匹配器
         services.AddSingleton<IGrayMatcher, PercentageGrayMatcher>();
