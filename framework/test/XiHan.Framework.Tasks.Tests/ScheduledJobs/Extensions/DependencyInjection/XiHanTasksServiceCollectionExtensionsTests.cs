@@ -53,7 +53,7 @@ public class XiHanTasksServiceCollectionExtensionsTests
     /// 核心服务以单例注册，且实现类型符合默认约定
     /// </summary>
     [Theory]
-    [InlineData(typeof(IJobStore), typeof(InMemoryJobStore))]
+    [InlineData(typeof(IJobStore), typeof(DefaultJobStore))]
     [InlineData(typeof(IJobLockProvider), typeof(CachingJobLockProvider))]
     [InlineData(typeof(IJobScheduler), typeof(CompositeJobScheduler))]
     [InlineData(typeof(IJobExecutor), typeof(JobExecutor))]
@@ -246,14 +246,14 @@ public class XiHanTasksServiceCollectionExtensionsTests
     /// 显式切换到内存存储时覆盖默认注册
     /// </summary>
     [Fact]
-    public void UseInMemoryStore_RegistersInMemoryJobStore()
+    public void UseDefaultStore_RegistersDefaultJobStore()
     {
         IServiceCollection services = new ServiceCollection();
 
-        var builder = services.AddXiHanTasks().UseInMemoryStore();
+        var builder = services.AddXiHanTasks().UseDefaultStore();
 
         var descriptors = services.Where(item => item.ServiceType == typeof(IJobStore)).ToList();
-        Assert.Equal(typeof(InMemoryJobStore), descriptors[^1].ImplementationType);
+        Assert.Equal(typeof(DefaultJobStore), descriptors[^1].ImplementationType);
         Assert.NotNull(builder);
     }
 
@@ -261,12 +261,12 @@ public class XiHanTasksServiceCollectionExtensionsTests
     /// 两个兼容旧 API 的锁扩展都指向统一的分布式锁适配器
     /// </summary>
     [Fact]
-    public void UseInMemoryLockAndUseDistributedLock_BothRegisterCachingLockProvider()
+    public void UseDefaultLockAndUseDistributedLock_BothRegisterCachingLockProvider()
     {
         IServiceCollection first = new ServiceCollection();
         IServiceCollection second = new ServiceCollection();
 
-        first.AddXiHanTasks().UseInMemoryLock();
+        first.AddXiHanTasks().UseDefaultLock();
         second.AddXiHanTasks().UseDistributedLock();
 
         Assert.Equal(

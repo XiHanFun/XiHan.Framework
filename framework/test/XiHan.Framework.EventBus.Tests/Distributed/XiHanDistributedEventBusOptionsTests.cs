@@ -42,8 +42,8 @@ public class XiHanDistributedEventBusOptionsTests
         var second = new XiHanDistributedEventBusOptions();
 
         first.Handlers.Add<RecordingDistributedHandler<NamedNoticeEvent>>();
-        first.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox));
-        first.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
+        first.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox));
+        first.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox));
 
         Assert.Single(first.Handlers);
         Assert.Single(first.Outboxes);
@@ -61,13 +61,13 @@ public class XiHanDistributedEventBusOptionsTests
     {
         var options = new XiHanDistributedEventBusOptions();
 
-        options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox));
-        options.Inboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventInbox));
+        options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox));
+        options.Inboxes.Configure(config => config.ImplementationType = typeof(DefaultEventInbox));
 
         Assert.True(options.Outboxes.ContainsKey("Default"));
         Assert.True(options.Inboxes.ContainsKey("Default"));
-        Assert.Equal(typeof(InMemoryEventOutbox), options.Outboxes["Default"].ImplementationType);
-        Assert.Equal(typeof(InMemoryEventInbox), options.Inboxes["Default"].ImplementationType);
+        Assert.Equal(typeof(DefaultEventOutbox), options.Outboxes["Default"].ImplementationType);
+        Assert.Equal(typeof(DefaultEventInbox), options.Inboxes["Default"].ImplementationType);
     }
 
     /// <summary>
@@ -78,12 +78,12 @@ public class XiHanDistributedEventBusOptionsTests
     {
         var options = new XiHanDistributedEventBusOptions();
 
-        options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox));
+        options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox));
         options.Outboxes.Configure(config => config.IsSendingEnabled = false);
 
         Assert.Single(options.Outboxes);
         var config = options.Outboxes["Default"];
-        Assert.Equal(typeof(InMemoryEventOutbox), config.ImplementationType);
+        Assert.Equal(typeof(DefaultEventOutbox), config.ImplementationType);
         Assert.False(config.IsSendingEnabled);
     }
 

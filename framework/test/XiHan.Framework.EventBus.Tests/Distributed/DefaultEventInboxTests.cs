@@ -14,7 +14,7 @@ namespace XiHan.Framework.EventBus.Tests.Distributed;
 /// 收件箱承担幂等去重与失败重试两件事：待处理集合必须随状态迁移正确进出，
 /// 消息去重按 <c>MessageId</c> 严格比较（不能大小写不敏感，否则会把不同消息当成重复丢弃）。
 /// </remarks>
-public class InMemoryEventInboxTests
+public class DefaultEventInboxTests
 {
     /// <summary>
     /// 入队空事件时抛出参数异常
@@ -22,7 +22,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task EnqueueAsync_WhenEventNull_Throws()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => inbox.EnqueueAsync(null!));
     }
@@ -36,7 +36,7 @@ public class InMemoryEventInboxTests
     [InlineData(-1)]
     public async Task GetWaitingEventsAsync_WhenMaxCountNotPositive_ReturnsEmpty(int maxCount)
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1"));
 
         var waiting = await inbox.GetWaitingEventsAsync(maxCount, cancellationToken: TestContext.Current.CancellationToken);
@@ -50,7 +50,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_ReturnsEnqueuedEvents()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
 
@@ -65,7 +65,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_OrdersByCreatedTimeAndRespectsMaxCount()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var baseTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         await inbox.EnqueueAsync(CreateEvent("late", createdTime: baseTime.AddMinutes(20)));
         await inbox.EnqueueAsync(CreateEvent("early", createdTime: baseTime));
@@ -82,7 +82,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_AppliesFilter()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1", "xihan.tests.kept"));
         await inbox.EnqueueAsync(CreateEvent("message-2", "xihan.tests.filtered"));
 
@@ -100,7 +100,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task GetWaitingEventsAsync_WhenCancelled_Throws()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1"));
         using var cancellation = new CancellationTokenSource();
         await cancellation.CancelAsync();
@@ -115,7 +115,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task MarkAsProcessedAsync_RemovesEventFromWaitingSet()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
 
@@ -130,7 +130,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task MarkAsDiscardAsync_RemovesEventFromWaitingSet()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
 
@@ -145,7 +145,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task RetryLaterAsync_WithFutureTime_HidesEventUntilDue()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
 
@@ -160,7 +160,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task RetryLaterAsync_WithElapsedTime_RequeuesEvent()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
         await inbox.MarkAsProcessedAsync(incoming.Id);
@@ -176,7 +176,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task RetryLaterAsync_WithoutNextRetryTime_RequeuesImmediately()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
         await inbox.MarkAsDiscardAsync(incoming.Id);
@@ -192,7 +192,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task StateTransitions_WithUnknownId_DoNotThrow()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var unknownId = Guid.NewGuid();
 
         await inbox.MarkAsProcessedAsync(unknownId);
@@ -206,7 +206,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task ExistsByMessageIdAsync_WhenEnqueued_ReturnsTrue()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1"));
 
         Assert.True(await inbox.ExistsByMessageIdAsync("message-1"));
@@ -218,7 +218,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task ExistsByMessageIdAsync_WhenUnknown_ReturnsFalse()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1"));
 
         Assert.False(await inbox.ExistsByMessageIdAsync("message-2"));
@@ -230,7 +230,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task ExistsByMessageIdAsync_IsCaseSensitive()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("Message-1"));
 
         Assert.False(await inbox.ExistsByMessageIdAsync("message-1"));
@@ -245,7 +245,7 @@ public class InMemoryEventInboxTests
     [InlineData("   ")]
     public async Task ExistsByMessageIdAsync_WhenMessageIdBlank_ReturnsFalse(string messageId)
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent(messageId));
 
         Assert.False(await inbox.ExistsByMessageIdAsync(messageId));
@@ -257,7 +257,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task DeleteOldEventsAsync_KeepsRecentlyProcessedEvents()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         var incoming = CreateEvent("message-1");
         await inbox.EnqueueAsync(incoming);
         await inbox.MarkAsProcessedAsync(incoming.Id);
@@ -273,7 +273,7 @@ public class InMemoryEventInboxTests
     [Fact]
     public async Task DeleteOldEventsAsync_NeverRemovesWaitingEvents()
     {
-        var inbox = new InMemoryEventInbox();
+        var inbox = new DefaultEventInbox();
         await inbox.EnqueueAsync(CreateEvent("message-1"));
 
         await inbox.DeleteOldEventsAsync();

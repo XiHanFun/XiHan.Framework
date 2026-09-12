@@ -40,10 +40,10 @@ public static class XiHanCachingServiceCollectionExtensions
         services.AddSingleton(typeof(IHybridCache<,>), typeof(XiHanHybridCache<,>));
 
         // 分布式锁：默认进程内回退（仅单实例）；Redis 启用时下方替换为跨实例的 Redis 实现
-        services.TryAddSingleton<IDistributedLock, InMemoryDistributedLock>();
+        services.TryAddSingleton<IDistributedLock, DefaultDistributedLock>();
 
         // 延迟队列：默认进程内回退（仅单实例，进程退出即丢失）；Redis 启用时下方替换为跨实例的 Redis 实现
-        services.TryAddSingleton(typeof(IRedisDelayQueue<>), typeof(InMemoryDelayQueue<>));
+        services.TryAddSingleton(typeof(IRedisDelayQueue<>), typeof(DefaultDelayQueue<>));
 
         services.Configure<XiHanDistributedCacheOptions>(cacheOptions =>
         {

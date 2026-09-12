@@ -32,7 +32,7 @@ public static class XiHanAuthenticationServiceCollectionExtensions
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
         // 注册刷新令牌存储
-        services.TryAddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+        services.TryAddSingleton<IRefreshTokenStore, DefaultRefreshTokenStore>();
         // 注册 JWT 服务
         services.TryAddSingleton<IJwtTokenService, JwtTokenService>();
         // 注册 OTP 服务
@@ -64,4 +64,5 @@ public static class XiHanAuthenticationServiceCollectionExtensions
 
         return services;
     }
+
 }

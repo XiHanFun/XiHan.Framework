@@ -334,7 +334,7 @@ public sealed class ReflectionEventHandlerInvoker : IEventHandlerInvoker
 /// <summary>
 /// 测试桩：内存发件箱
 /// </summary>
-public sealed class InMemoryEventOutbox : IEventOutbox
+public sealed class DefaultEventOutbox : IEventOutbox
 {
     private readonly List<OutgoingEventInfo> _events = [];
 
@@ -441,7 +441,7 @@ public sealed class InMemoryInboxEntry
 /// <summary>
 /// 测试桩：内存收件箱
 /// </summary>
-public sealed class InMemoryEventInbox : IEventInbox
+public sealed class DefaultEventInbox : IEventInbox
 {
     private readonly List<InMemoryInboxEntry> _entries = [];
 

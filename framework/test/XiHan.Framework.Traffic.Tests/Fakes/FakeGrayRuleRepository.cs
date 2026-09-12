@@ -9,7 +9,7 @@ namespace XiHan.Framework.Traffic.Tests.Fakes;
 /// 可编排返回值与故障的灰度规则仓储替身
 /// </summary>
 /// <remarks>
-/// 与 InMemoryGrayRuleRepository 不同，本替身不做 IsEnabled 过滤，
+/// 与 DefaultGrayRuleRepository 不同，本替身不做 IsEnabled 过滤，
 /// 目的是让引擎测试能精确控制「引擎拿到的规则集合」，把仓储过滤语义留给仓储自己的测试。
 /// </remarks>
 public sealed class FakeGrayRuleRepository : IGrayRuleRepository

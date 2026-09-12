@@ -33,7 +33,7 @@ public class MyModule : XiHanModule { }
 
 - `ILocalEventBus` → `LocalEventBus`（单例，通过 `[ExposeServices]` 暴露）
 - `IDistributedEventBus` → `LocalDistributedEventBus`（单例，`[Dependency(TryRegister = true)]`，可被替换）
-- `IEventOutbox` / `IEventInbox` → 默认 `InMemoryEventOutbox` / `InMemoryEventInbox`（单例，`TryAddSingleton`）
+- `IEventOutbox` / `IEventInbox` → 默认 `DefaultEventOutbox` / `DefaultEventInbox`（单例，`TryAddSingleton`）
 - 两个后台托管服务：`EventBoxOutboxSenderHostedService`（发送发件箱）、`EventBoxInboxProcessorHostedService`（处理收件箱）
 - `IUnitOfWorkEventPublisher` → `UnitOfWorkEventPublisher`（`[Dependency(ReplaceServices = true)]`，让事件在 UoW 完成后发布）
 - 通过 `OnRegistered` 钩子把所有事件处理器类型自动收集进 `XiHanLocalEventBusOptions.Handlers` / `XiHanDistributedEventBusOptions.Handlers`
@@ -58,14 +58,14 @@ public class MyModule : XiHanModule { }
 ### 发件箱/收件箱后台循环
 
 - `EventBoxOutboxSenderHostedService`：循环拉取每个已启用发件箱的等待事件（`GetWaitingEventsAsync`，批量 `OutboxBatchSize`），调用 `ISupportsEventBoxes.PublishManyFromOutboxAsync` 投递，成功后 `DeleteManyAsync` 清理。
-- `EventBoxInboxProcessorHostedService`：循环拉取每个已启用收件箱的等待事件，逐个 `ProcessFromInboxAsync` 处理；成功 `MarkAsProcessedAsync`，失败进重试计数——达到 `MaxInboxRetryCount` 则 `MarkAsDiscardAsync` 丢弃，否则 `RetryLaterAsync` 延后（`InboxRetryDelaySeconds` 秒后）；每轮末尾 `DeleteOldEventsAsync` 清理过期（默认实现 `InMemoryEventInbox` 只清理非等待中、且最后修改时间超过 7 天的记录）。
+- `EventBoxInboxProcessorHostedService`：循环拉取每个已启用收件箱的等待事件，逐个 `ProcessFromInboxAsync` 处理；成功 `MarkAsProcessedAsync`，失败进重试计数——达到 `MaxInboxRetryCount` 则 `MarkAsDiscardAsync` 丢弃，否则 `RetryLaterAsync` 延后（`InboxRetryDelaySeconds` 秒后）；每轮末尾 `DeleteOldEventsAsync` 清理过期（默认实现 `DefaultEventInbox` 只清理非等待中、且最后修改时间超过 7 天的记录）。
 - 两者轮询间隔 = `PollingIntervalMilliseconds`（下限 200ms）。
 
 ## 核心能力
 
 - **本地事件总线** `LocalEventBus`（`ILocalEventBus`，单例）：进程内发布/订阅，接入工作单元与当前租户上下文；处理器按 `Order` 排序执行；支持事件继承（父类型处理器也会被基于子类型的发布触发）
 - **分布式事件总线** `LocalDistributedEventBus`（`IDistributedEventBus`，单例，`TryRegister`）：在本地事件总线之上叠加 Outbox/Inbox 与事件名映射，可被真正的 MQ 实现替换；另有空实现 `NullDistributedEventBus`（`Instance` 单例）
-- **Outbox / Inbox 模式**：默认内存实现 `InMemoryEventOutbox` / `InMemoryEventInbox`，可替换为持久化实现；发件箱保证事件不丢，收件箱靠 `MessageId` 去重、并做失败重试/丢弃
+- **Outbox / Inbox 模式**：有界默认实现 `DefaultEventOutbox` / `DefaultEventInbox` 各最多 100000 条，满载时拒绝新增而不静默丢事件；可由应用替换为持久化实现
 - **后台托管服务**：`EventBoxOutboxSenderHostedService`、`EventBoxInboxProcessorHostedService`（均为 `BackgroundService`，以 `TryAddEnumerable` 注册为 `IHostedService`）
 - **处理器工厂体系**：`IocEventHandlerFactory`（从 DI 解析，支持依赖注入）、`TransientEventHandlerFactory` / `TransientEventHandlerFactory<THandler>`（每次新建瞬时实例）、`SingleInstanceHandlerFactory`（复用同一实例）、`ActionEventHandler<TEvent>`（把委托包装成处理器）
 - **工作单元集成** `UnitOfWorkEventPublisher`：实现 `IUnitOfWorkEventPublisher`，让本地/分布式事件跟随 UoW 完成后发布
@@ -83,7 +83,7 @@ public class MyModule : XiHanModule { }
 | `XiHanLocalEventBusOptions` | 本地事件总线选项：`ITypeList<IEventHandler> Handlers`（处理器类型列表） |
 | `XiHanDistributedEventBusOptions` | 分布式事件总线选项：`Handlers`、`OutboxConfigDictionary Outboxes`、`InboxConfigDictionary Inboxes` |
 | `EventBoxProcessingOptions` | 发件箱/收件箱后台处理选项；配置节 `XiHan:EventBus:EventBoxes` |
-| `InMemoryEventOutbox` / `InMemoryEventInbox` | 默认内存事件盒实现（`ConcurrentDictionary` 存储） |
+| `DefaultEventOutbox` / `DefaultEventInbox` | 默认进程内事件盒实现，各最多 100000 条；满载时拒绝新增 |
 | `EventNameAttribute` | 为分布式事件类型指定事件名；静态 `GetNameOrDefault<TEvent>()` / `GetNameOrDefault(Type)` 取名或回退 `FullName` |
 | `GenericEventNameAttribute` | 为泛型事件类型（如 `EntityCreatedEventData<TEntity>`）按其唯一泛型参数动态生成事件名，可配 `Prefix` / `Postfix`；泛型参数不唯一时抛 `XiHanException` |
 | `DistributedEventSent` / `DistributedEventReceived` | 分布式事件发送/接收的观测型本地事件（`Source` 取 `Direct`/`Outbox`/`Inbox`），发布/接收路径上自动触发，用于旁路日志、审计、指标采集 |
@@ -122,7 +122,7 @@ public class MyModule : XiHanModule { }
 
 ### 事件盒实现与选择器 `XiHanDistributedEventBusOptions`
 
-发件箱/收件箱默认名 `"Default"`、默认 `DatabaseName = "Default"`、默认实现 `InMemoryEventOutbox` / `InMemoryEventInbox`（`AddXiHanEventBus` 里兜底填充）。要替换实现或做事件筛选，用 `Configure`：
+发件箱/收件箱默认名 `"Default"`、默认 `DatabaseName = "Default"`、默认实现 `DefaultEventOutbox` / `DefaultEventInbox`（`AddXiHanEventBus` 里兜底填充）。要替换实现或做事件筛选，用 `Configure`：
 
 ```csharp
 Configure<XiHanDistributedEventBusOptions>(options =>
@@ -206,7 +206,7 @@ await _distributedEventBus.PublishAsync(new OrderShippedEvent { OrderId = 1001 }
 - **本地/分布式处理器必须进入 `Options.Handlers` 才会被订阅（最重要）**。运行期 `LocalEventBus` 构造时对 `Options.Handlers` 逐个 `SubscribeHandlers`、`LocalDistributedEventBus` 逐个 `Subscribe`；而 `Handlers` 的填充来自 `AddXiHanEventBus` 里 `services.OnRegistered(...)` 钩子——它在服务注册阶段识别实现了 `ILocalEventHandler<>` / `IDistributedEventHandler<>` 的类型并 `AddIfNotContains` 进 `Handlers`。这意味着处理器要**走框架的模块注册管线**才会被登记（例如实现 `ITransientDependency`/被约定扫描注册，或以能触发 `OnRegistered` 的方式加入 `IServiceCollection`）。**若绕过这条链路——例如手动裸 `AddTransient(具体处理器类型)` 而未被 `OnRegistered` 捕获，或在钩子注册之后才加入——它不会进入 `Handlers`，也就不会被订阅，事件会静默无人处理、且不报错。** 排查"处理器没触发"时，第一步就是确认它有没有进 `Handlers`。
 - **发布默认跟随工作单元**：有当前 UoW 时，事件先记录进 UoW，直到 UoW 成功提交才由 `UnitOfWorkEventPublisher` 真正发布；UoW 回滚则事件不发。要"立即发布、不等 UoW"，显式传 `onUnitOfWorkComplete: false`。
 - **分布式默认走 Outbox**：`useOutbox` 默认 `true`，发布是异步的（先入发件箱，后台再投递），不要期望调用返回后处理器已执行完。要同步直投可传 `useOutbox: false`。
-- **默认实现是内存版**：`InMemoryEventOutbox` / `InMemoryEventInbox` 进程重启即丢，仅适合单机/开发；生产的"不丢/去重"承诺需替换为持久化实现。
+- **默认实现是内存版**：`DefaultEventOutbox` / `DefaultEventInbox` 进程重启即丢，仅适合单机/开发；生产的"不丢/去重"承诺需替换为持久化实现。
 - **处理器执行顺序**：同一事件的多个本地处理器按 `LocalEventHandlerOrderAttribute.Order` 升序执行，未标注默认 0；顺序相同则不保证稳定顺序。
 - **事件继承会被触发**：基于子类型发布时，订阅了其父类型/接口的处理器也会被触发（`ShouldTriggerEventForHandler` 用 `IsAssignableFrom` 判断）。
 

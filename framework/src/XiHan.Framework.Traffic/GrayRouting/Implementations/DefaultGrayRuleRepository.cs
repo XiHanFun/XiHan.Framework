@@ -7,14 +7,17 @@ using XiHan.Framework.Traffic.GrayRouting.Abstractions;
 namespace XiHan.Framework.Traffic.GrayRouting.Implementations;
 
 /// <summary>
-/// 内存灰度规则仓储
+/// 默认灰度规则仓储（有界进程内实现）
 /// </summary>
 /// <remarks>
 /// 仅用于演示和测试，生产环境应使用数据库或配置中心
 /// </remarks>
-public class InMemoryGrayRuleRepository : IGrayRuleRepository
+public class DefaultGrayRuleRepository : IGrayRuleRepository
 {
+    private const int MaxRuleCount = 10000;
+
     private readonly ConcurrentDictionary<string, IGrayRule> _rules = new();
+    private readonly Lock _writeLock = new();
 
     /// <summary>
     /// 获取所有启用的灰度规则
@@ -51,7 +54,16 @@ public class InMemoryGrayRuleRepository : IGrayRuleRepository
     /// </summary>
     public void AddRule(IGrayRule rule)
     {
-        _rules[rule.RuleId] = rule;
+        ArgumentNullException.ThrowIfNull(rule);
+        lock (_writeLock)
+        {
+            if (!_rules.ContainsKey(rule.RuleId) && _rules.Count >= MaxRuleCount)
+            {
+                throw new InvalidOperationException($"默认灰度规则存储已达到 {MaxRuleCount} 条上限，请替换为应用级持久化实现。");
+            }
+
+            _rules[rule.RuleId] = rule;
+        }
     }
 
     /// <summary>

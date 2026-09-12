@@ -29,7 +29,7 @@ public static class XiHanBackgroundJobsServiceCollectionExtensions
 
         // 核心服务（可被应用侧替换：如替换 IBackgroundJobStore 为持久化/分布式实现）
         services.TryAddSingleton<IBackgroundJobSerializer, BackgroundJobSerializer>();
-        services.TryAddSingleton<IBackgroundJobStore, InMemoryBackgroundJobStore>();
+        services.TryAddSingleton<IBackgroundJobStore, DefaultBackgroundJobStore>();
         services.TryAddTransient<IBackgroundJobManager, BackgroundJobManager>();
         services.TryAddTransient<IBackgroundJobExecuter, BackgroundJobExecuter>();
 

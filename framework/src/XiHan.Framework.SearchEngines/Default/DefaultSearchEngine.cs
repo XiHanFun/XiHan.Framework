@@ -11,10 +11,10 @@ using XiHan.Framework.SearchEngines.Abstractions.Indexing;
 using XiHan.Framework.SearchEngines.Abstractions.Querying;
 using XiHan.Framework.SearchEngines.Abstractions.Results;
 
-namespace XiHan.Framework.SearchEngines.InMemory;
+namespace XiHan.Framework.SearchEngines.Default;
 
 /// <summary>
-/// 进程内搜索引擎
+/// 默认搜索引擎（有界进程内实现）
 /// </summary>
 /// <remarks>
 /// 面向单机开发与自动化测试：数据只存在于当前进程，重启即丢，不做分词与相关度模型。
@@ -24,11 +24,15 @@ namespace XiHan.Framework.SearchEngines.InMemory;
 /// 只有一个实现的抽象无法证明自己没有泄漏该实现的概念。
 /// </para>
 /// </remarks>
-public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
+public sealed class DefaultSearchEngine : ISearchEngine, ISingletonDependency
 {
+    private const int MaxIndexCount = 100;
+    private const int MaxDocumentCountPerIndex = 100000;
+
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
     private readonly ConcurrentDictionary<string, SearchIndexState> _indexes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lock _indexWriteLock = new();
 
     /// <summary>
     /// 判断索引是否存在
@@ -51,7 +55,16 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        var created = _indexes.TryAdd(definition.Name, new SearchIndexState(definition));
+        bool created;
+        lock (_indexWriteLock)
+        {
+            if (!_indexes.ContainsKey(definition.Name) && _indexes.Count >= MaxIndexCount)
+            {
+                throw new InvalidOperationException($"默认搜索引擎已达到 {MaxIndexCount} 个索引上限，请替换为应用级搜索实现。");
+            }
+
+            created = _indexes.TryAdd(definition.Name, new SearchIndexState(definition));
+        }
 
         return Task.FromResult(created);
     }
@@ -80,7 +93,11 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         ArgumentNullException.ThrowIfNull(document);
 
         var state = GetIndexOrThrow(index);
-        state.Documents[document.Id] = JsonSerializer.SerializeToElement(document.Document, SerializerOptions);
+        lock (state.DocumentWriteLock)
+        {
+            EnsureDocumentCapacity(state, document.Id);
+            state.Documents[document.Id] = JsonSerializer.SerializeToElement(document.Document, SerializerOptions);
+        }
 
         return Task.CompletedTask;
     }
@@ -97,15 +114,30 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         where TDocument : class
     {
         ArgumentNullException.ThrowIfNull(documents);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var state = GetIndexOrThrow(index);
+        var batch = documents.ToArray();
         var count = 0;
 
-        foreach (var document in documents)
+        lock (state.DocumentWriteLock)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            state.Documents[document.Id] = JsonSerializer.SerializeToElement(document.Document, SerializerOptions);
-            count++;
+            var newDocumentCount = batch
+                .Select(document => document.Id)
+                .Distinct(StringComparer.Ordinal)
+                .Count(id => !state.Documents.ContainsKey(id));
+            if (state.Documents.Count + newDocumentCount > MaxDocumentCountPerIndex)
+            {
+                throw new InvalidOperationException(
+                    $"默认搜索索引 '{index}' 已达到 {MaxDocumentCountPerIndex} 条文档上限，请替换为应用级搜索实现。");
+            }
+
+            foreach (var document in batch)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                state.Documents[document.Id] = JsonSerializer.SerializeToElement(document.Document, SerializerOptions);
+                count++;
+            }
         }
 
         return Task.FromResult(count);
@@ -215,6 +247,15 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         return _indexes.TryGetValue(index, out var state)
             ? state
             : throw new InvalidOperationException($"索引 '{index}' 不存在，请先创建索引。");
+    }
+
+    private static void EnsureDocumentCapacity(SearchIndexState state, string documentId)
+    {
+        if (!state.Documents.ContainsKey(documentId) && state.Documents.Count >= MaxDocumentCountPerIndex)
+        {
+            throw new InvalidOperationException(
+                $"默认搜索索引 '{state.Definition.Name}' 已达到 {MaxDocumentCountPerIndex} 条文档上限，请替换为应用级搜索实现。");
+        }
     }
 
     /// <summary>
@@ -504,5 +545,10 @@ public sealed class InMemorySearchEngine : ISearchEngine, ISingletonDependency
         /// 文档集合
         /// </summary>
         public ConcurrentDictionary<string, JsonElement> Documents { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 文档写入锁
+        /// </summary>
+        public Lock DocumentWriteLock { get; } = new();
     }
 }

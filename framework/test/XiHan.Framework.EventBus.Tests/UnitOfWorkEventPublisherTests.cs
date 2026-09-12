@@ -78,7 +78,7 @@ public class UnitOfWorkEventPublisherTests
     public async Task PublishDistributedEventsAsync_WhenRecordUsesOutbox_EnqueuesToOutbox()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
         var unitOfWork = harness.StartUnitOfWork();
@@ -99,7 +99,7 @@ public class UnitOfWorkEventPublisherTests
     public async Task PublishDistributedEventsAsync_WhenRecordSkipsOutbox_DeliversDirectly()
     {
         using var harness = LocalDistributedEventBusHarness.Create(
-            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(InMemoryEventOutbox)));
+            configureOptions: options => options.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox)));
         var handler = new RecordingDistributedHandler<NamedNoticeEvent>();
         harness.Bus.Subscribe<NamedNoticeEvent>(handler);
         harness.StartUnitOfWork();

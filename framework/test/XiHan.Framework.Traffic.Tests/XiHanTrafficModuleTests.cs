@@ -56,7 +56,7 @@ public class XiHanTrafficModuleTests
         using var provider = services.BuildServiceProvider();
 
         Assert.IsType<DefaultGrayRuleEngine>(provider.GetRequiredService<IGrayRuleEngine>());
-        Assert.IsType<InMemoryGrayRuleRepository>(provider.GetRequiredService<IGrayRuleRepository>());
+        Assert.IsType<DefaultGrayRuleRepository>(provider.GetRequiredService<IGrayRuleRepository>());
         Assert.Equal(5, provider.GetServices<IGrayMatcher>().Count());
     }
 
