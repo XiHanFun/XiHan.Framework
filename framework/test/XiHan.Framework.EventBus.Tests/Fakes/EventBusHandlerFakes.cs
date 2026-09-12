@@ -610,14 +610,14 @@ public sealed class RecordingReceivedObserver : ILocalEventHandler<DistributedEv
 /// <remarks>
 /// 发件箱按 <c>ImplementationType</c> 从容器解析，必须是不同的类型才能同时注册两个。
 /// </remarks>
-public sealed class SecondaryEventOutbox : InMemoryEventOutbox
+public sealed class SecondaryEventOutbox : DefaultEventOutbox
 {
 }
 
 /// <summary>
 /// 测试替身：第二个收件箱实现类型，用于验证多收件箱编排
 /// </summary>
-public sealed class SecondaryEventInbox : InMemoryEventInbox
+public sealed class SecondaryEventInbox : DefaultEventInbox
 {
 }
 
@@ -836,8 +836,8 @@ public sealed class LocalDistributedEventBusHarness : IDisposable
         string? correlationId = null)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<InMemoryEventOutbox>();
-        services.AddSingleton<InMemoryEventInbox>();
+        services.AddSingleton<DefaultEventOutbox>();
+        services.AddSingleton<DefaultEventInbox>();
         services.AddSingleton<SecondaryEventOutbox>();
         services.AddSingleton<SecondaryEventInbox>();
         configureServices?.Invoke(services);
@@ -868,13 +868,13 @@ public sealed class LocalDistributedEventBusHarness : IDisposable
     /// 获取默认的内存发件箱
     /// </summary>
     /// <returns>发件箱</returns>
-    public InMemoryEventOutbox GetOutbox() => _provider.GetRequiredService<InMemoryEventOutbox>();
+    public DefaultEventOutbox GetOutbox() => _provider.GetRequiredService<DefaultEventOutbox>();
 
     /// <summary>
     /// 获取默认的内存收件箱
     /// </summary>
     /// <returns>收件箱</returns>
-    public InMemoryEventInbox GetInbox() => _provider.GetRequiredService<InMemoryEventInbox>();
+    public DefaultEventInbox GetInbox() => _provider.GetRequiredService<DefaultEventInbox>();
 
     /// <summary>
     /// 释放资源

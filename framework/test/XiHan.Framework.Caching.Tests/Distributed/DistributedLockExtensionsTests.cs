@@ -23,7 +23,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_WhenAcquired_RunsActionAndReturnsTrue()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         var executed = false;
 
         var acquired = await distributedLock.WithLockAsync("resource", LongExpiry, _ =>
@@ -43,7 +43,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_AfterAction_ReleasesLock()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await distributedLock.WithLockAsync("resource", LongExpiry, _ => Task.CompletedTask, token);
 
@@ -62,7 +62,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_WhenActionThrows_StillReleasesLock()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => distributedLock.WithLockAsync(
             "resource",
@@ -82,7 +82,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_WhenNotAcquired_SkipsActionAndReturnsFalse()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var holder = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(holder);
         var executed = false;
@@ -104,7 +104,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_WithResult_WhenAcquired_ReturnsValue()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         var (acquired, result) = await distributedLock.WithLockAsync("resource", LongExpiry, _ => Task.FromResult(7), token);
 
@@ -119,7 +119,7 @@ public class DistributedLockExtensionsTests
     public async Task WithLockAsync_WithResult_WhenNotAcquired_ReturnsDefault()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var holder = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(holder);
         var executed = false;
@@ -142,7 +142,7 @@ public class DistributedLockExtensionsTests
     public async Task AcquireAsync_WhenFree_ReturnsHandle()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
 
         await using var handle = await distributedLock.AcquireAsync("resource", LongExpiry, TimeSpan.FromSeconds(1), cancellationToken: token);
 
@@ -159,7 +159,7 @@ public class DistributedLockExtensionsTests
     public async Task AcquireAsync_WithZeroWaitAndHeldResource_ReturnsNull()
     {
         var token = TestContext.Current.CancellationToken;
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         await using var holder = await distributedLock.TryAcquireAsync("resource", LongExpiry, token);
         Assert.NotNull(holder);
 
@@ -186,7 +186,7 @@ public class DistributedLockExtensionsTests
     [Fact]
     public async Task WithLockAsync_WithNullAction_Throws()
     {
-        var distributedLock = new InMemoryDistributedLock();
+        var distributedLock = new DefaultDistributedLock();
         Func<CancellationToken, Task>? action = null;
 
         await Assert.ThrowsAsync<ArgumentNullException>(

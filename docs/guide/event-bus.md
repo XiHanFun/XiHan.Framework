@@ -41,7 +41,7 @@ public class MyModule : XiHanModule;
 | --- | --- | --- |
 | `ILocalEventBus` | `LocalEventBus` | 单例 |
 | `IDistributedEventBus` | `LocalDistributedEventBus` | 单例，`TryRegister`，可被 Broker 实现替换 |
-| `IEventOutbox` / `IEventInbox` | `InMemoryEventOutbox` / `InMemoryEventInbox` | 单例，`TryAddSingleton` |
+| `IEventOutbox` / `IEventInbox` | `DefaultEventOutbox` / `DefaultEventInbox` | 单例，`TryAddSingleton` |
 | `IUnitOfWorkEventPublisher` | `UnitOfWorkEventPublisher` | `ReplaceServices`，负责在工作单元完成后发事件 |
 | `IHostedService` | `EventBoxOutboxSenderHostedService`、`EventBoxInboxProcessorHostedService` | 发件箱发送与收件箱处理的轮询循环 |
 
@@ -239,7 +239,7 @@ PublishAsync(useOutbox: true)
 | 清理 | 每轮末尾 `DeleteOldEventsAsync`；内存实现只清理非等待中、且最后修改时间超过 7 天的记录 |
 
 ::: danger 默认事件盒在内存里
-`InMemoryEventOutbox` / `InMemoryEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
+`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
 :::
 
 ```csharp

@@ -48,8 +48,8 @@ public static class XiHanBotTelegramPlatformServiceCollectionExtensions
         services.TryAddSingleton<ITelegramBotSettingsStore, DefaultTelegramBotSettingsStore>();
 
         // 幂等 / 会话状态 / 出站审计（TryAdd 默认实现；应用层分布式实现覆盖）
-        services.TryAddSingleton<ITelegramUpdateDeduplicator, InMemoryTelegramUpdateDeduplicator>();
-        services.TryAddSingleton<IConversationStateStore, InMemoryConversationStateStore>();
+        services.TryAddSingleton<ITelegramUpdateDeduplicator, DefaultTelegramUpdateDeduplicator>();
+        services.TryAddSingleton<IConversationStateStore, DefaultConversationStateStore>();
         services.TryAddSingleton<ITelegramMessageAuditStore, NoOpTelegramMessageAuditStore>();
 
         // 路由与分发管线

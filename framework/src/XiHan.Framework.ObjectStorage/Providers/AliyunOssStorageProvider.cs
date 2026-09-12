@@ -20,6 +20,8 @@ namespace XiHan.Framework.ObjectStorage.Providers;
 /// </remarks>
 public class AliyunOssStorageProvider : FileStorageProviderBase
 {
+    private static readonly TimeSpan UploadSessionTtl = TimeSpan.FromHours(24);
+
     private readonly AliyunOssStorageOptions _options;
     private readonly OssClient _client;
     private readonly ConcurrentDictionary<string, MultipartUploadSession> _uploadSessions = new();
@@ -58,6 +60,8 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
     /// </summary>
     public override async Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
     {
+        CleanupExpiredUploadSessions();
+
         var bucket = request.BucketName ?? _options.DefaultBucket;
         var objectName = NormalizePath(request.StoragePath);
 
@@ -82,7 +86,8 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
                 UploadId = uploadId,
                 BucketName = bucket,
                 ObjectName = objectName,
-                PartETags = new ConcurrentDictionary<int, string>()
+                PartETags = new ConcurrentDictionary<int, string>(),
+                LastActivityUtcTicks = DateTimeOffset.UtcNow.UtcTicks
             };
 
             return uploadId;
@@ -107,6 +112,8 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
                 ErrorMessage = "上传会话不存在"
             };
         }
+
+        Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
 
         try
         {
@@ -531,6 +538,18 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
         return (string.IsNullOrWhiteSpace(bucketName) ? _options.DefaultBucket : bucketName.Trim(), normalizedPath);
     }
 
+    private void CleanupExpiredUploadSessions()
+    {
+        var cutoffTicks = DateTimeOffset.UtcNow.Subtract(UploadSessionTtl).UtcTicks;
+        foreach (var session in _uploadSessions)
+        {
+            if (Interlocked.Read(ref session.Value.LastActivityUtcTicks) <= cutoffTicks)
+            {
+                _uploadSessions.TryRemove(session.Key, out _);
+            }
+        }
+    }
+
     #endregion
 
     /// <summary>
@@ -542,5 +561,6 @@ public class AliyunOssStorageProvider : FileStorageProviderBase
         public string BucketName { get; set; } = string.Empty;
         public string ObjectName { get; set; } = string.Empty;
         public ConcurrentDictionary<int, string> PartETags { get; set; } = new();
+        public long LastActivityUtcTicks;
     }
 }

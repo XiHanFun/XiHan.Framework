@@ -30,7 +30,7 @@ public class XiHanTrafficServiceCollectionExtensionsTests
         using var provider = BuildProvider(services => services.AddGrayRouting());
 
         Assert.IsType<DefaultGrayRuleEngine>(provider.GetRequiredService<IGrayRuleEngine>());
-        Assert.IsType<InMemoryGrayRuleRepository>(provider.GetRequiredService<IGrayRuleRepository>());
+        Assert.IsType<DefaultGrayRuleRepository>(provider.GetRequiredService<IGrayRuleRepository>());
     }
 
     /// <summary>
@@ -231,7 +231,7 @@ public class XiHanTrafficServiceCollectionExtensionsTests
     {
         using var provider = BuildProvider(services => services.AddGrayRouting());
 
-        var repository = (InMemoryGrayRuleRepository)provider.GetRequiredService<IGrayRuleRepository>();
+        var repository = (DefaultGrayRuleRepository)provider.GetRequiredService<IGrayRuleRepository>();
         repository.AddRule(new GrayRule
         {
             RuleId = "header-rule",

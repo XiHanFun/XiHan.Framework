@@ -11,7 +11,9 @@ namespace XiHan.Framework.Observability.Performance;
 /// </summary>
 public class PerformanceMonitor : IPerformanceMonitor
 {
-    private readonly ConcurrentBag<PerformanceRecord> _records = [];
+    private const int MaxRecordCount = 10000;
+
+    private readonly ConcurrentQueue<PerformanceRecord> _records = new();
 
     /// <summary>
     /// 开始监控操作
@@ -82,7 +84,11 @@ public class PerformanceMonitor : IPerformanceMonitor
     /// </summary>
     internal void AddRecord(PerformanceRecord record)
     {
-        _records.Add(record);
+        _records.Enqueue(record);
+        while (_records.Count > MaxRecordCount)
+        {
+            _records.TryDequeue(out _);
+        }
     }
 
     /// <summary>

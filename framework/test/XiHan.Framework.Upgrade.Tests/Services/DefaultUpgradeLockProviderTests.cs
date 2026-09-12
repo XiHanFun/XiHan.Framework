@@ -12,7 +12,7 @@ namespace XiHan.Framework.Upgrade.Tests.Services;
 /// 升级锁的唯一职责是「同一资源键同一时刻只有一个持有者」。
 /// 覆盖互斥、释放后可重入、过期接管、陈旧令牌不得误删新持有者，以及并发下唯一赢家。
 /// </remarks>
-public class InMemoryUpgradeLockProviderTests
+public class DefaultUpgradeLockProviderTests
 {
     private const string ResourceKey = "SystemUpgrade";
 
@@ -22,7 +22,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WhenFree_ReturnsTokenWithIdentity()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
 
         var token = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", TestContext.Current.CancellationToken);
 
@@ -38,7 +38,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WhenHeld_ReturnsNull()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var first = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", cancellationToken);
         Assert.NotNull(first);
@@ -54,7 +54,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WithDifferentResourceKeys_AreIndependent()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         var host = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", cancellationToken);
@@ -71,7 +71,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task ReleaseAsync_ThenAcquireAgain_Succeeds()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var first = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", cancellationToken);
         Assert.NotNull(first);
@@ -89,7 +89,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task ReleaseAsync_CalledTwice_IsIdempotent()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var token = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", cancellationToken);
         Assert.NotNull(token);
@@ -106,7 +106,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task DisposeAsync_ReleasesLock()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var token = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMinutes(5), "node-a", cancellationToken);
         Assert.NotNull(token);
@@ -124,7 +124,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WhenExistingLockExpired_TakesOver()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var expired = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMilliseconds(1), "node-a", cancellationToken);
         Assert.NotNull(expired);
@@ -143,7 +143,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task ReleaseAsync_FromStaleToken_DoesNotReleaseCurrentHolder()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
         var stale = await provider.TryAcquireLockAsync(ResourceKey, TimeSpan.FromMilliseconds(1), "node-a", cancellationToken);
         Assert.NotNull(stale);
@@ -163,7 +163,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_UnderConcurrency_HasExactlyOneWinner()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         var tasks = Enumerable.Range(0, 32)
@@ -183,7 +183,7 @@ public class InMemoryUpgradeLockProviderTests
     [InlineData("   ")]
     public async Task TryAcquireLockAsync_WhenResourceKeyBlank_ThrowsArgumentException(string resourceKey)
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(
             async () => await provider.TryAcquireLockAsync(resourceKey, TimeSpan.FromMinutes(5), "node-a", TestContext.Current.CancellationToken));
@@ -197,7 +197,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WhenExpiryNotPositive_ThrowsArgumentOutOfRange()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
@@ -214,7 +214,7 @@ public class InMemoryUpgradeLockProviderTests
     [Fact]
     public async Task TryAcquireLockAsync_WhenTokenCancelled_ThrowsAndKeepsLockFree()
     {
-        var provider = new InMemoryUpgradeLockProvider();
+        var provider = new DefaultUpgradeLockProvider();
         using var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
 

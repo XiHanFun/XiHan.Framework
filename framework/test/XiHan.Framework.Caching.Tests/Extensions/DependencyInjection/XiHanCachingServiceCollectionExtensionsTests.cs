@@ -93,14 +93,14 @@ public class XiHanCachingServiceCollectionExtensionsTests
     /// Redis 未启用时分布式锁落到进程内回退实现
     /// </summary>
     [Fact]
-    public void AddXiHanCaching_WhenRedisDisabled_UsesInMemoryDistributedLock()
+    public void AddXiHanCaching_WhenRedisDisabled_UsesDefaultDistributedLock()
     {
         var services = new ServiceCollection();
         services.AddXiHanCaching(BuildConfiguration(false));
 
         var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IDistributedLock));
 
-        Assert.Equal(typeof(InMemoryDistributedLock), descriptor.ImplementationType);
+        Assert.Equal(typeof(DefaultDistributedLock), descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
 
@@ -238,7 +238,7 @@ public class XiHanCachingServiceCollectionExtensionsTests
 
         var lockDescriptor = Assert.Single(services, item => item.ServiceType == typeof(IDistributedLock));
 
-        Assert.Equal(typeof(InMemoryDistributedLock), lockDescriptor.ImplementationType);
+        Assert.Equal(typeof(DefaultDistributedLock), lockDescriptor.ImplementationType);
         Assert.DoesNotContain(services, item => item.ServiceType == typeof(IConnectionMultiplexer));
         Assert.DoesNotContain(services, item => item.ServiceType == typeof(IRedisStreamQueue<>));
     }

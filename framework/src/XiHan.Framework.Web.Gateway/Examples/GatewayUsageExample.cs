@@ -69,7 +69,7 @@ public static class GatewayUsageExample
         var sp = services.BuildServiceProvider();
         var repository = sp.GetRequiredService<IGrayRuleRepository>();
 
-        if (repository is InMemoryGrayRuleRepository memoryRepo)
+        if (repository is DefaultGrayRuleRepository memoryRepo)
         {
             // 添加一个百分比灰度规则
             memoryRepo.AddRule(new GrayRule
@@ -122,7 +122,7 @@ public static class GatewayUsageExample
         var sp = services.BuildServiceProvider();
         var repository = sp.GetRequiredService<IGrayRuleRepository>();
 
-        if (repository is InMemoryGrayRuleRepository memoryRepo)
+        if (repository is DefaultGrayRuleRepository memoryRepo)
         {
             // 添加一个有时间限制的灰度规则
             memoryRepo.AddRule(new GrayRule
