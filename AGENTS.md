@@ -18,8 +18,8 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 ## 开始前必须做
 
-1. 读取 `.agents/skills/xihan-framework/SKILL.md`。
-2. 按任务类型读取该技能指向的 references，不要一次加载无关资料。
+1. 按任务读取对应技能：模块、分层与公共 API 读取 `.agents/skills/module-development/SKILL.md`；缓存、队列和外部资源读取 `.agents/skills/resource-governance/SKILL.md`；测试、文档、打包和发布读取 `.agents/skills/testing-release/SKILL.md`。
+2. 同时涉及多个职责时加载对应多个技能，不要一次读取无关资料。
 3. 检查当前分支、`git status` 和最近提交；保留用户已有改动。
 4. 阅读目标模块及其直接依赖的 README、项目文件、Module 类和相邻实现。
 5. 先确认能力应归属 Utils、Metadata、Core、Domain、Application、Infrastructure 还是 Web 层，再创建代码。
@@ -30,7 +30,9 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 ```text
 /
 ├─ AGENTS.md
-├─ .agents/skills/xihan-framework/ # Codex 仓库技能与工程规范
+├─ .agents/skills/                 # 按模块、资源和发布分类的仓库技能
+├─ .claude/skills -> ../.agents/skills
+├─ CLAUDE.md -> AGENTS.md
 ├─ docs/                           # VitePress 文档站
 ├─ framework/
 │  ├─ XiHan.Framework.slnx         # 主解决方案
