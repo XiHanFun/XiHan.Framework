@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 工程"
+  short_description: "开发、审查和发布 XiHan.Framework 模块"
+  default_prompt: "使用 $xihan-framework 实现并验证一项符合仓库分层与模块规范的框架能力。"
+
+policy:
+  allow_implicit_invocation: true
