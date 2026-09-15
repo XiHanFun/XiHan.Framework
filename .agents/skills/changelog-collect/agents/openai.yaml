@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 变更日志"
+  short_description: "从提交和公共契约整理 Framework 用户可感知日志"
+  default_prompt: "使用 $xihan-framework-changelog-collect 整理指定版本范围的变更日志。"
+
+policy:
+  allow_implicit_invocation: true
