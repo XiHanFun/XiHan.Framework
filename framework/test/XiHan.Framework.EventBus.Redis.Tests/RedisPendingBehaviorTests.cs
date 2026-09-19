@@ -12,7 +12,7 @@ namespace XiHan.Framework.EventBus.Redis.Tests;
 /// 修复方案建立在几条对 Redis 的假设上，这里对真实 Redis 逐条验证，避免方案基于臆测：
 /// 读取但未确认的消息会留在待处理列表、可被另一消费者接管、接管后投递次数递增、确认后不再出现。
 /// 地址取环境变量 <c>XIHAN_TEST_REDIS</c>，缺省 <c>localhost:6379,user=redis,password=redis</c>；
-/// 不可达时整类跳过。
+/// 不可达或不支持 Streams（低于 5.0）时整类跳过。
 /// </remarks>
 [Collection("Redis")]
 public class RedisPendingBehaviorTests : IAsyncLifetime
@@ -26,6 +26,8 @@ public class RedisPendingBehaviorTests : IAsyncLifetime
 
     private IConnectionMultiplexer? _connection;
 
+    private string _skipReason = $"Redis 不可达（{Configuration}），跳过该组验证。";
+
     /// <summary>
     /// 初始化
     /// </summary>
@@ -38,6 +40,17 @@ public class RedisPendingBehaviorTests : IAsyncLifetime
         }
         catch (Exception)
         {
+            _connection = null;
+            return;
+        }
+
+        // 连得上不代表可用：Streams 自 Redis 5.0 起才有，旧版或移植版会对 XGROUP 报 unknown command
+        var server = _connection.GetServers().FirstOrDefault();
+        if (server is null || !server.Features.Streams)
+        {
+            _skipReason = $"Redis 不支持 Streams（{server?.Version.ToString() ?? "未知版本"}，需 5.0+），跳过该组验证。";
+            await _connection.CloseAsync();
+            _connection.Dispose();
             _connection = null;
         }
     }
@@ -161,12 +174,12 @@ public class RedisPendingBehaviorTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 取得数据库，Redis 不可达时跳过
+    /// 取得数据库，Redis 不可达或不支持 Streams 时跳过
     /// </summary>
     /// <returns>数据库</returns>
     private IDatabase RequireDatabase()
     {
-        Assert.SkipWhen(_connection is null, $"Redis 不可达（{Configuration}），跳过该组验证。");
+        Assert.SkipWhen(_connection is null, _skipReason);
 
         return _connection!.GetDatabase();
     }
