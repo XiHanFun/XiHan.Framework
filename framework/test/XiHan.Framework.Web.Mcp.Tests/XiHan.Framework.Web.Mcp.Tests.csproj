@@ -5,7 +5,12 @@
     <Import Project="..\..\props\test.props" />
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\XiHan.Framework.Web.Mcp\XiHan.Framework.Web.Mcp.csproj" />
+      <!-- 测试要在进程内把 Kestrel 拉起来跑真实 HTTP，非 Web SDK 项目须显式引用 ASP.NET Core 共享框架 -->
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\XiHan.Framework.Web.Mcp\XiHan.Framework.Web.Mcp.csproj" />
     </ItemGroup>
 
 </Project>
