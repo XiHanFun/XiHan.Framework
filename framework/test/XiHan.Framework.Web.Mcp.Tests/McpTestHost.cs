@@ -219,7 +219,7 @@ internal sealed class McpTestHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 组装内存配置项，宿主与「只看服务集合」的测试共用同一套，两边看到的配置必然一致
+    /// 组装内存配置项，宿主与直接检视服务集合的测试共用
     /// </summary>
     /// <param name="enabled">是否启用</param>
     /// <param name="apiKey">访问密钥，null 表示不写这个键</param>

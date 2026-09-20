@@ -15,8 +15,8 @@ namespace XiHan.Framework.Web.Mcp.Tests.Extensions;
 /// <remarks>
 /// 服务集合与选项绑定两个维度已由 <c>XiHanWebMcpServiceCollectionExtensionsTests</c> 覆盖，
 /// 未就绪时不注册端点数据源也已由 <see cref="ApplicationBuilderExtensionsTests"/> 覆盖。
-/// 这里只留它们证明不了的那部分：真实宿主上 /mcp 到底能不能被请求到。
-/// 就绪分支同时断言服务注册，使 <c>IsMcpType</c> 判定不至于恒真通过。
+/// 这里只留它们覆盖不到的那部分：真实宿主上 /mcp 能否被请求到。
+/// 就绪分支同时断言服务注册与端点可达，两者共用同一个 <c>IsMcpType</c> 判定。
 /// </remarks>
 public class McpExposureGateEndToEndTests
 {

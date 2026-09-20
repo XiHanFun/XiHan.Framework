@@ -10,8 +10,8 @@ namespace XiHan.Framework.Web.Mcp.Tests.Filters;
 /// </summary>
 /// <remarks>
 /// 鉴权矩阵（自定义头、Bearer 回落、大小写、长度、重复头值、空密钥配置）已由
-/// <see cref="McpApiKeyEndpointFilterTests"/> 按单元粒度穷举。这里只证明单元测试证明不了的那件事：
-/// 该过滤器确实被挂到了真实 /mcp 端点上，因此只留放行与拒绝各一条。
+/// <see cref="McpApiKeyEndpointFilterTests"/> 按单元粒度穷举。这里只覆盖单元版覆盖不到的那件事：
+/// 该过滤器确实被挂到了真实 /mcp 端点上，故只留放行与拒绝各一条。
 /// </remarks>
 public class McpApiKeyEndToEndTests
 {

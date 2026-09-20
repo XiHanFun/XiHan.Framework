@@ -85,7 +85,7 @@ public sealed class McpToolExposureFilter : IPostConfigureOptions<McpServerOptio
     }
 
     /// <summary>
-    /// 把配置里的名字收成按序号比较的集合（跳过空白项，配置里留空行不至于变成一个匹配不上的名字）
+    /// 把配置里的名字收成按序号比较的集合（空白项跳过）
     /// </summary>
     /// <param name="names">配置里的名字</param>
     /// <returns>按序号比较的名字集合</returns>

@@ -52,7 +52,7 @@ public sealed class SkillMcpToolsConfigurator : IConfigureOptions<McpServerOptio
                 continue;
             }
 
-            // 加不进去只有一个原因：同名工具已在集合里。是不是技能贡献的，决定了另一方能报到多细
+            // 加不进去只有一个原因：同名工具已在集合里
             var rival = owners.TryGetValue(toolName, out var owner)
                 ? $"技能 {Describe(owner)}"
                 : "工具集中已有的同名工具（如宿主经 WithTools 直接注册的）";

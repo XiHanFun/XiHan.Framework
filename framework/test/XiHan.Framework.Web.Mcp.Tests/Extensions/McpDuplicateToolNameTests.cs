@@ -46,7 +46,7 @@ public class McpDuplicateToolNameTests
                 new NamedEchoAiSkill(SecondSkill, SharedTool));
         });
 
-        // 三样都得有：不点工具名就不知道改哪个，不点技能名就得自己翻遍注册表找是谁
+        // 异常信息须同时点出工具名与冲突双方的技能名
         Assert.Contains(SharedTool, exception.Message, StringComparison.Ordinal);
         Assert.Contains(FirstSkill, exception.Message, StringComparison.Ordinal);
         Assert.Contains(SecondSkill, exception.Message, StringComparison.Ordinal);

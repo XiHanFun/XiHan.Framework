@@ -10,7 +10,7 @@ namespace XiHan.Framework.Web.Mcp.Options;
 /// 鉴权为「应用管理的 key」：请求须带 <see cref="HeaderName"/>(或 Authorization: Bearer)且值等于 <see cref="ApiKey"/>。
 /// fail-closed：未开启或未配置 ApiKey 则不暴露 /mcp 端点。
 /// <para>
-/// 端点一旦暴露，持有密钥者默认可调用宿主注册的**全部**技能；要把暴露面收窄到其中一部分，
+/// 端点一旦暴露，持有密钥者默认可调用宿主注册的全部技能；要把暴露面收窄到其中一部分，
 /// 用 <see cref="AllowedTools"/> 与 <see cref="DeniedTools"/>。
 /// </para>
 /// </remarks>
@@ -50,8 +50,8 @@ public sealed class XiHanMcpOptions
     /// 工具名允许清单（默认空表示不限制，即暴露全部工具；非空则只暴露清单内列出的工具）
     /// </summary>
     /// <remarks>
-    /// 名字按序号（ordinal）比较且**区分大小写**，与 MCP 工具集自身按名索引的方式一致：大小写写错的名字
-    /// 既不会放行也不会拦截，等同于没写。两个清单都为空时暴露面与不配置本项时逐字相同，既有宿主升级后行为不变。
+    /// 名字按序号（ordinal）比较且区分大小写，与 MCP 工具集自身按名索引的方式一致：大小写写错的名字
+    /// 既不会放行也不会拦截，等同于没写。两个清单都为空时暴露面与不配置本项时逐字相同。
     /// </remarks>
     public List<string> AllowedTools { get; set; } = [];
 
@@ -59,7 +59,7 @@ public sealed class XiHanMcpOptions
     /// 工具名拒绝清单（始终生效；同一个名字若同时出现在 <see cref="AllowedTools"/> 里，以拒绝为准）
     /// </summary>
     /// <remarks>
-    /// 名字按序号（ordinal）比较且**区分大小写**，规则同 <see cref="AllowedTools"/>。
+    /// 名字按序号（ordinal）比较且区分大小写，规则同 <see cref="AllowedTools"/>。
     /// 被拒绝的工具既不出现在 tools/list，也不能经 tools/call 调用。
     /// </remarks>
     public List<string> DeniedTools { get; set; } = [];

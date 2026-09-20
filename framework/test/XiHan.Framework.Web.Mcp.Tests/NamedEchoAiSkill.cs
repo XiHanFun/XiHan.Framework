@@ -10,7 +10,7 @@ namespace XiHan.Framework.Web.Mcp.Tests;
 /// 测试用技能：技能名与投影出的工具名可分别指定，回显内容里带上技能名
 /// </summary>
 /// <remarks>
-/// 技能名与投影出的工具名可分别指定；回显内容带技能名，用于断言实际被调用的是哪个技能。
+/// 回显内容带技能名，供断言实际被调用的是哪个技能。
 /// </remarks>
 /// <param name="name">技能名</param>
 /// <param name="functionName">投影出的工具名，null 表示与技能名相同</param>

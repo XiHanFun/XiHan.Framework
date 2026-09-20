@@ -35,7 +35,7 @@ public static class ApplicationBuilderExtensions
             return endpoints;
         }
 
-        // 主动装配一次 McpServerOptions：工具集装配本是懒的，不提前跑则撞名要等第一个请求才炸
+        // 提前装配 McpServerOptions，使工具集在映射端点前完成构建
         _ = endpoints.ServiceProvider.GetRequiredService<IOptions<McpServerOptions>>().Value;
 
         _ = endpoints.MapMcp(options.Path)
