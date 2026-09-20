@@ -12,6 +12,12 @@ namespace XiHan.Framework.Web.Mcp.Filters;
 /// </summary>
 /// <remarks>
 /// 被裁掉的工具既不出现在 tools/list，也不能经 tools/call 调用；两个清单都为空时不触碰工具集。
+/// <para>
+/// 裁剪的对象是 <see cref="McpServerOptions.ToolCollection"/>。宿主若另行设置
+/// <c>Handlers.ListToolsHandler</c> / <c>CallToolHandler</c>，这两个 handler 提供的工具不在裁剪范围内；
+/// 且 <c>CallToolHandler</c> 是「工具集里找不到才调用」的回退，被拒绝的名字有可能落到它身上。
+/// 启用清单的宿主不应同时使用这两个 handler。
+/// </para>
 /// </remarks>
 public sealed class McpToolExposureFilter : IPostConfigureOptions<McpServerOptions>
 {

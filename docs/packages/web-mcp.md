@@ -65,7 +65,7 @@ public class MyModule : XiHanModule { }
 - **技能投影**：调用 AI 包的 `AddXiHanMcpServerTools()`，技能注册表里的每个 `IAiSkill` 自动成为一个 MCP tool。
 - **端点映射与鉴权**：`MapMcp(Path)` 后 `AllowAnonymous()` 绕过框架全局鉴权 FallbackPolicy，改由 `McpApiKeyEndpointFilter` 校验 key，不匹配即 401。
 - **fail-closed**：`Enabled` 与 `ApiKey` 任一不满足，则既不注册 MCP 服务也不映射端点。
-- **暴露面裁剪**：`McpToolExposureFilter` 经 `IPostConfigureOptions<McpServerOptions>` 按允许/拒绝清单裁剪工具集，被裁掉的工具既不出现在 `tools/list` 也不能经 `tools/call` 调用。两个清单都为空时不触碰工具集，暴露面与不配置时逐字相同。
+- **暴露面裁剪**：`McpToolExposureFilter` 经 `IPostConfigureOptions<McpServerOptions>` 按允许/拒绝清单裁剪工具集，被裁掉的工具既不出现在 `tools/list` 也不能经 `tools/call` 调用。两个清单都为空时不触碰工具集，暴露面与不配置时逐字相同。裁剪的对象是 `McpServerOptions.ToolCollection`：宿主若另行设置 `Handlers.ListToolsHandler` / `CallToolHandler`，这两个 handler 提供的工具不在裁剪范围内，且被拒绝的名字有可能落到 `CallToolHandler` 的回退上，故启用清单的宿主不应同时使用这两个 handler。
 
 ## 主要 API / 类型
 
