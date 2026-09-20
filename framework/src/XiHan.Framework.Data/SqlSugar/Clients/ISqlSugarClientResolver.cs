@@ -61,6 +61,19 @@ public interface ISqlSugarClientResolver
     IReadOnlyList<string> GetCurrentLayoutConfigIds();
 
     /// <summary>
+    /// 获取当前工作单元已登记的连接配置标识
+    /// </summary>
+    /// <remarks>
+    /// 无当前工作单元、工作单元非事务型或已结束时返回空集合。
+    /// 返回顺序不作承诺，调用方不得依赖顺序表达优先级。
+    /// </remarks>
+    /// <returns>已登记的连接配置标识</returns>
+    IReadOnlyList<string> GetEnlistedConfigIds()
+    {
+        return [];
+    }
+
+    /// <summary>
     /// 按顺序获取所有库的客户端（初始化/种子数据等场景使用）
     /// </summary>
     IEnumerable<ISqlSugarClient> GetAllClients();
