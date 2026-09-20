@@ -95,12 +95,14 @@ MCP 工具桥接 `AddXiHanMcpServerTools()` 不在模块内自动调用，须配
 | `OptionsAiPromptStore` | 默认 `IAiPromptStore` 实现，读 `IOptionsMonitor<XiHanAiOptions>.Prompts`（appsettings 兜底），按 `Name` + 可选 `Version` 查询 |
 | `XiHanAgentFactory` | `IXiHanAgentFactory` 实现（解析器 → `IChatClient.AsAIAgent`） |
 | `DefaultAiSkillRegistry` | `IAiSkillRegistry` 实现，构造时收纳 DI 全部 `IAiSkill`，线程安全、同名覆盖 |
-| `SkillMcpToolsConfigurator` | `IConfigureOptions<McpServerOptions>`，把技能 `AsFunction()` 经 `McpServerTool.Create` 并入 MCP 工具集 |
+| `SkillMcpToolsConfigurator` | `IConfigureOptions<McpServerOptions>`，把技能 `AsFunction()` 经 `McpServerTool.Create` 并入 MCP 工具集；工具名冲突时抛 `InvalidOperationException` |
 | `FixedWindowChunkingStrategy` | 固定窗口 + 重叠切片；`MaxChunkSize` / `Overlap`，换行归一后按步长切分 |
 | `DefaultKnowledgeIngestor` | 切片 → 批量 embedding → upsert；`RemoveDocumentAsync` 按文档删向量。依赖注入的 `VectorStore` |
 | `DefaultKnowledgeRetriever` | query embedding → `VectorStore` 检索 → 映射 `RetrievedChunk`；`RetrievalFilter` 转 pre-filter 表达式 |
 | `DefaultRagPromptAugmenter` | 简单模板增强（约束 + 编号片段 + 问题）；不走 Scriban，直接插值 |
 | `VectorStoreKnowledgeRecord` | 向量库记录模型（`Microsoft.Extensions.VectorData` 特性），见下文 |
+
+> 注册表与投影对重名的处理不同：`DefaultAiSkillRegistry` 按名索引、**同名覆盖**（后注册的胜出，这是注册表语义）；而 `SkillMcpToolsConfigurator` 投影到 MCP 工具集时**撞名即失败**，因为对外暴露的允许/拒绝清单按工具名放行，重名会让同一条清单项指向两个不同的能力。
 
 ### DI 入口扩展方法
 
