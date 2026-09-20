@@ -184,6 +184,68 @@ public sealed class ModuleDataSourceRoutingTests
         Assert.Throws<ArgumentException>(() => new ModuleDataSourceAttribute(" "));
     }
 
+    [Fact]
+    public void 未标注的实体默认不进模块库()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var types = provider.GetEntityTypes(ErpContext);
+
+        Assert.DoesNotContain(typeof(PlainRoutingEntity), types);
+    }
+
+    [Fact]
+    public void 标注进入模块库的实体在模块库建表()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var types = provider.GetEntityTypes(ErpContext);
+
+        Assert.Contains(typeof(AllDatabasesRoutingEntity), types);
+    }
+
+    [Fact]
+    public void 标注进入模块库的实体在主库照常建表()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var types = provider.GetEntityTypes(PlatformContext);
+
+        Assert.Contains(typeof(AllDatabasesRoutingEntity), types);
+    }
+
+    [Fact]
+    public void 标注进入模块库的实体在租户模块库建表()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var types = provider.GetEntityTypes(TenantErpContext);
+
+        Assert.Contains(typeof(AllDatabasesRoutingEntity), types);
+    }
+
+    [Fact]
+    public void 声明了模块数据源的实体不受新属性影响()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var erpTypes = provider.GetEntityTypes(ErpContext);
+        var mesTypes = provider.GetEntityTypes(new DbInitializationContext("Default_Mes", null, isTenantDatabase: false));
+
+        Assert.Contains(typeof(ErpRoutingEntity), erpTypes);
+        Assert.DoesNotContain(typeof(ErpRoutingEntity), mesTypes);
+    }
+
+    [Fact]
+    public void 标注进入模块库仍受建表开关约束()
+    {
+        var provider = CreateEntityTypeProvider(new TableInitializationOptions());
+
+        var types = provider.GetEntityTypes(ErpContext);
+
+        Assert.DoesNotContain(typeof(DisabledAllDatabasesRoutingEntity), types);
+    }
+
     /// <summary>
     /// 构造建表实体提供器：模块名取自连接配置，与运行期一致
     /// </summary>
@@ -262,6 +324,26 @@ public sealed class ModuleDataSourceRoutingTests
     [SugarTable("test_routing_mes")]
     [Tenant("Mes")]
     private sealed class MesRoutingEntity : IEntityBase
+    {
+        public long RowVersion { get; set; }
+    }
+
+    /// <summary>
+    /// 未声明模块数据源但要求在模块库也建表的实体。
+    /// </summary>
+    [SugarTable("test_routing_all_databases")]
+    [TableInitialization(IncludeModuleConnections = true)]
+    private sealed class AllDatabasesRoutingEntity : IEntityBase
+    {
+        public long RowVersion { get; set; }
+    }
+
+    /// <summary>
+    /// 要求在模块库建表但整体关闭了建表的实体。
+    /// </summary>
+    [SugarTable("test_routing_all_databases_disabled")]
+    [TableInitialization(false, IncludeModuleConnections = true)]
+    private sealed class DisabledAllDatabasesRoutingEntity : IEntityBase
     {
         public long RowVersion { get; set; }
     }

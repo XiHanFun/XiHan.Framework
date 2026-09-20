@@ -113,7 +113,9 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     /// <remarks>
     /// 模块库的 ConfigId 由父连接派生（形如 <c>Default_Erp</c>、<c>Tenant_1001_Erp</c>），
     /// 所以声明了模块数据源的实体，在所有以该模块名结尾的连接上都要建表——每套布局各建一份；
-    /// 未声明的实体不进模块库，除非该连接被 <see cref="TableInitializationOptions.SharedConnectionConfigIds"/> 放行。
+    /// 未声明的实体进模块库需满足三条通路之一：当前连接不是模块库、该连接被
+    /// <see cref="TableInitializationOptions.SharedConnectionConfigIds"/> 放行、实体标注了
+    /// <see cref="TableInitializationAttribute.IncludeModuleConnections"/>。
     /// 当前连接标识未知时一律放行。
     /// </remarks>
     /// <param name="entityType">实体类型</param>
@@ -137,8 +139,13 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
                    string.Equals(declaredName, currentConfigId, StringComparison.OrdinalIgnoreCase);
         }
 
-        return !IsAnyModuleConnection(currentConfigId) ||
-               DbInitializationFilters.MatchesAny(selection.SharedConnectionConfigIds, currentConfigId);
+        if (!IsAnyModuleConnection(currentConfigId) ||
+            DbInitializationFilters.MatchesAny(selection.SharedConnectionConfigIds, currentConfigId))
+        {
+            return true;
+        }
+
+        return entityType.GetCustomAttribute<TableInitializationAttribute>(inherit: true)?.IncludeModuleConnections == true;
     }
 
     /// <summary>

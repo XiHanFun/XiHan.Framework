@@ -48,4 +48,9 @@ public sealed class TableInitializationAttribute : Attribute
     /// 仅在这些连接配置标识上建表，为空表示不限连接
     /// </summary>
     public string[] ConnectionConfigIds { get; set; } = [];
+
+    /// <summary>
+    /// 是否在模块库也建表，默认 false
+    /// </summary>
+    public bool IncludeModuleConnections { get; set; }
 }
