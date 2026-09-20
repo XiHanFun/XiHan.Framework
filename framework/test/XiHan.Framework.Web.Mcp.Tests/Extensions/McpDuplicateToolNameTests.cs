@@ -1,7 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace XiHan.Framework.Web.Mcp.Tests;
+namespace XiHan.Framework.Web.Mcp.Tests.Extensions;
 
 /// <summary>
 /// 工具名冲突：两个技能投影出同名工具时，宿主起不来，且错误信息点得出是谁撞了谁
@@ -35,7 +35,7 @@ public class McpDuplicateToolNameTests
     /// 两个技能投影出同名工具时，宿主启动即失败，异常里点出工具名与冲突双方
     /// </summary>
     [Fact]
-    public async Task 工具名冲突时宿主启动即失败并点名冲突双方()
+    public async Task Startup_WithDuplicateToolNames_ThrowsNamingBothSkills()
     {
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {

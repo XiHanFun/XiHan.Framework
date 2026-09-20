@@ -4,7 +4,7 @@
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 
-namespace XiHan.Framework.Web.Mcp.Tests;
+namespace XiHan.Framework.Web.Mcp.Tests.Filters;
 
 /// <summary>
 /// 工具暴露策略：允许/拒绝清单决定哪些技能能经 /mcp 被看见和被调用
@@ -15,7 +15,7 @@ namespace XiHan.Framework.Web.Mcp.Tests;
 /// 限制类断言都配一个可调用的对照工具：清单放行的那个工具仍能调用，且回显里带着它自己的技能名。
 /// </para>
 /// </remarks>
-public class McpToolExposurePolicyTests
+public class McpToolExposureFilterTests
 {
     /// <summary>
     /// 宿主配置的正确密钥
@@ -46,7 +46,7 @@ public class McpToolExposurePolicyTests
     /// 两个清单都不配时，全部技能照旧暴露且照旧调得动（升级兼容性保证）
     /// </summary>
     [Fact]
-    public async Task 两个清单都不配时全部技能都暴露且都调得动()
+    public async Task PostConfigure_WithBothListsEmpty_ExposesEveryTool()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,
@@ -69,7 +69,7 @@ public class McpToolExposurePolicyTests
     /// 配了允许清单时，清单外的工具既不出现在列表里也调不动
     /// </summary>
     [Fact]
-    public async Task 配了允许清单时清单外的工具既不列出也调不动()
+    public async Task PostConfigure_WithAllowList_HidesAndBlocksToolsOutsideIt()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,
@@ -94,7 +94,7 @@ public class McpToolExposurePolicyTests
     /// 配了拒绝清单时，清单里的工具既不出现在列表里也调不动
     /// </summary>
     [Fact]
-    public async Task 配了拒绝清单时清单内的工具既不列出也调不动()
+    public async Task PostConfigure_WithDenyList_HidesAndBlocksListedTools()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,
@@ -119,7 +119,7 @@ public class McpToolExposurePolicyTests
     /// 同一个名字同时出现在两个清单里时，以拒绝为准
     /// </summary>
     [Fact]
-    public async Task 同时出现在两个清单里的工具以拒绝为准()
+    public async Task PostConfigure_WithNameInBothLists_PrefersDeny()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,
@@ -144,10 +144,10 @@ public class McpToolExposurePolicyTests
     /// 允许清单里的名字大小写不对时不会误放行
     /// </summary>
     /// <remarks>
-    /// 名字按序号比较、区分大小写；大小写不匹配的允许清单等同于空清单，全部工具消失。
+    /// 名字按序号比较、区分大小写，大小写不匹配的名字匹配不上任何工具，于是没有工具被放行。
     /// </remarks>
     [Fact]
-    public async Task 允许清单大小写不匹配时不会误放行()
+    public async Task PostConfigure_WithMiscasedAllowEntry_StillHidesTheTool()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,
@@ -171,7 +171,7 @@ public class McpToolExposurePolicyTests
     /// 大小写写错的拒绝清单拦不住任何工具。
     /// </remarks>
     [Fact]
-    public async Task 拒绝清单大小写不匹配时不会误拦截()
+    public async Task PostConfigure_WithMiscasedDenyEntry_DoesNotBlockTheTool()
     {
         await using var host = await McpTestHost.StartAsync(
             enabled: true,

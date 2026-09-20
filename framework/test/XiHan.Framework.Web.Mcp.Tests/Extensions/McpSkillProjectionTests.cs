@@ -3,7 +3,7 @@
 
 using ModelContextProtocol.Protocol;
 
-namespace XiHan.Framework.Web.Mcp.Tests;
+namespace XiHan.Framework.Web.Mcp.Tests.Extensions;
 
 /// <summary>
 /// 技能到 MCP 工具的投影：宿主注册的 <c>IAiSkill</c> 经 /mcp 既列得出也调得动
@@ -19,7 +19,7 @@ public class McpSkillProjectionTests
     /// 已注册的技能出现在 tools/list 里，名称与说明都取自技能本身
     /// </summary>
     [Fact]
-    public async Task 已注册的技能出现在工具列表里()
+    public async Task ListTools_WithRegisteredSkill_ReturnsItsNameAndDescription()
     {
         var skill = new EchoAiSkill();
         await using var host = await McpTestHost.StartAsync(enabled: true, ApiKey, skill);
@@ -36,7 +36,7 @@ public class McpSkillProjectionTests
     /// 已注册的技能可经 tools/call 调用，返回的是技能自己算出来的结果
     /// </summary>
     [Fact]
-    public async Task 已注册的技能可经工具调用并返回结果()
+    public async Task CallTool_WithRegisteredSkill_ReturnsSkillResult()
     {
         var skill = new EchoAiSkill();
         await using var host = await McpTestHost.StartAsync(enabled: true, ApiKey, skill);

@@ -4,26 +4,26 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using XiHan.Framework.AI.Mcp;
 using XiHan.Framework.Web.Mcp.Extensions.DependencyInjection;
-using XiHan.Framework.Web.Mcp.Options;
 
-namespace XiHan.Framework.Web.Mcp.Tests;
+namespace XiHan.Framework.Web.Mcp.Tests.Extensions;
 
 /// <summary>
-/// fail-closed 门控：未开启或未配密钥时，既不注册 MCP 服务，也不映射 /mcp 端点
+/// fail-closed 门控在真实宿主上的端到端覆盖
 /// </summary>
 /// <remarks>
-/// <see cref="XiHanMcpOptions.IsExposable"/> 同时被 <c>AddXiHanWebMcp</c> 与 <c>MapXiHanMcp</c> 引用，
-/// 决定服务注册与端点映射是否发生。测试分别覆盖端点存在性与服务注册两个维度。
+/// 服务集合与选项绑定两个维度已由 <c>XiHanWebMcpServiceCollectionExtensionsTests</c> 覆盖，
+/// 未就绪时不注册端点数据源也已由 <see cref="ApplicationBuilderExtensionsTests"/> 覆盖。
+/// 这里只留它们证明不了的那部分：真实宿主上 /mcp 到底能不能被请求到。
+/// 就绪分支同时断言服务注册，使 <c>IsMcpType</c> 判定不至于恒真通过。
 /// </remarks>
-public class McpExposureGateTests
+public class McpExposureGateEndToEndTests
 {
     /// <summary>
     /// 三种「没配全」的姿势，每一种都必须什么都不暴露
     /// </summary>
-    public static TheoryData<bool, string?, string> 未就绪暴露的配置 =>
+    public static TheoryData<bool, string?, string> NotExposableConfigurations =>
         new()
         {
             { false, "test-api-key", "配了密钥但没开启用" },
@@ -38,8 +38,8 @@ public class McpExposureGateTests
     /// <param name="apiKey">访问密钥</param>
     /// <param name="scenario">场景说明，失败时用来指认是哪一种配错</param>
     [Theory]
-    [MemberData(nameof(未就绪暴露的配置))]
-    public async Task 未就绪暴露时端点不存在(bool enabled, string? apiKey, string scenario)
+    [MemberData(nameof(NotExposableConfigurations))]
+    public async Task MapXiHanMcp_WhenNotExposable_ExposesNoEndpoint(bool enabled, string? apiKey, string scenario)
     {
         await using var host = await McpTestHost.StartAsync(enabled, apiKey);
 
@@ -52,50 +52,10 @@ public class McpExposureGateTests
     }
 
     /// <summary>
-    /// 未就绪暴露时，容器里没有任何 MCP 服务
-    /// </summary>
-    /// <param name="enabled">是否启用</param>
-    /// <param name="apiKey">访问密钥</param>
-    /// <param name="scenario">场景说明</param>
-    [Theory]
-    [MemberData(nameof(未就绪暴露的配置))]
-    public void 未就绪暴露时不注册任何MCP服务(bool enabled, string? apiKey, string scenario)
-    {
-        var services = BuildServices(enabled, apiKey);
-
-        var mcpDescriptors = services.Where(IsMcpDescriptor).ToArray();
-
-        Assert.True(
-            mcpDescriptors.Length == 0,
-            $"{scenario}：不该注册 MCP 服务，却注册了 {mcpDescriptors.Length} 项，"
-            + $"例如 {string.Join("、", mcpDescriptors.Take(5).Select(descriptor => descriptor.ServiceType.Name))}。");
-    }
-
-    /// <summary>
-    /// 未就绪暴露时选项照样绑上，「不注册服务」不等于「配置没读」
-    /// </summary>
-    /// <param name="enabled">是否启用</param>
-    /// <param name="apiKey">访问密钥</param>
-    /// <param name="scenario">场景说明</param>
-    [Theory]
-    [MemberData(nameof(未就绪暴露的配置))]
-    public void 未就绪暴露时选项仍然完成绑定(bool enabled, string? apiKey, string scenario)
-    {
-        var services = BuildServices(enabled, apiKey);
-
-        using var provider = services.BuildServiceProvider();
-        var options = provider.GetRequiredService<IOptions<XiHanMcpOptions>>().Value;
-
-        Assert.Equal(enabled, options.Enabled);
-        Assert.Equal(apiKey, options.ApiKey);
-        Assert.False(options.IsExposable, $"{scenario}：这份配置不该被判定为可暴露。");
-    }
-
-    /// <summary>
     /// 反向对照：配全了就该既注册服务也映射端点
     /// </summary>
     [Fact]
-    public async Task 就绪暴露时既注册MCP服务也映射端点()
+    public async Task MapXiHanMcp_WhenExposable_RegistersMcpServicesAndExposesEndpoint()
     {
         const string ApiKey = "exposure-control-key";
 
