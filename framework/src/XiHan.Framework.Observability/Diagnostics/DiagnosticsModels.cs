@@ -86,7 +86,8 @@ public class MemoryInfo
     public long TotalMemoryBytes { get; set; }
 
     /// <summary>
-    /// 已分配内存（字节）
+    /// 已分配内存（字节）：最近一次 GC 结束时对象实际占用的托管堆字节数（堆大小减碎片），
+    /// 不含此后新分配、尚未回收的对象；进程尚未发生过 GC 时为 0
     /// </summary>
     public long AllocatedBytes { get; set; }
 

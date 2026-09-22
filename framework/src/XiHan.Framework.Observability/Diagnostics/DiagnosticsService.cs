@@ -64,7 +64,11 @@ public class DiagnosticsService : IDiagnosticsService
         return new MemoryInfo
         {
             TotalMemoryBytes = gcMemoryInfo.TotalAvailableMemoryBytes,
-            AllocatedBytes = GC.GetTotalMemory(false),
+            // 不读 GC.GetTotalMemory(false)：regions GC（.NET 7+ 64 位默认）下它按「gen0 跨度 − gen0 碎片」估算，
+            // 碎片统计覆盖全部 gen0 region 而跨度只数到临时 region，一旦 gen0 因固定对象保留了额外 region 就无符号下溢，
+            // 转成 long 后是负数（dotnet/runtime#130888，CI 上稳定复现）。
+            // 改取最近一次 GC 结束时的堆大小减碎片，即对象实际占用的托管堆字节数；口径与 MemoryHealthCheck 一致。
+            AllocatedBytes = gcMemoryInfo.HeapSizeBytes - gcMemoryInfo.FragmentedBytes,
             WorkingSetBytes = currentProcess.WorkingSet64,
             PrivateMemoryBytes = currentProcess.PrivateMemorySize64,
             GcInfo = new GCInfo
