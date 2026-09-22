@@ -1,0 +1,122 @@
+name: 发布 NuGet
+
+# 推送 v* 标签（如 v4.3.0）触发。版本号取自 framework/props/version.props，
+# 构建产出 66 个包到 framework/nupkgs/，统一推送 nuget.org（--skip-duplicate 幂等）。
+#
+# 发包必须同时满足两条，由 guard job 把关，缺一不发：
+# ① 标签指向的提交在 main 的历史里。标签本身不带分支信息，所以要查祖先关系——
+#    打在 dev 或任何别处的 v* 标签一律拒发。
+# ② 标签号就是 version.props 里写着的 <Version>——否则发出去的不是你以为的那个版本，
+#    而 --skip-duplicate 还会把这种错静默吞掉。
+# 手动 Run workflow 时必须选中一个版本标签；选分支会被 ① 拦下。
+#
+# 只管发布，不跑测试：测试与覆盖率门禁在 ci.yml，提交进 main 时已经跑过；
+# 这里只留产包与推送本身绕不开的步骤。
+#
+# 认证走 NuGet 可信发布（OIDC），无长期 API Key。
+# nuget.org → 受信任的发布 → 添加策略：存储库所有者 XiHanFun、存储库 XiHan.Framework、
+# 工作流文件 publish.yml、环境留空。
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: 校验标签
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+        with:
+          # 要拿完整历史才能判断祖先关系
+          fetch-depth: 0
+
+      - name: 只放行 main 上的版本标签
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error::发布只接受版本标签触发，收到 $GITHUB_REF_TYPE $GITHUB_REF_NAME"
+            exit 1
+          fi
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::标签 $GITHUB_REF_NAME 指向的提交 $GITHUB_SHA 不在 main 的历史里，拒绝发布。请先把要发布的提交合进 main，再在 main 上打标签。"
+            exit 1
+          fi
+          echo "标签 $GITHUB_REF_NAME 在 main 上，放行"
+
+      - name: 标签号与 version.props 对账
+        run: |
+          version="$(grep -oP '(?<=<Version>)[^<]+' framework/props/version.props)"
+          if [ -z "$version" ]; then
+            echo "::error::framework/props/version.props 里没读到 <Version>，拒绝发布。"
+            exit 1
+          fi
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::标签 $GITHUB_REF_NAME 与 framework/props/version.props 的 <Version>$version</Version> 不一致，拒绝发布。先用 VersionUpgrade.ps1 把版本提到位并合进 main，再在那个提交上打 v$version。"
+            exit 1
+          fi
+          echo "标签 $GITHUB_REF_NAME 与 version.props 的 $version 一致，放行"
+
+  publish:
+    name: 构建并推送 NuGet 包
+    needs: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # 颁发 GitHub OIDC 令牌，NuGet/login 用它换取 1 小时有效的临时 API Key
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        run: dotnet restore framework/XiHan.Framework.slnx
+
+      - name: 构建（含打包）
+        # GeneratePackageOnBuild 默认开启（nuget.props），66 个包统一输出到 framework/nupkgs/；
+        # 高危/严重依赖漏洞由 common.props 的 NU1903/NU1904 门禁在构建期拦截。
+        run: >
+          dotnet build framework/XiHan.Framework.slnx
+          --configuration Release
+          --no-restore
+
+      - name: NuGet 可信发布登录（OIDC 换临时 API Key）
+        # 经 nuget.org 受信任发布策略校验后返回 1 小时有效的临时 Key，无长期机密。
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: zhaifanhua
+
+      - name: 推送 NuGet 包
+        # dotnet nuget push 一次只接受一个包，逐个循环推送；--skip-duplicate 保证重跑幂等。
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          for pkg in framework/nupkgs/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: 上传包构件
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nupkgs
+          path: framework/nupkgs/*.nupkg
+          if-no-files-found: ignore

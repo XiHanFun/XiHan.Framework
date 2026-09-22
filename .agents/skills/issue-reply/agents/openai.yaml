@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework Issue 回复"
+  short_description: "调查框架和 Provider 问题并给出有证据的 Issue 回复"
+  default_prompt: "使用 $xihan-framework-issue-reply 调查并回复指定的 GitHub Issue。"
+
+policy:
+  allow_implicit_invocation: true

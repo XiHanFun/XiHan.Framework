@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 测试发布"
+  short_description: "验证、打包和发布 XiHan.Framework NuGet 模块"
+  default_prompt: "使用 $xihan-framework-testing-release 验证并准备一次框架发布。"
+
+policy:
+  allow_implicit_invocation: true

@@ -96,6 +96,15 @@ public class OrderRepository(ISqlSugarClientResolver resolver)
 
 维护全局数据的唯一合法入口是**平台态**（`ICurrentTenant.Change(null)`）。
 
+**例外：用户自有行**。按 `UserId` 归属、`TenantId` 只是「注册地」元数据的行（账号、安全记录、个人设置、站内信收件行等），平台归属用户或跨租户成员在别的租户里写自己的这些行是合法的。这类写入用 `TenantWriteGuard.Suppress()` 显式包裹：作用域内对象式写（Update / Delete / 软删 / 恢复）的预读同时忽略租户过滤并跳过写边界校验，条件写不再追加当前租户 `Where`；契约是被包裹的写只作用于当前用户自己的行。
+
+```csharp
+using (TenantWriteGuard.Suppress())
+{
+    await _userRepository.UpdateAsync(user, cancellationToken);
+}
+```
+
 ## 分页与查询协议
 
 分页请求是两段结构（`PageRequestDtoBase`）：
