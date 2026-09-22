@@ -245,7 +245,7 @@ var slow = performanceMonitor.GetSlowOperations(500);  // 耗时 ≥ 500ms，按
 | --- | --- |
 | `GetSystemInfo()` | 操作系统描述与版本、机器名、CPU 核数、系统启动时间、用户名 |
 | `GetRuntimeInfo()` | .NET 版本、进程 ID、应用启动时间与运行秒数、是否 64 位 |
-| `GetMemoryInfo()` | 已分配字节、工作集、私有内存，以及各代 GC 次数与暂停占比 |
+| `GetMemoryInfo()` | 已分配字节（最近一次 GC 结束时的堆大小减碎片）、工作集、私有内存，以及各代 GC 次数与暂停占比 |
 | `GetThreadInfo()` | 线程池线程数、可用/最大工作线程与 IO 线程、待处理工作项数 |
 | `GetDiagnosticsReport()` | 上述四项一次性汇总 |
 | `ForceGarbageCollection()` | 两轮 `GC.Collect()` 中间夹一次 `WaitForPendingFinalizers()` |
@@ -263,7 +263,7 @@ services.AddHealthChecks()
         .AddCheck("memory", new MemoryHealthCheck(thresholdMb: 512));
 ```
 
-它读 `GC.GetTotalMemory(false)`，超过阈值返回 `Degraded`（不是 `Unhealthy`），两种结果都附带各代 GC 次数与内存负载阈值明细。默认阈值 1024MB。
+它读最近一次 GC 结束时的托管堆大小减碎片（`GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，即回收后对象实际占用的字节数，不含尚未回收的垃圾），超过阈值返回 `Degraded`（不是 `Unhealthy`），两种结果都附带各代 GC 次数与内存负载阈值明细。默认阈值 1024MB。读数是 GC 快照：进程还没发生过 GC 时为 0，空闲期间保持上一次回收的值。
 
 其余检查项（数据库、Redis、向量库等）需要由应用实现 `IHealthCheck` 并注册。下面以应用自己的检查类型为例，再在模块初始化时映射端点：
 

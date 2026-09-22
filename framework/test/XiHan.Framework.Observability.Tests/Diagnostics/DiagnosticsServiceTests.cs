@@ -120,16 +120,22 @@ public class DiagnosticsServiceTests
     /// <summary>
     /// 内存信息各项读数有效，GC 计数非负
     /// </summary>
+    /// <remarks>
+    /// 已分配字节取自最近一次 GC 的快照，先强制一次回收保证快照存在；
+    /// 回收后测试宿主的存活对象有若干 MB，读数必为正。
+    /// 早先这里放宽成 >= 0 并归因于「空闲运行时尚未保留托管堆」，实际是 GC.GetTotalMemory(false)
+    /// 在 regions GC 下会下溢成负数（dotnet/runtime#130888），实现已改为不再依赖该 API。
+    /// </remarks>
     [Fact]
     public void GetMemoryInfo_Always_ReturnsValidFigures()
     {
         var service = new DiagnosticsService();
+        GC.Collect();
 
         var info = service.GetMemoryInfo();
 
         Assert.NotNull(info);
-        // 空闲或刚启动的运行时可能尚未保留托管堆，GC.GetTotalMemory(false) 合法返回 0。
-        Assert.True(info.AllocatedBytes >= 0);
+        Assert.True(info.AllocatedBytes > 0);
         Assert.True(info.WorkingSetBytes > 0);
         Assert.True(info.PrivateMemoryBytes >= 0);
         Assert.True(info.TotalMemoryBytes > 0);
@@ -196,6 +202,8 @@ public class DiagnosticsServiceTests
     public void GetDiagnosticsReport_Always_AggregatesAllSections()
     {
         var service = new DiagnosticsService();
+        // 已分配字节来自最近一次 GC 的快照，先回收一次保证快照存在且为正。
+        GC.Collect();
 
         var report = service.GetDiagnosticsReport();
 
