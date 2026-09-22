@@ -2,16 +2,25 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
-## 未发布
+## v4.4.0 (2026-09-22)
+
+- **修复** `TenantWriteGuard.Suppress()` 作用域内，Update / Delete / 软删除 / 恢复操作的预读仍受全局租户过滤，跨租户成员（归属租户 A、当前活动在租户 B）的自有行被判定为不存在，豁免实际只对 `TenantId=0` 的行生效。对象式写入的预读改为经 `GetForWriteAsync` / `CreateWritePreReadQueryable` 执行，作用域内清除 `IMultiTenantEntity` 过滤，含软删除的预读同理
+- **修复** 内存诊断读数在 regions GC 下可能为负值：`GC.GetTotalMemory(false)` 在 gen0 因固定对象保留额外 region 时发生无符号下溢（dotnet/runtime#130888）。`DiagnosticsService.GetMemoryInfo` 与 `MemoryHealthCheck` 改取 `GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，即最近一次 GC 结束时托管堆的实际占用。`AllocatedBytes` 的名称与类型不变，首次 GC 前为 0
+- **升级** 升级依赖（Microsoft.Agents.AI 1.22.0、MailKit 4.18.0、SqlSugarCore 5.1.4.221、OpenTelemetry 1.19.0、Scalar.AspNetCore 2.17.6），发布 v4.4.0
+
+## v4.3.0 (2026-09-12)
 
 ::: warning 升级须知
-所有公开 `InMemoryXxx` 默认实现统一更名为 `DefaultXxx`，不保留旧类型别名；`XiHanJobBuilder.UseInMemoryStore/UseInMemoryLock` 同步更名为 `UseDefaultStore/UseDefaultLock`，`DefaultSearchEngine` 命名空间迁到 `XiHan.Framework.SearchEngines.Default`。应用若直接引用旧具体类型，升级时需同步改名；只依赖接口与模块默认注册的不受影响。
+所有公开的 `InMemoryXxx` 默认实现统一更名为 `DefaultXxx`，不保留旧类型别名：`DefaultRefreshTokenStore`、`DefaultConversationStateStore` / `DefaultTelegramUpdateDeduplicator`、`DefaultDelayQueue` / `DefaultDistributedLock`、`DefaultEventInbox` / `DefaultEventOutbox`、`DefaultSearchEngine`（命名空间迁至 `XiHan.Framework.SearchEngines.Default`）、`DefaultBackgroundJobStore` / `DefaultJobStore`、`DefaultGrayRuleRepository`、`DefaultUpgradeLockProvider` / `DefaultUpgradeVersionStore`、`DefaultWorkflowBookmarkStore` / `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore`；`XiHanJobBuilder.UseInMemoryStore` / `UseInMemoryLock` 同步更名为 `UseDefaultStore` / `UseDefaultLock`。直接引用旧具体类型的应用需同步改名；仅依赖接口与模块默认注册的应用不受影响。
+
+上述默认实现同时增加了容量或 TTL 边界，满载后的行为随之改变：缓存型数据先清理过期项；锁满载时返回获取失败；队列与事实数据存储满载时抛出 `InvalidOperationException` 拒绝新增，并提示替换为应用级持久化实现。这些实现仅适用于开发与单实例场景，多实例部署应改用 Redis 或数据库实现。
 :::
 
-- **调整** 认证、Telegram、缓存锁/延迟队列、EventBox、Workflow、Tasks、Upgrade、Traffic、Search 的 16 组进程内默认实现统一采用 `DefaultXxx` 命名
-- **修复** 所有上述默认存储增加容量或 TTL 边界：缓存型数据先清理过期项，锁满载时返回获取失败，队列及事实数据存储满载时明确拒绝新增，不再允许进程长期运行时无界占用内存
-- **新增** Framework 的刷新令牌默认实现保持零外部依赖；多实例或持久化实现继续由应用层实现 `IRefreshTokenStore` 并覆盖默认注册
-- **优化** `PerformanceMonitor` 由无界记录集合改为只保留最近 10000 条；Local / OSS / COS 分片上传回收 24 小时无活动的进程内会话
+- **调整** 认证、Telegram、缓存锁 / 延迟队列、EventBox、Workflow、Tasks、Upgrade、Traffic、Search 的 16 组进程内默认实现统一采用 `DefaultXxx` 命名
+- **修复** 上述默认存储全部增加容量或 TTL 边界，进程长期运行时不再无界占用内存
+- **新增** 刷新令牌默认实现保持零外部依赖；多实例或持久化场景由应用层实现 `IRefreshTokenStore` 并覆盖默认注册
+- **优化** `PerformanceMonitor` 由无界记录集合改为只保留最近 10000 条；Local / OSS / COS 分片上传自动回收 24 小时无活动的进程内会话
+- **升级** 升级依赖，发布 v4.3.0
 
 ## v4.2.0 (2026-09-04)
 
