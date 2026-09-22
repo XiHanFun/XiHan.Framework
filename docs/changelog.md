@@ -6,7 +6,7 @@
 
 - **修复** `TenantWriteGuard.Suppress()` 作用域内，Update / Delete / 软删除 / 恢复操作的预读仍受全局租户过滤，跨租户成员（归属租户 A、当前活动在租户 B）的自有行被判定为不存在，豁免实际只对 `TenantId=0` 的行生效。对象式写入的预读改为经 `GetForWriteAsync` / `CreateWritePreReadQueryable` 执行，作用域内清除 `IMultiTenantEntity` 过滤，含软删除的预读同理
 - **修复** 内存诊断读数在 regions GC 下可能为负值：`GC.GetTotalMemory(false)` 在 gen0 因固定对象保留额外 region 时发生无符号下溢（dotnet/runtime#130888）。`DiagnosticsService.GetMemoryInfo` 与 `MemoryHealthCheck` 改取 `GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，即最近一次 GC 结束时托管堆的实际占用。`AllocatedBytes` 的名称与类型不变，首次 GC 前为 0
-- **升级** 升级依赖（Microsoft.Agents.AI 1.22.0、MailKit 4.18.0、SqlSugarCore 5.1.4.221、OpenTelemetry 1.19.0、Scalar.AspNetCore 2.17.6），发布 v4.4.0
+- **升级** 升级依赖，发布 v4.4.0
 
 ## v4.3.0 (2026-09-12)
 
@@ -25,15 +25,15 @@
 ## v4.2.0 (2026-09-04)
 
 ::: warning 升级须知
-`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`，只用 `System.Text.Json`。此前靠它传递拿到 `Newtonsoft.Json` 的下游工程将拿不到，需自行声明。用到 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
+`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`，只使用 `System.Text.Json`。此前通过该包传递引用 `Newtonsoft.Json` 的项目需自行添加依赖。使用 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
 
-另有两处产物与运行平台脱钩，输出可能与上一版不同：`NormalizeLineEndings` 固定产出 `\n`（此前在 Windows 上产出 `\r\n`），`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只挡 `\0` 与 `/`）。
+两处输出不再依赖运行平台，结果可能与上一版不同：`NormalizeLineEndings` 固定输出 `\n`（此前在 Windows 上输出 `\r\n`）；`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只过滤 `\0` 与 `/`）。
 :::
 
-- **新增** `PathHelper.PathComparison` / `PathComparer`：本机文件系统路径的大小写口径改由运行平台决定，`PathEquals` / `IsSubPath` / `GetCommonPath` 与虚拟文件系统的物理路径去重键、变更追踪缓存都改走它——此前硬编码 `OrdinalIgnoreCase`，在 Linux 上会把 `/app/Data` 与 `/app/data` 两个不同目录判成同一个；虚拟路径与嵌入资源名是逻辑标识不是本机路径，一律 `Ordinal`
-- **新增** 建表扫描不再要求实体继承 `IEntityBase`，标了 `[SugarTable]` 即是候选
-- **修复** `IsPathSafe` 与 `IsSubPath` 用裸前缀匹配判目录穿越：`basePath` 为 `/app/data` 时 `/app/database/secret` 前缀成立即被判为安全，改为卡在分隔符边界上
-- **修复** 要跨平台流转的数据不再跟着运行平台走：净化后的文件名按各平台限制的并集处理（保留名与末尾的点、空格无条件判定），对象存储的键只认 `/`（`\` 在 S3 / OSS / COS 的键里是合法字符），`SplitToLines` 三种行尾都认、`NormalizeLineEndings` 产物固定为 `\n`
+- **新增** `PathHelper.PathComparison` / `PathComparer`：本机文件系统路径的大小写比较口径由运行平台决定，`PathEquals` / `IsSubPath` / `GetCommonPath`、虚拟文件系统的物理路径去重键与变更追踪缓存统一使用该口径。此前固定为 `OrdinalIgnoreCase`，在 Linux 上会将 `/app/Data` 与 `/app/data` 判定为同一目录。虚拟路径与嵌入资源名属于逻辑标识，统一使用 `Ordinal`
+- **新增** 建表扫描不再要求实体继承 `IEntityBase`，标注 `[SugarTable]` 的类型即纳入建表
+- **修复** `IsPathSafe` 与 `IsSubPath` 以字符串前缀判定目录穿越，`basePath` 为 `/app/data` 时 `/app/database/secret` 会被判定为安全路径。改为按路径分隔符边界判定
+- **修复** 跨平台流转的数据不再依赖运行平台：净化后的文件名按各平台限制的并集处理，保留名与末尾的点、空格一律判定为非法；对象存储的键只识别 `/` 为分隔符（`\` 在 S3 / OSS / COS 的键中为合法字符）；`SplitToLines` 识别三种行尾，`NormalizeLineEndings` 固定输出 `\n`
 - **调整** `XiHan.Framework.Serialization` 移除 `Newtonsoft.Json` 引用
 - **升级** 升级依赖，发布 v4.2.0
 
@@ -42,23 +42,23 @@
 ::: warning 升级须知
 本次含多处破坏性变更：
 
-- 默认节点命名统一为 `Default`：EventBus 的 RabbitMQ `ExchangeName=Default`、`QueueName` / `ClientProvidedName=Default.EventBus`，Kafka `TopicName` / `GroupId=Default.EventBus`，Redis `StreamKey=Default:EventBus:Stream`、`ConsumerGroup=Default.EventBus`；Tasks 的 Redis 作业存储 `KeyPrefix=Default:BackgroundJobs`；Caching / Authentication / Workflow 内部 Redis 键前缀由 `xihan:` 改为 `default:`；AI 知识库默认集合名改为 `default_knowledge`。升级后旧队列里未消费的消息、旧键上的锁与待处理作业不会自动迁移，需要沿用旧名的在 `appsettings` 里显式配置回去；知识库集合改名后须重建或重新摄取
-- 模块分库配置从顶层 `ConnectionConfigs` 条目改为父连接下的 `ModuleDataSourceConfigs`，条目只写模块名与连接串、其余字段继承父连接，`ConfigId` 由框架派生为 `{父连接}_{模块名}`（原 `Erp` 变为 `Default_Erp`）；实体特性 `[DataSource]` 更名为 `[ModuleDataSource]`
-- 库隔离租户的模块表落点从共享模块库（`Default_{模块名}`）改为该租户自己的模块库（库名 `{租户库名}_{模块名}`）。升级后这些是新建的空库，共享模块库里属于这些租户的存量行需自行搬迁；不想迁的把 `XiHan:Data:SqlSugarCore:EnableTenantModuleDatabaseConvention` 置为 `false` 即可维持原状
+- 默认节点命名统一为 `Default`：EventBus 的 RabbitMQ `ExchangeName=Default`、`QueueName` / `ClientProvidedName=Default.EventBus`，Kafka `TopicName` / `GroupId=Default.EventBus`，Redis `StreamKey=Default:EventBus:Stream`、`ConsumerGroup=Default.EventBus`；Tasks 的 Redis 作业存储 `KeyPrefix=Default:BackgroundJobs`；Caching / Authentication / Workflow 内部 Redis 键前缀由 `xihan:` 改为 `default:`；AI 知识库默认集合名改为 `default_knowledge`。升级后旧队列中未消费的消息、旧键上的锁与待处理作业不会自动迁移，需沿用旧名的部署请在 `appsettings` 中显式配置；知识库集合更名后需重建或重新摄取
+- 模块分库配置由顶层 `ConnectionConfigs` 条目改为父连接下的 `ModuleDataSourceConfigs`，条目只写模块名与连接串，其余字段继承父连接，`ConfigId` 由框架派生为 `{父连接}_{模块名}`（原 `Erp` 变为 `Default_Erp`）；实体特性 `[DataSource]` 更名为 `[ModuleDataSource]`
+- 库隔离租户的模块表存储位置由共享模块库（`Default_{模块名}`）改为该租户专属的模块库（库名 `{租户库名}_{模块名}`）。升级后这些库为新建空库，共享模块库中属于这些租户的存量数据需自行迁移；不迁移的部署可将 `XiHan:Data:SqlSugarCore:EnableTenantModuleDatabaseConvention` 置为 `false` 保持原行为
 - 三个数据访问接口新增成员，自定义实现需补齐：`ISqlSugarClientResolver.GetCurrentLayoutConfigIds()`、`ISqlSugarTenantConnectionResolver.GetModuleDataSourceNames()`、`IDbInitializer.InitializeCurrentLayoutAsync()`
-- `EnableAutoCheckOnStartup` 现在真的会执行迁移。此前 `UpdateScripts` 下的脚本一条都没跑过，升级到本版后它们会在启动时按序全部执行，升级前请先备份数据库
+- `EnableAutoCheckOnStartup` 开启时现在会实际执行迁移。此前 `UpdateScripts` 下的脚本从未被执行，升级到本版后将在启动时按序全部执行，升级前请备份数据库
 :::
 
-- **新增** 实体按模块数据源分库路由：实体标 `[ModuleDataSource("Erp")]` 即固定落在该模块库上，租户上下文保持统一；模块维度与租户维度正交，落到哪条连接由「模块名 + 当前租户」共同决定，模块名不再占用顶层 `ConfigId` 命名空间。仓储 `DbClient` 与 `CreateQueryable<T>` 改为按实体解析，声明的库无对应连接时 fail-closed；建表初始化同口径收窄（声明了模块库的实体只在自己的库建表），`DataSeederBase` 增加 `DbClientFor<T>()`
-- **新增** 库隔离租户按约定自带整套模块库：租户连接描述符没声明模块库时，按默认布局逐条镜像给它，库名由租户主库名派生；显式声明优先于约定，认不出库名字段（如 Oracle）直接抛而不静默回落公共模块库；开关 `EnableTenantModuleDatabaseConvention` 默认开
-- **新增** SignalR 会话闸门 `SessionStateHubFilter`：建连与方法调用走与 HTTP 侧同一个 `ISessionStateGate`，已登出、被踢下线、已过期的会话不再能收实时推送；会话抽象由 `Web.Api/Session` 下沉到 `Web.Core/Session`，HTTP 中间件与选项仍留在 `Web.Api`
-- **新增** `GetClaimsIgnoringLifetime`：只放过有效期，签名与发行者 / 受众照验；刷新令牌只在令牌过期后才被调用，挂在旧解析路径上的会话有效性与模仿态判定此前恒空转
-- **新增** 模仿态原语 `ICurrentUser` / `ClaimsPrincipal` 的 `IsImpersonating()` 与 `XiHanClaimsIdentityExtensions.BuildImpersonatorClaims(...)`，调用方不必手拼声明字符串
-- **修复** 启动自检只建版本记录、从不执行迁移：`IUpgradeEngine.ExecuteAsync` 全仓零调用方，`UpdateScripts` 下的脚本写下去就没跑过、`sys_version.db_version` 恒停在 `0.0.0`，给既有实体加字段后部署即 42703 且不报任何错。改为自检之后同步执行迁移，失败抛出中断启动；未注册引擎时安静跳过
-- **修复** 建库建表遍历漏掉模块库：`DbInitializer` 自己拼的名单只有顶层 `ConfigId`，派生出的模块库整批掉出循环且全程零异常，改为走 `ISqlSugarClientResolver.GetAllConfigIds()`；库隔离租户开通时只初始化主库，补 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局把主库与模块库一起建
-- **修复** 模块另指一个物理库却没声明从库时照搬父库从库，读会落到别的库上；改为只在模块不分库时才继承
-- **修复** 模仿者用户标识三处用 `Guid.TryParse` 解析，而系统用户主键全链路是 `long`，写进去后恒解析成 `null`——不抛异常、不报编译错，模仿态判定静默失效
-- **修复** 模块库派生出的 SQLite 库文件名跟着运行平台走：连接串是配置数据，却按 `Path.*` 的平台语义解析——Linux 上反斜杠不算分隔符，`C:\data\qqq.db` 被整串当文件名，派生成 `C:\data\qqq_Erp.db`；`Path.Combine` 还会把分隔符换成当前平台的，改掉原连接串的风格。改为按字符切分，两种分隔符都认，目录段连分隔符一起原样保留
+- **新增** 实体按模块数据源分库路由：实体标注 `[ModuleDataSource("Erp")]` 后固定写入该模块库，租户上下文保持不变；模块维度与租户维度正交，目标连接由模块名与当前租户共同决定，模块名不再占用顶层 `ConfigId` 命名空间。仓储 `DbClient` 与 `CreateQueryable<T>` 改为按实体解析，声明的模块库无对应连接时抛出异常；建表初始化同步收窄，声明了模块库的实体只在该库建表；`DataSeederBase` 新增 `DbClientFor<T>()`
+- **新增** 库隔离租户按约定自动获得整套模块库：租户连接描述符未声明模块库时，按默认布局逐条派生，库名由租户主库名推导；显式声明优先于约定；无法识别库名字段（如 Oracle）时抛出异常，不回落到共享模块库；开关 `EnableTenantModuleDatabaseConvention` 默认开启
+- **新增** SignalR 会话闸门 `SessionStateHubFilter`：连接建立与方法调用经与 HTTP 侧相同的 `ISessionStateGate` 校验，已登出、被强制下线或已过期的会话不再接收实时推送；会话抽象由 `Web.Api/Session` 下沉至 `Web.Core/Session`，HTTP 中间件与选项仍在 `Web.Api`
+- **新增** `GetClaimsIgnoringLifetime`：跳过有效期校验，签名与发行者 / 受众仍照常校验。刷新令牌流程只在令牌过期后触发，此前挂在原解析路径上的会话有效性与模仿态判定因此从未生效
+- **新增** 模仿态原语：`ICurrentUser` / `ClaimsPrincipal` 的 `IsImpersonating()` 与 `XiHanClaimsIdentityExtensions.BuildImpersonatorClaims(...)`，无需手动拼接声明字符串
+- **修复** 启动自检只创建版本记录、不执行迁移：`IUpgradeEngine.ExecuteAsync` 没有调用方，`UpdateScripts` 下的脚本从未执行，`sys_version.db_version` 始终为 `0.0.0`，为既有实体新增字段后部署会出现 42703 且无任何报错。改为自检后同步执行迁移，失败时抛出异常中断启动；未注册引擎时跳过
+- **修复** 建库建表遍历遗漏模块库：`DbInitializer` 的遍历名单只含顶层 `ConfigId`，派生的模块库不会建库建表且无任何报错，改为经 `ISqlSugarClientResolver.GetAllConfigIds()` 遍历；库隔离租户开通时只初始化主库，新增 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局同时初始化主库与模块库
+- **修复** 模块指定独立物理库但未声明从库时，错误继承父连接的从库，读操作会落到其他库；改为仅在模块与父连接共用物理库时继承
+- **修复** 模仿者用户标识以 `Guid.TryParse` 解析，而用户主键类型为 `long`，解析结果始终为 `null`，模仿态判定失效且无任何报错；改为按 `long` 解析
+- **修复** 模块库派生的 SQLite 库文件名依赖运行平台：连接串按 `Path.*` 的平台语义解析，Linux 下反斜杠不视为分隔符，`C:\data\qqq.db` 被整体当作文件名派生为 `C:\data\qqq_Erp.db`，`Path.Combine` 还会将分隔符替换为当前平台风格。改为按字符切分，同时识别两种分隔符，目录段原样保留
 - **升级** 发布 v4.1.0
 
 ## v4.0.1 (2026-08-28)
