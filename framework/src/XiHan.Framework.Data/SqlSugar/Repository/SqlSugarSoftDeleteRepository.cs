@@ -17,7 +17,7 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 /// 语义约定：
 /// <list type="bullet">
 ///   <item>软删除/恢复均<b>幂等</b>：已软删的行再软删、未删除的行再恢复，一律静默跳过（不抛异常、不产生写操作）。</item>
-///   <item>恢复走含软删写路径（<c>UpdateIncludingDeletedAsync</c>）：预读保留租户过滤、仅忽略软删过滤——
+///   <item>恢复走含软删写路径（<c>UpdateIncludingDeletedAsync</c>）：预读保留租户过滤（写边界豁免作用域内除外）、仅忽略软删过滤——
 ///         常规更新的预读带软删过滤，对已软删行必失败，恢复曾因此全线不可用。</item>
 ///   <item>恢复同时清空全部删除审计字段（DeletedTime/DeletedId/DeletedBy）——只清 DeletedTime 会残留
 ///         「被 X 删除于 null」的矛盾数据；AOP 的 ToDeleted 仅在 IsDeleted=true 时介入，恢复清理必须由仓储层完成。</item>
@@ -71,7 +71,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
+        var entity = await GetForWriteAsync(id, cancellationToken);
         if (entity == null)
         {
             return;
@@ -124,8 +124,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        // 含软删预读（租户过滤仍生效）：已删行交由实体重载幂等跳过
-        var entities = await CreateWithDeletedQueryable()
+        // 含软删预读（租户过滤仍生效，写边界豁免作用域内除外）：已删行交由实体重载幂等跳过
+        var entities = await CreateWritePreReadWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
         await SoftDeleteRangeAsync(entities, cancellationToken);
@@ -139,7 +139,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task SoftDeleteRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        var entities = await CreateWithDeletedQueryable()
+        var entities = await CreateWritePreReadWithDeletedQueryable()
             .Where(predicate)
             .ToListAsync(cancellationToken);
         await SoftDeleteRangeAsync(entities, cancellationToken);
@@ -154,7 +154,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     public async Task SoftDeleteRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         // 与其余重载统一用含软删预读，语义一致（已删行由实体重载幂等跳过）
-        var query = CreateWithDeletedQueryable().ApplySpecification(specification);
+        var query = CreateWritePreReadWithDeletedQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await SoftDeleteRangeAsync(entities, cancellationToken);
     }
@@ -189,7 +189,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var entity = await CreateWithDeletedQueryable()
+        var entity = await CreateWritePreReadWithDeletedQueryable()
             .Where(item => item.BasicId.Equals(id))
             .FirstAsync(cancellationToken);
         if (entity == null)
@@ -243,7 +243,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
-        var entities = await CreateWithDeletedQueryable()
+        var entities = await CreateWritePreReadWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
         await RestoreRangeAsync(entities, cancellationToken);
@@ -257,7 +257,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        var entities = await CreateWithDeletedQueryable()
+        var entities = await CreateWritePreReadWithDeletedQueryable()
             .Where(predicate)
             .ToListAsync(cancellationToken);
         await RestoreRangeAsync(entities, cancellationToken);
@@ -271,7 +271,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// <returns>是否成功</returns>
     public async Task RestoreRangeAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default)
     {
-        var query = CreateWithDeletedQueryable().ApplySpecification(specification);
+        var query = CreateWritePreReadWithDeletedQueryable().ApplySpecification(specification);
         var entities = await query.ToListAsync(cancellationToken);
         await RestoreRangeAsync(entities, cancellationToken);
     }

@@ -26,8 +26,11 @@ public class MemoryHealthCheck : IHealthCheck
     /// </summary>
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        var allocated = GC.GetTotalMemory(false);
         var gcInfo = GC.GetGCMemoryInfo();
+        // 与 DiagnosticsService.GetMemoryInfo 同一口径：最近一次 GC 结束时对象实际占用的托管堆字节数。
+        // 不用 GC.GetTotalMemory(false)——regions GC 下它会下溢成负数（dotnet/runtime#130888），
+        // 而且它把尚未回收的垃圾也计入，会让健康检查仅因 GC 还没触发就误报降级。
+        var allocated = gcInfo.HeapSizeBytes - gcInfo.FragmentedBytes;
 
         var data = new Dictionary<string, object>
         {

@@ -10,9 +10,12 @@ namespace XiHan.Framework.Observability.Tests.HealthChecks;
 /// 内存健康检查测试
 /// </summary>
 /// <remarks>
-/// 判定口径是 GC.GetTotalMemory(false) 与「阈值 MB × 1024 × 1024」比较，且用的是 &gt;= ：
-/// 阈值 0 时必然落在降级分支（已分配字节数不可能为负），这是唯一能在不注入内存读数的前提下稳定命中的边界；
+/// 判定口径是「最近一次 GC 结束时的堆大小减碎片」与「阈值 MB × 1024 × 1024」比较，且用的是 &gt;= ：
+/// 阈值 0 时必然落在降级分支（该读数由两个非负快照相减得出，不可能为负；
+/// 早先读 GC.GetTotalMemory(false) 时这条前提并不成立，regions GC 下它会下溢成负数，见 dotnet/runtime#130888），
+/// 这是唯一能在不注入内存读数的前提下稳定命中的边界；
 /// 另一侧用真实压舱内存把已分配量顶到阈值之上，验证比较走的确实是阈值而不是常量。
+/// 读数是 GC 快照，压舱分配后必须先强制回收一次，快照才会把它算进去。
 /// 当前实现只有 Healthy / Degraded 两条出口，没有 Unhealthy 分支，用例按现状锁定并在报告中标注该缺口。
 /// </remarks>
 public class MemoryHealthCheckTests
@@ -58,7 +61,7 @@ public class MemoryHealthCheckTests
     /// 实际已分配量超过阈值时判定为降级
     /// </summary>
     /// <remarks>
-    /// 用一块存活的压舱数组把 GC.GetTotalMemory 顶到阈值之上，确保比较真的以构造参数为准。
+    /// 用一块存活的压舱数组把最近一次 GC 快照里的已分配量顶到阈值之上，确保比较真的以构造参数为准。
     /// </remarks>
     [Fact]
     public async Task CheckHealthAsync_WhenAllocationExceedsThreshold_ReturnsDegraded()
@@ -68,6 +71,8 @@ public class MemoryHealthCheckTests
 
         try
         {
+            // 快照只在 GC 结束时刷新，分配完压舱后强制回收一次，让快照把这 48MB 计入。
+            GC.Collect();
             var check = new MemoryHealthCheck(8);
 
             var result = await check.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
@@ -113,6 +118,8 @@ public class MemoryHealthCheckTests
     public async Task CheckHealthAsync_DiagnosticData_KeepsTypesAndUnitConversion()
     {
         var check = new MemoryHealthCheck(1_000_000);
+        // 已分配字节来自最近一次 GC 的快照，先回收一次保证快照存在且为正。
+        GC.Collect();
 
         var result = await check.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
 

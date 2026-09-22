@@ -29,7 +29,9 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 ///   <item><b>写路径租户边界（读共享 ≠ 写共享）</b>：全局租户过滤器为「读共享」放行 <c>TenantId=0</c> 的平台全局行，
 ///         但写路径不得复用该口径——租户上下文内禁止改写/删除非本租户行（含全局行）：
 ///         预读守卫经 <c>EnsureWritableInCurrentTenant</c> 校验取回行的 TenantId，条件写自动追加当前租户 Where；
-///         平台维护全局/跨租户数据的唯一合法入口是平台态（无租户上下文，<c>ICurrentTenant.Change(null)</c>）。</item>
+///         平台维护全局/跨租户数据的唯一合法入口是平台态（无租户上下文，<c>ICurrentTenant.Change(null)</c>）。
+///         <see cref="TenantWriteGuard.Suppress"/> 作用域内（用户自有行写入）预读同时忽略租户过滤：
+///         自有行可能带别的租户戳（归属租户 / 登录时租户），带租户过滤的预读会把它当作「不存在」。</item>
 ///   <item>事务不在仓储内开启，统一由工作单元接管 SqlSugar 连接事务。</item>
 /// </list>
 /// </remarks>
@@ -110,7 +112,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -198,7 +200,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return insertedRows > 0;
         }
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("新增或更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -260,7 +262,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("删除失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -279,7 +281,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (await GetByIdAsync(id, cancellationToken) is not { } existing)
+        if (await GetForWriteAsync(id, cancellationToken) is not { } existing)
         {
             return false;
         }
@@ -371,7 +373,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         // 需要写边界校验时取整行（要读 TenantId），否则维持只取主键的轻量路径
         if (RequiresTenantWriteGuard())
         {
-            var rows = await CreateQueryable()
+            var rows = await CreateWritePreReadQueryable()
                 .Where(entity => idArray.Contains(entity.BasicId))
                 .ToListAsync(cancellationToken);
             if (rows.Count != idArray.Length)
@@ -387,7 +389,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return;
         }
 
-        var existingIds = await CreateQueryable()
+        var existingIds = await CreateWritePreReadQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .Select(entity => entity.BasicId)
             .ToListAsync(cancellationToken);
@@ -397,6 +399,52 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             throw new InvalidOperationException(message);
         }
     }
+
+    #region 写路径预读
+
+    /// <summary>
+    /// 按主键预读待写行（写边界豁免作用域内忽略租户过滤）
+    /// </summary>
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>从库中取回的行，不可见时为 null</returns>
+    protected async Task<TEntity?> GetForWriteAsync(TKey id, CancellationToken cancellationToken)
+    {
+        return await CreateWritePreReadQueryable()
+            .Where(entity => entity.BasicId.Equals(id))
+            .FirstAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// 创建写路径预读查询：<see cref="TenantWriteGuard.Suppress"/> 作用域内忽略租户过滤，否则沿用默认过滤
+    /// </summary>
+    /// <remarks>
+    /// 用户自有行（按 UserId 归属）可能带别的租户戳，豁免作用域只放开写边界校验而预读仍带租户过滤的话，
+    /// 这些行会被预读判为「不存在」而写不进去。
+    /// </remarks>
+    protected ISugarQueryable<TEntity> CreateWritePreReadQueryable()
+    {
+        return TenantWriteGuard.IsSuppressed ? CreateNoTenantQueryable() : CreateQueryable();
+    }
+
+    /// <summary>
+    /// 创建含软删行的写路径预读查询（恢复/清除场景）：<see cref="TenantWriteGuard.Suppress"/> 作用域内同时忽略租户过滤
+    /// </summary>
+    protected ISugarQueryable<TEntity> CreateWritePreReadWithDeletedQueryable()
+    {
+        if (!TenantWriteGuard.IsSuppressed || !SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>())
+        {
+            return CreateWithDeletedQueryable();
+        }
+
+        // ClearFilter 是赋值不是合并，两类过滤器须在同一次调用里一起清
+        var queryable = DbClient.Queryable<TEntity>();
+        return SqlSugarEntityTypeHelper.IsSoftDeleteEntity<TEntity>()
+            ? queryable.ClearFilter<ISoftDelete, IMultiTenantEntity>()
+            : queryable.ClearFilter<IMultiTenantEntity>();
+    }
+
+    #endregion
 
     #region 写路径租户边界
 
@@ -547,7 +595,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// </summary>
     /// <remarks>
     /// 常规 <see cref="UpdateAsync(TEntity, CancellationToken)"/> 的预读带全局软删过滤，对已软删行必失败；
-    /// 本路径预读用 <c>CreateWithDeletedQueryable</c>——保留租户过滤（租户安全边界不放松）、仅忽略软删过滤。
+    /// 本路径预读用 <c>CreateWritePreReadWithDeletedQueryable</c>——保留租户过滤（写边界豁免作用域内除外）、仅忽略软删过滤。
     /// 随后的对象式 UPDATE 按主键定向命中（对象式更新不吃全局写过滤，SqlSugar 对其调用 <c>EnableQueryFilter</c> 直接抛异常，
     /// 结构上无法把过滤烘进 WHERE）。0 行受影响按 fail-closed 抛异常（预读与写入之间行被并发物理删除）。
     /// </remarks>
@@ -560,7 +608,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var id = entity.BasicId;
-        var existingRows = await CreateWithDeletedQueryable()
+        var existingRows = await CreateWritePreReadWithDeletedQueryable()
             .Where(item => item.BasicId.Equals(id))
             .Take(1)
             .ToListAsync(cancellationToken);
@@ -598,7 +646,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var idArray = entityArray.Select(entity => entity.BasicId).Distinct().ToArray();
-        var existingRows = await CreateWithDeletedQueryable()
+        var existingRows = await CreateWritePreReadWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
         if (existingRows.Count != idArray.Length)
