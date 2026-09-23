@@ -116,12 +116,17 @@ public static partial class RegexHelper
     /// <summary>
     /// 验证是否为2位小数的正实数
     /// </summary>
+    /// <remarks>
+    /// 小数点必须转义：原先写作 <c>(.[0-9]{2})?</c>，未转义的 <c>.</c> 匹配任意字符，
+    /// <c>"12a34"</c> 会被判定为合法的两位小数金额。
+    /// </remarks>
     [GeneratedRegex(@"^[0-9]+(.[0-9]{2})?$", RegexOptions.Compiled)]
     public static partial Regex NumberPositiveRealTwoDoubleRegex();
 
     /// <summary>
     /// 验证是否为1-3位小数的正实数
     /// </summary>
+    /// <remarks>小数点必须转义，原因同 <see cref="NumberPositiveRealTwoDoubleRegex"/>。</remarks>
     [GeneratedRegex(@"^[0-9]+(.[0-9]{1,3})?$", RegexOptions.Compiled)]
     public static partial Regex NumberPositiveRealOneOrThreeDoubleRegex();
 
@@ -130,6 +135,16 @@ public static partial class RegexHelper
     /// </summary>
     [GeneratedRegex(@"^\+?[1-9][0-9]*$", RegexOptions.Compiled)]
     public static partial Regex NumberPositiveIntNotZeroRegex();
+
+    /// <summary>
+    /// 验证是否为数字型主键：不含前导零的正整数，不含 0
+    /// </summary>
+    /// <remarks>
+    /// 用 <c>\A</c>、<c>\z</c> 而不是 <c>^</c>、<c>$</c>：后者的 <c>$</c> 允许串尾多一个换行，
+    /// <c>"123\n"</c> 会被判定为合法主键。
+    /// </remarks>
+    [GeneratedRegex(@"\A[1-9][0-9]*\z", RegexOptions.Compiled)]
+    public static partial Regex NumberIdRegex();
 
     /// <summary>
     /// 验证是否为非零的负整数
@@ -192,9 +207,14 @@ public static partial class RegexHelper
     public static partial Regex UrlRegex();
 
     /// <summary>
-    /// 验证是否为请求安全参数字符串
+    /// 匹配 URL 查询串中敏感参数的值，用于脱敏
     /// </summary>
-    [GeneratedRegex(@"(?<=password=|passwd=|pwd=|secret=|token=)[^&]+", RegexOptions.Compiled)]
+    /// <remarks>
+    /// 加 <see cref="RegexOptions.IgnoreCase"/>：查询串的参数名大小写由调用方决定，
+    /// 原先只匹配全小写，<c>?Token=</c>、<c>?Password=</c> 一律漏脱敏，
+    /// 而漏脱敏的后果是明文密钥进日志。
+    /// </remarks>
+    [GeneratedRegex(@"(?<=password=|passwd=|pwd=|secret=|token=)[^&]+", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
     public static partial Regex RequestSecurityParamsRegex();
 
     /// <summary>

@@ -20,6 +20,21 @@ public class AsyncBarrier : IDisposable
     private readonly Func<int, Task>? _postPhaseAction;
 
     /// <summary>
+    /// 当前计数在组合状态中占用的位掩码（低 16 位）
+    /// </summary>
+    private const long CurrentCountMask = 0xFFFF;
+
+    /// <summary>
+    /// 除当前计数以外的位掩码，即阶段编号与参与者总数
+    /// </summary>
+    /// <remarks>
+    /// 原先写成 <c>0xFFFFFFFF0000L</c>，只保住 bit 16-47，
+    /// 而阶段编号占 bit 32-63，于是每次更新计数都会把阶段编号的高 16 位清零，
+    /// 阶段号跑到 65536 就回绕（实测跑满 70000 个阶段后 <see cref="CurrentPhaseNumber"/> 读出 4463）。
+    /// </remarks>
+    private const long PhaseAndTotalMask = ~CurrentCountMask;
+
+    /// <summary>
     /// 参与者计数和阶段状态的组合值
     /// 高32位：阶段编号，低32位：参与者信息
     /// 参与者信息中：高16位为总数，低16位为当前计数
@@ -155,7 +170,7 @@ public class AsyncBarrier : IDisposable
 
             // 尝试增加当前计数
             var newCount = currentCount + 1;
-            var newState = (originalState & 0xFFFFFFFF0000L) | (uint)newCount;
+            var newState = (originalState & PhaseAndTotalMask) | (newCount & CurrentCountMask);
 
             if (Interlocked.CompareExchange(ref _state, newState, originalState) == originalState)
             {
@@ -358,7 +373,7 @@ public class AsyncBarrier : IDisposable
             }
 
             var newCount = currentCount + 1;
-            var newState = (originalState & 0xFFFFFFFF0000L) | (uint)newCount;
+            var newState = (originalState & PhaseAndTotalMask) | (newCount & CurrentCountMask);
 
             if (Interlocked.CompareExchange(ref _state, newState, originalState) == originalState)
             {

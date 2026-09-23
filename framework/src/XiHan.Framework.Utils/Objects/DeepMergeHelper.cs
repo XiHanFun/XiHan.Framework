@@ -20,19 +20,31 @@ public static class DeepMergeHelper
     /// 深度合并多个配置，按优先级返回合并后的配置
     /// </summary>
     /// <typeparam name="T">配置类型</typeparam>
-    /// <param name="configs">按优先级排序的配置列表，第一个为最高优先级</param>
+    /// <param name="configs">按优先级排序的配置列表，第一个为最高优先级，其中的 null 元素会被忽略</param>
     /// <returns>合并后的配置</returns>
     public static T DeepMerge<T>(params T[]? configs) where T : class, new()
     {
-        // 快速路径：没有配置或只有一个配置
+        // 快速路径：没有配置
         if (configs is null || configs.Length == 0)
         {
             return new T();
         }
 
-        if (configs is [not null])
+        // 先滤掉 null 元素：ProcessProperty 会对每个元素调 PropertyInfo.GetValue(config)，
+        // 实例属性传 null 目标会抛 TargetException，
+        // 而"某一层配置缺省就传 null"恰恰是本方法最常见的调用方式（如 DeepMerge(用户配置, 默认配置)）。
+        // 原先的 configs is [not null] 只挡住了"单个元素且非 null"，多元素含 null 时直接炸。
+        var effectiveConfigs = Array.FindAll(configs, config => config is not null);
+
+        if (effectiveConfigs.Length == 0)
         {
-            return DeepClone(configs[0]) as T ?? new T();
+            return new T();
+        }
+
+        // 快速路径：只有一个有效配置
+        if (effectiveConfigs.Length == 1)
+        {
+            return DeepClone(effectiveConfigs[0]) as T ?? new T();
         }
 
         // 创建结果对象
@@ -49,7 +61,7 @@ public static class DeepMergeHelper
         // 处理每个属性
         foreach (var property in properties)
         {
-            ProcessProperty(property, result, configs);
+            ProcessProperty(property, result, effectiveConfigs);
         }
 
         return result;
@@ -187,6 +199,11 @@ public static class DeepMergeHelper
             // 处理集合
             case ICollection collection:
                 return collection.Count == 0;
+            // 处理只实现泛型集合接口的类型（HashSet<T>、ISet<T>、IEnumerable<T> 属性等）。
+            // 它们不实现非泛型 ICollection，原先会落到下面的默认分支按引用比较，
+            // 于是一个空 HashSet<T> 被当成"有值"，把低优先级里真正有内容的集合挡掉。
+            case IEnumerable enumerable:
+                return !enumerable.Cast<object?>().Any();
 
             default:
                 // 其他类型使用默认相等比较
@@ -275,6 +292,11 @@ public static class DeepMergeHelper
     /// <param name="target">目标集合（高优先级）</param>
     /// <param name="source">源集合（低优先级）</param>
     /// <returns>合并后的集合</returns>
+    /// <remarks>
+    /// 原实现只认非泛型 <see cref="IList"/>，<see cref="HashSet{T}"/>、<see cref="Queue{T}"/> 之类
+    /// 直接退回 <c>DeepClone(target)</c>，低优先级的项全部丢失；
+    /// 现在改为按运行时元素类型合并，并尽量还原回目标的原类型。
+    /// </remarks>
     private static object? MergeCollections(object? target, object? source)
     {
         if (target is null || source is null)
@@ -282,70 +304,40 @@ public static class DeepMergeHelper
             return target ?? source;
         }
 
-        // 处理列表类型。
-        // 注意：HashSet<T> 之类不实现非泛型 IList 的集合走不到下面的合并，只能保留高优先级值，
-        // 这是 MergeCollections 的固有能力边界，与本次修复无关。
-        if (target is not IList targetList || source is not IList sourceList)
-        {
-            return DeepClone(target);
-        }
-
-        // 提取元素类型
-        Type elementType;
         var targetType = target.GetType();
+        var elementType = GetEnumerableElementType(targetType);
 
-        if (targetType.IsGenericType)
+        if (elementType is null || target is not IEnumerable targetItems || source is not IEnumerable sourceItems)
         {
-            elementType = targetType.GetGenericArguments()[0];
-        }
-        else if (targetType.IsArray)
-        {
-            elementType = targetType.GetElementType()!;
-        }
-        else
-        {
-            return target; // 无法确定元素类型，返回高优先级值
+            return DeepClone(target); // 无法确定元素类型，返回高优先级值的克隆
         }
 
-        // 创建新列表
-        var listType = typeof(List<>).MakeGenericType(elementType);
-        var resultList = (IList)Activator.CreateInstance(listType)!;
-
-        // 添加所有唯一项
+        // 按"高优先级在前"的顺序收集去重后的项
+        var mergedItems = new List<object?>();
         var addedItems = new HashSet<object?>();
 
-        // 先添加高优先级集合中的项
-        foreach (var item in targetList)
+        foreach (var item in targetItems)
         {
             if (addedItems.Add(item))
             {
-                resultList.Add(DeepClone(item));
+                mergedItems.Add(DeepClone(item));
             }
         }
 
-        // 再添加低优先级集合中的项(如果尚未添加)
-        foreach (var item in sourceList)
+        foreach (var item in sourceItems)
         {
             if (addedItems.Add(item))
             {
-                resultList.Add(DeepClone(item));
+                mergedItems.Add(DeepClone(item));
             }
         }
 
-        // 目标本身是数组时必须还原成数组再返回：
-        // 调用方 ProcessProperty / MergeComplexObjects 会把结果 SetValue 回原属性，
-        // 回一个 List<T> 会抛 ArgumentException 并被 catch 吞掉，属性最终一个值都没设上
-        // （这正是"数组进得了合并分支却永远设不回去"的后半段）。
-        if (targetType.IsArray)
-        {
-            var resultArray = Array.CreateInstance(elementType, resultList.Count);
-            resultList.CopyTo(resultArray, 0);
-            return resultArray;
-        }
-
-        return resultList;
-
-        // 其他集合类型，返回高优先级集合
+        // 合并结果必须能回写到原属性上：
+        // 调用方 ProcessProperty / MergeComplexObjects 会把结果 SetValue 回去，
+        // 类型不兼容时 SetValue 抛 ArgumentException 并被 catch 吞掉，属性最终一个值都没设上。
+        return targetType.IsArray
+            ? CreateArray(elementType, mergedItems)
+            : TryCreateCollection(targetType, elementType, mergedItems) ?? CreateList(elementType, mergedItems);
     }
 
     /// <summary>
@@ -504,10 +496,137 @@ public static class DeepMergeHelper
                 IDictionary dict => CloneDictionary(dict),
                 // 处理列表
                 IList list => CloneList(list),
+                // 处理只实现泛型集合接口的类型（HashSet<T>、Queue<T>、SortedSet<T> 等）。
+                // 它们既不是 IDictionary 也不是非泛型 IList，原先会落到 CloneComplexObject，
+                // 而那条路靠"Activator.CreateInstance + 复制可写属性"工作，
+                // 这类集合没有可写属性，结果是克隆出一个空集合——元素被静默丢光。
+                // 重建不了原类型时仍退回 CloneComplexObject，保持原有行为。
+                IEnumerable enumerable => CloneEnumerable(enumerable) ?? CloneComplexObject(obj),
                 _ => CloneComplexObject(obj)
             };
 
         // 处理复杂对象
+    }
+
+    /// <summary>
+    /// 取可枚举类型的元素类型
+    /// </summary>
+    /// <param name="type">集合类型</param>
+    /// <returns>元素类型，无法确定时返回 null</returns>
+    private static Type? GetEnumerableElementType(Type type)
+    {
+        if (type.IsArray)
+        {
+            return type.GetElementType();
+        }
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+        {
+            return type.GetGenericArguments()[0];
+        }
+
+        foreach (var contract in type.GetInterfaces())
+        {
+            if (contract.IsGenericType && contract.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return contract.GetGenericArguments()[0];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 用 <c>IEnumerable&lt;TElement&gt;</c> 构造函数重建目标集合类型
+    /// </summary>
+    /// <param name="collectionType">目标集合类型</param>
+    /// <param name="elementType">元素类型</param>
+    /// <param name="items">元素集合</param>
+    /// <returns>重建后的集合，类型不支持该构造函数时返回 null</returns>
+    private static object? TryCreateCollection(Type collectionType, Type elementType, List<object?> items)
+    {
+        if (collectionType.IsAbstract || collectionType.IsInterface)
+        {
+            return null;
+        }
+
+        var constructor = collectionType.GetConstructor([typeof(IEnumerable<>).MakeGenericType(elementType)]);
+        if (constructor is null)
+        {
+            return null;
+        }
+
+        // Stack<T> 的枚举顺序是栈顶在前，直接回灌构造函数会把栈整个翻过来，因此先反转一次
+        var ordered = collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(Stack<>)
+            ? Enumerable.Reverse(items).ToList()
+            : items;
+
+        try
+        {
+            return constructor.Invoke([CreateList(elementType, ordered)]);
+        }
+        catch (TargetInvocationException ex)
+        {
+            LogHelper.Error($"无法重建集合类型 {collectionType.FullName}: {ex.InnerException?.Message ?? ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 用指定元素类型创建 <see cref="List{T}"/>
+    /// </summary>
+    /// <param name="elementType">元素类型</param>
+    /// <param name="items">元素集合</param>
+    /// <returns>强类型列表</returns>
+    private static IList CreateList(Type elementType, List<object?> items)
+    {
+        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+        foreach (var item in items)
+        {
+            list.Add(item);
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// 用指定元素类型创建数组
+    /// </summary>
+    /// <param name="elementType">元素类型</param>
+    /// <param name="items">元素集合</param>
+    /// <returns>强类型数组</returns>
+    private static Array CreateArray(Type elementType, List<object?> items)
+    {
+        var array = Array.CreateInstance(elementType, items.Count);
+        for (var i = 0; i < items.Count; i++)
+        {
+            array.SetValue(items[i], i);
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// 克隆只实现泛型集合接口的集合
+    /// </summary>
+    /// <param name="source">要克隆的集合</param>
+    /// <returns>克隆后的集合，无法重建原类型时返回 null</returns>
+    private static object? CloneEnumerable(IEnumerable source)
+    {
+        var type = source.GetType();
+        var elementType = GetEnumerableElementType(type);
+        if (elementType is null)
+        {
+            return null;
+        }
+
+        var items = new List<object?>();
+        foreach (var item in source)
+        {
+            items.Add(DeepClone(item));
+        }
+
+        return TryCreateCollection(type, elementType, items);
     }
 
     /// <summary>

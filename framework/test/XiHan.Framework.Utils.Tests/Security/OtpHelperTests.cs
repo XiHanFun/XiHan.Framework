@@ -371,4 +371,45 @@ public class OtpHelperTests
         Assert.Throws<ArgumentNullException>(() => { _ = OtpHelper.GenerateHotpUri("ABCDEFGH", string.Empty, "issuer"); });
         Assert.Throws<ArgumentNullException>(() => { _ = OtpHelper.GenerateHotpUri("ABCDEFGH", "user", string.Empty); });
     }
+
+    /// <summary>
+    /// 长度不同的候选码被拒绝，不因固定时间比较而误判
+    /// </summary>
+    /// <remarks>
+    /// 验证改用 <c>CryptographicOperations.FixedTimeEquals</c> 逐字节比较，
+    /// 不再用字符串 <c>==</c>（一旦发现不同字符就提前返回，耗时随匹配前缀长度变化，
+    /// 攻击者可据此逐位试探）。这里确认换了比较方式之后判定结果依然正确：
+    /// 长度不等、前缀相同但尾部不同、完全不同，三种情况都必须拒绝。
+    /// </remarks>
+    [Fact]
+    public void VerifyHotp_RejectsCandidatesOfAnyShape()
+    {
+        const string Correct = "755224";
+
+        Assert.True(OtpHelper.VerifyHotp(RfcSecretBase32, Correct, 0));
+
+        // 长度不同
+        Assert.False(OtpHelper.VerifyHotp(RfcSecretBase32, Correct[..5], 0));
+        Assert.False(OtpHelper.VerifyHotp(RfcSecretBase32, Correct + "0", 0));
+
+        // 前缀相同、末位不同
+        Assert.False(OtpHelper.VerifyHotp(RfcSecretBase32, Correct[..5] + (Correct[^1] == '0' ? '1' : '0'), 0));
+
+        // 首位不同
+        Assert.False(OtpHelper.VerifyHotp(RfcSecretBase32, (Correct[0] == '0' ? '1' : '0') + Correct[1..], 0));
+    }
+
+    /// <summary>
+    /// 时间型验证同样对各种形态的错误码都拒绝
+    /// </summary>
+    [Fact]
+    public void VerifyTotp_RejectsCandidatesOfAnyShape()
+    {
+        var correct = OtpHelper.GenerateTotp(RfcSecretBase32);
+
+        Assert.True(OtpHelper.VerifyTotp(RfcSecretBase32, correct));
+        Assert.False(OtpHelper.VerifyTotp(RfcSecretBase32, correct[..5]));
+        Assert.False(OtpHelper.VerifyTotp(RfcSecretBase32, correct + "0"));
+        Assert.False(OtpHelper.VerifyTotp(RfcSecretBase32, correct[..5] + (correct[^1] == '0' ? '1' : '0')));
+    }
 }

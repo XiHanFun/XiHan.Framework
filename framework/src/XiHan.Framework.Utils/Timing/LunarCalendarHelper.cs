@@ -30,6 +30,31 @@ public static class LunarCalendarHelper
     private static readonly DateTime BaseDate = new(1900, 1, 31);
 
     /// <summary>
+    /// 干支纪年基准年份：公元 4 年为甲子年
+    /// </summary>
+    private const int GanzhiEpochYear = 4;
+
+    /// <summary>
+    /// 干支纪日基准日期：1900 年 1 月 1 日为甲戌日
+    /// </summary>
+    private static readonly DateTime DayGanzhiEpoch = new(1900, 1, 1);
+
+    /// <summary>
+    /// 干支纪日基准日的天干下标（甲）
+    /// </summary>
+    private const int DayGanzhiEpochTianganIndex = 0;
+
+    /// <summary>
+    /// 干支纪日基准日的地支下标（戌）
+    /// </summary>
+    private const int DayGanzhiEpochDizhiIndex = 10;
+
+    /// <summary>
+    /// 节气与农历日期采用的时区偏移（东八区），节气时刻按北京时间归日
+    /// </summary>
+    private const double SolarTermTimeZoneOffsetDays = 8.0 / 24.0;
+
+    /// <summary>
     /// 天干数组
     /// </summary>
     private static readonly string[] Tiangan = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -74,10 +99,19 @@ public static class LunarCalendarHelper
 
     /// <summary>
     /// 农历年份数据 (1900-2100年)
-    /// 每个数值的低12位表示12个月的大小月(1为大月30天，0为小月29天)
-    /// 第13位表示闰月的大小月
-    /// 第14-17位表示闰月月份(0表示无闰月)
     /// </summary>
+    /// <remarks>
+    /// 通用农历表，每个元素按位编码一个农历年，位布局如下：
+    /// <list type="bullet">
+    /// <item>bit 0-3：闰月月份，0 表示该年无闰月</item>
+    /// <item>bit 4-15：12 个普通月的大小，bit 15 是正月、bit 4 是腊月，置位为大月 30 天，否则小月 29 天</item>
+    /// <item>bit 16：闰月的大小，置位为大月 30 天，否则小月 29 天</item>
+    /// </list>
+    /// 原先的注释与三个解码方法都按"低 12 位是月大小、bit 14-17 是闰月月份"理解，
+    /// 与本表实际编码错位，导致 <see cref="GetLeapMonth"/> 在整个 1900-2100 区间几乎恒返回 0、
+    /// 每个闰年少算一整个月，公农历互转累计偏差约 1900 天（2024-02-10 会被换算成 2027 年四月廿三）。
+    /// 校验方式：1900 年闰八月、2020 年闰四月、2023 年闰二月，按本布局解出的值与史实一致。
+    /// </remarks>
     private static readonly int[] LunarYearData =
     [
         0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
@@ -151,17 +185,17 @@ public static class LunarCalendarHelper
 
             daysDiff -= daysInMonth;
 
-            // 检查闰月
-            if (lunarMonth == leapMonth && !isLeapMonth)
+            // 闰月紧跟在同名的普通月之后，落在闰月里就带着 isLeapMonth 跳出
+            if (lunarMonth == leapMonth)
             {
-                isLeapMonth = true;
-                daysInMonth = GetLeapMonthDays(lunarYear);
-                if (daysDiff < daysInMonth)
+                var daysInLeapMonth = GetLeapMonthDays(lunarYear);
+                if (daysDiff < daysInLeapMonth)
                 {
+                    isLeapMonth = true;
                     break;
                 }
-                daysDiff -= daysInMonth;
-                isLeapMonth = false;
+
+                daysDiff -= daysInLeapMonth;
             }
 
             lunarMonth++;
@@ -192,11 +226,30 @@ public static class LunarCalendarHelper
     /// <param name="lunarDay">农历日</param>
     /// <param name="isLeapMonth">是否闰月</param>
     /// <returns>公历日期</returns>
+    /// <exception cref="ArgumentOutOfRangeException">年、月、日超出有效范围时抛出</exception>
+    /// <exception cref="ArgumentException">指定年份没有该闰月时抛出</exception>
     public static DateTime ConvertToSolar(int lunarYear, int lunarMonth, int lunarDay, bool isLeapMonth = false)
     {
         if (lunarYear is < MinYear or > MaxYear)
         {
             throw new ArgumentOutOfRangeException(nameof(lunarYear), $"仅支持{MinYear}年至{MaxYear}年的农历年份");
+        }
+
+        if (lunarMonth is < 1 or > 12)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lunarMonth), "农历月份必须在 1 到 12 之间，闰月请用 isLeapMonth 指定");
+        }
+
+        // 越界的月份会让 GetLunarMonthDays 去读闰月编码位，算出的天数毫无意义，因此必须先挡住
+        if (isLeapMonth && GetLeapMonth(lunarYear) != lunarMonth)
+        {
+            throw new ArgumentException($"{lunarYear} 年没有闰{lunarMonth}月", nameof(isLeapMonth));
+        }
+
+        var daysInTargetMonth = isLeapMonth ? GetLeapMonthDays(lunarYear) : GetLunarMonthDays(lunarYear, lunarMonth);
+        if (lunarDay < 1 || lunarDay > daysInTargetMonth)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lunarDay), $"该月只有 {daysInTargetMonth} 天");
         }
 
         var totalDays = 0;
@@ -239,10 +292,10 @@ public static class LunarCalendarHelper
     /// </summary>
     /// <param name="year">年份（农历年）</param>
     /// <returns>生肖名称</returns>
+    /// <remarks>生肖跟地支一一对应，因此与 <see cref="GetTianganDizhi"/> 共用同一个地支基准。</remarks>
     public static string GetZodiac(int year)
     {
-        var index = (year - 1900) % 12;
-        return Zodiac[index];
+        return Zodiac[Mod(year - GanzhiEpochYear, 12)];
     }
 
     /// <summary>
@@ -250,11 +303,15 @@ public static class LunarCalendarHelper
     /// </summary>
     /// <param name="year">年份（农历年）</param>
     /// <returns>天干地支组合</returns>
+    /// <remarks>
+    /// 原实现以 1900 年为甲子年推算天干，但 1900 年是庚子年，天干因此恒定偏 6 位
+    /// （1900 算成"甲子"、2024 算成"戊辰"，正确值是"庚子"和"甲辰"）；
+    /// 地支和生肖恰好因为 1900 年确实是子年而没受影响。
+    /// 改用公元 4 年甲子这一通用基准，同时修正天干偏移并支持 1900 年以前的年份。
+    /// </remarks>
     public static string GetTianganDizhi(int year)
     {
-        var tianganIndex = (year - 1900) % 10;
-        var dizhiIndex = (year - 1900) % 12;
-        return Tiangan[tianganIndex] + Dizhi[dizhiIndex];
+        return Tiangan[Mod(year - GanzhiEpochYear, 10)] + Dizhi[Mod(year - GanzhiEpochYear, 12)];
     }
 
     /// <summary>
@@ -262,14 +319,18 @@ public static class LunarCalendarHelper
     /// </summary>
     /// <param name="date">公历日期</param>
     /// <returns>日期天干地支</returns>
+    /// <remarks>
+    /// 原实现的注释声称"1900 年 1 月 1 日为甲子日、甲为第 0 位"，代码却又给两个下标都加了 6，
+    /// 注释与代码自相矛盾；而 1900 年 1 月 1 日实际是甲戌日（儒略日 2415021，
+    /// 按通用公式 天干=(JDN+9)%10、地支=(JDN+1)%12 可验证），
+    /// 于是锚点和偏移两处都错，任何日期的日干支都算不对（1900-01-01 被算成"庚午"）。
+    /// 现按该日为甲戌日重新定基准，并用非负取模支持 1900 年以前的日期。
+    /// </remarks>
     public static string GetDayTianganDizhi(DateTime date)
     {
-        // 以1900年1月1日为甲子日计算
-        var baseDay = new DateTime(1900, 1, 1);
-        var daysDiff = (date - baseDay).Days;
-        var tianganIndex = (daysDiff + 6) % 10;  // 1900年1月1日为甲子日，甲为第0位
-        var dizhiIndex = (daysDiff + 6) % 12;
-        return Tiangan[tianganIndex] + Dizhi[dizhiIndex];
+        var daysDiff = (date.Date - DayGanzhiEpoch).Days;
+        return Tiangan[Mod(daysDiff + DayGanzhiEpochTianganIndex, 10)] +
+            Dizhi[Mod(daysDiff + DayGanzhiEpochDizhiIndex, 12)];
     }
 
     #endregion
@@ -280,20 +341,36 @@ public static class LunarCalendarHelper
     /// 获取指定年份的所有节气日期
     /// </summary>
     /// <param name="year">公历年份</param>
-    /// <returns>节气日期列表</returns>
+    /// <returns>按日期先后排列的 24 个节气，时刻为北京时间</returns>
+    /// <remarks>
+    /// 返回的是落在该公历年内的 24 个节气，即小寒、大寒、立春……冬至，
+    /// <see cref="SolarTerm.Order"/> 是它在本年内按日期排列的序号（1-24）。
+    /// <para>
+    /// 原实现有两处问题：一是估算表按"小寒打头"排列、而节气名与黄经表按"立春打头"排列，
+    /// 两者整体错位 2 个下标，±15 天的搜索窗口根本框不住目标黄经，24 个节气日期全错约 15 天
+    /// （2024 年立春被算成 1 月 19 日）；二是按"立春年"取 24 个节气，
+    /// 一月份的小寒、大寒被算到上一年的列表里，<see cref="GetSolarTerm"/> 按公历年查找时永远查不到它们。
+    /// 现在不再依赖估算表，直接按日扫描出太阳黄经跨过目标度数的那一天再二分，年份归属也改为公历年。
+    /// </para>
+    /// </remarks>
     public static List<SolarTerm> GetSolarTerms(int year)
     {
         var solarTerms = new List<SolarTerm>();
 
-        for (var i = 0; i < 24; i++)
+        for (var i = 0; i < SolarTerms.Length; i++)
         {
-            var date = GetSolarTermDate(year, i);
             solarTerms.Add(new SolarTerm
             {
                 Name = SolarTerms[i],
-                Date = date,
-                Order = i + 1
+                Date = GetSolarTermDate(year, i)
             });
+        }
+
+        solarTerms.Sort((left, right) => left.Date.CompareTo(right.Date));
+
+        for (var i = 0; i < solarTerms.Count; i++)
+        {
+            solarTerms[i].Order = i + 1;
         }
 
         return solarTerms;
@@ -330,12 +407,25 @@ public static class LunarCalendarHelper
     /// <param name="lunarMonth">农历月</param>
     /// <param name="lunarDay">农历日</param>
     /// <param name="isLeapMonth">是否闰月</param>
+    /// <param name="lunarYear">农历年份，用于判断腊月二十九是不是除夕；不传则不判定这一天</param>
     /// <returns>节日名称，如果不是节日则返回null</returns>
-    public static string? GetLunarFestival(int lunarMonth, int lunarDay, bool isLeapMonth = false)
+    /// <remarks>
+    /// 腊月只有 29 天时，廿九才是除夕，这取决于所查询的那一个农历年。
+    /// 原实现拿 <c>DateTime.Now.Year</c>（而且是公历年）去查腊月天数，
+    /// 既与被查询的日期无关，又把公历年当成农历年用，
+    /// 结果同一个日期在不同年份运行会得到不同答案。
+    /// 现在改为由调用方传入农历年份；<see cref="LunarDate.Festival"/> 会自动带上自己的年份。
+    /// </remarks>
+    public static string? GetLunarFestival(int lunarMonth, int lunarDay, bool isLeapMonth = false, int? lunarYear = null)
     {
         if (isLeapMonth)
         {
             return null; // 闰月一般不过传统节日
+        }
+
+        if (lunarMonth == 12 && lunarDay == 29)
+        {
+            return lunarYear is not null && GetLunarMonthDays(lunarYear.Value, 12) == 29 ? "除夕" : null;
         }
 
         return (lunarMonth, lunarDay) switch
@@ -354,7 +444,6 @@ public static class LunarCalendarHelper
             (12, 23) => "小年",
             (12, 24) => "小年",
             (12, 30) => "除夕",
-            (12, 29) => GetLunarMonthDays(DateTime.Now.Year, 12) == 29 ? "除夕" : null,
             _ => null
         };
     }
@@ -414,8 +503,14 @@ public static class LunarCalendarHelper
     /// <param name="month">农历月份</param>
     /// <param name="isLeapMonth">是否闰月</param>
     /// <returns>中文月份名称</returns>
+    /// <exception cref="ArgumentOutOfRangeException">月份不在 1 到 12 之间时抛出</exception>
     public static string GetLunarMonthName(int month, bool isLeapMonth = false)
     {
+        if (month is < 1 or > 12)
+        {
+            throw new ArgumentOutOfRangeException(nameof(month), "农历月份必须在 1 到 12 之间");
+        }
+
         var monthName = LunarMonths[month - 1];
         return isLeapMonth ? "闰" + monthName : monthName;
     }
@@ -473,7 +568,8 @@ public static class LunarCalendarHelper
     /// <returns>闰月月份，0表示无闰月</returns>
     private static int GetLeapMonth(int year)
     {
-        return year is < MinYear or > MaxYear ? 0 : (LunarYearData[year - MinYear] & 0xf0000) >> 16;
+        // 闰月月份在 bit 0-3，不是 bit 16-19，位布局见 LunarYearData 说明
+        return year is < MinYear or > MaxYear ? 0 : LunarYearData[year - MinYear] & 0xf;
     }
 
     /// <summary>
@@ -484,13 +580,14 @@ public static class LunarCalendarHelper
     /// <returns>月份天数</returns>
     private static int GetLunarMonthDays(int year, int month)
     {
-        if (year is < MinYear or > MaxYear)
+        if (year is < MinYear or > MaxYear || month is < 1 or > 12)
         {
             return 29;
         }
 
-        var monthData = LunarYearData[year - MinYear] & 0xfff;
-        return (monthData & (1 << (12 - month))) != 0 ? 30 : 29;
+        // 正月在 bit 15、腊月在 bit 4，因此第 month 个月对应 0x10000 >> month，
+        // 而不是在低 12 位里取 1 << (12 - month)，位布局见 LunarYearData 说明
+        return (LunarYearData[year - MinYear] & (0x10000 >> month)) != 0 ? 30 : 29;
     }
 
     /// <summary>
@@ -500,39 +597,69 @@ public static class LunarCalendarHelper
     /// <returns>闰月天数</returns>
     private static int GetLeapMonthDays(int year)
     {
+        // 闰月大小在 bit 16，这一处原本就与 LunarYearData 的实际布局一致
         return !HasLeapMonth(year) ? 0 : (LunarYearData[year - MinYear] & 0x10000) != 0 ? 30 : 29;
     }
 
     /// <summary>
-    /// 计算指定年份第n个节气的日期（基于太阳黄经的真实算法）
+    /// 取非负余数
+    /// </summary>
+    /// <param name="value">被除数</param>
+    /// <param name="modulus">除数，必须为正</param>
+    /// <returns>落在 [0, modulus) 区间内的余数</returns>
+    /// <remarks>
+    /// C# 的 % 对负被除数返回负值，直接拿去索引干支/生肖数组会越界，
+    /// 而干支推算本身对公元前后都成立，不应因为取模写法而限制在 1900 年以后。
+    /// </remarks>
+    private static int Mod(int value, int modulus)
+    {
+        var remainder = value % modulus;
+        return remainder < 0 ? remainder + modulus : remainder;
+    }
+
+    /// <summary>
+    /// 计算指定公历年内第 n 个节气的时刻（基于太阳黄经）
     /// </summary>
     /// <param name="year">公历年份</param>
-    /// <param name="termIndex">节气索引（0-23）</param>
-    /// <returns>节气日期</returns>
+    /// <param name="termIndex">节气在 <see cref="SolarTerms"/> 中的下标（0 为立春）</param>
+    /// <returns>该节气在当年的北京时间时刻</returns>
+    /// <exception cref="InvalidOperationException">当年内找不到太阳黄经跨过目标度数的时刻时抛出</exception>
+    /// <remarks>
+    /// 立春对应黄经 315 度，此后每个节气递增 15 度。
+    /// 原实现靠一张按"小寒打头"排列的估算表圈定 ±15 天的搜索窗口，与本下标体系错位 2 位，
+    /// 二分区间内根本不含目标黄经，只能收敛到区间端点。
+    /// 现在改为按日扫描找出黄经跨过目标度数的那一天，再在这一天内二分，不依赖任何估算表。
+    /// 太阳黄经一年只跨过某个度数一次，因此扫描到的首个跨越点就是当年的该节气。
+    /// </remarks>
     private static DateTime GetSolarTermDate(int year, int termIndex)
     {
-        // 每个节气对应的太阳黄经度数
-        var solarLongitudes = new double[]
+        var targetLongitude = (315.0 + (15.0 * termIndex)) % 360.0;
+
+        // 按北京时间的自然日扫描，保证"落在该公历年内"的判断与返回值同一时区
+        var dayCount = DateTime.IsLeapYear(year) ? 366 : 365;
+        var yearStart = new DateTime(year, 1, 1);
+
+        var previousJd = GetJulianDay(yearStart) - SolarTermTimeZoneOffsetDays;
+        var previousDiff = GetAngleDifference(CalculateSolarLongitude(previousJd), targetLongitude);
+
+        for (var day = 1; day <= dayCount; day++)
         {
-            315, 330, 345, 0, 15, 30, 45, 60, 75, 90, 105, 120,
-            135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300
-        };
+            var currentJd = GetJulianDay(yearStart.AddDays(day)) - SolarTermTimeZoneOffsetDays;
+            var currentDiff = GetAngleDifference(CalculateSolarLongitude(currentJd), targetLongitude);
 
-        var targetLongitude = solarLongitudes[termIndex];
+            // 黄经自身单调增长，差值由负转正即为跨越点；
+            // 由正跳负是 GetAngleDifference 在 ±180 度处的折返，不是跨越点
+            if (previousDiff < 0 && currentDiff >= 0)
+            {
+                var crossingJd = BinarySearchSolarTerm(previousJd, currentJd, targetLongitude);
+                return JulianDayToDateTime(crossingJd + SolarTermTimeZoneOffsetDays);
+            }
 
-        // 计算当年1月1日的儒略日数
-        var jan1 = new DateTime(year, 1, 1);
-        var julianDay = GetJulianDay(jan1);
+            previousJd = currentJd;
+            previousDiff = currentDiff;
+        }
 
-        // 估算节气可能的日期范围
-        var estimatedDay = GetEstimatedSolarTermDay(year, termIndex);
-        var searchStart = julianDay + estimatedDay - 15;
-        var searchEnd = julianDay + estimatedDay + 15;
-
-        // 二分法搜索精确的节气时刻
-        var result = BinarySearchSolarTerm(searchStart, searchEnd, targetLongitude);
-
-        return JulianDayToDateTime(result);
+        throw new InvalidOperationException($"{year} 年内未找到太阳黄经跨过 {targetLongitude} 度的时刻。");
     }
 
     /// <summary>
@@ -649,42 +776,17 @@ public static class LunarCalendarHelper
     }
 
     /// <summary>
-    /// 获取节气的估算日期（从年初开始的天数）
-    /// </summary>
-    /// <param name="year">年份</param>
-    /// <param name="termIndex">节气索引</param>
-    /// <returns>估算天数</returns>
-    private static int GetEstimatedSolarTermDay(int year, int termIndex)
-    {
-        // 基于统计平均值的估算表（从1月1日开始的天数）
-        var estimatedDays = new[]
-        {
-            4, 19, 35, 51, 66, 81, 96, 112, 128, 144, 160, 176,
-            192, 208, 224, 240, 256, 272, 288, 304, 320, 336, 352, 3
-        };
-
-        var baseDay = estimatedDays[termIndex];
-
-        // 对于小寒，如果是下一年的，需要调整
-        if (termIndex == 23 && baseDay < 10)
-        {
-            baseDay += 365;
-            if (IsLeapYear(year))
-            {
-                baseDay += 1;
-            }
-        }
-
-        return baseDay;
-    }
-
-    /// <summary>
     /// 二分法搜索节气精确时刻
     /// </summary>
-    /// <param name="startJd">搜索开始的儒略日</param>
-    /// <param name="endJd">搜索结束的儒略日</param>
+    /// <param name="startJd">跨越点之前的儒略日，此刻黄经差为负</param>
+    /// <param name="endJd">跨越点之后的儒略日，此刻黄经差为非负</param>
     /// <param name="targetLongitude">目标黄经</param>
     /// <returns>精确的儒略日数</returns>
+    /// <remarks>
+    /// 调用方保证区间两端的黄经差异号，因此一路二分到 1 秒精度即可。
+    /// 原实现在 |差值| &lt; 0.01 度时提前返回，0.01 度对应约 15 分钟的太阳视运动，
+    /// 节气时刻落在午夜前后时足以把日期判到隔壁天，故去掉这个提前返回。
+    /// </remarks>
     private static double BinarySearchSolarTerm(double startJd, double endJd, double targetLongitude)
     {
         const double Precision = 1.0 / 86400.0; // 1秒的精度
@@ -698,11 +800,6 @@ public static class LunarCalendarHelper
 
             // 处理角度跨越0度的情况
             var diff = GetAngleDifference(longitude, targetLongitude);
-
-            if (Math.Abs(diff) < 0.01) // 0.01度的精度
-            {
-                return midJd;
-            }
 
             // 判断太阳是否还未到达目标黄经
             if (diff > 0)
@@ -740,16 +837,6 @@ public static class LunarCalendarHelper
         }
 
         return diff;
-    }
-
-    /// <summary>
-    /// 判断是否为闰年
-    /// </summary>
-    /// <param name="year">年份</param>
-    /// <returns>是否为闰年</returns>
-    private static bool IsLeapYear(int year)
-    {
-        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
     #endregion
@@ -813,7 +900,7 @@ public class LunarDate
     /// <summary>
     /// 农历节日名称
     /// </summary>
-    public string? Festival => LunarCalendarHelper.GetLunarFestival(Month, Day, IsLeapMonth);
+    public string? Festival => LunarCalendarHelper.GetLunarFestival(Month, Day, IsLeapMonth, Year);
 
     /// <summary>
     /// 农历日期的完整中文表示

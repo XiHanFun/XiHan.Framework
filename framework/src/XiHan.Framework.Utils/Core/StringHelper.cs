@@ -111,30 +111,17 @@ public static class StringHelper
     /// <param name="sepeater">分割器</param>
     /// <param name="isAllowsDuplicates">是否允许重复</param>
     /// <returns></returns>
+    /// <remarks>
+    /// 原实现用 <c>item == enumerable.LastOrDefault()</c> 判断"是不是最后一项"，这是按值比较：
+    /// 只要集合里有元素与末项相等，那个位置的分隔符就会被吞掉，
+    /// 例如 ["a","b","a"] 会拼成 "ab,a" 而不是 "a,b,a"。
+    /// 拼接本身就是 <c>string.Join</c> 的语义，直接用它。
+    /// </remarks>
     public static string GetEnumerableStr(IEnumerable<string> sourceEnumerable, char sepeater = ',', bool isAllowsDuplicates = true)
     {
-        StringBuilder sb = new();
+        ArgumentNullException.ThrowIfNull(sourceEnumerable);
 
-        if (!isAllowsDuplicates)
-        {
-            sourceEnumerable = sourceEnumerable.Distinct();
-        }
-
-        var enumerable = sourceEnumerable.ToList();
-        foreach (var item in enumerable)
-        {
-            if (item == enumerable.LastOrDefault())
-            {
-                sb.Append(item);
-            }
-            else
-            {
-                sb.Append(item);
-                sb.Append(sepeater);
-            }
-        }
-
-        return sb.ToString();
+        return string.Join(sepeater, isAllowsDuplicates ? sourceEnumerable : sourceEnumerable.Distinct());
     }
 
     #endregion 组装
@@ -237,9 +224,15 @@ public static class StringHelper
     /// </summary>
     /// <param name="value">需验证的字符串</param>
     /// <returns>是否合法的 bool 值。</returns>
+    /// <remarks>
+    /// 原先用的模式是 <c>^[1-9]*[0-9]*$</c>，两段都可以匹配空，实际等价于"全是数字"：
+    /// 文档声明的"0 除外"落空（<c>"0"</c> 返回 true），前导零的 <c>"0123"</c> 也照过，
+    /// 而 <c>$</c> 还允许串尾多一个换行，<c>"123\n"</c> 同样返回 true。
+    /// 现按文档口径收紧为"不含前导零的非零正整数"。
+    /// </remarks>
     public static bool IsNumberId(string? value)
     {
-        return IsValidateStr("^[1-9]*[0-9]*$", value);
+        return !string.IsNullOrEmpty(value) && RegexHelper.NumberIdRegex().IsMatch(value);
     }
 
     /// <summary>
@@ -267,25 +260,24 @@ public static class StringHelper
     /// 得到字符串长度(一个汉字长度为2)
     /// </summary>
     /// <param name="inputString">参数字符串</param>
-    /// <returns></returns>
+    /// <returns>显示宽度，ASCII 字符记 1，其余字符记 2</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="inputString"/> 为 null 时抛出</exception>
+    /// <remarks>
+    /// 原实现先用 <c>ASCIIEncoding</c> 转字节再看哪些字节是 63（问号），以此识别非 ASCII 字符。
+    /// 但输入里本来就有的问号同样是 63，会被当成汉字记成 2。
+    /// 改为按 Unicode 标量值逐个判定，同时正确处理代理对（一个 emoji 记 2 而不是按两个 char 算）。
+    /// </remarks>
     public static int GetStrLength(string inputString)
     {
-        ASCIIEncoding ascii = new();
-        var tempLen = 0;
-        var s = ascii.GetBytes(inputString);
-        foreach (var t in s)
+        ArgumentNullException.ThrowIfNull(inputString);
+
+        var length = 0;
+        foreach (var rune in inputString.EnumerateRunes())
         {
-            if (t == 63)
-            {
-                tempLen += 2;
-            }
-            else
-            {
-                tempLen += 1;
-            }
+            length += rune.IsAscii ? 1 : 2;
         }
 
-        return tempLen;
+        return length;
     }
 
     #endregion 得到字符串长度
@@ -296,54 +288,51 @@ public static class StringHelper
     /// 截取指定长度字符串
     /// </summary>
     /// <param name="inputString">要处理的字符串</param>
-    /// <param name="len">指定长度</param>
-    /// <returns>返回处理后的字符串</returns>
+    /// <param name="len">指定长度，按 <see cref="GetStrLength"/> 的宽度口径计（ASCII 记 1，其余记 2）；传奇数表示发生截断时追加省略号，此时可用宽度为 <c>len - 1</c></param>
+    /// <returns>截取后的字符串，宽度不超过 <paramref name="len"/></returns>
+    /// <exception cref="ArgumentNullException"><paramref name="inputString"/> 为 null 时抛出</exception>
+    /// <remarks>
+    /// 原实现有三处问题：先追加字符再判断是否超长，结果总是多带一个字符出来
+    /// （<c>ClipString("abcdefgh", 4)</c> 返回 "abcde"）；
+    /// 用 <c>ASCIIEncoding</c> 的字节下标去索引原字符串，遇到代理对时字节数与字符数不再一一对应，
+    /// 越界后被一个空的 catch 静默吞掉；
+    /// 判断是否追加省略号用的是 UTF-8 字节数与显示宽度相比，两个口径不是一回事。
+    /// 现改为按 Unicode 标量值累计宽度，装不下就停，不再多带字符，也不会把代理对拆开。
+    /// </remarks>
     public static string ClipString(string inputString, int len)
     {
-        var isShowFix = false;
-        if (len > 0 && len % 2 == 1)
+        ArgumentNullException.ThrowIfNull(inputString);
+
+        if (len <= 0)
         {
-            isShowFix = true;
+            return string.Empty;
+        }
+
+        var appendEllipsis = len % 2 == 1;
+        if (appendEllipsis)
+        {
             len--;
         }
 
-        ASCIIEncoding ascii = new();
-        var tempLen = 0;
-        StringBuilder sb = new();
-        var s = ascii.GetBytes(inputString);
-        for (var i = 0; i < s.Length; i++)
-        {
-            if (s[i] == 63)
-            {
-                tempLen += 2;
-            }
-            else
-            {
-                tempLen += 1;
-            }
+        var width = 0;
+        var charCount = 0;
+        var truncated = false;
 
-            try
+        foreach (var rune in inputString.EnumerateRunes())
+        {
+            var runeWidth = rune.IsAscii ? 1 : 2;
+            if (width + runeWidth > len)
             {
-                sb.Append(inputString.AsSpan(i, 1));
-            }
-            catch
-            {
+                truncated = true;
                 break;
             }
 
-            if (tempLen > len)
-            {
-                break;
-            }
+            width += runeWidth;
+            charCount += rune.Utf16SequenceLength;
         }
 
-        var myByte = Encoding.Default.GetBytes(inputString);
-        if (isShowFix && myByte.Length > len)
-        {
-            sb.Append('…');
-        }
-
-        return sb.ToString();
+        var clipped = inputString[..charCount];
+        return truncated && appendEllipsis ? clipped + "…" : clipped;
     }
 
     #endregion 截取指定长度字符串
@@ -412,40 +401,25 @@ public static class StringHelper
     /// <summary>
     /// 字符串整体替换
     /// </summary>
-    /// <param name="content"></param>
-    /// <param name="oldStr"></param>
-    /// <param name="newStr"></param>
-    /// <returns></returns>
+    /// <param name="content">源字符串</param>
+    /// <param name="oldStr">被替换的子串，不能为空</param>
+    /// <param name="newStr">用于替换的新子串，为 null 时按空串处理</param>
+    /// <returns>替换后的字符串</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="content"/> 或 <paramref name="oldStr"/> 为 null 时抛出</exception>
+    /// <exception cref="ArgumentException"><paramref name="oldStr"/> 为空串时抛出</exception>
+    /// <remarks>
+    /// 原实现自己手写查找拼接，<paramref name="oldStr"/> 为空串时 <c>IndexOf("")</c> 恒返回当前位置、
+    /// 而 <c>start += oldStr.Length</c> 加的是 0，循环游标永远不前进，
+    /// 调用即死循环并持续向 StringBuilder 追加，最终 OOM。
+    /// 另外判定用 <see cref="StringComparison.CurrentCulture"/>、查找用 <see cref="StringComparison.Ordinal"/>，两者口径不一致。
+    /// 整体替换就是 <see cref="string.Replace(string, string?, StringComparison)"/> 的语义，改为直接调用，口径统一为序号比较。
+    /// </remarks>
     public static string FormatReplaceStr(string content, string oldStr, string newStr)
     {
-        // 没有替换字符串直接返回源字符串
-        if (!content.Contains(oldStr, StringComparison.CurrentCulture))
-        {
-            return content;
-        }
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentException.ThrowIfNullOrEmpty(oldStr);
 
-        // 有替换字符串开始替换
-        StringBuilder strBuffer = new();
-        var start = 0;
-        var end = 0;
-        // 查找替换内容，把它之前和上一个替换内容之后的字符串拼接起来
-        while (true)
-        {
-            start = content.IndexOf(oldStr, start, StringComparison.Ordinal);
-            if (start == -1)
-            {
-                break;
-            }
-
-            strBuffer.Append(content[end..start]);
-            strBuffer.Append(newStr);
-            start += oldStr.Length;
-            end = start;
-        }
-
-        // 查找到最后一个位置之后，把剩下的字符串拼接进去
-        strBuffer.Append(content[end..]);
-        return strBuffer.ToString();
+        return content.Replace(oldStr, newStr, StringComparison.Ordinal);
     }
 
     #endregion 整体替换

@@ -103,7 +103,7 @@ public static decimal ToDecimal(object? value, decimal defaultValue = 0m)
 ```csharp
 public static List<string> GetStrList(string sourceStr, char sepeater = ',', bool isAllowsDuplicates = true)
 public static string GetListStr(IEnumerable<string> sourceList, char sepeater = ',', bool isAllowsDuplicates = true)
-public static string ClipString(string inputString, int len)
+public static string ClipString(string inputString, int len)   // len 按显示宽度计（ASCII 记 1、其余记 2），传奇数表示截断时追加省略号
 public static string HtmlToTxt(string strHtml)
 public static string FirstToUpper(string value)
 ```
@@ -392,13 +392,13 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 ### 十、时间 `Timing`
 
 - **`DateTimeRange`**（**可实例化类**，非静态）：表示时间区间，`StartTime` / `EndTime` 属性，构造 `new DateTimeRange(start, end)`；提供大量静态便捷区间：`DateTimeRange.Today` / `Yesterday` / `ThisWeek` / `LastMonth` / `Last7Days` / `Last30DaysExceptToday` 等。
-- **`LunarCalendarHelper`**（`public static`，支持 1900–2100）：`ConvertToLunar(DateTime)` / `ConvertToSolar(LunarDate)`、生肖/天干/地支（`GetZodiac` / `GetTiangan` / `GetDizhi`）、节气（`GetSolarTerm`）、农历节日与农历日期字符串。
+- **`LunarCalendarHelper`**（`public static`，支持 1900–2100）：`ConvertToLunar(DateTime)` 返回 `LunarDate`（含闰月标记、生肖、干支、中文年月日与农历节日）；`ConvertToSolar(year, month, day, isLeapMonth = false)` 反向换算，月份固定传 1–12，闰月用 `isLeapMonth` 指定。生肖与干支：`GetZodiac(year)` / `GetTianganDizhi(year)` / `GetDayTianganDizhi(DateTime)`。节气：`GetSolarTerms(year)` 返回该**公历年内**按日期排列的 24 个节气（小寒打头、冬至结尾，时刻为北京时间），`GetSolarTerm(DateTime)` / `IsSolarTerm(DateTime)` 按日查询。节日：`GetLunarFestival(month, day, isLeapMonth = false, lunarYear = null)`，腊月廿九是否为除夕取决于该农历年腊月天数，需传 `lunarYear` 才能判定。
 - **`StopwatchHelper`**（`public static`）：命名计时（`StartNamed` / `StopNamed`）、`Measure(Action)` / `MeasureAsync` / `MeasureWithResult<T>`、性能统计（`GetStatistics` 返回 `TimingStatistics`）、`Benchmark(name, action, iterations = 1000)`、`CreateDisposable(...)` 得到 `using` 即计时的一次性计时器。
 
 ### 十一、本地化 `Localization`
 
 - **`CultureHelper`**：`IsRtl` 属性、`Use(string culture, string? uiCulture = null)` 返回 `IDisposable` 临时切换文化、`IsValidCultureCode` / `IsCompatibleCulture`。
-- **`CurrencyHelper`**：`GetAllCurrencies()`、`GetCurrencyInfo("CNY")`、`FormatCurrency(decimal amount, string currencyCode)`。
+- **`CurrencyHelper`**：`GetAllCurrencies()`、`GetCurrencyInfo("CNY")`、`FormatCurrency(decimal amount, string currencyCode)`。带 `CultureInfo` 的重载里，货币符号与小数位数取自 `currencyCode`，数字分组与小数点排版取自 `culture`，两者互不干扰。
 - **`TimeZoneHelper`**：`GetTimeZone(id)`、`ConvertTime(...)`、`GetTimeZoneOffsetString`（如 `"+08:00"`）、`IsTimeZoneExists`。
 - **`I18nFormatHelper`** / **`LanguageHelper`**：文化相关的日期/数字格式化与 `ResourceManager` 多语言字符串获取。
 
@@ -480,7 +480,7 @@ public static RetryPolicy ForException<TException>(int maxRetries, IRetryStrateg
 
 ### 十七、异步原语 `Threading`
 
-- **`Debouncer`**（可实例化，`IDisposable`）：`new Debouncer(interval).Debounce(action)`，间隔内重复调用会取消前次。
+- **`Debouncer`**（可实例化，`IDisposable`）：`new Debouncer(interval).Debounce(action)`，间隔内重复调用会取消前次。`Dispose` 取消尚未到期的操作；释放之后再调用 `Debounce` 不抛异常，直接忽略（宿主多为异步回调，判断与释放之间天然有竞态）。
 - **`DisposeAction`** / **`AsyncDisposeFunc`**：把任意 `Action` / `Func<Task>` 包装成 `using` 释放时执行（`AsyncDisposeFunc` 走 `DisposeAsync`）。
 - **`NullDisposable`** / **`NullAsyncDisposable`**：单例空实现（`NullDisposable.Instance`），用于返回"什么都不做"的可释放对象。
 - **`AsyncBarrier`** / **`AsyncReaderWriterLock`**：异步屏障与异步读写锁（`AcquireReadLockAsync()` 返回 `IDisposable`）。

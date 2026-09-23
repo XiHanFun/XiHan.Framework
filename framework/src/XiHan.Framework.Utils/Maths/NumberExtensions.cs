@@ -375,9 +375,20 @@ public static class NumberExtensions
     /// <param name="a">第一个数</param>
     /// <param name="b">第二个数</param>
     /// <returns>最小公倍数</returns>
+    /// <remarks>
+    /// 先除后乘：原实现写成 <c>(a * b).Abs() / a.Gcd(b)</c>，
+    /// 乘积先于除法求值，两个各自远在类型范围内的数也可能在中间步骤溢出
+    /// （<c>1000000.Lcm(999999)</c> 的正确结果是 999999000000，int 装不下，原实现静默得到 728379968）。
+    /// 改成 <c>a / gcd * b</c>，中间值不超过最终结果，只有结果本身真正越界时才会溢出。
+    /// </remarks>
     public static T Lcm<T>(this T a, T b) where T : INumber<T>
     {
-        return a == T.Zero || b == T.Zero ? T.Zero : (a * b).Abs() / a.Gcd(b);
+        if (a == T.Zero || b == T.Zero)
+        {
+            return T.Zero;
+        }
+
+        return (a.Abs() / a.Gcd(b) * b).Abs();
     }
 
     /// <summary>
