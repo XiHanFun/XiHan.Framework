@@ -120,14 +120,14 @@ public static partial class RegexHelper
     /// 小数点必须转义：原先写作 <c>(.[0-9]{2})?</c>，未转义的 <c>.</c> 匹配任意字符，
     /// <c>"12a34"</c> 会被判定为合法的两位小数金额。
     /// </remarks>
-    [GeneratedRegex(@"^[0-9]+(.[0-9]{2})?$", RegexOptions.Compiled)]
+    [GeneratedRegex(@"^[0-9]+(\.[0-9]{2})?$", RegexOptions.Compiled)]
     public static partial Regex NumberPositiveRealTwoDoubleRegex();
 
     /// <summary>
     /// 验证是否为1-3位小数的正实数
     /// </summary>
     /// <remarks>小数点必须转义，原因同 <see cref="NumberPositiveRealTwoDoubleRegex"/>。</remarks>
-    [GeneratedRegex(@"^[0-9]+(.[0-9]{1,3})?$", RegexOptions.Compiled)]
+    [GeneratedRegex(@"^[0-9]+(\.[0-9]{1,3})?$", RegexOptions.Compiled)]
     public static partial Regex NumberPositiveRealOneOrThreeDoubleRegex();
 
     /// <summary>
