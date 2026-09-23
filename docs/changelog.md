@@ -2,6 +2,29 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.5.0 (2026-09-24)
+
+::: warning 升级须知
+本次含多处破坏性变更：
+
+- `XiHan.Framework.Script` 的 `MemoryUsage` 三个属性更名，数值改为执行期间的分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`。`ScriptExecutionLog.MemoryUsageBytes` 与 `EngineStatistics.TotalMemoryUsage` 名称不变，数值同样改为分配量，`HighMemoryUsageThresholdBytes` 的原有阈值需按新口径重新标定
+- `LunarCalendarHelper.GetLunarFestival` 新增可选参数 `lunarYear`，源码兼容、二进制不兼容：调用该方法的已编译程序集需针对新版本重新编译
+- 农历换算结果修正后与上一版不同，公农历互转、年 / 日干支与节气日期均有变化，由旧版本计算并持久化的农历数据需重新计算。`GetSolarTerms(year)` 改为返回该公历年内按日期排列的 24 个节气（小寒打头、冬至结尾），`Order` 为年内序号
+- `XiHan.Framework.Utils` 多处输入校验收紧：`MathHelper.Factorial` / `Fibonacci` 超出 `MaxFactorialInput`（20）/ `MaxFibonacciCount`（47）时抛出 `ArgumentOutOfRangeException`，此前静默溢出为负数；`StringHelper.IsNumberId` 不再接受 `"0"`、前导零与串尾换行；`RegexHelper` 的两个金额正则不再将任意字符视为小数点；`DateTimeHelper.GetEndOfYear` 返回 `23:59:59.9999999`，比此前晚约 1 毫秒
+- `CurrencyHelper.FormatCurrency(amount, currencyCode, culture)` 输出的货币符号与小数位数改为取自 `currencyCode`，此前实际输出 `culture` 自身的货币（`FormatCurrency(100m, "USD", zh-CN)` 得到 `¥100.00`）
+:::
+
+- **修复** `LunarCalendarHelper` 农历换算：闰月与月大小解码错位，闰年少算一个月，公农历互转累计偏差近 1900 天；年、日干支基准错误；节气日期整体错位约 15 天且未换算到东八区；`GetSolarTerm` 查不到一月份的小寒、大寒；`GetLunarFestival` 判定除夕的结果随运行时间变化，改由调用方传入 `lunarYear`，`LunarDate.Festival` 自动传入所属农历年
+- **修复** `AsyncReaderWriterLock.AcquireReadLockAsync(TimeSpan)` 超时后读者计数未回滚，此后读锁与写锁可同时持有；`AsyncBarrier` 阶段号到 65536 时回绕；`Debouncer` 不释放被替换的 `CancellationTokenSource`，释放后再调用 `Debounce` 改为直接忽略
+- **修复** `TreeExtensions.ToTree` 在子节点排在父节点之前时误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组时抛出 `TargetException`，克隆 `HashSet<T>` / `Queue<T>` 等集合得到空集合
+- **修复** `StringHelper`：`FormatReplaceStr` 在被替换子串为空时死循环至内存耗尽；`ClipString` 多保留一个字符且可能拆开代理对；`GetEnumerableStr` 在重复元素处丢失分隔符；`GetStrLength` 将输入中的 `?` 计为 2
+- **修复** `DateTimeHelper.GetDetailedAge` 跨大小月时算出负天数；中国时区改为首次使用时解析，缺少时区数据库的环境不再导致 `DateTimeHelper` 类型初始化失败
+- **修复** `NumberExtensions.Lcm` 中间结果溢出；`MaskHelper` 的 `MaskPhone` / `MaskIdCard` / `MaskBankCard` 传入 `null` 时抛出 `NullReferenceException`；`MaskUrlParams` 只匹配全小写参数名，`?Token=`、`?Password=` 等未脱敏
+- **修复** 脚本执行的 `MemoryUsage` 以堆占用差值计量，执行期间发生 GC 时读数为零或负数；改取 `GC.GetTotalAllocatedBytes` 的分配量，恒为非负。该值为进程级计数，并发执行的脚本会互相计入对方的分配量
+- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 边界常量与 `RegexHelper.NumberIdRegex`
+- **优化** `OtpHelper` 验证码比对改为常量时间比较；`CurrencyHelper` 的货币查询结果进程内缓存，货币代码不区分大小写
+- **升级** 发布 v4.5.0
+
 ## v4.4.0 (2026-09-22)
 
 - **修复** `TenantWriteGuard.Suppress()` 作用域内，Update / Delete / 软删除 / 恢复操作的预读仍受全局租户过滤，跨租户成员（归属租户 A、当前活动在租户 B）的自有行被判定为不存在，豁免实际只对 `TenantId=0` 的行生效。对象式写入的预读改为经 `GetForWriteAsync` / `CreateWritePreReadQueryable` 执行，作用域内清除 `IMultiTenantEntity` 过滤，含软删除的预读同理
