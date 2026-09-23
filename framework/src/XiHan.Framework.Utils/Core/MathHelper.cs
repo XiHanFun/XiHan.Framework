@@ -8,6 +8,17 @@ namespace XiHan.Framework.Utils.Core;
 /// </summary>
 public static class MathHelper
 {
+    /// <summary>
+    /// <see cref="Factorial"/> 能在 <see cref="long"/> 范围内精确表示的最大入参，20! 是最后一个不溢出的值
+    /// </summary>
+    public const int MaxFactorialInput = 20;
+
+    /// <summary>
+    /// <see cref="Fibonacci"/> 能在 <see cref="int"/> 范围内精确表示的最大项数
+    /// </summary>
+    /// <remarks>数列以 0、1 开头，下标 46 的 1836311903 是最后一个不溢出的项，对应 47 项。</remarks>
+    public const int MaxFibonacciCount = 47;
+
     #region 几何计算
 
     /// <summary>
@@ -155,15 +166,18 @@ public static class MathHelper
     /// <summary>
     /// 生成斐波那契数列
     /// </summary>
-    /// <param name="count">要生成的斐波那契数列项数（必须为正整数）</param>
+    /// <param name="count">要生成的斐波那契数列项数（必须为正整数，且不超过 <see cref="MaxFibonacciCount"/>）</param>
     /// <returns>斐波那契数列</returns>
-    /// <exception cref="ArgumentException">当项数不为正整数时抛出</exception>
+    /// <exception cref="ArgumentOutOfRangeException">当项数不为正整数或超出 <see cref="int"/> 可表示范围时抛出</exception>
+    /// <remarks>
+    /// 原实现不限项数，第 48 项起超出 <see cref="int"/> 范围并静默回绕成负数
+    /// （<c>Fibonacci(50)</c> 的第 50 项返回 -811192543）。
+    /// 数列越界是调用方的输入问题，应当明确拒绝而不是返回一串错误数字。
+    /// </remarks>
     public static List<int> Fibonacci(int count)
     {
-        if (count <= 0)
-        {
-            throw new ArgumentException("数量必须为正整数。");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, MaxFibonacciCount);
 
         var sequence = new List<int>
         {
@@ -180,15 +194,17 @@ public static class MathHelper
     /// <summary>
     /// 计算阶乘
     /// </summary>
-    /// <param name="number">要计算阶乘的非负整数</param>
+    /// <param name="number">要计算阶乘的非负整数，不超过 <see cref="MaxFactorialInput"/></param>
     /// <returns>阶乘结果</returns>
-    /// <exception cref="ArgumentException">当数字为负数时抛出</exception>
+    /// <exception cref="ArgumentOutOfRangeException">当数字为负数或超出 <see cref="long"/> 可表示范围时抛出</exception>
+    /// <remarks>
+    /// 原实现不限入参，21! 起超出 <see cref="long"/> 范围并静默回绕成负数
+    /// （<c>Factorial(21)</c> 返回 -4249290049419214848，真实值是 51090942171709440000）。
+    /// </remarks>
     public static long Factorial(int number)
     {
-        if (number < 0)
-        {
-            throw new ArgumentException("数字不能为负。");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(number);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(number, MaxFactorialInput);
 
         long result = 1;
         for (var i = 2; i <= number; i++)
