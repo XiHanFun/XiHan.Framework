@@ -172,7 +172,7 @@ public class ScriptResultTests
     {
         var exception = new InvalidOperationException("底层异常");
         var diagnostics = ImmutableArray.Create(CreateDiagnostic("XH0003", "诊断", DiagnosticSeverity.Warning));
-        var memory = new MemoryUsage { MemoryBefore = 10, MemoryAfter = 30 };
+        var memory = new MemoryUsage { AllocatedBytesBefore = 10, AllocatedBytesAfter = 30 };
         var source = new ScriptResult
         {
             IsSuccess = true,

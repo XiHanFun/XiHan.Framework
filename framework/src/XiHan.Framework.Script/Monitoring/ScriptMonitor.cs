@@ -67,7 +67,7 @@ public class ScriptMonitor : IDisposable
             IsSuccess = result.IsSuccess,
             ExecutionTimeMs = result.ExecutionTimeMs,
             CompilationTimeMs = result.CompilationTimeMs,
-            MemoryUsageBytes = result.MemoryUsage?.MemoryIncrease ?? 0,
+            MemoryUsageBytes = result.MemoryUsage?.AllocatedBytes ?? 0,
             ErrorMessage = result.ErrorMessage,
             ScriptCode = _options.LogScriptCode ? scriptCode : null,
             ScriptPath = scriptPath,
