@@ -392,7 +392,8 @@ public class UpgradeEngine : IUpgradeEngine
     /// <returns>升级锁资源键</returns>
     private string BuildResourceKey(long? tenantId)
     {
-        if (!tenantId.HasValue)
+        // 平台就是 0 号租户：0 与 null 同用平台锁，避免同一平台升级出现两把不同的锁
+        if (tenantId is not > 0)
         {
             return _options.LockResourceKey;
         }

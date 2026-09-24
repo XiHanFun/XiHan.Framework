@@ -65,23 +65,35 @@ public class CurrentTenantTests
     }
 
     /// <summary>
-    /// 任意非 null 唯一标识都算租户可用，包括 0 与负数
+    /// 切到业务租户（标识大于 0）时租户可用
     /// </summary>
-    /// <remarks>
-    /// 可用性只看 null 与否，不看数值大小；把 0 当作「无租户」是常见误实现，这里显式钉死。
-    /// </remarks>
     [Theory]
-    [InlineData(0L)]
-    [InlineData(-1L)]
     [InlineData(1L)]
     [InlineData(long.MaxValue)]
-    public void Change_WithAnyNonNullId_MakesTenantAvailable(long tenantId)
+    public void Change_WithBusinessTenantId_MakesTenantAvailable(long tenantId)
     {
         var currentTenant = CreateWithFakeAccessor();
 
         using (currentTenant.Change(tenantId))
         {
             Assert.True(currentTenant.IsAvailable);
+            Assert.Equal<long?>(tenantId, currentTenant.Id);
+        }
+    }
+
+    /// <summary>
+    /// 平台就是 0 号租户：切到 0（以及非法的负数）仍是平台，不算可用的业务租户，与无租户上下文同义
+    /// </summary>
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(-1L)]
+    public void Change_WithPlatformTenantId_KeepsTenantUnavailable(long tenantId)
+    {
+        var currentTenant = CreateWithFakeAccessor();
+
+        using (currentTenant.Change(tenantId))
+        {
+            Assert.False(currentTenant.IsAvailable);
             Assert.Equal<long?>(tenantId, currentTenant.Id);
         }
     }

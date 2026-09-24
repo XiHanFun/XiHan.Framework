@@ -46,7 +46,7 @@ public class MyModule : XiHanModule { }
 
 ### 当前租户上下文（AsyncLocal）
 
-`AsyncLocalCurrentTenantAccessor` 用 `AsyncLocal<BasicTenantInfo?>` 保存当前租户，注册为进程单例（`Instance`）。`CurrentTenant.Change(id, name)` 的实现：先记住父级 `Current`，写入新的 `BasicTenantInfo`，返回一个 `DisposeAction`——`Dispose` 时把 `Current` 还原为父级。因此 `Change` 支持**嵌套**，且能安全地跨异步边界流转、在 `using` 结束时精确恢复到上一层。`IsAvailable` 等价于 `Id.HasValue`。
+`AsyncLocalCurrentTenantAccessor` 用 `AsyncLocal<BasicTenantInfo?>` 保存当前租户，注册为进程单例（`Instance`）。`CurrentTenant.Change(id, name)` 的实现：先记住父级 `Current`，写入新的 `BasicTenantInfo`，返回一个 `DisposeAction`——`Dispose` 时把 `Current` 还原为父级。因此 `Change` 支持**嵌套**，且能安全地跨异步边界流转、在 `using` 结束时精确恢复到上一层。`IsAvailable` 等价于 `Id is > 0`：平台就是 0 号租户，`null` 与 `0` 都不算业务租户。
 
 ### 租户解析链（贡献者 + 中间件）
 
@@ -97,7 +97,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 
 | 类型 | 说明 |
 | --- | --- |
-| `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id.HasValue` |
+| `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id is > 0` |
 | `AsyncLocalCurrentTenantAccessor` | 基于 `AsyncLocal<BasicTenantInfo?>` 的访问器，单例 `Instance`，私有构造 |
 | `TenantResolveContributorBase` | 自定义租户解析贡献者的抽象基类（`abstract string Name` / `abstract Task ResolveAsync(...)`） |
 | `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`；从 `ICurrentUser.TenantId` 解析（未认证/无租户则跳过） |

@@ -36,6 +36,11 @@ public class XiHanTenantResolveMiddleware(
     RequestDelegate next,
     IOptions<XiHanTenantResolveOptions> options)
 {
+    /// <summary>
+    /// 平台租户键：平台就是 0 号租户
+    /// </summary>
+    private const string PlatformTenantKey = "0";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -76,6 +81,15 @@ public class XiHanTenantResolveMiddleware(
         }
 
         tenantKey = tenantKey.Trim();
+
+        // 平台就是 0 号租户：显式给出 0 与未给出租户等价，按平台放行（不去租户存储里找一个不存在的 0 号租户）
+        if (tenantKey == PlatformTenantKey)
+        {
+            FinalizeRequestIdentity(httpContext, null);
+            await next(httpContext);
+            return;
+        }
+
         var fromToken = handledBy == CurrentUserTenantResolveContributor.ContributorName;
         var tenantConfiguration = await ResolveTenantAsync(tenantStore, tenantKey, httpContext.RequestAborted);
 

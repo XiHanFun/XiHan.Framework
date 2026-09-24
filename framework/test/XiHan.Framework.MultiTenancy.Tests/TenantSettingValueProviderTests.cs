@@ -54,15 +54,15 @@ public class TenantSettingValueProviderTests
     }
 
     /// <summary>
-    /// 有租户名称时用名称作为提供者键
+    /// 用租户唯一标识作为提供者键
     /// </summary>
     [Fact]
-    public async Task GetOrNullAsync_WithTenantName_UsesNameAsProviderKey()
+    public async Task GetOrNullAsync_WithTenant_UsesTenantIdAsProviderKey()
     {
         var store = new FakeSettingStore();
         var currentTenant = new FakeCurrentTenant { Id = 7L, Name = "xihan" };
         var provider = CreateProvider(store, currentTenant);
-        store.Seed("App.Theme", TenantSettingValueProvider.ProviderName, "xihan", "dark");
+        store.Seed("App.Theme", TenantSettingValueProvider.ProviderName, "7", "dark");
 
         var value = await provider.GetOrNullAsync(new SettingDefinition("App.Theme"));
 
@@ -70,20 +70,18 @@ public class TenantSettingValueProviderTests
         var call = Assert.Single(store.GetOrNullCalls);
         Assert.Equal("App.Theme", call.Name);
         Assert.Equal("T", call.ProviderName);
-        Assert.Equal("xihan", call.ProviderKey);
+        Assert.Equal("7", call.ProviderKey);
     }
 
     /// <summary>
-    /// 租户名称为空或空白时回退到租户唯一标识
+    /// 租户名称不参与定键：同一租户在请求里带名称切入、在后台只按标识切入，按名称定键会分裂成两套设置
     /// </summary>
-    /// <remarks>
-    /// 空白字符串是配置绑定里最常见的「看起来有值其实没值」，必须和 null 一样触发回退。
-    /// </remarks>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task GetOrNullAsync_WhenTenantNameBlank_FallsBackToTenantId(string? tenantName)
+    [InlineData("xihan")]
+    public async Task GetOrNullAsync_AnyTenantName_UsesTenantIdAsProviderKey(string? tenantName)
     {
         var store = new FakeSettingStore();
         var currentTenant = new FakeCurrentTenant { Id = 7L, Name = tenantName };
@@ -96,13 +94,16 @@ public class TenantSettingValueProviderTests
     }
 
     /// <summary>
-    /// 既无租户名称也无租户唯一标识时提供者键为 null
+    /// 平台（无租户上下文或 0 号租户）没有租户级取值，提供者键为 null
     /// </summary>
-    [Fact]
-    public async Task GetOrNullAsync_WithoutTenant_UsesNullProviderKey()
+    /// <param name="tenantId">当前租户标识</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0L)]
+    public async Task GetOrNullAsync_InPlatform_UsesNullProviderKey(long? tenantId)
     {
         var store = new FakeSettingStore();
-        var provider = CreateProvider(store, new FakeCurrentTenant());
+        var provider = CreateProvider(store, new FakeCurrentTenant { Id = tenantId, Name = tenantId?.ToString() });
 
         await provider.GetOrNullAsync(new SettingDefinition("App.Theme"));
 
@@ -149,9 +150,9 @@ public class TenantSettingValueProviderTests
         await provider.GetOrNullAsync(setting);
 
         Assert.Equal(3, store.GetOrNullCalls.Count);
-        Assert.Equal("tenant-one", store.GetOrNullCalls[0].ProviderKey);
-        Assert.Equal("tenant-two", store.GetOrNullCalls[1].ProviderKey);
-        Assert.Equal("tenant-one", store.GetOrNullCalls[2].ProviderKey);
+        Assert.Equal("1", store.GetOrNullCalls[0].ProviderKey);
+        Assert.Equal("2", store.GetOrNullCalls[1].ProviderKey);
+        Assert.Equal("1", store.GetOrNullCalls[2].ProviderKey);
     }
 
     /// <summary>
@@ -162,7 +163,7 @@ public class TenantSettingValueProviderTests
     {
         var store = new FakeSettingStore();
         var provider = CreateProvider(store, new FakeCurrentTenant { Id = 7L, Name = "xihan" });
-        store.Seed("App.Theme", TenantSettingValueProvider.ProviderName, "xihan", "dark");
+        store.Seed("App.Theme", TenantSettingValueProvider.ProviderName, "7", "dark");
 
         var values = await provider.GetAllAsync(
         [
@@ -177,7 +178,7 @@ public class TenantSettingValueProviderTests
         Assert.Equal("App.Language", call.Names[1]);
         Assert.Equal("App.TimeZone", call.Names[2]);
         Assert.Equal("T", call.ProviderName);
-        Assert.Equal("xihan", call.ProviderKey);
+        Assert.Equal("7", call.ProviderKey);
 
         Assert.Equal(3, values.Count);
         Assert.Equal("App.Theme", values[0].Name);
