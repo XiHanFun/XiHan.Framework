@@ -147,8 +147,10 @@ using (TenantWriteGuard.Suppress())
 
 开关只管开不开，范围由后两项决定：默认全量，标 `[TableInitialization(false)]` 的实体不建、标 `Target = DbInitializationTarget.Platform` 的实体不进租户独立库；要整体自己实现就 `Replace` 掉 `IDbEntityTypeProvider` / `IDataSeederSelector`。细节见 [XiHan.Framework.Data](../packages/data#选择初始化范围)。
 
+初始化分三段：**全部连接建库建表 → 表结构升级 → 全部连接播种**。表结构升级由注册的 `IDbSchemaUpgrader` 执行（只在开启建表时调用，失败即中断启动）；种子按最新实体读写，所以排在升级之后。
+
 ::: danger `DbInitializer` 表存在就跳过，从不补列
-给既有实体加字段后部署必报「列不存在」。要么重建数据库，要么手动 `ALTER TABLE`。**框架不是迁移工具。**
+给既有实体加字段后，存量库只能靠升级补列：注册一个 `IDbSchemaUpgrader`（通常接到升级模块的 `IUpgradeEngine` 上跑版本化脚本），或者重建数据库。不补列就部署，种子一查就报「列不存在」。**框架不是迁移工具。**
 :::
 
 ## 读写分离
@@ -167,7 +169,7 @@ using (TenantWriteGuard.Suppress())
 
 | 现象 | 原因 |
 | --- | --- |
-| 部署后报「列不存在」 | 加了字段没重建库 |
+| 部署后报「列不存在」 | 加了字段，存量库没有升级器补列（见上文 `IDbSchemaUpgrader`） |
 | 写操作报参数重名 | 仓储里显式调了 `.EnableQueryFilter()` |
 | 查到了别的租户数据 | 实体没继承 `SugarMultiTenant*` 系列 |
 | 变更日志空 | `EnableDiffLog` 没开 |

@@ -192,12 +192,35 @@ public class FlagMaintenanceModeManager(MaintenanceFlag flag) : IUpgradeMaintena
 
 退出时机固定在「迁移完成、版本回写、可选文件替换之后，释放锁之前」；异常路径也会退出维护模式。`EnableFileUpdate`（默认 `false`）和 `EnableRollingRestart`（默认 `false`）对应的两个默认实现都是空的，开了也不会发生任何事——需要就自己实现 `IUpgradeFileUpdater` / `IRollingRestartCoordinator`。
 
-### 启动自动检查只是建记录
+### 与数据库初始化的先后
 
-`EnableAutoCheckOnStartup`（默认 `true`）门控的是 `XiHanUpgradeModule.OnPostApplicationInitializationAsync`：它建一个 Scope，解析 `IUpgradeVersionStore` 与 `IUpgradeStatusService`（任一缺失即返回），调 `EnsureInitializedAsync()`。
+建表只建缺失的表、不改已存在的表，存量表的新列靠升级脚本补；而种子按最新实体读写。升级模块自己在 `OnPostApplicationInitializationAsync` 里跑（见下文「启动自动升级」），那时种子早已执行完——存量库上新加的列还没补，种子一查就失败。
 
-::: warning 启动阶段不会执行任何迁移
-`EnsureInitializedAsync` 只做一件事：`GetOrCreateAsync` 把版本记录建出来。**真正的升级必须显式调 `IUpgradeEngine.ExecuteAsync` 或 `IUpgradeCoordinator.StartAsync`。**
+同时用了数据模块的建表与播种时，把升级引擎接到数据模块的 `IDbSchemaUpgrader` 上：数据库初始化会在「全部连接建表之后、任何播种之前」调它，升级模块稍后再检查一次时版本已是最新、空转。
+
+```csharp
+public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngine engine) : IDbSchemaUpgrader
+{
+    public async Task UpgradeAsync(CancellationToken cancellationToken = default)
+    {
+        await status.EnsureInitializedAsync();
+        var result = await engine.ExecuteAsync(cancellationToken);
+        if (result.Status == UpgradeStatus.Failed)
+        {
+            throw new InvalidOperationException(result.Message);
+        }
+    }
+}
+```
+
+新库上表已按最新实体建好、还没有数据，脚本必须能空转，且不能依赖种子数据。
+
+### 启动自动升级
+
+`EnableAutoCheckOnStartup`（默认 `true`）门控的是 `XiHanUpgradeModule.OnPostApplicationInitializationAsync`：它建一个 Scope，解析 `IUpgradeVersionStore` 与 `IUpgradeStatusService`（任一缺失即返回），调 `EnsureInitializedAsync()` 建出版本记录，再同步执行 `IUpgradeEngine.ExecuteAsync`。
+
+::: warning 升级失败即中断启动
+这里走引擎而不是 `IUpgradeCoordinator`：后者把执行丢进 `Task.Run` 且吞掉异常，应用会带着半迁移的结构对外服务。引擎返回 `Failed` 时直接抛出，启动中断。
 :::
 
 ### 多租户隔离升级

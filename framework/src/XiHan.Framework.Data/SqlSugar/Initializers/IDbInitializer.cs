@@ -9,7 +9,7 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 public interface IDbInitializer
 {
     /// <summary>
-    /// 初始化数据库
+    /// 初始化数据库：全部连接建库建表 → 表结构升级（<see cref="IDbSchemaUpgrader"/>）→ 全部连接播种
     /// </summary>
     Task InitializeAsync();
 
@@ -19,7 +19,7 @@ public interface IDbInitializer
     /// <remarks>
     /// 给「只初始化这一个租户」的场景用（如库隔离租户开通时建库建表）。
     /// 与 <see cref="InitializeAsync"/> 的区别是不遍历静态配置里的全部库，
-    /// 也不改动当前租户上下文——调用方切到目标租户后调它即可。
+    /// 也不改动当前租户上下文——调用方切到目标租户后调它即可。新开的库按最新实体建表，不跑表结构升级。
     /// </remarks>
     Task InitializeCurrentLayoutAsync();
 

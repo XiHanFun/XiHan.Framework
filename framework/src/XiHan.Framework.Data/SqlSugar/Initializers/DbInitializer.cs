@@ -53,6 +53,10 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     /// <summary>
     /// 初始化数据库（完整流程）
     /// </summary>
+    /// <remarks>
+    /// 三段式：全部连接建库建表 → 表结构升级（<see cref="IDbSchemaUpgrader"/>）→ 全部连接播种。
+    /// 建表只建缺失的表、不改已存在的表，存量库的新列由升级器补齐；种子按最新实体读写，必须排在升级之后。
+    /// </remarks>
     public async Task InitializeAsync()
     {
         try
@@ -71,17 +75,34 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 .Where(c => !string.IsNullOrWhiteSpace(c))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-
             if (configIds.Length == 0)
             {
-                await InitializeForConfigAsync(_options.DefaultConfigId);
+                configIds = [_options.DefaultConfigId];
             }
-            else
+
+            foreach (var configId in configIds)
+            {
+                await PrepareSchemaForConfigAsync(configId);
+            }
+
+            if (!_options.EnableTableInitialization)
+            {
+                _logger.LogInformation("表结构初始化已禁用（EnableTableInitialization = false），跳过表结构升级与种子数据");
+                return;
+            }
+
+            await UpgradeSchemaAsync();
+
+            if (_options.EnableDataSeeding)
             {
                 foreach (var configId in configIds)
                 {
-                    await InitializeForConfigAsync(configId);
+                    await SeedForConfigAsync(configId);
                 }
+            }
+            else
+            {
+                _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
             }
 
             _logger.LogInformation("数据库初始化完成");
@@ -203,10 +224,10 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     }
 
     /// <summary>
-    /// 在指定连接配置上下文中执行初始化
+    /// 在指定连接配置上下文中建库、建表
     /// </summary>
-    /// <param name="connectionConfigId"></param>
-    private async Task InitializeForConfigAsync(string connectionConfigId)
+    /// <param name="connectionConfigId">连接配置标识</param>
+    private async Task PrepareSchemaForConfigAsync(string connectionConfigId)
     {
         var normalizedConfigId = connectionConfigId.Trim();
         var (tenantId, tenantName, connectionLabel) = ResolveTenantScope(normalizedConfigId);
@@ -220,22 +241,41 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         {
             await CreateTablesInternalAsync(normalizedConfigId);
         }
-        else
+    }
+
+    /// <summary>
+    /// 在指定连接配置上下文中播种
+    /// </summary>
+    /// <param name="connectionConfigId">连接配置标识</param>
+    private async Task SeedForConfigAsync(string connectionConfigId)
+    {
+        var normalizedConfigId = connectionConfigId.Trim();
+        var (tenantId, tenantName, connectionLabel) = ResolveTenantScope(normalizedConfigId);
+        using var tenantScope = _currentTenant.Change(tenantId, tenantName);
+
+        await SeedDataInternalAsync(normalizedConfigId);
+
+        _logger.LogInformation("数据库连接初始化完成: {Connection}", connectionLabel);
+    }
+
+    /// <summary>
+    /// 执行已注册的表结构升级器（建表之后、播种之前）
+    /// </summary>
+    private async Task UpgradeSchemaAsync()
+    {
+        var upgraders = _serviceProvider.GetServices<IDbSchemaUpgrader>().ToList();
+        if (upgraders.Count == 0)
         {
-            _logger.LogInformation("表结构初始化已禁用（EnableTableInitialization = false），跳过初始化");
             return;
         }
 
-        if (_options.EnableDataSeeding)
+        _logger.LogInformation("开始表结构升级，共 {Count} 个升级器", upgraders.Count);
+        foreach (var upgrader in upgraders)
         {
-            await SeedDataInternalAsync(normalizedConfigId);
-        }
-        else
-        {
-            _logger.LogInformation("种子数据已禁用（EnableDataSeeding = false），跳过种子数据");
+            await upgrader.UpgradeAsync();
         }
 
-        _logger.LogInformation("数据库连接初始化完成: {Connection}", connectionLabel);
+        _logger.LogInformation("表结构升级完成");
     }
 
     /// <summary>
