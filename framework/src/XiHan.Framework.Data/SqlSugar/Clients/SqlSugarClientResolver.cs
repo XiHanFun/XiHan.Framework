@@ -117,7 +117,7 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     }
 
     /// <summary>
-    /// 获取实体对应的客户端：未声明模块数据源取当前租户主库，声明了则取该布局下的模块库
+    /// 获取实体对应的客户端：固定落平台库的取平台库；未声明模块数据源取当前租户主库，声明了则取该布局下的模块库
     /// </summary>
     /// <remarks>
     /// 两条维度在此交汇：租户维度先定「哪一套布局」，模块维度再在布局内选库。
@@ -129,6 +129,13 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     public ISqlSugarClient GetClientForEntity(Type entityType)
     {
         ArgumentNullException.ThrowIfNull(entityType);
+
+        // 固定落平台库的实体（平台目录、账号、成员关系、读共享模板）：不随当前租户的独立布局切换，
+        // 行级租户过滤照常生效；字段隔离的租户本就在平台库，这里对它们是同一个连接
+        if (_entityModuleDataSourceResolver.IsPlatformPlaced(entityType))
+        {
+            return GetClient(_tenantConnectionResolver.ResolveConfigId(null));
+        }
 
         var parentConfigId = ResolveCurrentLayoutConfigId();
 
