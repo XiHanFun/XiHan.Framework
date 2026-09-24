@@ -317,8 +317,8 @@ public class WorkflowUserTaskService : IWorkflowUserTaskService
 
         foreach (var bookmark in bookmarks)
         {
-            // 租户隔离：存在环境租户时不返回其他租户的待办（跨租户重名受理人场景）
-            if (_currentTenant.Id is { } tenantId && bookmark.TenantId != tenantId)
+            // 租户隔离：只返回当前作用域的待办（跨租户重名受理人场景；平台就是 0 号租户，无上下文按 0 处理）
+            if ((bookmark.TenantId ?? 0) != (_currentTenant.Id ?? 0))
             {
                 continue;
             }

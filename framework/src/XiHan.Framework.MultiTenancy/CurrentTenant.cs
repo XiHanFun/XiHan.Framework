@@ -27,7 +27,7 @@ public class CurrentTenant : ICurrentTenant, ITransientDependency
     /// 是否可用
     /// </summary>
     /// <returns>是否可用</returns>
-    public virtual bool IsAvailable => Id.HasValue;
+    public virtual bool IsAvailable => Id is > 0;
 
     /// <summary>
     /// 租户唯一标识

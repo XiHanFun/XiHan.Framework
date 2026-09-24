@@ -101,9 +101,9 @@ public sealed class SqlSugarClientResolver : ISqlSugarClientResolver
     /// <returns>父连接 ConfigId 与该租户自带的模块库配置（无则为 null）</returns>
     private (string ParentConfigId, List<SqlSugarModuleDataSourceConfigOptions>? ModuleConfigs) ResolveCurrentLayout()
     {
-        // 库隔离：存在租户连接提供器且处于租户上下文时，优先解析该租户的独立布局
+        // 库隔离：存在租户连接提供器且处于业务租户上下文时，优先解析该租户的独立布局（平台就是 0 号租户，走默认布局）
         // 提供器返回 null → 走静态 ConfigId 解析（字段/行隔离）；抛异常 → fail-closed
-        if (_connectionProvider is not null && _currentTenant.Id is { } tenantId)
+        if (_connectionProvider is not null && _currentTenant.Id is { } tenantId && tenantId > 0)
         {
             var descriptor = _connectionProvider.Resolve(tenantId, _currentTenant.Name);
             if (descriptor is not null)

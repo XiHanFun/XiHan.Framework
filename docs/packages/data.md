@@ -543,7 +543,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **跨库不是一个事务**：同一工作单元跨多个 `ConfigId`（模块分库、租户独立库）写入时，每个连接各开本地事务，框架不提供跨库分布式事务；有强一致要求就把跨库步骤拆成可补偿流程。
 - **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
-- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤）/`CreateWithDeletedQueryable()`（清软删过滤），仅用于平台运维/审计恢复且须自行做权限校验。
+- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤，读共享与严格隔离一并清除）/`CreateWithDeletedQueryable()`（清软删过滤）；仓储外的查询用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()` 扩展，不要直接写 `ClearFilter<IMultiTenantEntity>()`（清不掉严格隔离实体的过滤）。仅用于确需跨租户的场景且须自行做权限校验。
 - **`TenantId=0` 是全局模板**：多租户实体的 `TenantId` 非空，`0` 表示平台/全局记录，对所有租户可见（配合 `UNIQUE(TenantId, Code)` 复合唯一索引对全局记录生效）。
 - **审计字段勿手填**：`TenantId`、创建/修改/删除时间与操作人由 `DataExecuting` AOP 注入，业务侧手填会被覆盖或引发不一致。
 - **雪花主键**：主键由 `IDistributedIdGenerator<long>` 通过 `StaticConfig.CustomSnowFlakeFunc` 全局生成；实体基类的 `BasicId` 映射为非自增主键。
