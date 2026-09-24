@@ -62,7 +62,8 @@ public class WorkflowDefinitionManager : IWorkflowDefinitionManager
         definition.Status = WorkflowDefinitionStatus.Draft;
         definition.CreationTime = _clock.Now;
         definition.PublishTime = null;
-        definition.TenantId ??= _currentTenant.Id;
+        // 定义属于创建它的作用域，不采信调用方提交的租户标识（平台就是 0 号租户）
+        definition.TenantId = _currentTenant.Id ?? 0;
 
         await _definitionStore.InsertAsync(definition, cancellationToken);
         return definition;

@@ -52,13 +52,13 @@ public class TenantFeatureChecker(
             return null;
         }
 
-        var tenantProviderKey = !currentTenant.Name.IsNullOrWhiteSpace()
-            ? currentTenant.Name
-            : currentTenant.Id?.ToString();
-        if (tenantProviderKey.IsNullOrWhiteSpace())
+        // 只按租户标识定键（与租户级设置同一口径），平台（0 号租户）没有租户级特性值
+        if (currentTenant.Id is not { } tenantId || tenantId <= 0)
         {
             return null;
         }
+
+        var tenantProviderKey = tenantId.ToString();
 
         return await settingStore.GetOrNullAsync(
             FeatureKeyPrefix + featureName.Trim(),

@@ -42,7 +42,7 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
     /// </summary>
     /// <param name="query">检索问题文本</param>
     /// <param name="topK">返回切片数量上限，非正数时按 5 处理</param>
-    /// <param name="filter">检索过滤条件，按租户与文档限定范围</param>
+    /// <param name="filter">检索过滤条件，按租户与文档限定范围；为空即平台（0 号租户）</param>
     /// <param name="provider">嵌入模型 provider 名，为空取默认 provider</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>命中的知识片段列表，集合不存在时返回空列表</returns>
@@ -101,28 +101,17 @@ public sealed class DefaultKnowledgeRetriever : IKnowledgeRetriever
     /// <summary>
     /// 由过滤条件构建向量检索选项（作用于已索引字段 TenantId/DocumentId）
     /// </summary>
-    private static VectorSearchOptions<VectorStoreKnowledgeRecord>? BuildOptions(RetrievalFilter? filter)
+    /// <remarks>
+    /// 租户谓词恒存在：检索只在一个租户作用域内进行，过滤条件为空即平台（0 号租户）。
+    /// </remarks>
+    private static VectorSearchOptions<VectorStoreKnowledgeRecord> BuildOptions(RetrievalFilter? filter)
     {
-        if (filter is null || (filter.TenantId is null && string.IsNullOrEmpty(filter.DocumentId)))
-        {
-            return null;
-        }
+        var tenantId = filter?.TenantId ?? 0;
+        var documentId = filter?.DocumentId;
 
-        Expression<Func<VectorStoreKnowledgeRecord, bool>> predicate;
-        if (filter.TenantId is { } tenantId && !string.IsNullOrEmpty(filter.DocumentId))
-        {
-            var documentId = filter.DocumentId;
-            predicate = record => record.TenantId == tenantId && record.DocumentId == documentId;
-        }
-        else if (filter.TenantId is { } tenantOnly)
-        {
-            predicate = record => record.TenantId == tenantOnly;
-        }
-        else
-        {
-            var documentId = filter.DocumentId!;
-            predicate = record => record.DocumentId == documentId;
-        }
+        Expression<Func<VectorStoreKnowledgeRecord, bool>> predicate = string.IsNullOrEmpty(documentId)
+            ? record => record.TenantId == tenantId
+            : record => record.TenantId == tenantId && record.DocumentId == documentId;
 
         return new VectorSearchOptions<VectorStoreKnowledgeRecord> { Filter = predicate };
     }

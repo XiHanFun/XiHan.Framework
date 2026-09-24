@@ -162,34 +162,32 @@ public static class EntityAuditExtensions
     /// 写入租户标识（插入语义专用），带跨租户预置值防护
     /// </summary>
     /// <remarks>
+    /// 平台就是 0 号租户：无租户上下文按 0 处理，新行一律落在当前作用域。
     /// <list type="bullet">
-    ///   <item>平台态（<c>context.TenantId</c> 为 null，播种/平台代管场景）：保留实体预置值——这是合法路径，防护须放行。</item>
-    ///   <item>租户态 + 实体为默认值(0)：注入当前租户标识（原有行为）。</item>
-    ///   <item>租户态 + 实体预置了与当前租户不符的非默认值：<b>fail-closed 抛异常</b>——典型来源是 DTO 误映射/恶意
-    ///         mass-assignment 伪造跨租户数据；列上的 <c>IsOnlyIgnoreUpdate</c> 只防更新、防不了插入，必须在此拦截。</item>
+    ///   <item>实体为默认值(0)：注入当前作用域标识（平台态即 0）。</item>
+    ///   <item>实体预置了与当前作用域不符的值：<b>fail-closed 抛异常</b>——平台态预置租户标识是「平台代写租户数据」，
+    ///         租户态预置别的租户标识是 DTO 误映射/恶意 mass-assignment 伪造跨租户数据；
+    ///         列上的 <c>IsOnlyIgnoreUpdate</c> 只防更新、防不了插入，必须在此拦截。写入某租户的数据须先切入该租户上下文。</item>
     /// </list>
     /// </remarks>
     private static void SetTenantIdValue(DataFilterModel entityInfo, PropertyInfo propertyInfo, EntityAuditContext context)
     {
-        if (context.TenantId is null)
-        {
-            return;
-        }
-
+        var scopeTenantId = context.TenantId ?? 0;
         var currentValue = propertyInfo.GetValue(entityInfo.EntityValue);
         if (IsDefaultValue(currentValue))
         {
-            entityInfo.SetValue(context.TenantId.Value);
+            entityInfo.SetValue(scopeTenantId);
             return;
         }
 
-        if (currentValue is long presetTenantId && presetTenantId == context.TenantId.Value)
+        if (currentValue is long presetTenantId && presetTenantId == scopeTenantId)
         {
             return;
         }
 
-        throw new InvalidOperationException(
-            $"插入失败：实体预置的租户标识（{currentValue}）与当前租户上下文（{context.TenantId}）不一致，禁止跨租户写入；平台代写请在平台态（无租户上下文）执行。");
+        throw new InvalidOperationException(scopeTenantId == 0
+            ? $"插入失败：平台上下文只能写入平台数据（TenantId=0），实体预置了租户标识（{currentValue}）；写入租户数据请先切入该租户上下文。"
+            : $"插入失败：实体预置的租户标识（{currentValue}）与当前租户上下文（{scopeTenantId}）不一致，禁止跨租户写入。");
     }
 
     /// <summary>

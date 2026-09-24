@@ -20,7 +20,7 @@
 ```csharp
 public class OrderService(ICurrentTenant currentTenant) : ITransientDependency
 {
-    public long? TenantId => currentTenant.Id;   // null = 平台态（无租户上下文）
+    public long? TenantId => currentTenant.Id;   // null 与 0 同义：平台（0 号租户）
 }
 ```
 
@@ -39,9 +39,26 @@ using (currentTenant.Change(tenantId))
 
 框架的任务调度与后台作业已经内建了这一步——执行时按「参数 tenantId → 任务归属租户 → 当前异步上下文」的优先级解析并切换。
 
-### 平台态
+### 平台就是 0 号租户
 
-`Change(null)` 进入**平台态**：没有租户上下文。这是**维护全局 / 跨租户数据的唯一合法入口**。
+没有租户上下文（`Id == null`）与 `Change(0)` 同义，都是**平台**，也就是 0 号租户。平台和任何一个租户一样，只看、只写自己的数据：
+
+- 读：平台只看 `TenantId = 0` 的行，**看不到任何租户的数据**；
+- 写：新行落 `TenantId = 0`；预置了别的租户标识的插入直接拒绝；只能改写 / 删除 `TenantId = 0` 的行。
+
+不存在「没有租户上下文就看全部、写全部」的隐式口径。跨租户只有显式通道：
+
+| 需求 | 做法 |
+| --- | --- |
+| 跨租户读取（按全局唯一邮箱定位账号、按会话标识找会话等） | 仓储里 `CreateNoTenantQueryable()`，或在查询上 `.ClearTenantFilter()`（读共享与严格隔离的过滤一并清除） |
+| 写某个租户的数据（开通租户、逐租户维护） | `using (currentTenant.Change(tenantId))` 切入该租户后再写 |
+| 用户自有行（账号、会话、个人设置） | `TenantWriteGuard.Suppress()`，见 [数据访问](./data) |
+
+`IsAvailable` 表示「当前处于某个业务租户」，平台（`null` 或 `0`）为 `false`。
+
+::: warning 不要直接写 `ClearFilter<IMultiTenantEntity>()`
+租户过滤按读共享（`IMultiTenantEntity`）与严格隔离（`IStrictMultiTenantEntity`）两个类型登记，只清前者时严格隔离实体仍被收紧在当前作用域，跨租户读取会静默缺数据。统一用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`。
+:::
 
 ## 全局记录约定
 
@@ -58,14 +75,16 @@ using (currentTenant.Change(tenantId))
 这是多租户里最容易出事的一点：
 
 ```text
-读：全局过滤器放行 TenantId IN (0, 当前租户)    ← 租户能读到平台全局数据
-写：禁止改写 / 删除非本租户行（含 TenantId=0 的全局行）
+读：全局过滤器放行 TenantId IN (0, 当前租户)    ← 租户能读到平台全局数据；平台只读 0
+写：只能改写 / 删除当前作用域的行              ← 租户不能改 0 号全局行，平台也不能改租户行
 ```
+
+平台与租户各自独有、不存在共用的数据（运行数据、日志、会话等），实体再实现 `IStrictMultiTenantEntity` 收紧为严格相等：租户态只看本租户行，不再读共享平台行。
 
 ::: danger 「读共享」不等于「写共享」
 如果写路径复用读的口径，租户就能改掉平台的全局数据——这是越权。
 
-框架的做法：预读守卫校验取回行的 `TenantId`，条件写自动追加当前租户 `Where`。要维护全局数据，必须显式进平台态。
+框架的做法：预读守卫校验取回行的 `TenantId`，条件写自动追加当前作用域的 `Where`。要维护全局数据，在平台（0 号租户）作用域里改。
 :::
 
 ## 实体怎么支持多租户
@@ -92,10 +111,12 @@ using (currentTenant.Change(tenantId))
 | 现象 | 原因 |
 | --- | --- |
 | 查到了别的租户数据 | 实体没实现 `IMultiTenantEntity`（只加了列） |
-| 后台任务里查不到数据 | 没有租户上下文，要 `Change(tenantId)` |
-| 改不了全局数据 | 这是**有意的**——去平台态改 |
+| 后台任务里查不到租户数据 | 后台没有租户上下文即平台，只看得到平台数据；逐个 `Change(tenantId)` 切入租户处理 |
+| 改不了全局数据 | 这是**有意的**——在平台（0 号租户）作用域里改 |
 | 切租户后权限没变 | 授权快照没在目标上下文重建 |
-| 平台态下反而查不到租户数据 | 平台态没有租户过滤，但业务查询可能自己带了条件 |
+| 平台下查不到租户数据 | 这是**有意的**——平台只看自己的数据；确需跨租户读取用 `ClearTenantFilter()` / `CreateNoTenantQueryable()` |
+| 平台插入报「平台上下文只能写入平台数据」 | 在平台里给行预置了租户标识；写某个租户的数据要先切入该租户 |
+| 跨租户读取漏了一部分表 | 只清了 `IMultiTenantEntity` 过滤，严格隔离实体仍被收紧；改用 `ClearTenantFilter()` |
 
 ## 下一步
 

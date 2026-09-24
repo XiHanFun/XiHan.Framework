@@ -92,9 +92,9 @@ public class OrderRepository(ISqlSugarClientResolver resolver)
 
 ### 写路径的租户边界
 
-**读共享 ≠ 写共享**：全局过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但写路径**不复用这个口径**——租户上下文内禁止改写/删除非本租户行（含全局行）。预读守卫会校验取回行的 `TenantId`，条件写自动追加当前租户 `Where`。
+**读共享 ≠ 写共享**：全局过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但写路径**不复用这个口径**——每个作用域只能改写/删除本作用域的行：租户态不能动全局行，平台（0 号租户）也不能动租户行。预读守卫会校验取回行的 `TenantId`，条件写自动追加当前作用域的 `Where`。
 
-维护全局数据的唯一合法入口是**平台态**（`ICurrentTenant.Change(null)`）。
+平台就是 0 号租户：没有租户上下文与 `Change(0)` 同义。维护全局数据在平台作用域进行；写某个租户的数据要 `Change(tenantId)` 切入该租户。跨租户读取只能显式清过滤（`CreateNoTenantQueryable()` / `.ClearTenantFilter()`），见 [多租户](./multi-tenancy)。
 
 **例外：用户自有行**。按 `UserId` 归属、`TenantId` 只是「注册地」元数据的行（账号、安全记录、个人设置、站内信收件行等），平台归属用户或跨租户成员在别的租户里写自己的这些行是合法的。这类写入用 `TenantWriteGuard.Suppress()` 显式包裹：作用域内对象式写（Update / Delete / 软删 / 恢复）的预读同时忽略租户过滤并跳过写边界校验，条件写不再追加当前租户 `Where`；契约是被包裹的写只作用于当前用户自己的行。
 
