@@ -80,9 +80,13 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 configIds = [_options.DefaultConfigId];
             }
 
+            var freshConfigIds = new List<string>();
             foreach (var configId in configIds)
             {
-                await PrepareSchemaForConfigAsync(configId);
+                if (await PrepareSchemaForConfigAsync(configId))
+                {
+                    freshConfigIds.Add(configId.Trim());
+                }
             }
 
             if (!_options.EnableTableInitialization)
@@ -91,7 +95,7 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 return;
             }
 
-            await UpgradeSchemaAsync();
+            await UpgradeSchemaAsync(new DbSchemaUpgradeContext(freshConfigIds));
 
             if (_options.EnableDataSeeding)
             {
@@ -227,7 +231,8 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     /// 在指定连接配置上下文中建库、建表
     /// </summary>
     /// <param name="connectionConfigId">连接配置标识</param>
-    private async Task PrepareSchemaForConfigAsync(string connectionConfigId)
+    /// <returns>本次从零建出了全部实体表（新库）返回 true</returns>
+    private async Task<bool> PrepareSchemaForConfigAsync(string connectionConfigId)
     {
         var normalizedConfigId = connectionConfigId.Trim();
         var (tenantId, tenantName, connectionLabel) = ResolveTenantScope(normalizedConfigId);
@@ -237,10 +242,7 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
 
         await CreateDatabaseInternalAsync(normalizedConfigId);
 
-        if (_options.EnableTableInitialization)
-        {
-            await CreateTablesInternalAsync(normalizedConfigId);
-        }
+        return _options.EnableTableInitialization && await CreateTablesInternalAsync(normalizedConfigId);
     }
 
     /// <summary>
@@ -261,7 +263,8 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     /// <summary>
     /// 执行已注册的表结构升级器（建表之后、播种之前）
     /// </summary>
-    private async Task UpgradeSchemaAsync()
+    /// <param name="context">本次初始化的建表结果</param>
+    private async Task UpgradeSchemaAsync(DbSchemaUpgradeContext context)
     {
         var upgraders = _serviceProvider.GetServices<IDbSchemaUpgrader>().ToList();
         if (upgraders.Count == 0)
@@ -272,7 +275,7 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
         _logger.LogInformation("开始表结构升级，共 {Count} 个升级器", upgraders.Count);
         foreach (var upgrader in upgraders)
         {
-            await upgrader.UpgradeAsync();
+            await upgrader.UpgradeAsync(context);
         }
 
         _logger.LogInformation("表结构升级完成");
@@ -367,7 +370,8 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
     /// 创建表结构（内部）
     /// </summary>
     /// <param name="connectionConfigId"></param>
-    private async Task CreateTablesInternalAsync(string? connectionConfigId = null)
+    /// <returns>从零建出了全部实体表（此前一张都没有）返回 true</returns>
+    private async Task<bool> CreateTablesInternalAsync(string? connectionConfigId = null)
     {
         try
         {
@@ -380,7 +384,7 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 _logger.LogWarning(
                     "按选取规则（模式：{Mode}）没有需要创建的实体类型",
                     _options.TableInitialization.Mode);
-                return;
+                return false;
             }
 
             _logger.LogInformation("开始创建表结构，共 {Count} 个实体", entityTypes.Count);
@@ -447,6 +451,8 @@ public partial class DbInitializer : IDbInitializer, IScopedDependency
                 successCount,
                 splitTableInitCount,
                 skippedExistsCount);
+
+            return skippedExistsCount == 0 && successCount > 0;
         }
         catch (Exception ex)
         {

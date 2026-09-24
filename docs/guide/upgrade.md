@@ -201,8 +201,14 @@ public class FlagMaintenanceModeManager(MaintenanceFlag flag) : IUpgradeMaintena
 ```csharp
 public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngine engine) : IDbSchemaUpgrader
 {
-    public async Task UpgradeAsync(CancellationToken cancellationToken = default)
+    public async Task UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken cancellationToken = default)
     {
+        // 本次从零建出全部实体表的库本就是最新结构：登记为最新版本，不补跑历史脚本
+        if (context.IsFresh("Default"))
+        {
+            _ = await engine.BaselineAsync(cancellationToken);
+        }
+
         await status.EnsureInitializedAsync();
         var result = await engine.ExecuteAsync(cancellationToken);
         if (result.Status == UpgradeStatus.Failed)
@@ -213,7 +219,7 @@ public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngi
 }
 ```
 
-新库上表已按最新实体建好、还没有数据，脚本必须能空转，且不能依赖种子数据。
+新建的库（`DbSchemaUpgradeContext.IsFresh`）要先 `BaselineAsync` 再 `EnsureInitializedAsync`：后者对没有版本记录的库按 `0.0.0` 建记录，引擎随即把全部历史脚本在最新结构上跑一遍。登记之后，历史脚本只在它所属版本之前建的库上执行，脚本按当时的结构写即可，不能依赖种子数据。
 
 ### 启动自动升级
 
