@@ -70,6 +70,32 @@ public sealed class DbInitializerPhaseOrderTests : IDisposable
     }
 
     [Fact]
+    public async Task 从零建出全部实体表的连接_升级器拿到新库标记()
+    {
+        var upgrader = new RecordingUpgrader(_events, fails: false);
+        var initializer = CreateInitializer(["Default"], upgrader: upgrader, entityTypes: [typeof(FreshProbe)]);
+
+        await initializer.InitializeAsync();
+
+        Assert.NotNull(upgrader.Context);
+        Assert.True(upgrader.Context.IsFresh("Default"));
+    }
+
+    [Fact]
+    public async Task 已有实体表的连接_不是新库()
+    {
+        _client.CodeFirst.InitTables(typeof(FreshProbe));
+        var upgrader = new RecordingUpgrader(_events, fails: false);
+        var initializer = CreateInitializer(["Default"], upgrader: upgrader, entityTypes: [typeof(FreshProbe)]);
+
+        await initializer.InitializeAsync();
+
+        Assert.NotNull(upgrader.Context);
+        Assert.False(upgrader.Context.IsFresh("Default"));
+        Assert.Empty(upgrader.Context.FreshConfigIds);
+    }
+
+    [Fact]
     public async Task 关闭建表时既不升级也不播种()
     {
         // 表结构不由应用维护时，升级交给升级模块在应用初始化之后执行，这里不代为跑
@@ -103,7 +129,9 @@ public sealed class DbInitializerPhaseOrderTests : IDisposable
         string[] configIds,
         bool upgraderFails = false,
         bool enableDataSeeding = true,
-        bool enableTableInitialization = true)
+        bool enableTableInitialization = true,
+        RecordingUpgrader? upgrader = null,
+        Type[]? entityTypes = null)
     {
         var options = Options.Create(new XiHanSqlSugarCoreOptions
         {
@@ -114,7 +142,7 @@ public sealed class DbInitializerPhaseOrderTests : IDisposable
         });
 
         var services = new ServiceCollection();
-        services.AddSingleton<IDbSchemaUpgrader>(new RecordingUpgrader(_events, upgraderFails));
+        services.AddSingleton<IDbSchemaUpgrader>(upgrader ?? new RecordingUpgrader(_events, upgraderFails));
         services.AddSingleton<IDataSeeder>(new RecordingSeeder(_events));
 
         return new DbInitializer(
@@ -123,19 +151,19 @@ public sealed class DbInitializerPhaseOrderTests : IDisposable
             NullLogger<DbInitializer>.Instance,
             options,
             new NoTenant(),
-            new RecordingEntityTypeProvider(_events),
+            new RecordingEntityTypeProvider(_events, entityTypes ?? []),
             new DataSeederSelector(options));
     }
 
     /// <summary>
-    /// 建表阶段的探针：记录被建表的连接，不返回任何实体
+    /// 建表阶段的探针：记录被建表的连接，返回给定的实体
     /// </summary>
-    private sealed class RecordingEntityTypeProvider(List<string> events) : IDbEntityTypeProvider
+    private sealed class RecordingEntityTypeProvider(List<string> events, Type[] entityTypes) : IDbEntityTypeProvider
     {
         public IReadOnlyList<Type> GetEntityTypes(DbInitializationContext context)
         {
             events.Add($"tables:{context.ConnectionConfigId}");
-            return [];
+            return entityTypes;
         }
     }
 
@@ -144,11 +172,23 @@ public sealed class DbInitializerPhaseOrderTests : IDisposable
     /// </summary>
     private sealed class RecordingUpgrader(List<string> events, bool fails) : IDbSchemaUpgrader
     {
-        public Task UpgradeAsync(CancellationToken cancellationToken = default)
+        public DbSchemaUpgradeContext? Context { get; private set; }
+
+        public Task UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken cancellationToken = default)
         {
+            Context = context;
             events.Add("upgrade");
             return fails ? throw new InvalidOperationException("升级失败") : Task.CompletedTask;
         }
+    }
+
+    /// <summary>
+    /// 建表探针实体（不标 SugarTable：程序集扫描只收带表特性的类型，免得混进别的用例）
+    /// </summary>
+    private sealed class FreshProbe
+    {
+        [SugarColumn(IsPrimaryKey = true)]
+        public long Id { get; set; }
     }
 
     /// <summary>
