@@ -19,6 +19,12 @@ public class ApiLogRecord
     public long? UserId { get; set; }
 
     /// <summary>
+    /// 租户标识（记录产生时所属的租户；null 表示宿主/平台）
+    /// </summary>
+    /// <remarks>写入器按它落戳并切入该租户写入，不依赖写入时的环境上下文——排队异步写入时环境里已没有请求的租户。</remarks>
+    public long? TenantId { get; set; }
+
+    /// <summary>
     /// 用户名
     /// </summary>
     public string? UserName { get; set; }

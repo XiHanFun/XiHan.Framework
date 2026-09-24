@@ -14,8 +14,8 @@ namespace XiHan.Framework.MultiTenancy.Tests;
 /// <remarks>
 /// 这个贡献者是解析链上优先级最高的一环（注册时被插到第 0 位），它的分支只有三条：
 /// 未认证、已认证但没有租户（宿主用户）、已认证且带租户。
-/// 前两条必须原样放行让后续贡献者接手，最后一条才写入上下文并短路——
-/// 一旦前两条误置 Handled，宿主用户的请求会被钉死在无租户状态，Header/QueryString 解析全部失效。
+/// 已认证的两条都以令牌为准并短路：宿主用户就是无租户，Header/QueryString 不得替它另选租户——
+/// 否则宿主身份可以逐请求自选任意租户上下文，绕过成员关系。只有未认证请求放行给后续贡献者。
 /// </remarks>
 public class CurrentUserTenantResolveContributorTests
 {
@@ -104,10 +104,10 @@ public class CurrentUserTenantResolveContributorTests
     }
 
     /// <summary>
-    /// 已认证但没有租户（宿主用户）时原样放行
+    /// 已认证但没有租户（宿主用户）时以令牌为准：无租户并短路，后续贡献者不得替它另选租户
     /// </summary>
     [Fact]
-    public async Task ResolveAsync_WhenAuthenticatedWithoutTenant_LeavesContextUnhandled()
+    public async Task ResolveAsync_WhenAuthenticatedWithoutTenant_HandlesAsHost()
     {
         var context = CreateContext(new FakeCurrentUser { IsAuthenticated = true, TenantId = null });
         var contributor = new CurrentUserTenantResolveContributor();
@@ -115,7 +115,7 @@ public class CurrentUserTenantResolveContributorTests
         await contributor.ResolveAsync(context);
 
         Assert.Null(context.TenantIdOrName);
-        Assert.False(context.Handled);
+        Assert.True(context.Handled);
     }
 
     /// <summary>
@@ -173,7 +173,7 @@ public class CurrentUserTenantResolveContributorTests
         Assert.Equal("42", tenantContext.TenantIdOrName);
         Assert.True(tenantContext.Handled);
         Assert.Null(hostContext.TenantIdOrName);
-        Assert.False(hostContext.Handled);
+        Assert.True(hostContext.Handled);
     }
 
     /// <summary>
