@@ -207,5 +207,10 @@ public class UpgradeCoordinatorTests
         {
             _gate.TrySetResult();
         }
+
+        public Task<bool> BaselineAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
+        }
     }
 }

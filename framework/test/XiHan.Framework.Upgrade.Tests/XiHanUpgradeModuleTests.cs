@@ -235,6 +235,11 @@ public class XiHanUpgradeModuleTests
                 Message = _status == UpgradeStatus.Failed ? "脚本执行失败" : "升级完成"
             });
         }
+
+        public Task<bool> BaselineAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
+        }
     }
 
     /// <summary>
@@ -307,6 +312,11 @@ public class XiHanUpgradeModuleTests
         }
 
         public Task<bool> HasMigrationHistoryAsync(string version, string scriptName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(false);
         }

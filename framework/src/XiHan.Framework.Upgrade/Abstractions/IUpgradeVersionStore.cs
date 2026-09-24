@@ -54,4 +54,14 @@ public interface IUpgradeVersionStore
     /// 是否已执行指定脚本
     /// </summary>
     Task<bool> HasMigrationHistoryAsync(string version, string scriptName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 当前库还没有版本记录时，按给定版本登记一条
+    /// </summary>
+    /// <param name="appVersion">应用版本</param>
+    /// <param name="dbVersion">数据库版本</param>
+    /// <param name="minSupportVersion">最小支持版本</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>新登记返回 true，已有记录返回 false（不改动既有记录）</returns>
+    Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default);
 }

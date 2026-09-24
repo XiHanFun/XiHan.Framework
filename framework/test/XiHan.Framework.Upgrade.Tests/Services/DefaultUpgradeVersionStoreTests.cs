@@ -41,6 +41,42 @@ public class DefaultUpgradeVersionStoreTests
     }
 
     /// <summary>
+    /// 没有版本记录时登记基线：之后取到的就是登记的版本，不再从 0.0.0 起跑
+    /// </summary>
+    [Fact]
+    public async Task TryCreateBaselineAsync_WhenNoRecord_CreatesStateAtGivenVersions()
+    {
+        var store = CreateStore(NextTenantId());
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        var created = await store.TryCreateBaselineAsync("1.3.0", "1.2.0", "1.0.0", cancellationToken);
+        var state = await store.GetOrCreateAsync("9.9.9", "9.9.9", cancellationToken);
+
+        Assert.True(created);
+        Assert.Equal("1.3.0", state.AppVersion);
+        Assert.Equal("1.2.0", state.DbVersion);
+        Assert.Equal("1.0.0", state.MinSupportVersion);
+    }
+
+    /// <summary>
+    /// 已有版本记录时登记基线不改动它
+    /// </summary>
+    [Fact]
+    public async Task TryCreateBaselineAsync_WhenRecordExists_KeepsIt()
+    {
+        var store = CreateStore(NextTenantId());
+        var cancellationToken = TestContext.Current.CancellationToken;
+        _ = await store.GetOrCreateAsync("1.0.0", "0.9.0", cancellationToken);
+
+        var created = await store.TryCreateBaselineAsync("1.3.0", "1.2.0", "1.0.0", cancellationToken);
+        var state = await store.GetOrCreateAsync("1.0.0", "0.9.0", cancellationToken);
+
+        Assert.False(created);
+        Assert.Equal("0.0.0", state.DbVersion);
+        Assert.Equal("1.0.0", state.AppVersion);
+    }
+
+    /// <summary>
     /// 再次获取沿用已建仓记录，不会被新传入的版本覆盖
     /// </summary>
     [Fact]

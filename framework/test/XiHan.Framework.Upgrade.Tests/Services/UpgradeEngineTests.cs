@@ -443,6 +443,44 @@ public class UpgradeEngineTests : IDisposable
     }
 
     /// <summary>
+    /// 新库登记为最新脚本版本：不执行任何历史脚本
+    /// </summary>
+    [Fact]
+    public async Task BaselineAsync_WhenNoVersionRecord_RecordsLatestScriptVersion()
+    {
+        var harness = new EngineHarness();
+        harness.ScriptProviders.Add(new FakeUpgradeScriptProvider(
+            [WriteScript("1.0.0", "01_a.sql", "-- 1.0.0"), WriteScript("1.2.0", "01_b.sql", "-- 1.2.0")]));
+        harness.Options.AppVersion = "1.3.0";
+        harness.Options.MinSupportVersion = "1.0.0";
+
+        var created = await harness.Build().BaselineAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(created);
+        Assert.Equal(("1.3.0", "1.2.0", "1.0.0"), harness.Store.Baseline);
+        Assert.Empty(harness.MigrationExecutor.ExecutedSql);
+        Assert.Equal(["store:ensure-tables", "store:baseline"], harness.Calls);
+    }
+
+    /// <summary>
+    /// 已有版本记录的库由升级引擎管着：登记基线不改动它
+    /// </summary>
+    [Fact]
+    public async Task BaselineAsync_WhenVersionRecordExists_LeavesItAlone()
+    {
+        var harness = new EngineHarness();
+        harness.ScriptProviders.Add(new FakeUpgradeScriptProvider([WriteScript("1.2.0", "01_b.sql", "-- 1.2.0")]));
+        harness.Options.AppVersion = "1.3.0";
+        harness.Store.HasState = true;
+
+        var created = await harness.Build().BaselineAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(created);
+        Assert.Null(harness.Store.Baseline);
+        Assert.Empty(harness.MigrationExecutor.ExecutedSql);
+    }
+
+    /// <summary>
     /// 清理临时目录
     /// </summary>
     public void Dispose()
@@ -646,6 +684,23 @@ public class UpgradeEngineTests : IDisposable
         public Task<bool> HasMigrationHistoryAsync(string version, string scriptName, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(ExecutedKeys.Contains($"{version}|{scriptName}"));
+        }
+
+        public (string AppVersion, string DbVersion, string MinSupportVersion)? Baseline { get; private set; }
+
+        public bool HasState { get; set; }
+
+        public Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default)
+        {
+            _calls.Add("store:baseline");
+            if (HasState)
+            {
+                return Task.FromResult(false);
+            }
+
+            Baseline = (appVersion, dbVersion, minSupportVersion);
+            HasState = true;
+            return Task.FromResult(true);
         }
     }
 
