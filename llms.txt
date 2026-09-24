@@ -1,0 +1,132 @@
+# 曦寒开发框架
+
+> 快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。
+
+本文件由文档站构建期生成，内容与仓库文档同源。
+
+## 机读资产
+
+- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 111 页正文
+- [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 38 页开发指南
+- [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt): 67 页模块总览
+- 每页 Markdown：把站点地址后缀成 `.md`，如 https://framework.docs.xihanfun.com/guide/ai.md
+
+## 开始
+
+- [更新日志 · XiHan.Framework](https://framework.docs.xihanfun.com/changelog): 本文件记录 XiHan.Framework 各版本的变更。
+- [曦寒开发框架](https://framework.docs.xihanfun.com/): 快速 轻量 高效 用心的 .NET 模块化开发框架
+- [XiHan.Framework 开发框架](https://framework.docs.xihanfun.com/introduction): 快速、轻量、高效、用心的 .NET 10 模块化开发框架。
+- [框架概述](https://framework.docs.xihanfun.com/overview): XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后端分离的 ASP.NET Core 应用设计。
+- [快速上手](https://framework.docs.xihanfun.com/quickstart): 本篇带你从零建一个基于 XiHan.Framework 的 Web API。
+- [为什么选择曦寒](https://framework.docs.xihanfun.com/why): 功能清单在 模块总览，这一页不重复。
+
+## 开发指南
+
+- [AI 与 MCP](https://framework.docs.xihanfun.com/guide/ai): 框架把大模型接入收敛成三件事：按名解析 provider 拿到一个 `IChatClient`、把应用能力登记成「技能」、再决定这些技能是内部工具调用还是对外 MCP tool。
+- [AOP 与拦截器](https://framework.docs.xihanfun.com/guide/aop): `[UnitOfWork]`、`[Cacheable]`、审计留痕这些横切能力，底层都是同一套机制：Castle 动态代理 + `IXiHanInterceptor`。
+- [审计](https://framework.docs.xihanfun.com/guide/auditing): 审计日志回答的是「谁、在什么时候、对什么做了什么」——请求访问、业务操作、异常、开放接口调用、登录、实体字段级变更。
+- [认证](https://framework.docs.xihanfun.com/guide/authentication): 认证解决「你是谁」。
+- [授权](https://framework.docs.xihanfun.com/guide/authorization): 认证解决「你是谁」，授权解决「你能做什么」。
+- [机器人](https://framework.docs.xihanfun.com/guide/bot): 把「往哪些渠道发通知」和「用哪个厂商发」拆开：业务只面对一个 `IBotClient`，邮件 / 短信 / Telegram / 钉钉 / 飞书 / 企业微信各是一个可插拔的通道子包，凭证由数据库供给而不是写死在 `appsettings`。
+- [缓存与分布式锁](https://framework.docs.xihanfun.com/guide/caching): 框架的缓存抽象、分布式锁、以及失效时序这个最容易出错的点。
+- [配置与选项](https://framework.docs.xihanfun.com/guide/configuration): 框架怎么读配置、选项模式怎么用、配置节怎么命名、什么该放配置什么该写代码。
+- [数据访问](https://framework.docs.xihanfun.com/guide/data): 框架的数据访问基于 SqlSugar。
+- [依赖注入](https://framework.docs.xihanfun.com/guide/dependency-injection): XiHan.Framework 直接使用 .NET 内置的依赖注入容器（`IServiceCollection` / `IServiceProvider`），没有另造一套。
+- [分布式 ID](https://framework.docs.xihanfun.com/guide/distributed-ids): 主键、消息标识、对外短码各需要不同形状的唯一标识。
+- [动态 API](https://framework.docs.xihanfun.com/guide/dynamic-api): 动态 API 是 XiHan.Framework 暴露接口的方式：你写应用服务，框架把它自动变成 REST 接口，不需要为每个服务再写一个 Controller。
+- [事件总线](https://framework.docs.xihanfun.com/guide/event-bus): 用事件把「一件事发生了」和「谁来响应」拆开：发布方不认识订阅方，订阅方随时可增可减。
+- [扩展与二次开发](https://framework.docs.xihanfun.com/guide/extending): 本页讲怎么在 XiHan.Framework 上写自己的东西：新建一个模块、替换框架的默认实现、加自定义 AOP 拦截器、定制动态 API 约定。
+- [常见问题](https://framework.docs.xihanfun.com/guide/faq): 框架层面的高频故障速查。
+- [网关与流量治理](https://framework.docs.xihanfun.com/guide/gateway): 灰度发布要按人群、租户、百分比把一部分流量导到新逻辑上，同时希望每条请求可追踪、出错有统一响应格式。
+- [HTTP 远程请求](https://framework.docs.xihanfun.com/guide/http): 调用外部 API 时，你不想每次都手写 `HttpClient` 注册、超时、重试、日志、异常兜底这一堆样板。
+- [模块生命周期](https://framework.docs.xihanfun.com/guide/lifecycle): 每个模块在框架启动到关闭的过程中，会依次经过若干生命周期钩子。
+- [国际化](https://framework.docs.xihanfun.com/guide/localization): 框架的多语言方案：文案放 JSON 文件、按请求头切文化、枚举与异常消息也一并本地化。
+- [日志](https://framework.docs.xihanfun.com/guide/logging): 框架把 Serilog 接成唯一的日志出口：控制台 + 异步滚动文件，每行自带 W3C TraceId。
+- [对象映射与序列化](https://framework.docs.xihanfun.com/guide/mapping): 实体和 DTO 之间怎么搬数据，对象和 JSON 之间怎么往返。
+- [消息通知](https://framework.docs.xihanfun.com/guide/messaging): 给「发一条通知」定义统一的模型和入口：业务代码只组装一个信封、指定通道，具体走邮件、短信还是站内信由路由决定。
+- [模块系统](https://framework.docs.xihanfun.com/guide/modularity): 模块系统是 XiHan.Framework 的地基。
+- [多租户](https://framework.docs.xihanfun.com/guide/multi-tenancy): 框架提供租户上下文、租户解析中间件与数据隔离基础设施。
+- [可观测性](https://framework.docs.xihanfun.com/guide/observability): 线上出问题时要能回答三个问题：这次请求走过哪些环节、哪一步慢、进程现在什么状态。
+- [实时通信](https://framework.docs.xihanfun.com/guide/realtime): 服务端要主动把消息推到浏览器——通知、聊天、任务进度、强制下线——走 `XiHan.Framework.Web.RealTime` 提供的 SignalR 集成。
+- [统一响应与异常](https://framework.docs.xihanfun.com/guide/response): 框架让所有接口回同一个 JSON 信封：成功的业务对象被自动包进去，抛出的异常也被翻译成同一个形状。
+- [脚本引擎](https://framework.docs.xihanfun.com/guide/script): 把易变的业务规则（折扣公式、审批条件、字段派生逻辑）写成一段 C# 源码存起来，运行期编译执行，改逻辑不用重新发布。
+- [搜索引擎](https://framework.docs.xihanfun.com/guide/search): 框架把全文检索收敛成一个很小的接口 `ISearchEngine`：业务代码只写「建索引、写文档、查」，开发期跑进程内实现，生产切到 Elasticsearch，业务代码一行不改。
+- [数据加解密](https://framework.docs.xihanfun.com/guide/security): 密码怎么存、第三方凭证怎么落库还能还原、报文怎么防篡改——这三件事在框架里分属三套机制。
+- [对象存储与虚拟文件](https://framework.docs.xihanfun.com/guide/storage): 业务要存文件，但不该被绑死在某一家云厂商上；程序自己也要读文件（模板、配置、内置资源），但这些文件既可能在磁盘上也可能编译进了程序集。
+- [定时任务与后台作业](https://framework.docs.xihanfun.com/guide/tasks): 框架里有三条彼此独立的「后台执行」能力线，选错了会很难受：定时调度、一次性后台作业、后台常驻服务。
+- [模板引擎](https://framework.docs.xihanfun.com/guide/templating): 把「模板 + 数据」渲染成文本（通知正文、邮件、代码文件）。
+- [工作单元与事务](https://framework.docs.xihanfun.com/guide/uow): 事务边界怎么划、提交时序是什么、嵌套怎么算——这一章的每条规则都对应过一个真实事故，值得完整读一遍。
+- [升级与迁移](https://framework.docs.xihanfun.com/guide/upgrade): 新版本部署上去之后，谁来跑那批 SQL、多个节点怎么保证只有一个跑、跑的时候要不要挡住请求——`XiHan.Framework.Upgrade` 把这套动作编排成一条固定流水线。
+- [数据校验](https://framework.docs.xihanfun.com/guide/validation): 框架的校验能力分散在三个地方：ASP.NET Core 的模型验证负责请求入口，业务异常负责规则判断，扩展属性验证器负责动态字段。
+- [Web 应用开发](https://framework.docs.xihanfun.com/guide/web): 引用 `XiHan.Framework.Web.Api` 后你得到的是一整条编排好的中间件管道、统一响应信封、异常处理与 API 文档。
+- [工作流](https://framework.docs.xihanfun.com/guide/workflow): 审批、长流程编排这类「跑一半要停下来等人、等定时、等外部系统」的业务，用代码里的 `await` 是撑不住的——进程重启就全丢了。
+
+## 模块总览
+
+- [XiHan.Framework.AI.Abstractions](https://framework.docs.xihanfun.com/packages/ai-abstractions): 纯 AI 契约包：会话门面、多 provider 解析、可插拔配置源、智能体、技能、RAG、提示词库、护栏与管道横切开关的一组接口，零框架内部依赖。
+- [XiHan.Framework.AI](https://framework.docs.xihanfun.com/packages/ai): AI 抽象包的默认实现：基于 Microsoft.Extensions.AI + Microsoft Agent Framework 的多 provider 会话、嵌入、智能体、RAG 与 MCP 工具桥接。
+- [XiHan.Framework.Analyzers](https://framework.docs.xihanfun.com/packages/analyzers): 基于 Roslyn 的编译期规范分析器：检查 C# 源文件的曦寒标准版权文件头，并提供一键修复。
+- [XiHan.Framework.Application.Contracts](https://framework.docs.xihanfun.com/packages/application-contracts): 应用层对外契约：DTO 基类体系、应用服务接口与统一响应模型（`ApiResponse` + `ApiResponseCodes`）
+- [XiHan.Framework.Application](https://framework.docs.xihanfun.com/packages/application): 应用层实现：应用服务基类、CRUD/批量 CRUD 基类（Mapster 映射 + 软删除感知 + DataAnnotations 校验）与动态 API 特性 `[DynamicApi]`
+- [XiHan.Framework.Auditing](https://framework.docs.xihanfun.com/packages/auditing): 审计日志基础设施：6 类日志记录、Channel 异步队列 + 后台批量消费者、采集管道、敏感数据脱敏、写入器契约（默认空实现）。
+- [XiHan.Framework.Authentication](https://framework.docs.xihanfun.com/packages/authentication): 认证：JWT 双令牌、OAuth2 外部登录（Google/GitHub/Gitee/QQ/微信/企业微信/飞书/钉钉，账号授权与扫码登录）、TOTP 两步验证、一次性验证码
+- [XiHan.Framework.Authorization](https://framework.docs.xihanfun.com/packages/authorization): 授权：RBAC 角色权限、Policy 策略、ABAC 属性访问控制，并接入 ASP.NET Core 授权管道（实时校验）
+- [XiHan.Framework.Bot.DingTalk](https://framework.docs.xihanfun.com/packages/bot-dingtalk): Bot 钉钉通道：钉钉群「自定义机器人」Webhook 提供者，纯 HTTP、无第三方 SDK。
+- [XiHan.Framework.Bot.Email](https://framework.docs.xihanfun.com/packages/bot-email): Bot 邮件通道：基于 MailKit 的 SMTP 发件提供者，把邮件接入统一的 `IBotClient` 调度。
+- [XiHan.Framework.Bot.Lark](https://framework.docs.xihanfun.com/packages/bot-lark): Bot 飞书通道：飞书群「自定义机器人」Webhook + 图片上传提供者，纯 HTTP、无第三方 SDK。
+- [XiHan.Framework.Bot.Sms](https://framework.docs.xihanfun.com/packages/bot-sms): Bot 短信通道：阿里云 / 腾讯云双网关短信提供者，内部模板码经映射转服务商模板码后发送。
+- [XiHan.Framework.Bot.Telegram](https://framework.docs.xihanfun.com/packages/bot-telegram): Bot Telegram 通道：两层能力——统一调度用的单发 `IBotProvider`，与一套可托管多机器人的交互平台（Webhook/长轮询双模、命令/回调/会话路由、发送门面、去重/审计）。
+- [XiHan.Framework.Bot.WeCom](https://framework.docs.xihanfun.com/packages/bot-wecom): Bot 企业微信通道：企业微信群机器人 Webhook + 媒体上传提供者，纯 HTTP、无第三方 SDK。
+- [XiHan.Framework.Bot](https://framework.docs.xihanfun.com/packages/bot): 机器人 / 消息通知内核：统一消息模型 + 多提供者调度，把「往哪些渠道发」与「用哪个厂商发」解耦。
+- [XiHan.Framework.Caching](https://framework.docs.xihanfun.com/packages/caching): 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键，Redis 启用后额外提供分布式锁、延迟队列与 Stream 可靠队列。
+- [XiHan.Framework.Castle](https://framework.docs.xihanfun.com/packages/castle): AOP 动态代理底座：集成 Castle DynamicProxy，把框架的异步拦截器链 `IXiHanInterceptor[]` 适配到 Castle 的同步 `IInterceptor`，在服务注册完成后自动为登记了拦截器的接口服务生成代理。
+- [XiHan.Framework.Core](https://framework.docs.xihanfun.com/packages/core): 框架的模块化引擎与运行时内核：定义 `XiHanModule` 基类、`[DependsOn]` 依赖声明、模块描述符与拓扑排序加载、7 阶段生命周期钩子、应用引导工厂、约定式依赖注入、选项模式与统一异常体系。
+- [XiHan.Framework.Data](https://framework.docs.xihanfun.com/packages/data): 基于 SqlSugar 的数据访问基础设施：仓储模式、工作单元事务接入、多租户数据隔离、审计/软删除全局过滤、启动自动建库建表与种子数据
+- [XiHan.Framework.DevTools](https://framework.docs.xihanfun.com/packages/devtools): 开发工具库。
+- [XiHan.Framework.DistributedIds](https://framework.docs.xihanfun.com/packages/distributed-ids): 分布式唯一标识生成：自研 Snowflake / NanoId / SequentialGuid 生成器 + Sqids 短码编码，统一在 `IDistributedIdGenerator<TKey>` 接口下，零第三方依赖。
+- [XiHan.Framework.Domain.Shared](https://framework.docs.xihanfun.com/packages/domain-shared): 领域层共享包：跨领域层与应用层复用的分页查询子系统（声明式过滤/排序/关键字 + 分页 DTO），以及少量共享枚举与常量。
+- [XiHan.Framework.Domain](https://framework.docs.xihanfun.com/packages/domain): DDD 领域层：实体/聚合根基类、审计与多租户变体、持久化无关的仓储抽象、领域服务、领域事件、规约、业务规则、值对象与领域异常。
+- [XiHan.Framework.EventBus.Abstractions](https://framework.docs.xihanfun.com/packages/eventbus-abstractions): 事件总线抽象包：只定义发布/订阅契约、本地与分布式处理器接口、可靠投递（Outbox/Inbox）契约，不含任何实现。
+- [XiHan.Framework.EventBus.Kafka](https://framework.docs.xihanfun.com/packages/eventbus-kafka): 分布式事件总线的 Kafka 提供程序：所有事件写入同一主题，以事件名作为消息 Key，消费者组竞争消费、手动提交偏移。
+- [XiHan.Framework.EventBus.RabbitMQ](https://framework.docs.xihanfun.com/packages/eventbus-rabbitmq): 分布式事件总线的 RabbitMQ 提供程序：以事件名作为路由键投递到 direct 交换机，同一队列竞争消费。
+- [XiHan.Framework.EventBus.Redis](https://framework.docs.xihanfun.com/packages/eventbus-redis): 分布式事件总线的 Redis Streams 提供程序：`XADD` 写入同一 Stream，消费者组 `XREADGROUP` 竞争消费、处理后 `XACK`。
+- [XiHan.Framework.EventBus](https://framework.docs.xihanfun.com/packages/eventbus): 事件总线实现：进程内本地事件总线 + 分布式事件总线（Outbox/Inbox 可靠投递），落地 EventBus.Abstractions 的全部契约。
+- [XiHan.Framework.Http](https://framework.docs.xihanfun.com/packages/http): 基于 `IHttpClientFactory` 与 Polly 的高级 HTTP 客户端：统一结果封装、韧性策略（重试/超时/熔断）、字符串链式请求、上传下载、批量并发与代理池。
+- [模块总览](https://framework.docs.xihanfun.com/packages/): XiHan.Framework 由 66 个 NuGet 包组成，按分层组织。
+- [XiHan.Framework.Localization.Abstractions](https://framework.docs.xihanfun.com/packages/localization-abstractions): 国际化抽象层：可本地化字符串与枚举本地化的接口契约，实现由 XiHan.Framework.Localization 提供。
+- [XiHan.Framework.Localization](https://framework.docs.xihanfun.com/packages/localization): 国际化实现：JSON 优先（ResourceManager 回退）的字符串本地化 + 按请求头动态切换文化的中间件 + 枚举字段级本地化服务。
+- [XiHan.Framework.Logging](https://framework.docs.xihanfun.com/packages/logging): 结构化日志：Serilog 集成、控制台/异步文件双路输出、按天/按大小滚动、结构化与性能日志、多租户日志上下文。
+- [XiHan.Framework.Messaging](https://framework.docs.xihanfun.com/packages/messaging): 很薄的消息路由抽象层：定义"消息信封 → 按通道路由 → 交给发送器投递"的统一模型与接口，本身只负责路由，不含任何具体通道实现。
+- [XiHan.Framework.Metadata](https://framework.docs.xihanfun.com/packages/metadata): 框架"身份信息"的单一事实源：名称、版本、作者、组织、许可证、支持平台等静态元数据。
+- [XiHan.Framework.MultiTenancy.Abstractions](https://framework.docs.xihanfun.com/packages/multitenancy-abstractions): 多租户抽象：当前租户上下文、多租户实体标记、租户解析链契约与 URL 提供者接口
+- [XiHan.Framework.MultiTenancy](https://framework.docs.xihanfun.com/packages/multitenancy): 多租户实现：当前租户上下文（AsyncLocal）、租户解析链、租户配置存储、租户级设置隔离与功能开关
+- [XiHan.Framework.ObjectStorage](https://framework.docs.xihanfun.com/packages/object-storage): 对象存储统一抽象：把「文件存到哪里」抽象成 `IFileStorageProvider`，本地磁盘与阿里云 OSS / MinIO / 腾讯云 COS 四种后端实现同一套上传、下载、删除、预签名 URL 等操作，并支持多提供程序管理与业务路由。
+- [XiHan.Framework.ObjectMapping](https://framework.docs.xihanfun.com/packages/objectmapping): 对象映射：集成 Mapster 注册 `IMapper`，并内置一套"对象扩展属性（动态属性）"管理体系（存储 + 验证 + 访问策略）。
+- [XiHan.Framework.Observability](https://framework.docs.xihanfun.com/packages/observability): 可观测性基础库：健康检查、指标采集、性能监控、运行时诊断，并内置可选的 OpenTelemetry 装配（链路追踪 / 指标导出），默认零运行时开销、按需开启。
+- [XiHan.Framework.Script](https://framework.docs.xihanfun.com/packages/script): C# 脚本引擎：基于 Roslyn（`Microsoft.CodeAnalysis.CSharp`）在内存中动态编译并执行 C# 脚本，附带编译缓存、执行超时与编译后静态安全校验。
+- [XiHan.Framework.SearchEngines.Abstractions](https://framework.docs.xihanfun.com/packages/search-engines-abstractions): 搜索引擎抽象包：索引、文档、检索请求与结果的统一契约。
+- [XiHan.Framework.SearchEngines.Elasticsearch](https://framework.docs.xihanfun.com/packages/search-engines-elasticsearch): 搜索引擎契约的 Elasticsearch 实现：连接与认证交给官方客户端传输层，请求体与响应解析以 JSON 直接构造。
+- [XiHan.Framework.SearchEngines](https://framework.docs.xihanfun.com/packages/search-engines): 搜索引擎默认实现包：提供进程内的 `ISearchEngine` 实现作为兜底。
+- [XiHan.Framework.Security](https://framework.docs.xihanfun.com/packages/security): 安全基座：当前用户/客户端/主体上下文、密码哈希与策略、BouncyCastle 加密算法
+- [XiHan.Framework.Serialization](https://framework.docs.xihanfun.com/packages/serialization): 序列化辅助库：核心是一套基于 `System.Text.Json` 的"动态 JSON"操作体系与 `JsonSerializerOptions` 组合工具。
+- [XiHan.Framework.Settings](https://framework.docs.xihanfun.com/packages/settings): 设置管理：设置定义提供者模式、多来源取值链、按作用域（全局/租户/用户/会话）读写、加密与变更事件
+- [XiHan.Framework.Tasks](https://framework.docs.xihanfun.com/packages/tasks): 任务库：自研调度引擎（Cron/Interval/Delay）+ 一次性后台作业队列（BackgroundJobs）+ 后台常驻服务基类，执行期自动切换租户上下文。
+- [XiHan.Framework.Templating](https://framework.docs.xihanfun.com/packages/templating): 模板渲染：基于第三方 Scriban 的完整引擎 + 一个轻量字符串替换引擎，经引擎注册表 `ITemplateEngineRegistry` 按名称统一管理。
+- [XiHan.Framework.Threading](https://framework.docs.xihanfun.com/packages/threading): 并发上下文基础：统一取当前 `CancellationToken`（含临时覆盖），以及基于 `AsyncLocal` 的环境数据上下文与可嵌套的环境作用域（Ambient Scope）。
+- [XiHan.Framework.Timing](https://framework.docs.xihanfun.com/packages/timing): 时间策略：统一时钟抽象 `IClock`（UTC/Local 模式 + 规范化）、Windows↔IANA 时区互转、请求级当前时区，以及 UTC↔用户时间双向转换。
+- [XiHan.Framework.Traffic](https://framework.docs.xihanfun.com/packages/traffic): 流量治理：灰度路由（已完整实现）+ 限流 / 熔断策略抽象（仅接口，实现留给上层）。
+- [XiHan.Framework.Uow](https://framework.docs.xihanfun.com/packages/uow): 工作单元：靠 AOP 拦截器自动管理事务边界，`[UnitOfWork]` 标注即原子提交，嵌套自动复用，通常无需手动开启/提交事务
+- [XiHan.Framework.Upgrade](https://framework.docs.xihanfun.com/packages/upgrade): 分布式安全升级引擎：检测版本 → 抢分布式锁 → 进维护模式 → 按序执行迁移脚本 → 回写版本 →（可选）替换文件 / 滚动重启，全流程编排 + 逐环节可插拔。
+- [XiHan.Framework.Utils](https://framework.docs.xihanfun.com/packages/utils): 框架最底层的零依赖通用工具库：加密/哈希、序列化、反射、集合/LINQ、文件 IO、网络、时间、本地化、缓存、日志、诊断、控制台工具等，全部以静态 Helper 与扩展方法形式提供。
+- [XiHan.Framework.Validation.Abstractions](https://framework.docs.xihanfun.com/packages/validation-abstractions): 校验抽象：验证错误契约与统一的验证异常类型。
+- [XiHan.Framework.Validation](https://framework.docs.xihanfun.com/packages/validation): 数据校验的集成入口。
+- [XiHan.Framework.VirtualFileSystem](https://framework.docs.xihanfun.com/packages/virtual-file-system): 虚拟文件系统：把本地物理目录与程序集嵌入资源按优先级统一挂载到一套虚拟路径下访问、枚举与监控，高优先级同名文件覆盖低优先级；另附内存版本快照与回滚。
+- [XiHan.Framework.Web.Api](https://framework.docs.xihanfun.com/packages/web-api): 动态 API + 完整 Web 中间件管道：把标注 `[DynamicApi]` 的应用服务自动暴露为 REST 接口，并一次性装配转发头还原、追踪、文化、异常/请求/API 日志、限流、熔断、CORS、认证、多租户解析、授权与 OpenAPI 安全一整条管线。
+- [XiHan.Framework.Web.Core](https://framework.docs.xihanfun.com/packages/web-core): Web 基础设施底座：托管环境接入、HttpContext 支持、当前主体桥接（`ICurrentUser`）、以及客户端信息识别（真实 IP / 归属地 / 浏览器·系统·设备）。
+- [XiHan.Framework.Web.Docs](https://framework.docs.xihanfun.com/packages/web-docs): API 文档：在动态 API 之上提供 Scalar 与 Swagger UI 两套交互式文档界面，并按 `[DynamicApi]` 分组自动注册多份 OpenAPI 文档。
+- [XiHan.Framework.Web.Gateway](https://framework.docs.xihanfun.com/packages/web-gateway): API 网关薄接入层：在流量入口做灰度路由决策、请求追踪与网关级异常处理；限流/熔断为配置开关。
+- [XiHan.Framework.Web.Grpc](https://framework.docs.xihanfun.com/packages/web-grpc): gRPC 服务端轻量接入：把 ASP.NET Core gRPC 纳入框架的模块化生命周期；契约与服务映射由应用侧完成。
+- [XiHan.Framework.Web.Mcp](https://framework.docs.xihanfun.com/packages/web-mcp): MCP Server 服务端接入：把 AI 技能经 HTTP 传输暴露为 MCP tools，供外部 AI 客户端调用；配置门控，默认不暴露。
+- [XiHan.Framework.Web.RealTime](https://framework.docs.xihanfun.com/packages/web-realtime): 实时通信：基于 SignalR 的服务端集成，提供 Hub 基类、连接管理、按用户/组/全体的泛型通知服务与统一 JSON 协议。
+- [XiHan.Framework.Workflow.Abstractions](https://framework.docs.xihanfun.com/packages/workflow-abstractions): 工作流抽象包：流程定义模型、活动契约、运行时实例/书签模型、存储端口与人工任务契约。
+- [XiHan.Framework.Workflow](https://framework.docs.xihanfun.com/packages/workflow): 工作流引擎：图执行引擎 + 17 个内置活动 + 人工任务（审批）+ 表达式求值 + 定时器调度 + 内存存储默认实现。
