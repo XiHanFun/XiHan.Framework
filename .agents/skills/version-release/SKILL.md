@@ -22,6 +22,6 @@ description: 为 XiHan.Framework 准备版本、更新 version.props、整理发
 
 ## 发布
 
-只有用户明确要求发布，才可创建并推送版本标签或手动触发 `.github/workflows/publish.yml`（手动运行须选中版本标签，选分支会被拒）。推标签前先确认标签提交属于预期 `main` 历史且版本与 `version.props` 完全一致——工作流的 guard 两条都查，任一不满足拒发。
+只有用户明确要求发布，才可创建并推送版本标签或手动触发 `.github/workflows/release.yml`（手动运行须选中版本标签，选分支会被拒）。推标签前先确认标签提交属于预期 `main` 历史且版本与 `version.props` 完全一致——工作流的 guard 两条都查，任一不满足拒发。
 
 工作流先由 guard 校验标签，再通过 OIDC 登录 NuGet、构建并逐包推送；测试与覆盖率门禁归 `ci.yml`，发布链不重跑。发布后核对工作流、NuGet 版本和文档；任何包、测试或登录失败都应停止并报告。不得移动已发布标签、手改 nupkg、跳过测试或用 `--skip-duplicate` 掩盖版本不一致。

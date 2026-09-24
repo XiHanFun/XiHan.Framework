@@ -37,7 +37,7 @@ pnpm --dir docs build
 ## 包与发布
 
 - `framework/props/nuget.props` 管理包元数据和输出；日常构建关闭 `GeneratePackageOnBuild`。
-- 发布前核对 `.github/workflows/ci.yml`、`.github/workflows/publish.yml` 和实际生成包清单。
+- 发布前核对 `.github/workflows/ci.yml`、`.github/workflows/release.yml` 和实际生成包清单。
 - VersionUpgrade、NuGet unlist、标签、推送和发布会改变外部状态，只在用户明确要求时执行。
 - 不手工修改 `nupkgs` 或构建产物；修正源项目和 props 后重新生成。
 - 一个版本内的契约、实现、测试、文档和包元数据必须一致。

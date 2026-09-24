@@ -15,7 +15,7 @@ name: 发布 NuGet
 #
 # 认证走 NuGet 可信发布（OIDC），无长期 API Key。
 # nuget.org → 受信任的发布 → 添加策略：存储库所有者 XiHanFun、存储库 XiHan.Framework、
-# 工作流文件 publish.yml、环境留空。
+# 工作流文件 release.yml、环境留空。
 on:
   workflow_dispatch:
   push:

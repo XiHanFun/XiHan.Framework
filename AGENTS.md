@@ -109,7 +109,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 - `framework/props/nuget.props` 默认可在构建时生成包，日常验证应显式关闭 `GeneratePackageOnBuild`，避免制造无关包产物。
 - 版本脚本、包撤销脚本、打标签和 NuGet 发布都属于外部状态变更，只有用户明确要求时才能执行。
-- 发布前以 `.github/workflows/ci.yml` 和 `.github/workflows/publish.yml` 为最终事实源，完成 Release 构建、MTP 测试和包清单核对。
+- 发布前以 `.github/workflows/ci.yml` 和 `.github/workflows/release.yml` 为最终事实源，完成 Release 构建、MTP 测试和包清单核对。
 
 ## Git 与提交
 
