@@ -13,8 +13,9 @@ namespace XiHan.Framework.Data.SqlSugar.Initializers;
 /// 必须排在升级之后，否则种子一查就撞上还没补齐的列，启动失败。
 /// </para>
 /// <para>
-/// 升级器只在开启表结构初始化时由 <see cref="IDbInitializer.InitializeAsync"/> 调用，失败直接抛出、中断初始化；
-/// 新库上表是按最新实体建的，升级器应当空转。
+/// 升级器只在开启表结构初始化时由 <see cref="IDbInitializer.InitializeAsync"/> 调用，失败直接抛出、中断初始化。
+/// 本次从零建出全部实体表的库（<see cref="DbSchemaUpgradeContext.FreshConfigIds"/>）本就是最新结构，
+/// 升级器应把它登记为最新版本，不在它上面补跑历史升级。
 /// </para>
 /// </remarks>
 public interface IDbSchemaUpgrader
@@ -22,6 +23,7 @@ public interface IDbSchemaUpgrader
     /// <summary>
     /// 把存量库的表结构升级到当前版本
     /// </summary>
+    /// <param name="context">本次初始化的建表结果</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task UpgradeAsync(CancellationToken cancellationToken = default);
+    Task UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken cancellationToken = default);
 }
