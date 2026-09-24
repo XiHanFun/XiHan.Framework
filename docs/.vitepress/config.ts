@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { DefaultTheme, HeadConfig, defineConfig } from "vitepress";
+import { renderPageMarkdown, writeLlmsAssets } from "./gen-llms";
 
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
@@ -409,6 +410,51 @@ export default defineConfig({
   head: head,
   lastUpdated: true,
   cleanUrls: true,
+  // 机读资产（llms.txt、全站正文、分册与「取本页 Markdown」的单页 .md）在构建末尾落进产物目录
+  async buildEnd(siteConfig) {
+    await writeLlmsAssets(siteConfig.outDir, {
+      title: "曦寒开发框架",
+      summary:
+        "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
+      sections: [
+        { dir: ".", label: "开始" },
+        { dir: "guide", label: "开发指南", bundle: "guide" },
+        { dir: "packages", label: "模块总览", bundle: "packages" },
+      ],
+    });
+  },
+  vite: {
+    plugins: [
+      {
+        // 开发服务器没有构建产物，链接指向 /__markdown/，这里按需生成同一份
+        name: "xihan-doc-page-markdown",
+        configureServer(server) {
+          server.middlewares.use(async (request, response, next) => {
+            const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+            const prefix = "/__markdown/";
+            if (!pathname.startsWith(prefix)) {
+              next();
+              return;
+            }
+            try {
+              const markdown = await renderPageMarkdown(decodeURIComponent(pathname.slice(prefix.length)));
+              if (markdown === null) {
+                response.statusCode = 404;
+                response.end("Not Found");
+                return;
+              }
+              response.statusCode = 200;
+              response.setHeader("Content-Type", "text/markdown; charset=utf-8");
+              response.end(markdown);
+            }
+            catch (error) {
+              next(error);
+            }
+          });
+        },
+      },
+    ],
+  },
   themeConfig: {
     logo: logo,
     socialLinks: [

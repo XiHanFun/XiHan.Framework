@@ -58,6 +58,17 @@ await app.RunAsync();
 
 开发指南的章节会指向对应的包页看细节，两册互补而不重复。
 
+给 AI 工具读时，文档站在构建期另外产出几份纯文本，与本站同源：
+
+| 地址 | 内容 |
+| --- | --- |
+| [`/llms.txt`](https://framework.docs.xihanfun.com/llms.txt) | 全站索引，每行一页 |
+| [`/llms-full.txt`](https://framework.docs.xihanfun.com/llms-full.txt) | 全站正文 |
+| [`/llms-guide.txt`](https://framework.docs.xihanfun.com/llms-guide.txt) | 开发指南全部章节 |
+| [`/llms-packages.txt`](https://framework.docs.xihanfun.com/llms-packages.txt) | 模块总览与全部包页 |
+
+只需要一页时，把地址后缀改为 `.md`，如 `https://framework.docs.xihanfun.com/guide/modularity.md`；每页正文右上角的「取本页 Markdown」指向的也是它。
+
 ## 开发指南速览
 
 | 章 | 内容 |
