@@ -120,6 +120,28 @@ public class UpgradeEngine : IUpgradeEngine
     }
 
     /// <summary>
+    /// 把当前库登记为已处于最新脚本版本（仅当前库还没有版本记录时）
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>新登记返回 true，已有版本记录返回 false</returns>
+    public async Task<bool> BaselineAsync(CancellationToken cancellationToken = default)
+    {
+        await _versionStore.EnsureTablesAsync(cancellationToken);
+
+        var currentAppVersion = ResolveCurrentAppVersion();
+        var scripts = await CollectScriptsAsync(cancellationToken);
+        var latestScriptVersion = GetLatestScriptVersion(scripts);
+
+        var created = await _versionStore.TryCreateBaselineAsync(currentAppVersion, latestScriptVersion, _options.MinSupportVersion, cancellationToken);
+        if (created)
+        {
+            _logger.LogInformation("新库登记为最新版本: App {AppVersion}, Db {DbVersion}", currentAppVersion, latestScriptVersion);
+        }
+
+        return created;
+    }
+
+    /// <summary>
     /// 获取最新的脚本版本
     /// </summary>
     /// <param name="scripts">脚本列表</param>
