@@ -81,7 +81,7 @@ public class MyModule : XiHanModule { }
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
 - **实体差异日志**：可选启用（`EnableDiffLog`），基于 SqlSugar 原生 `OnDiffLogEvent` AOP 生成 before/after 快照，交 `IEntityDiffLogWriter` 落库。
 - **分页 / 规约 / 自动查询**：内置多种分页重载（`pageIndex/pageSize`、`PageRequestDtoBase`、规约 `ISpecification<TEntity>`、`GetPagedAutoAsync` 按 DTO 自动构建条件）。
-- **数据库初始化**：可选建库（自动处理 MySQL utf8mb4 归一化）、`CodeFirst` 建表（含分表 `SplitTables` 识别）、按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
+- **数据库初始化**：三段式——全部连接建库建表（自动处理 MySQL utf8mb4 归一化、识别分表 `SplitTables`）→ 执行已注册的 `IDbSchemaUpgrader` 把存量表升级到当前结构 → 全部连接按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
 - **雪花 ID**：接入 `XiHan.Framework.DistributedIds`，通过 `StaticConfig.CustomSnowFlakeFunc` 作为 SqlSugar 全局主键生成器。
 - **SQL 日志与慢查询**：可开启 SQL/异常/慢 SQL 日志，慢 SQL 阈值可配。
 - **主从读写分离**：SqlSugar 原生主从能力完整放出，appsettings 声明从库即可分担读；差异化权重与更多原生定制走代码钩子；可选从库健康探针自动摘除/回填权重（详见下文）。
@@ -148,6 +148,7 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
+| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync()`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
