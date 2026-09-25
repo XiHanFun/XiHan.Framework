@@ -52,7 +52,7 @@ public class MyModule : XiHanModule { }
 - **超时控制**：`TimeoutMs`（默认 30000ms）→ `ScriptTimeoutException`。
 - **静态安全校验**：黑名单命名空间/类型 + 危险关键字 + 不安全代码检测；`SecurityOptions` 提供 `Strict` / `Permissive` / `Disabled` 预设。
 - **构建与工厂**：`ScriptEngineBuilder` 提供 `AddReference/AddImport/AddGlobal/WithTimeout/WithOptimization/WithUnsafe/DisableCache` 链式方法；`ScriptEngineFactory` 创建默认/命名引擎并管理生命周期与统计。**已知限制**见下方「使用示例」。
-- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（预热 5 次后统计，返回 `PerformanceStatistics`；`TotalTimeMs` 与 `MemoryUsageBytes` 只覆盖正式执行，后者是分配字节数，口径同 `MemoryUsage.AllocatedBytes`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
+- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（`iterations` 须大于 0，否则在预热前抛出 `ArgumentOutOfRangeException`；预热 5 次后统计，返回 `PerformanceStatistics`；`TotalElapsedTime` 与 `MemoryUsageBytes` 只覆盖正式执行，前者保留完整精度，只读的 `TotalTimeMs` 是它截断到整毫秒的值，`ExecutionsPerSecond`（`double?`）按完整精度计算、耗时为零时为 `null`；`MemoryUsageBytes` 是分配字节数，口径同 `MemoryUsage.AllocatedBytes`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
 
 ## 主要 API / 类型
 
@@ -179,6 +179,7 @@ var res = await XiHanScript.RunAsync("result = System.Environment.MachineName;",
 - **超时只保护调用方**：到 `TimeoutMs` 即返回超时失败，但中断不了正在运行的脚本线程，纯 CPU 死循环会一直占用线程池线程。
 - **首次编译有开销**：重复执行相同脚本请保持 `EnableCache=true` 并复用引擎实例，以命中编译缓存。
 - **模块不注册服务**：不能注入 `IScriptEngine`；通过 `XiHanScript` / `ScriptEngineFactory` 使用。
+- **基准测试的耗时读 `TotalElapsedTime`**：快速脚本或迭代次数很少时 `TotalTimeMs` 截断为 0，不代表没有耗时。`TotalTimeMs` 已改为只读、`ExecutionsPerSecond` 已改为 `double?`（二进制不兼容，引用它们的程序集需重新编译）：自行构造统计对象时把 `TotalTimeMs = n` 改为 `TotalElapsedTime = TimeSpan.FromMilliseconds(n)`，读取速率处按 `is { } rate` 判空；序列化结果新增 `TotalElapsedTime`，反序列化只回读它。
 
 ## 依赖模块
 
