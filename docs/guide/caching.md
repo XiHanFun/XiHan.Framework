@@ -9,8 +9,9 @@
 | 能力 | 接口 | 说明 |
 | --- | --- | --- |
 | 分布式缓存 | `IDistributedCache` / `IDistributedCache<T>` | 有 Redis 走 Redis，否则退化为进程内内存 |
-| 分布式锁 | `IDistributedLock` | 同上，**未接 Redis 时退化为进程内锁** |
-| 延迟队列 / 流式队列 | `IRedisDelayQueue<T>` / `IRedisStreamQueue<T>` | 名字里就带 Redis，是**诚实的专用抽象**，需要 Redis |
+| 分布式锁 | `IDistributedLock` | 同上，**未接 Redis 时退化为进程内锁**：最多 10000 个锁条目，满载时获取返回 `null`，与「锁被占用」表现相同 |
+| 延迟队列 | `IRedisDelayQueue<T>` | 有 Redis 走 Sorted Set；否则退化为进程内 `DefaultDelayQueue<T>`：不跨实例、进程退出即丢，最多 100000 条，满载入队抛 `InvalidOperationException` |
+| 流式队列 | `IRedisStreamQueue<T>` | 仅在启用 Redis 并配置连接串时注册，没有进程内回退 |
 
 配置节 `XiHan:Caching:Redis`：
 
@@ -103,7 +104,7 @@ if (cache is ICacheSupportsLuaScript lua)
 
 签名是中立的：入参 `object?[]`，返回 `CacheScriptResult`（承载标量、整数、布尔与嵌套数组）。具体实现负责把自己的原生返回值映射成这个中立结构。
 
-`IRedisDelayQueue` / `IRedisStreamQueue` 则是名字里就带 Redis 的专用抽象，直接用即可。
+`IRedisStreamQueue` 只在启用 Redis 后才能注入；`IRedisDelayQueue` 未接 Redis 时是进程内的有界回退，多实例部署或需要持久化时必须接 Redis。
 
 ## 常见问题
 

@@ -69,13 +69,13 @@ public class MyModule : XiHanModule { }
 - **连接选择每次访问实时解析**：`DbClient` 每次访问都重新解析——实体声明了模块数据源固定落该模块库，未声明则随租户上下文切换即时生效。
 - **静态连接与运行时动态连接一致**：`SqlSugarConnectionConfigurator` 复用同一套过滤器/AOP 装配逻辑，保证运行时新注册的租户连接与启动期静态连接行为完全一致。
 - **事务不在仓储内开启**：仓储只做 before 预读保证实体在当前租户范围内，事务边界统一由工作单元接管（见 [XiHan.Framework.Uow](./uow)）。
-- **写操作前的租户安全校验**：`UpdateAsync`/`DeleteAsync`/批量操作会先按当前过滤器读取实体，读不到即视为"不存在或不在当前租户范围内"并抛 `InvalidOperationException`，防止越租户改删。
+- **写操作前的租户安全校验**：`UpdateAsync`/`DeleteAsync`/批量操作会先按当前过滤器读取实体，读不到即视为"不存在或不在当前租户范围内"并抛 `InvalidOperationException`，防止越租户改删。预读统一经受保护的 `GetForWriteAsync` / `CreateWritePreReadQueryable`（恢复与清除经 `CreateWritePreReadWithDeletedQueryable`），`TenantWriteGuard.Suppress()` 作用域内会清除租户过滤；自定义仓储覆写写方法时，预读也要走这几个方法，否则豁免作用域内会把用户自有行误判为不存在。
 - **SQL 执行自动上报链路追踪**：每条 SQL 执行完成（或异常）后，`SetSugarAop` 按已知耗时回溯生成一个 `db.query`（`ActivityKind.Client`）的 OpenTelemetry Activity，挂在当前请求 Activity 之下，携带 `db.system`/`db.statement` 标签，异常时记录状态与堆栈；基于 `XiHanActivitySources.DataSource`，无监听者时直接跳过、零开销。
 
 ## 核心能力
 
 - **多套仓储实现**：只读、读写、软删除、审计、聚合根，全部开放泛型注册，注入接口即用。
-- **多租户数据隔离**：全局 `QueryFilter` 自动过滤租户数据（当前无租户上下文时不过滤，有上下文时"本租户数据 OR 全局模板 `TenantId=0`"）；连接层支持按 `ConfigId`/前缀/名称/自定义委托解析，或由业务提供 `ISqlSugarTenantConnectionProvider` 做库级隔离。
+- **多租户数据隔离**：全局 `QueryFilter` 自动过滤租户数据（平台就是 0 号租户：无租户上下文只看 `TenantId=0`；租户上下文看"本租户数据 OR 全局模板 `TenantId=0`"；严格隔离实体只看本作用域）；跨租户读取只能显式 `ClearTenantFilter()`；连接层支持按 `ConfigId`/前缀/名称/自定义委托解析，或由业务提供 `ISqlSugarTenantConnectionProvider` 做库级隔离。
 - **模块分库**：实体标 `[ModuleDataSource("Erp")]` 即固定落在当前布局的 Erp 模块库上，租户上下文照常统一；建表初始化同步收窄到该库（详见下文）。
 - **软删除过滤**：实现 `ISoftDelete` 的实体自动过滤 `IsDeleted`；`ISoftDeleteRepositoryBase<,>` 额外提供 `SoftDelete`/`Restore`/`GetDeleted`/`GetAllWithDeleted` 等。
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
@@ -136,7 +136,8 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库，含派生出的模块库）、`GetCurrentLayoutConfigIds()`（当前这一套布局有哪些库）、`AsTenant()` |
 | `ModuleDataSourceAttribute` | 实体上声明所属模块数据源：`[ModuleDataSource("Erp")]`，标在基类上对派生实体生效；SqlSugar 原生 `[Tenant("Erp")]` 同样被识别 |
-| `IEntityModuleDataSourceResolver` | 实体模块数据源解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；默认实现读特性并缓存，可 `Replace` |
+| `PlatformDataSourceAttribute` | 实体上声明固定落平台库：`[PlatformDataSource]`，库隔离租户下不随独立库切换；与 `[ModuleDataSource]` 互斥 |
+| `IEntityModuleDataSourceResolver` | 实体落点解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；`IsPlatformPlaced(entityType)` 判断是否固定落平台库；默认实现读特性并缓存，可 `Replace` |
 | `IModuleDataSourceConnectionResolver` | 模块数据源连接解析器：`ResolveClient(moduleDataSource, parentConfigId)` 按「模块名 + 当前布局」定连接，两条维度在此交汇 |
 | `ISqlSugarTenantConnectionResolver` | `ResolveCurrentConfigId()` / `ResolveConfigId(long? tenantId, string? name)` / `GetConfigIds()`——解析顺序：自定义委托 → `tenantId` 直配 → `前缀+tenantId` → 租户名 → 默认 |
 | `ISqlSugarConnectionConfigurator` | `Configure(provider)` 装配过滤器+AOP；`EnsureTenantConnection(tenant, descriptor)` 运行时幂等注册租户独立连接（缺连接串 fail-closed） |
@@ -148,7 +149,8 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
-| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync()`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
+| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken ct = default)`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
+| `DbSchemaUpgradeContext` | 本次初始化的建表结果：`FreshConfigIds` 为从零建出全部实体表的连接，`IsFresh(configId)` 判断某个连接是否新库。新库本就是最新结构，升级器应把它登记为最新版本（如 `IUpgradeEngine.BaselineAsync`），不补跑历史脚本 |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
@@ -173,7 +175,7 @@ public class MyModule : XiHanModule { }
 - `SugarEntity<TKey>` / `SugarEntityWithIdentity` — 基础实体
 - `SugarCreationEntity` / `SugarModificationEntity` / `SugarDeletionEntity` / `SugarFullAuditedEntity<TKey>` — 审计实体（`Created_Time`/`Modified_Time`/`Is_Deleted`/`Deleted_Time` 等映射 + `Row_Version` 并发标识）
 - `SugarMultiTenantEntity<TKey>` 及其审计变体 — 多租户实体（含 `Tenant_Id` 列，`0`=平台/全局模板）
-- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` — 聚合根基类
+- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` — 聚合根基类，公共列与上面各基类同名（`Basic_Id`、`Tenant_Id`、`Created_Time`、`Is_Deleted` 等）
 
 ## 配置
 
@@ -451,6 +453,23 @@ return descriptor with
 services.Replace(ServiceDescriptor.Singleton<IEntityModuleDataSourceResolver, ManifestEntityModuleDataSourceResolver>());
 ```
 
+### 固定落平台库：`[PlatformDataSource]`
+
+库隔离部署下，租户的业务与运行数据落各自的独立库；而平台目录、账号、成员关系与读共享的模板，要跨租户读取、或与平台数据在同一条 SQL 里关联，只能集中在平台库（默认布局的主库）。给这类实体标 `[PlatformDataSource]`：
+
+```csharp
+[SugarTable("sys_user_tenant")]
+[PlatformDataSource]
+public class SysUserTenant : SugarMultiTenantEntity<long> { }
+```
+
+- **运行期**：无论当前租户是否库隔离，读写都走平台库并登记进工作单元；行级租户过滤照常生效（`TenantId` 仍在行上）。字段隔离的租户本就在平台库，标注对它们没有影响。
+- **建表**：只在平台库建，不进租户独立库与模块库。
+- **与模块数据源互斥**：同时声明 `[ModuleDataSource]` 视为配置错误，解析即抛异常。
+- **跨库写不是一个事务**：同一工作单元同时写平台库与租户独立库时，每个连接各开一个本地事务。
+
+`[TableInitialization(Target = DbInitializationTarget.Platform)]` 只管「表建在哪」，运行期仍跟着当前租户的布局走；要读写也固定在平台库，用 `[PlatformDataSource]`。
+
 ## 选择初始化范围
 
 `EnableTableInitialization` / `EnableDataSeeding` 是总开关，**选哪些表建、哪些种子跑**由两组选取规则决定。默认全量（扫描到的实体都建、注册的种子都跑），与总开关打开时的历史行为一致。
@@ -543,7 +562,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - **总开关之外还有范围**：打开建表/种子开关后默认全量参与；要挑表挑种子（含平台库与租户独立库分开建）见[选择初始化范围](#选择初始化范围)。
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **跨库不是一个事务**：同一工作单元跨多个 `ConfigId`（模块分库、租户独立库）写入时，每个连接各开本地事务，框架不提供跨库分布式事务；有强一致要求就把跨库步骤拆成可补偿流程。
-- **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
+- **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前作用域/已软删），抛 `InvalidOperationException`；每个作用域只能改写本作用域的行——租户不能改 `TenantId=0` 的全局行，平台也不能改租户行，平台上下文插入预置了租户标识的行同样被拒。写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户。这是安全边界，不是 bug。
 - **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤，读共享与严格隔离一并清除）/`CreateWithDeletedQueryable()`（清软删过滤）；仓储外的查询用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()` 扩展，不要直接写 `ClearFilter<IMultiTenantEntity>()`（清不掉严格隔离实体的过滤）。仅用于确需跨租户的场景且须自行做权限校验。
 - **`TenantId=0` 是全局模板**：多租户实体的 `TenantId` 非空，`0` 表示平台/全局记录，对所有租户可见（配合 `UNIQUE(TenantId, Code)` 复合唯一索引对全局记录生效）。
 - **审计字段勿手填**：`TenantId`、创建/修改/删除时间与操作人由 `DataExecuting` AOP 注入，业务侧手填会被覆盖或引发不一致。

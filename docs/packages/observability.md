@@ -68,7 +68,7 @@ public class MyModule : XiHanModule { }
 - **指标采集（`IMetricsCollector` / `MetricsCollector`）**：记录计数器、测量值、直方图，`BeginTimer` 返回可释放计时器（`Dispose` 时以 `{name}.duration` 记录耗时直方图）。底层基于 `System.Diagnostics.Metrics.Meter`（`MeterName = "XiHan.Metrics"`）直出 OTel 指标管道——`RecordMeasurement` 内部委托给 `RecordHistogram`（无 pull 型 Gauge 回调上下文）；**不再内存留存**，`GetMetrics()` 恒返回空列表、`Clear()` 为空操作（仅为接口向后兼容保留）。是否真正被导出取决于「配置项」一节的 `Enabled`/`EnableMetrics` 是否开启。
 - **性能监控（`IPerformanceMonitor` / `PerformanceMonitor`）**：`BeginOperation` 返回 `IPerformanceTracker`，支持打标签与记录检查点；记录保存在独立进程内队列并只保留最近 10000 条，汇总为 `PerformanceStatistics`（含成功/失败计数、平均/最小/最大耗时与 P50/P95/P99），并可按阈值筛出慢操作。与 OTel 装配无关，不受 `Enabled` 影响。
 - **运行时诊断（`IDiagnosticsService` / `DiagnosticsService`）**：读取系统、运行时、内存、线程信息，强制触发 GC，或一次性生成 `DiagnosticsReport` 完整报告。
-- **健康检查（`IHealthCheck` 实现）**：`MemoryHealthCheck` 为真实实现——按内存阈值判定 `Healthy`/`Degraded` 并附带 GC 明细。
+- **健康检查（`IHealthCheck` 实现）**：`MemoryHealthCheck` 为真实实现——按内存阈值判定 `Healthy`/`Degraded` 并附带 GC 明细；读数取 `GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，是最近一次 GC 后的托管堆实际占用，首次 GC 前为 0。
 - **链路追踪源（`XiHan.Framework.Core.Tracing.XiHanActivitySources`）**：框架共享的 `ActivitySource` 名与实例，定义在 `Core` 而非本包（避免 Data/EventBus/Http/Web 等既依赖 Core 又要发 Span 却不能反向依赖 Observability）；内置 `App`/`Data`/`EventBus`/`Grpc`/`Cache`/`Ai` 六个源，`All` 汇总供 OTel `AddSource` 一次性注册。
 
 ## 主要 API / 类型
@@ -95,14 +95,14 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `IDiagnosticsService` | `SystemInfo GetSystemInfo()`、`RuntimeInfo GetRuntimeInfo()`、`MemoryInfo GetMemoryInfo()`、`ThreadInfo GetThreadInfo()`、`void ForceGarbageCollection()`、`DiagnosticsReport GetDiagnosticsReport()` |
+| `IDiagnosticsService` | `SystemInfo GetSystemInfo()`、`RuntimeInfo GetRuntimeInfo()`、`MemoryInfo GetMemoryInfo()`（`AllocatedBytes` 与 `MemoryHealthCheck` 同口径：最近一次 GC 后的托管堆实际占用）、`ThreadInfo GetThreadInfo()`、`void ForceGarbageCollection()`、`DiagnosticsReport GetDiagnosticsReport()` |
 | `DiagnosticsReport` | 汇总 `SystemInfo` / `RuntimeInfo` / `MemoryInfo`（含 `GCInfo`）/ `ThreadInfo` 与生成时间 |
 
 ### 健康检查
 
 | 类型 | 说明 |
 | --- | --- |
-| `MemoryHealthCheck` | **真实实现**。构造参数 `thresholdMb`（默认 1024MB）；超阈值返回 `Degraded`，否则 `Healthy`，均附带 GC 明细数据 |
+| `MemoryHealthCheck` | **真实实现**。构造参数 `thresholdMb`（默认 1024MB）；超阈值返回 `Degraded`，否则 `Healthy`，均附带 GC 明细数据；读数为最近一次 GC 后的托管堆实际占用，首次 GC 前为 0 |
 
 数据库、Redis 与向量库检查不属于本包。应用应针对自己实际使用的客户端实现 `IHealthCheck`，避免通用占位检查给出错误的健康状态。
 
