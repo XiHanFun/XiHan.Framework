@@ -53,9 +53,9 @@ public class MyModule : XiHanModule { }
 | 1 | `UseForwardedHeaders` | 依据 `X-Forwarded-Proto/Host/For` 还原真实 scheme/host/客户端 IP；必须最前，否则后续读 scheme/host/IP 的中间件全错。 |
 | 2 | `XiHanTraceIdMiddleware` | 取请求头 `X-Trace-Id`（无则用 `TraceIdentifier`），写入 `HttpContext.Items` 并回写响应头，贯穿全链路。 |
 | 3 | `UseXiHanRequestCulture` | 解析请求文化（`X-Language` 等）并设置到当前线程，使后续管线（含控制器/响应过滤器）在请求文化下执行。 |
-| 4 | `XiHanRequestContextMiddleware` | 汇聚 TraceId/文化/用户/租户/客户端 IP/UA/路径/方法/起始时间为 `RequestContext`，写入 `IRequestContextAccessor`。 |
+| 4 | `XiHanRequestContextMiddleware` | 汇聚 TraceId/文化/客户端 IP/UA/路径/方法/起始时间为 `RequestContext`，写入 `IRequestContextAccessor`；用户与租户此时尚未可知，由第 15 步定型写回。 |
 | 5 | `XiHanExceptionLoggingMiddleware` | 管线级异常日志采集（异常队列/告警）。 |
-| 6 | `XiHanRequestLoggingMiddleware` | 请求起止/访问日志采集。 |
+| 6 | `XiHanRequestLoggingMiddleware` | 请求起止/访问日志采集；请求结束时重新读取定型后的 `RequestContext`，访问日志按请求所属的用户与租户记账。 |
 | 7 | `UseRouting` | 端点路由匹配。 |
 | 8 | `UseRateLimiter` | **仅当 `XiHan:Web:RateLimiting:IsEnabled=true`**：按客户端 IP 固定窗口限流，置于路由后、鉴权前，尽早拒绝超额。 |
 | 9 | `XiHanCircuitBreakingMiddleware` | **仅当 `XiHan:Web:CircuitBreaking:IsEnabled=true`**：服务端过载熔断，置于限流后、鉴权前，过载时快速失败。 |
@@ -64,7 +64,7 @@ public class MyModule : XiHanModule { }
 | 12 | `XiHanApiLoggingMiddleware` | 接口访问日志：仅当请求携带 OpenApi 安全头时记录（AccessKey/Signature）。 |
 | 13 | `XiHanOpenApiSecurityMiddleware` | 对受保护路径做签名/内容签名/加密/防重放校验（默认关闭）。 |
 | 14 | `UseAuthentication` | JWT Bearer 认证，填充 `HttpContext.User`。 |
-| 15 | `XiHanTenantResolveMiddleware` | 按贡献者（Header/QueryString）解析租户并 `ICurrentTenant.Change`，置于认证后（可用用户信息）、授权前（授权可依租户）。 |
+| 15 | `XiHanTenantResolveMiddleware` | 按解析链解析租户并 `ICurrentTenant.Change`：已认证请求只以令牌为准；请求头、查询串、兜底租户给出的租户须在 `ITenantStore` 中存在且激活，否则以 400 拒绝。解析后把用户与租户定型写回 `RequestContext`。置于认证后（可用用户信息）、授权前（授权可依租户）。 |
 | 16 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。 |
 | 17 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
 
@@ -159,7 +159,7 @@ public class MyModule : XiHanModule { }
 | `XiHanUnitOfWorkFilter` | 动作级工作单元过滤器：按原始应用服务方法上的 `[UnitOfWork]` 开启工作单元，动作抛异常时不提交、由释放时回滚。 |
 | `OriginalMethodResolver` | 由动态控制器动作回查原始应用服务方法（供上述两个过滤器读取业务特性）。 |
 | `[IgnoreApiResponse]` | 标注类/方法跳过统一响应包装（如自定义流式响应）。 |
-| `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）。 |
+| `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（`sealed record`：TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）；用户与租户在认证与租户解析之后才定型，位于租户解析之前的中间件须在 `await next()` 返回后读取。 |
 | `ITraceIdProvider` / `HttpTraceIdProvider` | TraceId 提供器。 |
 | `XiHanTenantResolveMiddleware` + `HeaderTenantResolveContributor` / `QueryStringTenantResolveContributor` | 多租户解析中间件与两个内置贡献者。 |
 | `XiHanOpenApiSecurityMiddleware` / `IOpenApiSecurityClientStore` / `OpenApiSecurityClient` | OpenAPI 安全中间件、客户端存储与客户端模型。 |
@@ -243,7 +243,7 @@ public class MyModule : XiHanModule { }
 | `HeaderKeys` | `string[]` | `["X-Tenant-Id","x-tenant-id","TenantId"]` | 租户 Header 键。 |
 | `EnableQueryStringResolve` | `bool` | `true` | 启用 QueryString 解析。 |
 | `QueryStringKeys` | `string[]` | `["tenantId","tenant"]` | 租户 QueryString 键。 |
-| `FallbackTenant` | `string?` | `null` | 未解析出租户时的兜底。 |
+| `FallbackTenant` | `string?` | `null` | 未解析出租户时的兜底；须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝。 |
 
 ### 异步日志队列：`XiHan:Auditing:LogQueue`（`XiHanAuditingLogQueueOptions`，来自 [Auditing](./auditing) 包）
 

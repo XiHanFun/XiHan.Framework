@@ -370,8 +370,8 @@ public sealed class OrderCommandHandler(ITelegramNotifier notifier) : IBotComman
 
 | 接口 | 默认实现 | 多实例下的问题 |
 | --- | --- | --- |
-| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 进程内 TTL 字典，**多实例失效** |
-| `IConversationStateStore` | `DefaultConversationStateStore` | 同上，会话状态不跨实例 |
+| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 进程内 TTL 字典（30 分钟，最多 100000 条，满载抛异常），**多实例失效** |
+| `IConversationStateStore` | `DefaultConversationStateStore` | 进程内（最多 50000 条，满载抛异常），会话状态不跨实例 |
 | `ITelegramMessageAuditStore` | `NoOpTelegramMessageAuditStore` | 不落任何审计 |
 
 替换方式同样是 `Replace`。

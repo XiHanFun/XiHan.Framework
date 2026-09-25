@@ -42,7 +42,7 @@ public class MyModule : XiHanModule { }
 - `IWorkflowExpressionEvaluator` → `WorkflowExpressionEvaluator`（内置轻量表达式）
 - `IWorkflowActivityRegistry` → `WorkflowActivityRegistry`
 - `IWorkflowEventPublisher` → `LocalEventBusWorkflowEventPublisher`
-- `IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore` → 三个 **`InMemory*`** 实现
+- `IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore` → `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore`（有界进程内实现，`TryAddSingleton`）
 - `IWorkflowEngine` → `WorkflowEngine`
 - `IWorkflowDefinitionManager` → `WorkflowDefinitionManager`
 - `IWorkflowUserTaskService` → `WorkflowUserTaskService`
