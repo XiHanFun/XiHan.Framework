@@ -11,7 +11,7 @@
 
 XiHan.Framework.Upgrade 把分布式部署下的「安全升级」抽象成一套统一编排：应用启动或运维触发时，检测当前应用 / 数据库版本是否落后，落后则抢占分布式锁（保证集群内单节点执行），进入维护模式，按语义化版本顺序**幂等**执行 SQL 迁移脚本，回写版本记录，最后可选地替换程序文件、滚动重启。
 
-它提供**编排骨架 + 抽象 + 一批默认实现**，但默认实现大多是 InMemory / Null 占位——**版本存储、分布式锁、迁移执行三项生产环境必须替换为持久化 / 分布式实现**（尤其迁移执行器默认直接抛异常，必须由应用层提供）。
+它提供**编排骨架 + 抽象 + 一批默认实现**，但默认实现大多是有界进程内实现（`DefaultUpgradeVersionStore` / `DefaultUpgradeLockProvider`）或 Null 空实现——**版本存储、分布式锁、迁移执行三项生产环境必须替换为持久化 / 分布式实现**（尤其迁移执行器默认直接抛异常，必须由应用层提供）。
 
 ## 何时使用
 
@@ -36,8 +36,8 @@ public class MyModule : XiHanModule { }
 | 接口 | 默认实现 | 生命周期 | 生产可用性 |
 | --- | --- | --- | --- |
 | `IUpgradeScriptProvider` | `FileSystemUpgradeScriptProvider` | Singleton | 可用（从文件系统扫描 SQL） |
-| `IUpgradeVersionStore` | `DefaultUpgradeVersionStore` | Scoped | 最多 10000 个租户、每租户 10000 条迁移历史；生产需替换为数据库实现 |
-| `IUpgradeLockProvider` | `DefaultUpgradeLockProvider` | Singleton | 最多 10000 个锁条目；多节点需替换为应用级分布式锁 |
+| `IUpgradeVersionStore` | `DefaultUpgradeVersionStore` | Scoped | 最多 10000 个租户、每租户 10000 条迁移历史，超限抛 `InvalidOperationException`；生产需替换为数据库实现 |
+| `IUpgradeLockProvider` | `DefaultUpgradeLockProvider` | Singleton | 最多 10000 个锁条目，满载时获取失败（引擎报「升级锁已被占用」）；多节点需替换为应用级分布式锁 |
 | `IUpgradeMigrationExecutor` | `DefaultUpgradeMigrationExecutor` | Singleton | **必须替换**（默认直接抛异常，见下） |
 | `IUpgradeTenantProvider` | `DefaultUpgradeTenantProvider` | Scoped | 视多租户需求替换（默认只返回当前 `ICurrentTenant`，不会遍历租户库） |
 | `IUpgradeStatusService` | `UpgradeStatusService` | Scoped | 可用 |
@@ -49,7 +49,9 @@ public class MyModule : XiHanModule { }
 
 ### 启动自动检查
 
-`XiHanUpgradeModule.OnPostApplicationInitializationAsync` 在应用初始化后运行，受 `XiHanUpgradeOptions.EnableAutoCheckOnStartup`（默认 `true`）门控：为 `true` 且已注册 `IUpgradeVersionStore` / `IUpgradeStatusService` 时，调用 `IUpgradeStatusService.EnsureInitializedAsync()` 完成初始化。**注意：启动阶段只做「初始化」，真正执行升级由 `IUpgradeEngine.ExecuteAsync` / `IUpgradeCoordinator.StartAsync` 触发。**
+`XiHanUpgradeModule.OnPostApplicationInitializationAsync` 在应用初始化后运行，受 `XiHanUpgradeOptions.EnableAutoCheckOnStartup`（默认 `true`）门控：为 `true` 且已注册 `IUpgradeVersionStore` / `IUpgradeStatusService` 时，调用 `IUpgradeStatusService.EnsureInitializedAsync()` 建出版本记录，再**同步执行** `IUpgradeEngine.ExecuteAsync()` 跑完待执行的脚本；引擎返回 `Failed` 时抛出异常中断启动，未注册引擎时跳过。这里不走 `IUpgradeCoordinator`：后者把执行丢进 `Task.Run` 且吞掉异常，应用会带着半迁移的结构对外服务。
+
+同时用了数据模块的建表与播种时，把引擎接到数据模块的 `IDbSchemaUpgrader` 上，让脚本先于种子执行；新建的库先 `IUpgradeEngine.BaselineAsync()` 登记为最新版本，不补跑历史脚本。写法见 [升级指南](../guide/upgrade#与数据库初始化的先后)。
 
 ## 工作原理（UpgradeEngine 编排）
 
@@ -89,7 +91,8 @@ migrations/
 - **版本存储与状态管理**：`IUpgradeVersionStore` 建表、取 / 建版本记录、写升级中 / 完成 / 失败状态、追加并去重迁移历史。
 - **迁移执行（幂等）**：按语义化版本分组排序脚本，逐条去重执行，历史留痕；执行经 `IUpgradeMigrationExecutor`（应保证事务）。
 - **分布式锁**：`IUpgradeLockProvider` 抢占带过期的资源锁，`IUpgradeLockToken`（`IAsyncDisposable`）负责释放，确保集群内单节点升级。
-- **启动自动检查**：受 `EnableAutoCheckOnStartup` 门控，在 `OnPostApplicationInitializationAsync` 初始化。
+- **启动自动升级**：受 `EnableAutoCheckOnStartup` 门控，在 `OnPostApplicationInitializationAsync` 建版本记录并同步执行迁移，失败即中断启动。
+- **新库基线登记**：`BaselineAsync` 把按当前实体新建出来的库直接登记为最新脚本版本，历史脚本只在它所属版本之前建的库上执行。
 - **语义化版本比较**：`SemanticVersion` 提供解析与比较，用于强制升级判定与脚本排序。
 - **主节点 / 多租户编排**：可配置仅主节点执行升级，支持逐租户隔离升级。
 - **运维扩展**：维护模式、程序文件替换、滚动重启均为可插拔扩展点（默认 Null 空实现）。
@@ -98,10 +101,10 @@ migrations/
 
 | 类型 | 关键成员 / 说明 |
 | --- | --- |
-| `IUpgradeEngine` / `UpgradeEngine` | 升级引擎（编排核心）：`Task<UpgradeStartResult> ExecuteAsync(CancellationToken)` |
+| `IUpgradeEngine` / `UpgradeEngine` | 升级引擎（编排核心）：`Task<UpgradeStartResult> ExecuteAsync(CancellationToken)`；`Task<bool> BaselineAsync(CancellationToken)` 在当前库还没有版本记录时按最新脚本版本与当前应用版本登记，已有记录返回 `false` 且不改动 |
 | `IUpgradeCoordinator` / `UpgradeCoordinator` | 升级协调器（后台启动）：`Task<UpgradeStartResult> StartAsync()`；内部用 `AsyncLock` 防重入，若上一次任务尚未完成，再次调用直接返回 `Started=false`、`Status=Upgrading` 而不会并发再起一个任务 |
 | `IUpgradeStatusService` / `UpgradeStatusService` | 状态服务：`EnsureInitializedAsync()`、`GetVersionSnapshotAsync(clientVersion?, ...)`、`GetUpgradeStatusAsync(...)` |
-| `IUpgradeVersionStore` | 版本 / 状态存储、迁移历史：`EnsureTablesAsync`、`GetOrCreateAsync`、`GetLatestHistoryAsync`、`SetUpgradingAsync`、`SetUpgradeCompletedAsync`、`SetUpgradeFailedAsync`、`UpdateDbVersionAsync`、`AddMigrationHistoryAsync`、`HasMigrationHistoryAsync` |
+| `IUpgradeVersionStore` | 版本 / 状态存储、迁移历史：`EnsureTablesAsync`、`GetOrCreateAsync`、`GetLatestHistoryAsync`、`SetUpgradingAsync`、`SetUpgradeCompletedAsync`、`SetUpgradeFailedAsync`、`UpdateDbVersionAsync`、`AddMigrationHistoryAsync`、`HasMigrationHistoryAsync`、`TryCreateBaselineAsync`（没有版本记录时按给定版本登记一条，已有记录返回 `false`） |
 | `IUpgradeMigrationExecutor` | 迁移脚本执行器（内部保证事务）：`Task ExecuteAsync(string sql, CancellationToken)` |
 | `IUpgradeScriptProvider` | 脚本发现来源：`Task<IReadOnlyList<UpgradeScript>> GetScriptsAsync(...)`（默认 `FileSystemUpgradeScriptProvider`） |
 | `IUpgradeLockProvider` / `IUpgradeLockToken` | 分布式锁：`TryAcquireLockAsync(resourceKey, expiry, nodeName, ...)`；令牌含 `ResourceKey`、`LockId`、`IsReleased`、`ReleaseAsync()`（`IAsyncDisposable`） |
@@ -126,7 +129,7 @@ migrations/
 | `MigrationsRootPath` | `string` | `"migrations"` | 迁移脚本根目录（相对路径基于应用根目录） |
 | `LockResourceKey` | `string` | `"SystemUpgrade"` | 分布式锁资源键 |
 | `LockExpirySeconds` | `int` | `600` | 分布式锁过期时间（秒） |
-| `EnableAutoCheckOnStartup` | `bool` | `true` | 启动时自动检查（初始化） |
+| `EnableAutoCheckOnStartup` | `bool` | `true` | 启动时建版本记录并同步执行迁移，失败即中断启动 |
 | `NodeName` | `string?` | `null` | 当前节点名（为空用「机器名-实例Id」） |
 | `PrimaryNodeName` | `string?` | `null` | 主节点名（配置后仅主节点可执行升级） |
 | `EnableMultiTenantIsolation` | `bool` | `false` | 是否逐租户隔离升级 |

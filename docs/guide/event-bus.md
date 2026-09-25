@@ -239,7 +239,7 @@ PublishAsync(useOutbox: true)
 | 清理 | 每轮末尾 `DeleteOldEventsAsync`；内存实现只清理非等待中、且最后修改时间超过 7 天的记录 |
 
 ::: danger 默认事件盒在内存里
-`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
+`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，各最多 100000 条，进程一停全部丢失，重试计数也只在当前进程内累计。发件箱满载时发布抛 `InvalidOperationException`；收件箱满载时先清理 7 天前的已处理 / 已丢弃记录，仍满则抛出。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
 :::
 
 ```csharp

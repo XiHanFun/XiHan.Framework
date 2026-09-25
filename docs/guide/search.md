@@ -52,7 +52,7 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 ```
 
 ::: warning 进程内实现能做什么、不能做什么
-`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每索引 100000 条文档；索引状态放在进程内，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每索引 100000 条文档，超限抛 `InvalidOperationException`（批量写入整批拒绝）；索引状态放在进程内，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
 
 用它验证「链路通不通」可以，验证「搜得准不准」不行。生产必须换实现。
 :::
@@ -62,11 +62,11 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 三步：建索引 → 写文档 → 查。
 
 ```csharp
-using XiHan.Framework.SearchEngines;
-using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
-using XiHan.Framework.SearchEngines.Results;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 
 public class ArticleSearchService(ISearchEngine search)
 {
@@ -185,6 +185,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.SearchEngines;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
 

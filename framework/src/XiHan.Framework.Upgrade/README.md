@@ -17,7 +17,8 @@ XiHan.Framework.Upgrade 提供分布式安全升级的底层引擎与流程编�
 ## 配置与约定
 - 配置节：`XiHan:Upgrade`
 - 关键配置项：`MinSupportVersion`、`MigrationsRootPath`、`LockResourceKey`、`LockExpirySeconds`、`EnableAutoCheckOnStartup`
-- 运行时实现要求：业务侧必须提供 `IUpgradeVersionStore`、`IUpgradeLockProvider`、`IUpgradeMigrationExecutor` 的实现
+- 运行时实现要求：业务侧必须提供 `IUpgradeMigrationExecutor`（默认实现直接抛异常）；`IUpgradeVersionStore`、`IUpgradeLockProvider` 的默认实现 `DefaultUpgradeVersionStore` / `DefaultUpgradeLockProvider` 为有界进程内实现，只适用于开发与单实例，生产与多节点需替换为数据库版本存储与分布式锁
+- 启动行为：`EnableAutoCheckOnStartup`（默认 `true`）开启时，应用初始化后建出版本记录并同步执行待执行脚本，失败即中断启动；与数据模块的建表、播种配合时，经 `IDbSchemaUpgrader` 接入，新建的库用 `IUpgradeEngine.BaselineAsync` 登记为最新版本
 
 ## 使用方式
 ```csharp

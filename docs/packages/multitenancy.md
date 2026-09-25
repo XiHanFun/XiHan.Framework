@@ -16,7 +16,7 @@
 ## 何时使用
 
 - 你的系统需要区分多个租户，并按租户隔离数据与配置
-- 你需要在请求管线里自动识别当前租户（登录用户、`X-Tenant-Id` 头、`tenantId` 查询串——后两者由 Web.Api 提供贡献者）
+- 你需要在请求管线里自动识别当前租户（登录用户的令牌、`X-Tenant-Id` 头、`tenantId` 查询串——后两者由 Web.Api 提供贡献者，只对未认证请求生效）
 - 你需要租户级设置（同一设置项对不同租户取不同值）
 - 你需要从存储中按 Id 或名称查询租户配置（连接串、是否激活、版本等）
 - 你需要按租户判断某功能是否启用（`ITenantFeatureChecker`）
@@ -58,18 +58,24 @@ public class MyModule : XiHanModule { }
   ↓
 得到 TenantIdOrName（若为空且未 Handled，回退到 FallbackTenant）
   ↓
-若仍为空 → 直接 next()（宿主上下文，Id = null）
+为空或为 "0" → 直接 next()（平台，即 0 号租户）
   ↓
 ITenantStore 按 TenantIdOrName 查 TenantConfiguration
   （先按数字 Id 试 FindAsync(long)，再按名称 FindAsync(string)）
   ↓
-命中 → using CurrentTenant.Change(cfg.Id, cfg.Name) 包裹 next()
-未命中 → 尽力把 TenantIdOrName 解析为 long 后 Change(tenantId, key) 包裹 next()
+来自令牌（CurrentUser 贡献者短路）：
+  命中 → Change(cfg.Id, cfg.Name)
+  未命中但为数字 → Change(数字, key)（令牌已签名，租户目录由应用自管时仍以令牌为准）
+来自外部输入（请求头 / 查询串 / FallbackTenant / 其余贡献者）：
+  命中且 IsActive → Change(cfg.Id, cfg.Name)
+  否则 → 400 拒绝，不进入 next()
+  ↓
+把用户与租户定型写回 IRequestContextAccessor，在租户作用域内执行 next()
 ```
 
 链的组成（默认顺序）：
 
-1. `CurrentUserTenantResolveContributor`（本包，插在首位）——从登录用户的 `ICurrentUser.TenantId` 解析；未登录或无租户则跳过
+1. `CurrentUserTenantResolveContributor`（本包，插在首位）——已认证请求以令牌为准：带租户声明即该租户，不带即平台，两种情况都短路解析链，请求头与查询串无法替已认证身份另选租户；未认证请求跳过，交给后续贡献者
 2. `HeaderTenantResolveContributor`（Web.Api 追加）——按 `HeaderKeys` 读请求头
 3. `QueryStringTenantResolveContributor`（Web.Api 追加）——按 `QueryStringKeys` 读查询串
 
@@ -77,11 +83,11 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 
 ### 租户级设置隔离
 
-`TenantSettingValueProvider`（提供者名 `"T"`）继承设置包的 `SettingValueProvider`，读值时以「当前租户键」作为 ProviderKey 调设置存储。租户键取值优先用 `ICurrentTenant.Name`，为空则回退到 `Id?.ToString()`。它被插入到设置值提供者链的 `GlobalSettingValueProvider`（`"G"`）之后，从而实现「先看全局、再被租户覆盖」的语义。详见 [Settings](./settings)。
+`TenantSettingValueProvider`（提供者名 `"T"`）继承设置包的 `SettingValueProvider`，读值时以「当前租户键」作为 ProviderKey 调设置存储。租户键只取 `ICurrentTenant.Id`（大于 0 时）的字符串形式，平台（0 号租户）没有租户级取值；不用租户名称定键，因为同一租户在请求管道里带名称切入、在后台按标识切入，按名称定键会落出两套设置。它被插入到设置值提供者链的 `GlobalSettingValueProvider`（`"G"`）之后，从而实现「先看全局、再被租户覆盖」的语义。详见 [Settings](./settings)。
 
 ### 租户功能开关
 
-`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以租户键作 ProviderKey、`"T"` 作 ProviderName 读值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，其它/空值返回传入的 `defaultValue`。
+`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以租户标识作 ProviderKey（与租户级设置同一口径）、`"T"` 作 ProviderName 读值；平台（0 号租户）没有租户级功能值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，其它/空值返回传入的 `defaultValue`。
 
 ## 核心能力
 
@@ -100,7 +106,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id is > 0` |
 | `AsyncLocalCurrentTenantAccessor` | 基于 `AsyncLocal<BasicTenantInfo?>` 的访问器，单例 `Instance`，私有构造 |
 | `TenantResolveContributorBase` | 自定义租户解析贡献者的抽象基类（`abstract string Name` / `abstract Task ResolveAsync(...)`） |
-| `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`；从 `ICurrentUser.TenantId` 解析（未认证/无租户则跳过） |
+| `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`（常量 `ContributorName`）；已认证请求取 `ICurrentUser.TenantId`（为空即平台）并短路解析链，未认证请求跳过 |
 | `XiHanTenantResolveOptions` | 解析选项（配置节 `XiHan:MultiTenancy:Resolve`），见下表 |
 
 ### 存储与功能
@@ -111,7 +117,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `ITenantStore` | 租户存储契约：`Task<TenantConfiguration?> FindAsync(long id, ...)`、`Task<TenantConfiguration?> FindAsync(string name, ...)`、`Task<IReadOnlyList<TenantConfiguration>> GetListAsync(bool includeInactive = true, ...)` |
 | `DefaultTenantStore` | 默认实现，从 `XiHanDefaultTenantStoreOptions.Tenants` 读取（`IOptionsMonitor` 热更新）；`FindAsync(string)` 支持纯数字按 Id、否则按 `Name`/`NormalizedName` 不区分大小写匹配 |
 | `XiHanDefaultTenantStoreOptions` | 配置节 `XiHan:MultiTenancy:DefaultStore`，字段 `TenantConfiguration[] Tenants`（默认空数组） |
-| `TenantSettingValueProvider` | 租户级设置值提供者，`ProviderName = "T"`；租户键优先 `Name`、回退 `Id` |
+| `TenantSettingValueProvider` | 租户级设置值提供者，`ProviderName = "T"`；租户键只取租户标识，平台没有租户级取值 |
 | `ITenantFeatureChecker` / `TenantFeatureChecker` | `Task<bool> IsEnabledAsync(string featureName, bool defaultValue = false)`、`Task<string?> GetValueOrNullAsync(string featureName)`；功能键前缀 `Feature:` |
 
 ## 配置
@@ -125,7 +131,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `HeaderKeys` | `string[]` | `["X-Tenant-Id", "x-tenant-id", "TenantId"]` | Header 租户键（按优先级） |
 | `EnableQueryStringResolve` | `bool` | `true` | 是否启用 QueryString 解析 |
 | `QueryStringKeys` | `string[]` | `["tenantId", "tenant"]` | QueryString 租户键（按优先级） |
-| `FallbackTenant` | `string?` | `null` | 解析链未命中且未 Handled 时的回退租户标识 |
+| `FallbackTenant` | `string?` | `null` | 解析链未命中且未 Handled 时的回退租户标识；与请求头、查询串一样须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝 |
 
 配置节 `XiHan:MultiTenancy:DefaultStore`（`XiHanDefaultTenantStoreOptions.SectionName`）：
 
@@ -168,7 +174,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 ```csharp
 public class OrderService(ICurrentTenant currentTenant)
 {
-    public long? CurrentTenantId => currentTenant.Id; // null = 宿主
+    public long? CurrentTenantId => currentTenant.Id; // null 与 0 同义：平台（0 号租户）
 }
 ```
 
@@ -213,7 +219,8 @@ public class FeatureGate(ITenantFeatureChecker featureChecker)
 
 ## 注意事项与最佳实践
 
-- **框架层 `null` = 宿主；`TenantId = 0` 是应用层约定**：框架抽象中 `TenantId` 为 `long?`，`null` 表示宿主/公共数据。**BasicApp 应用层**另用 `TenantId = 0` 表示全局/宿主数据——这是**应用侧约定**，并非框架强制，框架自身不认识「0 号租户」这一特例。
+- **平台就是 0 号租户**：`ICurrentTenant.Id` 为 `long?`，`null` 与 `0` 同义，都是平台；实体上 `TenantId = 0` 的行是平台 / 全局数据，业务租户从 1 开始。数据过滤、写边界、租户级设置与功能、租户解析统一按这一口径，平台同样只看、只写自己的数据，见 [多租户](../guide/multi-tenancy)。
+- **外部输入的租户必须登记**：请求头、查询串与 `FallbackTenant` 给出的租户在 `ITenantStore` 查不到或未激活时，请求以 400 拒绝。靠匿名请求头识别租户的应用（如租户专属登录页），须把租户登记进 `ITenantStore`。
 - **解析中间件不在本包**：`XiHanTenantResolveMiddleware` 与 Header/QueryString 贡献者在 [Web.Api](./web-api)。只引用本包不会自动解析请求中的租户，需要 Web.Api 模块接入中间件。
 - **中间件在认证之后**：解析链首位的 `CurrentUserTenantResolveContributor` 依赖 `ICurrentUser`，因此中间件排在 `UseAuthentication()` 之后才能拿到已认证用户的 `TenantId`。
 - **默认存储是内存快照**：`DefaultTenantStore` 每次查询会克隆配置快照（含连接串）返回，适合小规模静态租户；生产多租户建议替换为数据库版 `ITenantStore`。

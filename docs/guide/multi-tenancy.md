@@ -26,7 +26,10 @@ public class OrderService(ICurrentTenant currentTenant) : ITransientDependency
 
 ### 谁来设置它
 
-请求链路里由 **`XiHanTenantResolveMiddleware`** 设置，位置在**认证之后**（要读令牌里的租户 claim）、**授权之前**（授权判定要在租户上下文里进行）。
+请求链路里由 **`XiHanTenantResolveMiddleware`** 设置，位置在**认证之后**（要读令牌里的租户 claim）、**授权之前**（授权判定要在租户上下文里进行）。租户来源分两种信任级别：
+
+- **令牌**：已认证请求一律以令牌为准——带租户声明即该租户，不带即平台。请求头、查询串不能替已认证身份另选租户，否则宿主令牌可以逐请求自选任意租户、绕过成员关系。
+- **外部输入**：未认证请求才看 `X-Tenant-Id` 请求头、`tenantId` 查询串与 `FallbackTenant`。给出的租户必须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝；靠匿名请求头识别租户的场景（如租户专属登录页），要把租户登记进 `ITenantStore`。
 
 非请求场景（定时任务、后台作业、控制台）**没有中间件**，要自己切：
 

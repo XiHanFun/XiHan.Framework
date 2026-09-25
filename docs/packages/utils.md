@@ -154,9 +154,9 @@ public static T GetRandomOf<T>(params T[] objs)
 public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)   // Fisher-Yates
 ```
 
-**`RegexHelper`**（`public static partial`，源生成器编译正则）暴露 65 个 `partial Regex` 工厂属性，如 `EmailRegex()`、`IpRegex()`、`Ipv6Regex()`、`UrlRegex()`、`StrongPasswordRegex()`、`HexColorRegex()`、`Iso8601DateTimeRegex()`、`WindowsPathRegex()` 等，另有 `IsMatch(string input, string pattern, RegexOptions options = RegexOptions.IgnoreCase)`。
+**`RegexHelper`**（`public static partial`，源生成器编译正则）暴露 66 个 `partial Regex` 工厂属性，如 `EmailRegex()`、`NumberIdRegex()`（不含前导零的正整数，`StringHelper.IsNumberId` 使用）、`IpRegex()`、`Ipv6Regex()`、`UrlRegex()`、`StrongPasswordRegex()`、`HexColorRegex()`、`Iso8601DateTimeRegex()`、`WindowsPathRegex()` 等，另有 `IsMatch(string input, string pattern, RegexOptions options = RegexOptions.IgnoreCase)`。
 
-其余：`DateTimeHelper`（工作日/年龄/友好时间/月边界）、`MathHelper`（几何/统计/质数/斐波那契）、`ArrayHelper`（`Find`/`Insert`/`Remove`/`Shuffle`）、`CloneHelper`（`DeepCopy` / `CopyProperties` / `MapObject`）、`CompareHelper`（`DeepEquals` / `GetHashCodeDeep`）、`LogicHelper`（函数式 `If`/`Switch`/`TryExecute`/`RetryAsync`）、`SystemInfoManager`（`GetSystemInfo()` 汇总硬件+运行时）。
+其余：`DateTimeHelper`（工作日/年龄/友好时间/月边界）、`MathHelper`（几何/统计/质数/斐波那契/阶乘；`Fibonacci(count)` 的 `count` 须在 1–`MaxFibonacciCount`(47)、`Factorial(number)` 的 `number` 须在 0–`MaxFactorialInput`(20)，越界抛 `ArgumentOutOfRangeException`）、`ArrayHelper`（`Find`/`Insert`/`Remove`/`Shuffle`）、`CloneHelper`（`DeepCopy` / `CopyProperties` / `MapObject`）、`CompareHelper`（`DeepEquals` / `GetHashCodeDeep`）、`LogicHelper`（函数式 `If`/`Switch`/`TryExecute`/`RetryAsync`）、`SystemInfoManager`（`GetSystemInfo()` 汇总硬件+运行时）。
 
 ### 二、扩展方法 `Extensions`
 
@@ -373,7 +373,7 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 
 **`DirectoryHelper`**：`CreateIfNotExists` / `DeleteIfExists` / `Clear` / `Copy`、`GetFiles(path, pattern, isSearchChild)`、`GetSize(dirPath)`、`GetBaseDirectory()` / `GetWwwrootDirectory()`、`IsEmpty(path)`。
 
-**`PathHelper`** — 路径校验/规范化/安全（防目录穿越）：`IsValidPath`、`IsPathSafe(string path, string basePath)`、`NormalizePath`、`ToUnixPath` / `ToWindowsPath`、`SanitizeFileName`、`GetRelativePath` / `GetAbsolutePath`、`CombinePaths(params string[])`、`GetPathComponents`（返回 `PathComponents` record）。
+**`PathHelper`** — 路径校验/规范化/安全（防目录穿越）：`IsValidPath`、`IsPathSafe(string path, string basePath)`、`NormalizePath`、`ToUnixPath` / `ToWindowsPath`、`SanitizeFileName`、`GetRelativePath` / `GetAbsolutePath`、`CombinePaths(params string[])`、`GetPathComponents`（返回 `PathComponents` record）。`PathComparison` / `PathComparer` 是本机路径的大小写口径（Windows / macOS 不区分，其余平台区分），`PathEquals` / `IsSubPath` / `GetCommonPath` 均按它比较；`IsPathSafe` / `IsSubPath` 按分隔符边界判定（`/app/database` 不算 `/app/data` 的子路径）；`SanitizeFileName` / `IsValidFileName` 按各平台限制的并集处理，结果与运行平台无关。
 
 **`StreamHelper`** — 全面的流工具：读写（`ReadAllBytesAsync` / `WriteAllTextAsync`）、拷贝（`CopyToAsync`、带进度 `CopyToWithProgressAsync`）、内存流/Base64 互转、GZip 压缩（`CompressBytes` / `DecompressBytes`）、哈希（`ComputeMD5Hash` / `ComputeSHA256Hash`）、流对比（`CompareStreamsAsync`）。
 
@@ -420,10 +420,10 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 public static void Configure(Action<CacheOptions> configure)
 public static T? Get<T>(string key)
 public static bool TryGetValue<T>(string key, out T? value)
-public static void Set<T>(string key, T value, TimeSpan expiration)
+public static void Set<T>(string key, T value, TimeSpan expireSpan)
 public static void SetSliding<T>(string key, T value, TimeSpan slidingExpiration, DateTimeOffset? absoluteExpiration = null)
-public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expiration)
-public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expiration, CancellationToken cancellationToken = default)
+public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expireSpan)
+public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expireSpan, CancellationToken cancellationToken = default)
 public static int RemoveByPrefix(string prefix)
 public static void Clear()
 ```
@@ -518,7 +518,7 @@ using XiHan.Framework.Utils.Diagnostics;
 
 // 1) 哈希 + 脱敏 + 命名转换
 var digest = HashHelper.Sha256("payload");
-var masked = "13800138000".MaskPhone();          // 138****8000
+var masked = MaskHelper.MaskPhone("13800138000");    // 138****8000
 var col = "UserName".ToSnakeCase();               // user_name
 
 // 2) 序列化：对象 <-> JSON（camelCase、Try 风格）
@@ -547,7 +547,7 @@ using XiHan.Framework.Utils.Timing;
 var user = await CacheHelper.GetOrAddAsync(
     key: $"user:{id}",
     factory: async _ => await LoadUserAsync(id),
-    expiration: TimeSpan.FromMinutes(5));
+    expireSpan: TimeSpan.FromMinutes(5));
 
 // 6) 时间区间便捷属性
 var lastWeek = DateTimeRange.LastWeek;   // StartTime / EndTime

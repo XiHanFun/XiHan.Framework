@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Script`
 - **模块类**：`XiHanScriptModule`（不注册额外服务，仅占位）
 - **所在层**：基础设施层
-- **关键依赖**：`Microsoft.CodeAnalysis.CSharp`（Roslyn，5.6.0）+ 框架内部依赖（[XiHan.Framework.Core](./core)）。
+- **关键依赖**：`Microsoft.CodeAnalysis.CSharp`（Roslyn）+ 框架内部依赖（[XiHan.Framework.Core](./core)）。
 
 ## 概述
 
@@ -41,7 +41,7 @@ public class MyModule : XiHanModule { }
 2. **编译**：Roslyn 用 `CompilerOptions`（语言版本、优化级别、调试信息等）编译到内存程序集；失败返回带诊断的 `CompilationResult`。
 3. **缓存**：按脚本内容与选项生成缓存键，命中则复用已编译程序集（结果 `FromCache=true`）。
 4. **安全校验**：若 `SecurityOptions.EnableSecurityChecks`，对编译出的程序集 `assembly.GetTypes()` 做反射检查——命中禁止命名空间/类型/不安全代码/危险方法名则抛 `ScriptSecurityException`。
-5. **执行 + 超时**：反射调用入口方法，用 `CancellationTokenSource(TimeoutMs)` 控制时长，超时抛 `ScriptTimeoutException`；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存分配量、诊断）。其中 `MemoryUsage.AllocatedBytes` 是执行期间的分配字节数，恒为非负；因取自进程级累计计数，并发执行的脚本会互相计入对方的分配量。
+5. **执行 + 超时**：反射调用入口方法，执行任务与 `Task.Delay(TimeoutMs)` 竞速，超时后 `ExecuteAsync` 返回失败结果（`Exception` 为 `ScriptTimeoutException`），脚本线程仍在后台跑完；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存分配量、诊断）。其中 `MemoryUsage.AllocatedBytes` 是执行期间的分配字节数，恒为非负；因取自进程级累计计数，并发执行的脚本会互相计入对方的分配量。
 
 ## 核心能力
 
@@ -155,11 +155,12 @@ var result = await XiHanScript.RunAsync<int>(
 
 ```csharp
 var options = ScriptOptions.Default
-    .WithStrictSecurity()   // 禁文件/网络/反射，禁不安全代码
+    .WithStrictSecurity()   // 目前实际生效的只有 AllowUnsafe=false；EnableStrictMode 与 Allow* 标志引擎尚未读取
     .WithTimeout(2000);
 
 var res = await XiHanScript.RunAsync("result = System.Environment.MachineName;", options);
-// 命中 ForbiddenTypes(Environment) → res.IsSuccess=false，抛/记 ScriptSecurityException
+// 不会被拦截，res.IsSuccess 仍为 true：安全检查只看脚本「声明」的类型与方法名，不看调用。
+// 要拦截某类写法，往 ForbiddenNamespaces / ForbiddenTypes / DangerousKeywords 里加，并按上面的检查口径设计
 ```
 
 ## 扩展点 / 自定义
@@ -168,21 +169,21 @@ var res = await XiHanScript.RunAsync("result = System.Environment.MachineName;",
 - **自定义安全策略**：构造 `SecurityOptions` 或用 `Strict/Permissive/Disabled` 预设，再经 `ScriptOptions.WithSecurity(...)` 调整黑名单。
 - **附加引用/导入**：需要脚本访问业务类型时用 `ScriptOptions` 的 `AddReference(typeof(X))` / `AddImport("Your.Namespace")`（注意上面「已知限制」，不要经 `ScriptEngineBuilder` 配置后误以为已生效）。
 - **脚本模板**：`ScriptTemplateManager` 构造时自动加载 3 个内置系统模板（`HelloWorld`/`MathCalculator`/`DataProcessor`，`IsSystem=true`，不可删除/覆盖保存），并从模板目录（默认 `AppDomain.CurrentDomain.BaseDirectory/Templates`，可在构造函数传入）加载 `*.json` 自定义模板；`ScriptTemplate.Code` 用 `#{参数名}` 占位符，`GenerateCode(parameters)` 做纯字符串替换（不是 Scriban/正则模板引擎），`ValidateParameters` 按 `TemplateParameter`（`Required`/`MinValue`/`MaxValue`/`Pattern`/`Options` 等）做必填、数值范围、正则、枚举取值校验。
-- **执行监控**：`ScriptMonitor`（配 `ScriptMonitorOptions`，预设 `Default`/`HighPerformance`/`Verbose`）是独立组件，**不会**被 `ScriptEngine`/`XiHanScript` 自动调用——需要调用方自己在执行后调 `monitor.LogExecution(result, scriptCode, scriptPath)` 记录；随后可用 `GetExecutionLogs`/`GetStatistics()`（`ScriptExecutionStatistics`，含成功率、缓存命中率、最近一小时执行数、最慢脚本等）/`GetPerformanceInfo()`、订阅 `ScriptExecuted`/`PerformanceWarning` 事件，或 `ExportLogsAsync` 导出 JSON/CSV/XML（`LogExportFormat`）。
+- **执行监控**：`ScriptMonitor`（配 `ScriptMonitorOptions`，预设 `Default`/`HighPerformance`/`Verbose`；`MemoryUsageBytes` 与 `HighMemoryUsageThresholdBytes`（默认 100MB）按单次执行的分配字节数计）是独立组件，**不会**被 `ScriptEngine`/`XiHanScript` 自动调用——需要调用方自己在执行后调 `monitor.LogExecution(result, scriptCode, scriptPath)` 记录；随后可用 `GetExecutionLogs`/`GetStatistics()`（`ScriptExecutionStatistics`，含成功率、缓存命中率、最近一小时执行数、最慢脚本等）/`GetPerformanceInfo()`、订阅 `ScriptExecuted`/`PerformanceWarning` 事件，或 `ExportLogsAsync` 导出 JSON/CSV/XML（`LogExportFormat`）。
 - **调试选项（预留，未接入引擎）**：`DebugOptions`（含 `Verbose()`/`Production()` 预设）、`Breakpoint`、`DebugLevel`、`HitCountCondition` 是独立的公开数据模型，当前未被 `ScriptOptions`/`ScriptEngine` 引用或消费——即设置断点/调试级别目前不会对脚本执行产生任何实际效果，不要据此设计依赖真实调试能力的功能。
 
 ## 注意事项与最佳实践
 
 - **不是安全沙箱**：静态黑名单可被绕过（如经字符串拼接/间接调用），且脚本在宿主进程内运行。**不要用它执行不可信的任意代码**；确需运行不可信代码请用进程/容器级隔离。
 - **`Statement` 脚本的返回值**：给内置 `result` 赋值；`Expression` 则直接是表达式的值。
-- **超时是软控制**：`ScriptTimeoutException` 依赖协作式取消，纯 CPU 死循环不一定能被及时中断。
+- **超时只保护调用方**：到 `TimeoutMs` 即返回超时失败，但中断不了正在运行的脚本线程，纯 CPU 死循环会一直占用线程池线程。
 - **首次编译有开销**：重复执行相同脚本请保持 `EnableCache=true` 并复用引擎实例，以命中编译缓存。
 - **模块不注册服务**：不能注入 `IScriptEngine`；通过 `XiHanScript` / `ScriptEngineFactory` 使用。
 
 ## 依赖模块
 
 - [XiHan.Framework.Core](./core) — 唯一的框架内部依赖，提供模块化与依赖注入基座。
-- 第三方核心依赖：`Microsoft.CodeAnalysis.CSharp`（Roslyn，5.6.0）。
+- 第三方核心依赖：`Microsoft.CodeAnalysis.CSharp`（Roslyn）。
 
 ## 相关模块
 

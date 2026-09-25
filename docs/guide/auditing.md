@@ -264,7 +264,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 
 ## 与多租户的配合
 
-6 类记录里只有 `EntityDiffLogRecord` 自带 `TenantId`，由 `DefaultEntityAuditContextProvider` 取 `ICurrentUser.TenantId ?? ICurrentTenant?.Id` 填充。另外 5 类记录模型**没有租户字段**——需要按租户分区就在写入器里补，但补之前要看清下面这条。
+6 类记录都自带 `TenantId`（`null` 即平台）。`EntityDiffLogRecord` 由 `DefaultEntityAuditContextProvider` 取 `ICurrentUser.TenantId ?? ICurrentTenant?.Id` 填充；访问、操作、异常、API 四类日志由 Web.Api 的采集点取请求所属租户——租户解析完成后定型写回 `RequestContext` 的那个值，已认证请求即令牌里的租户；登录日志由产生它的应用在采集时填。写入器按 record 上的 `TenantId` 落戳，不要再读环境上下文，原因见下面这条。
 
 ::: danger 队列模式下写入器读不到当前用户 / 租户
 后台消费者在自己的线程上用 `IServiceScopeFactory.CreateScope()` 新建作用域：没有 `HttpContext`，AsyncLocal 的租户上下文也不流到那里。写入器里读 `ICurrentUser` / `ICurrentTenant` 会得到空值。
@@ -348,7 +348,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 
 - [数据访问](./data)：仓储写路径、审计字段自动赋值
 - [工作单元与事务](./uow)：差异日志与业务同事务的前提
-- [多租户](./multi-tenancy)：租户上下文与平台态
+- [多租户](./multi-tenancy)：租户上下文与平台（0 号租户）
 - [Web 应用开发](./web)：中间件与过滤器在管线里的位置
 - [Auditing 包文档](../packages/auditing)：完整 API 与配置表
 - [Logging 包文档](../packages/logging)：结构化运行日志（与审计日志是两回事）

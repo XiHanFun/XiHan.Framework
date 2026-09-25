@@ -11,7 +11,7 @@
 
 XiHan.Framework.Traffic 是框架的流量治理库，覆盖灰度路由、限流、熔断三类场景，但三者成熟度不同：
 
-- **灰度路由（GrayRouting）——已完整实现**：内置规则引擎 `IGrayRuleEngine` + 四个匹配器（百分比 / 用户 / 租户 / 请求头）+ 内存规则仓储，开箱即可做灰度决策。
+- **灰度路由（GrayRouting）——已完整实现**：内置规则引擎 `IGrayRuleEngine` + 五个匹配器（百分比 / 用户 / 租户 / 请求头 / IP 地址）+ 内存规则仓储，开箱即可做灰度决策。
 - **限流（RateLimiting）——仅策略接口**：只有 `IRateLimitPolicy` 抽象，**无内置实现**。
 - **熔断（CircuitBreaker）——仅策略接口**：只有 `ICircuitBreakerPolicy` 抽象，**无内置实现**。
 
@@ -40,7 +40,7 @@ public class MyModule : XiHanModule { }
 
 - `IGrayRuleEngine` → `DefaultGrayRuleEngine`
 - `IGrayRuleRepository` → `DefaultGrayRuleRepository`（**生产环境应替换为数据库实现**）
-- 四个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`
+- 五个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`、`IpAddressGrayMatcher`
 
 > 限流 `IRateLimitPolicy` 与熔断 `ICircuitBreakerPolicy` **不会**被模块自动注册任何实现——它们是留给上层接入的策略契约。
 
@@ -59,7 +59,7 @@ public class MyModule : XiHanModule { }
 ## 核心能力
 
 - **灰度路由**：规则引擎按优先级匹配，输出灰度决策（是否命中、目标版本 / 服务、命中规则 Id、原因）。
-- **多维匹配器**：内置百分比、用户 ID、租户 ID、请求头四种；`GrayRuleType` 另预留 `IpAddress`、`Custom` 类型（无内置匹配器，需自行实现）。
+- **多维匹配器**：内置百分比、用户 ID、租户 ID、请求头、IP 地址五种；`GrayRuleType` 另预留 `Custom` 类型（无内置匹配器，需自行实现）。
 - **规则来源可插拔**：仓储接口只读，默认内存实现可用 `ReplaceGrayRuleRepository<T>()` 换成数据库实现；自定义匹配器用 `AddGrayMatcher<T>()` 注册。
 - **限流 / 熔断策略抽象**：`IRateLimitPolicy` / `ICircuitBreakerPolicy` 定义统一契约，供上层接入实现。
 
@@ -71,8 +71,8 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `IGrayRuleEngine` / `DefaultGrayRuleEngine` | 灰度规则引擎：`Task<IGrayDecision> DecideAsync(GrayContext, CancellationToken)` |
 | `IGrayMatcher` | 匹配器契约：`GrayRuleType RuleType { get; }`、`bool IsMatch(GrayContext, IGrayRule)`、`Task<bool> IsMatchAsync(...)` |
-| `PercentageGrayMatcher` / `UserIdGrayMatcher` / `TenantIdGrayMatcher` / `HeaderGrayMatcher` | 四个内置匹配器 |
-| `IGrayRuleRepository` / `DefaultGrayRuleRepository` | 规则仓储（**只读**）；默认实现最多 10000 条，另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员） |
+| `PercentageGrayMatcher` / `UserIdGrayMatcher` / `TenantIdGrayMatcher` / `HeaderGrayMatcher` / `IpAddressGrayMatcher` | 五个内置匹配器 |
+| `IGrayRuleRepository` / `DefaultGrayRuleRepository` | 规则仓储（**只读**）；默认实现最多 10000 条（满载时 `AddRule` 抛 `InvalidOperationException`），另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员） |
 | `IGrayRule` / `GrayRule` | 灰度规则契约与实现（字段见下） |
 | `IGrayDecision` / `GrayDecision` | 决策结果契约与实现，工厂 `GrayDecision.Gray(...)` / `GrayDecision.NotGray(reason)` |
 | `GrayContext` | 灰度上下文（字段见下） |
@@ -105,7 +105,7 @@ public class MyModule : XiHanModule { }
 
 | 方法 | 说明 |
 | --- | --- |
-| `IServiceCollection.AddGrayRouting()` | 注册灰度引擎、内存仓储与四个内置匹配器（模块默认已调用） |
+| `IServiceCollection.AddGrayRouting()` | 注册灰度引擎、内存仓储与五个内置匹配器（模块默认已调用） |
 | `IServiceCollection.AddGrayMatcher<TMatcher>()` | 追加自定义匹配器（如 IpAddress / Custom） |
 | `IServiceCollection.ReplaceGrayRuleRepository<TRepository>()` | 用数据库等实现替换默认内存仓储 |
 
@@ -151,14 +151,14 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ## 扩展点 / 自定义
 
 - **数据库规则仓储**：实现 `IGrayRuleRepository`（只读三方法），`ReplaceGrayRuleRepository<T>()` 替换默认内存实现；规则的写入 / 管理由应用层自行提供。
-- **新增匹配维度**：实现 `IGrayMatcher`（暴露 `RuleType` 并解析 `GrayRule.Configuration`），`AddGrayMatcher<T>()` 注册；这是补齐 `IpAddress` / `Custom` 的标准做法。
+- **新增匹配维度**：实现 `IGrayMatcher`（暴露 `RuleType` 并解析 `GrayRule.Configuration`），`AddGrayMatcher<T>()` 注册；这是补齐 `Custom` 等维度的标准做法。
 - **接入限流 / 熔断**：实现 `IRateLimitPolicy` / `ICircuitBreakerPolicy` 并在 Web 层挂到请求管道；本库不提供实现，也不自动注册。
 
 ## 注意事项与最佳实践
 
 - 灰度规则**按 `Priority` 升序**匹配，命中即短路——把更具体、更高优先的规则设更小的 `Priority`。
 - `PercentageGrayMatcher` 基于每次请求的随机数判断，**同一用户多次请求可能落在不同分支**；需要稳定分流请自行实现基于用户/租户哈希的匹配器。
-- 默认 `DefaultGrayRuleRepository` 是进程内存储，多实例不共享、重启丢失——生产务必替换为数据库仓储。
+- 默认 `DefaultGrayRuleRepository` 是进程内存储（最多 10000 条，满载时 `AddRule` 抛 `InvalidOperationException`），多实例不共享、重启丢失——生产务必替换为数据库仓储。
 - 决策异常被吞并降级为「未命中」（fail-open），不会因规则问题阻断主请求；但要留意日志排查。
 - `IpAddress` / `Custom` 枚举值已预留，但**无对应内置匹配器**，直接使用会因「找不到匹配器」被跳过。
 
