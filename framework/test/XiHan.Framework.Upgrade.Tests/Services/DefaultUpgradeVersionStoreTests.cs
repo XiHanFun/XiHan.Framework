@@ -13,6 +13,7 @@ namespace XiHan.Framework.Upgrade.Tests.Services;
 /// <remarks>
 /// 该实现的状态字典是静态的（进程级共享），因此每个用例都用独占的租户标识建仓，
 /// 避免用例之间互相污染；这也顺带覆盖了「按租户隔离版本状态与迁移历史」的契约。
+/// 平台分区只有一个，落在平台分区的用例改用独占的版本值与脚本名区分各自的写入。
 /// </remarks>
 public class DefaultUpgradeVersionStoreTests
 {
@@ -364,6 +365,79 @@ public class DefaultUpgradeVersionStoreTests
         Assert.True(await firstStore.HasMigrationHistoryAsync("1.0.0", "a.sql", cancellationToken));
         Assert.False(await secondStore.HasMigrationHistoryAsync("1.0.0", "a.sql", cancellationToken));
         Assert.Null(await secondStore.GetLatestHistoryAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// 平台就是 0 号租户：无租户上下文与 Change(0) 取到同一条版本记录，与升级锁同一口径
+    /// </summary>
+    /// <remarks>
+    /// 平台分区在进程内只有一个，这里用独占的数据库版本值区分本用例的写入。
+    /// </remarks>
+    [Fact]
+    public async Task GetOrCreateAsync_WhenPlatformAsNullOrZero_SharesOneState()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var currentTenant = new FakeCurrentTenant();
+        var store = new DefaultUpgradeVersionStore(currentTenant);
+        var dbVersion = $"0.0.{NextTenantId()}";
+
+        var hostState = await store.GetOrCreateAsync("1.0.0", "0.9.0", cancellationToken);
+        UpgradeVersionState zeroState;
+        using (currentTenant.Change(0))
+        {
+            zeroState = await store.GetOrCreateAsync("1.0.0", "0.9.0", cancellationToken);
+            await store.UpdateDbVersionAsync(zeroState, dbVersion, cancellationToken);
+        }
+
+        var reread = await store.GetOrCreateAsync("1.0.0", "0.9.0", cancellationToken);
+
+        Assert.Equal(hostState.Id, zeroState.Id);
+        Assert.Equal(dbVersion, reread.DbVersion);
+        Assert.Equal(0, hostState.TenantId);
+        Assert.Equal(0, reread.TenantId);
+    }
+
+    /// <summary>
+    /// 平台就是 0 号租户：无租户上下文与 Change(0) 共用一份迁移历史，业务租户仍然隔离
+    /// </summary>
+    [Fact]
+    public async Task HasMigrationHistoryAsync_WhenPlatformAsNullOrZero_SharesOneHistory()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var currentTenant = new FakeCurrentTenant();
+        var store = new DefaultUpgradeVersionStore(currentTenant);
+        var zeroScript = $"zero-{Guid.NewGuid():N}.sql";
+        var hostScript = $"host-{Guid.NewGuid():N}.sql";
+
+        using (currentTenant.Change(0))
+        {
+            await store.AddMigrationHistoryAsync(new UpgradeMigrationHistory
+            {
+                TenantId = 0,
+                Version = "1.0.0",
+                ScriptName = zeroScript,
+                ExecutedTime = DateTimeOffset.UtcNow,
+                Success = true
+            }, cancellationToken);
+        }
+
+        await store.AddMigrationHistoryAsync(new UpgradeMigrationHistory
+        {
+            Version = "1.0.0",
+            ScriptName = hostScript,
+            ExecutedTime = DateTimeOffset.UtcNow,
+            Success = true
+        }, cancellationToken);
+
+        Assert.True(await store.HasMigrationHistoryAsync("1.0.0", zeroScript, cancellationToken));
+        using (currentTenant.Change(0))
+        {
+            Assert.True(await store.HasMigrationHistoryAsync("1.0.0", hostScript, cancellationToken));
+        }
+
+        var businessStore = CreateStore(NextTenantId());
+        Assert.False(await businessStore.HasMigrationHistoryAsync("1.0.0", zeroScript, cancellationToken));
+        Assert.False(await businessStore.HasMigrationHistoryAsync("1.0.0", hostScript, cancellationToken));
     }
 
     /// <summary>
