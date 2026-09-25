@@ -21,7 +21,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IClock, Clock>();
         services.AddSingleton<ITimezoneProvider, TZConvertTimezoneProvider>();
-        services.AddTransient<ICurrentTimezoneProvider, CurrentTimezoneProvider>();
+        // 时区按异步流存放，实例本身无状态，与单例时钟共用同一个实例
+        services.AddSingleton<ICurrentTimezoneProvider, CurrentTimezoneProvider>();
 
         return services;
     }

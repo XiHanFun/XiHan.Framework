@@ -61,7 +61,7 @@ public class XiHanTimingModuleTests
             ServiceLifetime.Singleton,
             context.Services.Single(item => item.ServiceType == typeof(ITimezoneProvider)).Lifetime);
         Assert.Equal(
-            ServiceLifetime.Transient,
+            ServiceLifetime.Singleton,
             context.Services.Single(item => item.ServiceType == typeof(ICurrentTimezoneProvider)).Lifetime);
     }
 
