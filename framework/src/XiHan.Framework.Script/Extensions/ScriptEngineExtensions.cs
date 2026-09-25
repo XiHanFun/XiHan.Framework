@@ -199,12 +199,16 @@ public static class ScriptEngineExtensions
     /// </remarks>
     /// <param name="engine">脚本引擎</param>
     /// <param name="scriptCode">脚本代码</param>
-    /// <param name="iterations">正式执行次数，不含预热</param>
+    /// <param name="iterations">正式执行次数，不含预热，必须大于 0</param>
     /// <param name="options">脚本选项</param>
     /// <returns>性能统计信息</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="iterations"/> 小于或等于 0 时抛出，此时不做任何执行</exception>
     public static async Task<PerformanceStatistics> BenchmarkAsync(this IScriptEngine engine,
         string scriptCode, int iterations = 100, ScriptOptions? options = null)
     {
+        // 没有正式执行就没有可统计的结果，在预热之前拒绝
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
+
         var results = new List<ScriptResult>();
 
         // 预热
@@ -236,7 +240,7 @@ public static class ScriptEngineExtensions
         return new PerformanceStatistics
         {
             TotalIterations = iterations,
-            TotalTimeMs = (long)elapsed.TotalMilliseconds,
+            TotalElapsedTime = elapsed,
             MemoryUsageBytes = allocatedBytes,
             SuccessCount = results.Count(r => r.IsSuccess),
             FailureCount = results.Count(r => !r.IsSuccess),
