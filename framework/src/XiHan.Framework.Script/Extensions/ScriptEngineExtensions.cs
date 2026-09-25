@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
+using System.Diagnostics;
 using XiHan.Framework.Script.Core;
 using XiHan.Framework.Script.Enums;
 using XiHan.Framework.Script.Exceptions;
@@ -192,17 +193,19 @@ public static class ScriptEngineExtensions
     /// <summary>
     /// 执行脚本并返回性能统计信息
     /// </summary>
+    /// <remarks>
+    /// 先预热执行 5 次并强制一次垃圾回收，之后才开始统计：耗时与内存分配量都只覆盖 <paramref name="iterations"/> 次正式执行，
+    /// 预热（首次执行通常含编译）及其回收不计入任何统计项。
+    /// </remarks>
     /// <param name="engine">脚本引擎</param>
     /// <param name="scriptCode">脚本代码</param>
-    /// <param name="iterations">执行次数</param>
+    /// <param name="iterations">正式执行次数，不含预热</param>
     /// <param name="options">脚本选项</param>
     /// <returns>性能统计信息</returns>
     public static async Task<PerformanceStatistics> BenchmarkAsync(this IScriptEngine engine,
         string scriptCode, int iterations = 100, ScriptOptions? options = null)
     {
         var results = new List<ScriptResult>();
-        var startTime = DateTime.Now;
-        var startMemory = GC.GetTotalMemory(false);
 
         // 预热
         for (var i = 0; i < 5; i++)
@@ -210,10 +213,15 @@ public static class ScriptEngineExtensions
             await engine.ExecuteAsync(scriptCode, options);
         }
 
-        // 强制垃圾回收
+        // 强制垃圾回收，避免预热留下的垃圾在正式执行期间触发回收、干扰计时
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
+
+        // 统计窗口从这里开始。分配量与 MemoryUsage 同一口径：累计分配字节数单调不减，差值恒为非负；
+        // 计时用单调时钟，不受系统时间调整影响
+        var startAllocatedBytes = GC.GetTotalAllocatedBytes(false);
+        var startTimestamp = Stopwatch.GetTimestamp();
 
         // 实际测试
         for (var i = 0; i < iterations; i++)
@@ -222,14 +230,14 @@ public static class ScriptEngineExtensions
             results.Add(result);
         }
 
-        var endTime = DateTime.Now;
-        var endMemory = GC.GetTotalMemory(false);
+        var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+        var allocatedBytes = GC.GetTotalAllocatedBytes(false) - startAllocatedBytes;
 
         return new PerformanceStatistics
         {
             TotalIterations = iterations,
-            TotalTimeMs = (long)(endTime - startTime).TotalMilliseconds,
-            MemoryUsageBytes = endMemory - startMemory,
+            TotalTimeMs = (long)elapsed.TotalMilliseconds,
+            MemoryUsageBytes = allocatedBytes,
             SuccessCount = results.Count(r => r.IsSuccess),
             FailureCount = results.Count(r => !r.IsSuccess),
             AverageExecutionTimeMs = results.Average(r => r.ExecutionTimeMs),
