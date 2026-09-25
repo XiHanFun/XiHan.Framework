@@ -6,24 +6,20 @@ namespace XiHan.Framework.Timing;
 /// <summary>
 /// 当前时区提供器
 /// </summary>
+/// <remarks>
+/// 时区存放在静态 <see cref="AsyncLocal{T}"/> 中，归属于当前异步流而不是实例：
+/// 同一异步流里任意实例读到的都是同一个值，因此业务代码写入的时区对单例 <see cref="IClock"/> 可见。
+/// </remarks>
 public class CurrentTimezoneProvider : ICurrentTimezoneProvider
 {
-    private readonly AsyncLocal<string?> _currentScope;
+    private static readonly AsyncLocal<string?> CurrentScope = new();
 
     /// <summary>
-    /// 构造函数
-    /// </summary>
-    public CurrentTimezoneProvider()
-    {
-        _currentScope = new AsyncLocal<string?>();
-    }
-
-    /// <summary>
-    /// 当前时区
+    /// 当前异步流的时区
     /// </summary>
     public string? TimeZone
     {
-        get => _currentScope.Value;
-        set => _currentScope.Value = value;
+        get => CurrentScope.Value;
+        set => CurrentScope.Value = value;
     }
 }
