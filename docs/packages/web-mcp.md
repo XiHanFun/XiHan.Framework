@@ -42,6 +42,8 @@ public class MyModule : XiHanModule { }
 | `HeaderName` | `string` | `X-Api-Key` | 携带密钥的请求头名；也接受 `Authorization: Bearer` |
 | `Path` | `string` | `/mcp` | 端点路径 |
 | `Stateless` | `bool` | `true` | 是否无状态 HTTP 传输（无服务端→客户端回调） |
+| `AllowedTools` | `List<string>` | 空 | 工具名允许清单；空表示不限制，非空则只暴露清单内的工具。按序号比较、区分大小写 |
+| `DeniedTools` | `List<string>` | 空 | 工具名拒绝清单；始终生效，同名同时出现在允许清单时以拒绝为准 |
 
 ```json
 {
@@ -63,6 +65,7 @@ public class MyModule : XiHanModule { }
 - **技能投影**：调用 AI 包的 `AddXiHanMcpServerTools()`，技能注册表里的每个 `IAiSkill` 自动成为一个 MCP tool。
 - **端点映射与鉴权**：`MapMcp(Path)` 后 `AllowAnonymous()` 绕过框架全局鉴权 FallbackPolicy，改由 `McpApiKeyEndpointFilter` 校验 key，不匹配即 401。
 - **fail-closed**：`Enabled` 与 `ApiKey` 任一不满足，则既不注册 MCP 服务也不映射端点。
+- **暴露面裁剪**：`McpToolExposureFilter` 经 `IPostConfigureOptions<McpServerOptions>` 按允许/拒绝清单裁剪工具集，被裁掉的工具既不出现在 `tools/list` 也不能经 `tools/call` 调用。两个清单都为空时不触碰工具集，暴露面与不配置时逐字相同。裁剪的对象是 `McpServerOptions.ToolCollection`：宿主若另行设置 `Handlers.ListToolsHandler` / `CallToolHandler`，这两个 handler 提供的工具不在裁剪范围内，且被拒绝的名字有可能落到 `CallToolHandler` 的回退上，故启用清单的宿主不应同时使用这两个 handler。
 
 ## 主要 API / 类型
 
@@ -71,6 +74,7 @@ public class MyModule : XiHanModule { }
 | `XiHanWebMcpModule` | 模块类；`ConfigureServices` 装配服务，`OnApplicationInitialization` 映射端点 |
 | `XiHanMcpOptions` | 配置类，配置节 `XiHan:AI:Mcp`；`IsExposable` 为「启用且配了密钥」的合成判定 |
 | `McpApiKeyEndpointFilter` | 端点过滤器，定长比较校验 key，防时序侧信道 |
+| `McpToolExposureFilter` | `IPostConfigureOptions<McpServerOptions>`，按允许/拒绝清单裁剪对外暴露的工具集 |
 | `AddXiHanWebMcp(IConfiguration)` | 服务集合扩展，绑定配置并按 `IsExposable` 装配 |
 | `MapXiHanMcp(XiHanMcpOptions)` | 端点路由扩展，按 `IsExposable` 映射端点并挂鉴权过滤器 |
 
@@ -80,6 +84,8 @@ public class MyModule : XiHanModule { }
 - **默认不开**：不配 `Enabled` 与 `ApiKey` 时端点根本不存在，误部署不会意外把能力暴露到公网。
 - **走反代时**：`/mcp` 为 SSE 长连接，反向代理需关闭缓冲并放宽超时。
 - **签名中间件**：若启用了开放接口签名中间件（默认关闭），需把 `/mcp` 加入其忽略路径。
+- **清单按工具名生效**：技能投影出的工具名若彼此重复，装配期即抛 `InvalidOperationException`——同一条清单项指向两个不同能力是授权漏洞，故不容许重名存在。
+- **收窄暴露面**：持有密钥者默认可调用宿主注册的全部技能。只想开放其中一部分时用 `AllowedTools`；要永久屏蔽某个工具用 `DeniedTools`。
 
 ## 依赖模块
 
