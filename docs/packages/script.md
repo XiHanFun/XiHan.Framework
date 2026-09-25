@@ -52,7 +52,7 @@ public class MyModule : XiHanModule { }
 - **超时控制**：`TimeoutMs`（默认 30000ms）→ `ScriptTimeoutException`。
 - **静态安全校验**：黑名单命名空间/类型 + 危险关键字 + 不安全代码检测；`SecurityOptions` 提供 `Strict` / `Permissive` / `Disabled` 预设。
 - **构建与工厂**：`ScriptEngineBuilder` 提供 `AddReference/AddImport/AddGlobal/WithTimeout/WithOptimization/WithUnsafe/DisableCache` 链式方法；`ScriptEngineFactory` 创建默认/命名引擎并管理生命周期与统计。**已知限制**见下方「使用示例」。
-- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（预热 5 次后统计，返回 `PerformanceStatistics`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
+- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（预热 5 次后统计，返回 `PerformanceStatistics`；`TotalTimeMs` 与 `MemoryUsageBytes` 只覆盖正式执行，后者是分配字节数，口径同 `MemoryUsage.AllocatedBytes`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
 
 ## 主要 API / 类型
 
