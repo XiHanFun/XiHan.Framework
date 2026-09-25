@@ -114,8 +114,8 @@ public class Order : IMultiTenant
 
 ## 注意事项与最佳实践
 
-- **`null` = 宿主/公共**：`ICurrentTenant.Id` 与 `IMultiTenant.TenantId` 均为 `long?`，框架层约定 `null` 表示宿主（Host）数据，而非某个特殊数字。BasicApp 应用层另有 `TenantId = 0` 表宿主的约定，那是**应用侧约定**，见 [MultiTenancy](./multitenancy)。
-- **`IsAvailable` 语义**：实现包中 `IsAvailable` 等价于 `Id.HasValue`；宿主上下文（`Id == null`）下 `IsAvailable` 为 `false`。
+- **平台就是 0 号租户**：`ICurrentTenant.Id` 为 `long?`，`null` 与 `0` 同义，都表示平台；多租户实体上平台行一律落 `TenantId = 0`，数据过滤、写边界、连接解析、缓存键都按这一口径处理。
+- **`IsAvailable` 语义**：表示「当前处于某个业务租户」，实现包中等价于 `Id is > 0`；平台（`null` 或 `0`）下为 `false`。
 - **抽象包无副作用**：本包只有接口/模型，模块类不注册服务；不要指望单独引用它就能获得当前租户，必须引用实现包。
 
 ## 依赖模块

@@ -10,6 +10,31 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.6.0 (2026-09-25)
+
+::: warning 升级须知
+本次含多处破坏性变更：
+
+- 平台就是 0 号租户：无租户上下文按 0 号租户处理，只读、只写 `TenantId = 0` 的行，不再隐式看全部、写全部。依赖平台态跨租户读取的代码改用仓储的 `CreateNoTenantQueryable()` 或查询上的 `ClearTenantFilter()`；写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户，平台上下文插入预置了租户标识的行会被拒绝。`ICurrentTenant.IsAvailable` 改为仅在业务租户（标识大于 0）下返回 `true`，0 号租户返回 `false`
+- 租户级设置与租户级特性只按租户标识定键，此前按租户名称存储的值需迁移为按租户标识存储。`SettingManager` 写入租户级设置时取当前租户作用域（此前取当前用户的租户），平台作用域下写租户级设置抛出异常，平台的设置写入全局级。`XiHan.Framework.Settings` 新增对 `XiHan.Framework.MultiTenancy.Abstractions` 的依赖
+- 已认证请求的租户只以令牌为准：宿主令牌不再能通过 `X-Tenant-Id` 请求头或 `tenantId` 查询参数进入租户。请求头、查询参数与兜底租户给出的租户必须在 `ITenantStore` 中存在且处于激活状态，否则返回 400；依靠匿名请求头识别租户的应用需把租户登记进 `ITenantStore`
+- `RetrievalFilter.TenantId` 由 `long?` 改为 `long`，检索恒限定在一个租户内，不再支持不限租户的检索
+- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` 的主键、租户、审计与软删列改用与其余实体基类一致的列名：`BasicId` → `Basic_Id`、`TenantId` → `Tenant_Id`、`CreatedTime` / `CreatedId` / `CreatedBy` → `Created_Time` / `Created_Id` / `Created_By`，`Modified*`、`IsDeleted`、`Deleted*` 同理。存量库需先把聚合根表的旧列（PostgreSQL 下为 `basicid`、`tenantid`、`isdeleted` 等）改为新列名，否则启动时报列不存在
+- `IUpgradeEngine` 新增 `BaselineAsync`，`IUpgradeVersionStore` 新增 `TryCreateBaselineAsync`，`IEntityModuleDataSourceResolver` 新增 `IsPlatformPlaced`，自定义实现需补齐
+:::
+
+- **调整** 多租户统一为「平台就是 0 号租户」：数据过滤、写边界、任务、工作流、AI 检索、租户级设置与特性、租户解析、连接解析、灰度与升级锁对 `null` 与 `0` 采用同一口径；条件写恒追加当前作用域谓词，不再依赖读过滤器是否启用
+- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，一并清除读共享与严格隔离两类租户过滤；`CreateNoTenantQueryable()` 与写路径预读改用它，修复严格隔离实体（`IStrictMultiTenantEntity`）在跨租户读取时仍被限定在当前作用域、结果静默缺数据
+- **新增** `[PlatformDataSource]`：标注的实体固定落在平台库（默认布局的主库），库隔离租户下不随独立库切换，建表也不进租户独立库与模块库，行级租户过滤照常生效；与 `[ModuleDataSource]` 同时声明视为配置错误
+- **新增** 访问、API、异常、操作、登录日志记录新增 `TenantId`，在记录产生时取请求所属租户，排队异步写入时不再依赖写入时的环境上下文；`RequestContext` 的用户与租户在认证与租户解析之后定型写回
+- **修复** 已认证请求可通过请求头或查询参数另选租户；请求头、查询参数与兜底租户给出的租户未经验证即建立租户上下文
+- **修复** 任务执行器仅在执行作业本身时切入任务所在租户，实例落库、状态回写与执行历史（含失败路径）落在错误的租户作用域
+- **修复** 工作流定义与实例采信调用方提交的租户标识，改为取当前作用域的租户
+- **修复** 数据库初始化时种子先于升级脚本执行，存量库新增的列尚未补齐即被种子读取，启动报列不存在。初始化改为「全部连接建库建表 → 表结构升级 → 全部连接播种」，新增 `IDbSchemaUpgrader` 扩展点供应用接入升级引擎
+- **修复** 聚合根基类的公共列名与其余实体基类不一致，同一库中并存两套列名（迁移见升级须知）
+- **新增** `IUpgradeEngine.BaselineAsync`：本次初始化从零建出的库（`DbSchemaUpgradeContext.IsFresh`）登记为最新脚本版本，不再从 `0.0.0` 补跑历史脚本
+- **升级** 发布 v4.6.0
+
 ## v4.5.0 (2026-09-24)
 
 ::: warning 升级须知
@@ -1755,7 +1780,7 @@ public sealed class KnowledgeSample(
 - **这份 Options 不绑配置节**。`AddXiHanRAG(Action<KnowledgeVectorOptions>)` 只接受代码配置；要从 appsettings 读，应用侧自行 `services.Configure<KnowledgeVectorOptions>(configuration.GetSection("..."))`。
 - **切片主键是确定性的**。由 `documentId:index` 派生，重复摄取同一文档即覆盖，天然幂等。
 - **删除要传原切片数**。`RemoveDocumentAsync(documentId, chunkCount)` 靠枚举 `0..chunkCount-1` 生成键来删，`chunkCount` 传小了会留孤儿向量——摄取返回的切片数要存下来。
-- **过滤只作用于两个索引字段**。`RetrievalFilter` 只有 `TenantId` 与 `DocumentId`，它们在集合定义里标了索引，作为 pre-filter 下推到向量库。
+- **过滤只作用于两个索引字段**。`RetrievalFilter` 只有 `TenantId` 与 `DocumentId`，它们在集合定义里标了索引，作为 pre-filter 下推到向量库。租户谓词恒存在：检索只在一个租户内进行（平台为 0，`filter` 为空即平台），不存在不限租户的检索。
 - **嵌入模型单独配**。取 `AiProviderOptions.EmbeddingModel`，与会话共用同一端点和密钥；该字段为空时解析嵌入生成器会抛异常。
 
 ::: tip 故障可读
@@ -2218,7 +2243,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 | 队列开启 | 后台线程新作用域 | 不能 |
 | 实体差异日志 AOP | 请求线程内同步执行 | 能 |
 
-审计表本身按你自己的实体定义走既有多租户规则；跨租户查审计要在平台态下进行，见 [多租户](./multi-tenancy)。
+审计表本身按你自己的实体定义走既有多租户规则：平台只看平台自己的审计，跨租户查审计要显式清租户过滤（`ClearTenantFilter()`），见 [多租户](./multi-tenancy)。
 
 ## 配置
 
@@ -3753,9 +3778,9 @@ public class OrderRepository(ISqlSugarClientResolver resolver)
 
 ### 写路径的租户边界
 
-**读共享 ≠ 写共享**：全局过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但写路径**不复用这个口径**——租户上下文内禁止改写/删除非本租户行（含全局行）。预读守卫会校验取回行的 `TenantId`，条件写自动追加当前租户 `Where`。
+**读共享 ≠ 写共享**：全局过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但写路径**不复用这个口径**——每个作用域只能改写/删除本作用域的行：租户态不能动全局行，平台（0 号租户）也不能动租户行。预读守卫会校验取回行的 `TenantId`，条件写自动追加当前作用域的 `Where`。
 
-维护全局数据的唯一合法入口是**平台态**（`ICurrentTenant.Change(null)`）。
+平台就是 0 号租户：没有租户上下文与 `Change(0)` 同义。维护全局数据在平台作用域进行；写某个租户的数据要 `Change(tenantId)` 切入该租户。跨租户读取只能显式清过滤（`CreateNoTenantQueryable()` / `.ClearTenantFilter()`），见 [多租户](./multi-tenancy)。
 
 **例外：用户自有行**。按 `UserId` 归属、`TenantId` 只是「注册地」元数据的行（账号、安全记录、个人设置、站内信收件行等），平台归属用户或跨租户成员在别的租户里写自己的这些行是合法的。这类写入用 `TenantWriteGuard.Suppress()` 显式包裹：作用域内对象式写（Update / Delete / 软删 / 恢复）的预读同时忽略租户过滤并跳过写边界校验，条件写不再追加当前租户 `Where`；契约是被包裹的写只作用于当前用户自己的行。
 
@@ -3808,8 +3833,10 @@ using (TenantWriteGuard.Suppress())
 
 开关只管开不开，范围由后两项决定：默认全量，标 `[TableInitialization(false)]` 的实体不建、标 `Target = DbInitializationTarget.Platform` 的实体不进租户独立库；要整体自己实现就 `Replace` 掉 `IDbEntityTypeProvider` / `IDataSeederSelector`。细节见 [XiHan.Framework.Data](../packages/data#选择初始化范围)。
 
+初始化分三段：**全部连接建库建表 → 表结构升级 → 全部连接播种**。表结构升级由注册的 `IDbSchemaUpgrader` 执行（只在开启建表时调用，失败即中断启动）；种子按最新实体读写，所以排在升级之后。
+
 ::: danger `DbInitializer` 表存在就跳过，从不补列
-给既有实体加字段后部署必报「列不存在」。要么重建数据库，要么手动 `ALTER TABLE`。**框架不是迁移工具。**
+给既有实体加字段后，存量库只能靠升级补列：注册一个 `IDbSchemaUpgrader`（通常接到升级模块的 `IUpgradeEngine` 上跑版本化脚本），或者重建数据库。不补列就部署，种子一查就报「列不存在」。**框架不是迁移工具。**
 :::
 
 ## 读写分离
@@ -3828,7 +3855,7 @@ using (TenantWriteGuard.Suppress())
 
 | 现象 | 原因 |
 | --- | --- |
-| 部署后报「列不存在」 | 加了字段没重建库 |
+| 部署后报「列不存在」 | 加了字段，存量库没有升级器补列（见上文 `IDbSchemaUpgrader`） |
 | 写操作报参数重名 | 仓储里显式调了 `.EnableQueryFilter()` |
 | 查到了别的租户数据 | 实体没继承 `SugarMultiTenant*` 系列 |
 | 变更日志空 | `EnableDiffLog` 没开 |
@@ -5356,9 +5383,9 @@ public async Task<InvoiceDto> CreateInvoiceAsync(InvoiceCreateDto input) { … }
 
 ### 租户上下文里改不了全局数据
 
-这是**有意的写路径边界**：全局租户过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但**写路径不复用这个口径**——租户上下文内禁止改写/删除非本租户行（含全局行），预读守卫会校验取回行的 `TenantId`，条件写会自动追加当前租户 Where。
+这是**有意的写路径边界**：全局租户过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但**写路径不复用这个口径**——每个作用域只能改写/删除本作用域的行，预读守卫会校验取回行的 `TenantId`，条件写会自动追加当前作用域的 Where。
 
-维护全局 / 跨租户数据的唯一合法入口是**平台态**（无租户上下文，`ICurrentTenant.Change(null)`）。
+全局数据在平台（0 号租户，无租户上下文与 `Change(0)` 同义）作用域里维护；某个租户的数据切入该租户（`Change(tenantId)`）维护。平台同样只能改写 `TenantId=0` 的行，不存在「平台写全部」。
 
 ---
 
@@ -7786,7 +7813,7 @@ await builder.AddApplicationAsync<MyAppModule>(options =>
 ```csharp
 public class OrderService(ICurrentTenant currentTenant) : ITransientDependency
 {
-    public long? TenantId => currentTenant.Id;   // null = 平台态（无租户上下文）
+    public long? TenantId => currentTenant.Id;   // null 与 0 同义：平台（0 号租户）
 }
 ```
 
@@ -7805,9 +7832,26 @@ using (currentTenant.Change(tenantId))
 
 框架的任务调度与后台作业已经内建了这一步——执行时按「参数 tenantId → 任务归属租户 → 当前异步上下文」的优先级解析并切换。
 
-### 平台态
+### 平台就是 0 号租户
 
-`Change(null)` 进入**平台态**：没有租户上下文。这是**维护全局 / 跨租户数据的唯一合法入口**。
+没有租户上下文（`Id == null`）与 `Change(0)` 同义，都是**平台**，也就是 0 号租户。平台和任何一个租户一样，只看、只写自己的数据：
+
+- 读：平台只看 `TenantId = 0` 的行，**看不到任何租户的数据**；
+- 写：新行落 `TenantId = 0`；预置了别的租户标识的插入直接拒绝；只能改写 / 删除 `TenantId = 0` 的行。
+
+不存在「没有租户上下文就看全部、写全部」的隐式口径。跨租户只有显式通道：
+
+| 需求 | 做法 |
+| --- | --- |
+| 跨租户读取（按全局唯一邮箱定位账号、按会话标识找会话等） | 仓储里 `CreateNoTenantQueryable()`，或在查询上 `.ClearTenantFilter()`（读共享与严格隔离的过滤一并清除） |
+| 写某个租户的数据（开通租户、逐租户维护） | `using (currentTenant.Change(tenantId))` 切入该租户后再写 |
+| 用户自有行（账号、会话、个人设置） | `TenantWriteGuard.Suppress()`，见 [数据访问](./data) |
+
+`IsAvailable` 表示「当前处于某个业务租户」，平台（`null` 或 `0`）为 `false`。
+
+::: warning 不要直接写 `ClearFilter<IMultiTenantEntity>()`
+租户过滤按读共享（`IMultiTenantEntity`）与严格隔离（`IStrictMultiTenantEntity`）两个类型登记，只清前者时严格隔离实体仍被收紧在当前作用域，跨租户读取会静默缺数据。统一用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`。
+:::
 
 ## 全局记录约定
 
@@ -7824,14 +7868,16 @@ using (currentTenant.Change(tenantId))
 这是多租户里最容易出事的一点：
 
 ```text
-读：全局过滤器放行 TenantId IN (0, 当前租户)    ← 租户能读到平台全局数据
-写：禁止改写 / 删除非本租户行（含 TenantId=0 的全局行）
+读：全局过滤器放行 TenantId IN (0, 当前租户)    ← 租户能读到平台全局数据；平台只读 0
+写：只能改写 / 删除当前作用域的行              ← 租户不能改 0 号全局行，平台也不能改租户行
 ```
+
+平台与租户各自独有、不存在共用的数据（运行数据、日志、会话等），实体再实现 `IStrictMultiTenantEntity` 收紧为严格相等：租户态只看本租户行，不再读共享平台行。
 
 ::: danger 「读共享」不等于「写共享」
 如果写路径复用读的口径，租户就能改掉平台的全局数据——这是越权。
 
-框架的做法：预读守卫校验取回行的 `TenantId`，条件写自动追加当前租户 `Where`。要维护全局数据，必须显式进平台态。
+框架的做法：预读守卫校验取回行的 `TenantId`，条件写自动追加当前作用域的 `Where`。要维护全局数据，在平台（0 号租户）作用域里改。
 :::
 
 ## 实体怎么支持多租户
@@ -7858,10 +7904,12 @@ using (currentTenant.Change(tenantId))
 | 现象 | 原因 |
 | --- | --- |
 | 查到了别的租户数据 | 实体没实现 `IMultiTenantEntity`（只加了列） |
-| 后台任务里查不到数据 | 没有租户上下文，要 `Change(tenantId)` |
-| 改不了全局数据 | 这是**有意的**——去平台态改 |
+| 后台任务里查不到租户数据 | 后台没有租户上下文即平台，只看得到平台数据；逐个 `Change(tenantId)` 切入租户处理 |
+| 改不了全局数据 | 这是**有意的**——在平台（0 号租户）作用域里改 |
 | 切租户后权限没变 | 授权快照没在目标上下文重建 |
-| 平台态下反而查不到租户数据 | 平台态没有租户过滤，但业务查询可能自己带了条件 |
+| 平台下查不到租户数据 | 这是**有意的**——平台只看自己的数据；确需跨租户读取用 `ClearTenantFilter()` / `CreateNoTenantQueryable()` |
+| 平台插入报「平台上下文只能写入平台数据」 | 在平台里给行预置了租户标识；写某个租户的数据要先切入该租户 |
+| 跨租户读取漏了一部分表 | 只清了 `IMultiTenantEntity` 过滤，严格隔离实体仍被收紧；改用 `ClearTenantFilter()` |
 
 ## 下一步
 
@@ -11699,12 +11747,41 @@ public class FlagMaintenanceModeManager(MaintenanceFlag flag) : IUpgradeMaintena
 
 退出时机固定在「迁移完成、版本回写、可选文件替换之后，释放锁之前」；异常路径也会退出维护模式。`EnableFileUpdate`（默认 `false`）和 `EnableRollingRestart`（默认 `false`）对应的两个默认实现都是空的，开了也不会发生任何事——需要就自己实现 `IUpgradeFileUpdater` / `IRollingRestartCoordinator`。
 
-### 启动自动检查只是建记录
+### 与数据库初始化的先后
 
-`EnableAutoCheckOnStartup`（默认 `true`）门控的是 `XiHanUpgradeModule.OnPostApplicationInitializationAsync`：它建一个 Scope，解析 `IUpgradeVersionStore` 与 `IUpgradeStatusService`（任一缺失即返回），调 `EnsureInitializedAsync()`。
+建表只建缺失的表、不改已存在的表，存量表的新列靠升级脚本补；而种子按最新实体读写。升级模块自己在 `OnPostApplicationInitializationAsync` 里跑（见下文「启动自动升级」），那时种子早已执行完——存量库上新加的列还没补，种子一查就失败。
 
-::: warning 启动阶段不会执行任何迁移
-`EnsureInitializedAsync` 只做一件事：`GetOrCreateAsync` 把版本记录建出来。**真正的升级必须显式调 `IUpgradeEngine.ExecuteAsync` 或 `IUpgradeCoordinator.StartAsync`。**
+同时用了数据模块的建表与播种时，把升级引擎接到数据模块的 `IDbSchemaUpgrader` 上：数据库初始化会在「全部连接建表之后、任何播种之前」调它，升级模块稍后再检查一次时版本已是最新、空转。
+
+```csharp
+public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngine engine) : IDbSchemaUpgrader
+{
+    public async Task UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken cancellationToken = default)
+    {
+        // 本次从零建出全部实体表的库本就是最新结构：登记为最新版本，不补跑历史脚本
+        if (context.IsFresh("Default"))
+        {
+            _ = await engine.BaselineAsync(cancellationToken);
+        }
+
+        await status.EnsureInitializedAsync();
+        var result = await engine.ExecuteAsync(cancellationToken);
+        if (result.Status == UpgradeStatus.Failed)
+        {
+            throw new InvalidOperationException(result.Message);
+        }
+    }
+}
+```
+
+新建的库（`DbSchemaUpgradeContext.IsFresh`）要先 `BaselineAsync` 再 `EnsureInitializedAsync`：后者对没有版本记录的库按 `0.0.0` 建记录，引擎随即把全部历史脚本在最新结构上跑一遍。登记之后，历史脚本只在它所属版本之前建的库上执行，脚本按当时的结构写即可，不能依赖种子数据。
+
+### 启动自动升级
+
+`EnableAutoCheckOnStartup`（默认 `true`）门控的是 `XiHanUpgradeModule.OnPostApplicationInitializationAsync`：它建一个 Scope，解析 `IUpgradeVersionStore` 与 `IUpgradeStatusService`（任一缺失即返回），调 `EnsureInitializedAsync()` 建出版本记录，再同步执行 `IUpgradeEngine.ExecuteAsync`。
+
+::: warning 升级失败即中断启动
+这里走引擎而不是 `IUpgradeCoordinator`：后者把执行丢进 `Task.Run` 且吞掉异常，应用会带着半迁移的结构对外服务。引擎返回 `Failed` 时直接抛出，启动中断。
 :::
 
 ### 多租户隔离升级
@@ -12921,7 +12998,7 @@ dotnet add package XiHan.Framework.AI.Abstractions
 | `IKnowledgeIngestor` | `Task<int> IngestAsync(KnowledgeIngestRequest request, CancellationToken ct = default)`（返回切片数）；`Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken ct = default)`（按文档清理已入库向量） |
 | `KnowledgeIngestRequest` | 摄取请求：`DocumentId`（required）/ `Text`（required）/ `TenantId`（0=平台全局）/ `Title` / `Source` / `Provider`（嵌入 provider，null 用默认）/ `Chunking` |
 | `IKnowledgeRetriever` | `Task<IReadOnlyList<RetrievedChunk>> RetrieveAsync(string query, int topK = 5, RetrievalFilter? filter = null, string? provider = null, CancellationToken ct = default)` |
-| `RetrievalFilter` | 向量库 pre-filter：`long? TenantId`（0=平台全局，null 不限）；`string? DocumentId`（null 不限） |
+| `RetrievalFilter` | 向量库 pre-filter：`long TenantId`（平台为 0；检索恒限定在这一个租户内，不存在不限租户的检索）；`string? DocumentId`（null 不限）。`filter` 为空即平台 |
 | `IRagPromptAugmenter` | `string Augment(string userPrompt, IReadOnlyList<RetrievedChunk> context)`（context 为空原样返回） |
 | `TextChunk` | 入库前切片：`DocumentId` / `Index` / `Text`（均 required）/ `TenantId` / `Title` / `Source` |
 | `RetrievedChunk` | 检索命中：`DocumentId` / `Index` / `Text`（均 required）/ `Title` / `Source` / `double? Score`（相似度，越大越相近；连接器量纲可能不同） |
@@ -16914,7 +16991,7 @@ public class MyModule : XiHanModule { }
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
 - **实体差异日志**：可选启用（`EnableDiffLog`），基于 SqlSugar 原生 `OnDiffLogEvent` AOP 生成 before/after 快照，交 `IEntityDiffLogWriter` 落库。
 - **分页 / 规约 / 自动查询**：内置多种分页重载（`pageIndex/pageSize`、`PageRequestDtoBase`、规约 `ISpecification<TEntity>`、`GetPagedAutoAsync` 按 DTO 自动构建条件）。
-- **数据库初始化**：可选建库（自动处理 MySQL utf8mb4 归一化）、`CodeFirst` 建表（含分表 `SplitTables` 识别）、按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
+- **数据库初始化**：三段式——全部连接建库建表（自动处理 MySQL utf8mb4 归一化、识别分表 `SplitTables`）→ 执行已注册的 `IDbSchemaUpgrader` 把存量表升级到当前结构 → 全部连接按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
 - **雪花 ID**：接入 `XiHan.Framework.DistributedIds`，通过 `StaticConfig.CustomSnowFlakeFunc` 作为 SqlSugar 全局主键生成器。
 - **SQL 日志与慢查询**：可开启 SQL/异常/慢 SQL 日志，慢 SQL 阈值可配。
 - **主从读写分离**：SqlSugar 原生主从能力完整放出，appsettings 声明从库即可分担读；差异化权重与更多原生定制走代码钩子；可选从库健康探针自动摘除/回填权重（详见下文）。
@@ -16981,6 +17058,7 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
+| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync()`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
@@ -17376,7 +17454,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **跨库不是一个事务**：同一工作单元跨多个 `ConfigId`（模块分库、租户独立库）写入时，每个连接各开本地事务，框架不提供跨库分布式事务；有强一致要求就把跨库步骤拆成可补偿流程。
 - **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
-- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤）/`CreateWithDeletedQueryable()`（清软删过滤），仅用于平台运维/审计恢复且须自行做权限校验。
+- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤，读共享与严格隔离一并清除）/`CreateWithDeletedQueryable()`（清软删过滤）；仓储外的查询用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()` 扩展，不要直接写 `ClearFilter<IMultiTenantEntity>()`（清不掉严格隔离实体的过滤）。仅用于确需跨租户的场景且须自行做权限校验。
 - **`TenantId=0` 是全局模板**：多租户实体的 `TenantId` 非空，`0` 表示平台/全局记录，对所有租户可见（配合 `UNIQUE(TenantId, Code)` 复合唯一索引对全局记录生效）。
 - **审计字段勿手填**：`TenantId`、创建/修改/删除时间与操作人由 `DataExecuting` AOP 注入，业务侧手填会被覆盖或引发不一致。
 - **雪花主键**：主键由 `IDistributedIdGenerator<long>` 通过 `StaticConfig.CustomSnowFlakeFunc` 全局生成；实体基类的 `BasicId` 映射为非自增主键。
@@ -20713,8 +20791,8 @@ public class Order : IMultiTenant
 
 ## 注意事项与最佳实践
 
-- **`null` = 宿主/公共**：`ICurrentTenant.Id` 与 `IMultiTenant.TenantId` 均为 `long?`，框架层约定 `null` 表示宿主（Host）数据，而非某个特殊数字。BasicApp 应用层另有 `TenantId = 0` 表宿主的约定，那是**应用侧约定**，见 [MultiTenancy](./multitenancy)。
-- **`IsAvailable` 语义**：实现包中 `IsAvailable` 等价于 `Id.HasValue`；宿主上下文（`Id == null`）下 `IsAvailable` 为 `false`。
+- **平台就是 0 号租户**：`ICurrentTenant.Id` 为 `long?`，`null` 与 `0` 同义，都表示平台；多租户实体上平台行一律落 `TenantId = 0`，数据过滤、写边界、连接解析、缓存键都按这一口径处理。
+- **`IsAvailable` 语义**：表示「当前处于某个业务租户」，实现包中等价于 `Id is > 0`；平台（`null` 或 `0`）下为 `false`。
 - **抽象包无副作用**：本包只有接口/模型，模块类不注册服务；不要指望单独引用它就能获得当前租户，必须引用实现包。
 
 ## 依赖模块
@@ -20781,7 +20859,7 @@ public class MyModule : XiHanModule { }
 
 ### 当前租户上下文（AsyncLocal）
 
-`AsyncLocalCurrentTenantAccessor` 用 `AsyncLocal<BasicTenantInfo?>` 保存当前租户，注册为进程单例（`Instance`）。`CurrentTenant.Change(id, name)` 的实现：先记住父级 `Current`，写入新的 `BasicTenantInfo`，返回一个 `DisposeAction`——`Dispose` 时把 `Current` 还原为父级。因此 `Change` 支持**嵌套**，且能安全地跨异步边界流转、在 `using` 结束时精确恢复到上一层。`IsAvailable` 等价于 `Id.HasValue`。
+`AsyncLocalCurrentTenantAccessor` 用 `AsyncLocal<BasicTenantInfo?>` 保存当前租户，注册为进程单例（`Instance`）。`CurrentTenant.Change(id, name)` 的实现：先记住父级 `Current`，写入新的 `BasicTenantInfo`，返回一个 `DisposeAction`——`Dispose` 时把 `Current` 还原为父级。因此 `Change` 支持**嵌套**，且能安全地跨异步边界流转、在 `using` 结束时精确恢复到上一层。`IsAvailable` 等价于 `Id is > 0`：平台就是 0 号租户，`null` 与 `0` 都不算业务租户。
 
 ### 租户解析链（贡献者 + 中间件）
 
@@ -20832,7 +20910,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 
 | 类型 | 说明 |
 | --- | --- |
-| `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id.HasValue` |
+| `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id is > 0` |
 | `AsyncLocalCurrentTenantAccessor` | 基于 `AsyncLocal<BasicTenantInfo?>` 的访问器，单例 `Instance`，私有构造 |
 | `TenantResolveContributorBase` | 自定义租户解析贡献者的抽象基类（`abstract string Name` / `abstract Task ResolveAsync(...)`） |
 | `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`；从 `ICurrentUser.TenantId` 解析（未认证/无租户则跳过） |

@@ -83,7 +83,7 @@ public class MyModule : XiHanModule { }
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
 - **实体差异日志**：可选启用（`EnableDiffLog`），基于 SqlSugar 原生 `OnDiffLogEvent` AOP 生成 before/after 快照，交 `IEntityDiffLogWriter` 落库。
 - **分页 / 规约 / 自动查询**：内置多种分页重载（`pageIndex/pageSize`、`PageRequestDtoBase`、规约 `ISpecification<TEntity>`、`GetPagedAutoAsync` 按 DTO 自动构建条件）。
-- **数据库初始化**：可选建库（自动处理 MySQL utf8mb4 归一化）、`CodeFirst` 建表（含分表 `SplitTables` 识别）、按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
+- **数据库初始化**：三段式——全部连接建库建表（自动处理 MySQL utf8mb4 归一化、识别分表 `SplitTables`）→ 执行已注册的 `IDbSchemaUpgrader` 把存量表升级到当前结构 → 全部连接按 `Order` 顺序执行 `IDataSeeder`；建哪些表、跑哪些种子可用特性/配置圈定或整体接管。
 - **雪花 ID**：接入 `XiHan.Framework.DistributedIds`，通过 `StaticConfig.CustomSnowFlakeFunc` 作为 SqlSugar 全局主键生成器。
 - **SQL 日志与慢查询**：可开启 SQL/异常/慢 SQL 日志，慢 SQL 阈值可配。
 - **主从读写分离**：SqlSugar 原生主从能力完整放出，appsettings 声明从库即可分担读；差异化权重与更多原生定制走代码钩子；可选从库健康探针自动摘除/回填权重（详见下文）。
@@ -150,6 +150,7 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
+| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync()`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
@@ -545,7 +546,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **跨库不是一个事务**：同一工作单元跨多个 `ConfigId`（模块分库、租户独立库）写入时，每个连接各开本地事务，框架不提供跨库分布式事务；有强一致要求就把跨库步骤拆成可补偿流程。
 - **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
-- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤）/`CreateWithDeletedQueryable()`（清软删过滤），仅用于平台运维/审计恢复且须自行做权限校验。
+- **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤，读共享与严格隔离一并清除）/`CreateWithDeletedQueryable()`（清软删过滤）；仓储外的查询用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()` 扩展，不要直接写 `ClearFilter<IMultiTenantEntity>()`（清不掉严格隔离实体的过滤）。仅用于确需跨租户的场景且须自行做权限校验。
 - **`TenantId=0` 是全局模板**：多租户实体的 `TenantId` 非空，`0` 表示平台/全局记录，对所有租户可见（配合 `UNIQUE(TenantId, Code)` 复合唯一索引对全局记录生效）。
 - **审计字段勿手填**：`TenantId`、创建/修改/删除时间与操作人由 `DataExecuting` AOP 注入，业务侧手填会被覆盖或引发不一致。
 - **雪花主键**：主键由 `IDistributedIdGenerator<long>` 通过 `StaticConfig.CustomSnowFlakeFunc` 全局生成；实体基类的 `BasicId` 映射为非自增主键。

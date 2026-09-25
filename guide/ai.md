@@ -325,7 +325,7 @@ public sealed class KnowledgeSample(
 - **这份 Options 不绑配置节**。`AddXiHanRAG(Action<KnowledgeVectorOptions>)` 只接受代码配置；要从 appsettings 读，应用侧自行 `services.Configure<KnowledgeVectorOptions>(configuration.GetSection("..."))`。
 - **切片主键是确定性的**。由 `documentId:index` 派生，重复摄取同一文档即覆盖，天然幂等。
 - **删除要传原切片数**。`RemoveDocumentAsync(documentId, chunkCount)` 靠枚举 `0..chunkCount-1` 生成键来删，`chunkCount` 传小了会留孤儿向量——摄取返回的切片数要存下来。
-- **过滤只作用于两个索引字段**。`RetrievalFilter` 只有 `TenantId` 与 `DocumentId`，它们在集合定义里标了索引，作为 pre-filter 下推到向量库。
+- **过滤只作用于两个索引字段**。`RetrievalFilter` 只有 `TenantId` 与 `DocumentId`，它们在集合定义里标了索引，作为 pre-filter 下推到向量库。租户谓词恒存在：检索只在一个租户内进行（平台为 0，`filter` 为空即平台），不存在不限租户的检索。
 - **嵌入模型单独配**。取 `AiProviderOptions.EmbeddingModel`，与会话共用同一端点和密钥；该字段为空时解析嵌入生成器会抛异常。
 
 ::: tip 故障可读
