@@ -2,6 +2,31 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.6.0 (2026-09-25)
+
+::: warning 升级须知
+本次含多处破坏性变更：
+
+- 平台就是 0 号租户：无租户上下文按 0 号租户处理，只读、只写 `TenantId = 0` 的行，不再隐式看全部、写全部。依赖平台态跨租户读取的代码改用仓储的 `CreateNoTenantQueryable()` 或查询上的 `ClearTenantFilter()`；写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户，平台上下文插入预置了租户标识的行会被拒绝。`ICurrentTenant.IsAvailable` 改为仅在业务租户（标识大于 0）下返回 `true`，0 号租户返回 `false`
+- 租户级设置与租户级特性只按租户标识定键，此前按租户名称存储的值需迁移为按租户标识存储。`SettingManager` 写入租户级设置时取当前租户作用域（此前取当前用户的租户），平台作用域下写租户级设置抛出异常，平台的设置写入全局级。`XiHan.Framework.Settings` 新增对 `XiHan.Framework.MultiTenancy.Abstractions` 的依赖
+- 已认证请求的租户只以令牌为准：宿主令牌不再能通过 `X-Tenant-Id` 请求头或 `tenantId` 查询参数进入租户。请求头、查询参数与兜底租户给出的租户必须在 `ITenantStore` 中存在且处于激活状态，否则返回 400；依靠匿名请求头识别租户的应用需把租户登记进 `ITenantStore`
+- `RetrievalFilter.TenantId` 由 `long?` 改为 `long`，检索恒限定在一个租户内，不再支持不限租户的检索
+- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` 的主键、租户、审计与软删列改用与其余实体基类一致的列名：`BasicId` → `Basic_Id`、`TenantId` → `Tenant_Id`、`CreatedTime` / `CreatedId` / `CreatedBy` → `Created_Time` / `Created_Id` / `Created_By`，`Modified*`、`IsDeleted`、`Deleted*` 同理。存量库需先把聚合根表的旧列（PostgreSQL 下为 `basicid`、`tenantid`、`isdeleted` 等）改为新列名，否则启动时报列不存在
+- `IUpgradeEngine` 新增 `BaselineAsync`，`IUpgradeVersionStore` 新增 `TryCreateBaselineAsync`，`IEntityModuleDataSourceResolver` 新增 `IsPlatformPlaced`，自定义实现需补齐
+:::
+
+- **调整** 多租户统一为「平台就是 0 号租户」：数据过滤、写边界、任务、工作流、AI 检索、租户级设置与特性、租户解析、连接解析、灰度与升级锁对 `null` 与 `0` 采用同一口径；条件写恒追加当前作用域谓词，不再依赖读过滤器是否启用
+- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，一并清除读共享与严格隔离两类租户过滤；`CreateNoTenantQueryable()` 与写路径预读改用它，修复严格隔离实体（`IStrictMultiTenantEntity`）在跨租户读取时仍被限定在当前作用域、结果静默缺数据
+- **新增** `[PlatformDataSource]`：标注的实体固定落在平台库（默认布局的主库），库隔离租户下不随独立库切换，建表也不进租户独立库与模块库，行级租户过滤照常生效；与 `[ModuleDataSource]` 同时声明视为配置错误
+- **新增** 访问、API、异常、操作、登录日志记录新增 `TenantId`，在记录产生时取请求所属租户，排队异步写入时不再依赖写入时的环境上下文；`RequestContext` 的用户与租户在认证与租户解析之后定型写回
+- **修复** 已认证请求可通过请求头或查询参数另选租户；请求头、查询参数与兜底租户给出的租户未经验证即建立租户上下文
+- **修复** 任务执行器仅在执行作业本身时切入任务所在租户，实例落库、状态回写与执行历史（含失败路径）落在错误的租户作用域
+- **修复** 工作流定义与实例采信调用方提交的租户标识，改为取当前作用域的租户
+- **修复** 数据库初始化时种子先于升级脚本执行，存量库新增的列尚未补齐即被种子读取，启动报列不存在。初始化改为「全部连接建库建表 → 表结构升级 → 全部连接播种」，新增 `IDbSchemaUpgrader` 扩展点供应用接入升级引擎
+- **修复** 聚合根基类的公共列名与其余实体基类不一致，同一库中并存两套列名（迁移见升级须知）
+- **新增** `IUpgradeEngine.BaselineAsync`：本次初始化从零建出的库（`DbSchemaUpgradeContext.IsFresh`）登记为最新脚本版本，不再从 `0.0.0` 补跑历史脚本
+- **升级** 发布 v4.6.0
+
 ## v4.5.0 (2026-09-24)
 
 ::: warning 升级须知
