@@ -5,49 +5,44 @@
 ## v4.6.0 (2026-09-25)
 
 ::: warning 升级须知
-本次含多处破坏性变更：
-
-- 平台就是 0 号租户：无租户上下文按 0 号租户处理，只读、只写 `TenantId = 0` 的行，不再隐式看全部、写全部。依赖平台态跨租户读取的代码改用仓储的 `CreateNoTenantQueryable()` 或查询上的 `ClearTenantFilter()`；写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户，平台上下文插入预置了租户标识的行会被拒绝。`ICurrentTenant.IsAvailable` 改为仅在业务租户（标识大于 0）下返回 `true`，0 号租户返回 `false`
-- 租户级设置与租户级特性只按租户标识定键，此前按租户名称存储的值需迁移为按租户标识存储。`SettingManager` 写入租户级设置时取当前租户作用域（此前取当前用户的租户），平台作用域下写租户级设置抛出异常，平台的设置写入全局级。`XiHan.Framework.Settings` 新增对 `XiHan.Framework.MultiTenancy.Abstractions` 的依赖
-- 已认证请求的租户只以令牌为准：宿主令牌不再能通过 `X-Tenant-Id` 请求头或 `tenantId` 查询参数进入租户。请求头、查询参数与兜底租户给出的租户必须在 `ITenantStore` 中存在且处于激活状态，否则返回 400；依靠匿名请求头识别租户的应用需把租户登记进 `ITenantStore`
-- `RetrievalFilter.TenantId` 由 `long?` 改为 `long`，检索恒限定在一个租户内，不再支持不限租户的检索
-- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` 的主键、租户、审计与软删列改用与其余实体基类一致的列名：`BasicId` → `Basic_Id`、`TenantId` → `Tenant_Id`、`CreatedTime` / `CreatedId` / `CreatedBy` → `Created_Time` / `Created_Id` / `Created_By`，`Modified*`、`IsDeleted`、`Deleted*` 同理。存量库需先把聚合根表的旧列（PostgreSQL 下为 `basicid`、`tenantid`、`isdeleted` 等）改为新列名，否则启动时报列不存在
-- `IUpgradeEngine` 新增 `BaselineAsync`，`IUpgradeVersionStore` 新增 `TryCreateBaselineAsync`，`IEntityModuleDataSourceResolver` 新增 `IsPlatformPlaced`，自定义实现需补齐
+- 平台即 0 号租户：无租户上下文只读写 `TenantId = 0` 的行。跨租户读取改用 `CreateNoTenantQueryable()` / `ClearTenantFilter()`，写租户数据先 `Change(tenantId)`；`IsAvailable` 对 0 号租户返回 `false`
+- 已认证请求只按令牌定租户；请求头、查询串与 `FallbackTenant` 给出的租户须在 `ITenantStore` 中存在且激活，否则返回 400
+- 租户级设置与特性改按租户标识定键，按名称存储的旧值需迁移；`XiHan.Framework.Settings` 新增依赖 `MultiTenancy.Abstractions`
+- `RetrievalFilter.TenantId` 改为 `long`，不再支持不限租户的检索
+- 聚合根公共列改名为 `Basic_Id`、`Tenant_Id`、`Created_Time`、`Is_Deleted` 等，存量库需先改列名
+- `IUpgradeEngine`、`IUpgradeVersionStore`、`IEntityModuleDataSourceResolver` 各新增一个成员，自定义实现需补齐
 :::
 
-- **调整** 多租户统一为「平台就是 0 号租户」：数据过滤、写边界、任务、工作流、AI 检索、租户级设置与特性、租户解析、连接解析、灰度与升级锁对 `null` 与 `0` 采用同一口径；条件写恒追加当前作用域谓词，不再依赖读过滤器是否启用
-- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，一并清除读共享与严格隔离两类租户过滤；`CreateNoTenantQueryable()` 与写路径预读改用它，修复严格隔离实体（`IStrictMultiTenantEntity`）在跨租户读取时仍被限定在当前作用域、结果静默缺数据
-- **新增** `[PlatformDataSource]`：标注的实体固定落在平台库（默认布局的主库），库隔离租户下不随独立库切换，建表也不进租户独立库与模块库，行级租户过滤照常生效；与 `[ModuleDataSource]` 同时声明视为配置错误
-- **新增** 访问、API、异常、操作、登录日志记录新增 `TenantId`，在记录产生时取请求所属租户，排队异步写入时不再依赖写入时的环境上下文；`RequestContext` 的用户与租户在认证与租户解析之后定型写回
-- **修复** 已认证请求可通过请求头或查询参数另选租户；请求头、查询参数与兜底租户给出的租户未经验证即建立租户上下文
-- **修复** 任务执行器仅在执行作业本身时切入任务所在租户，实例落库、状态回写与执行历史（含失败路径）落在错误的租户作用域
-- **修复** 工作流定义与实例采信调用方提交的租户标识，改为取当前作用域的租户
-- **修复** 数据库初始化时种子先于升级脚本执行，存量库新增的列尚未补齐即被种子读取，启动报列不存在。初始化改为「全部连接建库建表 → 表结构升级 → 全部连接播种」，新增 `IDbSchemaUpgrader` 扩展点供应用接入升级引擎
-- **修复** 聚合根基类的公共列名与其余实体基类不一致，同一库中并存两套列名（迁移见升级须知）
-- **新增** `IUpgradeEngine.BaselineAsync`：本次初始化从零建出的库（`DbSchemaUpgradeContext.IsFresh`）登记为最新脚本版本，不再从 `0.0.0` 补跑历史脚本
+- **调整** 多租户统一「平台即 0 号租户」口径，覆盖数据过滤、写边界、任务、工作流、检索、设置、连接解析、灰度与升级锁
+- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，同时清除读共享与严格隔离过滤
+- **新增** `[PlatformDataSource]`：实体固定落平台库，不随租户独立库切换
+- **新增** `IDbSchemaUpgrader`：数据库初始化改为建表 → 结构升级 → 播种；`IUpgradeEngine.BaselineAsync` 让新建的库直接登记为最新版本
+- **新增** 五类日志记录新增 `TenantId`，按请求所属租户记账
+- **修复** 请求头或查询串可替已认证请求另选租户
+- **修复** 跨租户读取时严格隔离实体静默缺数据
+- **修复** 任务实例、状态与历史未落在任务所在租户；工作流采信调用方提交的租户
+- **修复** 种子先于升级脚本执行，存量库启动报列不存在
+- **修复** 聚合根公共列名与其余实体基类不一致
 - **升级** 发布 v4.6.0
 
 ## v4.5.0 (2026-09-24)
 
 ::: warning 升级须知
-本次含多处破坏性变更：
-
-- `XiHan.Framework.Script` 的 `MemoryUsage` 三个属性更名，数值改为执行期间的分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`。`ScriptExecutionLog.MemoryUsageBytes` 与 `EngineStatistics.TotalMemoryUsage` 名称不变，数值同样改为分配量，`HighMemoryUsageThresholdBytes` 的原有阈值需按新口径重新标定
-- `LunarCalendarHelper.GetLunarFestival` 新增可选参数 `lunarYear`，源码兼容、二进制不兼容：调用该方法的已编译程序集需针对新版本重新编译
-- 农历换算结果修正后与上一版不同，公农历互转、年 / 日干支与节气日期均有变化，由旧版本计算并持久化的农历数据需重新计算。`GetSolarTerms(year)` 改为返回该公历年内按日期排列的 24 个节气（小寒打头、冬至结尾），`Order` 为年内序号
-- `XiHan.Framework.Utils` 多处输入校验收紧：`MathHelper.Factorial` / `Fibonacci` 超出 `MaxFactorialInput`（20）/ `MaxFibonacciCount`（47）时抛出 `ArgumentOutOfRangeException`，此前静默溢出为负数；`StringHelper.IsNumberId` 不再接受 `"0"`、前导零与串尾换行；`RegexHelper` 的两个金额正则不再将任意字符视为小数点；`DateTimeHelper.GetEndOfYear` 返回 `23:59:59.9999999`，比此前晚约 1 毫秒
-- `CurrencyHelper.FormatCurrency(amount, currencyCode, culture)` 输出的货币符号与小数位数改为取自 `currencyCode`，此前实际输出 `culture` 自身的货币（`FormatCurrency(100m, "USD", zh-CN)` 得到 `¥100.00`）
+- `Script` 的 `MemoryUsage` 属性改名并改为分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`；`MemoryUsageBytes`、`TotalMemoryUsage` 同改口径，`HighMemoryUsageThresholdBytes` 需重新标定
+- 农历换算修正后结果与上一版不同，已持久化的农历数据需重算；`GetSolarTerms(year)` 改为返回该公历年内的 24 个节气；`GetLunarFestival` 新增 `lunarYear` 参数，已编译的调用方需重新编译
+- `Utils` 校验收紧：`Factorial` / `Fibonacci` 超过 20 / 47 抛 `ArgumentOutOfRangeException`；`IsNumberId` 不再接受 `"0"`、前导零与串尾换行；金额正则的小数点改为严格匹配；`GetEndOfYear` 返回 `23:59:59.9999999`
+- `CurrencyHelper.FormatCurrency` 的货币符号与小数位改取自 `currencyCode`，不再取 `culture` 的货币
 :::
 
-- **修复** `LunarCalendarHelper` 农历换算：闰月与月大小解码错位，闰年少算一个月，公农历互转累计偏差近 1900 天；年、日干支基准错误；节气日期整体错位约 15 天且未换算到东八区；`GetSolarTerm` 查不到一月份的小寒、大寒；`GetLunarFestival` 判定除夕的结果随运行时间变化，改由调用方传入 `lunarYear`，`LunarDate.Festival` 自动传入所属农历年
-- **修复** `AsyncReaderWriterLock.AcquireReadLockAsync(TimeSpan)` 超时后读者计数未回滚，此后读锁与写锁可同时持有；`AsyncBarrier` 阶段号到 65536 时回绕；`Debouncer` 不释放被替换的 `CancellationTokenSource`，释放后再调用 `Debounce` 改为直接忽略
-- **修复** `TreeExtensions.ToTree` 在子节点排在父节点之前时误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组时抛出 `TargetException`，克隆 `HashSet<T>` / `Queue<T>` 等集合得到空集合
-- **修复** `StringHelper`：`FormatReplaceStr` 在被替换子串为空时死循环至内存耗尽；`ClipString` 多保留一个字符且可能拆开代理对；`GetEnumerableStr` 在重复元素处丢失分隔符；`GetStrLength` 将输入中的 `?` 计为 2
-- **修复** `DateTimeHelper.GetDetailedAge` 跨大小月时算出负天数；中国时区改为首次使用时解析，缺少时区数据库的环境不再导致 `DateTimeHelper` 类型初始化失败
-- **修复** `NumberExtensions.Lcm` 中间结果溢出；`MaskHelper` 的 `MaskPhone` / `MaskIdCard` / `MaskBankCard` 传入 `null` 时抛出 `NullReferenceException`；`MaskUrlParams` 只匹配全小写参数名，`?Token=`、`?Password=` 等未脱敏
-- **修复** 脚本执行的 `MemoryUsage` 以堆占用差值计量，执行期间发生 GC 时读数为零或负数；改取 `GC.GetTotalAllocatedBytes` 的分配量，恒为非负。该值为进程级计数，并发执行的脚本会互相计入对方的分配量
-- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 边界常量与 `RegexHelper.NumberIdRegex`
-- **优化** `OtpHelper` 验证码比对改为常量时间比较；`CurrencyHelper` 的货币查询结果进程内缓存，货币代码不区分大小写
+- **修复** `LunarCalendarHelper` 闰月、干支与节气计算错误，公农历互转偏差近 1900 天
+- **修复** `AsyncReaderWriterLock` 超时后读写锁可同时持有；`AsyncBarrier` 阶段号回绕；`Debouncer` 泄漏 `CancellationTokenSource`
+- **修复** `TreeExtensions.ToTree` 误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组抛异常、克隆集合得到空集合
+- **修复** `StringHelper`：`FormatReplaceStr` 死循环、`ClipString` 多保留一个字符、`GetEnumerableStr` 丢分隔符、`GetStrLength` 计数错误
+- **修复** `DateTimeHelper.GetDetailedAge` 算出负天数；缺少时区数据库时类型初始化失败
+- **修复** `NumberExtensions.Lcm` 溢出；`MaskHelper` 传入 `null` 抛异常、`MaskUrlParams` 漏掉大写参数名
+- **修复** 脚本内存读数在 GC 后为零或负数
+- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 与 `RegexHelper.NumberIdRegex`
+- **优化** `OtpHelper` 改为常量时间比较；`CurrencyHelper` 缓存货币查询，货币代码不区分大小写
 - **升级** 发布 v4.5.0
 
 ## v4.4.0 (2026-09-22)
