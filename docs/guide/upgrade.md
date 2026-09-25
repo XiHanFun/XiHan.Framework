@@ -155,7 +155,7 @@ await _versionStore.SetUpgradeCompletedAsync(version, currentAppVersion, version
 ::: danger 存储实现必须把新值写回入参实例
 如果 `UpdateDbVersionAsync` 只更新了数据库、没有同步修改传入的 `version` 对象，那么 `version.DbVersion` 仍是本轮开始时的旧值，完成时会被原样写回去——数据库版本永远推不上去，每次启动都判定「需要升级」。内置实现通过把状态复制回入参来满足这一点，自定义实现照做。
 
-同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。
+同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。平台就是 0 号租户：无租户上下文与 `Change(0)` 必须落同一个平台分区（内置实现都落 `host`，记录的 `TenantId` 为 0），与升级锁同一口径，否则平台会出现两份版本记录与迁移历史。
 :::
 
 ### 维护模式
@@ -351,7 +351,7 @@ services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeV
 ```
 
 ::: danger 默认存储进程重启即丢
-`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
+`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区，租户 Id 为 `null` 与 `0` 同落 `host`）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
 :::
 
 ## 常见问题
