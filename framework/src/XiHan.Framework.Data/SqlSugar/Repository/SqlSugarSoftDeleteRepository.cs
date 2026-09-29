@@ -313,7 +313,22 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         // 写边界：租户上下文内禁止物理清除全局行/异租户行（读过滤放行 TenantId=0，写路径必须收紧）
         EnsureWritableInCurrentTenant(entity);
 
-        return await ExecutePurgeAsync([id], cancellationToken) > 0;
+        if (await ExecutePurgeAsync([id], cancellationToken) > 0)
+        {
+            return true;
+        }
+
+        // DELETE 未命中：行已被并发物理删除则目标态已达成，被并发恢复则按活动数据拒绝
+        var current = await CreateWithDeletedQueryable()
+            .Where(item => item.BasicId.Equals(id))
+            .Take(1)
+            .ToListAsync(cancellationToken);
+        if (current.Count > 0 && !current[0].IsDeleted)
+        {
+            throw new InvalidOperationException("物理清除仅允许作用于已软删除的数据；活动数据请先软删除。");
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -321,7 +336,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     /// </summary>
     /// <remarks>
     /// 集合中包含未软删除的活动数据时整批拒绝（fail-closed）；
-    /// 不存在的主键被忽略（目标态已达成）。
+    /// 不存在的主键被忽略（目标态已达成）；
+    /// 预读之后被并发恢复的行不被清除，也不计入返回的行数。
     /// </remarks>
     /// <param name="ids">主键集合</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -361,7 +377,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     }
 
     /// <summary>
-    /// 执行物理清除：临时摘除软删过滤（保留租户过滤）后按主键集合 DELETE
+    /// 执行物理清除：临时摘除软删过滤（保留租户过滤）后按主键集合 DELETE，仅命中仍处于已软删状态的行
     /// </summary>
     /// <remarks>
     /// <c>Deleteable&lt;T&gt;()</c> 工厂在创建瞬间基于当前 QueryFilter 状态把过滤烘进 DELETE 的 WHERE：
@@ -384,6 +400,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             db.QueryFilter.ClearAndBackup<ISoftDelete>();
             return await db.Deleteable<TEntity>()
                 .In(idArray.Cast<object>().ToArray())
+                .Where(entity => entity.IsDeleted)
                 .EnableDiffLogEvent(typeof(TEntity))
                 .ExecuteCommandAsync(cancellationToken);
         }
