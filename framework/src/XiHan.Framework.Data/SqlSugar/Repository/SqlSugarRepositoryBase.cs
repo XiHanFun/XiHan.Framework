@@ -587,11 +587,12 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// 常规 <see cref="UpdateAsync(TEntity, CancellationToken)"/> 的预读带全局软删过滤，对已软删行必失败；
     /// 本路径预读用 <c>CreateWritePreReadWithDeletedQueryable</c>——保留租户过滤（写边界豁免作用域内除外）、仅忽略软删过滤。
     /// 随后的对象式 UPDATE 按主键定向命中（对象式更新不吃全局写过滤，SqlSugar 对其调用 <c>EnableQueryFilter</c> 直接抛异常，
-    /// 结构上无法把过滤烘进 WHERE）。0 行受影响按 fail-closed 抛异常（预读与写入之间行被并发物理删除）。
+    /// 结构上无法把过滤烘进 WHERE），并与常规更新一样校验行版本：调用方须传入从库中加载、携带当前 Row_Version 的实体。
     /// </remarks>
     /// <param name="entity">实体</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>更新后的实体</returns>
+    /// <exception cref="ConcurrencyConflictException">行版本与数据库不一致，或预读与写入之间行被并发物理删除</exception>
     protected async Task<TEntity> UpdateIncludingDeletedAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -606,23 +607,21 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             ?? throw new InvalidOperationException("更新失败：实体不存在或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
-        var affectedRows = await DbClient.Updateable(entity)
-            .EnableDiffLogEvent(AuditBusinessData)
-            .ExecuteCommandAsync(cancellationToken);
-        if (affectedRows == 0)
-        {
-            throw new InvalidOperationException("更新失败：目标行已被并发删除（0 行受影响）。");
-        }
-
+        await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
         return entity;
     }
 
     /// <summary>
     /// 批量按主键更新实体，预读校验放行已软删数据（批量恢复场景专用）
     /// </summary>
+    /// <remarks>
+    /// 预读一次校验可见性与租户边界后，逐个实体按行版本乐观锁更新（SqlSugar 的 OptLock 仅支持单实体）。
+    /// 任一实体版本冲突即抛异常并停止后续更新；已写入的行由外层工作单元的事务决定是否回滚。
+    /// </remarks>
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>更新后的实体集合</returns>
+    /// <exception cref="ConcurrencyConflictException">任一实体行版本与数据库不一致，或预读与写入之间行被并发物理删除</exception>
     protected async Task<IReadOnlyList<TEntity>> UpdateRangeIncludingDeletedAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -649,16 +648,9 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             EnsureWritableInCurrentTenant(existing);
         }
 
-        var affectedRows = await DbClient.Updateable(entityArray)
-            .EnableDiffLogEvent(AuditBusinessData)
-            .ExecuteCommandAsync(cancellationToken);
-
-        // 只在「全部未命中」时 fail-closed：严格按 Length 比对会误报——
-        // MySQL 连接串 UseAffectedRows=true 时相同值 UPDATE 计 0 行、输入含重复主键时末次更新亦计 0，
-        // 而预读与写入之间被并发物理删除（软删行仅 Purge 能物理删）本就是极窄窗口。
-        if (affectedRows == 0)
+        foreach (var entity in entityArray)
         {
-            throw new InvalidOperationException("批量更新失败：目标行已被并发删除（0 行受影响）。");
+            await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
         }
 
         return entityArray;
