@@ -3,12 +3,11 @@
 
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
-using XiHan.Framework.Web.Mcp.Options;
 
-namespace XiHan.Framework.Web.Mcp.Filters;
+namespace XiHan.Framework.Web.Mcp.Options;
 
 /// <summary>
-/// MCP 工具暴露过滤器（按 <see cref="XiHanMcpOptions.AllowedTools"/> 与 <see cref="XiHanMcpOptions.DeniedTools"/> 裁剪经 /mcp 暴露的工具集）
+/// MCP 工具暴露配置器（按 <see cref="XiHanMcpOptions.AllowedTools"/> 与 <see cref="XiHanMcpOptions.DeniedTools"/> 裁剪经 /mcp 暴露的工具集）
 /// </summary>
 /// <remarks>
 /// 被裁掉的工具既不出现在 tools/list，也不能经 tools/call 调用；两个清单都为空时不触碰工具集。
@@ -19,14 +18,14 @@ namespace XiHan.Framework.Web.Mcp.Filters;
 /// 启用清单的宿主不应同时使用这两个 handler。
 /// </para>
 /// </remarks>
-public sealed class McpToolExposureFilter : IPostConfigureOptions<McpServerOptions>
+public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServerOptions>
 {
     private readonly IOptions<XiHanMcpOptions> _options;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public McpToolExposureFilter(IOptions<XiHanMcpOptions> options)
+    public McpToolExposureConfigurator(IOptions<XiHanMcpOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options;

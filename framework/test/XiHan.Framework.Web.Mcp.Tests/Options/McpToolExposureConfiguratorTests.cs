@@ -4,7 +4,7 @@
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 
-namespace XiHan.Framework.Web.Mcp.Tests.Filters;
+namespace XiHan.Framework.Web.Mcp.Tests.Options;
 
 /// <summary>
 /// 工具暴露策略：允许/拒绝清单决定哪些技能能经 /mcp 被看见和被调用
@@ -15,7 +15,7 @@ namespace XiHan.Framework.Web.Mcp.Tests.Filters;
 /// 限制类断言都配一个可调用的对照工具：清单放行的那个工具仍能调用，且回显里带着它自己的技能名。
 /// </para>
 /// </remarks>
-public class McpToolExposureFilterTests
+public class McpToolExposureConfiguratorTests
 {
     /// <summary>
     /// 宿主配置的正确密钥

@@ -93,7 +93,7 @@ XiHan.Framework.Web.Mcp/
       XiHanWebMcpServiceCollectionExtensions.cs
   Filters/
     McpApiKeyEndpointFilter.cs
-    McpToolExposureFilter.cs
   Options/
+    McpToolExposureConfigurator.cs
     XiHanMcpOptions.cs
 ```
