@@ -60,6 +60,7 @@
     <Project Path="src/XiHan.Framework.SearchEngines.Elasticsearch/XiHan.Framework.SearchEngines.Elasticsearch.csproj" />
     <Project Path="src/XiHan.Framework.Security/XiHan.Framework.Security.csproj" />
     <Project Path="src/XiHan.Framework.Serialization/XiHan.Framework.Serialization.csproj" />
+    <Project Path="src/XiHan.Framework.Settings.SqlSugar/XiHan.Framework.Settings.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.Tasks/XiHan.Framework.Tasks.csproj" />
     <Project Path="src/XiHan.Framework.Templating/XiHan.Framework.Templating.csproj" />
     <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
@@ -127,6 +128,7 @@
     <Project Path="test/XiHan.Framework.SearchEngines.Tests/XiHan.Framework.SearchEngines.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Tests/XiHan.Framework.Security.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Serialization.Tests/XiHan.Framework.Serialization.Tests.csproj" Id="b4569bd6-5e7d-45bf-9135-17b2c6265439" />
+    <Project Path="test/XiHan.Framework.Settings.SqlSugar.Tests/XiHan.Framework.Settings.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Settings.Tests/XiHan.Framework.Settings.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Tasks.Tests/XiHan.Framework.Tasks.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Templating.Tests/XiHan.Framework.Templating.Tests.csproj" />
