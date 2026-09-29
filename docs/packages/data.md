@@ -134,7 +134,7 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库，含派生出的模块库）、`GetCurrentLayoutConfigIds()`（当前这一套布局有哪些库）、`AsTenant()` |
+| `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库，含派生出的模块库）、`GetCurrentLayoutConfigIds()`（当前这一套布局有哪些库）、`GetEnlistedConfigIds()`（当前事务型 UoW 已登记了哪些库，非事务或无 UoW 返回空）、`AsTenant()` |
 | `ModuleDataSourceAttribute` | 实体上声明所属模块数据源：`[ModuleDataSource("Erp")]`，标在基类上对派生实体生效；SqlSugar 原生 `[Tenant("Erp")]` 同样被识别 |
 | `IEntityModuleDataSourceResolver` | 实体模块数据源解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；默认实现读特性并缓存，可 `Replace` |
 | `IModuleDataSourceConnectionResolver` | 模块数据源连接解析器：`ResolveClient(moduleDataSource, parentConfigId)` 按「模块名 + 当前布局」定连接，两条维度在此交汇 |
@@ -153,7 +153,7 @@ public class MyModule : XiHanModule { }
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
 | `IDataSeederSelector` | 种子选取器：`Select(seeders, context)` 决定当前库跑哪些种子，默认实现按特性+选项筛选，可 `Replace` |
-| `TableInitializationAttribute` | 实体上声明建表方式：`Enabled` / `Group` / `Target` / `ConnectionConfigIds` |
+| `TableInitializationAttribute` | 实体上声明建表方式：`Enabled` / `Group` / `Target` / `ConnectionConfigIds` / `IncludeModuleConnections` |
 | `DataSeedingAttribute` | 种子上声明播种方式：`Enabled` / `Group` / `Target` / `ConnectionConfigIds` |
 | `DbInitializationContext` | 当前库上下文：`ConnectionConfigId` / `TenantId` / `IsTenantDatabase` / `Target` |
 | `IDatabaseMetadataProvider` | 库表结构元数据读取 |
@@ -426,11 +426,21 @@ public class ErpOrderAppService(IRepositoryBase<ErpOrder, long> orderRepository,
 - **库隔离租户自带整套模块库**：租户连接描述符没声明模块库时，框架按默认布局逐条镜像给它——默认布局给某模块分了库，该租户也分，库名由租户主库名派生成 `{租户库名}_{模块名}`（SQLite 是库文件名）；默认布局那条连接串留空（该模块不分库）时租户同样不分，模块表落它自己的主库。于是「租户声明了库隔离」就意味着它的数据都在自己的库里，不会有一部分悄悄落回公共模块库。开关是 `EnableTenantModuleDatabaseConvention`（默认 `true`），关掉即退回旧行为（模块表回落共享模块库，按 `TenantId` 行过滤区分）。派生不出库名（如 Oracle 这类连接串里没有库名字段）时抛异常，且抛在主库注册之前——整套布局要么一起落地要么都不落地。
 - **连接串留空表示不分库**：模块条目写了名字、连接串留空，即该模块直接用父连接的主库；条目<b>整条缺失</b>才是未配置。
 - **fail-closed**：实体声明的模块数据源在当前布局与默认布局里都没有配置时直接抛异常，绝不回退主库造成跨库串写。
-- **建表口径一致**：声明了模块数据源的实体只在自己的模块库建表（每套布局各建一份）；未声明的实体不进模块库，需要模块库里也建框架公共表时把该 `ConfigId` 列入 `TableInitialization.SharedConnectionConfigIds`。
+- **建表口径一致**：声明了模块数据源的实体只在自己的模块库建表（每套布局各建一份）；未声明的实体默认不进模块库，需要时把该 `ConfigId` 列入 `TableInitialization.SharedConnectionConfigIds`，或在实体上标注 `TableInitialization(IncludeModuleConnections = true)`。
 - **模块库跟着启动一起建**：启动时的建库建表遍历的是全量连接标识（含派生出的模块库），模块库不存在会被自动创建；库隔离租户开通时走 `IDbInitializer.InitializeCurrentLayoutAsync()`，把该租户的主库与它自带的模块库一起建出来。
 - **种子按连接圈定**：模块自带的种子标 `[DataSeeding(ConnectionConfigIds = ["Default_Erp"])]`，避免在遍历每个库时重复执行。
 - **兼容 SqlSugar 原生特性**：实体已标了 SqlSugar 的 `[Tenant("Erp")]` 时同样被识别，此时声明的是连接标识本身，按相等匹配。
 - **跨库写不是一个事务**：同一工作单元跨多个库写入时，每个 `ConfigId` 各开一个本地事务，框架不提供跨库分布式事务；需要强一致时把跨库步骤拆成可补偿的流程。
+
+基础设施表（收发件箱、审计、分布式锁这类每个库都得有一份的表）用实体级标注，不必把每个模块库的 `ConfigId` 都写进名单：
+
+```csharp
+[SugarTable("sys_infrastructure_record")]
+[TableInitialization(IncludeModuleConnections = true)]
+public class SysInfrastructureRecord : SugarEntity<Guid> { }
+```
+
+该属性只决定建不建表，**不改变运行期的连接解析**——实体仍按 `[ModuleDataSource]` 或当前租户上下文路由，不会因为多建了一份表就换库。
 
 要把某个租户的某个模块库指到别处（另一台机器、另一种库），在它的租户连接描述符里显式写出来即可——显式的优先，上面的约定只补它没提到的模块：
 
@@ -473,6 +483,11 @@ public class SysTenant : SugarEntity<long> { }
 [TableInitialization(ConnectionConfigIds = ["Archive"])]
 public class SysArchive : SugarEntity<long> { }
 
+// 基础设施表：每个库都要有一份（收发件箱、审计、分布式锁等）
+[SugarTable("sys_infrastructure_record")]
+[TableInitialization(IncludeModuleConnections = true)]
+public class SysInfrastructureRecord : SugarEntity<Guid> { }
+
 // 整组种子归一个分组，配置里按组开关
 [DataSeeding(Group = "Demo")]
 public abstract class DemoSeederBase : DataSeederBase { }
@@ -484,6 +499,7 @@ public abstract class DemoSeederBase : DataSeederBase { }
 | `Group` | 分组名，配合选项里的 `IncludedGroups`/`ExcludedGroups` 按组开关 |
 | `Target` | `Platform` / `Tenant` / `All`（默认）。租户库指 `ConfigId` 以 `TenantConfigIdPrefix` 开头的运行时连接 |
 | `ConnectionConfigIds` | 仅在这些连接上建表/播种，为空表示不限连接 |
+| `IncludeModuleConnections` | `true` 表示未声明模块数据源的实体也在模块库建表，默认 `false` |
 
 特性标在基类上对派生类型同样生效（`Inherited = true`）。
 
@@ -508,7 +524,7 @@ public abstract class DemoSeederBase : DataSeederBase { }
 - `Mode`：`All`（默认，扫到的都参与，标了 `Enabled = false` 的除外）或 `OptIn`（只有显式标了特性的才参与）。
 - `IncludedGroups` / `ExcludedGroups`：按特性上的 `Group` 圈定。
 - `IncludedTables` / `ExcludedTables`（种子对应 `IncludedSeeders` / `ExcludedSeeders`）：支持 `*` `?` 通配；表按**实体类名、实体全名、表名**任一匹配，种子按 **`Name`、类名、类全名**任一匹配。
-- `SharedConnectionConfigIds`（仅建表）：模块库中额外允许建「未声明模块数据源实体」的连接名单，支持通配。
+- `SharedConnectionConfigIds`（仅建表）：模块库中额外允许建「未声明模块数据源实体」的连接名单，支持通配。未声明模块数据源的实体进模块库共三条通路：当前连接不是模块库、该 `ConfigId` 命中 `SharedConnectionConfigIds`、实体标注了 `IncludeModuleConnections = true`。前者是连接层级整体放行（名单内的模块库对所有此类实体开放），后者是实体层级单点放行（只有标注的实体进模块库），两者并存。
 - `Filter`：`Func<Type,bool>?` / `Func<IDataSeeder,bool>?` 代码钩子，只能在 `Configure<XiHanSqlSugarCoreOptions>` 里设置。
 
 判定顺序：模块数据源 → 特性 → 模式 → 分组 → 名称 → 自定义委托，任一环节否决即不参与。
