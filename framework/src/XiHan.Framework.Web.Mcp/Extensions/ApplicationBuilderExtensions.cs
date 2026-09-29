@@ -1,6 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using ModelContextProtocol.Server;
 using XiHan.Framework.Web.Mcp.Filters;
 using XiHan.Framework.Web.Mcp.Options;
 
@@ -21,6 +24,7 @@ public static class ApplicationBuilderExtensions
     /// <param name="endpoints">端点路由构建器</param>
     /// <param name="options">MCP 配置</param>
     /// <returns>端点路由构建器</returns>
+    /// <exception cref="InvalidOperationException">技能投影出的工具名有冲突（见 <c>SkillMcpToolsConfigurator</c>）</exception>
     public static IEndpointRouteBuilder MapXiHanMcp(this IEndpointRouteBuilder endpoints, XiHanMcpOptions options)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -30,6 +34,9 @@ public static class ApplicationBuilderExtensions
         {
             return endpoints;
         }
+
+        // 提前装配 McpServerOptions，使工具集在映射端点前完成构建
+        _ = endpoints.ServiceProvider.GetRequiredService<IOptions<McpServerOptions>>().Value;
 
         _ = endpoints.MapMcp(options.Path)
             .AllowAnonymous()
