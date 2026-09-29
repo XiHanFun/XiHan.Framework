@@ -99,6 +99,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `MultiTenancy.Abstractions` | Multi-tenancy abstractions: tenant context interfaces, resolution chain |
 | `MultiTenancy` | Multi-tenancy: tenant resolution middleware, data isolation, tenant configuration, lifecycle |
 | `Settings` | Settings management: definition-provider pattern, dynamic configuration, multiple sources (including tenant level) |
+| `Settings.SqlSugar` | Settings persistence: SqlSugar-backed `ISettingStore` implementation |
 | `Validation.Abstractions` | Validation abstractions: the `IHasValidationErrors` contract and `XiHanValidationException` |
 | `Validation` | Validation integration entry point: currently a thin placeholder, module class only |
 | `ObjectMapping` | Object mapping: Mapster integration |

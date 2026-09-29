@@ -99,6 +99,7 @@
 | `MultiTenancy.Abstractions` | 多租户抽象：租户上下文接口、解析链 |
 | `MultiTenancy` | 多租户：租户解析中间件、数据隔离、租户配置管理、生命周期 |
 | `Settings` | 设置管理：设置定义提供者模式、动态配置、多来源（租户级别） |
+| `Settings.SqlSugar` | 设置管理持久化：`ISettingStore` 的 SqlSugar 落库实现 |
 | `Validation.Abstractions` | 校验抽象：校验错误契约 `IHasValidationErrors` 与 `XiHanValidationException` |
 | `Validation` | 数据校验集成入口：当前为薄占位，仅模块类 |
 | `ObjectMapping` | 对象映射：Mapster 集成 |

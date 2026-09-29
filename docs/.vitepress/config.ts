@@ -153,6 +153,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
           pkg("MultiTenancy.Abstractions", "multitenancy-abstractions"),
           pkg("MultiTenancy 多租户", "multitenancy"),
           pkg("Settings 设置", "settings"),
+          pkg("Settings.SqlSugar", "settings-sqlsugar"),
           pkg("Validation.Abstractions", "validation-abstractions"),
           pkg("Validation 校验", "validation"),
         ],

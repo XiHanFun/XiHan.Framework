@@ -108,4 +108,5 @@ public class YourAppModule : XiHanModule
 
 ## 相关模块
 
-- [Auditing.SqlSugar](./auditing-sqlsugar) / [EventBus.SqlSugar](./eventbus-sqlsugar)：同一套落库范式的其他实现
+- [XiHan.Framework.Settings](./settings)：`ISettingStore` 契约与设置管理
+- [XiHan.Framework.Data](./data)：SqlSugar 客户端、工作单元与建表
