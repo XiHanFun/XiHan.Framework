@@ -60,13 +60,14 @@ public class TenantSettingValueProvider : SettingValueProvider
     }
 
     /// <summary>
-    /// 获取租户 ProviderKey（优先名称，回退到唯一标识）
+    /// 获取租户 ProviderKey：只按租户标识定键，平台（0 号租户）没有租户级取值
     /// </summary>
+    /// <remarks>
+    /// 不用租户名称定键：同一租户在请求管道里带名称切入、在后台按标识切入，按名称定键会让同一租户落出两套设置。
+    /// </remarks>
     /// <returns></returns>
     private string? GetTenantProviderKey()
     {
-        return !string.IsNullOrWhiteSpace(CurrentTenant.Name)
-            ? CurrentTenant.Name
-            : CurrentTenant.Id?.ToString();
+        return CurrentTenant.Id is { } tenantId && tenantId > 0 ? tenantId.ToString() : null;
     }
 }

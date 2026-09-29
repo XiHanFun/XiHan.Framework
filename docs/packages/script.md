@@ -41,7 +41,7 @@ public class MyModule : XiHanModule { }
 2. **编译**：Roslyn 用 `CompilerOptions`（语言版本、优化级别、调试信息等）编译到内存程序集；失败返回带诊断的 `CompilationResult`。
 3. **缓存**：按脚本内容与选项生成缓存键，命中则复用已编译程序集（结果 `FromCache=true`）。
 4. **安全校验**：若 `SecurityOptions.EnableSecurityChecks`，对编译出的程序集 `assembly.GetTypes()` 做反射检查——命中禁止命名空间/类型/不安全代码/危险方法名则抛 `ScriptSecurityException`。
-5. **执行 + 超时**：反射调用入口方法，用 `CancellationTokenSource(TimeoutMs)` 控制时长，超时抛 `ScriptTimeoutException`；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存占用、诊断）。
+5. **执行 + 超时**：反射调用入口方法，用 `CancellationTokenSource(TimeoutMs)` 控制时长，超时抛 `ScriptTimeoutException`；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存分配量、诊断）。其中 `MemoryUsage.AllocatedBytes` 是执行期间的分配字节数，恒为非负；因取自进程级累计计数，并发执行的脚本会互相计入对方的分配量。
 
 ## 核心能力
 

@@ -81,7 +81,7 @@ dotnet add package XiHan.Framework.AI.Abstractions
 | `IKnowledgeIngestor` | `Task<int> IngestAsync(KnowledgeIngestRequest request, CancellationToken ct = default)`（返回切片数）；`Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken ct = default)`（按文档清理已入库向量） |
 | `KnowledgeIngestRequest` | 摄取请求：`DocumentId`（required）/ `Text`（required）/ `TenantId`（0=平台全局）/ `Title` / `Source` / `Provider`（嵌入 provider，null 用默认）/ `Chunking` |
 | `IKnowledgeRetriever` | `Task<IReadOnlyList<RetrievedChunk>> RetrieveAsync(string query, int topK = 5, RetrievalFilter? filter = null, string? provider = null, CancellationToken ct = default)` |
-| `RetrievalFilter` | 向量库 pre-filter：`long? TenantId`（0=平台全局，null 不限）；`string? DocumentId`（null 不限） |
+| `RetrievalFilter` | 向量库 pre-filter：`long TenantId`（平台为 0；检索恒限定在这一个租户内，不存在不限租户的检索）；`string? DocumentId`（null 不限）。`filter` 为空即平台 |
 | `IRagPromptAugmenter` | `string Augment(string userPrompt, IReadOnlyList<RetrievedChunk> context)`（context 为空原样返回） |
 | `TextChunk` | 入库前切片：`DocumentId` / `Index` / `Text`（均 required）/ `TenantId` / `Title` / `Source` |
 | `RetrievedChunk` | 检索命中：`DocumentId` / `Index` / `Text`（均 required）/ `Title` / `Source` / `double? Score`（相似度，越大越相近；连接器量纲可能不同） |

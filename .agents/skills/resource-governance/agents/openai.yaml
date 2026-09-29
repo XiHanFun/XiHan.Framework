@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 资源治理"
+  short_description: "治理默认实现、容量并发和外部资源 Provider 边界"
+  default_prompt: "使用 $xihan-framework-resource-governance 审查并改进一个资源实现。"
+
+policy:
+  allow_implicit_invocation: true

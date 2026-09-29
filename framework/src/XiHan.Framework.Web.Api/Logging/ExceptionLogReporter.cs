@@ -51,6 +51,7 @@ public static class ExceptionLogReporter
             {
                 TraceId = traceId,
                 UserId = requestContext?.UserId ?? currentUser?.UserId,
+                TenantId = requestContext?.TenantId,
                 UserName = requestContext?.UserName ?? currentUser?.UserName,
                 Path = requestContext?.Path ?? context.Request.Path.ToString(),
                 Method = requestContext?.Method ?? context.Request.Method,

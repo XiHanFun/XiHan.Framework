@@ -208,6 +208,43 @@ public class MaskHelperTests
     }
 
     /// <summary>
+    /// 入参为 null 时原样返回，不抛空引用
+    /// </summary>
+    /// <remarks>
+    /// 原实现把"为空"与"太短"并到同一分支，两种情况都去调 <c>Mask</c> 扩展方法，
+    /// 而该方法上来就 <c>input.Trim()</c>：代码明明判了 <c>IsNullOrEmpty</c>，
+    /// 传 null 仍然会 NullReferenceException。
+    /// </remarks>
+    [Fact]
+    public void MaskSensitiveNumbers_WhenInputIsNull_ReturnsNull()
+    {
+        Assert.Null(MaskHelper.MaskPhone(null!));
+        Assert.Null(MaskHelper.MaskIdCard(null!));
+        Assert.Null(MaskHelper.MaskBankCard(null!));
+    }
+
+    /// <summary>
+    /// 入参为空串时原样返回
+    /// </summary>
+    [Fact]
+    public void MaskSensitiveNumbers_WhenInputIsEmpty_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, MaskHelper.MaskPhone(string.Empty));
+        Assert.Equal(string.Empty, MaskHelper.MaskIdCard(string.Empty));
+        Assert.Equal(string.Empty, MaskHelper.MaskBankCard(string.Empty));
+    }
+
+    /// <summary>
+    /// 通用脱敏方法对 null 抛出明确的参数异常
+    /// </summary>
+    [Fact]
+    public void Mask_WhenInputIsNull_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => MaskHelper.Mask(null!));
+        Assert.Throws<ArgumentNullException>(() => MaskHelper.Mask(null!, 1, 1));
+    }
+
+    /// <summary>
     /// URL 中的敏感查询参数值被整体替换
     /// </summary>
     [Theory]
@@ -215,6 +252,24 @@ public class MaskHelperTests
     [InlineData("https://a.com/x?password=p%40ss", "https://a.com/x?password=******")]
     [InlineData("https://a.com/x?pwd=1234&secret=s3cr3t", "https://a.com/x?pwd=******&secret=******")]
     public void MaskUrlParams_ReplacesSensitiveValues(string url, string expected)
+    {
+        Assert.Equal(expected, MaskHelper.MaskUrlParams(url));
+    }
+
+    /// <summary>
+    /// 敏感参数名不分大小写都要脱敏
+    /// </summary>
+    /// <remarks>
+    /// 底层正则原先只匹配全小写参数名，<c>?Token=</c>、<c>?Password=</c> 一律漏脱敏。
+    /// 查询串的参数名大小写由调用方决定，漏脱敏的后果是明文密钥进日志。
+    /// </remarks>
+    [Theory]
+    [InlineData("https://a.com/x?Token=abc123", "https://a.com/x?Token=******")]
+    [InlineData("https://a.com/x?Password=p%40ss", "https://a.com/x?Password=******")]
+    [InlineData("https://a.com/x?PWD=1234", "https://a.com/x?PWD=******")]
+    [InlineData("https://a.com/x?Secret=s3cr3t&user=bob", "https://a.com/x?Secret=******&user=bob")]
+    [InlineData("https://a.com/x?Token=a&password=b", "https://a.com/x?Token=******&password=******")]
+    public void MaskUrlParams_IsCaseInsensitive(string url, string expected)
     {
         Assert.Equal(expected, MaskHelper.MaskUrlParams(url));
     }

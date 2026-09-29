@@ -4,6 +4,7 @@
 using SqlSugar;
 using System.Linq.Expressions;
 using XiHan.Framework.Data.SqlSugar.Clients;
+using XiHan.Framework.Data.SqlSugar.Extensions;
 using XiHan.Framework.Data.SqlSugar.Helpers;
 using XiHan.Framework.Domain.Entities.Abstracts;
 using XiHan.Framework.Domain.Exceptions;
@@ -26,10 +27,13 @@ namespace XiHan.Framework.Data.SqlSugar.Repository;
 ///         MySQL 驱动“Parameter already been defined”崩溃（PG 驱动容忍重名故不崩，但仍是冗余死条件）。</item>
 ///   <item>审计字段（CreatedTime/ModifiedTime/TenantId 等）通过 SqlSugar <c>DataExecuting</c> AOP 自动注入。</item>
 ///   <item>实体差异日志通过 SqlSugar 原生 <c>OnDiffLogEvent</c> AOP 处理：仓储只需在写操作挂 <c>.EnableDiffLogEvent(typeof(TEntity))</c>（不叠 <c>EnableQueryFilter</c> 即安全）。</item>
-///   <item><b>写路径租户边界（读共享 ≠ 写共享）</b>：全局租户过滤器为「读共享」放行 <c>TenantId=0</c> 的平台全局行，
-///         但写路径不得复用该口径——租户上下文内禁止改写/删除非本租户行（含全局行）：
-///         预读守卫经 <c>EnsureWritableInCurrentTenant</c> 校验取回行的 TenantId，条件写自动追加当前租户 Where；
-///         平台维护全局/跨租户数据的唯一合法入口是平台态（无租户上下文，<c>ICurrentTenant.Change(null)</c>）。</item>
+///   <item><b>写路径租户边界（读共享 ≠ 写共享）</b>：平台就是 0 号租户（无租户上下文按 0 处理），
+///         每个作用域只能改写/删除本作用域的行——租户态只写本租户行（不含读共享放行的 <c>TenantId=0</c> 全局行），
+///         平台态只写 <c>TenantId=0</c> 的行：
+///         预读守卫经 <c>EnsureWritableInCurrentTenant</c> 校验取回行的 TenantId，条件写自动追加当前作用域 Where。
+///         维护某个租户的数据须显式切入该租户（<c>ICurrentTenant.Change(tenantId)</c>），不存在「平台态写全部」的口径。
+///         <see cref="TenantWriteGuard.Suppress"/> 作用域内（用户自有行写入）预读同时忽略租户过滤：
+///         自有行可能带别的租户戳（归属租户 / 登录时租户），带租户过滤的预读会把它当作「不存在」。</item>
 ///   <item>事务不在仓储内开启，统一由工作单元接管 SqlSugar 连接事务。</item>
 /// </list>
 /// </remarks>
@@ -110,7 +114,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -136,7 +140,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             .SetColumns(columns, appendColumnsByDataFilter: true)
             .Where(whereExpression);
 
-        // 租户态收紧写边界：自动过滤沿用读口径放行 TenantId=0 全局行，条件写须额外限定仅本租户行
+        // 收紧写边界：自动过滤沿用读口径（租户态放行 TenantId=0 全局行），条件写须额外限定仅当前作用域的行
         var tenantScope = BuildTenantWriteScopePredicate();
         if (tenantScope is not null)
         {
@@ -198,7 +202,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return insertedRows > 0;
         }
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("新增或更新失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -260,7 +264,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         ArgumentNullException.ThrowIfNull(entity);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existing = await GetByIdAsync(entity.BasicId, cancellationToken)
+        var existing = await GetForWriteAsync(entity.BasicId, cancellationToken)
             ?? throw new InvalidOperationException("删除失败：实体不存在、已被软删除或不在当前租户范围内。");
         EnsureWritableInCurrentTenant(existing);
 
@@ -279,7 +283,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (await GetByIdAsync(id, cancellationToken) is not { } existing)
+        if (await GetForWriteAsync(id, cancellationToken) is not { } existing)
         {
             return false;
         }
@@ -338,7 +342,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         var deleteable = DbClient.Deleteable<TEntity>()
             .Where(predicate);
 
-        // 租户态收紧写边界：自动过滤沿用读口径放行 TenantId=0 全局行，谓词删除须额外限定仅本租户行
+        // 收紧写边界：自动过滤沿用读口径（租户态放行 TenantId=0 全局行），谓词删除须额外限定仅当前作用域的行
         var tenantScope = BuildTenantWriteScopePredicate();
         if (tenantScope is not null)
         {
@@ -355,7 +359,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     #endregion
 
     /// <summary>
-    /// 校验主键集合是否均在当前查询过滤范围内可见；租户上下文下同时校验写边界（禁止改写全局行/异租户行）。
+    /// 校验主键集合是否均在当前查询过滤范围内可见；多租户实体同时校验写边界（只能改写当前作用域的行）。
     /// </summary>
     /// <param name="ids">待校验主键集合</param>
     /// <param name="message">校验失败异常信息</param>
@@ -371,7 +375,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         // 需要写边界校验时取整行（要读 TenantId），否则维持只取主键的轻量路径
         if (RequiresTenantWriteGuard())
         {
-            var rows = await CreateQueryable()
+            var rows = await CreateWritePreReadQueryable()
                 .Where(entity => idArray.Contains(entity.BasicId))
                 .ToListAsync(cancellationToken);
             if (rows.Count != idArray.Length)
@@ -387,7 +391,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return;
         }
 
-        var existingIds = await CreateQueryable()
+        var existingIds = await CreateWritePreReadQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .Select(entity => entity.BasicId)
             .ToListAsync(cancellationToken);
@@ -398,39 +402,87 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
     }
 
-    #region 写路径租户边界
+    #region 写路径预读
 
     /// <summary>
-    /// 是否需要写路径租户边界校验（实体为多租户实体且当前处于租户上下文）
+    /// 按主键预读待写行（写边界豁免作用域内忽略租户过滤）
     /// </summary>
-    private static bool RequiresTenantWriteGuard()
+    /// <param name="id">主键</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>从库中取回的行，不可见时为 null</returns>
+    protected async Task<TEntity?> GetForWriteAsync(TKey id, CancellationToken cancellationToken)
     {
-        return SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>() && GetActiveTenantId() is not null;
+        return await CreateWritePreReadQueryable()
+            .Where(entity => entity.BasicId.Equals(id))
+            .FirstAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 获取当前激活的租户标识（平台态返回 null）
+    /// 创建写路径预读查询：<see cref="TenantWriteGuard.Suppress"/> 作用域内忽略租户过滤，否则沿用默认过滤
+    /// </summary>
+    /// <remarks>
+    /// 用户自有行（按 UserId 归属）可能带别的租户戳，豁免作用域只放开写边界校验而预读仍带租户过滤的话，
+    /// 这些行会被预读判为「不存在」而写不进去。
+    /// </remarks>
+    protected ISugarQueryable<TEntity> CreateWritePreReadQueryable()
+    {
+        return TenantWriteGuard.IsSuppressed ? CreateNoTenantQueryable() : CreateQueryable();
+    }
+
+    /// <summary>
+    /// 创建含软删行的写路径预读查询（恢复/清除场景）：<see cref="TenantWriteGuard.Suppress"/> 作用域内同时忽略租户过滤
+    /// </summary>
+    protected ISugarQueryable<TEntity> CreateWritePreReadWithDeletedQueryable()
+    {
+        if (!TenantWriteGuard.IsSuppressed || !SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>())
+        {
+            return CreateWithDeletedQueryable();
+        }
+
+        var queryable = DbClient.Queryable<TEntity>();
+        return SqlSugarEntityTypeHelper.IsSoftDeleteEntity<TEntity>()
+            ? queryable.ClearTenantAndSoftDeleteFilter()
+            : queryable.ClearTenantFilter();
+    }
+
+    #endregion
+
+    #region 写路径租户边界
+
+    /// <summary>
+    /// 是否需要写路径租户边界校验（实体为多租户实体）
+    /// </summary>
+    /// <remarks>
+    /// 与是否启用租户读过滤器无关：写边界是独立的安全校验，平台态同样只写 <c>TenantId=0</c> 的行。
+    /// </remarks>
+    private static bool RequiresTenantWriteGuard()
+    {
+        return SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>();
+    }
+
+    /// <summary>
+    /// 获取当前作用域的租户标识（平台态为 0）
     /// </summary>
     /// <remarks>
     /// 与全局租户过滤器同源：DI 注册的 <c>ICurrentTenantAccessor</c> 单例正是
     /// <see cref="AsyncLocalCurrentTenantAccessor.Instance"/>（AsyncLocal 语义，随执行流），
     /// 仓储静态读取以避免为全部仓储构造函数增加注入涟漪。
     /// </remarks>
-    private static long? GetActiveTenantId()
+    private static long GetScopeTenantId()
     {
-        return AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId;
+        return AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId ?? 0;
     }
 
     /// <summary>
-    /// 校验实体在当前租户上下文内可写：租户态禁止改写非本租户行——含 <c>TenantId=0</c> 的平台全局行。
+    /// 校验实体在当前作用域内可写：只能改写本作用域的行（租户态不含 <c>TenantId=0</c> 的平台全局行，平台态不含租户行）。
     /// </summary>
     /// <remarks>
     /// 全局租户过滤器为「读共享」放行 <c>TenantId=0</c>，写路径若复用该口径，租户即可改写/删除平台级共享数据（影响所有租户）。
-    /// 平台态（无租户上下文）放行——那是维护全局/跨租户数据的唯一合法入口。
+    /// 平台同理不能直接改写租户行：维护某个租户的数据须显式切入该租户。
     /// 传入的必须是<b>从库中取回</b>的行（预读结果）：入参实体的 TenantId 可能是调用方伪造的。
     /// </remarks>
     /// <param name="entity">从库中取回的实体行</param>
-    /// <exception cref="InvalidOperationException">租户上下文内试图改写全局行或异租户行</exception>
+    /// <exception cref="InvalidOperationException">试图改写不属于当前作用域的行</exception>
     protected static void EnsureWritableInCurrentTenant(TEntity entity)
     {
         if (entity is not IMultiTenantEntity multiTenantEntity)
@@ -444,32 +496,24 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return;
         }
 
-        var tenantId = GetActiveTenantId();
-        if (tenantId is null)
+        var scopeTenantId = GetScopeTenantId();
+        if (multiTenantEntity.TenantId == scopeTenantId)
         {
-            // 严格隔离实体：平台态只拥有 TenantId=0 的行，改写租户行同样越界
-            if (entity is IStrictMultiTenantEntity && multiTenantEntity.TenantId != 0)
-            {
-                throw new InvalidOperationException(
-                    $"写入失败：不允许在平台态修改租户级（TenantId={multiTenantEntity.TenantId}）的严格隔离数据；请切换到该租户后执行。");
-            }
-
             return;
         }
 
-        if (multiTenantEntity.TenantId != tenantId.Value)
-        {
-            throw new InvalidOperationException(
-                $"写入失败：不允许在租户上下文修改其他租户或平台级（TenantId={multiTenantEntity.TenantId}）的数据；平台数据维护请在平台态执行。");
-        }
+        throw new InvalidOperationException(scopeTenantId == 0
+            ? $"写入失败：平台上下文只能修改平台数据（TenantId=0），不能修改租户（TenantId={multiTenantEntity.TenantId}）的数据；请切入该租户后执行。"
+            : $"写入失败：不允许在租户上下文修改其他租户或平台级（TenantId={multiTenantEntity.TenantId}）的数据；平台数据维护请在平台上下文执行。");
     }
 
     /// <summary>
-    /// 为无预读的条件写（表达式更新/谓词删除）构建当前租户的严格 Where 谓词；无需守卫时返回 null。
+    /// 为无预读的条件写（表达式更新/谓词删除）构建当前作用域的严格 Where 谓词；无需守卫时返回 null。
     /// </summary>
     /// <remarks>
-    /// 自动查询过滤（IsAutoUpdate/DeleteQueryFilter）沿用读口径放行 <c>TenantId=0</c>，
-    /// 本谓词在租户态额外收紧为「仅本租户行」（表达式内只出现 long 标量，符合过滤表达式约束）。
+    /// 自动查询过滤（IsAutoUpdate/DeleteQueryFilter）沿用读口径，租户态会放行 <c>TenantId=0</c>；
+    /// 本谓词收紧为「仅当前作用域的行」（平台态即 <c>TenantId=0</c>），且不依赖读过滤器是否启用
+    /// （表达式内只出现 long 标量，符合过滤表达式约束）。
     /// </remarks>
     private static Expression<Func<TEntity, bool>>? BuildTenantWriteScopePredicate()
     {
@@ -484,16 +528,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             return null;
         }
 
-        var tenantId = GetActiveTenantId();
-        if (tenantId is null)
-        {
-            return null;
-        }
-
         var parameter = Expression.Parameter(typeof(TEntity), "entity");
         var body = Expression.Equal(
             Expression.Property(parameter, nameof(IMultiTenantEntity.TenantId)),
-            Expression.Constant(tenantId.Value, typeof(long)));
+            Expression.Constant(GetScopeTenantId(), typeof(long)));
         return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
     }
 
@@ -547,7 +585,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// </summary>
     /// <remarks>
     /// 常规 <see cref="UpdateAsync(TEntity, CancellationToken)"/> 的预读带全局软删过滤，对已软删行必失败；
-    /// 本路径预读用 <c>CreateWithDeletedQueryable</c>——保留租户过滤（租户安全边界不放松）、仅忽略软删过滤。
+    /// 本路径预读用 <c>CreateWritePreReadWithDeletedQueryable</c>——保留租户过滤（写边界豁免作用域内除外）、仅忽略软删过滤。
     /// 随后的对象式 UPDATE 按主键定向命中（对象式更新不吃全局写过滤，SqlSugar 对其调用 <c>EnableQueryFilter</c> 直接抛异常，
     /// 结构上无法把过滤烘进 WHERE）。0 行受影响按 fail-closed 抛异常（预读与写入之间行被并发物理删除）。
     /// </remarks>
@@ -560,7 +598,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var id = entity.BasicId;
-        var existingRows = await CreateWithDeletedQueryable()
+        var existingRows = await CreateWritePreReadWithDeletedQueryable()
             .Where(item => item.BasicId.Equals(id))
             .Take(1)
             .ToListAsync(cancellationToken);
@@ -598,7 +636,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         cancellationToken.ThrowIfCancellationRequested();
 
         var idArray = entityArray.Select(entity => entity.BasicId).Distinct().ToArray();
-        var existingRows = await CreateWithDeletedQueryable()
+        var existingRows = await CreateWritePreReadWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
         if (existingRows.Count != idArray.Length)

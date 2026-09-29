@@ -263,9 +263,12 @@ public class LoggingPerformanceTests : IDisposable
 
         await Task.WhenAll(tasks);
         LogFileHelper.Flush();
-        
+
         stopwatch.Stop();
-        var finalMemory = GC.GetTotalMemory(false);
+        // 终点必须和起点一样在完整回收后读数。5 万条 500 字符消息会产出上百 MB 的临时字符串，
+        // 用 GetTotalMemory(false) 读到的是「GC 恰好还没跑」的垃圾量，与是否泄漏无关（CI 实测 101.67MB 贴边变红）；
+        // 「内存受控」要守的是回收后仍被持有的量。
+        var finalMemory = GC.GetTotalMemory(true);
 
         // Assert
         var throughput = TotalMessages / stopwatch.Elapsed.TotalSeconds;

@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 创建 PR"
+  short_description: "按模板准备、检查并创建 Framework Pull Request"
+  default_prompt: "使用 $xihan-framework-create-pr 为当前分支准备并创建 Pull Request。"
+
+policy:
+  allow_implicit_invocation: true

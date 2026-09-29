@@ -88,6 +88,7 @@ public class XiHanActionLoggingFilter(ILogger<XiHanActionLoggingFilter> logger) 
                     TraceId = traceId,
                     SessionId = ResolveSessionId(context.HttpContext),
                     UserId = requestContext?.UserId ?? currentUser?.UserId,
+                    TenantId = requestContext?.TenantId,
                     UserName = requestContext?.UserName ?? currentUser?.UserName,
                     ControllerName = controllerName,
                     ActionName = actionName,

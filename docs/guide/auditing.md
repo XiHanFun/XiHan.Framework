@@ -280,7 +280,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 | 队列开启 | 后台线程新作用域 | 不能 |
 | 实体差异日志 AOP | 请求线程内同步执行 | 能 |
 
-审计表本身按你自己的实体定义走既有多租户规则；跨租户查审计要在平台态下进行，见 [多租户](./multi-tenancy)。
+审计表本身按你自己的实体定义走既有多租户规则：平台只看平台自己的审计，跨租户查审计要显式清租户过滤（`ClearTenantFilter()`），见 [多租户](./multi-tenancy)。
 
 ## 配置
 

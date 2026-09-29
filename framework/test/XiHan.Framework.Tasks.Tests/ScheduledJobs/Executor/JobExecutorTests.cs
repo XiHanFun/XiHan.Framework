@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using XiHan.Framework.MultiTenancy;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Abstractions;
 using XiHan.Framework.Tasks.ScheduledJobs.Executor;
 using XiHan.Framework.Tasks.ScheduledJobs.Models;
@@ -296,6 +298,69 @@ public class JobExecutorTests
     }
 
     /// <summary>
+    /// 带租户的任务：实例落库、状态回写、历史落档与任务体都在该租户作用域内，结束后作用域还原
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithTenant_RunsStoreCallsAndWorkerInsideTenantScope()
+    {
+        var store = new TenantRecordingJobStore();
+        var executor = CreateTenantAwareExecutor(store);
+        var instance = CreateInstance(typeof(TenantCapturingWorker));
+        instance.TenantId = 66L;
+
+        TenantCapturingWorker.Reset();
+        await executor.ExecuteAsync(instance, null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(66L, TenantCapturingWorker.CapturedTenantId);
+        Assert.Equal([66L, 66L, 66L], store.ObservedTenantIds);
+        Assert.Null(AsyncLocalCurrentTenantAccessor.Instance.Current);
+    }
+
+    /// <summary>
+    /// 任务体抛异常时，失败状态回写与历史落档同样在任务所在租户作用域内
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithTenant_WhenWorkerThrows_KeepsFailurePathInsideTenantScope()
+    {
+        var store = new TenantRecordingJobStore();
+        var executor = CreateTenantAwareExecutor(store);
+        var instance = CreateInstance(typeof(ThrowingWorker));
+        instance.TenantId = 77L;
+
+        var result = await executor.ExecuteAsync(instance, null, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.NotEmpty(store.ObservedTenantIds);
+        Assert.All(store.ObservedTenantIds, tenantId => Assert.Equal(77L, tenantId));
+        Assert.Null(AsyncLocalCurrentTenantAccessor.Instance.Current);
+    }
+
+    /// <summary>
+    /// 未指定租户的任务不切换作用域，在平台作用域执行
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithoutTenant_RunsInPlatformScope()
+    {
+        var store = new TenantRecordingJobStore();
+        var executor = CreateTenantAwareExecutor(store);
+
+        await executor.ExecuteAsync(CreateInstance(typeof(SucceedingWorker)), null, TestContext.Current.CancellationToken);
+
+        Assert.Equal([null, null, null], store.ObservedTenantIds);
+    }
+
+    /// <summary>
+    /// 组装一个注册了多租户服务的执行器
+    /// </summary>
+    private static JobExecutor CreateTenantAwareExecutor(IJobStore store)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<ICurrentTenantAccessor>(AsyncLocalCurrentTenantAccessor.Instance);
+        services.AddTransient<ICurrentTenant, CurrentTenant>();
+        return new JobExecutor(services.BuildServiceProvider(), NullLogger<JobExecutor>.Instance, store, []);
+    }
+
+    /// <summary>
     /// 组装一个不带中间件的执行器
     /// </summary>
     private static JobExecutor CreateExecutor(DefaultJobStore store)
@@ -328,6 +393,76 @@ public class JobExecutorTests
             TraceId = Guid.NewGuid().ToString("N"),
             ExecutionNode = "test-node"
         };
+    }
+
+    /// <summary>
+    /// 记录每次写入调用时所在租户作用域的存储替身
+    /// </summary>
+    private sealed class TenantRecordingJobStore : IJobStore
+    {
+        private readonly DefaultJobStore _inner = new();
+
+        public List<long?> ObservedTenantIds { get; } = [];
+
+        public Task SaveJobInstanceAsync(JobInstance jobInstance)
+        {
+            Record();
+            return _inner.SaveJobInstanceAsync(jobInstance);
+        }
+
+        public Task UpdateJobStatusAsync(string instanceId, JobStatus status)
+        {
+            Record();
+            return _inner.UpdateJobStatusAsync(instanceId, status);
+        }
+
+        public Task SaveJobHistoryAsync(JobHistory history)
+        {
+            Record();
+            return _inner.SaveJobHistoryAsync(history);
+        }
+
+        public Task<JobInstance?> GetJobInstanceAsync(string instanceId) => _inner.GetJobInstanceAsync(instanceId);
+
+        public Task<IReadOnlyList<JobHistory>> GetJobHistoryAsync(string jobName, int pageIndex = 1, int pageSize = 20) =>
+            _inner.GetJobHistoryAsync(jobName, pageIndex, pageSize);
+
+        public Task<IReadOnlyList<JobInstance>> GetRunningInstancesAsync(string jobName) => _inner.GetRunningInstancesAsync(jobName);
+
+        public Task CleanupHistoryAsync(int retentionDays) => _inner.CleanupHistoryAsync(retentionDays);
+
+        private void Record()
+        {
+            ObservedTenantIds.Add(AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId);
+        }
+    }
+
+    /// <summary>
+    /// 记录执行时所在租户的任务体
+    /// </summary>
+    public sealed class TenantCapturingWorker : IJobWorker
+    {
+        /// <summary>
+        /// 执行时所在租户
+        /// </summary>
+        public static long? CapturedTenantId { get; private set; }
+
+        /// <summary>
+        /// 清空记录
+        /// </summary>
+        public static void Reset()
+        {
+            CapturedTenantId = null;
+        }
+
+        /// <summary>
+        /// 执行任务
+        /// </summary>
+        public Task<JobResult> ExecuteAsync(IJobContext context, CancellationToken cancellationToken = default)
+        {
+            CapturedTenantId = AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId;
+            return Task.FromResult(JobResult.Success("ok"));
+        }
     }
 
     /// <summary>

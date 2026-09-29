@@ -91,6 +91,42 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
     }
 
     /// <summary>
+    /// 当前库还没有版本记录时，按给定版本登记一条
+    /// </summary>
+    /// <param name="appVersion">应用版本</param>
+    /// <param name="dbVersion">数据库版本</param>
+    /// <param name="minSupportVersion">最小支持版本</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>新登记返回 true，已有记录返回 false</returns>
+    public Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var tenantId = _currentTenant?.Id;
+        var tenantKey = BuildTenantKey(tenantId);
+        lock (SyncRoot)
+        {
+            if (VersionStates.ContainsKey(tenantKey))
+            {
+                return Task.FromResult(false);
+            }
+
+            EnsureTenantCapacity(tenantKey);
+            VersionStates[tenantKey] = new UpgradeVersionState
+            {
+                Id = Interlocked.Increment(ref _idSeed),
+                TenantId = tenantId,
+                AppVersion = NormalizeVersion(appVersion),
+                DbVersion = NormalizeVersion(dbVersion),
+                MinSupportVersion = NormalizeVersion(minSupportVersion),
+                IsUpgrading = false
+            };
+
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <summary>
     /// 获取最新迁移历史记录
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
