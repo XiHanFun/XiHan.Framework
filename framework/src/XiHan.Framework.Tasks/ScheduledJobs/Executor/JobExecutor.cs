@@ -91,7 +91,8 @@ public class JobExecutor : IJobExecutor
                 jobInstance.StackTrace = result.Exception?.StackTrace;
             }
 
-            // 更新任务状态
+            // 回存结束后的实例并更新任务状态
+            await _jobStore.SaveJobInstanceAsync(jobInstance);
             await _jobStore.UpdateJobStatusAsync(jobInstance.InstanceId, result.Status);
 
             // 保存执行历史
@@ -113,6 +114,7 @@ public class JobExecutor : IJobExecutor
             // 状态回写失败不得吞掉历史落档（否则失败的执行连一条 JobHistory 痕迹都不留，无法排障）
             try
             {
+                await _jobStore.SaveJobInstanceAsync(jobInstance);
                 await _jobStore.UpdateJobStatusAsync(jobInstance.InstanceId, JobStatus.Failed);
             }
             catch (Exception storeEx)

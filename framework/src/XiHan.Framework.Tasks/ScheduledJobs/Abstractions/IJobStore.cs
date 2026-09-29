@@ -13,6 +13,9 @@ public interface IJobStore
     /// <summary>
     /// 保存任务实例
     /// </summary>
+    /// <remarks>
+    /// 同一实例会被保存多次（开始执行时与执行结束后各一次），已存在时应更新。
+    /// </remarks>
     /// <param name="jobInstance">任务实例</param>
     Task SaveJobInstanceAsync(JobInstance jobInstance);
 
