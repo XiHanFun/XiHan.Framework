@@ -117,6 +117,30 @@ public sealed class SoftDeleteRestoreConcurrencyTests : IDisposable
     }
 
     /// <summary>
+    /// 自开事务回滚后已写入实体的行版本还原，刷新过期实体后可原批重试
+    /// </summary>
+    [Fact]
+    public async Task RestoreRangeAsync_OwnedRollback_ShouldRestoreRowVersionsAndAllowRetry()
+    {
+        SeedDeleted(1);
+        SeedDeleted(2);
+        var entity1 = LoadRaw(1);
+        var stale2 = LoadRaw(2);
+        await RestoreAndModifyAsync(2, "newer");
+
+        _ = await Assert.ThrowsAsync<ConcurrencyConflictException>(() => _repository.RestoreRangeAsync([entity1, stale2]));
+
+        Assert.Equal(LoadRaw(1).RowVersion, entity1.RowVersion);
+
+        var fresh2 = LoadRaw(2);
+        entity1.IsDeleted = true;
+        await _repository.RestoreRangeAsync([entity1, fresh2]);
+
+        AssertRestored(LoadRaw(1));
+        AssertRestored(LoadRaw(2));
+    }
+
+    /// <summary>
     /// 有外层事务时批量恢复不自行提交，由外层决定去留
     /// </summary>
     [Fact]

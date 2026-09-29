@@ -617,7 +617,8 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// <remarks>
     /// 同一实例重复出现时去重，只更新一次；同一主键对应多个不同实例时抛出 <see cref="ArgumentException"/>。
     /// 预读一次校验可见性与租户边界后，逐个实体按行版本乐观锁更新（SqlSugar 的 OptLock 仅支持单实体）。
-    /// 无外层事务时在本方法内开启事务，任一实体失败则整批回滚；有外层事务时由外层决定提交或回滚。
+    /// 无外层事务时在本方法内开启事务，任一实体失败则整批回滚，并把各实体的行版本还原为更新前的值；
+    /// 有外层事务时由外层决定提交或回滚，不还原行版本。
     /// </remarks>
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -656,6 +657,7 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
         }
 
         var ownsTransaction = DbClient.Ado.Transaction is null;
+        var rowVersions = entityArray.Select(entity => entity.RowVersion).ToArray();
         if (ownsTransaction)
         {
             await DbClient.Ado.BeginTranAsync();
@@ -678,6 +680,10 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             if (ownsTransaction)
             {
                 await DbClient.Ado.RollbackTranAsync();
+                for (var index = 0; index < entityArray.Length; index++)
+                {
+                    entityArray[index].RowVersion = rowVersions[index];
+                }
             }
 
             throw;
