@@ -220,8 +220,8 @@ public class AccountService(IPasswordHasher hasher, IPasswordPolicyService polic
 ## 扩展点 / 自定义
 
 - **主体来源**：Web 宿主一般会注册基于 `HttpContext.User` 的 `ICurrentPrincipalAccessor` 覆盖默认的 `ThreadCurrentPrincipalAccessor`。
-- **密码历史持久化**：`DefaultPasswordHistoryStore` 是**进程内存实现**（静态 `ConcurrentDictionary`），仅适合开发/测试。生产务必自实现 `IPasswordHistoryStore`（读数据库最近 N 条哈希）并在 DI 里覆盖——因扩展方法用 `TryAddScoped`，只要你先注册就会生效。
-- **默认实现是只读的**：`IPasswordHistoryStore` 接口只定义了读取方法，写入靠 `DefaultPasswordHistoryStore` 上的静态方法 `RecordPassword(userId, passwordHash, maxHistoryCount = 10)`——框架不会在密码修改成功后自动调用它，若使用默认内存实现，需应用层显式调用该静态方法落库，否则历史队列永远为空、`IsPasswordReusedAsync` 恒返回 `false`。
+- **密码历史持久化**：`DefaultPasswordHistoryStore` 是**进程内存实现**（静态 `ConcurrentDictionary`），仅适合开发/测试。生产用 SqlSugar 可直接依赖 [XiHan.Framework.Security.SqlSugar](./security-sqlsugar)，或自行实现 `IPasswordHistoryStore`（读数据库最近 N 条哈希）并在 DI 里覆盖——因扩展方法用 `TryAddScoped`，只要你先注册就会生效。
+- **默认实现是只读的**：`IPasswordHistoryStore` 接口只定义了读取方法，写入靠 `DefaultPasswordHistoryStore` 上的静态方法 `RecordPassword(userId, passwordHash, maxHistoryCount = 10)`——框架不会在密码修改成功后自动调用它，若使用默认内存实现，需应用层显式调用该静态方法，否则历史队列永远为空、`IsPasswordReusedAsync` 恒返回 `false`；换用 SqlSugar 存储时改调 `SqlSugarPasswordHistoryStore.RecordPasswordAsync`，改密后同样要由应用显式调用。
 - **声明类型定制**：`XiHanClaimTypes` 的常量是可 `set` 的静态属性，可在应用启动早期改写以对齐外部身份提供方的声明命名（全局生效，务必在读取任何主体前设置）。
 
 ## 注意事项与最佳实践
@@ -239,5 +239,6 @@ public class AccountService(IPasswordHasher hasher, IPasswordPolicyService polic
 
 ## 相关模块
 
+- [XiHan.Framework.Security.SqlSugar](./security-sqlsugar)（密码历史的 SqlSugar 持久化存储）
 - [XiHan.Framework.Authentication](./authentication)（在此之上实现 JWT / OAuth2 / MFA / 一次性验证码）
 - [XiHan.Framework.Authorization](./authorization)（RBAC / Policy / ABAC 授权）

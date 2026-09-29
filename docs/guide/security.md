@@ -147,7 +147,7 @@ await policy.IsPasswordReusedAsync(newPassword, userId, historyCount, ct);
 
 更要注意：`IPasswordHistoryStore` 接口**只有读方法** `GetRecentPasswordHashesAsync`。写入靠 `DefaultPasswordHistoryStore.RecordPassword(userId, passwordHash, maxHistoryCount)` 这个静态方法，框架不会在改密成功后自动调用它。不接管的话历史队列恒空，`IsPasswordReusedAsync` 永远返回 `false`。
 
-生产做法：实现 `IPasswordHistoryStore` 读数据库最近 N 条哈希，并在改密流程里自己写一条历史。
+生产做法：实现 `IPasswordHistoryStore` 读数据库最近 N 条哈希，并在改密流程里自己写一条历史。用 SqlSugar 的项目可依赖 [XiHan.Framework.Security.SqlSugar](../packages/security-sqlsugar)，它提供落库的读取与 `RecordPasswordAsync` 写方法，但改密后调用 `RecordPasswordAsync` 仍由应用负责。
 :::
 
 ## 对称加密
@@ -374,7 +374,7 @@ HTTP方法(大写)
 | --- | --- |
 | 改了 `Iterations` 后老用户登不上 | 不会发生。哈希串自带参数，校验用串里的值；只有哈希串被截断/改写才失败 |
 | 调大 `SaltSize` 后 `NeedsRehash` 一直是 `false` | 它只比较 `Version` / `Iterations` / `HashAlgorithm`，改盐长需同时提升 `Version` |
-| 密码历史复用检查永远通过 | 默认存储是只读内存实现，改密后没人调 `RecordPassword`；生产要自实现 `IPasswordHistoryStore` |
+| 密码历史复用检查永远通过 | 默认存储是只读内存实现，改密后没人调 `RecordPassword`；生产要换 [Security.SqlSugar](../packages/security-sqlsugar) 并在改密后调 `RecordPasswordAsync`，或自实现 `IPasswordHistoryStore` |
 | 相同明文每次加密结果一样 | 用了 `AesHelper.Encrypt(text, password)`（全零盐派生 Key/IV）；换三参重载并每条数据用新 IV |
 | RSA 加密/验签报密钥解析错误 | 公钥不是 SubjectPublicKeyInfo 编码；用 `ExportSubjectPublicKeyInfo()` 重新导出 |
 | SM2 验签恒为 false | 公钥不是曲线点编码，或私钥不是原始标量；`GenerateKeys()` 的输出格式与签名/验签期望的格式不同 |
