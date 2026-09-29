@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Authentication.SqlSugar</Title>
+        <AssemblyName>XiHan.Framework.Authentication.SqlSugar</AssemblyName>
+        <PackageId>XiHan.Framework.Authentication.SqlSugar</PackageId>
+        <Description>曦寒框架认证存储 SqlSugar 持久化提供程序</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Authentication\XiHan.Framework.Authentication.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+    </ItemGroup>
+
+</Project>
