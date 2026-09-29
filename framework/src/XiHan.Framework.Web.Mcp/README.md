@@ -41,6 +41,7 @@ XiHan.Framework.Web.Mcp 把 AI 技能以 MCP（Model Context Protocol）Server �
 | 非空 | 非空 | 先按允许清单收窄，再减去拒绝清单；同一个名字两边都写了，**以拒绝为准** |
 
 - 名字按序号（ordinal）比较，**区分大小写**，与 MCP 工具集自身按名索引的方式一致。大小写写错的名字匹配不上任何工具：写进拒绝清单拦不住它，写进允许清单也放行不了它。配完请照着 `tools/list` 的实际输出核一遍。
+- 清单不得含空白项（如 `""`），否则启动即失败，异常指出是哪个清单的第几项。
 - 被裁掉的工具既不出现在 `tools/list`，也不能经 `tools/call` 调用。
 - 裁剪的对象是 `McpServerOptions.ToolCollection`。宿主若另行设置 `Handlers.ListToolsHandler` / `CallToolHandler`，这两个 handler 提供的工具不在裁剪范围内；且 `CallToolHandler` 是「`ToolCollection` 里找不到才调用」的回退，被拒绝的名字有可能落到它身上。启用清单的宿主不应同时使用这两个 handler。
 - 清单管的只是**这个 HTTP 端点**的暴露面：它是与 `ApiKey` 同层的部署级对外策略，不是技能开关，被裁掉的技能在宿主进程内照常被模型经 `AIFunction` 自动调用。

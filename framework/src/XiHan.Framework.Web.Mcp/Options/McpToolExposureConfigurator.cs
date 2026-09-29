@@ -17,6 +17,9 @@ namespace XiHan.Framework.Web.Mcp.Options;
 /// 且 <c>CallToolHandler</c> 是「工具集里找不到才调用」的回退，被拒绝的名字有可能落到它身上。
 /// 启用清单的宿主不应同时使用这两个 handler。
 /// </para>
+/// <para>
+/// 清单含空白项时抛 <see cref="InvalidOperationException"/>。
+/// </para>
 /// </remarks>
 public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServerOptions>
 {
@@ -36,13 +39,14 @@ public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServe
     /// </summary>
     /// <param name="name">选项名（本包只用默认名，任何名字都按同一策略裁剪）</param>
     /// <param name="options">待裁剪的 MCP 服务端选项</param>
+    /// <exception cref="InvalidOperationException">允许清单或拒绝清单含空白项</exception>
     public void PostConfigure(string? name, McpServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
         var policy = _options.Value;
-        var allowed = ToNameSet(policy.AllowedTools);
-        var denied = ToNameSet(policy.DeniedTools);
+        var allowed = ToNameSet(policy.AllowedTools, nameof(XiHanMcpOptions.AllowedTools));
+        var denied = ToNameSet(policy.DeniedTools, nameof(XiHanMcpOptions.DeniedTools));
 
         // 两个清单都没配 = 不限制，保持既有暴露面
         if (allowed.Count == 0 && denied.Count == 0)
@@ -84,11 +88,13 @@ public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServe
     }
 
     /// <summary>
-    /// 把配置里的名字收成按序号比较的集合（空白项跳过）
+    /// 把配置里的名字收成按序号比较的集合
     /// </summary>
     /// <param name="names">配置里的名字</param>
+    /// <param name="listName">清单对应的选项属性名，用于异常信息</param>
     /// <returns>按序号比较的名字集合</returns>
-    private static HashSet<string> ToNameSet(IEnumerable<string>? names)
+    /// <exception cref="InvalidOperationException">清单含空白项</exception>
+    private static HashSet<string> ToNameSet(List<string>? names, string listName)
     {
         var set = new HashSet<string>(StringComparer.Ordinal);
         if (names is null)
@@ -96,12 +102,15 @@ public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServe
             return set;
         }
 
-        foreach (var name in names)
+        for (var index = 0; index < names.Count; index++)
         {
-            if (!string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(names[index]))
             {
-                _ = set.Add(name);
+                throw new InvalidOperationException(
+                    $"MCP 工具清单配置项 {XiHanMcpOptions.SectionName}:{listName}:{index} 为空白；请删除该项或填入工具名。");
             }
+
+            _ = set.Add(names[index]);
         }
 
         return set;

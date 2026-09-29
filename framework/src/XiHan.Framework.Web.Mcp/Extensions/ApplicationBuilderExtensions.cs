@@ -24,7 +24,7 @@ public static class ApplicationBuilderExtensions
     /// <param name="endpoints">端点路由构建器</param>
     /// <param name="options">MCP 配置</param>
     /// <returns>端点路由构建器</returns>
-    /// <exception cref="InvalidOperationException">技能投影出的工具名有冲突（见 <c>SkillMcpToolsConfigurator</c>）</exception>
+    /// <exception cref="InvalidOperationException">技能投影出的工具名有冲突（见 <c>SkillMcpToolsConfigurator</c>），或工具清单含空白项（见 <see cref="McpToolExposureConfigurator"/>）</exception>
     public static IEndpointRouteBuilder MapXiHanMcp(this IEndpointRouteBuilder endpoints, XiHanMcpOptions options)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
