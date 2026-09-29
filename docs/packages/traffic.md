@@ -39,7 +39,7 @@ public class MyModule : XiHanModule { }
 `XiHanTrafficModule.ConfigureServices` 默认调用 `AddGrayRouting()`，注册（`TryAdd` 语义，可被替换）：
 
 - `IGrayRuleEngine` → `DefaultGrayRuleEngine`
-- `IGrayRuleRepository` → `DefaultGrayRuleRepository`（**生产环境应替换为数据库实现**）
+- `IGrayRuleRepository` → `DefaultGrayRuleRepository`（**生产环境应替换为数据库实现**：用 SqlSugar 可直接依赖 [XiHan.Framework.Traffic.SqlSugar](./traffic-sqlsugar)，或自行实现）
 - 四个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`
 
 > 限流 `IRateLimitPolicy` 与熔断 `ICircuitBreakerPolicy` **不会**被模块自动注册任何实现——它们是留给上层接入的策略契约。
@@ -150,7 +150,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 
 ## 扩展点 / 自定义
 
-- **数据库规则仓储**：实现 `IGrayRuleRepository`（只读三方法），`ReplaceGrayRuleRepository<T>()` 替换默认内存实现；规则的写入 / 管理由应用层自行提供。
+- **数据库规则仓储**：用 SqlSugar 可直接依赖 [XiHan.Framework.Traffic.SqlSugar](./traffic-sqlsugar)，或自行实现 `IGrayRuleRepository`（只读三方法），`ReplaceGrayRuleRepository<T>()` 替换默认内存实现；规则的写入 / 管理由应用层自行提供。
 - **新增匹配维度**：实现 `IGrayMatcher`（暴露 `RuleType` 并解析 `GrayRule.Configuration`），`AddGrayMatcher<T>()` 注册；这是补齐 `IpAddress` / `Custom` 的标准做法。
 - **接入限流 / 熔断**：实现 `IRateLimitPolicy` / `ICircuitBreakerPolicy` 并在 Web 层挂到请求管道；本库不提供实现，也不自动注册。
 
@@ -169,6 +169,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 
 ## 相关模块
 
+- [XiHan.Framework.Traffic.SqlSugar](./traffic-sqlsugar) — 灰度规则的 SqlSugar 只读仓储，从数据库加载并定时刷新。
 - [XiHan.Framework.Web.Gateway](./web-gateway) — 网关层，灰度决策的典型执行方。
 - [XiHan.Framework.Web.Api](./web-api) — 入站限流 / 熔断的真正实现所在层。
 - [XiHan.Framework.Observability](./observability) — 可观测性，配合流量治理做指标与追踪。

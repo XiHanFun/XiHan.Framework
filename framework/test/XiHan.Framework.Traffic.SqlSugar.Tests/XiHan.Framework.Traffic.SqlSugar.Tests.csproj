@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\test.props" />
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+        <ProjectReference Include="..\..\src\XiHan.Framework.Traffic.SqlSugar\XiHan.Framework.Traffic.SqlSugar.csproj" />
+    </ItemGroup>
+
+</Project>

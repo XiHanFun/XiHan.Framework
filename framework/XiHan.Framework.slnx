@@ -65,6 +65,7 @@
     <Project Path="src/XiHan.Framework.Threading/XiHan.Framework.Threading.csproj" />
     <Project Path="src/XiHan.Framework.Timing/XiHan.Framework.Timing.csproj" />
     <Project Path="src/XiHan.Framework.Traffic/XiHan.Framework.Traffic.csproj" />
+    <Project Path="src/XiHan.Framework.Traffic.SqlSugar/XiHan.Framework.Traffic.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.Upgrade/XiHan.Framework.Upgrade.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
@@ -133,6 +134,7 @@
     <Project Path="test/XiHan.Framework.Threading.Tests/XiHan.Framework.Threading.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Timing.Tests/XiHan.Framework.Timing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Traffic.Tests/XiHan.Framework.Traffic.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Traffic.SqlSugar.Tests/XiHan.Framework.Traffic.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Uow.Tests/XiHan.Framework.Uow.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Upgrade.Tests/XiHan.Framework.Upgrade.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />

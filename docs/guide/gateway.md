@@ -221,7 +221,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ```
 
 ::: warning GetEnabledRulesAsync 是每请求调用一次的
-`GrayRoutingMiddleware` 每条请求都会走一次引擎，引擎每次都问仓储要全部启用规则。数据库实现**必须自己带缓存**，否则每个请求一次查库。`RefreshAsync` 是留给你在规则变更后主动刷缓存的钩子——框架自身不会调它，得由你的规则管理入口（写完规则后）触发。
+`GrayRoutingMiddleware` 每条请求都会走一次引擎，引擎每次都问仓储要全部启用规则。数据库实现**必须自己带缓存**，否则每个请求一次查库（[XiHan.Framework.Traffic.SqlSugar](../packages/traffic-sqlsugar) 已内置带刷新间隔的内存缓存，自行实现时才需要自己处理）。`RefreshAsync` 是留给你在规则变更后主动刷缓存的钩子——框架自身不会调它，得由你的规则管理入口（写完规则后）触发。
 
 仓储用 `TryAddSingleton` 注册，替换实现也是单例；里面若要用 Scoped 的仓储/DbContext，从 `IServiceScopeFactory` 开作用域。
 :::
