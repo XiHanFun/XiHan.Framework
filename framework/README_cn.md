@@ -111,6 +111,7 @@
 | `Templating` | 模板渲染：Scriban 引擎、模板注册表 |
 | `Tasks` | 定时任务与后台作业：调度引擎、后台服务、多租户感知 |
 | `Traffic` | 流量治理：灰度路由（规则引擎 + Header / IP / 百分比 / 租户 / 用户 匹配器）；限流与熔断仅提供策略接口 |
+| `Traffic.SqlSugar` | 灰度规则 SqlSugar 持久化：`IGrayRuleRepository` 的只读落库实现，带内存缓存 |
 | `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
 | `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
 | `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |

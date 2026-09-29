@@ -109,4 +109,4 @@ public class YourAppModule : XiHanModule
 
 ## 相关模块
 
-- [Settings.SqlSugar](./settings-sqlsugar)：同一套落库范式
+- [XiHan.Framework.Web.Gateway](./web-gateway)：灰度路由中间件，每个请求经它读取本仓储的规则
