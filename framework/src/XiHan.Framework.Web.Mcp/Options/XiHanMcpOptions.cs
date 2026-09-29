@@ -51,7 +51,7 @@ public sealed class XiHanMcpOptions
     /// </summary>
     /// <remarks>
     /// 名字按序号（ordinal）比较且区分大小写，与 MCP 工具集自身按名索引的方式一致：大小写写错的名字
-    /// 既不会放行也不会拦截，等同于没写。清单不得含空白项，否则启动即失败。
+    /// 既不会放行也不会拦截，等同于没写，启动期会对这样的名字记一次警告。清单不得含空白项，否则启动即失败。
     /// 两个清单都为空时暴露面与不配置本项时逐字相同。
     /// </remarks>
     public List<string> AllowedTools { get; set; } = [];

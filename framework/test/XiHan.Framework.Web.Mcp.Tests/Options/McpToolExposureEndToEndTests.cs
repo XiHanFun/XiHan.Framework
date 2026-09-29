@@ -168,7 +168,7 @@ public class McpToolExposureEndToEndTests
     /// 拒绝清单里的名字大小写不对时不会误拦截
     /// </summary>
     /// <remarks>
-    /// 大小写写错的拒绝清单拦不住任何工具。
+    /// 大小写写错的拒绝清单拦不住任何工具；启动期会对这样的清单项记一次警告。
     /// </remarks>
     [Fact]
     public async Task PostConfigure_WithMiscasedDenyEntry_DoesNotBlockTheTool()

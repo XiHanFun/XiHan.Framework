@@ -18,20 +18,31 @@ namespace XiHan.Framework.Web.Mcp.Options;
 /// 启用清单的宿主不应同时使用这两个 handler。
 /// </para>
 /// <para>
-/// 清单含空白项时抛 <see cref="InvalidOperationException"/>。
+/// 清单含空白项时抛 <see cref="InvalidOperationException"/>。首次装配时核对清单项，
+/// 在 <see cref="McpServerOptions.ToolCollection"/> 里匹配不到任何工具的清单项记一次警告。
 /// </para>
 /// </remarks>
 public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServerOptions>
 {
     private readonly IOptions<XiHanMcpOptions> _options;
+    private readonly ILogger<McpToolExposureConfigurator> _logger;
+
+    /// <summary>
+    /// 是否已核对过清单项（0 未核对，1 已核对）
+    /// </summary>
+    private int _entriesChecked;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    public McpToolExposureConfigurator(IOptions<XiHanMcpOptions> options)
+    /// <param name="options">MCP 配置</param>
+    /// <param name="logger">日志器</param>
+    public McpToolExposureConfigurator(IOptions<XiHanMcpOptions> options, ILogger<McpToolExposureConfigurator> logger)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
         _options = options;
+        _logger = logger;
     }
 
     /// <summary>
@@ -52,6 +63,11 @@ public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServe
         if (allowed.Count == 0 && denied.Count == 0)
         {
             return;
+        }
+
+        if (Interlocked.Exchange(ref _entriesChecked, 1) == 0)
+        {
+            ReportUnmatchedEntries(options.ToolCollection, allowed, denied);
         }
 
         if (options.ToolCollection is not { } tools)
@@ -114,5 +130,32 @@ public sealed class McpToolExposureConfigurator : IPostConfigureOptions<McpServe
         }
 
         return set;
+    }
+
+    /// <summary>
+    /// 对在工具集里匹配不到任何工具的清单项记一次警告
+    /// </summary>
+    /// <param name="tools">裁剪前的工具集</param>
+    /// <param name="allowed">允许清单</param>
+    /// <param name="denied">拒绝清单</param>
+    private void ReportUnmatchedEntries(McpServerPrimitiveCollection<McpServerTool>? tools, HashSet<string> allowed, HashSet<string> denied)
+    {
+        var toolNames = tools is null
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : tools.Select(tool => tool.ProtocolTool.Name).ToHashSet(StringComparer.Ordinal);
+
+        var unmatchedAllowed = allowed.Where(entry => !toolNames.Contains(entry)).Order(StringComparer.Ordinal).ToArray();
+        var unmatchedDenied = denied.Where(entry => !toolNames.Contains(entry)).Order(StringComparer.Ordinal).ToArray();
+
+        if (unmatchedAllowed.Length == 0 && unmatchedDenied.Length == 0)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "MCP 工具清单有项在工具集中匹配不到任何工具（名字区分大小写）：AllowedTools [{UnmatchedAllowedTools}]，DeniedTools [{UnmatchedDeniedTools}]。"
+            + "拒绝清单写错名字不会屏蔽任何工具；若该工具由自定义 ListToolsHandler 提供，可忽略本警告。",
+            string.Join(", ", unmatchedAllowed),
+            string.Join(", ", unmatchedDenied));
     }
 }
