@@ -80,6 +80,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Uow` | Unit of work: AOP interceptors manage transaction boundaries |
 | `Caching` | Hybrid caching: HybridCache (memory + Redis), caching interceptor, tenant awareness |
 | `Authentication` | Authentication: JWT / OAuth2 / OIDC, token factory, MFA, SSO |
+| `Authentication.SqlSugar` | SqlSugar persistence provider for authentication stores: users, refresh tokens (hash-only, reuse detection) and external-login bindings replace the in-memory defaults from `Authentication` |
 | `Authorization` | Authorization: RBAC, policy-based, claims-based |
 | `Security` | Security and cryptography: BouncyCastle primitives, key management, password hashing, data protection |
 | `Auditing` | Audit logging: collection pipeline for operation / access / login / exception / API / entity-change logs, async queue, masking and write contracts |

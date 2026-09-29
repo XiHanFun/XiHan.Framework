@@ -51,7 +51,7 @@ public class MyAppModule : XiHanModule { }
 | `IsTokenExpired(string)` | 是否已过期 |
 | `RefreshAccessToken(accessToken, refreshToken)` | 用旧访问令牌 + 刷新令牌换新的一套 |
 
-刷新令牌的持久化走 `IRefreshTokenStore`。默认 `DefaultRefreshTokenStore` 是可直接使用的单实例实现：最多保留 100000 条，并在写入过程中批量清理过期项；达到上限后明确拒绝新增，不会继续挤占进程内存。框架不提供该端口的 Redis 实现，多实例共享或持久化由应用层实现 `IRefreshTokenStore` 后 `Replace` 默认注册。
+刷新令牌的持久化走 `IRefreshTokenStore`。默认 `DefaultRefreshTokenStore` 是可直接使用的单实例实现：最多保留 100000 条，并在写入过程中批量清理过期项；达到上限后明确拒绝新增，不会继续挤占进程内存。框架不提供该端口的 Redis 实现；多实例共享或持久化可依赖 [XiHan.Framework.Authentication.SqlSugar](../packages/authentication-sqlsugar)（刷新令牌、用户、第三方登录绑定一并落库），或由应用层实现 `IRefreshTokenStore` 后 `Replace` 默认注册。
 
 ::: tip 别把权限码冻结进令牌
 把权限清单写进 JWT 有两个后果：授予或回收后要等令牌过期才生效；权限清单随令牌一起泄露。
@@ -99,7 +99,7 @@ version:iterations:algorithm:base64(salt):base64(hash)
 | `GenerateRecoveryCodesAsync` / `VerifyRecoveryCodeAsync` | 恢复码 |
 | `RecordFailedLoginAttemptAsync` | 记录失败尝试（锁定与风控的输入） |
 
-用户数据的读写走 `IUserStore`——框架只定义契约，**业务侧必须 `Replace` 成自己的实现**（通常是数据库）。
+用户数据的读写走 `IUserStore`——框架只定义契约，默认实现只够开发期用，生产必须换掉：用 SqlSugar 可直接依赖 [XiHan.Framework.Authentication.SqlSugar](../packages/authentication-sqlsugar)，或自行实现并 `Replace`。
 
 ## 一次性验证码
 

@@ -106,7 +106,7 @@ public class MyModule : XiHanModule { }
 | `FeishuAuthenticationOptions` / `FeishuAuthenticationHandler` | 飞书，passport 与开放平台两套端点按 `Mode` 成套切换 |
 | `DingTalkAuthenticationOptions` / `DingTalkAuthenticationHandler` | 钉钉，JSON 令牌请求 + 小驼峰字段改写 + 私有请求头 |
 | `WeixinShortState`（internal） | 微信系网页授权页的 state 搬运与还原 |
-| `IExternalLoginStore` | `Task<long?> FindUserIdAsync(provider, providerKey, tenantId?)`、`Task CreateAsync(userId, ExternalLoginInfo, tenantId?)`、`Task RemoveAsync(userId, provider)`（业务层实现数据库持久化） |
+| `IExternalLoginStore` | `Task<long?> FindUserIdAsync(provider, providerKey, tenantId?)`、`Task CreateAsync(userId, ExternalLoginInfo, tenantId?)`、`Task RemoveAsync(userId, provider)`（数据库持久化可用 [Authentication.SqlSugar](./authentication-sqlsugar)，或由业务层自行实现） |
 | `ExternalLoginInfo` | `Provider`、`ProviderKey`、`DisplayName`、`Email`、`AvatarUrl` |
 
 ### MFA / 一次性验证码
@@ -126,7 +126,7 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `IAuthenticationService` / `DefaultAuthenticationService` | `AuthenticateAsync`、`ValidatePasswordStrengthAsync`、`ChangePasswordAsync`、`ResetPasswordAsync`、`EnableTwoFactorAuthenticationAsync`、`VerifyTwoFactorCodeAsync`、`DisableTwoFactorAuthenticationAsync`、`GenerateRecoveryCodesAsync`、`VerifyRecoveryCodeAsync`、`RecordFailedLoginAttemptAsync`、`ResetFailedLoginAttemptsAsync`、`IsAccountLockedAsync` |
 | `AuthenticationResult` | `Succeeded`、`UserId`、`Username`、`TokenResult`、`RequiresTwoFactor`、`IsLockedOut`、`LockoutEnd`、`ErrorMessage`；工厂 `Success` / `Failure` / `RequiresTwoFactorAuthentication` / `LockedOut` |
-| `IUserStore` / `DefaultUserStore` | 用户读写、失败次数与锁定时间读写（默认内存实现，生产替换为数据库实现） |
+| `IUserStore` / `DefaultUserStore` | 用户读写、失败次数与锁定时间读写（默认内存实现，生产可用 [Authentication.SqlSugar](./authentication-sqlsugar) 或自行实现数据库版本） |
 | `UserInfo` | 用户数据载体：`UserId`、`Username`、`PasswordHash`、`Email`、`PhoneNumber`、`TwoFactorEnabled` / `TwoFactorSecret`、`RecoveryCodes`、`IsLocked` / `LockoutEnd` / `FailedLoginAttempts`、`LastLoginTime`、`PasswordChangedTime`、`IsActive` |
 
 ## 配置
@@ -272,9 +272,9 @@ public class MfaService(IOtpService otp)
 
 ## 扩展点 / 自定义
 
-- **刷新令牌存储**：`DefaultRefreshTokenStore` 是有界进程内默认实现，可在不接 Redis 时直接使用；框架不提供 Redis 版本，多实例共享或数据库审计由应用层实现 `IRefreshTokenStore` 后覆盖。
-- **用户存储**：`DefaultUserStore` 仅供开发/测试；生产必须实现 `IUserStore`（读写真实用户表、失败次数、锁定时间）覆盖它，否则 `IAuthenticationService` 无真实数据可依。
-- **外部登录持久化**：`IExternalLoginStore` 需业务层实现，把 `(provider, providerKey)` 映射到内部用户并记录绑定。
+- **刷新令牌存储**：`DefaultRefreshTokenStore` 是有界进程内默认实现，可在不接 Redis 时直接使用；框架不提供 Redis 版本；多实例共享或数据库审计用 SqlSugar 可直接依赖 [XiHan.Framework.Authentication.SqlSugar](./authentication-sqlsugar)，或自行实现 `IRefreshTokenStore` 后覆盖。
+- **用户存储**：`DefaultUserStore` 仅供开发/测试；生产必须换掉它：用 SqlSugar 可直接依赖 [XiHan.Framework.Authentication.SqlSugar](./authentication-sqlsugar)，或自行实现 `IUserStore`（读写真实用户表、失败次数、锁定时间）覆盖，否则 `IAuthenticationService` 无真实数据可依。
+- **外部登录持久化**：`IExternalLoginStore` 无内存默认实现，用 SqlSugar 可直接依赖 [XiHan.Framework.Authentication.SqlSugar](./authentication-sqlsugar)，或自行实现，把 `(provider, providerKey)` 映射到内部用户并记录绑定。
 - **新增 OAuth 提供商**：内置分支覆盖 google/github/gitee/qq/weixin/workweixin/feishu/dingtalk。接入其它家按偏离程度递增：只有端点与声明映射不同 → 只写一个继承 `XiHanOAuthProviderOptions` 的 Options，直接搭 `XiHanOAuthHandler<TOptions>`；要多调一次接口补声明 → 覆写 `AfterClaimActionsAsync`；令牌或用户信息形态不同 → 覆写 `ExchangeCodeAsync` / `CreateTicketAsync`。最后在 `RegisterProvider` 加一个 `case`。
 - **改写某一家的授权地址构造**：覆写 `BuildChallengeUrl`，参考 `WeixinAuthenticationHandler`（锚点 + state 搬运）与 `WorkWeixinAuthenticationHandler`（两种登录方式两套参数）。
 - **远端失败的落地方式**：授权码无效等错误由 `RemoteAuthenticationHandler` 抛出，需要跳错误页时在对应 provider 的 `Events.OnRemoteFailure` 里处理。
@@ -301,5 +301,6 @@ public class MfaService(IOtpService otp)
 
 ## 相关模块
 
+- [XiHan.Framework.Authentication.SqlSugar](./authentication-sqlsugar)（用户、刷新令牌、第三方登录绑定的 SqlSugar 持久化存储）
 - [XiHan.Framework.Authorization](./authorization)（消费令牌声明做授权判定）
 - [XiHan.Framework.Security](./security)
