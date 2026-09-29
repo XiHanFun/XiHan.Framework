@@ -615,26 +615,33 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
     /// 批量按主键更新实体，预读校验放行已软删数据（批量恢复场景专用）
     /// </summary>
     /// <remarks>
+    /// 同一实例重复出现时去重，只更新一次；同一主键对应多个不同实例时抛出 <see cref="ArgumentException"/>。
     /// 预读一次校验可见性与租户边界后，逐个实体按行版本乐观锁更新（SqlSugar 的 OptLock 仅支持单实体）。
-    /// 任一实体版本冲突即抛异常并停止后续更新；已写入的行由外层工作单元的事务决定是否回滚。
+    /// 无外层事务时在本方法内开启事务，任一实体失败则整批回滚；有外层事务时由外层决定提交或回滚。
     /// </remarks>
     /// <param name="entities">实体集合</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>更新后的实体集合</returns>
+    /// <exception cref="ArgumentException">集合中同一主键对应多个不同实例</exception>
     /// <exception cref="ConcurrencyConflictException">任一实体行版本与数据库不一致，或预读与写入之间行被并发物理删除</exception>
     protected async Task<IReadOnlyList<TEntity>> UpdateRangeIncludingDeletedAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        var entityArray = entities.ToArray();
+        var entityArray = entities.Distinct(ReferenceEqualityComparer.Instance).Cast<TEntity>().ToArray();
         if (entityArray.Length == 0)
         {
             return [];
         }
 
+        if (entityArray.GroupBy(entity => entity.BasicId).Any(group => group.Count() > 1))
+        {
+            throw new ArgumentException("批量更新失败：集合中同一主键对应多个不同实例。", nameof(entities));
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
 
-        var idArray = entityArray.Select(entity => entity.BasicId).Distinct().ToArray();
+        var idArray = entityArray.Select(entity => entity.BasicId).ToArray();
         var existingRows = await CreateWritePreReadWithDeletedQueryable()
             .Where(entity => idArray.Contains(entity.BasicId))
             .ToListAsync(cancellationToken);
@@ -648,9 +655,32 @@ public class SqlSugarRepositoryBase<TEntity, TKey> : SqlSugarReadOnlyRepository<
             EnsureWritableInCurrentTenant(existing);
         }
 
-        foreach (var entity in entityArray)
+        var ownsTransaction = DbClient.Ado.Transaction is null;
+        if (ownsTransaction)
         {
-            await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
+            await DbClient.Ado.BeginTranAsync();
+        }
+
+        try
+        {
+            foreach (var entity in entityArray)
+            {
+                await ExecuteEntityUpdateWithOptLockAsync(entity, cancellationToken);
+            }
+
+            if (ownsTransaction)
+            {
+                await DbClient.Ado.CommitTranAsync();
+            }
+        }
+        catch
+        {
+            if (ownsTransaction)
+            {
+                await DbClient.Ado.RollbackTranAsync();
+            }
+
+            throw;
         }
 
         return entityArray;

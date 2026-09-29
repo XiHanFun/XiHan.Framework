@@ -128,7 +128,7 @@ public class MyModule : XiHanModule { }
 | `Task<bool> AddOrUpdateAsync(TEntity entity, ...)` | 按 `IsTransient()` 决定新增/更新；另有批量重载 |
 | `Task<bool> DeleteAsync(TEntity entity, ...)` | 按实体删除；另有 `DeleteByIdAsync`、按条件、批量重载 |
 
-> 软删除过滤开启时，对实现 `ISoftDelete` 的实体，`Delete*` 走的是全局过滤器语义；`SqlSugarSoftDeleteRepository` 的 `SoftDeleteAsync` 是把 `IsDeleted=true`（并置 `DeletedTime`）走更新落库，`RestoreAsync` 反之。两者与单实体 `UpdateAsync` 一样校验 `Row_Version`：传入的实体须从库中加载，版本已过期时抛 `ConcurrencyConflictException`；`RestoreRangeAsync` 逐个实体校验，任一冲突即停止，已写入的行由外层工作单元的事务决定是否回滚。
+> 软删除过滤开启时，对实现 `ISoftDelete` 的实体，`Delete*` 走的是全局过滤器语义；`SqlSugarSoftDeleteRepository` 的 `SoftDeleteAsync` 是把 `IsDeleted=true`（并置 `DeletedTime`）走更新落库，`RestoreAsync` 反之。两者与单实体 `UpdateAsync` 一样校验 `Row_Version`：传入的实体须从库中加载，版本已过期时抛 `ConcurrencyConflictException`；`RestoreRangeAsync` 逐个实体校验：无外层事务时在方法内开启事务，任一实体失败则整批回滚；有外层事务时由外层决定提交或回滚。集合中同一实例重复出现只更新一次，同一主键对应多个不同实例则抛 `ArgumentException`。预读与写入之间行被并发物理删除时，抛出的异常由 `InvalidOperationException` 变为 `ConcurrencyConflictException`；目前没有关闭乐观锁的开关。
 
 ### 客户端与租户解析
 
