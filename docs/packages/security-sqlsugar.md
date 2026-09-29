@@ -99,4 +99,4 @@ public class YourAppModule : XiHanModule
 
 ## 相关模块
 
-- [Settings.SqlSugar](./settings-sqlsugar)：同一套简单存储落库范式
+- [XiHan.Framework.Authentication](./authentication)：修改密码流程，应用在其中调用 `RecordPasswordAsync` 记录密码历史

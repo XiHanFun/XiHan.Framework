@@ -82,6 +82,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Authentication` | Authentication: JWT / OAuth2 / OIDC, token factory, MFA, SSO |
 | `Authorization` | Authorization: RBAC, policy-based, claims-based |
 | `Security` | Security and cryptography: BouncyCastle primitives, key management, password hashing, data protection |
+| `Security.SqlSugar` | Password history persistence: SqlSugar-backed `IPasswordHistoryStore` implementation |
 | `Auditing` | Audit logging: collection pipeline for operation / access / login / exception / API / entity-change logs, async queue, masking and write contracts |
 | `EventBus.Abstractions` | Event bus abstractions: publish/subscribe interfaces, handler pipeline |
 | `EventBus` | Event bus: local and distributed events, outbox pattern, event store (built-in implementation; brokers come from the sub-packages below) |

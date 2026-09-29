@@ -142,6 +142,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           pkg("Security 安全加密", "security"),
+          pkg("Security.SqlSugar", "security-sqlsugar"),
           pkg("Authentication 认证", "authentication"),
           pkg("Authorization 授权", "authorization"),
         ],

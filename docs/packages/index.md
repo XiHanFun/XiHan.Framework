@@ -60,6 +60,7 @@ DDD 分层与应用服务契约。
 | 模块 | 说明 |
 | --- | --- |
 | [Security](./security) | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
+| [Security.SqlSugar](./security-sqlsugar) | 密码历史记录的 SqlSugar 持久化提供程序：按用户查询与写入密码哈希、按上限裁剪历史 |
 | [Authentication](./authentication) | 认证：JWT / OAuth2 / OIDC、令牌工厂、MFA、SSO |
 | [Authorization](./authorization) | 授权：RBAC、策略授权、声明授权 |
 
