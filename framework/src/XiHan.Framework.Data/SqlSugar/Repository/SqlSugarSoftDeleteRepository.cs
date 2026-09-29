@@ -59,8 +59,17 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
+        var snapshot = DeletionState.Capture(entity);
         MarkDeleted(entity);
-        await UpdateAsync(entity, cancellationToken);
+        try
+        {
+            await UpdateAsync(entity, cancellationToken);
+        }
+        catch
+        {
+            snapshot.ApplyTo(entity);
+            throw;
+        }
     }
 
     /// <summary>
@@ -98,13 +107,22 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
+        var snapshots = DeletionState.CaptureAll(entityArray);
         foreach (var entity in entityArray)
         {
             MarkDeleted(entity);
         }
 
         // 参与更新的均为当前可见行，走常规批量更新（预读校验租户边界）
-        await UpdateRangeAsync(entityArray, cancellationToken);
+        try
+        {
+            await UpdateRangeAsync(entityArray, cancellationToken);
+        }
+        catch
+        {
+            DeletionState.ApplyAll(entityArray, snapshots);
+            throw;
+        }
     }
 
     /// <summary>
@@ -175,10 +193,19 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
+        var snapshot = DeletionState.Capture(entity);
         MarkRestored(entity);
 
         // 必须走含软删写路径：常规 UpdateAsync 的预读带软删过滤，对已软删行必抛「实体不存在」
-        _ = await UpdateIncludingDeletedAsync(entity, cancellationToken);
+        try
+        {
+            _ = await UpdateIncludingDeletedAsync(entity, cancellationToken);
+        }
+        catch
+        {
+            snapshot.ApplyTo(entity);
+            throw;
+        }
     }
 
     /// <summary>
@@ -217,13 +244,22 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
             return;
         }
 
+        var snapshots = DeletionState.CaptureAll(entityArray);
         foreach (var entity in entityArray)
         {
             MarkRestored(entity);
         }
 
         // 必须走含软删写路径：常规批量更新的可见性校验带软删过滤，已删行不可见会整批抛异常
-        _ = await UpdateRangeIncludingDeletedAsync(entityArray, cancellationToken);
+        try
+        {
+            _ = await UpdateRangeIncludingDeletedAsync(entityArray, cancellationToken);
+        }
+        catch
+        {
+            DeletionState.ApplyAll(entityArray, snapshots);
+            throw;
+        }
     }
 
     /// <summary>
@@ -485,6 +521,74 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         {
             typedDeletionEntity.DeletedId = default;
             typedDeletionEntity.DeletedBy = null;
+        }
+    }
+
+    /// <summary>
+    /// 实体删除状态快照：删除标记与删除审计字段
+    /// </summary>
+    /// <param name="IsDeleted">是否已删除</param>
+    /// <param name="DeletedTime">删除时间</param>
+    /// <param name="DeletedId">删除者ID</param>
+    /// <param name="DeletedBy">删除者</param>
+    private readonly record struct DeletionState(bool IsDeleted, DateTimeOffset? DeletedTime, TKey? DeletedId, string? DeletedBy)
+    {
+        /// <summary>
+        /// 记录实体当前的删除状态
+        /// </summary>
+        /// <param name="entity">实体</param>
+        /// <returns>快照</returns>
+        public static DeletionState Capture(TEntity entity)
+        {
+            var deletionEntity = entity as IDeletionEntity;
+            var typedDeletionEntity = entity as IDeletionEntity<TKey>;
+            return new DeletionState(
+                entity.IsDeleted,
+                deletionEntity?.DeletedTime,
+                typedDeletionEntity is null ? default : typedDeletionEntity.DeletedId,
+                typedDeletionEntity?.DeletedBy);
+        }
+
+        /// <summary>
+        /// 逐一记录实体集合当前的删除状态
+        /// </summary>
+        /// <param name="entities">实体集合</param>
+        /// <returns>与实体集合一一对应的快照</returns>
+        public static DeletionState[] CaptureAll(TEntity[] entities)
+        {
+            return [.. entities.Select(Capture)];
+        }
+
+        /// <summary>
+        /// 把实体集合逐一写回对应快照
+        /// </summary>
+        /// <param name="entities">实体集合</param>
+        /// <param name="snapshots">与实体集合一一对应的快照</param>
+        public static void ApplyAll(TEntity[] entities, DeletionState[] snapshots)
+        {
+            for (var index = 0; index < entities.Length; index++)
+            {
+                snapshots[index].ApplyTo(entities[index]);
+            }
+        }
+
+        /// <summary>
+        /// 把快照写回实体
+        /// </summary>
+        /// <param name="entity">实体</param>
+        public void ApplyTo(TEntity entity)
+        {
+            entity.IsDeleted = IsDeleted;
+            if (entity is IDeletionEntity deletionEntity)
+            {
+                deletionEntity.DeletedTime = DeletedTime;
+            }
+
+            if (entity is IDeletionEntity<TKey> typedDeletionEntity)
+            {
+                typedDeletionEntity.DeletedId = DeletedId;
+                typedDeletionEntity.DeletedBy = DeletedBy;
+            }
         }
     }
 
