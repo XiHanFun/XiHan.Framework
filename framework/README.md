@@ -112,6 +112,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Tasks` | Scheduled tasks and background jobs: scheduling engine, background services, tenant awareness |
 | `Traffic` | Traffic governance: gray routing (rule engine with header / IP / percentage / tenant / user matchers); rate limiting and circuit breaking are policy interfaces only |
 | `Upgrade` | Upgrade engine: version store, migration execution, distributed lock, automatic check on startup |
+| `Upgrade.SqlSugar` | Upgrade version persistence: SqlSugar-backed `IUpgradeVersionStore` for version state and migration history |
 | `AI.Abstractions` | AI abstractions: agents, chat, configuration, guardrails, prompts, RAG, skills |
 | `AI` | AI integration: Microsoft.Extensions.AI model abstraction, Microsoft.Agents.AI agent framework, MCP protocol support |
 | `Bot` | Bot core: multi-channel dispatch pipeline, policies and templates; channels come from the sub-packages below |

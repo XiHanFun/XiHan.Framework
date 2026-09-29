@@ -98,4 +98,4 @@ public class YourAppModule : XiHanModule
 
 ## 相关模块
 
-- [Settings.SqlSugar](./settings-sqlsugar)：同一套「唯一索引 + 冲突后重查」的落库范式
+- [XiHan.Framework.Caching](./caching)：分布式锁，多节点部署时替换进程内的升级锁

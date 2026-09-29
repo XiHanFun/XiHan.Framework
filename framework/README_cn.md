@@ -112,6 +112,7 @@
 | `Tasks` | 定时任务与后台作业：调度引擎、后台服务、多租户感知 |
 | `Traffic` | 流量治理：灰度路由（规则引擎 + Header / IP / 百分比 / 租户 / 用户 匹配器）；限流与熔断仅提供策略接口 |
 | `Upgrade` | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
+| `Upgrade.SqlSugar` | 升级版本记录 SqlSugar 持久化：`IUpgradeVersionStore` 的落库实现，含版本状态与迁移历史 |
 | `AI.Abstractions` | AI 抽象层：智能体、对话、配置、护栏、提示词、RAG、技能等接口契约 |
 | `AI` | AI 集成：Microsoft.Extensions.AI 统一模型抽象、Microsoft.Agents.AI 智能体框架、MCP 协议支持 |
 | `Bot` | 机器人核心：多渠道消息分发管道、策略与模板，渠道能力由以下子包提供 |
