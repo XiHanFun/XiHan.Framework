@@ -43,7 +43,8 @@ XiHan.Framework.Web.Mcp 把 AI 技能以 MCP（Model Context Protocol）Server �
 - 名字按序号（ordinal）比较，**区分大小写**，与 MCP 工具集自身按名索引的方式一致。大小写写错的名字匹配不上任何工具：写进拒绝清单拦不住它，写进允许清单也放行不了它。启动时会对在工具集里匹配不到任何工具的清单项记一次警告；配完仍请照着 `tools/list` 的实际输出核一遍。
 - 清单不得含空白项（如 `""`），否则启动即失败，异常指出是哪个清单的第几项。
 - 被裁掉的工具既不出现在 `tools/list`，也不能经 `tools/call` 调用。
-- 裁剪的对象是 `McpServerOptions.ToolCollection`。宿主若另行设置 `Handlers.ListToolsHandler` / `CallToolHandler`，这两个 handler 提供的工具不在裁剪范围内；且 `CallToolHandler` 是「`ToolCollection` 里找不到才调用」的回退，被拒绝的名字有可能落到它身上。启用清单的宿主不应同时使用这两个 handler。
+- 清单在两处生效：从 `McpServerOptions.ToolCollection` 移除工具；并在 `tools/list` / `tools/call` 请求过滤器链的最外层按同一清单过滤。宿主经 `Handlers.ListToolsHandler` / `CallToolHandler` 提供的工具同样受清单约束，被拦下的调用到不了 `CallToolHandler` 的回退，按「未知工具」作答。
+- 实验性的 `CallToolWithAlternateHandler` / `CallToolWithAlternateFilters` 不在覆盖范围内；SDK 不允许 `CallToolWithAlternateHandler` 与 `tools/call` 过滤器共存，启用清单的宿主不应设置它。
 - 清单管的只是**这个 HTTP 端点**的暴露面：它是与 `ApiKey` 同层的部署级对外策略，不是技能开关，被裁掉的技能在宿主进程内照常被模型经 `AIFunction` 自动调用。
 
 配置写法（环境变量按下标给数组元素）：

@@ -1,8 +1,11 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
+using ModelContextProtocol.Server;
 
 namespace XiHan.Framework.Web.Mcp.Tests.Options;
 
@@ -17,6 +20,11 @@ namespace XiHan.Framework.Web.Mcp.Tests.Options;
 /// </remarks>
 public class McpToolExposureEndToEndTests
 {
+    /// <summary>
+    /// 宿主经 ListToolsHandler / CallToolHandler 提供的工具名
+    /// </summary>
+    private const string HandlerTool = "xihan_test_handler";
+
     /// <summary>
     /// 宿主配置的正确密钥
     /// </summary>
@@ -189,6 +197,92 @@ public class McpToolExposureEndToEndTests
     }
 
     /// <summary>
+    /// 清单同样作用于宿主 handler 提供的工具：被拒绝的 handler 工具既不出现在列表里，调用也到不了 handler
+    /// </summary>
+    [Fact]
+    public async Task PostConfigure_WithDenyList_HidesAndBlocksHandlerProvidedTool()
+    {
+        var handlerCalls = new StrongBox<int>();
+        await using var host = await McpTestHost.StartAsync(
+            enabled: true,
+            ApiKey,
+            [],
+            [HandlerTool],
+            AddHandlerTool(handlerCalls),
+            new NamedEchoAiSkill(AlphaTool));
+
+        await using var session = await host.ConnectAsync("X-Api-Key", ApiKey);
+
+        var names = await ListToolNamesAsync(session);
+
+        Assert.Contains(AlphaTool, names);
+        Assert.DoesNotContain(HandlerTool, names);
+
+        Assert.Null(await TryCallAsync(session, HandlerTool));
+        Assert.Equal(0, handlerCalls.Value);
+        await AssertCallableAsync(session, AlphaTool);
+    }
+
+    /// <summary>
+    /// 允许清单外的名字不会落到 CallToolHandler 的回退上
+    /// </summary>
+    /// <remarks>
+    /// 乙技能已从工具集移除，若没有 tools/call 过滤器，对它的调用会回退到宿主的 CallToolHandler 并被当成成功处理。
+    /// </remarks>
+    [Fact]
+    public async Task PostConfigure_WithAllowList_KeepsCallsOffTheFallbackHandler()
+    {
+        var handlerCalls = new StrongBox<int>();
+        await using var host = await McpTestHost.StartAsync(
+            enabled: true,
+            ApiKey,
+            [AlphaTool],
+            [],
+            AddHandlerTool(handlerCalls),
+            new NamedEchoAiSkill(AlphaTool),
+            new NamedEchoAiSkill(BetaTool));
+
+        await using var session = await host.ConnectAsync("X-Api-Key", ApiKey);
+
+        var names = await ListToolNamesAsync(session);
+
+        Assert.Contains(AlphaTool, names);
+        Assert.DoesNotContain(BetaTool, names);
+        Assert.DoesNotContain(HandlerTool, names);
+
+        Assert.Null(await TryCallAsync(session, BetaTool));
+        Assert.Null(await TryCallAsync(session, HandlerTool));
+        Assert.Equal(0, handlerCalls.Value);
+        await AssertCallableAsync(session, AlphaTool);
+    }
+
+    /// <summary>
+    /// 清单没点到的 handler 工具照常可见、可调用（对照：handler 确实接上了）
+    /// </summary>
+    [Fact]
+    public async Task PostConfigure_WithListsNotNamingHandlerTool_KeepsItReachable()
+    {
+        var handlerCalls = new StrongBox<int>();
+        await using var host = await McpTestHost.StartAsync(
+            enabled: true,
+            ApiKey,
+            [],
+            [BetaTool],
+            AddHandlerTool(handlerCalls),
+            new NamedEchoAiSkill(AlphaTool),
+            new NamedEchoAiSkill(BetaTool));
+
+        await using var session = await host.ConnectAsync("X-Api-Key", ApiKey);
+
+        var names = await ListToolNamesAsync(session);
+
+        Assert.Contains(HandlerTool, names);
+        Assert.Null(await TryCallAsync(session, BetaTool));
+        Assert.Equal($"handler:{HandlerTool}", await TryCallAsync(session, HandlerTool));
+        Assert.Equal(1, handlerCalls.Value);
+    }
+
+    /// <summary>
     /// 清单含空白项时宿主启动即失败
     /// </summary>
     [Fact]
@@ -205,6 +299,31 @@ public class McpToolExposureEndToEndTests
         });
 
         Assert.Contains("AllowedTools:1", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 给宿主挂上自定义 ListToolsHandler / CallToolHandler，提供一个不在工具集里的工具
+    /// </summary>
+    /// <param name="handlerCalls">CallToolHandler 被调用的次数</param>
+    /// <returns>追加到宿主的服务注册</returns>
+    private static Action<IServiceCollection> AddHandlerTool(StrongBox<int> handlerCalls)
+    {
+        return services => services.Configure<McpServerOptions>(options =>
+        {
+            options.Handlers.ListToolsHandler = (_, _) => ValueTask.FromResult(new ListToolsResult
+            {
+                Tools = [new Tool { Name = HandlerTool, Description = "宿主 handler 提供的工具，仅用于测试" }]
+            });
+
+            options.Handlers.CallToolHandler = (request, cancellationToken) =>
+            {
+                _ = Interlocked.Increment(ref handlerCalls.Value);
+                return ValueTask.FromResult(new CallToolResult
+                {
+                    Content = [new TextContentBlock { Text = $"handler:{request.Params?.Name}" }]
+                });
+            };
+        });
     }
 
     /// <summary>
