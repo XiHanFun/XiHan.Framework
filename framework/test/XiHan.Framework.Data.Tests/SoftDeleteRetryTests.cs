@@ -28,6 +28,7 @@ public sealed class SoftDeleteRetryTests : IDisposable
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"xihan-soft-delete-retry-{Guid.NewGuid():N}.db");
     private readonly SqlSugarScope _scope;
     private readonly SqlSugarSoftDeleteRepository<SoftNote, long> _repository;
+    private bool _failNextUpdate;
 
     /// <summary>
     /// 建库并挂软删过滤器
@@ -47,7 +48,18 @@ public sealed class SoftDeleteRetryTests : IDisposable
                     IsAutoDeleteQueryFilter = true
                 }
             },
-            client => client.QueryFilter.AddTableFilter<ISoftDelete>(entity => !entity.IsDeleted));
+            provider =>
+            {
+                provider.QueryFilter.AddTableFilter<ISoftDelete>(entity => !entity.IsDeleted);
+                provider.Aop.OnLogExecuting = (sql, _) =>
+                {
+                    if (_failNextUpdate && sql.TrimStart().StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _failNextUpdate = false;
+                        throw new InvalidOperationException("模拟数据库错误");
+                    }
+                };
+            });
 
         var client = _scope.GetConnectionScope(ConfigId);
         client.CodeFirst.InitTables<SoftNote>();
@@ -94,6 +106,27 @@ public sealed class SoftDeleteRetryTests : IDisposable
         Assert.Null(note.DeletedTime);
         Assert.Equal(originalVersion, note.RowVersion);
         Assert.False(LoadRaw(1).IsDeleted);
+    }
+
+    /// <summary>
+    /// 软删遇到数据库错误后实体状态与行版本均不变，同一实体重试落库
+    /// </summary>
+    [Fact]
+    public async Task SoftDeleteAsync_DatabaseErrorThenRetried_ShouldPersist()
+    {
+        SeedActive(1);
+        var note = LoadRaw(1);
+        var originalVersion = note.RowVersion;
+        _failNextUpdate = true;
+
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => _repository.SoftDeleteAsync(note));
+
+        Assert.False(note.IsDeleted);
+        Assert.Equal(originalVersion, note.RowVersion);
+
+        await _repository.SoftDeleteAsync(note);
+
+        Assert.True(LoadRaw(1).IsDeleted);
     }
 
     /// <summary>

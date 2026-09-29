@@ -525,13 +525,14 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
     }
 
     /// <summary>
-    /// 实体删除状态快照：删除标记与删除审计字段
+    /// 实体删除状态快照：删除标记、删除审计字段与行版本
     /// </summary>
     /// <param name="IsDeleted">是否已删除</param>
     /// <param name="DeletedTime">删除时间</param>
     /// <param name="DeletedId">删除者ID</param>
     /// <param name="DeletedBy">删除者</param>
-    private readonly record struct DeletionState(bool IsDeleted, DateTimeOffset? DeletedTime, TKey? DeletedId, string? DeletedBy)
+    /// <param name="RowVersion">行版本</param>
+    private readonly record struct DeletionState(bool IsDeleted, DateTimeOffset? DeletedTime, TKey? DeletedId, string? DeletedBy, long RowVersion)
     {
         /// <summary>
         /// 记录实体当前的删除状态
@@ -546,7 +547,8 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
                 entity.IsDeleted,
                 deletionEntity?.DeletedTime,
                 typedDeletionEntity is null ? default : typedDeletionEntity.DeletedId,
-                typedDeletionEntity?.DeletedBy);
+                typedDeletionEntity?.DeletedBy,
+                entity.RowVersion);
         }
 
         /// <summary>
@@ -579,6 +581,7 @@ public class SqlSugarSoftDeleteRepository<TEntity, TKey> : SqlSugarRepositoryBas
         public void ApplyTo(TEntity entity)
         {
             entity.IsDeleted = IsDeleted;
+            entity.RowVersion = RowVersion;
             if (entity is IDeletionEntity deletionEntity)
             {
                 deletionEntity.DeletedTime = DeletedTime;
