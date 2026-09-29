@@ -68,7 +68,7 @@ export XiHan__AI__Mcp__AllowedTools__1=query_inventory
 
 两个技能投影出同一个工具名时宿主起不来：`SkillMcpToolsConfigurator` 抛 `InvalidOperationException`，异常里点明工具名与冲突双方；`MapXiHanMcp` 在映射端点前先把工具集装配出来，让这个失败落在启动期而不是第一个 MCP 请求上。
 
-同名工具里只有一个能被列出与调用，另一个会无声消失，而清单是按工具名放行的，一条清单项会指向两个不同的能力。技能名相同的两个技能进不了同一张注册表（`DefaultAiSkillRegistry` 按名索引、同名覆盖），所以撞名通常来自 `AsFunction()` 里取了同一个工具名。
+同名工具只能保留一个：静默丢弃另一个会让注册过的技能凭空消失，且留下哪个并不确定（注册表的枚举顺序没有保证），按工具名配置的允许/拒绝清单也就说不清放行或屏蔽的是哪个技能。技能名相同的两个技能进不了同一张注册表（`DefaultAiSkillRegistry` 按名索引、大小写不敏感、同名覆盖），所以撞名通常来自 `AsFunction()` 里取了同一个工具名。
 
 ## 使用方式
 ```csharp

@@ -102,7 +102,7 @@ MCP 工具桥接 `AddXiHanMcpServerTools()` 不在模块内自动调用，须配
 | `DefaultRagPromptAugmenter` | 简单模板增强（约束 + 编号片段 + 问题）；不走 Scriban，直接插值 |
 | `VectorStoreKnowledgeRecord` | 向量库记录模型（`Microsoft.Extensions.VectorData` 特性），见下文 |
 
-> 注册表与投影对重名的处理不同：`DefaultAiSkillRegistry` 按名索引、**同名覆盖**（后注册的胜出，这是注册表语义）；而 `SkillMcpToolsConfigurator` 投影到 MCP 工具集时**撞名即失败**，因为对外暴露的允许/拒绝清单按工具名放行，重名会让同一条清单项指向两个不同的能力。
+> 注册表与投影对重名的处理不同：`DefaultAiSkillRegistry` 按名索引、**同名覆盖**（后注册的胜出，这是注册表语义）；而 `SkillMcpToolsConfigurator` 投影到 MCP 工具集时**撞名即失败**：工具集里同名只能留一个，静默丢弃会让技能凭空消失，且留下哪个不确定。
 
 ### DI 入口扩展方法
 
