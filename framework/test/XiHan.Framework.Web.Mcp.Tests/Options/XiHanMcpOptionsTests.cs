@@ -106,7 +106,9 @@ public class XiHanMcpOptionsTests
             [$"{XiHanMcpOptions.SectionName}:ApiKey"] = "configured-key",
             [$"{XiHanMcpOptions.SectionName}:HeaderName"] = "X-Mcp-Key",
             [$"{XiHanMcpOptions.SectionName}:Path"] = "/internal/mcp",
-            [$"{XiHanMcpOptions.SectionName}:Stateless"] = "false"
+            [$"{XiHanMcpOptions.SectionName}:Stateless"] = "false",
+            [$"{XiHanMcpOptions.SectionName}:AllowedTools:0"] = "search_orders",
+            [$"{XiHanMcpOptions.SectionName}:DeniedTools:0"] = "delete_tenant"
         });
 
         var options = configuration.GetSection(XiHanMcpOptions.SectionName).Get<XiHanMcpOptions>();
@@ -117,11 +119,13 @@ public class XiHanMcpOptionsTests
         Assert.Equal("X-Mcp-Key", options.HeaderName);
         Assert.Equal("/internal/mcp", options.Path);
         Assert.False(options.Stateless);
+        Assert.Equal("search_orders", Assert.Single(options.AllowedTools));
+        Assert.Equal("delete_tenant", Assert.Single(options.DeniedTools));
         Assert.True(options.IsExposable);
     }
 
     /// <summary>
-    /// 只配了部分键时，其余键保持默认值
+    /// 只配了部分键时，其余键保持默认值；两个工具清单缺省即为空（空清单表示不裁剪暴露面）
     /// </summary>
     [Fact]
     public void Bind_FromPartialSection_KeepsDefaultsForMissingKeys()
@@ -138,6 +142,8 @@ public class XiHanMcpOptionsTests
         Assert.Equal("X-Api-Key", options.HeaderName);
         Assert.Equal("/mcp", options.Path);
         Assert.True(options.Stateless);
+        Assert.Empty(options.AllowedTools);
+        Assert.Empty(options.DeniedTools);
     }
 
     /// <summary>
