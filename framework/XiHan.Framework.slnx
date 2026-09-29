@@ -67,6 +67,7 @@
     <Project Path="src/XiHan.Framework.Traffic/XiHan.Framework.Traffic.csproj" />
     <Project Path="src/XiHan.Framework.Uow/XiHan.Framework.Uow.csproj" />
     <Project Path="src/XiHan.Framework.Upgrade/XiHan.Framework.Upgrade.csproj" />
+    <Project Path="src/XiHan.Framework.Upgrade.SqlSugar/XiHan.Framework.Upgrade.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Workflow/XiHan.Framework.Workflow.csproj" />
@@ -135,6 +136,7 @@
     <Project Path="test/XiHan.Framework.Traffic.Tests/XiHan.Framework.Traffic.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Uow.Tests/XiHan.Framework.Uow.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Upgrade.Tests/XiHan.Framework.Upgrade.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Upgrade.SqlSugar.Tests/XiHan.Framework.Upgrade.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Utils.Tests/XiHan.Framework.Utils.Tests.csproj" Id="e6f382f6-e361-47cd-af97-2689f3d784c8" />
     <Project Path="test/XiHan.Framework.Validation.Abstractions.Tests/XiHan.Framework.Validation.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Validation.Tests/XiHan.Framework.Validation.Tests.csproj" />

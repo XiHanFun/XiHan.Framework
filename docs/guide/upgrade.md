@@ -12,7 +12,7 @@
 | 脚本发现（按版本目录扫 `*.sql`） | `FileSystemUpgradeScriptProvider` | 可用 |
 | 后台触发与进程内防重入 | `UpgradeCoordinator` | 可用 |
 | 状态查询 | `UpgradeStatusService` | 可用 |
-| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现** |
+| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现**，可用 [Upgrade.SqlSugar](../packages/upgrade-sqlsugar) |
 | **分布式锁** | `DefaultUpgradeLockProvider`（进程内） | **多节点必须换** |
 | **迁移执行器** | `DefaultUpgradeMigrationExecutor` | **必须换**，默认直接抛异常 |
 | 维护模式 | `DefaultUpgradeMaintenanceModeManager` | 只写日志，不拦请求 |
@@ -344,7 +344,9 @@ services.Replace(ServiceDescriptor.Singleton<IUpgradeLockProvider, DistributedUp
 
 ### 版本存储
 
-实现 `IUpgradeVersionStore` 的 9 个方法，把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
+用 SqlSugar 的项目直接依赖 [XiHan.Framework.Upgrade.SqlSugar](../packages/upgrade-sqlsugar) 的 `XiHanUpgradeSqlSugarModule`，它注册的就是下面的 `SqlSugarUpgradeVersionStore`。
+
+自己实现时，实现 `IUpgradeVersionStore` 的 9 个方法，把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
 
 ```csharp
 services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeVersionStore>());
