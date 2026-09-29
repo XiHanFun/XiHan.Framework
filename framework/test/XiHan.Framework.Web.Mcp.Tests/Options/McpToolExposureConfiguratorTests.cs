@@ -10,7 +10,7 @@ using MsOptions = Microsoft.Extensions.Options.Options;
 namespace XiHan.Framework.Web.Mcp.Tests.Options;
 
 /// <summary>
-/// 工具暴露配置器：清单的合法性校验与匹配不到工具时的告警
+/// 工具暴露配置器：清单的合法性校验、匹配不到工具时的告警，以及两个清单都为空时不触碰选项
 /// </summary>
 /// <remarks>
 /// 清单经 /mcp 的实际裁剪效果由 <see cref="McpToolExposureEndToEndTests"/> 在真实协议往返上断言。
@@ -49,6 +49,24 @@ public class McpToolExposureConfiguratorTests
         var exception = Assert.Throws<InvalidOperationException>(() => configurator.PostConfigure(null, CreateServerOptions(AlphaTool)));
 
         Assert.Contains($"{XiHanMcpOptions.SectionName}:{listName}:1", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 两个清单都为空时不裁剪工具集、不挂过滤器、不告警
+    /// </summary>
+    [Fact]
+    public void PostConfigure_WithBothListsEmpty_LeavesOptionsUntouched()
+    {
+        var logger = new RecordingLogger<McpToolExposureConfigurator>();
+        var options = CreateServerOptions(AlphaTool, BetaTool);
+
+        CreateConfigurator(new XiHanMcpOptions(), logger).PostConfigure(null, options);
+
+        Assert.NotNull(options.ToolCollection);
+        Assert.Equal(2, options.ToolCollection.Count);
+        Assert.Empty(options.Filters.Request.ListToolsFilters);
+        Assert.Empty(options.Filters.Request.CallToolFilters);
+        Assert.Empty(logger.Records);
     }
 
     /// <summary>

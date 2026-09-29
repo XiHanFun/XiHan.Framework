@@ -87,11 +87,32 @@ internal sealed class McpTestHost : IAsyncDisposable
     /// <param name="deniedTools">工具名拒绝清单</param>
     /// <param name="skills">要注册进技能注册表的技能</param>
     /// <returns>已启动的宿主</returns>
+    public static Task<McpTestHost> StartAsync(
+        bool enabled,
+        string? apiKey,
+        IReadOnlyList<string> allowedTools,
+        IReadOnlyList<string> deniedTools,
+        params IAiSkill[] skills)
+    {
+        return StartAsync(enabled, apiKey, allowedTools, deniedTools, configureServices: null, skills);
+    }
+
+    /// <summary>
+    /// 按给定配置启动宿主，并允许追加宿主自己的服务注册
+    /// </summary>
+    /// <param name="enabled">是否启用 MCP</param>
+    /// <param name="apiKey">访问密钥，null 表示配置里根本没有这个键</param>
+    /// <param name="allowedTools">工具名允许清单</param>
+    /// <param name="deniedTools">工具名拒绝清单</param>
+    /// <param name="configureServices">在框架注册之后追加的服务注册，null 表示不追加</param>
+    /// <param name="skills">要注册进技能注册表的技能</param>
+    /// <returns>已启动的宿主</returns>
     public static async Task<McpTestHost> StartAsync(
         bool enabled,
         string? apiKey,
         IReadOnlyList<string> allowedTools,
         IReadOnlyList<string> deniedTools,
+        Action<IServiceCollection>? configureServices,
         params IAiSkill[] skills)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -114,6 +135,8 @@ internal sealed class McpTestHost : IAsyncDisposable
         {
             _ = builder.Services.AddSingleton<IAiSkill>(skill);
         }
+
+        configureServices?.Invoke(builder.Services);
 
         var app = builder.Build();
         try
