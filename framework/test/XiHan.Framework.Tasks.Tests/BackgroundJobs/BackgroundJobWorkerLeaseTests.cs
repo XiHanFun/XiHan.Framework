@@ -457,6 +457,78 @@ public class BackgroundJobWorkerLeaseTests
     }
 
     /// <summary>
+    /// 不支持租约的存储：宿主停止期间处理器抛出非取消的业务异常时照常退避回写
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task StoreWithoutLeaseSupport_WhenHandlerFailsWhileHostStops_WritesBackBackoff()
+    {
+        var jobOptions = new BackgroundJobOptions();
+        jobOptions.AddJob<UnnamedArgsJob>();
+        var job = CreateJob(jobOptions.GetJobs()[0].JobName, BackgroundJobPriority.Normal);
+
+        var store = new RecordingBackgroundJobStore();
+        store.EnqueueWaitingBatch(job);
+
+        var executer = new GatedBackgroundJobExecuter(FailAfterCancellationAsync);
+
+        using var provider = BuildProvider(store, executer, new FakeClock(Start), jobOptions);
+        using var worker = CreateWorker(provider, CreateWorkerOptions(0), new TimerTrackingTimeProvider(new DateTimeOffset(Start)));
+
+        await worker.StartAsync(TestContext.Current.CancellationToken);
+        await WaitUntilAsync(() => executer.Started.Count == 1, "作业应开始执行");
+        await worker.StopAsync(TestContext.Current.CancellationToken);
+
+        var updated = Assert.Single(store.Updated);
+        Assert.Equal(job.Id, updated.Id);
+        Assert.Equal((short)1, updated.TryCount);
+        Assert.Equal(Start.AddSeconds(60), updated.NextTryTime);
+        Assert.False(updated.IsAbandoned);
+        Assert.Empty(store.Deleted);
+    }
+
+    /// <summary>
+    /// 租约路径：宿主停止期间处理器抛出非取消的业务异常时照常按令牌退避回写，不只释放租约
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task LeasedJob_WhenHandlerFailsWhileHostStops_WritesBackBackoffByToken()
+    {
+        await using var harness = new LeaseHarness(FailAfterCancellationAsync);
+        var jobId = await harness.AddJobAsync();
+
+        await harness.StartAsync();
+        await WaitUntilAsync(() => harness.Executer.Started.Count == 1, "作业应开始执行");
+        await harness.StopAsync();
+
+        var stored = await harness.Store.Inner.FindAsync(jobId);
+        Assert.NotNull(stored);
+        Assert.Equal((short)1, stored.TryCount);
+        Assert.Equal(Start.AddSeconds(60), stored.NextTryTime);
+        Assert.False(stored.IsAbandoned);
+        Assert.Null(stored.ClaimToken);
+        Assert.Equal(1, harness.Store.TryUpdateCallCount);
+        Assert.Equal(0, harness.Store.ReleaseCallCount);
+        Assert.Equal(0, harness.Store.UpdateCallCount);
+    }
+
+    /// <summary>
+    /// 等到执行令牌取消后抛出非取消的业务异常
+    /// </summary>
+    /// <param name="context">执行上下文</param>
+    /// <returns>任务</returns>
+    private static async Task FailAfterCancellationAsync(BackgroundJobExecutionContext context)
+    {
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using (context.CancellationToken.Register(() => cancelled.TrySetResult()))
+        {
+            await cancelled.Task;
+        }
+
+        throw new BackgroundJobExecutionException("模拟停止期间的业务失败");
+    }
+
+    /// <summary>
     /// 断言租约路径没有任何回写
     /// </summary>
     /// <param name="store">存储替身</param>

@@ -155,11 +155,7 @@ public class BackgroundJobWorker : BackgroundService
             var currentTenant = serviceProvider.GetRequiredService<ICurrentTenant>();
             var jobOptions = serviceProvider.GetRequiredService<IOptions<BackgroundJobOptions>>().Value;
 
-            // 本轮要串行跑掉刚领到的这一批（MaxJobFetchCount 默认 1000 条）。原实现抢到锁后再不管它，
-            // 一旦本轮总耗时超过锁 TTL，锁自动过期，另一实例抢到后会领到同一批尚未删除的作业重复执行——
-            // 而"多实例单活"正是这把锁存在的全部理由。框架早就提供了 ExtendAsync 却无人调用，
-            // 这里按 TTL 的一半为周期续期，把"单轮耗时必须小于 TTL"这条隐含约束消掉。
-            // 计时用注入的 IClock（与本类其它时间判断同源，也便于用例用可控时钟精确验证）。
+            // 作业之间按分布式锁 TTL 的一半为周期续期，计时使用 IClock
             var lockExpiry = TimeSpan.FromSeconds(_options.DistributedLockExpirySeconds);
             var renewInterval = lockExpiry / 2;
             var lastRenewTime = clock.Now;
@@ -263,7 +259,7 @@ public class BackgroundJobWorker : BackgroundService
             // 成功：删除
             await store.DeleteAsync(job.Id);
         }
-        catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested && IsCancellation(ex))
         {
             _logger.LogInformation(ex, "宿主停止中断了后台作业 {JobName}({JobId})，不累计失败也不回写", job.JobName, job.Id);
         }
@@ -394,7 +390,7 @@ public class BackgroundJobWorker : BackgroundService
             return;
         }
 
-        if (stoppingToken.IsCancellationRequested)
+        if (stoppingToken.IsCancellationRequested && IsCancellation(failure))
         {
             _logger.LogInformation("宿主停止中断了后台作业 {JobName}({JobId})，释放租约", job.JobName, job.Id);
             await TryReleaseLeaseAsync(store, current);
@@ -518,6 +514,22 @@ public class BackgroundJobWorker : BackgroundService
         return (nextTryDate - job.CreationTime).TotalSeconds > _options.DefaultTimeoutSeconds
             ? null
             : nextTryDate;
+    }
+
+    /// <summary>
+    /// 判断异常或其内部异常链中是否包含取消异常
+    /// </summary>
+    private static bool IsCancellation(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is OperationCanceledException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
