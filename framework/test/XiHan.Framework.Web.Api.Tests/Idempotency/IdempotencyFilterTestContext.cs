@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -77,6 +78,11 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
     public ServiceProvider Provider { get; }
 
     /// <summary>
+    /// 请求中携带的表单文件，非空时请求按表单编码
+    /// </summary>
+    public List<IFormFile> FormFiles { get; } = [];
+
+    /// <summary>
     /// 动作被真正执行的次数
     /// </summary>
     public int ActionInvocations { get; private set; }
@@ -115,12 +121,29 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
             httpContext.Request.Headers[Options.HeaderName] = key;
         }
 
+        if (FormFiles.Count > 0)
+        {
+            httpContext.Request.ContentType = "multipart/form-data; boundary=x";
+            var files = new FormFileCollection();
+            files.AddRange(FormFiles);
+            httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), files);
+        }
+
         var descriptor = new ControllerActionDescriptor
         {
             MethodInfo = method,
             ControllerTypeInfo = typeof(IdempotencySampleController).GetTypeInfo(),
             ActionName = method.Name,
-            ControllerName = nameof(IdempotencySampleController)
+            ControllerName = nameof(IdempotencySampleController),
+            Parameters = method.GetParameters()
+                .Select(parameter => (ParameterDescriptor)new ControllerParameterDescriptor
+                {
+                    Name = parameter.Name!,
+                    ParameterType = parameter.ParameterType,
+                    ParameterInfo = parameter,
+                    BindingInfo = BindingInfo.GetBindingInfo(parameter.GetCustomAttributes())
+                })
+                .ToList()
         };
         var actionContext = new ActionContext(httpContext, new RouteData(), descriptor);
         var executing = new ActionExecutingContext(actionContext, [], arguments, controller: new object());

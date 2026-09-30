@@ -197,6 +197,55 @@ public class IdempotencyFilterTests
     }
 
     /// <summary>
+    /// 文件集合与含文件属性的表单对象按参数类型返回 415 且不执行动作
+    /// </summary>
+    [Theory]
+    [InlineData(nameof(IdempotencySampleController.UploadManyAsync), "files")]
+    [InlineData(nameof(IdempotencySampleController.UploadFormAsync), "form")]
+    public async Task FileParameterTypes_Return415WithoutRunningAction(string actionName, string parameterName)
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+
+        var (result, _) = await ctx.ExecuteAsync(actionName, "k1",
+            new Dictionary<string, object?> { [parameterName] = null });
+
+        AssertRejected(result, StatusCodes.Status415UnsupportedMediaType);
+        Assert.Equal(0, ctx.ActionInvocations);
+    }
+
+    /// <summary>
+    /// 请求携带表单文件时返回 415
+    /// </summary>
+    [Fact]
+    public async Task RequestWithFormFiles_Returns415()
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+        ctx.FormFiles.Add(new FormFile(Stream.Null, 0, 0, "f", "a.txt"));
+
+        var (result, _) = await ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderAsync), "k1", Args());
+
+        AssertRejected(result, StatusCodes.Status415UnsupportedMediaType);
+        Assert.Equal(0, ctx.ActionInvocations);
+    }
+
+    /// <summary>
+    /// 参数类型判定：文件、流及含文件属性的对象为不支持
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(Stream), true)]
+    [InlineData(typeof(IFormFile), true)]
+    [InlineData(typeof(IFormFile[]), true)]
+    [InlineData(typeof(List<IFormFile>), true)]
+    [InlineData(typeof(IFormFileCollection), true)]
+    [InlineData(typeof(UploadForm), true)]
+    [InlineData(typeof(CreateOrderInput), false)]
+    [InlineData(typeof(string), false)]
+    public void IsUnsupportedParameterType_ClassifiesTypes(Type type, bool expected)
+    {
+        Assert.Equal(expected, RequestFingerprint.IsUnsupportedParameterType(type));
+    }
+
+    /// <summary>
     /// 参数序列化后超过上限返回 413
     /// </summary>
     [Fact]

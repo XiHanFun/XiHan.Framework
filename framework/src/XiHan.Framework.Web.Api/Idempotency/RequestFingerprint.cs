@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.AspNetCore.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -21,6 +22,29 @@ public static class RequestFingerprint
     {
         ArgumentNullException.ThrowIfNull(arguments);
         return arguments.Values.Any(value => value is Stream or IFormFile or IFormFileCollection);
+    }
+
+    /// <summary>
+    /// 参数类型是否为幂等保护不支持的文件或流，或含此类公开可读属性的对象（检查一层）
+    /// </summary>
+    /// <param name="type">参数类型</param>
+    /// <returns>不支持时为 true</returns>
+    public static bool IsUnsupportedParameterType(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (IsFileOrStreamType(type))
+        {
+            return true;
+        }
+
+        if (type == typeof(string) || type.IsPrimitive || type.IsEnum)
+        {
+            return false;
+        }
+
+        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Any(property => property.CanRead && property.GetIndexParameters().Length == 0 && IsFileOrStreamType(property.PropertyType));
     }
 
     /// <summary>
@@ -71,5 +95,13 @@ public static class RequestFingerprint
         hash.AppendData(body);
         fingerprint = Convert.ToHexString(hash.GetHashAndReset());
         return true;
+    }
+
+    private static bool IsFileOrStreamType(Type type)
+    {
+        return typeof(Stream).IsAssignableFrom(type) ||
+               typeof(IFormFile).IsAssignableFrom(type) ||
+               typeof(IFormFileCollection).IsAssignableFrom(type) ||
+               typeof(IEnumerable<IFormFile>).IsAssignableFrom(type);
     }
 }

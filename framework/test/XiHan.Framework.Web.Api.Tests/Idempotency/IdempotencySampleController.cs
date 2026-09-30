@@ -23,6 +23,12 @@ public sealed record CreateOrderInput(string Sku, int Quantity);
 public sealed record OrderResult(int OrderNo, string Sku);
 
 /// <summary>
+/// 幂等测试用带文件的表单入参
+/// </summary>
+/// <param name="File">上传文件</param>
+public sealed record UploadForm(IFormFile File);
+
+/// <summary>
 /// 动作执行计数器，可选地挂起动作直到放行
 /// </summary>
 public sealed class ExecutionCounter
@@ -130,6 +136,26 @@ public class IdempotencySampleController : ControllerBase
     [HttpPost("upload")]
     [Idempotent]
     public Task<int> UploadAsync(IFormFile file)
+    {
+        return Task.FromResult(_counter.Increment());
+    }
+
+    /// <summary>
+    /// 带文件集合参数的幂等接口
+    /// </summary>
+    [HttpPost("upload-many")]
+    [Idempotent]
+    public Task<int> UploadManyAsync(List<IFormFile> files)
+    {
+        return Task.FromResult(_counter.Increment());
+    }
+
+    /// <summary>
+    /// 带文件表单对象的幂等接口
+    /// </summary>
+    [HttpPost("upload-form")]
+    [Idempotent]
+    public Task<int> UploadFormAsync([FromForm] UploadForm form)
     {
         return Task.FromResult(_counter.Increment());
     }

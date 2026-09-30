@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Globalization;
@@ -124,7 +125,9 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
             return;
         }
 
-        if (RequestFingerprint.ContainsUnsupportedArgument(context.ActionArguments))
+        if (RequestFingerprint.ContainsUnsupportedArgument(context.ActionArguments) ||
+            HasUnsupportedParameter(context.ActionDescriptor) ||
+            HasUploadedFiles(httpContext.Request))
         {
             Reject(context, StatusCodes.Status415UnsupportedMediaType, "幂等接口不支持文件或流参数");
             return;
@@ -207,6 +210,18 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
 
         _logger.LogWarning("幂等请求 {Method} {Endpoint} 未写入完成，已标记为结果不确定", execution.Key.Method, execution.Key.Endpoint);
         await _store.MarkIndeterminateAsync(execution.Key, execution.OwnerToken, CancellationToken.None);
+    }
+
+    private static bool HasUnsupportedParameter(ActionDescriptor actionDescriptor)
+    {
+        return actionDescriptor.Parameters.Any(parameter =>
+            parameter.BindingInfo?.BindingSource == BindingSource.FormFile ||
+            RequestFingerprint.IsUnsupportedParameterType(parameter.ParameterType));
+    }
+
+    private static bool HasUploadedFiles(HttpRequest request)
+    {
+        return request.HasFormContentType && request.Form.Files.Count > 0;
     }
 
     private static bool IsTransactional(IServiceProvider serviceProvider, MethodInfo method)
