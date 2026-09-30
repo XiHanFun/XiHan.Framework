@@ -70,6 +70,7 @@
     <Project Path="src/XiHan.Framework.VirtualFileSystem/XiHan.Framework.VirtualFileSystem.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Workflow/XiHan.Framework.Workflow.csproj" />
+    <Project Path="src/XiHan.Framework.Workflow.SqlSugar/XiHan.Framework.Workflow.SqlSugar.csproj" />
   </Folder>
   <Folder Name="/1.src/7.Web/">
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
@@ -148,6 +149,7 @@
     <Project Path="test/XiHan.Framework.Web.RealTime.Tests/XiHan.Framework.Web.RealTime.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Tests/XiHan.Framework.Workflow.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Workflow.SqlSugar.Tests/XiHan.Framework.Workflow.SqlSugar.Tests.csproj" />
   </Folder>
   <Folder Name="/3.samples/" />
   <Folder Name="/3.samples/1.Hosts/">

@@ -34,7 +34,7 @@ public class MyModule : XiHanModule { }
 ::: danger 默认存储在内存里
 `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 是**进程内**实现：进程重启，全部定义、实例与书签消失，也不跨实例共享。
 
-只适合开发和单测。生产环境必须实现三个 Store 并 `Replace` 掉默认注册，见[换成持久化存储](#换成持久化存储)。
+只适合开发和单测。生产环境要换成持久化存储：依赖 [XiHan.Framework.Workflow.SqlSugar](../packages/workflow-sqlsugar)，或自己实现三个 Store 并 `Replace` 掉默认注册，见[换成持久化存储](#换成持久化存储)。
 :::
 
 ## 图执行模型
@@ -378,13 +378,17 @@ services.AddXiHanWorkflowActivity<SendSmsActivity>();
 
 ## 换成持久化存储
 
-三个端口各自 `Replace` 即可（框架用 `TryAddSingleton` 注册了内存实现，再 `TryAdd` 会被静默忽略，**必须用 `Replace`**）：
+用 SqlSugar 的项目直接依赖 [XiHan.Framework.Workflow.SqlSugar](../packages/workflow-sqlsugar) 的 `XiHanWorkflowSqlSugarModule`，三个 Store 一并替换，表结构与已知边界见该页。
+
+自己实现时，三个端口各自 `Replace` 即可（框架用 `TryAddSingleton` 注册了内存实现，再 `TryAdd` 会被静默忽略，**必须用 `Replace`**）：
 
 ```csharp
-services.Replace(ServiceDescriptor.Singleton<IWorkflowDefinitionStore, DbWorkflowDefinitionStore>());
-services.Replace(ServiceDescriptor.Singleton<IWorkflowInstanceStore, DbWorkflowInstanceStore>());
-services.Replace(ServiceDescriptor.Singleton<IWorkflowBookmarkStore, DbWorkflowBookmarkStore>());
+services.Replace(ServiceDescriptor.Scoped<IWorkflowDefinitionStore, DbWorkflowDefinitionStore>());
+services.Replace(ServiceDescriptor.Scoped<IWorkflowInstanceStore, DbWorkflowInstanceStore>());
+services.Replace(ServiceDescriptor.Scoped<IWorkflowBookmarkStore, DbWorkflowBookmarkStore>());
 ```
+
+依赖 Scoped 服务时须用 Scoped。
 
 实现时要守住的语义契约：
 
@@ -443,7 +447,7 @@ Worker 会直接退出，延时、节点重试、节点超时三类书签**永�
 | 现象 | 原因 |
 | --- | --- |
 | 启动实例报「未发布」 | 定义还是草稿，得先 `PublishAsync` |
-| 重启服务后实例全没了 | 还在用默认的内存存储，换持久化实现 |
+| 重启服务后实例全没了 | 还在用默认的内存存储，换 [Workflow.SqlSugar](../packages/workflow-sqlsugar) 或自实现的持久化存储 |
 | 延时节点永远不往下走 | `IsTimerEnabled` 被关了，或 Worker 所在进程没跑起来 |
 | 条件表达式报「引用了不存在的变量」 | 变量没声明默认值，且前序节点没写过它 |
 | 条件表达式报「必须返回布尔值」 | 写成了取值表达式，比如漏了比较运算符 |
