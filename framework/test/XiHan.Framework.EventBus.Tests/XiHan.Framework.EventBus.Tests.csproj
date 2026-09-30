@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.EventBus\XiHan.Framework.EventBus.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.ProviderContractTests\XiHan.Framework.ProviderContractTests.csproj" />
     </ItemGroup>
 
 

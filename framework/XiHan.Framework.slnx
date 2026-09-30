@@ -124,6 +124,7 @@
     <Project Path="test/XiHan.Framework.ObjectMapping.Tests/XiHan.Framework.ObjectMapping.Tests.csproj" />
     <Project Path="test/XiHan.Framework.ObjectStorage.Tests/XiHan.Framework.ObjectStorage.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Observability.Tests/XiHan.Framework.Observability.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.ProviderContractTests/XiHan.Framework.ProviderContractTests.csproj" />
     <Project Path="test/XiHan.Framework.Script.Tests/XiHan.Framework.Script.Tests.csproj" />
     <Project Path="test/XiHan.Framework.SearchEngines.Abstractions.Tests/XiHan.Framework.SearchEngines.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.SearchEngines.Elasticsearch.Tests/XiHan.Framework.SearchEngines.Elasticsearch.Tests.csproj" />
