@@ -25,6 +25,8 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
 {
     private readonly ISqlSugarClientResolver _clientResolver;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ISqlSugarOutboxConnectionScope _connectionScope;
+    private readonly IOutboxDeliveryTargetProvider? _targetProvider;
     private readonly ILogger<SqlSugarEventOutbox> _logger;
     private readonly XiHanSqlSugarEventBoxOptions _options;
 
@@ -39,16 +41,24 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// </summary>
     /// <param name="clientResolver">客户端解析器</param>
     /// <param name="currentTenant">当前租户</param>
+    /// <param name="connectionScope">入箱连接范围</param>
+    /// <param name="targetProviders">发件箱投递目标目录，未注册时为空集合，注册多个时取最后一个</param>
     /// <param name="options">收发件箱存储配置</param>
     /// <param name="logger">日志器</param>
     public SqlSugarEventOutbox(
         ISqlSugarClientResolver clientResolver,
         ICurrentTenant currentTenant,
+        ISqlSugarOutboxConnectionScope connectionScope,
+        IEnumerable<IOutboxDeliveryTargetProvider> targetProviders,
         IOptions<XiHanSqlSugarEventBoxOptions> options,
         ILogger<SqlSugarEventOutbox> logger)
     {
+        ArgumentNullException.ThrowIfNull(targetProviders);
+
         _clientResolver = clientResolver;
         _currentTenant = currentTenant;
+        _connectionScope = connectionScope;
+        _targetProvider = targetProviders.LastOrDefault();
         _options = options.Value;
         _logger = logger;
     }
@@ -56,33 +66,90 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// <summary>
     /// 将事件信息添加到发件箱
     /// </summary>
+    /// <remarks>
+    /// 落点：入箱连接范围指定了连接时写该连接，该连接必须已登记在当前工作单元；
+    /// 未指定时，当前工作单元恰好登记一个连接则写该库，一个都没有则写当前布局的主库，多于一个则拒绝。
+    /// 处于租户上下文时，落点须在平台布局内，或该租户在投递目标目录中启用且落点属于该租户的布局；
+    /// 目录中已停用的租户一律拒绝入箱。
+    /// </remarks>
     /// <param name="outgoingEvent">出站事件信息</param>
+    /// <exception cref="InvalidOperationException">无法确定落点，或写入落点的事件不会被发送循环投递</exception>
     public async Task EnqueueAsync(OutgoingEventInfo outgoingEvent)
     {
         ArgumentNullException.ThrowIfNull(outgoingEvent);
 
-        EnsureSharedLayout();
+        var configId = ResolveEnqueueConfigId();
 
-        var client = ResolveEnqueueClient();
+        await EnsureDeliverableAsync(configId);
+
+        var client = _clientResolver.GetClient(configId);
 
         await client.Insertable(EventOutboxMapper.ToEntity(outgoingEvent)).ExecuteCommandAsync();
     }
 
     /// <summary>
-    /// 确认当前租户与平台使用同一套数据库布局
+    /// 解析入箱写入的连接配置标识
     /// </summary>
-    /// <remarks>
-    /// 当前租户布局的主库与平台布局不同时抛出异常。
-    /// </remarks>
-    /// <exception cref="InvalidOperationException">当前租户使用独立于平台的数据库布局</exception>
-    private void EnsureSharedLayout()
+    /// <returns>连接配置标识</returns>
+    /// <exception cref="InvalidOperationException">指定的连接未登记、登记了多个连接却未指定，或无法解析当前布局</exception>
+    private string ResolveEnqueueConfigId()
     {
-        if (_currentTenant.Id is not > 0)
+        var enlistedConfigIds = _clientResolver.GetEnlistedConfigIds();
+        var specifiedConfigId = _connectionScope.ConfigId;
+
+        if (specifiedConfigId is not null)
+        {
+            if (!enlistedConfigIds.Contains(specifiedConfigId, StringComparer.Ordinal))
+            {
+                var enlisted = enlistedConfigIds.Count == 0 ? "无" : string.Join("、", enlistedConfigIds);
+                throw new InvalidOperationException(
+                    $"指定的发件箱连接 {specifiedConfigId} 未登记在当前工作单元（已登记：{enlisted}），" +
+                    "事件无法与业务数据写入同一个事务。");
+            }
+
+            return specifiedConfigId;
+        }
+
+        if (enlistedConfigIds.Count == 1)
+        {
+            return enlistedConfigIds[0];
+        }
+
+        if (enlistedConfigIds.Count == 0)
+        {
+            var layoutConfigIds = _clientResolver.GetCurrentLayoutConfigIds();
+            if (layoutConfigIds.Count == 0)
+            {
+                throw new InvalidOperationException("无法解析当前数据库布局，事件无法入箱。");
+            }
+
+            return layoutConfigIds[0];
+        }
+
+        throw new InvalidOperationException(
+            $"当前工作单元登记了多个数据库连接（{string.Join("、", enlistedConfigIds)}），无法确定事件应写入哪个库。" +
+            "请用 ISqlSugarOutboxConnectionScope.Use 指定承载业务数据的连接，或拆分工作单元。");
+    }
+
+    /// <summary>
+    /// 确认写入指定连接的事件会被发送循环投递
+    /// </summary>
+    /// <param name="configId">入箱写入的连接配置标识</param>
+    /// <returns>表示异步操作的任务</returns>
+    /// <exception cref="InvalidOperationException">写入该连接的事件不会被投递，或当前租户的投递目标已停用</exception>
+    private async Task EnsureDeliverableAsync(string configId)
+    {
+        if (_currentTenant.Id is not { } tenantId || tenantId <= 0)
         {
             return;
         }
 
-        var currentLayout = _clientResolver.GetCurrentLayoutConfigIds();
+        var target = _targetProvider is null ? null : await _targetProvider.FindAsync(tenantId);
+        if (target is { IsEnabled: false })
+        {
+            throw new InvalidOperationException(
+                $"租户 {tenantId} 的发件箱投递目标已停用：既有事件仍会被送完，但不再接受新事件入箱。");
+        }
 
         IReadOnlyList<string> platformLayout;
         using (_currentTenant.Change(null))
@@ -90,40 +157,29 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
             platformLayout = _clientResolver.GetCurrentLayoutConfigIds();
         }
 
-        if (currentLayout.Count == 0 || platformLayout.Count == 0 ||
-            !string.Equals(currentLayout[0], platformLayout[0], StringComparison.Ordinal))
+        if (platformLayout.Contains(configId, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        if (_targetProvider is null)
         {
             throw new InvalidOperationException(
-                $"发件箱不支持租户独立库：当前租户 {_currentTenant.Id} 使用独立于平台的数据库布局，" +
-                "写入其中的事件不会被发送循环投递。请改用共享库的隔离方式，或不要在该租户上下文中发布分布式事件。");
+                $"发件箱不支持未登记的租户独立库：当前租户 {tenantId} 的事件将写入独立于平台的数据库 {configId}，" +
+                "未注册 IOutboxDeliveryTargetProvider 时发送循环不会扫描该库。请注册发件箱投递目标目录，或改用共享库的隔离方式。");
         }
-    }
 
-    /// <summary>
-    /// 解析入箱写入的客户端
-    /// </summary>
-    /// <remarks>
-    /// 当前工作单元已登记恰好一个连接时写该库，未登记任何连接时写当前库。
-    /// </remarks>
-    /// <returns>事件行写入的客户端</returns>
-    /// <exception cref="InvalidOperationException">当前工作单元登记了多个连接</exception>
-    private ISqlSugarClient ResolveEnqueueClient()
-    {
-        var enlistedConfigIds = _clientResolver.GetEnlistedConfigIds();
-
-        if (enlistedConfigIds.Count == 0)
+        if (target is null)
         {
-            return _clientResolver.GetCurrentClient();
+            throw new InvalidOperationException(
+                $"租户 {tenantId} 不在发件箱投递目标目录中，写入其独立库 {configId} 的事件不会被发送循环投递。请先把该租户加入目录。");
         }
 
-        if (enlistedConfigIds.Count == 1)
+        if (!_clientResolver.GetCurrentLayoutConfigIds().Contains(configId, StringComparer.Ordinal))
         {
-            return _clientResolver.GetClient(enlistedConfigIds[0]);
+            throw new InvalidOperationException(
+                $"连接 {configId} 既不在平台布局中，也不在租户 {tenantId} 的布局中，写入其中的事件不会被发送循环投递。");
         }
-
-        throw new InvalidOperationException(
-            $"当前工作单元登记了多个数据库连接（{string.Join("、", enlistedConfigIds)}），无法确定事件应写入哪个库。" +
-            "请拆分工作单元，使每个事务只写入一个库。");
     }
 
     /// <summary>

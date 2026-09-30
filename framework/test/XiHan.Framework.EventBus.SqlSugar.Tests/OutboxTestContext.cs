@@ -35,11 +35,13 @@ internal sealed class OutboxTestContext : IDisposable
     /// <param name="withModuleDatabase">是否额外创建一个模块库</param>
     /// <param name="moduleSharesMainDatabase">模块库连接标识是否与主库指向同一个客户端（不额外建库）</param>
     /// <param name="tenantIds">使用独立库的租户，每个租户一个独立的临时库，布局随当前租户切换</param>
+    /// <param name="withTargetProvider">是否注册投递目标目录</param>
     public OutboxTestContext(
         TimeSpan? claimTimeout = null,
         bool withModuleDatabase = false,
         bool moduleSharesMainDatabase = false,
-        IReadOnlyCollection<long>? tenantIds = null)
+        IReadOnlyCollection<long>? tenantIds = null,
+        bool withTargetProvider = false)
     {
         _claimTimeout = claimTimeout ?? TimeSpan.FromMinutes(5);
 
@@ -75,6 +77,11 @@ internal sealed class OutboxTestContext : IDisposable
                     : configIds;
         }
 
+        if (withTargetProvider)
+        {
+            TargetProvider = new StubTargetProvider();
+        }
+
         Outbox = CreateOutbox();
     }
 
@@ -92,6 +99,16 @@ internal sealed class OutboxTestContext : IDisposable
     /// 当前租户
     /// </summary>
     public FakeCurrentTenant CurrentTenant { get; }
+
+    /// <summary>
+    /// 投递目标目录，未注册时为 null
+    /// </summary>
+    public StubTargetProvider? TargetProvider { get; }
+
+    /// <summary>
+    /// 入箱连接范围
+    /// </summary>
+    public AsyncLocalSqlSugarOutboxConnectionScope ConnectionScope { get; } = new();
 
     /// <summary>
     /// 被测发件箱
@@ -143,6 +160,8 @@ internal sealed class OutboxTestContext : IDisposable
         return new SqlSugarEventOutbox(
             Resolver,
             CurrentTenant,
+            ConnectionScope,
+            TargetProvider is null ? [] : [TargetProvider],
             Microsoft.Extensions.Options.Options.Create(new XiHanSqlSugarEventBoxOptions
             {
                 ClaimTimeout = _claimTimeout

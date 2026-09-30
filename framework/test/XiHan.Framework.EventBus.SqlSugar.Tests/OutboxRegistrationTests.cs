@@ -19,6 +19,22 @@ namespace XiHan.Framework.EventBus.SqlSugar.Tests;
 public class OutboxRegistrationTests
 {
     /// <summary>
+    /// 入箱连接范围以单例注册
+    /// </summary>
+    [Fact]
+    public void 入箱连接范围以单例注册()
+    {
+        var services = new ServiceCollection();
+
+        services.AddXiHanSqlSugarEventBus(new ConfigurationBuilder().Build());
+
+        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(ISqlSugarOutboxConnectionScope));
+
+        Assert.Equal(typeof(AsyncLocalSqlSugarOutboxConnectionScope), descriptor.ImplementationType);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+    }
+
+    /// <summary>
     /// 发件箱实现类型被顶替
     /// </summary>
     [Fact]

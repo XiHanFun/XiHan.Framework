@@ -43,6 +43,7 @@ public static class XiHanSqlSugarEventBusServiceCollectionExtensions
             options.Inboxes.Configure(config => config.ImplementationType = typeof(SqlSugarEventInbox));
         });
 
+        services.TryAddSingleton<ISqlSugarOutboxConnectionScope, AsyncLocalSqlSugarOutboxConnectionScope>();
         services.TryAddScoped<SqlSugarEventOutbox>();
         services.Replace(ServiceDescriptor.Scoped<IEventOutbox, SqlSugarEventOutbox>());
 
