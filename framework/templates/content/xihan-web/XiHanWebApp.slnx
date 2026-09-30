@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/XiHanWebApp/XiHanWebApp.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/XiHanWebApp.Tests/XiHanWebApp.Tests.csproj" />
+  </Folder>
+</Solution>

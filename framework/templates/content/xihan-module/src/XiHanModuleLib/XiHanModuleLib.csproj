@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- 放入已有解决方案时由上层 Directory.Build.props 统一版本；独立使用时取这里的默认值 -->
+    <XiHanFrameworkVersion Condition="'$(XiHanFrameworkVersion)' == ''">XIHAN_FRAMEWORK_VERSION</XiHanFrameworkVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="XiHan.Framework.Core" Version="[$(XiHanFrameworkVersion)]" />
+  </ItemGroup>
+
+</Project>

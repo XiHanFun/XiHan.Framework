@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "XiHanFun",
+  "classifications": [ "Web", "WebAPI", "XiHan" ],
+  "identity": "XiHan.Framework.Templates.Web",
+  "groupIdentity": "XiHan.Framework.Templates.Web",
+  "name": "XiHan.Framework Web API 应用",
+  "description": "基于 XiHan.Framework 模块系统的 Web API 应用，含动态 API、接口文档与集成测试；可选数据访问（SQLite）、多租户、可观测性。",
+  "shortName": "xihan-web",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "symbols": {
+    "ProjectName": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "safe_namespace",
+      "replaces": "XiHanWebApp",
+      "fileRename": "XiHanWebApp"
+    },
+    "FrameworkVersion": {
+      "type": "parameter",
+      "datatype": "string",
+      "description": "引用的 XiHan.Framework 包版本，默认与模板包版本一致。",
+      "defaultValue": "__XIHAN_TEMPLATE_PACKAGE_VERSION__",
+      "replaces": "XIHAN_FRAMEWORK_VERSION"
+    },
+    "Data": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "加入数据访问（XiHan.Framework.Data + SQLite 示例实体与接口）。",
+      "defaultValue": "false"
+    },
+    "MultiTenancy": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "加入多租户示例（配置式租户存储 + 按请求头解析租户）。",
+      "defaultValue": "false"
+    },
+    "Observability": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "加入可观测性（XiHan.Framework.Observability + /health 健康检查端点）。",
+      "defaultValue": "false"
+    },
+    "ClassPrefix": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "classPrefixForm",
+      "replaces": "WebAppHost",
+      "fileRename": "WebAppHost"
+    },
+    "HttpPort": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": {
+        "low": 5100,
+        "high": 5899
+      },
+      "replaces": "5959"
+    },
+    "DbFileName": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "lowerLastSegmentForm",
+      "replaces": "webapphost-db"
+    }
+  },
+  "forms": {
+    "lastSegment": {
+      "identifier": "replace",
+      "pattern": "^.*\\.(?=[^\\.]+$)",
+      "replacement": ""
+    },
+    "identifierChars": {
+      "identifier": "replace",
+      "pattern": "[^\\p{L}\\p{Nd}_]",
+      "replacement": "_"
+    },
+    "leadingDigit": {
+      "identifier": "replace",
+      "pattern": "^(?=\\p{Nd})",
+      "replacement": "_"
+    },
+    "classPrefixForm": {
+      "identifier": "chain",
+      "steps": [ "lastSegment", "identifierChars", "leadingDigit", "firstUpperCase" ]
+    },
+    "lowerLastSegmentForm": {
+      "identifier": "chain",
+      "steps": [ "lastSegment", "identifierChars", "lowerCase" ]
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!Data)",
+          "exclude": [ "src/XiHanWebApp/Data/**", "test/XiHanWebApp.Tests/TodoItemApiTests.cs" ]
+        },
+        {
+          "condition": "(!MultiTenancy)",
+          "exclude": [ "src/XiHanWebApp/MultiTenancy/**", "test/XiHanWebApp.Tests/TenantApiTests.cs" ]
+        },
+        {
+          "condition": "(!Observability)",
+          "exclude": [ "test/XiHanWebApp.Tests/HealthCheckTests.cs" ]
+        }
+      ]
+    }
+  ]
+}

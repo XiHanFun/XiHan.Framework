@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- 接口文档从 XML 注释读取接口说明 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="XiHan.Framework.Web.Api" Version="[$(XiHanFrameworkVersion)]" />
+    <PackageReference Include="XiHan.Framework.Web.Docs" Version="[$(XiHanFrameworkVersion)]" />
+<!--#if (Data) -->
+    <PackageReference Include="XiHan.Framework.Data" Version="[$(XiHanFrameworkVersion)]" />
+<!--#endif -->
+<!--#if (Observability) -->
+    <PackageReference Include="XiHan.Framework.Observability" Version="[$(XiHanFrameworkVersion)]" />
+<!--#endif -->
+  </ItemGroup>
+
+</Project>

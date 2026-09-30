@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\props\version.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageType>Template</PackageType>
+		<PackageId>XiHan.Framework.Templates</PackageId>
+		<Title>XiHan.Framework.Templates</Title>
+		<Description>曦寒框架 dotnet new 模板：xihan-web（Web API 应用）、xihan-module（模块类库）</Description>
+		<Authors>XiHanFun</Authors>
+		<Copyright>Copyright (c) 2021-Present XiHanFun and contributors.</Copyright>
+		<PackageTags>dotnet-new templates csharp aspnetcore xihan framework xihanfun</PackageTags>
+		<PackageProjectUrl>https://docs.xihanfun.com</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/XiHanFun/XiHan.Framework</RepositoryUrl>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<!-- 模板包只含 content，不产出程序集、不带依赖 -->
+		<IncludeContentInPack>true</IncludeContentInPack>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+		<EnableDefaultItems>false</EnableDefaultItems>
+		<NoDefaultExcludes>true</NoDefaultExcludes>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);NU5128</NoWarn>
+		<XiHanTemplateVersionToken>__XIHAN_TEMPLATE_PACKAGE_VERSION__</XiHanTemplateVersionToken>
+		<TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);XiHanStampTemplateVersion</TargetsForTfmSpecificContentInPackage>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- template.json 由下方目标替换版本占位符后再打包 -->
+		<None Include="content\**\*" Exclude="content\**\bin\**;content\**\obj\**;content\**\.template.config\template.json" Pack="true" PackagePath="content\%(RecursiveDir)%(Filename)%(Extension)" />
+		<None Include="..\nuget\logo.png" Pack="true" PackagePath="" Visible="false" />
+		<None Include="..\nuget\LICENSE" Pack="true" PackagePath="" Visible="false" />
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<!-- 读取文件、替换占位符后写出 -->
+	<UsingTask TaskName="XiHanReplaceTokenInFile" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+		<ParameterGroup>
+			<SourceFile ParameterType="System.String" Required="true" />
+			<DestinationFile ParameterType="System.String" Required="true" />
+			<Token ParameterType="System.String" Required="true" />
+			<Value ParameterType="System.String" Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+var text = System.IO.File.ReadAllText(SourceFile);
+if (!text.Contains(Token))
+{
+    Log.LogError("{0} 缺少版本占位符 {1}。", SourceFile, Token);
+    return false;
+}
+System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(DestinationFile));
+System.IO.File.WriteAllText(DestinationFile, text.Replace(Token, Value), new System.Text.UTF8Encoding(false));
+]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<!-- 把模板参数 FrameworkVersion 的默认值写成本包版本，生成的应用默认引用同版本框架包 -->
+	<Target Name="XiHanStampTemplateVersion">
+		<ItemGroup>
+			<_XiHanTemplateJson Include="content/**/.template.config/template.json" />
+		</ItemGroup>
+
+		<Error Condition="'@(_XiHanTemplateJson)' == ''" Text="未找到任何 template.json。" />
+
+		<XiHanReplaceTokenInFile SourceFile="%(_XiHanTemplateJson.FullPath)" DestinationFile="$(IntermediateOutputPath)stamped/%(_XiHanTemplateJson.RecursiveDir)template.json" Token="$(XiHanTemplateVersionToken)" Value="$(Version)" />
+
+		<ItemGroup>
+			<TfmSpecificPackageFile Include="$(IntermediateOutputPath)stamped/%(_XiHanTemplateJson.RecursiveDir)template.json" PackagePath="content/%(_XiHanTemplateJson.RecursiveDir)template.json" />		</ItemGroup>
+	</Target>
+
+</Project>

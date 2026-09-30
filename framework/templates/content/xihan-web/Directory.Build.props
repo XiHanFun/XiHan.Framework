@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- XiHan.Framework 包版本：升级框架时只改这一处 -->
+    <XiHanFrameworkVersion>XIHAN_FRAMEWORK_VERSION</XiHanFrameworkVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

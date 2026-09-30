@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "XiHanFun",
+  "classifications": [ "Library", "XiHan" ],
+  "identity": "XiHan.Framework.Templates.Module",
+  "groupIdentity": "XiHan.Framework.Templates.Module",
+  "name": "XiHan.Framework 模块",
+  "description": "符合 XiHan.Framework 模块约定的类库：模块类、服务注册扩展、配置选项、默认服务、README 与测试项目。",
+  "shortName": "xihan-module",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "symbols": {
+    "ProjectName": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "safe_namespace",
+      "replaces": "XiHanModuleLib",
+      "fileRename": "XiHanModuleLib"
+    },
+    "FrameworkVersion": {
+      "type": "parameter",
+      "datatype": "string",
+      "description": "引用的 XiHan.Framework 包版本，默认与模板包版本一致。",
+      "defaultValue": "__XIHAN_TEMPLATE_PACKAGE_VERSION__",
+      "replaces": "XIHAN_FRAMEWORK_VERSION"
+    },
+    "ClassPrefix": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "classPrefixForm",
+      "replaces": "FeatureName",
+      "fileRename": "FeatureName"
+    }
+  },
+  "forms": {
+    "lastSegment": {
+      "identifier": "replace",
+      "pattern": "^.*\\.(?=[^\\.]+$)",
+      "replacement": ""
+    },
+    "identifierChars": {
+      "identifier": "replace",
+      "pattern": "[^\\p{L}\\p{Nd}_]",
+      "replacement": "_"
+    },
+    "leadingDigit": {
+      "identifier": "replace",
+      "pattern": "^(?=\\p{Nd})",
+      "replacement": "_"
+    },
+    "classPrefixForm": {
+      "identifier": "chain",
+      "steps": [ "lastSegment", "identifierChars", "leadingDigit", "firstUpperCase" ]
+    }
+  }
+}

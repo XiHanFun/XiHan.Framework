@@ -1,0 +1,8 @@
+bin/
+obj/
+TestResults/
+*.user
+*.db
+*.db-shm
+*.db-wal
+wwwroot/uploads/
