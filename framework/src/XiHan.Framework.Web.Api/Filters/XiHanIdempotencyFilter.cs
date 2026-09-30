@@ -28,7 +28,7 @@ namespace XiHan.Framework.Web.Api.Filters;
 /// <remarks>
 /// 注册在工作单元过滤器之外：校验幂等键、计算请求摘要、以独立连接取得幂等键，
 /// 已完成则把快照还原为 <see cref="ObjectResult"/> 短路动作；动作失败或未写入完成时释放或标记不确定。
-/// 完成写入由内层完成过滤器在工作单元提交前完成。
+/// 完成写入由内层完成过滤器 <see cref="XiHanIdempotencyCompletionFilter"/> 在工作单元提交前完成。
 /// </remarks>
 public class XiHanIdempotencyFilter : IAsyncActionFilter
 {
