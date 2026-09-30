@@ -39,6 +39,26 @@ public class XiHanJobOptions
     public int HistoryRetentionDays { get; set; } = 30;
 
     /// <summary>
+    /// 是否启用历史记录后台清理
+    /// </summary>
+    public bool HistoryCleanupEnabled { get; set; }
+
+    /// <summary>
+    /// 历史记录清理间隔（分钟）
+    /// </summary>
+    public int HistoryCleanupIntervalMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// 历史记录清理每批删除条数
+    /// </summary>
+    public int HistoryCleanupBatchSize { get; set; } = 500;
+
+    /// <summary>
+    /// 历史记录清理每轮最多执行批数
+    /// </summary>
+    public int HistoryCleanupMaxBatchesPerRun { get; set; } = 10;
+
+    /// <summary>
     /// 是否启用性能监控
     /// </summary>
     public bool EnableMetrics { get; set; } = true;

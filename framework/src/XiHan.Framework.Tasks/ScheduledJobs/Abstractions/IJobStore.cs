@@ -57,4 +57,24 @@ public interface IJobStore
     /// </summary>
     /// <param name="retentionDays">保留天数</param>
     Task CleanupHistoryAsync(int retentionDays);
+
+    /// <summary>
+    /// 分批清理早于截止时间的执行历史与已终结实例
+    /// </summary>
+    /// <param name="cutoff">截止时间，早于该时间的记录被清理</param>
+    /// <param name="batchSize">每类记录本批最多删除的条数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>本批删除的总条数</returns>
+    /// <remarks>
+    /// 每类最多删除 <paramref name="batchSize"/> 条；等待中与运行中的实例不删除。
+    /// 默认实现退回 <see cref="CleanupHistoryAsync(int)"/> 一次清完并返回 0。
+    /// </remarks>
+    async Task<int> CleanupHistoryAsync(DateTimeOffset cutoff, int batchSize, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var retentionDays = (int)Math.Max(0, Math.Floor((DateTimeOffset.UtcNow - cutoff).TotalDays));
+        await CleanupHistoryAsync(retentionDays);
+        return 0;
+    }
 }

@@ -107,8 +107,8 @@ public class XiHanTasksServiceCollectionExtensionsTests
 
         services.AddXiHanTasks();
 
-        var descriptor = Assert.Single(services, item => item.ServiceType == typeof(IHostedService));
-        Assert.Equal(typeof(JobHostedService), descriptor.ImplementationType);
+        Assert.Single(services, item => item.ServiceType == typeof(IHostedService)
+            && item.ImplementationType == typeof(JobHostedService));
     }
 
     /// <summary>
