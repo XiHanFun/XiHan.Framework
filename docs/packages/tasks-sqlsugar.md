@@ -164,5 +164,5 @@ public class YourAppModule : XiHanModule
 
 - [MultiTenancy](./multitenancy)：写库期间切换到的宿主上下文
 - [Uow](./uow)：后台作业入队所参与的工作单元
-- [EventBus.SqlSugar](./eventbus-sqlsugar)：同一套条件抢占领取协议的发件箱实现
-- [Auditing.SqlSugar](./auditing-sqlsugar)：同一套落库范式的审计日志实现
+- [EventBus](./eventbus)：事件总线与发件箱
+- [Auditing](./auditing)：审计日志

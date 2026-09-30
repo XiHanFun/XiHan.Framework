@@ -194,6 +194,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
           pkg("VirtualFileSystem 虚拟文件", "virtual-file-system"),
           pkg("Templating 模板", "templating"),
           pkg("Tasks 定时任务", "tasks"),
+          pkg("Tasks.SqlSugar", "tasks-sqlsugar"),
           pkg("Traffic 流量治理", "traffic"),
           pkg("Upgrade 升级引擎", "upgrade"),
           pkg("Script 脚本引擎", "script"),
