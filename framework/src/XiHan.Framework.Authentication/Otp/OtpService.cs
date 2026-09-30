@@ -12,6 +12,11 @@ namespace XiHan.Framework.Authentication.Otp;
 /// </summary>
 public class OtpService : IOtpService
 {
+    /// <summary>
+    /// 恢复码字符集：大写字母与数字
+    /// </summary>
+    private const string RecoveryCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
     private readonly OtpOptions _options;
 
     /// <summary>
@@ -121,13 +126,7 @@ public class OtpService : IOtpService
     /// <returns>恢复码</returns>
     private static string GenerateRecoveryCode()
     {
-        var bytes = new byte[8];
-        RandomNumberGenerator.Fill(bytes);
-        var code = Convert.ToBase64String(bytes)
-            .Replace("+", "")
-            .Replace("/", "")
-            .Replace("=", "")
-            .ToUpperInvariant();
+        var code = RandomNumberGenerator.GetString(RecoveryCodeAlphabet, 8);
 
         // 格式化为 XXXX-XXXX 的形式
         return $"{code[..4]}-{code[4..8]}";
