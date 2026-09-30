@@ -248,6 +248,96 @@ public class BackgroundJobManagementServiceTests
     }
 
     /// <summary>
+    /// 授权器收到的操作与作业标识与调用一致
+    /// </summary>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task Operations_PassOperationAndJobIdToAuthorizer()
+    {
+        var clock = new FakeClock(Now);
+        var authorizer = new StubAuthorizer(false);
+        var service = CreateService(CreateStore(clock), authorizer, new RecordingAuditor(), clock);
+        var retryJobId = Guid.NewGuid();
+        var cancelJobId = Guid.NewGuid();
+
+        await service.RetryAsync(retryJobId, TestContext.Current.CancellationToken);
+        await service.RequestCancellationAsync(cancelJobId, TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            [(BackgroundJobManagementOperation.Retry, retryJobId), (BackgroundJobManagementOperation.Cancel, cancelJobId)],
+            authorizer.Calls);
+    }
+
+    /// <summary>
+    /// 调用方令牌在存储操作之后被取消：结果照常返回，审计器仍收到记录
+    /// </summary>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task RequestCancellation_WhenCallerTokenCancelledAfterStoreOperation_StillAudits()
+    {
+        var clock = new FakeClock(Now);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var store = new ScriptedManagementStore
+        {
+            OnRequestCancellation = _ =>
+            {
+                cts.Cancel();
+                return Task.FromResult(BackgroundJobManagementStatus.CancellationRequested);
+            }
+        };
+        var auditor = new TokenHonoringAuditor();
+        var service = CreateService(store, new StubAuthorizer(true), auditor, clock);
+        var jobId = Guid.NewGuid();
+
+        var result = await service.RequestCancellationAsync(jobId, cts.Token);
+
+        Assert.Equal(BackgroundJobManagementStatus.CancellationRequested, result.Status);
+        var entry = Assert.Single(auditor.Entries);
+        Assert.Equal(new BackgroundJobManagementAuditEntry(jobId, BackgroundJobManagementOperation.Cancel, BackgroundJobManagementStatus.CancellationRequested, Now), entry);
+    }
+
+    /// <summary>
+    /// 存储抛异常时异常向外传播且不审计
+    /// </summary>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task Retry_WhenStoreThrows_Propagates_AndDoesNotAudit()
+    {
+        var clock = new FakeClock(Now);
+        var store = new ScriptedManagementStore
+        {
+            OnRetry = _ => Task.FromException<BackgroundJobManagementStatus>(new InvalidOperationException("模拟存储失败"))
+        };
+        var auditor = new RecordingAuditor();
+        var service = CreateService(store, new StubAuthorizer(true), auditor, clock);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.RetryAsync(Guid.NewGuid(), TestContext.Current.CancellationToken));
+
+        Assert.Empty(auditor.Entries);
+    }
+
+    /// <summary>
+    /// 调用方令牌一开始即已取消：抛出取消异常，不授权、不变更存储、不审计
+    /// </summary>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task RequestCancellation_WhenCallerTokenAlreadyCancelled_Throws_AndLeavesStoreUnchanged()
+    {
+        var clock = new FakeClock(Now);
+        var store = CreateStore(clock);
+        var job = CreateJob();
+        await store.InsertAsync(job);
+        var authorizer = new StubAuthorizer(true);
+        var auditor = new RecordingAuditor();
+        var service = CreateService(store, authorizer, auditor, clock);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => service.RequestCancellationAsync(job.Id, new CancellationToken(true)));
+
+        Assert.Same(job, await store.FindAsync(job.Id));
+        Assert.False(job.IsCancellationRequested);
+        Assert.Empty(authorizer.Calls);
+        Assert.Empty(auditor.Entries);
+    }
+
+    /// <summary>
     /// 默认授权器对任意操作都拒绝
     /// </summary>
     [Fact(Timeout = TimeoutMilliseconds)]
@@ -491,6 +581,120 @@ public class BackgroundJobManagementServiceTests
             }
 
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// 按取消令牌行事的审计器：令牌已取消时抛出，否则记录
+    /// </summary>
+    private sealed class TokenHonoringAuditor : IBackgroundJobManagementAuditor
+    {
+        private readonly Lock _gate = new();
+        private readonly List<BackgroundJobManagementAuditEntry> _entries = [];
+
+        /// <summary>
+        /// 已记录的审计条目
+        /// </summary>
+        public IReadOnlyList<BackgroundJobManagementAuditEntry> Entries
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return [.. _entries];
+                }
+            }
+        }
+
+        /// <summary>
+        /// 记录审计条目
+        /// </summary>
+        public Task AuditAsync(BackgroundJobManagementAuditEntry entry, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (_gate)
+            {
+                _entries.Add(entry);
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// 管理方法行为可编排的存储替身
+    /// </summary>
+    private sealed class ScriptedManagementStore : IBackgroundJobStore
+    {
+        /// <summary>
+        /// 重试时的行为
+        /// </summary>
+        public Func<Guid, Task<BackgroundJobManagementStatus>> OnRetry { get; init; } = _ => Task.FromResult(BackgroundJobManagementStatus.NoChange);
+
+        /// <summary>
+        /// 请求取消时的行为
+        /// </summary>
+        public Func<Guid, Task<BackgroundJobManagementStatus>> OnRequestCancellation { get; init; } = _ => Task.FromResult(BackgroundJobManagementStatus.NoChange);
+
+        /// <summary>
+        /// 支持作业管理
+        /// </summary>
+        public bool SupportsJobManagement => true;
+
+        /// <summary>
+        /// 按标识查找作业
+        /// </summary>
+        public Task<BackgroundJobInfo?> FindAsync(Guid jobId)
+        {
+            return Task.FromResult<BackgroundJobInfo?>(null);
+        }
+
+        /// <summary>
+        /// 插入作业
+        /// </summary>
+        public Task InsertAsync(BackgroundJobInfo jobInfo)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 获取待执行作业
+        /// </summary>
+        public Task<List<BackgroundJobInfo>> GetWaitingJobsAsync(string? applicationName, int maxResultCount)
+        {
+            return Task.FromResult(new List<BackgroundJobInfo>());
+        }
+
+        /// <summary>
+        /// 删除作业
+        /// </summary>
+        public Task DeleteAsync(Guid jobId)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 更新作业
+        /// </summary>
+        public Task UpdateAsync(BackgroundJobInfo jobInfo)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 重试已放弃的作业
+        /// </summary>
+        public Task<BackgroundJobManagementStatus> RetryAbandonedAsync(Guid jobId, CancellationToken cancellationToken = default)
+        {
+            return OnRetry(jobId);
+        }
+
+        /// <summary>
+        /// 请求取消作业
+        /// </summary>
+        public Task<BackgroundJobManagementStatus> RequestCancellationAsync(Guid jobId, CancellationToken cancellationToken = default)
+        {
+            return OnRequestCancellation(jobId);
         }
     }
 

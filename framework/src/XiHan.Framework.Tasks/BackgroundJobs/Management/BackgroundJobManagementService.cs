@@ -15,8 +15,10 @@ namespace XiHan.Framework.Tasks.BackgroundJobs.Management;
 /// 流程：授权 → 判断存储是否支持作业管理 → 委派存储 → 审计。
 /// 授权器拒绝返回 <see cref="BackgroundJobManagementStatus.Denied"/>，存储不支持作业管理返回
 /// <see cref="BackgroundJobManagementStatus.NotSupported"/>，两者同样审计。
+/// 调用方令牌在开始时已取消则抛出 <see cref="OperationCanceledException"/>，不调用授权器与存储，也不审计。
 /// 授权器抛出的异常原样传播给调用方，此时不调用存储也不审计。
-/// 审计器抛出的异常记 Warning 日志，不改变返回结果。
+/// 存储抛出的异常原样传播给调用方，此时不审计。
+/// 审计不接收调用方令牌；审计器抛出的异常记 Warning 日志，不改变返回结果。
 /// </remarks>
 /// <param name="store">后台作业存储</param>
 /// <param name="authorizer">管理授权器</param>
@@ -36,7 +38,7 @@ public sealed class BackgroundJobManagementService(
     /// <param name="jobId">作业标识</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>操作结果</returns>
-    /// <remarks>授权器抛出的异常原样传播，且不审计。</remarks>
+    /// <remarks>授权器或存储抛出的异常原样传播，且不审计。</remarks>
     public Task<BackgroundJobManagementResult> RetryAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         return ExecuteAsync(BackgroundJobManagementOperation.Retry, jobId, store.RetryAbandonedAsync, cancellationToken);
@@ -48,7 +50,7 @@ public sealed class BackgroundJobManagementService(
     /// <param name="jobId">作业标识</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>操作结果</returns>
-    /// <remarks>授权器抛出的异常原样传播，且不审计。</remarks>
+    /// <remarks>授权器或存储抛出的异常原样传播，且不审计。</remarks>
     public Task<BackgroundJobManagementResult> RequestCancellationAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         return ExecuteAsync(BackgroundJobManagementOperation.Cancel, jobId, store.RequestCancellationAsync, cancellationToken);
@@ -68,6 +70,8 @@ public sealed class BackgroundJobManagementService(
         Func<Guid, CancellationToken, Task<BackgroundJobManagementStatus>> storeOperation,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         BackgroundJobManagementStatus status;
         if (!await authorizer.IsAuthorizedAsync(operation, jobId, cancellationToken))
         {
@@ -82,7 +86,7 @@ public sealed class BackgroundJobManagementService(
             status = await storeOperation(jobId, cancellationToken);
         }
 
-        await AuditAsync(new BackgroundJobManagementAuditEntry(jobId, operation, status, clock.Now), cancellationToken);
+        await AuditAsync(new BackgroundJobManagementAuditEntry(jobId, operation, status, clock.Now));
         return new BackgroundJobManagementResult(jobId, operation, status);
     }
 
@@ -90,13 +94,12 @@ public sealed class BackgroundJobManagementService(
     /// 调用审计器，审计异常记 Warning 日志
     /// </summary>
     /// <param name="entry">审计记录</param>
-    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>任务</returns>
-    private async Task AuditAsync(BackgroundJobManagementAuditEntry entry, CancellationToken cancellationToken)
+    private async Task AuditAsync(BackgroundJobManagementAuditEntry entry)
     {
         try
         {
-            await auditor.AuditAsync(entry, cancellationToken);
+            await auditor.AuditAsync(entry, CancellationToken.None);
         }
         catch (Exception ex)
         {
