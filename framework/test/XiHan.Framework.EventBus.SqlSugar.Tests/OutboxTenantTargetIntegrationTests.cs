@@ -119,6 +119,7 @@ public class OutboxTenantTargetIntegrationTests
         await InsertAsync(context.TenantClient(1002), 1);
 
         await host.RoundAsync();
+        Assert.Equal(1, await CountAsync(context, 1002));
         await host.RoundAsync();
 
         Assert.Equal(0, await CountAsync(context, 1002));
