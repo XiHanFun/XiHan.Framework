@@ -170,6 +170,44 @@ public class DefaultIdempotencyStoreTests
     }
 
     /// <summary>
+    /// 完成写入会使快照总字节超过上限时抛出异常，记录仍为处理中
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_WhenBytesWouldExceedCap_Throws()
+    {
+        var store = CreateStore(options => options.MaxTotalResponseBytes = 4);
+        var k1 = Key with { Key = "k1" };
+        var k2 = Key with { Key = "k2" };
+        var a = await store.TryAcquireAsync(k1, "fp", true);
+        var b = await store.TryAcquireAsync(k2, "fp", true);
+
+        await store.CompleteAsync(k1, a.OwnerToken, new StoredResponse(200, [1, 2, 3]));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            store.CompleteAsync(k2, b.OwnerToken, new StoredResponse(200, [1, 2])));
+        Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(k2, "fp", true)).Status);
+    }
+
+    /// <summary>
+    /// 完成写入超限时先清理过期完成记录再判断
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_PurgesExpiredBeforeRejecting()
+    {
+        var store = CreateStore(options => options.MaxTotalResponseBytes = 4);
+        var k1 = Key with { Key = "k1" };
+        var k2 = Key with { Key = "k2" };
+        var a = await store.TryAcquireAsync(k1, "fp", true);
+        var b = await store.TryAcquireAsync(k2, "fp", true);
+        await store.CompleteAsync(k1, a.OwnerToken, new StoredResponse(200, [1, 2, 3, 4]));
+        _clock.Advance(TimeSpan.FromHours(25));
+
+        await store.CompleteAsync(k2, b.OwnerToken, new StoredResponse(200, [5, 6, 7, 8]));
+
+        Assert.Equal(IdempotencyAcquireStatus.Replay, (await store.TryAcquireAsync(k2, "fp", true)).Status);
+    }
+
+    /// <summary>
     /// 20 个并发取得只有一个成功
     /// </summary>
     [Fact]

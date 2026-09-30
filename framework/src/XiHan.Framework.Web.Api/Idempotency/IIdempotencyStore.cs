@@ -26,7 +26,7 @@ public interface IIdempotencyStore
     /// <param name="response">响应快照</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>异步任务</returns>
-    /// <exception cref="InvalidOperationException">记录不存在、令牌不符或已不是处理中状态</exception>
+    /// <exception cref="InvalidOperationException">记录不存在、令牌不符、已不是处理中状态，或存储的响应快照容量已满（记录保持处理中）</exception>
     Task CompleteAsync(IdempotencyRecordKey key, Guid ownerToken, StoredResponse response, CancellationToken cancellationToken = default);
 
     /// <summary>

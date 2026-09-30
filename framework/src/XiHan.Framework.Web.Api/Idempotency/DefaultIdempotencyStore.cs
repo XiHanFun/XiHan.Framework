@@ -73,6 +73,8 @@ public class DefaultIdempotencyStore : IIdempotencyStore
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(response);
 
+        var now = _timeProvider.GetUtcNow();
+
         lock (_lock)
         {
             if (!_entries.TryGetValue(key, out var entry) ||
@@ -82,10 +84,20 @@ public class DefaultIdempotencyStore : IIdempotencyStore
                 throw new InvalidOperationException("幂等记录不存在、拥有者令牌不符或已不是处理中状态，无法写入完成。");
             }
 
+            var size = response.Body?.Length ?? 0;
+            if (_totalResponseBytes + size > _options.MaxTotalResponseBytes)
+            {
+                PurgeExpired(now);
+                if (_totalResponseBytes + size > _options.MaxTotalResponseBytes)
+                {
+                    throw new InvalidOperationException("幂等存储的响应快照容量已满，无法写入完成。");
+                }
+            }
+
             entry.State = EntryState.Completed;
             entry.Response = response;
-            entry.ExpiresAt = _timeProvider.GetUtcNow().Add(_options.CompletedRetention);
-            _totalResponseBytes += response.Body?.Length ?? 0;
+            entry.ExpiresAt = now.Add(_options.CompletedRetention);
+            _totalResponseBytes += size;
         }
 
         return Task.CompletedTask;
