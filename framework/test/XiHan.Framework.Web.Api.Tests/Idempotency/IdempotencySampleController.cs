@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Uow.Attributes;
-using XiHan.Framework.Web.Api.Idempotency;
+using XiHan.Framework.Application.Attributes;
 
 namespace XiHan.Framework.Web.Api.Tests.Idempotency;
 

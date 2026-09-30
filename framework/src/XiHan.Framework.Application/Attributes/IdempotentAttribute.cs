@@ -1,7 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace XiHan.Framework.Web.Api.Idempotency;
+namespace XiHan.Framework.Application.Attributes;
 
 /// <summary>
 /// 标记动作或控制器启用幂等保护

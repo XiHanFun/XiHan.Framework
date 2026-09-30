@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Contracts.Dtos;
 using XiHan.Framework.Application.Contracts.Enums;
 using XiHan.Framework.MultiTenancy.Abstractions;
@@ -125,16 +126,28 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
             return;
         }
 
+        bool hasUploadedFiles;
+        try
+        {
+            hasUploadedFiles = await HasUploadedFilesAsync(httpContext.Request, httpContext.RequestAborted);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException or BadHttpRequestException)
+        {
+            Reject(context, StatusCodes.Status400BadRequest, "请求表单无法读取");
+            return;
+        }
+
         if (RequestFingerprint.ContainsUnsupportedArgument(context.ActionArguments) ||
             HasUnsupportedParameter(context.ActionDescriptor) ||
-            HasUploadedFiles(httpContext.Request))
+            hasUploadedFiles)
         {
             Reject(context, StatusCodes.Status415UnsupportedMediaType, "幂等接口不支持文件或流参数");
             return;
         }
 
         var request = httpContext.Request;
-        if (!RequestFingerprint.TryCompute(request.Method, request.Path.Value ?? string.Empty, request.QueryString.Value,
+        var path = (request.Path.Value ?? string.Empty).ToLowerInvariant();
+        if (!RequestFingerprint.TryCompute(request.Method, path, request.QueryString.Value,
                 context.ActionArguments, _serializerOptions, _options.MaxRequestBytes, out var fingerprint))
         {
             Reject(context, StatusCodes.Status413PayloadTooLarge, "请求内容超过幂等摘要上限");
@@ -145,7 +158,7 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
             _currentTenant.Id?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
             _currentUser.UserId.Value.ToString(CultureInfo.InvariantCulture),
             request.Method,
-            request.Path.Value ?? string.Empty,
+            path,
             key);
         var isTransactional = IsTransactional(httpContext.RequestServices, method);
 
@@ -193,23 +206,30 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
     }
 
     /// <summary>
-    /// 动作失败或未写入完成时收尾：事务型失败释放，其余标记不确定
+    /// 动作失败或未写入完成时收尾：事务型失败释放，其余标记不确定；存储调用失败时记录错误日志后忽略
     /// </summary>
     private async Task AbandonAsync(IdempotencyExecution execution, bool actionFailed)
     {
-        if (actionFailed && execution.IsTransactional)
+        try
         {
-            await _store.ReleaseAsync(execution.Key, execution.OwnerToken, CancellationToken.None);
-            return;
-        }
+            if (actionFailed && execution.IsTransactional)
+            {
+                await _store.ReleaseAsync(execution.Key, execution.OwnerToken, CancellationToken.None);
+                return;
+            }
 
-        if (execution.IsCompleted)
+            if (execution.IsCompleted)
+            {
+                return;
+            }
+
+            _logger.LogWarning("幂等请求 {Method} {Endpoint} 未写入完成，已标记为结果不确定", execution.Key.Method, execution.Key.Endpoint);
+            await _store.MarkIndeterminateAsync(execution.Key, execution.OwnerToken, CancellationToken.None);
+        }
+        catch (Exception ex)
         {
-            return;
+            _logger.LogError(ex, "幂等请求 {Method} {Endpoint} 收尾时存储调用失败", execution.Key.Method, execution.Key.Endpoint);
         }
-
-        _logger.LogWarning("幂等请求 {Method} {Endpoint} 未写入完成，已标记为结果不确定", execution.Key.Method, execution.Key.Endpoint);
-        await _store.MarkIndeterminateAsync(execution.Key, execution.OwnerToken, CancellationToken.None);
     }
 
     private static bool HasUnsupportedParameter(ActionDescriptor actionDescriptor)
@@ -219,9 +239,9 @@ public class XiHanIdempotencyFilter : IAsyncActionFilter
             RequestFingerprint.IsUnsupportedParameterType(parameter.ParameterType));
     }
 
-    private static bool HasUploadedFiles(HttpRequest request)
+    private static async Task<bool> HasUploadedFilesAsync(HttpRequest request, CancellationToken cancellationToken)
     {
-        return request.HasFormContentType && request.Form.Files.Count > 0;
+        return request.HasFormContentType && (await request.ReadFormAsync(cancellationToken)).Files.Count > 0;
     }
 
     private static bool IsTransactional(IServiceProvider serviceProvider, MethodInfo method)

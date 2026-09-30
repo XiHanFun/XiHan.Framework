@@ -35,7 +35,6 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
     public IdempotencyFilterTestContext(Action<XiHanIdempotencyOptions>? configure = null)
     {
         configure?.Invoke(Options);
-        Store = new DefaultIdempotencyStore(Microsoft.Extensions.Options.Options.Create(Options), Clock);
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddOptions<XiHanUnitOfWorkDefaultOptions>();
@@ -45,6 +44,8 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
         services.AddSingleton<IUnitOfWorkTransactionBehaviourProvider, NullUnitOfWorkTransactionBehaviourProvider>();
         services.AddTransient<IUnitOfWork, UnitOfWork>();
         Provider = services.BuildServiceProvider();
+        Store = new DefaultIdempotencyStore(Microsoft.Extensions.Options.Options.Create(Options), Clock,
+            Provider.GetRequiredService<IUnitOfWorkManager>());
     }
 
     /// <summary>
@@ -61,6 +62,11 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
     /// 进程内存储
     /// </summary>
     public DefaultIdempotencyStore Store { get; }
+
+    /// <summary>
+    /// 被测过滤器使用的存储，为空时使用 <see cref="Store"/>
+    /// </summary>
+    public IIdempotencyStore? FilterStore { get; set; }
 
     /// <summary>
     /// 当前用户
@@ -95,14 +101,15 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
         var jsonOptions = new JsonOptions();
         jsonOptions.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         return new XiHanIdempotencyFilter(
-            Store, User, Tenant,
+            FilterStore ?? Store, User, Tenant,
             Microsoft.Extensions.Options.Options.Create(Options),
             Microsoft.Extensions.Options.Options.Create(jsonOptions),
             NullLogger<XiHanIdempotencyFilter>.Instance);
     }
 
     /// <summary>
-    /// 执行一次过滤器；action 返回动作结果或抛出异常，completeInAction 模拟内层过滤器写入完成
+    /// 执行一次过滤器；action 返回动作结果或抛出异常，completeInAction 模拟内层过滤器写入完成，
+    /// throwFromNext 为真时动作异常从后续管道直接抛出，configureRequest 可调整请求
     /// </summary>
     public async Task<(IActionResult? ShortCircuit, HttpContext HttpContext)> ExecuteAsync(
         string actionName,
@@ -110,7 +117,9 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
         IDictionary<string, object?> arguments,
         Func<IActionResult>? action = null,
         bool completeInAction = true,
-        string path = "/api/idempotency-sample/orders")
+        string path = "/api/idempotency-sample/orders",
+        bool throwFromNext = false,
+        Action<HttpRequest>? configureRequest = null)
     {
         var method = typeof(IdempotencySampleController).GetMethod(actionName)!;
         var httpContext = new DefaultHttpContext { RequestServices = Provider };
@@ -128,6 +137,8 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
             files.AddRange(FormFiles);
             httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), files);
         }
+
+        configureRequest?.Invoke(httpContext.Request);
 
         var descriptor = new ControllerActionDescriptor
         {
@@ -162,7 +173,7 @@ internal sealed class IdempotencyFilterTestContext : IAsyncDisposable
                     execution.IsCompleted = true;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!throwFromNext)
             {
                 executed.Exception = ex;
             }

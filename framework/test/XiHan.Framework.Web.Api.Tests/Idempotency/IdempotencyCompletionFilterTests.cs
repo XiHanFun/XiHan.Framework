@@ -43,6 +43,23 @@ public class IdempotencyCompletionFilterTests
     }
 
     /// <summary>
+    /// 事务型工作单元提交前同一键仍为处理中，提交后才可重播
+    /// </summary>
+    [Fact]
+    public async Task Completion_NotVisibleAsReplayBeforeCommit()
+    {
+        await using var fixture = new CompletionFixture();
+        fixture.Store.ProbeAfterComplete = true;
+
+        var run = await fixture.ExecuteChainAsync(new ObjectResult(new OrderResult(1, "SKU")));
+
+        Assert.Equal(IdempotencyAcquireStatus.InProgress, fixture.Store.StatusAfterComplete);
+        Assert.True(run.TransactionApi.Committed);
+        var replay = await fixture.Store.TryAcquireAsync(run.Execution!.Key, "fp", isTransactional: true);
+        Assert.Equal(IdempotencyAcquireStatus.Replay, replay.Status);
+    }
+
+    /// <summary>
     /// 快照按 MVC JSON 配置序列化
     /// </summary>
     [Fact]
@@ -157,6 +174,10 @@ public class IdempotencyCompletionFilterTests
 
         public bool CompletedWhileUnitOfWorkPresent { get; private set; }
 
+        public bool ProbeAfterComplete { get; set; }
+
+        public IdempotencyAcquireStatus? StatusAfterComplete { get; private set; }
+
         public Task<IdempotencyAcquireResult> TryAcquireAsync(IdempotencyRecordKey key, string fingerprint, bool isTransactional, CancellationToken cancellationToken = default)
         {
             return inner.TryAcquireAsync(key, fingerprint, isTransactional, cancellationToken);
@@ -172,7 +193,16 @@ public class IdempotencyCompletionFilterTests
                 throw new InvalidOperationException("完成写入失败");
             }
 
-            return inner.CompleteAsync(key, ownerToken, response, cancellationToken);
+            return CompleteAndProbeAsync(key, ownerToken, response, cancellationToken);
+        }
+
+        private async Task CompleteAndProbeAsync(IdempotencyRecordKey key, Guid ownerToken, StoredResponse response, CancellationToken cancellationToken)
+        {
+            await inner.CompleteAsync(key, ownerToken, response, cancellationToken);
+            if (ProbeAfterComplete)
+            {
+                StatusAfterComplete = (await inner.TryAcquireAsync(key, "fp", true, cancellationToken)).Status;
+            }
         }
 
         public Task ReleaseAsync(IdempotencyRecordKey key, Guid ownerToken, CancellationToken cancellationToken = default)

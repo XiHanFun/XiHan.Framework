@@ -1,7 +1,11 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Uow.Abstracts;
+using XiHan.Framework.Uow.Options;
 using XiHan.Framework.Web.Api.Idempotency;
 
 namespace XiHan.Framework.Web.Api.Tests.Idempotency;
@@ -9,16 +13,97 @@ namespace XiHan.Framework.Web.Api.Tests.Idempotency;
 /// <summary>
 /// 进程内幂等存储测试
 /// </summary>
-public class DefaultIdempotencyStoreTests
+public sealed class DefaultIdempotencyStoreTests : IDisposable
 {
     private static readonly IdempotencyRecordKey Key = new("", "42", "POST", "/api/orders", "k1");
     private readonly ManualTimeProvider _clock = new();
+    private readonly ServiceProvider _provider = BuildUnitOfWorkProvider();
+
+    /// <summary>
+    /// 释放工作单元容器
+    /// </summary>
+    public void Dispose()
+    {
+        _provider.Dispose();
+    }
+
+    /// <summary>
+    /// 事务型工作单元提交前同一键为处理中，提交后重播
+    /// </summary>
+    [Fact]
+    public async Task CompleteInTransaction_VisibleOnlyAfterCommit()
+    {
+        var store = CreateStore();
+        var manager = _provider.GetRequiredService<IUnitOfWorkManager>();
+        var acquired = await store.TryAcquireAsync(Key, "fp", true);
+
+        using (var unitOfWork = manager.Begin(new XiHanUnitOfWorkOptions { IsTransactional = true }))
+        {
+            await store.CompleteAsync(Key, acquired.OwnerToken, new StoredResponse(200, [1]));
+            Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(Key, "fp", true)).Status);
+
+            await unitOfWork.CompleteAsync();
+        }
+
+        Assert.Equal(IdempotencyAcquireStatus.Replay, (await store.TryAcquireAsync(Key, "fp", true)).Status);
+    }
+
+    /// <summary>
+    /// 事务型工作单元未提交即释放后，外层释放记录，可重新取得
+    /// </summary>
+    [Fact]
+    public async Task CompleteInTransaction_NotCommitted_ReleaseAllowsRetry()
+    {
+        var store = CreateStore();
+        var manager = _provider.GetRequiredService<IUnitOfWorkManager>();
+        var acquired = await store.TryAcquireAsync(Key, "fp", true);
+
+        using (manager.Begin(new XiHanUnitOfWorkOptions { IsTransactional = true }))
+        {
+            await store.CompleteAsync(Key, acquired.OwnerToken, new StoredResponse(200, [1]));
+        }
+
+        Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(Key, "fp", true)).Status);
+        await store.ReleaseAsync(Key, acquired.OwnerToken);
+
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, (await store.TryAcquireAsync(Key, "fp", true)).Status);
+    }
+
+    /// <summary>
+    /// 非事务型工作单元内写入完成立即可重播
+    /// </summary>
+    [Fact]
+    public async Task CompleteInNonTransactionalUnitOfWork_ReplaysImmediately()
+    {
+        var store = CreateStore();
+        var manager = _provider.GetRequiredService<IUnitOfWorkManager>();
+        var acquired = await store.TryAcquireAsync(Key, "fp", false);
+
+        using (manager.Begin(new XiHanUnitOfWorkOptions { IsTransactional = false }))
+        {
+            await store.CompleteAsync(Key, acquired.OwnerToken, new StoredResponse(200, [1]));
+            Assert.Equal(IdempotencyAcquireStatus.Replay, (await store.TryAcquireAsync(Key, "fp", false)).Status);
+        }
+    }
+
+    private static ServiceProvider BuildUnitOfWorkProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddOptions<XiHanUnitOfWorkDefaultOptions>();
+        services.AddSingleton<IAmbientUnitOfWork, AmbientUnitOfWork>();
+        services.AddSingleton<IUnitOfWorkManager, UnitOfWorkManager>();
+        services.AddSingleton<IUnitOfWorkEventPublisher, NullUnitOfWorkEventPublisher>();
+        services.AddSingleton<IUnitOfWorkTransactionBehaviourProvider, NullUnitOfWorkTransactionBehaviourProvider>();
+        services.AddTransient<IUnitOfWork, UnitOfWork>();
+        return services.BuildServiceProvider();
+    }
 
     private DefaultIdempotencyStore CreateStore(Action<XiHanIdempotencyOptions>? configure = null)
     {
         var options = new XiHanIdempotencyOptions();
         configure?.Invoke(options);
-        return new DefaultIdempotencyStore(Options.Create(options), _clock);
+        return new DefaultIdempotencyStore(Options.Create(options), _clock, _provider.GetRequiredService<IUnitOfWorkManager>());
     }
 
     /// <summary>
@@ -86,10 +171,10 @@ public class DefaultIdempotencyStoreTests
     }
 
     /// <summary>
-    /// 处理中与不确定记录不自动过期
+    /// 处理中记录不自动过期，不确定记录超过保留期后可重新取得
     /// </summary>
     [Fact]
-    public async Task ProcessingAndIndeterminate_NeverExpire()
+    public async Task Processing_NeverExpires_IndeterminateExpiresAfterRetention()
     {
         var store = CreateStore();
         var otherKey = Key with { Key = "k2" };
@@ -97,10 +182,50 @@ public class DefaultIdempotencyStoreTests
         var second = await store.TryAcquireAsync(otherKey, "fp", false);
         await store.MarkIndeterminateAsync(otherKey, second.OwnerToken);
 
+        _clock.Advance(TimeSpan.FromHours(23));
+        Assert.Equal(IdempotencyAcquireStatus.Indeterminate, (await store.TryAcquireAsync(otherKey, "fp", false)).Status);
+
         _clock.Advance(TimeSpan.FromDays(30));
 
         Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(Key, "fp", true)).Status);
-        Assert.Equal(IdempotencyAcquireStatus.Indeterminate, (await store.TryAcquireAsync(otherKey, "fp", false)).Status);
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, (await store.TryAcquireAsync(otherKey, "fp-new", false)).Status);
+    }
+
+    /// <summary>
+    /// 记录数满时清理过期的不确定记录腾出空间
+    /// </summary>
+    [Fact]
+    public async Task TryAcquire_WhenFull_PurgesExpiredIndeterminate()
+    {
+        var store = CreateStore(options => options.MaxEntries = 1);
+        var a = await store.TryAcquireAsync(Key with { Key = "a" }, "fp", false);
+        await store.MarkIndeterminateAsync(Key with { Key = "a" }, a.OwnerToken);
+
+        var full = await store.TryAcquireAsync(Key with { Key = "b" }, "fp", true);
+        _clock.Advance(TimeSpan.FromHours(25));
+        var afterExpiry = await store.TryAcquireAsync(Key with { Key = "b" }, "fp", true);
+
+        Assert.Equal(IdempotencyAcquireStatus.CapacityExceeded, full.Status);
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, afterExpiry.Status);
+    }
+
+    /// <summary>
+    /// 清理过期完成记录后释放快照字节预算
+    /// </summary>
+    [Fact]
+    public async Task TryAcquire_WhenBytesFull_PurgeReleasesByteBudget()
+    {
+        var store = CreateStore(options => options.MaxTotalResponseBytes = 4);
+        var a = await store.TryAcquireAsync(Key, "fp", true);
+        await store.CompleteAsync(Key, a.OwnerToken, new StoredResponse(200, [1, 2, 3, 4]));
+
+        _clock.Advance(TimeSpan.FromHours(25));
+        var k2 = Key with { Key = "k2" };
+        var b = await store.TryAcquireAsync(k2, "fp", true);
+        await store.CompleteAsync(k2, b.OwnerToken, new StoredResponse(200, [5, 6, 7, 8]));
+
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, b.Status);
+        Assert.Equal(IdempotencyAcquireStatus.Replay, (await store.TryAcquireAsync(k2, "fp", true)).Status);
     }
 
     /// <summary>

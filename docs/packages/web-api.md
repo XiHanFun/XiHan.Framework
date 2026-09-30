@@ -352,9 +352,12 @@ public class PingController : XiHanController
 
 ### 用法
 
-在动作、应用服务方法或其所在类上标 `[Idempotent]`；需要事务语义时同时标 `[UnitOfWork(true)]`。调用方通过请求头 `Idempotency-Key` 传入幂等键（可见 ASCII 字符，长度不超过 128）。
+在动作、应用服务方法或其所在类上标 `[Idempotent]`（`XiHan.Framework.Application.Attributes` 命名空间，位于 `XiHan.Framework.Application` 包）；需要事务语义时同时标 `[UnitOfWork(true)]`。调用方通过请求头 `Idempotency-Key` 传入幂等键（可见 ASCII 字符，长度不超过 128）。
 
 ```csharp
+using XiHan.Framework.Application.Attributes;
+using XiHan.Framework.Uow.Attributes;
+
 public sealed class OrderAppService : IApplicationService
 {
     // POST /api/Order
@@ -373,7 +376,7 @@ Content-Type: application/json
 { "productId": 1, "quantity": 2 }
 ```
 
-- 幂等键按 租户、用户、HTTP 方法、请求路径、幂等键 隔离，不同用户或不同路径使用相同的键互不影响。
+- 幂等键按 租户、用户、HTTP 方法、请求路径、幂等键 隔离，不同用户或不同路径使用相同的键互不影响；请求路径按小写参与记录键与请求摘要，仅大小写不同的路径视为同一路径。
 - 请求摘要由 HTTP 方法、路径、查询串与模型绑定后的参数计算，不是原始请求体；相同键但摘要不同视为内容冲突。
 - 重播响应带 `Idempotency-Replayed: true`，并照常经过统一 `ApiResponse` 包装。
 
@@ -381,7 +384,7 @@ Content-Type: application/json
 
 | 状态码 | 场景 |
 | --- | --- |
-| 400 | 幂等键缺失或无效（含超长、含非可见 ASCII 字符）。 |
+| 400 | 幂等键缺失或无效（含超长、含非可见 ASCII 字符）；表单请求内容无法读取。 |
 | 401 | 调用方未认证。 |
 | 409 | 相同键的请求正在处理；相同键但请求内容不同；该键对应的结果不确定。 |
 | 413 | 参与摘要的参数序列化后超过 `MaxRequestBytes`。 |
@@ -398,10 +401,10 @@ Content-Type: application/json
 | `MaxResponseBytes` | `int` | `1048576`（1 MiB） | 单个响应快照的最大字节数。 |
 | `MaxEntries` | `int` | `10000` | 进程内存储的最大记录数。 |
 | `MaxTotalResponseBytes` | `long` | `67108864`（64 MiB） | 进程内存储的响应快照总字节上限。 |
-| `CompletedRetention` | `TimeSpan` | `24:00:00` | 完成记录的保留时长。 |
+| `CompletedRetention` | `TimeSpan` | `24:00:00` | 完成记录与结果不确定记录的保留时长。 |
 | `ProcessingLease` | `TimeSpan` | `00:05:00` | 事务型端点处理中记录的租约时长，仅落库存储使用。 |
 
-各字段必须大于零，否则应用启动失败。
+除 `HeaderName` 外的各字段必须大于零，否则应用启动失败。
 
 ```json
 {
@@ -426,14 +429,17 @@ Content-Type: application/json
 
 ### 失败与重试语义
 
-- 事务型端点（`[UnitOfWork(true)]`）：动作抛出异常时释放幂等键，允许用同一个键重试。
+- 事务型的判定与工作单元过滤器一致：动作或应用服务方法、或其所在类标注 `[UnitOfWork]`（或类实现 `IUnitOfWorkEnabled`）时才开启工作单元；`[UnitOfWork]` 未显式指定是否事务时，方法名不以 `Get` 开头即为事务型（受 `XiHan:Uow:Default:TransactionBehavior` 影响）；未标注 `[UnitOfWork]` 的控制器动作与应用服务方法为非事务型。
+- 事务型端点：动作抛出异常时释放幂等键，允许用同一个键重试。
+- 事务型端点写入完成后、工作单元提交成功前，同一个键的请求得到 409（处理中）；提交成功后才重播。
 - 非事务型端点抛出异常，或动作成功但没有保存快照（返回值类型不支持，或快照超过 `MaxResponseBytes`）：该键标记为结果不确定，之后携带同一个键的请求返回 409，不会自动重新执行。
+- 写入完成时进程内存储的快照总字节会超过 `MaxTotalResponseBytes`（清理过期记录后仍超过）：请求返回 500；事务型端点的业务一并回滚并释放幂等键，非事务型端点标记为结果不确定。
 - 明确返回的 4xx/5xx 结果同样会被保存并重播。
 
 ### 限制
 
 - 重播只保留状态码与动作返回值的 JSON（支持 `ObjectResult`、`EmptyResult`、`StatusCodeResult`）；`Set-Cookie`、`Location` 等响应头及非 JSON 格式化器的输出不会重现。
-- 默认的进程内存储只在当前进程有效，重启即失，也不跨实例共享；完成记录在保留期后过期，处理中与结果不确定的记录在进程内不会过期。
+- 默认的进程内存储只在当前进程有效，重启即失，也不跨实例共享；完成记录与结果不确定记录在保留期后过期，处理中记录在进程内不会过期。
 - 多实例部署需要跨实例一致性时，替换 `IIdempotencyStore`；后续将提供基于 SqlSugar 的存储包 `XiHan.Framework.Web.Api.SqlSugar`。
 - 不支持 Minimal API、文件上传与流式响应。
 

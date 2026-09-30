@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Uow.Abstracts;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Filters;
 using XiHan.Framework.Web.Api.Idempotency;
@@ -28,6 +30,8 @@ public class IdempotencyRegistrationTests
         services.AddLogging();
         services.AddSingleton<ICurrentUser, FakeCurrentUser>();
         services.AddSingleton<ICurrentTenant, FakeCurrentTenant>();
+        services.AddSingleton<IAmbientUnitOfWork, AmbientUnitOfWork>();
+        services.AddSingleton<IUnitOfWorkManager, UnitOfWorkManager>();
         services.AddXiHanWebApiIdempotency(configuration);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });

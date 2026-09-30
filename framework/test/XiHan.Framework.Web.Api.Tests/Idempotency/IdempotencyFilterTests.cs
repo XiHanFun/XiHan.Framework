@@ -275,10 +275,105 @@ public class IdempotencyFilterTests
         Assert.Equal(1, ctx.ActionInvocations);
     }
 
+    /// <summary>
+    /// 路径大小写不同的相同请求视为同一记录并重播
+    /// </summary>
+    [Fact]
+    public async Task PathCaseInsensitive_Replays()
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+        await ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderAsync), "k1", Args(), path: "/api/Orders");
+
+        var (result, http) = await ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderAsync), "k1", Args(), path: "/api/orders");
+
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal("true", http.Response.Headers[XiHanIdempotencyFilter.ReplayedHeaderName].ToString());
+        Assert.Equal(1, ctx.ActionInvocations);
+    }
+
+    /// <summary>
+    /// 表单内容无法读取时返回 400 且不执行动作
+    /// </summary>
+    [Fact]
+    public async Task MalformedForm_Returns400()
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+
+        var (result, _) = await ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderAsync), "k1", Args(),
+            configureRequest: request =>
+            {
+                request.ContentType = "multipart/form-data; boundary=x";
+                request.Body = new MemoryStream("not a multipart body"u8.ToArray());
+            });
+
+        AssertRejected(result, StatusCodes.Status400BadRequest);
+        Assert.Equal(0, ctx.ActionInvocations);
+    }
+
+    /// <summary>
+    /// 收尾释放失败时动作原本的异常保持不变
+    /// </summary>
+    [Fact]
+    public async Task ReleaseFailure_KeepsOriginalException()
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+        ctx.FilterStore = new FailingCleanupStore(ctx.Store);
+        var original = new InvalidOperationException("业务失败");
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderAsync), "k1", Args(),
+                action: () => throw original, throwFromNext: true));
+
+        Assert.Same(original, thrown);
+    }
+
+    /// <summary>
+    /// 收尾标记不确定失败时过滤器正常返回，执行结果中的原异常保持不变
+    /// </summary>
+    [Fact]
+    public async Task MarkIndeterminateFailure_DoesNotReplaceExecutedException()
+    {
+        await using var ctx = new IdempotencyFilterTestContext();
+        ctx.FilterStore = new FailingCleanupStore(ctx.Store);
+
+        var exception = await Record.ExceptionAsync(() =>
+            ctx.ExecuteAsync(nameof(IdempotencySampleController.CreateOrderWithoutTransactionAsync), "k1", Args(),
+                action: () => throw new InvalidOperationException("业务失败")));
+
+        Assert.Null(exception);
+        Assert.Equal(1, ctx.ActionInvocations);
+    }
+
     private static void AssertRejected(IActionResult? result, int statusCode)
     {
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(statusCode, objectResult.StatusCode);
         Assert.IsType<ApiResponse>(objectResult.Value);
+    }
+
+    /// <summary>
+    /// 释放与标记不确定一律抛出异常的存储
+    /// </summary>
+    private sealed class FailingCleanupStore(IIdempotencyStore inner) : IIdempotencyStore
+    {
+        public Task<IdempotencyAcquireResult> TryAcquireAsync(IdempotencyRecordKey key, string fingerprint, bool isTransactional, CancellationToken cancellationToken = default)
+        {
+            return inner.TryAcquireAsync(key, fingerprint, isTransactional, cancellationToken);
+        }
+
+        public Task CompleteAsync(IdempotencyRecordKey key, Guid ownerToken, StoredResponse response, CancellationToken cancellationToken = default)
+        {
+            return inner.CompleteAsync(key, ownerToken, response, cancellationToken);
+        }
+
+        public Task ReleaseAsync(IdempotencyRecordKey key, Guid ownerToken, CancellationToken cancellationToken = default)
+        {
+            throw new TimeoutException("释放失败");
+        }
+
+        public Task MarkIndeterminateAsync(IdempotencyRecordKey key, Guid ownerToken, CancellationToken cancellationToken = default)
+        {
+            throw new TimeoutException("标记不确定失败");
+        }
     }
 }

@@ -49,6 +49,7 @@ public class MyModule : XiHanModule { }
 | `CrudApplicationServiceBase<TEntity, TEntityDto, TKey, TCreateDto, TUpdateDto, TPageRequestDto>` | 通用 CRUD 基类，封装映射、分页、软删除、校验 |
 | `BatchCrudApplicationServiceBase<...>` | 批量 CRUD 基类，追加批量增删改查 |
 | `DynamicApiAttribute`（`[DynamicApi]`） | 动态 API 配置特性，控制路由/名称/版本/分组/大小写等 |
+| `IdempotentAttribute`（`[Idempotent]`） | 标记动作或应用服务方法启用接口幂等保护，由 `XiHan.Framework.Web.Api` 的幂等过滤器处理，见 [Web API 接口幂等](./web-api#接口幂等) |
 
 ### `ApplicationServiceBase`
 
