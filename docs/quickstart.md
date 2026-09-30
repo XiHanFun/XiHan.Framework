@@ -17,6 +17,21 @@
 dotnet --version   # 应输出 10.x
 ```
 
+## 用模板生成（可选）
+
+仓库的 `framework/templates` 提供 `dotnet new` 模板：`xihan-web` 一步生成本篇第一到五步的全部内容（外加集成测试），`xihan-module` 生成符合模块约定的类库。模板包暂不发布到 nuget.org，需从源码打包安装：
+
+```bash
+dotnet pack framework/templates/XiHan.Framework.Templates.csproj -c Release -o artifacts
+dotnet new install artifacts/XiHan.Framework.Templates.<版本>.nupkg
+
+dotnet new xihan-web -n MyApp                     # 最小 Web API，不依赖外部服务
+dotnet new xihan-web -n MyApp --data --multi-tenancy --observability
+dotnet new xihan-module -n MyApp.Inventory
+```
+
+`--data` 使用 SQLite，生成的项目可直接 `dotnet run` 启动。模板默认引用与模板包同版本的框架包，从尚未发布的版本打包时生成项目需加 `--framework-version <已发布的版本>`。选项、版本兼容、更新与卸载见 [模板说明](https://github.com/XiHanFun/XiHan.Framework/tree/main/framework/templates)。下面是不用模板、手动搭建的步骤。
+
 ## 第一步：创建项目
 
 ```bash
