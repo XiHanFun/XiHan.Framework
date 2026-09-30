@@ -18,7 +18,7 @@ namespace XiHan.Framework.Tasks.SqlSugar.BackgroundJobs;
 /// </summary>
 /// <remarks>
 /// 作业行写入默认布局的主库；存在事务型环境工作单元时，入队参与该工作单元的事务。
-/// 支持逐作业租约与作业管理：续租、按令牌完成、按令牌回写、释放租约、重试与取消均为按条件的单条更新或删除，
+/// 支持逐作业租约与作业管理：续租、按令牌完成、按令牌回写、释放租约、重试与取消的每一步都是带主键（与令牌）条件的更新或删除，
 /// 租约时长取 <see cref="XiHanTasksSqlSugarOptions.BackgroundJobLeaseTimeout"/>。放弃的作业保留在表中。
 /// </remarks>
 public class SqlSugarBackgroundJobStore : IBackgroundJobStore
@@ -398,49 +398,71 @@ public class SqlSugarBackgroundJobStore : IBackgroundJobStore
     /// <summary>
     /// 请求取消作业：持有有效租约的作业登记取消请求；其余未放弃的作业直接标记放弃并结束租约
     /// </summary>
+    /// <remarks>
+    /// 两步条件更新都未命中、而作业仍未放弃且未登记取消请求时（两步之间作业被领取或释放），重新执行两步，最多三轮。
+    /// </remarks>
     /// <param name="jobId">作业标识</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>CancellationRequested / Cancelled / NoChange（已放弃或已请求）/ NotFound</returns>
     public async Task<BackgroundJobManagementStatus> RequestCancellationAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
-        var leaseValidSince = _clock.Now - _options.BackgroundJobLeaseTimeout;
+        const int maxAttempts = 3;
 
         return await _clientAccessor.ExecuteAsync(async client =>
         {
-            var requested = await client.Updateable<SysBackgroundJob>()
-                .SetColumns(item => new SysBackgroundJob
-                {
-                    IsCancellationRequested = true
-                })
-                .Where(item => item.BasicId == jobId
-                    && item.IsAbandoned == false
-                    && item.ClaimToken != null
-                    && item.ClaimTime != null
-                    && item.ClaimTime >= leaseValidSince
-                    && (item.IsCancellationRequested == null || item.IsCancellationRequested == false))
-                .ExecuteCommandAsync(cancellationToken);
-
-            if (requested > 0)
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                return BackgroundJobManagementStatus.CancellationRequested;
-            }
+                var leaseValidSince = _clock.Now - _options.BackgroundJobLeaseTimeout;
 
-            var cancelled = await client.Updateable<SysBackgroundJob>()
-                .SetColumns(item => new SysBackgroundJob
+                var requested = await client.Updateable<SysBackgroundJob>()
+                    .SetColumns(item => new SysBackgroundJob
+                    {
+                        IsCancellationRequested = true
+                    })
+                    .Where(item => item.BasicId == jobId
+                        && item.IsAbandoned == false
+                        && item.ClaimToken != null
+                        && item.ClaimTime != null
+                        && item.ClaimTime >= leaseValidSince
+                        && (item.IsCancellationRequested == null || item.IsCancellationRequested == false))
+                    .ExecuteCommandAsync(cancellationToken);
+
+                if (requested > 0)
                 {
-                    IsAbandoned = true,
-                    IsCancellationRequested = true,
-                    ClaimToken = null,
-                    ClaimTime = null
-                })
-                .Where(item => item.BasicId == jobId
-                    && item.IsAbandoned == false
-                    && (item.ClaimToken == null || item.ClaimTime == null || item.ClaimTime < leaseValidSince))
-                .ExecuteCommandAsync(cancellationToken);
+                    return BackgroundJobManagementStatus.CancellationRequested;
+                }
 
-            if (cancelled > 0)
-            {
-                return BackgroundJobManagementStatus.Cancelled;
+                var cancelled = await client.Updateable<SysBackgroundJob>()
+                    .SetColumns(item => new SysBackgroundJob
+                    {
+                        IsAbandoned = true,
+                        IsCancellationRequested = true,
+                        ClaimToken = null,
+                        ClaimTime = null
+                    })
+                    .Where(item => item.BasicId == jobId
+                        && item.IsAbandoned == false
+                        && (item.ClaimToken == null || item.ClaimTime == null || item.ClaimTime < leaseValidSince))
+                    .ExecuteCommandAsync(cancellationToken);
+
+                if (cancelled > 0)
+                {
+                    return BackgroundJobManagementStatus.Cancelled;
+                }
+
+                var stored = await client.Queryable<SysBackgroundJob>()
+                    .Where(item => item.BasicId == jobId)
+                    .FirstAsync(cancellationToken);
+
+                if (stored is null)
+                {
+                    return BackgroundJobManagementStatus.NotFound;
+                }
+
+                if (stored.IsAbandoned || stored.IsCancellationRequested == true)
+                {
+                    return BackgroundJobManagementStatus.NoChange;
+                }
             }
 
             return await ExistsAsync(client, jobId, cancellationToken)

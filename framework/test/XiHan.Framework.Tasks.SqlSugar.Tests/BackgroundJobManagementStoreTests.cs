@@ -170,6 +170,84 @@ public class BackgroundJobManagementStoreTests
         Assert.Equal(BackgroundJobManagementStatus.NoChange, await store.RequestCancellationAsync(job.Id, cancellationToken));
     }
 
+    /// <summary>
+    /// 两步之间作业恰被领取时重新执行两步并登记取消请求
+    /// </summary>
+    [Fact(Timeout = 30000)]
+    public async Task 两步之间作业被领取时重试并登记取消请求()
+    {
+        using var context = new TasksTestContext();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var store = context.BackgroundJobStore;
+        var job = NewJob();
+        await store.InsertAsync(job);
+
+        var armed = true;
+        context.Client.Aop.OnLogExecuted = (sql, _) =>
+        {
+            if (!armed || !sql.TrimStart().StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            armed = false;
+            context.Client.Updateable<SysBackgroundJob>()
+                .SetColumns(item => new SysBackgroundJob
+                {
+                    ClaimToken = "claimed-between-steps",
+                    ClaimTime = Now
+                })
+                .Where(item => item.BasicId == job.Id)
+                .ExecuteCommand();
+        };
+
+        var status = await store.RequestCancellationAsync(job.Id, cancellationToken);
+
+        Assert.False(armed);
+        Assert.Equal(BackgroundJobManagementStatus.CancellationRequested, status);
+        var stored = await FindEntityAsync(context, job.Id);
+        Assert.NotNull(stored);
+        Assert.False(stored.IsAbandoned);
+        Assert.True(stored.IsCancellationRequested);
+        Assert.Equal("claimed-between-steps", stored.ClaimToken);
+    }
+
+    /// <summary>
+    /// 登记取消请求后释放租约，取消标记保留，再次领取后续租携带该标记
+    /// </summary>
+    [Fact(Timeout = 30000)]
+    public async Task 登记取消请求后释放租约标记保留且再次领取后续租携带标记()
+    {
+        using var context = new TasksTestContext();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var store = context.BackgroundJobStore;
+        var job = NewJob();
+        await store.InsertAsync(job);
+        var claimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+
+        Assert.Equal(BackgroundJobManagementStatus.CancellationRequested, await store.RequestCancellationAsync(job.Id, cancellationToken));
+        await store.ReleaseLeaseAsync(ToLease(claimed), cancellationToken);
+
+        var stored = await FindEntityAsync(context, job.Id);
+        Assert.NotNull(stored);
+        Assert.True(stored.IsCancellationRequested);
+        Assert.Null(stored.ClaimToken);
+
+        var reclaimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+        Assert.True(reclaimed.IsCancellationRequested);
+
+        var renewed = await store.TryRenewLeaseAsync(ToLease(reclaimed), cancellationToken);
+        Assert.NotNull(renewed);
+        Assert.True(renewed.IsCancellationRequested);
+    }
+
+    private static BackgroundJobLease ToLease(BackgroundJobInfo job)
+    {
+        Assert.NotNull(job.ClaimToken);
+        Assert.NotNull(job.LeaseExpiresAt);
+        return new BackgroundJobLease(job.Id, job.ClaimToken, job.LeaseExpiresAt.Value, job.IsCancellationRequested);
+    }
+
     private static Task<SysBackgroundJob> FindEntityAsync(TasksTestContext context, Guid jobId)
     {
         return context.Client.Queryable<SysBackgroundJob>()

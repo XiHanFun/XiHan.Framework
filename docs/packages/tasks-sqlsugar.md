@@ -117,7 +117,7 @@ public class YourAppModule : XiHanModule
 
 本存储声明 `SupportsJobLease`，Worker 因此对每个作业走租约路径：执行前按令牌续租确认租约，执行中按续租间隔续租，结束后按令牌删除或回写。租约时长由 `BackgroundJobLeaseTimeout` 决定；续租间隔取主包的 `XiHan:BackgroundJobs:JobLeaseRenewalIntervalSeconds`（默认取租约时长的四分之一），主包的 `JobLeaseDurationSeconds` 只作用于进程内存储。
 
-每个操作都是一条带条件的 `UPDATE` 或 `DELETE`，时间比较在 SQL 条件里完成：
+每一步都是带主键（与令牌）条件的 `UPDATE` 或 `DELETE`，时间比较在 SQL 条件里完成：
 
 | 操作 | 条件 | 效果 |
 | --- | --- | --- |
@@ -141,7 +141,7 @@ public class YourAppModule : XiHanModule
 | 重试 | 已放弃的作业：清除放弃与取消标记、尝试次数归零、下次执行时间设为当前时间、结束租约，返回 `Rescheduled`；未放弃返回 `NoChange`；不存在返回 `NotFound` |
 | 取消 | 持有有效租约且未登记请求：登记取消请求，返回 `CancellationRequested`，由持有租约的 Worker 在续租时得知并协作停止；其余未放弃的作业：标记放弃并结束租约，返回 `Cancelled`；已放弃或已登记请求返回 `NoChange`；不存在返回 `NotFound` |
 
-取消是协作式的，不强制终止正在执行的代码。被取消的作业保留在表中，可以再重试。
+取消分两步条件更新；两步都未命中而作业仍未放弃且未登记请求时（两步之间作业恰被领取或释放），重新执行，最多三轮。取消是协作式的，不强制终止正在执行的代码。被取消的作业保留在表中，可以再重试。
 
 ### 定时任务的运行中实例
 

@@ -124,6 +124,26 @@ public class BackgroundJobLeaseTests
     }
 
     /// <summary>
+    /// 续租恰在租约到期那一刻仍命中，此刻作业也不能被他人领取
+    /// </summary>
+    [Fact(Timeout = 30000)]
+    public async Task 续租恰在到期那一刻仍命中且不能被他人领取()
+    {
+        using var context = new TasksTestContext();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var store = context.BackgroundJobStore;
+        await store.InsertAsync(NewJob());
+        var claimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+
+        context.Clock.Now = Now.AddMinutes(5);
+
+        Assert.Empty(await store.GetWaitingJobsAsync(null, 10));
+        var renewed = await store.TryRenewLeaseAsync(ToLease(claimed), cancellationToken);
+        Assert.NotNull(renewed);
+        Assert.Equal(Now.AddMinutes(10), renewed.ExpiresAt);
+    }
+
+    /// <summary>
     /// 租约已过期但未被他人领取时，按令牌完成仍命中
     /// </summary>
     [Fact(Timeout = 30000)]
