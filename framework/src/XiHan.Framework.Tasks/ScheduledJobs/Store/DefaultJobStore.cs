@@ -166,6 +166,70 @@ public class DefaultJobStore : IJobStore
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// 分批清理早于截止时间的执行历史与已终结实例
+    /// </summary>
+    public Task<int> CleanupHistoryAsync(DateTimeOffset cutoff, int batchSize, CancellationToken cancellationToken = default)
+    {
+        if (batchSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "每批删除条数必须大于 0。");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var historyIds = _histories.Values
+            .Where(h => h.StartedAt < cutoff)
+            .OrderBy(h => h.StartedAt)
+            .Take(batchSize)
+            .Select(h => h.HistoryId)
+            .ToList();
+
+        var deleted = 0;
+        foreach (var historyId in historyIds)
+        {
+            if (_histories.TryRemove(historyId, out _))
+            {
+                deleted++;
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var instances = _instances
+            .Where(pair => IsExpiredTerminal(pair.Value, cutoff))
+            .OrderBy(pair => pair.Value.CompletedAt)
+            .Take(batchSize)
+            .ToList();
+
+        foreach (var pair in instances)
+        {
+            if (IsExpiredTerminal(pair.Value, cutoff) && _instances.TryRemove(pair))
+            {
+                _completedInstanceIds.TryRemove(pair.Key, out _);
+                deleted++;
+            }
+        }
+
+        // 移除完成顺序队列头部已不再追踪的条目；并发下误取出仍在追踪的条目时放回队尾
+        while (_completedInstanceOrder.TryPeek(out var headId) && !_completedInstanceIds.ContainsKey(headId))
+        {
+            if (_completedInstanceOrder.TryDequeue(out var removedId) && _completedInstanceIds.ContainsKey(removedId))
+            {
+                _completedInstanceOrder.Enqueue(removedId);
+                break;
+            }
+        }
+
+        return Task.FromResult(deleted);
+    }
+
+    private static bool IsExpiredTerminal(JobInstance instance, DateTimeOffset cutoff)
+    {
+        return instance.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled
+            && instance.CompletedAt < cutoff;
+    }
+
     private void TrackCompletedInstance(string instanceId)
     {
         if (_completedInstanceIds.TryAdd(instanceId, 0))

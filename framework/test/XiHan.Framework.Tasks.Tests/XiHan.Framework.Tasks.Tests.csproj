@@ -8,5 +8,8 @@
         <ProjectReference Include="..\..\src\XiHan.Framework.Tasks\XiHan.Framework.Tasks.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    </ItemGroup>
 
 </Project>

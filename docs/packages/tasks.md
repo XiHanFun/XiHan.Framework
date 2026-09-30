@@ -114,7 +114,8 @@ public class MyModule : XiHanModule { }
 | `IJobContext` | 执行上下文：`JobInstance`、`long? TenantId`、`Parameters`、`ServiceProvider`、`TraceId`、`StartedAt`、`AttemptCount`、`CancellationToken` |
 | `IJobExecutor` / `JobExecutor` | 执行器，在租户上下文中跑任务实例、写历史 |
 | `IJobMiddleware` | 执行管道中间件抽象（Logging/Timeout/Lock/Retry/Metrics 内置） |
-| `IJobStore` / `DefaultJobStore` | 有界默认存储：实例最多 20000 条、终态实例最近 10000 条、历史最多 100000 条 |
+| `IJobStore` / `DefaultJobStore` | 有界默认存储：实例最多 20000 条、终态实例最近 10000 条、历史最多 100000 条；`CleanupHistoryAsync(cutoff, batchSize, ct)` 按截止时间分批清理 |
+| `JobHistoryCleanupService` | 历史清理后台服务，`HistoryCleanupEnabled = true` 时按间隔分批清理执行历史与已终结实例；`RunOnceAsync(ct)` 执行一轮并返回删除总数 |
 | `IJobLockProvider` / `CachingJobLockProvider` | 任务锁抽象与基于 Caching 分布式锁的实现 |
 | `IJobEventPublisher` / `JobMetricsProvider` | 任务事件发布与指标采集 |
 | `XiHanJobBuilder` | 链式配置：`UseStore<T>()`、`UseLockProvider<T>()`、`AddMiddleware<T>()`、`AddJob<T>()`、`Configure(...)` |
@@ -197,7 +198,11 @@ public class MyModule : XiHanModule { }
 | `AutoDiscoverJobs` | `bool` | `true` | 是否自动发现并注册任务 |
 | `JobAssemblyPatterns` | `string[]` | `["*.Jobs", "*.Tasks"]` | 扫描的程序集名称模式 |
 | `DefaultTimeoutMilliseconds` | `int` | `300000` | 默认任务超时（5 分钟） |
-| `HistoryRetentionDays` | `int` | `30` | 历史记录保留天数 |
+| `HistoryRetentionDays` | `int` | `30` | 历史记录保留天数（启用清理时不能小于 0） |
+| `HistoryCleanupEnabled` | `bool` | `false` | 是否启用历史清理后台服务 |
+| `HistoryCleanupIntervalMinutes` | `int` | `60` | 清理间隔（分钟，启用清理时须在 1 到 71582 之间） |
+| `HistoryCleanupBatchSize` | `int` | `500` | 每批每类最多删除条数（启用清理时必须大于 0） |
+| `HistoryCleanupMaxBatchesPerRun` | `int` | `10` | 每轮最多执行批数（启用清理时必须大于 0） |
 | `EnableMetrics` | `bool` | `true` | 是否启用性能监控 |
 | `NodeName` | `string?` | `null` | 任务执行节点名称 |
 
@@ -237,7 +242,7 @@ public class MyModule : XiHanModule { }
 | `AbandonedRetentionDays` | `int` | `7` | 已放弃作业的保留天数（移出活跃索引，作业体设 TTL 便于事后排查） |
 | `FetchMultiplier` | `int` | `4` | 候选加载倍数：每轮从索引取 `maxResultCount × 本值` 条到期候选，内存二次排序后再取 `maxResultCount` |
 
-示例 `appsettings.json`：
+示例 `appsettings.json`（示例为启用历史清理的状态，`HistoryCleanupEnabled` 默认关闭）：
 
 ```json
 {
@@ -249,6 +254,10 @@ public class MyModule : XiHanModule { }
         "JobAssemblyPatterns": ["*.Jobs", "*.Tasks"],
         "DefaultTimeoutMilliseconds": 300000,
         "HistoryRetentionDays": 30,
+        "HistoryCleanupEnabled": true,
+        "HistoryCleanupIntervalMinutes": 60,
+        "HistoryCleanupBatchSize": 500,
+        "HistoryCleanupMaxBatchesPerRun": 10,
         "EnableMetrics": true
       }
     },
@@ -414,6 +423,9 @@ services.AddHostedService<OutboxConsumer>();
 - 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。宿主级任务令 `TenantId` 为空。
 - 后台服务的 `XiHanBackgroundServiceOptions` **默认不启用单任务超时**（`EnableTaskTimeout=false`、`TaskTimeoutMilliseconds=0`），如需超时须显式打开。
 - 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化用 SqlSugar 可直接依赖 [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar)，或自行实现 `IJobStore`。
+- 历史清理默认关闭。启用后每轮以「当前时间 − `HistoryRetentionDays` 天」为截止时间，分批删除早于它的执行历史（按 `StartedAt`）与已终结实例（`Succeeded`/`Failed`/`Canceled`，按 `CompletedAt`），等待中与运行中的实例不删除；某批删除数不足批量上限即结束本轮，单轮失败只记日志，下一轮照常执行。
+- 自实现的 `IJobStore` 若未实现分批方法 `CleanupHistoryAsync(DateTimeOffset, int, CancellationToken)`，接口默认实现会换算保留天数后调用 `CleanupHistoryAsync(int)` 一次清完。
+- 启用清理时，清理数值与 `HistoryRetentionDays` 在启动时校验（`ValidateOnStart`），配置不合法会直接启动失败；未启用时不校验。
 - 后台作业队列没有固定重试次数上限，只有**累计耗时**上限（`DefaultTimeoutSeconds`，默认 2 天）——退避间隔按指数增长，高频失败的作业会更快被判定放弃，而非跑满固定次数。
 - `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()`，用 SqlSugar 可直接依赖 [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar)，或自实现 `IBackgroundJobStore`。
 - `[BackgroundJobName]` 标注在**作业参数类型**而非处理器类型上；不标注时回退参数类型全名——修改参数类型的命名空间/类名会导致名称变化，已入库未执行的旧作业将找不到配置而被放弃，关键作业建议显式标注固定名称。
