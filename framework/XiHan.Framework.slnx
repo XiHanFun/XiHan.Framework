@@ -73,6 +73,7 @@
   </Folder>
   <Folder Name="/1.src/7.Web/">
     <Project Path="src/XiHan.Framework.Web.Api/XiHan.Framework.Web.Api.csproj" Id="c2f22ef5-3eba-47b2-a893-b7db49e09ad9" />
+    <Project Path="src/XiHan.Framework.Web.Api.SqlSugar/XiHan.Framework.Web.Api.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.Web.Core/XiHan.Framework.Web.Core.csproj" />
     <Project Path="src/XiHan.Framework.Web.Docs/XiHan.Framework.Web.Docs.csproj" Id="e8a1d021-4093-4e09-b9da-027db1eb90ae" />
     <Project Path="src/XiHan.Framework.Web.Gateway/XiHan.Framework.Web.Gateway.csproj" />
@@ -140,6 +141,7 @@
     <Project Path="test/XiHan.Framework.Validation.Tests/XiHan.Framework.Validation.Tests.csproj" />
     <Project Path="test/XiHan.Framework.VirtualFileSystem.Tests/XiHan.Framework.VirtualFileSystem.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Web.Api.Tests/XiHan.Framework.Web.Api.Tests.csproj" Id="823dea4f-39d6-440f-8e2b-55c8f872e03a" />
+    <Project Path="test/XiHan.Framework.Web.Api.SqlSugar.Tests/XiHan.Framework.Web.Api.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Web.Core.Tests/XiHan.Framework.Web.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Web.Docs.Tests/XiHan.Framework.Web.Docs.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Web.Gateway.Tests/XiHan.Framework.Web.Gateway.Tests.csproj" />
