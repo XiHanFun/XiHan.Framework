@@ -5,7 +5,7 @@
 
 <p><b>快速、轻量、高效、用心的 .NET 现代模块化开发框架</b></p>
 
-<p>基于 .NET 10 构建 · 66 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+<p>基于 .NET 10 构建 · 76 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
 
 <p><a href="./README.md">English</a> | <b>简体中文</b></p>
 
@@ -17,7 +17,7 @@
 <p>
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <img alt="Modules" src="https://img.shields.io/badge/Modules-66-1f6feb?style=flat-square" />
+  <img alt="Modules" src="https://img.shields.io/badge/Modules-76-1f6feb?style=flat-square" />
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
   <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
@@ -52,7 +52,7 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 
 | 去处 | 内容 |
 | --- | --- |
-| [文档站](https://framework.docs.xihanfun.com) | 完整指南与 66 个包的逐包 API 文档 |
+| [文档站](https://framework.docs.xihanfun.com) | 完整指南与 76 个包的逐包 API 文档 |
 | [框架工程说明](./framework/README_cn.md) | 分层架构、模块清单、目录结构、依赖关系 |
 | [更新日志](https://framework.docs.xihanfun.com/changelog) | 各版本变更与升级须知 |
 | [贡献指南](./CONTRIBUTING.md) | 分支约定、提交规范、本地构建与测试 |

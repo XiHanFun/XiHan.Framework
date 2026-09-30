@@ -52,7 +52,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 
 ## Module Catalog
 
-66 modules, one per project under `framework/src`; package names match project names.
+76 modules, one per project under `framework/src`; package names match project names.
 
 ### Common and Core
 
@@ -157,7 +157,9 @@ Utils (zero third-party deps)
               ├── Uow
               │     ├── Caching (+ Redis)
               │     └── EventBus ──→ EventBus.RabbitMQ / Kafka / Redis
-              ├── Domain.Shared ──→ Domain ──→ Data (SqlSugar)
+              ├── Domain.Shared ──→ Domain ──→ Data (SqlSugar) ──→ *.SqlSugar
+              │     │                                             (Auditing / Authentication / Authorization / EventBus /
+              │     │                                              Security / Settings / Tasks / Traffic / Upgrade / Workflow, 10 persistence packages)
               │     └── Application.Contracts ──→ Application
               ├── MultiTenancy.Abstractions ──→ MultiTenancy
               │     ├── Tasks
@@ -181,7 +183,7 @@ Utils (zero third-party deps)
 XiHan.Framework/
 ├── framework/
 │   ├── XiHan.Framework.slnx               # solution file
-│   ├── src/                               # sources (66 modules)
+│   ├── src/                               # sources (76 modules)
 │   │   ├── XiHan.Framework.Utils/         #   utilities
 │   │   ├── XiHan.Framework.Metadata/      #   framework metadata
 │   │   ├── XiHan.Framework.Core/          #   modularity core
@@ -193,7 +195,7 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Core/      #   web core
 │   │   ├── XiHan.Framework.Web.Api/       #   dynamic APIs
 │   │   └── ...                            #   other modules
-│   ├── test/                              # tests (one per src project, 66 unit-test projects)
+│   ├── test/                              # tests (one per src project, 76 unit-test projects)
 │   │   ├── XiHan.Framework.Utils.Tests/   #   utilities tests
 │   │   ├── XiHan.Framework.Core.Tests/    #   core tests
 │   │   └── ...                            #   the rest follow <Project>.Tests

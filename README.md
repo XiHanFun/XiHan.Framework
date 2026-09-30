@@ -5,7 +5,7 @@
 
 <p><b>A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET</b></p>
 
-<p>Built on .NET 10 · 66 modular components · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
+<p>Built on .NET 10 · 76 modular components · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
 
 <p><b>English</b> | <a href="./README_cn.md">简体中文</a></p>
 
@@ -17,7 +17,7 @@
 <p>
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <img alt="Modules" src="https://img.shields.io/badge/Modules-66-1f6feb?style=flat-square" />
+  <img alt="Modules" src="https://img.shields.io/badge/Modules-76-1f6feb?style=flat-square" />
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
   <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
@@ -52,7 +52,7 @@ XiHan.Framework is a modular backend framework for enterprise applications, desi
 
 | Destination | Contents |
 | --- | --- |
-| [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs for all 66 packages |
+| [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs for all 76 packages |
 | [Framework engineering notes](./framework/README.md) | Layered architecture, module catalog, directory layout, dependencies |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
 | [Contributing guide](./CONTRIBUTING.md) | Branch conventions, commit rules, local build and test |
