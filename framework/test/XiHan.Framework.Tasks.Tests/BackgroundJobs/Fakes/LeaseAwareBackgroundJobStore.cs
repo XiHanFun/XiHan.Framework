@@ -20,6 +20,7 @@ public sealed class LeaseAwareBackgroundJobStore : IBackgroundJobStore
     private int _completeCallCount;
     private int _tryUpdateCallCount;
     private int _releaseCallCount;
+    private int _renewFailuresToInject;
 
     /// <summary>
     /// 构造函数
@@ -69,6 +70,21 @@ public sealed class LeaseAwareBackgroundJobStore : IBackgroundJobStore
     /// 释放租约调用次数
     /// </summary>
     public int ReleaseCallCount => Read(ref _releaseCallCount);
+
+    /// <summary>
+    /// 接下来的续租调用中抛出异常的次数（每次抛出减一，抛出的调用也计入续租调用次数）
+    /// </summary>
+    public int RenewFailuresToInject
+    {
+        get => Read(ref _renewFailuresToInject);
+        set
+        {
+            lock (_gate)
+            {
+                _renewFailuresToInject = value;
+            }
+        }
+    }
 
     /// <summary>
     /// 是否支持逐作业租约
@@ -128,6 +144,16 @@ public sealed class LeaseAwareBackgroundJobStore : IBackgroundJobStore
     /// </summary>
     public async Task<BackgroundJobLease?> TryRenewLeaseAsync(BackgroundJobLease lease, CancellationToken cancellationToken = default)
     {
+        lock (_gate)
+        {
+            if (_renewFailuresToInject > 0)
+            {
+                _renewFailuresToInject--;
+                _renewCallCount++;
+                throw new InvalidOperationException("模拟续租失败");
+            }
+        }
+
         var renewed = await Inner.TryRenewLeaseAsync(lease, cancellationToken);
         Increment(ref _renewCallCount);
         return renewed;

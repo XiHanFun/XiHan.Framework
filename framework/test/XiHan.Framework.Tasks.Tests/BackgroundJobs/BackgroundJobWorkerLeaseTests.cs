@@ -276,6 +276,115 @@ public class BackgroundJobWorkerLeaseTests
     }
 
     /// <summary>
+    /// 续租出错但租约尚未到期时继续执行，下个间隔续租成功后作业按令牌完成
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task LeasedJob_WhenRenewalThrowsBeforeExpiry_RetriesAndCompletesByToken()
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var harness = new LeaseHarness(_ => release.Task);
+        var jobId = await harness.AddJobAsync();
+
+        await harness.StartAsync();
+        await WaitUntilAsync(() => harness.Executer.Started.Count == 1 && harness.TimeProvider.TimerCount == 1, "作业应开始执行且续租计时器已创建");
+
+        harness.Store.RenewFailuresToInject = 1;
+        harness.Advance(TimeSpan.FromSeconds(15));
+        await WaitUntilAsync(() => harness.TimeProvider.TimerCount == 2, "续租出错后应等待下个间隔");
+        Assert.False(harness.Executer.Started[0].CancellationToken.IsCancellationRequested);
+
+        harness.Advance(TimeSpan.FromSeconds(15));
+        await WaitUntilAsync(() => harness.TimeProvider.TimerCount == 3, "第二次续租应成功");
+
+        release.SetResult();
+        await WaitUntilAsync(async () => await harness.Store.Inner.FindAsync(jobId) is null, "作业完成后应被删除");
+        await harness.StopAsync();
+
+        Assert.False(harness.Executer.Started[0].CancellationToken.IsCancellationRequested);
+        Assert.Equal(3, harness.Store.RenewCallCount);
+        Assert.Equal(1, harness.Store.CompleteCallCount);
+        Assert.Equal(0, harness.Store.TryUpdateCallCount);
+        Assert.Equal(0, harness.Store.UpdateCallCount);
+        Assert.Equal(0, harness.Store.DeleteCallCount);
+    }
+
+    /// <summary>
+    /// 租约已到期后续租出错视为失租：取消执行令牌且不回写
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task LeasedJob_WhenRenewalThrowsAfterExpiry_CancelsExecutionAndDoesNotWriteBack()
+    {
+        await using var harness = new LeaseHarness(context => Task.Delay(Timeout.Infinite, context.CancellationToken));
+        await harness.AddJobAsync();
+
+        await harness.StartAsync();
+        await WaitUntilAsync(() => harness.Executer.Started.Count == 1 && harness.TimeProvider.TimerCount == 1, "作业应开始执行且续租计时器已创建");
+
+        harness.Store.RenewFailuresToInject = int.MaxValue;
+        harness.Advance(TimeSpan.FromSeconds(LeaseSeconds + 1), TimeSpan.FromSeconds(15));
+        await WaitUntilAsync(() => harness.Executer.FinishedCount == 1, "处理器应因取消而结束");
+        await WaitUntilAsync(() => harness.Store.WaitingCallCount >= 2, "Worker 应已结束本轮");
+        await harness.StopAsync();
+
+        Assert.True(harness.Executer.Started[0].CancellationToken.IsCancellationRequested);
+        Assert.Single(harness.Executer.Started);
+        AssertNoWriteBack(harness.Store);
+    }
+
+    /// <summary>
+    /// 执行前确认时已被请求取消的作业不执行，直接按放弃回写
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task LeasedJob_WhenCancellationRequestedBeforeExecution_AbandonsWithoutExecuting()
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        await using var harness = new LeaseHarness(_ => Interlocked.Increment(ref calls) == 1 ? release.Task : Task.CompletedTask);
+        var firstId = await harness.AddJobAsync(BackgroundJobPriority.High);
+        var secondId = await harness.AddJobAsync(BackgroundJobPriority.Normal);
+
+        await harness.StartAsync();
+        await WaitUntilAsync(() => harness.Executer.Started.Count == 1, "第一个作业应开始执行");
+
+        Assert.Equal(BackgroundJobManagementStatus.CancellationRequested, await harness.Store.Inner.RequestCancellationAsync(secondId));
+
+        release.SetResult();
+        await WaitUntilAsync(async () => await harness.Store.Inner.FindAsync(secondId) is null, "已请求取消的作业应按放弃处理并移除");
+        await harness.StopAsync();
+
+        Assert.Single(harness.Executer.Started);
+        Assert.Null(await harness.Store.Inner.FindAsync(firstId));
+        Assert.Equal(1, harness.Store.CompleteCallCount);
+        Assert.Equal(1, harness.Store.TryUpdateCallCount);
+        Assert.Equal(0, harness.Store.UpdateCallCount);
+        Assert.Equal(0, harness.Store.DeleteCallCount);
+    }
+
+    /// <summary>
+    /// 租约路径找不到作业配置时不执行，按令牌回写放弃
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task LeasedJob_WhenJobConfigurationMissing_AbandonsByToken()
+    {
+        await using var harness = new LeaseHarness(_ => Task.CompletedTask);
+        var jobId = await harness.AddJobAsync(jobName: "xihan-tests-unregistered-job");
+
+        await harness.StartAsync();
+        await WaitUntilAsync(() => harness.Store.TryUpdateCallCount == 1, "找不到配置的作业应按令牌回写");
+        await harness.StopAsync();
+
+        Assert.Empty(harness.Executer.Started);
+        Assert.Null(await harness.Store.Inner.FindAsync(jobId));
+        Assert.Equal(0, harness.Store.CompleteCallCount);
+        Assert.Equal(0, harness.Store.UpdateCallCount);
+        Assert.Equal(0, harness.Store.DeleteCallCount);
+    }
+
+    /// <summary>
     /// 不支持租约的存储即使作业带有令牌也走原路径：成功调用删除、失败调用更新
     /// </summary>
     /// <returns>任务</returns>
@@ -494,9 +603,10 @@ public class BackgroundJobWorkerLeaseTests
         /// </summary>
         /// <param name="priority">优先级</param>
         /// <returns>作业标识</returns>
-        public async Task<Guid> AddJobAsync(BackgroundJobPriority priority = BackgroundJobPriority.Normal)
+        /// <param name="jobName">作业名，为空时取已注册的作业</param>
+        public async Task<Guid> AddJobAsync(BackgroundJobPriority priority = BackgroundJobPriority.Normal, string? jobName = null)
         {
-            var job = CreateJob(_jobName, priority);
+            var job = CreateJob(jobName ?? _jobName, priority);
             await Store.Inner.InsertAsync(job);
             return job.Id;
         }

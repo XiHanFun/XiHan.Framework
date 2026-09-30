@@ -34,6 +34,10 @@ public class BackgroundJobWorker : BackgroundService
     /// <summary>
     /// 构造函数（续租等待使用系统时间）
     /// </summary>
+    /// <param name="scopeFactory">作用域工厂</param>
+    /// <param name="distributedLock">分布式锁</param>
+    /// <param name="options">Worker 选项</param>
+    /// <param name="logger">日志</param>
     public BackgroundJobWorker(
         IServiceScopeFactory scopeFactory,
         IDistributedLock distributedLock,
@@ -157,38 +161,43 @@ public class BackgroundJobWorker : BackgroundService
         var useJobLease = store.SupportsJobLease;
         var index = 0;
 
-        for (; index < jobs.Count; index++)
+        try
         {
-            var job = jobs[index];
-            if (cancellationToken.IsCancellationRequested)
+            for (; index < jobs.Count; index++)
             {
-                break;
-            }
-
-            if (renewInterval > TimeSpan.Zero && clock.Now - lastRenewTime >= renewInterval)
-            {
-                lastRenewTime = clock.Now;
-                if (!await TryExtendLockAsync(handle, lockExpiry, cancellationToken))
+                var job = jobs[index];
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    // 已经不确定自己还持有锁，继续跑就可能与抢到锁的另一实例重复执行；
-                    // 剩下的作业留在存储里，下一轮重新抢锁后接着处理
                     break;
                 }
-            }
 
-            if (useJobLease && TryCreateLease(job, out var lease))
-            {
-                await ExecuteLeasedJobAsync(serviceProvider, store, clock, serializer, executer, currentTenant, jobOptions, job, lease, cancellationToken);
-            }
-            else
-            {
-                await TryExecuteJobAsync(serviceProvider, store, clock, serializer, executer, currentTenant, jobOptions, job, cancellationToken);
+                if (renewInterval > TimeSpan.Zero && clock.Now - lastRenewTime >= renewInterval)
+                {
+                    lastRenewTime = clock.Now;
+                    if (!await TryExtendLockAsync(handle, lockExpiry, cancellationToken))
+                    {
+                        // 已经不确定自己还持有锁，继续跑就可能与抢到锁的另一实例重复执行；
+                        // 剩下的作业留在存储里，下一轮重新抢锁后接着处理
+                        break;
+                    }
+                }
+
+                if (useJobLease && TryCreateLease(job, out var lease))
+                {
+                    await ExecuteLeasedJobAsync(serviceProvider, store, clock, serializer, executer, currentTenant, jobOptions, job, lease, cancellationToken);
+                }
+                else
+                {
+                    await TryExecuteJobAsync(serviceProvider, store, clock, serializer, executer, currentTenant, jobOptions, job, cancellationToken);
+                }
             }
         }
-
-        if (useJobLease)
+        finally
         {
-            await ReleasePendingLeasesAsync(store, jobs, index);
+            if (useJobLease)
+            {
+                await ReleasePendingLeasesAsync(store, jobs, index);
+            }
         }
     }
 
@@ -263,6 +272,9 @@ public class BackgroundJobWorker : BackgroundService
     /// <summary>
     /// 按租约执行单个作业：执行前确认租约、执行中按间隔续租、按令牌回写
     /// </summary>
+    /// <remarks>
+    /// 执行前确认未命中时跳过作业：按本地时钟租约已到期记 Debug 日志，租约未到期（已被其它领取者换走或作业已不存在）记 Warning 日志。
+    /// </remarks>
     private async Task ExecuteLeasedJobAsync(
         IServiceProvider serviceProvider,
         IBackgroundJobStore store,
@@ -288,7 +300,15 @@ public class BackgroundJobWorker : BackgroundService
 
         if (confirmed is null)
         {
-            _logger.LogWarning("后台作业 {JobName}({JobId}) 的租约已失效，跳过", job.JobName, job.Id);
+            if (clock.Now >= lease.ExpiresAt)
+            {
+                _logger.LogDebug("后台作业 {JobName}({JobId}) 的租约已到期，跳过", job.JobName, job.Id);
+            }
+            else
+            {
+                _logger.LogWarning("后台作业 {JobName}({JobId}) 的租约已不属于本 Worker，跳过", job.JobName, job.Id);
+            }
+
             return;
         }
 
@@ -316,7 +336,8 @@ public class BackgroundJobWorker : BackgroundService
         var interval = CalculateRenewalInterval(confirmed.ExpiresAt - clock.Now);
         if (interval <= TimeSpan.Zero)
         {
-            _logger.LogWarning("后台作业 {JobName}({JobId}) 的租约剩余时间不足，跳过", job.JobName, job.Id);
+            _logger.LogWarning("后台作业 {JobName}({JobId}) 的租约剩余时间不足，释放租约并跳过", job.JobName, job.Id);
+            await TryReleaseLeaseAsync(store, confirmed);
             return;
         }
 
@@ -342,7 +363,7 @@ public class BackgroundJobWorker : BackgroundService
         }
         finally
         {
-            await renewCts.CancelAsync();
+            await TryCancelAsync(renewCts, job);
             await renewTask;
         }
 
@@ -413,7 +434,7 @@ public class BackgroundJobWorker : BackgroundService
                 {
                     _logger.LogWarning(ex, "后台作业 {JobName}({JobId}) 续租异常且租约已到期，取消执行", job.JobName, job.Id);
                     renewal.IsLost = true;
-                    await executionCts.CancelAsync();
+                    await TryCancelAsync(executionCts, job);
                     return;
                 }
 
@@ -425,7 +446,7 @@ public class BackgroundJobWorker : BackgroundService
             {
                 _logger.LogWarning("后台作业 {JobName}({JobId}) 续租未命中，已失去租约，取消执行", job.JobName, job.Id);
                 renewal.IsLost = true;
-                await executionCts.CancelAsync();
+                await TryCancelAsync(executionCts, job);
                 return;
             }
 
@@ -434,7 +455,7 @@ public class BackgroundJobWorker : BackgroundService
             {
                 _logger.LogInformation("后台作业 {JobName}({JobId}) 收到取消请求，取消执行", job.JobName, job.Id);
                 renewal.IsCancellationRequested = true;
-                await executionCts.CancelAsync();
+                await TryCancelAsync(executionCts, job);
             }
         }
     }
@@ -556,6 +577,21 @@ public class BackgroundJobWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "按令牌回写后台作业状态失败：{JobId}", job.Id);
+        }
+    }
+
+    /// <summary>
+    /// 容错取消（取消回调抛出的异常仅记日志）
+    /// </summary>
+    private async Task TryCancelAsync(CancellationTokenSource cancellationTokenSource, BackgroundJobInfo job)
+    {
+        try
+        {
+            await cancellationTokenSource.CancelAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "取消后台作业执行时回调出错：{JobName}({JobId})", job.JobName, job.Id);
         }
     }
 
