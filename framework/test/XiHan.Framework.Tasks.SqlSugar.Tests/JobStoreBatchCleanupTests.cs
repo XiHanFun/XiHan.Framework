@@ -75,24 +75,28 @@ public class JobStoreBatchCleanupTests
     }
 
     /// <summary>
-    /// 等待中与运行截止时刻未早于截止时间的运行中实例不删除
+    /// 等待中、暂停与运行截止时刻未早于截止时间的运行中实例不删除
     /// </summary>
     [Fact(Timeout = 30000)]
-    public async Task 等待中与未过截止时刻的运行中实例不删除()
+    public async Task 等待中暂停与未过截止时刻的运行中实例不删除()
     {
         using var context = new TasksTestContext();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         var pending = NewInstance(JobStatus.Pending, Cutoff.AddDays(-10));
-        var running = NewInstance(JobStatus.Running, Cutoff.AddMinutes(-1));
+        var paused = NewInstance(JobStatus.Paused, Cutoff.AddDays(-10));
         await context.JobStore.SaveJobInstanceAsync(pending);
-        await context.JobStore.SaveJobInstanceAsync(running);
+        await context.JobStore.SaveJobInstanceAsync(paused);
+        var running = await InsertRunningInstanceAsync(context, Cutoff.AddMinutes(1));
+        var boundaryRunning = await InsertRunningInstanceAsync(context, Cutoff);
 
         var deleted = await context.JobStore.CleanupHistoryAsync(Cutoff, 100, cancellationToken);
 
         Assert.Equal(0, deleted);
         Assert.NotNull(await context.JobStore.GetJobInstanceAsync(pending.InstanceId));
-        Assert.NotNull(await context.JobStore.GetJobInstanceAsync(running.InstanceId));
+        Assert.NotNull(await context.JobStore.GetJobInstanceAsync(paused.InstanceId));
+        Assert.NotNull(await context.JobStore.GetJobInstanceAsync(running));
+        Assert.NotNull(await context.JobStore.GetJobInstanceAsync(boundaryRunning));
     }
 
     /// <summary>
@@ -143,6 +147,23 @@ public class JobStoreBatchCleanupTests
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => context.JobStore.CleanupHistoryAsync(Cutoff, 0, cancellationToken));
+    }
+
+    private static async Task<string> InsertRunningInstanceAsync(TasksTestContext context, DateTimeOffset runningDeadline)
+    {
+        var instanceId = Guid.NewGuid().ToString("N");
+        var startedAt = Cutoff.AddDays(-1).UtcDateTime;
+        await context.Client.Insertable(new Entities.SysJobInstance(instanceId)
+        {
+            JobName = JobName,
+            Status = (int)JobStatus.Running,
+            TriggerType = (int)JobTriggerType.Cron,
+            ScheduledAt = startedAt,
+            StartedAt = startedAt,
+            RunningDeadline = runningDeadline.UtcDateTime
+        }).ExecuteCommandAsync();
+
+        return instanceId;
     }
 
     private static Task<int> CountInstancesAsync(TasksTestContext context)
