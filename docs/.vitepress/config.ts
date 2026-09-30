@@ -166,6 +166,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
           pkg("EventBus.RabbitMQ", "eventbus-rabbitmq"),
           pkg("EventBus.Kafka", "eventbus-kafka"),
           pkg("EventBus.Redis", "eventbus-redis"),
+          pkg("EventBus.SqlSugar", "eventbus-sqlsugar"),
           pkg("Messaging 消息", "messaging"),
           pkg("Http 客户端", "http"),
         ],

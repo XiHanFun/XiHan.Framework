@@ -88,6 +88,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `EventBus.RabbitMQ` | RabbitMQ provider for the distributed event bus |
 | `EventBus.Kafka` | Kafka provider for the distributed event bus |
 | `EventBus.Redis` | Redis (Streams) provider for the distributed event bus |
+| `EventBus.SqlSugar` | SqlSugar persistence provider for the event outbox and inbox: the outbox is persisted in the database the business writes to, the inbox deduplicates by message id, claiming is mutually exclusive across instances |
 | `Workflow.Abstractions` | Workflow abstractions: definition model, activity contracts, runtime instance and bookmark models, storage ports, human-task contracts; no execution logic |
 | `Workflow` | Workflow engine: graph execution engine, built-in activity set, human tasks (approvals), expression evaluation, timer scheduling, in-memory store by default |
 | `Castle` | AOP dynamic proxy: Castle DynamicProxy integration and interceptor registration |

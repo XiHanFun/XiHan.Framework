@@ -220,6 +220,7 @@ await _distributedEventBus.PublishAsync(new OrderShippedEvent { OrderId = 1001 }
 
 ## 相关模块
 
+- [XiHan.Framework.EventBus.SqlSugar](./eventbus-sqlsugar)（收发件箱的 SqlSugar 持久化实现）
 - [XiHan.Framework.EventBus.Abstractions](./eventbus-abstractions)
 - [XiHan.Framework.EventBus.RabbitMQ](./eventbus-rabbitmq)（分布式事件走 RabbitMQ）
 - [XiHan.Framework.EventBus.Kafka](./eventbus-kafka)（分布式事件走 Kafka）

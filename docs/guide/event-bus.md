@@ -239,7 +239,7 @@ PublishAsync(useOutbox: true)
 | 清理 | 每轮末尾 `DeleteOldEventsAsync`；内存实现只清理非等待中、且最后修改时间超过 7 天的记录 |
 
 ::: danger 默认事件盒在内存里
-`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
+`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。用 SqlSugar 的项目可直接依赖 [XiHan.Framework.EventBus.SqlSugar](../packages/eventbus-sqlsugar)，收发件箱一并落库，发件箱的写入前提见该页。
 :::
 
 ```csharp
@@ -357,7 +357,7 @@ public class DistributedEventLogger : ILocalEventHandler<DistributedEventSent>, 
 | 工作单元回滚了事件却发了 | 发布时传了 `onUnitOfWorkComplete: false`，或者当时根本没有工作单元 |
 | 分布式事件迟迟不到 | 走发件箱本就是异步，间隔为 `PollingIntervalMilliseconds`；默认配置还要再过一次收件箱轮询 |
 | `useOutbox: true` 但发件箱里查不到记录 | 发布点没有当前工作单元，静默退化成了直接投递 |
-| 进程重启后未投递的事件消失 | 默认事件盒是内存实现，换持久化实现 |
+| 进程重启后未投递的事件消失 | 默认事件盒是内存实现，换 [EventBus.SqlSugar](../packages/eventbus-sqlsugar) 或自实现的持久化存储 |
 | 换了 Broker 后某个事件收不到 | 处理器没在初始化前登记（RabbitMQ 按已登记事件名绑队列），或两端事件名不一致 |
 | 处理器里租户不对 | 事件数据没带 `TenantId`，后台线程拿不到请求上下文 |
 | 收件箱事件被丢弃 | 连续失败达到 `MaxInboxRetryCount`，已 `MarkAsDiscardAsync`，看警告日志 |

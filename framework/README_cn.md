@@ -88,6 +88,7 @@
 | `EventBus.RabbitMQ` | 分布式事件总线 RabbitMQ 提供程序 |
 | `EventBus.Kafka` | 分布式事件总线 Kafka 提供程序 |
 | `EventBus.Redis` | 分布式事件总线 Redis（Streams）提供程序 |
+| `EventBus.SqlSugar` | 事件收发件箱 SqlSugar 持久化提供程序：发件箱按业务所在库落库，收件箱按消息标识去重，多实例领取互斥 |
 | `Workflow.Abstractions` | 工作流抽象：流程定义模型、活动契约、运行时实例与书签模型、存储端口、人工任务契约，不含执行实现 |
 | `Workflow` | 工作流引擎：图执行引擎、内置活动集、人工任务（审批）、表达式求值、定时器调度、内存存储默认实现 |
 | `Castle` | AOP 动态代理：Castle DynamicProxy 集成，服务拦截器注册 |

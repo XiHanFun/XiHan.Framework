@@ -82,6 +82,7 @@ DDD 分层与应用服务契约。
 | [EventBus.RabbitMQ](./eventbus-rabbitmq) | 分布式事件总线的 RabbitMQ 提供程序：direct 交换机 + 事件名路由键、队列竞争消费 |
 | [EventBus.Kafka](./eventbus-kafka) | 分布式事件总线的 Kafka 提供程序：单主题 + 事件名作 Key、消费者组竞争消费 |
 | [EventBus.Redis](./eventbus-redis) | 分布式事件总线的 Redis Streams 提供程序：`XADD` / `XREADGROUP` 消费者组竞争消费 |
+| [EventBus.SqlSugar](./eventbus-sqlsugar) | 事件收发件箱的 SqlSugar 持久化提供程序：发件箱按业务所在库落库、收件箱按消息标识去重、条件抢占领取 |
 | [Messaging](./messaging) | 消息处理：消息代理抽象（发布/消费/路由） |
 | [Http](./http) | HTTP 客户端：Polly 韧性策略（重试/熔断）、请求管道 |
 
