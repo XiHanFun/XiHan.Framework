@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Tasks.BackgroundJobs;
 using XiHan.Framework.Tasks.BackgroundJobs.Abstractions;
@@ -58,7 +59,39 @@ public class BackgroundJobExecuterCancellationTests
         Assert.Equal(cts.Token, job.ReceivedToken);
     }
 
-    private static async Task RunAsync<TJob>(TJob job, CancellationToken cancellationToken)
+    /// <summary>
+    /// 上下文令牌已取消时处理器抛出的取消异常按信息级别记录，仍包装为作业执行异常外抛
+    /// </summary>
+    [Fact(Timeout = 30_000)]
+    public async Task ExecuteAsync_WhenHandlerObservesCancelledContextToken_LogsInformationAndWraps()
+    {
+        var logger = new LevelRecordingLogger<BackgroundJobExecuter>();
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<BackgroundJobExecutionException>(() => RunAsync(new CancellingJob(), cts.Token, logger));
+
+        Assert.IsType<OperationCanceledException>(exception.InnerException, exactMatch: false);
+        Assert.Contains(LogLevel.Information, logger.Entries);
+        Assert.DoesNotContain(LogLevel.Error, logger.Entries);
+    }
+
+    /// <summary>
+    /// 上下文令牌未取消时处理器抛出的取消异常仍按错误记录
+    /// </summary>
+    [Fact(Timeout = 30_000)]
+    public async Task ExecuteAsync_WhenHandlerThrowsCancellationWithoutContextCancellation_LogsError()
+    {
+        var logger = new LevelRecordingLogger<BackgroundJobExecuter>();
+        using var cts = new CancellationTokenSource();
+
+        await Assert.ThrowsAsync<BackgroundJobExecutionException>(() => RunAsync(new CancellingJob(), cts.Token, logger));
+
+        Assert.Contains(LogLevel.Error, logger.Entries);
+        Assert.DoesNotContain(LogLevel.Information, logger.Entries);
+    }
+
+    private static async Task RunAsync<TJob>(TJob job, CancellationToken cancellationToken, ILogger<BackgroundJobExecuter>? logger = null)
         where TJob : class
     {
         var services = new ServiceCollection();
@@ -66,7 +99,7 @@ public class BackgroundJobExecuterCancellationTests
         using var provider = services.BuildServiceProvider();
 
         var context = new BackgroundJobExecutionContext(provider, typeof(TJob), new NamedJobArgs(), cancellationToken);
-        var executer = new BackgroundJobExecuter(NullLogger<BackgroundJobExecuter>.Instance);
+        var executer = new BackgroundJobExecuter(logger ?? NullLogger<BackgroundJobExecuter>.Instance);
 
         await executer.ExecuteAsync(context);
     }
@@ -103,6 +136,55 @@ public class BackgroundJobExecuterCancellationTests
         {
             ReceivedToken = cancellationToken;
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class CancellingJob : AsyncBackgroundJob<NamedJobArgs>
+    {
+        public override Task ExecuteAsync(NamedJobArgs args)
+        {
+            return Task.CompletedTask;
+        }
+
+        public override async Task ExecuteAsync(NamedJobArgs args, CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            throw new OperationCanceledException(cancellationToken);
+        }
+    }
+
+    private sealed class LevelRecordingLogger<TCategory> : ILogger<TCategory>
+    {
+        private readonly object _gate = new();
+        private readonly List<LogLevel> _entries = [];
+
+        public IReadOnlyList<LogLevel> Entries
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return [.. _entries];
+                }
+            }
+        }
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            lock (_gate)
+            {
+                _entries.Add(logLevel);
+            }
         }
     }
 }

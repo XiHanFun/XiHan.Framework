@@ -97,6 +97,9 @@ public interface IBackgroundJobStore
     /// <summary>
     /// 按令牌释放租约，作业保持待执行；令牌不匹配时不做任何变更
     /// </summary>
+    /// <remarks>
+    /// 只清除领取令牌与租约到期时间，必须保留 <see cref="BackgroundJobInfo.IsCancellationRequested"/>，下次领取时仍能读到已登记的取消请求。
+    /// </remarks>
     /// <param name="lease">当前租约</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>任务</returns>
