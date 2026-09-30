@@ -27,4 +27,19 @@ internal static class XiHanApiUsageRule
         DiagnosticSeverity.Info,
         isEnabledByDefault: true,
         description: "直接 new HttpClient() 易造成 socket 句柄耗尽，且不经过工厂管道（重试、熔断、代理策略），推荐通过依赖注入的 IHttpClientFactory 或框架的 IHttpClientService 获取实例.");
+
+    /// <summary>
+    /// XHFA002：对外可见的异步方法已有取消令牌参数，调用带可选取消令牌参数的方法时省略了该参数
+    /// </summary>
+    internal const string CancellationTokenNotForwardedId = "XHFA002";
+
+    internal static readonly DiagnosticDescriptor CancellationTokenNotForwarded = new(
+        CancellationTokenNotForwardedId,
+        "转发取消令牌",
+        "调用 {0} 时省略了取消令牌参数，请转发 {1}",
+        Category,
+        // 默认 Info；仓库内由 .editorconfig 提升为 warning
+        DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "对外可见的异步方法接收了取消令牌，调用带可选取消令牌参数的方法时应把它传下去；确需不可取消时显式传入 CancellationToken.None.");
 }

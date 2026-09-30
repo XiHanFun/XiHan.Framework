@@ -1,6 +1,6 @@
 # XiHan.Framework.Analyzers
 
-> 基于 Roslyn 的编译期规范分析器：检查 C# 源文件的曦寒标准版权文件头，并提供一键修复。
+> 基于 Roslyn 的编译期规范分析器：检查 C# 源文件的曦寒标准版权文件头与 API 用法，并提供一键修复。
 
 - **NuGet**：`XiHan.Framework.Analyzers`
 - **模块类**：—（作为 Analyzer 引用，编译期生效，无运行时模块类）
@@ -9,7 +9,7 @@
 
 ## 概述
 
-XiHan.Framework.Analyzers 是一套基于 Roslyn 的代码分析器与代码修复器，在**编译期**扫描 C# 源码是否符合框架规范，并在 IDE 中给出诊断提示和 Code Fix 一键修复。当前落地的规则是文件头版权声明检查（`XHFH001`）。它以 `netstandard2.0` 构建（Roslyn 分析器约定的目标框架），标记为开发期依赖（`DevelopmentDependency`），并按 analyzer 约定打包到 `analyzers/dotnet/cs`——因此只在开发/构建阶段生效，**不进入运行时**、不给消费方带来运行时依赖。
+XiHan.Framework.Analyzers 是一套基于 Roslyn 的代码分析器与代码修复器，在**编译期**扫描 C# 源码是否符合框架规范，并在 IDE 中给出诊断提示和 Code Fix 一键修复。当前落地的规则是文件头版权声明检查（`XHFH001`）、直接创建 HttpClient 提示（`XHFA001`）与取消令牌转发检查（`XHFA002`）。它以 `netstandard2.0` 构建（Roslyn 分析器约定的目标框架），标记为开发期依赖（`DevelopmentDependency`），并按 analyzer 约定打包到 `analyzers/dotnet/cs`——因此只在开发/构建阶段生效，**不进入运行时**、不给消费方带来运行时依赖。
 
 ## 何时使用
 
@@ -50,8 +50,8 @@ dotnet add package XiHan.Framework.Analyzers
 | 规则 ID | 标题 | 类别 | 默认级别 | 说明 |
 | --- | --- | --- | --- | --- |
 | `XHFH001` | 缺少曦寒标准版权文件头 | `XiHan.FileHeader` | `Warning`（默认启用） | C# 源文件必须以标准的两行版权与 MIT 授权声明开头；缺失或不合规即触发，消息为「文件 '{0}' 缺少或未正确声明曦寒标准版权文件头」。 |
-
-> 目前源码中仅定义此一条规则（`XiHanFileHeaderRule.cs`）。
+| `XHFA001` | 避免直接 new HttpClient | `XiHan.ApiUsage` | `Info`（默认启用） | 直接创建 `HttpClient` 会绕过连接池与工厂管道，建议改用 `IHttpClientFactory` 或框架 `IHttpClientService`。 |
+| `XHFA002` | 转发取消令牌 | `XiHan.ApiUsage` | `Info`（默认启用；本仓库设为 `Warning`） | 对外可见、返回 `Task`/`ValueTask`/`IAsyncEnumerable` 且带取消令牌参数的方法，调用带可选取消令牌参数的方法时省略了该参数即触发。显式传入任何值（含 `CancellationToken.None`、`default`）不触发；Lambda、匿名方法、本地函数内的调用与生成代码不检查；只检查方法调用，不检查构造函数与隐式调用（如集合初始化器的 Add）。提供 Code Fix：追加命名实参 `参数名: 令牌名`。 |
 
 ## 主要 API / 类型
 
@@ -59,6 +59,8 @@ dotnet add package XiHan.Framework.Analyzers
 | --- | --- |
 | `XiHanFileHeaderAnalyzer` | `public sealed`，`[DiagnosticAnalyzer(LanguageNames.CSharp)]`，注册语法树动作产出 `XHFH001` 诊断 |
 | `XiHanFileHeaderCodeFixProvider` | `public sealed`，`[ExportCodeFixProvider]` + `[Shared]`，提供「添加曦寒标准版权文件头」修复，`GetFixAllProvider()` 返回 `BatchFixer` 支持批量修复 |
+| `XiHanHttpClientCreationAnalyzer` | `public sealed`，产出 `XHFA001` |
+| `XiHanCancellationTokenForwardingAnalyzer` / `XiHanCancellationTokenForwardingCodeFixProvider` | `public sealed`，产出 `XHFA002` 并提供「转发取消令牌」修复 |
 
 > `XiHanFileHeaderRule`（诊断描述符/ID/类别）与 `XiHanFileHeader`（文件头校验、解析、生成的内部工具）均为 `internal`，不属于对外 API。
 
