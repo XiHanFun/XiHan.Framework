@@ -428,6 +428,35 @@ public class BackgroundJobWorkerLeaseTests
     }
 
     /// <summary>
+    /// 不支持租约的存储：宿主停止中断处理器时不累计失败、不回写
+    /// </summary>
+    /// <returns>任务</returns>
+    [Fact(Timeout = TimeoutMilliseconds)]
+    public async Task StoreWithoutLeaseSupport_WhenHostStopsDuringExecution_DoesNotWriteBack()
+    {
+        var jobOptions = new BackgroundJobOptions();
+        jobOptions.AddJob<UnnamedArgsJob>();
+        var job = CreateJob(jobOptions.GetJobs()[0].JobName, BackgroundJobPriority.Normal);
+
+        var store = new RecordingBackgroundJobStore();
+        store.EnqueueWaitingBatch(job);
+
+        var executer = new GatedBackgroundJobExecuter(context => Task.Delay(Timeout.Infinite, context.CancellationToken));
+
+        using var provider = BuildProvider(store, executer, new FakeClock(Start), jobOptions);
+        using var worker = CreateWorker(provider, CreateWorkerOptions(0), new TimerTrackingTimeProvider(new DateTimeOffset(Start)));
+
+        await worker.StartAsync(TestContext.Current.CancellationToken);
+        await WaitUntilAsync(() => executer.Started.Count == 1, "作业应开始执行");
+        await worker.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, executer.FinishedCount);
+        Assert.Empty(store.Updated);
+        Assert.Empty(store.Deleted);
+        Assert.False(job.IsAbandoned);
+    }
+
+    /// <summary>
     /// 断言租约路径没有任何回写
     /// </summary>
     /// <param name="store">存储替身</param>
