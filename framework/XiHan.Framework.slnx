@@ -27,6 +27,7 @@
     <Project Path="src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.AI/XiHan.Framework.AI.csproj" />
     <Project Path="src/XiHan.Framework.Auditing/XiHan.Framework.Auditing.csproj" />
+    <Project Path="src/XiHan.Framework.Auditing.SqlSugar/XiHan.Framework.Auditing.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.Authentication/XiHan.Framework.Authentication.csproj" Id="2438269a-f231-41bf-b911-a9d5556e1bc6" />
     <Project Path="src/XiHan.Framework.Authorization/XiHan.Framework.Authorization.csproj" />
     <Project Path="src/XiHan.Framework.Bot/XiHan.Framework.Bot.csproj" />
@@ -88,6 +89,7 @@
     <Project Path="test/XiHan.Framework.Application.Contracts.Tests/XiHan.Framework.Application.Contracts.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Tests/XiHan.Framework.Auditing.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Auditing.SqlSugar.Tests/XiHan.Framework.Auditing.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Authentication.Tests/XiHan.Framework.Authentication.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Authorization.Tests/XiHan.Framework.Authorization.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Bot.DingTalk.Tests/XiHan.Framework.Bot.DingTalk.Tests.csproj" />

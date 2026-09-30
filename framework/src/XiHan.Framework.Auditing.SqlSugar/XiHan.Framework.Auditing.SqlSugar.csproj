@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Auditing.SqlSugar</Title>
+        <AssemblyName>XiHan.Framework.Auditing.SqlSugar</AssemblyName>
+        <PackageId>XiHan.Framework.Auditing.SqlSugar</PackageId>
+        <Description>曦寒框架审计日志 SqlSugar 持久化提供程序</Description>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\XiHan.Framework.Auditing\XiHan.Framework.Auditing.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.Data\XiHan.Framework.Data.csproj" />
+    </ItemGroup>
+
+</Project>

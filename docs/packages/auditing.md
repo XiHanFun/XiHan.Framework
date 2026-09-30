@@ -256,6 +256,7 @@ record.QueryString = LogSanitizer.MaskQueryString(httpRequest.QueryString.Value)
 
 ## 相关模块
 
+- [XiHan.Framework.Auditing.SqlSugar](./auditing-sqlsugar)（6 类审计日志的 SqlSugar 持久化写入器，按月分表）
 - [XiHan.Framework.Web.Api](./web-api)（中间件采集访问 / 操作 / 异常 / 接口 / 登录日志）
 - [XiHan.Framework.Data](./data)（`EntityChangeInterceptor`、`SqlSugarDiffLogAop` 采集实体变更）
 - [XiHan.Framework.Logging](./logging)（结构化运行日志，与审计日志是两回事）
