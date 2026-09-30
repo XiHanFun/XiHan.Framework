@@ -11,6 +11,8 @@ using XiHan.Framework.EventBus.SqlSugar.Entities;
 using XiHan.Framework.EventBus.SqlSugar.Mapping;
 using XiHan.Framework.EventBus.SqlSugar.Options;
 using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Uow.Options;
 
 namespace XiHan.Framework.EventBus.SqlSugar.Outbox;
 
@@ -27,6 +29,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     private readonly ICurrentTenant _currentTenant;
     private readonly ISqlSugarOutboxConnectionScope _connectionScope;
     private readonly IOutboxDeliveryTargetProvider? _targetProvider;
+    private readonly IUnitOfWorkManager? _unitOfWorkManager;
     private readonly ILogger<SqlSugarEventOutbox> _logger;
     private readonly XiHanSqlSugarEventBoxOptions _options;
 
@@ -45,13 +48,15 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// <param name="targetProviders">发件箱投递目标目录，未注册时为空集合，注册多个时取最后一个</param>
     /// <param name="options">收发件箱存储配置</param>
     /// <param name="logger">日志器</param>
+    /// <param name="unitOfWorkManager">工作单元管理器，为 null 时目录查询沿用当前工作单元</param>
     public SqlSugarEventOutbox(
         ISqlSugarClientResolver clientResolver,
         ICurrentTenant currentTenant,
         ISqlSugarOutboxConnectionScope connectionScope,
         IEnumerable<IOutboxDeliveryTargetProvider> targetProviders,
         IOptions<XiHanSqlSugarEventBoxOptions> options,
-        ILogger<SqlSugarEventOutbox> logger)
+        ILogger<SqlSugarEventOutbox> logger,
+        IUnitOfWorkManager? unitOfWorkManager = null)
     {
         ArgumentNullException.ThrowIfNull(targetProviders);
 
@@ -61,6 +66,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
         _targetProvider = targetProviders.LastOrDefault();
         _options = options.Value;
         _logger = logger;
+        _unitOfWorkManager = unitOfWorkManager;
     }
 
     /// <summary>
@@ -132,6 +138,33 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     }
 
     /// <summary>
+    /// 在无租户上下文、独立的非事务工作单元中查找租户的投递目标
+    /// </summary>
+    /// <param name="tenantId">租户标识</param>
+    /// <returns>投递目标，未注册目录或不在目录中时为 null</returns>
+    private async Task<OutboxDeliveryTarget?> FindTargetAsync(long tenantId)
+    {
+        if (_targetProvider is null)
+        {
+            return null;
+        }
+
+        using (_currentTenant.Change(null))
+        {
+            if (_unitOfWorkManager is null)
+            {
+                return await _targetProvider.FindAsync(tenantId);
+            }
+
+            using var unitOfWork = _unitOfWorkManager.Begin(new XiHanUnitOfWorkOptions { IsTransactional = false }, requiresNew: true);
+            var target = await _targetProvider.FindAsync(tenantId);
+            await unitOfWork.CompleteAsync();
+
+            return target;
+        }
+    }
+
+    /// <summary>
     /// 确认写入指定连接的事件会被发送循环投递
     /// </summary>
     /// <param name="configId">入箱写入的连接配置标识</param>
@@ -144,7 +177,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
             return;
         }
 
-        var target = _targetProvider is null ? null : await _targetProvider.FindAsync(tenantId);
+        var target = await FindTargetAsync(tenantId);
         if (target is { IsEnabled: false })
         {
             throw new InvalidOperationException(
@@ -423,6 +456,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// </summary>
     /// <remarks>
     /// 待发送与已领取但尚未删除的事件都计入。任一库不可达时抛出异常，不返回部分结果。
+    /// 多个连接配置标识指向同一物理库时按标识分别计数。
     /// </remarks>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>尚未删除的事件数</returns>

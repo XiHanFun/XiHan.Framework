@@ -34,13 +34,17 @@ public class OutboxSourceTests
     [Fact]
     public async Task 某个库领不满时余量顺延给其他库()
     {
-        using var context = new OutboxTestContext(withModuleDatabase: true);
-        await InsertAsync(context.Client, 1);
-        await InsertAsync(context.ModuleClient, 10);
+        // 起始库逐次轮换，两个新夹具各跑一次以走到两种起点
+        for (var round = 0; round < 2; round++)
+        {
+            using var context = new OutboxTestContext(withModuleDatabase: true);
+            await InsertAsync(context.Client, 1);
+            await InsertAsync(context.ModuleClient, 10);
 
-        var claimed = await context.Outbox.GetWaitingEventsAsync(4);
+            var claimed = await context.Outbox.GetWaitingEventsAsync(4);
 
-        Assert.Equal(4, claimed.Count);
+            Assert.Equal(4, claimed.Count);
+        }
     }
 
     /// <summary>
@@ -61,7 +65,7 @@ public class OutboxSourceTests
 
         Assert.Single(claimed);
 
-        // 平台库放一条同标识的记录：按当前布局遍历删除会误删它
+        // 平台库放一条同标识的记录
         await context.Client.Insertable(EventOutboxMapper.ToEntity(info)).ExecuteCommandAsync();
 
         await context.Outbox.DeleteManyAsync([info.Id]);

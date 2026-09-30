@@ -15,6 +15,9 @@ public interface IOutboxDeliveryTargetProvider
     /// <summary>
     /// 分页读取目录
     /// </summary>
+    /// <remarks>
+    /// 发送循环在无租户上下文中调用本方法。
+    /// </remarks>
     /// <param name="cursor">上一页返回的游标，读取首页时为 null</param>
     /// <param name="pageSize">单页最多返回的目标数，大于零</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -24,6 +27,9 @@ public interface IOutboxDeliveryTargetProvider
     /// <summary>
     /// 按租户标识查找投递目标
     /// </summary>
+    /// <remarks>
+    /// 发件箱在无租户上下文、且不随当前业务工作单元的事务调用本方法。
+    /// </remarks>
     /// <param name="tenantId">租户标识</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>投递目标，不在目录中时为 null</returns>

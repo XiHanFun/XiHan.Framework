@@ -7,7 +7,7 @@ namespace XiHan.Framework.EventBus.Abstractions.Distributed;
 /// 按当前租户上下文定位存储的发件箱
 /// </summary>
 /// <remarks>
-/// 领取、删除与计数都作用于当前租户上下文所在的存储。
+/// 领取与计数作用于当前租户上下文所在的存储；删除可按实现记录的领取来源定位。
 /// 发送循环只对实现了本接口的发件箱按投递目标切换租户上下文扫描。
 /// </remarks>
 public interface ITenantScopedEventOutbox : IEventOutbox

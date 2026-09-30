@@ -169,8 +169,10 @@ public class OutboxTargetEnqueueTests
 
         using (context.CurrentTenant.Change(1001))
         {
-            await Assert.ThrowsAsync<InvalidOperationException>(
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => context.Outbox.EnqueueAsync(NewEvent()));
+
+            Assert.Contains("停用", error.Message);
         }
 
         Assert.Equal(0, await context.Client.Queryable<SysEventOutbox>().CountAsync());
@@ -226,14 +228,68 @@ public class OutboxTargetEnqueueTests
         {
             await context.Outbox.EnqueueAsync(NewEvent());
         }
+        Assert.Equal(1, await tenantClient.Queryable<SysEventOutbox>().CountAsync());
         tenantClient.Ado.RollbackTran();
 
         Assert.Equal(0, await tenantClient.Queryable<SysEventOutbox>().CountAsync());
+        Assert.Equal(0, await context.Client.Queryable<SysEventOutbox>().CountAsync());
 
         using (context.CurrentTenant.Change(1001))
         {
             Assert.Empty(await context.Outbox.GetWaitingEventsAsync(10));
         }
+    }
+
+    /// <summary>
+    /// 目录查询在无租户上下文中进行
+    /// </summary>
+    [Fact]
+    public async Task 目录查询在无租户上下文中进行()
+    {
+        using var context = new OutboxTestContext(tenantIds: [1001], withTargetProvider: true);
+        context.TargetProvider!.Targets.Add(new OutboxDeliveryTarget(1001));
+        context.TargetProvider.TenantProbe = () => context.CurrentTenant.Id;
+
+        using (context.CurrentTenant.Change(1001))
+        {
+            await context.Outbox.EnqueueAsync(NewEvent());
+
+            Assert.Equal(1001, context.CurrentTenant.Id);
+        }
+
+        Assert.Equal([(long?)null], context.TargetProvider.FindTenantContexts);
+        Assert.Equal(1, await context.TenantClient(1001).Queryable<SysEventOutbox>().CountAsync());
+    }
+
+    /// <summary>
+    /// 目录查询在独立的非事务工作单元中进行且随后释放
+    /// </summary>
+    [Fact]
+    public async Task 目录查询在独立的非事务工作单元中进行且随后释放()
+    {
+        using var context = new OutboxTestContext(tenantIds: [1001], withTargetProvider: true);
+        var manager = new RecordingUnitOfWorkManager();
+        context.UnitOfWorkManager = manager;
+        context.TargetProvider!.Targets.Add(new OutboxDeliveryTarget(1001));
+        var openDuringFind = new List<bool>();
+        context.TargetProvider.TenantProbe = () =>
+        {
+            openDuringFind.Add(manager.BeginCalls.Count == 1 && !manager.BeginCalls[0].UnitOfWork.IsDisposed);
+            return null;
+        };
+        var outbox = context.CreateOutbox();
+
+        using (context.CurrentTenant.Change(1001))
+        {
+            await outbox.EnqueueAsync(NewEvent());
+        }
+
+        var call = Assert.Single(manager.BeginCalls);
+        Assert.True(call.RequiresNew);
+        Assert.False(call.IsTransactional);
+        Assert.True(call.UnitOfWork.IsCompleted);
+        Assert.True(call.UnitOfWork.IsDisposed);
+        Assert.Equal([true], openDuringFind);
     }
 
     private static OutgoingEventInfo NewEvent()

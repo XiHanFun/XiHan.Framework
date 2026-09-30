@@ -7,6 +7,7 @@ using XiHan.Framework.Data.SqlSugar.Clients;
 using XiHan.Framework.EventBus.SqlSugar.Entities;
 using XiHan.Framework.EventBus.SqlSugar.Options;
 using XiHan.Framework.EventBus.SqlSugar.Outbox;
+using XiHan.Framework.Uow;
 
 namespace XiHan.Framework.EventBus.SqlSugar.Tests;
 
@@ -106,6 +107,11 @@ internal sealed class OutboxTestContext : IDisposable
     public StubTargetProvider? TargetProvider { get; }
 
     /// <summary>
+    /// 工作单元管理器，未设置时发件箱不开独立工作单元；设置后需再调用 <see cref="CreateOutbox"/>
+    /// </summary>
+    public IUnitOfWorkManager? UnitOfWorkManager { get; set; }
+
+    /// <summary>
     /// 入箱连接范围
     /// </summary>
     public AsyncLocalSqlSugarOutboxConnectionScope ConnectionScope { get; } = new();
@@ -166,7 +172,8 @@ internal sealed class OutboxTestContext : IDisposable
             {
                 ClaimTimeout = _claimTimeout
             }),
-            NullLogger<SqlSugarEventOutbox>.Instance);
+            NullLogger<SqlSugarEventOutbox>.Instance,
+            UnitOfWorkManager);
     }
 
     /// <summary>

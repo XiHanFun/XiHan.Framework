@@ -27,6 +27,16 @@ internal sealed class StubTargetProvider : IOutboxDeliveryTargetProvider
     public List<string?> RequestedCursors { get; } = [];
 
     /// <summary>
+    /// 读取租户上下文的探针，在 FindAsync 内调用
+    /// </summary>
+    public Func<long?>? TenantProbe { get; set; }
+
+    /// <summary>
+    /// 按调用顺序记录的 FindAsync 内租户上下文
+    /// </summary>
+    public List<long?> FindTenantContexts { get; } = [];
+
+    /// <summary>
     /// 分页读取目录
     /// </summary>
     /// <param name="cursor">游标</param>
@@ -59,6 +69,11 @@ internal sealed class StubTargetProvider : IOutboxDeliveryTargetProvider
     /// <returns>目标，不在目录中时为 null</returns>
     public Task<OutboxDeliveryTarget?> FindAsync(long tenantId, CancellationToken cancellationToken = default)
     {
+        if (TenantProbe is not null)
+        {
+            FindTenantContexts.Add(TenantProbe());
+        }
+
         return Task.FromResult(Targets.FirstOrDefault(target => target.TenantId == tenantId));
     }
 
