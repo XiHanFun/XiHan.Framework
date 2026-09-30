@@ -104,4 +104,10 @@ public class SysBackgroundJob : SugarEntity<Guid>
     /// </summary>
     [SugarColumn(ColumnName = "Claim_Time", IsNullable = true, ColumnDescription = "领取时刻")]
     public DateTime? ClaimTime { get; set; }
+
+    /// <summary>
+    /// 是否已请求取消，空值与 false 均表示未请求
+    /// </summary>
+    [SugarColumn(ColumnName = "Is_Cancellation_Requested", IsNullable = true, ColumnDescription = "是否已请求取消")]
+    public bool? IsCancellationRequested { get; set; }
 }

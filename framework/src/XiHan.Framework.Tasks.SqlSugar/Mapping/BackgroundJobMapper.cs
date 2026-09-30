@@ -12,7 +12,7 @@ namespace XiHan.Framework.Tasks.SqlSugar.Mapping;
 public static class BackgroundJobMapper
 {
     /// <summary>
-    /// 把后台作业信息转换为实体，领取令牌与领取时刻置空
+    /// 把后台作业信息转换为实体，领取令牌与领取时刻置空，未请求取消时取消标记存为空
     /// </summary>
     /// <param name="info">后台作业信息</param>
     /// <returns>后台作业实体</returns>
@@ -33,12 +33,13 @@ public static class BackgroundJobMapper
             IsAbandoned = info.IsAbandoned,
             Priority = (int)info.Priority,
             ClaimToken = null,
-            ClaimTime = null
+            ClaimTime = null,
+            IsCancellationRequested = info.IsCancellationRequested ? true : null
         };
     }
 
     /// <summary>
-    /// 把实体转换为后台作业信息，空字符串的应用名还原为空
+    /// 把实体转换为后台作业信息，空字符串的应用名还原为空，取消标记为空视为未请求
     /// </summary>
     /// <param name="entity">后台作业实体</param>
     /// <returns>后台作业信息</returns>
@@ -58,7 +59,9 @@ public static class BackgroundJobMapper
             NextTryTime = entity.NextTryTime,
             LastTryTime = entity.LastTryTime,
             IsAbandoned = entity.IsAbandoned,
-            Priority = (BackgroundJobPriority)entity.Priority
+            Priority = (BackgroundJobPriority)entity.Priority,
+            ClaimToken = entity.ClaimToken,
+            IsCancellationRequested = entity.IsCancellationRequested == true
         };
     }
 

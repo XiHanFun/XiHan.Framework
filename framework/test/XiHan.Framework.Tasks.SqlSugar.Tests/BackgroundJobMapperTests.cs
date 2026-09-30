@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using XiHan.Framework.Tasks.BackgroundJobs.Models;
+using XiHan.Framework.Tasks.SqlSugar.Entities;
 using XiHan.Framework.Tasks.SqlSugar.Mapping;
 
 namespace XiHan.Framework.Tasks.SqlSugar.Tests;
@@ -45,6 +46,40 @@ public class BackgroundJobMapperTests
         Assert.Equal(info.LastTryTime, restored.LastTryTime);
         Assert.True(restored.IsAbandoned);
         Assert.Equal(BackgroundJobPriority.High, restored.Priority);
+    }
+
+    /// <summary>
+    /// 取消标记未请求时存为空，已请求时存为真，还原时空值视为未请求
+    /// </summary>
+    [Fact]
+    public void 取消标记按可空字段映射()
+    {
+        var info = new BackgroundJobInfo { Id = Guid.NewGuid(), JobName = "Order.Close", JobArgs = "{}" };
+
+        var notRequested = BackgroundJobMapper.ToEntity(info);
+        info.IsCancellationRequested = true;
+        var requested = BackgroundJobMapper.ToEntity(info);
+
+        Assert.Null(notRequested.IsCancellationRequested);
+        Assert.True(requested.IsCancellationRequested);
+        Assert.False(BackgroundJobMapper.ToJobInfo(notRequested).IsCancellationRequested);
+        Assert.True(BackgroundJobMapper.ToJobInfo(requested).IsCancellationRequested);
+    }
+
+    /// <summary>
+    /// 实体的领取令牌映射到作业信息
+    /// </summary>
+    [Fact]
+    public void 实体的领取令牌映射到作业信息()
+    {
+        var entity = new SysBackgroundJob(Guid.NewGuid())
+        {
+            JobName = "Order.Close",
+            JobArgs = "{}",
+            ClaimToken = "token-1"
+        };
+
+        Assert.Equal("token-1", BackgroundJobMapper.ToJobInfo(entity).ClaimToken);
     }
 
     /// <summary>
