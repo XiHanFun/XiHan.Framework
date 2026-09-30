@@ -87,6 +87,7 @@
     <Project Path="test/XiHan.Framework.Analyzers.Tests/XiHan.Framework.Analyzers.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Application.Contracts.Tests/XiHan.Framework.Application.Contracts.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Application.Tests/XiHan.Framework.Application.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Tests/XiHan.Framework.Auditing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Authentication.Tests/XiHan.Framework.Authentication.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Authorization.Tests/XiHan.Framework.Authorization.Tests.csproj" />

@@ -67,6 +67,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 模块通过 `[DependsOn]` 声明依赖；不得通过静态服务定位、反射探测或复制代码形成隐式依赖。
 - 抽象与契约放在下层或 `.Abstractions` 项目，具体 Provider 放在上层实现项目。
 - 不允许为了复用少量代码让底层模块反向引用 Web、数据库、Redis 或应用模块。
+- 项目引用方向由 `framework/test/XiHan.Framework.Architecture.Tests` 按 slnx 的 `/1.src/<序号>.<层名>/` 目录校验：同层与向下引用合法，向上引用须在 `FrameworkDependencyPolicy` 登记理由，循环依赖一律失败，源码项目只能引用源码项目。
 
 ### 模块与生命周期
 
