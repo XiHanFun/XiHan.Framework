@@ -2,8 +2,15 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using XiHan.Framework.Uow;
+using XiHan.Framework.Uow.Abstracts;
+using XiHan.Framework.Uow.Options;
 using XiHan.Framework.Web.Api.Idempotency;
 using XiHan.Framework.Web.Api.SqlSugar.Entities;
+using XiHan.Framework.Web.Api.SqlSugar.Idempotency;
 
 namespace XiHan.Framework.Web.Api.SqlSugar.Tests.Idempotency;
 
@@ -148,6 +155,74 @@ public sealed class SqlSugarIdempotencyStoreTests : IDisposable
     }
 
     /// <summary>
+    /// 不确定记录超过保留期后可重新取得
+    /// </summary>
+    [Fact]
+    public async Task 不确定记录过期后可重新取得()
+    {
+        var store = _context.CreateStore();
+        var key = CreateKey("k1");
+        var acquired = await store.TryAcquireAsync(key, "fp-a", isTransactional: false);
+        await store.MarkIndeterminateAsync(key, acquired.OwnerToken);
+
+        _context.Clock.Advance(_context.Options.CompletedRetention - TimeSpan.FromMilliseconds(1));
+        Assert.Equal(IdempotencyAcquireStatus.Indeterminate, (await store.TryAcquireAsync(key, "fp-a", false)).Status);
+
+        _context.Clock.Advance(TimeSpan.FromMilliseconds(2));
+        var result = await store.TryAcquireAsync(key, "fp-b", isTransactional: false);
+
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, result.Status);
+        Assert.Equal(SysIdempotencyRecord.StatusProcessing, _context.FindRecord(key)!.Status);
+        Assert.Equal("fp-b", _context.FindRecord(key)!.Fingerprint);
+    }
+
+    /// <summary>
+    /// 请求路径超过端点列长度时截断写入，仍可正常取得
+    /// </summary>
+    [Fact]
+    public async Task 超长路径截断写入_仍可正常取得()
+    {
+        var store = _context.CreateStore();
+        var key = new IdempotencyRecordKey(string.Empty, "42", "POST", "/api/" + new string('a', 600), "k1");
+
+        var result = await store.TryAcquireAsync(key, "fp-a", isTransactional: true);
+
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, result.Status);
+        Assert.Equal(512, _context.FindRecord(key)!.Endpoint.Length);
+        Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(key, "fp-a", true)).Status);
+    }
+
+    /// <summary>
+    /// 插入成功后请求被取消，取得结果仍为成功且记录保留
+    /// </summary>
+    [Fact]
+    public async Task 插入成功后取消_仍返回取得且记录保留()
+    {
+        using var provider = BuildCancellationObservingProvider();
+        using var cancellation = new CancellationTokenSource();
+        using var client = _context.CreateClient();
+        client.Aop.OnLogExecuted = (sql, _) =>
+        {
+            if (sql.Contains("INSERT", StringComparison.OrdinalIgnoreCase))
+            {
+                cancellation.Cancel();
+            }
+        };
+        var store = new SqlSugarIdempotencyStore(
+            new StubClientResolver(client),
+            provider.GetRequiredService<IUnitOfWorkManager>(),
+            Options.Create(_context.Options),
+            _context.Clock);
+        var key = CreateKey("k1");
+
+        var result = await store.TryAcquireAsync(key, "fp-a", isTransactional: true, cancellation.Token);
+
+        Assert.True(cancellation.IsCancellationRequested);
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, result.Status);
+        Assert.Equal(result.OwnerToken, _context.FindRecord(key)!.OwnerToken);
+    }
+
+    /// <summary>
     /// 释放只删除处理中记录，完成记录不受影响
     /// </summary>
     [Fact]
@@ -280,10 +355,10 @@ public sealed class SqlSugarIdempotencyStoreTests : IDisposable
     }
 
     /// <summary>
-    /// 清理只删除过期的完成记录
+    /// 清理删除过期的完成记录与不确定记录
     /// </summary>
     [Fact]
-    public async Task 清理只删除过期完成记录()
+    public async Task 清理删除过期完成记录与不确定记录()
     {
         var store = _context.CreateStore();
         var expiredKey = CreateKey("expired");
@@ -301,12 +376,25 @@ public sealed class SqlSugarIdempotencyStoreTests : IDisposable
         _context.Clock.Advance(_context.Options.CompletedRetention - TimeSpan.FromMilliseconds(250));
         var deleted = await store.PurgeExpiredAsync();
 
-        Assert.Equal(1, deleted);
+        Assert.Equal(2, deleted);
         Assert.Null(_context.FindRecord(expiredKey));
+        Assert.Null(_context.FindRecord(indeterminateKey));
         Assert.NotNull(_context.FindRecord(freshKey));
         Assert.NotNull(_context.FindRecord(processingKey));
-        Assert.NotNull(_context.FindRecord(indeterminateKey));
-        Assert.Equal(3, await _context.Client.Queryable<SysIdempotencyRecord>().CountAsync());
+        Assert.Equal(2, await _context.Client.Queryable<SysIdempotencyRecord>().CountAsync());
+    }
+
+    private static ServiceProvider BuildCancellationObservingProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddOptions<XiHanUnitOfWorkDefaultOptions>();
+        services.AddSingleton<IAmbientUnitOfWork, AmbientUnitOfWork>();
+        services.AddSingleton<IUnitOfWorkManager, UnitOfWorkManager>();
+        services.AddSingleton<IUnitOfWorkEventPublisher, NullUnitOfWorkEventPublisher>();
+        services.AddSingleton<IUnitOfWorkTransactionBehaviourProvider, NullUnitOfWorkTransactionBehaviourProvider>();
+        services.AddTransient<IUnitOfWork, CancellationObservingUnitOfWork>();
+        return services.BuildServiceProvider();
     }
 
     private static IdempotencyRecordKey CreateKey(string key)
@@ -320,5 +408,21 @@ public sealed class SqlSugarIdempotencyStoreTests : IDisposable
         Assert.Equal(IdempotencyAcquireStatus.Acquired, acquired.Status);
         await store.CompleteAsync(key, acquired.OwnerToken, new StoredResponse(200, [1]));
         return acquired.OwnerToken;
+    }
+
+    /// <summary>
+    /// 提交时检查取消令牌的工作单元
+    /// </summary>
+    private sealed class CancellationObservingUnitOfWork(
+        IServiceProvider serviceProvider,
+        IUnitOfWorkEventPublisher unitOfWorkEventPublisher,
+        IOptions<XiHanUnitOfWorkDefaultOptions> options,
+        ILogger<UnitOfWork> logger) : UnitOfWork(serviceProvider, unitOfWorkEventPublisher, options, logger)
+    {
+        public override Task CompleteAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return base.CompleteAsync(cancellationToken);
+        }
     }
 }

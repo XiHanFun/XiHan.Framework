@@ -11,7 +11,7 @@
 - 完成写入（状态 + 响应快照）经解析器客户端登记到当前工作单元：事务型工作单元内与业务同一事务提交或回滚，业务回滚则不留完成记录
 - 唯一索引 `ux_sys_idempotency_record_key_hash` 串行化同一键的并发取得，跨进程、跨实例有效
 - 事务型端点的处理中记录租约到期后可被接管，旧拥有者随后的完成写入失败；非事务型端点不接管
-- 过期完成记录在同一键再次使用时惰性删除，批量清理由应用调用 `PurgeExpiredAsync`
+- 过期的完成记录与结果不确定记录在同一键再次使用时惰性删除，批量清理由应用调用 `PurgeExpiredAsync`
 - 表结构由 `[TableInitialization]` 经 CodeFirst 建立，可重复执行，不做 DROP；需开启 `XiHan:Data:SqlSugarCore` 下的建表初始化（`EnableDbInitialization` 与 `EnableTableInitialization`）
 
 ## 依赖关系
@@ -20,12 +20,13 @@
 
 ## 配置与约定
 
-复用 `XiHan:Web:Api:Idempotency`（`XiHanIdempotencyOptions`），本包没有自己的配置节。本包用到其中两项：
+复用 `XiHan:Web:Api:Idempotency`（`XiHanIdempotencyOptions`），本包没有自己的配置节。本包用到其中三项：
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `CompletedRetention` | `24:00:00` | 完成记录的保留时长，写入完成时据此计算 `Expires_Time` |
+| `CompletedRetention` | `24:00:00` | 完成记录与结果不确定记录的保留时长，写入完成或标记不确定时据此计算 `Expires_Time` |
 | `ProcessingLease` | `00:05:00` | 事务型端点处理中记录的租约时长，写入 `Lease_Expires_Time` |
+| `MaxKeyLength` | `128` | 不能超过 128（`Idempotency_Key` 列长度），超过时应用启动失败 |
 
 其余字段（`MaxEntries`、`MaxTotalResponseBytes` 只约束进程内存储）不影响本包。
 
@@ -36,13 +37,13 @@
 | 列 | 说明 |
 | --- | --- |
 | `Key_Hash` | 记录键摘要，租户、主体、方法、端点、幂等键的 SHA-256；唯一索引 `ux_sys_idempotency_record_key_hash` |
-| `Tenant_Id` / `Subject_Id` / `Http_Method` / `Endpoint` / `Idempotency_Key` | 组成记录键的原始值，仅供排查 |
+| `Tenant_Id` / `Subject_Id` / `Http_Method` / `Endpoint` / `Idempotency_Key` | 组成记录键的原始值，仅供排查；`Endpoint` 超过 512 字符时截断写入，记录键以 `Key_Hash` 为准 |
 | `Fingerprint` | 请求摘要，同一键、不同摘要返回冲突 |
 | `Status` | 0 处理中，1 已完成，2 结果不确定 |
 | `Owner_Token` | 拥有者令牌，完成、释放、标记不确定都按它匹配 |
 | `Is_Transactional` | 动作是否在事务型工作单元内执行 |
 | `Lease_Expires_Time` | 处理中租约到期时间 |
-| `Expires_Time` | 完成记录过期时间，未完成时为空 |
+| `Expires_Time` | 完成记录或结果不确定记录的过期时间，处理中时为空 |
 | `Response_Status` / `Response_Body` | 响应状态码与响应快照（JSON 字节） |
 | `Created_Time` / `Completed_Time` | 创建与完成时间 |
 
@@ -91,7 +92,7 @@ public class MyAppModule : XiHanModule
 
 ### 清理过期记录
 
-框架不运行后台清理任务。过期完成记录只在同一键再次使用时惰性删除，批量清理由应用自行排程调用 `SqlSugarIdempotencyStore.PurgeExpiredAsync`，返回删除的记录数：
+框架不运行后台清理任务。过期的完成记录与结果不确定记录只在同一键再次使用时惰性删除，批量清理由应用自行排程调用 `SqlSugarIdempotencyStore.PurgeExpiredAsync`，返回删除的记录数：
 
 ```csharp
 public class IdempotencyPurgeService(IServiceScopeFactory scopeFactory) : BackgroundService

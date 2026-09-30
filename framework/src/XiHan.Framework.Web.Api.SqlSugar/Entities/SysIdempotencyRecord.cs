@@ -70,7 +70,7 @@ public class SysIdempotencyRecord : SugarEntity<Guid>
     public string HttpMethod { get; set; } = string.Empty;
 
     /// <summary>
-    /// 请求路径
+    /// 请求路径，超过列长度时截断
     /// </summary>
     [SugarColumn(ColumnName = "Endpoint", Length = 512, IsNullable = false, ColumnDescription = "请求路径")]
     public string Endpoint { get; set; } = string.Empty;
@@ -112,9 +112,9 @@ public class SysIdempotencyRecord : SugarEntity<Guid>
     public DateTimeOffset LeaseExpiresTime { get; set; }
 
     /// <summary>
-    /// 完成记录过期时间
+    /// 完成或不确定记录过期时间
     /// </summary>
-    [SugarColumn(ColumnName = "Expires_Time", IsNullable = true, ColumnDescription = "完成记录过期时间")]
+    [SugarColumn(ColumnName = "Expires_Time", IsNullable = true, ColumnDescription = "完成或不确定记录过期时间")]
     public DateTimeOffset? ExpiresTime { get; set; }
 
     /// <summary>

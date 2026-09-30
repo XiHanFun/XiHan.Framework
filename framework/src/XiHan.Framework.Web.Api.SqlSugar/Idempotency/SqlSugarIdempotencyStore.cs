@@ -19,9 +19,12 @@ namespace XiHan.Framework.Web.Api.SqlSugar.Idempotency;
 /// 不随外层事务提交或回滚；
 /// 完成写入经客户端解析器登记到当前工作单元，事务型工作单元内与业务同一事务提交。
 /// 唯一索引建在记录键摘要上，由数据库串行化同一键的并发取得。
+/// 完成与不确定记录超过保留期后可被重新取得；请求路径超过端点列长度时截断写入。
 /// </remarks>
 public class SqlSugarIdempotencyStore : IIdempotencyStore
 {
+    private const int EndpointMaxLength = 512;
+
     private readonly ISqlSugarClientResolver _clientResolver;
     private readonly IUnitOfWorkManager _unitOfWorkManager;
     private readonly XiHanIdempotencyOptions _options;
@@ -48,7 +51,7 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         using var unitOfWork = BeginIndependent();
         using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
         var result = await AcquireCoreAsync(client, key, fingerprint, isTransactional, cancellationToken);
-        await unitOfWork.CompleteAsync(cancellationToken);
+        await unitOfWork.CompleteAsync(CancellationToken.None);
         return result;
     }
 
@@ -106,10 +109,15 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         ArgumentNullException.ThrowIfNull(key);
 
         var keyHash = key.ComputeHash();
+        var expiresTime = _timeProvider.GetUtcNow().Add(_options.CompletedRetention);
         using var unitOfWork = BeginIndependent();
         using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
         await client.Updateable<SysIdempotencyRecord>()
-            .SetColumns(record => record.Status == SysIdempotencyRecord.StatusIndeterminate)
+            .SetColumns(record => new SysIdempotencyRecord
+            {
+                Status = SysIdempotencyRecord.StatusIndeterminate,
+                ExpiresTime = expiresTime
+            })
             .Where(record => record.KeyHash == keyHash &&
                              record.OwnerToken == ownerToken &&
                              record.Status == SysIdempotencyRecord.StatusProcessing)
@@ -118,7 +126,7 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
     }
 
     /// <summary>
-    /// 删除已过期的完成记录
+    /// 删除已过期的完成记录与不确定记录
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>删除的记录数</returns>
@@ -128,7 +136,9 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         using var unitOfWork = BeginIndependent();
         using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
         var deleted = await client.Deleteable<SysIdempotencyRecord>()
-            .Where(record => record.Status == SysIdempotencyRecord.StatusCompleted && record.ExpiresTime <= now)
+            .Where(record => (record.Status == SysIdempotencyRecord.StatusCompleted ||
+                              record.Status == SysIdempotencyRecord.StatusIndeterminate) &&
+                             record.ExpiresTime <= now)
             .ExecuteCommandAsync(cancellationToken);
         await unitOfWork.CompleteAsync(cancellationToken);
         return deleted;
@@ -175,7 +185,7 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
     }
 
     /// <summary>
-    /// 按已存在记录的状态给出取得结果；过期完成记录删除后返回 null，由调用方重试插入
+    /// 按已存在记录的状态给出取得结果；过期的完成或不确定记录删除后返回 null，由调用方重试插入
     /// </summary>
     /// <remarks>过期与租约到期的时间比较在数据库条件中进行。</remarks>
     private async Task<IdempotencyAcquireResult?> ResolveExistingAsync(
@@ -186,13 +196,13 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        if (existing.Status == SysIdempotencyRecord.StatusCompleted &&
+        if (existing.Status != SysIdempotencyRecord.StatusProcessing &&
             await client.Queryable<SysIdempotencyRecord>()
                 .AnyAsync(record => record.BasicId == existing.BasicId && record.ExpiresTime <= now, cancellationToken))
         {
             await client.Deleteable<SysIdempotencyRecord>()
                 .Where(record => record.BasicId == existing.BasicId &&
-                                 record.Status == SysIdempotencyRecord.StatusCompleted &&
+                                 record.Status == existing.Status &&
                                  record.ExpiresTime <= now)
                 .ExecuteCommandAsync(cancellationToken);
             return null;
@@ -233,7 +243,7 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
             TenantId = key.TenantId,
             SubjectId = key.SubjectId,
             HttpMethod = key.Method,
-            Endpoint = key.Endpoint,
+            Endpoint = key.Endpoint.Length > EndpointMaxLength ? key.Endpoint[..EndpointMaxLength] : key.Endpoint,
             IdempotencyKey = key.Key,
             Fingerprint = fingerprint,
             Status = SysIdempotencyRecord.StatusProcessing,
