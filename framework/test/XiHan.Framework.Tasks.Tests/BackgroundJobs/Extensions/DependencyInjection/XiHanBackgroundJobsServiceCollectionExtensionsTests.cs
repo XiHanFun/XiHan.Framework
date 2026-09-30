@@ -10,6 +10,7 @@ using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Tasks.BackgroundJobs;
 using XiHan.Framework.Tasks.BackgroundJobs.Abstractions;
 using XiHan.Framework.Tasks.BackgroundJobs.Extensions.DependencyInjection;
+using XiHan.Framework.Tasks.BackgroundJobs.Models;
 using XiHan.Framework.Tasks.BackgroundJobs.Options;
 using XiHan.Framework.Tasks.Tests.BackgroundJobs.Fakes;
 using XiHan.Framework.Timing;
@@ -126,6 +127,33 @@ public class XiHanBackgroundJobsServiceCollectionExtensionsTests
         Assert.Equal(1234, options.JobPollPeriodMilliseconds);
         Assert.Equal("order-service", options.ApplicationName);
         Assert.Equal(3.5, options.DefaultWaitFactor);
+    }
+
+    /// <summary>
+    /// 从容器解析的默认存储采用配置的作业租约时长
+    /// </summary>
+    [Fact]
+    public async Task AddXiHanBackgroundJobs_DefaultStoreUsesConfiguredLeaseDuration()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["XiHan:BackgroundJobs:JobLeaseDurationSeconds"] = "42"
+        };
+        using var provider = BuildProvider(settings);
+        var store = provider.GetRequiredService<IBackgroundJobStore>();
+        var now = provider.GetRequiredService<IClock>().Now;
+
+        await store.InsertAsync(new BackgroundJobInfo
+        {
+            Id = Guid.NewGuid(),
+            JobName = "job",
+            JobArgs = "{}",
+            CreationTime = now,
+            NextTryTime = now
+        });
+        var claimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+
+        Assert.Equal(now.AddSeconds(42), claimed.LeaseExpiresAt);
     }
 
     /// <summary>

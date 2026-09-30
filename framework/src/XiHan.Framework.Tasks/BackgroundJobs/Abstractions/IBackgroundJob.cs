@@ -20,4 +20,15 @@ public interface IAsyncBackgroundJob<in TArgs> : IBackgroundJob
     /// <param name="args">作业参数</param>
     /// <returns>任务</returns>
     Task ExecuteAsync(TArgs args);
+
+    /// <summary>
+    /// 执行作业（可观察取消）
+    /// </summary>
+    /// <param name="args">作业参数</param>
+    /// <param name="cancellationToken">取消令牌：宿主停止、失去租约或管理端请求取消时触发</param>
+    /// <returns>任务</returns>
+    Task ExecuteAsync(TArgs args, CancellationToken cancellationToken)
+    {
+        return ExecuteAsync(args);
+    }
 }

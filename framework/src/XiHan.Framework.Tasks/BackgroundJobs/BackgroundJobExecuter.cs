@@ -42,13 +42,15 @@ public class BackgroundJobExecuter : IBackgroundJobExecuter
             ?? throw new BackgroundJobExecutionException(
                 $"作业处理器 {context.JobType.Name} 未实现 IAsyncBackgroundJob<TArgs>");
 
-        var method = jobInterface.GetMethod(nameof(IAsyncBackgroundJob<object>.ExecuteAsync))
+        var method = jobInterface.GetMethod(
+            nameof(IAsyncBackgroundJob<object>.ExecuteAsync),
+            [jobInterface.GetGenericArguments()[0], typeof(CancellationToken)])
             ?? throw new BackgroundJobExecutionException(
                 $"作业处理器 {context.JobType.Name} 缺少 ExecuteAsync 方法");
 
         try
         {
-            var result = method.Invoke(job, [context.JobArgs]);
+            var result = method.Invoke(job, [context.JobArgs, context.CancellationToken]);
             if (result is Task task)
             {
                 await task;

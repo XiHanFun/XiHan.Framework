@@ -62,4 +62,19 @@ public class BackgroundJobInfo
     /// 优先级
     /// </summary>
     public BackgroundJobPriority Priority { get; set; } = BackgroundJobPriority.Normal;
+
+    /// <summary>
+    /// 领取令牌（支持作业租约的存储在领取时填写；为空表示未被领取或存储不支持租约）
+    /// </summary>
+    public string? ClaimToken { get; set; }
+
+    /// <summary>
+    /// 租约到期时间（与 <see cref="ClaimToken"/> 同时填写）
+    /// </summary>
+    public DateTime? LeaseExpiresAt { get; set; }
+
+    /// <summary>
+    /// 是否已被请求取消
+    /// </summary>
+    public bool IsCancellationRequested { get; set; }
 }
