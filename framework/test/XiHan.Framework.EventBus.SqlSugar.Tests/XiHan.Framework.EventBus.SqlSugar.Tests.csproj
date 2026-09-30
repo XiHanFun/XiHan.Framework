@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\XiHan.Framework.EventBus.SqlSugar\XiHan.Framework.EventBus.SqlSugar.csproj" />
+        <ProjectReference Include="..\XiHan.Framework.ProviderContractTests\XiHan.Framework.ProviderContractTests.csproj" />
     </ItemGroup>
 
 </Project>
