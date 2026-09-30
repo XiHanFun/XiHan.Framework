@@ -36,6 +36,7 @@ dotnet_sort_system_directives_first = false
 file_header_template = Copyright (c) 2021-Present XiHanFun and contributors.\nLicensed under the MIT License. See LICENSE in the project root for license information.
 dotnet_diagnostic.IDE0073.severity = suggestion
 dotnet_diagnostic.XHFH001.severity = warning
+dotnet_diagnostic.XHFA002.severity = warning
 
 # this. 和 Me. 首选项
 dotnet_style_qualification_for_event = false:suggestion
