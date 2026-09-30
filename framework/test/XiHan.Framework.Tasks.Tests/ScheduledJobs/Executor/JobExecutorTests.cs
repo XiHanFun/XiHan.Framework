@@ -368,6 +368,53 @@ public class JobExecutorTests
     }
 
     /// <summary>
+    /// 任务体成功后结束时的完整实例回存失败，不改变成功的执行结果，状态与历史仍按成功记录
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WhenWorkerSucceedsAndEndSaveThrows_KeepsSuccessResult()
+    {
+        var store = new EndSaveFailingJobStore();
+        var executor = new JobExecutor(
+            new ServiceCollection().BuildServiceProvider(),
+            NullLogger<JobExecutor>.Instance,
+            store,
+            []);
+        var instance = CreateInstance(typeof(SucceedingWorker));
+
+        var result = await executor.ExecuteAsync(instance, null, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(JobStatus.Succeeded, result.Status);
+        Assert.Equal([JobStatus.Succeeded], store.StatusUpdates);
+        var history = Assert.Single(store.Histories);
+        Assert.True(history.IsSuccess);
+        Assert.Equal(JobStatus.Succeeded, history.Status);
+    }
+
+    /// <summary>
+    /// 任务体抛异常且结束时的完整实例回存失败，失败状态仍会回写，历史按失败记录
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WhenWorkerThrowsAndEndSaveThrows_StillUpdatesFailedStatus()
+    {
+        var store = new EndSaveFailingJobStore();
+        var executor = new JobExecutor(
+            new ServiceCollection().BuildServiceProvider(),
+            NullLogger<JobExecutor>.Instance,
+            store,
+            []);
+        var instance = CreateInstance(typeof(NotAWorker));
+
+        var result = await executor.ExecuteAsync(instance, null, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal([JobStatus.Failed], store.StatusUpdates);
+        var history = Assert.Single(store.Histories);
+        Assert.False(history.IsSuccess);
+        Assert.Equal(JobStatus.Failed, history.Status);
+    }
+
+    /// <summary>
     /// 带租户的任务：实例落库、状态回写、历史落档与任务体都在该租户作用域内，结束后作用域还原
     /// </summary>
     [Fact]
@@ -463,6 +510,77 @@ public class JobExecutorTests
             TraceId = Guid.NewGuid().ToString("N"),
             ExecutionNode = "test-node"
         };
+    }
+
+    /// <summary>
+    /// 第二次及之后的保存实例调用抛异常、并记录状态回写与历史的存储替身
+    /// </summary>
+    private sealed class EndSaveFailingJobStore : IJobStore
+    {
+        private int _saveCount;
+
+        /// <summary>
+        /// 状态回写记录
+        /// </summary>
+        public List<JobStatus> StatusUpdates { get; } = [];
+
+        /// <summary>
+        /// 已保存的执行历史
+        /// </summary>
+        public List<JobHistory> Histories { get; } = [];
+
+        /// <summary>
+        /// 保存任务实例，首次（开始时）成功，之后抛异常
+        /// </summary>
+        public Task SaveJobInstanceAsync(JobInstance jobInstance)
+        {
+            if (++_saveCount > 1)
+            {
+                throw new InvalidOperationException("存储不可用");
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 更新任务状态
+        /// </summary>
+        public Task UpdateJobStatusAsync(string instanceId, JobStatus status)
+        {
+            StatusUpdates.Add(status);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 保存执行历史
+        /// </summary>
+        public Task SaveJobHistoryAsync(JobHistory history)
+        {
+            Histories.Add(history);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 获取任务实例
+        /// </summary>
+        public Task<JobInstance?> GetJobInstanceAsync(string instanceId) => Task.FromResult<JobInstance?>(null);
+
+        /// <summary>
+        /// 获取执行历史
+        /// </summary>
+        public Task<IReadOnlyList<JobHistory>> GetJobHistoryAsync(string jobName, int pageIndex = 1, int pageSize = 20) =>
+            Task.FromResult<IReadOnlyList<JobHistory>>([]);
+
+        /// <summary>
+        /// 获取运行中的实例
+        /// </summary>
+        public Task<IReadOnlyList<JobInstance>> GetRunningInstancesAsync(string jobName) =>
+            Task.FromResult<IReadOnlyList<JobInstance>>([]);
+
+        /// <summary>
+        /// 清理执行历史
+        /// </summary>
+        public Task CleanupHistoryAsync(int retentionDays) => Task.CompletedTask;
     }
 
     /// <summary>
