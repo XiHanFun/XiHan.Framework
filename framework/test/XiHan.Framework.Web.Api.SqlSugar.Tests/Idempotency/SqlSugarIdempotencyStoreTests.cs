@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.Data.Sqlite;
 using XiHan.Framework.Web.Api.Idempotency;
 using XiHan.Framework.Web.Api.SqlSugar.Entities;
 
@@ -193,6 +194,40 @@ public sealed class SqlSugarIdempotencyStoreTests : IDisposable
 
         Assert.Equal(IdempotencyAcquireStatus.Acquired, retry.Status);
         Assert.NotEqual(acquired.OwnerToken, retry.OwnerToken);
+    }
+
+    /// <summary>
+    /// 取得在外层事务回滚后仍然保留
+    /// </summary>
+    [Fact]
+    public async Task 取得在外层事务回滚后仍然保留()
+    {
+        var store = _context.CreateStore();
+        var key = CreateKey("k1");
+        var timeout = TimeSpan.FromSeconds(10);
+
+        _context.Client.Ado.Open();
+        var transaction = ((SqliteConnection)_context.Client.Ado.Connection).BeginTransaction(deferred: true);
+        _context.Client.Ado.Transaction = transaction;
+        IdempotencyAcquireResult acquired;
+        try
+        {
+            acquired = await store.TryAcquireAsync(key, "fp-a", isTransactional: true).WaitAsync(timeout);
+        }
+        finally
+        {
+            transaction.Rollback();
+            _context.Client.Ado.Transaction = null;
+            _context.Client.Ado.Close();
+        }
+
+        Assert.Equal(IdempotencyAcquireStatus.Acquired, acquired.Status);
+        using var freshClient = _context.CreateClient();
+        var keyHash = key.ComputeHash();
+        var record = freshClient.Queryable<SysIdempotencyRecord>().Where(item => item.KeyHash == keyHash).First();
+        Assert.NotNull(record);
+        Assert.Equal(SysIdempotencyRecord.StatusProcessing, record.Status);
+        Assert.Equal(IdempotencyAcquireStatus.InProgress, (await store.TryAcquireAsync(key, "fp-a", true).WaitAsync(timeout)).Status);
     }
 
     /// <summary>

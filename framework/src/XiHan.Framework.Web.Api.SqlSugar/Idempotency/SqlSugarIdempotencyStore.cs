@@ -15,7 +15,8 @@ namespace XiHan.Framework.Web.Api.SqlSugar.Idempotency;
 /// 幂等记录的 SqlSugar 存储
 /// </summary>
 /// <remarks>
-/// 取得、释放与标记不确定在新开的非事务工作单元中执行，立即提交；
+/// 取得、释放、标记不确定与清理在新开的非事务工作单元中，经解析器客户端复制出的独立连接执行，立即提交，
+/// 不随外层事务提交或回滚；
 /// 完成写入经客户端解析器登记到当前工作单元，事务型工作单元内与业务同一事务提交。
 /// 唯一索引建在记录键摘要上，由数据库串行化同一键的并发取得。
 /// </remarks>
@@ -45,7 +46,8 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         ArgumentNullException.ThrowIfNull(key);
 
         using var unitOfWork = BeginIndependent();
-        var result = await AcquireCoreAsync(key, fingerprint, isTransactional, cancellationToken);
+        using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
+        var result = await AcquireCoreAsync(client, key, fingerprint, isTransactional, cancellationToken);
         await unitOfWork.CompleteAsync(cancellationToken);
         return result;
     }
@@ -89,8 +91,8 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
 
         var keyHash = key.ComputeHash();
         using var unitOfWork = BeginIndependent();
-        await _clientResolver.GetClientForEntity<SysIdempotencyRecord>()
-            .Deleteable<SysIdempotencyRecord>()
+        using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
+        await client.Deleteable<SysIdempotencyRecord>()
             .Where(record => record.KeyHash == keyHash &&
                              record.OwnerToken == ownerToken &&
                              record.Status == SysIdempotencyRecord.StatusProcessing)
@@ -105,8 +107,8 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
 
         var keyHash = key.ComputeHash();
         using var unitOfWork = BeginIndependent();
-        await _clientResolver.GetClientForEntity<SysIdempotencyRecord>()
-            .Updateable<SysIdempotencyRecord>()
+        using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
+        await client.Updateable<SysIdempotencyRecord>()
             .SetColumns(record => record.Status == SysIdempotencyRecord.StatusIndeterminate)
             .Where(record => record.KeyHash == keyHash &&
                              record.OwnerToken == ownerToken &&
@@ -124,8 +126,8 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
     {
         var now = _timeProvider.GetUtcNow();
         using var unitOfWork = BeginIndependent();
-        var deleted = await _clientResolver.GetClientForEntity<SysIdempotencyRecord>()
-            .Deleteable<SysIdempotencyRecord>()
+        using var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>().CopyNew();
+        var deleted = await client.Deleteable<SysIdempotencyRecord>()
             .Where(record => record.Status == SysIdempotencyRecord.StatusCompleted && record.ExpiresTime <= now)
             .ExecuteCommandAsync(cancellationToken);
         await unitOfWork.CompleteAsync(cancellationToken);
@@ -137,9 +139,8 @@ public class SqlSugarIdempotencyStore : IIdempotencyStore
         return _unitOfWorkManager.Begin(new XiHanUnitOfWorkOptions { IsTransactional = false }, requiresNew: true);
     }
 
-    private async Task<IdempotencyAcquireResult> AcquireCoreAsync(IdempotencyRecordKey key, string fingerprint, bool isTransactional, CancellationToken cancellationToken)
+    private async Task<IdempotencyAcquireResult> AcquireCoreAsync(ISqlSugarClient client, IdempotencyRecordKey key, string fingerprint, bool isTransactional, CancellationToken cancellationToken)
     {
-        var client = _clientResolver.GetClientForEntity<SysIdempotencyRecord>();
         var keyHash = key.ComputeHash();
 
         for (var attempt = 0; attempt < 2; attempt++)

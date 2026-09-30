@@ -18,6 +18,8 @@ namespace XiHan.Framework.Web.Api.SqlSugar.Tests.Idempotency;
 /// </summary>
 internal sealed class IdempotencyStoreTestContext : IDisposable
 {
+    private const int CommandTimeoutSeconds = 10;
+
     private readonly string _databaseFile = Path.Combine(Path.GetTempPath(), $"xihan_idem_store_{Guid.NewGuid():N}.db");
 
     /// <summary>
@@ -57,7 +59,9 @@ internal sealed class IdempotencyStoreTestContext : IDisposable
     /// <returns>客户端</returns>
     public SqlSugarClient CreateClient()
     {
-        return new SqlSugarClient(CreateConnectionConfig());
+        var client = new SqlSugarClient(CreateConnectionConfig());
+        client.Ado.CommandTimeOut = CommandTimeoutSeconds;
+        return client;
     }
 
     /// <summary>
