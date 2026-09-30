@@ -175,7 +175,9 @@ if (!result.Succeeded)
 
 框架默认的 `DefaultPermissionChecker` 读 `IPermissionStore` / `IRoleStore`，而这两个默认实现是**纯内存**的（`ConcurrentDictionary`）：不持久化、不预置任何数据。而且它们注册为 **Scoped**，字典是实例字段，随请求作用域新建——这一个请求里写进去的授权，下一个请求就读不到了。也就是说，**不换实现的话，对真实用户的所有判定都返回 false**。它的定位是参考实现与开发期占位。
 
-生产做法是自己实现 `IPermissionChecker`，读一份按用户缓存的授权快照：
+只需要把授权数据落库时，依赖 [XiHan.Framework.Authorization.SqlSugar](../packages/authorization-sqlsugar)：权限、角色、策略存储换成 SqlSugar 实现，并以直接查表的检查器替换 `DefaultPermissionChecker`。
+
+不用 SqlSugar 子包、要自行实现判定时，实现 `IPermissionChecker`，读一份按用户缓存的授权快照：
 
 ```csharp
 public sealed class SnapshotPermissionChecker : IPermissionChecker
@@ -317,7 +319,7 @@ public Task<ProfileDto> GetMyProfileAsync(long user_id) { … }
 | 现象 | 原因 |
 | --- | --- |
 | 换了 `IPermissionChecker` 毫无变化 | 用了 `TryAdd`，框架已占位；必须用 `Replace` |
-| 所有权限判定恒为 `false` | 没换实现，默认内存存储不预置任何数据 |
+| 所有权限判定恒为 `false` | 没换实现，默认内存存储不预置任何数据；换 [Authorization.SqlSugar](../packages/authorization-sqlsugar) 或自实现判定器 |
 | 权限码明明配了还是 403 | 默认判定器按序数比较、区分大小写；权限码常量与种子数据里的字符串必须逐字一致 |
 | 超管也被拦 | 通配 `*` 不是框架行为，要在自己的 `IPermissionChecker` 实现里判 |
 | 抛 `InvalidOperationException` 说策略未找到 | 模块没 `DependsOn(typeof(XiHanAuthorizationModule))`，策略提供器未注册 |

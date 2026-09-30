@@ -81,6 +81,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Caching` | Hybrid caching: HybridCache (memory + Redis), caching interceptor, tenant awareness |
 | `Authentication` | Authentication: JWT / OAuth2 / OIDC, token factory, MFA, SSO |
 | `Authorization` | Authorization: RBAC, policy-based, claims-based |
+| `Authorization.SqlSugar` | SqlSugar persistence provider for authorization: permission, role and policy stores plus a query-based permission checker (at most two SQL statements per check) |
 | `Security` | Security and cryptography: BouncyCastle primitives, key management, password hashing, data protection |
 | `Auditing` | Audit logging: collection pipeline for operation / access / login / exception / API / entity-change logs, async queue, masking and write contracts |
 | `EventBus.Abstractions` | Event bus abstractions: publish/subscribe interfaces, handler pipeline |

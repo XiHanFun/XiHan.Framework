@@ -182,7 +182,7 @@ public class ReportService(IAuthorizationService authz)
 
 ## 扩展点 / 自定义
 
-- **权限 / 角色 / 策略存储**：默认实现（`DefaultPermissionStore` / `DefaultRoleStore` / `DefaultPolicyStore`）基于 `ConcurrentDictionary` 的线程安全内存实现，可正常增删查（含各自的 `ClearAsync` 及 `AddRolesAsync` / `AddPermissionsAsync` / `AddPoliciesAsync` 等批量播种方法，便于开发/测试播种数据），但不持久化、不预置数据；生产必须实现 `IPermissionStore` / `IRoleStore` / `IPolicyStore` 读真实库，DI 覆盖（扩展方法用 `TryAddScoped`，先注册即生效）。
+- **权限 / 角色 / 策略存储**：默认实现（`DefaultPermissionStore` / `DefaultRoleStore` / `DefaultPolicyStore`）基于 `ConcurrentDictionary` 的线程安全内存实现，可正常增删查（含各自的 `ClearAsync` 及 `AddRolesAsync` / `AddPermissionsAsync` / `AddPoliciesAsync` 等批量播种方法，便于开发/测试播种数据），但不持久化、不预置数据；生产用 SqlSugar 可直接依赖 [XiHan.Framework.Authorization.SqlSugar](./authorization-sqlsugar)，或自行实现 `IPermissionStore` / `IRoleStore` / `IPolicyStore` 读真实库，DI 覆盖（扩展方法用 `TryAddScoped`，先注册即生效）。
 - **超管通配 `*`**：由你实现的 `IPermissionChecker` / `IPermissionStore` 快照负责（如超管权限集含 `*`），本包不硬编码超管身份。
 - **自定义 ABAC 逻辑**：实现 `IAbacEvaluator` 覆盖 `DefaultAbacEvaluator`，接你自己的策略引擎（如 OPA/规则 DSL）；或实现 `IAbacAttributeCollector` 补充领域特有的资源属性。
 - **自定义 Policy 要求**：实现 `IAuthorizationRequirement`（Policies 版）放进 `PolicyDefinition.CustomRequirements`。
@@ -203,6 +203,7 @@ public class ReportService(IAuthorizationService authz)
 
 ## 相关模块
 
+- [XiHan.Framework.Authorization.SqlSugar](./authorization-sqlsugar)（权限、角色、策略的 SqlSugar 持久化存储与查表权限检查器）
 - [XiHan.Framework.Authentication](./authentication)
 - [XiHan.Framework.Security](./security)
 - [BasicApp 权限模型](https://basicapp.docs.xihanfun.com/backend/permission)（权限码 / 数据范围 / 字段脱敏的应用层落地）
