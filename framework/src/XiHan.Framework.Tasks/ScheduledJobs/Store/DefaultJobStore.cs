@@ -196,19 +196,17 @@ public class DefaultJobStore : IJobStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var instanceIds = _instances.Values
-            .Where(i => i.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled
-                && i.CompletedAt < cutoff)
-            .OrderBy(i => i.CompletedAt)
+        var instances = _instances
+            .Where(pair => IsExpiredTerminal(pair.Value, cutoff))
+            .OrderBy(pair => pair.Value.CompletedAt)
             .Take(batchSize)
-            .Select(i => i.InstanceId)
             .ToList();
 
-        foreach (var instanceId in instanceIds)
+        foreach (var pair in instances)
         {
-            if (_instances.TryRemove(instanceId, out _))
+            if (IsExpiredTerminal(pair.Value, cutoff) && _instances.TryRemove(pair))
             {
-                _completedInstanceIds.TryRemove(instanceId, out _);
+                _completedInstanceIds.TryRemove(pair.Key, out _);
                 deleted++;
             }
         }
@@ -224,6 +222,12 @@ public class DefaultJobStore : IJobStore
         }
 
         return Task.FromResult(deleted);
+    }
+
+    private static bool IsExpiredTerminal(JobInstance instance, DateTimeOffset cutoff)
+    {
+        return instance.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Canceled
+            && instance.CompletedAt < cutoff;
     }
 
     private void TrackCompletedInstance(string instanceId)

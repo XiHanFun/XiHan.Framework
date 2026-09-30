@@ -450,7 +450,7 @@ services.UseRedisBackgroundJobStore(o =>
 
 ### 定时任务历史清理
 
-执行历史与已终结实例由 `JobHistoryCleanupService` 定期清理，默认关闭：
+执行历史与已终结实例由 `JobHistoryCleanupService` 定期清理，默认关闭（下例为启用状态）：
 
 ```json
 {
@@ -471,7 +471,7 @@ services.UseRedisBackgroundJobStore(o =>
 - 每 `HistoryCleanupIntervalMinutes` 分钟一轮，截止时间为「当前时间 − `HistoryRetentionDays` 天」。
 - 每批调用 `IJobStore.CleanupHistoryAsync(cutoff, batchSize, ct)`：执行历史按 `StartedAt`、已终结实例（`Succeeded`/`Failed`/`Canceled`）按 `CompletedAt`，早于截止时间的各删至多 `batchSize` 条；等待中与运行中的实例不删除。
 - 每轮最多 `HistoryCleanupMaxBatchesPerRun` 批，某批删除数不足 `batchSize` 即结束本轮；单轮失败只记日志，不影响下一轮。
-- 三个清理数值必须大于 0、`HistoryRetentionDays` 不能小于 0，启动时校验，不合法直接启动失败。
+- 启用清理时启动校验：`HistoryCleanupIntervalMinutes` 须在 1 到 71582 之间，`HistoryCleanupBatchSize`、`HistoryCleanupMaxBatchesPerRun` 须大于 0，`HistoryRetentionDays` 不能小于 0，不合法直接启动失败；未启用时不校验这些值。
 - 自实现 `IJobStore` 未实现分批方法时，接口默认实现换算保留天数后调用 `CleanupHistoryAsync(int)` 一次清完。
 - 需要立即清理时，可直接调用 `IJobStore.CleanupHistoryAsync(cutoff, batchSize, ct)`。
 

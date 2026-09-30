@@ -11,10 +11,20 @@ namespace XiHan.Framework.Tasks.ScheduledJobs.Configuration;
 internal sealed class XiHanJobOptionsValidator : IValidateOptions<XiHanJobOptions>
 {
     /// <summary>
-    /// 校验历史保留天数与历史清理数值
+    /// 清理间隔允许的最大分钟数（周期定时器的最大周期）
+    /// </summary>
+    internal const int MaxHistoryCleanupIntervalMinutes = 71582;
+
+    /// <summary>
+    /// 启用历史清理时校验历史保留天数与历史清理数值
     /// </summary>
     public ValidateOptionsResult Validate(string? name, XiHanJobOptions options)
     {
+        if (!options.HistoryCleanupEnabled)
+        {
+            return ValidateOptionsResult.Success;
+        }
+
         List<string> failures = [];
 
         if (options.HistoryRetentionDays < 0)
@@ -22,9 +32,9 @@ internal sealed class XiHanJobOptionsValidator : IValidateOptions<XiHanJobOption
             failures.Add($"{nameof(XiHanJobOptions.HistoryRetentionDays)} 不能小于 0。");
         }
 
-        if (options.HistoryCleanupIntervalMinutes <= 0)
+        if (options.HistoryCleanupIntervalMinutes is <= 0 or > MaxHistoryCleanupIntervalMinutes)
         {
-            failures.Add($"{nameof(XiHanJobOptions.HistoryCleanupIntervalMinutes)} 必须大于 0。");
+            failures.Add($"{nameof(XiHanJobOptions.HistoryCleanupIntervalMinutes)} 必须在 1 到 {MaxHistoryCleanupIntervalMinutes} 之间。");
         }
 
         if (options.HistoryCleanupBatchSize <= 0)

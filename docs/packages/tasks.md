@@ -198,11 +198,11 @@ public class MyModule : XiHanModule { }
 | `AutoDiscoverJobs` | `bool` | `true` | 是否自动发现并注册任务 |
 | `JobAssemblyPatterns` | `string[]` | `["*.Jobs", "*.Tasks"]` | 扫描的程序集名称模式 |
 | `DefaultTimeoutMilliseconds` | `int` | `300000` | 默认任务超时（5 分钟） |
-| `HistoryRetentionDays` | `int` | `30` | 历史记录保留天数（不能小于 0） |
+| `HistoryRetentionDays` | `int` | `30` | 历史记录保留天数（启用清理时不能小于 0） |
 | `HistoryCleanupEnabled` | `bool` | `false` | 是否启用历史清理后台服务 |
-| `HistoryCleanupIntervalMinutes` | `int` | `60` | 清理间隔（分钟，必须大于 0） |
-| `HistoryCleanupBatchSize` | `int` | `500` | 每批每类最多删除条数（必须大于 0） |
-| `HistoryCleanupMaxBatchesPerRun` | `int` | `10` | 每轮最多执行批数（必须大于 0） |
+| `HistoryCleanupIntervalMinutes` | `int` | `60` | 清理间隔（分钟，启用清理时须在 1 到 71582 之间） |
+| `HistoryCleanupBatchSize` | `int` | `500` | 每批每类最多删除条数（启用清理时必须大于 0） |
+| `HistoryCleanupMaxBatchesPerRun` | `int` | `10` | 每轮最多执行批数（启用清理时必须大于 0） |
 | `EnableMetrics` | `bool` | `true` | 是否启用性能监控 |
 | `NodeName` | `string?` | `null` | 任务执行节点名称 |
 
@@ -242,7 +242,7 @@ public class MyModule : XiHanModule { }
 | `AbandonedRetentionDays` | `int` | `7` | 已放弃作业的保留天数（移出活跃索引，作业体设 TTL 便于事后排查） |
 | `FetchMultiplier` | `int` | `4` | 候选加载倍数：每轮从索引取 `maxResultCount × 本值` 条到期候选，内存二次排序后再取 `maxResultCount` |
 
-示例 `appsettings.json`：
+示例 `appsettings.json`（示例为启用历史清理的状态，`HistoryCleanupEnabled` 默认关闭）：
 
 ```json
 {
@@ -425,7 +425,7 @@ services.AddHostedService<OutboxConsumer>();
 - 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化请自行实现 `IJobStore`。
 - 历史清理默认关闭。启用后每轮以「当前时间 − `HistoryRetentionDays` 天」为截止时间，分批删除早于它的执行历史（按 `StartedAt`）与已终结实例（`Succeeded`/`Failed`/`Canceled`，按 `CompletedAt`），等待中与运行中的实例不删除；某批删除数不足批量上限即结束本轮，单轮失败只记日志，下一轮照常执行。
 - 自实现的 `IJobStore` 若未实现分批方法 `CleanupHistoryAsync(DateTimeOffset, int, CancellationToken)`，接口默认实现会换算保留天数后调用 `CleanupHistoryAsync(int)` 一次清完。
-- 清理数值与 `HistoryRetentionDays` 在启动时校验（`ValidateOnStart`），配置不合法会直接启动失败。
+- 启用清理时，清理数值与 `HistoryRetentionDays` 在启动时校验（`ValidateOnStart`），配置不合法会直接启动失败；未启用时不校验。
 - 后台作业队列没有固定重试次数上限，只有**累计耗时**上限（`DefaultTimeoutSeconds`，默认 2 天）——退避间隔按指数增长，高频失败的作业会更快被判定放弃，而非跑满固定次数。
 - `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()` 或自实现 `IBackgroundJobStore`。
 - `[BackgroundJobName]` 标注在**作业参数类型**而非处理器类型上；不标注时回退参数类型全名——修改参数类型的命名空间/类名会导致名称变化，已入库未执行的旧作业将找不到配置而被放弃，关键作业建议显式标注固定名称。

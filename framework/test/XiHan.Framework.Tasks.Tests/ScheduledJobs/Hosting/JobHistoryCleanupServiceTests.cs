@@ -18,9 +18,11 @@ namespace XiHan.Framework.Tasks.Tests.ScheduledJobs.Hosting;
 /// <summary>
 /// JobHistoryCleanupService 历史清理后台服务测试
 /// </summary>
-public class JobHistoryCleanupServiceTests
+public class JobHistoryCleanupServiceTests : IDisposable
 {
     private const int TimeoutMilliseconds = 30_000;
+
+    private readonly List<ServiceProvider> _providers = [];
 
     private static readonly DateTimeOffset Now = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
 
@@ -139,7 +141,7 @@ public class JobHistoryCleanupServiceTests
     public async Task ExecuteAsync_WhenEnabled_RunsOnInterval()
     {
         var store = new ScriptedBatchJobStore(1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
-        var timeProvider = new FakeTimeProvider(Now);
+        var timeProvider = new TimerSignalingTimeProvider(Now);
         using var service = CreateService(store, timeProvider, options =>
         {
             options.HistoryCleanupEnabled = true;
@@ -147,13 +149,14 @@ public class JobHistoryCleanupServiceTests
         });
 
         await service.StartAsync(TestContext.Current.CancellationToken);
+        await timeProvider.TimerCreated.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        timeProvider.Advance(TimeSpan.FromMinutes(14));
+        await Task.Delay(50, TestContext.Current.CancellationToken);
         Assert.Empty(store.Calls);
 
-        await WaitUntilAsync(() =>
-        {
-            timeProvider.Advance(TimeSpan.FromMinutes(15));
-            return !store.Calls.IsEmpty;
-        });
+        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        await WaitUntilAsync(() => !store.Calls.IsEmpty);
 
         await service.StopAsync(TestContext.Current.CancellationToken);
     }
@@ -216,23 +219,45 @@ public class JobHistoryCleanupServiceTests
     /// </summary>
     [Theory]
     [InlineData(0, 500, 10, 30)]
+    [InlineData(71583, 500, 10, 30)]
     [InlineData(60, 0, 10, 30)]
     [InlineData(60, 500, 0, 30)]
     [InlineData(60, 500, 10, -1)]
-    public void AddXiHanTasks_WithInvalidCleanupOptions_FailsValidation(int interval, int batchSize, int maxBatches, int retentionDays)
+    public void AddXiHanTasks_WithCleanupEnabledAndInvalidOptions_FailsValidation(int interval, int batchSize, int maxBatches, int retentionDays)
     {
-        var services = new ServiceCollection();
-        services.AddXiHanTasks(options =>
-        {
-            options.HistoryCleanupIntervalMinutes = interval;
-            options.HistoryCleanupBatchSize = batchSize;
-            options.HistoryCleanupMaxBatchesPerRun = maxBatches;
-            options.HistoryRetentionDays = retentionDays;
-        });
-        using var provider = services.BuildServiceProvider();
+        using var provider = BuildOptionsProvider(true, interval, batchSize, maxBatches, retentionDays);
 
         Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IOptions<XiHanJobOptions>>().Value);
         Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
+    }
+
+    /// <summary>
+    /// 间隔取定时器允许的最大分钟数时通过校验
+    /// </summary>
+    [Fact]
+    public void AddXiHanTasks_WithCleanupEnabledAndMaxInterval_PassesValidation()
+    {
+        using var provider = BuildOptionsProvider(true, 71582, 500, 10, 30);
+
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        Assert.Equal(71582, provider.GetRequiredService<IOptions<XiHanJobOptions>>().Value.HistoryCleanupIntervalMinutes);
+    }
+
+    /// <summary>
+    /// 未启用清理时不校验清理相关数值
+    /// </summary>
+    [Theory]
+    [InlineData(0, 500, 10, 30)]
+    [InlineData(71583, 500, 10, 30)]
+    [InlineData(60, 0, 10, 30)]
+    [InlineData(60, 500, 0, 30)]
+    [InlineData(60, 500, 10, -1)]
+    public void AddXiHanTasks_WithCleanupDisabledAndInvalidOptions_PassesValidation(int interval, int batchSize, int maxBatches, int retentionDays)
+    {
+        using var provider = BuildOptionsProvider(false, interval, batchSize, maxBatches, retentionDays);
+
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        Assert.False(provider.GetRequiredService<IOptions<XiHanJobOptions>>().Value.HistoryCleanupEnabled);
     }
 
     /// <summary>
@@ -263,11 +288,39 @@ public class JobHistoryCleanupServiceTests
             && item.ImplementationType == typeof(JobHistoryCleanupService));
     }
 
-    private static JobHistoryCleanupService CreateService(IJobStore store, TimeProvider timeProvider, Action<XiHanJobOptions> configure)
+    /// <summary>
+    /// 释放测试中创建的服务提供者
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (var provider in _providers)
+        {
+            provider.Dispose();
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private static ServiceProvider BuildOptionsProvider(bool enabled, int interval, int batchSize, int maxBatches, int retentionDays)
+    {
+        var services = new ServiceCollection();
+        services.AddXiHanTasks(options =>
+        {
+            options.HistoryCleanupEnabled = enabled;
+            options.HistoryCleanupIntervalMinutes = interval;
+            options.HistoryCleanupBatchSize = batchSize;
+            options.HistoryCleanupMaxBatchesPerRun = maxBatches;
+            options.HistoryRetentionDays = retentionDays;
+        });
+        return services.BuildServiceProvider();
+    }
+
+    private JobHistoryCleanupService CreateService(IJobStore store, TimeProvider timeProvider, Action<XiHanJobOptions> configure)
     {
         var services = new ServiceCollection();
         services.AddSingleton(store);
         var provider = services.BuildServiceProvider();
+        _providers.Add(provider);
         var options = new XiHanJobOptions();
         configure(options);
 
@@ -283,6 +336,18 @@ public class JobHistoryCleanupServiceTests
         while (!condition())
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+    }
+
+    private sealed class TimerSignalingTimeProvider(DateTimeOffset startDateTime) : FakeTimeProvider(startDateTime)
+    {
+        public TaskCompletionSource TimerCreated { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = base.CreateTimer(callback, state, dueTime, period);
+            TimerCreated.TrySetResult();
+            return timer;
         }
     }
 

@@ -16,7 +16,7 @@ XiHan.Framework.Tasks 提供任务调度与后台服务的基础能力，包括�
 - 任务调度配置通过 Options 类型承载
 - 建议在启动模块统一配置调度器与执行策略
 - 定时任务历史清理默认关闭；设 `XiHan:Tasks:ScheduledJobs:HistoryCleanupEnabled = true` 后，`JobHistoryCleanupService` 每 `HistoryCleanupIntervalMinutes`（默认 60）分钟清理一轮：删除早于 `HistoryRetentionDays` 天的执行历史与已终结实例，每批 `HistoryCleanupBatchSize`（默认 500）条、每轮最多 `HistoryCleanupMaxBatchesPerRun`（默认 10）批，等待中与运行中的实例不删除
-- 上述三个清理数值必须大于 0、`HistoryRetentionDays` 不能小于 0，启动时校验，不合法直接启动失败
+- 启用清理时启动校验：`HistoryCleanupIntervalMinutes` 须在 1 到 71582 之间，其余两个清理数值必须大于 0，`HistoryRetentionDays` 不能小于 0，不合法直接启动失败；未启用时不校验
 
 ## 使用方式
 ```csharp
