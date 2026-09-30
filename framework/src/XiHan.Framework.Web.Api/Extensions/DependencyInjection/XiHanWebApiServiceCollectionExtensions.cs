@@ -17,6 +17,7 @@ using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
+using XiHan.Framework.Web.Api.Idempotency;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Core.Session;
@@ -44,6 +45,7 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.AddXiHanWebApiCors(configuration);
         services.AddXiHanWebApiAuth(configuration);
         services.AddXiHanWebApiLogging(configuration);
+        services.AddXiHanWebApiIdempotency(configuration);
         services.AddXiHanWebApiMvc();
 
         return services;
@@ -247,6 +249,32 @@ public static class XiHanWebApiServiceCollectionExtensions
     }
 
     /// <summary>
+    /// 添加接口幂等保护服务：配置、默认进程内存储与内外两层过滤器
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="configuration">应用配置</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanWebApiIdempotency(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddOptions<XiHanIdempotencyOptions>()
+            .Bind(configuration.GetSection(XiHanIdempotencyOptions.SectionName))
+            .Validate(options => options.MaxKeyLength > 0 && options.MaxRequestBytes > 0 && options.MaxResponseBytes > 0 &&
+                                 options.MaxEntries > 0 && options.MaxTotalResponseBytes > 0 &&
+                                 options.CompletedRetention > TimeSpan.Zero && options.ProcessingLease > TimeSpan.Zero,
+                "幂等配置无效：各上限与时长必须大于零。")
+            .ValidateOnStart();
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IIdempotencyStore, DefaultIdempotencyStore>();
+        services.AddScoped<XiHanIdempotencyFilter>();
+        services.AddScoped<XiHanIdempotencyCompletionFilter>();
+
+        return services;
+    }
+
+    /// <summary>
     /// 添加动态 API、MVC Controllers、JSON 序列化、租户解析和 OpenApi 服务
     /// </summary>
     public static IServiceCollection AddXiHanWebApiMvc(this IServiceCollection services)
@@ -312,8 +340,12 @@ public static class XiHanWebApiServiceCollectionExtensions
             options.Filters.AddService<XiHanApiResponseResultFilter>();
             // 缓存在工作单元之外：命中缓存不开事务，清除缓存发生在事务提交之后
             options.Filters.AddService<XiHanCacheFilter>();
-            // 排在最后：工作单元是最贴近动作的一层，动作抛出的异常先落到它手里再向外传
+            // 幂等取得与重播在工作单元之外：重播不开事务，取得以独立连接立即提交
+            options.Filters.AddService<XiHanIdempotencyFilter>();
+            // 工作单元包住动作与幂等完成写入，动作抛出的异常先落到它手里再向外传
             options.Filters.AddService<XiHanUnitOfWorkFilter>();
+            // 最贴近动作：动作返回后写入幂等完成，与业务同一事务提交
+            options.Filters.AddService<XiHanIdempotencyCompletionFilter>();
         })
         .ConfigureApiBehaviorOptions(options =>
         {

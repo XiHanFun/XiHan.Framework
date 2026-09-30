@@ -17,7 +17,7 @@ namespace XiHan.Framework.Web.Api.Filters;
 /// 控制器由 MVC 自行激活、动态控制器又直接注入应用服务的具体类，两者都不经过接口动态代理，
 /// <c>UnitOfWorkInterceptor</c> 在 HTTP 入口不会执行；本过滤器按同一套 <see cref="UnitOfWorkHelper"/>
 /// 规则在动作外层开启工作单元：动作正常返回才提交，动作抛出异常（无论后续是否被异常过滤器接管）一律不提交，
-/// 由工作单元释放时回滚。
+/// 由工作单元释放时回滚。本过滤器之内另有幂等完成过滤器。
 /// </remarks>
 public class XiHanUnitOfWorkFilter : IAsyncActionFilter
 {

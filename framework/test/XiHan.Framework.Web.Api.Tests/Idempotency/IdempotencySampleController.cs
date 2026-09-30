@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Uow.Attributes;
@@ -85,6 +86,7 @@ public sealed class ExecutionCounter
 /// 幂等测试控制器
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("api/idempotency-sample")]
 public class IdempotencySampleController : ControllerBase
 {

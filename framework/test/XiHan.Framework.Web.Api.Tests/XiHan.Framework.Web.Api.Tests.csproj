@@ -5,6 +5,7 @@
 	<Import Project="..\..\props\test.props" />
 
 	<ItemGroup>
+	  <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
 	  <ProjectReference Include="..\..\src\XiHan.Framework.Web.Api\XiHan.Framework.Web.Api.csproj" />
 	</ItemGroup>
 
