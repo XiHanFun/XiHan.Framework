@@ -423,7 +423,7 @@ services.UseRedisBackgroundJobStore(o =>
 | 配置节 | 绑定到 | 是否生效 |
 | --- | --- | --- |
 | `XiHan:BackgroundJobs` | `BackgroundJobWorkerOptions` | 模块自动绑定，全部生效 |
-| `XiHan:Tasks:ScheduledJobs` | `XiHanJobOptions` | 绑定了，但当前实现不读取（见下方警告） |
+| `XiHan:Tasks:ScheduledJobs` | `XiHanJobOptions` | 只有历史清理相关字段生效（见下方） |
 | 无配置节 | `XiHanBackgroundServiceOptions` | 需自行 `services.Configure<…>(…)` |
 
 常用的后台作业配置：
@@ -448,12 +448,38 @@ services.UseRedisBackgroundJobStore(o =>
 - `IsJobExecutionEnabled = false` 只停执行，入队照常可用 —— 数据迁移窗口期很好用。
 - `ApplicationName` 用于多个应用共用同一份存储时互相隔离；**入队端和 Worker 端读的是同一份配置**，所以天然一致，但不同应用之间彼此看不见对方的作业。
 
-::: warning XiHan:Tasks:ScheduledJobs 目前不影响运行时行为
-`XiHanJobOptions` 的字段（`Enabled`、`AutoDiscoverJobs`、`JobAssemblyPatterns`、`DefaultTimeoutMilliseconds`、`HistoryRetentionDays`、`EnableMetrics`、`NodeName`）会被绑定成选项对象，但调度器、执行器、存储都不读取它们。实际生效的是：
+### 定时任务历史清理
+
+执行历史与已终结实例由 `JobHistoryCleanupService` 定期清理，默认关闭：
+
+```json
+{
+  "XiHan": {
+    "Tasks": {
+      "ScheduledJobs": {
+        "HistoryRetentionDays": 30,
+        "HistoryCleanupEnabled": true,
+        "HistoryCleanupIntervalMinutes": 60,
+        "HistoryCleanupBatchSize": 500,
+        "HistoryCleanupMaxBatchesPerRun": 10
+      }
+    }
+  }
+}
+```
+
+- 每 `HistoryCleanupIntervalMinutes` 分钟一轮，截止时间为「当前时间 − `HistoryRetentionDays` 天」。
+- 每批调用 `IJobStore.CleanupHistoryAsync(cutoff, batchSize, ct)`：执行历史按 `StartedAt`、已终结实例（`Succeeded`/`Failed`/`Canceled`）按 `CompletedAt`，早于截止时间的各删至多 `batchSize` 条；等待中与运行中的实例不删除。
+- 每轮最多 `HistoryCleanupMaxBatchesPerRun` 批，某批删除数不足 `batchSize` 即结束本轮；单轮失败只记日志，不影响下一轮。
+- 三个清理数值必须大于 0、`HistoryRetentionDays` 不能小于 0，启动时校验，不合法直接启动失败。
+- 自实现 `IJobStore` 未实现分批方法时，接口默认实现换算保留天数后调用 `CleanupHistoryAsync(int)` 一次清完。
+- 需要立即清理时，可直接调用 `IJobStore.CleanupHistoryAsync(cutoff, batchSize, ct)`。
+
+::: warning XiHan:Tasks:ScheduledJobs 的其余字段目前不影响运行时行为
+`XiHanJobOptions` 中除历史清理相关字段（`HistoryRetentionDays` 与 `HistoryCleanup*`）外的字段（`Enabled`、`AutoDiscoverJobs`、`JobAssemblyPatterns`、`DefaultTimeoutMilliseconds`、`EnableMetrics`、`NodeName`）会被绑定成选项对象，但调度器、执行器、存储都不读取它们。实际生效的是：
 
 - 超时 → `JobInfo.TimeoutMilliseconds`（`[JobTimeout]`，默认 300000）
 - 任务注册 → 必须显式调用 `RegisterJobsFromAssembly` / `RegisterCronJob` / `RegisterIntervalJob` / `RegisterJob`
-- 历史清理 → 自行调用 `IJobStore.CleanupHistoryAsync(retentionDays)`
 - 执行节点名 → `JobInstance.ExecutionNode`，由调度器写入 `Environment.MachineName`
 
 另外 `IJobEventPublisher` 的默认实现 `DefaultJobEventPublisher` 是空实现，`JobMetricsProvider` 已注册但内置中间件不向它写入 —— 需要任务指标请自行实现 `IJobMiddleware` 采集。
