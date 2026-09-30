@@ -1,6 +1,6 @@
 name: CI
 
-# 构建 + 测试（MTP 模式）+ 覆盖率门禁。NuGet 发布由 release.yml 负责（只收 main 上、与 version.props 一致的 v* 标签）。
+# 构建 + 测试（MTP 模式）+ 覆盖率门禁 + dotnet new 模板生成验证。NuGet 发布由 release.yml 负责（只收 main 上、与 version.props 一致的 v* 标签）。
 on:
   push:
     branches: [main, dev]
@@ -124,4 +124,37 @@ jobs:
         with:
           name: coverage-report
           path: ${{ runner.temp }}/coverage/
+          if-no-files-found: ignore
+
+  templates:
+    name: 模板生成验证（${{ matrix.os }}）
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 生成、构建、测试并启动模板产物
+        # 框架与模板打包到隔离目录，模板装进隔离模板库，不推送任何包
+        shell: pwsh
+        run: >
+          ./framework/templates/Test-XiHanTemplates.ps1
+          -WorkRoot "${{ runner.temp }}/xihan-templates"
+
+      - name: 上传模板验证日志
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: templates-logs-${{ matrix.os }}
+          path: ${{ runner.temp }}/xihan-templates/logs/
           if-no-files-found: ignore
