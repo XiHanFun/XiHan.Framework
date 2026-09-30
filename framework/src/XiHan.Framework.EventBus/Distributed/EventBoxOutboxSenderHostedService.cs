@@ -94,7 +94,7 @@ public class EventBoxOutboxSenderHostedService : BackgroundService
 
         var batchSize = Math.Max(1, _processingOptions.Value.OutboxBatchSize);
         var scanner = scope.ServiceProvider.GetService<OutboxDeliveryTargetScanner>();
-        var hasTargetProvider = scope.ServiceProvider.GetService<IOutboxDeliveryTargetProvider>() is not null;
+        var hasTargetProvider = scope.ServiceProvider.GetService<IServiceProviderIsService>()?.IsService(typeof(IOutboxDeliveryTargetProvider)) == true;
 
         foreach (var outboxConfig in outboxConfigs)
         {

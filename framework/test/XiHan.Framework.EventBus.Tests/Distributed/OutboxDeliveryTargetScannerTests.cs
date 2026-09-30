@@ -149,6 +149,104 @@ public class OutboxDeliveryTargetScannerTests
     }
 
     /// <summary>
+    /// 目录故障期间每轮仍扫描宿主布局
+    /// </summary>
+    [Fact]
+    public async Task 目录故障期间每轮仍扫描宿主()
+    {
+        using var harness = new ScannerHarness();
+        harness.Directory.Targets.Add(new OutboxDeliveryTarget(1001));
+        harness.Directory.FailingCursors.Add(string.Empty);
+        harness.Outbox.Seed(0, 25);
+
+        for (var round = 0; round < 3; round++)
+        {
+            await harness.Scanner.SendRoundAsync(harness.OutboxConfig, 10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(0, harness.Outbox.RemainingOf(0));
+    }
+
+    /// <summary>
+    /// 读到空页但仍有下一页时同一轮继续读取
+    /// </summary>
+    [Fact]
+    public async Task 空页有下一页游标时同一轮继续读取()
+    {
+        using var harness = new ScannerHarness(pageSize: 1);
+        harness.Directory.Targets.AddRange([new OutboxDeliveryTarget(1001), new OutboxDeliveryTarget(1002)]);
+        harness.Directory.EmptyCursors.Add(string.Empty);
+        harness.Outbox.Seed(1002, 2);
+
+        await harness.Scanner.SendRoundAsync(harness.OutboxConfig, 10, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, harness.Outbox.RemainingOf(1002));
+    }
+
+    /// <summary>
+    /// 已注册目录但发件箱不按租户定位时只在无租户上下文领取一次
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task 发件箱不按租户定位时发送后台服务不走目标扫描()
+    {
+        var currentTenant = new FakeCurrentTenant();
+        var directory = new FakeTargetProvider();
+        directory.Targets.Add(new OutboxDeliveryTarget(1001));
+        var distributedOptions = new XiHanDistributedEventBusOptions();
+        distributedOptions.Outboxes.Configure(config => config.ImplementationType = typeof(DefaultEventOutbox));
+        var processingOptions = new EventBoxProcessingOptions { PollingIntervalMilliseconds = 1, OutboxBatchSize = 10 };
+
+        var services = new ServiceCollection();
+        services.AddSingleton<ICurrentTenant>(currentTenant);
+        services.AddSingleton<DefaultEventOutbox>();
+        services.AddSingleton<IOutboxDeliveryTargetProvider>(directory);
+        services.AddSingleton<IDistributedEventBus>(serviceProvider => new RecordingDistributedEventBus(
+            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            currentTenant,
+            new FakeUnitOfWorkManager(),
+            MsOptions.Create(distributedOptions),
+            new StubGuidGenerator(),
+            new StubClock(),
+            new EventHandlerInvoker(),
+            NullLocalEventBus.Instance,
+            new FakeCorrelationIdProvider()));
+        services.AddSingleton(serviceProvider => new OutboxDeliveryTargetScanner(
+            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            MsOptions.Create(processingOptions),
+            NullLogger<OutboxDeliveryTargetScanner>.Instance));
+        using var provider = services.BuildServiceProvider();
+        var bus = (RecordingDistributedEventBus)provider.GetRequiredService<IDistributedEventBus>();
+        var outbox = provider.GetRequiredService<DefaultEventOutbox>();
+        await outbox.EnqueueAsync(new OutgoingEventInfo(Guid.NewGuid(), "Test.Event", [1], DateTime.UtcNow));
+
+        using var hostedService = new EventBoxOutboxSenderHostedService(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            MsOptions.Create(distributedOptions),
+            MsOptions.Create(processingOptions),
+            NullLogger<EventBoxOutboxSenderHostedService>.Instance);
+
+        await hostedService.StartAsync(TestContext.Current.CancellationToken);
+        try
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (bus.OutboxPublished.IsEmpty && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(25, TestContext.Current.CancellationToken);
+            }
+
+            await Task.Delay(500, TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            await hostedService.StopAsync(CancellationToken.None);
+        }
+
+        Assert.Single(bus.OutboxPublished);
+        Assert.Empty(currentTenant.ChangedIds);
+        Assert.Empty(directory.RequestedCursors);
+    }
+
+    /// <summary>
     /// 预算不为正时不访问任何目标
     /// </summary>
     [Fact]

@@ -178,6 +178,11 @@ public sealed class FakeTargetProvider : IOutboxDeliveryTargetProvider
     public HashSet<string> FailingCursors { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 读取时返回空集合但仍给出下一页游标的游标，首页以空字符串表示
+    /// </summary>
+    public HashSet<string> EmptyCursors { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 按调用顺序记录的读取游标
     /// </summary>
     public List<string?> RequestedCursors { get; } = [];
@@ -199,8 +204,10 @@ public sealed class FakeTargetProvider : IOutboxDeliveryTargetProvider
         }
 
         var start = cursor is null ? 0 : int.Parse(cursor, CultureInfo.InvariantCulture);
-        var items = Targets.Skip(start).Take(pageSize).ToList();
-        var next = start + items.Count;
+        var items = EmptyCursors.Contains(cursor ?? string.Empty)
+            ? []
+            : Targets.Skip(start).Take(pageSize).ToList();
+        var next = EmptyCursors.Contains(cursor ?? string.Empty) ? start + pageSize : start + items.Count;
 
         return Task.FromResult(new OutboxDeliveryTargetPage(
             items,

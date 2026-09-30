@@ -141,6 +141,20 @@ public class XiHanEventBusServiceCollectionExtensionsTests
     }
 
     /// <summary>
+    /// 投递目标扫描器可由容器构造
+    /// </summary>
+    [Fact]
+    public void AddXiHanEventBus_OutboxDeliveryTargetScanner_IsResolvable()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddXiHanEventBus(BuildConfiguration());
+        using var provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetRequiredService<OutboxDeliveryTargetScanner>());
+    }
+
+    /// <summary>
     /// 扩展方法返回同一个服务集合以支持链式调用
     /// </summary>
     [Fact]

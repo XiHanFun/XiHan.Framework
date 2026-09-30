@@ -80,7 +80,7 @@ public class OutboxDeliveryTargetScanner
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var (found, target) = await NextTargetAsync(state, options, cancellationToken);
+            var (found, target) = await NextTargetAsync(state, options, deadline, cancellationToken);
             if (!found)
             {
                 break;
@@ -103,11 +103,13 @@ public class OutboxDeliveryTargetScanner
     /// </summary>
     /// <param name="state">轮转状态</param>
     /// <param name="options">事件盒后台处理配置</param>
+    /// <param name="deadline">本轮扫描的截止时刻</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否取到目标；取到时目标为 null 表示宿主布局</returns>
     private async Task<(bool Found, OutboxDeliveryTarget? Target)> NextTargetAsync(
         RotationState state,
         EventBoxProcessingOptions options,
+        DateTimeOffset deadline,
         CancellationToken cancellationToken)
     {
         if (state.HostPending)
@@ -127,58 +129,62 @@ public class OutboxDeliveryTargetScanner
             return (true, null);
         }
 
-        if (_timeProvider.GetUtcNow() < state.DirectoryRetryAt)
+        while (true)
         {
-            state.HostPending = true;
-            return (false, null);
-        }
+            if (_timeProvider.GetUtcNow() < state.DirectoryRetryAt)
+            {
+                return (true, null);
+            }
 
-        OutboxDeliveryTargetPage page;
-        try
-        {
-            using var scope = _serviceScopeFactory.CreateScope();
-            var provider = scope.ServiceProvider.GetService<IOutboxDeliveryTargetProvider>();
+            if (_timeProvider.GetUtcNow() >= deadline)
+            {
+                return (false, null);
+            }
 
-            page = provider is null
-                ? OutboxDeliveryTargetPage.Empty
-                : await provider.GetPageAsync(state.Cursor, Math.Max(1, options.OutboxTargetPageSize), cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            state.DirectoryFailures++;
-            var backoff = GetDirectoryBackoff(state.DirectoryFailures, options);
-            state.DirectoryRetryAt = _timeProvider.GetUtcNow() + backoff;
-            state.HostPending = true;
-            _logger.LogError(ex, "读取发件箱投递目标目录失败，游标保持不变，{Backoff} 后重试。", backoff);
-            return (false, null);
-        }
+            OutboxDeliveryTargetPage page;
+            try
+            {
+                using var scope = _serviceScopeFactory.CreateScope();
+                var provider = scope.ServiceProvider.GetService<IOutboxDeliveryTargetProvider>();
 
-        state.DirectoryFailures = 0;
-        state.DirectoryRetryAt = DateTimeOffset.MinValue;
-        state.Cursor = page.NextCursor;
-        state.EndOfDirectory = page.NextCursor is null;
+                page = provider is null
+                    ? OutboxDeliveryTargetPage.Empty
+                    : await provider.GetPageAsync(state.Cursor, Math.Max(1, options.OutboxTargetPageSize), cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                state.DirectoryFailures++;
+                var backoff = GetDirectoryBackoff(state.DirectoryFailures, options);
+                state.DirectoryRetryAt = _timeProvider.GetUtcNow() + backoff;
+                _logger.LogError(ex, "读取发件箱投递目标目录失败，游标保持不变，{Backoff} 后重试。", backoff);
+                return (true, null);
+            }
 
-        foreach (var target in page.Targets)
-        {
-            state.Buffer.AddLast(target);
+            state.DirectoryFailures = 0;
+            state.DirectoryRetryAt = DateTimeOffset.MinValue;
+            state.Cursor = page.NextCursor;
+            state.EndOfDirectory = page.NextCursor is null;
+
+            foreach (var target in page.Targets)
+            {
+                state.Buffer.AddLast(target);
+            }
+
+            if (TryTakeBuffered(state, out buffered))
+            {
+                return (true, buffered);
+            }
+
+            if (state.EndOfDirectory)
+            {
+                StartNewCycle(state);
+                return (true, null);
+            }
         }
-
-        if (TryTakeBuffered(state, out buffered))
-        {
-            return (true, buffered);
-        }
-
-        if (state.EndOfDirectory)
-        {
-            StartNewCycle(state);
-            return (true, null);
-        }
-
-        return (false, null);
     }
 
     /// <summary>
