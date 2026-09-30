@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Tasks.BackgroundJobs.Abstractions;
+using XiHan.Framework.Tasks.BackgroundJobs.Management;
 using XiHan.Framework.Tasks.BackgroundJobs.Models;
 using XiHan.Framework.Tasks.BackgroundJobs.Options;
 
@@ -32,6 +33,11 @@ public static class XiHanBackgroundJobsServiceCollectionExtensions
         services.TryAddSingleton<IBackgroundJobStore, DefaultBackgroundJobStore>();
         services.TryAddTransient<IBackgroundJobManager, BackgroundJobManager>();
         services.TryAddTransient<IBackgroundJobExecuter, BackgroundJobExecuter>();
+
+        // 作业管理（授权默认拒绝、审计默认写日志，均可被应用侧替换）
+        services.TryAddTransient<IBackgroundJobManagementService, BackgroundJobManagementService>();
+        services.TryAddSingleton<IBackgroundJobManagementAuthorizer, DenyAllBackgroundJobManagementAuthorizer>();
+        services.TryAddSingleton<IBackgroundJobManagementAuditor, LoggingBackgroundJobManagementAuditor>();
 
         // 轮询 Worker
         services.AddHostedService<BackgroundJobWorker>();
