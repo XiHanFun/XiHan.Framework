@@ -148,15 +148,20 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IBackgroundJobManager` / `BackgroundJobManager` | 入队门面：`Task<string> EnqueueAsync<TArgs>(TArgs args, BackgroundJobPriority priority = Normal, TimeSpan? delay = null)` |
-| `IAsyncBackgroundJob<TArgs>` | 作业处理器契约：`Task ExecuteAsync(TArgs args)`（继承标记接口 `IBackgroundJob`） |
-| `AsyncBackgroundJob<TArgs>` | 作业处理器抽象基类，实现 `ITransientDependency`（约定自动瞬时注册）+ `Logger` 属性 |
+| `IAsyncBackgroundJob<TArgs>` | 作业处理器契约：`Task ExecuteAsync(TArgs args)`，以及带取消令牌的默认接口方法 `Task ExecuteAsync(TArgs args, CancellationToken cancellationToken)`（默认转调前者；继承标记接口 `IBackgroundJob`） |
+| `AsyncBackgroundJob<TArgs>` | 作业处理器抽象基类，实现 `ITransientDependency`（约定自动瞬时注册）+ `Logger` 属性；可重写 `ExecuteAsync(TArgs, CancellationToken)` 观察取消（宿主停止、失去租约、管理端请求取消时触发） |
 | `IBackgroundJobExecuter` / `BackgroundJobExecuter` | 执行器：从 DI 解析处理器，反射调用 `IAsyncBackgroundJob<TArgs>.ExecuteAsync` |
-| `IBackgroundJobStore` | 存储端口：`FindAsync(jobId)`、`InsertAsync(jobInfo)`、`GetWaitingJobsAsync(applicationName, maxResultCount)`、`DeleteAsync(jobId)`、`UpdateAsync(jobInfo)` |
+| `IBackgroundJobStore` | 存储端口：`FindAsync(jobId)`、`InsertAsync(jobInfo)`、`GetWaitingJobsAsync(applicationName, maxResultCount)`、`DeleteAsync(jobId)`、`UpdateAsync(jobInfo)`；另有一组带默认实现的可选成员：`SupportsJobLease`、`TryRenewLeaseAsync`、`TryCompleteAsync`、`TryUpdateAsync(jobInfo, lease)`、`ReleaseLeaseAsync`（租约），`SupportsJobManagement`、`RetryAbandonedAsync`、`RequestCancellationAsync`（管理），默认均为不支持 |
 | `DefaultBackgroundJobStore` | 默认内存实现（最多 100000 条；进程重启丢失；成功或放弃后移除） |
 | `RedisBackgroundJobStore` | 可选 Redis 实现：有序集合索引（score=下次执行时间）+ 字符串键存作业体 JSON，放弃的作业移出索引并设 TTL 便于事后排查 |
 | `IBackgroundJobSerializer` / `BackgroundJobSerializer` | 参数序列化端口，默认基于 `System.Text.Json` |
-| `BackgroundJobWorker` | 轮询 `BackgroundService`：抢分布式锁 → 领取 → 执行 → 成功删除 / 失败退避 / 超时放弃 |
-| `BackgroundJobInfo` | 持久化模型：`Id`、`ApplicationName`、`TenantId`、`JobName`、`JobArgs`（JSON）、`TryCount`、`CreationTime`、`NextTryTime`、`LastTryTime`、`IsAbandoned`、`Priority` |
+| `BackgroundJobWorker` | 轮询 `BackgroundService`：抢分布式锁 → 领取 → 执行 → 成功删除 / 失败退避 / 超时放弃；存储支持租约时逐作业确认租约、按间隔续租、按令牌回写 |
+| `BackgroundJobLease` | 作业租约记录：`JobId`、`Token`（每次领取重新生成）、`ExpiresAt`、`IsCancellationRequested` |
+| `IBackgroundJobManagementService` / `BackgroundJobManagementService` | 管理服务：`RetryAsync(jobId)`、`RequestCancellationAsync(jobId)`，流程为授权 → 判断存储是否支持管理 → 委派存储 → 审计 |
+| `IBackgroundJobManagementAuthorizer` / `DenyAllBackgroundJobManagementAuthorizer` | 管理授权器，默认实现拒绝全部操作，须替换才可使用 |
+| `IBackgroundJobManagementAuditor` / `LoggingBackgroundJobManagementAuditor` | 管理审计器，默认以 Information 级别写日志 |
+| `BackgroundJobManagementResult` / `BackgroundJobManagementStatus` / `BackgroundJobManagementOperation` / `BackgroundJobManagementAuditEntry` | 管理结果、状态（`Rescheduled`、`Cancelled`、`CancellationRequested`、`NoChange`、`NotFound`、`Denied`、`NotSupported`）、操作（`Retry`、`Cancel`）与审计记录 |
+| `BackgroundJobInfo` | 持久化模型：`Id`、`ApplicationName`、`TenantId`、`JobName`、`JobArgs`（JSON）、`TryCount`、`CreationTime`、`NextTryTime`、`LastTryTime`、`IsAbandoned`、`Priority`、`ClaimToken`、`LeaseExpiresAt`、`IsCancellationRequested` |
 | `BackgroundJobExecutionContext` | 执行上下文：`ServiceProvider`、`JobType`、`JobArgs`、`CancellationToken` |
 | `BackgroundJobExecutionException` | 业务失败信号（区别于致命错误），可携带 `JobName` / `JobArgs`，触发退避重试 |
 | `BackgroundJobPriority` | `Low`(5) / `BelowNormal`(10) / `Normal`(15，默认) / `AboveNormal`(20) / `High`(25)，领取时按值降序排序 |
@@ -186,6 +191,30 @@ public class MyModule : XiHanModule { }
 | `IJobScheduler.RegisterCronJob<T>(name, cron, ...)` / `RegisterIntervalJob<T>(name, interval, ...)` | 代码方式注册单个任务 |
 | `IServiceCollection.AddXiHanBackgroundJobs(IConfiguration)` | 注册后台作业队列全套（管理器 + 轮询 Worker + 内存存储默认 + 处理器自动发现）；模块已在 `PreConfigureServices` 自动调用，通常无需手动调用 |
 | `IServiceCollection.UseRedisBackgroundJobStore(Action<RedisBackgroundJobStoreOptions>?)` | 将 `IBackgroundJobStore` 替换为 `RedisBackgroundJobStore`（`services.Replace`），复用 Caching 注册的 `IConnectionMultiplexer` |
+
+### 后台作业租约与管理
+
+作业租约支持矩阵：
+
+| 存储 | 租约 | 说明 |
+| --- | --- | --- |
+| 进程内 `DefaultBackgroundJobStore` | 支持 | 租约时长取 `JobLeaseDurationSeconds` |
+| SqlSugar（`XiHan.Framework.Tasks.SqlSugar`，由另一个 PR 提供） | 支持 | 由该包的存储实现 |
+| Redis（`RedisBackgroundJobStore`） | 不支持 | 维持分布式锁单活，不假装续租 |
+| 自定义存储 | 默认不支持 | 覆写 `SupportsJobLease` 及 `TryRenewLeaseAsync`、`TryCompleteAsync`、`TryUpdateAsync`、`ReleaseLeaseAsync` 才启用 |
+
+失租语义：
+
+- 续租未命中（令牌不匹配或租约已到期）时，Worker 取消传给处理器的令牌，并且不回写该作业的执行结果。
+- 取消是协作式的，不保证强制终止处理器。
+- 不承诺业务副作用 exactly-once，处理器应保持幂等。
+- 分布式锁仍只在作业之间续期；单个作业执行过长时锁可能过期，其它实例可领取其它作业，但同一作业受租约保护。
+
+管理服务：
+
+- 授权器默认拒绝全部操作（结果为 `Denied`），应用替换 `IBackgroundJobManagementAuthorizer` 后才可使用。
+- 审计器默认写日志；审计记录不含操作者身份，自定义审计器自行从环境上下文获取。
+- 存储不支持管理时返回 `NotSupported`。进程内存储放弃的作业即被移除，因此对其重试多为 `NotFound`。
 
 ## 配置
 
@@ -228,6 +257,8 @@ public class MyModule : XiHanModule { }
 | `DefaultTimeoutSeconds` | `int` | `172800`（2 天） | 放弃阈值：自创建起累计重试时间超过此值即放弃，唯一的失败上限（无固定次数） |
 | `DistributedLockName` | `string` | `"XiHanBackgroundJobWorker"` | 分布式锁名称，保证多实例下单活 Worker |
 | `DistributedLockExpirySeconds` | `int` | `300` | 分布式锁 TTL（崩溃安全网，应大于单轮处理耗时） |
+| `JobLeaseDurationSeconds` | `int` | `300` | 作业租约时长（秒），须大于 0；仅作用于进程内默认存储，其它存储以各自配置为准 |
+| `JobLeaseRenewalIntervalSeconds` | `int` | `0` | 续租间隔（秒）；0 表示取租约时长的 1/4；配置值不小于租约时长的 1/3 时同样取 1/4 |
 
 `RedisBackgroundJobStoreOptions`（切换 `services.UseRedisBackgroundJobStore(...)` 时可选配置，无固定配置节名，代码方式传入）：
 

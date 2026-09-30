@@ -259,6 +259,63 @@ Worker 启动后先等 `FirstWaitDurationMilliseconds`（默认 5000），之后
 不标 `[BackgroundJobName]` 时，作业名回退成参数类型的完整名称。改类名或换命名空间后，已入库未执行的旧作业会「找不到作业配置」→ 按致命错误直接放弃。关键作业一律显式标注固定名称。
 :::
 
+### 处理器取消令牌
+
+处理器可重写带取消令牌的重载，宿主停止、失去租约或管理端请求取消时令牌触发：
+
+```csharp
+public class SendWelcomeEmailJob : AsyncBackgroundJob<SendWelcomeEmailArgs>
+{
+    public override Task ExecuteAsync(SendWelcomeEmailArgs args)
+    {
+        return ExecuteAsync(args, CancellationToken.None);
+    }
+
+    public override async Task ExecuteAsync(SendWelcomeEmailArgs args, CancellationToken cancellationToken)
+    {
+        await _mailer.SendAsync(args.Email, cancellationToken);
+    }
+}
+```
+
+不重写时，带令牌的重载默认转调 `ExecuteAsync(args)`，行为与以前一致。
+
+### 作业租约与失租
+
+存储支持租约时，Worker 对每个作业执行前确认租约、执行中按间隔续租、结束时按令牌回写：
+
+| 存储 | 租约 | 说明 |
+| --- | --- | --- |
+| 进程内 `DefaultBackgroundJobStore` | 支持 | 租约时长取 `JobLeaseDurationSeconds` |
+| SqlSugar（`XiHan.Framework.Tasks.SqlSugar`，由另一个 PR 提供） | 支持 | 由该包的存储实现 |
+| Redis（`RedisBackgroundJobStore`） | 不支持 | 维持分布式锁单活，不假装续租 |
+| 自定义存储 | 默认不支持 | 覆写 `SupportsJobLease` 及 `TryRenewLeaseAsync`、`TryCompleteAsync`、`TryUpdateAsync`、`ReleaseLeaseAsync` 才启用 |
+
+续租未命中（令牌不匹配或租约已到期）就是失去租约：Worker 取消处理器的令牌，并且不回写该作业的结果。
+
+::: warning 失租的边界
+- 取消是协作式的：处理器不观察令牌就不会停，框架不强制终止。
+- 不承诺业务副作用 exactly-once，处理器应保持幂等。
+- 分布式锁仍只在作业之间续期。单个作业执行过长时锁可能过期，此时其它实例可以领取其它作业，但同一作业受租约保护，不会被重复领取。
+:::
+
+### 重试与取消（管理服务）
+
+`IBackgroundJobManagementService` 提供两个操作，界面由应用自己做：
+
+```csharp
+var retry = await management.RetryAsync(jobId);                 // 已放弃 → 重新排入待执行
+var cancel = await management.RequestCancellationAsync(jobId);  // 协作取消，不保证强制终止
+
+if (retry.Status == BackgroundJobManagementStatus.Denied) { /* 没有授权 */ }
+```
+
+结果状态：`Rescheduled`、`Cancelled`（未在执行，已取消）、`CancellationRequested`（执行中，已登记请求）、`NoChange`、`NotFound`、`Denied`、`NotSupported`。
+
+- **授权默认全部拒绝**：默认的 `DenyAllBackgroundJobManagementAuthorizer` 让每次操作返回 `Denied`，应用替换 `IBackgroundJobManagementAuthorizer` 才可用。
+- **审计默认写日志**：默认的审计器以 Information 级别记录；审计记录不含操作者身份，需要的话自定义 `IBackgroundJobManagementAuditor`，自行从环境上下文获取。
+- 存储不支持管理时返回 `NotSupported`。进程内存储放弃的作业即被移除，因此对其重试多为 `NotFound`。
+
 ## 后台常驻服务
 
 继承 `XiHanBackgroundServiceBase<T>`，只实现「取任务」和「处理任务」：
@@ -411,7 +468,7 @@ services.UseRedisBackgroundJobStore(o =>
 });
 ```
 
-自实现 `IBackgroundJobStore` 时，`GetWaitingJobsAsync` 必须遵守契约，否则多实例会重复执行：
+自实现 `IBackgroundJobStore` 时，租约与管理相关成员是带默认实现的可选方法（默认不支持），见「作业租约与失租」。`GetWaitingJobsAsync` 必须遵守契约，否则多实例会重复执行：
 
 - 过滤：`ApplicationName` 匹配 且 `!IsAbandoned` 且 `NextTryTime <= 当前时间`
 - 排序：`Priority` 降序 → `TryCount` 升序 → `NextTryTime` 升序
@@ -439,13 +496,17 @@ services.UseRedisBackgroundJobStore(o =>
       "DefaultFirstWaitDurationSeconds": 60,
       "DefaultWaitFactor": 2.0,
       "DefaultTimeoutSeconds": 172800,
-      "DistributedLockExpirySeconds": 300
+      "DistributedLockExpirySeconds": 300,
+      "JobLeaseDurationSeconds": 300,
+      "JobLeaseRenewalIntervalSeconds": 0
     }
   }
 }
 ```
 
 - `IsJobExecutionEnabled = false` 只停执行，入队照常可用 —— 数据迁移窗口期很好用。
+- `JobLeaseDurationSeconds` 只作用于进程内默认存储，须大于 0；其它存储以各自配置为准。
+- `JobLeaseRenewalIntervalSeconds` 为 0 表示取租约时长的 1/4；配置值不小于租约时长的 1/3 时同样取 1/4。
 - `ApplicationName` 用于多个应用共用同一份存储时互相隔离；**入队端和 Worker 端读的是同一份配置**，所以天然一致，但不同应用之间彼此看不见对方的作业。
 
 ::: warning XiHan:Tasks:ScheduledJobs 目前不影响运行时行为
