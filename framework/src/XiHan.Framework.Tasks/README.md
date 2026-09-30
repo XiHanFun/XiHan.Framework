@@ -26,7 +26,6 @@ XiHan.Framework.Tasks 提供任务调度与后台服务的基础能力，包括�
 | 存储 | 租约 | 说明 |
 | --- | --- | --- |
 | 进程内 `DefaultBackgroundJobStore` | 支持 | 租约时长取 `JobLeaseDurationSeconds` |
-| SqlSugar（`XiHan.Framework.Tasks.SqlSugar`，由另一个 PR 提供） | 支持 | 由该包的存储实现 |
 | Redis（`RedisBackgroundJobStore`） | 不支持 | 维持分布式锁单活，不做续租 |
 | 自定义存储 | 默认不支持 | 覆写 `SupportsJobLease` 及 `TryRenewLeaseAsync`、`TryCompleteAsync`、`TryUpdateAsync`、`ReleaseLeaseAsync` 才启用 |
 
@@ -59,6 +58,8 @@ public class SendMailJob : AsyncBackgroundJob<SendMailArgs>
     }
 }
 ```
+
+两个重载要么都重写（业务写在带令牌的重载里，单参数版本转调它，即上面的写法），要么只实现 `ExecuteAsync(args)` 并把业务写在里面。只让 `ExecuteAsync(args)` 转调带令牌的重载、却不重写后者，会与基类默认实现互相调用，造成无限递归。
 
 管理服务 `IBackgroundJobManagementService`：
 - `RetryAsync(jobId)`：把已放弃的作业重新排入待执行

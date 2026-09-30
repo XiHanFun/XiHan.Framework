@@ -280,6 +280,14 @@ public class SendWelcomeEmailJob : AsyncBackgroundJob<SendWelcomeEmailArgs>
 
 不重写时，带令牌的重载默认转调 `ExecuteAsync(args)`，行为与以前一致。
 
+::: warning 两个重载要么都重写，要么只写单参数版本
+- 要观察取消：两个 `ExecuteAsync` 都重写，业务写在带令牌的重载里，单参数版本转调它（即上面的写法）。
+- 沿用旧行为：只实现 `ExecuteAsync(args)` 并把业务写在里面，不要让它转调带令牌的重载。
+- 只让 `ExecuteAsync(args)` 转调带令牌的重载、却不重写后者，会与基类默认实现互相调用，造成无限递归。
+:::
+
+宿主停止打断处理器时，作业不累计失败、不回写，留在存储里等下次启动再执行。
+
 ### 作业租约与失租
 
 存储支持租约时，Worker 对每个作业执行前确认租约、执行中按间隔续租、结束时按令牌回写：
@@ -287,7 +295,6 @@ public class SendWelcomeEmailJob : AsyncBackgroundJob<SendWelcomeEmailArgs>
 | 存储 | 租约 | 说明 |
 | --- | --- | --- |
 | 进程内 `DefaultBackgroundJobStore` | 支持 | 租约时长取 `JobLeaseDurationSeconds` |
-| SqlSugar（`XiHan.Framework.Tasks.SqlSugar`，由另一个 PR 提供） | 支持 | 由该包的存储实现 |
 | Redis（`RedisBackgroundJobStore`） | 不支持 | 维持分布式锁单活，不假装续租 |
 | 自定义存储 | 默认不支持 | 覆写 `SupportsJobLease` 及 `TryRenewLeaseAsync`、`TryCompleteAsync`、`TryUpdateAsync`、`ReleaseLeaseAsync` 才启用 |
 
