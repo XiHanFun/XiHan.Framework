@@ -402,7 +402,7 @@ services.AddHostedService<OutboxConsumer>();
 
 - **替换任务存储 / 锁**：`services.AddSingleton<IJobStore, MyStore>()`（覆盖默认 `TryAddSingleton`），或 `builder.UseStore<MyStore>()` / `builder.UseLockProvider<MyLock>()`。
 - **追加中间件**：实现 `IJobMiddleware`，`builder.AddMiddleware<MyMiddleware>()`；注册顺序即执行顺序。
-- **持久化后台作业队列**：默认内存存储进程重启丢失；`services.UseRedisBackgroundJobStore()` 一行切换为 Redis 持久化 + 跨实例（复用 Caching 的 `IConnectionMultiplexer`），或自行实现 `IBackgroundJobStore` 接自建存储（如数据库）。
+- **持久化后台作业队列**：默认内存存储进程重启丢失；`services.UseRedisBackgroundJobStore()` 一行切换为 Redis 持久化 + 跨实例（复用 Caching 的 `IConnectionMultiplexer`），用 SqlSugar 可直接依赖 [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar)（落库并支持与业务同事务入队），或自行实现 `IBackgroundJobStore` 接自建存储。
 - **自定义后台服务**：继承 `XiHanBackgroundServiceBase<T>`，实现 `FetchWorkItemsAsync` / `ProcessItemAsync`，可重写 `OnTaskFailed` / `CreateDefaultRetryPolicy`。
 - **运行时热调**：通过 `IDynamicServiceConfig` 动态改并发数、空闲延迟、启停，无需重启。
 
@@ -413,9 +413,9 @@ services.AddHostedService<OutboxConsumer>();
 - `AllowConcurrent=false` 依赖 `IJobStore.GetRunningInstancesAsync` + 任务锁，跨实例防并发需 Redis 分布式锁（Caching 启用 Redis）。
 - 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。宿主级任务令 `TenantId` 为空。
 - 后台服务的 `XiHanBackgroundServiceOptions` **默认不启用单任务超时**（`EnableTaskTimeout=false`、`TaskTimeoutMilliseconds=0`），如需超时须显式打开。
-- 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化请自行实现 `IJobStore`。
+- 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化用 SqlSugar 可直接依赖 [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar)，或自行实现 `IJobStore`。
 - 后台作业队列没有固定重试次数上限，只有**累计耗时**上限（`DefaultTimeoutSeconds`，默认 2 天）——退避间隔按指数增长，高频失败的作业会更快被判定放弃，而非跑满固定次数。
-- `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()` 或自实现 `IBackgroundJobStore`。
+- `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()`，用 SqlSugar 可直接依赖 [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar)，或自实现 `IBackgroundJobStore`。
 - `[BackgroundJobName]` 标注在**作业参数类型**而非处理器类型上；不标注时回退参数类型全名——修改参数类型的命名空间/类名会导致名称变化，已入库未执行的旧作业将找不到配置而被放弃，关键作业建议显式标注固定名称。
 
 ## 依赖模块
@@ -428,6 +428,7 @@ services.AddHostedService<OutboxConsumer>();
 
 ## 相关模块
 
+- [XiHan.Framework.Tasks.SqlSugar](./tasks-sqlsugar) — 后台作业、定时任务实例与执行历史的 SqlSugar 持久化存储。
 - [XiHan.Framework.Caching](./caching) — 分布式锁与缓存底座。
 - [XiHan.Framework.MultiTenancy](./multitenancy) — 多租户上下文来源。
 - [XiHan.Framework.Observability](./observability) — 可观测性，配合任务指标与追踪。

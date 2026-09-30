@@ -111,6 +111,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `Timing` | Time policy: time zone management, time abstraction |
 | `Templating` | Template rendering: Scriban engine, template registry |
 | `Tasks` | Scheduled tasks and background jobs: scheduling engine, background services, tenant awareness |
+| `Tasks.SqlSugar` | SqlSugar persistence provider for tasks: background-job enqueue joins the business transaction and claiming is mutually exclusive across instances; scheduled-job instances and execution history are persisted |
 | `Traffic` | Traffic governance: gray routing (rule engine with header / IP / percentage / tenant / user matchers); rate limiting and circuit breaking are policy interfaces only |
 | `Upgrade` | Upgrade engine: version store, migration execution, distributed lock, automatic check on startup |
 | `AI.Abstractions` | AI abstractions: agents, chat, configuration, guardrails, prompts, RAG, skills |
