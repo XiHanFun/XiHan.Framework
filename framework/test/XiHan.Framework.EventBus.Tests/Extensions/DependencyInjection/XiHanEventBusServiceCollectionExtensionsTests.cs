@@ -122,6 +122,25 @@ public class XiHanEventBusServiceCollectionExtensionsTests
     }
 
     /// <summary>
+    /// 投递目标扫描器以单例注册、待送数计数器已注册，重复调用不重复登记
+    /// </summary>
+    [Fact]
+    public void AddXiHanEventBus_RegistersOutboxTargetServices()
+    {
+        var services = new ServiceCollection();
+        var configuration = BuildConfiguration();
+
+        services.AddXiHanEventBus(configuration);
+        services.AddXiHanEventBus(configuration);
+
+        Assert.Equal(1, CountDescriptors(services, typeof(OutboxDeliveryTargetScanner)));
+        Assert.Equal(1, CountDescriptors(services, typeof(IOutboxPendingEventCounter)));
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            services.Single(descriptor => descriptor.ServiceType == typeof(OutboxDeliveryTargetScanner)).Lifetime);
+    }
+
+    /// <summary>
     /// 扩展方法返回同一个服务集合以支持链式调用
     /// </summary>
     [Fact]

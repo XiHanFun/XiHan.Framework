@@ -24,6 +24,21 @@ public class EventBoxProcessingOptions
     public int OutboxBatchSize { get; set; } = 100;
 
     /// <summary>
+    /// 发件箱投递目标目录单页读取数量
+    /// </summary>
+    public int OutboxTargetPageSize { get; set; } = 100;
+
+    /// <summary>
+    /// 发件箱单轮扫描投递目标的时间上限（毫秒），达到后本轮不再访问新目标
+    /// </summary>
+    public int OutboxRoundTimeLimitMilliseconds { get; set; } = 30000;
+
+    /// <summary>
+    /// 发件箱投递目标目录读取失败后的最大退避时长（毫秒）
+    /// </summary>
+    public int OutboxTargetDirectoryMaxBackoffMilliseconds { get; set; } = 60000;
+
+    /// <summary>
     /// 收件箱单批处理数量
     /// </summary>
     public int InboxBatchSize { get; set; } = 100;

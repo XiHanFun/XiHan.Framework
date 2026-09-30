@@ -13,6 +13,9 @@ namespace XiHan.Framework.EventBus.Distributed;
 /// <summary>
 /// 事件发件箱发送后台服务
 /// </summary>
+/// <remarks>
+/// 注册了 <see cref="IOutboxDeliveryTargetProvider"/> 且发件箱实现 <see cref="ITenantScopedEventOutbox"/> 时，由 <see cref="OutboxDeliveryTargetScanner"/> 按投递目标轮转扫描；否则只在当前（无租户）上下文领取。
+/// </remarks>
 public class EventBoxOutboxSenderHostedService : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -90,11 +93,21 @@ public class EventBoxOutboxSenderHostedService : BackgroundService
         }
 
         var batchSize = Math.Max(1, _processingOptions.Value.OutboxBatchSize);
+        var scanner = scope.ServiceProvider.GetService<OutboxDeliveryTargetScanner>();
+        var hasTargetProvider = scope.ServiceProvider.GetService<IOutboxDeliveryTargetProvider>() is not null;
+
         foreach (var outboxConfig in outboxConfigs)
         {
             var outbox = scope.ServiceProvider.GetService(outboxConfig.ImplementationType) as IEventOutbox;
             if (outbox is null)
             {
+                continue;
+            }
+
+            // 注册了投递目标目录且发件箱按租户定位存储时，按目标轮转扫描
+            if (outbox is ITenantScopedEventOutbox && hasTargetProvider && scanner is not null)
+            {
+                await scanner.SendRoundAsync(outboxConfig, batchSize, cancellationToken);
                 continue;
             }
 

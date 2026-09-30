@@ -77,4 +77,17 @@ public class EventBoxProcessingOptionsTests
         Assert.Equal(3, options.MaxInboxRetryCount);
         Assert.Equal(1, options.InboxRetryDelaySeconds);
     }
+
+    /// <summary>
+    /// 投递目标扫描配置的默认值
+    /// </summary>
+    [Fact]
+    public void OutboxTargetScanning_HasExpectedDefaults()
+    {
+        var options = new EventBoxProcessingOptions();
+
+        Assert.Equal(100, options.OutboxTargetPageSize);
+        Assert.Equal(30000, options.OutboxRoundTimeLimitMilliseconds);
+        Assert.Equal(60000, options.OutboxTargetDirectoryMaxBackoffMilliseconds);
+    }
 }
