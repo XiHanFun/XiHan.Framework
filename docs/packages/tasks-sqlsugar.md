@@ -114,6 +114,16 @@ public class YourAppModule : XiHanModule
 
 不允许并发的任务在触发前会查询「是否有运行中实例」。执行途中进程退出会留下一条永远是「运行中」的记录。本包为运行中实例记录截止时刻（开始时间 + 任务超时 + 宽限期），查询只认截止时刻未到的实例。任务超时小于等于 0（不限时）时截止时刻为 `9999-12-31`，实例在被显式结束之前一直算运行中。
 
+### 定时任务的分批清理
+
+主包的 [`JobHistoryCleanupService`](./tasks) 启用后（`XiHan:Tasks:ScheduledJobs:HistoryCleanupEnabled = true`），按 `HistoryRetentionDays` 算出截止时间，逐批调用本存储的 `CleanupHistoryAsync(cutoff, batchSize, ct)`。每一批：
+
+1. 查出开始时间早于截止时间的执行历史，最多 `batchSize` 条主键，按主键删除
+2. 查出待清理的任务实例，最多 `batchSize` 条主键，按主键删除：成功、失败或已取消且完成时间早于截止时间的实例，以及运行截止时刻早于截止时间的遗留运行中实例
+3. 返回两类合计删除数
+
+等待中实例与运行截止时刻未到截止时间的运行中实例不删除。时间比较在 SQL 内完成；`Started_At`、`Completed_At` 上已有索引，无需另建。取消令牌在每类操作前检查。
+
 ## 配置
 
 配置节 `XiHan:Tasks:SqlSugar`（`XiHanTasksSqlSugarOptions.SectionName`）。
@@ -145,7 +155,7 @@ public class YourAppModule : XiHanModule
 - **提前结束的一轮不会释放租约**。Worker 因停机或锁续期失败提前结束一轮时，已领取但未执行的作业要等租约过期才会被再次领取。
 - **SQL Server 未开启 RCSI 时，领取会被未提交的入队事务阻塞**。默认的已提交读隔离下，未提交的入队事务持有的行锁会让领取的查询等待；在库上开启 `READ_COMMITTED_SNAPSHOT`（RCSI）可避免。
 - **`GetWaitingJobsAsync` 是领取不是查询**。调用后作业已被盖上令牌，不要在别处当作只读查询复用，也不要在事务型工作单元里调用它。
-- **执行记录只增不减**。框架不会自动清理，需应用定期调用 `IJobStore.CleanupHistoryAsync`；它同时清掉运行截止时刻早于保留期的遗留运行中实例。放弃的后台作业同样需要应用自行清理。
+- **执行记录默认只增不减**。主包的历史清理服务默认关闭；启用后按批清理，未启用时需应用定期调用 `IJobStore.CleanupHistoryAsync`。两种方式都会清掉运行截止时刻早于截止时间的遗留运行中实例。放弃的后台作业需要应用自行清理。
 - **运行中实例对所有节点可见**。多节点共用一个库时，不允许并发的任务在节点之间也互斥。
 - **不限时的任务要留意遗留实例**。任务超时小于等于 0 时，运行中实例在被显式结束之前一直算运行中；这类任务若不允许并发、又在执行途中崩溃，会一直被跳过。用 `IJobStore.UpdateJobStatusAsync(实例标识, JobStatus.Failed)` 清除，遗留实例的 `Running_Deadline` 为 `9999-12-31`。
 - **跨库写入不是一个事务**。业务数据在模块库或租户独立库时，作业的入队与业务各自提交。

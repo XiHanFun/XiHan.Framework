@@ -43,7 +43,8 @@
 
 定时任务：
 
-- 每次执行新增一行实例与一行历史。框架不会自动清理，`XiHanJobOptions.HistoryRetentionDays` 也未被读取——应用需自行定期调用 `IJobStore.CleanupHistoryAsync`，它同时删除过期的执行历史、已结束的实例与运行截止时刻早于保留期的遗留运行中实例
+- 每次执行新增一行实例与一行历史。主包的 `JobHistoryCleanupService` 默认关闭；设 `XiHan:Tasks:ScheduledJobs:HistoryCleanupEnabled = true` 后，它按 `HistoryRetentionDays` 算出截止时间，调用本存储的 `CleanupHistoryAsync(cutoff, batchSize, ct)` 分批清理。未启用时需应用自行定期调用 `IJobStore.CleanupHistoryAsync`
+- 分批清理每批对执行历史与任务实例各查出最多 `batchSize` 条主键再按主键删除，返回两类合计删除数；删除对象为开始时间早于截止时间的执行历史、完成时间早于截止时间的已结束实例，以及运行截止时刻早于截止时间的遗留运行中实例。等待中实例与运行截止时刻未到的运行中实例不删除。时间比较在 SQL 内完成，查询走 `Started_At`、`Completed_At` 上已有的索引
 - 多个节点共用一个库时，某节点的运行中实例会让其他节点跳过不允许并发的任务
 - 截止时刻依赖协作式超时：任务代码不响应取消时，可能在截止时刻之后仍在运行，此时调度器会再触发一份
 - 超过截止时刻的遗留实例仍标为 `Running`，只是不再阻塞调度

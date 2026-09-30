@@ -259,6 +259,86 @@ public class SqlSugarJobStore : IJobStore
     }
 
     /// <summary>
+    /// 分批清理早于截止时间的执行历史与已结束的任务实例
+    /// </summary>
+    /// <remarks>
+    /// 执行历史与任务实例各自先查出最多 <paramref name="batchSize"/> 条主键，再按主键删除。
+    /// 实例的删除条件与 <see cref="CleanupHistoryAsync(int)"/> 一致：成功、失败或已取消且完成时间早于截止时间，
+    /// 或运行中且运行截止时刻早于截止时间；等待中与运行截止时刻未到截止时间的运行中实例不删除。
+    /// </remarks>
+    /// <param name="cutoff">截止时间，早于该时间的记录被清理</param>
+    /// <param name="batchSize">每类记录本批最多删除的条数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>本批删除的总条数</returns>
+    public async Task<int> CleanupHistoryAsync(DateTimeOffset cutoff, int batchSize, CancellationToken cancellationToken = default)
+    {
+        if (batchSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "每批删除条数必须大于 0。");
+        }
+
+        var cutoffTime = cutoff.UtcDateTime;
+        var succeeded = (int)JobStatus.Succeeded;
+        var failed = (int)JobStatus.Failed;
+        var canceled = (int)JobStatus.Canceled;
+        var running = (int)JobStatus.Running;
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var deletedHistories = await _clientAccessor.ExecuteAsync(async client =>
+        {
+            var historyIds = await client.Queryable<SysJobHistory>()
+                .Where(item => item.StartedAt < cutoffTime)
+                .OrderBy(item => item.StartedAt)
+                .Take(batchSize)
+                .Select(item => item.BasicId)
+                .ToListAsync(cancellationToken);
+
+            if (historyIds.Count == 0)
+            {
+                return 0;
+            }
+
+            return await client.Deleteable<SysJobHistory>()
+                .Where(item => historyIds.Contains(item.BasicId))
+                .ExecuteCommandAsync(cancellationToken);
+        });
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var deletedInstances = await _clientAccessor.ExecuteAsync(async client =>
+        {
+            var instanceIds = await client.Queryable<SysJobInstance>()
+                .Where(item => ((item.Status == succeeded || item.Status == failed || item.Status == canceled)
+                        && item.CompletedAt != null
+                        && item.CompletedAt < cutoffTime)
+                    || (item.Status == running
+                        && item.RunningDeadline != null
+                        && item.RunningDeadline < cutoffTime))
+                .Take(batchSize)
+                .Select(item => item.BasicId)
+                .ToListAsync(cancellationToken);
+
+            if (instanceIds.Count == 0)
+            {
+                return 0;
+            }
+
+            return await client.Deleteable<SysJobInstance>()
+                .Where(item => instanceIds.Contains(item.BasicId)
+                    && (((item.Status == succeeded || item.Status == failed || item.Status == canceled)
+                            && item.CompletedAt != null
+                            && item.CompletedAt < cutoffTime)
+                        || (item.Status == running
+                            && item.RunningDeadline != null
+                            && item.RunningDeadline < cutoffTime)))
+                .ExecuteCommandAsync(cancellationToken);
+        });
+
+        return deletedHistories + deletedInstances;
+    }
+
+    /// <summary>
     /// 判断是否为终止状态
     /// </summary>
     private static bool IsTerminal(JobStatus status)
