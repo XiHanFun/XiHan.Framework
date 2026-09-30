@@ -184,6 +184,66 @@ public class DefaultBackgroundJobStoreLeaseTests
     }
 
     /// <summary>
+    /// 按令牌回写不覆盖回写前登记的取消请求：未放弃的回写转为取消并移除作业
+    /// </summary>
+    [Fact]
+    public async Task TryUpdate_WhenCancellationRequestedAfterClaim_CancelsAndRemoves()
+    {
+        var store = CreateStore(new FakeClock(Now));
+        var job = CreateJob();
+        await store.InsertAsync(job);
+        var claimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+        Assert.Equal(
+            BackgroundJobManagementStatus.CancellationRequested,
+            await store.RequestCancellationAsync(job.Id, TestContext.Current.CancellationToken));
+
+        claimed.TryCount = 1;
+        claimed.NextTryTime = Now.AddSeconds(10);
+
+        Assert.False(claimed.IsCancellationRequested);
+        Assert.True(await store.TryUpdateAsync(claimed, ToLease(claimed), TestContext.Current.CancellationToken));
+        Assert.Null(await store.FindAsync(job.Id));
+    }
+
+    /// <summary>
+    /// 租约已到期但未被他人领取时，按令牌完成仍命中
+    /// </summary>
+    [Fact]
+    public async Task TryComplete_WhenLeaseExpiredButNotReclaimed_ReturnsTrue()
+    {
+        var clock = new FakeClock(Now);
+        var store = CreateStore(clock);
+        var job = CreateJob();
+        await store.InsertAsync(job);
+        var claimed = Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+
+        clock.Now = Now.AddSeconds(LeaseSeconds + 1);
+
+        Assert.True(await store.TryCompleteAsync(ToLease(claimed), TestContext.Current.CancellationToken));
+        Assert.Null(await store.FindAsync(job.Id));
+    }
+
+    /// <summary>
+    /// 租约已到期的作业视为未在执行：取消直接生效并移除
+    /// </summary>
+    [Fact]
+    public async Task RequestCancellation_WhenLeaseExpired_CancelsAndRemoves()
+    {
+        var clock = new FakeClock(Now);
+        var store = CreateStore(clock);
+        var job = CreateJob();
+        await store.InsertAsync(job);
+        Assert.Single(await store.GetWaitingJobsAsync(null, 10));
+
+        clock.Now = Now.AddSeconds(LeaseSeconds);
+
+        Assert.Equal(
+            BackgroundJobManagementStatus.Cancelled,
+            await store.RequestCancellationAsync(job.Id, TestContext.Current.CancellationToken));
+        Assert.Null(await store.FindAsync(job.Id));
+    }
+
+    /// <summary>
     /// 释放租约后立即可再领取；错误令牌释放无效
     /// </summary>
     [Fact]

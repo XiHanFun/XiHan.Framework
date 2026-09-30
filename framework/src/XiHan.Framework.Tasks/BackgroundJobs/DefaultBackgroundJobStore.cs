@@ -128,7 +128,11 @@ public class DefaultBackgroundJobStore : IBackgroundJobStore
     /// </summary>
     public Task DeleteAsync(Guid jobId)
     {
-        _jobs.TryRemove(jobId, out _);
+        lock (_writeLock)
+        {
+            _jobs.TryRemove(jobId, out _);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -144,7 +148,11 @@ public class DefaultBackgroundJobStore : IBackgroundJobStore
 
         if (jobInfo.IsAbandoned)
         {
-            _jobs.TryRemove(jobInfo.Id, out _);
+            lock (_writeLock)
+            {
+                _jobs.TryRemove(jobInfo.Id, out _);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -191,7 +199,7 @@ public class DefaultBackgroundJobStore : IBackgroundJobStore
     }
 
     /// <summary>
-    /// 按令牌回写作业并结束租约；放弃的作业直接移除
+    /// 按令牌回写作业并结束租约；取消请求与存储中已登记的合并，已请求取消的作业按放弃处理；放弃的作业直接移除
     /// </summary>
     public Task<bool> TryUpdateAsync(BackgroundJobInfo jobInfo, BackgroundJobLease lease, CancellationToken cancellationToken = default)
     {
@@ -207,8 +215,8 @@ public class DefaultBackgroundJobStore : IBackgroundJobStore
             stored.TryCount = jobInfo.TryCount;
             stored.NextTryTime = jobInfo.NextTryTime;
             stored.LastTryTime = jobInfo.LastTryTime;
-            stored.IsAbandoned = jobInfo.IsAbandoned;
-            stored.IsCancellationRequested = jobInfo.IsCancellationRequested;
+            stored.IsCancellationRequested = stored.IsCancellationRequested || jobInfo.IsCancellationRequested;
+            stored.IsAbandoned = jobInfo.IsAbandoned || stored.IsCancellationRequested;
             stored.ClaimToken = null;
             stored.LeaseExpiresAt = null;
 
