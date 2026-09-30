@@ -62,4 +62,14 @@ public class BackgroundJobWorkerOptions
     /// 分布式锁 TTL（秒）：崩溃安全网，应大于单轮处理耗时
     /// </summary>
     public int DistributedLockExpirySeconds { get; set; } = 300;
+
+    /// <summary>
+    /// 进程内默认存储的作业租约时长（秒），必须大于 0；其它存储以各自配置为准
+    /// </summary>
+    public int JobLeaseDurationSeconds { get; set; } = 300;
+
+    /// <summary>
+    /// 作业续租间隔（秒）；0 表示取租约时长的四分之一。配置值不小于租约时长的三分之一时同样取四分之一
+    /// </summary>
+    public int JobLeaseRenewalIntervalSeconds { get; set; }
 }
