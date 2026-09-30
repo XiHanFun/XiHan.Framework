@@ -35,6 +35,7 @@ public class MyModule : XiHanModule { }
 - `IDistributedEventBus` → `LocalDistributedEventBus`（单例，`[Dependency(TryRegister = true)]`，可被替换）
 - `IEventOutbox` / `IEventInbox` → 默认 `DefaultEventOutbox` / `DefaultEventInbox`（单例，`TryAddSingleton`）
 - 两个后台托管服务：`EventBoxOutboxSenderHostedService`（发送发件箱）、`EventBoxInboxProcessorHostedService`（处理收件箱）
+- `OutboxDeliveryTargetScanner`（单例）与 `IOutboxPendingEventCounter` → `OutboxPendingEventCounter`（瞬时）
 - `IUnitOfWorkEventPublisher` → `UnitOfWorkEventPublisher`（`[Dependency(ReplaceServices = true)]`，让事件在 UoW 完成后发布）
 - 通过 `OnRegistered` 钩子把所有事件处理器类型自动收集进 `XiHanLocalEventBusOptions.Handlers` / `XiHanDistributedEventBusOptions.Handlers`
 
@@ -57,9 +58,27 @@ public class MyModule : XiHanModule { }
 
 ### 发件箱/收件箱后台循环
 
-- `EventBoxOutboxSenderHostedService`：循环拉取每个已启用发件箱的等待事件（`GetWaitingEventsAsync`，批量 `OutboxBatchSize`），调用 `ISupportsEventBoxes.PublishManyFromOutboxAsync` 投递，成功后 `DeleteManyAsync` 清理。
+- `EventBoxOutboxSenderHostedService`：循环拉取每个已启用发件箱的等待事件（`GetWaitingEventsAsync`，批量 `OutboxBatchSize`），调用 `ISupportsEventBoxes.PublishManyFromOutboxAsync` 投递，成功后 `DeleteManyAsync` 清理。容器中注册了 `IOutboxDeliveryTargetProvider`、且发件箱实现 `ITenantScopedEventOutbox` 时，该发件箱由 `OutboxDeliveryTargetScanner` 按投递目标轮转扫描，见下文。
 - `EventBoxInboxProcessorHostedService`：循环拉取每个已启用收件箱的等待事件，逐个 `ProcessFromInboxAsync` 处理；成功 `MarkAsProcessedAsync`，失败进重试计数——达到 `MaxInboxRetryCount` 则 `MarkAsDiscardAsync` 丢弃，否则 `RetryLaterAsync` 延后（`InboxRetryDelaySeconds` 秒后）；每轮末尾 `DeleteOldEventsAsync` 清理过期（默认实现 `DefaultEventInbox` 只清理非等待中、且最后修改时间超过 7 天的记录）。
 - 两者轮询间隔 = `PollingIntervalMilliseconds`（下限 200ms）。
+
+### 按投递目标轮转扫描发件箱
+
+`OutboxDeliveryTargetScanner` 服务于租户独立库：应用提供的投递目标目录列出需要单独扫描发件箱的租户，扫描器逐个切换到其租户上下文领取、投递、删除。
+
+- **循环**：宿主布局（无租户上下文）与目录中的全部目标组成一个循环。每个发件箱配置各有一份轮转状态，每轮从上一轮停下的位置继续，同一目标在一轮内至多访问一次；走到目录末尾后下一个是宿主布局，游标回到目录首页。
+- **预算**：每个发件箱配置每轮最多领取 `OutboxBatchSize` 条，每个目标最多领取本轮剩余的预算。
+- **时间上限**：单轮耗时达到 `OutboxRoundTimeLimitMilliseconds` 后不再访问新目标，剩余目标留给下一轮。
+- **分页**：按 `OutboxTargetPageSize` 分页读取目录（`GetPageAsync`，无租户上下文）；返回空页但带游标时，同一轮内继续读下一页。
+- **目标隔离**：每个目标在独立的服务作用域内处理，结束即还原租户上下文；某个目标处理失败时记录日志并跳过，不影响其他目标。停用的目标照常扫描，直至排空。
+- **目录失败**：读取目录抛异常时游标保持不变，按指数退避暂停读取目录——首次退避为 `PollingIntervalMilliseconds`（下限 200ms），每次连续失败翻倍，上限 `OutboxTargetDirectoryMaxBackoffMilliseconds`；退避期间每轮照常扫描宿主布局。读取成功后退避清零。
+- **游标**：只保存在进程内存中，进程重启后从目录首页开始。
+
+未注册目录，或发件箱没有实现 `ITenantScopedEventOutbox`（如默认的 `DefaultEventOutbox`）时，发送循环只在无租户上下文领取。
+
+### 待送数查询
+
+`IOutboxPendingEventCounter.GetPendingCountAsync(target)` 统计某个投递目标在全部已配置发件箱中尚未删除的事件数，供删除租户前确认其发件箱已排空。默认实现 `OutboxPendingEventCounter` 对每个不同的发件箱实现类型，在独立作用域内切换到目标租户后调用 `ITenantScopedEventOutbox.GetPendingCountAsync` 并求和；同一实现类型只统计一次。已领取未删除的事件也计入；任一存储不可达时抛出异常；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException`。
 
 ## 核心能力
 
@@ -83,6 +102,8 @@ public class MyModule : XiHanModule { }
 | `XiHanLocalEventBusOptions` | 本地事件总线选项：`ITypeList<IEventHandler> Handlers`（处理器类型列表） |
 | `XiHanDistributedEventBusOptions` | 分布式事件总线选项：`Handlers`、`OutboxConfigDictionary Outboxes`、`InboxConfigDictionary Inboxes` |
 | `EventBoxProcessingOptions` | 发件箱/收件箱后台处理选项；配置节 `XiHan:EventBus:EventBoxes` |
+| `OutboxDeliveryTargetScanner` | 发件箱投递目标轮转扫描器（单例）；`SendRoundAsync(outboxConfig, budget, ct)` 执行一轮并返回领取总数 |
+| `OutboxPendingEventCounter` | `IOutboxPendingEventCounter` 默认实现（瞬时），统计投递目标的待送事件数 |
 | `DefaultEventOutbox` / `DefaultEventInbox` | 默认进程内事件盒实现，各最多 100000 条；满载时拒绝新增 |
 | `EventNameAttribute` | 为分布式事件类型指定事件名；静态 `GetNameOrDefault<TEvent>()` / `GetNameOrDefault(Type)` 取名或回退 `FullName` |
 | `GenericEventNameAttribute` | 为泛型事件类型（如 `EntityCreatedEventData<TEntity>`）按其唯一泛型参数动态生成事件名，可配 `Prefix` / `Postfix`；泛型参数不唯一时抛 `XiHanException` |
@@ -99,7 +120,10 @@ public class MyModule : XiHanModule { }
 | 字段 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
 | `PollingIntervalMilliseconds` | `int` | `2000` | 后台轮询间隔（毫秒，实际下限 200ms） |
-| `OutboxBatchSize` | `int` | `100` | 发件箱单批处理数量 |
+| `OutboxBatchSize` | `int` | `100` | 发件箱单批处理数量；按投递目标轮转扫描时为每轮预算 |
+| `OutboxTargetPageSize` | `int` | `100` | 投递目标目录单页读取数量 |
+| `OutboxRoundTimeLimitMilliseconds` | `int` | `30000` | 单轮扫描投递目标的时间上限（毫秒），达到后本轮不再访问新目标 |
+| `OutboxTargetDirectoryMaxBackoffMilliseconds` | `int` | `60000` | 目录读取失败后的最大退避时长（毫秒） |
 | `InboxBatchSize` | `int` | `100` | 收件箱单批处理数量 |
 | `MaxInboxRetryCount` | `int` | `5` | 收件箱最大重试次数，超过则丢弃 |
 | `InboxRetryDelaySeconds` | `int` | `10` | 收件箱重试延迟秒数 |
@@ -111,6 +135,9 @@ public class MyModule : XiHanModule { }
       "EventBoxes": {
         "PollingIntervalMilliseconds": 2000,
         "OutboxBatchSize": 100,
+        "OutboxTargetPageSize": 100,
+        "OutboxRoundTimeLimitMilliseconds": 30000,
+        "OutboxTargetDirectoryMaxBackoffMilliseconds": 60000,
         "InboxBatchSize": 100,
         "MaxInboxRetryCount": 5,
         "InboxRetryDelaySeconds": 10

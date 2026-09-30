@@ -38,6 +38,7 @@ public class MyModule : XiHanModule { }
 - **分布式事件契约**：`IDistributedEventBus`（继承 `IEventBus`，发布额外带 `useOutbox` 参数）+ `IDistributedEventHandler<TEvent>`
 - **处理器基础接口** `IEventHandler`：所有处理器的间接基接口，实际需实现 `ILocalEventHandler<>` 或 `IDistributedEventHandler<>`，不要直接实现它
 - **可靠投递契约**：`IEventOutbox`（发件箱）、`IEventInbox`（收件箱），以及出/入站事件信息 `IOutgoingEventInfo` / `IIncomingEventInfo`（及其实现 `OutgoingEventInfo` / `IncomingEventInfo`）
+- **发件箱投递目标契约**：`OutboxDeliveryTarget` / `OutboxDeliveryTargetPage`（投递目标与目录分页）、`IOutboxDeliveryTargetProvider`（应用提供的投递目标目录）、`ITenantScopedEventOutbox`（按当前租户上下文定位存储的发件箱）、`IOutboxPendingEventCounter`（投递目标的待送事件数）
 - **事件盒配置**：`OutboxConfig` / `InboxConfig` 及其字典 `OutboxConfigDictionary` / `InboxConfigDictionary`，`ISupportsEventBoxes` 声明对象支持事件盒机制
 - **处理器工厂与调用**：`IEventHandlerFactory`、`IEventHandlerInvoker`、`EventTypeWithEventHandlerFactories` 等抽象，供实现层构建处理管道
 - **事件命名与租户**：`IEventNameProvider`（事件名提供器）、`IEventDataMayHaveTenantId`（事件可能携带租户）
@@ -106,6 +107,11 @@ Task HandleEventAsync(TEvent eventData);
 | `IIncomingEventInfo` | 入站事件信息：在出站字段基础上多一个 `string MessageId`（用于去重） |
 | `OutgoingEventInfo` / `IncomingEventInfo` | 上述接口的具体实现类；构造函数校验事件名非空且不超过 `MaxEventNameLength`（静态属性，默认 256）；均提供 `SetCorrelationId(string)` / `GetCorrelationId()`，内部借助 `ExtraProperties` 与 `EventBusConsts.CorrelationIdHeaderName` 读写关联标识 |
 | `ISupportsEventBoxes` | 声明对象（通常是分布式事件总线）支持事件盒：`PublishFromOutboxAsync` / `PublishManyFromOutboxAsync` / `ProcessFromInboxAsync` |
+| `OutboxDeliveryTarget` | 发件箱投递目标，对应一个需要单独扫描发件箱的租户：构造入参 `long tenantId`（必须大于零）、`string? tenantName = null`、`bool isEnabled = true`；停用的目标仍会被扫描直至排空，但拒绝新事件入箱 |
+| `OutboxDeliveryTargetPage` | 投递目标目录的一页：`IReadOnlyList<OutboxDeliveryTarget> Targets`、`string? NextCursor`（构造时空字符串归一为 null，null 表示已到目录末尾）；静态 `Empty` 为空的末页 |
+| `IOutboxDeliveryTargetProvider` | 投递目标目录，由应用实现：`Task<OutboxDeliveryTargetPage> GetPageAsync(string? cursor, int pageSize, CancellationToken)`（发送循环在无租户上下文中调用）、`Task<OutboxDeliveryTarget?> FindAsync(long tenantId, CancellationToken)`（发件箱在无租户上下文、且不随当前业务工作单元的事务调用；不在目录中时返回 null）。目录应至少包含全部使用独立数据库布局的租户 |
+| `ITenantScopedEventOutbox` | 继承 `IEventOutbox`，表示领取与计数作用于当前租户上下文所在的存储：`Task<long> GetPendingCountAsync(CancellationToken)` 统计待发送与已领取未删除的事件，任一存储不可达时抛出异常。发送循环只对实现了本接口的发件箱按投递目标切换租户上下文扫描 |
+| `IOutboxPendingEventCounter` | `Task<long> GetPendingCountAsync(OutboxDeliveryTarget target, CancellationToken)`：统计投递目标在全部已配置发件箱中尚未删除的事件数，供删除租户前确认已排空；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException` |
 
 ### 事件盒配置
 

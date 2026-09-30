@@ -108,15 +108,36 @@ public class YourAppModule : XiHanModule
 
 发件箱只在调用方于**未完成的工作单元内**以 `onUnitOfWorkComplete: false` 发布、且配置了至少一个 `Outboxes` 时才会被写入；工作单元为事务型时事件行与业务数据同一个事务，非事务型时各自提交。按默认的 `onUnitOfWorkComplete: true` 发布时，工作单元先提交、再发布缓冲的分布式事件，此时已没有当前工作单元，`AddToOutboxAsync` 返回 `false`，事件**绕过发件箱直接发出**——本包对这条路径不起作用。
 
-`DistributedEventBusBase` 在工作单元的作用域内解析发件箱实现，因此 `SqlSugarEventOutbox` 注册为 `Scoped`。事件行的落库由当前工作单元已登记的连接决定：
+`DistributedEventBusBase` 在工作单元的作用域内解析发件箱实现，因此 `SqlSugarEventOutbox` 注册为 `Scoped`。事件行的落点：
 
-| 已登记的连接 | 落点 |
+| 情形 | 落点 |
 | --- | --- |
-| 0 个 | 当前库 |
-| 1 个 | 该库，与业务数据同一个事务 |
-| 多于 1 个 | 抛 `InvalidOperationException` |
+| 用 `ISqlSugarOutboxConnectionScope.Use(configId)` 指定了连接 | 该连接，须已登记在当前工作单元，否则抛 `InvalidOperationException` |
+| 未指定，已登记 0 个连接 | 当前布局的主库 |
+| 未指定，已登记 1 个连接 | 该库，与业务数据同一个事务 |
+| 未指定，已登记多于 1 个连接 | 抛 `InvalidOperationException` |
 
-当前租户使用独立于平台的数据库布局（库隔离）时，入箱在解析落点之前就抛 `InvalidOperationException`。判断方式是比较当前租户与平台（`ICurrentTenant.Change(null)`）下 `GetCurrentLayoutConfigIds()` 的主库。
+落点确定后，处于租户上下文时还要判定写入该落点的事件能否被发送循环投递，见「租户独立库」。
+
+```csharp
+public class OrderAppService(
+    IDistributedEventBus distributedEventBus,
+    ISqlSugarOutboxConnectionScope outboxConnectionScope)
+{
+    public async Task ShipAsync(Order order)
+    {
+        // 工作单元内登记了多个连接时，指定与业务数据同一事务的连接
+        using (outboxConnectionScope.Use("Orders"))
+        {
+            await distributedEventBus.PublishAsync(
+                new OrderShippedEvent { OrderId = order.BasicId },
+                onUnitOfWorkComplete: false);
+        }
+    }
+}
+```
+
+`Use` 在返回对象释放前的同一异步流程内生效，嵌套时释放后恢复外层指定。`configId` 区分大小写，须与连接配置标识原文一致，首尾空白被去掉；为空或空白时抛 `ArgumentException`。
 
 ### 收件箱入箱与去重
 
@@ -141,13 +162,87 @@ public class YourAppModule : XiHanModule
 
 可领取条件：发件箱是「待发送，或已领取但超时」；收件箱是「待处理且下次重试时刻为空或已到，或已领取但超时」。
 
-发件箱的领取遍历当前布局的全部库（主库与已建连的模块库），每库配额为 `maxCount` 除以库数、至少 1 条，单个库不可达时记录日志并跳过。收件箱只有一个库，不遍历。
+发件箱的领取遍历当前布局的全部库（主库与已建连的模块库），单个库不可达时记录日志并跳过。配额分配：起始库逐次轮换，每个库分到剩余配额按剩余库数均分后的上取整，前面的库领不满时余量顺延给后面的库，领满配额的库在第二轮继续分剩余配额；单次领取总量不超过 `maxCount`。收件箱只有一个库，不遍历。
 
 不使用 `FOR UPDATE SKIP LOCKED`、`UPDATE ... LIMIT` 等方言特性——本框架是通用类库，代价是多一次往返。
 
 ### 超时释放
 
 `Claim_Time` 早于「当前时刻 − 领取超时」的已领取记录重新变为可领取，避免实例异常退出导致记录永久滞留。
+
+### 发件箱完成
+
+`SqlSugarEventOutbox` 在领取时记下每条事件的来源（所在库的连接配置标识与领取令牌）。`DeleteManyAsync` 对本实例领取过的事件只在其来源库、按该令牌删除，不受当前租户上下文影响；记录已被其他实例重新领取（令牌已变）时不删除。其余标识遍历当前布局的全部库删除。某个库删除失败时记录日志并跳过，该库上的记录之后会被重新领取、再次投递。
+
+### 租户独立库
+
+未注册 `IOutboxDeliveryTargetProvider` 时，发送循环只扫描宿主布局，落点不在平台布局的入箱一律抛 `InvalidOperationException`。
+
+应用实现投递目标目录并注册为作用域服务后，发件箱接受目录中已启用租户的独立库入箱，[EventBus](./eventbus) 的发送循环由 `OutboxDeliveryTargetScanner` 按目标轮转扫描。租户上下文中的入箱按下表判定（无租户上下文的入箱不做此判定）：
+
+| 情形 | 结果 |
+| --- | --- |
+| 租户在目录中且已停用 | 拒绝新入箱，共享布局也拒绝；已入箱的事件继续投递直至排空 |
+| 落点在平台布局，租户不在目录中或已启用 | 接受 |
+| 落点不在平台布局，租户在目录中且启用，落点属于该租户当前的布局 | 接受 |
+| 落点不在平台布局，租户不在目录中 | 拒绝 |
+| 落点既不在平台布局，也不在该租户当前的布局 | 拒绝 |
+
+目录应至少包含全部使用独立数据库布局的租户；与平台共用布局的租户可以不列入。发件箱在无租户上下文、独立的非事务工作单元中调用 `FindAsync`，查询不进入业务工作单元的事务；发送循环在无租户上下文中调用 `GetPageAsync`。
+
+```csharp
+public class TenantOutboxDirectory(ISqlSugarClientResolver clientResolver) : IOutboxDeliveryTargetProvider
+{
+    public async Task<OutboxDeliveryTargetPage> GetPageAsync(
+        string? cursor, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var afterId = cursor is null ? 0L : long.Parse(cursor);
+
+        // AppTenant 是应用自己的租户表
+        var tenants = await clientResolver.GetCurrentClient().Queryable<AppTenant>()
+            .Where(tenant => tenant.BasicId > afterId)
+            .OrderBy(tenant => tenant.BasicId)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var targets = tenants.Select(ToTarget).ToList();
+        var nextCursor = tenants.Count < pageSize ? null : tenants[^1].BasicId.ToString();
+
+        return new OutboxDeliveryTargetPage(targets, nextCursor);
+    }
+
+    public async Task<OutboxDeliveryTarget?> FindAsync(long tenantId, CancellationToken cancellationToken = default)
+    {
+        var tenant = await clientResolver.GetCurrentClient().Queryable<AppTenant>()
+            .Where(item => item.BasicId == tenantId)
+            .FirstAsync(cancellationToken);
+
+        return tenant is null ? null : ToTarget(tenant);
+    }
+
+    private static OutboxDeliveryTarget ToTarget(AppTenant tenant)
+    {
+        return new OutboxDeliveryTarget(tenant.BasicId, tenant.TenantName, isEnabled: !tenant.IsRetiring);
+    }
+}
+
+// 启动模块的 ConfigureServices 中
+services.AddScoped<IOutboxDeliveryTargetProvider, TenantOutboxDirectory>();
+```
+
+`GetPageAsync` 返回的 `NextCursor` 为 null 或空字符串表示已到目录末尾。
+
+删除租户的顺序：先在目录中把它停用，再用 `IOutboxPendingEventCounter` 确认待送数为 0，然后删除。
+
+```csharp
+var pending = await pendingEventCounter.GetPendingCountAsync(new OutboxDeliveryTarget(tenantId));
+if (pending == 0)
+{
+    // 可以删除该租户的库
+}
+```
+
+待送数包含待发送与已领取未删除的事件；任一库不可达时抛出异常，不返回部分结果；多个连接配置标识指向同一物理库时按标识分别计数。
 
 ### 收件箱的状态流转与清理
 
@@ -176,7 +271,9 @@ public class YourAppModule : XiHanModule
 | 类型 | 说明 |
 | --- | --- |
 | `XiHanSqlSugarEventBusModule` | 模块类，声明依赖即启用 |
-| `SqlSugarEventOutbox` | `IEventOutbox` 的 SqlSugar 实现，注册为 `Scoped` |
+| `SqlSugarEventOutbox` | `IEventOutbox` 的 SqlSugar 实现，同时实现 `ITenantScopedEventOutbox`，注册为 `Scoped` |
+| `ISqlSugarOutboxConnectionScope` | 入箱连接范围：`Use(configId)` 指定入箱写入的连接，`ConfigId` 为当前指定值 |
+| `AsyncLocalSqlSugarOutboxConnectionScope` | `ISqlSugarOutboxConnectionScope` 的默认实现，基于异步本地存储，注册为单例 |
 | `SqlSugarEventInbox` | `IEventInbox` 的 SqlSugar 实现，注册为 `Scoped` |
 | `SysEventOutbox` / `SysEventInbox` | 收发件箱实体 |
 | `EventOutboxMapper` / `EventInboxMapper` | 契约与实体的双向映射 |
@@ -186,21 +283,21 @@ public class YourAppModule : XiHanModule
 
 - **投递与处理都是至少一次**。发件箱在投递成功后才删除记录；收件箱在处理成功后才标记已处理。进程在两步之间退出，记录会被重新领取。处理器必须幂等。
 - **先写业务数据、后发布事件**。发件箱按工作单元已登记的连接决定落点；先发布再写业务，事件会落在主库而业务落在模块库，两者不在同一个事务里，且不会报错。
-- **一个工作单元只写一个库**。登记了多个连接时发件箱入箱抛异常，出路是拆小工作单元。
+- **一个工作单元登记多个库时要指定落点**。未指定时发件箱入箱抛异常；用 `ISqlSugarOutboxConnectionScope.Use` 指定承载业务的连接，或拆小工作单元。
 - **收件箱的去重窗口等于保留期**。清理之后同一消息再来会被当作新消息处理；没有消息标识的消息不参与去重。
 - **`ClaimTimeout` 要大于单批最长处理时间**。宿主逐条顺序处理一批事件，整批超时后尾部记录会被其他实例重新领取。
 - **收件箱的重试计数在进程内**。多实例轮流领到同一条失败事件、或进程重启后，计数从 1 重来，实际重试次数可能超过 `MaxInboxRetryCount`。
 - **`IEventOutbox` / `IEventInbox` 的生命周期由单例改为作用域**。框架内没有构造函数注入这两个接口的地方，不会产生被捕获依赖；应用若自行把它们注入单例，需要改为从作用域解析。
 - **`GetWaitingEventsAsync` 是领取不是查询**。调用后记录已被标记为已领取，不要在别处当作只读查询复用。
 - **`filter` 参数未支持**。传入非空值会抛 `NotSupportedException`，而不是静默忽略。
-- **租户独立库下入箱会抛异常**。发件箱的发送循环只遍历平台布局，写入租户独立库的事件永远不会被投递，因此入箱时若当前租户的数据库布局与平台布局的主库不同，`EnqueueAsync` 抛 `InvalidOperationException`（fail-closed）。字段隔离与行隔离的租户与平台共用主库，不受影响；收件箱的全部记录都在宿主布局主库。
+- **租户独立库入箱需要投递目标目录**。未注册 `IOutboxDeliveryTargetProvider`、租户不在目录中或已停用时，写入租户独立库的入箱抛 `InvalidOperationException`，见「租户独立库」。收件箱的全部记录都在宿主布局主库。
 - **发件箱投递失败要等满 `ClaimTimeout` 才重试，且没有次数上限**。投递失败的记录保持已领取状态，直到领取超时才会被重新领取；发件箱没有重试计数，会一直重试下去。
-- **配额 `maxCount / 库数` 在积压集中于单一库时会压低吞吐**。每库领取量按库数均分，积压全在一个库里时，单次领取量只有 `maxCount` 除以库数。
-- **业务实体在模块库又开启 `EnableDiffLog` 时，不要在同一工作单元内以 `onUnitOfWorkComplete: false` 发布分布式事件**。差异日志写入器经 `GetCurrentClient()` 把主库也登记进工作单元，登记变成两个库（业务模块库加主库），发件箱入箱随即抛「登记了多个数据库连接」的异常。避开方式：事件改在工作单元完成时发布（`onUnitOfWorkComplete: true`，此时不经过发件箱），或该类实体不开差异日志。
+- **业务实体在模块库又开启 `EnableDiffLog` 时，同一工作单元内以 `onUnitOfWorkComplete: false` 发布分布式事件须指定落点**。差异日志写入器经 `GetCurrentClient()` 把主库也登记进工作单元，登记变成两个库（业务模块库加主库），未指定落点时发件箱入箱抛「登记了多个数据库连接」的异常。处理方式：用 `ISqlSugarOutboxConnectionScope.Use` 指定业务模块库；或事件改在工作单元完成时发布（`onUnitOfWorkComplete: true`，此时不经过发件箱）；或该类实体不开差异日志。
 
 ## 扩展点 / 自定义
 
-需要完全自定义存储行为时，实现 `IEventOutbox` / `IEventInbox` 并在 DI 中 `Replace`，同时把 `XiHanDistributedEventBusOptions.Outboxes` / `Inboxes` 的 `ImplementationType` 指向自己的类型。
+- **投递目标目录**：实现 `IOutboxDeliveryTargetProvider` 并注册为作用域服务，让租户独立库可以入箱并被投递，见「租户独立库」。
+- **完全自定义存储**：实现 `IEventOutbox` / `IEventInbox` 并在 DI 中 `Replace`，同时把 `XiHanDistributedEventBusOptions.Outboxes` / `Inboxes` 的 `ImplementationType` 指向自己的类型。
 
 ## 依赖模块
 
