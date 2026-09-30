@@ -322,10 +322,10 @@ public class BackgroundJobLeaseTests
     }
 
     /// <summary>
-    /// 不含取消字段的旧表经 CodeFirst 补列后可读且可领取，补列可重复执行
+    /// 不含取消字段的旧表经 SqlSugar CodeFirst.InitTables 补列后旧数据可读且可领取，重复调用 InitTables 不出错
     /// </summary>
     [Fact(Timeout = 30000)]
-    public async Task 旧表补列后旧数据可读且可领取()
+    public async Task 旧表经CodeFirst初始化补列后旧数据可读且可领取()
     {
         using var context = new TasksTestContext();
         var client = context.Client;

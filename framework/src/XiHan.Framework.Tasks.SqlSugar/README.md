@@ -45,9 +45,26 @@
 - SQL Server 未开启 RCSI 时，领取会被未提交的入队事务阻塞
 - 放弃的作业保留在表里并标记 `Is_Abandoned = 1`，没有自动清理；可按标识查到，也可经管理服务重试
 - 管理：本存储声明 `SupportsJobManagement`。重试只作用于已放弃的作业，清除放弃与取消标记、尝试次数归零、下次执行时间设为当前时间并结束租约，重复重试返回 `NoChange`。取消持有有效租约的作业时只登记取消请求（`CancellationRequested`），由持有租约的 Worker 在续租时得知并协作停止；其余未放弃的作业直接标记放弃并结束租约（`Cancelled`）；已放弃或已登记请求的作业返回 `NoChange`，不存在的返回 `NotFound`。取消是协作式的，不强制终止正在执行的代码
-- 取消标记列 `Is_Cancellation_Requested` 可空，空值与 `0` 均表示未请求。已有 `sys_background_job` 表的库在 CodeFirst 建表初始化时只补这一列、不改动既有数据，可重复执行；自行维护表结构时手工补一个可空的布尔列
+- 取消标记列 `Is_Cancellation_Requested` 可空，空值与 `0` 均表示未请求。框架的 `DbInitializer` 不修改已存在的表：新安装无需处理；若 `sys_background_job` 已由本包早期版本建立，需经 `IDbSchemaUpgrader` 或手工补这一列（示例见本节末尾），没有存在性检查的写法要先确认列不存在，以便重复执行。直接调用 SqlSugar `CodeFirst.InitTables` 的宿主会自动补列
+- MySQL 连接串不要设 `UseAffectedRows=true`：同一秒内的续租会因列值未变返回 0 行而被判失去租约，保持 MySqlConnector 的默认
+- 租约恰在到期那一刻本存储仍可续租（与领取的过期判定一致），进程内存储不可
+- 多实例的时钟需要同步：时钟偏差大于续租间隔时，作业可能被另一实例提前重新领取
+- 取消在两步条件更新之间作业恰被领取或释放时重新执行，最多三轮
 - `UpdateAsync` 只更新已存在的作业，不存在时不插入；`InsertAsync` 遇主键重复时抛数据库异常；应用名为空与空字符串视为同一个应用
 - 不要在事务型工作单元里调用领取：条件 `UPDATE` 持有的行锁要到工作单元提交才释放
+
+存量表补 `Is_Cancellation_Requested` 列的示例：
+
+```sql
+-- MySQL：先查 information_schema.COLUMNS 确认列不存在再执行
+ALTER TABLE sys_background_job ADD COLUMN Is_Cancellation_Requested TINYINT(1) NULL;
+-- SQL Server：自带存在性检查
+IF COL_LENGTH('sys_background_job', 'Is_Cancellation_Requested') IS NULL ALTER TABLE sys_background_job ADD Is_Cancellation_Requested BIT NULL;
+-- PostgreSQL：自带存在性检查（列名按 SqlSugar 默认的自动小写）
+ALTER TABLE sys_background_job ADD COLUMN IF NOT EXISTS is_cancellation_requested BOOLEAN NULL;
+-- SQLite：先用 PRAGMA table_info(sys_background_job) 确认列不存在再执行
+ALTER TABLE sys_background_job ADD COLUMN Is_Cancellation_Requested BIT NULL;
+```
 
 定时任务：
 

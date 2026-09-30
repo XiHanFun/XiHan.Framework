@@ -81,7 +81,20 @@ public class YourAppModule : XiHanModule
 
 后台作业的时间与 `IClock.Now` 同一口径。
 
-`Is_Cancellation_Requested` 是后加的可空列。已有 `sys_background_job` 表的库在 CodeFirst 建表初始化时只补这一列，不改动既有数据，可重复执行；自行维护表结构时手工补一个可空的布尔列。
+`Is_Cancellation_Requested` 是后加的可空列。框架的 `DbInitializer` 不修改已存在的表：新安装直接建出含该列的表，无需处理；若 `sys_background_job` 已由本包早期版本建立，需经 `IDbSchemaUpgrader`（见 [Data](./data)）或手工补一个可空布尔列 `Is_Cancellation_Requested`。各库示例如下，没有存在性检查的写法要先确认列不存在，以便重复执行：
+
+```sql
+-- MySQL：先查 information_schema.COLUMNS 确认列不存在再执行
+ALTER TABLE sys_background_job ADD COLUMN Is_Cancellation_Requested TINYINT(1) NULL;
+-- SQL Server：自带存在性检查
+IF COL_LENGTH('sys_background_job', 'Is_Cancellation_Requested') IS NULL ALTER TABLE sys_background_job ADD Is_Cancellation_Requested BIT NULL;
+-- PostgreSQL：自带存在性检查（列名按 SqlSugar 默认的自动小写）
+ALTER TABLE sys_background_job ADD COLUMN IF NOT EXISTS is_cancellation_requested BOOLEAN NULL;
+-- SQLite：先用 PRAGMA table_info(sys_background_job) 确认列不存在再执行
+ALTER TABLE sys_background_job ADD COLUMN Is_Cancellation_Requested BIT NULL;
+```
+
+直接调用 SqlSugar `CodeFirst.InitTables` 的宿主会自动补这一列，不改动既有数据。
 
 ### `sys_job_instance`
 
@@ -193,6 +206,10 @@ public class YourAppModule : XiHanModule
 - **运行中实例对所有节点可见**。多节点共用一个库时，不允许并发的任务在节点之间也互斥。
 - **不限时的任务要留意遗留实例**。任务超时小于等于 0 时，运行中实例在被显式结束之前一直算运行中；这类任务若不允许并发、又在执行途中崩溃，会一直被跳过。用 `IJobStore.UpdateJobStatusAsync(实例标识, JobStatus.Failed)` 清除，遗留实例的 `Running_Deadline` 为 `9999-12-31`。
 - **跨库写入不是一个事务**。业务数据在模块库或租户独立库时，作业的入队与业务各自提交。
+- **MySQL 不要开启 `UseAffectedRows=true`**。开启后同一秒内的续租因列值未变返回 0 行，被判为失去租约；保持 MySqlConnector 的默认（返回匹配行数）。
+- **租约恰在到期那一刻仍可续租**。本存储以「`Claim_Time` 不早于当前时间减租约时长」判定有效，与领取的过期判定一致；进程内存储在这一刻已不可续租。
+- **多实例的时钟需要同步**。租约判定用各实例自己的当前时间，时钟偏差大于续租间隔时，作业可能被另一实例提前重新领取。
+- **取消最多重试三轮**。两步条件更新之间作业恰被领取或释放时重新执行，三轮仍无法判定时返回 `NoChange`。
 - **两个存储的生命周期仍是单例**，与主包一致。之后调用 `UseRedisBackgroundJobStore()` 或 `XiHanJobBuilder.UseStore<T>()` 会覆盖本包。
 
 ## 扩展点 / 自定义
