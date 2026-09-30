@@ -20,7 +20,8 @@ namespace XiHan.Framework.EventBus.SqlSugar.Outbox;
 /// 发件箱的 SqlSugar 实现
 /// </summary>
 /// <remarks>
-/// 读写都作用于当前租户上下文所在的数据库布局。
+/// 读写都作用于当前租户上下文所在的数据库布局；租户上下文中领取、按标识遍历删除与待送数统计只作用于租户独立的库，
+/// 平台布局内的库由宿主上下文负责。
 /// 本实例记住自己领取的每条事件来自哪个库、用了哪个领取令牌，删除这些事件时只在该库按该令牌删除。
 /// </remarks>
 public class SqlSugarEventOutbox : ITenantScopedEventOutbox
@@ -221,7 +222,8 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// <remarks>
     /// 本方法在返回前会把记录标记为已领取，不是纯查询。
     /// 领取超时后记录可被重新领取，超时时长由 <see cref="XiHanSqlSugarEventBoxOptions.ClaimTimeout"/> 配置。
-    /// 领取遍历当前布局的全部库，起始库逐次轮换；每个库分到剩余配额按剩余库数均分后的上取整，
+    /// 租户上下文中只作用于租户独立的库，平台布局内的库由宿主上下文负责。
+    /// 领取遍历可扫描的全部库，起始库逐次轮换；每个库分到剩余配额按剩余库数均分后的上取整，
     /// 前面的库领不满时余量顺延给后面的库，领满配额的库在第二轮继续分剩余配额；单次领取总量不超过 <c>maxCount</c>。
     /// 某个库不可达时记录日志并跳过。
     /// </remarks>
@@ -248,7 +250,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var configIds = _clientResolver.GetCurrentLayoutConfigIds();
+        var configIds = GetScannableConfigIds();
         if (configIds.Count == 0)
         {
             return [];
@@ -385,7 +387,8 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     /// <remarks>
     /// 本实例领取过的事件只在其来源库、按当时的领取令牌删除，不受当前租户上下文影响；
     /// 令牌已变（记录被其他实例重新领取）时不删除。
-    /// 其余标识遍历当前布局的全部库删除；主键全局唯一，没有该记录的库上执行只删除 0 行。
+    /// 其余标识遍历可扫描的全部库删除；租户上下文中只作用于租户独立的库，平台布局内的库由宿主上下文负责。
+    /// 主键全局唯一，没有该记录的库上执行只删除 0 行。
     /// 某个库删除失败时记录日志并跳过该库，不向调用方传播异常；该库上的记录保持可领取状态，
     /// 会在后续轮询中被重新领取并再次投递。
     /// </remarks>
@@ -436,7 +439,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
             return;
         }
 
-        foreach (var configId in _clientResolver.GetCurrentLayoutConfigIds())
+        foreach (var configId in GetScannableConfigIds())
         {
             try
             {
@@ -452,9 +455,10 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     }
 
     /// <summary>
-    /// 统计当前布局各库中尚未删除的事件数
+    /// 统计可扫描的各库中尚未删除的事件数
     /// </summary>
     /// <remarks>
+    /// 租户上下文中只作用于租户独立的库，平台布局内的库由宿主上下文负责。
     /// 待发送与已领取但尚未删除的事件都计入。任一库不可达时抛出异常，不返回部分结果。
     /// 多个连接配置标识指向同一物理库时按标识分别计数。
     /// </remarks>
@@ -464,7 +468,7 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
     {
         long total = 0;
 
-        foreach (var configId in _clientResolver.GetCurrentLayoutConfigIds().Distinct(StringComparer.Ordinal))
+        foreach (var configId in GetScannableConfigIds().Distinct(StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -473,6 +477,27 @@ public class SqlSugarEventOutbox : ITenantScopedEventOutbox
         }
 
         return total;
+    }
+
+    /// <summary>
+    /// 获取领取、遍历删除与待送数统计所作用的连接配置标识
+    /// </summary>
+    /// <returns>当前布局的连接配置标识；处于租户上下文时剔除平台布局内的连接</returns>
+    private IReadOnlyList<string> GetScannableConfigIds()
+    {
+        var configIds = _clientResolver.GetCurrentLayoutConfigIds();
+        if (_currentTenant.Id is not > 0)
+        {
+            return configIds;
+        }
+
+        IReadOnlyList<string> platformLayout;
+        using (_currentTenant.Change(null))
+        {
+            platformLayout = _clientResolver.GetCurrentLayoutConfigIds();
+        }
+
+        return [.. configIds.Where(configId => !platformLayout.Contains(configId, StringComparer.Ordinal))];
     }
 
     /// <summary>

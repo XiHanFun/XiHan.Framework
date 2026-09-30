@@ -8,7 +8,7 @@ XiHan.Framework.EventBus 提供事件总线实现与集成能力，支持进程�
 - 与应用服务、领域事件的集成入口
 - 统一事件处理与异常管理策略
 - 发件箱/收件箱后台循环；注册投递目标目录且发件箱实现 `ITenantScopedEventOutbox` 时，由 `OutboxDeliveryTargetScanner` 按投递目标轮转扫描发件箱
-- `OutboxPendingEventCounter`：统计投递目标在全部发件箱中的待送事件数
+- `OutboxPendingEventCounter`：统计投递目标在全部按租户定位存储的发件箱（实现 `ITenantScopedEventOutbox`）中的待送事件数
 
 ## 依赖关系
 - 通过 `XiHanEventBusModule` 参与模块化生命周期

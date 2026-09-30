@@ -78,7 +78,7 @@ public class MyModule : XiHanModule { }
 
 ### 待送数查询
 
-`IOutboxPendingEventCounter.GetPendingCountAsync(target)` 统计某个投递目标在全部已配置发件箱中尚未删除的事件数，供删除租户前确认其发件箱已排空。默认实现 `OutboxPendingEventCounter` 对每个不同的发件箱实现类型，在独立作用域内切换到目标租户后调用 `ITenantScopedEventOutbox.GetPendingCountAsync` 并求和；同一实现类型只统计一次。已领取未删除的事件也计入；任一存储不可达时抛出异常；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException`。
+`IOutboxPendingEventCounter.GetPendingCountAsync(target)` 统计某个投递目标在全部按租户定位存储的发件箱（实现 `ITenantScopedEventOutbox`）中尚未删除的事件数，供删除租户前确认其发件箱已排空。默认实现 `OutboxPendingEventCounter` 对每个不同的发件箱实现类型，在独立作用域内切换到目标租户后调用 `ITenantScopedEventOutbox.GetPendingCountAsync` 并求和；同一实现类型只统计一次。已领取未删除的事件也计入；任一存储不可达时抛出异常；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException`。
 
 ## 核心能力
 

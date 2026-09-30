@@ -172,11 +172,11 @@ public class OrderAppService(
 
 ### 发件箱完成
 
-`SqlSugarEventOutbox` 在领取时记下每条事件的来源（所在库的连接配置标识与领取令牌）。`DeleteManyAsync` 对本实例领取过的事件只在其来源库、按该令牌删除，不受当前租户上下文影响；记录已被其他实例重新领取（令牌已变）时不删除。其余标识遍历当前布局的全部库删除。某个库删除失败时记录日志并跳过，该库上的记录之后会被重新领取、再次投递。
+`SqlSugarEventOutbox` 在领取时记下每条事件的来源（所在库的连接配置标识与领取令牌）。`DeleteManyAsync` 对本实例领取过的事件只在其来源库、按该令牌删除，不受当前租户上下文影响；记录已被其他实例重新领取（令牌已变）时不删除。其余标识遍历当前布局的全部库删除，租户上下文中不含平台布局内的库。某个库删除失败时记录日志并跳过，该库上的记录之后会被重新领取、再次投递。
 
 ### 租户独立库
 
-未注册 `IOutboxDeliveryTargetProvider` 时，发送循环只扫描宿主布局，落点不在平台布局的入箱一律抛 `InvalidOperationException`。
+未注册 `IOutboxDeliveryTargetProvider` 时，发送循环只扫描宿主布局，租户上下文中落点不在平台布局的入箱一律抛 `InvalidOperationException`；无租户上下文的入箱不做可投递判定。
 
 应用实现投递目标目录并注册为作用域服务后，发件箱接受目录中已启用租户的独立库入箱，[EventBus](./eventbus) 的发送循环由 `OutboxDeliveryTargetScanner` 按目标轮转扫描。租户上下文中的入箱按下表判定（无租户上下文的入箱不做此判定）：
 
@@ -188,7 +188,9 @@ public class OrderAppService(
 | 落点不在平台布局，租户不在目录中 | 拒绝 |
 | 落点既不在平台布局，也不在该租户当前的布局 | 拒绝 |
 
-目录应至少包含全部使用独立数据库布局的租户；与平台共用布局的租户可以不列入。发件箱在无租户上下文、独立的非事务工作单元中调用 `FindAsync`，查询不进入业务工作单元的事务；发送循环在无租户上下文中调用 `GetPageAsync`。
+目录应至少包含全部使用独立数据库布局的租户；与平台共用布局的租户可以不列入。发件箱在无租户上下文、独立的非事务工作单元中调用 `FindAsync`，查询所用连接不登记进当前业务工作单元。注册目录后，每次租户上下文中的入箱都会调用一次 `FindAsync`，建议应用端缓存目录查询结果。发送循环在无租户上下文中调用 `GetPageAsync`。
+
+租户上下文中领取、按标识遍历删除与待送数统计只作用于租户独立的库，平台布局内的库由宿主上下文负责。共享布局租户的事件存在平台库，平台库中的事件不区分租户，`IOutboxPendingEventCounter` 对共享布局租户返回 0。扫描器切换到独立库租户时会为其建连，`SqlSugarScope` 的连接配置数随目录中独立库租户数增长。
 
 ```csharp
 public class TenantOutboxDirectory(ISqlSugarClientResolver clientResolver) : IOutboxDeliveryTargetProvider
@@ -232,7 +234,7 @@ services.AddScoped<IOutboxDeliveryTargetProvider, TenantOutboxDirectory>();
 
 `GetPageAsync` 返回的 `NextCursor` 为 null 或空字符串表示已到目录末尾。
 
-删除租户的顺序：先在目录中把它停用，再用 `IOutboxPendingEventCounter` 确认待送数为 0，然后删除。
+删除租户的顺序：先在目录中把它停用，等进行中的事务结束，再以 `IOutboxPendingEventCounter` 确认为 0，然后删除。
 
 ```csharp
 var pending = await pendingEventCounter.GetPendingCountAsync(new OutboxDeliveryTarget(tenantId));

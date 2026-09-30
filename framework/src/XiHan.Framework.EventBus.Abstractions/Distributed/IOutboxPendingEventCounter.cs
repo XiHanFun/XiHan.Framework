@@ -12,7 +12,7 @@ namespace XiHan.Framework.EventBus.Abstractions.Distributed;
 public interface IOutboxPendingEventCounter
 {
     /// <summary>
-    /// 统计指定投递目标在全部已配置发件箱中尚未删除的事件数
+    /// 统计指定投递目标在全部按租户定位存储的发件箱（实现 <see cref="ITenantScopedEventOutbox"/>）中尚未删除的事件数
     /// </summary>
     /// <param name="target">投递目标</param>
     /// <param name="cancellationToken">取消令牌</param>

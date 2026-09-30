@@ -145,6 +145,36 @@ public class OutboxTenantTargetIntegrationTests
         Assert.Equal(1, await CountAsync(context, 1001));
     }
 
+    /// <summary>
+    /// 目录同时列出独立库租户与共享布局租户时平台库只在宿主上下文中投递一次
+    /// </summary>
+    [Fact]
+    public async Task 共享布局租户不重复扫描平台库()
+    {
+        using var context = new OutboxTestContext(tenantIds: [1001], withTargetProvider: true);
+        context.TargetProvider!.Targets.Add(new OutboxDeliveryTarget(1001));
+        context.TargetProvider.Targets.Add(new OutboxDeliveryTarget(2002));
+        using var host = OutboxTenantHost.For(context);
+        host.Bus.TenantProbe = () => context.CurrentTenant.Id;
+        await InsertAsync(context.Client, 3);
+        await InsertAsync(context.TenantClient(1001), 1);
+        var platformIds = (await context.Client.Queryable<SysEventOutbox>().Select(item => item.BasicId).ToListAsync()).ToHashSet();
+
+        Assert.Equal(0, await host.Counter.GetPendingCountAsync(new OutboxDeliveryTarget(2002), TestContext.Current.CancellationToken));
+
+        var claimed = await host.RoundAsync();
+
+        Assert.Equal(4, claimed);
+        Assert.Equal(4, host.Bus.Published.Count);
+        Assert.Equal(4, host.Bus.Published.Select(item => item.Id).Distinct().Count());
+        Assert.All(
+            host.Bus.PublishedTenants.Where(item => platformIds.Contains(item.EventId)),
+            item => Assert.Null(item.TenantId));
+        Assert.Equal(3, host.Bus.PublishedTenants.Count(item => platformIds.Contains(item.EventId)));
+        Assert.Equal(0, await context.Client.Queryable<SysEventOutbox>().CountAsync());
+        Assert.Equal(0, await CountAsync(context, 1001));
+    }
+
     private static OutboxTestContext NewContext(params long[] tenantIds)
     {
         var context = new OutboxTestContext(tenantIds: tenantIds, withTargetProvider: true);

@@ -21,7 +21,7 @@ public interface ISqlSugarOutboxConnectionScope
     /// 指定入箱写入的连接
     /// </summary>
     /// <param name="configId">承载业务数据的连接配置标识，须与连接配置标识原文一致（区分大小写）</param>
-    /// <returns>释放时恢复外层指定的对象</returns>
+    /// <returns>释放时恢复外层指定连接的对象</returns>
     /// <exception cref="ArgumentException"><paramref name="configId"/> 为 null、空字符串或空白</exception>
     IDisposable Use(string configId);
 }

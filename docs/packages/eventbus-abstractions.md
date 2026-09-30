@@ -109,9 +109,9 @@ Task HandleEventAsync(TEvent eventData);
 | `ISupportsEventBoxes` | 声明对象（通常是分布式事件总线）支持事件盒：`PublishFromOutboxAsync` / `PublishManyFromOutboxAsync` / `ProcessFromInboxAsync` |
 | `OutboxDeliveryTarget` | 发件箱投递目标，对应一个需要单独扫描发件箱的租户：构造入参 `long tenantId`（必须大于零）、`string? tenantName = null`、`bool isEnabled = true`；停用的目标仍会被扫描直至排空，但拒绝新事件入箱 |
 | `OutboxDeliveryTargetPage` | 投递目标目录的一页：`IReadOnlyList<OutboxDeliveryTarget> Targets`、`string? NextCursor`（构造时空字符串归一为 null，null 表示已到目录末尾）；静态 `Empty` 为空的末页 |
-| `IOutboxDeliveryTargetProvider` | 投递目标目录，由应用实现：`Task<OutboxDeliveryTargetPage> GetPageAsync(string? cursor, int pageSize, CancellationToken)`（发送循环在无租户上下文中调用）、`Task<OutboxDeliveryTarget?> FindAsync(long tenantId, CancellationToken)`（发件箱在无租户上下文、且不随当前业务工作单元的事务调用；不在目录中时返回 null）。目录应至少包含全部使用独立数据库布局的租户 |
+| `IOutboxDeliveryTargetProvider` | 投递目标目录，由应用实现：`Task<OutboxDeliveryTargetPage> GetPageAsync(string? cursor, int pageSize, CancellationToken)`（发送循环在无租户上下文中调用）、`Task<OutboxDeliveryTarget?> FindAsync(long tenantId, CancellationToken)`（发件箱在无租户上下文、独立的非事务工作单元中调用，查询所用连接不登记进当前业务工作单元；每次租户上下文中的入箱调用一次，建议应用端缓存；不在目录中时返回 null）。目录应至少包含全部使用独立数据库布局的租户 |
 | `ITenantScopedEventOutbox` | 继承 `IEventOutbox`，表示领取与计数作用于当前租户上下文所在的存储：`Task<long> GetPendingCountAsync(CancellationToken)` 统计待发送与已领取未删除的事件，任一存储不可达时抛出异常。发送循环只对实现了本接口的发件箱按投递目标切换租户上下文扫描 |
-| `IOutboxPendingEventCounter` | `Task<long> GetPendingCountAsync(OutboxDeliveryTarget target, CancellationToken)`：统计投递目标在全部已配置发件箱中尚未删除的事件数，供删除租户前确认已排空；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException` |
+| `IOutboxPendingEventCounter` | `Task<long> GetPendingCountAsync(OutboxDeliveryTarget target, CancellationToken)`：统计投递目标在全部按租户定位存储的发件箱（实现 `ITenantScopedEventOutbox`）中尚未删除的事件数，供删除租户前（停用并等进行中的事务结束后）确认已排空；没有任何已配置发件箱实现 `ITenantScopedEventOutbox` 时抛 `NotSupportedException` |
 
 ### 事件盒配置
 

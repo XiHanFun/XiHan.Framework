@@ -13,7 +13,7 @@ XiHan.Framework.EventBus.Abstractions 提供事件总线的抽象契约与基础
   - `OutboxDeliveryTargetPage`：投递目标目录的一页与下一页游标
   - `IOutboxDeliveryTargetProvider`：由应用实现的投递目标目录，分页读取与按租户查找
   - `ITenantScopedEventOutbox`：按当前租户上下文定位存储的发件箱，可统计待送数
-  - `IOutboxPendingEventCounter`：统计投递目标在全部发件箱中的待送事件数
+  - `IOutboxPendingEventCounter`：统计投递目标在全部按租户定位存储的发件箱（实现 `ITenantScopedEventOutbox`）中的待送事件数
 
 ## 依赖关系
 - 通过 `XiHanEventBusAbstractionsModule` 参与模块化生命周期

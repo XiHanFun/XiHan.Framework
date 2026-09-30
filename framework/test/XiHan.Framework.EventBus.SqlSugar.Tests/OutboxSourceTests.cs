@@ -34,7 +34,6 @@ public class OutboxSourceTests
     [Fact]
     public async Task 某个库领不满时余量顺延给其他库()
     {
-        // 起始库逐次轮换，两个新夹具各跑一次以走到两种起点
         for (var round = 0; round < 2; round++)
         {
             using var context = new OutboxTestContext(withModuleDatabase: true);
@@ -140,6 +139,42 @@ public class OutboxSourceTests
         {
             Assert.Equal(2, await context.Outbox.GetPendingCountAsync(TestContext.Current.CancellationToken));
         }
+    }
+
+    /// <summary>
+    /// 共享布局租户上下文中不领取也不统计平台库的事件
+    /// </summary>
+    [Fact]
+    public async Task 共享布局租户上下文中不领取也不统计平台库的事件()
+    {
+        using var context = new OutboxTestContext();
+        await InsertAsync(context.Client, 3);
+
+        using (context.CurrentTenant.Change(1001))
+        {
+            Assert.Empty(await context.Outbox.GetWaitingEventsAsync(10, cancellationToken: TestContext.Current.CancellationToken));
+            Assert.Equal(0, await context.Outbox.GetPendingCountAsync(TestContext.Current.CancellationToken));
+        }
+
+        Assert.Equal(3, await context.Client.Queryable<SysEventOutbox>().CountAsync());
+    }
+
+    /// <summary>
+    /// 共享布局租户上下文中按标识删除不触及平台库
+    /// </summary>
+    [Fact]
+    public async Task 共享布局租户上下文中按标识删除不触及平台库()
+    {
+        using var context = new OutboxTestContext();
+        var info = NewEvent();
+        await context.Client.Insertable(EventOutboxMapper.ToEntity(info)).ExecuteCommandAsync();
+
+        using (context.CurrentTenant.Change(1001))
+        {
+            await context.Outbox.DeleteManyAsync([info.Id]);
+        }
+
+        Assert.Equal(1, await context.Client.Queryable<SysEventOutbox>().CountAsync());
     }
 
     /// <summary>

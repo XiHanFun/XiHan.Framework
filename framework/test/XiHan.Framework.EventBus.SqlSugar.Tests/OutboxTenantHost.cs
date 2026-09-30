@@ -161,6 +161,16 @@ internal sealed class RecordingEventBoxBus : IDistributedEventBus, ISupportsEven
     public ConcurrentQueue<OutgoingEventInfo> Published { get; } = new();
 
     /// <summary>
+    /// 读取租户上下文的探针，在投递时调用
+    /// </summary>
+    public Func<long?>? TenantProbe { get; set; }
+
+    /// <summary>
+    /// 设置探针后按投递顺序记录的事件标识与投递时的租户上下文
+    /// </summary>
+    public ConcurrentQueue<(Guid EventId, long? TenantId)> PublishedTenants { get; } = new();
+
+    /// <summary>
     /// 记录单个投递
     /// </summary>
     /// <param name="outgoingEvent">出站事件</param>
@@ -168,7 +178,7 @@ internal sealed class RecordingEventBoxBus : IDistributedEventBus, ISupportsEven
     /// <returns>任务</returns>
     public Task PublishFromOutboxAsync(OutgoingEventInfo outgoingEvent, OutboxConfig outboxConfig)
     {
-        Published.Enqueue(outgoingEvent);
+        Record(outgoingEvent);
         return Task.CompletedTask;
     }
 
@@ -182,10 +192,24 @@ internal sealed class RecordingEventBoxBus : IDistributedEventBus, ISupportsEven
     {
         foreach (var outgoingEvent in outgoingEvents)
         {
-            Published.Enqueue(outgoingEvent);
+            Record(outgoingEvent);
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 记录一条投递及投递时的租户上下文
+    /// </summary>
+    /// <param name="outgoingEvent">出站事件</param>
+    private void Record(OutgoingEventInfo outgoingEvent)
+    {
+        Published.Enqueue(outgoingEvent);
+
+        if (TenantProbe is not null)
+        {
+            PublishedTenants.Enqueue((outgoingEvent.Id, TenantProbe()));
+        }
     }
 
     public Task ProcessFromInboxAsync(IncomingEventInfo incomingEvent, InboxConfig inboxConfig)

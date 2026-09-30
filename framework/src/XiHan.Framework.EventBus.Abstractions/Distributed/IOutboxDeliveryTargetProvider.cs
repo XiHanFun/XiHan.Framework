@@ -28,7 +28,8 @@ public interface IOutboxDeliveryTargetProvider
     /// 按租户标识查找投递目标
     /// </summary>
     /// <remarks>
-    /// 发件箱在无租户上下文、且不随当前业务工作单元的事务调用本方法。
+    /// 发件箱在无租户上下文、独立的非事务工作单元中调用本方法，查询所用连接不登记进当前业务工作单元；
+    /// 每次租户上下文中的入箱调用一次，建议实现方缓存查询结果。
     /// </remarks>
     /// <param name="tenantId">租户标识</param>
     /// <param name="cancellationToken">取消令牌</param>
