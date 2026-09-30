@@ -28,6 +28,10 @@ dotnet_diagnostic.XHFH001.severity = error
 dotnet_diagnostic.XHFH001.severity = none
 ```
 
+## 编译器兼容性
+
+分析器编译自 Microsoft.CodeAnalysis 5.0，可被 .NET SDK 10.0.100 及以上自带的编译器加载。本仓库的全部项目经 `props/common.props` 以分析器方式引用它（不进入任何包的依赖）；编译器低于分析器所需版本时构建报 `CS9057` 错误，而不是静默停用分析器。
+
 ## 项目引用
 
 开发期可通过项目引用接入：

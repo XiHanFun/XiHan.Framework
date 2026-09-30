@@ -99,6 +99,7 @@ dotnet_diagnostic.XHFH001.severity = none
 - 校验是**严格匹配**：两行内容完全固定，不含 `FileName` / `Guid` / `CreateTime` 等逐文件字段；比对前会归一化行尾并剥离 BOM，因此跨平台换行与 BOM 不影响判定。
 - 项目以 `netstandard2.0` 构建、`IncludeBuildOutput=false` + `SuppressDependenciesWhenPacking=true` 打包为 analyzer，Roslyn 相关 `PackageReference` 全部 `PrivateAssets="all"`，不会外泄给引用方，也不进入运行时。
 - 引用它是开发期能力；要在 CI 阻断构建，请把 `XHFH001` 的严重级别调为 `error`。
+- 分析器编译自 Microsoft.CodeAnalysis 5.0，可被 .NET SDK 10.0.100 及以上自带的编译器加载；编译器更旧时会出现 `CS9057` 且分析器不生效。本仓库把 `CS9057` 设为错误，并经 `props/common.props` 让全部项目以分析器方式加载它。
 
 ## 依赖模块
 

@@ -7,7 +7,16 @@
 		<Nullable>enable</Nullable>
 		<!-- 生成 XML 文档文件，用于代码提示和文档生成 -->
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<!-- NuGet 审计：高危(NU1903)/严重(NU1904)漏洞直接中断构建，杜绝带病发布 -->
-		<WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
+		<!-- NuGet 审计：高危(NU1903)/严重(NU1904)漏洞直接中断构建，杜绝带病发布；
+		     CS9057：分析器引用的编译器版本高于当前 SDK 时分析器不会加载，同样中断构建 -->
+		<WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904;CS9057</WarningsAsErrors>
 	</PropertyGroup>
+
+	<!-- 仓库内项目以分析器方式加载本仓的 Roslyn 分析器，不进入任何包的依赖 -->
+	<ItemGroup Condition="'$(MSBuildProjectName)' != 'XiHan.Framework.Analyzers' And '$(MSBuildProjectName)' != 'XiHan.Framework.Analyzers.Tests'">
+		<ProjectReference Include="$(MSBuildThisFileDirectory)..\src\XiHan.Framework.Analyzers\XiHan.Framework.Analyzers.csproj"
+		                  OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+	</ItemGroup>
 </Project>
