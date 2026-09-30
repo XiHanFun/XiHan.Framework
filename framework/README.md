@@ -90,6 +90,7 @@ The framework is organized into strict modular layers. Dependencies between modu
 | `EventBus.Redis` | Redis (Streams) provider for the distributed event bus |
 | `Workflow.Abstractions` | Workflow abstractions: definition model, activity contracts, runtime instance and bookmark models, storage ports, human-task contracts; no execution logic |
 | `Workflow` | Workflow engine: graph execution engine, built-in activity set, human tasks (approvals), expression evaluation, timer scheduling, in-memory store by default |
+| `Workflow.SqlSugar` | SqlSugar persistence provider for workflows: definitions, instances, execution history and bookmarks; every store call commits in its own transaction |
 | `Castle` | AOP dynamic proxy: Castle DynamicProxy integration and interceptor registration |
 | `Logging` | Structured logging: Serilog integration, file/console sinks, async writes |
 | `Serialization` | Serialization: dynamic JSON manipulation and `JsonSerializerOptions` composition on System.Text.Json |

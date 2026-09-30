@@ -138,4 +138,3 @@ public class YourAppModule : XiHanModule
 
 - [Workflow.Abstractions](./workflow-abstractions)：存储端口与运行时模型
 - [Caching](./caching)：Redis 分布式锁
-- [EventBus.SqlSugar](./eventbus-sqlsugar) / [Auditing.SqlSugar](./auditing-sqlsugar)：同一套落库范式的其他实现

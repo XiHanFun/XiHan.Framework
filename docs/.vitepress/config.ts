@@ -199,6 +199,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
           pkg("Script 脚本引擎", "script"),
           pkg("Workflow.Abstractions", "workflow-abstractions"),
           pkg("Workflow 工作流", "workflow"),
+          pkg("Workflow.SqlSugar", "workflow-sqlsugar"),
           pkg("SearchEngines.Abstractions", "search-engines-abstractions"),
           pkg("SearchEngines 搜索", "search-engines"),
           pkg("SearchEngines.Elasticsearch", "search-engines-elasticsearch"),
