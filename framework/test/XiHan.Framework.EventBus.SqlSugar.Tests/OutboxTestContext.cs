@@ -11,7 +11,7 @@ using XiHan.Framework.EventBus.SqlSugar.Outbox;
 namespace XiHan.Framework.EventBus.SqlSugar.Tests;
 
 /// <summary>
-/// 发件箱测试夹具，提供一个或两个临时 SQLite 库与发件箱实例
+/// 发件箱测试夹具，提供一个或两个临时 SQLite 库、可选的租户独立库与发件箱实例
 /// </summary>
 internal sealed class OutboxTestContext : IDisposable
 {
@@ -26,6 +26,7 @@ internal sealed class OutboxTestContext : IDisposable
     public const string ModuleConfigId = "Default_Shop";
 
     private readonly List<string> _databaseFiles = [];
+    private readonly TimeSpan _claimTimeout;
 
     /// <summary>
     /// 构造函数
@@ -33,11 +34,15 @@ internal sealed class OutboxTestContext : IDisposable
     /// <param name="claimTimeout">领取超时</param>
     /// <param name="withModuleDatabase">是否额外创建一个模块库</param>
     /// <param name="moduleSharesMainDatabase">模块库连接标识是否与主库指向同一个客户端（不额外建库）</param>
+    /// <param name="tenantIds">使用独立库的租户，每个租户一个独立的临时库，布局随当前租户切换</param>
     public OutboxTestContext(
         TimeSpan? claimTimeout = null,
         bool withModuleDatabase = false,
-        bool moduleSharesMainDatabase = false)
+        bool moduleSharesMainDatabase = false,
+        IReadOnlyCollection<long>? tenantIds = null)
     {
+        _claimTimeout = claimTimeout ?? TimeSpan.FromMinutes(5);
+
         List<string> configIds = withModuleDatabase || moduleSharesMainDatabase
             ? [MainConfigId, ModuleConfigId]
             : [MainConfigId];
@@ -50,33 +55,27 @@ internal sealed class OutboxTestContext : IDisposable
                 continue;
             }
 
-            var databaseFile = Path.Combine(Path.GetTempPath(), $"xihan_outbox_{Guid.NewGuid():N}.db");
-            _databaseFiles.Add(databaseFile);
+            Clients[configId] = CreateDatabase();
+        }
 
-            var client = new SqlSugarClient(new ConnectionConfig
-            {
-                // 禁用连接池
-                ConnectionString = $"DataSource={databaseFile};Pooling=False",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
-            });
-
-            client.CodeFirst.InitTables(typeof(SysEventOutbox));
-            Clients[configId] = client;
+        foreach (var tenantId in tenantIds ?? [])
+        {
+            Clients[TenantConfigId(tenantId)] = CreateDatabase();
         }
 
         Resolver = new StubClientResolver(Clients, configIds, MainConfigId);
 
         CurrentTenant = new FakeCurrentTenant();
 
-        Outbox = new SqlSugarEventOutbox(
-            Resolver,
-            CurrentTenant,
-            Microsoft.Extensions.Options.Options.Create(new XiHanSqlSugarEventBoxOptions
-            {
-                ClaimTimeout = claimTimeout ?? TimeSpan.FromMinutes(5)
-            }),
-            NullLogger<SqlSugarEventOutbox>.Instance);
+        if (tenantIds is { Count: > 0 })
+        {
+            Resolver.CurrentLayoutSelector = () =>
+                CurrentTenant.Id is { } tenantId && Clients.ContainsKey(TenantConfigId(tenantId))
+                    ? [TenantConfigId(tenantId)]
+                    : configIds;
+        }
+
+        Outbox = CreateOutbox();
     }
 
     /// <summary>
@@ -116,6 +115,42 @@ internal sealed class OutboxTestContext : IDisposable
     }
 
     /// <summary>
+    /// 租户独立库的连接配置标识
+    /// </summary>
+    /// <param name="tenantId">租户标识</param>
+    /// <returns>连接配置标识</returns>
+    public static string TenantConfigId(long tenantId)
+    {
+        return $"Tenant_{tenantId}";
+    }
+
+    /// <summary>
+    /// 租户独立库的客户端
+    /// </summary>
+    /// <param name="tenantId">租户标识</param>
+    /// <returns>该租户库的客户端</returns>
+    public SqlSugarClient TenantClient(long tenantId)
+    {
+        return Clients[TenantConfigId(tenantId)];
+    }
+
+    /// <summary>
+    /// 创建一个共用本夹具依赖的新发件箱实例
+    /// </summary>
+    /// <returns>发件箱实例</returns>
+    public SqlSugarEventOutbox CreateOutbox()
+    {
+        return new SqlSugarEventOutbox(
+            Resolver,
+            CurrentTenant,
+            Microsoft.Extensions.Options.Options.Create(new XiHanSqlSugarEventBoxOptions
+            {
+                ClaimTimeout = _claimTimeout
+            }),
+            NullLogger<SqlSugarEventOutbox>.Instance);
+    }
+
+    /// <summary>
     /// 释放客户端并删除临时库文件
     /// </summary>
     public void Dispose()
@@ -133,6 +168,28 @@ internal sealed class OutboxTestContext : IDisposable
                 File.Delete(databaseFile);
             }
         }
+    }
+
+    /// <summary>
+    /// 创建一个建好发件箱表的临时 SQLite 库
+    /// </summary>
+    /// <returns>该库的客户端</returns>
+    private SqlSugarClient CreateDatabase()
+    {
+        var databaseFile = Path.Combine(Path.GetTempPath(), $"xihan_outbox_{Guid.NewGuid():N}.db");
+        _databaseFiles.Add(databaseFile);
+
+        var client = new SqlSugarClient(new ConnectionConfig
+        {
+            // 禁用连接池
+            ConnectionString = $"DataSource={databaseFile};Pooling=False",
+            DbType = DbType.Sqlite,
+            IsAutoCloseConnection = true
+        });
+
+        client.CodeFirst.InitTables(typeof(SysEventOutbox));
+
+        return client;
     }
 }
 

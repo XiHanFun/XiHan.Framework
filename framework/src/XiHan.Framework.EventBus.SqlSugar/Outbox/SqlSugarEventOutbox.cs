@@ -17,12 +17,22 @@ namespace XiHan.Framework.EventBus.SqlSugar.Outbox;
 /// <summary>
 /// 发件箱的 SqlSugar 实现
 /// </summary>
-public class SqlSugarEventOutbox : IEventOutbox
+/// <remarks>
+/// 读写都作用于当前租户上下文所在的数据库布局。
+/// 本实例记住自己领取的每条事件来自哪个库、用了哪个领取令牌，删除这些事件时只在该库按该令牌删除。
+/// </remarks>
+public class SqlSugarEventOutbox : ITenantScopedEventOutbox
 {
     private readonly ISqlSugarClientResolver _clientResolver;
     private readonly ICurrentTenant _currentTenant;
     private readonly ILogger<SqlSugarEventOutbox> _logger;
     private readonly XiHanSqlSugarEventBoxOptions _options;
+
+    private const int MaxClaimPasses = 2;
+
+    private static int _claimRotation;
+
+    private readonly Dictionary<Guid, ClaimSource> _claimSources = [];
 
     /// <summary>
     /// 构造函数
@@ -122,8 +132,9 @@ public class SqlSugarEventOutbox : IEventOutbox
     /// <remarks>
     /// 本方法在返回前会把记录标记为已领取，不是纯查询。
     /// 领取超时后记录可被重新领取，超时时长由 <see cref="XiHanSqlSugarEventBoxOptions.ClaimTimeout"/> 配置。
-    /// 领取会遍历当前布局的全部库，每库最多领取 <c>maxCount</c> 除以库数的整数商，且每库至少领取 1 条；
-    /// 库数超过 <c>maxCount</c> 时，单次领取的总量等于库数；某个库不可达时记录日志并跳过。
+    /// 领取遍历当前布局的全部库，起始库逐次轮换；每个库分到剩余配额按剩余库数均分后的上取整，
+    /// 前面的库领不满时余量顺延给后面的库，领满配额的库在第二轮继续分剩余配额；单次领取总量不超过 <c>maxCount</c>。
+    /// 某个库不可达时记录日志并跳过。
     /// </remarks>
     /// <param name="maxCount">最大数量</param>
     /// <param name="filter">过滤条件，本实现不支持，传入非空值将抛出异常</param>
@@ -154,27 +165,52 @@ public class SqlSugarEventOutbox : IEventOutbox
             return [];
         }
 
-        var quota = Math.Max(1, maxCount / configIds.Count);
+        var start = (int)((uint)Interlocked.Increment(ref _claimRotation) % (uint)configIds.Count);
+        List<string> candidates = [.. configIds.Skip(start), .. configIds.Take(start)];
+        var remaining = maxCount;
         var claimed = new List<SysEventOutbox>();
 
-        foreach (var configId in configIds)
+        for (var pass = 0; pass < MaxClaimPasses && remaining > 0 && candidates.Count > 0; pass++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            var saturated = new List<string>();
 
-            try
+            for (var index = 0; index < candidates.Count && remaining > 0; index++)
             {
-                var client = _clientResolver.GetClient(configId);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                claimed.AddRange(await ClaimFromDatabaseAsync(client, quota, cancellationToken));
+                var configId = candidates[index];
+                var databasesLeft = candidates.Count - index;
+                var quota = (remaining + databasesLeft - 1) / databasesLeft;
+
+                try
+                {
+                    var client = _clientResolver.GetClient(configId);
+                    var rows = await ClaimFromDatabaseAsync(client, quota, cancellationToken);
+
+                    foreach (var row in rows)
+                    {
+                        _claimSources[row.BasicId] = new ClaimSource(configId, row.ClaimToken!);
+                    }
+
+                    claimed.AddRange(rows);
+                    remaining -= rows.Count;
+
+                    if (rows.Count == quota)
+                    {
+                        saturated.Add(configId);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "从数据库 {ConfigId} 领取待发送事件失败，已跳过该库。", configId);
+                }
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "从数据库 {ConfigId} 领取待发送事件失败，已跳过该库。", configId);
-            }
+
+            candidates = saturated;
         }
 
         return [.. claimed.OrderBy(item => item.CreatedTime).Select(EventOutboxMapper.ToEventInfo)];
@@ -258,7 +294,9 @@ public class SqlSugarEventOutbox : IEventOutbox
     /// 批量删除事件信息
     /// </summary>
     /// <remarks>
-    /// 删除会遍历当前布局的全部库；主键全局唯一，没有该记录的库上执行只删除 0 行。
+    /// 本实例领取过的事件只在其来源库、按当时的领取令牌删除，不受当前租户上下文影响；
+    /// 令牌已变（记录被其他实例重新领取）时不删除。
+    /// 其余标识遍历当前布局的全部库删除；主键全局唯一，没有该记录的库上执行只删除 0 行。
     /// 某个库删除失败时记录日志并跳过该库，不向调用方传播异常；该库上的记录保持可领取状态，
     /// 会在后续轮询中被重新领取并再次投递。
     /// </remarks>
@@ -267,8 +305,44 @@ public class SqlSugarEventOutbox : IEventOutbox
     {
         ArgumentNullException.ThrowIfNull(ids);
 
-        var idList = ids.ToList();
+        var idList = ids.Distinct().ToList();
         if (idList.Count == 0)
+        {
+            return;
+        }
+
+        var locatedGroups = idList
+            .Where(_claimSources.ContainsKey)
+            .GroupBy(id => _claimSources[id])
+            .ToList();
+
+        foreach (var group in locatedGroups)
+        {
+            var configId = group.Key.ConfigId;
+            var claimToken = group.Key.ClaimToken;
+            var groupIds = group.ToList();
+
+            try
+            {
+                var client = _clientResolver.GetClient(configId);
+
+                await client.Deleteable<SysEventOutbox>()
+                    .Where(item => groupIds.Contains(item.BasicId) && item.ClaimToken == claimToken)
+                    .ExecuteCommandAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "从数据库 {ConfigId} 删除已投递事件失败，已跳过该库。", configId);
+            }
+
+            foreach (var id in groupIds)
+            {
+                _claimSources.Remove(id);
+            }
+        }
+
+        var unlocatedIds = idList.Where(id => locatedGroups.All(group => !group.Contains(id))).ToList();
+        if (unlocatedIds.Count == 0)
         {
             return;
         }
@@ -279,7 +353,7 @@ public class SqlSugarEventOutbox : IEventOutbox
             {
                 var client = _clientResolver.GetClient(configId);
 
-                await client.Deleteable<SysEventOutbox>().In(idList).ExecuteCommandAsync();
+                await client.Deleteable<SysEventOutbox>().In(unlocatedIds).ExecuteCommandAsync();
             }
             catch (Exception ex)
             {
@@ -287,4 +361,34 @@ public class SqlSugarEventOutbox : IEventOutbox
             }
         }
     }
+
+    /// <summary>
+    /// 统计当前布局各库中尚未删除的事件数
+    /// </summary>
+    /// <remarks>
+    /// 待发送与已领取但尚未删除的事件都计入。任一库不可达时抛出异常，不返回部分结果。
+    /// </remarks>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>尚未删除的事件数</returns>
+    public async Task<long> GetPendingCountAsync(CancellationToken cancellationToken = default)
+    {
+        long total = 0;
+
+        foreach (var configId in _clientResolver.GetCurrentLayoutConfigIds().Distinct(StringComparer.Ordinal))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var client = _clientResolver.GetClient(configId);
+            total += await client.Queryable<SysEventOutbox>().CountAsync(cancellationToken);
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// 领取来源：记录所在库的连接配置标识与领取令牌
+    /// </summary>
+    /// <param name="ConfigId">连接配置标识</param>
+    /// <param name="ClaimToken">领取令牌</param>
+    private readonly record struct ClaimSource(string ConfigId, string ClaimToken);
 }
