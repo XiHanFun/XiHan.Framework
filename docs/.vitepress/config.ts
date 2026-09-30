@@ -227,6 +227,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
         items: [
           pkg("Web.Core Web 核心", "web-core"),
           pkg("Web.Api 动态 API", "web-api"),
+          pkg("Web.Api.SqlSugar 幂等存储", "web-api-sqlsugar"),
           pkg("Web.Docs API 文档", "web-docs"),
           pkg("Web.Gateway 网关", "web-gateway"),
           pkg("Web.Grpc gRPC", "web-grpc"),

@@ -184,6 +184,7 @@ dotnet package search XiHan.Framework
 | --- | --- |
 | `XiHan.Framework.Core` | Modularity core (required) |
 | `XiHan.Framework.Web.Api` | Full Web API middleware pipeline |
+| `XiHan.Framework.Web.Api.SqlSugar` | SqlSugar-backed API idempotency store |
 | `XiHan.Framework.Web.Docs` | Scalar + Swagger documentation |
 | `XiHan.Framework.Data` | SqlSugar data access |
 | `XiHan.Framework.Caching` | HybridCache + Redis |

@@ -118,7 +118,7 @@ Content-Type: application/json
 
 - 重播只保留状态码与动作返回值的 JSON（支持 `ObjectResult`、`EmptyResult`、`StatusCodeResult`）；`Set-Cookie`、`Location` 等响应头及非 JSON 格式化器的输出不会重现。
 - 默认的进程内存储只在当前进程有效，重启即失，也不跨实例共享；完成记录与结果不确定记录在保留期后过期，处理中记录在进程内不会过期。
-- 多实例部署需要跨实例一致性时，替换 `IIdempotencyStore`；后续将提供基于 SqlSugar 的存储包 `XiHan.Framework.Web.Api.SqlSugar`。
+- 多实例部署需要跨实例一致性时，替换 `IIdempotencyStore`；使用 SqlSugar 存储包 [`XiHan.Framework.Web.Api.SqlSugar`](../XiHan.Framework.Web.Api.SqlSugar/README.md)。
 - 不支持 Minimal API、文件上传与流式响应。
 
 ## 扩展点
