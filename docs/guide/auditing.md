@@ -143,11 +143,7 @@ public class OperationLogWriter : IOperationLogWriter, IScopedDependency
 | `OperationType` | `Create` / `Delete` / `Update`；更新时若 `Is_Deleted` 由 false 翻 true 记为 `Delete`、由 true 翻 false 记为 `Restore` |
 | `ChangedFields` | `{Field, Before, After}` 数组；前后镜像都在且无字段变更的行被跳过 |
 | 快照裁剪 | 单列值超 1000 字符先截断；整条快照 JSON 超 8000 字符时产出**合法的**截断标记对象，不会从中间切断出非法 JSON |
-| 失败处理 | AOP 内部整体 try/catch，审计异常不外抛、只记错误日志；但差异日志与业务写同一事务，写入失败可能让业务事务回滚（见下方提示） |
-
-::: warning 差异日志写入失败会连带回滚业务事务
-这层 try/catch 救不了事务：差异日志的 `INSERT` 与业务写同一事务，PostgreSQL 下事务内任何报错都会让事务进入 aborted 状态（SQL Server 开 `XACT_ABORT ON` 时同理），随后的提交失败，业务写入降级为回滚。另 5 类日志多在业务事务之外落库，写入失败只丢日志。
-:::
+| 失败处理 | AOP 内部整体 try/catch，审计失败只记错误日志，绝不影响主业务 |
 
 ### 写入器的事务契约
 

@@ -180,6 +180,7 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
           pkg("Localization 国际化", "localization"),
           pkg("Logging 日志", "logging"),
           pkg("Auditing 审计日志", "auditing"),
+          pkg("Auditing.SqlSugar", "auditing-sqlsugar"),
           pkg("Castle AOP", "castle"),
           pkg("Threading 并发", "threading"),
           pkg("Timing 时间", "timing"),

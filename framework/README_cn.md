@@ -83,6 +83,7 @@
 | `Authorization` | 授权：RBAC、策略授权、声明授权 |
 | `Security` | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
 | `Auditing` | 审计日志：操作/访问/登录/异常/接口/实体变更日志的采集管道、异步队列、脱敏与写入契约 |
+| `Auditing.SqlSugar` | 审计日志 SqlSugar 提供程序：6 类日志实体按月分表，写入器以 Replace 顶替 Auditing 的空实现 |
 | `EventBus.Abstractions` | 事件总线抽象：发布/订阅接口、事件处理管道 |
 | `EventBus` | 事件总线：本地/分布式事件、Outbox 模式、事件存储（内置实现，分布式 Broker 由以下子包提供） |
 | `EventBus.RabbitMQ` | 分布式事件总线 RabbitMQ 提供程序 |

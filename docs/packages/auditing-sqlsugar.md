@@ -175,7 +175,7 @@ services.Replace(ServiceDescriptor.Scoped<IOperationLogWriter, MyOperationLogWri
 - **`CreatedTime` 按 UTC 写入**，分表切换点随之按 UTC 划分，跨时区部署时切表时刻不等于本地零点。
 - **脱敏在采集端完成**。记录到达写入器时已脱敏，写入器不再处理，重复脱敏会二次遮蔽已遮蔽的内容。
 - **实体差异日志固定落主库**。`SqlSugarEntityDiffLogWriter` 经 `GetCurrentClient()` 取客户端，不支持 `[ModuleDataSource]` 路由；业务实体声明了模块数据源时，该实体的差异日志仍落在当前布局主库。
-- **差异日志与发件箱同用时的登记冲突**。业务实体位于模块库又开启 `EnableDiffLog` 时，差异日志写入器经 `GetCurrentClient()` 把主库也登记进工作单元，登记变成两个库；此时在同一工作单元内以 `onUnitOfWorkComplete: false` 发布分布式事件，会因发件箱入箱遇到多个登记连接而抛异常（见 [EventBus.SqlSugar](./eventbus-sqlsugar)）。避开方式：事件改在工作单元完成时发布（`onUnitOfWorkComplete: true`），或该类实体不开差异日志。
+- **差异日志与发件箱同用时的登记冲突**。业务实体位于模块库又开启 `EnableDiffLog` 时，差异日志写入器经 `GetCurrentClient()` 把主库也登记进工作单元，登记变成两个库；此时在同一工作单元内以 `onUnitOfWorkComplete: false` 发布分布式事件，会因发件箱入箱遇到多个登记连接而抛异常（见 [EventBus](./eventbus)）。避开方式：事件改在工作单元完成时发布（`onUnitOfWorkComplete: true`），或该类实体不开差异日志。
 - **差异日志写失败会把业务一起回滚**。`SqlSugarDiffLogAop` 的整体 try/catch 只保证异常不外抛、错误进日志，保护不了已被数据库中止的事务：差异日志的 `INSERT` 与业务写同一事务，PostgreSQL 下事务内的任何报错都会让事务进入 aborted 状态（SQL Server 开 `XACT_ABORT ON` 时同理），随后的提交失败，那笔业务写入随之回滚。其余 5 类日志一般在业务事务之外落库，写入失败只是丢日志（登录日志若在活动事务作用域内调用，同样随那笔事务回滚）。
 - **定长列由映射层截断**。路径、查询串、User-Agent、来源页、异常类型等列宽有限，而采集端不夹长度；超长的自由文本在 SQL Server / MySQL 严格模式下会让整条 `INSERT` 抛错（队列模式下 `FlushAsync` 的 try 在逐条循环外层，一条失败连带丢弃整批），MySQL 非严格模式则会静默截断。`AuditingLogMapper` 统一把这些列截到列宽，保留前缀；请求体、响应体、异常堆栈等大文本列不设上限。
 - **MySQL 上每月第一笔差异日志可能提交业务事务**。实体差异日志与业务写同一事务，当月分表尚不存在时，`SplitTable()` 插入会自动建分表；MySQL 的 DDL 会隐式提交当前事务，业务事务因此被提前提交。建议预先建好当月与下月分表。

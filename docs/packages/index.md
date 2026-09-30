@@ -95,6 +95,7 @@ DDD 分层与应用服务契约。
 | [Localization](./localization) | 国际化：多语言资源文件、动态文化切换 |
 | [Logging](./logging) | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
 | [Auditing](./auditing) | 审计日志：6 类日志记录、Channel 异步队列 + 批量消费者、脱敏器、写入器契约（默认空实现） |
+| [Auditing.SqlSugar](./auditing-sqlsugar) | 审计日志 SqlSugar 提供程序：6 类日志实体（按月分表）与写入器，替换空实现后日志落库 |
 | [Castle](./castle) | AOP 动态代理：Castle DynamicProxy 集成、服务拦截器注册 |
 | [Threading](./threading) | 并发辅助：取消令牌提供者、基于 AsyncLocal 的环境作用域 |
 | [Timing](./timing) | 时间策略：时区管理、时间抽象 |
