@@ -43,4 +43,4 @@ dotnet_diagnostic.XHFH001.severity = none
                   PrivateAssets="all" />
 ```
 
-发布后也可以通过 NuGet 包接入。
+发布后也可以通过 NuGet 包接入。框架的其它包都不依赖本包，引用它们不会带入这里的任何规则（包括 `XHFH001`）。

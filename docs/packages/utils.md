@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Utils`
 - **模块类**：—（无模块类，直接引用静态方法即可）
 - **所在层**：公共层
-- **关键依赖**：仅 .NET 原生 BCL（编译期引用 `XiHan.Framework.Analyzers` 做文件头规范检查），运行时零第三方依赖
+- **关键依赖**：仅 .NET 原生 BCL，零第三方依赖
 
 ## 概述
 
@@ -573,8 +573,7 @@ var lastWeek = DateTimeRange.LastWeek;   // StartTime / EndTime
 
 ## 依赖模块
 
-- 编译期：[XiHan.Framework.Analyzers](./analyzers)（文件头规范检查，运行时不参与）。
-- 运行时：无框架内部业务依赖，仅 .NET BCL。
+- 无框架内部依赖，仅 .NET BCL。仓库内构建经 `props/common.props` 加载 [XiHan.Framework.Analyzers](./analyzers)，不进入本包的依赖。
 
 ## 相关模块
 

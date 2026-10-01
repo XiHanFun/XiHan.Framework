@@ -27,6 +27,8 @@ XiHan.Framework.Analyzers 是一套基于 Roslyn 的代码分析器与代码修�
 dotnet add package XiHan.Framework.Analyzers
 ```
 
+框架的其它包都不依赖本包，引用它们不会带入这里的任何规则（包括 `XHFH001`）；需要这些规则时显式引用本包。
+
 开发期也可通过项目引用以 analyzer 形式接入（推荐显式声明为 analyzer，避免把它当普通程序集引用）：
 
 ```xml
@@ -111,5 +113,5 @@ dotnet_diagnostic.XHFH001.severity = none
 
 ## 相关模块
 
-- [XiHan.Framework.Utils](./utils) — 在编译期以 analyzer 形式引用本包做文件头规范检查。
+- [XiHan.Framework.Utils](./utils) — 框架最底层的工具库，与其它框架包一样不依赖本包。
 - [XiHan.Framework.Core](./core) — 框架核心库。
