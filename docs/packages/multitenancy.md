@@ -81,7 +81,13 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 
 ### 租户功能开关
 
-`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以租户键作 ProviderKey、`"T"` 作 ProviderName 读值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，其它/空值返回传入的 `defaultValue`。
+`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以当前租户标识（`ICurrentTenant.Id`）作 ProviderKey、`"T"` 作 ProviderName 读值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，值为空或全空白时返回传入的 `defaultValue`，其它非真值（如 `false`、`0`、`maybe`）判为未启用。
+
+取值口径：
+
+- **平台态取不到租户级功能值**：无租户上下文（`Id` 为 `null`）或 `Id <= 0`（平台 0 号租户）时，`GetValueOrNullAsync` 直接返回 `null` 且不查询设置存储，`IsEnabledAsync` 因而完全由调用方传入的 `defaultValue` 决定。这是设计使然：功能开关只有租户级取值，平台态没有租户级特性值，也不回退到全局设置。
+- **租户之间互不影响**：键里带租户标识，租户甲设了 `Feature:x = true`、租户乙未设时，乙取到 `null`；在 `ICurrentTenant.Change(tenantId)` 作用域内取值随作用域内的租户变化，离开作用域后还原。
+- **功能名会修剪、设定值不修剪**：功能名两侧的空白会被去掉后再拼键；设定值按原样比较，`"  true  "` 这样两侧带空白的值判为未启用，不会被 `defaultValue` 放行。设定值需精确写成 `true`／`false`（或 `1/0`、`yes/no`、`on/off`）。
 
 ## 核心能力
 
