@@ -19,6 +19,7 @@ namespace XiHan.Framework.Tasks.SqlSugar.Tests;
 /// <remarks>
 /// 地址取环境变量 <c>XIHAN_TEST_MYSQL</c>，未设置时整类跳过。
 /// </remarks>
+[Collection("MySqlBackgroundJobTable")]
 public class BackgroundJobConcurrencyTests
 {
     private const string SkipReason = "未设置 XIHAN_TEST_MYSQL，跳过真实数据库并发测试。";
