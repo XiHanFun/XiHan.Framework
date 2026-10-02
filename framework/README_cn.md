@@ -52,7 +52,7 @@
 
 ## 模块清单
 
-共 66 个模块，与 `framework/src` 下的工程一一对应，包名与工程名一致。
+模块与 `framework/src` 下的工程一一对应，包名与工程名一致。
 
 ### 公共与核心
 
@@ -181,7 +181,7 @@ Utils (零第三方依赖)
 XiHan.Framework/
 ├── framework/
 │   ├── XiHan.Framework.slnx              # 解决方案文件
-│   ├── src/                               # 源码（66 个模块）
+│   ├── src/                               # 源码（每个模块一个工程）
 │   │   ├── XiHan.Framework.Utils/         #   公共工具
 │   │   ├── XiHan.Framework.Metadata/      #   框架元数据
 │   │   ├── XiHan.Framework.Core/          #   模块化核心
@@ -193,7 +193,7 @@ XiHan.Framework/
 │   │   ├── XiHan.Framework.Web.Core/      #   Web 核心
 │   │   ├── XiHan.Framework.Web.Api/       #   动态 API
 │   │   └── ...                            #   其他模块
-│   ├── test/                              # 测试（src 下每个项目一一对应，共 66 个单测工程）
+│   ├── test/                              # 测试（与 src 下的项目一一对应）
 │   │   ├── XiHan.Framework.Utils.Tests/   #   工具测试
 │   │   ├── XiHan.Framework.Core.Tests/    #   内核测试
 │   │   └── ...                            #   其余按 <项目名>.Tests 一一对应

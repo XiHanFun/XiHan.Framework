@@ -5,7 +5,7 @@
 
 <p><b>A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET</b></p>
 
-<p>Built on .NET 10 · 66 modular components · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
+<p>Built on .NET · modular packages · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
 
 <p><b>English</b> | <a href="./README_cn.md">简体中文</a></p>
 
@@ -15,9 +15,8 @@
   <a href="https://gitcode.com/XiHanFun/XiHan.Framework"><img alt="GitCode Stars" src="https://gitcode.com/XiHanFun/XiHan.Framework/star/badge.svg" /></a>
 </p>
 <p>
-  <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <img alt="Modules" src="https://img.shields.io/badge/Modules-66-1f6feb?style=flat-square" />
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
   <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
@@ -52,7 +51,7 @@ XiHan.Framework is a modular backend framework for enterprise applications, desi
 
 | Destination | Contents |
 | --- | --- |
-| [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs for all 66 packages |
+| [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs |
 | [Framework engineering notes](./framework/README.md) | Layered architecture, module catalog, directory layout, dependencies |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
 | [Contributing guide](./CONTRIBUTING.md) | Branch conventions, commit rules, local build and test |
@@ -63,8 +62,8 @@ XiHan.Framework is a modular backend framework for enterprise applications, desi
 - **Dependency inversion** — higher layers do not depend on lower ones; both depend on abstractions
 - **Single responsibility** — each package owns exactly one functional area
 - **Open/closed** — open for extension, closed for modification, customizable through interfaces and base classes
-- **.NET 10 first** — use the built-ins (DI, logging, serialization) and reach for third-party libraries only when necessary
-- **Performance** — built on .NET 10's high-performance features; AOT is out of scope (SqlSugar / Castle DynamicProxy, plus Newtonsoft.Json pulled in transitively by SqlSugar, are not trimming-compatible yet)
+- **.NET native first** — use the built-ins (DI, logging, serialization) and reach for third-party libraries only when necessary
+- **Performance** — built on the high-performance features of modern .NET; AOT is out of scope (SqlSugar / Castle DynamicProxy, plus Newtonsoft.Json pulled in transitively by SqlSugar, are not trimming-compatible yet)
 
 ## Tech Stack
 
