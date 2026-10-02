@@ -13,49 +13,44 @@
 ## v4.6.0 (2026-09-25)
 
 ::: warning 升级须知
-本次含多处破坏性变更：
-
-- 平台就是 0 号租户：无租户上下文按 0 号租户处理，只读、只写 `TenantId = 0` 的行，不再隐式看全部、写全部。依赖平台态跨租户读取的代码改用仓储的 `CreateNoTenantQueryable()` 或查询上的 `ClearTenantFilter()`；写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户，平台上下文插入预置了租户标识的行会被拒绝。`ICurrentTenant.IsAvailable` 改为仅在业务租户（标识大于 0）下返回 `true`，0 号租户返回 `false`
-- 租户级设置与租户级特性只按租户标识定键，此前按租户名称存储的值需迁移为按租户标识存储。`SettingManager` 写入租户级设置时取当前租户作用域（此前取当前用户的租户），平台作用域下写租户级设置抛出异常，平台的设置写入全局级。`XiHan.Framework.Settings` 新增对 `XiHan.Framework.MultiTenancy.Abstractions` 的依赖
-- 已认证请求的租户只以令牌为准：宿主令牌不再能通过 `X-Tenant-Id` 请求头或 `tenantId` 查询参数进入租户。请求头、查询参数与兜底租户给出的租户必须在 `ITenantStore` 中存在且处于激活状态，否则返回 400；依靠匿名请求头识别租户的应用需把租户登记进 `ITenantStore`
-- `RetrievalFilter.TenantId` 由 `long?` 改为 `long`，检索恒限定在一个租户内，不再支持不限租户的检索
-- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` 的主键、租户、审计与软删列改用与其余实体基类一致的列名：`BasicId` → `Basic_Id`、`TenantId` → `Tenant_Id`、`CreatedTime` / `CreatedId` / `CreatedBy` → `Created_Time` / `Created_Id` / `Created_By`，`Modified*`、`IsDeleted`、`Deleted*` 同理。存量库需先把聚合根表的旧列（PostgreSQL 下为 `basicid`、`tenantid`、`isdeleted` 等）改为新列名，否则启动时报列不存在
-- `IUpgradeEngine` 新增 `BaselineAsync`，`IUpgradeVersionStore` 新增 `TryCreateBaselineAsync`，`IEntityModuleDataSourceResolver` 新增 `IsPlatformPlaced`，自定义实现需补齐
+- 平台即 0 号租户：无租户上下文只读写 `TenantId = 0` 的行。跨租户读取改用 `CreateNoTenantQueryable()` / `ClearTenantFilter()`，写租户数据先 `Change(tenantId)`；`IsAvailable` 对 0 号租户返回 `false`
+- 已认证请求只按令牌定租户；请求头、查询串与 `FallbackTenant` 给出的租户须在 `ITenantStore` 中存在且激活，否则返回 400
+- 租户级设置与特性改按租户标识定键，按名称存储的旧值需迁移；`XiHan.Framework.Settings` 新增依赖 `MultiTenancy.Abstractions`
+- `RetrievalFilter.TenantId` 改为 `long`，不再支持不限租户的检索
+- 聚合根公共列改名为 `Basic_Id`、`Tenant_Id`、`Created_Time`、`Is_Deleted` 等，存量库需先改列名
+- `IUpgradeEngine`、`IUpgradeVersionStore`、`IEntityModuleDataSourceResolver` 各新增一个成员，自定义实现需补齐
 :::
 
-- **调整** 多租户统一为「平台就是 0 号租户」：数据过滤、写边界、任务、工作流、AI 检索、租户级设置与特性、租户解析、连接解析、灰度与升级锁对 `null` 与 `0` 采用同一口径；条件写恒追加当前作用域谓词，不再依赖读过滤器是否启用
-- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，一并清除读共享与严格隔离两类租户过滤；`CreateNoTenantQueryable()` 与写路径预读改用它，修复严格隔离实体（`IStrictMultiTenantEntity`）在跨租户读取时仍被限定在当前作用域、结果静默缺数据
-- **新增** `[PlatformDataSource]`：标注的实体固定落在平台库（默认布局的主库），库隔离租户下不随独立库切换，建表也不进租户独立库与模块库，行级租户过滤照常生效；与 `[ModuleDataSource]` 同时声明视为配置错误
-- **新增** 访问、API、异常、操作、登录日志记录新增 `TenantId`，在记录产生时取请求所属租户，排队异步写入时不再依赖写入时的环境上下文；`RequestContext` 的用户与租户在认证与租户解析之后定型写回
-- **修复** 已认证请求可通过请求头或查询参数另选租户；请求头、查询参数与兜底租户给出的租户未经验证即建立租户上下文
-- **修复** 任务执行器仅在执行作业本身时切入任务所在租户，实例落库、状态回写与执行历史（含失败路径）落在错误的租户作用域
-- **修复** 工作流定义与实例采信调用方提交的租户标识，改为取当前作用域的租户
-- **修复** 数据库初始化时种子先于升级脚本执行，存量库新增的列尚未补齐即被种子读取，启动报列不存在。初始化改为「全部连接建库建表 → 表结构升级 → 全部连接播种」，新增 `IDbSchemaUpgrader` 扩展点供应用接入升级引擎
-- **修复** 聚合根基类的公共列名与其余实体基类不一致，同一库中并存两套列名（迁移见升级须知）
-- **新增** `IUpgradeEngine.BaselineAsync`：本次初始化从零建出的库（`DbSchemaUpgradeContext.IsFresh`）登记为最新脚本版本，不再从 `0.0.0` 补跑历史脚本
+- **调整** 多租户统一「平台即 0 号租户」口径，覆盖数据过滤、写边界、任务、工作流、检索、设置、连接解析、灰度与升级锁
+- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，同时清除读共享与严格隔离过滤
+- **新增** `[PlatformDataSource]`：实体固定落平台库，不随租户独立库切换
+- **新增** `IDbSchemaUpgrader`：数据库初始化改为建表 → 结构升级 → 播种；`IUpgradeEngine.BaselineAsync` 让新建的库直接登记为最新版本
+- **新增** 五类日志记录新增 `TenantId`，按请求所属租户记账
+- **修复** 请求头或查询串可替已认证请求另选租户
+- **修复** 跨租户读取时严格隔离实体静默缺数据
+- **修复** 任务实例、状态与历史未落在任务所在租户；工作流采信调用方提交的租户
+- **修复** 种子先于升级脚本执行，存量库启动报列不存在
+- **修复** 聚合根公共列名与其余实体基类不一致
 - **升级** 发布 v4.6.0
 
 ## v4.5.0 (2026-09-24)
 
 ::: warning 升级须知
-本次含多处破坏性变更：
-
-- `XiHan.Framework.Script` 的 `MemoryUsage` 三个属性更名，数值改为执行期间的分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`。`ScriptExecutionLog.MemoryUsageBytes` 与 `EngineStatistics.TotalMemoryUsage` 名称不变，数值同样改为分配量，`HighMemoryUsageThresholdBytes` 的原有阈值需按新口径重新标定
-- `LunarCalendarHelper.GetLunarFestival` 新增可选参数 `lunarYear`，源码兼容、二进制不兼容：调用该方法的已编译程序集需针对新版本重新编译
-- 农历换算结果修正后与上一版不同，公农历互转、年 / 日干支与节气日期均有变化，由旧版本计算并持久化的农历数据需重新计算。`GetSolarTerms(year)` 改为返回该公历年内按日期排列的 24 个节气（小寒打头、冬至结尾），`Order` 为年内序号
-- `XiHan.Framework.Utils` 多处输入校验收紧：`MathHelper.Factorial` / `Fibonacci` 超出 `MaxFactorialInput`（20）/ `MaxFibonacciCount`（47）时抛出 `ArgumentOutOfRangeException`，此前静默溢出为负数；`StringHelper.IsNumberId` 不再接受 `"0"`、前导零与串尾换行；`RegexHelper` 的两个金额正则不再将任意字符视为小数点；`DateTimeHelper.GetEndOfYear` 返回 `23:59:59.9999999`，比此前晚约 1 毫秒
-- `CurrencyHelper.FormatCurrency(amount, currencyCode, culture)` 输出的货币符号与小数位数改为取自 `currencyCode`，此前实际输出 `culture` 自身的货币（`FormatCurrency(100m, "USD", zh-CN)` 得到 `¥100.00`）
+- `Script` 的 `MemoryUsage` 属性改名并改为分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`；`MemoryUsageBytes`、`TotalMemoryUsage` 同改口径，`HighMemoryUsageThresholdBytes` 需重新标定
+- 农历换算修正后结果与上一版不同，已持久化的农历数据需重算；`GetSolarTerms(year)` 改为返回该公历年内的 24 个节气；`GetLunarFestival` 新增 `lunarYear` 参数，已编译的调用方需重新编译
+- `Utils` 校验收紧：`Factorial` / `Fibonacci` 超过 20 / 47 抛 `ArgumentOutOfRangeException`；`IsNumberId` 不再接受 `"0"`、前导零与串尾换行；金额正则的小数点改为严格匹配；`GetEndOfYear` 返回 `23:59:59.9999999`
+- `CurrencyHelper.FormatCurrency` 的货币符号与小数位改取自 `currencyCode`，不再取 `culture` 的货币
 :::
 
-- **修复** `LunarCalendarHelper` 农历换算：闰月与月大小解码错位，闰年少算一个月，公农历互转累计偏差近 1900 天；年、日干支基准错误；节气日期整体错位约 15 天且未换算到东八区；`GetSolarTerm` 查不到一月份的小寒、大寒；`GetLunarFestival` 判定除夕的结果随运行时间变化，改由调用方传入 `lunarYear`，`LunarDate.Festival` 自动传入所属农历年
-- **修复** `AsyncReaderWriterLock.AcquireReadLockAsync(TimeSpan)` 超时后读者计数未回滚，此后读锁与写锁可同时持有；`AsyncBarrier` 阶段号到 65536 时回绕；`Debouncer` 不释放被替换的 `CancellationTokenSource`，释放后再调用 `Debounce` 改为直接忽略
-- **修复** `TreeExtensions.ToTree` 在子节点排在父节点之前时误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组时抛出 `TargetException`，克隆 `HashSet<T>` / `Queue<T>` 等集合得到空集合
-- **修复** `StringHelper`：`FormatReplaceStr` 在被替换子串为空时死循环至内存耗尽；`ClipString` 多保留一个字符且可能拆开代理对；`GetEnumerableStr` 在重复元素处丢失分隔符；`GetStrLength` 将输入中的 `?` 计为 2
-- **修复** `DateTimeHelper.GetDetailedAge` 跨大小月时算出负天数；中国时区改为首次使用时解析，缺少时区数据库的环境不再导致 `DateTimeHelper` 类型初始化失败
-- **修复** `NumberExtensions.Lcm` 中间结果溢出；`MaskHelper` 的 `MaskPhone` / `MaskIdCard` / `MaskBankCard` 传入 `null` 时抛出 `NullReferenceException`；`MaskUrlParams` 只匹配全小写参数名，`?Token=`、`?Password=` 等未脱敏
-- **修复** 脚本执行的 `MemoryUsage` 以堆占用差值计量，执行期间发生 GC 时读数为零或负数；改取 `GC.GetTotalAllocatedBytes` 的分配量，恒为非负。该值为进程级计数，并发执行的脚本会互相计入对方的分配量
-- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 边界常量与 `RegexHelper.NumberIdRegex`
-- **优化** `OtpHelper` 验证码比对改为常量时间比较；`CurrencyHelper` 的货币查询结果进程内缓存，货币代码不区分大小写
+- **修复** `LunarCalendarHelper` 闰月、干支与节气计算错误，公农历互转偏差近 1900 天
+- **修复** `AsyncReaderWriterLock` 超时后读写锁可同时持有；`AsyncBarrier` 阶段号回绕；`Debouncer` 泄漏 `CancellationTokenSource`
+- **修复** `TreeExtensions.ToTree` 误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组抛异常、克隆集合得到空集合
+- **修复** `StringHelper`：`FormatReplaceStr` 死循环、`ClipString` 多保留一个字符、`GetEnumerableStr` 丢分隔符、`GetStrLength` 计数错误
+- **修复** `DateTimeHelper.GetDetailedAge` 算出负天数；缺少时区数据库时类型初始化失败
+- **修复** `NumberExtensions.Lcm` 溢出；`MaskHelper` 传入 `null` 抛异常、`MaskUrlParams` 漏掉大写参数名
+- **修复** 脚本内存读数在 GC 后为零或负数
+- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 与 `RegexHelper.NumberIdRegex`
+- **优化** `OtpHelper` 改为常量时间比较；`CurrencyHelper` 缓存货币查询，货币代码不区分大小写
 - **升级** 发布 v4.5.0
 
 ## v4.4.0 (2026-09-22)
@@ -2227,7 +2222,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 
 ## 与多租户的配合
 
-6 类记录里只有 `EntityDiffLogRecord` 自带 `TenantId`，由 `DefaultEntityAuditContextProvider` 取 `ICurrentUser.TenantId ?? ICurrentTenant?.Id` 填充。另外 5 类记录模型**没有租户字段**——需要按租户分区就在写入器里补，但补之前要看清下面这条。
+6 类记录都自带 `TenantId`（`null` 即平台）。`EntityDiffLogRecord` 由 `DefaultEntityAuditContextProvider` 取 `ICurrentUser.TenantId ?? ICurrentTenant?.Id` 填充；访问、操作、异常、API 四类日志由 Web.Api 的采集点取请求所属租户——租户解析完成后定型写回 `RequestContext` 的那个值，已认证请求即令牌里的租户；登录日志由产生它的应用在采集时填。写入器按 record 上的 `TenantId` 落戳，不要再读环境上下文，原因见下面这条。
 
 ::: danger 队列模式下写入器读不到当前用户 / 租户
 后台消费者在自己的线程上用 `IServiceScopeFactory.CreateScope()` 新建作用域：没有 `HttpContext`，AsyncLocal 的租户上下文也不流到那里。写入器里读 `ICurrentUser` / `ICurrentTenant` 会得到空值。
@@ -2311,7 +2306,7 @@ public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScop
 
 - [数据访问](./data)：仓储写路径、审计字段自动赋值
 - [工作单元与事务](./uow)：差异日志与业务同事务的前提
-- [多租户](./multi-tenancy)：租户上下文与平台态
+- [多租户](./multi-tenancy)：租户上下文与平台（0 号租户）
 - [Web 应用开发](./web)：中间件与过滤器在管线里的位置
 - [Auditing 包文档](../packages/auditing)：完整 API 与配置表
 - [Logging 包文档](../packages/logging)：结构化运行日志（与审计日志是两回事）
@@ -3302,8 +3297,8 @@ public sealed class OrderCommandHandler(ITelegramNotifier notifier) : IBotComman
 
 | 接口 | 默认实现 | 多实例下的问题 |
 | --- | --- | --- |
-| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 进程内 TTL 字典，**多实例失效** |
-| `IConversationStateStore` | `DefaultConversationStateStore` | 同上，会话状态不跨实例 |
+| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 进程内 TTL 字典（30 分钟，最多 100000 条，满载抛异常），**多实例失效** |
+| `IConversationStateStore` | `DefaultConversationStateStore` | 进程内（最多 50000 条，满载抛异常），会话状态不跨实例 |
 | `ITelegramMessageAuditStore` | `NoOpTelegramMessageAuditStore` | 不落任何审计 |
 
 替换方式同样是 `Replace`。
@@ -3401,8 +3396,9 @@ Telegram 平台走配置节 `XiHan:Bot:Telegram:Platform`（仅作兜底，生�
 | 能力 | 接口 | 说明 |
 | --- | --- | --- |
 | 分布式缓存 | `IDistributedCache` / `IDistributedCache<T>` | 有 Redis 走 Redis，否则退化为进程内内存 |
-| 分布式锁 | `IDistributedLock` | 同上，**未接 Redis 时退化为进程内锁** |
-| 延迟队列 / 流式队列 | `IRedisDelayQueue<T>` / `IRedisStreamQueue<T>` | 名字里就带 Redis，是**诚实的专用抽象**，需要 Redis |
+| 分布式锁 | `IDistributedLock` | 同上，**未接 Redis 时退化为进程内锁**：最多 10000 个锁条目，满载时获取返回 `null`，与「锁被占用」表现相同 |
+| 延迟队列 | `IRedisDelayQueue<T>` | 有 Redis 走 Sorted Set；否则退化为进程内 `DefaultDelayQueue<T>`：不跨实例、进程退出即丢，最多 100000 条，满载入队抛 `InvalidOperationException` |
+| 流式队列 | `IRedisStreamQueue<T>` | 仅在启用 Redis 并配置连接串时注册，没有进程内回退 |
 
 配置节 `XiHan:Caching:Redis`：
 
@@ -3495,7 +3491,7 @@ if (cache is ICacheSupportsLuaScript lua)
 
 签名是中立的：入参 `object?[]`，返回 `CacheScriptResult`（承载标量、整数、布尔与嵌套数组）。具体实现负责把自己的原生返回值映射成这个中立结构。
 
-`IRedisDelayQueue` / `IRedisStreamQueue` 则是名字里就带 Redis 的专用抽象，直接用即可。
+`IRedisStreamQueue` 只在启用 Redis 后才能注入；`IRedisDelayQueue` 未接 Redis 时是进程内的有界回退，多实例部署或需要持久化时必须接 Redis。
 
 ## 常见问题
 
@@ -4709,7 +4705,7 @@ PublishAsync(useOutbox: true)
 | 清理 | 每轮末尾 `DeleteOldEventsAsync`；内存实现只清理非等待中、且最后修改时间超过 7 天的记录 |
 
 ::: danger 默认事件盒在内存里
-`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，进程一停全部丢失，重试计数也只在当前进程内累计。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
+`DefaultEventOutbox` / `DefaultEventInbox` 用 `ConcurrentDictionary` 存储，各最多 100000 条，进程一停全部丢失，重试计数也只在当前进程内累计。发件箱满载时发布抛 `InvalidOperationException`；收件箱满载时先清理 7 天前的已处理 / 已丢弃记录，仍满则抛出。开发和单机够用，要真正的「不丢」必须换成持久化实现：把自己的 `IEventOutbox` / `IEventInbox` 注册进容器，并把 `ImplementationType` 指过去。
 :::
 
 ```csharp
@@ -5633,7 +5629,7 @@ public class GrayVersionHeaderMiddleware(RequestDelegate next)
 
 ## 生产化：换掉内存规则仓储
 
-默认的 `DefaultGrayRuleRepository` 是最多保存 10000 条规则的单例进程内仓储：规则重启即丢、多实例各存各的、没有任何管理入口（`AddRule` / `RemoveRule` / `Clear` 不在 `IGrayRuleRepository` 接口上）。
+默认的 `DefaultGrayRuleRepository` 是最多保存 10000 条规则的单例进程内仓储（满载时 `AddRule` 抛 `InvalidOperationException`）：规则重启即丢、多实例各存各的、没有任何管理入口（`AddRule` / `RemoveRule` / `Clear` 不在 `IGrayRuleRepository` 接口上）。
 
 生产要实现三个只读方法后替换：
 
@@ -7819,7 +7815,10 @@ public class OrderService(ICurrentTenant currentTenant) : ITransientDependency
 
 ### 谁来设置它
 
-请求链路里由 **`XiHanTenantResolveMiddleware`** 设置，位置在**认证之后**（要读令牌里的租户 claim）、**授权之前**（授权判定要在租户上下文里进行）。
+请求链路里由 **`XiHanTenantResolveMiddleware`** 设置，位置在**认证之后**（要读令牌里的租户 claim）、**授权之前**（授权判定要在租户上下文里进行）。租户来源分两种信任级别：
+
+- **令牌**：已认证请求一律以令牌为准——带租户声明即该租户，不带即平台。请求头、查询串不能替已认证身份另选租户，否则宿主令牌可以逐请求自选任意租户、绕过成员关系。
+- **外部输入**：未认证请求才看 `X-Tenant-Id` 请求头、`tenantId` 查询串与 `FallbackTenant`。给出的租户必须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝；靠匿名请求头识别租户的场景（如租户专属登录页），要把租户登记进 `ITenantStore`。
 
 非请求场景（定时任务、后台作业、控制台）**没有中间件**，要自己切：
 
@@ -8158,8 +8157,8 @@ var stats = performanceMonitor.GetStatistics();        // 总数/成功/失败�
 var slow = performanceMonitor.GetSlowOperations(500);  // 耗时 ≥ 500ms，按耗时倒序
 ```
 
-::: warning 记录存在无上限的 `ConcurrentBag` 里
-`PerformanceMonitor` 的记录只增不减，`Clear()` 是唯一的释放途径，进程重启即全丢。它适合「排查期临时打开、看完就清」，不适合当常驻监控——常驻请走 OTel 指标与链路。
+::: warning 只保留最近 10000 条记录
+`PerformanceMonitor` 的记录存在进程内队列，超过 10000 条自动丢弃最旧的，`GetStatistics()` / `GetSlowOperations()` 只反映这部分；进程重启即全丢，`Clear()` 可主动清空。它适合排查期临时观察，不适合当常驻监控——常驻请走 OTel 指标与链路。
 :::
 
 `IDiagnosticsService` 读进程当下状态，全部基于 BCL，无副作用（除 GC 那个方法外）：
@@ -8247,7 +8246,7 @@ public override void OnApplicationInitialization(ApplicationInitializationContex
 | 日志里 TraceId 格式变了 | 开启 OTel 后从 `TraceIdentifier` 变为 W3C 32-hex | 同步调整日志检索与告警规则 |
 | 日志 TraceId 为空 | 当前上下文没有 Activity（如未走 HTTP 管线的后台线程） | 在入口自行 `StartActivity` |
 | 消费端与发布端不在同一条 trace | 发布时没有环境 Activity，`correlationId` 非法或为空 | 在作业/任务入口建 Activity |
-| 进程内存持续上涨 | `PerformanceMonitor` 的 `ConcurrentBag` 无上限累积 | 定期 `Clear()`，或改用 OTel 指标 |
+| 早期的慢操作查不到、统计总数不再增长 | `PerformanceMonitor` 只保留最近 10000 条 | 需要全量历史改用 OTel 指标 |
 | `/health` 返回 401 | `RequireAuthenticatedUser=true` 时装配的鉴权 FallbackPolicy 拦截 | `MapHealthChecks(...).AllowAnonymous()` |
 | `/health` 200 但没有任何检查项 | 模块只注册基础设施，不含检查项 | 应用侧 `AddCheck` |
 | `StartActivity` 处空引用 | OTel 关闭时返回 `null` | 一律用 `activity?.` |
@@ -8961,7 +8960,7 @@ throw new UserFriendlyException(
 
 ## 只有 C#
 
-`XiHan.Framework.Script` 的唯一第三方依赖是 `Microsoft.CodeAnalysis.CSharp`（Roslyn 5.6.0）。没有 JavaScript、Python、Lua 引擎，也没有留出接别的语言的抽象层。
+`XiHan.Framework.Script` 的唯一第三方依赖是 `Microsoft.CodeAnalysis.CSharp`（Roslyn）。没有 JavaScript、Python、Lua 引擎，也没有留出接别的语言的抽象层。
 
 脚本不是被解释执行的 DSL，而是**真的 C# 源码**：Roslyn 在内存里把它编译成一个程序集，然后反射调用其中的入口方法。所以脚本拥有和宿主代码同等的能力——这既是它好用的原因，也是安全章节要反复强调的原因。
 
@@ -9166,13 +9165,11 @@ var stats = engine.GetStatistics();
 
 ## 超时：它保护调用方，保护不了进程
 
-::: danger `ScriptOptions.TimeoutMs` 打断不了已经跑起来的脚本
-引擎内部是 `Task.Run(委托, cts.Token)` 再 `await task`。`CancellationToken` 传给 `Task.Run` 只在**委托开始执行之前**起作用；一旦委托跑起来，取消令牌就再也影响不到它，`await` 会老老实实等到脚本自己结束。
-
-也就是说：默认路径下 `TimeoutMs`（默认 30000）几乎只在极端调度延迟时才会触发 `ScriptTimeoutException`。**它不能用来兜底死循环。**
+::: danger `ScriptOptions.TimeoutMs` 让调用方按时返回，停不下脚本本身
+引擎把执行任务与 `Task.Delay(TimeoutMs)`（默认 30000）竞速，到点即判超时：`ExecuteAsync` 返回 `IsSuccess=false`、`Exception` 为 `ScriptTimeoutException` 的结果。但托管代码没有安全的线程中止手段，**被判超时的脚本线程仍在后台跑完**。
 :::
 
-想让调用方到点返回，用扩展方法：
+想让超时直接抛异常，用扩展方法——它会覆盖 `options.TimeoutMs`，到点**抛出** `ScriptTimeoutException`，而不是返回失败结果：
 
 ```csharp
 try
@@ -9185,7 +9182,7 @@ catch (ScriptTimeoutException ex)
 }
 ```
 
-`ExecuteWithTimeoutAsync` 内部用的是 `task.WaitAsync(token)`，到点就把控制权还给你。但要认清代价：**脚本线程还在后台跑到底**，线程池线程和它占的内存都收不回来。一个 `while(true)` 会永久占住一个线程池线程直到进程重启。
+两种方式到点都把控制权还给你，代价也一样：**脚本线程还在后台跑到底**，线程池线程和它占的内存都收不回来。一个 `while(true)` 会永久占住一个线程池线程直到进程重启。
 
 结论：超时只是给调用方的 SLA 兜底，不是安全机制。真正的兜底是"不执行不可信代码"。
 
@@ -9408,7 +9405,7 @@ return amount;
 | 编译报找不到业务类型 | 默认只挂了几个基础程序集，要 `AddReference(typeof(X))` + `AddImport("命名空间")` |
 | `EvalAsync` 一直返回 `null` | 它失败时就返回 `null`，看不到原因；换 `ExecuteAsync` 读 `ErrorMessage` / `Diagnostics` |
 | `ScriptResult<T>.Value` 是 `default` 但 `IsSuccess` 是 `true` | 脚本返回的类型和 `T` 对不上，取值时静默降级为 `default` |
-| 死循环脚本没有被超时中断 | `TimeoutMs` 打断不了运行中的委托，用 `ExecuteWithTimeoutAsync` 让调用方返回（脚本线程仍在跑） |
+| 死循环脚本超时后仍占着线程 | 到 `TimeoutMs` 调用方拿到超时失败结果，但脚本线程仍在后台跑；超时不是隔离手段，不要执行不可信代码 |
 | 类名带 `Unsafe` 被判违规 | `AllowUnsafe=false` 时按类型名字符串匹配，改类名 |
 | 脚本调 `Process.Start` 没被拦住 | 安全检查只看脚本**声明**的类型/方法名，不看调用；这是设计上的边界，不是配置问题 |
 | 改了 `AllowUnsafe` / 优化级别没生效 | 这两项不参与缓存键，命中缓存直接复用旧程序集；`ClearCache()` 或用 `WithCacheKey` 区分 |
@@ -9483,7 +9480,7 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 ```
 
 ::: warning 进程内实现能做什么、不能做什么
-`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每索引 100000 条文档；索引状态放在进程内，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每索引 100000 条文档，超限抛 `InvalidOperationException`（批量写入整批拒绝）；索引状态放在进程内，**进程重启即丢**，多实例部署时各进程各有一份、互不可见；关键字匹配是**大小写不敏感的子串包含**，命中几个字段就得几分，**不分词、没有相关度模型**。
 
 用它验证「链路通不通」可以，验证「搜得准不准」不行。生产必须换实现。
 :::
@@ -9493,11 +9490,11 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 三步：建索引 → 写文档 → 查。
 
 ```csharp
-using XiHan.Framework.SearchEngines;
-using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
-using XiHan.Framework.SearchEngines.Results;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 
 public class ArticleSearchService(ISearchEngine search)
 {
@@ -9616,6 +9613,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Core.Modularity;
 using XiHan.Framework.SearchEngines;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
 
@@ -10269,10 +10267,10 @@ var result = await provider.CompleteChunkedUploadAsync(new ChunkedUploadComplete
 });
 ```
 
-失败路径务必调 `AbortChunkedUploadAsync` 收尾。本地存储的分片落在系统临时目录 `chunked-uploads/{uploadId}` 下，`Complete` 或 `Abort` 都会清掉它；两个都不调，临时文件就一直留着。
+失败路径务必调 `AbortChunkedUploadAsync` 收尾。本地存储的分片落在系统临时目录 `chunked-uploads/{uploadId}` 下，`Complete` 或 `Abort` 都会清掉它；两个都不调时，会话在最后一次活动 24 小时后、于下一次 `InitiateChunkedUploadAsync` 时被回收并删除临时目录（惰性回收，没有新上传就不触发；进程重启前的残留目录需自行清理）。
 
 ::: warning 分片会话在进程内存里
-本地存储的上传会话存在 `ConcurrentDictionary` 中。进程重启，或者多实例部署时分片请求被负载均衡打到了另一个实例，会拿到 `Upload session not found`。多实例下的分片上传需要会话粘滞。
+Local / OSS / COS 的上传会话都存在进程内存中，24 小时无活动即被回收。进程重启、会话已被回收，或多实例部署时分片请求被打到另一个实例，都会报会话不存在（Local 为 `Upload session not found`，OSS / COS 为「上传会话不存在」）。多实例下的分片上传需要会话粘滞。
 :::
 
 ### 后端是怎么被选中的
@@ -10561,7 +10559,7 @@ _vfs.Watch("**/*.json");
 | 本地存储设了 `AccessControl` 仍能匿名访问 | 本地提供程序不读该字段，`UrlPrefix` 目录挂在鉴权之前，一律匿名可读 |
 | MinIO 分片每步都成功，最后失败 | 分片方法是占位实现、数据被丢弃；改用 `UploadAsync` |
 | 腾讯云 COS 分片上传报本地文件找不到 | `UploadChunkAsync` 把 `StoragePath` 当本地文件路径调 `PutObject`，从不读 `ChunkData`；改用 `UploadAsync` |
-| 分片上传报 `Upload session not found` | 会话在进程内存里，进程重启或请求被打到别的实例 |
+| 分片上传报 `Upload session not found` / 「上传会话不存在」 | 会话在进程内存里：进程重启、会话 24 小时无活动已被回收，或请求被打到别的实例 |
 | `GetProvider` 抛 `InvalidOperationException` | 该名字不在 `EnabledProviders` / `DefaultProvider` 中，也没经 `AddFileStorageProvider` 注册 |
 | 启动期抛"不支持的对象存储提供程序" | `EnabledProviders` 里的名字拼错，与配置节名混用了 |
 | 本地 `GetMetadataAsync` 的 `ContentType` 回落成 `application/octet-stream` | 本地提供程序只内置 jpg/jpeg、png、gif、webp、pdf、zip、mp4、mp3 的映射，其余扩展名一律回落 |
@@ -10941,17 +10939,13 @@ services.AddXiHanTasks(config).AddMiddleware<TracingMiddleware>();
 
 | 能力线 | 租户从哪来 | 切换时机 |
 | --- | --- | --- |
-| 定时调度 | 触发时按优先级解析：① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户 | `JobExecutor` 用 `ICurrentTenant.Change(...)` 包住整条管道 |
+| 定时调度 | 触发时按优先级解析：① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户 | `JobExecutor` 一开始就 `ICurrentTenant.Change(...)` 切入：实例落库、任务构造、管道执行、状态回写与历史落档（含失败路径）都在该租户作用域内 |
 | 后台作业 | **入队那一刻**的 `ICurrentTenant.Id`，写进 `BackgroundJobInfo.TenantId` | Worker 执行前 `ICurrentTenant.Change(job.TenantId)` |
 
-`TenantId` 为空表示宿主（Host）级任务。
-
-::: warning 任务类的构造函数在切租户之前执行
-`JobExecutor` 先用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例，再切换租户上下文。构造函数里做的任何依赖租户的查询都会落在错误的上下文里 —— **把租户相关的活儿全放进 `ExecuteAsync`**。
-:::
+`TenantId` 为空表示平台级任务，在平台（0 号租户）作用域执行，只看得到平台数据；要处理各租户的数据，在任务里逐个 `Change(tenantId)` 切入。
 
 ::: warning 任务类上的 AOP 特性不生效
-同样因为走 `ActivatorUtilities.CreateInstance`，任务类型本身不经过容器解析，拿不到拦截器代理。打在 `IJobWorker` 实现类上的 `[UnitOfWork]`、`[Cacheable]` 之类特性会静默失效。
+因为走 `ActivatorUtilities.CreateInstance`，任务类型本身不经过容器解析，拿不到拦截器代理。打在 `IJobWorker` 实现类上的 `[UnitOfWork]`、`[Cacheable]` 之类特性会静默失效。
 
 正确做法：把需要事务/缓存的逻辑放进从容器注入的应用服务里，任务类只负责调用它。见 [AOP 与拦截器](./aop) 和 [工作单元与事务](./uow)。
 :::
@@ -10975,7 +10969,7 @@ services.AddXiHanTasks(config).AddMiddleware<TracingMiddleware>();
 
 ### 存储替换
 
-默认实现全部是进程内内存，进程重启即丢：
+默认实现都是有界的进程内存储，进程重启即丢：`DefaultJobStore` 实例最多 20000 条（终态实例只留最近 10000 条）、历史最多 100000 条；`DefaultBackgroundJobStore` 最多 100000 条。满载时新增抛 `InvalidOperationException`——后台作业入队直接失败，定时任务的历史写入失败只记错误日志。框架不自动清理历史，长期运行要定期调 `IJobStore.CleanupHistoryAsync`。
 
 | 存的是什么 | 默认实现 | 换成别的 |
 | --- | --- | --- |
@@ -11055,7 +11049,7 @@ services.UseRedisBackgroundJobStore(o =>
 | 历史里出现「无法获取任务锁」的失败记录 | 锁在重试外层，抢锁失败直接记为一次失败执行，不会重试 |
 | `[JobTimeout]` 设了 5 分钟，任务却跑了 15 分钟才超时 | 超时是「首次 + 全部重试」的总预算，与重试次数无关；实际观感差异来自重试间隔 |
 | 任务里的 `[UnitOfWork]` / `[Cacheable]` 不生效 | 任务实例由 `ActivatorUtilities.CreateInstance` 构造，不经容器代理；把逻辑挪进注入的服务 |
-| 任务构造函数里查不到租户数据 | 租户上下文在构造之后才切换，把逻辑挪进 `ExecuteAsync` |
+| 平台级任务里查不到租户数据 | 未指定租户的任务在平台作用域执行，平台只看自己的数据；给任务指定 `TenantId`，或在任务里逐个 `Change(tenantId)` |
 | 重启后待执行的后台作业全没了 | 默认 `DefaultBackgroundJobStore` 是进程内的，换 `UseRedisBackgroundJobStore()` 或自实现 |
 | 入队的作业迟迟不执行 | `IsJobExecutionEnabled = false`；或首轮等待 5 秒 + 轮询间隔 5 秒的正常延迟；或多实例下锁被别的实例持有 |
 | 作业只试了一次就被放弃 | 属于致命错误：作业名找不到配置（改过参数类型名且没标 `[BackgroundJobName]`），或参数反序列化失败 |
@@ -11567,8 +11561,8 @@ await cache.RemoveByPatternAsync(pattern, hideErrors: true, considerUow: true, t
 | 脚本发现（按版本目录扫 `*.sql`） | `FileSystemUpgradeScriptProvider` | 可用 |
 | 后台触发与进程内防重入 | `UpgradeCoordinator` | 可用 |
 | 状态查询 | `UpgradeStatusService` | 可用 |
-| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现** |
-| **分布式锁** | `DefaultUpgradeLockProvider`（进程内） | **多节点必须换** |
+| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典，最多 10000 个租户、每租户 10000 条历史，超限抛 `InvalidOperationException`） | **必须换成数据库实现** |
+| **分布式锁** | `DefaultUpgradeLockProvider`（进程内，最多 10000 个锁条目，满载时获取失败、引擎报「升级锁已被占用」） | **多节点必须换** |
 | **迁移执行器** | `DefaultUpgradeMigrationExecutor` | **必须换**，默认直接抛异常 |
 | 维护模式 | `DefaultUpgradeMaintenanceModeManager` | 只写日志，不拦请求 |
 | 程序文件替换 / 滚动重启 | `NullUpgradeFileUpdater` / `NullRollingRestartCoordinator` | 空实现 |
@@ -11675,7 +11669,7 @@ needAppUpgrade = 记录AppVersion < 当前应用版本
 节点进入升级前要过两道门：
 
 1. **主节点门控**：配了 `PrimaryNodeName` 且当前节点名不匹配 → 直接返回 `Normal` / `"当前节点非主节点，等待升级"`。不配则每个节点都视为主节点。
-2. **抢锁**：`TryAcquireLockAsync(resourceKey, LockExpirySeconds, nodeName)`。资源键为 `LockResourceKey`；版本记录的 `TenantId` 非空（即当前处于某个租户上下文）时追加 `:Tenant_{租户Id}` 后缀，与 `EnableMultiTenantIsolation` 开没开无关。
+2. **抢锁**：`TryAcquireLockAsync(resourceKey, LockExpirySeconds, nodeName)`。资源键为 `LockResourceKey`；版本记录的 `TenantId` 大于 0（即当前处于某个业务租户）时追加 `:Tenant_{租户Id}` 后缀，平台（`null` 或 `0`）共用 `LockResourceKey` 本身，与 `EnableMultiTenantIsolation` 开没开无关。
 
 节点名的解析顺序是 `NodeName` 选项 → `机器名-实例Id`。实例 Id 每次进程启动都会变，所以**要用 `PrimaryNodeName` 就必须同时显式配 `NodeName`**，否则永远匹配不上，谁都不升级。
 
@@ -11710,7 +11704,7 @@ await _versionStore.SetUpgradeCompletedAsync(version, currentAppVersion, version
 ::: danger 存储实现必须把新值写回入参实例
 如果 `UpdateDbVersionAsync` 只更新了数据库、没有同步修改传入的 `version` 对象，那么 `version.DbVersion` 仍是本轮开始时的旧值，完成时会被原样写回去——数据库版本永远推不上去，每次启动都判定「需要升级」。内置实现通过把状态复制回入参来满足这一点，自定义实现照做。
 
-同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。
+同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。平台就是 0 号租户：无租户上下文与 `Change(0)` 必须落同一个平台分区（内置实现都落 `host`，记录的 `TenantId` 为 0），与升级锁同一口径，否则平台会出现两份版本记录与迁移历史。
 :::
 
 ### 维护模式
@@ -11790,7 +11784,7 @@ public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngi
 
 两个要注意的地方：
 
-- 默认 `DefaultUpgradeTenantProvider` 返回的是**一条**记录——当前 `ICurrentTenant` 的 Id 与名称（宿主态即 `(null, null)`）。要「逐全体租户」批量升级，必须自己实现 `IUpgradeTenantProvider` 从租户仓储读全量列表。
+- 默认 `DefaultUpgradeTenantProvider` 返回的是**一条**记录——当前 `ICurrentTenant` 的 Id 与名称（平台即 `(null, null)`）。要「逐全体租户」批量升级，必须自己实现 `IUpgradeTenantProvider` 从租户仓储读全量列表。
 - 全部租户跑完后返回的固定是 `Started=true` / `Completed` / `"多租户升级完成"`，**即使每个租户实际都是「无需升级」或「锁被占用」**。要判断实情看日志与各租户状态。
 
 ## 配置
@@ -11899,14 +11893,14 @@ services.Replace(ServiceDescriptor.Singleton<IUpgradeLockProvider, DistributedUp
 
 ### 版本存储
 
-实现 `IUpgradeVersionStore` 的 9 个方法，把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
+实现 `IUpgradeVersionStore` 的 10 个方法（含新库基线登记用的 `TryCreateBaselineAsync`），把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
 
 ```csharp
 services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeVersionStore>());
 ```
 
 ::: danger 默认存储进程重启即丢
-`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
+`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区，租户 Id 为 `null` 与 `0` 同落 `host`）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
 :::
 
 ## 常见问题
@@ -12477,7 +12471,7 @@ public class MyModule : XiHanModule { }
 所有注册都是 `TryAdd` 语义，业务侧可以整块换掉。
 
 ::: danger 默认存储在内存里
-`DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 是**进程内**实现：进程重启，全部定义、实例与书签消失，也不跨实例共享。
+`DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 是有界的**进程内**实现：定义最多 10000 条、实例最多 100000 条、节点实例与书签各最多 500000 条，满载时新增抛 `InvalidOperationException`，不会静默淘汰；进程重启，全部定义、实例与书签消失，也不跨实例共享。
 
 只适合开发和单测。生产环境必须实现三个 Store 并 `Replace` 掉默认注册，见[换成持久化存储](#换成持久化存储)。
 :::
@@ -14118,12 +14112,14 @@ flush 时新建一个 DI scope 解析 `IXxxLogWriter`，**逐条**调用 `WriteA
 
 | 类型 | 说明 |
 | --- | --- |
-| `AccessLogRecord` | 访问日志：`TraceId`、`UserId`、`Method`、`Path`、`QueryString`、`RequestBody`、`StatusCode`、`RemoteIp`、`UserAgent`、`Referer`、`ElapsedMilliseconds`、`ResponseSize` 等 16 个字段 |
+| `AccessLogRecord` | 访问日志：`TraceId`、`UserId`、`TenantId`、`Method`、`Path`、`QueryString`、`RequestBody`、`StatusCode`、`RemoteIp`、`UserAgent`、`Referer`、`ElapsedMilliseconds`、`ResponseSize` 等 17 个字段 |
 | `OperationLogRecord` | 操作日志：在访问日志基础上带 `ControllerName` / `ActionName` / `RequestParams` / `ResponseResult` |
-| `ApiLogRecord` | 接口日志：最全，另含 `ClientId` / `AppId` / `IsSignatureValid` / `SignatureAlgorithm` / `RequestSize` / `IsSuccess` 等 23 个字段 |
+| `ApiLogRecord` | 接口日志：最全，另含 `ClientId` / `AppId` / `IsSignatureValid` / `SignatureAlgorithm` / `RequestSize` / `IsSuccess` 等 25 个字段 |
 | `ExceptionLogRecord` | 异常日志：`ExceptionType` / `ExceptionMessage` / `ExceptionStackTrace` / `RequestHeaders` 等 |
 | `LoginLogRecord` | 登录日志：`LoginResult` / `Message` / `LoginIp` / `DeviceId` / `LoginTime` |
 | `EntityDiffLogRecord` | 实体变更日志：`OperationType` / `EntityType` / `EntityId` / `BeforeData` / `AfterData` / `ChangedFields` |
+
+六类记录都带 `long? TenantId`（`null` 即平台）：五类日志在记录产生时取请求所属租户，写入器据此落戳，不依赖写入时的环境上下文。
 | `ILogQueue<TRecord>` | 日志队列契约：`Count` / `TryEnqueue` / `EnqueueAsync` / `DequeueAllAsync` |
 | `ChannelLogQueue<TRecord>` | 基于有界 `Channel` 的默认实现（单例，开放泛型注册） |
 | `IAccessLogPipeline` 等 5 个 | 采集管道契约（`Scoped`）：`WriteAsync(record, ct)` |
@@ -15477,7 +15473,7 @@ Webhook 模式还需在应用管道里 `app.UseTelegramBotWebhook()`（映射 We
 - **主动发送门面**：`ITelegramNotifier` 按机器人名发文本/Markdown/图片/文件、编辑消息与内联键盘、`SendToAdminsAsync` 广播管理员；内建重试退避（429 用 `RetryAfter`，否则指数退避）与出站审计。
 - **多机器人托管**：`TelegramBotManager` / `BotRegistry` / `TelegramBotHostedService`（`IHostedService`，启动/停止不阻塞应用）。
 - **处理器扩展点**：`IBotCommandHandler` / `IBotCallbackHandler` / `IBotMessageHandler` / `IBotReplyHandler` / `IBotInlineQueryHandler` / `IBotStartPayloadHandler` / `IBotStateHandler` + `[BotCommand]` / `[BotCallback]` 特性。
-- **会话状态/去重/审计**：`IConversationStateStore`（多轮会话，默认内存 TTL 10 分钟）、`ITelegramUpdateDeduplicator`（更新去重，默认内存 TTL 30 分钟）、`ITelegramMessageAuditStore`（默认 No-op），均可换 store。
+- **会话状态/去重/审计**：`IConversationStateStore`（多轮会话，默认内存存储，TTL 由调用方传入、非正数时取 10 分钟）、`ITelegramUpdateDeduplicator`（更新去重，默认内存 TTL 30 分钟）、`ITelegramMessageAuditStore`（默认 No-op），均可换 store。
 - **内联键盘 DSL**：`TelegramKeyboardBuilder`（`AddButton` / `AddUrlButton` / `AddRow` / `Build`，静态 `ConfirmCancel` / `Single`）。
 
 ## 主要 API / 类型
@@ -15533,8 +15529,8 @@ Webhook 模式还需在应用管道里 `app.UseTelegramBotWebhook()`（映射 We
 | --- | --- | --- |
 | `ITelegramBotConfigStore` | `DefaultTelegramBotConfigStore` | `Task<IReadOnlyList<TelegramBotConfig>> GetBotConfigsAsync(ct)`；默认读选项 `.Bots` |
 | `ITelegramBotSettingsStore` | `DefaultTelegramBotSettingsStore` | `Task<TelegramBotSettings> GetSettingsAsync(ct)`；默认读选项 `.Settings` |
-| `IConversationStateStore` | `DefaultConversationStateStore` | 多轮会话状态（默认 TTL 10 分钟，最多 50000 条） |
-| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 更新去重（TTL 30 分钟，最多 100000 条） |
+| `IConversationStateStore` | `DefaultConversationStateStore` | 多轮会话状态（TTL 由调用方传入、非正数时取 10 分钟；最多 50000 条，满载抛 `InvalidOperationException`） |
+| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 更新去重（TTL 30 分钟，最多 100000 条，满载抛 `InvalidOperationException`） |
 | `ITelegramMessageAuditStore` | `NoOpTelegramMessageAuditStore` | 出站审计（`AppendAsync(TelegramMessageAuditRecord, ct)`） |
 
 `ConversationState`：`Step`（当前步骤）/ `Payload`（上下文 JSON）/ `CreateTime`。
@@ -16100,7 +16096,7 @@ await bot.SendAsync(msg, ct);
 
 # XiHan.Framework.Caching
 
-> 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键，Redis 启用后额外提供分布式锁、延迟队列与 Stream 可靠队列。
+> 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键；分布式锁与延迟队列默认是有界进程内实现，启用 Redis 后升级为跨实例实现，并额外提供 Stream 可靠队列。
 
 - **NuGet**：`XiHan.Framework.Caching`
 - **模块类**：`XiHanCachingModule`
@@ -16113,7 +16109,7 @@ await bot.SendAsync(msg, ct);
 
 - 用泛型接口 `IHybridCache<TCacheItem>` / `IDistributedCache<TCacheItem>` 让你以类型安全的方式缓存业务对象，屏蔽序列化与键拼接细节。
 - 键经 `IDistributedCacheKeyNormalizer` 规范化，默认按当前租户加前缀，天然实现多租户隔离。
-- 未配置 Redis 时全部回落到进程内内存实现（内存缓存 + 内存分布式缓存 + 进程内锁），零外部依赖即可跑；配置 Redis 后自动 `Replace` 为 Redis 实现，并解锁分布式锁、延迟队列、Stream 队列等能力。
+- 未配置 Redis 时全部回落到进程内内存实现（内存缓存 + 内存分布式缓存 + `DefaultDistributedLock` + `DefaultDelayQueue<T>`），零外部依赖即可跑；配置 Redis 后自动换成 Redis 实现，锁与延迟队列跨实例生效，并额外提供 Stream 队列。
 - 通过 AOP 拦截器支持 `[Cacheable]` 声明式缓存方法结果，并用 `[CacheEvict]` 在方法成功后清除缓存。
 
 设计思路是"接口稳定、实现可切换"：业务只依赖泛型接口，本地/Redis 的差异由 DI 装配期决定。
@@ -16151,13 +16147,13 @@ public class MyModule : XiHanModule;
 
 动态代理只包裹接口注册，HTTP 请求进来的控制器实例不经过它。[XiHan.Framework.Web.Api](./web-api) 的 `XiHanCacheFilter` 补上这条路径：MVC 动作外层按同一套 `CacheAspect` 语义处理 `[Cacheable]` / `[CacheEvict]`，动态 API 的动作先经 `OriginalMethodAttribute` 回查原始应用服务方法再读取特性。它排在工作单元过滤器之外，命中缓存不开启事务、清除缓存发生在事务提交之后。
 
-若 `XiHan:Caching:Redis:IsEnabled = true`，`AddXiHanCaching` 继续：调用 `AddStackExchangeRedisCache`，把 `IDistributedCache` `Replace` 为 `XiHanRedisCache`，并在有连接串时 `TryAdd` 出 `IConnectionMultiplexer`、`IRedisStreamQueue<>`、`IRedisDelayQueue<>`，同时把 `IDistributedLock` `Replace` 为 `RedisDistributedLock`。
+若 `XiHan:Caching:Redis:IsEnabled = true`，`AddXiHanCaching` 继续：调用 `AddStackExchangeRedisCache`，先 `RemoveAll<IDistributedCache>()` 再注册 `XiHanRedisCache`；有连接串时 `TryAdd` 出 `IConnectionMultiplexer`、`IRedisStreamQueue<>`，并把 `IRedisDelayQueue<>` / `IDistributedLock` 分别 `Replace` 为 `RedisDelayQueue<>` / `RedisDistributedLock`。
 
 ## 工作原理
 
 **两级混合缓存**：`IHybridCache<TCacheItem>` 是对 .NET `HybridCache` 的泛型薄封装。读取时优先命中本地内存（L1），未命中回落分布式层（L2，内存或 Redis），再未命中执行工厂并回填两级；两级一致失效。`GetOrCreateAsync` 的 `optionsFactory` 可按调用定制 `HybridCacheEntryOptions`（本地/分布式过期时间）。
 
-**键规范化（租户隔离）**：所有分布式缓存键先经 `DefaultDistributedCacheKeyNormalizer.NormalizeKey` 处理，产出形如 `{tenantId}:{cacheName}:{key}`。租户段取当前 `ICurrentTenantAccessor.Current.TenantId`；无租户（宿主）时用 `0`。`cacheName` 由 `CacheNameAttribute.GetCacheName<TCacheItem>()` 推断（有 `[CacheName]` 用其值，否则用类型全名去掉 `CacheItem` 后缀）。若某条查询要跨租户共享，可通过 `DistributedCacheKeyNormalizeArgs.IgnoreMultiTenancy` 跳过租户段。
+**键规范化（租户隔离）**：所有分布式缓存键先经 `DefaultDistributedCacheKeyNormalizer.NormalizeKey` 处理，产出形如 `{tenantId}:{cacheName}:{key}`。租户段取当前 `ICurrentTenantAccessor.Current.TenantId`；无租户上下文时用 `0`——平台就是 0 号租户，`null` 与 `0` 落同一个键段。`cacheName` 由 `CacheNameAttribute.GetCacheName<TCacheItem>()` 推断（有 `[CacheName]` 用其值，否则用类型全名去掉 `CacheItem` 后缀）。若某条查询要跨租户共享，可通过 `DistributedCacheKeyNormalizeArgs.IgnoreMultiTenancy` 跳过租户段。
 
 **Redis 装配切换**：`IDistributedCache<>` 的模式匹配 / Lua 等高级能力，依赖底层 `IDistributedCache` 是否实现三个"能力"标记接口 —— `ICacheSupportsMultipleItems`、`ICacheSupportsKeyPattern`、`ICacheSupportsLuaScript`。`XiHanRedisCache`（继承自框架 `RedisCache`）实现了全部三者，因此启用 Redis 后 `GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 才真正生效；内存分布式缓存不实现这些接口，相应方法在纯内存模式下不可用（会退化/抛错）。
 
@@ -16167,7 +16163,7 @@ public class MyModule : XiHanModule;
 
 - **两级混合缓存**：`IHybridCache<TCacheItem>` / `IHybridCache<TCacheItem, TCacheKey>`，泛型封装 .NET `HybridCache`。
 - **泛型分布式缓存**：`IDistributedCache<TCacheItem>` / `IDistributedCache<TCacheItem, TCacheKey>`，同步/异步、单条/批量、GetOrAdd、Refresh、Exists、按模式查/删、Lua 脚本一应俱全。
-- **租户感知键**：`DefaultDistributedCacheKeyNormalizer`，`TenantId` 前缀（宿主用 `0`）。
+- **租户感知键**：`DefaultDistributedCacheKeyNormalizer`，`TenantId` 前缀（平台用 `0`）。
 - **AOP 声明式缓存**：`[Cacheable]` 缓存方法结果；`[CacheEvict]` 标注失效意图；`[CacheName]` 指定缓存名。
 - **Redis 分布式锁**：`IDistributedLock`（`SET NX PX` + 释放校验持有者），带 `WithLockAsync` / `AcquireAsync`（等待重试）便捷扩展。
 - **Redis 延迟队列**：`IRedisDelayQueue<T>`，基于 Sorted Set，到期原子领取。
@@ -16366,7 +16362,7 @@ var due = await delayQueue.DequeueDueAsync(count: 50, ct);
 
 ## 注意事项与最佳实践
 
-- **纯内存模式的能力边界**：未启用 Redis 时，`GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 等依赖能力接口的方法不可用；分布式锁仅进程内有效（多实例部署无跨实例互斥）。这些能力务必在启用 Redis 后使用。
+- **纯内存模式的能力边界**：未启用 Redis 时，`GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 等依赖能力接口的方法不可用；分布式锁仅进程内有效（多实例部署无跨实例互斥，最多 10000 个锁条目，满载时获取返回 `null`）；延迟队列同样只在进程内（最多 100000 条，满载入队抛 `InvalidOperationException`）。这些能力务必在启用 Redis 后使用。
 - **`[CacheEvict]` 只在方法成功后清理**：键模板必须与读取侧一致；事务写入若要求“提交后再失效”，应继续使用带 `considerUow` 的缓存接口或应用侧提交后失效机制，避免数据库回滚后缓存已被提前清除。
 - **租户隔离是默认行为**：键自动带租户前缀；要跨租户共享缓存需显式走 `IgnoreMultiTenancy`，否则不同租户天然隔离。
 - **`hideErrors`**：多数方法支持隐藏分布式缓存异常（缓存故障不影响主流程）；对一致性敏感的场景应显式传 `false` 让异常冒泡。
@@ -16981,13 +16977,13 @@ public class MyModule : XiHanModule { }
 - **连接选择每次访问实时解析**：`DbClient` 每次访问都重新解析——实体声明了模块数据源固定落该模块库，未声明则随租户上下文切换即时生效。
 - **静态连接与运行时动态连接一致**：`SqlSugarConnectionConfigurator` 复用同一套过滤器/AOP 装配逻辑，保证运行时新注册的租户连接与启动期静态连接行为完全一致。
 - **事务不在仓储内开启**：仓储只做 before 预读保证实体在当前租户范围内，事务边界统一由工作单元接管（见 [XiHan.Framework.Uow](./uow)）。
-- **写操作前的租户安全校验**：`UpdateAsync`/`DeleteAsync`/批量操作会先按当前过滤器读取实体，读不到即视为"不存在或不在当前租户范围内"并抛 `InvalidOperationException`，防止越租户改删。
+- **写操作前的租户安全校验**：`UpdateAsync`/`DeleteAsync`/批量操作会先按当前过滤器读取实体，读不到即视为"不存在或不在当前租户范围内"并抛 `InvalidOperationException`，防止越租户改删。预读统一经受保护的 `GetForWriteAsync` / `CreateWritePreReadQueryable`（恢复与清除经 `CreateWritePreReadWithDeletedQueryable`），`TenantWriteGuard.Suppress()` 作用域内会清除租户过滤；自定义仓储覆写写方法时，预读也要走这几个方法，否则豁免作用域内会把用户自有行误判为不存在。
 - **SQL 执行自动上报链路追踪**：每条 SQL 执行完成（或异常）后，`SetSugarAop` 按已知耗时回溯生成一个 `db.query`（`ActivityKind.Client`）的 OpenTelemetry Activity，挂在当前请求 Activity 之下，携带 `db.system`/`db.statement` 标签，异常时记录状态与堆栈；基于 `XiHanActivitySources.DataSource`，无监听者时直接跳过、零开销。
 
 ## 核心能力
 
 - **多套仓储实现**：只读、读写、软删除、审计、聚合根，全部开放泛型注册，注入接口即用。
-- **多租户数据隔离**：全局 `QueryFilter` 自动过滤租户数据（当前无租户上下文时不过滤，有上下文时"本租户数据 OR 全局模板 `TenantId=0`"）；连接层支持按 `ConfigId`/前缀/名称/自定义委托解析，或由业务提供 `ISqlSugarTenantConnectionProvider` 做库级隔离。
+- **多租户数据隔离**：全局 `QueryFilter` 自动过滤租户数据（平台就是 0 号租户：无租户上下文只看 `TenantId=0`；租户上下文看"本租户数据 OR 全局模板 `TenantId=0`"；严格隔离实体只看本作用域）；跨租户读取只能显式 `ClearTenantFilter()`；连接层支持按 `ConfigId`/前缀/名称/自定义委托解析，或由业务提供 `ISqlSugarTenantConnectionProvider` 做库级隔离。
 - **模块分库**：实体标 `[ModuleDataSource("Erp")]` 即固定落在当前布局的 Erp 模块库上，租户上下文照常统一；建表初始化同步收窄到该库（详见下文）。
 - **软删除过滤**：实现 `ISoftDelete` 的实体自动过滤 `IsDeleted`；`ISoftDeleteRepositoryBase<,>` 额外提供 `SoftDelete`/`Restore`/`GetDeleted`/`GetAllWithDeleted` 等。
 - **审计字段自动注入**：通过 SqlSugar `DataExecuting` AOP 注入雪花主键、创建/修改/删除时间与操作人、`TenantId`、`TraceId`，业务与仓储都无需手填。
@@ -17048,7 +17044,8 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `ISqlSugarClientResolver` | `GetCurrentClient()` 按当前租户解析并把连接登记进事务型 UoW；`GetClientForEntity(entityType)` / `GetClientForEntity<TEntity>()` 按实体模块数据源解析；`GetClient(configId)`、`GetAllConfigIds()`、`GetAllClients()`（初始化/种子遍历各库，含派生出的模块库）、`GetCurrentLayoutConfigIds()`（当前这一套布局有哪些库）、`AsTenant()` |
 | `ModuleDataSourceAttribute` | 实体上声明所属模块数据源：`[ModuleDataSource("Erp")]`，标在基类上对派生实体生效；SqlSugar 原生 `[Tenant("Erp")]` 同样被识别 |
-| `IEntityModuleDataSourceResolver` | 实体模块数据源解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；默认实现读特性并缓存，可 `Replace` |
+| `PlatformDataSourceAttribute` | 实体上声明固定落平台库：`[PlatformDataSource]`，库隔离租户下不随独立库切换；与 `[ModuleDataSource]` 互斥 |
+| `IEntityModuleDataSourceResolver` | 实体落点解析器：`ResolveModuleDataSource(entityType)` 返回实体声明的模块名，未声明返回 `null`；`IsPlatformPlaced(entityType)` 判断是否固定落平台库；默认实现读特性并缓存，可 `Replace` |
 | `IModuleDataSourceConnectionResolver` | 模块数据源连接解析器：`ResolveClient(moduleDataSource, parentConfigId)` 按「模块名 + 当前布局」定连接，两条维度在此交汇 |
 | `ISqlSugarTenantConnectionResolver` | `ResolveCurrentConfigId()` / `ResolveConfigId(long? tenantId, string? name)` / `GetConfigIds()`——解析顺序：自定义委托 → `tenantId` 直配 → `前缀+tenantId` → 租户名 → 默认 |
 | `ISqlSugarConnectionConfigurator` | `Configure(provider)` 装配过滤器+AOP；`EnsureTenantConnection(tenant, descriptor)` 运行时幂等注册租户独立连接（缺连接串 fail-closed） |
@@ -17060,7 +17057,8 @@ public class MyModule : XiHanModule { }
 | 类型 | 说明 |
 | --- | --- |
 | `IDbInitializer` | `InitializeAsync()`（遍历全部库的完整流程）/ `InitializeCurrentLayoutAsync()`（只初始化当前租户这一套布局，租户开通时用）/ `CreateDatabaseAsync()` / `CreateTablesAsync()` / `SeedDataAsync()` |
-| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync()`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
+| `IDbSchemaUpgrader` | 存量库表结构升级器：`UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken ct = default)`。建表只建缺失的表、不改已存在的表，存量表的新列由它补齐；在全部连接建表之后、任何播种之前执行，失败即中断初始化。只在 `EnableTableInitialization` 开启时调用 |
+| `DbSchemaUpgradeContext` | 本次初始化的建表结果：`FreshConfigIds` 为从零建出全部实体表的连接，`IsFresh(configId)` 判断某个连接是否新库。新库本就是最新结构，升级器应把它登记为最新版本（如 `IUpgradeEngine.BaselineAsync`），不补跑历史脚本 |
 | `IDataSeeder` | 种子契约：`int Order`（越小越先）/ `string Name` / `Task SeedAsync()` |
 | `DataSeederBase` | 种子基类：提供 `DbClient`、`DbClientFor<T>()`（按实体模块数据源解析）、`HasDataAsync<T>(predicate)`、`BulkInsertAsync<T>(list)` 等辅助 |
 | `IDbEntityTypeProvider` | 建表实体提供器：`GetEntityTypes(context)` 决定当前库建哪些表，默认实现按特性+选项筛选，可 `Replace` |
@@ -17085,7 +17083,7 @@ public class MyModule : XiHanModule { }
 - `SugarEntity<TKey>` / `SugarEntityWithIdentity` — 基础实体
 - `SugarCreationEntity` / `SugarModificationEntity` / `SugarDeletionEntity` / `SugarFullAuditedEntity<TKey>` — 审计实体（`Created_Time`/`Modified_Time`/`Is_Deleted`/`Deleted_Time` 等映射 + `Row_Version` 并发标识）
 - `SugarMultiTenantEntity<TKey>` 及其审计变体 — 多租户实体（含 `Tenant_Id` 列，`0`=平台/全局模板）
-- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` — 聚合根基类
+- `SugarAggregateRoot` / `SugarMultiTenantAggregateRoot` — 聚合根基类，公共列与上面各基类同名（`Basic_Id`、`Tenant_Id`、`Created_Time`、`Is_Deleted` 等）
 
 ## 配置
 
@@ -17363,6 +17361,23 @@ return descriptor with
 services.Replace(ServiceDescriptor.Singleton<IEntityModuleDataSourceResolver, ManifestEntityModuleDataSourceResolver>());
 ```
 
+### 固定落平台库：`[PlatformDataSource]`
+
+库隔离部署下，租户的业务与运行数据落各自的独立库；而平台目录、账号、成员关系与读共享的模板，要跨租户读取、或与平台数据在同一条 SQL 里关联，只能集中在平台库（默认布局的主库）。给这类实体标 `[PlatformDataSource]`：
+
+```csharp
+[SugarTable("sys_user_tenant")]
+[PlatformDataSource]
+public class SysUserTenant : SugarMultiTenantEntity<long> { }
+```
+
+- **运行期**：无论当前租户是否库隔离，读写都走平台库并登记进工作单元；行级租户过滤照常生效（`TenantId` 仍在行上）。字段隔离的租户本就在平台库，标注对它们没有影响。
+- **建表**：只在平台库建，不进租户独立库与模块库。
+- **与模块数据源互斥**：同时声明 `[ModuleDataSource]` 视为配置错误，解析即抛异常。
+- **跨库写不是一个事务**：同一工作单元同时写平台库与租户独立库时，每个连接各开一个本地事务。
+
+`[TableInitialization(Target = DbInitializationTarget.Platform)]` 只管「表建在哪」，运行期仍跟着当前租户的布局走；要读写也固定在平台库，用 `[PlatformDataSource]`。
+
 ## 选择初始化范围
 
 `EnableTableInitialization` / `EnableDataSeeding` 是总开关，**选哪些表建、哪些种子跑**由两组选取规则决定。默认全量（扫描到的实体都建、注册的种子都跑），与总开关打开时的历史行为一致。
@@ -17455,7 +17470,7 @@ services.Replace(ServiceDescriptor.Singleton<IDataSeederSelector, MyDataSeederSe
 - **总开关之外还有范围**：打开建表/种子开关后默认全量参与；要挑表挑种子（含平台库与租户独立库分开建）见[选择初始化范围](#选择初始化范围)。
 - **事务靠工作单元**：仓储内不开事务；需要多写原子提交时给应用服务方法打 `[UnitOfWork(isTransactional: true)]`，`ISqlSugarClientResolver` 会自动把连接登记进 UoW 事务。见 [XiHan.Framework.Uow](./uow)。
 - **跨库不是一个事务**：同一工作单元跨多个 `ConfigId`（模块分库、租户独立库）写入时，每个连接各开本地事务，框架不提供跨库分布式事务；有强一致要求就把跨库步骤拆成可补偿流程。
-- **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前租户/已软删），抛 `InvalidOperationException`；这是安全边界，不是 bug。
+- **越租户写会被拒**：`Update/Delete` 前的可见性预读若读不到实体（不在当前作用域/已软删），抛 `InvalidOperationException`；每个作用域只能改写本作用域的行——租户不能改 `TenantId=0` 的全局行，平台也不能改租户行，平台上下文插入预置了租户标识的行同样被拒。写某个租户的数据须先 `ICurrentTenant.Change(tenantId)` 切入该租户。这是安全边界，不是 bug。
 - **跨租户/含软删查询**：仓储内部提供 `CreateNoTenantQueryable()`（清租户过滤，读共享与严格隔离一并清除）/`CreateWithDeletedQueryable()`（清软删过滤）；仓储外的查询用 `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()` 扩展，不要直接写 `ClearFilter<IMultiTenantEntity>()`（清不掉严格隔离实体的过滤）。仅用于确需跨租户的场景且须自行做权限校验。
 - **`TenantId=0` 是全局模板**：多租户实体的 `TenantId` 非空，`0` 表示平台/全局记录，对所有租户可见（配合 `UNIQUE(TenantId, Code)` 复合唯一索引对全局记录生效）。
 - **审计字段勿手填**：`TenantId`、创建/修改/删除时间与操作人由 `DataExecuting` AOP 注入，业务侧手填会被覆盖或引发不一致。
@@ -20721,7 +20736,7 @@ public class MyModule : XiHanModule { }
 
 - **当前租户契约**：`ICurrentTenant` 提供 `Id`（`long?`）、`Name`、`IsAvailable`，以及用 `using` 临时切换租户的 `Change(...)`
 - **租户信息载体与访问器**：`BasicTenantInfo` 承载租户 Id/Name，`ICurrentTenantAccessor` 读写「当前」`BasicTenantInfo`
-- **多租户实体标记**：`IMultiTenant` 暴露 `long? TenantId`，`null` 表示宿主（Host）/公共数据
+- **多租户实体标记**：`IMultiTenant` 暴露 `long? TenantId`，`null` 与 `0` 同义，表示平台（0 号租户）/公共数据
 - **租户解析链契约**：`ITenantResolveContributor` + `ITenantResolveContext`，把请求中的标识/名称解析成租户
 - **忽略多租户**：`IgnoreMultiTenancyAttribute`
 - **租户 URL 契约**：`IMultiTenantUrlProvider` 按租户模板生成 URL
@@ -20740,7 +20755,7 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `IMultiTenant` | 多租户实体接口，暴露 `long? TenantId { get; }`（`null` = 宿主/公共数据） |
+| `IMultiTenant` | 多租户实体接口，暴露 `long? TenantId { get; }`（`null` 与 `0` 同义：平台 / 公共数据） |
 | `ITenantResolveContributor` | 租户解析贡献者。属性 `string Name`；方法 `Task ResolveAsync(ITenantResolveContext context)` |
 | `ITenantResolveContext` | 解析上下文（继承 `IServiceProviderAccessor`）。属性 `string? TenantIdOrName { get; set; }`、`bool Handled { get; set; }` |
 | `IMultiTenantUrlProvider` | 按租户生成 URL 的契约。方法 `Task<string> GetUrlAsync(string templateUrl)` |
@@ -20768,7 +20783,7 @@ public class ReportService
         using (_currentTenant.Change(tenantId, "Acme"))
         {
             var id = _currentTenant.Id;          // 当前作用域内为 tenantId
-            var available = _currentTenant.IsAvailable; // true
+            var available = _currentTenant.IsAvailable; // tenantId 大于 0 时为 true；Change(0) 即平台，为 false
         }
     }
 }
@@ -20781,7 +20796,7 @@ public class Order : IMultiTenant
 {
     public long Id { get; set; }
 
-    // null 表示宿主/公共数据；非 null 表示归属某租户
+    // null 与 0 同义：平台（0 号租户）/ 公共数据；大于 0 表示归属某业务租户
     public long? TenantId { get; set; }
 }
 ```
@@ -20831,7 +20846,7 @@ public class Order : IMultiTenant
 ## 何时使用
 
 - 你的系统需要区分多个租户，并按租户隔离数据与配置
-- 你需要在请求管线里自动识别当前租户（登录用户、`X-Tenant-Id` 头、`tenantId` 查询串——后两者由 Web.Api 提供贡献者）
+- 你需要在请求管线里自动识别当前租户（登录用户的令牌、`X-Tenant-Id` 头、`tenantId` 查询串——后两者由 Web.Api 提供贡献者，只对未认证请求生效）
 - 你需要租户级设置（同一设置项对不同租户取不同值）
 - 你需要从存储中按 Id 或名称查询租户配置（连接串、是否激活、版本等）
 - 你需要按租户判断某功能是否启用（`ITenantFeatureChecker`）
@@ -20873,18 +20888,24 @@ public class MyModule : XiHanModule { }
   ↓
 得到 TenantIdOrName（若为空且未 Handled，回退到 FallbackTenant）
   ↓
-若仍为空 → 直接 next()（宿主上下文，Id = null）
+为空或为 "0" → 直接 next()（平台，即 0 号租户）
   ↓
 ITenantStore 按 TenantIdOrName 查 TenantConfiguration
   （先按数字 Id 试 FindAsync(long)，再按名称 FindAsync(string)）
   ↓
-命中 → using CurrentTenant.Change(cfg.Id, cfg.Name) 包裹 next()
-未命中 → 尽力把 TenantIdOrName 解析为 long 后 Change(tenantId, key) 包裹 next()
+来自令牌（CurrentUser 贡献者短路）：
+  命中 → Change(cfg.Id, cfg.Name)
+  未命中但为数字 → Change(数字, key)（令牌已签名，租户目录由应用自管时仍以令牌为准）
+来自外部输入（请求头 / 查询串 / FallbackTenant / 其余贡献者）：
+  命中且 IsActive → Change(cfg.Id, cfg.Name)
+  否则 → 400 拒绝，不进入 next()
+  ↓
+把用户与租户定型写回 IRequestContextAccessor，在租户作用域内执行 next()
 ```
 
 链的组成（默认顺序）：
 
-1. `CurrentUserTenantResolveContributor`（本包，插在首位）——从登录用户的 `ICurrentUser.TenantId` 解析；未登录或无租户则跳过
+1. `CurrentUserTenantResolveContributor`（本包，插在首位）——已认证请求以令牌为准：带租户声明即该租户，不带即平台，两种情况都短路解析链，请求头与查询串无法替已认证身份另选租户；未认证请求跳过，交给后续贡献者
 2. `HeaderTenantResolveContributor`（Web.Api 追加）——按 `HeaderKeys` 读请求头
 3. `QueryStringTenantResolveContributor`（Web.Api 追加）——按 `QueryStringKeys` 读查询串
 
@@ -20892,11 +20913,11 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 
 ### 租户级设置隔离
 
-`TenantSettingValueProvider`（提供者名 `"T"`）继承设置包的 `SettingValueProvider`，读值时以「当前租户键」作为 ProviderKey 调设置存储。租户键取值优先用 `ICurrentTenant.Name`，为空则回退到 `Id?.ToString()`。它被插入到设置值提供者链的 `GlobalSettingValueProvider`（`"G"`）之后，从而实现「先看全局、再被租户覆盖」的语义。详见 [Settings](./settings)。
+`TenantSettingValueProvider`（提供者名 `"T"`）继承设置包的 `SettingValueProvider`，读值时以「当前租户键」作为 ProviderKey 调设置存储。租户键只取 `ICurrentTenant.Id`（大于 0 时）的字符串形式，平台（0 号租户）没有租户级取值；不用租户名称定键，因为同一租户在请求管道里带名称切入、在后台按标识切入，按名称定键会落出两套设置。它被插入到设置值提供者链的 `GlobalSettingValueProvider`（`"G"`）之后，从而实现「先看全局、再被租户覆盖」的语义。详见 [Settings](./settings)。
 
 ### 租户功能开关
 
-`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以租户键作 ProviderKey、`"T"` 作 ProviderName 读值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，其它/空值返回传入的 `defaultValue`。
+`TenantFeatureChecker` 复用设置存储：把功能名加前缀 `Feature:` 组成设置键，以租户标识作 ProviderKey（与租户级设置同一口径）、`"T"` 作 ProviderName 读值；平台（0 号租户）没有租户级功能值。`IsEnabledAsync` 把 `1/true/yes/on`（忽略大小写）视为启用，其它/空值返回传入的 `defaultValue`。
 
 ## 核心能力
 
@@ -20915,7 +20936,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `CurrentTenant` | `ICurrentTenant` 实现（`ITransientDependency`），委托给 `ICurrentTenantAccessor`；`IsAvailable => Id is > 0` |
 | `AsyncLocalCurrentTenantAccessor` | 基于 `AsyncLocal<BasicTenantInfo?>` 的访问器，单例 `Instance`，私有构造 |
 | `TenantResolveContributorBase` | 自定义租户解析贡献者的抽象基类（`abstract string Name` / `abstract Task ResolveAsync(...)`） |
-| `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`；从 `ICurrentUser.TenantId` 解析（未认证/无租户则跳过） |
+| `CurrentUserTenantResolveContributor` | 内置贡献者，`Name = "CurrentUser"`（常量 `ContributorName`）；已认证请求取 `ICurrentUser.TenantId`（为空即平台）并短路解析链，未认证请求跳过 |
 | `XiHanTenantResolveOptions` | 解析选项（配置节 `XiHan:MultiTenancy:Resolve`），见下表 |
 
 ### 存储与功能
@@ -20926,7 +20947,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `ITenantStore` | 租户存储契约：`Task<TenantConfiguration?> FindAsync(long id, ...)`、`Task<TenantConfiguration?> FindAsync(string name, ...)`、`Task<IReadOnlyList<TenantConfiguration>> GetListAsync(bool includeInactive = true, ...)` |
 | `DefaultTenantStore` | 默认实现，从 `XiHanDefaultTenantStoreOptions.Tenants` 读取（`IOptionsMonitor` 热更新）；`FindAsync(string)` 支持纯数字按 Id、否则按 `Name`/`NormalizedName` 不区分大小写匹配 |
 | `XiHanDefaultTenantStoreOptions` | 配置节 `XiHan:MultiTenancy:DefaultStore`，字段 `TenantConfiguration[] Tenants`（默认空数组） |
-| `TenantSettingValueProvider` | 租户级设置值提供者，`ProviderName = "T"`；租户键优先 `Name`、回退 `Id` |
+| `TenantSettingValueProvider` | 租户级设置值提供者，`ProviderName = "T"`；租户键只取租户标识，平台没有租户级取值 |
 | `ITenantFeatureChecker` / `TenantFeatureChecker` | `Task<bool> IsEnabledAsync(string featureName, bool defaultValue = false)`、`Task<string?> GetValueOrNullAsync(string featureName)`；功能键前缀 `Feature:` |
 
 ## 配置
@@ -20940,7 +20961,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 | `HeaderKeys` | `string[]` | `["X-Tenant-Id", "x-tenant-id", "TenantId"]` | Header 租户键（按优先级） |
 | `EnableQueryStringResolve` | `bool` | `true` | 是否启用 QueryString 解析 |
 | `QueryStringKeys` | `string[]` | `["tenantId", "tenant"]` | QueryString 租户键（按优先级） |
-| `FallbackTenant` | `string?` | `null` | 解析链未命中且未 Handled 时的回退租户标识 |
+| `FallbackTenant` | `string?` | `null` | 解析链未命中且未 Handled 时的回退租户标识；与请求头、查询串一样须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝 |
 
 配置节 `XiHan:MultiTenancy:DefaultStore`（`XiHanDefaultTenantStoreOptions.SectionName`）：
 
@@ -20983,7 +21004,7 @@ ITenantStore 按 TenantIdOrName 查 TenantConfiguration
 ```csharp
 public class OrderService(ICurrentTenant currentTenant)
 {
-    public long? CurrentTenantId => currentTenant.Id; // null = 宿主
+    public long? CurrentTenantId => currentTenant.Id; // null 与 0 同义：平台（0 号租户）
 }
 ```
 
@@ -21028,7 +21049,8 @@ public class FeatureGate(ITenantFeatureChecker featureChecker)
 
 ## 注意事项与最佳实践
 
-- **框架层 `null` = 宿主；`TenantId = 0` 是应用层约定**：框架抽象中 `TenantId` 为 `long?`，`null` 表示宿主/公共数据。**BasicApp 应用层**另用 `TenantId = 0` 表示全局/宿主数据——这是**应用侧约定**，并非框架强制，框架自身不认识「0 号租户」这一特例。
+- **平台就是 0 号租户**：`ICurrentTenant.Id` 为 `long?`，`null` 与 `0` 同义，都是平台；实体上 `TenantId = 0` 的行是平台 / 全局数据，业务租户从 1 开始。数据过滤、写边界、租户级设置与功能、租户解析统一按这一口径，平台同样只看、只写自己的数据，见 [多租户](../guide/multi-tenancy)。
+- **外部输入的租户必须登记**：请求头、查询串与 `FallbackTenant` 给出的租户在 `ITenantStore` 查不到或未激活时，请求以 400 拒绝。靠匿名请求头识别租户的应用（如租户专属登录页），须把租户登记进 `ITenantStore`。
 - **解析中间件不在本包**：`XiHanTenantResolveMiddleware` 与 Header/QueryString 贡献者在 [Web.Api](./web-api)。只引用本包不会自动解析请求中的租户，需要 Web.Api 模块接入中间件。
 - **中间件在认证之后**：解析链首位的 `CurrentUserTenantResolveContributor` 依赖 `ICurrentUser`，因此中间件排在 `UseAuthentication()` 之后才能拿到已认证用户的 `TenantId`。
 - **默认存储是内存快照**：`DefaultTenantStore` 每次查询会克隆配置快照（含连接串）返回，适合小规模静态租户；生产多租户建议替换为数据库版 `ITenantStore`。
@@ -21151,7 +21173,7 @@ public class MyModule : XiHanModule { }
 | `MinioFileStorageProvider` | `"MinIO"` | ❌ | ❌ | ✅（真实签名） |
 | `TencentCosStorageProvider` | `"TencentCOS"` | ✅ | ✅ | ✅（真实签名） |
 
-> 以源码为准：`MinioFileStorageProvider` 当前**不声明**分片/断点续传（`SupportChunkedUpload => false`），对其调用分片方法会走基类默认实现抛 `NotSupportedException`。上传大文件前请先检查目标 Provider 的 `SupportChunkedUpload`。
+> 以源码为准：`MinioFileStorageProvider` 当前**不声明**分片/断点续传（`SupportChunkedUpload => false`），但覆盖了四个分片方法作为占位：初始化返回随机 GUID、上传分片返回假成功（数据被丢弃）、完成返回 `Success=false`、取消为空操作，不会抛 `NotSupportedException`。上传大文件前请先检查目标 Provider 的 `SupportChunkedUpload`。
 
 ### 数据模型
 
@@ -21300,7 +21322,7 @@ public class DownloadService
 ## 注意事项与最佳实践
 
 - **上传不抛异常**：`UploadAsync` 内部把异常收敛为 `FileUploadResult { Success=false, ErrorMessage=... }`。调用方务必检查 `result.Success`，不要只 `try/catch`。
-- **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；不支持的后端（如当前的 MinIO）会抛 `NotSupportedException`。
+- **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；MinIO 的分片方法是占位实现，调用不会报错但数据不会落盘，大文件改用 `UploadAsync`。
 - **云端未完成分片仍需生命周期策略**：框架会回收 24 小时无活动的进程内 OSS/COS 会话，但不会在请求线程批量调用远端 Abort；生产桶应配置清理未完成 Multipart Upload 的生命周期规则。
 - **本地预签名无时效**：`LocalFileStorageProvider.GeneratePresignedUrlAsync` 只是返回静态直链，`expiresIn` 被忽略，也没有鉴权。需要真实时效/鉴权控制请改用云存储 Provider。
 - **提供程序名称大小写**：Manager/Router 内部用大小写不敏感比较，但常量值有固定拼写（`MinIO`/`AliyunOSS`/`TencentCOS`），配置里建议直接用 `ObjectStorageProviderNames` 的常量拼写以免误配。
@@ -21563,7 +21585,7 @@ public class MyModule : XiHanModule { }
 - **指标采集（`IMetricsCollector` / `MetricsCollector`）**：记录计数器、测量值、直方图，`BeginTimer` 返回可释放计时器（`Dispose` 时以 `{name}.duration` 记录耗时直方图）。底层基于 `System.Diagnostics.Metrics.Meter`（`MeterName = "XiHan.Metrics"`）直出 OTel 指标管道——`RecordMeasurement` 内部委托给 `RecordHistogram`（无 pull 型 Gauge 回调上下文）；**不再内存留存**，`GetMetrics()` 恒返回空列表、`Clear()` 为空操作（仅为接口向后兼容保留）。是否真正被导出取决于「配置项」一节的 `Enabled`/`EnableMetrics` 是否开启。
 - **性能监控（`IPerformanceMonitor` / `PerformanceMonitor`）**：`BeginOperation` 返回 `IPerformanceTracker`，支持打标签与记录检查点；记录保存在独立进程内队列并只保留最近 10000 条，汇总为 `PerformanceStatistics`（含成功/失败计数、平均/最小/最大耗时与 P50/P95/P99），并可按阈值筛出慢操作。与 OTel 装配无关，不受 `Enabled` 影响。
 - **运行时诊断（`IDiagnosticsService` / `DiagnosticsService`）**：读取系统、运行时、内存、线程信息，强制触发 GC，或一次性生成 `DiagnosticsReport` 完整报告。
-- **健康检查（`IHealthCheck` 实现）**：`MemoryHealthCheck` 为真实实现——按内存阈值判定 `Healthy`/`Degraded` 并附带 GC 明细。
+- **健康检查（`IHealthCheck` 实现）**：`MemoryHealthCheck` 为真实实现——按内存阈值判定 `Healthy`/`Degraded` 并附带 GC 明细；读数取 `GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，是最近一次 GC 后的托管堆实际占用，首次 GC 前为 0。
 - **链路追踪源（`XiHan.Framework.Core.Tracing.XiHanActivitySources`）**：框架共享的 `ActivitySource` 名与实例，定义在 `Core` 而非本包（避免 Data/EventBus/Http/Web 等既依赖 Core 又要发 Span 却不能反向依赖 Observability）；内置 `App`/`Data`/`EventBus`/`Grpc`/`Cache`/`Ai` 六个源，`All` 汇总供 OTel `AddSource` 一次性注册。
 
 ## 主要 API / 类型
@@ -21590,14 +21612,14 @@ public class MyModule : XiHanModule { }
 
 | 类型 | 说明 |
 | --- | --- |
-| `IDiagnosticsService` | `SystemInfo GetSystemInfo()`、`RuntimeInfo GetRuntimeInfo()`、`MemoryInfo GetMemoryInfo()`、`ThreadInfo GetThreadInfo()`、`void ForceGarbageCollection()`、`DiagnosticsReport GetDiagnosticsReport()` |
+| `IDiagnosticsService` | `SystemInfo GetSystemInfo()`、`RuntimeInfo GetRuntimeInfo()`、`MemoryInfo GetMemoryInfo()`（`AllocatedBytes` 与 `MemoryHealthCheck` 同口径：最近一次 GC 后的托管堆实际占用）、`ThreadInfo GetThreadInfo()`、`void ForceGarbageCollection()`、`DiagnosticsReport GetDiagnosticsReport()` |
 | `DiagnosticsReport` | 汇总 `SystemInfo` / `RuntimeInfo` / `MemoryInfo`（含 `GCInfo`）/ `ThreadInfo` 与生成时间 |
 
 ### 健康检查
 
 | 类型 | 说明 |
 | --- | --- |
-| `MemoryHealthCheck` | **真实实现**。构造参数 `thresholdMb`（默认 1024MB）；超阈值返回 `Degraded`，否则 `Healthy`，均附带 GC 明细数据 |
+| `MemoryHealthCheck` | **真实实现**。构造参数 `thresholdMb`（默认 1024MB）；超阈值返回 `Degraded`，否则 `Healthy`，均附带 GC 明细数据；读数为最近一次 GC 后的托管堆实际占用，首次 GC 前为 0 |
 
 数据库、Redis 与向量库检查不属于本包。应用应针对自己实际使用的客户端实现 `IHealthCheck`，避免通用占位检查给出错误的健康状态。
 
@@ -21707,7 +21729,7 @@ activity?.SetTag("order.id", orderId);
 - **NuGet**：`XiHan.Framework.Script`
 - **模块类**：`XiHanScriptModule`（不注册额外服务，仅占位）
 - **所在层**：基础设施层
-- **关键依赖**：`Microsoft.CodeAnalysis.CSharp`（Roslyn，5.6.0）+ 框架内部依赖（[XiHan.Framework.Core](./core)）。
+- **关键依赖**：`Microsoft.CodeAnalysis.CSharp`（Roslyn）+ 框架内部依赖（[XiHan.Framework.Core](./core)）。
 
 ## 概述
 
@@ -21743,7 +21765,7 @@ public class MyModule : XiHanModule { }
 2. **编译**：Roslyn 用 `CompilerOptions`（语言版本、优化级别、调试信息等）编译到内存程序集；失败返回带诊断的 `CompilationResult`。
 3. **缓存**：按脚本内容与选项生成缓存键，命中则复用已编译程序集（结果 `FromCache=true`）。
 4. **安全校验**：若 `SecurityOptions.EnableSecurityChecks`，对编译出的程序集 `assembly.GetTypes()` 做反射检查——命中禁止命名空间/类型/不安全代码/危险方法名则抛 `ScriptSecurityException`。
-5. **执行 + 超时**：反射调用入口方法，用 `CancellationTokenSource(TimeoutMs)` 控制时长，超时抛 `ScriptTimeoutException`；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存分配量、诊断）。其中 `MemoryUsage.AllocatedBytes` 是执行期间的分配字节数，恒为非负；因取自进程级累计计数，并发执行的脚本会互相计入对方的分配量。
+5. **执行 + 超时**：反射调用入口方法，执行任务与 `Task.Delay(TimeoutMs)` 竞速，超时后 `ExecuteAsync` 返回失败结果（`Exception` 为 `ScriptTimeoutException`），脚本线程仍在后台跑完；结果封装为 `ScriptResult` / `ScriptResult<T>`（含执行/编译耗时、内存分配量、诊断）。其中 `MemoryUsage.AllocatedBytes` 是执行期间的分配字节数，恒为非负；因取自进程级累计计数，并发执行的脚本会互相计入对方的分配量。
 
 ## 核心能力
 
@@ -21754,7 +21776,7 @@ public class MyModule : XiHanModule { }
 - **超时控制**：`TimeoutMs`（默认 30000ms）→ `ScriptTimeoutException`。
 - **静态安全校验**：黑名单命名空间/类型 + 危险关键字 + 不安全代码检测；`SecurityOptions` 提供 `Strict` / `Permissive` / `Disabled` 预设。
 - **构建与工厂**：`ScriptEngineBuilder` 提供 `AddReference/AddImport/AddGlobal/WithTimeout/WithOptimization/WithUnsafe/DisableCache` 链式方法；`ScriptEngineFactory` 创建默认/命名引擎并管理生命周期与统计。**已知限制**见下方「使用示例」。
-- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（预热 5 次后统计，返回 `PerformanceStatistics`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
+- **扩展方法**（`ScriptEngineExtensions`）：同步门面 `Execute`/`Execute<T>`/`ExecuteFile`/`ExecuteFile<T>`/`Compile`/`CreateInstance`/`Evaluate`/`Evaluate<T>`；失败即抛异常的 `ExecuteOrThrowAsync`/`ExecuteOrThrowAsync<T>`/`CompileOrThrowAsync`；批量执行 `ExecuteBatchAsync`（可选并行）；基准测试 `BenchmarkAsync`（`iterations` 须大于 0，否则在预热前抛出 `ArgumentOutOfRangeException`；预热 5 次后统计，返回 `PerformanceStatistics`；`TotalElapsedTime` 与 `MemoryUsageBytes` 只覆盖正式执行，前者保留完整精度，只读的 `TotalTimeMs` 是它截断到整毫秒的值，`ExecutionsPerSecond`（`double?`）按完整精度计算、耗时为零时为 `null`；`MemoryUsageBytes` 是分配字节数，口径同 `MemoryUsage.AllocatedBytes`）；`ExecuteWithTimeoutAsync`；全异常兜底 `ExecuteSafelyAsync`/`ExecuteFileSafelyAsync`（把各类 `ScriptException` 转换成失败态 `ScriptResult`，不再抛出）；启发式安全扫描 `ValidateSecurityAsync`（按危险/网络/文件关键字字符串匹配打分，返回 `SecurityValidationResult` + `SecurityRiskLevel`，与执行期反射安全校验是两套独立机制，仅供预检参考）；纯编译语法检查 `ValidateSyntaxAsync`（返回 `SyntaxValidationResult`）。
 
 ## 主要 API / 类型
 
@@ -21857,11 +21879,12 @@ var result = await XiHanScript.RunAsync<int>(
 
 ```csharp
 var options = ScriptOptions.Default
-    .WithStrictSecurity()   // 禁文件/网络/反射，禁不安全代码
+    .WithStrictSecurity()   // 目前实际生效的只有 AllowUnsafe=false；EnableStrictMode 与 Allow* 标志引擎尚未读取
     .WithTimeout(2000);
 
 var res = await XiHanScript.RunAsync("result = System.Environment.MachineName;", options);
-// 命中 ForbiddenTypes(Environment) → res.IsSuccess=false，抛/记 ScriptSecurityException
+// 不会被拦截，res.IsSuccess 仍为 true：安全检查只看脚本「声明」的类型与方法名，不看调用。
+// 要拦截某类写法，往 ForbiddenNamespaces / ForbiddenTypes / DangerousKeywords 里加，并按上面的检查口径设计
 ```
 
 ## 扩展点 / 自定义
@@ -21870,21 +21893,22 @@ var res = await XiHanScript.RunAsync("result = System.Environment.MachineName;",
 - **自定义安全策略**：构造 `SecurityOptions` 或用 `Strict/Permissive/Disabled` 预设，再经 `ScriptOptions.WithSecurity(...)` 调整黑名单。
 - **附加引用/导入**：需要脚本访问业务类型时用 `ScriptOptions` 的 `AddReference(typeof(X))` / `AddImport("Your.Namespace")`（注意上面「已知限制」，不要经 `ScriptEngineBuilder` 配置后误以为已生效）。
 - **脚本模板**：`ScriptTemplateManager` 构造时自动加载 3 个内置系统模板（`HelloWorld`/`MathCalculator`/`DataProcessor`，`IsSystem=true`，不可删除/覆盖保存），并从模板目录（默认 `AppDomain.CurrentDomain.BaseDirectory/Templates`，可在构造函数传入）加载 `*.json` 自定义模板；`ScriptTemplate.Code` 用 `#{参数名}` 占位符，`GenerateCode(parameters)` 做纯字符串替换（不是 Scriban/正则模板引擎），`ValidateParameters` 按 `TemplateParameter`（`Required`/`MinValue`/`MaxValue`/`Pattern`/`Options` 等）做必填、数值范围、正则、枚举取值校验。
-- **执行监控**：`ScriptMonitor`（配 `ScriptMonitorOptions`，预设 `Default`/`HighPerformance`/`Verbose`）是独立组件，**不会**被 `ScriptEngine`/`XiHanScript` 自动调用——需要调用方自己在执行后调 `monitor.LogExecution(result, scriptCode, scriptPath)` 记录；随后可用 `GetExecutionLogs`/`GetStatistics()`（`ScriptExecutionStatistics`，含成功率、缓存命中率、最近一小时执行数、最慢脚本等）/`GetPerformanceInfo()`、订阅 `ScriptExecuted`/`PerformanceWarning` 事件，或 `ExportLogsAsync` 导出 JSON/CSV/XML（`LogExportFormat`）。
+- **执行监控**：`ScriptMonitor`（配 `ScriptMonitorOptions`，预设 `Default`/`HighPerformance`/`Verbose`；`MemoryUsageBytes` 与 `HighMemoryUsageThresholdBytes`（默认 100MB）按单次执行的分配字节数计）是独立组件，**不会**被 `ScriptEngine`/`XiHanScript` 自动调用——需要调用方自己在执行后调 `monitor.LogExecution(result, scriptCode, scriptPath)` 记录；随后可用 `GetExecutionLogs`/`GetStatistics()`（`ScriptExecutionStatistics`，含成功率、缓存命中率、最近一小时执行数、最慢脚本等）/`GetPerformanceInfo()`、订阅 `ScriptExecuted`/`PerformanceWarning` 事件，或 `ExportLogsAsync` 导出 JSON/CSV/XML（`LogExportFormat`）。
 - **调试选项（预留，未接入引擎）**：`DebugOptions`（含 `Verbose()`/`Production()` 预设）、`Breakpoint`、`DebugLevel`、`HitCountCondition` 是独立的公开数据模型，当前未被 `ScriptOptions`/`ScriptEngine` 引用或消费——即设置断点/调试级别目前不会对脚本执行产生任何实际效果，不要据此设计依赖真实调试能力的功能。
 
 ## 注意事项与最佳实践
 
 - **不是安全沙箱**：静态黑名单可被绕过（如经字符串拼接/间接调用），且脚本在宿主进程内运行。**不要用它执行不可信的任意代码**；确需运行不可信代码请用进程/容器级隔离。
 - **`Statement` 脚本的返回值**：给内置 `result` 赋值；`Expression` 则直接是表达式的值。
-- **超时是软控制**：`ScriptTimeoutException` 依赖协作式取消，纯 CPU 死循环不一定能被及时中断。
+- **超时只保护调用方**：到 `TimeoutMs` 即返回超时失败，但中断不了正在运行的脚本线程，纯 CPU 死循环会一直占用线程池线程。
 - **首次编译有开销**：重复执行相同脚本请保持 `EnableCache=true` 并复用引擎实例，以命中编译缓存。
 - **模块不注册服务**：不能注入 `IScriptEngine`；通过 `XiHanScript` / `ScriptEngineFactory` 使用。
+- **基准测试的耗时读 `TotalElapsedTime`**：快速脚本或迭代次数很少时 `TotalTimeMs` 截断为 0，不代表没有耗时。`TotalTimeMs` 已改为只读、`ExecutionsPerSecond` 已改为 `double?`（二进制不兼容，引用它们的程序集需重新编译）：自行构造统计对象时把 `TotalTimeMs = n` 改为 `TotalElapsedTime = TimeSpan.FromMilliseconds(n)`，读取速率处按 `is { } rate` 判空；序列化结果新增 `TotalElapsedTime`，反序列化只回读它。
 
 ## 依赖模块
 
 - [XiHan.Framework.Core](./core) — 唯一的框架内部依赖，提供模块化与依赖注入基座。
-- 第三方核心依赖：`Microsoft.CodeAnalysis.CSharp`（Roslyn，5.6.0）。
+- 第三方核心依赖：`Microsoft.CodeAnalysis.CSharp`（Roslyn）。
 
 ## 相关模块
 
@@ -22028,7 +22052,7 @@ dotnet add package XiHan.Framework.SearchEngines.Elasticsearch
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.SearchEngines;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
 
@@ -22155,7 +22179,7 @@ await search.CreateIndexAsync(new SearchIndexDefinition("articles",
 2. 让契约始终有**第二个实现**来校验自己——只有一个实现的抽象无法证明自己没有泄漏该实现的概念。
 
 ::: warning 进程内实现的定位
-`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每个索引 100000 条文档；数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须由应用替换为具体搜索引擎实现。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每个索引 100000 条文档，超限抛 `InvalidOperationException`（批量写入超限时整批拒绝，不会部分写入）；数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须由应用替换为具体搜索引擎实现。
 :::
 
 ## 何时使用
@@ -22196,10 +22220,11 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 ## 使用示例
 
 ```csharp
-using XiHan.Framework.SearchEngines;
-using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 
 public class ArticleSearchService(ISearchEngine search)
 {
@@ -22662,7 +22687,7 @@ var options = JsonSerializerOptionsHelper.Create(
 - **NuGet**：`XiHan.Framework.Settings`
 - **模块类**：`XiHanSettingsModule`
 - **所在层**：应用层
-- **关键依赖**：仅 .NET 原生 + 框架内部依赖（Core / Security；加密用 `Utils` 的 `AesHelper`）
+- **关键依赖**：仅 .NET 原生 + 框架内部依赖（Core / Security / MultiTenancy.Abstractions；加密用 `Utils` 的 `AesHelper`）
 
 ## 概述
 
@@ -22730,7 +22755,7 @@ UserSettingValueProvider (U)          → 取 ISettingStore（当前用户 UserI
 | `SettingScope` | ProviderName | ProviderKey | 说明 |
 | --- | --- | --- | --- |
 | `Application` | `G` | `null` | 全局，无键 |
-| `Tenant` | `T` | `ICurrentUser.TenantId` | 无租户上下文则抛 `XiHanException` |
+| `Tenant` | `T` | `ICurrentTenant.Id` | 写入当前租户作用域（与读取口径一致）；平台（`null` 或 `0`）没有租户级设置，抛 `XiHanException`，平台的设置写全局级 |
 | `User` | `U` | `ICurrentUser.UserId` | 无用户则抛 `XiHanException` |
 | `Session` | `U` | `ICurrentUser.UserId` | **与 `User` 同键**（会话级未单列独立存储键） |
 
@@ -22744,7 +22769,7 @@ UserSettingValueProvider (U)          → 取 ISettingStore（当前用户 UserI
 
 - **设置定义提供者模式（自动发现未接线到读写路径）**：实现 `ISettingDefinitionProvider.Define(...)` 声明设置项；模块启动时自动发现该实现类型并收集进 `XiHanSettingOptions.DefinitionProviders`，但当前源码没有消费者据此调用 `Define()`——定义仍需调用方显式对目标 `ISettingManager` 调用 `AddDefinition(...)` 才会生效（见「工作原理」）
 - **多来源值提供者链**：`D → C → G → U`（+ 多租户 `T`），逐个取第一个非空值
-- **作用域读写**：`SettingScope` 分 `Application`（`"G"`）/ `Tenant`（`"T"`）/ `User`（`"U"`）/ `Session`（同 `"U"`）；用户/租户键来自 `ICurrentUser`
+- **作用域读写**：`SettingScope` 分 `Application`（`"G"`）/ `Tenant`（`"T"`）/ `User`（`"U"`）/ `Session`（同 `"U"`）；用户键来自 `ICurrentUser`，租户键来自 `ICurrentTenant`
 - **加密与校验**：定义可标记 `IsEncrypted` 走 AES；可挂 `Validator` 校验写入值
 - **变更事件**：`SettingManager.OnSettingChanged` 在写入后触发 `SettingChangedEventArgs`
 - **可插拔存储**：`ISettingStore` 承载持久化，默认 `NullSettingStore`（`TryRegister`），上层替换为数据库实现
@@ -22889,7 +22914,8 @@ var def = new SettingDefinition("App.PageSize", defaultValue: "20")
 ## 依赖模块
 
 - [XiHan.Framework.Core](./core)
-- [XiHan.Framework.Security](./security)（`ICurrentUser`，解析用户/租户级设置的 providerKey）
+- [XiHan.Framework.Security](./security)（`ICurrentUser`，解析用户级设置的 providerKey）
+- [XiHan.Framework.MultiTenancy.Abstractions](./multitenancy-abstractions)（包引用，不声明模块依赖；`ICurrentTenant` 决定租户级设置写入哪个租户）
 
 ## 相关模块
 
@@ -22976,8 +23002,8 @@ public class MyModule : XiHanModule { }
 
 ### 执行与租户切换（JobExecutor）
 
-- `JobExecutor.ExecuteAsync` 为每次执行创建一个 DI 作用域，用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例，再套上中间件管道执行。
-- **多租户感知**：`CompositeJobScheduler.ResolveTenantId` 按优先级解析租户——① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户（`AsyncLocalCurrentTenantAccessor`）；执行时若解析到租户，`JobExecutor` 用 `ICurrentTenant.Change(tenantId, ...)` 切到该租户上下文再跑任务。`TenantId` 为空视为 Host（宿主）任务。
+- `JobExecutor.ExecuteAsync` 为每次执行创建一个 DI 作用域并切入任务所在租户，再用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例、套上中间件管道执行。
+- **多租户感知**：`CompositeJobScheduler.ResolveTenantId` 按优先级解析租户——① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户（`AsyncLocalCurrentTenantAccessor`）；解析到租户时，`JobExecutor` 在执行开头用 `ICurrentTenant.Change(tenantId, ...)` 切入，实例落库、任务构造、管道执行、状态回写与历史落档（含失败路径）都在该租户作用域内。`TenantId` 为空视为平台任务，在平台（0 号租户）作用域执行。
 - 执行结果与异常均落 `JobInstance` 状态并写 `JobHistory`（即便状态回写失败也保证历史留痕，便于排障）。
 
 ### 后台作业队列（BackgroundJobs）
@@ -23313,9 +23339,9 @@ services.AddHostedService<OutboxConsumer>();
 - 调度器**每秒巡检一次**，触发精度为秒级；`Delay` 是「一次性」延迟，触发后不再续排。
 - Cron/Interval 任务若下次触发时间算不出（表达式无解 / 已过截止时间），任务会「注册但永不执行」——留意日志中的 Warning。
 - `AllowConcurrent=false` 依赖 `IJobStore.GetRunningInstancesAsync` + 任务锁，跨实例防并发需 Redis 分布式锁（Caching 启用 Redis）。
-- 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。宿主级任务令 `TenantId` 为空。
+- 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。平台级任务令 `TenantId` 为空，它在平台作用域执行、只看得到平台数据。
 - 后台服务的 `XiHanBackgroundServiceOptions` **默认不启用单任务超时**（`EnableTaskTimeout=false`、`TaskTimeoutMilliseconds=0`），如需超时须显式打开。
-- 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化请自行实现 `IJobStore`。
+- 默认 `DefaultJobStore` 是有界进程内存储，进程重启丢失历史；满载时新增抛 `InvalidOperationException`（历史写入失败只记错误日志，不影响任务执行），框架不自动清理历史，长期运行需定期调 `CleanupHistoryAsync`；需持久化请自行实现 `IJobStore`。
 - 后台作业队列没有固定重试次数上限，只有**累计耗时**上限（`DefaultTimeoutSeconds`，默认 2 天）——退避间隔按指数增长，高频失败的作业会更快被判定放弃，而非跑满固定次数。
 - `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()` 或自实现 `IBackgroundJobStore`。
 - `[BackgroundJobName]` 标注在**作业参数类型**而非处理器类型上；不标注时回退参数类型全名——修改参数类型的命名空间/类名会导致名称变化，已入库未执行的旧作业将找不到配置而被放弃，关键作业建议显式标注固定名称。
@@ -23729,7 +23755,7 @@ public class ContextFlow
 
 ## 概述
 
-XiHan.Framework.Timing 为框架提供统一的「时间」抽象。核心是 `IClock`：用它取代散落的 `DateTime.Now` 调用，可在 UTC 与本地两种模式间切换（由 `XiHanClockOptions.Kind` 控制），并把不同 `DateTimeKind` 的时间值规范化到统一基准。配合时区提供器，`IClock` 能在 UTC 与「用户所在时区」之间双向转换；而 `ITimezoneProvider` 基于 TimeZoneConverter 做 Windows 时区 ID 与 IANA 时区名的互转与列表获取。「当前时区」由 `CurrentTimezoneProvider` 用 `AsyncLocal` 存储，天然按请求隔离。
+XiHan.Framework.Timing 为框架提供统一的「时间」抽象。核心是 `IClock`：用它取代散落的 `DateTime.Now` 调用，可在 UTC 与本地两种模式间切换（由 `XiHanClockOptions.Kind` 控制），并把不同 `DateTimeKind` 的时间值规范化到统一基准。配合时区提供器，`IClock` 能在 UTC 与「用户所在时区」之间双向转换；而 `ITimezoneProvider` 基于 TimeZoneConverter 做 Windows 时区 ID 与 IANA 时区名的互转与列表获取。「当前时区」由 `CurrentTimezoneProvider` 存放在静态 `AsyncLocal` 中，归属于当前异步流而不是实例：请求内任意位置写入后，单例 `IClock` 即按它换算，并发请求之间互不串值。
 
 ## 何时使用
 
@@ -23756,7 +23782,7 @@ public class MyModule : XiHanModule { }
 | （Options） | `XiHanClockOptions` | 通过 `AddOptions` |
 | `IClock` | `Clock` | Singleton |
 | `ITimezoneProvider` | `TZConvertTimezoneProvider` | Singleton |
-| `ICurrentTimezoneProvider` | `CurrentTimezoneProvider` | Transient（内部 `AsyncLocal`，请求级隔离） |
+| `ICurrentTimezoneProvider` | `CurrentTimezoneProvider` | Singleton（时区存于静态 `AsyncLocal`，按异步流隔离） |
 
 启用后即可注入 `IClock` 使用。
 
@@ -23764,7 +23790,8 @@ public class MyModule : XiHanModule { }
 
 - **模式由 `Kind` 决定**：`Clock.Now` 在 `Kind == Utc` 时返回 `DateTime.UtcNow`，否则 `DateTime.Now`；`SupportsMultipleTimezone` 也等价于 `Kind == Utc`。**默认 `Kind` 为 `Unspecified`**，此时不启用多时区，`ConvertToUserTime` / `ConvertToUtc` 直接原样返回——要启用时区换算须显式把 `Kind` 配为 `Utc`。
 - **换算依赖当前时区**：`ConvertToUserTime` / `ConvertToUtc` 会读 `ICurrentTimezoneProvider.TimeZone`（为空则不换算），经 `ITimezoneProvider.GetTimeZoneInfo(...)` 得到 `TimeZoneInfo` 后用 `TimeZoneInfo.ConvertTime*` 完成换算。
-- **请求级时区来源**：Web 层可在管道中读取请求头（如 `X-Timezone`）写入 `ICurrentTimezoneProvider.TimeZone`；因其基于 `AsyncLocal`，同一请求链路内一致、请求间隔离。
+- **当前时区由应用写入**：框架不会自动写入 `ICurrentTimezoneProvider.TimeZone`。Web.Api 的 JSON 时间输出直接读请求头 `X-Timezone` 换算，不经过 `IClock`；要让 `IClock` 按请求换算，由应用在自己的中间件或业务入口写入，见[按请求写入当前时区](#按请求写入当前时区)。
+- **按异步流共享与隔离**：同一异步流内任意实例读写的是同一个值；赋值对后续 `await` 的下游和派生的子任务可见，子任务内的赋值不回流，并行请求互不影响。在被 `await` 的异步方法（如中间件）内赋值，方法返回后调用方恢复原值；在同一个方法内赋值则一直生效到被覆盖。
 
 ## 核心能力
 
@@ -23772,7 +23799,7 @@ public class MyModule : XiHanModule { }
 - **DateTime 规范化**：`Clock.Normalize(dateTime)` 处理不同 `DateTimeKind` 之间的转换（Utc↔Local↔Unspecified）。
 - **UTC ↔ 用户时间转换**：UTC 模式下 `ConvertToUserTime` / `ConvertToUtc` 双向换算，支持 `DateTime` 与 `DateTimeOffset`。
 - **时区标准互转**：`TZConvertTimezoneProvider` 基于 TimeZoneConverter 做 Windows / IANA 互转与列表获取。
-- **请求级当前时区**：`CurrentTimezoneProvider` 用 `AsyncLocal<string?>` 存储当前请求时区。
+- **请求级当前时区**：`CurrentTimezoneProvider` 用静态 `AsyncLocal<string?>` 存储当前异步流的时区，与注入的是哪个实例无关。
 
 ## 主要 API / 类型
 
@@ -23782,8 +23809,8 @@ public class MyModule : XiHanModule { }
 | `Clock` | `IClock` 实现，成员 `virtual` 可继承覆盖；换算逻辑依赖当前时区与 `TimezoneProvider` |
 | `ITimezoneProvider` | `List<NameValue> GetWindowsTimezones()`、`List<NameValue> GetIanaTimezones()`、`string WindowsToIana(string)`、`string IanaToWindows(string)`、`TimeZoneInfo GetTimeZoneInfo(string windowsOrIanaTimeZoneId)` |
 | `TZConvertTimezoneProvider` | `ITimezoneProvider` 实现，基于 `TimeZoneConverter.TZConvert` |
-| `ICurrentTimezoneProvider` | 当前时区。`string? TimeZone { get; set; }` |
-| `CurrentTimezoneProvider` | 用 `AsyncLocal<string?>` 存储，请求级隔离 |
+| `ICurrentTimezoneProvider` | 当前异步流的时区。`string? TimeZone { get; set; }`，为空或空白时不换算 |
+| `CurrentTimezoneProvider` | 用静态 `AsyncLocal<string?>` 存储，按异步流隔离，同一流内所有实例共享 |
 | `XiHanClockOptions` | 时钟配置。`DateTimeKind Kind { get; set; }`，默认 `Unspecified` |
 
 DI 入口：`ServiceCollectionExtensions.AddXiHanTiming(this IServiceCollection)`。
@@ -23816,27 +23843,45 @@ public class TokenService
 }
 ```
 
-### UTC ↔ 用户时区换算（需 Kind = Utc 且已设当前时区）
+### 按请求写入当前时区
+
+框架没有写入 `ICurrentTimezoneProvider` 的中间件，需要 `IClock` 按请求换算时由应用自己接入，例如读请求头 `X-Timezone`：
 
 ```csharp
-public class DisplayService
+using TimeZoneConverter;
+
+app.Use(async (context, next) =>
+{
+    var timeZone = context.Request.Headers["X-Timezone"].ToString();
+
+    // 缺失或无法识别的时区不写入，否则 IClock 换算会抛 TimeZoneNotFoundException
+    if (TZConvert.TryGetTimeZoneInfo(timeZone, out _))
+    {
+        context.RequestServices.GetRequiredService<ICurrentTimezoneProvider>().TimeZone = timeZone;
+    }
+
+    // 在本中间件内写入，对下游整个请求可见；请求结束后不会留给其他请求
+    await next(context);
+});
+```
+
+### UTC ↔ 用户时区换算（需 Kind = Utc 且已写入当前时区）
+
+```csharp
+public class ExportService
 {
     private readonly IClock _clock;
-    private readonly ICurrentTimezoneProvider _currentTz;
 
-    public DisplayService(IClock clock, ICurrentTimezoneProvider currentTz)
-    {
-        _clock = clock;
-        _currentTz = currentTz;
-    }
+    public ExportService(IClock clock) => _clock = clock;
 
-    public DateTime ToUserTime(DateTime utcTime)
-    {
-        _currentTz.TimeZone = "Asia/Shanghai";   // 通常由请求头 X-Timezone 中间件写入
-        return _clock.ConvertToUserTime(utcTime); // Kind=Utc 时按当前时区换算
-    }
+    // 按当前请求的时区把 UTC 换成用户墙上时间，例如导出文件、报表或消息文案
+    public DateTime ToUserTime(DateTime utcTime) => _clock.ConvertToUserTime(utcTime);
 }
 ```
+
+::: warning 不要与 JSON 输出的时区换算叠加
+Web.Api 的 JSON 输出已按 `X-Timezone` 把 `DateTime` / `DateTimeOffset` 换算成用户时间，并把 `DateTime` 一律当作 UTC 处理。接口返回的 DTO 保持 UTC 即可；先用 `ConvertToUserTime` 换算再交给 JSON 输出会换算两次。
+:::
 
 ### Windows / IANA 时区互转与列表
 
@@ -23856,12 +23901,14 @@ public class TimezoneOptionsService
 
 - **自定义时钟**：`Clock` 的成员为 `virtual`，可继承覆盖 `Now`、换算逻辑等，并在 DI 中替换 `IClock`（例如测试用固定时钟）。
 - **自定义时区源**：实现 `ITimezoneProvider` 替换默认的 `TZConvertTimezoneProvider`。
-- **自定义当前时区注入**：在 Web 管道中读取请求头写入 `ICurrentTimezoneProvider.TimeZone`，即可让 `IClock` 的换算按请求生效。
+- **当前时区来源**：框架不自动写入当前时区，由应用在中间件、消息消费入口或后台任务中写入 `ICurrentTimezoneProvider.TimeZone`（见[按请求写入当前时区](#按请求写入当前时区)）。也可替换 `ICurrentTimezoneProvider` 的实现，例如从当前用户设置读取时区；`IClock` 是单例并持有它，替换实现须能以单例注册。
 
 ## 注意事项与最佳实践
 
 - **默认不换算**：`XiHanClockOptions.Kind` 默认 `Unspecified`，此时 `SupportsMultipleTimezone` 为 `false`，`ConvertToUserTime` / `ConvertToUtc` 原样返回。需要时区换算必须显式配为 `Utc`。
 - **换算前置条件**：只有在 `Kind = Utc`、输入 `DateTime.Kind = Utc`（`ConvertToUserTime`）且 `ICurrentTimezoneProvider.TimeZone` 非空时才会真正换算；任一不满足则原样返回。
+- **时区须可识别**：`ConvertToUserTime` / `ConvertToUtc` 对无法识别的时区抛 `TimeZoneNotFoundException`，来自客户端的时区写入前先校验。
+- **临时切换要写回**：在同一个方法内切换时区（如后台任务逐个用户处理）会一直生效到被覆盖，先保存原值，在 `finally` 中写回。
 - **存 UTC、显示按时区**：推荐后端统一存 UTC，展示层用当前时区换算，避免夏令时与跨时区歧义。
 - `GetTimeZoneInfo` 同时接受 Windows ID 与 IANA 名，跨平台（Windows/Linux）一致由 TimeZoneConverter 兜底。
 
@@ -23892,7 +23939,7 @@ public class TimezoneOptionsService
 
 XiHan.Framework.Traffic 是框架的流量治理库，覆盖灰度路由、限流、熔断三类场景，但三者成熟度不同：
 
-- **灰度路由（GrayRouting）——已完整实现**：内置规则引擎 `IGrayRuleEngine` + 四个匹配器（百分比 / 用户 / 租户 / 请求头）+ 内存规则仓储，开箱即可做灰度决策。
+- **灰度路由（GrayRouting）——已完整实现**：内置规则引擎 `IGrayRuleEngine` + 五个匹配器（百分比 / 用户 / 租户 / 请求头 / IP 地址）+ 内存规则仓储，开箱即可做灰度决策。
 - **限流（RateLimiting）——仅策略接口**：只有 `IRateLimitPolicy` 抽象，**无内置实现**。
 - **熔断（CircuitBreaker）——仅策略接口**：只有 `ICircuitBreakerPolicy` 抽象，**无内置实现**。
 
@@ -23921,7 +23968,7 @@ public class MyModule : XiHanModule { }
 
 - `IGrayRuleEngine` → `DefaultGrayRuleEngine`
 - `IGrayRuleRepository` → `DefaultGrayRuleRepository`（**生产环境应替换为数据库实现**）
-- 四个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`
+- 五个内置匹配器 `IGrayMatcher`：`PercentageGrayMatcher`、`UserIdGrayMatcher`、`TenantIdGrayMatcher`、`HeaderGrayMatcher`、`IpAddressGrayMatcher`
 
 > 限流 `IRateLimitPolicy` 与熔断 `ICircuitBreakerPolicy` **不会**被模块自动注册任何实现——它们是留给上层接入的策略契约。
 
@@ -23940,7 +23987,7 @@ public class MyModule : XiHanModule { }
 ## 核心能力
 
 - **灰度路由**：规则引擎按优先级匹配，输出灰度决策（是否命中、目标版本 / 服务、命中规则 Id、原因）。
-- **多维匹配器**：内置百分比、用户 ID、租户 ID、请求头四种；`GrayRuleType` 另预留 `IpAddress`、`Custom` 类型（无内置匹配器，需自行实现）。
+- **多维匹配器**：内置百分比、用户 ID、租户 ID、请求头、IP 地址五种；`GrayRuleType` 另预留 `Custom` 类型（无内置匹配器，需自行实现）。
 - **规则来源可插拔**：仓储接口只读，默认内存实现可用 `ReplaceGrayRuleRepository<T>()` 换成数据库实现；自定义匹配器用 `AddGrayMatcher<T>()` 注册。
 - **限流 / 熔断策略抽象**：`IRateLimitPolicy` / `ICircuitBreakerPolicy` 定义统一契约，供上层接入实现。
 
@@ -23952,8 +23999,8 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `IGrayRuleEngine` / `DefaultGrayRuleEngine` | 灰度规则引擎：`Task<IGrayDecision> DecideAsync(GrayContext, CancellationToken)` |
 | `IGrayMatcher` | 匹配器契约：`GrayRuleType RuleType { get; }`、`bool IsMatch(GrayContext, IGrayRule)`、`Task<bool> IsMatchAsync(...)` |
-| `PercentageGrayMatcher` / `UserIdGrayMatcher` / `TenantIdGrayMatcher` / `HeaderGrayMatcher` | 四个内置匹配器 |
-| `IGrayRuleRepository` / `DefaultGrayRuleRepository` | 规则仓储（**只读**）；默认实现最多 10000 条，另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员） |
+| `PercentageGrayMatcher` / `UserIdGrayMatcher` / `TenantIdGrayMatcher` / `HeaderGrayMatcher` / `IpAddressGrayMatcher` | 五个内置匹配器 |
+| `IGrayRuleRepository` / `DefaultGrayRuleRepository` | 规则仓储（**只读**）；默认实现最多 10000 条（满载时 `AddRule` 抛 `InvalidOperationException`），另暴露 `AddRule` / `RemoveRule` / `Clear`（非接口成员） |
 | `IGrayRule` / `GrayRule` | 灰度规则契约与实现（字段见下） |
 | `IGrayDecision` / `GrayDecision` | 决策结果契约与实现，工厂 `GrayDecision.Gray(...)` / `GrayDecision.NotGray(reason)` |
 | `GrayContext` | 灰度上下文（字段见下） |
@@ -23986,7 +24033,7 @@ public class MyModule : XiHanModule { }
 
 | 方法 | 说明 |
 | --- | --- |
-| `IServiceCollection.AddGrayRouting()` | 注册灰度引擎、内存仓储与四个内置匹配器（模块默认已调用） |
+| `IServiceCollection.AddGrayRouting()` | 注册灰度引擎、内存仓储与五个内置匹配器（模块默认已调用） |
 | `IServiceCollection.AddGrayMatcher<TMatcher>()` | 追加自定义匹配器（如 IpAddress / Custom） |
 | `IServiceCollection.ReplaceGrayRuleRepository<TRepository>()` | 用数据库等实现替换默认内存仓储 |
 
@@ -24032,14 +24079,14 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ## 扩展点 / 自定义
 
 - **数据库规则仓储**：实现 `IGrayRuleRepository`（只读三方法），`ReplaceGrayRuleRepository<T>()` 替换默认内存实现；规则的写入 / 管理由应用层自行提供。
-- **新增匹配维度**：实现 `IGrayMatcher`（暴露 `RuleType` 并解析 `GrayRule.Configuration`），`AddGrayMatcher<T>()` 注册；这是补齐 `IpAddress` / `Custom` 的标准做法。
+- **新增匹配维度**：实现 `IGrayMatcher`（暴露 `RuleType` 并解析 `GrayRule.Configuration`），`AddGrayMatcher<T>()` 注册；这是补齐 `Custom` 等维度的标准做法。
 - **接入限流 / 熔断**：实现 `IRateLimitPolicy` / `ICircuitBreakerPolicy` 并在 Web 层挂到请求管道；本库不提供实现，也不自动注册。
 
 ## 注意事项与最佳实践
 
 - 灰度规则**按 `Priority` 升序**匹配，命中即短路——把更具体、更高优先的规则设更小的 `Priority`。
 - `PercentageGrayMatcher` 基于每次请求的随机数判断，**同一用户多次请求可能落在不同分支**；需要稳定分流请自行实现基于用户/租户哈希的匹配器。
-- 默认 `DefaultGrayRuleRepository` 是进程内存储，多实例不共享、重启丢失——生产务必替换为数据库仓储。
+- 默认 `DefaultGrayRuleRepository` 是进程内存储（最多 10000 条，满载时 `AddRule` 抛 `InvalidOperationException`），多实例不共享、重启丢失——生产务必替换为数据库仓储。
 - 决策异常被吞并降级为「未命中」（fail-open），不会因规则问题阻断主请求；但要留意日志排查。
 - `IpAddress` / `Custom` 枚举值已预留，但**无对应内置匹配器**，直接使用会因「找不到匹配器」被跳过。
 
@@ -24302,7 +24349,7 @@ public class BatchImporter(IUnitOfWorkManager uowManager)
 
 XiHan.Framework.Upgrade 把分布式部署下的「安全升级」抽象成一套统一编排：应用启动或运维触发时，检测当前应用 / 数据库版本是否落后，落后则抢占分布式锁（保证集群内单节点执行），进入维护模式，按语义化版本顺序**幂等**执行 SQL 迁移脚本，回写版本记录，最后可选地替换程序文件、滚动重启。
 
-它提供**编排骨架 + 抽象 + 一批默认实现**，但默认实现大多是 InMemory / Null 占位——**版本存储、分布式锁、迁移执行三项生产环境必须替换为持久化 / 分布式实现**（尤其迁移执行器默认直接抛异常，必须由应用层提供）。
+它提供**编排骨架 + 抽象 + 一批默认实现**，但默认实现大多是有界进程内实现（`DefaultUpgradeVersionStore` / `DefaultUpgradeLockProvider`）或 Null 空实现——**版本存储、分布式锁、迁移执行三项生产环境必须替换为持久化 / 分布式实现**（尤其迁移执行器默认直接抛异常，必须由应用层提供）。
 
 ## 何时使用
 
@@ -24327,8 +24374,8 @@ public class MyModule : XiHanModule { }
 | 接口 | 默认实现 | 生命周期 | 生产可用性 |
 | --- | --- | --- | --- |
 | `IUpgradeScriptProvider` | `FileSystemUpgradeScriptProvider` | Singleton | 可用（从文件系统扫描 SQL） |
-| `IUpgradeVersionStore` | `DefaultUpgradeVersionStore` | Scoped | 最多 10000 个租户、每租户 10000 条迁移历史；生产需替换为数据库实现 |
-| `IUpgradeLockProvider` | `DefaultUpgradeLockProvider` | Singleton | 最多 10000 个锁条目；多节点需替换为应用级分布式锁 |
+| `IUpgradeVersionStore` | `DefaultUpgradeVersionStore` | Scoped | 最多 10000 个租户、每租户 10000 条迁移历史，超限抛 `InvalidOperationException`；生产需替换为数据库实现 |
+| `IUpgradeLockProvider` | `DefaultUpgradeLockProvider` | Singleton | 最多 10000 个锁条目，满载时获取失败（引擎报「升级锁已被占用」）；多节点需替换为应用级分布式锁 |
 | `IUpgradeMigrationExecutor` | `DefaultUpgradeMigrationExecutor` | Singleton | **必须替换**（默认直接抛异常，见下） |
 | `IUpgradeTenantProvider` | `DefaultUpgradeTenantProvider` | Scoped | 视多租户需求替换（默认只返回当前 `ICurrentTenant`，不会遍历租户库） |
 | `IUpgradeStatusService` | `UpgradeStatusService` | Scoped | 可用 |
@@ -24340,7 +24387,9 @@ public class MyModule : XiHanModule { }
 
 ### 启动自动检查
 
-`XiHanUpgradeModule.OnPostApplicationInitializationAsync` 在应用初始化后运行，受 `XiHanUpgradeOptions.EnableAutoCheckOnStartup`（默认 `true`）门控：为 `true` 且已注册 `IUpgradeVersionStore` / `IUpgradeStatusService` 时，调用 `IUpgradeStatusService.EnsureInitializedAsync()` 完成初始化。**注意：启动阶段只做「初始化」，真正执行升级由 `IUpgradeEngine.ExecuteAsync` / `IUpgradeCoordinator.StartAsync` 触发。**
+`XiHanUpgradeModule.OnPostApplicationInitializationAsync` 在应用初始化后运行，受 `XiHanUpgradeOptions.EnableAutoCheckOnStartup`（默认 `true`）门控：为 `true` 且已注册 `IUpgradeVersionStore` / `IUpgradeStatusService` 时，调用 `IUpgradeStatusService.EnsureInitializedAsync()` 建出版本记录，再**同步执行** `IUpgradeEngine.ExecuteAsync()` 跑完待执行的脚本；引擎返回 `Failed` 时抛出异常中断启动，未注册引擎时跳过。这里不走 `IUpgradeCoordinator`：后者把执行丢进 `Task.Run` 且吞掉异常，应用会带着半迁移的结构对外服务。
+
+同时用了数据模块的建表与播种时，把引擎接到数据模块的 `IDbSchemaUpgrader` 上，让脚本先于种子执行；新建的库先 `IUpgradeEngine.BaselineAsync()` 登记为最新版本，不补跑历史脚本。写法见 [升级指南](../guide/upgrade#与数据库初始化的先后)。
 
 ## 工作原理（UpgradeEngine 编排）
 
@@ -24380,7 +24429,8 @@ migrations/
 - **版本存储与状态管理**：`IUpgradeVersionStore` 建表、取 / 建版本记录、写升级中 / 完成 / 失败状态、追加并去重迁移历史。
 - **迁移执行（幂等）**：按语义化版本分组排序脚本，逐条去重执行，历史留痕；执行经 `IUpgradeMigrationExecutor`（应保证事务）。
 - **分布式锁**：`IUpgradeLockProvider` 抢占带过期的资源锁，`IUpgradeLockToken`（`IAsyncDisposable`）负责释放，确保集群内单节点升级。
-- **启动自动检查**：受 `EnableAutoCheckOnStartup` 门控，在 `OnPostApplicationInitializationAsync` 初始化。
+- **启动自动升级**：受 `EnableAutoCheckOnStartup` 门控，在 `OnPostApplicationInitializationAsync` 建版本记录并同步执行迁移，失败即中断启动。
+- **新库基线登记**：`BaselineAsync` 把按当前实体新建出来的库直接登记为最新脚本版本，历史脚本只在它所属版本之前建的库上执行。
 - **语义化版本比较**：`SemanticVersion` 提供解析与比较，用于强制升级判定与脚本排序。
 - **主节点 / 多租户编排**：可配置仅主节点执行升级，支持逐租户隔离升级。
 - **运维扩展**：维护模式、程序文件替换、滚动重启均为可插拔扩展点（默认 Null 空实现）。
@@ -24389,10 +24439,10 @@ migrations/
 
 | 类型 | 关键成员 / 说明 |
 | --- | --- |
-| `IUpgradeEngine` / `UpgradeEngine` | 升级引擎（编排核心）：`Task<UpgradeStartResult> ExecuteAsync(CancellationToken)` |
+| `IUpgradeEngine` / `UpgradeEngine` | 升级引擎（编排核心）：`Task<UpgradeStartResult> ExecuteAsync(CancellationToken)`；`Task<bool> BaselineAsync(CancellationToken)` 在当前库还没有版本记录时按最新脚本版本与当前应用版本登记，已有记录返回 `false` 且不改动 |
 | `IUpgradeCoordinator` / `UpgradeCoordinator` | 升级协调器（后台启动）：`Task<UpgradeStartResult> StartAsync()`；内部用 `AsyncLock` 防重入，若上一次任务尚未完成，再次调用直接返回 `Started=false`、`Status=Upgrading` 而不会并发再起一个任务 |
 | `IUpgradeStatusService` / `UpgradeStatusService` | 状态服务：`EnsureInitializedAsync()`、`GetVersionSnapshotAsync(clientVersion?, ...)`、`GetUpgradeStatusAsync(...)` |
-| `IUpgradeVersionStore` | 版本 / 状态存储、迁移历史：`EnsureTablesAsync`、`GetOrCreateAsync`、`GetLatestHistoryAsync`、`SetUpgradingAsync`、`SetUpgradeCompletedAsync`、`SetUpgradeFailedAsync`、`UpdateDbVersionAsync`、`AddMigrationHistoryAsync`、`HasMigrationHistoryAsync` |
+| `IUpgradeVersionStore` | 版本 / 状态存储、迁移历史：`EnsureTablesAsync`、`GetOrCreateAsync`、`GetLatestHistoryAsync`、`SetUpgradingAsync`、`SetUpgradeCompletedAsync`、`SetUpgradeFailedAsync`、`UpdateDbVersionAsync`、`AddMigrationHistoryAsync`、`HasMigrationHistoryAsync`、`TryCreateBaselineAsync`（没有版本记录时按给定版本登记一条，已有记录返回 `false`） |
 | `IUpgradeMigrationExecutor` | 迁移脚本执行器（内部保证事务）：`Task ExecuteAsync(string sql, CancellationToken)` |
 | `IUpgradeScriptProvider` | 脚本发现来源：`Task<IReadOnlyList<UpgradeScript>> GetScriptsAsync(...)`（默认 `FileSystemUpgradeScriptProvider`） |
 | `IUpgradeLockProvider` / `IUpgradeLockToken` | 分布式锁：`TryAcquireLockAsync(resourceKey, expiry, nodeName, ...)`；令牌含 `ResourceKey`、`LockId`、`IsReleased`、`ReleaseAsync()`（`IAsyncDisposable`） |
@@ -24417,7 +24467,7 @@ migrations/
 | `MigrationsRootPath` | `string` | `"migrations"` | 迁移脚本根目录（相对路径基于应用根目录） |
 | `LockResourceKey` | `string` | `"SystemUpgrade"` | 分布式锁资源键 |
 | `LockExpirySeconds` | `int` | `600` | 分布式锁过期时间（秒） |
-| `EnableAutoCheckOnStartup` | `bool` | `true` | 启动时自动检查（初始化） |
+| `EnableAutoCheckOnStartup` | `bool` | `true` | 启动时建版本记录并同步执行迁移，失败即中断启动 |
 | `NodeName` | `string?` | `null` | 当前节点名（为空用「机器名-实例Id」） |
 | `PrimaryNodeName` | `string?` | `null` | 主节点名（配置后仅主节点可执行升级） |
 | `EnableMultiTenantIsolation` | `bool` | `false` | 是否逐租户隔离升级 |
@@ -24662,9 +24712,9 @@ public static T GetRandomOf<T>(params T[] objs)
 public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)   // Fisher-Yates
 ```
 
-**`RegexHelper`**（`public static partial`，源生成器编译正则）暴露 65 个 `partial Regex` 工厂属性，如 `EmailRegex()`、`IpRegex()`、`Ipv6Regex()`、`UrlRegex()`、`StrongPasswordRegex()`、`HexColorRegex()`、`Iso8601DateTimeRegex()`、`WindowsPathRegex()` 等，另有 `IsMatch(string input, string pattern, RegexOptions options = RegexOptions.IgnoreCase)`。
+**`RegexHelper`**（`public static partial`，源生成器编译正则）暴露 66 个 `partial Regex` 工厂属性，如 `EmailRegex()`、`NumberIdRegex()`（不含前导零的正整数，`StringHelper.IsNumberId` 使用）、`IpRegex()`、`Ipv6Regex()`、`UrlRegex()`、`StrongPasswordRegex()`、`HexColorRegex()`、`Iso8601DateTimeRegex()`、`WindowsPathRegex()` 等，另有 `IsMatch(string input, string pattern, RegexOptions options = RegexOptions.IgnoreCase)`。
 
-其余：`DateTimeHelper`（工作日/年龄/友好时间/月边界）、`MathHelper`（几何/统计/质数/斐波那契）、`ArrayHelper`（`Find`/`Insert`/`Remove`/`Shuffle`）、`CloneHelper`（`DeepCopy` / `CopyProperties` / `MapObject`）、`CompareHelper`（`DeepEquals` / `GetHashCodeDeep`）、`LogicHelper`（函数式 `If`/`Switch`/`TryExecute`/`RetryAsync`）、`SystemInfoManager`（`GetSystemInfo()` 汇总硬件+运行时）。
+其余：`DateTimeHelper`（工作日/年龄/友好时间/月边界）、`MathHelper`（几何/统计/质数/斐波那契/阶乘；`Fibonacci(count)` 的 `count` 须在 1–`MaxFibonacciCount`(47)、`Factorial(number)` 的 `number` 须在 0–`MaxFactorialInput`(20)，越界抛 `ArgumentOutOfRangeException`）、`ArrayHelper`（`Find`/`Insert`/`Remove`/`Shuffle`）、`CloneHelper`（`DeepCopy` / `CopyProperties` / `MapObject`）、`CompareHelper`（`DeepEquals` / `GetHashCodeDeep`）、`LogicHelper`（函数式 `If`/`Switch`/`TryExecute`/`RetryAsync`）、`SystemInfoManager`（`GetSystemInfo()` 汇总硬件+运行时）。
 
 ### 二、扩展方法 `Extensions`
 
@@ -24881,7 +24931,7 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 
 **`DirectoryHelper`**：`CreateIfNotExists` / `DeleteIfExists` / `Clear` / `Copy`、`GetFiles(path, pattern, isSearchChild)`、`GetSize(dirPath)`、`GetBaseDirectory()` / `GetWwwrootDirectory()`、`IsEmpty(path)`。
 
-**`PathHelper`** — 路径校验/规范化/安全（防目录穿越）：`IsValidPath`、`IsPathSafe(string path, string basePath)`、`NormalizePath`、`ToUnixPath` / `ToWindowsPath`、`SanitizeFileName`、`GetRelativePath` / `GetAbsolutePath`、`CombinePaths(params string[])`、`GetPathComponents`（返回 `PathComponents` record）。
+**`PathHelper`** — 路径校验/规范化/安全（防目录穿越）：`IsValidPath`、`IsPathSafe(string path, string basePath)`、`NormalizePath`、`ToUnixPath` / `ToWindowsPath`、`SanitizeFileName`、`GetRelativePath` / `GetAbsolutePath`、`CombinePaths(params string[])`、`GetPathComponents`（返回 `PathComponents` record）。`PathComparison` / `PathComparer` 是本机路径的大小写口径（Windows / macOS 不区分，其余平台区分），`PathEquals` / `IsSubPath` / `GetCommonPath` 均按它比较；`IsPathSafe` / `IsSubPath` 按分隔符边界判定（`/app/database` 不算 `/app/data` 的子路径）；`SanitizeFileName` / `IsValidFileName` 按各平台限制的并集处理，结果与运行平台无关。
 
 **`StreamHelper`** — 全面的流工具：读写（`ReadAllBytesAsync` / `WriteAllTextAsync`）、拷贝（`CopyToAsync`、带进度 `CopyToWithProgressAsync`）、内存流/Base64 互转、GZip 压缩（`CompressBytes` / `DecompressBytes`）、哈希（`ComputeMD5Hash` / `ComputeSHA256Hash`）、流对比（`CompareStreamsAsync`）。
 
@@ -24928,10 +24978,10 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 public static void Configure(Action<CacheOptions> configure)
 public static T? Get<T>(string key)
 public static bool TryGetValue<T>(string key, out T? value)
-public static void Set<T>(string key, T value, TimeSpan expiration)
+public static void Set<T>(string key, T value, TimeSpan expireSpan)
 public static void SetSliding<T>(string key, T value, TimeSpan slidingExpiration, DateTimeOffset? absoluteExpiration = null)
-public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expiration)
-public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expiration, CancellationToken cancellationToken = default)
+public static T GetOrAdd<T>(string key, Func<T> factory, TimeSpan expireSpan)
+public static Task<T> GetOrAddAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan expireSpan, CancellationToken cancellationToken = default)
 public static int RemoveByPrefix(string prefix)
 public static void Clear()
 ```
@@ -25026,7 +25076,7 @@ using XiHan.Framework.Utils.Diagnostics;
 
 // 1) 哈希 + 脱敏 + 命名转换
 var digest = HashHelper.Sha256("payload");
-var masked = "13800138000".MaskPhone();          // 138****8000
+var masked = MaskHelper.MaskPhone("13800138000");    // 138****8000
 var col = "UserName".ToSnakeCase();               // user_name
 
 // 2) 序列化：对象 <-> JSON（camelCase、Try 风格）
@@ -25055,7 +25105,7 @@ using XiHan.Framework.Utils.Timing;
 var user = await CacheHelper.GetOrAddAsync(
     key: $"user:{id}",
     factory: async _ => await LoadUserAsync(id),
-    expiration: TimeSpan.FromMinutes(5));
+    expireSpan: TimeSpan.FromMinutes(5));
 
 // 6) 时间区间便捷属性
 var lastWeek = DateTimeRange.LastWeek;   // StartTime / EndTime
@@ -25543,9 +25593,9 @@ public class MyModule : XiHanModule { }
 | 1 | `UseForwardedHeaders` | 依据 `X-Forwarded-Proto/Host/For` 还原真实 scheme/host/客户端 IP；必须最前，否则后续读 scheme/host/IP 的中间件全错。 |
 | 2 | `XiHanTraceIdMiddleware` | 取请求头 `X-Trace-Id`（无则用 `TraceIdentifier`），写入 `HttpContext.Items` 并回写响应头，贯穿全链路。 |
 | 3 | `UseXiHanRequestCulture` | 解析请求文化（`X-Language` 等）并设置到当前线程，使后续管线（含控制器/响应过滤器）在请求文化下执行。 |
-| 4 | `XiHanRequestContextMiddleware` | 汇聚 TraceId/文化/用户/租户/客户端 IP/UA/路径/方法/起始时间为 `RequestContext`，写入 `IRequestContextAccessor`。 |
+| 4 | `XiHanRequestContextMiddleware` | 汇聚 TraceId/文化/客户端 IP/UA/路径/方法/起始时间为 `RequestContext`，写入 `IRequestContextAccessor`；用户与租户此时尚未可知，由第 15 步定型写回。 |
 | 5 | `XiHanExceptionLoggingMiddleware` | 管线级异常日志采集（异常队列/告警）。 |
-| 6 | `XiHanRequestLoggingMiddleware` | 请求起止/访问日志采集。 |
+| 6 | `XiHanRequestLoggingMiddleware` | 请求起止/访问日志采集；请求结束时重新读取定型后的 `RequestContext`，访问日志按请求所属的用户与租户记账。 |
 | 7 | `UseRouting` | 端点路由匹配。 |
 | 8 | `UseRateLimiter` | **仅当 `XiHan:Web:RateLimiting:IsEnabled=true`**：按客户端 IP 固定窗口限流，置于路由后、鉴权前，尽早拒绝超额。 |
 | 9 | `XiHanCircuitBreakingMiddleware` | **仅当 `XiHan:Web:CircuitBreaking:IsEnabled=true`**：服务端过载熔断，置于限流后、鉴权前，过载时快速失败。 |
@@ -25554,7 +25604,7 @@ public class MyModule : XiHanModule { }
 | 12 | `XiHanApiLoggingMiddleware` | 接口访问日志：仅当请求携带 OpenApi 安全头时记录（AccessKey/Signature）。 |
 | 13 | `XiHanOpenApiSecurityMiddleware` | 对受保护路径做签名/内容签名/加密/防重放校验（默认关闭）。 |
 | 14 | `UseAuthentication` | JWT Bearer 认证，填充 `HttpContext.User`。 |
-| 15 | `XiHanTenantResolveMiddleware` | 按贡献者（Header/QueryString）解析租户并 `ICurrentTenant.Change`，置于认证后（可用用户信息）、授权前（授权可依租户）。 |
+| 15 | `XiHanTenantResolveMiddleware` | 按解析链解析租户并 `ICurrentTenant.Change`：已认证请求只以令牌为准；请求头、查询串、兜底租户给出的租户须在 `ITenantStore` 中存在且激活，否则以 400 拒绝。解析后把用户与租户定型写回 `RequestContext`。置于认证后（可用用户信息）、授权前（授权可依租户）。 |
 | 16 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。 |
 | 17 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
 
@@ -25649,7 +25699,7 @@ public class MyModule : XiHanModule { }
 | `XiHanUnitOfWorkFilter` | 动作级工作单元过滤器：按原始应用服务方法上的 `[UnitOfWork]` 开启工作单元，动作抛异常时不提交、由释放时回滚。 |
 | `OriginalMethodResolver` | 由动态控制器动作回查原始应用服务方法（供上述两个过滤器读取业务特性）。 |
 | `[IgnoreApiResponse]` | 标注类/方法跳过统一响应包装（如自定义流式响应）。 |
-| `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）。 |
+| `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（`sealed record`：TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）；用户与租户在认证与租户解析之后才定型，位于租户解析之前的中间件须在 `await next()` 返回后读取。 |
 | `ITraceIdProvider` / `HttpTraceIdProvider` | TraceId 提供器。 |
 | `XiHanTenantResolveMiddleware` + `HeaderTenantResolveContributor` / `QueryStringTenantResolveContributor` | 多租户解析中间件与两个内置贡献者。 |
 | `XiHanOpenApiSecurityMiddleware` / `IOpenApiSecurityClientStore` / `OpenApiSecurityClient` | OpenAPI 安全中间件、客户端存储与客户端模型。 |
@@ -25733,7 +25783,7 @@ public class MyModule : XiHanModule { }
 | `HeaderKeys` | `string[]` | `["X-Tenant-Id","x-tenant-id","TenantId"]` | 租户 Header 键。 |
 | `EnableQueryStringResolve` | `bool` | `true` | 启用 QueryString 解析。 |
 | `QueryStringKeys` | `string[]` | `["tenantId","tenant"]` | 租户 QueryString 键。 |
-| `FallbackTenant` | `string?` | `null` | 未解析出租户时的兜底。 |
+| `FallbackTenant` | `string?` | `null` | 未解析出租户时的兜底；须在 `ITenantStore` 中存在且激活，否则请求以 400 拒绝。 |
 
 ### 异步日志队列：`XiHan:Auditing:LogQueue`（`XiHanAuditingLogQueueOptions`，来自 [Auditing](./auditing) 包）
 
@@ -26400,8 +26450,8 @@ public class MyModule : XiHanModule { }
 | `HeaderName` | `string` | `X-Api-Key` | 携带密钥的请求头名；也接受 `Authorization: Bearer` |
 | `Path` | `string` | `/mcp` | 端点路径 |
 | `Stateless` | `bool` | `true` | 是否无状态 HTTP 传输（无服务端→客户端回调） |
-| `AllowedTools` | `List<string>` | 空 | 工具名允许清单；空表示不限制，非空则只暴露清单内的工具。按序号比较、区分大小写 |
-| `DeniedTools` | `List<string>` | 空 | 工具名拒绝清单；始终生效，同名同时出现在允许清单时以拒绝为准 |
+| `AllowedTools` | `List<string>` | 空 | 工具名允许清单；空表示不限制，非空则只暴露清单内的工具。按序号比较、区分大小写，不得含空白项 |
+| `DeniedTools` | `List<string>` | 空 | 工具名拒绝清单；始终生效，同名同时出现在允许清单时以拒绝为准。不得含空白项 |
 
 ```json
 {
@@ -26423,7 +26473,7 @@ public class MyModule : XiHanModule { }
 - **技能投影**：调用 AI 包的 `AddXiHanMcpServerTools()`，技能注册表里的每个 `IAiSkill` 自动成为一个 MCP tool。
 - **端点映射与鉴权**：`MapMcp(Path)` 后 `AllowAnonymous()` 绕过框架全局鉴权 FallbackPolicy，改由 `McpApiKeyEndpointFilter` 校验 key，不匹配即 401。
 - **fail-closed**：`Enabled` 与 `ApiKey` 任一不满足，则既不注册 MCP 服务也不映射端点。
-- **暴露面裁剪**：`McpToolExposureConfigurator` 经 `IPostConfigureOptions<McpServerOptions>` 按允许/拒绝清单裁剪工具集，被裁掉的工具既不出现在 `tools/list` 也不能经 `tools/call` 调用。两个清单都为空时不触碰工具集，暴露面与不配置时逐字相同。裁剪的对象是 `McpServerOptions.ToolCollection`：宿主若另行设置 `Handlers.ListToolsHandler` / `CallToolHandler`，这两个 handler 提供的工具不在裁剪范围内，且被拒绝的名字有可能落到 `CallToolHandler` 的回退上，故启用清单的宿主不应同时使用这两个 handler。
+- **暴露面裁剪**：`McpToolExposureConfigurator` 经 `IPostConfigureOptions<McpServerOptions>` 按允许/拒绝清单裁剪工具集，并在 `tools/list` / `tools/call` 请求过滤器链最外层按同一清单过滤，被裁掉的工具既不出现在 `tools/list` 也不能经 `tools/call` 调用，宿主经 `Handlers.ListToolsHandler` / `CallToolHandler` 提供的工具同样受约束。两个清单都为空时什么都不做，暴露面与不配置时逐字相同。清单含空白项时启动即失败；匹配不到任何工具的清单项在启动期记一次警告。实验性的 `CallToolWithAlternateHandler` 不在覆盖范围内，启用清单时不应设置它。
 
 ## 主要 API / 类型
 
@@ -26807,7 +26857,7 @@ public class MyModule : XiHanModule { }
 - `IWorkflowExpressionEvaluator` → `WorkflowExpressionEvaluator`（内置轻量表达式）
 - `IWorkflowActivityRegistry` → `WorkflowActivityRegistry`
 - `IWorkflowEventPublisher` → `LocalEventBusWorkflowEventPublisher`
-- `IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore` → 三个 **`InMemory*`** 实现
+- `IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore` → `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore`（有界进程内实现，`TryAddSingleton`）
 - `IWorkflowEngine` → `WorkflowEngine`
 - `IWorkflowDefinitionManager` → `WorkflowDefinitionManager`
 - `IWorkflowUserTaskService` → `WorkflowUserTaskService`

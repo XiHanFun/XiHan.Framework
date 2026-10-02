@@ -14,8 +14,8 @@
 | 脚本发现（按版本目录扫 `*.sql`） | `FileSystemUpgradeScriptProvider` | 可用 |
 | 后台触发与进程内防重入 | `UpgradeCoordinator` | 可用 |
 | 状态查询 | `UpgradeStatusService` | 可用 |
-| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典） | **必须换成数据库实现** |
-| **分布式锁** | `DefaultUpgradeLockProvider`（进程内） | **多节点必须换** |
+| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典，最多 10000 个租户、每租户 10000 条历史，超限抛 `InvalidOperationException`） | **必须换成数据库实现** |
+| **分布式锁** | `DefaultUpgradeLockProvider`（进程内，最多 10000 个锁条目，满载时获取失败、引擎报「升级锁已被占用」） | **多节点必须换** |
 | **迁移执行器** | `DefaultUpgradeMigrationExecutor` | **必须换**，默认直接抛异常 |
 | 维护模式 | `DefaultUpgradeMaintenanceModeManager` | 只写日志，不拦请求 |
 | 程序文件替换 / 滚动重启 | `NullUpgradeFileUpdater` / `NullRollingRestartCoordinator` | 空实现 |
@@ -122,7 +122,7 @@ needAppUpgrade = 记录AppVersion < 当前应用版本
 节点进入升级前要过两道门：
 
 1. **主节点门控**：配了 `PrimaryNodeName` 且当前节点名不匹配 → 直接返回 `Normal` / `"当前节点非主节点，等待升级"`。不配则每个节点都视为主节点。
-2. **抢锁**：`TryAcquireLockAsync(resourceKey, LockExpirySeconds, nodeName)`。资源键为 `LockResourceKey`；版本记录的 `TenantId` 非空（即当前处于某个租户上下文）时追加 `:Tenant_{租户Id}` 后缀，与 `EnableMultiTenantIsolation` 开没开无关。
+2. **抢锁**：`TryAcquireLockAsync(resourceKey, LockExpirySeconds, nodeName)`。资源键为 `LockResourceKey`；版本记录的 `TenantId` 大于 0（即当前处于某个业务租户）时追加 `:Tenant_{租户Id}` 后缀，平台（`null` 或 `0`）共用 `LockResourceKey` 本身，与 `EnableMultiTenantIsolation` 开没开无关。
 
 节点名的解析顺序是 `NodeName` 选项 → `机器名-实例Id`。实例 Id 每次进程启动都会变，所以**要用 `PrimaryNodeName` 就必须同时显式配 `NodeName`**，否则永远匹配不上，谁都不升级。
 
@@ -157,7 +157,7 @@ await _versionStore.SetUpgradeCompletedAsync(version, currentAppVersion, version
 ::: danger 存储实现必须把新值写回入参实例
 如果 `UpdateDbVersionAsync` 只更新了数据库、没有同步修改传入的 `version` 对象，那么 `version.DbVersion` 仍是本轮开始时的旧值，完成时会被原样写回去——数据库版本永远推不上去，每次启动都判定「需要升级」。内置实现通过把状态复制回入参来满足这一点，自定义实现照做。
 
-同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。
+同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。平台就是 0 号租户：无租户上下文与 `Change(0)` 必须落同一个平台分区（内置实现都落 `host`，记录的 `TenantId` 为 0），与升级锁同一口径，否则平台会出现两份版本记录与迁移历史。
 :::
 
 ### 维护模式
@@ -237,7 +237,7 @@ public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngi
 
 两个要注意的地方：
 
-- 默认 `DefaultUpgradeTenantProvider` 返回的是**一条**记录——当前 `ICurrentTenant` 的 Id 与名称（宿主态即 `(null, null)`）。要「逐全体租户」批量升级，必须自己实现 `IUpgradeTenantProvider` 从租户仓储读全量列表。
+- 默认 `DefaultUpgradeTenantProvider` 返回的是**一条**记录——当前 `ICurrentTenant` 的 Id 与名称（平台即 `(null, null)`）。要「逐全体租户」批量升级，必须自己实现 `IUpgradeTenantProvider` 从租户仓储读全量列表。
 - 全部租户跑完后返回的固定是 `Started=true` / `Completed` / `"多租户升级完成"`，**即使每个租户实际都是「无需升级」或「锁被占用」**。要判断实情看日志与各租户状态。
 
 ## 配置
@@ -346,14 +346,14 @@ services.Replace(ServiceDescriptor.Singleton<IUpgradeLockProvider, DistributedUp
 
 ### 版本存储
 
-实现 `IUpgradeVersionStore` 的 9 个方法，把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
+实现 `IUpgradeVersionStore` 的 10 个方法（含新库基线登记用的 `TryCreateBaselineAsync`），把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
 
 ```csharp
 services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeVersionStore>());
 ```
 
 ::: danger 默认存储进程重启即丢
-`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
+`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区，租户 Id 为 `null` 与 `0` 同落 `host`）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
 :::
 
 ## 常见问题

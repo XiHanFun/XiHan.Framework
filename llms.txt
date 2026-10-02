@@ -78,7 +78,7 @@
 - [XiHan.Framework.Bot.Telegram](https://framework.docs.xihanfun.com/packages/bot-telegram): Bot Telegram 通道：两层能力——统一调度用的单发 `IBotProvider`，与一套可托管多机器人的交互平台（Webhook/长轮询双模、命令/回调/会话路由、发送门面、去重/审计）。
 - [XiHan.Framework.Bot.WeCom](https://framework.docs.xihanfun.com/packages/bot-wecom): Bot 企业微信通道：企业微信群机器人 Webhook + 媒体上传提供者，纯 HTTP、无第三方 SDK。
 - [XiHan.Framework.Bot](https://framework.docs.xihanfun.com/packages/bot): 机器人 / 消息通知内核：统一消息模型 + 多提供者调度，把「往哪些渠道发」与「用哪个厂商发」解耦。
-- [XiHan.Framework.Caching](https://framework.docs.xihanfun.com/packages/caching): 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键，Redis 启用后额外提供分布式锁、延迟队列与 Stream 可靠队列。
+- [XiHan.Framework.Caching](https://framework.docs.xihanfun.com/packages/caching): 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键；分布式锁与延迟队列默认是有界进程内实现，启用 Redis 后升级为跨实例实现，并额外提供 Stream 可靠队列。
 - [XiHan.Framework.Castle](https://framework.docs.xihanfun.com/packages/castle): AOP 动态代理底座：集成 Castle DynamicProxy，把框架的异步拦截器链 `IXiHanInterceptor[]` 适配到 Castle 的同步 `IInterceptor`，在服务注册完成后自动为登记了拦截器的接口服务生成代理。
 - [XiHan.Framework.Core](https://framework.docs.xihanfun.com/packages/core): 框架的模块化引擎与运行时内核：定义 `XiHanModule` 基类、`[DependsOn]` 依赖声明、模块描述符与拓扑排序加载、7 阶段生命周期钩子、应用引导工厂、约定式依赖注入、选项模式与统一异常体系。
 - [XiHan.Framework.Data](https://framework.docs.xihanfun.com/packages/data): 基于 SqlSugar 的数据访问基础设施：仓储模式、工作单元事务接入、多租户数据隔离、审计/软删除全局过滤、启动自动建库建表与种子数据
