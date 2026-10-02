@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./assets/banner.png" alt="XiHan.Framework" />
+<img src="./assets/banner_cn.png" alt="XiHan.Framework" />
 
 <h1>XiHan.Framework</h1>
 
