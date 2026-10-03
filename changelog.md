@@ -4,6 +4,21 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.6.1 (2026-10-03)
+
+::: warning 升级须知
+- `PerformanceStatistics.TotalTimeMs` 改为只读、`ExecutionsPerSecond` 改为 `double?`，引用它们的程序集需重新编译；自行构造统计对象改设 `TotalElapsedTime`
+- 技能投影出同名 MCP 工具（含与宿主 `WithTools` 注册的工具重名）时启动即失败，需改掉其中一方的工具名
+- 自定义 `IUpgradeVersionStore` 需让无租户上下文与 `Change(0)` 落同一个平台分区
+:::
+
+- **新增** `XiHanMcpOptions.AllowedTools` / `DeniedTools`：按允许 / 拒绝清单收窄 `/mcp` 暴露的工具，`tools/list` 与 `tools/call` 同时生效，拒绝优先
+- **修复** 给注入的 `ICurrentTimezoneProvider` 写入时区后，`IClock.ConvertToUserTime` / `ConvertToUtc` 读不到；当前时区改按异步流共享
+- **修复** `BenchmarkAsync` 耗时含预热、内存读数为零或负数、`ExecutionsPerSecond` 为无穷大时无法序列化；`iterations` 不大于 0 时在预热前抛 `ArgumentOutOfRangeException`
+- **修复** `DefaultUpgradeVersionStore` 为无租户上下文与 0 号租户各存一份版本记录
+- **修复** 技能投影的 MCP 工具重名时被静默丢弃
+- **升级** 升级依赖，发布 v4.6.1
+
 ## v4.6.0 (2026-09-25)
 
 ::: warning 升级须知

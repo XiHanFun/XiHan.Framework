@@ -49,7 +49,7 @@ var hash = HashHelper.Sha256("hello");
 var camel = "user_name".ToCamelCase();
 ```
 
-> 项目全局启用了 `ImplicitUsings` 与 `Nullable`（可空引用类型），目标框架 `net10.0`。签名中的 `?` 均表示可空。
+> 项目全局启用了 `ImplicitUsings` 与 `Nullable`（可空引用类型），目标框架为当前 .NET 版本。签名中的 `?` 均表示可空。
 
 ## 包结构总览
 

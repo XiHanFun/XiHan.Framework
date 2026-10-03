@@ -15,7 +15,7 @@
 
 - [更新日志 · XiHan.Framework](https://framework.docs.xihanfun.com/changelog): 本文件记录 XiHan.Framework 各版本的变更。
 - [曦寒开发框架](https://framework.docs.xihanfun.com/): 快速 轻量 高效 用心的 .NET 模块化开发框架
-- [XiHan.Framework 开发框架](https://framework.docs.xihanfun.com/introduction): 快速、轻量、高效、用心的 .NET 10 模块化开发框架。
+- [XiHan.Framework 开发框架](https://framework.docs.xihanfun.com/introduction): 快速、轻量、高效、用心的 .NET 现代模块化开发框架。
 - [框架概述](https://framework.docs.xihanfun.com/overview): XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后端分离的 ASP.NET Core 应用设计。
 - [快速上手](https://framework.docs.xihanfun.com/quickstart): 本篇带你从零建一个基于 XiHan.Framework 的 Web API。
 - [为什么选择曦寒](https://framework.docs.xihanfun.com/why): 功能清单在 模块总览，这一页不重复。
@@ -92,7 +92,7 @@
 - [XiHan.Framework.EventBus.Redis](https://framework.docs.xihanfun.com/packages/eventbus-redis): 分布式事件总线的 Redis Streams 提供程序：`XADD` 写入同一 Stream，消费者组 `XREADGROUP` 竞争消费、处理后 `XACK`。
 - [XiHan.Framework.EventBus](https://framework.docs.xihanfun.com/packages/eventbus): 事件总线实现：进程内本地事件总线 + 分布式事件总线（Outbox/Inbox 可靠投递），落地 EventBus.Abstractions 的全部契约。
 - [XiHan.Framework.Http](https://framework.docs.xihanfun.com/packages/http): 基于 `IHttpClientFactory` 与 Polly 的高级 HTTP 客户端：统一结果封装、韧性策略（重试/超时/熔断）、字符串链式请求、上传下载、批量并发与代理池。
-- [模块总览](https://framework.docs.xihanfun.com/packages/): XiHan.Framework 由 66 个 NuGet 包组成，按分层组织。
+- [模块总览](https://framework.docs.xihanfun.com/packages/): XiHan.Framework 由一组可独立引用的 NuGet 包组成，按分层组织。
 - [XiHan.Framework.Localization.Abstractions](https://framework.docs.xihanfun.com/packages/localization-abstractions): 国际化抽象层：可本地化字符串与枚举本地化的接口契约，实现由 XiHan.Framework.Localization 提供。
 - [XiHan.Framework.Localization](https://framework.docs.xihanfun.com/packages/localization): 国际化实现：JSON 优先（ResourceManager 回退）的字符串本地化 + 按请求头动态切换文化的中间件 + 枚举字段级本地化服务。
 - [XiHan.Framework.Logging](https://framework.docs.xihanfun.com/packages/logging): 结构化日志：Serilog 集成、控制台/异步文件双路输出、按天/按大小滚动、结构化与性能日志、多租户日志上下文。

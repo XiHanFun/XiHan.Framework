@@ -31,7 +31,7 @@ dotnet add package XiHan.Framework.Metadata
 ## 核心能力
 
 - 集中维护框架身份常量：`Name`、`DisplayName`、`Copyright`、`Author`、`Organization`、`OrganizationUrl`、`RepositoryUrl`、`DocumentationUrl`、`License`、`LicenseUrl`、`Description`。
-- 数组型元信息：`Keywords`、`SupportedFrameworks`（当前 `net10.0`）、`SupportedPlatforms`（`Windows` / `Linux` / `MacOS`）。
+- 数组型元信息：`Keywords`、`SupportedFrameworks`（当前目标框架）、`SupportedPlatforms`（`Windows` / `Linux` / `MacOS`）。
 - 版本信息（从 `XiHanMetadata` 所在程序集读取）：`Version`、`FullVersion`、`MajorVersion`、`MinorVersion`、`PatchVersion`。
 - 运行时入口信息（从入口程序集读取）：`EntryAssemblyName`、`EntryAssemblyVersion`。
 - 展示用文本：`Logo`（ASCII 艺术字）、`SendWord`（框架寄语）。
@@ -55,9 +55,9 @@ dotnet add package XiHan.Framework.Metadata
 | `DocumentationUrl` | `string` | `https://docs.xihanfun.com` |
 | `License` | `string` | `"MIT"` |
 | `LicenseUrl` | `string` | 指向仓库 `LICENSE` |
-| `Description` | `string` | `"快速、轻量、高效、用心的开发框架和组件库。基于 .NET 10 构建。"` |
+| `Description` | `string` | `"快速、轻量、高效、用心的 .NET 现代模块化开发框架。基于 {当前 .NET 版本} 构建。"`，版本由运行时解析 |
 | `Keywords` | `string[]` | `dotnet`、`aspnetcore`、`csharp`、`web`、`webapp`、`xihan`、`framework`、`zhaifanhua`、`xihanfun`、`modular`、`extensible`（共 11 项） |
-| `SupportedFrameworks` | `string[]` | `["net10.0"]` |
+| `SupportedFrameworks` | `string[]` | 只含当前目标框架，即 `TargetFramework`（如 `["net10.0"]`） |
 | `SupportedPlatforms` | `string[]` | `["Windows", "Linux", "MacOS"]` |
 
 ### 版本与运行时（只读属性）
