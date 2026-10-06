@@ -5,7 +5,7 @@ description: 测试、覆盖率、文档构建、版本升级、NuGet 打包或�
 
 # XiHan.Framework 测试与发布
 
-先读 `references/testing-and-release.md`，再以当前 `.github/workflows/ci.yml`、`.github/workflows/publish.yml` 和 `framework/props` 为事实源。
+先读 `references/testing-and-release.md`，再以当前 `.github/workflows/ci.yml`、`.github/workflows/release.yml` 和 `framework/props` 为事实源。
 
 ## 标准验证
 

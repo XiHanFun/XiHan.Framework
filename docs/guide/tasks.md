@@ -357,17 +357,13 @@ services.AddXiHanTasks(config).AddMiddleware<TracingMiddleware>();
 
 | 能力线 | 租户从哪来 | 切换时机 |
 | --- | --- | --- |
-| 定时调度 | 触发时按优先级解析：① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户 | `JobExecutor` 用 `ICurrentTenant.Change(...)` 包住整条管道 |
+| 定时调度 | 触发时按优先级解析：① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户 | `JobExecutor` 一开始就 `ICurrentTenant.Change(...)` 切入：实例落库、任务构造、管道执行、状态回写与历史落档（含失败路径）都在该租户作用域内 |
 | 后台作业 | **入队那一刻**的 `ICurrentTenant.Id`，写进 `BackgroundJobInfo.TenantId` | Worker 执行前 `ICurrentTenant.Change(job.TenantId)` |
 
-`TenantId` 为空表示宿主（Host）级任务。
-
-::: warning 任务类的构造函数在切租户之前执行
-`JobExecutor` 先用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例，再切换租户上下文。构造函数里做的任何依赖租户的查询都会落在错误的上下文里 —— **把租户相关的活儿全放进 `ExecuteAsync`**。
-:::
+`TenantId` 为空表示平台级任务，在平台（0 号租户）作用域执行，只看得到平台数据；要处理各租户的数据，在任务里逐个 `Change(tenantId)` 切入。
 
 ::: warning 任务类上的 AOP 特性不生效
-同样因为走 `ActivatorUtilities.CreateInstance`，任务类型本身不经过容器解析，拿不到拦截器代理。打在 `IJobWorker` 实现类上的 `[UnitOfWork]`、`[Cacheable]` 之类特性会静默失效。
+因为走 `ActivatorUtilities.CreateInstance`，任务类型本身不经过容器解析，拿不到拦截器代理。打在 `IJobWorker` 实现类上的 `[UnitOfWork]`、`[Cacheable]` 之类特性会静默失效。
 
 正确做法：把需要事务/缓存的逻辑放进从容器注入的应用服务里，任务类只负责调用它。见 [AOP 与拦截器](./aop) 和 [工作单元与事务](./uow)。
 :::
@@ -391,7 +387,7 @@ services.AddXiHanTasks(config).AddMiddleware<TracingMiddleware>();
 
 ### 存储替换
 
-默认实现全部是进程内内存，进程重启即丢：
+默认实现都是有界的进程内存储，进程重启即丢：`DefaultJobStore` 实例最多 20000 条（终态实例只留最近 10000 条）、历史最多 100000 条；`DefaultBackgroundJobStore` 最多 100000 条。满载时新增抛 `InvalidOperationException`——后台作业入队直接失败，定时任务的历史写入失败只记错误日志。框架不自动清理历史，长期运行要定期调 `IJobStore.CleanupHistoryAsync`。
 
 | 存的是什么 | 默认实现 | 换成别的 |
 | --- | --- | --- |
@@ -471,7 +467,7 @@ services.UseRedisBackgroundJobStore(o =>
 | 历史里出现「无法获取任务锁」的失败记录 | 锁在重试外层，抢锁失败直接记为一次失败执行，不会重试 |
 | `[JobTimeout]` 设了 5 分钟，任务却跑了 15 分钟才超时 | 超时是「首次 + 全部重试」的总预算，与重试次数无关；实际观感差异来自重试间隔 |
 | 任务里的 `[UnitOfWork]` / `[Cacheable]` 不生效 | 任务实例由 `ActivatorUtilities.CreateInstance` 构造，不经容器代理；把逻辑挪进注入的服务 |
-| 任务构造函数里查不到租户数据 | 租户上下文在构造之后才切换，把逻辑挪进 `ExecuteAsync` |
+| 平台级任务里查不到租户数据 | 未指定租户的任务在平台作用域执行，平台只看自己的数据；给任务指定 `TenantId`，或在任务里逐个 `Change(tenantId)` |
 | 重启后待执行的后台作业全没了 | 默认 `DefaultBackgroundJobStore` 是进程内的，换 `UseRedisBackgroundJobStore()` 或自实现 |
 | 入队的作业迟迟不执行 | `IsJobExecutionEnabled = false`；或首轮等待 5 秒 + 轮询间隔 5 秒的正常延迟；或多实例下锁被别的实例持有 |
 | 作业只试了一次就被放弃 | 属于致命错误：作业名找不到配置（改过参数类型名且没标 `[BackgroundJobName]`），或参数反序列化失败 |

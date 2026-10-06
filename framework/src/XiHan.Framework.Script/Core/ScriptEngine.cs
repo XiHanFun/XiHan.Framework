@@ -108,7 +108,7 @@ public class ScriptEngine : IScriptEngine, IDisposable
                 }
 
                 _statistics.CacheSize = _compilationCache.Count;
-                _statistics.TotalMemoryUsage += memoryUsage.MemoryIncrease;
+                _statistics.TotalMemoryUsage += memoryUsage.AllocatedBytes;
             }
 
             return result;

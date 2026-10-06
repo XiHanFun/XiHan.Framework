@@ -1,6 +1,6 @@
 # XiHan.Framework.Caching
 
-> 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键，Redis 启用后额外提供分布式锁、延迟队列与 Stream 可靠队列。
+> 框架统一缓存层：基于 .NET `HybridCache` 的两级混合缓存 + 泛型分布式缓存 + AOP 声明式缓存 + 租户感知键；分布式锁与延迟队列默认是有界进程内实现，启用 Redis 后升级为跨实例实现，并额外提供 Stream 可靠队列。
 
 - **NuGet**：`XiHan.Framework.Caching`
 - **模块类**：`XiHanCachingModule`
@@ -13,7 +13,7 @@
 
 - 用泛型接口 `IHybridCache<TCacheItem>` / `IDistributedCache<TCacheItem>` 让你以类型安全的方式缓存业务对象，屏蔽序列化与键拼接细节。
 - 键经 `IDistributedCacheKeyNormalizer` 规范化，默认按当前租户加前缀，天然实现多租户隔离。
-- 未配置 Redis 时全部回落到进程内内存实现（内存缓存 + 内存分布式缓存 + 进程内锁），零外部依赖即可跑；配置 Redis 后自动 `Replace` 为 Redis 实现，并解锁分布式锁、延迟队列、Stream 队列等能力。
+- 未配置 Redis 时全部回落到进程内内存实现（内存缓存 + 内存分布式缓存 + `DefaultDistributedLock` + `DefaultDelayQueue<T>`），零外部依赖即可跑；配置 Redis 后自动换成 Redis 实现，锁与延迟队列跨实例生效，并额外提供 Stream 队列。
 - 通过 AOP 拦截器支持 `[Cacheable]` 声明式缓存方法结果，并用 `[CacheEvict]` 在方法成功后清除缓存。
 
 设计思路是"接口稳定、实现可切换"：业务只依赖泛型接口，本地/Redis 的差异由 DI 装配期决定。
@@ -51,13 +51,13 @@ public class MyModule : XiHanModule;
 
 动态代理只包裹接口注册，HTTP 请求进来的控制器实例不经过它。[XiHan.Framework.Web.Api](./web-api) 的 `XiHanCacheFilter` 补上这条路径：MVC 动作外层按同一套 `CacheAspect` 语义处理 `[Cacheable]` / `[CacheEvict]`，动态 API 的动作先经 `OriginalMethodAttribute` 回查原始应用服务方法再读取特性。它排在工作单元过滤器之外，命中缓存不开启事务、清除缓存发生在事务提交之后。
 
-若 `XiHan:Caching:Redis:IsEnabled = true`，`AddXiHanCaching` 继续：调用 `AddStackExchangeRedisCache`，把 `IDistributedCache` `Replace` 为 `XiHanRedisCache`，并在有连接串时 `TryAdd` 出 `IConnectionMultiplexer`、`IRedisStreamQueue<>`、`IRedisDelayQueue<>`，同时把 `IDistributedLock` `Replace` 为 `RedisDistributedLock`。
+若 `XiHan:Caching:Redis:IsEnabled = true`，`AddXiHanCaching` 继续：调用 `AddStackExchangeRedisCache`，先 `RemoveAll<IDistributedCache>()` 再注册 `XiHanRedisCache`；有连接串时 `TryAdd` 出 `IConnectionMultiplexer`、`IRedisStreamQueue<>`，并把 `IRedisDelayQueue<>` / `IDistributedLock` 分别 `Replace` 为 `RedisDelayQueue<>` / `RedisDistributedLock`。
 
 ## 工作原理
 
 **两级混合缓存**：`IHybridCache<TCacheItem>` 是对 .NET `HybridCache` 的泛型薄封装。读取时优先命中本地内存（L1），未命中回落分布式层（L2，内存或 Redis），再未命中执行工厂并回填两级；两级一致失效。`GetOrCreateAsync` 的 `optionsFactory` 可按调用定制 `HybridCacheEntryOptions`（本地/分布式过期时间）。
 
-**键规范化（租户隔离）**：所有分布式缓存键先经 `DefaultDistributedCacheKeyNormalizer.NormalizeKey` 处理，产出形如 `{tenantId}:{cacheName}:{key}`。租户段取当前 `ICurrentTenantAccessor.Current.TenantId`；无租户（宿主）时用 `0`。`cacheName` 由 `CacheNameAttribute.GetCacheName<TCacheItem>()` 推断（有 `[CacheName]` 用其值，否则用类型全名去掉 `CacheItem` 后缀）。若某条查询要跨租户共享，可通过 `DistributedCacheKeyNormalizeArgs.IgnoreMultiTenancy` 跳过租户段。
+**键规范化（租户隔离）**：所有分布式缓存键先经 `DefaultDistributedCacheKeyNormalizer.NormalizeKey` 处理，产出形如 `{tenantId}:{cacheName}:{key}`。租户段取当前 `ICurrentTenantAccessor.Current.TenantId`；无租户上下文时用 `0`——平台就是 0 号租户，`null` 与 `0` 落同一个键段。`cacheName` 由 `CacheNameAttribute.GetCacheName<TCacheItem>()` 推断（有 `[CacheName]` 用其值，否则用类型全名去掉 `CacheItem` 后缀）。若某条查询要跨租户共享，可通过 `DistributedCacheKeyNormalizeArgs.IgnoreMultiTenancy` 跳过租户段。
 
 **Redis 装配切换**：`IDistributedCache<>` 的模式匹配 / Lua 等高级能力，依赖底层 `IDistributedCache` 是否实现三个"能力"标记接口 —— `ICacheSupportsMultipleItems`、`ICacheSupportsKeyPattern`、`ICacheSupportsLuaScript`。`XiHanRedisCache`（继承自框架 `RedisCache`）实现了全部三者，因此启用 Redis 后 `GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 才真正生效；内存分布式缓存不实现这些接口，相应方法在纯内存模式下不可用（会退化/抛错）。
 
@@ -67,7 +67,7 @@ public class MyModule : XiHanModule;
 
 - **两级混合缓存**：`IHybridCache<TCacheItem>` / `IHybridCache<TCacheItem, TCacheKey>`，泛型封装 .NET `HybridCache`。
 - **泛型分布式缓存**：`IDistributedCache<TCacheItem>` / `IDistributedCache<TCacheItem, TCacheKey>`，同步/异步、单条/批量、GetOrAdd、Refresh、Exists、按模式查/删、Lua 脚本一应俱全。
-- **租户感知键**：`DefaultDistributedCacheKeyNormalizer`，`TenantId` 前缀（宿主用 `0`）。
+- **租户感知键**：`DefaultDistributedCacheKeyNormalizer`，`TenantId` 前缀（平台用 `0`）。
 - **AOP 声明式缓存**：`[Cacheable]` 缓存方法结果；`[CacheEvict]` 标注失效意图；`[CacheName]` 指定缓存名。
 - **Redis 分布式锁**：`IDistributedLock`（`SET NX PX` + 释放校验持有者），带 `WithLockAsync` / `AcquireAsync`（等待重试）便捷扩展。
 - **Redis 延迟队列**：`IRedisDelayQueue<T>`，基于 Sorted Set，到期原子领取。
@@ -266,7 +266,7 @@ var due = await delayQueue.DequeueDueAsync(count: 50, ct);
 
 ## 注意事项与最佳实践
 
-- **纯内存模式的能力边界**：未启用 Redis 时，`GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 等依赖能力接口的方法不可用；分布式锁仅进程内有效（多实例部署无跨实例互斥）。这些能力务必在启用 Redis 后使用。
+- **纯内存模式的能力边界**：未启用 Redis 时，`GetKeys` / `RemoveByPattern` / `ScriptEvaluate` 等依赖能力接口的方法不可用；分布式锁仅进程内有效（多实例部署无跨实例互斥，最多 10000 个锁条目，满载时获取返回 `null`）；延迟队列同样只在进程内（最多 100000 条，满载入队抛 `InvalidOperationException`）。这些能力务必在启用 Redis 后使用。
 - **`[CacheEvict]` 只在方法成功后清理**：键模板必须与读取侧一致；事务写入若要求“提交后再失效”，应继续使用带 `considerUow` 的缓存接口或应用侧提交后失效机制，避免数据库回滚后缓存已被提前清除。
 - **租户隔离是默认行为**：键自动带租户前缀；要跨租户共享缓存需显式走 `IgnoreMultiTenancy`，否则不同租户天然隔离。
 - **`hideErrors`**：多数方法支持隐藏分布式缓存异常（缓存故障不影响主流程）；对一致性敏感的场景应显式传 `false` 让异常冒泡。

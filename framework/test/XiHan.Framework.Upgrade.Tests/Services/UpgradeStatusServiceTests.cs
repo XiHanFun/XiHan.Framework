@@ -399,6 +399,11 @@ public class UpgradeStatusServiceTests
         {
             return Task.FromResult(false);
         }
+
+        public Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
+        }
     }
 
     /// <summary>

@@ -143,10 +143,10 @@ var result = await provider.CompleteChunkedUploadAsync(new ChunkedUploadComplete
 });
 ```
 
-失败路径务必调 `AbortChunkedUploadAsync` 收尾。本地存储的分片落在系统临时目录 `chunked-uploads/{uploadId}` 下，`Complete` 或 `Abort` 都会清掉它；两个都不调，临时文件就一直留着。
+失败路径务必调 `AbortChunkedUploadAsync` 收尾。本地存储的分片落在系统临时目录 `chunked-uploads/{uploadId}` 下，`Complete` 或 `Abort` 都会清掉它；两个都不调时，会话在最后一次活动 24 小时后、于下一次 `InitiateChunkedUploadAsync` 时被回收并删除临时目录（惰性回收，没有新上传就不触发；进程重启前的残留目录需自行清理）。
 
 ::: warning 分片会话在进程内存里
-本地存储的上传会话存在 `ConcurrentDictionary` 中。进程重启，或者多实例部署时分片请求被负载均衡打到了另一个实例，会拿到 `Upload session not found`。多实例下的分片上传需要会话粘滞。
+Local / OSS / COS 的上传会话都存在进程内存中，24 小时无活动即被回收。进程重启、会话已被回收，或多实例部署时分片请求被打到另一个实例，都会报会话不存在（Local 为 `Upload session not found`，OSS / COS 为「上传会话不存在」）。多实例下的分片上传需要会话粘滞。
 :::
 
 ### 后端是怎么被选中的
@@ -435,7 +435,7 @@ _vfs.Watch("**/*.json");
 | 本地存储设了 `AccessControl` 仍能匿名访问 | 本地提供程序不读该字段，`UrlPrefix` 目录挂在鉴权之前，一律匿名可读 |
 | MinIO 分片每步都成功，最后失败 | 分片方法是占位实现、数据被丢弃；改用 `UploadAsync` |
 | 腾讯云 COS 分片上传报本地文件找不到 | `UploadChunkAsync` 把 `StoragePath` 当本地文件路径调 `PutObject`，从不读 `ChunkData`；改用 `UploadAsync` |
-| 分片上传报 `Upload session not found` | 会话在进程内存里，进程重启或请求被打到别的实例 |
+| 分片上传报 `Upload session not found` / 「上传会话不存在」 | 会话在进程内存里：进程重启、会话 24 小时无活动已被回收，或请求被打到别的实例 |
 | `GetProvider` 抛 `InvalidOperationException` | 该名字不在 `EnabledProviders` / `DefaultProvider` 中，也没经 `AddFileStorageProvider` 注册 |
 | 启动期抛"不支持的对象存储提供程序" | `EnabledProviders` 里的名字拼错，与配置节名混用了 |
 | 本地 `GetMetadataAsync` 的 `ContentType` 回落成 `application/octet-stream` | 本地提供程序只内置 jpg/jpeg、png、gif、webp、pdf、zip、mp4、mp3 的映射，其余扩展名一律回落 |

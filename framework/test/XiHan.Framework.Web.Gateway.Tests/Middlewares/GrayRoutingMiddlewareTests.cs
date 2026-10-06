@@ -263,10 +263,10 @@ public class GrayRoutingMiddlewareTests
     }
 
     /// <summary>
-    /// 当前租户存在但无标识（宿主租户）时租户标识为空
+    /// 当前租户存在但无标识（平台）时按 0 号租户参与灰度匹配，与显式 0 同一口径
     /// </summary>
     [Fact]
-    public async Task InvokeAsync_WithHostTenant_LeavesTenantIdNull()
+    public async Task InvokeAsync_WithHostTenant_UsesPlatformTenantZero()
     {
         var engine = new RecordingGrayRuleEngine();
         var middleware = CreateMiddleware(engine, _ => Task.CompletedTask);
@@ -275,7 +275,7 @@ public class GrayRoutingMiddlewareTests
         await middleware.InvokeAsync(context, new FakeCurrentTenant());
 
         Assert.NotNull(engine.LastContext);
-        Assert.False(engine.LastContext.TenantId.HasValue);
+        Assert.Equal(0L, engine.LastContext.TenantId);
     }
 
     /// <summary>

@@ -47,14 +47,16 @@ public class JobExecutor : IJobExecutor
         jobInstance.StartedAt = startTime;
         jobInstance.Status = JobStatus.Running;
 
+        // 任务实例、状态回写与执行历史都属于任务所在的租户：整个执行（含失败路径的回写与落档）在该租户作用域内进行；
+        // 未指定租户的任务在平台作用域执行
+        using var scope = _serviceProvider.CreateScope();
+        var scopedServiceProvider = scope.ServiceProvider;
+        using var tenantScope = EnterJobTenantScope(scopedServiceProvider, jobInstance);
+
         try
         {
             // 保存任务实例状态
             await _jobStore.SaveJobInstanceAsync(jobInstance);
-
-            // 创建作用域
-            using var scope = _serviceProvider.CreateScope();
-            var scopedServiceProvider = scope.ServiceProvider;
 
             // 创建执行上下文
             var context = new JobExecutionContext(
@@ -74,19 +76,7 @@ public class JobExecutor : IJobExecutor
                 pipeline.Use(middleware);
             }
 
-            var currentTenant = scopedServiceProvider.GetService<ICurrentTenant>();
-            JobResult result;
-            if (currentTenant is not null && jobInstance.TenantId.HasValue)
-            {
-                using (currentTenant.Change(jobInstance.TenantId.Value, jobInstance.TenantId.Value.ToString()))
-                {
-                    result = await pipeline.ExecuteAsync(context, job);
-                }
-            }
-            else
-            {
-                result = await pipeline.ExecuteAsync(context, job);
-            }
+            var result = await pipeline.ExecuteAsync(context, job);
 
             // 更新执行结果
             var endTime = DateTimeOffset.UtcNow;
@@ -135,6 +125,20 @@ public class JobExecutor : IJobExecutor
 
             return result;
         }
+    }
+
+    /// <summary>
+    /// 切入任务所在的租户作用域；未指定租户或未启用多租户时不切换
+    /// </summary>
+    private static IDisposable? EnterJobTenantScope(IServiceProvider scopedServiceProvider, JobInstance jobInstance)
+    {
+        if (!jobInstance.TenantId.HasValue)
+        {
+            return null;
+        }
+
+        var currentTenant = scopedServiceProvider.GetService<ICurrentTenant>();
+        return currentTenant?.Change(jobInstance.TenantId.Value, jobInstance.TenantId.Value.ToString());
     }
 
     /// <summary>

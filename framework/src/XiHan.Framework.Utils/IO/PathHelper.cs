@@ -513,7 +513,7 @@ public static class PathHelper
     #region 路径比较
 
     /// <summary>
-    /// 比较两个路径是否相等（忽略大小写和路径分隔符差异）
+    /// 比较两个路径是否相等（忽略路径分隔符差异，大小写按 <see cref="PathComparison"/> 比较）
     /// </summary>
     /// <param name="path1">第一个路径</param>
     /// <param name="path2">第二个路径</param>

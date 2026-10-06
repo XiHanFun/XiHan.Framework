@@ -61,7 +61,10 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     /// <returns>连接配置标识</returns>
     public string ResolveCurrentConfigId()
     {
-        return ResolveConfigId(_currentTenant.Id, _currentTenant.Name);
+        // 平台就是 0 号租户：无上下文与 0 号租户都走平台的默认连接
+        return _currentTenant.Id is > 0
+            ? ResolveConfigId(_currentTenant.Id, _currentTenant.Name)
+            : ResolveConfigId(null);
     }
 
     /// <summary>
@@ -72,6 +75,13 @@ public sealed class SqlSugarTenantConnectionResolver : ISqlSugarTenantConnection
     /// <returns>连接配置标识</returns>
     public string ResolveConfigId(long? tenantId, string? tenantName = null)
     {
+        // 平台就是 0 号租户：0 与 null 同义，按平台解析（不去找 "0" / "Tenant_0" 这类租户连接）
+        if (tenantId is not > 0)
+        {
+            tenantId = null;
+            tenantName = null;
+        }
+
         // 优先走业务自定义解析（若配置）
         var customConfigId = _options.ResolveConnectionConfigId?.Invoke(tenantId, tenantName);
         if (TryResolveConfigId(customConfigId, out var resolvedCustomConfigId))

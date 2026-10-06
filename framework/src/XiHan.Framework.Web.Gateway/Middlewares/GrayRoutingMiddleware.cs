@@ -87,10 +87,10 @@ public class GrayRoutingMiddleware
             context.UserId = userId;
         }
 
-        // 提取租户ID
-        if (currentTenant?.Id != null)
+        // 提取租户ID（平台就是 0 号租户：无上下文按 0 参与灰度匹配，与显式 0 同一口径）
+        if (currentTenant is not null)
         {
-            context.TenantId = currentTenant.Id;
+            context.TenantId = currentTenant.Id ?? 0;
         }
 
         // 提取所有Header

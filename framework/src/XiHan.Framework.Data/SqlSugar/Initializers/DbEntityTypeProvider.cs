@@ -65,6 +65,12 @@ public class DbEntityTypeProvider : IDbEntityTypeProvider
     /// <returns>参与返回 true</returns>
     protected virtual bool ShouldInitialize(Type entityType, TableInitializationOptions selection, DbInitializationContext context)
     {
+        // 固定落平台库的实体不进租户独立库（模块库由下面的模块归属判断排除）
+        if (context.IsTenantDatabase && _moduleDataSourceResolver.IsPlatformPlaced(entityType))
+        {
+            return false;
+        }
+
         if (!IsModuleDataSourceAllowed(entityType, selection, context))
         {
             return false;
