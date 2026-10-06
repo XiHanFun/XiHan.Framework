@@ -15,7 +15,7 @@ git log -5 --oneline
 dotnet sln framework/XiHan.Framework.slnx list
 ```
 
-实现前确认目标能力是否已存在、最低可成立层、直接依赖、相邻 Module 类和测试方式。
+在 worktree 中先按 `AGENTS.md`「分支与 worktree」核对分支分组和基线。实现前确认目标能力是否已存在、最低可成立层、直接依赖、相邻 Module 类和测试方式。
 
 ## 架构边界
 

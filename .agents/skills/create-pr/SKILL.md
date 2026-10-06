@@ -8,6 +8,7 @@ description: 为 XiHan.Framework 准备、审查或创建 Pull Request 时使用
 ## 前置检查
 
 - 检查分支、上游、工作区、merge/rebase 和冲突；非正常分支状态不创建 PR。
+- 分支名按 `AGENTS.md`「分支与 worktree」分组；仍是 `claude/<名>`、`codex/<名>` 等工具前缀时，推送前先按任务改名，不把工具前缀推到远端。分支为 `issue/<编号>` 时在「关联 Issue」填写该编号。
 - 根据用户意图和远端分支确定 base；普通开发通常面向 `dev`，release/hotfix 以现有分支策略为准，不默认改成 `main`。
 - 用 `git log <base>..HEAD`、`git diff --stat <base>...HEAD` 和完整 diff 审查整条分支。
 - 核对模块依赖、公共 API、XML 文档、包元数据、测试和迁移说明。
