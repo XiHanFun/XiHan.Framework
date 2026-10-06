@@ -49,7 +49,7 @@ public class EngineStatistics
     public int CacheSize { get; set; }
 
     /// <summary>
-    /// 总内存使用量(字节)
+    /// 累计分配字节数（各次执行期间的分配量之和，取自进程级计数）
     /// </summary>
     public long TotalMemoryUsage { get; set; }
 

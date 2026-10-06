@@ -34,7 +34,7 @@ public class ScriptMonitorOptions
     public long SlowExecutionThresholdMs { get; set; } = 5000;
 
     /// <summary>
-    /// 高内存使用阈值(字节)
+    /// 单次执行分配字节数的告警阈值
     /// </summary>
     public long HighMemoryUsageThresholdBytes { get; set; } = 100 * 1024 * 1024; // 100MB
 

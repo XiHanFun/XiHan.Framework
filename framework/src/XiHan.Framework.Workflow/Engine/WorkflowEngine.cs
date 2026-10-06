@@ -137,7 +137,8 @@ public class WorkflowEngine : IWorkflowEngine
             ParentInstanceId = request.ParentInstanceId,
             ParentNodeInstanceId = request.ParentNodeInstanceId,
             Depth = request.Depth,
-            TenantId = _currentTenant.Id ?? definition.TenantId,
+            // 实例属于发起它的作用域（平台就是 0 号租户）
+            TenantId = _currentTenant.Id ?? 0,
             CreationTime = now,
             StartTime = now
         };
@@ -203,11 +204,9 @@ public class WorkflowEngine : IWorkflowEngine
 
         var bookmarks = await _bookmarkStore.GetBySignalAsync(signalName, correlationId, cancellationToken);
 
-        // 租户隔离：存在环境租户时只投递本租户的信号书签
-        if (_currentTenant.Id is { } tenantId)
-        {
-            bookmarks = [.. bookmarks.Where(item => item.TenantId == tenantId)];
-        }
+        // 租户隔离：只投递当前作用域的信号书签（平台就是 0 号租户，无上下文按 0 处理）
+        var scopeTenantId = _currentTenant.Id ?? 0;
+        bookmarks = [.. bookmarks.Where(item => (item.TenantId ?? 0) == scopeTenantId)];
 
         var resumedCount = 0;
 

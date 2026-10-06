@@ -32,7 +32,7 @@ public class MyModule : XiHanModule { }
 所有注册都是 `TryAdd` 语义，业务侧可以整块换掉。
 
 ::: danger 默认存储在内存里
-`DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 是**进程内**实现：进程重启，全部定义、实例与书签消失，也不跨实例共享。
+`DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 是有界的**进程内**实现：定义最多 10000 条、实例最多 100000 条、节点实例与书签各最多 500000 条，满载时新增抛 `InvalidOperationException`，不会静默淘汰；进程重启，全部定义、实例与书签消失，也不跨实例共享。
 
 只适合开发和单测。生产环境必须实现三个 Store 并 `Replace` 掉默认注册，见[换成持久化存储](#换成持久化存储)。
 :::

@@ -34,7 +34,7 @@ public class ScriptExecutionStatistics
     public double AverageCompilationTimeMs { get; set; }
 
     /// <summary>
-    /// 总内存使用量(字节)
+    /// 累计分配字节数
     /// </summary>
     public long TotalMemoryUsageBytes { get; set; }
 

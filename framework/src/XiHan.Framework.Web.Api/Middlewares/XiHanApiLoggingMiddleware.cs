@@ -7,6 +7,7 @@ using XiHan.Framework.Auditing;
 using XiHan.Framework.Auditing.Pipelines;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Web.Api.Constants;
+using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 
 namespace XiHan.Framework.Web.Api.Middlewares;
@@ -89,11 +90,13 @@ public class XiHanApiLoggingMiddleware(
                     var responseBody = ResolveResponseBody(context, capture);
                     var endpoint = context.GetEndpoint();
 
+                    var finalContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
                     await pipeline.WriteAsync(new ApiLogRecord
                     {
                         TraceId = traceId,
                         // 签名调用无 JWT 用户，回退凭证归属用户作为审计主体（用户名由写入器按 UserId 解析）
                         UserId = currentUser?.UserId ?? client?.OwnerUserId,
+                        TenantId = finalContext?.TenantId,
                         UserName = currentUser?.UserName,
                         ClientId = accessKey,
                         AppId = client?.AccessKey,

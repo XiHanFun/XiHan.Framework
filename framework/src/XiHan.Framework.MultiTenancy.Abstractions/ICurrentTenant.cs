@@ -11,16 +11,16 @@ namespace XiHan.Framework.MultiTenancy.Abstractions;
 public interface ICurrentTenant
 {
     /// <summary>
-    /// 获取当前租户是否可用
-    /// 指示当前上下文中是否存在有效的租户信息
+    /// 获取当前是否处于某个业务租户
+    /// 平台就是 0 号租户：无租户上下文与 0 号租户都视为平台，不算可用的业务租户
     /// </summary>
-    /// <value>如果租户信息可用则为 true，否则为 false</value>
+    /// <value>当前处于业务租户（标识大于 0）时为 true，平台时为 false</value>
     bool IsAvailable { get; }
 
     /// <summary>
     /// 获取当前租户的唯一标识符
     /// </summary>
-    /// <value>租户的全局唯一唯一标识，如果当前没有租户则为 null</value>
+    /// <value>租户的全局唯一标识；平台可能为 null 或 0，二者同义</value>
     long? Id { get; }
 
     /// <summary>

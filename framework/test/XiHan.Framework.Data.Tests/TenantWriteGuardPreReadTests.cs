@@ -24,7 +24,6 @@ public sealed class TenantWriteGuardPreReadTests : IDisposable
     private const string ConfigId = "Main";
     private const long HomeTenantId = 1;
     private const long ActiveTenantId = 2;
-    private const long PlatformTenantScopeSentinel = long.MinValue;
 
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"xihan-write-guard-{Guid.NewGuid():N}.db");
     private readonly SqlSugarScope _scope;
@@ -49,8 +48,7 @@ public sealed class TenantWriteGuardPreReadTests : IDisposable
                 }
             },
             client => client.QueryFilter.AddTableFilter<IMultiTenantEntity>(
-                entity => ResolveTenantScopeId() == PlatformTenantScopeSentinel ||
-                          entity.TenantId == 0 ||
+                entity => entity.TenantId == 0 ||
                           entity.TenantId == ResolveTenantScopeId()));
 
         var client = _scope.GetConnectionScope(ConfigId);
@@ -158,7 +156,7 @@ public sealed class TenantWriteGuardPreReadTests : IDisposable
 
     private static long ResolveTenantScopeId()
     {
-        return AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId ?? PlatformTenantScopeSentinel;
+        return AsyncLocalCurrentTenantAccessor.Instance.Current?.TenantId ?? 0;
     }
 
     private static TenantScope EnterTenant(long tenantId)

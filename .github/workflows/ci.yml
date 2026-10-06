@@ -1,6 +1,6 @@
 name: CI
 
-# 构建 + 测试（MTP 模式）+ 覆盖率门禁。NuGet 发布由 publish.yml 负责（只收 main 上、与 version.props 一致的 v* 标签）。
+# 构建 + 测试（MTP 模式）+ 覆盖率门禁。NuGet 发布由 release.yml 负责（只收 main 上、与 version.props 一致的 v* 标签）。
 on:
   push:
     branches: [main, dev]

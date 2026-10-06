@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Security.Cryptography;
+using System.Text;
 using XiHan.Framework.Utils.Converters;
 using XiHan.Framework.Utils.Security.Cryptography;
 
@@ -75,7 +76,7 @@ public static class OtpHelper
         for (var i = -allowedSkew; i <= allowedSkew; i++)
         {
             var counter = currentCounter + i;
-            if (GenerateOtp(secretKey, counter, digits, useBase32) == otp)
+            if (OtpEquals(GenerateOtp(secretKey, counter, digits, useBase32), otp))
             {
                 return true;
             }
@@ -111,7 +112,8 @@ public static class OtpHelper
     /// <returns>验证通过返回 true，否则返回 false</returns>
     public static bool VerifyHotp(string secretKey, string otp, long counter, int digits = 6, bool useBase32 = true)
     {
-        return !string.IsNullOrWhiteSpace(secretKey) && !string.IsNullOrWhiteSpace(otp) && GenerateOtp(secretKey, counter, digits, useBase32) == otp;
+        return !string.IsNullOrWhiteSpace(secretKey) && !string.IsNullOrWhiteSpace(otp) &&
+            OtpEquals(GenerateOtp(secretKey, counter, digits, useBase32), otp);
     }
 
     #region 辅助功能
@@ -305,6 +307,27 @@ public static class OtpHelper
     }
 
     #endregion
+
+    /// <summary>
+    /// 以固定时间比较两个一次性密码
+    /// </summary>
+    /// <param name="expected">本地算出的一次性密码</param>
+    /// <param name="actual">待验证的一次性密码</param>
+    /// <returns>两者相同返回 true，否则返回 false</returns>
+    /// <remarks>
+    /// 字符串的 <c>==</c> 一旦发现不同字符就提前返回，耗时随匹配前缀长度变化，
+    /// 攻击者可以据此逐位试探出正确的一次性密码。
+    /// 这里改用 <see cref="CryptographicOperations.FixedTimeEquals"/>，
+    /// 比较耗时只与长度有关、与内容无关；长度本身不是秘密（由 digits 参数决定），
+    /// 长度不等时直接返回 false 不会泄露额外信息。
+    /// </remarks>
+    private static bool OtpEquals(string expected, string actual)
+    {
+        var expectedBytes = Encoding.ASCII.GetBytes(expected);
+        var actualBytes = Encoding.ASCII.GetBytes(actual);
+
+        return CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes);
+    }
 
     /// <summary>
     /// 获取当前时间的计数器(用于 TOTP)

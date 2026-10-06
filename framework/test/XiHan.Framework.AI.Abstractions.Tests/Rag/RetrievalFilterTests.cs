@@ -17,34 +17,28 @@ namespace XiHan.Framework.AI.Abstractions.Tests.Rag;
 public class RetrievalFilterTests
 {
     /// <summary>
-    /// 新实例不施加任何限定
+    /// 新实例限定在平台（0 号租户），不限定文档
     /// </summary>
+    /// <remarks>
+    /// 检索只在一个租户作用域内进行：平台就是 0 号租户，不存在「不限租户」的取值，
+    /// 漏设租户只会落在平台作用域，不会读到别的租户的数据。
+    /// </remarks>
     [Fact]
-    public void Defaults_WhenNewInstance_LimitNothing()
+    public void Defaults_WhenNewInstance_ScopeToPlatform()
     {
         var filter = new RetrievalFilter();
 
-        Assert.Null(filter.TenantId);
+        Assert.Equal(0L, filter.TenantId);
         Assert.Null(filter.DocumentId);
     }
 
     /// <summary>
-    /// 租户 0 表示平台全局，与不限租户的 null 严格区分
+    /// 租户标识没有「不限」的可空取值
     /// </summary>
-    /// <remarks>
-    /// 若实现里用 “TenantId 为假值即不过滤” 的写法，租户 0 会退化成不过滤，
-    /// 平台全局检索将读到全部租户数据。此处断言 0 是一个已赋值的限定条件。
-    /// </remarks>
     [Fact]
-    public void TenantId_WhenZero_IsAnExplicitScopeNotAbsentValue()
+    public void TenantId_IsNotNullable()
     {
-        var platformScoped = new RetrievalFilter { TenantId = 0 };
-        var unscoped = new RetrievalFilter();
-
-        Assert.True(platformScoped.TenantId.HasValue);
-        Assert.Equal(0L, platformScoped.TenantId!.Value);
-        Assert.False(unscoped.TenantId.HasValue);
-        Assert.NotEqual(unscoped.TenantId, platformScoped.TenantId);
+        Assert.Equal(typeof(long), typeof(RetrievalFilter).GetProperty(nameof(RetrievalFilter.TenantId))!.PropertyType);
     }
 
     /// <summary>
@@ -53,12 +47,11 @@ public class RetrievalFilterTests
     /// <param name="tenantId">租户限定</param>
     /// <param name="documentId">文档限定</param>
     [Theory]
-    [InlineData(null, null)]
     [InlineData(0L, null)]
     [InlineData(1024L, null)]
-    [InlineData(null, "doc-1")]
+    [InlineData(0L, "doc-1")]
     [InlineData(1024L, "doc-1")]
-    public void Initializer_WithAnyCombination_KeepsBothConditionsIndependent(long? tenantId, string? documentId)
+    public void Initializer_WithAnyCombination_KeepsBothConditionsIndependent(long tenantId, string? documentId)
     {
         var filter = new RetrievalFilter
         {
@@ -109,20 +102,19 @@ public class RetrievalFilterTests
         var json = JsonSerializer.Serialize(source, serializerOptions);
         var restored = JsonSerializer.Deserialize<RetrievalFilter>(json, serializerOptions)!;
 
-        Assert.True(restored.TenantId.HasValue);
-        Assert.Equal(0L, restored.TenantId!.Value);
+        Assert.Equal(0L, restored.TenantId);
         Assert.Equal("doc-9", restored.DocumentId);
     }
 
     /// <summary>
-    /// 经 System.Text.Json 往返后未限定的条件仍为 null
+    /// 经 System.Text.Json 往返后默认条件仍是平台作用域、不限文档
     /// </summary>
     [Fact]
-    public void JsonRoundTrip_WithoutConditions_KeepsBothNull()
+    public void JsonRoundTrip_WithDefaults_KeepsPlatformScope()
     {
         var restored = JsonSerializer.Deserialize<RetrievalFilter>(JsonSerializer.Serialize(new RetrievalFilter()))!;
 
-        Assert.Null(restored.TenantId);
+        Assert.Equal(0L, restored.TenantId);
         Assert.Null(restored.DocumentId);
     }
 

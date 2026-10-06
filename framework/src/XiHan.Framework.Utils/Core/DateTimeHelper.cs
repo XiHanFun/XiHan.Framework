@@ -20,7 +20,15 @@ public static class DateTimeHelper
     /// <summary>
     /// 中国时区
     /// </summary>
-    private static readonly TimeZoneInfo ChinaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+    /// <remarks>
+    /// 用 <see cref="Lazy{T}"/> 延迟解析：原先是静态字段初始化器，
+    /// 精简容器缺少时区数据库时 <see cref="TimeZoneInfo.FindSystemTimeZoneById"/> 抛异常会变成
+    /// <see cref="TypeInitializationException"/>，把整个 <see cref="DateTimeHelper"/> 拖垮——
+    /// 连 <see cref="IsWorkDay"/> 这种纯日期计算也一并不可用。
+    /// 改为延迟解析后，只有真正用到中国时区的 <see cref="ToChinaTime"/> 才会受影响。
+    /// Windows 与 IANA 两种标识都试一遍，跨平台镜像里只装了其中一种时也能解析成功。
+    /// </remarks>
+    private static readonly Lazy<TimeZoneInfo> ChinaTimeZoneLazy = new(ResolveChinaTimeZone);
 
     #endregion
 
@@ -114,7 +122,13 @@ public static class DateTimeHelper
     /// </summary>
     /// <param name="birthDate">出生日期</param>
     /// <param name="referenceDate">参考日期，默认为当前日期</param>
-    /// <returns>年龄详情（年、月、天）</returns>
+    /// <returns>年龄详情（年、月、天），三个分量都不为负</returns>
+    /// <remarks>
+    /// 原实现在日不够减时，借的是"参考日期前一个月"的天数，跨大小月时借不够：
+    /// 出生 2024-01-31、参考 2024-03-01 会算出 (0, 1, -1)，天数为负。
+    /// 现改为先按整年整月推进到不超过参考日期的那个"月纪念日"，再数剩余天数，
+    /// 借位由 <see cref="DateTime.AddMonths"/> 自带的月末截断负责，天数恒为非负。
+    /// </remarks>
     public static (int Years, int Months, int Days) GetDetailedAge(DateTime birthDate, DateTime? referenceDate = null)
     {
         var reference = referenceDate ?? DateTime.Now;
@@ -126,13 +140,6 @@ public static class DateTimeHelper
 
         var years = reference.Year - birthDate.Year;
         var months = reference.Month - birthDate.Month;
-        var days = reference.Day - birthDate.Day;
-
-        if (days < 0)
-        {
-            months--;
-            days += DateTime.DaysInMonth(reference.AddMonths(-1).Year, reference.AddMonths(-1).Month);
-        }
 
         if (months < 0)
         {
@@ -140,7 +147,21 @@ public static class DateTimeHelper
             months += 12;
         }
 
-        return (years, months, days);
+        // 整年整月推进后若越过参考日期，说明这个月还没满，回退一个月
+        var anniversary = birthDate.AddYears(years).AddMonths(months);
+        if (anniversary > reference)
+        {
+            months--;
+            if (months < 0)
+            {
+                years--;
+                months += 12;
+            }
+
+            anniversary = birthDate.AddYears(years).AddMonths(months);
+        }
+
+        return (years, months, (reference.Date - anniversary.Date).Days);
     }
 
     #endregion
@@ -406,9 +427,14 @@ public static class DateTimeHelper
     /// </summary>
     /// <param name="date">日期</param>
     /// <returns>本年结束时间</returns>
+    /// <remarks>
+    /// 与 <see cref="GetEndOfDay"/>、<see cref="GetEndOfWeek"/>、<see cref="GetEndOfMonth"/> 统一为"下一周期起点减一刻度"。
+    /// 原先写死 <c>23:59:59.999</c>，比其余几个 <c>AddTicks(-1)</c> 早了将近 1 毫秒，
+    /// 用作闭区间上界时会漏掉跨年前最后 1 毫秒内的数据。
+    /// </remarks>
     public static DateTime GetEndOfYear(DateTime date)
     {
-        return new DateTime(date.Year, 12, 31, 23, 59, 59, 999);
+        return GetStartOfYear(date).AddYears(1).AddTicks(-1);
     }
 
     #endregion
@@ -451,9 +477,28 @@ public static class DateTimeHelper
     /// </summary>
     /// <param name="dateTime">原始时间</param>
     /// <returns>中国时区时间</returns>
+    /// <exception cref="TimeZoneNotFoundException">运行环境缺少时区数据库时抛出</exception>
     public static DateTime ToChinaTime(DateTime dateTime)
     {
-        return TimeZoneInfo.ConvertTime(dateTime, ChinaTimeZone);
+        return TimeZoneInfo.ConvertTime(dateTime, ChinaTimeZoneLazy.Value);
+    }
+
+    /// <summary>
+    /// 解析中国时区
+    /// </summary>
+    /// <returns>中国标准时间时区信息</returns>
+    /// <exception cref="TimeZoneNotFoundException">Windows 与 IANA 两种标识都解析不到时抛出</exception>
+    private static TimeZoneInfo ResolveChinaTimeZone()
+    {
+        foreach (var timeZoneId in new[] { "China Standard Time", "Asia/Shanghai" })
+        {
+            if (TimeZoneInfo.TryFindSystemTimeZoneById(timeZoneId, out var timeZone))
+            {
+                return timeZone;
+            }
+        }
+
+        throw new TimeZoneNotFoundException("未能解析中国时区，运行环境可能缺少时区数据库（如精简容器镜像需安装 tzdata）。");
     }
 
     #endregion

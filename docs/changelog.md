@@ -2,29 +2,96 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
-## 未发布
+## v4.6.1 (2026-10-03)
 
 ::: warning 升级须知
-所有公开 `InMemoryXxx` 默认实现统一更名为 `DefaultXxx`，不保留旧类型别名；`XiHanJobBuilder.UseInMemoryStore/UseInMemoryLock` 同步更名为 `UseDefaultStore/UseDefaultLock`，`DefaultSearchEngine` 命名空间迁到 `XiHan.Framework.SearchEngines.Default`。应用若直接引用旧具体类型，升级时需同步改名；只依赖接口与模块默认注册的不受影响。
+- `PerformanceStatistics.TotalTimeMs` 改为只读、`ExecutionsPerSecond` 改为 `double?`，引用它们的程序集需重新编译；自行构造统计对象改设 `TotalElapsedTime`
+- 技能投影出同名 MCP 工具（含与宿主 `WithTools` 注册的工具重名）时启动即失败，需改掉其中一方的工具名
+- 自定义 `IUpgradeVersionStore` 需让无租户上下文与 `Change(0)` 落同一个平台分区
 :::
 
-- **调整** 认证、Telegram、缓存锁/延迟队列、EventBox、Workflow、Tasks、Upgrade、Traffic、Search 的 16 组进程内默认实现统一采用 `DefaultXxx` 命名
-- **修复** 所有上述默认存储增加容量或 TTL 边界：缓存型数据先清理过期项，锁满载时返回获取失败，队列及事实数据存储满载时明确拒绝新增，不再允许进程长期运行时无界占用内存
-- **新增** Framework 的刷新令牌默认实现保持零外部依赖；多实例或持久化实现继续由应用层实现 `IRefreshTokenStore` 并覆盖默认注册
-- **优化** `PerformanceMonitor` 由无界记录集合改为只保留最近 10000 条；Local / OSS / COS 分片上传回收 24 小时无活动的进程内会话
+- **新增** `XiHanMcpOptions.AllowedTools` / `DeniedTools`：按允许 / 拒绝清单收窄 `/mcp` 暴露的工具，`tools/list` 与 `tools/call` 同时生效，拒绝优先
+- **修复** 给注入的 `ICurrentTimezoneProvider` 写入时区后，`IClock.ConvertToUserTime` / `ConvertToUtc` 读不到；当前时区改按异步流共享
+- **修复** `BenchmarkAsync` 耗时含预热、内存读数为零或负数、`ExecutionsPerSecond` 为无穷大时无法序列化；`iterations` 不大于 0 时在预热前抛 `ArgumentOutOfRangeException`
+- **修复** `DefaultUpgradeVersionStore` 为无租户上下文与 0 号租户各存一份版本记录
+- **修复** 技能投影的 MCP 工具重名时被静默丢弃
+- **升级** 升级依赖，发布 v4.6.1
+
+## v4.6.0 (2026-09-25)
+
+::: warning 升级须知
+- 平台即 0 号租户：无租户上下文只读写 `TenantId = 0` 的行。跨租户读取改用 `CreateNoTenantQueryable()` / `ClearTenantFilter()`，写租户数据先 `Change(tenantId)`；`IsAvailable` 对 0 号租户返回 `false`
+- 已认证请求只按令牌定租户；请求头、查询串与 `FallbackTenant` 给出的租户须在 `ITenantStore` 中存在且激活，否则返回 400
+- 租户级设置与特性改按租户标识定键，按名称存储的旧值需迁移；`XiHan.Framework.Settings` 新增依赖 `MultiTenancy.Abstractions`
+- `RetrievalFilter.TenantId` 改为 `long`，不再支持不限租户的检索
+- 聚合根公共列改名为 `Basic_Id`、`Tenant_Id`、`Created_Time`、`Is_Deleted` 等，存量库需先改列名
+- `IUpgradeEngine`、`IUpgradeVersionStore`、`IEntityModuleDataSourceResolver` 各新增一个成员，自定义实现需补齐
+:::
+
+- **调整** 多租户统一「平台即 0 号租户」口径，覆盖数据过滤、写边界、任务、工作流、检索、设置、连接解析、灰度与升级锁
+- **新增** `ClearTenantFilter()` / `ClearTenantAndSoftDeleteFilter()`，同时清除读共享与严格隔离过滤
+- **新增** `[PlatformDataSource]`：实体固定落平台库，不随租户独立库切换
+- **新增** `IDbSchemaUpgrader`：数据库初始化改为建表 → 结构升级 → 播种；`IUpgradeEngine.BaselineAsync` 让新建的库直接登记为最新版本
+- **新增** 五类日志记录新增 `TenantId`，按请求所属租户记账
+- **修复** 请求头或查询串可替已认证请求另选租户
+- **修复** 跨租户读取时严格隔离实体静默缺数据
+- **修复** 任务实例、状态与历史未落在任务所在租户；工作流采信调用方提交的租户
+- **修复** 种子先于升级脚本执行，存量库启动报列不存在
+- **修复** 聚合根公共列名与其余实体基类不一致
+- **升级** 发布 v4.6.0
+
+## v4.5.0 (2026-09-24)
+
+::: warning 升级须知
+- `Script` 的 `MemoryUsage` 属性改名并改为分配字节数：`MemoryBefore` → `AllocatedBytesBefore`、`MemoryAfter` → `AllocatedBytesAfter`、`MemoryIncrease` → `AllocatedBytes`；`MemoryUsageBytes`、`TotalMemoryUsage` 同改口径，`HighMemoryUsageThresholdBytes` 需重新标定
+- 农历换算修正后结果与上一版不同，已持久化的农历数据需重算；`GetSolarTerms(year)` 改为返回该公历年内的 24 个节气；`GetLunarFestival` 新增 `lunarYear` 参数，已编译的调用方需重新编译
+- `Utils` 校验收紧：`Factorial` / `Fibonacci` 超过 20 / 47 抛 `ArgumentOutOfRangeException`；`IsNumberId` 不再接受 `"0"`、前导零与串尾换行；金额正则的小数点改为严格匹配；`GetEndOfYear` 返回 `23:59:59.9999999`
+- `CurrencyHelper.FormatCurrency` 的货币符号与小数位改取自 `currencyCode`，不再取 `culture` 的货币
+:::
+
+- **修复** `LunarCalendarHelper` 闰月、干支与节气计算错误，公农历互转偏差近 1900 天
+- **修复** `AsyncReaderWriterLock` 超时后读写锁可同时持有；`AsyncBarrier` 阶段号回绕；`Debouncer` 泄漏 `CancellationTokenSource`
+- **修复** `TreeExtensions.ToTree` 误报循环依赖；`DeepMergeHelper` 合并含 `null` 的数组抛异常、克隆集合得到空集合
+- **修复** `StringHelper`：`FormatReplaceStr` 死循环、`ClipString` 多保留一个字符、`GetEnumerableStr` 丢分隔符、`GetStrLength` 计数错误
+- **修复** `DateTimeHelper.GetDetailedAge` 算出负天数；缺少时区数据库时类型初始化失败
+- **修复** `NumberExtensions.Lcm` 溢出；`MaskHelper` 传入 `null` 抛异常、`MaskUrlParams` 漏掉大写参数名
+- **修复** 脚本内存读数在 GC 后为零或负数
+- **新增** `MathHelper.MaxFactorialInput` / `MaxFibonacciCount` 与 `RegexHelper.NumberIdRegex`
+- **优化** `OtpHelper` 改为常量时间比较；`CurrencyHelper` 缓存货币查询，货币代码不区分大小写
+- **升级** 发布 v4.5.0
+
+## v4.4.0 (2026-09-22)
+
+- **修复** `TenantWriteGuard.Suppress()` 作用域内，Update / Delete / 软删除 / 恢复操作的预读仍受全局租户过滤，跨租户成员（归属租户 A、当前活动在租户 B）的自有行被判定为不存在，豁免实际只对 `TenantId=0` 的行生效。对象式写入的预读改为经 `GetForWriteAsync` / `CreateWritePreReadQueryable` 执行，作用域内清除 `IMultiTenantEntity` 过滤，含软删除的预读同理
+- **修复** 内存诊断读数在 regions GC 下可能为负值：`GC.GetTotalMemory(false)` 在 gen0 因固定对象保留额外 region 时发生无符号下溢（dotnet/runtime#130888）。`DiagnosticsService.GetMemoryInfo` 与 `MemoryHealthCheck` 改取 `GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，即最近一次 GC 结束时托管堆的实际占用。`AllocatedBytes` 的名称与类型不变，首次 GC 前为 0
+- **升级** 升级依赖，发布 v4.4.0
+
+## v4.3.0 (2026-09-12)
+
+::: warning 升级须知
+所有公开的 `InMemoryXxx` 默认实现统一更名为 `DefaultXxx`，不保留旧类型别名：`DefaultRefreshTokenStore`、`DefaultConversationStateStore` / `DefaultTelegramUpdateDeduplicator`、`DefaultDelayQueue` / `DefaultDistributedLock`、`DefaultEventInbox` / `DefaultEventOutbox`、`DefaultSearchEngine`（命名空间迁至 `XiHan.Framework.SearchEngines.Default`）、`DefaultBackgroundJobStore` / `DefaultJobStore`、`DefaultGrayRuleRepository`、`DefaultUpgradeLockProvider` / `DefaultUpgradeVersionStore`、`DefaultWorkflowBookmarkStore` / `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore`；`XiHanJobBuilder.UseInMemoryStore` / `UseInMemoryLock` 同步更名为 `UseDefaultStore` / `UseDefaultLock`。直接引用旧具体类型的应用需同步改名；仅依赖接口与模块默认注册的应用不受影响。
+
+上述默认实现同时增加了容量或 TTL 边界，满载后的行为随之改变：缓存型数据先清理过期项；锁满载时返回获取失败；队列与事实数据存储满载时抛出 `InvalidOperationException` 拒绝新增，并提示替换为应用级持久化实现。这些实现仅适用于开发与单实例场景，多实例部署应改用 Redis 或数据库实现。
+:::
+
+- **调整** 认证、Telegram、缓存锁 / 延迟队列、EventBox、Workflow、Tasks、Upgrade、Traffic、Search 的 16 组进程内默认实现统一采用 `DefaultXxx` 命名
+- **修复** 上述默认存储全部增加容量或 TTL 边界，进程长期运行时不再无界占用内存
+- **新增** 刷新令牌默认实现保持零外部依赖；多实例或持久化场景由应用层实现 `IRefreshTokenStore` 并覆盖默认注册
+- **优化** `PerformanceMonitor` 由无界记录集合改为只保留最近 10000 条；Local / OSS / COS 分片上传自动回收 24 小时无活动的进程内会话
+- **升级** 升级依赖，发布 v4.3.0
 
 ## v4.2.0 (2026-09-04)
 
 ::: warning 升级须知
-`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`，只用 `System.Text.Json`。此前靠它传递拿到 `Newtonsoft.Json` 的下游工程将拿不到，需自行声明。用到 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
+`XiHan.Framework.Serialization` 不再引用 `Newtonsoft.Json`，只使用 `System.Text.Json`。此前通过该包传递引用 `Newtonsoft.Json` 的项目需自行添加依赖。使用 `XiHan.Framework.Data` 的应用不受影响，`Newtonsoft.Json` 仍由 SqlSugarCore 传递引入。
 
-另有两处产物与运行平台脱钩，输出可能与上一版不同：`NormalizeLineEndings` 固定产出 `\n`（此前在 Windows 上产出 `\r\n`），`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只挡 `\0` 与 `/`）。
+两处输出不再依赖运行平台，结果可能与上一版不同：`NormalizeLineEndings` 固定输出 `\n`（此前在 Windows 上输出 `\r\n`）；`SanitizeFileName` / `IsValidFileName` 改按各平台限制的并集处理（此前在 Linux 上只过滤 `\0` 与 `/`）。
 :::
 
-- **新增** `PathHelper.PathComparison` / `PathComparer`：本机文件系统路径的大小写口径改由运行平台决定，`PathEquals` / `IsSubPath` / `GetCommonPath` 与虚拟文件系统的物理路径去重键、变更追踪缓存都改走它——此前硬编码 `OrdinalIgnoreCase`，在 Linux 上会把 `/app/Data` 与 `/app/data` 两个不同目录判成同一个；虚拟路径与嵌入资源名是逻辑标识不是本机路径，一律 `Ordinal`
-- **新增** 建表扫描不再要求实体继承 `IEntityBase`，标了 `[SugarTable]` 即是候选
-- **修复** `IsPathSafe` 与 `IsSubPath` 用裸前缀匹配判目录穿越：`basePath` 为 `/app/data` 时 `/app/database/secret` 前缀成立即被判为安全，改为卡在分隔符边界上
-- **修复** 要跨平台流转的数据不再跟着运行平台走：净化后的文件名按各平台限制的并集处理（保留名与末尾的点、空格无条件判定），对象存储的键只认 `/`（`\` 在 S3 / OSS / COS 的键里是合法字符），`SplitToLines` 三种行尾都认、`NormalizeLineEndings` 产物固定为 `\n`
+- **新增** `PathHelper.PathComparison` / `PathComparer`：本机文件系统路径的大小写比较口径由运行平台决定，`PathEquals` / `IsSubPath` / `GetCommonPath`、虚拟文件系统的物理路径去重键与变更追踪缓存统一使用该口径。此前固定为 `OrdinalIgnoreCase`，在 Linux 上会将 `/app/Data` 与 `/app/data` 判定为同一目录。虚拟路径与嵌入资源名属于逻辑标识，统一使用 `Ordinal`
+- **新增** 建表扫描不再要求实体继承 `IEntityBase`，标注 `[SugarTable]` 的类型即纳入建表
+- **修复** `IsPathSafe` 与 `IsSubPath` 以字符串前缀判定目录穿越，`basePath` 为 `/app/data` 时 `/app/database/secret` 会被判定为安全路径。改为按路径分隔符边界判定
+- **修复** 跨平台流转的数据不再依赖运行平台：净化后的文件名按各平台限制的并集处理，保留名与末尾的点、空格一律判定为非法；对象存储的键只识别 `/` 为分隔符（`\` 在 S3 / OSS / COS 的键中为合法字符）；`SplitToLines` 识别三种行尾，`NormalizeLineEndings` 固定输出 `\n`
 - **调整** `XiHan.Framework.Serialization` 移除 `Newtonsoft.Json` 引用
 - **升级** 升级依赖，发布 v4.2.0
 
@@ -33,23 +100,23 @@
 ::: warning 升级须知
 本次含多处破坏性变更：
 
-- 默认节点命名统一为 `Default`：EventBus 的 RabbitMQ `ExchangeName=Default`、`QueueName` / `ClientProvidedName=Default.EventBus`，Kafka `TopicName` / `GroupId=Default.EventBus`，Redis `StreamKey=Default:EventBus:Stream`、`ConsumerGroup=Default.EventBus`；Tasks 的 Redis 作业存储 `KeyPrefix=Default:BackgroundJobs`；Caching / Authentication / Workflow 内部 Redis 键前缀由 `xihan:` 改为 `default:`；AI 知识库默认集合名改为 `default_knowledge`。升级后旧队列里未消费的消息、旧键上的锁与待处理作业不会自动迁移，需要沿用旧名的在 `appsettings` 里显式配置回去；知识库集合改名后须重建或重新摄取
-- 模块分库配置从顶层 `ConnectionConfigs` 条目改为父连接下的 `ModuleDataSourceConfigs`，条目只写模块名与连接串、其余字段继承父连接，`ConfigId` 由框架派生为 `{父连接}_{模块名}`（原 `Erp` 变为 `Default_Erp`）；实体特性 `[DataSource]` 更名为 `[ModuleDataSource]`
-- 库隔离租户的模块表落点从共享模块库（`Default_{模块名}`）改为该租户自己的模块库（库名 `{租户库名}_{模块名}`）。升级后这些是新建的空库，共享模块库里属于这些租户的存量行需自行搬迁；不想迁的把 `XiHan:Data:SqlSugarCore:EnableTenantModuleDatabaseConvention` 置为 `false` 即可维持原状
+- 默认节点命名统一为 `Default`：EventBus 的 RabbitMQ `ExchangeName=Default`、`QueueName` / `ClientProvidedName=Default.EventBus`，Kafka `TopicName` / `GroupId=Default.EventBus`，Redis `StreamKey=Default:EventBus:Stream`、`ConsumerGroup=Default.EventBus`；Tasks 的 Redis 作业存储 `KeyPrefix=Default:BackgroundJobs`；Caching / Authentication / Workflow 内部 Redis 键前缀由 `xihan:` 改为 `default:`；AI 知识库默认集合名改为 `default_knowledge`。升级后旧队列中未消费的消息、旧键上的锁与待处理作业不会自动迁移，需沿用旧名的部署请在 `appsettings` 中显式配置；知识库集合更名后需重建或重新摄取
+- 模块分库配置由顶层 `ConnectionConfigs` 条目改为父连接下的 `ModuleDataSourceConfigs`，条目只写模块名与连接串，其余字段继承父连接，`ConfigId` 由框架派生为 `{父连接}_{模块名}`（原 `Erp` 变为 `Default_Erp`）；实体特性 `[DataSource]` 更名为 `[ModuleDataSource]`
+- 库隔离租户的模块表存储位置由共享模块库（`Default_{模块名}`）改为该租户专属的模块库（库名 `{租户库名}_{模块名}`）。升级后这些库为新建空库，共享模块库中属于这些租户的存量数据需自行迁移；不迁移的部署可将 `XiHan:Data:SqlSugarCore:EnableTenantModuleDatabaseConvention` 置为 `false` 保持原行为
 - 三个数据访问接口新增成员，自定义实现需补齐：`ISqlSugarClientResolver.GetCurrentLayoutConfigIds()`、`ISqlSugarTenantConnectionResolver.GetModuleDataSourceNames()`、`IDbInitializer.InitializeCurrentLayoutAsync()`
-- `EnableAutoCheckOnStartup` 现在真的会执行迁移。此前 `UpdateScripts` 下的脚本一条都没跑过，升级到本版后它们会在启动时按序全部执行，升级前请先备份数据库
+- `EnableAutoCheckOnStartup` 开启时现在会实际执行迁移。此前 `UpdateScripts` 下的脚本从未被执行，升级到本版后将在启动时按序全部执行，升级前请备份数据库
 :::
 
-- **新增** 实体按模块数据源分库路由：实体标 `[ModuleDataSource("Erp")]` 即固定落在该模块库上，租户上下文保持统一；模块维度与租户维度正交，落到哪条连接由「模块名 + 当前租户」共同决定，模块名不再占用顶层 `ConfigId` 命名空间。仓储 `DbClient` 与 `CreateQueryable<T>` 改为按实体解析，声明的库无对应连接时 fail-closed；建表初始化同口径收窄（声明了模块库的实体只在自己的库建表），`DataSeederBase` 增加 `DbClientFor<T>()`
-- **新增** 库隔离租户按约定自带整套模块库：租户连接描述符没声明模块库时，按默认布局逐条镜像给它，库名由租户主库名派生；显式声明优先于约定，认不出库名字段（如 Oracle）直接抛而不静默回落公共模块库；开关 `EnableTenantModuleDatabaseConvention` 默认开
-- **新增** SignalR 会话闸门 `SessionStateHubFilter`：建连与方法调用走与 HTTP 侧同一个 `ISessionStateGate`，已登出、被踢下线、已过期的会话不再能收实时推送；会话抽象由 `Web.Api/Session` 下沉到 `Web.Core/Session`，HTTP 中间件与选项仍留在 `Web.Api`
-- **新增** `GetClaimsIgnoringLifetime`：只放过有效期，签名与发行者 / 受众照验；刷新令牌只在令牌过期后才被调用，挂在旧解析路径上的会话有效性与模仿态判定此前恒空转
-- **新增** 模仿态原语 `ICurrentUser` / `ClaimsPrincipal` 的 `IsImpersonating()` 与 `XiHanClaimsIdentityExtensions.BuildImpersonatorClaims(...)`，调用方不必手拼声明字符串
-- **修复** 启动自检只建版本记录、从不执行迁移：`IUpgradeEngine.ExecuteAsync` 全仓零调用方，`UpdateScripts` 下的脚本写下去就没跑过、`sys_version.db_version` 恒停在 `0.0.0`，给既有实体加字段后部署即 42703 且不报任何错。改为自检之后同步执行迁移，失败抛出中断启动；未注册引擎时安静跳过
-- **修复** 建库建表遍历漏掉模块库：`DbInitializer` 自己拼的名单只有顶层 `ConfigId`，派生出的模块库整批掉出循环且全程零异常，改为走 `ISqlSugarClientResolver.GetAllConfigIds()`；库隔离租户开通时只初始化主库，补 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局把主库与模块库一起建
-- **修复** 模块另指一个物理库却没声明从库时照搬父库从库，读会落到别的库上；改为只在模块不分库时才继承
-- **修复** 模仿者用户标识三处用 `Guid.TryParse` 解析，而系统用户主键全链路是 `long`，写进去后恒解析成 `null`——不抛异常、不报编译错，模仿态判定静默失效
-- **修复** 模块库派生出的 SQLite 库文件名跟着运行平台走：连接串是配置数据，却按 `Path.*` 的平台语义解析——Linux 上反斜杠不算分隔符，`C:\data\qqq.db` 被整串当文件名，派生成 `C:\data\qqq_Erp.db`；`Path.Combine` 还会把分隔符换成当前平台的，改掉原连接串的风格。改为按字符切分，两种分隔符都认，目录段连分隔符一起原样保留
+- **新增** 实体按模块数据源分库路由：实体标注 `[ModuleDataSource("Erp")]` 后固定写入该模块库，租户上下文保持不变；模块维度与租户维度正交，目标连接由模块名与当前租户共同决定，模块名不再占用顶层 `ConfigId` 命名空间。仓储 `DbClient` 与 `CreateQueryable<T>` 改为按实体解析，声明的模块库无对应连接时抛出异常；建表初始化同步收窄，声明了模块库的实体只在该库建表；`DataSeederBase` 新增 `DbClientFor<T>()`
+- **新增** 库隔离租户按约定自动获得整套模块库：租户连接描述符未声明模块库时，按默认布局逐条派生，库名由租户主库名推导；显式声明优先于约定；无法识别库名字段（如 Oracle）时抛出异常，不回落到共享模块库；开关 `EnableTenantModuleDatabaseConvention` 默认开启
+- **新增** SignalR 会话闸门 `SessionStateHubFilter`：连接建立与方法调用经与 HTTP 侧相同的 `ISessionStateGate` 校验，已登出、被强制下线或已过期的会话不再接收实时推送；会话抽象由 `Web.Api/Session` 下沉至 `Web.Core/Session`，HTTP 中间件与选项仍在 `Web.Api`
+- **新增** `GetClaimsIgnoringLifetime`：跳过有效期校验，签名与发行者 / 受众仍照常校验。刷新令牌流程只在令牌过期后触发，此前挂在原解析路径上的会话有效性与模仿态判定因此从未生效
+- **新增** 模仿态原语：`ICurrentUser` / `ClaimsPrincipal` 的 `IsImpersonating()` 与 `XiHanClaimsIdentityExtensions.BuildImpersonatorClaims(...)`，无需手动拼接声明字符串
+- **修复** 启动自检只创建版本记录、不执行迁移：`IUpgradeEngine.ExecuteAsync` 没有调用方，`UpdateScripts` 下的脚本从未执行，`sys_version.db_version` 始终为 `0.0.0`，为既有实体新增字段后部署会出现 42703 且无任何报错。改为自检后同步执行迁移，失败时抛出异常中断启动；未注册引擎时跳过
+- **修复** 建库建表遍历遗漏模块库：`DbInitializer` 的遍历名单只含顶层 `ConfigId`，派生的模块库不会建库建表且无任何报错，改为经 `ISqlSugarClientResolver.GetAllConfigIds()` 遍历；库隔离租户开通时只初始化主库，新增 `IDbInitializer.InitializeCurrentLayoutAsync()` 按当前布局同时初始化主库与模块库
+- **修复** 模块指定独立物理库但未声明从库时，错误继承父连接的从库，读操作会落到其他库；改为仅在模块与父连接共用物理库时继承
+- **修复** 模仿者用户标识以 `Guid.TryParse` 解析，而用户主键类型为 `long`，解析结果始终为 `null`，模仿态判定失效且无任何报错；改为按 `long` 解析
+- **修复** 模块库派生的 SQLite 库文件名依赖运行平台：连接串按 `Path.*` 的平台语义解析，Linux 下反斜杠不视为分隔符，`C:\data\qqq.db` 被整体当作文件名派生为 `C:\data\qqq_Erp.db`，`Path.Combine` 还会将分隔符替换为当前平台风格。改为按字符切分，同时识别两种分隔符，目录段原样保留
 - **升级** 发布 v4.1.0
 
 ## v4.0.1 (2026-08-28)

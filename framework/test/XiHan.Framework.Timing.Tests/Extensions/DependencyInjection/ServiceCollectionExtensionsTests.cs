@@ -11,12 +11,20 @@ namespace XiHan.Framework.Timing.Tests.Extensions.DependencyInjection;
 /// 时间服务注册扩展测试
 /// </summary>
 /// <remarks>
-/// 生命周期在这里是硬契约：时钟与时区提供器是无状态的单例，
-/// 而当前时区提供器承载的是「按调用流程隔离」的状态，必须是瞬时的——
-/// 一旦被误注册成单例，多租户/多时区场景会串时区，所以逐个锁死。
+/// 生命周期在这里是硬契约：时钟、时区提供器与当前时区提供器都是单例。
+/// 当前时区按异步流存放，隔离边界是异步流而不是实例，
+/// 所以它与单例时钟共用同一个实例；并发请求不串时区由末尾的请求流用例锁死。
 /// </remarks>
 public class ServiceCollectionExtensionsTests
 {
+    private const string ShanghaiTimeZone = "Asia/Shanghai";
+    private const string TokyoTimeZone = "Asia/Tokyo";
+
+    /// <summary>
+    /// 换算样本：2024-03-15 02:00 UTC（上海与东京均无夏令时，偏移恒为 +8 / +9）
+    /// </summary>
+    private static readonly DateTime UtcInstant = new(2024, 3, 15, 2, 0, 0, DateTimeKind.Utc);
+
     /// <summary>
     /// 扩展方法返回同一个服务集合，支持链式调用
     /// </summary>
@@ -61,17 +69,17 @@ public class ServiceCollectionExtensionsTests
     }
 
     /// <summary>
-    /// 当前时区提供器注册为瞬时，避免跨调用流程串时区
+    /// 当前时区提供器注册为单例，与单例时钟共用同一个实例
     /// </summary>
     [Fact]
-    public void AddXiHanTiming_RegistersCurrentTimezoneProviderAsTransient()
+    public void AddXiHanTiming_RegistersCurrentTimezoneProviderAsSingleton()
     {
         var services = new ServiceCollection();
 
         services.AddXiHanTiming();
 
         var descriptor = services.Single(item => item.ServiceType == typeof(ICurrentTimezoneProvider));
-        Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Equal(typeof(CurrentTimezoneProvider), descriptor.ImplementationType);
     }
 
@@ -88,15 +96,16 @@ public class ServiceCollectionExtensionsTests
 
         var clock = provider.GetRequiredService<IClock>();
         var timezoneProvider = provider.GetRequiredService<ITimezoneProvider>();
-        var firstCurrentTimezoneProvider = provider.GetRequiredService<ICurrentTimezoneProvider>();
-        var secondCurrentTimezoneProvider = provider.GetRequiredService<ICurrentTimezoneProvider>();
+        var currentTimezoneProvider = provider.GetRequiredService<ICurrentTimezoneProvider>();
+        using var scope = provider.CreateScope();
 
         Assert.IsType<Clock>(clock);
         Assert.IsType<TZConvertTimezoneProvider>(timezoneProvider);
-        Assert.IsType<CurrentTimezoneProvider>(firstCurrentTimezoneProvider);
+        Assert.IsType<CurrentTimezoneProvider>(currentTimezoneProvider);
         Assert.Same(clock, provider.GetRequiredService<IClock>());
         Assert.Same(timezoneProvider, provider.GetRequiredService<ITimezoneProvider>());
-        Assert.NotSame(firstCurrentTimezoneProvider, secondCurrentTimezoneProvider);
+        Assert.Same(currentTimezoneProvider, provider.GetRequiredService<ICurrentTimezoneProvider>());
+        Assert.Same(currentTimezoneProvider, scope.ServiceProvider.GetRequiredService<ICurrentTimezoneProvider>());
     }
 
     /// <summary>
@@ -171,5 +180,96 @@ public class ServiceCollectionExtensionsTests
 
         Assert.Equal(DateTimeKind.Local, clock.Kind);
         Assert.False(clock.SupportsMultipleTimezone);
+    }
+
+    /// <summary>
+    /// 请求内给注入的当前时区提供器赋值后，单例时钟按该时区换算
+    /// </summary>
+    /// <remarks>
+    /// 这是请求级时区的基本用法：业务侧与时钟从容器拿到的是否同一个实例不应影响结果，
+    /// 时区必须按当前异步流共享，否则单例时钟读不到赋值，把 UTC 时间原样返回。
+    /// </remarks>
+    [Fact]
+    public async Task AddXiHanTiming_WhenInjectedCurrentTimezoneAssigned_ClockConvertsIntoAssignedTimezone()
+    {
+        using var provider = BuildUtcClockServiceProvider();
+        var token = TestContext.Current.CancellationToken;
+
+        var assigned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var converted = await ConvertInRequestFlowAsync(provider, ShanghaiTimeZone, assigned, Task.CompletedTask, token);
+
+        Assert.Equal(new DateTime(2024, 3, 15, 10, 0, 0), converted);
+    }
+
+    /// <summary>
+    /// 并发请求各自的时区互不串值，也不回流到发起方
+    /// </summary>
+    /// <remarks>
+    /// 两个请求流先各自写入时区，互相等到对方也写完之后才换算，保证两次赋值在时间上重叠；
+    /// 若时区被存成进程级共享状态，其中一个请求会读到另一个请求的时区。
+    /// </remarks>
+    [Fact]
+    public async Task AddXiHanTiming_AcrossConcurrentRequestFlows_ClockUsesEachFlowsOwnTimezone()
+    {
+        using var provider = BuildUtcClockServiceProvider();
+        var token = TestContext.Current.CancellationToken;
+        var shanghaiAssigned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tokyoAssigned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var shanghai = ConvertInRequestFlowAsync(provider, ShanghaiTimeZone, shanghaiAssigned, tokyoAssigned.Task, token);
+        var tokyo = ConvertInRequestFlowAsync(provider, TokyoTimeZone, tokyoAssigned, shanghaiAssigned.Task, token);
+
+        Assert.Equal(new DateTime(2024, 3, 15, 10, 0, 0), await shanghai);
+        Assert.Equal(new DateTime(2024, 3, 15, 11, 0, 0), await tokyo);
+        Assert.Null(provider.GetRequiredService<ICurrentTimezoneProvider>().TimeZone);
+        Assert.Equal(UtcInstant, provider.GetRequiredService<IClock>().ConvertToUserTime(UtcInstant));
+    }
+
+    /// <summary>
+    /// 构造按 UTC 存储、启用多时区换算的默认服务容器
+    /// </summary>
+    /// <returns>服务容器</returns>
+    private static ServiceProvider BuildUtcClockServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddXiHanTiming();
+        services.Configure<XiHanClockOptions>(options => options.Kind = DateTimeKind.Utc);
+
+        return services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true
+        });
+    }
+
+    /// <summary>
+    /// 在独立异步流中模拟一次请求：开请求作用域，给注入的当前时区提供器赋值，再用时钟换算样本时间
+    /// </summary>
+    /// <param name="root">根容器</param>
+    /// <param name="timeZone">本次请求的时区</param>
+    /// <param name="assigned">写入时区后发出的信号</param>
+    /// <param name="convertAfter">换算前需等待的信号</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>用户时间</returns>
+    private static Task<DateTime> ConvertInRequestFlowAsync(
+        IServiceProvider root,
+        string timeZone,
+        TaskCompletionSource assigned,
+        Task convertAfter,
+        CancellationToken cancellationToken)
+    {
+        return Task.Run(
+            async () =>
+            {
+                using var scope = root.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTimezoneProvider>().TimeZone = timeZone;
+                assigned.SetResult();
+
+                await convertAfter.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+                return scope.ServiceProvider.GetRequiredService<IClock>().ConvertToUserTime(UtcInstant);
+            },
+            cancellationToken);
     }
 }

@@ -76,7 +76,7 @@ Webhook 模式还需在应用管道里 `app.UseTelegramBotWebhook()`（映射 We
 - **主动发送门面**：`ITelegramNotifier` 按机器人名发文本/Markdown/图片/文件、编辑消息与内联键盘、`SendToAdminsAsync` 广播管理员；内建重试退避（429 用 `RetryAfter`，否则指数退避）与出站审计。
 - **多机器人托管**：`TelegramBotManager` / `BotRegistry` / `TelegramBotHostedService`（`IHostedService`，启动/停止不阻塞应用）。
 - **处理器扩展点**：`IBotCommandHandler` / `IBotCallbackHandler` / `IBotMessageHandler` / `IBotReplyHandler` / `IBotInlineQueryHandler` / `IBotStartPayloadHandler` / `IBotStateHandler` + `[BotCommand]` / `[BotCallback]` 特性。
-- **会话状态/去重/审计**：`IConversationStateStore`（多轮会话，默认内存 TTL 10 分钟）、`ITelegramUpdateDeduplicator`（更新去重，默认内存 TTL 30 分钟）、`ITelegramMessageAuditStore`（默认 No-op），均可换 store。
+- **会话状态/去重/审计**：`IConversationStateStore`（多轮会话，默认内存存储，TTL 由调用方传入、非正数时取 10 分钟）、`ITelegramUpdateDeduplicator`（更新去重，默认内存 TTL 30 分钟）、`ITelegramMessageAuditStore`（默认 No-op），均可换 store。
 - **内联键盘 DSL**：`TelegramKeyboardBuilder`（`AddButton` / `AddUrlButton` / `AddRow` / `Build`，静态 `ConfirmCancel` / `Single`）。
 
 ## 主要 API / 类型
@@ -132,8 +132,8 @@ Webhook 模式还需在应用管道里 `app.UseTelegramBotWebhook()`（映射 We
 | --- | --- | --- |
 | `ITelegramBotConfigStore` | `DefaultTelegramBotConfigStore` | `Task<IReadOnlyList<TelegramBotConfig>> GetBotConfigsAsync(ct)`；默认读选项 `.Bots` |
 | `ITelegramBotSettingsStore` | `DefaultTelegramBotSettingsStore` | `Task<TelegramBotSettings> GetSettingsAsync(ct)`；默认读选项 `.Settings` |
-| `IConversationStateStore` | `DefaultConversationStateStore` | 多轮会话状态（默认 TTL 10 分钟，最多 50000 条） |
-| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 更新去重（TTL 30 分钟，最多 100000 条） |
+| `IConversationStateStore` | `DefaultConversationStateStore` | 多轮会话状态（TTL 由调用方传入、非正数时取 10 分钟；最多 50000 条，满载抛 `InvalidOperationException`） |
+| `ITelegramUpdateDeduplicator` | `DefaultTelegramUpdateDeduplicator` | 更新去重（TTL 30 分钟，最多 100000 条，满载抛 `InvalidOperationException`） |
 | `ITelegramMessageAuditStore` | `NoOpTelegramMessageAuditStore` | 出站审计（`AppendAsync(TelegramMessageAuditRecord, ct)`） |
 
 `ConversationState`：`Step`（当前步骤）/ `Payload`（上下文 JSON）/ `CreateTime`。

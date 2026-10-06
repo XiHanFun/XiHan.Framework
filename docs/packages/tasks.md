@@ -74,8 +74,8 @@ public class MyModule : XiHanModule { }
 
 ### 执行与租户切换（JobExecutor）
 
-- `JobExecutor.ExecuteAsync` 为每次执行创建一个 DI 作用域，用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例，再套上中间件管道执行。
-- **多租户感知**：`CompositeJobScheduler.ResolveTenantId` 按优先级解析租户——① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户（`AsyncLocalCurrentTenantAccessor`）；执行时若解析到租户，`JobExecutor` 用 `ICurrentTenant.Change(tenantId, ...)` 切到该租户上下文再跑任务。`TenantId` 为空视为 Host（宿主）任务。
+- `JobExecutor.ExecuteAsync` 为每次执行创建一个 DI 作用域并切入任务所在租户，再用 `ActivatorUtilities.CreateInstance` 构造 `IJobWorker` 实例、套上中间件管道执行。
+- **多租户感知**：`CompositeJobScheduler.ResolveTenantId` 按优先级解析租户——① 参数里的 `tenantId` → ② `JobInfo.TenantId` → ③ 当前异步上下文租户（`AsyncLocalCurrentTenantAccessor`）；解析到租户时，`JobExecutor` 在执行开头用 `ICurrentTenant.Change(tenantId, ...)` 切入，实例落库、任务构造、管道执行、状态回写与历史落档（含失败路径）都在该租户作用域内。`TenantId` 为空视为平台任务，在平台（0 号租户）作用域执行。
 - 执行结果与异常均落 `JobInstance` 状态并写 `JobHistory`（即便状态回写失败也保证历史留痕，便于排障）。
 
 ### 后台作业队列（BackgroundJobs）
@@ -411,9 +411,9 @@ services.AddHostedService<OutboxConsumer>();
 - 调度器**每秒巡检一次**，触发精度为秒级；`Delay` 是「一次性」延迟，触发后不再续排。
 - Cron/Interval 任务若下次触发时间算不出（表达式无解 / 已过截止时间），任务会「注册但永不执行」——留意日志中的 Warning。
 - `AllowConcurrent=false` 依赖 `IJobStore.GetRunningInstancesAsync` + 任务锁，跨实例防并发需 Redis 分布式锁（Caching 启用 Redis）。
-- 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。宿主级任务令 `TenantId` 为空。
+- 多租户任务：优先用参数 `tenantId` 或 `JobInfo.TenantId` 指定租户；未指定时回退到当前异步上下文租户。平台级任务令 `TenantId` 为空，它在平台作用域执行、只看得到平台数据。
 - 后台服务的 `XiHanBackgroundServiceOptions` **默认不启用单任务超时**（`EnableTaskTimeout=false`、`TaskTimeoutMilliseconds=0`），如需超时须显式打开。
-- 默认 `DefaultJobStore` 是进程内内存存储，进程重启丢失历史；需持久化请自行实现 `IJobStore`。
+- 默认 `DefaultJobStore` 是有界进程内存储，进程重启丢失历史；满载时新增抛 `InvalidOperationException`（历史写入失败只记错误日志，不影响任务执行），框架不自动清理历史，长期运行需定期调 `CleanupHistoryAsync`；需持久化请自行实现 `IJobStore`。
 - 后台作业队列没有固定重试次数上限，只有**累计耗时**上限（`DefaultTimeoutSeconds`，默认 2 天）——退避间隔按指数增长，高频失败的作业会更快被判定放弃，而非跑满固定次数。
 - `BackgroundJobWorker` 靠分布式锁保证多实例单活；默认 `DefaultBackgroundJobStore` 进程重启丢失全部待执行作业，需要持久化与跨实例可靠投递请切换 `UseRedisBackgroundJobStore()` 或自实现 `IBackgroundJobStore`。
 - `[BackgroundJobName]` 标注在**作业参数类型**而非处理器类型上；不标注时回退参数类型全名——修改参数类型的命名空间/类名会导致名称变化，已入库未执行的旧作业将找不到配置而被放弃，关键作业建议显式标注固定名称。

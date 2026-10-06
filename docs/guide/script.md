@@ -4,7 +4,7 @@
 
 ## 只有 C#
 
-`XiHan.Framework.Script` 的唯一第三方依赖是 `Microsoft.CodeAnalysis.CSharp`（Roslyn 5.6.0）。没有 JavaScript、Python、Lua 引擎，也没有留出接别的语言的抽象层。
+`XiHan.Framework.Script` 的唯一第三方依赖是 `Microsoft.CodeAnalysis.CSharp`（Roslyn）。没有 JavaScript、Python、Lua 引擎，也没有留出接别的语言的抽象层。
 
 脚本不是被解释执行的 DSL，而是**真的 C# 源码**：Roslyn 在内存里把它编译成一个程序集，然后反射调用其中的入口方法。所以脚本拥有和宿主代码同等的能力——这既是它好用的原因，也是安全章节要反复强调的原因。
 
@@ -209,13 +209,11 @@ var stats = engine.GetStatistics();
 
 ## 超时：它保护调用方，保护不了进程
 
-::: danger `ScriptOptions.TimeoutMs` 打断不了已经跑起来的脚本
-引擎内部是 `Task.Run(委托, cts.Token)` 再 `await task`。`CancellationToken` 传给 `Task.Run` 只在**委托开始执行之前**起作用；一旦委托跑起来，取消令牌就再也影响不到它，`await` 会老老实实等到脚本自己结束。
-
-也就是说：默认路径下 `TimeoutMs`（默认 30000）几乎只在极端调度延迟时才会触发 `ScriptTimeoutException`。**它不能用来兜底死循环。**
+::: danger `ScriptOptions.TimeoutMs` 让调用方按时返回，停不下脚本本身
+引擎把执行任务与 `Task.Delay(TimeoutMs)`（默认 30000）竞速，到点即判超时：`ExecuteAsync` 返回 `IsSuccess=false`、`Exception` 为 `ScriptTimeoutException` 的结果。但托管代码没有安全的线程中止手段，**被判超时的脚本线程仍在后台跑完**。
 :::
 
-想让调用方到点返回，用扩展方法：
+想让超时直接抛异常，用扩展方法——它会覆盖 `options.TimeoutMs`，到点**抛出** `ScriptTimeoutException`，而不是返回失败结果：
 
 ```csharp
 try
@@ -228,7 +226,7 @@ catch (ScriptTimeoutException ex)
 }
 ```
 
-`ExecuteWithTimeoutAsync` 内部用的是 `task.WaitAsync(token)`，到点就把控制权还给你。但要认清代价：**脚本线程还在后台跑到底**，线程池线程和它占的内存都收不回来。一个 `while(true)` 会永久占住一个线程池线程直到进程重启。
+两种方式到点都把控制权还给你，代价也一样：**脚本线程还在后台跑到底**，线程池线程和它占的内存都收不回来。一个 `while(true)` 会永久占住一个线程池线程直到进程重启。
 
 结论：超时只是给调用方的 SLA 兜底，不是安全机制。真正的兜底是"不执行不可信代码"。
 
@@ -451,7 +449,7 @@ return amount;
 | 编译报找不到业务类型 | 默认只挂了几个基础程序集，要 `AddReference(typeof(X))` + `AddImport("命名空间")` |
 | `EvalAsync` 一直返回 `null` | 它失败时就返回 `null`，看不到原因；换 `ExecuteAsync` 读 `ErrorMessage` / `Diagnostics` |
 | `ScriptResult<T>.Value` 是 `default` 但 `IsSuccess` 是 `true` | 脚本返回的类型和 `T` 对不上，取值时静默降级为 `default` |
-| 死循环脚本没有被超时中断 | `TimeoutMs` 打断不了运行中的委托，用 `ExecuteWithTimeoutAsync` 让调用方返回（脚本线程仍在跑） |
+| 死循环脚本超时后仍占着线程 | 到 `TimeoutMs` 调用方拿到超时失败结果，但脚本线程仍在后台跑；超时不是隔离手段，不要执行不可信代码 |
 | 类名带 `Unsafe` 被判违规 | `AllowUnsafe=false` 时按类型名字符串匹配，改类名 |
 | 脚本调 `Process.Start` 没被拦住 | 安全检查只看脚本**声明**的类型/方法名，不看调用；这是设计上的边界，不是配置问题 |
 | 改了 `AllowUnsafe` / 优化级别没生效 | 这两项不参与缓存键，命中缓存直接复用旧程序集；`ClearCache()` 或用 `WithCacheKey` 区分 |

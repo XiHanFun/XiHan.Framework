@@ -1,11 +1,11 @@
 <div align="center">
-<img src="./assets/banner.png" alt="XiHan.Framework" />
+<img src="./assets/banner_cn.png" alt="XiHan.Framework" />
 
 <h1>XiHan.Framework</h1>
 
 <p><b>快速、轻量、高效、用心的 .NET 现代模块化开发框架</b></p>
 
-<p>基于 .NET 10 构建 · 66 个模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
+<p>基于 .NET 构建 · 模块化组件 · <code>[DependsOn]</code> 依赖声明 · 拓扑排序加载</p>
 
 <p><a href="./README.md">English</a> | <b>简体中文</b></p>
 
@@ -15,9 +15,8 @@
   <a href="https://gitcode.com/XiHanFun/XiHan.Framework"><img alt="GitCode Stars" src="https://gitcode.com/XiHanFun/XiHan.Framework/star/badge.svg" /></a>
 </p>
 <p>
-  <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <img alt="Modules" src="https://img.shields.io/badge/Modules-66-1f6feb?style=flat-square" />
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
   <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
@@ -52,7 +51,7 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 
 | 去处 | 内容 |
 | --- | --- |
-| [文档站](https://framework.docs.xihanfun.com) | 完整指南与 66 个包的逐包 API 文档 |
+| [文档站](https://framework.docs.xihanfun.com) | 完整指南与逐包 API 文档 |
 | [框架工程说明](./framework/README_cn.md) | 分层架构、模块清单、目录结构、依赖关系 |
 | [更新日志](https://framework.docs.xihanfun.com/changelog) | 各版本变更与升级须知 |
 | [贡献指南](./CONTRIBUTING.md) | 分支约定、提交规范、本地构建与测试 |
@@ -63,8 +62,8 @@ XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后�
 - **依赖倒置** - 高层模块不依赖低层模块，都依赖抽象接口
 - **单一职责** - 每个包只负责一个特定的功能领域
 - **开闭原则** - 对扩展开放，对修改关闭，通过接口和抽象类支持自定义
-- **优先 .NET 10** - 使用内置功能（DI、日志、序列化），仅在必要时引入第三方库
-- **性能优化** - 利用 .NET 10 高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy，以及 SqlSugar 传递引入的 Newtonsoft.Json 暂不兼容裁剪）
+- **优先 .NET 原生** - 使用内置功能（DI、日志、序列化），仅在必要时引入第三方库
+- **性能优化** - 利用 .NET 的高性能特性；AOT 不在支持范围（核心依赖 SqlSugar / Castle DynamicProxy，以及 SqlSugar 传递引入的 Newtonsoft.Json 暂不兼容裁剪）
 
 ## 技术栈
 

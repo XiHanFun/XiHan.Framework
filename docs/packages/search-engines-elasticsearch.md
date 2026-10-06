@@ -30,7 +30,7 @@ dotnet add package XiHan.Framework.SearchEngines.Elasticsearch
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using XiHan.Framework.SearchEngines;
+using XiHan.Framework.SearchEngines.Abstractions;
 using XiHan.Framework.SearchEngines.Elasticsearch;
 using XiHan.Framework.SearchEngines.Elasticsearch.Options;
 

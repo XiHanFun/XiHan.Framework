@@ -19,4 +19,11 @@ public interface IEntityModuleDataSourceResolver
     /// <param name="entityType">实体类型</param>
     /// <returns>模块数据源名；未声明返回 null，表示落当前租户的主库</returns>
     string? ResolveModuleDataSource(Type entityType);
+
+    /// <summary>
+    /// 实体是否固定落在平台库（声明了 <see cref="PlatformDataSourceAttribute"/>）
+    /// </summary>
+    /// <param name="entityType">实体类型</param>
+    /// <returns>固定落平台库返回 true</returns>
+    bool IsPlatformPlaced(Type entityType);
 }

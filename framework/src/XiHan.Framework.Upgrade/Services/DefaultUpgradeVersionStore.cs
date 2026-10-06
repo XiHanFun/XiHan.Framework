@@ -10,6 +10,9 @@ namespace XiHan.Framework.Upgrade.Services;
 /// <summary>
 /// 默认升级版本存储（有界进程内实现）
 /// </summary>
+/// <remarks>
+/// 版本记录与迁移历史按当前租户分区。平台就是 0 号租户：无租户上下文与 0 号租户落同一平台分区，记录的租户Id为 0。
+/// </remarks>
 public class DefaultUpgradeVersionStore : IUpgradeVersionStore
 {
     private const int MaxTenantCount = 10000;
@@ -53,7 +56,7 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var tenantId = _currentTenant?.Id;
+        var tenantId = NormalizeTenantId(_currentTenant?.Id);
         var tenantKey = BuildTenantKey(tenantId);
         lock (SyncRoot)
         {
@@ -74,7 +77,6 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
             }
             else
             {
-                state.TenantId ??= tenantId;
                 if (string.IsNullOrWhiteSpace(state.AppVersion))
                 {
                     state.AppVersion = NormalizeVersion(currentAppVersion);
@@ -87,6 +89,42 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
             }
 
             return Task.FromResult(CloneState(state));
+        }
+    }
+
+    /// <summary>
+    /// 当前库还没有版本记录时，按给定版本登记一条
+    /// </summary>
+    /// <param name="appVersion">应用版本</param>
+    /// <param name="dbVersion">数据库版本</param>
+    /// <param name="minSupportVersion">最小支持版本</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>新登记返回 true，已有记录返回 false</returns>
+    public Task<bool> TryCreateBaselineAsync(string appVersion, string dbVersion, string minSupportVersion, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var tenantId = NormalizeTenantId(_currentTenant?.Id);
+        var tenantKey = BuildTenantKey(tenantId);
+        lock (SyncRoot)
+        {
+            if (VersionStates.ContainsKey(tenantKey))
+            {
+                return Task.FromResult(false);
+            }
+
+            EnsureTenantCapacity(tenantKey);
+            VersionStates[tenantKey] = new UpgradeVersionState
+            {
+                Id = Interlocked.Increment(ref _idSeed),
+                TenantId = tenantId,
+                AppVersion = NormalizeVersion(appVersion),
+                DbVersion = NormalizeVersion(dbVersion),
+                MinSupportVersion = NormalizeVersion(minSupportVersion),
+                IsUpgrading = false
+            };
+
+            return Task.FromResult(true);
         }
     }
 
@@ -134,7 +172,6 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
             state.IsUpgrading = true;
             state.UpgradeNode = nodeName;
             state.UpgradeStartTime = startTime;
-            state.TenantId ??= _currentTenant?.Id;
 
             CopyState(state, version);
         }
@@ -161,7 +198,6 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
             state.IsUpgrading = false;
             state.AppVersion = NormalizeVersion(appVersion);
             state.DbVersion = NormalizeVersion(dbVersion);
-            state.TenantId ??= _currentTenant?.Id;
 
             CopyState(state, version);
         }
@@ -184,7 +220,6 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
         {
             var state = GetOrCreateStateForWrite(version);
             state.IsUpgrading = false;
-            state.TenantId ??= _currentTenant?.Id;
 
             CopyState(state, version);
         }
@@ -208,7 +243,6 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
         {
             var state = GetOrCreateStateForWrite(version);
             state.DbVersion = NormalizeVersion(dbVersion);
-            state.TenantId ??= _currentTenant?.Id;
 
             CopyState(state, version);
         }
@@ -227,7 +261,7 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(history);
 
-        var tenantId = history.TenantId ?? _currentTenant?.Id;
+        var tenantId = NormalizeTenantId(history.TenantId ?? _currentTenant?.Id);
         var tenantKey = BuildTenantKey(tenantId);
         lock (SyncRoot)
         {
@@ -293,7 +327,18 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
     /// <returns>租户键</returns>
     private static string BuildTenantKey(long? tenantId)
     {
-        return tenantId.HasValue ? $"tenant:{tenantId.Value}" : "host";
+        // 平台就是 0 号租户：0 与 null 同落平台分区，与升级锁资源键同一口径
+        return tenantId is > 0 ? $"tenant:{tenantId.Value}" : "host";
+    }
+
+    /// <summary>
+    /// 规范化租户Id
+    /// </summary>
+    /// <param name="tenantId">租户Id</param>
+    /// <returns>业务租户返回原值，平台（null 或 0）返回 0</returns>
+    private static long NormalizeTenantId(long? tenantId)
+    {
+        return tenantId is > 0 ? tenantId.Value : 0;
     }
 
     /// <summary>
@@ -303,7 +348,7 @@ public class DefaultUpgradeVersionStore : IUpgradeVersionStore
     /// <returns>可写状态</returns>
     private UpgradeVersionState GetOrCreateStateForWrite(UpgradeVersionState source)
     {
-        var tenantId = source.TenantId ?? _currentTenant?.Id;
+        var tenantId = NormalizeTenantId(source.TenantId ?? _currentTenant?.Id);
         var tenantKey = BuildTenantKey(tenantId);
 
         if (!VersionStates.TryGetValue(tenantKey, out var state))

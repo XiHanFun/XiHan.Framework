@@ -12,6 +12,7 @@ description: 调查、分类、起草或发布 XiHan.Framework GitHub Issue 回�
 3. Bug 至少核对 Framework 包与版本/commit、.NET SDK、操作系统、最小模块依赖、配置、异常堆栈和可重复步骤。
 4. 搜索当前源码、测试、文档、相邻 Issue 和发布日志，确认问题归属及是否已修复。
 5. 涉及内存、连接或 OOM 时区分宿主资源压力、无界状态和正常长连接，不从单一现象下结论。
+6. 需要在 worktree 里复现或修复时，分支用 `issue/<编号>`，规则见 `AGENTS.md`「分支与 worktree」。
 
 ## 回复
 

@@ -15,7 +15,7 @@
 2. 让契约始终有**第二个实现**来校验自己——只有一个实现的抽象无法证明自己没有泄漏该实现的概念。
 
 ::: warning 进程内实现的定位
-`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每个索引 100000 条文档；数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须由应用替换为具体搜索引擎实现。
+`DefaultSearchEngine` 面向**单机开发与自动化测试**：最多 100 个索引、每个索引 100000 条文档，超限抛 `InvalidOperationException`（批量写入超限时整批拒绝，不会部分写入）；数据只存在于当前进程，**重启即丢**，且**不做分词与相关度模型**。生产环境必须由应用替换为具体搜索引擎实现。
 :::
 
 ## 何时使用
@@ -56,10 +56,11 @@ context.Services.TryAddSingleton<ISearchEngine>(sp => sp.GetRequiredService<Defa
 ## 使用示例
 
 ```csharp
-using XiHan.Framework.SearchEngines;
-using XiHan.Framework.SearchEngines.Documents;
-using XiHan.Framework.SearchEngines.Indexing;
-using XiHan.Framework.SearchEngines.Querying;
+using XiHan.Framework.SearchEngines.Abstractions;
+using XiHan.Framework.SearchEngines.Abstractions.Documents;
+using XiHan.Framework.SearchEngines.Abstractions.Indexing;
+using XiHan.Framework.SearchEngines.Abstractions.Querying;
+using XiHan.Framework.SearchEngines.Abstractions.Results;
 
 public class ArticleSearchService(ISearchEngine search)
 {

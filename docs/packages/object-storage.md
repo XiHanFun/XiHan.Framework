@@ -98,7 +98,7 @@ public class MyModule : XiHanModule { }
 | `MinioFileStorageProvider` | `"MinIO"` | ❌ | ❌ | ✅（真实签名） |
 | `TencentCosStorageProvider` | `"TencentCOS"` | ✅ | ✅ | ✅（真实签名） |
 
-> 以源码为准：`MinioFileStorageProvider` 当前**不声明**分片/断点续传（`SupportChunkedUpload => false`），对其调用分片方法会走基类默认实现抛 `NotSupportedException`。上传大文件前请先检查目标 Provider 的 `SupportChunkedUpload`。
+> 以源码为准：`MinioFileStorageProvider` 当前**不声明**分片/断点续传（`SupportChunkedUpload => false`），但覆盖了四个分片方法作为占位：初始化返回随机 GUID、上传分片返回假成功（数据被丢弃）、完成返回 `Success=false`、取消为空操作，不会抛 `NotSupportedException`。上传大文件前请先检查目标 Provider 的 `SupportChunkedUpload`。
 
 ### 数据模型
 
@@ -247,7 +247,7 @@ public class DownloadService
 ## 注意事项与最佳实践
 
 - **上传不抛异常**：`UploadAsync` 内部把异常收敛为 `FileUploadResult { Success=false, ErrorMessage=... }`。调用方务必检查 `result.Success`，不要只 `try/catch`。
-- **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；不支持的后端（如当前的 MinIO）会抛 `NotSupportedException`。
+- **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；MinIO 的分片方法是占位实现，调用不会报错但数据不会落盘，大文件改用 `UploadAsync`。
 - **云端未完成分片仍需生命周期策略**：框架会回收 24 小时无活动的进程内 OSS/COS 会话，但不会在请求线程批量调用远端 Abort；生产桶应配置清理未完成 Multipart Upload 的生命周期规则。
 - **本地预签名无时效**：`LocalFileStorageProvider.GeneratePresignedUrlAsync` 只是返回静态直链，`expiresIn` 被忽略，也没有鉴权。需要真实时效/鉴权控制请改用云存储 Provider。
 - **提供程序名称大小写**：Manager/Router 内部用大小写不敏感比较，但常量值有固定拼写（`MinIO`/`AliyunOSS`/`TencentCOS`），配置里建议直接用 `ObjectStorageProviderNames` 的常量拼写以免误配。

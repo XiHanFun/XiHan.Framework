@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
@@ -292,13 +293,13 @@ public class SettingManagerTests
     }
 
     /// <summary>
-    /// 租户级写入落到租户提供者，提供者键取当前租户标识
+    /// 租户级写入落到租户提供者，提供者键取当前作用域的租户（与读取口径一致），而不是令牌里的租户
     /// </summary>
     [Fact]
     public async Task SetValueAsync_WithTenantScope_WritesToTenantProviderKeyedByTenantId()
     {
         var store = new FakeSettingStore();
-        using var serviceProvider = CreateServiceProvider(new FakeCurrentUser(userId: 42, tenantId: 9));
+        using var serviceProvider = CreateServiceProvider(new FakeCurrentUser(userId: 42, tenantId: 3), currentTenantId: 9);
         var manager = CreateManager(store, new FakeSettingDefinitionManager(new SettingDefinition("Plain")), serviceProvider);
 
         await manager.SetValueAsync("Plain", "value", SettingScope.Tenant);
@@ -328,13 +329,16 @@ public class SettingManagerTests
     }
 
     /// <summary>
-    /// 无租户上下文时拒绝写入租户级设置
+    /// 平台（无租户上下文或 0 号租户）没有租户级设置，拒绝写入
     /// </summary>
-    [Fact]
-    public async Task SetValueAsync_WithTenantScope_WhenNoTenant_Throws()
+    /// <param name="currentTenantId">当前租户标识</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0L)]
+    public async Task SetValueAsync_WithTenantScope_WhenNoTenant_Throws(long? currentTenantId)
     {
         var store = new FakeSettingStore();
-        using var serviceProvider = CreateServiceProvider(new FakeCurrentUser(userId: 42));
+        using var serviceProvider = CreateServiceProvider(new FakeCurrentUser(userId: 42, tenantId: 9), currentTenantId);
         var manager = CreateManager(store, new FakeSettingDefinitionManager(new SettingDefinition("Plain")), serviceProvider);
 
         var exception = await Assert.ThrowsAsync<XiHanException>(async () => await manager.SetValueAsync("Plain", "value", SettingScope.Tenant));
@@ -615,8 +619,9 @@ public class SettingManagerTests
     /// 构造只含当前用户的最小容器
     /// </summary>
     /// <param name="currentUser">当前用户，null 表示容器里没有用户上下文</param>
+    /// <param name="currentTenantId">当前作用域的租户，null 表示平台</param>
     /// <returns>服务提供者</returns>
-    private static ServiceProvider CreateServiceProvider(ICurrentUser? currentUser = null)
+    private static ServiceProvider CreateServiceProvider(ICurrentUser? currentUser = null, long? currentTenantId = null)
     {
         var services = new ServiceCollection();
         if (currentUser is not null)
@@ -624,6 +629,21 @@ public class SettingManagerTests
             services.AddSingleton(currentUser);
         }
 
+        services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(currentTenantId));
         return services.BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// 固定租户上下文替身
+    /// </summary>
+    private sealed class FixedCurrentTenant(long? tenantId) : ICurrentTenant
+    {
+        public bool IsAvailable => tenantId is > 0;
+
+        public long? Id => tenantId;
+
+        public string? Name => null;
+
+        public IDisposable Change(long? id, string? name = null) => throw new NotSupportedException("用例不切换租户。");
     }
 }

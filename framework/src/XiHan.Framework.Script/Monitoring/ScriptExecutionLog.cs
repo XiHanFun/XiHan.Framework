@@ -34,7 +34,7 @@ public class ScriptExecutionLog
     public long CompilationTimeMs { get; set; }
 
     /// <summary>
-    /// 内存使用量(字节)
+    /// 执行期间的分配字节数（取自进程级计数，并发执行的脚本会互相计入）
     /// </summary>
     public long MemoryUsageBytes { get; set; }
 
