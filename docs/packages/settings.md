@@ -5,7 +5,7 @@
 - **NuGet**：`XiHan.Framework.Settings`
 - **模块类**：`XiHanSettingsModule`
 - **所在层**：应用层
-- **关键依赖**：仅 .NET 原生 + 框架内部依赖（Core / Security；加密用 `Utils` 的 `AesHelper`）
+- **关键依赖**：仅 .NET 原生 + 框架内部依赖（Core / Security / MultiTenancy.Abstractions；加密用 `Utils` 的 `AesHelper`）
 
 ## 概述
 
@@ -73,7 +73,7 @@ UserSettingValueProvider (U)          → 取 ISettingStore（当前用户 UserI
 | `SettingScope` | ProviderName | ProviderKey | 说明 |
 | --- | --- | --- | --- |
 | `Application` | `G` | `null` | 全局，无键 |
-| `Tenant` | `T` | `ICurrentUser.TenantId` | 无租户上下文则抛 `XiHanException` |
+| `Tenant` | `T` | `ICurrentTenant.Id` | 写入当前租户作用域（与读取口径一致）；平台（`null` 或 `0`）没有租户级设置，抛 `XiHanException`，平台的设置写全局级 |
 | `User` | `U` | `ICurrentUser.UserId` | 无用户则抛 `XiHanException` |
 | `Session` | `U` | `ICurrentUser.UserId` | **与 `User` 同键**（会话级未单列独立存储键） |
 
@@ -87,7 +87,7 @@ UserSettingValueProvider (U)          → 取 ISettingStore（当前用户 UserI
 
 - **设置定义提供者模式（自动发现未接线到读写路径）**：实现 `ISettingDefinitionProvider.Define(...)` 声明设置项；模块启动时自动发现该实现类型并收集进 `XiHanSettingOptions.DefinitionProviders`，但当前源码没有消费者据此调用 `Define()`——定义仍需调用方显式对目标 `ISettingManager` 调用 `AddDefinition(...)` 才会生效（见「工作原理」）
 - **多来源值提供者链**：`D → C → G → U`（+ 多租户 `T`），逐个取第一个非空值
-- **作用域读写**：`SettingScope` 分 `Application`（`"G"`）/ `Tenant`（`"T"`）/ `User`（`"U"`）/ `Session`（同 `"U"`）；用户/租户键来自 `ICurrentUser`
+- **作用域读写**：`SettingScope` 分 `Application`（`"G"`）/ `Tenant`（`"T"`）/ `User`（`"U"`）/ `Session`（同 `"U"`）；用户键来自 `ICurrentUser`，租户键来自 `ICurrentTenant`
 - **加密与校验**：定义可标记 `IsEncrypted` 走 AES；可挂 `Validator` 校验写入值
 - **变更事件**：`SettingManager.OnSettingChanged` 在写入后触发 `SettingChangedEventArgs`
 - **可插拔存储**：`ISettingStore` 承载持久化，默认 `NullSettingStore`（`TryRegister`），上层替换为数据库实现
@@ -232,7 +232,8 @@ var def = new SettingDefinition("App.PageSize", defaultValue: "20")
 ## 依赖模块
 
 - [XiHan.Framework.Core](./core)
-- [XiHan.Framework.Security](./security)（`ICurrentUser`，解析用户/租户级设置的 providerKey）
+- [XiHan.Framework.Security](./security)（`ICurrentUser`，解析用户级设置的 providerKey）
+- [XiHan.Framework.MultiTenancy.Abstractions](./multitenancy-abstractions)（包引用，不声明模块依赖；`ICurrentTenant` 决定租户级设置写入哪个租户）
 
 ## 相关模块
 

@@ -107,12 +107,14 @@ flush 时新建一个 DI scope 解析 `IXxxLogWriter`，**逐条**调用 `WriteA
 
 | 类型 | 说明 |
 | --- | --- |
-| `AccessLogRecord` | 访问日志：`TraceId`、`UserId`、`Method`、`Path`、`QueryString`、`RequestBody`、`StatusCode`、`RemoteIp`、`UserAgent`、`Referer`、`ElapsedMilliseconds`、`ResponseSize` 等 16 个字段 |
+| `AccessLogRecord` | 访问日志：`TraceId`、`UserId`、`TenantId`、`Method`、`Path`、`QueryString`、`RequestBody`、`StatusCode`、`RemoteIp`、`UserAgent`、`Referer`、`ElapsedMilliseconds`、`ResponseSize` 等 17 个字段 |
 | `OperationLogRecord` | 操作日志：在访问日志基础上带 `ControllerName` / `ActionName` / `RequestParams` / `ResponseResult` |
-| `ApiLogRecord` | 接口日志：最全，另含 `ClientId` / `AppId` / `IsSignatureValid` / `SignatureAlgorithm` / `RequestSize` / `IsSuccess` 等 23 个字段 |
+| `ApiLogRecord` | 接口日志：最全，另含 `ClientId` / `AppId` / `IsSignatureValid` / `SignatureAlgorithm` / `RequestSize` / `IsSuccess` 等 25 个字段 |
 | `ExceptionLogRecord` | 异常日志：`ExceptionType` / `ExceptionMessage` / `ExceptionStackTrace` / `RequestHeaders` 等 |
 | `LoginLogRecord` | 登录日志：`LoginResult` / `Message` / `LoginIp` / `DeviceId` / `LoginTime` |
 | `EntityDiffLogRecord` | 实体变更日志：`OperationType` / `EntityType` / `EntityId` / `BeforeData` / `AfterData` / `ChangedFields` |
+
+六类记录都带 `long? TenantId`（`null` 即平台）：五类日志在记录产生时取请求所属租户，写入器据此落戳，不依赖写入时的环境上下文。
 | `ILogQueue<TRecord>` | 日志队列契约：`Count` / `TryEnqueue` / `EnqueueAsync` / `DequeueAllAsync` |
 | `ChannelLogQueue<TRecord>` | 基于有界 `Channel` 的默认实现（单例，开放泛型注册） |
 | `IAccessLogPipeline` 等 5 个 | 采集管道契约（`Scoped`）：`WriteAsync(record, ct)` |

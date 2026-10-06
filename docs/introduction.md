@@ -1,6 +1,6 @@
 # XiHan.Framework 开发框架
 
-快速、轻量、高效、用心的 **.NET 10 模块化开发框架**。面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖，强调模块清晰、依赖可控、扩展可维护。
+快速、轻量、高效、用心的 **.NET 现代模块化开发框架**。面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖，强调模块清晰、依赖可控、扩展可维护。
 
 ## 一分钟了解它
 
@@ -53,10 +53,21 @@ await app.RunAsync();
 
 | 册 | 定位 | 什么时候看 |
 | --- | --- | --- |
-| **[开发指南](./guide/modularity)** | **按能力域编号**的任务式文档（38 章） | 「我要做 X」——数据访问、事务、认证、缓存、多租户… |
-| **[模块总览](./packages/)** | 按 NuGet 包组织的**参考手册**（66 页） | 「这个包有什么」——完整配置项、API 清单、注意事项 |
+| **[开发指南](./guide/modularity)** | **按能力域编号**的任务式文档 | 「我要做 X」——数据访问、事务、认证、缓存、多租户… |
+| **[模块总览](./packages/)** | 按 NuGet 包组织的**参考手册**（每包一页） | 「这个包有什么」——完整配置项、API 清单、注意事项 |
 
 开发指南的章节会指向对应的包页看细节，两册互补而不重复。
+
+给 AI 工具读时，文档站在构建期另外产出几份纯文本，与本站同源：
+
+| 地址 | 内容 |
+| --- | --- |
+| [`/llms.txt`](https://framework.docs.xihanfun.com/llms.txt) | 全站索引，每行一页 |
+| [`/llms-full.txt`](https://framework.docs.xihanfun.com/llms-full.txt) | 全站正文 |
+| [`/llms-guide.txt`](https://framework.docs.xihanfun.com/llms-guide.txt) | 开发指南全部章节 |
+| [`/llms-packages.txt`](https://framework.docs.xihanfun.com/llms-packages.txt) | 模块总览与全部包页 |
+
+只需要一页时，把地址后缀改为 `.md`，如 `https://framework.docs.xihanfun.com/guide/modularity.md`；每页正文右上角的「取本页 Markdown」指向的也是它。
 
 ## 开发指南速览
 

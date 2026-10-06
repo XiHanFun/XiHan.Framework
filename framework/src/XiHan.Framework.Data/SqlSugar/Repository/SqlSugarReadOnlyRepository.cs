@@ -60,13 +60,16 @@ public class SqlSugarReadOnlyRepository<TEntity, TKey> : IReadOnlyRepositoryBase
     }
 
     /// <summary>
-    /// 创建忽略租户过滤的查询（平台管理员跨租户场景使用，需权限校验）
+    /// 创建跨全部租户的查询（读共享与严格隔离的租户过滤一并清除，软删过滤保持生效）
     /// </summary>
+    /// <remarks>
+    /// 无租户上下文即平台（0 号租户），默认查询只看平台数据；跨租户读取只能经此显式入口，调用方须自行完成权限校验。
+    /// </remarks>
     protected virtual ISugarQueryable<TEntity> CreateNoTenantQueryable()
     {
         var queryable = DbClient.Queryable<TEntity>();
         return SqlSugarEntityTypeHelper.IsMultiTenantEntity<TEntity>()
-            ? queryable.ClearFilter<IMultiTenantEntity>()
+            ? queryable.ClearTenantFilter()
             : queryable;
     }
 

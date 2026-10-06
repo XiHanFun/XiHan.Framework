@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
 using XiHan.Framework.Core.Exceptions;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Security.Users;
 using XiHan.Framework.Settings.Definitions;
 using XiHan.Framework.Settings.Events;
@@ -238,12 +239,14 @@ public class SettingManager : ISettingManager, IScopedDependency
 
         if (scope == SettingScope.Tenant)
         {
-            if (currentUser?.TenantId is null)
+            // 写进当前作用域所在的租户（与读取口径一致）；平台就是 0 号租户，没有租户级设置，平台设置写全局级
+            var currentTenant = _serviceProvider.GetService(typeof(ICurrentTenant)) as ICurrentTenant;
+            if (currentTenant?.Id is not { } tenantId || tenantId <= 0)
             {
-                throw new XiHanException("当前上下文无租户信息，无法写入租户级设置");
+                throw new XiHanException("当前处于平台作用域，没有租户级设置，平台的设置请写入全局级");
             }
 
-            return (TenantProviderName, currentUser.TenantId.Value.ToString());
+            return (TenantProviderName, tenantId.ToString());
         }
 
         return (GlobalProviderName, null);

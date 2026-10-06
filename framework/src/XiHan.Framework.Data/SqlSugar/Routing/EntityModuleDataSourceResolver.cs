@@ -18,6 +18,8 @@ public class EntityModuleDataSourceResolver : IEntityModuleDataSourceResolver
 {
     private static readonly ConcurrentDictionary<Type, string?> NameCache = new();
 
+    private static readonly ConcurrentDictionary<Type, bool> PlatformCache = new();
+
     /// <summary>
     /// 解析实体声明的模块数据源名
     /// </summary>
@@ -34,6 +36,32 @@ public class EntityModuleDataSourceResolver : IEntityModuleDataSourceResolver
     /// </summary>
     /// <param name="entityType">实体类型</param>
     /// <returns>模块数据源名；未声明返回 null</returns>
+    /// <summary>
+    /// 实体是否固定落在平台库
+    /// </summary>
+    public virtual bool IsPlatformPlaced(Type entityType)
+    {
+        ArgumentNullException.ThrowIfNull(entityType);
+        return PlatformCache.GetOrAdd(entityType, static type => ReadPlatformPlacement(type));
+    }
+
+    private static bool ReadPlatformPlacement(Type entityType)
+    {
+        if (entityType.GetCustomAttribute<PlatformDataSourceAttribute>(inherit: true) is null)
+        {
+            return false;
+        }
+
+        // 平台库与模块库是两个互斥的落点：同时声明是配置错误，启动即失败，不猜哪个优先
+        if (!string.IsNullOrWhiteSpace(ReadDeclaredName(entityType)))
+        {
+            throw new InvalidOperationException(
+                $"实体 {entityType.FullName} 同时声明了平台库与模块数据源，二者只能取其一。");
+        }
+
+        return true;
+    }
+
     private static string? ReadDeclaredName(Type entityType)
     {
         var moduleDataSource = entityType.GetCustomAttribute<ModuleDataSourceAttribute>(inherit: true);

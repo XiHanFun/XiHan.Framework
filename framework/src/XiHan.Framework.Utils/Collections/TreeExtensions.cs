@@ -17,40 +17,43 @@ public static class TreeExtensions
     /// <param name="source">源数据集合</param>
     /// <param name="isChild">判断父子关系的函数，第一个参数为父级，第二个参数为子级</param>
     /// <returns>转换后的树形结构根节点集合</returns>
+    /// <exception cref="InvalidOperationException">父子关系构成环时抛出</exception>
+    /// <remarks>
+    /// 结果与 <paramref name="source"/> 的元素顺序无关：子节点排在父节点之前同样能正确建树。
+    /// </remarks>
     public static IEnumerable<TreeNode<T>> ToTree<T>(this IEnumerable<T> source, Func<T, T, bool> isChild)
     {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(isChild);
+
         var nodes = source.Select(value => new TreeNode<T>(value)).ToList();
-        var visited = new HashSet<T>();
 
-        foreach (var node in nodes)
+        // 原实现边遍历边挂链，并用一个跨遍历共享的 visited 集合兼做环检测：
+        // 子节点若排在父节点前面，会先被当作根遍历一遍并记入 visited，
+        // 等父节点再遍历到它时就撞上 visited 判定，对一棵正常的树抛出并不存在的"循环依赖"。
+        // 源集合顺序是调用方数据的偶然属性，不该影响建树结果，
+        // 故改为"先一次性建全父子边，再按 DFS 路径检测环"。
+        foreach (var parent in nodes)
         {
-            if (visited.Contains(node.Value))
+            foreach (var child in nodes)
             {
-                continue;
-            }
-
-            var stack = new Stack<TreeNode<T>>();
-            stack.Push(node);
-
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-                if (visited.Contains(current.Value))
+                if (isChild(parent.Value, child.Value))
                 {
-                    throw new InvalidOperationException("转为树形结构时，循环依赖检测到");
-                }
-
-                visited.Add(current.Value);
-
-                foreach (var child in nodes.Where(child => isChild(current.Value, child.Value)))
-                {
-                    current.Children.Add(child);
-                    stack.Push(child);
+                    parent.Children.Add(child);
                 }
             }
         }
 
-        return nodes.Where(node => !nodes.Any(n => n.Children.Contains(node)));
+        EnsureAcyclic(nodes);
+
+        // 根节点即不出现在任何节点子集合中的节点，按引用判定
+        var childNodes = new HashSet<TreeNode<T>>();
+        foreach (var child in nodes.SelectMany(node => node.Children))
+        {
+            childNodes.Add(child);
+        }
+
+        return nodes.Where(node => !childNodes.Contains(node)).ToList();
     }
 
     /// <summary>
@@ -277,6 +280,63 @@ public static class TreeExtensions
     }
 
     #region 私有方法
+
+    /// <summary>
+    /// 检测父子边是否构成环，构成环时抛出异常
+    /// </summary>
+    /// <typeparam name="T">树节点数据类型</typeparam>
+    /// <param name="nodes">已建好父子边的全部节点</param>
+    /// <exception cref="InvalidOperationException">存在环时抛出</exception>
+    /// <remarks>
+    /// 用迭代式三色标记：<c>onPath</c> 是当前 DFS 路径上的节点，重复进入才是环；
+    /// <c>settled</c> 是已确认无环的子树，用于避免重复遍历。
+    /// 只有"回到当前路径上的节点"才算环，因此同一节点被多个父节点引用不会被误判。
+    /// </remarks>
+    private static void EnsureAcyclic<T>(List<TreeNode<T>> nodes)
+    {
+        var onPath = new HashSet<TreeNode<T>>();
+        var settled = new HashSet<TreeNode<T>>();
+        var stack = new Stack<(TreeNode<T> Node, bool Leaving)>();
+
+        foreach (var start in nodes)
+        {
+            if (settled.Contains(start))
+            {
+                continue;
+            }
+
+            stack.Push((start, false));
+
+            while (stack.Count > 0)
+            {
+                var (node, leaving) = stack.Pop();
+
+                if (leaving)
+                {
+                    onPath.Remove(node);
+                    settled.Add(node);
+                    continue;
+                }
+
+                if (settled.Contains(node))
+                {
+                    continue;
+                }
+
+                if (!onPath.Add(node))
+                {
+                    throw new InvalidOperationException("转为树形结构时，循环依赖检测到");
+                }
+
+                stack.Push((node, true));
+
+                foreach (var child in node.Children)
+                {
+                    stack.Push((child, false));
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// 查找路径

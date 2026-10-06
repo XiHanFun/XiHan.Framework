@@ -7,9 +7,10 @@ namespace XiHan.Framework.Timing.Tests;
 /// 当前时区提供器测试
 /// </summary>
 /// <remarks>
-/// 该实现以 AsyncLocal 承载时区，语义上等价于「按执行上下文隔离的环境变量」：
-/// 父流程的赋值向下可见，子流程的赋值不回流。这套语义决定了它能否安全地按请求承载时区，
-/// 因此在这里连同实例隔离一起锁死。
+/// 该实现以静态 AsyncLocal 承载时区，语义上等价于「按执行上下文隔离的环境变量」：
+/// 值归属于异步流而不是实例，同一流里任何实例读到的都是同一个值；
+/// 父流程的赋值向下可见，子流程的赋值不回流，并行流程互不干扰。
+/// 这套语义决定了它能否安全地按请求承载时区，因此在这里逐条锁死。
 /// </remarks>
 public class CurrentTimezoneProviderTests
 {
@@ -17,10 +18,10 @@ public class CurrentTimezoneProviderTests
     private const string TokyoTimeZone = "Asia/Tokyo";
 
     /// <summary>
-    /// 新建实例时没有任何时区
+    /// 当前流程未赋值时没有任何时区
     /// </summary>
     [Fact]
-    public void TimeZone_OnNewInstance_IsNull()
+    public void TimeZone_WhenCurrentFlowHasNotAssigned_IsNull()
     {
         var provider = new CurrentTimezoneProvider();
 
@@ -75,10 +76,14 @@ public class CurrentTimezoneProviderTests
     }
 
     /// <summary>
-    /// 不同实例之间互不干扰
+    /// 同一流程内不同实例读写的是同一个时区
     /// </summary>
+    /// <remarks>
+    /// 业务代码与时钟从容器拿到的未必是同一个实例（替换注册、手动构造），
+    /// 时区若按实例隔离，时钟就读不到业务侧的赋值；隔离边界是异步流，由下面的并行流程用例锁死。
+    /// </remarks>
     [Fact]
-    public void TimeZone_AcrossInstances_IsIsolated()
+    public void TimeZone_AcrossInstancesInSameFlow_SharesAssignedValue()
     {
         var first = new CurrentTimezoneProvider
         {
@@ -86,10 +91,37 @@ public class CurrentTimezoneProviderTests
         };
         var second = new CurrentTimezoneProvider();
 
+        Assert.Equal(ShanghaiTimeZone, second.TimeZone);
+
         second.TimeZone = TokyoTimeZone;
 
-        Assert.Equal(ShanghaiTimeZone, first.TimeZone);
+        Assert.Equal(TokyoTimeZone, first.TimeZone);
         Assert.Equal(TokyoTimeZone, second.TimeZone);
+    }
+
+    /// <summary>
+    /// 被 await 的异步方法内的赋值对其下游可见，返回后调用方恢复为自己的时区
+    /// </summary>
+    /// <remarks>
+    /// 中间件正是这种形状：在自身异步方法里写时区再 await 下游，请求结束后时区不会留给调用方。
+    /// 写入与读取故意使用不同实例，同时证明值跟随异步流而非实例。
+    /// </remarks>
+    [Fact]
+    public async Task TimeZone_AssignedInsideAwaitedAsyncMethod_IsVisibleDownstreamAndRestoredForCaller()
+    {
+        var provider = new CurrentTimezoneProvider
+        {
+            TimeZone = ShanghaiTimeZone
+        };
+        string? observedDownstream = null;
+
+        await AssignThenInvokeDownstreamAsync(
+            new CurrentTimezoneProvider(),
+            TokyoTimeZone,
+            () => observedDownstream = provider.TimeZone);
+
+        Assert.Equal(TokyoTimeZone, observedDownstream);
+        Assert.Equal(ShanghaiTimeZone, provider.TimeZone);
     }
 
     /// <summary>
@@ -161,5 +193,21 @@ public class CurrentTimezoneProviderTests
         Assert.Equal(ShanghaiTimeZone, firstResult);
         Assert.Equal(TokyoTimeZone, secondResult);
         Assert.Null(provider.TimeZone);
+    }
+
+    /// <summary>
+    /// 以中间件的形状写入时区，再异步执行下游
+    /// </summary>
+    /// <param name="provider">写入时区所用的提供器</param>
+    /// <param name="timeZone">时区</param>
+    /// <param name="downstream">下游逻辑</param>
+    private static async Task AssignThenInvokeDownstreamAsync(
+        ICurrentTimezoneProvider provider,
+        string timeZone,
+        Action downstream)
+    {
+        provider.TimeZone = timeZone;
+        await Task.Yield();
+        downstream();
     }
 }

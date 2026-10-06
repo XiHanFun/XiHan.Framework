@@ -95,11 +95,14 @@ public class XiHanRequestLoggingMiddleware(RequestDelegate next, ILogger<XiHanRe
                 var pipeline = context.RequestServices.GetService<IAccessLogPipeline>();
                 if (pipeline is not null)
                 {
+                    // 本中间件位于认证与租户解析之前，需在请求结束时重新读取定型后的请求上下文
+                    var finalContext = context.RequestServices.GetService<IRequestContextAccessor>()?.Current;
                     await pipeline.WriteAsync(new AccessLogRecord
                     {
                         TraceId = traceId,
-                        UserId = requestContext?.UserId ?? currentUser?.UserId,
-                        UserName = requestContext?.UserName ?? currentUser?.UserName,
+                        UserId = finalContext?.UserId ?? currentUser?.UserId,
+                        TenantId = finalContext?.TenantId,
+                        UserName = finalContext?.UserName ?? currentUser?.UserName,
                         SessionId = ResolveSessionId(context),
                         ResourceName = ResolveResourceName(context),
                         Method = context.Request.Method,

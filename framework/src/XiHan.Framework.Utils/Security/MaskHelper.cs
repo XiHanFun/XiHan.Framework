@@ -22,8 +22,11 @@ public static partial class MaskHelper
     /// <param name="endCount">保留后面字符数</param>
     /// <param name="maskChar">脱敏字符，默认使用星号*</param>
     /// <returns>脱敏后的字符串</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> 为 null 时抛出</exception>
     public static string Mask(this string input, int frontCount, int endCount, char? maskChar = '*')
     {
+        ArgumentNullException.ThrowIfNull(input);
+
         input = input.Trim();
         if (string.IsNullOrWhiteSpace(input))
         {
@@ -46,8 +49,11 @@ public static partial class MaskHelper
     /// </summary>
     /// <param name="input">原始字符串</param>
     /// <returns></returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> 为 null 时抛出</exception>
     public static string Mask(this string input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+
         input = input.Trim();
         if (string.IsNullOrWhiteSpace(input))
         {
@@ -73,10 +79,16 @@ public static partial class MaskHelper
     /// 例如：13812345678 -> 138****5678
     /// </summary>
     /// <param name="phone">手机号</param>
-    /// <returns>脱敏后的手机号</returns>
+    /// <returns>脱敏后的手机号；入参为 null 或空串时原样返回</returns>
+    /// <remarks>
+    /// 原实现把"为空"与"太短"并到同一分支，两种情况都去调 <see cref="Mask(string)"/>，
+    /// 而该扩展方法上来就 <c>input.Trim()</c>，传 null 直接 NullReferenceException——
+    /// 代码明明判了 <see cref="string.IsNullOrEmpty"/> 却仍然会因为 null 炸掉。
+    /// 现与 <see cref="MaskPassword"/>、<see cref="MaskLicensePlate"/> 保持一致：空值原样返回，太短才整体遮蔽。
+    /// </remarks>
     public static string MaskPhone(string phone)
     {
-        return string.IsNullOrEmpty(phone) || phone.Length < 7 ? phone.Mask(0, 0) : phone.Mask(3, 4);
+        return string.IsNullOrEmpty(phone) ? phone : phone.Length < 7 ? phone.Mask(0, 0) : phone.Mask(3, 4);
     }
 
     /// <summary>
@@ -84,10 +96,10 @@ public static partial class MaskHelper
     /// 例如：11010119800101001X -> 1101***********1X
     /// </summary>
     /// <param name="idCard">身份证号</param>
-    /// <returns>脱敏后的身份证号</returns>
+    /// <returns>脱敏后的身份证号；入参为 null 或空串时原样返回</returns>
     public static string MaskIdCard(string idCard)
     {
-        return string.IsNullOrEmpty(idCard) || idCard.Length < 8 ? idCard.Mask(0, 0) : idCard.Mask(4, 4);
+        return string.IsNullOrEmpty(idCard) ? idCard : idCard.Length < 8 ? idCard.Mask(0, 0) : idCard.Mask(4, 4);
     }
 
     /// <summary>
@@ -95,10 +107,10 @@ public static partial class MaskHelper
     /// 例如：6222020200112233445 -> 6222********3445
     /// </summary>
     /// <param name="bankCard">银行卡号</param>
-    /// <returns>脱敏后的银行卡号</returns>
+    /// <returns>脱敏后的银行卡号；入参为 null 或空串时原样返回</returns>
     public static string MaskBankCard(string bankCard)
     {
-        return string.IsNullOrEmpty(bankCard) || bankCard.Length < 8 ? bankCard.Mask(0, 0) : bankCard.Mask(4, 4);
+        return string.IsNullOrEmpty(bankCard) ? bankCard : bankCard.Length < 8 ? bankCard.Mask(0, 0) : bankCard.Mask(4, 4);
     }
 
     /// <summary>

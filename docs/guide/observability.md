@@ -235,8 +235,8 @@ var stats = performanceMonitor.GetStatistics();        // 总数/成功/失败�
 var slow = performanceMonitor.GetSlowOperations(500);  // 耗时 ≥ 500ms，按耗时倒序
 ```
 
-::: warning 记录存在无上限的 `ConcurrentBag` 里
-`PerformanceMonitor` 的记录只增不减，`Clear()` 是唯一的释放途径，进程重启即全丢。它适合「排查期临时打开、看完就清」，不适合当常驻监控——常驻请走 OTel 指标与链路。
+::: warning 只保留最近 10000 条记录
+`PerformanceMonitor` 的记录存在进程内队列，超过 10000 条自动丢弃最旧的，`GetStatistics()` / `GetSlowOperations()` 只反映这部分；进程重启即全丢，`Clear()` 可主动清空。它适合排查期临时观察，不适合当常驻监控——常驻请走 OTel 指标与链路。
 :::
 
 `IDiagnosticsService` 读进程当下状态，全部基于 BCL，无副作用（除 GC 那个方法外）：
@@ -324,7 +324,7 @@ public override void OnApplicationInitialization(ApplicationInitializationContex
 | 日志里 TraceId 格式变了 | 开启 OTel 后从 `TraceIdentifier` 变为 W3C 32-hex | 同步调整日志检索与告警规则 |
 | 日志 TraceId 为空 | 当前上下文没有 Activity（如未走 HTTP 管线的后台线程） | 在入口自行 `StartActivity` |
 | 消费端与发布端不在同一条 trace | 发布时没有环境 Activity，`correlationId` 非法或为空 | 在作业/任务入口建 Activity |
-| 进程内存持续上涨 | `PerformanceMonitor` 的 `ConcurrentBag` 无上限累积 | 定期 `Clear()`，或改用 OTel 指标 |
+| 早期的慢操作查不到、统计总数不再增长 | `PerformanceMonitor` 只保留最近 10000 条 | 需要全量历史改用 OTel 指标 |
 | `/health` 返回 401 | `RequireAuthenticatedUser=true` 时装配的鉴权 FallbackPolicy 拦截 | `MapHealthChecks(...).AllowAnonymous()` |
 | `/health` 200 但没有任何检查项 | 模块只注册基础设施，不含检查项 | 应用侧 `AddCheck` |
 | `StartActivity` 处空引用 | OTel 关闭时返回 `null` | 一律用 `activity?.` |
