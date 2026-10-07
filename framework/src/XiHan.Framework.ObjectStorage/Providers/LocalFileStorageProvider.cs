@@ -92,10 +92,23 @@ public class LocalFileStorageProvider : FileStorageProviderBase
             };
         }
 
-        Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
-
+        var gateAcquired = false;
         try
         {
+            await session.Gate.WaitAsync(cancellationToken);
+            gateAcquired = true;
+
+            if (!IsCurrentChunkedUploadSession(request.UploadId, session))
+            {
+                return new ChunkUploadResult
+                {
+                    Success = false,
+                    ChunkNumber = request.ChunkNumber,
+                    ErrorMessage = "Upload session not found"
+                };
+            }
+
+            Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
             var chunkPath = Path.Combine(session.TempDirectory, $"chunk_{request.ChunkNumber:D4}");
 
             // 写入流必须在算哈希之前就释放：它是 FileShare.None 独占持有的，
@@ -133,6 +146,13 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 ErrorMessage = ex.Message
             };
         }
+        finally
+        {
+            if (gateAcquired)
+            {
+                session.Gate.Release();
+            }
+        }
     }
 
     /// <summary>
@@ -149,8 +169,23 @@ public class LocalFileStorageProvider : FileStorageProviderBase
             };
         }
 
+        var gateAcquired = false;
+        string? temporaryPath = null;
         try
         {
+            await session.Gate.WaitAsync(cancellationToken);
+            gateAcquired = true;
+
+            if (!IsCurrentChunkedUploadSession(request.UploadId, session))
+            {
+                return new FileUploadResult
+                {
+                    Success = false,
+                    ErrorMessage = "Upload session not found"
+                };
+            }
+
+            Interlocked.Exchange(ref session.LastActivityUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
             var fullPath = GetFullPath(request.StoragePath);
             var directory = Path.GetDirectoryName(fullPath)!;
 
@@ -159,12 +194,8 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 Directory.CreateDirectory(directory);
             }
 
-            // 合并所有分片。
-            // 输出流的作用域必须收在这里：它是 FileShare.None 独占持有的，
-            // 早先写成 using var（作用域到方法结束），下面读回算哈希的 File.OpenRead 打的是同一个文件，
-            // 必然抛「文件正被另一进程使用」并被兜底 catch 吞成 Success=false；
-            // 顺带 FileInfo.Length 也得在流关闭后取，否则读到的可能不是最终长度。
-            await using (var outputStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            temporaryPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.uploading");
+            await using (var outputStream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 foreach (var chunkInfo in request.ChunkInfos.OrderBy(c => c.ChunkNumber))
                 {
@@ -185,17 +216,16 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 await outputStream.FlushAsync(cancellationToken);
             }
 
-            var fileInfo = new FileInfo(fullPath);
-
-            // 计算文件哈希
             string etag;
-            using (var readStream = File.OpenRead(fullPath))
+            using (var readStream = File.OpenRead(temporaryPath))
             {
                 etag = await ComputeFileHashAsync(readStream, cancellationToken);
             }
 
-            // 清理临时文件
-            CleanupChunkedUpload(request.UploadId);
+            File.Move(temporaryPath, fullPath, true);
+            temporaryPath = null;
+            var fileInfo = new FileInfo(fullPath);
+            CleanupChunkedUpload(session);
 
             return new FileUploadResult
             {
@@ -215,15 +245,49 @@ public class LocalFileStorageProvider : FileStorageProviderBase
                 ErrorMessage = ex.Message
             };
         }
+        finally
+        {
+            if (temporaryPath is not null)
+            {
+                try
+                {
+                    File.Delete(temporaryPath);
+                }
+                catch
+                {
+                    // 临时输出清理失败不覆盖原始合并错误。
+                }
+            }
+
+            if (gateAcquired)
+            {
+                session.Gate.Release();
+            }
+        }
     }
 
     /// <summary>
     /// 取消分片上传
     /// </summary>
-    public override Task AbortChunkedUploadAsync(string uploadId, CancellationToken cancellationToken = default)
+    public override async Task AbortChunkedUploadAsync(string uploadId, CancellationToken cancellationToken = default)
     {
-        CleanupChunkedUpload(uploadId);
-        return Task.CompletedTask;
+        if (!_uploadSessions.TryGetValue(uploadId, out var session))
+        {
+            return;
+        }
+
+        await session.Gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (IsCurrentChunkedUploadSession(uploadId, session))
+            {
+                CleanupChunkedUpload(session);
+            }
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
     /// <summary>
@@ -576,11 +640,21 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     }
 
     /// <summary>
+    /// 判断分片上传会话是否仍在会话表中
+    /// </summary>
+    private bool IsCurrentChunkedUploadSession(string uploadId, ChunkedUploadSession session)
+    {
+        return _uploadSessions.TryGetValue(uploadId, out var currentSession)
+            && ReferenceEquals(session, currentSession);
+    }
+
+    /// <summary>
     /// 清理分片上传临时文件
     /// </summary>
-    private void CleanupChunkedUpload(string uploadId)
+    private void CleanupChunkedUpload(ChunkedUploadSession session)
     {
-        if (_uploadSessions.TryRemove(uploadId, out var session))
+        var entry = new KeyValuePair<string, ChunkedUploadSession>(session.UploadId, session);
+        if (((ICollection<KeyValuePair<string, ChunkedUploadSession>>)_uploadSessions).Remove(entry))
         {
             try
             {
@@ -601,9 +675,22 @@ public class LocalFileStorageProvider : FileStorageProviderBase
         var cutoffTicks = DateTimeOffset.UtcNow.Subtract(UploadSessionTtl).UtcTicks;
         foreach (var session in _uploadSessions)
         {
-            if (Interlocked.Read(ref session.Value.LastActivityUtcTicks) <= cutoffTicks)
+            if (!session.Value.Gate.Wait(0))
             {
-                CleanupChunkedUpload(session.Key);
+                continue;
+            }
+
+            try
+            {
+                if (IsCurrentChunkedUploadSession(session.Key, session.Value)
+                    && Interlocked.Read(ref session.Value.LastActivityUtcTicks) <= cutoffTicks)
+                {
+                    CleanupChunkedUpload(session.Value);
+                }
+            }
+            finally
+            {
+                session.Value.Gate.Release();
             }
         }
     }
@@ -615,6 +702,7 @@ public class LocalFileStorageProvider : FileStorageProviderBase
     /// </summary>
     private class ChunkedUploadSession
     {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
         public string UploadId { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public string StoragePath { get; set; } = string.Empty;
