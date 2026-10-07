@@ -33,6 +33,10 @@ XiHan.Framework.Authentication 提供认证相关的基础能力与策略支持�
 - 认证策略与配置通过 Options 类型承载
 - 推荐在启动模块中统一配置认证参数与策略
 
+## JWT 刷新令牌
+
+`IRefreshTokenStore.TryConsume` 必须原子地验证令牌有效期、主体绑定并消费该令牌。自定义实现需要用存储层原子操作实现单次消费；数据库实现可使用带令牌、主体和过期条件的原子删除，并按受影响行数判定结果。多实例实现不能用独立的读取与删除，也不能只依赖单进程锁。刷新服务先消费旧令牌，再签发并保存新的令牌；若签发失败，旧令牌仍保持已消费状态。
+
 ## 使用方式
 ```csharp
 [DependsOn(typeof(XiHanAuthenticationModule))]

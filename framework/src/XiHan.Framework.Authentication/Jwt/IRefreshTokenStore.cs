@@ -25,6 +25,17 @@ public interface IRefreshTokenStore
     bool Validate(string refreshToken, string? subject = null);
 
     /// <summary>
+    /// 原子校验并消费刷新令牌
+    /// </summary>
+    /// <param name="refreshToken">刷新令牌</param>
+    /// <param name="subject">可选主体标识，用于绑定校验</param>
+    /// <returns>令牌有效且本次调用成功消费时返回 <see langword="true"/>；否则返回 <see langword="false"/></returns>
+    /// <remarks>
+    /// 实现必须将有效性校验与移除作为单一原子操作。分布式实现必须保证跨实例原子性，不能用独立的读取和删除代替。
+    /// </remarks>
+    bool TryConsume(string refreshToken, string? subject = null);
+
+    /// <summary>
     /// 移除刷新令牌
     /// </summary>
     /// <param name="refreshToken">刷新令牌</param>

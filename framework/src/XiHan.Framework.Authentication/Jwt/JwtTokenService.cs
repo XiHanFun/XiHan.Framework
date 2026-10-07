@@ -207,16 +207,13 @@ public class JwtTokenService : IJwtTokenService
             var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out _);
             var subject = GetTokenSubject(principal.Claims);
 
-            if (!_refreshTokenStore.Validate(refreshToken, subject))
+            if (!_refreshTokenStore.TryConsume(refreshToken, subject))
             {
                 return null;
             }
 
             // 生成新的访问令牌
-            var newToken = GenerateAccessToken([.. principal.Claims]);
-            _refreshTokenStore.Remove(refreshToken);
-
-            return newToken;
+            return GenerateAccessToken([.. principal.Claims]);
         }
         catch
         {

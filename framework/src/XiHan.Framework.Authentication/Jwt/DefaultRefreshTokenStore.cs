@@ -83,6 +83,40 @@ public class DefaultRefreshTokenStore : IRefreshTokenStore
     }
 
     /// <summary>
+    /// 原子校验并消费刷新令牌
+    /// </summary>
+    public bool TryConsume(string refreshToken, string? subject = null)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return false;
+        }
+
+        lock (_syncRoot)
+        {
+            if (!_tokens.TryGetValue(refreshToken, out var entry))
+            {
+                return false;
+            }
+
+            var now = DateTime.UtcNow;
+            if (entry.ExpiresAt <= now)
+            {
+                _tokens.TryRemove(refreshToken, out _);
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(subject) &&
+                !string.Equals(entry.Subject, subject, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return _tokens.TryRemove(refreshToken, out _);
+        }
+    }
+
+    /// <summary>
     /// 移除刷新令牌
     /// </summary>
     public void Remove(string refreshToken)
