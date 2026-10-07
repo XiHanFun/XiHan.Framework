@@ -37,6 +37,8 @@ XiHan.Framework.Authentication 提供认证相关的基础能力与策略支持�
 
 `IRefreshTokenStore.TryConsume` 必须原子地验证令牌有效期、主体绑定并消费该令牌。自定义实现需要用存储层原子操作实现单次消费；数据库实现可使用带令牌、主体和过期条件的原子删除，并按受影响行数判定结果。多实例实现不能用独立的读取与删除，也不能只依赖单进程锁。刷新服务先消费旧令牌，再签发并保存新的令牌；若签发失败，旧令牌仍保持已消费状态。
 
+OIDC 签名密钥自动生成会先完整写入同目录临时文件，再以原子移动发布；共享同一密钥路径的并发实例会读取发布成功的密钥。部署在不同本地文件系统上的多个节点仍须预置相同的 `SigningKeyPem` 或 `SigningKeyPath` 文件，并关闭自动生成。
+
 ## 使用方式
 ```csharp
 [DependsOn(typeof(XiHanAuthenticationModule))]

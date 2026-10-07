@@ -29,7 +29,8 @@ public interface IOidcSigningKeyProvider
 /// </summary>
 /// <remarks>
 /// 密钥在首次解析后常驻：签名与 JWKS 必须来自同一把密钥，且 kid 要在进程生命周期内稳定，
-/// 否则客户端按 kid 取到的公钥验不了签。故本类型注册为单例。
+/// 否则客户端按 kid 取到的公钥验不了签。自动生成时先将完整 PEM 写入同目录临时文件，再原子发布；
+/// 并发实例读取发布成功的同一把密钥。故本类型注册为单例。
 /// </remarks>
 public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
 {
@@ -82,10 +83,11 @@ public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
     /// </summary>
     private RsaSecurityKey LoadOrCreateKey()
     {
-        var rsa = RSA.Create();
+        RSA rsa;
 
         if (!string.IsNullOrWhiteSpace(_options.SigningKeyPem))
         {
+            rsa = RSA.Create();
             rsa.ImportFromPem(_options.SigningKeyPem);
         }
         else
@@ -96,7 +98,8 @@ public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
 
             if (File.Exists(path))
             {
-                rsa.ImportFromPem(File.ReadAllText(path));
+                rsa = RSA.Create();
+                ImportExistingKey(rsa, path);
             }
             else if (_options.AutoGenerateSigningKey)
             {
@@ -106,7 +109,8 @@ public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
                 {
                     _ = Directory.CreateDirectory(directory);
                 }
-                File.WriteAllText(path, rsa.ExportPkcs8PrivateKeyPem());
+
+                rsa = CreateOrReadPublishedKey(rsa, path, directory);
             }
             else
             {
@@ -119,6 +123,71 @@ public sealed class OidcSigningKeyProvider : IOidcSigningKeyProvider
         {
             KeyId = string.IsNullOrWhiteSpace(_options.KeyId) ? DeriveKeyId(rsa) : _options.KeyId
         };
+    }
+
+    private static RSA CreateOrReadPublishedKey(RSA generatedRsa, string path, string? directory)
+    {
+        var temporaryPath = Path.Combine(
+            directory ?? AppContext.BaseDirectory,
+            $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        var published = false;
+
+        try
+        {
+            using (var stream = new FileStream(
+                       temporaryPath,
+                       FileMode.CreateNew,
+                       FileAccess.Write,
+                       FileShare.None,
+                       bufferSize: 4096,
+                       FileOptions.WriteThrough))
+            using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+            {
+                writer.Write(generatedRsa.ExportPkcs8PrivateKeyPem());
+                writer.Flush();
+                stream.Flush(flushToDisk: true);
+            }
+
+            try
+            {
+                File.Move(temporaryPath, path);
+                published = true;
+                return generatedRsa;
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+                var winnerRsa = RSA.Create();
+                ImportExistingKey(winnerRsa, path);
+                return winnerRsa;
+            }
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(temporaryPath);
+            }
+            finally
+            {
+                if (!published)
+                {
+                    generatedRsa.Dispose();
+                }
+            }
+        }
+    }
+
+    private static void ImportExistingKey(RSA rsa, string path)
+    {
+        try
+        {
+            rsa.ImportFromPem(File.ReadAllText(path));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Security.Cryptography.CryptographicException)
+        {
+            rsa.Dispose();
+            throw new InvalidOperationException($"OIDC 签名密钥文件无效或无法读取：{path}。", exception);
+        }
     }
 
     /// <summary>
