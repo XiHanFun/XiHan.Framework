@@ -58,6 +58,7 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.TryAddScoped<ITraceIdProvider, HttpTraceIdProvider>();
         services.Configure<XiHanOpenApiSecurityOptions>(configuration.GetSection(XiHanOpenApiSecurityOptions.SectionName));
         services.TryAddScoped<IOpenApiSecurityClientStore, DefaultOpenApiSecurityClientStore>();
+        services.TryAddSingleton<IOpenApiReplayNonceStore, LocalOpenApiReplayNonceStore>();
 
         // 会话闸门：默认放行（未接入会话体系的宿主零影响），应用侧用 Replace 注入真实现。
         // 中间件本身是 IMiddleware，需按类型注册。

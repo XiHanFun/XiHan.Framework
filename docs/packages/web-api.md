@@ -38,7 +38,7 @@ public class MyModule : XiHanModule { }
 
 `AddXiHanWebApi(configuration)` 内部依次装配：
 
-- `AddXiHanWebApiSecurity`：`IRequestContextAccessor`（单例）、`ITraceIdProvider`（Scoped）、绑定 `XiHanOpenApiSecurityOptions`、`IOpenApiSecurityClientStore`（默认 `DefaultOpenApiSecurityClientStore`）。
+- `AddXiHanWebApiSecurity`：`IRequestContextAccessor`（单例）、`ITraceIdProvider`（Scoped）、绑定 `XiHanOpenApiSecurityOptions`、`IOpenApiSecurityClientStore`（默认 `DefaultOpenApiSecurityClientStore`）、`IOpenApiReplayNonceStore`（默认有界的 `LocalOpenApiReplayNonceStore`）。
 - `AddXiHanWebApiCors`：绑定 `XiHanCorsOptions` 并按其构建默认 CORS 策略。
 - `AddXiHanWebApiAuth`：按 `XiHan:Authentication:Jwt` 装配 JWT Bearer；按 `XiHan:Web:Api:Auth` 装配授权（可全局要求登录）；OAuth 启用时追加 `ExternalCookie` 临时 scheme。
 - `AddXiHanWebApiLogging`：仅注册本包四个 MVC 过滤器（`XiHanActionLoggingFilter`、`XiHanApiResponseResultFilter`、`XiHanCacheFilter`、`XiHanUnitOfWorkFilter`）。五类日志的 `ILogQueue<>`（单例）+ 五个 `HostedService` Worker + 五个 Pipeline（Scoped）+ 五个 `Null*LogWriter` 默认写入器已下沉至 [XiHan.Framework.Auditing](./auditing) 包的 `AddXiHanAuditing`（随 `XiHanAuditingModule` 依赖自动装配），由上层应用覆盖写入器落库。
@@ -162,7 +162,7 @@ public class MyModule : XiHanModule { }
 | `IRequestContextAccessor` / `RequestContext` | 请求级上下文访问器与模型（`sealed record`：TraceId/文化/用户/租户/IP/UA/路径/方法/起始时间）；用户与租户在认证与租户解析之后才定型，位于租户解析之前的中间件须在 `await next()` 返回后读取。 |
 | `ITraceIdProvider` / `HttpTraceIdProvider` | TraceId 提供器。 |
 | `XiHanTenantResolveMiddleware` + `HeaderTenantResolveContributor` / `QueryStringTenantResolveContributor` | 多租户解析中间件与两个内置贡献者。 |
-| `XiHanOpenApiSecurityMiddleware` / `IOpenApiSecurityClientStore` / `OpenApiSecurityClient` | OpenAPI 安全中间件、客户端存储与客户端模型。 |
+| `XiHanOpenApiSecurityMiddleware` / `IOpenApiSecurityClientStore` / `IOpenApiReplayNonceStore` / `OpenApiSecurityClient` | OpenAPI 安全中间件、客户端存储、防重放 nonce 存储契约与客户端模型。 |
 | `XiHanCircuitBreakerState` | 熔断器状态（滑动窗口统计、Closed/Open/HalfOpen 状态机，多实例各自独立）。 |
 
 ## 配置
@@ -216,7 +216,7 @@ public class MyModule : XiHanModule { }
 
 ### OpenAPI 安全：`XiHan:Web:Api:OpenApiSecurity`（`XiHanOpenApiSecurityOptions`）
 
-对开放接口做签名（HMAC/RSA/SM2）、内容签名（SHA256/512）、请求/响应加密（AES-CBC）与防重放（时间戳窗 + Nonce，分布式缓存或本地内存兜底）。默认关闭（`IsEnabled=false`）。主要字段：
+对开放接口做签名（HMAC/RSA/SM2）、内容签名（SHA256/512）、请求/响应加密（AES-CBC）与防重放（时间戳窗 + Nonce）。默认关闭（`IsEnabled=false`）；验签成功后才认领 nonce。默认 `LocalOpenApiReplayNonceStore` 适用于单实例且有硬容量上限；多实例必须注册具备跨实例原子认领语义的 `IOpenApiReplayNonceStore`，普通 `IDistributedCache` 的 Get/Set 组合不能保证原子防重放。
 
 | 字段 | 类型 | 默认 | 含义 |
 | --- | --- | --- | --- |
@@ -225,6 +225,8 @@ public class MyModule : XiHanModule { }
 | `RequireContentSignature` | `bool` | `true` | 是否必须校验内容签名。 |
 | `EnableReplayProtection` | `bool` | `true` | 是否启用防重放（Nonce）。 |
 | `TimestampToleranceSeconds` / `NonceExpireSeconds` | `int` | `300` / `300` | 时间戳误差 / Nonce 存活秒数。 |
+| `MaxLocalNonceEntries` | `int` | `100000` | 本地 nonce 最大数量；满载时返回 503，不静默放行。 |
+| `MaxNonceLengthBytes` | `int` | `256` | nonce 最大 UTF-8 字节数，超限返回 400。 |
 | `MaxRequestBodySize` | `int` | `2*1024*1024` | 可读取的最大请求体字节数。 |
 | `EnableResponseEncryption` / `EncryptResponseByDefaultWhenRequestEncrypted` | `bool` | `true` / `false` | 是否允许响应加密 / 请求加密时是否默认加密响应。 |
 | `DefaultSignatureAlgorithm` | `string` | `"HMACSHA256"` | 默认签名算法（支持 HMACSHA256/512、RSASHA256、SM2）。 |

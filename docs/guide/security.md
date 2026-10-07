@@ -330,6 +330,8 @@ public sealed class StorageSecretProtector
 
 `XiHanOpenApiSecurityMiddleware` 提供请求签名、内容签名、防重放与报文加解密，配置节 `XiHan:Web:Api:OpenApiSecurity`，默认关闭。
 
+防重放 nonce 仅在 AccessKey、IP、算法、请求体与请求签名全部通过后认领。默认 `LocalOpenApiReplayNonceStore` 有 100000 条容量上限，满载时返回 503；多实例部署需注册实现 `IOpenApiReplayNonceStore` 的共享存储，并保证原子认领，普通 `IDistributedCache` 的 Get/Set 不是原子操作。nonce UTF-8 长度默认最多 256 字节，可通过 `MaxNonceLengthBytes` 调整。
+
 请求头：
 
 | 请求头 | 含义 |

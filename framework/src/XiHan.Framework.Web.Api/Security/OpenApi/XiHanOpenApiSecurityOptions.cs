@@ -45,6 +45,16 @@ public class XiHanOpenApiSecurityOptions
     public int NonceExpireSeconds { get; set; } = 300;
 
     /// <summary>
+    /// 本地防重放存储允许保留的最大 nonce 数量，默认 100000。满载时安全请求以 503 拒绝。
+    /// </summary>
+    public int MaxLocalNonceEntries { get; set; } = 100_000;
+
+    /// <summary>
+    /// 请求 nonce 的最大 UTF-8 字节数，默认 256。
+    /// </summary>
+    public int MaxNonceLengthBytes { get; set; } = 256;
+
+    /// <summary>
     /// 允许读取的最大请求体字节数
     /// </summary>
     public int MaxRequestBodySize { get; set; } = 2 * 1024 * 1024;

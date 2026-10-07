@@ -1,9 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -23,8 +21,11 @@ namespace XiHan.Framework.Web.Api.Middlewares;
 public class XiHanOpenApiSecurityMiddleware(
     RequestDelegate next,
     ILogger<XiHanOpenApiSecurityMiddleware> logger,
-    IOptionsMonitor<XiHanOpenApiSecurityOptions> optionsMonitor)
+    IOptionsMonitor<XiHanOpenApiSecurityOptions> optionsMonitor,
+    IOpenApiReplayNonceStore? replayNonceStore = null)
 {
+    private static readonly IOpenApiReplayNonceStore DefaultReplayNonceStore = new LocalOpenApiReplayNonceStore();
+    private readonly IOpenApiReplayNonceStore _replayNonceStore = replayNonceStore ?? DefaultReplayNonceStore;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -65,9 +66,6 @@ public class XiHanOpenApiSecurityMiddleware(
     [
         "BLOWFISH"
     ];
-
-    private static readonly ConcurrentDictionary<string, DateTimeOffset> LocalReplayNonceStore = new(StringComparer.Ordinal);
-    private static int _localReplayNonceCleanupCounter;
 
     /// <summary>
     /// 执行中间件
@@ -124,6 +122,13 @@ public class XiHanOpenApiSecurityMiddleware(
             return;
         }
 
+        if (options.MaxNonceLengthBytes <= 0 ||
+            Encoding.UTF8.GetByteCount(nonce) > options.MaxNonceLengthBytes)
+        {
+            await WriteSecurityErrorAsync(context, StatusCodes.Status400BadRequest, "Nonce 长度超出限制");
+            return;
+        }
+
         if (!long.TryParse(timestampRaw, out var timestampUnix))
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status400BadRequest, "时间戳格式错误");
@@ -148,12 +153,6 @@ public class XiHanOpenApiSecurityMiddleware(
         if (!IsClientIpAllowed(client, context.Connection.RemoteIpAddress?.ToString()))
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status403Forbidden, "请求 IP 不在白名单内");
-            return;
-        }
-
-        if (!await TryAcquireNonceAsync(context, options, accessKey, nonce))
-        {
-            await WriteSecurityErrorAsync(context, StatusCodes.Status409Conflict, "检测到重复请求");
             return;
         }
 
@@ -264,6 +263,34 @@ public class XiHanOpenApiSecurityMiddleware(
         {
             await WriteSecurityErrorAsync(context, StatusCodes.Status401Unauthorized, "请求签名校验失败");
             return;
+        }
+
+        if (options.EnableReplayProtection)
+        {
+            if (options.MaxLocalNonceEntries <= 0)
+            {
+                throw new InvalidOperationException("OpenApi nonce 存储容量必须大于零。");
+            }
+
+            var nonceResult = await _replayNonceStore.TryAcquireAsync(
+                accessKey,
+                nonce,
+                DateTimeOffset.UtcNow.AddSeconds(Math.Max(1, options.NonceExpireSeconds)),
+                options.MaxLocalNonceEntries,
+                context.RequestAborted);
+            switch (nonceResult)
+            {
+                case OpenApiNonceAcquisitionResult.Acquired:
+                    break;
+                case OpenApiNonceAcquisitionResult.AlreadyUsed:
+                    await WriteSecurityErrorAsync(context, StatusCodes.Status409Conflict, "检测到重复请求");
+                    return;
+                case OpenApiNonceAcquisitionResult.CapacityExceeded:
+                    await WriteSecurityErrorAsync(context, StatusCodes.Status503ServiceUnavailable, "防重放存储已满，请稍后重试");
+                    return;
+                default:
+                    throw new InvalidOperationException($"未知的 nonce 认领结果: {nonceResult}");
+            }
         }
 
         context.Items[OpenApiSecurityConstants.SecurityClientContextKey] = client;
@@ -615,92 +642,6 @@ public class XiHanOpenApiSecurityMiddleware(
         }
 
         return result;
-    }
-
-    private static async Task<bool> TryAcquireNonceAsync(
-        HttpContext context,
-        XiHanOpenApiSecurityOptions options,
-        string accessKey,
-        string nonce)
-    {
-        if (!options.EnableReplayProtection)
-        {
-            return true;
-        }
-
-        var distributedCache = context.RequestServices.GetService<IDistributedCache>();
-        if (distributedCache is null)
-        {
-            var localNonceKey = $"openapi:nonce:{accessKey}:{nonce}";
-            return TryAcquireLocalNonce(localNonceKey, options.NonceExpireSeconds);
-        }
-
-        var nonceKey = $"openapi:nonce:{accessKey}:{nonce}";
-        var cancellationToken = context.RequestAborted;
-        if (!TryAcquireLocalNonce(nonceKey, options.NonceExpireSeconds))
-        {
-            return false;
-        }
-
-        var exists = await distributedCache.GetAsync(nonceKey, cancellationToken);
-        if (exists is not null)
-        {
-            return false;
-        }
-
-        var cacheEntryOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(Math.Max(1, options.NonceExpireSeconds))
-        };
-        await distributedCache.SetAsync(
-            nonceKey,
-            [1],
-            cacheEntryOptions,
-            cancellationToken);
-
-        return true;
-    }
-
-    private static bool TryAcquireLocalNonce(string nonceKey, int nonceExpireSeconds)
-    {
-        var now = DateTimeOffset.UtcNow;
-        var expiry = now.AddSeconds(Math.Max(1, nonceExpireSeconds));
-
-        while (true)
-        {
-            if (LocalReplayNonceStore.TryGetValue(nonceKey, out var existingExpiry))
-            {
-                if (existingExpiry > now)
-                {
-                    return false;
-                }
-
-                LocalReplayNonceStore.TryRemove(nonceKey, out _);
-                continue;
-            }
-
-            if (LocalReplayNonceStore.TryAdd(nonceKey, expiry))
-            {
-                TryCleanupExpiredLocalNonces(now);
-                return true;
-            }
-        }
-    }
-
-    private static void TryCleanupExpiredLocalNonces(DateTimeOffset now)
-    {
-        if (Interlocked.Increment(ref _localReplayNonceCleanupCounter) % 256 != 0)
-        {
-            return;
-        }
-
-        foreach (var entry in LocalReplayNonceStore)
-        {
-            if (entry.Value <= now)
-            {
-                LocalReplayNonceStore.TryRemove(entry.Key, out _);
-            }
-        }
     }
 
     private static async Task<string> ReadRequestBodyAsync(
