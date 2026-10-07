@@ -386,7 +386,7 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 - **`HttpClientHelper`**（`public static`，内部持有单例 `HttpClient`，默认超时 30s）：`GetAsync<T>` / `PostAsync<T>` / `PutAsync<T>` / `DeleteAsync<T>`，以及 `GetStringAsync` / `PostStreamAsync` 等，统一支持 `Dictionary<string,string>? headers`。
 - **`MimeTypes`**：分组常量（`MimeTypes.Application.Json`、`MimeTypes.Image.Png`、`MimeTypes.Video.Mp4` …）。
 - **`IpFormatExtensions`**：`IPAddress` / `byte[]` / `string` 间的 IP 格式互转。
-- **`SseClient`**（可实例化）：`ConnectAsync(url, headers, ct)` + `OnMessage` / `OnClosed` 事件；**`SseServer`**（静态）：`SendEventAsync(Stream, SseMessage)` 服务端推送。
+- **`SseClient`**（可实例化）：`ConnectAsync(url, headers, ct)` + `OnMessage` / `OnClosed` 事件；通过 `MaxLineBytes`（默认 64 KiB）和 `MaxEventBytes`（默认 1 MiB）限制输入，较大服务端事件可调高这两个值；**`SseServer`**（静态）：`SendEventAsync(Stream, SseMessage)` 服务端推送。
 - **`WebSocketClient`**（可实例化）：`ConnectAsync()` / `SendTextAsync(string)` / `SendBinaryAsync(byte[])` + `OnMessage` / `OnOpen` / `OnClose` / `OnError` 事件。
 
 ### 十、时间 `Timing`

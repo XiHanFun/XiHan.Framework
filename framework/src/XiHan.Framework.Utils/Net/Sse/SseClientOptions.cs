@@ -19,6 +19,16 @@ public class SseClientOptions
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(100);
 
     /// <summary>
+    /// 获取或设置 SSE 单行最大字节数。默认为 64 KiB。
+    /// </summary>
+    public int MaxLineBytes { get; set; } = 64 * 1024;
+
+    /// <summary>
+    /// 获取或设置单个 SSE 事件的最大字节数。默认为 1 MiB。
+    /// </summary>
+    public int MaxEventBytes { get; set; } = 1024 * 1024;
+
+    /// <summary>
     /// 获取或设置在连接断开后是否自动重连
     /// </summary>
     public bool AutoReconnect { get; set; } = true;

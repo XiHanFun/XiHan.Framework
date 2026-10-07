@@ -127,18 +127,28 @@ public class SseClient : IDisposable
     private async Task ProcessSseStreamAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var reader = new StreamReader(stream);
+        var lineReader = new SseLineReader(stream);
+        if (_options.MaxLineBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(_options.MaxLineBytes), "SSE 行长度上限必须大于零。");
+        }
+
+        if (_options.MaxEventBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(_options.MaxEventBytes), "SSE 事件长度上限必须大于零。");
+        }
 
         var eventBuilder = new SseMessageBuilder();
-        string? line;
+        long eventBytes = 0;
 
         try
         {
             // 逐行读取SSE流
-            while (!cancellationToken.IsCancellationRequested && (line = await reader.ReadLineAsync(cancellationToken)) != null)
+            while (!cancellationToken.IsCancellationRequested
+                   && await lineReader.ReadLineAsync(_options.MaxLineBytes, cancellationToken) is { } line)
             {
                 // 空行表示消息结束
-                if (string.IsNullOrEmpty(line))
+                if (string.IsNullOrEmpty(line.Text))
                 {
                     var message = eventBuilder.Build();
                     if (!string.IsNullOrEmpty(message.Data))
@@ -146,31 +156,38 @@ public class SseClient : IDisposable
                         OnMessage?.Invoke(message);
                     }
                     eventBuilder.Reset();
+                    eventBytes = 0;
                     continue;
                 }
 
+                eventBytes += line.ByteCount + 1;
+                if (eventBytes > _options.MaxEventBytes)
+                {
+                    throw new InvalidDataException($"SSE 事件超过最大长度 {_options.MaxEventBytes} 字节。");
+                }
+
                 // 解析SSE格式的行
-                if (line.StartsWith("data:"))
+                if (line.Text.StartsWith("data:"))
                 {
-                    eventBuilder.AppendData(line[5..].TrimStart());
+                    eventBuilder.AppendData(line.Text[5..].TrimStart());
                 }
-                else if (line.StartsWith("event:"))
+                else if (line.Text.StartsWith("event:"))
                 {
-                    eventBuilder.SetEvent(line[6..].TrimStart());
+                    eventBuilder.SetEvent(line.Text[6..].TrimStart());
                 }
-                else if (line.StartsWith("id:"))
+                else if (line.Text.StartsWith("id:"))
                 {
-                    eventBuilder.SetId(line[3..].TrimStart());
+                    eventBuilder.SetId(line.Text[3..].TrimStart());
                 }
-                else if (line.StartsWith("retry:"))
+                else if (line.Text.StartsWith("retry:"))
                 {
-                    if (int.TryParse(line[6..].TrimStart(), out var retry))
+                    if (int.TryParse(line.Text[6..].TrimStart(), out var retry))
                     {
                         eventBuilder.SetRetry(retry);
                     }
                 }
                 // 注释行，忽略
-                else if (line.StartsWith(':'))
+                else if (line.Text.StartsWith(':'))
                 {
                 }
             }
@@ -182,12 +199,6 @@ public class SseClient : IDisposable
         {
             // 取消操作，正常结束
             OnClosed?.Invoke(null);
-        }
-        catch (Exception ex)
-        {
-            // 异常结束
-            OnClosed?.Invoke(ex);
-            throw;
         }
     }
 }
