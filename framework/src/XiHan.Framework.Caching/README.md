@@ -16,6 +16,8 @@ XiHan.Framework.Caching 提供缓存能力的统一抽象与基础实现入口�
 - 缓存配置通过 Options 类型承载
 - 业务侧可根据环境选择具体缓存实现
 
+未启用 Redis 时，`DefaultDistributedLock` 仅在当前进程内互斥，最多保存 10,000 个资源键。过期清理会按观测到的具体锁条目删除；续期与接管会替换条目，避免清扫误删新持有者。多实例互斥需启用 Redis Provider。
+
 ## 使用方式
 ```csharp
 [DependsOn(typeof(XiHanCachingModule))]

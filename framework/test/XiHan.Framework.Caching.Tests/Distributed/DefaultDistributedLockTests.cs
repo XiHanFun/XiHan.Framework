@@ -1,7 +1,9 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Concurrent;
 using XiHan.Framework.Caching.Distributed;
+using XiHan.Framework.Caching.Distributed.Abstracts;
 
 namespace XiHan.Framework.Caching.Tests.Distributed;
 
@@ -15,6 +17,64 @@ namespace XiHan.Framework.Caching.Tests.Distributed;
 public class DefaultDistributedLockTests
 {
     private static readonly TimeSpan LongExpiry = TimeSpan.FromMinutes(5);
+
+    [Fact]
+    public void Cleanup_DoesNotRemoveEntryReplacedAfterExpirationSnapshot()
+    {
+        var nowTicks = DateTime.UtcNow.Ticks;
+        var expiredEntry = new DefaultDistributedLock.LockEntry("same-owner", nowTicks - 1);
+        var renewedEntry = new DefaultDistributedLock.LockEntry("same-owner", nowTicks + TimeSpan.FromMinutes(5).Ticks);
+        var locks = new ConcurrentDictionary<string, DefaultDistributedLock.LockEntry>(StringComparer.Ordinal)
+        {
+            ["resource"] = expiredEntry
+        };
+        var observedEntry = new KeyValuePair<string, DefaultDistributedLock.LockEntry>("resource", expiredEntry);
+        Assert.True(locks.TryUpdate("resource", renewedEntry, expiredEntry));
+
+        var removed = DefaultDistributedLock.TryRemoveExpiredEntry(locks, observedEntry, nowTicks);
+
+        Assert.False(removed);
+        Assert.Same(renewedEntry, locks["resource"]);
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task TryAcquireAsync_ConcurrentNewKeys_RespectsCapacityLimit()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var distributedLock = new DefaultDistributedLock();
+        var existingHandles = new List<IDistributedLockHandle>();
+        for (var index = 0; index < 9_998; index++)
+        {
+            var handle = await distributedLock.TryAcquireAsync($"existing-{index}", LongExpiry, token);
+            Assert.NotNull(handle);
+            existingHandles.Add(handle);
+        }
+
+        using var startBarrier = new Barrier(8);
+        var tasks = Enumerable.Range(0, 8)
+            .Select(index => Task.Factory.StartNew(() =>
+            {
+                startBarrier.SignalAndWait(token);
+                return distributedLock.TryAcquireAsync($"new-{index}", LongExpiry, token);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap())
+            .ToArray();
+
+        var newHandles = await Task.WhenAll(tasks);
+
+        Assert.True(newHandles.Count(handle => handle is not null) <= 2);
+        foreach (var handle in newHandles)
+        {
+            if (handle is not null)
+            {
+                await handle.ReleaseAsync();
+            }
+        }
+
+        foreach (var handle in existingHandles)
+        {
+            await handle.ReleaseAsync();
+        }
+    }
 
     /// <summary>
     /// 资源空闲时可获取到锁句柄
@@ -274,5 +334,69 @@ public class DefaultDistributedLockTests
         {
             handle?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// 容量清扫与过期锁续期竞争时，清扫不能删除刚续期成功的持有者
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task Cleanup_DoesNotRemoveRenewedOwner()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var distributedLock = new DefaultDistributedLock();
+        var owner = await distributedLock.TryAcquireAsync("renewed-resource", TimeSpan.FromMilliseconds(1), token);
+        Assert.NotNull(owner);
+
+        var fillers = new List<IDistributedLockHandle>();
+        for (var index = 0; index < 9_999; index++)
+        {
+            var handle = await distributedLock.TryAcquireAsync($"filler-{index}", LongExpiry, token);
+            Assert.NotNull(handle);
+            fillers.Add(handle);
+        }
+
+        await Task.Delay(20, token);
+        using var startBarrier = new Barrier(9);
+        var cleanupTasks = Enumerable.Range(0, 8)
+            .Select(index => Task.Factory.StartNew(() =>
+            {
+                startBarrier.SignalAndWait(token);
+                return distributedLock.TryAcquireAsync($"cleanup-trigger-{index}", LongExpiry, token);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap())
+            .ToArray();
+        var renewTask = Task.Factory.StartNew(() =>
+        {
+            startBarrier.SignalAndWait(token);
+            return owner.ExtendAsync(LongExpiry, token);
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+
+        var cleanupHandles = await Task.WhenAll(cleanupTasks);
+        var renewalSucceeded = await renewTask;
+        if (renewalSucceeded)
+        {
+            Assert.True(await owner.ExtendAsync(LongExpiry, token), "A successful renewal must not be removed by capacity cleanup.");
+        }
+
+        foreach (var handle in cleanupHandles)
+        {
+            if (handle is not null)
+            {
+                await handle.ReleaseAsync();
+            }
+        }
+
+        foreach (var handle in fillers)
+        {
+            await handle.ReleaseAsync();
+        }
+
+        var replacement = await distributedLock.TryAcquireAsync("renewed-resource", LongExpiry, token);
+        Assert.Equal(renewalSucceeded, replacement is null);
+        if (replacement is not null)
+        {
+            await replacement.ReleaseAsync();
+        }
+
+        await owner.ReleaseAsync();
     }
 }

@@ -17,6 +17,7 @@ public sealed class DefaultDistributedLock : IDistributedLock
     private const int MaxEntryCount = 10000;
 
     private readonly ConcurrentDictionary<string, LockEntry> _locks = new(StringComparer.Ordinal);
+    private readonly object _newEntrySyncRoot = new();
 
     /// <summary>
     /// 尝试在当前进程内获取锁，单次尝试不阻塞不重试，已被其他持有者占用且未过期时返回 <see langword="null"/>
@@ -34,27 +35,11 @@ public sealed class DefaultDistributedLock : IDistributedLock
         }
 
         var key = resourceKey.Trim();
-        var nowTicks = DateTime.UtcNow.Ticks;
-        if (!_locks.ContainsKey(key) && _locks.Count >= MaxEntryCount)
-        {
-            foreach (var item in _locks)
-            {
-                if (item.Value.ExpiresAtUtcTicks <= nowTicks)
-                {
-                    _locks.TryRemove(item.Key, out _);
-                }
-            }
-
-            if (_locks.Count >= MaxEntryCount)
-            {
-                return Task.FromResult<IDistributedLockHandle?>(null);
-            }
-        }
-
         var entry = new LockEntry(Guid.NewGuid().ToString("N"), DateTime.UtcNow.Add(expiry).Ticks);
 
         while (true)
         {
+            var nowTicks = DateTime.UtcNow.Ticks;
             if (_locks.TryGetValue(key, out var existing))
             {
                 // 仍在有效期内 → 获取失败
@@ -69,20 +54,60 @@ public sealed class DefaultDistributedLock : IDistributedLock
                     continue;
                 }
             }
-            else if (!_locks.TryAdd(key, entry))
+            else
             {
-                continue;
+                lock (_newEntrySyncRoot)
+                {
+                    if (_locks.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    if (_locks.Count >= MaxEntryCount)
+                    {
+                        foreach (var item in _locks)
+                        {
+                            if (item.Value.ExpiresAtUtcTicks <= nowTicks)
+                            {
+                                _ = TryRemoveExpiredEntry(_locks, item, nowTicks);
+                            }
+                        }
+
+                        if (_locks.Count >= MaxEntryCount)
+                        {
+                            return Task.FromResult<IDistributedLockHandle?>(null);
+                        }
+                    }
+
+                    if (!_locks.TryAdd(key, entry))
+                    {
+                        continue;
+                    }
+                }
             }
 
             return Task.FromResult<IDistributedLockHandle?>(new DefaultDistributedLockHandle(_locks, key, entry));
         }
     }
 
+    internal static bool TryRemoveExpiredEntry(
+        ConcurrentDictionary<string, LockEntry> locks,
+        KeyValuePair<string, LockEntry> observedEntry,
+        long nowTicks)
+    {
+        if (observedEntry.Value.ExpiresAtUtcTicks > nowTicks)
+        {
+            return false;
+        }
+
+        return locks.TryRemove(observedEntry);
+    }
+
     internal sealed class LockEntry(string lockId, long expiresAtUtcTicks)
     {
         public string LockId { get; } = lockId;
 
-        public long ExpiresAtUtcTicks { get; set; } = expiresAtUtcTicks;
+        public long ExpiresAtUtcTicks { get; } = expiresAtUtcTicks;
     }
 }
 
@@ -92,7 +117,8 @@ public sealed class DefaultDistributedLock : IDistributedLock
 internal sealed class DefaultDistributedLockHandle : IDistributedLockHandle
 {
     private readonly ConcurrentDictionary<string, DefaultDistributedLock.LockEntry> _locks;
-    private readonly DefaultDistributedLock.LockEntry _entry;
+    private DefaultDistributedLock.LockEntry _entry;
+    private readonly object _syncRoot = new();
     private int _released;
 
     public DefaultDistributedLockHandle(
@@ -114,10 +140,13 @@ internal sealed class DefaultDistributedLockHandle : IDistributedLockHandle
 
     public Task ReleaseAsync()
     {
-        if (Interlocked.Exchange(ref _released, 1) == 0)
+        lock (_syncRoot)
         {
-            // 仅当字典里仍是本句柄持有的条目时删除（引用相等），避免删掉接管者的锁
-            _locks.TryRemove(new KeyValuePair<string, DefaultDistributedLock.LockEntry>(ResourceKey, _entry));
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                // 仅当字典里仍是本句柄持有的条目时删除（引用相等），避免删掉接管者的锁
+                _locks.TryRemove(new KeyValuePair<string, DefaultDistributedLock.LockEntry>(ResourceKey, _entry));
+            }
         }
 
         return Task.CompletedTask;
@@ -130,10 +159,21 @@ internal sealed class DefaultDistributedLockHandle : IDistributedLockHandle
             throw new ArgumentOutOfRangeException(nameof(expiry), "锁过期时间必须大于零。");
         }
 
-        if (!IsReleased && _locks.TryGetValue(ResourceKey, out var current) && ReferenceEquals(current, _entry))
+        lock (_syncRoot)
         {
-            _entry.ExpiresAtUtcTicks = DateTime.UtcNow.Add(expiry).Ticks;
-            return Task.FromResult(true);
+            if (!IsReleased &&
+                _locks.TryGetValue(ResourceKey, out var current) &&
+                ReferenceEquals(current, _entry))
+            {
+                var renewedEntry = new DefaultDistributedLock.LockEntry(
+                    current.LockId,
+                    DateTime.UtcNow.Add(expiry).Ticks);
+                if (_locks.TryUpdate(ResourceKey, renewedEntry, current))
+                {
+                    _entry = renewedEntry;
+                    return Task.FromResult(true);
+                }
+            }
         }
 
         return Task.FromResult(false);
