@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@xihanfun/vitepress-theme':
-        specifier: ^1.0.0
-        version: 1.0.0(vitepress@2.0.0-alpha.20(postcss@8.5.29))(vue@3.5.42)
+        specifier: ^1.1.0
+        version: 1.1.0(vitepress@2.0.0-alpha.20(postcss@8.5.29))(vue@3.5.42)
       vitepress:
         specifier: 2.0.0-alpha.20
         version: 2.0.0-alpha.20(postcss@8.5.29)
@@ -314,8 +314,8 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@xihanfun/vitepress-theme@1.0.0':
-    resolution: {integrity: sha512-yz0wWCZfUJefHtW7dpAu/P35/B21XHGH5EalND0jLGj0Vp4cjWiOxW1L8TakFOltllv9XD0+6F0bjMyRRNJFpw==}
+  '@xihanfun/vitepress-theme@1.1.0':
+    resolution: {integrity: sha512-WTKokoF/zDERh+rE9mS6oGRflhqYKKTTqPesO3ehqaMKUK3ravBDdCgefC5RRDisvOA6ISjiOqeK455aiX3oNQ==}
     peerDependencies:
       vitepress: ^2.0.0-alpha.20
       vue: ^3.5.0
@@ -892,7 +892,7 @@ snapshots:
     dependencies:
       vue: 3.5.42
 
-  '@xihanfun/vitepress-theme@1.0.0(vitepress@2.0.0-alpha.20(postcss@8.5.29))(vue@3.5.42)':
+  '@xihanfun/vitepress-theme@1.1.0(vitepress@2.0.0-alpha.20(postcss@8.5.29))(vue@3.5.42)':
     dependencies:
       vitepress: 2.0.0-alpha.20(postcss@8.5.29)
       vue: 3.5.42
