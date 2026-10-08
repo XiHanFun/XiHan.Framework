@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Extensions.VectorData;
+using System.Security.Cryptography;
+using System.Text;
 using XiHan.Framework.AI.Rag;
 
 namespace XiHan.Framework.AI.Tests;
@@ -76,6 +78,28 @@ public sealed class VectorStoreKnowledgeRecordTests
     public void CreateDefinition_ShouldRejectNonPositiveDimensions(int dimensions)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => VectorStoreKnowledgeRecord.CreateDefinition(dimensions));
+    }
+
+    /// <summary>
+    /// 切片主键在同一文档标识跨租户复用时仍必须隔离，同时平台租户保持旧主键兼容。
+    /// </summary>
+    [Fact]
+    public void MakeId_ShouldIncludeTenantInIdentity()
+    {
+        var method = typeof(VectorStoreKnowledgeRecord).GetMethod(
+            nameof(VectorStoreKnowledgeRecord.MakeId),
+            [typeof(long), typeof(string), typeof(int)]);
+
+        Assert.NotNull(method);
+        var tenantOne = (Guid)method.Invoke(null, [101L, "shared-document", 0])!;
+        var tenantTwo = (Guid)method.Invoke(null, [202L, "shared-document", 0])!;
+        var tenantOneAgain = (Guid)method.Invoke(null, [101L, "shared-document", 0])!;
+        var platform = (Guid)method.Invoke(null, [0L, "shared-document", 0])!;
+
+        Assert.NotEqual(tenantOne, tenantTwo);
+        Assert.Equal(tenantOne, tenantOneAgain);
+        var legacyPlatformKey = new Guid(MD5.HashData(Encoding.UTF8.GetBytes("shared-document:0")));
+        Assert.Equal(legacyPlatformKey, platform);
     }
 
     /// <summary>

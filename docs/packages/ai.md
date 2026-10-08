@@ -97,7 +97,7 @@ MCP 工具桥接 `AddXiHanMcpServerTools()` 不在模块内自动调用，须配
 | `DefaultAiSkillRegistry` | `IAiSkillRegistry` 实现，构造时收纳 DI 全部 `IAiSkill`，线程安全、同名覆盖 |
 | `SkillMcpToolsConfigurator` | `IConfigureOptions<McpServerOptions>`，把技能 `AsFunction()` 经 `McpServerTool.Create` 并入 MCP 工具集；工具名冲突时抛 `InvalidOperationException` |
 | `FixedWindowChunkingStrategy` | 固定窗口 + 重叠切片；`MaxChunkSize` / `Overlap`，换行归一后按步长切分 |
-| `DefaultKnowledgeIngestor` | 切片 → 批量 embedding → upsert；`RemoveDocumentAsync` 按文档删向量。依赖注入的 `VectorStore` |
+| `DefaultKnowledgeIngestor` | 切片 → 批量 embedding → upsert；摄取与删除均按租户隔离。依赖注入的 `VectorStore` |
 | `DefaultKnowledgeRetriever` | query embedding → `VectorStore` 检索 → 映射 `RetrievedChunk`；`RetrievalFilter` 转 pre-filter 表达式 |
 | `DefaultRagPromptAugmenter` | 简单模板增强（约束 + 编号片段 + 问题）；不走 Scriban，直接插值 |
 | `VectorStoreKnowledgeRecord` | 向量库记录模型（`Microsoft.Extensions.VectorData` 特性），见下文 |
@@ -117,8 +117,9 @@ MCP 工具桥接 `AddXiHanMcpServerTools()` 不在模块内自动调用，须配
 `DefaultKnowledgeIngestor` / `DefaultKnowledgeRetriever` 用固定的记录模型：
 
 - 集合名常量 `CollectionName = "default_knowledge"`
-- 主键 `Guid Id`，由 `MakeId(documentId, index)` 用 `MD5(documentId:index)` 确定性派生（同文档同序号恒等，重建即覆盖）。用 `Guid` 是因为 Qdrant 只支持 `Guid`/`ulong` 键，`Guid` 兼容各连接器
+- 主键 `Guid Id`，由 `MakeId(tenantId, documentId, index)` 确定性派生；租户 0 保留旧版 MD5 键，其他租户的键包含租户标识，避免相同文档标识覆盖其他租户切片。用 `Guid` 是因为 Qdrant 只支持 `Guid`/`ulong` 键，`Guid` 兼容各连接器
 - 过滤字段 `DocumentId` / `TenantId` 标 `IsIndexed = true` 以支持 pre-filter
+- 租户删除使用 `RemoveDocumentAsync(documentId, tenantId, chunkCount)`；旧版自定义 `IKnowledgeIngestor` 若未实现租户重载，非零租户删除会抛出 `NotSupportedException`，不会退回无租户删除。清理旧版向量键时仅删除记录 `TenantId` 匹配的记录
 - 向量维度编译期常量 `EmbeddingDimensions = 1536`（对齐 `text-embedding-3-small`）；换维度的嵌入模型须改此常量并重建集合。距离函数 `CosineSimilarity`，索引 `Hnsw`
 
 ## 配置
@@ -292,7 +293,7 @@ public sealed class AgentSample(IXiHanAgentFactory factory, IAiSkillRegistry ski
 
 - **向量库（Qdrant）不由本框架包注册**：`DefaultKnowledgeIngestor` / `DefaultKnowledgeRetriever` 构造依赖 `Microsoft.Extensions.VectorData` 的 `VectorStore`，而 `AddXiHanRAG` **不注册**任何具体 `VectorStore`。向量连接器与嵌入模型选择属**应用层部署事项**——应用（如 BasicApp）负责 `AddQdrantVectorStore(...)` 等登记，本框架包本身不提供 Qdrant 能力，也不引用其连接器包。若未注册 `VectorStore` 而调用 RAG 摄取/检索，会在解析这两个服务时因缺依赖失败。
 - **嵌入维度硬编码**：`VectorStoreKnowledgeRecord.EmbeddingDimensions = 1536`。换用不同维度的嵌入模型必须改此常量并重建向量集合，否则 upsert/检索维度不匹配。
-- **确定性主键**：切片主键由 `MD5(documentId:index)` 派生，重复摄取同一文档会覆盖旧切片（幂等）；删除须传原 `chunkCount`（`RemoveDocumentAsync`）以枚举全部键。
+- **确定性主键**：切片主键由租户、文档与序号确定性派生；重复摄取同租户同一文档会覆盖旧切片（幂等）。删除须传原 `chunkCount` 与 `tenantId`（`RemoveDocumentAsync`）以枚举全部键。自定义 `IKnowledgeIngestor` 实现应增加租户重载，确保只删除所属租户记录。
 - **解析器缓存与热切换**：改了配置源里的 provider 参数后，必须调 `Invalidate` 才生效——缓存不会自动感知外部 DB 变更。
 - **工具自动执行**：`OpenAiCompatibleChatClientFactory` 套了 `UseFunctionInvocation`，MAF 的 `ChatClientAgent` 内部也套 `FunctionInvokingChatClient`——工具/技能会被自动调用、无人工批准。当前 v1 技能均只读（知识检索）安全；将来接入有副作用的技能须自行加批准/审计。
 - **管道三开关默认全关**：护栏是有意为之的安全策略（默认关避免无感知拦截业务）；缓存对高温创造性调用会重放同答，语义有风险；遥测在未接 OTel 导出器前是静默空操作。生产环境建议至少打开 `EnableGuardrail`，其余按需评估。

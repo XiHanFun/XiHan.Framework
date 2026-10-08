@@ -48,6 +48,7 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.DocumentId);
+        ArgumentOutOfRangeException.ThrowIfNegative(request.TenantId);
         cancellationToken.ThrowIfCancellationRequested();
 
         var pieces = _chunkingStrategy.Chunk(request.Text, request.Chunking ?? new ChunkingOptions());
@@ -74,7 +75,7 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
         {
             records.Add(new VectorStoreKnowledgeRecord
             {
-                Id = VectorStoreKnowledgeRecord.MakeId(request.DocumentId, i),
+                Id = VectorStoreKnowledgeRecord.MakeId(request.TenantId, request.DocumentId, i),
                 DocumentId = request.DocumentId,
                 TenantId = request.TenantId,
                 ChunkIndex = i,
@@ -90,14 +91,27 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
     }
 
     /// <summary>
-    /// 按文档移除已入库向量，集合不存在时直接返回
+    /// 按文档移除平台全局向量，集合不存在时直接返回。
     /// </summary>
     /// <param name="documentId">文档标识</param>
     /// <param name="chunkCount">该文档原切片数，非正数时不做任何处理</param>
     /// <param name="cancellationToken">取消令牌</param>
     public async Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken cancellationToken = default)
     {
+        await RemoveDocumentAsync(documentId, 0, chunkCount, cancellationToken);
+    }
+
+    /// <summary>
+    /// 按租户和文档移除已入库向量，集合不存在时直接返回。
+    /// </summary>
+    /// <param name="documentId">文档标识</param>
+    /// <param name="tenantId">租户标识，0 表示平台全局数据</param>
+    /// <param name="chunkCount">该文档原切片数，非正数时不做任何处理</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task RemoveDocumentAsync(string documentId, long tenantId, int chunkCount, CancellationToken cancellationToken = default)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(documentId);
+        ArgumentOutOfRangeException.ThrowIfNegative(tenantId);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (chunkCount <= 0)
@@ -111,7 +125,29 @@ public sealed class DefaultKnowledgeIngestor : IKnowledgeIngestor
             return;
         }
 
-        var keys = Enumerable.Range(0, chunkCount).Select(i => VectorStoreKnowledgeRecord.MakeId(documentId, i));
+        var keys = Enumerable.Range(0, chunkCount)
+            .Select(i => VectorStoreKnowledgeRecord.MakeId(tenantId, documentId, i))
+            .ToHashSet();
+
+        if (tenantId != 0)
+        {
+            // 仅清理旧版未按租户派生的键，并核对记录租户，避免迁移时误删其他租户的旧向量。
+            var legacyKeys = Enumerable.Range(0, chunkCount)
+                .Select(i => VectorStoreKnowledgeRecord.MakeLegacyId(documentId, i))
+                .ToArray();
+            var legacyRecords = VectorStoreOperation.ExecuteStreamAsync(
+                collection.GetAsync(legacyKeys, cancellationToken: cancellationToken),
+                cancellationToken);
+
+            await foreach (var record in legacyRecords.WithCancellation(cancellationToken))
+            {
+                if (record.TenantId == tenantId)
+                {
+                    keys.Add(record.Id);
+                }
+            }
+        }
+
         await VectorStoreOperation.ExecuteAsync(() => collection.DeleteAsync(keys, cancellationToken));
     }
 

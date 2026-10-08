@@ -53,7 +53,7 @@ public class IKnowledgeIngestorTests
     }
 
     /// <summary>
-    /// 移除文档时按摄取返回的切片数逐片定位
+    /// 移除文档时按租户标识与摄取返回的切片数逐片定位
     /// </summary>
     /// <param name="chunkCount">该文档原切片数</param>
     /// <remarks>
@@ -64,13 +64,14 @@ public class IKnowledgeIngestorTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(128)]
-    public async Task RemoveDocumentAsync_PassesDocumentIdAndChunkCount(int chunkCount)
+    public async Task RemoveDocumentAsync_PassesTenantIdDocumentIdAndChunkCount(int chunkCount)
     {
         var ingestor = new RecordingKnowledgeIngestor(ingestedChunkCount: 0);
 
-        await ingestor.RemoveDocumentAsync("doc-42", chunkCount, TestContext.Current.CancellationToken);
+        await ingestor.RemoveDocumentAsync("doc-42", 42, chunkCount, TestContext.Current.CancellationToken);
 
         Assert.Equal("doc-42", ingestor.LastRemovedDocumentId);
+        Assert.Equal(42, ingestor.LastRemovedTenantId);
         Assert.Equal(chunkCount, ingestor.LastRemovedChunkCount);
     }
 
@@ -103,21 +104,51 @@ public class IKnowledgeIngestorTests
     [Fact]
     public void RemoveDocumentAsync_Signature_RequiresBothDocumentIdAndChunkCount()
     {
-        var method = typeof(IKnowledgeIngestor).GetMethod(nameof(IKnowledgeIngestor.RemoveDocumentAsync))!;
+        var method = typeof(IKnowledgeIngestor).GetMethod(
+            nameof(IKnowledgeIngestor.RemoveDocumentAsync),
+            [typeof(string), typeof(long), typeof(int), typeof(CancellationToken)])!;
 
         Assert.Equal(typeof(Task), method.ReturnType);
 
         var parameters = method.GetParameters();
 
-        Assert.Equal(3, parameters.Length);
+        Assert.Equal(4, parameters.Length);
         Assert.Equal("documentId", parameters[0].Name);
         Assert.Equal(typeof(string), parameters[0].ParameterType);
         Assert.False(parameters[0].IsOptional);
-        Assert.Equal("chunkCount", parameters[1].Name);
-        Assert.Equal(typeof(int), parameters[1].ParameterType);
+        Assert.Equal("tenantId", parameters[1].Name);
+        Assert.Equal(typeof(long), parameters[1].ParameterType);
         Assert.False(parameters[1].IsOptional);
-        Assert.Equal(typeof(CancellationToken), parameters[2].ParameterType);
-        Assert.True(parameters[2].IsOptional);
+        Assert.Equal("chunkCount", parameters[2].Name);
+        Assert.Equal(typeof(int), parameters[2].ParameterType);
+        Assert.False(parameters[2].IsOptional);
+        Assert.Equal(typeof(CancellationToken), parameters[3].ParameterType);
+        Assert.True(parameters[3].IsOptional);
+    }
+
+    /// <summary>
+    /// 租户文档删除必须显式携带租户标识。
+    /// </summary>
+    [Fact]
+    public void RemoveDocumentAsync_RequiresTenantScopedOverload()
+    {
+        var method = typeof(IKnowledgeIngestor).GetMethod(
+            nameof(IKnowledgeIngestor.RemoveDocumentAsync),
+            [typeof(string), typeof(long), typeof(int), typeof(CancellationToken)]);
+
+        Assert.NotNull(method);
+    }
+
+    /// <summary>
+    /// 未实现租户隔离删除的旧 Provider 必须拒绝处理非平台租户。
+    /// </summary>
+    [Fact]
+    public async Task RemoveDocumentAsync_LegacyProviderRejectsNonPlatformTenant()
+    {
+        IKnowledgeIngestor ingestor = new LegacyKnowledgeIngestor();
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            ingestor.RemoveDocumentAsync("doc-42", 42, 1, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -168,6 +199,11 @@ public class IKnowledgeIngestorTests
         public int? LastRemovedChunkCount { get; private set; }
 
         /// <summary>
+        /// 最近一次移除时给出的租户标识。
+        /// </summary>
+        public long? LastRemovedTenantId { get; private set; }
+
+        /// <summary>
         /// 记录摄取请求并回放切片数
         /// </summary>
         /// <param name="request">摄取请求</param>
@@ -186,12 +222,34 @@ public class IKnowledgeIngestorTests
         /// <param name="documentId">文档 id</param>
         /// <param name="chunkCount">该文档原切片数</param>
         /// <param name="cancellationToken">取消令牌</param>
-        public Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken cancellationToken = default)
+        public Task RemoveDocumentAsync(string documentId, long tenantId, int chunkCount, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastRemovedDocumentId = documentId;
+            LastRemovedTenantId = tenantId;
             LastRemovedChunkCount = chunkCount;
 
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 平台全局文档的旧版删除入口。
+        /// </summary>
+        public Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken cancellationToken = default)
+        {
+            return RemoveDocumentAsync(documentId, 0, chunkCount, cancellationToken);
+        }
+    }
+
+    private sealed class LegacyKnowledgeIngestor : IKnowledgeIngestor
+    {
+        public Task<int> IngestAsync(KnowledgeIngestRequest request, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(0);
+        }
+
+        public Task RemoveDocumentAsync(string documentId, int chunkCount, CancellationToken cancellationToken = default)
+        {
             return Task.CompletedTask;
         }
     }
