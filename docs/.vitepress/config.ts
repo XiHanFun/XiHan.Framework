@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 import type { DefaultTheme } from "vitepress";
 import { defineXiHanConfig } from "@xihanfun/vitepress-theme/config";
-import { renderPageMarkdown, writeLlmsAssets } from "./gen-llms.ts";
 
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
@@ -353,19 +352,19 @@ export default defineXiHanConfig({
   description,
   keywords,
   repo: "XiHan.Framework",
-  pageMarkdown: renderPageMarkdown,
-  // 机读资产（llms.txt、全站正文、分册与「取本页 Markdown」的单页 .md）在构建末尾落进产物目录
-  async buildEnd(siteConfig) {
-    await writeLlmsAssets(siteConfig.outDir, {
-      title: "曦寒开发框架",
-      summary:
-        "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
-      sections: [
-        { dir: ".", label: "开始" },
-        { dir: "guide", label: "开发指南", bundle: "guide" },
-        { dir: "packages", label: "模块总览", bundle: "packages" },
-      ],
-    });
+  llms: {
+    title: "曦寒开发框架",
+    summary:
+      "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
+    sections: [
+      { dir: ".", label: "开始" },
+      { dir: "guide", label: "开发指南" },
+      { dir: "packages", label: "模块总览" },
+    ],
+    bundles: [
+      { name: "guide", label: "开发指南", dirs: ["guide"] },
+      { name: "packages", label: "模块总览", dirs: ["packages"] },
+    ],
   },
   themeConfig: {
     nav,
