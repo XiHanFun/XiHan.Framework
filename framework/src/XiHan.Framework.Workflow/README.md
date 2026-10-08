@@ -13,7 +13,7 @@
 | 能力 | 说明 |
 | --- | --- |
 | 执行引擎 | `IWorkflowEngine`：启动/书签恢复/信号/挂起/取消/终止/重试；实例级分布式锁单写者；执行批次逐节点持久化；防失控环路步数上限 |
-| 标准活动库 | Start、End、Terminate、Fault、Log、SetVariable、Decision（独占网关）、Parallel、Join（WaitAll/WaitAny）、Delay、WaitSignal、UserTask、Http、Script（Roslyn）、PublishEvent、SubWorkflow、ForEach |
+| 标准活动库 | Start、End、Terminate、Fault、Log、SetVariable、Decision（独占网关）、Parallel、Join（WaitAll/WaitAny）、Delay、WaitSignal、UserTask、Http、PublishEvent、SubWorkflow、ForEach；Script（Roslyn）须显式注册 |
 | 审批 | 或签/会签/依次审批、拒绝一票否决、超时结果流转（`outcome == 'timeout'`）、转办、加签、抄送事件、审批轨迹 |
 | 表达式 | 内置轻量表达式语言（变量导航/算术/比较/逻辑/内置函数），出边条件 fail-closed，`{{ }}` 模板插值 |
 | 定义管理 | `IWorkflowDefinitionManager`：草稿 → 发布 → 停用 → 归档；同编码多版本，实例绑定版本；发布前结构校验（唯一开始节点、引用完整、表达式语法、可达性） |
@@ -47,6 +47,7 @@ Caching（分布式锁）、Core、DistributedIds（标识）、EventBus（事�
 - 引擎不接管数据库事务，业务活动自行管理事务边界；
 - 内存存储仅适用单实例部署，多实例集群须替换三个存储为共享持久化实现；
 - 活动输出合并进实例顶层变量，`outcome` 仅在出边条件求值时可见。
+- `ScriptActivity` 不随 `AddXiHanWorkflow` 默认注册。只有流程定义作者完全可信、且宿主接受同进程代码执行风险时，才显式调用 `services.AddXiHanWorkflowActivity<ScriptActivity>()`；框架内置脚本安全检查不是沙箱，不能用于隔离租户或终端用户提供的脚本。
 
 ## 使用方式
 
@@ -95,6 +96,7 @@ await userTaskService.CompleteAsync(tasks[0].TaskId, "1001", WorkflowUserTaskOut
 ## 扩展点
 
 - 自定义活动：实现 `IWorkflowActivity`（可选 `IResumableWorkflowActivity`/`ICompensableWorkflowActivity`），标注 `[WorkflowActivity("YourType")]`，`services.AddXiHanWorkflowActivity<YourActivity>()` 注册；
+- 受信任脚本：显式注册 `ScriptActivity`；升级时如依赖其原有默认注册，需增加 `services.AddXiHanWorkflowActivity<ScriptActivity>()`，并仅允许受信任的流程作者维护定义；
 - 持久化：以 `Replace` 覆盖 `IWorkflowDefinitionStore`/`IWorkflowInstanceStore`/`IWorkflowBookmarkStore`；
 - 表达式语言：替换 `IWorkflowExpressionEvaluator`；
 - 事件出口：替换 `IWorkflowEventPublisher`（如改发分布式总线）。

@@ -30,6 +30,7 @@ public class ReviewHardeningTests : IDisposable
         _host = new WorkflowTestHost(services =>
         {
             services.AddXiHanWorkflowActivity<CancellationThrowingActivity>();
+            services.AddXiHanWorkflowActivity<ScriptActivity>();
             services.AddHttpClient(HttpRequestActivity.HttpClientName)
                 .ConfigurePrimaryHttpMessageHandler(() => new StubHttpMessageHandler());
         });

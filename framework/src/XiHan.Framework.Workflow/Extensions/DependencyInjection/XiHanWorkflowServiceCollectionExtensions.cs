@@ -100,7 +100,6 @@ public static class XiHanWorkflowServiceCollectionExtensions
         services.AddXiHanWorkflowActivity<WaitSignalActivity>();
         services.AddXiHanWorkflowActivity<UserTaskActivity>();
         services.AddXiHanWorkflowActivity<HttpRequestActivity>();
-        services.AddXiHanWorkflowActivity<ScriptActivity>();
         services.AddXiHanWorkflowActivity<PublishEventActivity>();
         services.AddXiHanWorkflowActivity<SubWorkflowActivity>();
         services.AddXiHanWorkflowActivity<ForEachActivity>();
