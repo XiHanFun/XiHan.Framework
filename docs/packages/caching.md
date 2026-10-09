@@ -129,6 +129,8 @@ Task<IDistributedLockHandle?> TryAcquireAsync(string resourceKey, TimeSpan expir
 
 延迟精度 ≈ 消费者轮询周期（到期项不主动唤醒，需定期 `DequeueDueAsync`）。
 
+扩展方法 `ProcessDueAsync` / `ConsumeDueAsync` 逐条处理已到期消息：处理失败按 `retryDelay`（`RedisDelayConsumeOptions.RetryDelay`）重新入队，为空则丢弃；处理中途取消时，本批尚未处理的消息立即重新入队，正在处理的消息按失败处理，随后抛出 `OperationCanceledException`。
+
 ### Redis Stream 可靠队列 `IRedisStreamQueue<T>`
 
 基于 Redis Streams + 消费组，at-least-once。每个 `T` 独占一个 Stream。

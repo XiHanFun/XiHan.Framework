@@ -137,6 +137,96 @@ public class RedisDelayQueueExtensionsTests
     }
 
     /// <summary>
+    /// 处理中途取消时，本批尚未处理的消息立即回队，正在处理的消息按重投延迟回队
+    /// </summary>
+    [Fact]
+    public async Task ProcessDueAsync_WhenCancelledMidBatchWithRetryDelay_ReEnqueuesInFlightAndRemainingItems()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var queue = new DefaultDelayQueue<DelayMessage>();
+        await queue.EnqueueRangeAsync([new DelayMessage(1), new DelayMessage(2), new DelayMessage(3)], TimeSpan.Zero, token);
+        using var cts = new CancellationTokenSource();
+        var handled = new List<int>();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queue.ProcessDueAsync(10, (message, ct) =>
+        {
+            handled.Add(message.Id);
+            cts.Cancel();
+            ct.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
+        }, TimeSpan.FromMinutes(5), cts.Token));
+
+        Assert.Equal(new[] { 1 }, handled);
+        Assert.Equal(3, await queue.CountAsync(token));
+        Assert.Equal(new[] { 2, 3 }, (await queue.DequeueDueAsync(10, token)).Select(m => m.Id));
+    }
+
+    /// <summary>
+    /// 处理中途取消且没有重投延迟时，正在处理的消息丢弃，本批尚未处理的消息立即回队
+    /// </summary>
+    [Fact]
+    public async Task ProcessDueAsync_WhenCancelledMidBatchWithoutRetryDelay_ReEnqueuesRemainingItems()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var queue = new DefaultDelayQueue<DelayMessage>();
+        await queue.EnqueueRangeAsync([new DelayMessage(1), new DelayMessage(2), new DelayMessage(3)], TimeSpan.Zero, token);
+        using var cts = new CancellationTokenSource();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queue.ProcessDueAsync(10, (_, ct) =>
+        {
+            cts.Cancel();
+            ct.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
+        }, cancellationToken: cts.Token));
+
+        Assert.Equal(new[] { 2, 3 }, (await queue.DequeueDueAsync(10, token)).Select(m => m.Id));
+    }
+
+    /// <summary>
+    /// 处理成功后令牌被取消时，不再调用处理委托，本批尚未处理的消息立即回队
+    /// </summary>
+    [Fact]
+    public async Task ProcessDueAsync_WhenCancelledBetweenItems_StopsAndReEnqueuesRemainingItems()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var queue = new DefaultDelayQueue<DelayMessage>();
+        await queue.EnqueueRangeAsync([new DelayMessage(1), new DelayMessage(2), new DelayMessage(3)], TimeSpan.Zero, token);
+        using var cts = new CancellationTokenSource();
+        var handled = new List<int>();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queue.ProcessDueAsync(10, (message, _) =>
+        {
+            handled.Add(message.Id);
+            cts.Cancel();
+            return Task.CompletedTask;
+        }, cancellationToken: cts.Token));
+
+        Assert.Equal(new[] { 1 }, handled);
+        Assert.Equal(new[] { 2, 3 }, (await queue.DequeueDueAsync(10, token)).Select(m => m.Id));
+    }
+
+    /// <summary>
+    /// 处理失败时令牌已取消，重投仍然写回队列
+    /// </summary>
+    [Fact]
+    public async Task ProcessDueAsync_WhenHandlerFailsAfterCancellation_StillReEnqueuesItem()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var queue = new CancellationAwareDelayQueue();
+        await queue.EnqueueAsync(new DelayMessage(1), TimeSpan.Zero, token);
+        using var cts = new CancellationTokenSource();
+
+        var processed = await queue.ProcessDueAsync(10, (_, _) =>
+        {
+            cts.Cancel();
+            throw new InvalidOperationException("处理失败");
+        }, TimeSpan.FromMinutes(5), cts.Token);
+
+        Assert.Equal(0, processed);
+        Assert.Equal(1, await queue.CountAsync(token));
+    }
+
+    /// <summary>
     /// 队列或处理委托为空时到期消费拒绝执行
     /// </summary>
     [Fact]
@@ -228,6 +318,36 @@ public class RedisDelayQueueExtensionsTests
         Assert.Equal(50, options.BatchSize);
         Assert.Equal(TimeSpan.FromSeconds(5), options.PollInterval);
         Assert.Null(options.RetryDelay);
+    }
+
+    /// <summary>
+    /// 入队时响应取消令牌的延迟队列
+    /// </summary>
+    private sealed class CancellationAwareDelayQueue : IRedisDelayQueue<DelayMessage>
+    {
+        private readonly DefaultDelayQueue<DelayMessage> _inner = new();
+
+        public Task EnqueueAsync(DelayMessage item, TimeSpan delay, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return _inner.EnqueueAsync(item, delay, cancellationToken);
+        }
+
+        public Task EnqueueAtAsync(DelayMessage item, DateTimeOffset dueTime, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return _inner.EnqueueAtAsync(item, dueTime, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<DelayMessage>> DequeueDueAsync(int count, CancellationToken cancellationToken = default)
+        {
+            return _inner.DequeueDueAsync(count, cancellationToken);
+        }
+
+        public Task<long> CountAsync(CancellationToken cancellationToken = default)
+        {
+            return _inner.CountAsync(cancellationToken);
+        }
     }
 
     /// <summary>

@@ -33,6 +33,9 @@ public static class RedisDelayQueueExtensions
     /// <summary>
     /// 取出已到期的消息并逐条处理。返回处理条数。
     /// </summary>
+    /// <remarks>
+    /// 处理中途取消时，本批尚未处理的消息立即重新入队；正在处理的消息按 <paramref name="retryDelay"/> 重新入队，为空则丢弃。随后抛出 <see cref="OperationCanceledException"/>。
+    /// </remarks>
     /// <typeparam name="T">消息类型</typeparam>
     /// <param name="queue">队列</param>
     /// <param name="count">最大取出条数</param>
@@ -52,11 +55,18 @@ public static class RedisDelayQueueExtensions
 
         var due = await queue.DequeueDueAsync(count, cancellationToken);
         var processed = 0;
-        foreach (var item in due)
+        for (var index = 0; index < due.Count; index++)
         {
+            var item = due[index];
             if (item is null)
             {
                 continue;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await RequeueUnhandledAsync(queue, due, index);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             try
@@ -66,6 +76,12 @@ public static class RedisDelayQueueExtensions
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
+                if (retryDelay is { } cancelledDelay)
+                {
+                    await queue.EnqueueAsync(item, cancelledDelay, CancellationToken.None);
+                }
+
+                await RequeueUnhandledAsync(queue, due, index + 1);
                 throw;
             }
             catch
@@ -73,7 +89,7 @@ public static class RedisDelayQueueExtensions
                 // 延迟队列取出即移除：失败按 retryDelay 重新入队避免丢（无则丢弃）
                 if (retryDelay is { } delay)
                 {
-                    await queue.EnqueueAsync(item, delay, cancellationToken);
+                    await queue.EnqueueAsync(item, delay, CancellationToken.None);
                 }
             }
         }
@@ -111,6 +127,20 @@ public static class RedisDelayQueueExtensions
             if (processed == 0)
             {
                 await Task.Delay(options.PollInterval, cancellationToken);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 把本批从 <paramref name="startIndex"/> 起尚未处理的消息立即重新入队。
+    /// </summary>
+    private static async Task RequeueUnhandledAsync<T>(IRedisDelayQueue<T> queue, IReadOnlyList<T> due, int startIndex)
+    {
+        for (var index = startIndex; index < due.Count; index++)
+        {
+            if (due[index] is { } item)
+            {
+                await queue.EnqueueAsync(item, TimeSpan.Zero, CancellationToken.None);
             }
         }
     }
