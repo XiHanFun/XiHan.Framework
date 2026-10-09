@@ -1,6 +1,6 @@
 # XiHan.Framework.Workflow
 
-> 工作流引擎：图执行引擎 + 17 个内置活动 + 人工任务（审批）+ 表达式求值 + 定时器调度 + 内存存储默认实现。
+> 工作流引擎：图执行引擎 + 16 个内置活动（Script 须显式注册） + 人工任务（审批）+ 表达式求值 + 定时器调度 + 内存存储默认实现。
 
 - **NuGet**：`XiHan.Framework.Workflow`
 - **模块类**：`XiHanWorkflowModule`
@@ -49,7 +49,11 @@ public class MyModule : XiHanModule { }
 - `IScriptEngine` → `ScriptEngine`（脚本活动依赖，Script 模块未注册 DI，这里补默认注册）
 - HTTP 活动的命名 `HttpClient`
 - 托管服务 `WorkflowTimerWorker`（定时器轮询）
-- 17 个内置活动
+- 16 个内置活动（`Script` 活动不在其中，须显式注册）
+
+::: danger Script 活动须显式注册
+`Script` 活动在宿主进程内执行流程定义里的任意 C# 代码，`AddXiHanWorkflow` 不会注册它。只有流程定义作者完全可信时，才调用 `services.AddXiHanWorkflowActivity<ScriptActivity>()` 启用；脚本引擎的安全检查不是沙箱，不能隔离租户或终端用户提供的脚本。旧版本依赖默认注册的宿主，升级后需补上这一行，否则含 `Script` 节点的定义发布时会报活动类型未注册。
+:::
 
 ::: warning 默认存储是内存实现
 `DefaultWorkflowDefinitionStore` / `DefaultWorkflowInstanceStore` / `DefaultWorkflowBookmarkStore` 都是有界的**进程内默认存储**：定义最多 10000 条、实例最多 100000 条、节点实例与书签各最多 500000 条；达到上限会拒绝新增，不会静默淘汰流程数据。它们进程重启即全部丢失，也不跨实例；需要持久化时由应用实现三个 Store 端口并 `Replace` 默认注册。
@@ -107,7 +111,7 @@ public class MyModule : XiHanModule { }
 | `WaitSignal` | 等待信号 | 写 `Signal` 书签挂起 |
 | `UserTask` | 人工任务 | 审批，写 `UserTask` 书签挂起 |
 | `Http` | HTTP 请求 | 调外部接口 |
-| `Script` | C# 脚本 | 走 `IScriptEngine` |
+| `Script` | C# 脚本 | 走 `IScriptEngine`；默认不注册，仅限可信作者显式启用 |
 | `PublishEvent` | 发布事件 | 走事件总线 |
 | `SubWorkflow` | 子流程 | 起一个子实例，终态回调父节点 |
 | `ForEach` | 遍历 | 对集合逐项/并行执行 |

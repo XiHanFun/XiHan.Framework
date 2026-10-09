@@ -27,7 +27,7 @@ dotnet add package XiHan.Framework.Workflow
 public class MyModule : XiHanModule { }
 ```
 
-模块的 `ConfigureServices` 调用 `AddXiHanWorkflow(configuration)`，一次性接好：引擎 `IWorkflowEngine`、定义管理器 `IWorkflowDefinitionManager`、人工任务服务 `IWorkflowUserTaskService`、表达式求值器、活动注册表、事件发布器、三个存储端口、17 个内置活动、`Script` 活动用的 `IScriptEngine`、`Http` 活动用的命名 `HttpClient`（名称见 `HttpRequestActivity.HttpClientName`），以及托管服务 `WorkflowTimerWorker`。
+模块的 `ConfigureServices` 调用 `AddXiHanWorkflow(configuration)`，一次性接好：引擎 `IWorkflowEngine`、定义管理器 `IWorkflowDefinitionManager`、人工任务服务 `IWorkflowUserTaskService`、表达式求值器、活动注册表、事件发布器、三个存储端口、16 个内置活动、`Script` 活动用的 `IScriptEngine`、`Http` 活动用的命名 `HttpClient`（名称见 `HttpRequestActivity.HttpClientName`），以及托管服务 `WorkflowTimerWorker`。
 
 所有注册都是 `TryAdd` 语义，业务侧可以整块换掉。
 
@@ -203,7 +203,7 @@ var resumed = await engine.PublishSignalAsync(
 
 ## 内置活动
 
-17 个开箱活动，节点的 `ActivityType` 填下表的类型编码（常量见 `WorkflowActivityTypes`）：
+16 个开箱活动加 1 个须显式注册的 `Script` 活动，节点的 `ActivityType` 填下表的类型编码（常量见 `WorkflowActivityTypes`）：
 
 | 类型编码 | 说明 | 关键节点属性 |
 | --- | --- | --- |
@@ -225,6 +225,16 @@ var resumed = await engine.PublishSignalAsync(
 | `ForEach` | 对集合逐项起子流程 | `ItemsExpression`、`DefinitionCode`、`ItemVariableName`、`Parallel`、`FailFast`、`ResultVariable` |
 
 字符串型属性普遍支持 `{{ 表达式 }}` 模板插值。
+
+::: danger Script 活动默认不注册
+`Script` 在宿主进程内执行流程定义里的任意 C# 代码，`AddXiHanWorkflow` 不会注册它。只有流程定义作者完全可信时才显式启用：
+
+```csharp
+services.AddXiHanWorkflowActivity<ScriptActivity>();
+```
+
+脚本引擎的安全检查不是沙箱，不能隔离租户或终端用户提供的脚本。升级前依赖默认注册的宿主要补上这一行，否则含 `Script` 节点的定义发布时会报活动类型未注册。
+:::
 
 ::: warning WaitSignal 默认要求相关性匹配
 `AcceptAnyCorrelation` 不为 true 且实例没有 `CorrelationId` 时，节点直接故障。这是有意的：空相关性的信号书签会命中任意定向信号，把别的业务单据的载荷合并进本实例。真要接收任意同名信号，显式配 `AcceptAnyCorrelation = true`。

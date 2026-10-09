@@ -17,6 +17,11 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 /// 节点属性：<c>Code</c>（方法体代码，通过 <c>variables</c> 字典读写实例变量，可 <c>return</c> 结果值）；
 /// <c>ResultVariable</c>（return 值写入的变量名）。
 /// 脚本对 <c>variables</c> 字典的修改会在执行成功后合并回实例变量。
+/// <para>
+/// 本活动在宿主进程内执行流程定义中的任意 C# 代码，不随 <c>AddXiHanWorkflow</c> 默认注册；
+/// 仅在流程定义作者完全可信时以 <c>services.AddXiHanWorkflowActivity&lt;ScriptActivity&gt;()</c> 显式注册。
+/// 脚本引擎的安全检查不是沙箱，不能隔离租户或终端用户提供的脚本。
+/// </para>
 /// </remarks>
 [WorkflowActivity(WorkflowActivityTypes.Script, DisplayName = "C# 脚本", Category = "集成")]
 public class ScriptActivity : WorkflowActivityBase

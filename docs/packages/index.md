@@ -112,7 +112,7 @@ DDD 分层与应用服务契约。
 | [Upgrade](./upgrade) | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
 | [Script](./script) | 脚本引擎：基于 Roslyn 的 C# 动态脚本、编译校验与超时 |
 | [Workflow.Abstractions](./workflow-abstractions) | 工作流抽象：流程定义模型、活动契约、书签与存储端口 |
-| [Workflow](./workflow) | 工作流引擎：图执行、17 个内置活动、人工任务（审批）、表达式、定时器 |
+| [Workflow](./workflow) | 工作流引擎：图执行、16 个内置活动、人工任务（审批）、表达式、定时器 |
 | [SearchEngines.Abstractions](./search-engines-abstractions) | 搜索抽象：索引/文档/检索契约，零第三方依赖 |
 | [SearchEngines](./search-engines) | 搜索默认实现：进程内引擎（开发与测试兜底） |
 | [SearchEngines.Elasticsearch](./search-engines-elasticsearch) | 搜索实现：Elasticsearch（生产推荐） |
