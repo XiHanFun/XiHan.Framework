@@ -15,7 +15,7 @@ public static class ScriptExecutor
     /// 执行脚本
     /// </summary>
     /// <param name="scriptFilePath">脚本文件的完整路径</param>
-    /// <param name="arguments">传递给脚本的参数</param>
+    /// <param name="arguments">原样拼接到命令行的参数字符串；.bat 脚本的参数由 cmd 解析，只应传入可信内容</param>
     /// <returns>执行结果(标准输出和标准错误)</returns>
     public static string ExecuteScript(string scriptFilePath, string arguments = "")
     {
@@ -45,7 +45,7 @@ public static class ScriptExecutor
         var processStartInfo = new ProcessStartInfo
         {
             FileName = "/bin/bash", // Linux/macOS 使用 bash 执行脚本
-            Arguments = $"{scriptFilePath} {arguments}",
+            Arguments = $"{QuoteArgument(scriptFilePath)} {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -95,6 +95,47 @@ public static class ScriptExecutor
         };
 
         return ExecuteProcess(processStartInfo);
+    }
+
+    /// <summary>
+    /// 将单个参数转为命令行字符串中的一个独立参数
+    /// </summary>
+    /// <param name="value">参数值</param>
+    /// <returns>按 ProcessStartInfo.Arguments 解析规则加引号与转义后的参数</returns>
+    private static string QuoteArgument(string value)
+    {
+        if (value.Length > 0 && value.IndexOfAny([' ', '\t', '\n', '\v', '"']) < 0)
+        {
+            return value;
+        }
+
+        var builder = new StringBuilder(value.Length + 2);
+        builder.Append('"');
+        var backslashCount = 0;
+        foreach (var ch in value)
+        {
+            if (ch == '\\')
+            {
+                backslashCount++;
+                continue;
+            }
+
+            if (ch == '"')
+            {
+                builder.Append('\\', (backslashCount * 2) + 1);
+            }
+            else
+            {
+                builder.Append('\\', backslashCount);
+            }
+
+            builder.Append(ch);
+            backslashCount = 0;
+        }
+
+        builder.Append('\\', backslashCount * 2);
+        builder.Append('"');
+        return builder.ToString();
     }
 
     /// <summary>
