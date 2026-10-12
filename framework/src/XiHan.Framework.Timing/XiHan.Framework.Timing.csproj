@@ -14,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
+        <PackageReference Include="TimeZoneConverter" Version="8.0.0" />
     </ItemGroup>
 
     <ItemGroup>
