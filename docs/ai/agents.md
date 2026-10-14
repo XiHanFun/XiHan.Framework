@@ -57,7 +57,7 @@ xihan-framework changelog 4.6.0 4.6.2         # 两版之间的变更
 }
 ```
 
-在项目根目录运行 `setup` 会读出项目引用的框架版本并写好配置。
+在项目里运行 `setup` 会读出项目引用的框架版本，并把配置写到所在 git 仓库的根目录。
 
 ### 技能：XiHan.Framework 的使用规范
 

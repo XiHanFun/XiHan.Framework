@@ -66,7 +66,7 @@ dotnet tool install --global XiHan.Framework.Cli --version <版本>
 
 ### 自动写入
 
-在项目根目录运行 `setup`，它会扫描项目文件与 props 里的 `XiHan.Framework.*` 包引用读出版本，把钉住版本的配置写进对应文件，只改 `xihan-framework` 这一项，不动已有的其他服务：
+在项目里运行 `setup`，它会扫描项目文件与 props 里的 `XiHan.Framework.*` 包引用读出版本，把钉住版本的配置写进对应文件，只改 `xihan-framework` 这一项，不动已有的其他服务。配置写在所在 git 仓库的根目录（不在仓库里时写在向上第一个含解决方案或项目文件的目录），扫描也从这里开始：
 
 ```bash
 dnx XiHan.Framework.Cli --yes -- setup --client claude              # .mcp.json，并写入技能

@@ -8,7 +8,7 @@ namespace XiHan.Framework.Cli.Integration;
 /// <summary>
 /// 当前项目的位置与引用的框架版本
 /// </summary>
-/// <param name="Root">项目根目录：向上找到的第一个含 .git、解决方案或项目文件的目录</param>
+/// <param name="Root">项目根目录：所在 git 仓库的根，不在仓库里时为向上第一个含解决方案或项目文件的目录</param>
 /// <param name="FrameworkVersion">项目里 XiHan.Framework.* 包引用最常见的版本，没有引用时为 null</param>
 internal sealed record ProjectInfo(string? Root, string? FrameworkVersion);
 
@@ -79,13 +79,16 @@ internal static partial class ProjectDetector
 
     private static string? FindRoot(string start)
     {
+        return FindUp(start, directory => Directory.Exists(Path.Combine(directory.FullName, ".git")) || File.Exists(Path.Combine(directory.FullName, ".git")))
+            ?? FindUp(start, directory => directory.EnumerateFiles("*.sln*").Any() || directory.EnumerateFiles("*.csproj").Any());
+    }
+
+    private static string? FindUp(string start, Func<DirectoryInfo, bool> match)
+    {
         var directory = new DirectoryInfo(start);
         while (directory is not null)
         {
-            if (Directory.Exists(Path.Combine(directory.FullName, ".git"))
-                || File.Exists(Path.Combine(directory.FullName, ".git"))
-                || directory.EnumerateFiles("*.sln*").Any()
-                || directory.EnumerateFiles("*.csproj").Any())
+            if (match(directory))
             {
                 return directory.FullName;
             }
