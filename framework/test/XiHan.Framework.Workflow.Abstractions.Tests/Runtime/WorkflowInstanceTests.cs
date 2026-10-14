@@ -44,6 +44,7 @@ public class WorkflowInstanceTests
         Assert.Null(instance.FaultNodeId);
         Assert.Null(instance.FaultNodeInstanceId);
         Assert.Null(instance.CancellationReason);
+        Assert.Null(instance.Outcome);
     }
 
     /// <summary>

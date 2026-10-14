@@ -45,6 +45,11 @@ public sealed class ActivityExecutionResult
     public string? FaultMessage { get; private init; }
 
     /// <summary>
+    /// 是否结束整个实例（完成后不再流转，其余分支的待办、等待点与运行中子实例一并清理，实例直接完成）
+    /// </summary>
+    public bool EndsInstance { get; private init; }
+
+    /// <summary>
     /// 创建完成结果
     /// </summary>
     /// <param name="outputs">输出</param>
@@ -57,6 +62,23 @@ public sealed class ActivityExecutionResult
             Kind = ActivityExecutionResultKind.Completed,
             Outputs = outputs ?? [],
             Outcome = outcome
+        };
+    }
+
+    /// <summary>
+    /// 创建完成结果并结束整个实例（结果结束节点使用：其余并行分支不再等待）
+    /// </summary>
+    /// <param name="outputs">输出</param>
+    /// <param name="outcome">活动结果值</param>
+    /// <returns>完成结果</returns>
+    public static ActivityExecutionResult EndInstance(Dictionary<string, object?>? outputs = null, string? outcome = null)
+    {
+        return new ActivityExecutionResult
+        {
+            Kind = ActivityExecutionResultKind.Completed,
+            Outputs = outputs ?? [],
+            Outcome = outcome,
+            EndsInstance = true
         };
     }
 

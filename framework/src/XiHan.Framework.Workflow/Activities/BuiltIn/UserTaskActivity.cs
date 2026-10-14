@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Runtime;
 using XiHan.Framework.Workflow.Abstractions.UserTasks;
 using XiHan.Framework.Workflow.UserTasks;
@@ -15,9 +16,15 @@ namespace XiHan.Framework.Workflow.Activities.BuiltIn;
 /// 人工任务活动（审批节点：或签/会签/依次审批、超时、转办与加签由任务服务配合完成）
 /// </summary>
 /// <remarks>
-/// 节点属性：<c>Assignees</c>（受理人标识列表）或 <c>AssigneesExpression</c>（求值为列表/逗号分隔字符串的表达式）；
+/// 受理人来源（可并用，按以下顺序合并、去重）：<c>Assignees</c>（受理人标识列表）、
+/// <c>AssigneesExpression</c>（求值为列表/逗号分隔字符串的表达式）、<c>AssigneeRules</c>（受理人规则列表，
+/// 按类型交给已注册的 <see cref="IWorkflowAssigneeProvider"/> 解析，如角色、部门主管）。
+/// <c>ExcludeStarter</c> 为 true 时从结果中剔除流程发起人（禁止自己审批自己）。
+/// 解析为空时按 <c>EmptyAssigneeStrategy</c> 处理：Fault 节点故障（默认）/ AutoApprove 自动通过 / AutoReject 自动驳回 /
+/// Fallback 改按 <c>FallbackAssigneeRules</c> 再解析一次，仍为空则故障。
 /// <c>CompletionPolicy</c>（Any 或签（默认）/ All 会签 / Sequential 依次审批，未知值按定义错误故障）；
-/// <c>Title</c>（任务标题，支持模板，默认节点名称）；<c>FormData</c>（表单数据字典）；<c>CcUserIds</c>（抄送人列表）；
+/// <c>Title</c>（任务标题，支持模板，默认节点名称）；<c>FormData</c>（表单数据字典）；
+/// <c>CcUserIds</c> 与 <c>CcRules</c>（抄送人标识列表与抄送规则，合并去重）；
 /// <c>AllowedOutcomes</c>（允许的办理结果白名单，配置后白名单外的结果被拒绝并保留待办）。
 /// 完成结果：同意走 <c>outcome == 'approved'</c> 边，拒绝走 <c>outcome == 'rejected'</c> 边，
 /// 节点超时走 <c>outcome == 'timeout'</c> 边，也允许业务自定义结果值（任一非同意结果立即结束节点）。
@@ -39,15 +46,9 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
     /// 执行活动（解析受理人与完成策略，写入节点私有状态并挂起生成待办书签）
     /// </summary>
     /// <param name="context">执行上下文</param>
-    /// <returns>执行结果（未配置受理人或完成策略未知时返回故障）</returns>
+    /// <returns>执行结果（受理人为空且策略为故障、或完成策略未知时返回故障）</returns>
     public override async Task<ActivityExecutionResult> ExecuteAsync(ActivityExecutionContext context)
     {
-        var assignees = await ResolveAssigneesAsync(context);
-        if (assignees.Count == 0)
-        {
-            return ActivityExecutionResult.Fault($"人工任务节点 {context.Node.Id} 未配置受理人");
-        }
-
         // fail-closed：未知完成策略是定义错误，不允许静默降级为或签削弱审批强度
         var policyText = GetProperty<string>(context, "CompletionPolicy");
         if (!TryResolvePolicy(policyText, out var policy))
@@ -56,13 +57,36 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
                 $"人工任务节点 {context.Node.Id} 配置了未知完成策略 {policyText}（仅支持 Any/All/Sequential）");
         }
 
+        var strategyText = GetProperty<string>(context, "EmptyAssigneeStrategy");
+        if (!TryResolveEmptyStrategy(strategyText, out var emptyStrategy))
+        {
+            return ActivityExecutionResult.Fault(
+                $"人工任务节点 {context.Node.Id} 配置了未知受理人为空策略 {strategyText}（仅支持 Fault/AutoApprove/AutoReject/Fallback）");
+        }
+
+        var assignees = await ResolveAssigneesAsync(context);
+        if (assignees.Count == 0 && emptyStrategy == UserTaskEmptyAssigneeStrategy.Fallback)
+        {
+            assignees = await ResolveRuleListAsync(context, "FallbackAssigneeRules", excludeStarter: true);
+        }
+
+        var state = context.NodeInstance.State;
+        if (assignees.Count == 0)
+        {
+            return emptyStrategy switch
+            {
+                UserTaskEmptyAssigneeStrategy.AutoApprove => CompleteWithoutAssignee(context, state, WorkflowUserTaskOutcomes.Approved, "未解析到受理人，自动通过"),
+                UserTaskEmptyAssigneeStrategy.AutoReject => CompleteWithoutAssignee(context, state, WorkflowUserTaskOutcomes.Rejected, "未解析到受理人，自动驳回"),
+                _ => ActivityExecutionResult.Fault($"人工任务节点 {context.Node.Id} 未解析到受理人")
+            };
+        }
+
         var title = await GetTemplatedStringAsync(context, "Title") ?? context.Node.Name;
 
         // 复制表单数据，避免与流程定义共享同一字典实例
         var formData = new Dictionary<string, object?>(GetProperty<Dictionary<string, object?>>(context, "FormData") ?? []);
-        var ccUserIds = GetProperty<List<string>>(context, "CcUserIds") ?? [];
+        var ccUserIds = await ResolveCcUserIdsAsync(context);
 
-        var state = context.NodeInstance.State;
         state[AssigneesStateKey] = assignees;
         state[ApprovedStateKey] = new List<string>();
         state[PolicyStateKey] = policy.ToString();
@@ -212,23 +236,94 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
         };
     }
 
+    /// <summary>
+    /// 合并三类受理人来源：静态列表 → 表达式 → 规则（保持首次出现顺序并去重），按需剔除发起人
+    /// </summary>
     private static async Task<List<string>> ResolveAssigneesAsync(ActivityExecutionContext context)
     {
-        var assignees = GetProperty<List<string>>(context, "Assignees");
-        if (assignees is null)
+        var merged = new List<string>();
+
+        merged.AddRange(GetProperty<List<string>>(context, "Assignees") ?? []);
+
+        var evaluated = await EvaluatePropertyAsync(context, "AssigneesExpression");
+        merged.AddRange(evaluated switch
         {
-            var evaluated = await EvaluatePropertyAsync(context, "AssigneesExpression");
-            assignees = evaluated switch
-            {
-                null => [],
-                string text => [.. text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
-                _ => WorkflowValueConverter.ConvertTo<List<string>>(evaluated) ?? []
-            };
+            null => [],
+            string text => text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            _ => WorkflowValueConverter.ConvertTo<List<string>>(evaluated) ?? []
+        });
+
+        merged.AddRange(await ResolveRuleListAsync(context, "AssigneeRules", excludeStarter: false));
+
+        return FilterAssignees(context, merged, GetProperty<bool>(context, "ExcludeStarter"));
+    }
+
+    /// <summary>
+    /// 合并抄送人：静态列表 + 抄送规则
+    /// </summary>
+    private static async Task<List<string>> ResolveCcUserIdsAsync(ActivityExecutionContext context)
+    {
+        var merged = new List<string>(GetProperty<List<string>>(context, "CcUserIds") ?? []);
+        merged.AddRange(await ResolveRuleListAsync(context, "CcRules", excludeStarter: false));
+        return FilterAssignees(context, merged, excludeStarter: false);
+    }
+
+    /// <summary>
+    /// 解析节点属性中的一组受理人规则
+    /// </summary>
+    private static async Task<List<string>> ResolveRuleListAsync(ActivityExecutionContext context, string propertyName, bool excludeStarter)
+    {
+        var rules = GetProperty<List<WorkflowAssigneeRule>>(context, propertyName);
+        if (rules is not { Count: > 0 })
+        {
+            return [];
         }
 
+        var resolver = context.ServiceProvider.GetRequiredService<IWorkflowAssigneeResolver>();
+        var resolved = await resolver.ResolveAsync(
+            rules,
+            context.Definition,
+            context.Instance,
+            context.Node,
+            context.Variables.AsReadOnly,
+            context.CancellationToken);
+
+        return FilterAssignees(context, resolved, excludeStarter && GetProperty<bool>(context, "ExcludeStarter"));
+    }
+
+    private static List<string> FilterAssignees(ActivityExecutionContext context, IEnumerable<string> assignees, bool excludeStarter)
+    {
+        var starterId = excludeStarter ? context.Instance.StarterId : null;
         return [.. assignees
             .Where(assignee => !string.IsNullOrWhiteSpace(assignee))
+            .Select(assignee => assignee.Trim())
+            .Where(assignee => string.IsNullOrEmpty(starterId) || !string.Equals(assignee, starterId, StringComparison.Ordinal))
             .Distinct(StringComparer.Ordinal)];
+    }
+
+    /// <summary>
+    /// 无受理人时按策略直接结束节点（审批轨迹留下无办理人的记录）
+    /// </summary>
+    private static ActivityExecutionResult CompleteWithoutAssignee(
+        ActivityExecutionContext context,
+        Dictionary<string, object?> state,
+        string outcome,
+        string comment)
+    {
+        state[AssigneesStateKey] = new List<string>();
+        state[ApprovedStateKey] = new List<string>();
+        state[HistoryStateKey] = new List<Dictionary<string, object?>>
+        {
+            new()
+            {
+                ["actorId"] = null,
+                ["outcome"] = outcome,
+                ["comment"] = comment,
+                ["nodeId"] = context.Node.Id
+            }
+        };
+
+        return ActivityExecutionResult.Complete(outcome: outcome);
     }
 
     private static bool TryResolvePolicy(string? text, out UserTaskCompletionPolicy policy)
@@ -240,6 +335,17 @@ public class UserTaskActivity : WorkflowActivityBase, IResumableWorkflowActivity
         }
 
         return Enum.TryParse(text, ignoreCase: true, out policy) && Enum.IsDefined(policy);
+    }
+
+    private static bool TryResolveEmptyStrategy(string? text, out UserTaskEmptyAssigneeStrategy strategy)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            strategy = UserTaskEmptyAssigneeStrategy.Fault;
+            return true;
+        }
+
+        return Enum.TryParse(text, ignoreCase: true, out strategy) && Enum.IsDefined(strategy);
     }
 
     private static List<T> GetStateList<T>(Dictionary<string, object?> state, string key)

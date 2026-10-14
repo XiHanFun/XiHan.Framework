@@ -89,6 +89,41 @@ public class LifecycleTests : IDisposable
     }
 
     /// <summary>
+    /// 故障实例可放弃重试改为取消或终止，此后不能再重试；已取消的实例再取消仍幂等
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task 故障实例可放弃重试改为取消或终止(bool cancel)
+    {
+        var code = cancel ? "faulted-cancel" : "faulted-terminate";
+        var definition = WorkflowDefinitionBuilder.Create(code, "放弃重试")
+            .AddStart()
+            .AddNode("flaky", "TestFlaky", "不稳定节点", node => node
+                .WithProperty("SucceedOnAttempt", 2))
+            .AddEnd()
+            .AddTransition("start", "flaky")
+            .AddTransition("flaky", "end")
+            .Build();
+        await _host.PublishAsync(definition);
+
+        var faulted = await _host.Engine.StartAsync(new WorkflowStartRequest { DefinitionCode = code });
+        Assert.Equal(WorkflowInstanceStatus.Faulted, faulted.Status);
+
+        var closed = cancel
+            ? await _host.Engine.CancelAsync(faulted.Id, "放弃重试")
+            : await _host.Engine.TerminateAsync(faulted.Id, "放弃重试");
+
+        Assert.Equal(cancel ? WorkflowInstanceStatus.Canceled : WorkflowInstanceStatus.Terminated, closed.Status);
+        Assert.Equal("放弃重试", closed.CancellationReason);
+        await Assert.ThrowsAsync<WorkflowException>(() => _host.Engine.RetryAsync(faulted.Id));
+
+        var again = await _host.Engine.CancelAsync(faulted.Id, "再次取消");
+        Assert.Equal(closed.Status, again.Status);
+        Assert.Equal("放弃重试", again.CancellationReason);
+    }
+
+    /// <summary>
     /// 取消实例触发补偿，按执行逆序执行
     /// </summary>
     [Fact]
