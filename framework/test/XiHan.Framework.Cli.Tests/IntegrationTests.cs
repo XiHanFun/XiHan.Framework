@@ -22,14 +22,21 @@ public sealed class IntegrationTests : IDisposable
 
     private readonly string _root = Directory.CreateTempSubdirectory("xihan-framework-cli-").FullName;
 
+    public IntegrationTests()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, ".git"));
+    }
+
     public void Dispose()
     {
         Directory.Delete(_root, recursive: true);
     }
 
-    private void UseFrameworkVersion(string version)
+    private void UseFrameworkVersion(string version, string? directory = null)
     {
-        File.WriteAllText(Path.Combine(_root, "App.csproj"), $"""
+        var target = directory is null ? _root : Path.Combine(_root, directory);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "App.csproj"), $"""
             <Project Sdk="Microsoft.NET.Sdk.Web">
               <ItemGroup>
                 <PackageReference Include="XiHan.Framework.Web.Api" Version="{version}" />
@@ -75,6 +82,15 @@ public sealed class IntegrationTests : IDisposable
         var (code, _, error) = await RunAsync("info", "Caching");
         Assert.Equal(0, code);
         Assert.Contains("dnx XiHan.Framework.Cli@1.0.0", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProjectDetector_UsesRepositoryRootAndNestedProjects()
+    {
+        UseFrameworkVersion("2.0.0", Path.Combine("backend", "src", "App"));
+        var nested = Path.Combine(_root, "backend", "src", "App");
+        Assert.Equal(new ProjectInfo(_root, "2.0.0"), ProjectDetector.Detect(nested));
+        Assert.Equal(new ProjectInfo(_root, "2.0.0"), ProjectDetector.Detect(_root));
     }
 
     [Fact]
