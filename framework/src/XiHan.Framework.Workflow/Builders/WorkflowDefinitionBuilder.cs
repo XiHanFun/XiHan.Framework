@@ -155,6 +155,19 @@ public class WorkflowDefinitionBuilder
     }
 
     /// <summary>
+    /// 添加结果结束节点（声明流程结果；执行时回调结果处理器并立即结束整个实例）
+    /// </summary>
+    /// <param name="id">节点标识</param>
+    /// <param name="outcome">流程结果（如 approved / rejected）</param>
+    /// <param name="name">节点名称</param>
+    /// <returns>流程定义构建器</returns>
+    public WorkflowDefinitionBuilder AddOutcomeEnd(string id, string outcome, string? name = null)
+    {
+        Guard.NotNullOrWhiteSpace(outcome, nameof(outcome));
+        return AddNode(id, WorkflowActivityTypes.End, name ?? "结束", node => node.WithProperty("Outcome", outcome));
+    }
+
+    /// <summary>
     /// 添加独占网关节点
     /// </summary>
     /// <param name="id">节点标识</param>
