@@ -1,9 +1,16 @@
+import { copyFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { DefaultTheme } from "vitepress";
 import { defineXiHanConfig } from "@xihanfun/vitepress-theme/config";
 
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
+
+// XiHan.Framework 使用技能的真源在 CLI 工具里
+const skillPath = fileURLToPath(
+  new URL("../../framework/tool/XiHan.Framework.Cli/skills/xihan-framework/SKILL.md", import.meta.url),
+);
 
 const title: string = "曦寒开发框架文档";
 const description: string = "基于 DotNet 的模块化开发框架";
@@ -75,6 +82,16 @@ const startSidebar: DefaultTheme.SidebarItem[] = [
       { text: "为什么选择曦寒", link: "/why" },
       { text: "框架概述", link: "/overview" },
       { text: "快速上手", link: "/quickstart" },
+    ],
+  },
+  {
+    text: "AI 辅助开发",
+    collapsed: false,
+    items: [
+      { text: "For Agents", link: "/ai/agents" },
+      { text: "MCP Server", link: "/ai/mcp" },
+      { text: "CLI", link: "/ai/cli" },
+      { text: "LLMs.txt", link: "/ai/llms" },
     ],
   },
   { text: "更新日志", link: "/changelog" },
@@ -231,13 +248,14 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
 const sidebar: DefaultTheme.Sidebar = {
   "/guide/": guideSidebar,
   "/packages/": packagesSidebar,
+  "/ai/": startSidebar,
   "/": startSidebar,
 };
 
 const nav: DefaultTheme.NavItem[] = [
   {
     text: "指南",
-    activeMatch: "^/(introduction|why|overview|quickstart|guide/.*)$",
+    activeMatch: "^/(introduction|why|overview|quickstart|(guide|ai)/.*)$",
     items: [
       {
         text: "快速开始",
@@ -250,6 +268,14 @@ const nav: DefaultTheme.NavItem[] = [
       {
         text: "深入",
         items: [{ text: "开发指南", link: "/guide/modularity" }],
+      },
+      {
+        text: "AI 辅助开发",
+        items: [
+          { text: "For Agents", link: "/ai/agents" },
+          { text: "MCP Server", link: "/ai/mcp" },
+          { text: "CLI", link: "/ai/cli" },
+        ],
       },
     ],
   },
@@ -292,6 +318,7 @@ export default defineXiHanConfig({
       "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
     sections: [
       { dir: ".", label: "开始" },
+      { dir: "ai", label: "AI 辅助开发" },
       { dir: "guide", label: "开发指南" },
       { dir: "packages", label: "模块总览" },
     ],
@@ -299,6 +326,12 @@ export default defineXiHanConfig({
       { name: "guide", label: "开发指南", dirs: ["guide"] },
       { name: "packages", label: "模块总览", dirs: ["packages"] },
     ],
+    // 使用技能随 CLI 工具发布，文档站另发一份可下载的副本
+    async assets({ outDir }) {
+      await mkdir(`${outDir}/ai`, { recursive: true });
+      await copyFile(skillPath, `${outDir}/ai/SKILL.md`);
+      return [{ name: "ai/SKILL.md", description: "给 AI 编程工具的 XiHan.Framework 使用规范，可放进项目的技能目录" }];
+    },
   },
   themeConfig: {
     nav,
