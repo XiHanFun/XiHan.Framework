@@ -15,6 +15,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
+		<!-- 传递依赖钉住：SqlSugarCore → Oracle.ManagedDataAccess.Core → System.Security.Cryptography.Pkcs 8.0.1 存在
+		     高危漏洞 CVE-2026-84008（GHSA-846f-f764-76mx，10.0.13 起修复），上游升级后可移除本行。 -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 		<!-- 传递依赖钉住：SqlSugarCore → Microsoft.Data.Sqlite 10.0.9 → SQLitePCLRaw 2.1.11 存在
 		     高危漏洞 CVE-2025-6965（GHSA-2m69-gcr7-jv3q，2.1.12 起修复）。
 		     最近获胜原则把整条链抬到 2.1.13，上游升级后可移除本行。 -->
