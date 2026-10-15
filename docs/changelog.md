@@ -2,6 +2,21 @@
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
 
+## v4.7.0 (2026-10-15)
+
+::: warning 升级须知
+- 人工任务同时配置 `Assignees` 与 `AssigneesExpression` 时改为合并去重，此前只取 `Assignees`
+- `WorkflowInstance` 新增 `Outcome`，自行持久化工作流实例的存储需一并保存该字段
+:::
+
+- **新增** 工作流人工任务受理人规则 `AssigneeRules`（`{ type, values }`）与 `IWorkflowAssigneeProvider` 注册表：内置 `User` / `Starter` / `Expression`，角色、部门、上级主管等由应用注册解析器；新增 `ExcludeStarter`（跳过发起人）、`EmptyAssigneeStrategy`（找不到受理人时报错 / 自动通过 / 自动驳回 / 转交兜底受理人）、`FallbackAssigneeRules` 与 `CcRules`
+- **新增** 结束节点可声明 `Outcome`：执行时同步调用 `IWorkflowOutcomeHandler` 回写业务并立即结束整个实例，结果写入 `WorkflowInstance.Outcome`；回调失败时实例进入故障态，重试时再次回调。构建器新增 `WithAssigneeRule`、`AddOutcomeEnd`
+- **新增** 故障实例可直接取消或终止，不必先重试成功
+- **新增** `XiHan.Framework.Cli`（.NET 工具，命令 `xihan-framework`）：包、模块、配置节与文档的离线知识库，提供 `list` / `info` / `doc` / `config` / `search` / `changelog` 命令与 stdio MCP 服务端；`setup` 为 Claude Code、Cursor、VS Code 写入钉住版本的 MCP 配置与使用技能
+- **新增** 文档站新增「AI 辅助开发」一册：For Agents、MCP Server、CLI、LLMs.txt
+- **修复** 传递依赖 `System.Security.Cryptography.Pkcs` 的高危漏洞 CVE-2026-84008 与中危漏洞 CVE-2026-70162：`XiHan.Framework.Data`（经 SqlSugarCore → Oracle.ManagedDataAccess.Core）与 `XiHan.Framework.Bot.Email`（经 MailKit → MimeKit）钉到 10.0.13
+- **升级** .NET 运行库随 10.0.13 补丁更新，Microsoft.Extensions.AI 升至 10.11.0、Microsoft Agent Framework 升至 1.25.0，发布 v4.7.0
+
 ## v4.6.2 (2026-10-13)
 
 - **升级** 升级依赖，发布 v4.6.2
