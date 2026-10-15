@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/1.src/2.Metadata/">
     <Project Path="src/XiHan.Framework.Metadata/XiHan.Framework.Metadata.csproj" />
+    <Project Path="tool/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
   </Folder>
   <Folder Name="/1.src/3.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
@@ -158,9 +159,6 @@
   <Folder Name="/4.tool/" />
   <Folder Name="/4.tool/1.ProjectStandardization/">
     <Project Path="tool/Region/Region.csproj" Id="41b103a1-9eaf-4915-968e-0416ca8773dd" />
-  </Folder>
-  <Folder Name="/4.tool/2.AI/">
-    <Project Path="tool/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
   </Folder>
   <Folder Name="/5.others/" />
   <Folder Name="/5.others/1.Props/">
