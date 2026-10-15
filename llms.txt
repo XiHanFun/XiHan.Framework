@@ -6,10 +6,11 @@
 
 ## 机读资产
 
-- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 111 页正文
+- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 115 页正文
 - [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 38 页开发指南
 - [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt): 67 页模块总览
-- 每页 Markdown：把站点地址后缀成 `.md`，如 https://framework.docs.xihanfun.com/guide/ai.md
+- [ai/SKILL.md](https://framework.docs.xihanfun.com/ai/SKILL.md): 给 AI 编程工具的 XiHan.Framework 使用规范，可放进项目的技能目录
+- 每页 Markdown：把站点地址后缀成 `.md`，如 https://framework.docs.xihanfun.com/ai/agents.md
 
 ## 开始
 
@@ -19,6 +20,13 @@
 - [框架概述](https://framework.docs.xihanfun.com/overview): XiHan.Framework 是面向企业级应用的模块化后端框架，专为前后端分离的 ASP.NET Core 应用设计。
 - [快速上手](https://framework.docs.xihanfun.com/quickstart): 本篇带你从零建一个基于 XiHan.Framework 的 Web API。
 - [为什么选择曦寒](https://framework.docs.xihanfun.com/why): 功能清单在 模块总览，这一页不重复。
+
+## AI 辅助开发
+
+- [For Agents](https://framework.docs.xihanfun.com/ai/agents): 给 Claude Code、Cursor、Codex、GitHub Copilot 这类 AI 编程工具的入口：一段可以直接粘贴的提示词，加上 XiHan.Framework 为 AI 准备的全部资料从哪里取。
+- [CLI](https://framework.docs.xihanfun.com/ai/cli): `XiHan.Framework.Cli` 是 XiHan.Framework 的命令行工具：在终端里查包、模块类与依赖、配置节、文档与更新日志，也是 MCP 服务端 的载体。
+- [LLMs.txt](https://framework.docs.xihanfun.com/ai/llms): 文档站在构建时产出一组给大语言模型读的机读资产，内容与站点正文同源。
+- [MCP Server](https://framework.docs.xihanfun.com/ai/mcp): 本页介绍如何通过 Model Context Protocol（MCP）在 AI 编程工具中使用 XiHan.Framework 的知识库。
 
 ## 开发指南
 

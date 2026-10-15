@@ -141,7 +141,7 @@ var definition = WorkflowDefinitionBuilder.Create("leave-request", "请假审批
 实例永远绑定它启动时那个具体版本（`DefinitionId` + `DefinitionVersion`）。改流程的正确姿势是 `CreateNewVersionAsync` 出新草稿、改完发布，而不是去动已发布版本——存量实例还在按老图跑。
 :::
 
-发布校验（`WorkflowDefinitionValidator`）会一次性报出所有问题，覆盖：节点标识唯一且非空、活动类型已注册、**有且仅有一个开始节点**、开始节点无入边、连线两端存在、条件表达式语法合法、独占网关至多一条默认边、`Join` 的 `Mode` 与人工任务的 `CompletionPolicy` 取值合法、人工任务必须配 `Assignees` 或 `AssigneesExpression`、**所有节点从开始节点可达**。
+发布校验（`WorkflowDefinitionValidator`）会一次性报出所有问题，覆盖：节点标识唯一且非空、活动类型已注册、**有且仅有一个开始节点**、开始节点无入边、连线两端存在、条件表达式语法合法、独占网关至多一条默认边、`Join` 的 `Mode` 与人工任务的 `CompletionPolicy`、`EmptyAssigneeStrategy` 取值合法、人工任务至少配 `Assignees` / `AssigneesExpression` / `AssigneeRules` 之一、受理人规则类型已注册且参数合法（`Fallback` 策略必须配兜底规则）、结束节点的 `Outcome` 不为空串、**所有节点从开始节点可达**。
 
 ## 启动与驱动实例
 
@@ -209,7 +209,8 @@ var resumed = await engine.PublishSignalAsync(
 
 | 类型编码 | 说明 | 关键节点属性 |
 | --- | --- | --- |
-| `Start` / `End` | 流程入口 / 消耗当前令牌 | — |
+| `Start` | 流程入口 | — |
+| `End` | 消耗当前令牌；声明 `Outcome` 时为结果结束节点，回写业务后立即结束整个实例（见「结果结束节点」） | `Outcome` |
 | `Terminate` | 强制结束整个实例，不补偿 | `Reason` |
 | `Fault` | 主动置为故障 | `Message` |
 | `Log` | 记一条运行日志 | `Message`、`Level` |
@@ -243,11 +244,15 @@ var resumed = await engine.PublishSignalAsync(
 | 属性 | 说明 |
 | --- | --- |
 | `Assignees` | 受理人标识列表 |
-| `AssigneesExpression` | 求值为列表或逗号分隔字符串的表达式（与上一条二选一） |
+| `AssigneesExpression` | 求值为列表或逗号分隔字符串的表达式 |
+| `AssigneeRules` | 受理人规则列表 `[{ type, values }]`，按类型交给已注册的解析器（见下文） |
+| `ExcludeStarter` | 为 `true` 时从受理人中剔除流程发起人，禁止自己审批自己 |
+| `EmptyAssigneeStrategy` | 受理人解析为空时：`Fault` 节点故障（默认）/ `AutoApprove` / `AutoReject` / `Fallback` |
+| `FallbackAssigneeRules` | `Fallback` 策略使用的兜底规则 |
 | `CompletionPolicy` | `Any` 或签（默认）/ `All` 会签 / `Sequential` 依次审批 |
 | `Title` | 任务标题，支持模板，默认取节点名称 |
 | `FormData` | 表单数据字典，随待办一起给前端 |
-| `CcUserIds` | 抄送人，随任务创建事件发出 |
+| `CcUserIds` / `CcRules` | 抄送人标识与抄送规则，合并后随任务创建事件发出 |
 | `AllowedOutcomes` | 办理结果白名单 |
 
 三种完成策略的语义：
@@ -257,6 +262,51 @@ var resumed = await engine.PublishSignalAsync(
 | `Any` 或签 | 任一人同意即通过 | 一次性给全部受理人建待办 |
 | `All` 会签 | 全部同意才通过，任一非同意结果立即结束节点 | 一次性给全部受理人建待办 |
 | `Sequential` 依次 | 按列表顺序逐个审批，全部同意才通过 | 每次只给下一位建待办 |
+
+### 受理人规则
+
+三种来源可以并用，按 `Assignees` → `AssigneesExpression` → `AssigneeRules` 的顺序合并去重（依次审批按这个顺序排队）。`AssigneeRules` 是扩展口：框架内置三种不依赖组织数据的类型（`WorkflowAssigneeRuleTypes`），角色、部门、上级主管等由应用注册自己的解析器。
+
+| 内置类型 | 参数 | 解析结果 |
+| --- | --- | --- |
+| `User` | 受理人标识列表 | 参数本身 |
+| `Starter` | 无 | 实例的 `StarterId`（常用于「退回发起人修改」） |
+| `Expression` | 一条表达式 | 求值为列表或逗号分隔字符串 |
+
+```csharp
+.AddUserTask("manager", "主管审批", node => node
+    .WithAssigneeRule("StarterLeader", "1")      // 应用注册的类型：发起人的直属主管
+    .WithAssigneeRule(WorkflowAssigneeRuleTypes.User, "1001")
+    .WithProperty("ExcludeStarter", true)
+    .WithProperty("EmptyAssigneeStrategy", "Fallback")
+    .WithProperty("FallbackAssigneeRules", new List<WorkflowAssigneeRule>
+    {
+        new() { Type = "Role", Values = ["admin"] }
+    }))
+```
+
+自定义解析器实现 `IWorkflowAssigneeProvider`：
+
+```csharp
+public class RoleAssigneeProvider(IUserRoleRepository userRoles) : IWorkflowAssigneeProvider
+{
+    public string RuleType => "Role";
+
+    // 发布前校验参数，返回错误信息
+    public IReadOnlyList<string> Validate(WorkflowAssigneeRule rule)
+        => rule.Values.Count == 0 ? ["角色规则至少需要一个角色"] : [];
+
+    public async Task<IReadOnlyList<string>> ResolveAsync(WorkflowAssigneeResolveContext context)
+        => await userRoles.GetUserIdsAsync(context.Rule.Values, context.CancellationToken);
+}
+
+services.AddXiHanWorkflowAssigneeProvider<RoleAssigneeProvider>();
+```
+
+- 解析器按瞬时生命周期从当前执行作用域取，可以注入仓储；同一类型只允许一个解析器，重复注册在解析门面构造时直接报错。
+- 规则类型未注册时发布被拒；运行期遇到未注册类型（定义与部署不一致）节点故障，不会当作「没人可审」放过。
+- 数据源不可用必须抛异常（节点故障、可重试），**不要返回空列表**——空列表会走 `EmptyAssigneeStrategy`，配了 `AutoApprove` 就成了静默通过。
+- `AutoApprove` / `AutoReject` 会在审批轨迹 `history` 里留一条 `actorId` 为空的记录。
 
 ### 办理
 
@@ -301,6 +351,49 @@ public class ApprovalAppService(IWorkflowUserTaskService userTasks) : Applicatio
 | `WorkflowUserTaskTransferredEventData` | 转办 |
 
 实例级还有 `WorkflowInstanceStartedEventData` / `Completed` / `Faulted` / `Canceled` / `Terminated` / `Suspended` / `Resumed`，以及 `PublishEvent` 活动产生的 `WorkflowCustomEventData`。
+
+## 结果结束节点
+
+审批流的业务方关心的是**结论**：通过还是驳回。给结束节点声明 `Outcome`，它就成了结果结束节点：
+
+```csharp
+.AddUserTask("approve", "审批", node => node.WithAssigneeRule("Role", "finance"))
+.AddOutcomeEnd("end-approved", WorkflowUserTaskOutcomes.Approved, "通过")
+.AddOutcomeEnd("end-rejected", WorkflowUserTaskOutcomes.Rejected, "驳回")
+.AddTransition("approve", "end-approved", "outcome == 'approved'")
+.AddTransition("approve", "end-rejected", "outcome == 'rejected'")
+```
+
+执行到结果结束节点时，引擎依次做三件事：
+
+1. 调用全部已注册的 `IWorkflowOutcomeHandler`，把结论交给业务（回写单据状态、授权、发货……）；
+2. 全部成功后把结论写入 `WorkflowInstance.Outcome`；
+3. **立即结束整个实例**——其余并行分支的待办、等待点与汇聚波次作废，运行中的子实例级联终止。所以「并行会审中任一驳回即整单驳回」只需要把各分支的驳回边连到同一个驳回结束节点。
+
+没有声明 `Outcome` 的结束节点行为不变：只消耗当前令牌，所有令牌与书签结束后实例自动完成，`Outcome` 为空。
+
+```csharp
+public class ExpenseOutcomeHandler(IExpenseRepository expenses) : IWorkflowOutcomeHandler
+{
+    public async Task HandleAsync(WorkflowOutcomeContext context)
+    {
+        if (context.Definition.Code != "expense")
+        {
+            return;
+        }
+
+        // 必须幂等：重试会再次调用
+        await expenses.SetResultAsync(context.Instance.CorrelationId!, context.Outcome, context.CancellationToken);
+    }
+}
+
+services.AddTransient<IWorkflowOutcomeHandler, ExpenseOutcomeHandler>();
+```
+
+::: warning 处理器失败会让实例停在故障态
+任一处理器抛异常，结束节点故障、实例进入 `Faulted`，`Outcome` 不写入、实例不会被标记完成——业务没回写成功就不算结束。排除原因后 `RetryAsync` 会重新执行结束节点、再次调用处理器，所以处理器**必须幂等**。处理器跑在实例执行锁内，不要在里面同步驱动同一个实例。
+引擎不接管数据库事务：处理器的写入要自己包在独立工作单元里，失败时整体回滚，避免「授权写了一半、实例却故障」。
+:::
 
 ## 表达式求值器的边界
 

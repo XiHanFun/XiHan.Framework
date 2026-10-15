@@ -1,6 +1,6 @@
 # 曦寒开发框架 · 全站正文
 
-共 111 页。索引见 https://framework.docs.xihanfun.com/llms.txt
+共 115 页。索引见 https://framework.docs.xihanfun.com/llms.txt
 
 ---
 
@@ -9,6 +9,21 @@
 # 更新日志 · XiHan.Framework
 
 本文件记录 XiHan.Framework 各版本的变更。每条标注 **新增 / 修复 / 优化 / 调整 / 升级 / 移除** 类别。只收录使用者可感知的变更，仓库自身的配置、CI、测试工程与构建脚本不列入。框架以 NuGet 包形式发布，升级前请留意「调整」类中的破坏性变更。
+
+## v4.7.0 (2026-10-15)
+
+::: warning 升级须知
+- 人工任务同时配置 `Assignees` 与 `AssigneesExpression` 时改为合并去重，此前只取 `Assignees`
+- `WorkflowInstance` 新增 `Outcome`，自行持久化工作流实例的存储需一并保存该字段
+:::
+
+- **新增** 工作流人工任务受理人规则 `AssigneeRules`（`{ type, values }`）与 `IWorkflowAssigneeProvider` 注册表：内置 `User` / `Starter` / `Expression`，角色、部门、上级主管等由应用注册解析器；新增 `ExcludeStarter`（跳过发起人）、`EmptyAssigneeStrategy`（找不到受理人时报错 / 自动通过 / 自动驳回 / 转交兜底受理人）、`FallbackAssigneeRules` 与 `CcRules`
+- **新增** 结束节点可声明 `Outcome`：执行时同步调用 `IWorkflowOutcomeHandler` 回写业务并立即结束整个实例，结果写入 `WorkflowInstance.Outcome`；回调失败时实例进入故障态，重试时再次回调。构建器新增 `WithAssigneeRule`、`AddOutcomeEnd`
+- **新增** 故障实例可直接取消或终止，不必先重试成功
+- **新增** `XiHan.Framework.Cli`（.NET 工具，命令 `xihan-framework`）：包、模块、配置节与文档的离线知识库，提供 `list` / `info` / `doc` / `config` / `search` / `changelog` 命令与 stdio MCP 服务端；`setup` 为 Claude Code、Cursor、VS Code 写入钉住版本的 MCP 配置与使用技能
+- **新增** 文档站新增「AI 辅助开发」一册：For Agents、MCP Server、CLI、LLMs.txt
+- **修复** 传递依赖 `System.Security.Cryptography.Pkcs` 的高危漏洞 CVE-2026-84008 与中危漏洞 CVE-2026-70162：`XiHan.Framework.Data`（经 SqlSugarCore → Oracle.ManagedDataAccess.Core）与 `XiHan.Framework.Bot.Email`（经 MailKit → MimeKit）钉到 10.0.13
+- **升级** .NET 运行库随 10.0.13 补丁更新，Microsoft.Extensions.AI 升至 10.11.0、Microsoft Agent Framework 升至 1.25.0，发布 v4.7.0
 
 ## v4.6.2 (2026-10-13)
 
@@ -1464,6 +1479,397 @@ public class HelloAppService : ApplicationServiceBase
 - [框架概述](./overview)：设计原则、分层架构、技术栈
 - [模块总览](./packages/)：逐包查阅
 - [为什么选择曦寒基础应用](https://basicapp.docs.xihanfun.com/why)：如果你要的是一套现成的中后台
+
+---
+
+来源：https://framework.docs.xihanfun.com/ai/agents
+
+# For Agents
+
+给 Claude Code、Cursor、Codex、GitHub Copilot 这类 AI 编程工具的入口：一段可以直接粘贴的提示词，加上 XiHan.Framework 为 AI 准备的全部资料从哪里取。
+
+::: tip 和「AI 与 MCP」不是一回事
+本册讲的是**用 AI 工具写基于 XiHan.Framework 的代码**。要在自己的应用里接入大模型、把应用能力暴露成 MCP 工具，见开发指南的 [AI 与 MCP](../guide/ai)。
+:::
+
+## 复制这段提示词
+
+把下面这段放进对话，或写进项目的 `AGENTS.md` / `CLAUDE.md` / `.cursor/rules`：
+
+```text
+这个项目用 XiHan.Framework 写后端。写代码前先读这两份文档并按其中的规范执行：
+- https://framework.docs.xihanfun.com/ai/agents.md
+- https://framework.docs.xihanfun.com/ai/SKILL.md
+
+XiHan.Framework 的包名、模块类名、配置键与 API 以项目引用的版本为准，可能与你记得的不同，也不要套用别的框架的写法。
+不确定时用 CLI 查证（数据随工具离线，版本与项目对齐，需要 .NET 10 SDK）：
+  dnx XiHan.Framework.Cli@<版本> --yes -- info <包或模块>      安装命令、模块类与依赖
+  dnx XiHan.Framework.Cli@<版本> --yes -- config <配置节或包>  配置键、类型与缺省值
+  dnx XiHan.Framework.Cli@<版本> --yes -- search <关键字>      在文档里检索
+支持 MCP 时，运行 dnx XiHan.Framework.Cli@<版本> --yes -- setup --client <claude|cursor|vscode|codex> 接入 XiHan.Framework 的 MCP 服务端。
+```
+
+`<版本>` 写项目里 `XiHan.Framework.*` 包引用的版本。
+
+## Agent 能拿到什么
+
+### CLI：离线、与版本一致的知识库
+
+[`XiHan.Framework.Cli`](./cli) 是一个 .NET 工具，把全部包的模块类与 `[DependsOn]` 依赖、包依赖、全部配置节（属性、类型、缺省值与说明）、整站文档与更新日志打包在 NuGet 包里，不联网，查到的内容与工具的版本一致；它与框架各包同号发布。
+
+```bash
+xihan-framework list                          # 按层列出包与模块类
+xihan-framework info Caching                  # 安装命令、模块依赖、包依赖、配置节
+xihan-framework config XiHan:Caching:Redis    # 配置节的属性、类型、缺省值与配置片段
+xihan-framework search 分布式锁               # 在全部文档里检索
+xihan-framework doc guide/dynamic-api         # 指南全文
+xihan-framework changelog 4.6.0 4.6.2         # 两版之间的变更
+```
+
+不想安装时把 `xihan-framework` 换成 `dnx XiHan.Framework.Cli@<版本> --yes --`。
+
+### MCP Server：把 CLI 接进 AI 工具
+
+`xihan-framework mcp` 以 stdio 启动 [MCP 服务端](./mcp)，AI 工具可以直接调用 `xihan_framework_info`、`xihan_framework_config`、`xihan_framework_search` 等工具。
+
+```json
+{
+  "mcpServers": {
+    "xihan-framework": {
+      "command": "dnx",
+      "args": ["XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
+    }
+  }
+}
+```
+
+在项目里运行 `setup` 会读出项目引用的框架版本，并把配置写到所在 git 仓库的根目录。
+
+### 技能：XiHan.Framework 的使用规范
+
+[`SKILL.md`](https://framework.docs.xihanfun.com/ai/SKILL.md) 是写给 AI 的使用规范：先查证再写代码、应用骨架、模块与 `[DependsOn]`、动态 API 应用服务、配置节与基础设施、常见错误。它随工具发布，`setup --mode skill` 把它写进项目：Claude Code 写到 `.claude/skills/xihan-framework/`，其余工具写到 `.agents/skills/xihan-framework/`。MCP 提示词 `xihan-framework-expert` 用的也是这一份。
+
+### LLMs.txt：直接放进上下文的文档
+
+文档站构建时产出 [机读资产](./llms)：`llms.txt` 索引、`llms-full.txt` 全站正文、`llms-guide.txt` 开发指南、`llms-packages.txt` 模块总览，以及每一页的 Markdown（站点地址后加 `.md`，如 [guide/caching.md](https://framework.docs.xihanfun.com/guide/caching.md)）。
+
+## 各部分的关系
+
+| 部分 | 回答什么 | 什么时候用 |
+| --- | --- | --- |
+| 提示词与技能 | 规范：该怎么写、不该怎么写 | 每次会话开头，或长期写进项目的 Agent 规则 |
+| CLI | 事实：某个包有哪些模块、依赖与配置键 | 加包引用、写 `[DependsOn]`、写 appsettings 之前 |
+| MCP Server | 同上，以工具的形式交给 AI | AI 工具支持 MCP 时，替代手动跑 CLI |
+| LLMs.txt | 整份文档 | 工具不能运行命令、只能读网页时 |
+
+CLI、MCP 与技能都离线且跟随版本；LLMs.txt 在文档站上，内容对应最新发布的版本。
+
+## 前端与整套应用
+
+前端用 XiHan.UI 时，它有自己的 CLI 与 MCP 服务端，见 [视图组件的 AI 辅助开发](https://ui.docs.xihanfun.com/ai/agents)。基于 XiHan.BasicApp 二次开发时，两边一起接入，见 [基础应用的 AI 辅助开发](https://basicapp.docs.xihanfun.com/ai/agents)。
+
+## 相关
+
+- [快速上手](../quickstart) · [模块系统](../guide/modularity) · [配置与选项](../guide/configuration)
+
+---
+
+来源：https://framework.docs.xihanfun.com/ai/cli
+
+# CLI
+
+`XiHan.Framework.Cli` 是 XiHan.Framework 的命令行工具：在终端里查包、模块类与依赖、配置节、文档与更新日志，也是 [MCP 服务端](./mcp) 的载体。命令名 `xihan-framework`。
+
+## 特点
+
+- **离线**：整站文档、各包的项目文件、模块类与选项类在打包时嵌进工具，查询不联网。
+- **与版本一致**：工具与框架各包同号发布。在项目里运行时，工具扫描项目文件与 props 里的 `XiHan.Framework.*` 包引用，版本与自身不一致时在 stderr 提示改用同号的工具。
+- **配置键从源码读**：配置节、属性、类型与缺省值取自选项类的 `SectionName` 常量与属性声明，说明取自 XML 文档注释，不靠手抄。
+- **给机器读**：所有查询命令都可输出 JSON；查不到时给出候选。
+
+## 安装
+
+不安装，用 .NET 10 SDK 自带的 `dnx` 按版本直接运行：
+
+```bash
+dnx XiHan.Framework.Cli@<版本> --yes -- info Caching
+```
+
+装成全局工具：
+
+```bash
+dotnet tool install --global XiHan.Framework.Cli --version <版本>
+xihan-framework info Caching
+```
+
+或者装成仓库的本地工具，版本记在 `.config/dotnet-tools.json` 里随项目一起升级：
+
+```bash
+dotnet new tool-manifest
+dotnet tool install XiHan.Framework.Cli --version <版本>
+dotnet xihan-framework info Caching
+```
+
+需要 .NET 10 SDK。
+
+## 快速开始
+
+```bash
+xihan-framework list --layer Web                # Web 层的包
+xihan-framework info XiHanWebApiModule          # 按模块类名查包
+xihan-framework config Authentication           # 认证包的全部配置节
+xihan-framework config XiHan:Authentication:Jwt # 一个配置节的属性与缺省值
+xihan-framework search 工作单元 事务            # 同时提到两个词的页面
+xihan-framework doc guide/uow                   # 指南全文
+```
+
+## 命令
+
+### 查询
+
+| 命令 | 参数 | 说明 |
+| --- | --- | --- |
+| `list` | `--layer <层>` `--query <关键字>` | 按所在层列出包与模块类 |
+| `info` | `<包\|模块>` | 安装命令、模块类与 `[DependsOn]`、引用的框架包与第三方包、绑定的配置节 |
+| `doc` | `[<页面\|包>]` | 文档页全文；写包名时取它的参考页；不带参数列出全部页面 |
+| `config` | `[<配置节\|包\|选项类>]` | 不带参数列出全部配置节；带参数时逐项列出属性、类型、缺省值与说明，并给出按缺省值写出的 appsettings 片段 |
+| `search` | `<关键字…>` | 在全部文档里检索，多个词需同时出现，按相关度排序 |
+| `changelog` | `[<版本> [<版本>]]` `--keyword <词>` | 不带版本取最近一版；一个版本取这一版；两个版本取两者之间（不含较早的那一版）；`--keyword` 只留提到它的条目，可写包名 |
+
+### 集成
+
+| 命令 | 参数 | 说明 |
+| --- | --- | --- |
+| `mcp` | — | 以 stdio 启动 MCP 服务端，见 [MCP Server](./mcp) |
+| `setup` | `--client <claude\|cursor\|vscode\|codex>` `--mode <mcp\|skill\|both>` `--pin <版本>` `--dry-run` `--check` | 把钉住版本的 MCP 配置与使用技能写进项目 |
+
+### 包名
+
+包名可以写全名（`XiHan.Framework.Caching`）、短名（`Caching`、`Web.Api`、`web-api`）或模块类名（`XiHanCachingModule`）。文档页写站内路径，如 `guide/caching`、`quickstart`、`packages/web-api`。
+
+## 全局选项
+
+| 选项 | 说明 | 缺省 |
+| --- | --- | --- |
+| `--format <markdown\|json>` | 输出格式 | `markdown` |
+| `-v, --version` | 打印版本 | — |
+| `-h, --help` | 打印帮助 | — |
+
+## 退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功 |
+| `1` | 查不到（stderr 给出候选）或配置核对未通过 |
+| `2` | 用法错误：未知命令、缺参数、选项取值不合法 |
+
+## 相关
+
+- [For Agents](./agents) · [MCP Server](./mcp) · [LLMs.txt](./llms)
+
+---
+
+来源：https://framework.docs.xihanfun.com/ai/llms
+
+# LLMs.txt
+
+文档站在构建时产出一组给大语言模型读的机读资产，内容与站点正文同源。AI 工具读取它们即可了解 XiHan.Framework 的模块、API 与用法。
+
+## 可用资源
+
+| 文件 | 说明 |
+| --- | --- |
+| [llms.txt](https://framework.docs.xihanfun.com/llms.txt) | 索引：全部页面的标题、一句话摘要与地址，以及下列资产的入口 |
+| [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt) | 全站正文 |
+| [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt) | 开发指南：按能力域组织的用法与原理 |
+| [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt) | 模块总览：每个包的 API 清单与配置项全表 |
+| [ai/SKILL.md](https://framework.docs.xihanfun.com/ai/SKILL.md) | 给 AI 编程工具的使用规范，见 [For Agents](./agents) |
+
+**单页 Markdown**：任何一页的站点地址后加 `.md` 即可取到这一页的 Markdown，如 [guide/caching.md](https://framework.docs.xihanfun.com/guide/caching.md)、[packages/web-api.md](https://framework.docs.xihanfun.com/packages/web-api.md)。每页正文上方的「取本页 Markdown」也指向它。
+
+`llms-full.txt` 体积较大，多数场景读 `llms.txt` 索引后按需取单页，或只取用到的分册。
+
+## 在 AI 工具中使用
+
+所有工具都可以用同一段提示词：
+
+```text
+阅读 https://framework.docs.xihanfun.com/llms.txt 了解 XiHan.Framework，写代码时按需读取其中列出的页面（站点地址后加 .md 取 Markdown），以文档为准，不要凭记忆写包名、模块类名与配置键。
+```
+
+| 工具 | 做法 |
+| --- | --- |
+| Claude Code | 写进项目的 `CLAUDE.md`，或用 `/memory` 记下 |
+| Cursor | 在对话中用 `@Docs` 添加 `https://framework.docs.xihanfun.com/llms.txt`，或写进 `.cursor/rules` |
+| Codex | 写进项目的 `AGENTS.md` |
+| GitHub Copilot | 写进 `.github/copilot-instructions.md` |
+| Windsurf | 写进 `.windsurf/rules` |
+
+能运行命令或接入 MCP 的工具，优先用 [CLI](./cli) 或 [MCP Server](./mcp)：数据离线且与项目版本一致，配置节还能精确到属性的类型与缺省值；文档站上的资产对应最新发布的版本。
+
+## 相关
+
+- [For Agents](./agents) · [MCP Server](./mcp) · [CLI](./cli)
+
+---
+
+来源：https://framework.docs.xihanfun.com/ai/mcp
+
+# MCP Server
+
+本页介绍如何通过 Model Context Protocol（MCP）在 AI 编程工具中使用 XiHan.Framework 的知识库。
+
+## 什么是 MCP
+
+[Model Context Protocol](https://modelcontextprotocol.io) 是一个开放协议，让 AI 模型调用外部工具与数据源。接入 XiHan.Framework 的 MCP 服务端后，AI 写代码前可以直接查到包、模块类、`[DependsOn]` 依赖与配置键，而不是凭记忆猜。
+
+## 官方 MCP Server
+
+服务端由 [`XiHan.Framework.Cli`](./cli) 提供，命令是 `xihan-framework mcp`，走 stdio 传输，基于官方的 ModelContextProtocol C# SDK。数据随 NuGet 包离线发布、不联网，内容与工具的版本一致；工具与框架各包同号发布，钉住与项目相同的版本号即可查到项目实际用的包与配置。
+
+### 工具
+
+| 工具 | 说明 |
+| --- | --- |
+| `xihan_framework_list` | 按所在层列出全部包与模块类，可按层或关键字过滤 |
+| `xihan_framework_info` | 一个包的安装命令、模块类与 `[DependsOn]`、引用的框架包与第三方包、绑定的配置节 |
+| `xihan_framework_doc` | 文档页全文：开发指南、包参考页（写包名即可）或开始页；不传参数时列出全部页面 |
+| `xihan_framework_config` | 配置节的属性、类型、缺省值与说明，附按缺省值写出的 appsettings 片段；不传参数时列出全部配置节 |
+| `xihan_framework_search` | 在全部文档里检索关键字，按相关度返回页面与摘录 |
+| `xihan_framework_changelog` | 查某一版或两版之间的更新日志，可按包名过滤 |
+
+工具都是只读的。
+
+### 提示词
+
+| 提示词 | 说明 |
+| --- | --- |
+| `xihan-framework-expert` | 以 XiHan.Framework 专家身份工作，内容就是 [使用技能](https://framework.docs.xihanfun.com/ai/SKILL.md) |
+| `xihan-framework-module` | 按描述写一个框架模块，参数 `description` |
+
+### 配置
+
+不安装工具、按版本直接运行（需要 .NET 10 SDK 自带的 `dnx`）：
+
+```json
+{
+  "mcpServers": {
+    "xihan-framework": {
+      "command": "dnx",
+      "args": ["XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
+    }
+  }
+}
+```
+
+或者先装成全局工具，再直接调用命令：
+
+```bash
+dotnet tool install --global XiHan.Framework.Cli --version <版本>
+```
+
+```json
+{
+  "mcpServers": {
+    "xihan-framework": {
+      "command": "xihan-framework",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+`<版本>` 写项目里 `XiHan.Framework.*` 包引用的版本。省略版本号时 `dnx` 取最新版，查到的内容可能比项目里引用的新。
+
+### 自动写入
+
+在项目里运行 `setup`，它会扫描项目文件与 props 里的 `XiHan.Framework.*` 包引用读出版本，把钉住版本的配置写进对应文件，只改 `xihan-framework` 这一项，不动已有的其他服务。配置写在所在 git 仓库的根目录（不在仓库里时写在向上第一个含解决方案或项目文件的目录），扫描也从这里开始：
+
+```bash
+dnx XiHan.Framework.Cli --yes -- setup --client claude              # .mcp.json，并写入技能
+dnx XiHan.Framework.Cli --yes -- setup --client cursor --mode mcp   # 只写 .cursor/mcp.json
+dnx XiHan.Framework.Cli --yes -- setup --client vscode              # .vscode/mcp.json
+dnx XiHan.Framework.Cli --yes -- setup --client codex               # 打印 ~/.codex/config.toml 片段
+dnx XiHan.Framework.Cli --yes -- setup --client claude --dry-run    # 只打印，不写文件
+dnx XiHan.Framework.Cli --yes -- setup --client claude --check      # 核对配置是否就绪、版本是否一致
+```
+
+`--mode` 取 `mcp`、`skill` 或 `both`（缺省）；`--pin <版本>` 显式指定版本。配置文件已存在但无法解析为 JSON（例如带注释）时，`setup` 不改动文件并给出提示，按 `--dry-run` 打印的片段手动合并即可。
+
+## 在各工具中配置
+
+### Claude Code
+
+项目根目录的 `.mcp.json` 使用上面的写法，也可以用命令添加：
+
+```bash
+claude mcp add --scope project xihan-framework -- dnx XiHan.Framework.Cli@<版本> --yes -- mcp
+```
+
+Windows（非 WSL）上 Claude Code 需要经 `cmd /c` 调用 `dnx`，`setup --client claude` 会自动写成这种形式：
+
+```json
+{
+  "mcpServers": {
+    "xihan-framework": {
+      "command": "cmd",
+      "args": ["/c", "dnx", "XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
+    }
+  }
+}
+```
+
+### Cursor
+
+写在项目的 `.cursor/mcp.json` 或用户目录的 `~/.cursor/mcp.json`，使用通用写法。
+
+### VS Code
+
+写在项目的 `.vscode/mcp.json`，顶层键是 `servers`，并标明传输类型：
+
+```json
+{
+  "servers": {
+    "xihan-framework": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": ["XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
+    }
+  }
+}
+```
+
+### Visual Studio
+
+Visual Studio 读取解决方案目录下的 `.mcp.json` 或 `.vs/mcp.json`，写法同 VS Code（顶层键 `servers`）。
+
+### Codex
+
+写在 `~/.codex/config.toml`：
+
+```toml
+[mcp_servers.xihan-framework]
+command = "dnx"
+args = [
+  "XiHan.Framework.Cli@<版本>",
+  "--yes",
+  "--",
+  "mcp"
+]
+```
+
+### 其他工具
+
+其他支持 stdio MCP 的工具，按各自的配置位置填入同一组 `command` 与 `args` 即可。
+
+## 备选：LLMs.txt
+
+工具不支持 MCP、也不能运行命令时，让它读文档站的 [机读资产](./llms)：`https://framework.docs.xihanfun.com/llms.txt` 是索引，任何一页在站点地址后加 `.md` 即可取到 Markdown。
+
+## 相关
+
+- [For Agents](./agents) · [CLI](./cli) · [LLMs.txt](./llms)
+- 在自己的应用里对外提供 MCP 服务端：[XiHan.Framework.Web.Mcp](../packages/web-mcp)
 
 ---
 
@@ -12597,7 +13003,7 @@ var definition = WorkflowDefinitionBuilder.Create("leave-request", "请假审批
 实例永远绑定它启动时那个具体版本（`DefinitionId` + `DefinitionVersion`）。改流程的正确姿势是 `CreateNewVersionAsync` 出新草稿、改完发布，而不是去动已发布版本——存量实例还在按老图跑。
 :::
 
-发布校验（`WorkflowDefinitionValidator`）会一次性报出所有问题，覆盖：节点标识唯一且非空、活动类型已注册、**有且仅有一个开始节点**、开始节点无入边、连线两端存在、条件表达式语法合法、独占网关至多一条默认边、`Join` 的 `Mode` 与人工任务的 `CompletionPolicy` 取值合法、人工任务必须配 `Assignees` 或 `AssigneesExpression`、**所有节点从开始节点可达**。
+发布校验（`WorkflowDefinitionValidator`）会一次性报出所有问题，覆盖：节点标识唯一且非空、活动类型已注册、**有且仅有一个开始节点**、开始节点无入边、连线两端存在、条件表达式语法合法、独占网关至多一条默认边、`Join` 的 `Mode` 与人工任务的 `CompletionPolicy`、`EmptyAssigneeStrategy` 取值合法、人工任务至少配 `Assignees` / `AssigneesExpression` / `AssigneeRules` 之一、受理人规则类型已注册且参数合法（`Fallback` 策略必须配兜底规则）、结束节点的 `Outcome` 不为空串、**所有节点从开始节点可达**。
 
 ## 启动与驱动实例
 
@@ -12665,7 +13071,8 @@ var resumed = await engine.PublishSignalAsync(
 
 | 类型编码 | 说明 | 关键节点属性 |
 | --- | --- | --- |
-| `Start` / `End` | 流程入口 / 消耗当前令牌 | — |
+| `Start` | 流程入口 | — |
+| `End` | 消耗当前令牌；声明 `Outcome` 时为结果结束节点，回写业务后立即结束整个实例（见「结果结束节点」） | `Outcome` |
 | `Terminate` | 强制结束整个实例，不补偿 | `Reason` |
 | `Fault` | 主动置为故障 | `Message` |
 | `Log` | 记一条运行日志 | `Message`、`Level` |
@@ -12699,11 +13106,15 @@ var resumed = await engine.PublishSignalAsync(
 | 属性 | 说明 |
 | --- | --- |
 | `Assignees` | 受理人标识列表 |
-| `AssigneesExpression` | 求值为列表或逗号分隔字符串的表达式（与上一条二选一） |
+| `AssigneesExpression` | 求值为列表或逗号分隔字符串的表达式 |
+| `AssigneeRules` | 受理人规则列表 `[{ type, values }]`，按类型交给已注册的解析器（见下文） |
+| `ExcludeStarter` | 为 `true` 时从受理人中剔除流程发起人，禁止自己审批自己 |
+| `EmptyAssigneeStrategy` | 受理人解析为空时：`Fault` 节点故障（默认）/ `AutoApprove` / `AutoReject` / `Fallback` |
+| `FallbackAssigneeRules` | `Fallback` 策略使用的兜底规则 |
 | `CompletionPolicy` | `Any` 或签（默认）/ `All` 会签 / `Sequential` 依次审批 |
 | `Title` | 任务标题，支持模板，默认取节点名称 |
 | `FormData` | 表单数据字典，随待办一起给前端 |
-| `CcUserIds` | 抄送人，随任务创建事件发出 |
+| `CcUserIds` / `CcRules` | 抄送人标识与抄送规则，合并后随任务创建事件发出 |
 | `AllowedOutcomes` | 办理结果白名单 |
 
 三种完成策略的语义：
@@ -12713,6 +13124,51 @@ var resumed = await engine.PublishSignalAsync(
 | `Any` 或签 | 任一人同意即通过 | 一次性给全部受理人建待办 |
 | `All` 会签 | 全部同意才通过，任一非同意结果立即结束节点 | 一次性给全部受理人建待办 |
 | `Sequential` 依次 | 按列表顺序逐个审批，全部同意才通过 | 每次只给下一位建待办 |
+
+### 受理人规则
+
+三种来源可以并用，按 `Assignees` → `AssigneesExpression` → `AssigneeRules` 的顺序合并去重（依次审批按这个顺序排队）。`AssigneeRules` 是扩展口：框架内置三种不依赖组织数据的类型（`WorkflowAssigneeRuleTypes`），角色、部门、上级主管等由应用注册自己的解析器。
+
+| 内置类型 | 参数 | 解析结果 |
+| --- | --- | --- |
+| `User` | 受理人标识列表 | 参数本身 |
+| `Starter` | 无 | 实例的 `StarterId`（常用于「退回发起人修改」） |
+| `Expression` | 一条表达式 | 求值为列表或逗号分隔字符串 |
+
+```csharp
+.AddUserTask("manager", "主管审批", node => node
+    .WithAssigneeRule("StarterLeader", "1")      // 应用注册的类型：发起人的直属主管
+    .WithAssigneeRule(WorkflowAssigneeRuleTypes.User, "1001")
+    .WithProperty("ExcludeStarter", true)
+    .WithProperty("EmptyAssigneeStrategy", "Fallback")
+    .WithProperty("FallbackAssigneeRules", new List<WorkflowAssigneeRule>
+    {
+        new() { Type = "Role", Values = ["admin"] }
+    }))
+```
+
+自定义解析器实现 `IWorkflowAssigneeProvider`：
+
+```csharp
+public class RoleAssigneeProvider(IUserRoleRepository userRoles) : IWorkflowAssigneeProvider
+{
+    public string RuleType => "Role";
+
+    // 发布前校验参数，返回错误信息
+    public IReadOnlyList<string> Validate(WorkflowAssigneeRule rule)
+        => rule.Values.Count == 0 ? ["角色规则至少需要一个角色"] : [];
+
+    public async Task<IReadOnlyList<string>> ResolveAsync(WorkflowAssigneeResolveContext context)
+        => await userRoles.GetUserIdsAsync(context.Rule.Values, context.CancellationToken);
+}
+
+services.AddXiHanWorkflowAssigneeProvider<RoleAssigneeProvider>();
+```
+
+- 解析器按瞬时生命周期从当前执行作用域取，可以注入仓储；同一类型只允许一个解析器，重复注册在解析门面构造时直接报错。
+- 规则类型未注册时发布被拒；运行期遇到未注册类型（定义与部署不一致）节点故障，不会当作「没人可审」放过。
+- 数据源不可用必须抛异常（节点故障、可重试），**不要返回空列表**——空列表会走 `EmptyAssigneeStrategy`，配了 `AutoApprove` 就成了静默通过。
+- `AutoApprove` / `AutoReject` 会在审批轨迹 `history` 里留一条 `actorId` 为空的记录。
 
 ### 办理
 
@@ -12757,6 +13213,49 @@ public class ApprovalAppService(IWorkflowUserTaskService userTasks) : Applicatio
 | `WorkflowUserTaskTransferredEventData` | 转办 |
 
 实例级还有 `WorkflowInstanceStartedEventData` / `Completed` / `Faulted` / `Canceled` / `Terminated` / `Suspended` / `Resumed`，以及 `PublishEvent` 活动产生的 `WorkflowCustomEventData`。
+
+## 结果结束节点
+
+审批流的业务方关心的是**结论**：通过还是驳回。给结束节点声明 `Outcome`，它就成了结果结束节点：
+
+```csharp
+.AddUserTask("approve", "审批", node => node.WithAssigneeRule("Role", "finance"))
+.AddOutcomeEnd("end-approved", WorkflowUserTaskOutcomes.Approved, "通过")
+.AddOutcomeEnd("end-rejected", WorkflowUserTaskOutcomes.Rejected, "驳回")
+.AddTransition("approve", "end-approved", "outcome == 'approved'")
+.AddTransition("approve", "end-rejected", "outcome == 'rejected'")
+```
+
+执行到结果结束节点时，引擎依次做三件事：
+
+1. 调用全部已注册的 `IWorkflowOutcomeHandler`，把结论交给业务（回写单据状态、授权、发货……）；
+2. 全部成功后把结论写入 `WorkflowInstance.Outcome`；
+3. **立即结束整个实例**——其余并行分支的待办、等待点与汇聚波次作废，运行中的子实例级联终止。所以「并行会审中任一驳回即整单驳回」只需要把各分支的驳回边连到同一个驳回结束节点。
+
+没有声明 `Outcome` 的结束节点行为不变：只消耗当前令牌，所有令牌与书签结束后实例自动完成，`Outcome` 为空。
+
+```csharp
+public class ExpenseOutcomeHandler(IExpenseRepository expenses) : IWorkflowOutcomeHandler
+{
+    public async Task HandleAsync(WorkflowOutcomeContext context)
+    {
+        if (context.Definition.Code != "expense")
+        {
+            return;
+        }
+
+        // 必须幂等：重试会再次调用
+        await expenses.SetResultAsync(context.Instance.CorrelationId!, context.Outcome, context.CancellationToken);
+    }
+}
+
+services.AddTransient<IWorkflowOutcomeHandler, ExpenseOutcomeHandler>();
+```
+
+::: warning 处理器失败会让实例停在故障态
+任一处理器抛异常，结束节点故障、实例进入 `Faulted`，`Outcome` 不写入、实例不会被标记完成——业务没回写成功就不算结束。排除原因后 `RetryAsync` 会重新执行结束节点、再次调用处理器，所以处理器**必须幂等**。处理器跑在实例执行锁内，不要在里面同步驱动同一个实例。
+引擎不接管数据库事务：处理器的写入要自己包在独立工作单元里，失败时整体回滚，避免「授权写了一半、实例却故障」。
+:::
 
 ## 表达式求值器的边界
 
