@@ -9,7 +9,7 @@
 | 依赖 | 版本 | 说明 |
 | --- | --- | --- |
 | .NET SDK | **10.0+** | 必需 |
-| IDE | Visual Studio 2022 / Rider / VS Code | 任选 |
+| IDE | Visual Studio 2026 / Rider / VS Code | 任选 |
 | 数据库 | PostgreSQL / MySQL / SQLite 等 | 仅在用到 `Data` 模块时需要 |
 | Redis | 6.0+ | 仅在用到分布式缓存时需要 |
 
