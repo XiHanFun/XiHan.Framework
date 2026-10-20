@@ -114,6 +114,11 @@ public class WorkflowInstance
     public string? CancellationReason { get; set; }
 
     /// <summary>
+    /// 流程结果（由声明了 Outcome 的结果结束节点写入，如 approved / rejected；未经结果结束节点完成时为空）
+    /// </summary>
+    public string? Outcome { get; set; }
+
+    /// <summary>
     /// 是否处于终态（完成/取消/故障/终止）
     /// </summary>
     /// <returns>处于终态返回 true</returns>

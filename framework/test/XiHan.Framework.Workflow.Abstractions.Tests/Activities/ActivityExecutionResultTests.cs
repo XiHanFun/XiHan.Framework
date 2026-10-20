@@ -29,6 +29,7 @@ public class ActivityExecutionResultTests
         Assert.Empty(result.Bookmarks);
         Assert.Empty(result.ChildStartRequests);
         Assert.Null(result.FaultMessage);
+        Assert.False(result.EndsInstance);
     }
 
     /// <summary>
@@ -132,6 +133,23 @@ public class ActivityExecutionResultTests
         Assert.Single(result.ChildStartRequests);
         Assert.Same(child, result.ChildStartRequests[0]);
         Assert.Empty(result.Outputs);
+    }
+
+    /// <summary>
+    /// 结束实例结果是完成种类，携带结果值并标记结束整个实例
+    /// </summary>
+    [Fact]
+    public void EndInstance_WithOutcome_ReturnsCompletedThatEndsInstance()
+    {
+        var result = ActivityExecutionResult.EndInstance(outcome: "rejected");
+
+        Assert.Equal(ActivityExecutionResultKind.Completed, result.Kind);
+        Assert.True(result.EndsInstance);
+        Assert.Equal("rejected", result.Outcome);
+        Assert.Empty(result.Outputs);
+        Assert.Empty(result.Bookmarks);
+        Assert.Empty(result.ChildStartRequests);
+        Assert.Null(result.FaultMessage);
     }
 
     /// <summary>

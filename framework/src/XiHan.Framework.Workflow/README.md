@@ -14,7 +14,8 @@
 | --- | --- |
 | 执行引擎 | `IWorkflowEngine`：启动/书签恢复/信号/挂起/取消/终止/重试；实例级分布式锁单写者；执行批次逐节点持久化；防失控环路步数上限 |
 | 标准活动库 | Start、End、Terminate、Fault、Log、SetVariable、Decision（独占网关）、Parallel、Join（WaitAll/WaitAny）、Delay、WaitSignal、UserTask、Http、Script（Roslyn）、PublishEvent、SubWorkflow、ForEach |
-| 审批 | 或签/会签/依次审批、拒绝一票否决、超时结果流转（`outcome == 'timeout'`）、转办、加签、抄送事件、审批轨迹 |
+| 审批 | 或签/会签/依次审批、拒绝一票否决、超时结果流转（`outcome == 'timeout'`）、转办、加签、抄送事件、审批轨迹；受理人规则（内置指定用户/发起人/表达式，应用可注册角色、部门、主管等解析器）、剔除发起人、受理人为空策略（故障/自动通过/自动驳回/兜底） |
+| 结果回写 | 结束节点声明 `Outcome` 即为结果结束节点：同步调用 `IWorkflowOutcomeHandler` 回写业务，成功后写入实例结果并立即结束整个实例；处理器失败实例停在故障态、重试再次回调 |
 | 表达式 | 内置轻量表达式语言（变量导航/算术/比较/逻辑/内置函数），出边条件 fail-closed，`{{ }}` 模板插值 |
 | 定义管理 | `IWorkflowDefinitionManager`：草稿 → 发布 → 停用 → 归档；同编码多版本，实例绑定版本；发布前结构校验（唯一开始节点、引用完整、表达式语法、可达性） |
 | 调度 | `WorkflowTimerWorker`：轮询到期书签（延时/重试/节点超时），分布式锁集群单活，租户上下文还原 |
@@ -94,6 +95,8 @@ await userTaskService.CompleteAsync(tasks[0].TaskId, "1001", WorkflowUserTaskOut
 
 ## 扩展点
 
+- 受理人解析器：实现 `IWorkflowAssigneeProvider`（一种规则类型一个），`services.AddXiHanWorkflowAssigneeProvider<YourProvider>()` 注册；
+- 结果处理器：实现 `IWorkflowOutcomeHandler` 并注册进 DI，结果结束节点执行时同步调用（须幂等）；
 - 自定义活动：实现 `IWorkflowActivity`（可选 `IResumableWorkflowActivity`/`ICompensableWorkflowActivity`），标注 `[WorkflowActivity("YourType")]`，`services.AddXiHanWorkflowActivity<YourActivity>()` 注册；
 - 持久化：以 `Replace` 覆盖 `IWorkflowDefinitionStore`/`IWorkflowInstanceStore`/`IWorkflowBookmarkStore`；
 - 表达式语言：替换 `IWorkflowExpressionEvaluator`；
@@ -108,6 +111,7 @@ await userTaskService.CompleteAsync(tasks[0].TaskId, "1001", WorkflowUserTaskOut
 ## 目录结构
 
 - `Activities/`：活动注册表、活动基类与 `BuiltIn/` 内置活动库
+- `Assignees/`：受理人规则解析门面与 `BuiltIn/` 内置解析器
 - `Builders/`：流程定义流式构建器与设计器 JSON 序列化
 - `Definitions/`：定义管理器与发布前结构校验器
 - `Engine/`：执行引擎、定义图索引、实例锁获取器
