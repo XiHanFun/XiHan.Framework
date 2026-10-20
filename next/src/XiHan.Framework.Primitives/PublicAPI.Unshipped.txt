@@ -327,3 +327,4 @@ XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.init -> void
 ~override XiHan.Framework.Primitives.Result.Equals(object obj) -> bool
 ~override XiHan.Framework.Primitives.Result<T>.Equals(object obj) -> bool
 ~override XiHan.Framework.Primitives.TypedId<TTag, TValue>.Equals(object obj) -> bool
+XiHan.Framework.Primitives.InvocationContext.WithCancellation(System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!

@@ -70,6 +70,20 @@ public sealed class InvocationContextTests
     }
 
     [Fact]
+    public void WithCancellation_DerivesContextWithNewTokenSharingItems()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var context = Create(baggage: new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = "t-1" });
+
+        var derived = context.WithCancellation(cancellation.Token);
+
+        Assert.Equal(cancellation.Token, derived.CancellationToken);
+        Assert.Same(context.Items, derived.Items);
+        Assert.Same(context.Baggage, derived.Baggage);
+        Assert.Equal(TraceId, derived.TraceId);
+    }
+
+    [Fact]
     public void Deadline_DrivesExpiryAndRemainingTime()
     {
         var now = new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero);

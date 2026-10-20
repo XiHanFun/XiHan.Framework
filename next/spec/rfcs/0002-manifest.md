@@ -1,6 +1,6 @@
 # RFC-0002 清单
 
-> 状态：草案 | 日期：2026-10-21 | 对应 ADR：0002、0006
+> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：0002、0006 | 参考实现：`XiHan.Framework.Kernel.Capabilities.CapabilityResolver`
 
 ## 摘要
 

@@ -35,7 +35,7 @@ XiHan.Framework.Profiles.<Minimal|Standard|Full>
 不带 `XiHan` 前缀。已定名：
 
 - 原语层：`Result<T>`、`Result`、`Error`、`ErrorCode`、`Maybe`、`Maybe<T>`、`ITypedId<TValue>`、`TypedId<TTag, TValue>`、`InvocationContext`、`BaggageKeys`、`FrameworkException`、`FrameworkInfo`、`Stability`、`ApiLevelAttribute`、`LifecycleState`、`PipelineStage`，清单模型在 `Primitives.Manifests`。工厂方法在非泛型 `Result`、`Maybe` 上。
-- 内核：`IFeature`、`IHostedFeature`、`FeatureContext`、`AppBuilder`、`App`、`IPipelineMiddleware`、`PipelineBuilder`、`PipelineDelegate`、`PipelineStage`、`Placement`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`。
+- 内核：`IFeature`、`IHostedFeature`、`FeatureContext`、`AppBuilder`、`App`、`KernelOptions`、`BindingValue`、`CapabilityResolver`、`ResolvedGraph`、`IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`ContextItemKey<T>`、`Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`、`PermissionRegistry`、`IPlugin`、`IPluginHost`；错误码常量在 `KernelErrors`，能力 ID 常量在 `KernelCapabilities`。P3 新增 `IOperation<TRequest, TResponse>`、`IOperationInvoker`。
 - 约定：能力包入口 `<名称>Feature`；中间件 `<名称>Middleware`；操作 `<动词><资源>`；端口 `I<名词>`；选项 `<领域>Options`。
 
 ## 管道阶段

@@ -1,6 +1,6 @@
 # RFC-0003 调用上下文与传播
 
-> 状态：草案 | 日期：2026-10-21 | 对应 ADR：0002
+> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：0002 | 参考实现：`InvocationContext`、`DeadlineMiddleware`
 
 ## 摘要
 
