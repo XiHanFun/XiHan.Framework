@@ -7,15 +7,28 @@
   </Folder>
   <Folder Name="/2.Subsystems/" />
   <Folder Name="/3.Providers/" />
-  <Folder Name="/4.Hosting/" />
-  <Folder Name="/5.Plugins/" />
-  <Folder Name="/6.Tooling/" />
+  <Folder Name="/4.Hosting/">
+    <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/5.Plugins/">
+    <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
+  </Folder>
+  <Folder Name="/6.Tooling/">
+    <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </Folder>
   <Folder Name="/7.Tests/">
     <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Primitives.Tests/XiHan.Framework.Primitives.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Tests/XiHan.Framework.Kernel.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Hosting.AspNetCore.Tests/XiHan.Framework.Hosting.AspNetCore.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
   </Folder>
-  <Folder Name="/8.Solution Items/">
+  <Folder Name="/8.Samples/">
+    <Project Path="samples/SimpleApp/SimpleApp.csproj" />
+    <Project Path="samples/SamplePlugin/SamplePlugin.csproj" />
+  </Folder>
+  <Folder Name="/9.Solution Items/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />

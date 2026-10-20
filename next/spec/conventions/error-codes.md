@@ -33,11 +33,18 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `KERNEL_HOSTING_002` | 特性启动或停止失败 |
 | `KERNEL_HOSTING_003` | 特性停止超时 |
 | `KERNEL_HOSTING_004` | 应用状态不允许该操作（重复构建、未就绪时调用） |
+| `KERNEL_UNAVAILABLE_001` | 应用未就绪或正在停止，暂不接收调用（HTTP 503） |
 | `KERNEL_TIMEOUT_001` | 调用超过截止时间 |
 | `KERNEL_CANCELLED_001` | 调用被取消 |
 | `KERNEL_UNEXPECTED_001` | 调用期间发生未处理异常 |
 | `KERNEL_SECURITY_001` | 权限码重复 |
 | `KERNEL_SECURITY_002` | 权限注册表已满 |
+| `PLUGINS_VALIDATION_001` | 插件清单、种类或隔离级别不合法 |
+| `PLUGINS_VALIDATION_002` | 插件入口类型未实现 IPlugin，或实例清单与文件清单不一致 |
+| `PLUGINS_NOTFOUND_001` | 插件清单文件、程序集或入口类型不存在 |
+| `PLUGINS_DENIED_001` | 插件声明的权限未被宿主授予 |
+| `PLUGINS_CONFLICT_001` | 同一清单 ID 的插件已加载 |
+| `PLUGINS_UNEXPECTED_001` | 插件加载、配置、启动或停止时发生未处理异常 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |

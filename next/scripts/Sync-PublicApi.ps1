@@ -37,6 +37,8 @@ $toAdd = [System.Collections.Generic.HashSet[string]]::new([System.StringCompare
 $toRemove = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
 
 foreach ($line in $output) {
+    # 依赖项目的诊断也会出现在输出里，只取属于本项目的行（MSBuild 在行尾标注 [项目路径]）
+    if (-not $line.Contains("[$projectPath]")) { continue }
     $add = [regex]::Match($line, "RS0016: Symbol '(.+?)' is not part of the declared public API")
     if ($add.Success) { [void]$toAdd.Add($add.Groups[1].Value); continue }
     $remove = [regex]::Match($line, "RS0017: Symbol '(.+?)' is part of the declared API")

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://spec.xihanfun.com/manifest/v1.json",
+  "id": "xihan.samples.plugin",
+  "package": "SamplePlugin",
+  "version": "5.0.0-preview.1",
+  "primitives": "1",
+  "stability": "experimental",
+  "kind": "plugin",
+  "isolation": "in-process",
+  "requires": [ { "id": "kernel.plugins", "version": "1" } ],
+  "permissions": [ "capability:kernel.diagnostics" ],
+  "activation": [ "onStartup" ],
+  "entry": "SamplePlugin.SamplePlugin"
+}
