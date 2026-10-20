@@ -4,6 +4,8 @@
     <RootNamespace>XiHan.Framework.Kernel</RootNamespace>
     <Description>XiHan Framework 微内核（Ring 1）：宿主、能力图谱、执行管道、诊断薄桥、安全原语、插件宿主抽象。</Description>
     <PackageTags>xihan;framework;kernel</PackageTags>
+    <!-- Ring 1：分析器据此禁止反射 -->
+    <XiHanRing>1</XiHanRing>
   </PropertyGroup>
 
   <ItemGroup>

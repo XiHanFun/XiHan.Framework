@@ -14,7 +14,9 @@
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
   </Folder>
   <Folder Name="/6.Tooling/">
+    <Project Path="src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
     <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/7.Tests/">
     <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
@@ -23,6 +25,7 @@
     <Project Path="test/XiHan.Framework.Hosting.AspNetCore.Tests/XiHan.Framework.Hosting.AspNetCore.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Analyzers.Tests/XiHan.Framework.Kernel.Analyzers.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
