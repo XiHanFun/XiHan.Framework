@@ -1,0 +1,48 @@
+root = true
+
+[*.cs]
+charset = utf-8
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+insert_final_newline = true
+
+# 命名
+dotnet_naming_rule.private_fields_should_have_underscore.severity = warning
+dotnet_naming_rule.private_fields_should_have_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_have_underscore.style = underscore_prefix
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_prefix.required_prefix = _
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+
+dotnet_naming_rule.private_static_field_should_be_underscore_camelcase.severity = warning
+dotnet_naming_rule.private_static_field_should_be_underscore_camelcase.symbols = private_static_field
+dotnet_naming_rule.private_static_field_should_be_underscore_camelcase.style = underscore_prefix
+dotnet_naming_symbols.private_static_field.applicable_kinds = field
+dotnet_naming_symbols.private_static_field.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_field.required_modifiers = static
+
+# 修饰符
+dotnet_style_require_accessibility_modifiers = for_non_interface_members
+
+# 表达式体
+csharp_style_expression_bodied_methods = false
+csharp_style_expression_bodied_operators = false
+csharp_style_expression_bodied_constructors = false
+
+# var
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Null 检查
+csharp_style_conditional_delegate_call = true
+
+# 代码块
+csharp_prefer_braces = true
+csharp_style_namespace_declarations = file_scoped
+
+# IDE0290: 禁用主构造函数建议
+csharp_style_prefer_primary_constructors = false

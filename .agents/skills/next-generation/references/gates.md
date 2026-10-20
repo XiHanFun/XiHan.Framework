@@ -1,0 +1,46 @@
+# 门禁与阶段
+
+## 命令（仓库根）
+
+```bash
+dotnet restore next/XiHan.Framework.Next.slnx
+dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore
+dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build
+dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
+```
+
+`global.json` 启用了 Microsoft.Testing.Platform：`dotnet test` 必须用 `--solution`，不要改回 VSTest。CI 同形流程在 `.github/workflows/next-ci.yml`。
+
+## 门禁清单
+
+| 门禁 | 位置 | 失败时 |
+| --- | --- | --- |
+| 警告即错误、`latest-recommended` 分析器、Nullable | `next/Directory.Build.props` | 修代码，不加 `NoWarn`（测试项目仅允许 CA1515、CA1707、xUnit1051） |
+| NU1903/NU1904 漏洞 | 同上 | 升级依赖 |
+| PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 把新增公开成员写进 `PublicAPI.Unshipped.txt`；已发布行不改 |
+| 包验证 `EnablePackageValidation` | 同上 | 小版本不得破坏；大版本列出破坏清单 |
+| AOT 分析器 `IsAotCompatible` | 同上 | 去掉反射与动态代码 |
+| 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |
+| 新正式包 | 同上 `EverySourceProject_IsReferencedByArchitectureTests` | 把新包加进架构测试项目引用 |
+
+架构测试覆盖：包 ID 文法、目录名等于包 ID、命名空间等于包 ID 或其下一层、公开类型不带 `XiHan` 前缀、依赖只向下或同环抽象、`Primitives` 无引用、Ring 1/2 只引用 `Microsoft.Extensions.*` 抽象包、公开签名不泄漏第三方类型、Ring 0/1 零反射、版权头、README 与 PublicAPI 文件存在、术语表自洽。
+
+## 新建正式包的步骤
+
+1. 用术语表与文法确定包 ID；目录 `next/src/<包 ID>/`。
+2. 放入 `<包 ID>.csproj`（`PackageId`、`RootNamespace`、`Description`、`PackageTags`）、`README.md`（定位、责任边界、依赖方向、不负责的内容、状态）、`PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`（首行 `#nullable enable`）。
+3. 加进 `XiHan.Framework.Next.slnx` 对应环层目录，加进架构测试项目的引用。
+4. 若引入新能力 ID 或错误码，登记到 `next/spec/conventions/`。
+
+## 阶段退出条件
+
+| 阶段 | 退出条件 |
+| --- | --- |
+| P0 定边界 | 8 项 ADR 通过；空解决方案过全部门禁；RFC-0001 列出原语层全部类型 |
+| P1 内核 | 零 Provider 的 SimpleApp 可运行；AOT 发布通过；内核公开类型 ≤ 120、第三方依赖 0、启动 < 50 ms、空应用 < 30 MB |
+| P2 子系统 | Standard Profile 应用零外部基础设施运行；切换 Provider 只改配置与包引用；默认实现与 Provider 全过一致性套件 |
+| P3 协议与宿主 | 一份契约在 HTTP、gRPC、MCP 上服务；k8s 示例带探针与优雅停机 |
+| P4 插件与跨语言 | Go 插件在 .NET 宿主中服务一个操作；Go SDK 通过全部一致性向量；Spec 仓库公开 |
+| P5 GA | BasicApp 全量跑在 5.0；4.x 进入维护期 |
+
+详细任务清单在 `nextdocs/architecture/05-开发计划.md`。
