@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Primitives</PackageId>
+    <RootNamespace>XiHan.Framework.Primitives</RootNamespace>
+    <Description>XiHan Framework 原语层（Ring 0）：Result、Error、Maybe、TypedId、调用上下文契约、清单模型与稳定性标记。只增不改。</Description>
+    <PackageTags>xihan;framework;primitives</PackageTags>
+  </PropertyGroup>
+</Project>

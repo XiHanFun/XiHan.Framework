@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Architecture.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 架构测试必须引用全部正式包：EverySourceProject_IsReferencedByArchitectureTests 会强制这一点 -->
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/0.Primitives/">
+    <Project Path="src/XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </Folder>
+  <Folder Name="/1.Kernel/">
+    <Project Path="src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/2.Subsystems/" />
+  <Folder Name="/3.Providers/" />
+  <Folder Name="/4.Hosting/" />
+  <Folder Name="/5.Plugins/" />
+  <Folder Name="/6.Tooling/" />
+  <Folder Name="/7.Tests/">
+    <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
+  </Folder>
+  <Folder Name="/8.Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>
