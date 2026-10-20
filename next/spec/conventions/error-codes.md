@@ -19,7 +19,8 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 
 | 错误码 | 含义 |
 | --- | --- |
-| `PRIMITIVES_VALIDATION_001` | 原语参数非法（空 Code、空 Message 等） |
+| `PRIMITIVES_VALIDATION_001` | 原语参数非法（空 Code、空 Message、清单跨字段约束等） |
+| `PRIMITIVES_VALIDATION_002` | 使用了未初始化的 Result（default 值） |
 | `KERNEL_CAPABILITY_001` | 能力解析失败：缺失依赖 |
 | `KERNEL_CAPABILITY_002` | 能力解析失败：循环依赖 |
 | `KERNEL_CAPABILITY_003` | 能力解析失败：版本约束冲突 |

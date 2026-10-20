@@ -58,17 +58,17 @@ public interface IPipelineMiddleware
 
 public delegate ValueTask PipelineDelegate(InvocationContext context);
 
-public enum Stage { Ingress, Observe, Resilience, Authenticate, Tenant, Authorize, Validate, Idempotency, Transaction, Handle, Egress }
+// PipelineStage 枚举定义在 XiHan.Framework.Primitives（RFC-0001），阶段名与顺序为规范性内容
 public enum Placement { Beginning, End }
 
 public sealed class PipelineBuilder
 {
     public PipelineBuilder Use<TMiddleware>() where TMiddleware : IPipelineMiddleware;
-    public PipelineBuilder UseAt<TMiddleware>(Stage stage, Placement placement = Placement.End) where TMiddleware : IPipelineMiddleware;
+    public PipelineBuilder UseAt<TMiddleware>(PipelineStage stage, Placement placement = Placement.End) where TMiddleware : IPipelineMiddleware;
     public PipelineBuilder Before<TMiddleware, TOther>() where TMiddleware : IPipelineMiddleware where TOther : IPipelineMiddleware;
     public PipelineBuilder After<TMiddleware, TOther>() where TMiddleware : IPipelineMiddleware where TOther : IPipelineMiddleware;
     public PipelineDelegate Build(IServiceProvider services);
-    public IReadOnlyList<(Stage Stage, Type Middleware)> Describe();
+    public IReadOnlyList<(PipelineStage Stage, Type Middleware)> Describe();
 }
 ```
 

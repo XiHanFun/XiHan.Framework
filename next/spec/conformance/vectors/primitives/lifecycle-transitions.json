@@ -1,0 +1,24 @@
+{
+  "$comment": "生命周期合法迁移的完整列表；未列出的组合一律非法。见 RFC-0001。",
+  "allowed": [
+    ["Declared", "Resolved"],
+    ["Declared", "Failed"],
+    ["Resolved", "Configured"],
+    ["Resolved", "Failed"],
+    ["Configured", "Started"],
+    ["Configured", "Failed"],
+    ["Started", "Ready"],
+    ["Started", "Degraded"],
+    ["Started", "Draining"],
+    ["Started", "Failed"],
+    ["Ready", "Degraded"],
+    ["Ready", "Draining"],
+    ["Ready", "Failed"],
+    ["Degraded", "Ready"],
+    ["Degraded", "Draining"],
+    ["Degraded", "Failed"],
+    ["Draining", "Stopped"],
+    ["Draining", "Failed"],
+    ["Failed", "Resolved"]
+  ]
+}

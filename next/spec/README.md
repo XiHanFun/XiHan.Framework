@@ -36,7 +36,7 @@ spec/
 
 | RFC | 标题 | 状态 |
 | --- | --- | --- |
-| [0001](rfcs/0001-primitives.md) | 原语层 | 草案 |
+| [0001](rfcs/0001-primitives.md) | 原语层 | 已采纳（参考实现 `src/XiHan.Framework.Primitives`） |
 | [0002](rfcs/0002-manifest.md) | 清单 | 草案 |
 | [0003](rfcs/0003-invocation-context.md) | 调用上下文与传播 | 草案 |
 | [0004](rfcs/0004-pipeline-stages.md) | 管道阶段与排序 | 草案 |
