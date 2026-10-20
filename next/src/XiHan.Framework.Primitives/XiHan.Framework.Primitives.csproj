@@ -4,6 +4,8 @@
     <RootNamespace>XiHan.Framework.Primitives</RootNamespace>
     <Description>XiHan Framework 原语层（Ring 0）：Result、Error、Maybe、TypedId、调用上下文契约、清单模型与稳定性标记。只增不改。</Description>
     <PackageTags>xihan;framework;primitives</PackageTags>
+    <!-- Ring 0：分析器据此禁止反射 -->
+    <XiHanRing>0</XiHanRing>
   </PropertyGroup>
 
   <!-- 版本常量由构建期生成，FrameworkInfo.Version 不经反射读取程序集特性 -->

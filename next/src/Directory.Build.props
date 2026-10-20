@@ -7,7 +7,14 @@
     <IsAotCompatible>true</IsAotCompatible>
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- 启用 XiHan.Framework.Kernel.Analyzers 的框架包规则（XH0001/0002/0004）；XiHanRing 由 Ring 0/1 的项目自行设置 -->
+    <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="XiHanFrameworkPackage" />
+    <CompilerVisibleProperty Include="XiHanRing" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
@@ -15,5 +22,10 @@
     <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <!-- 每个正式包都以分析器形式引用自研分析器；分析器自身除外 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Analyzers'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 </Project>

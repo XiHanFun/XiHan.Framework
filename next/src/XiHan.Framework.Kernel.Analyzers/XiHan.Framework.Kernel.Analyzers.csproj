@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>XiHan.Framework.Kernel.Analyzers</PackageId>
+    <RootNamespace>XiHan.Framework.Kernel.Analyzers</RootNamespace>
+    <Description>XiHan Framework 的 Roslyn 分析器：公开类型必须标注 ApiLevel、类型名不带 XiHan 前缀与禁用词、不得引用 Internal 稳定性的 API、Ring 0/1 零反射。</Description>
+    <PackageTags>xihan;framework;analyzers;roslyn</PackageTags>
+    <!-- 分析器以 netstandard2.0 发布，不适用 AOT 与可空注解以外的运行时属性 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+</Project>
