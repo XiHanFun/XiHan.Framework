@@ -1,0 +1,127 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Kernel.Tests;
+
+public sealed class PipelineBuilderTests
+{
+    [Fact]
+    public void Describe_OrdersByStageThenPlacementThenOwnerThenRegistration()
+    {
+        var builder = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Handle)
+            .UseAt<MiddlewareB>(PipelineStage.Ingress, owner: "xihan.z")
+            .UseAt<MiddlewareC>(PipelineStage.Ingress, owner: "xihan.a")
+            .UseAt<MiddlewareD>(PipelineStage.Ingress, Placement.Beginning, owner: "xihan.z");
+
+        var order = builder.Describe().Select(static d => d.Middleware).ToList();
+
+        Assert.Equal([typeof(MiddlewareD), typeof(MiddlewareC), typeof(MiddlewareB), typeof(MiddlewareA)], order);
+    }
+
+    [Fact]
+    public void BeforeAndAfter_ReorderWithinStage()
+    {
+        var builder = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Handle)
+            .UseAt<MiddlewareB>(PipelineStage.Handle)
+            .UseAt<MiddlewareC>(PipelineStage.Handle)
+            .Before<MiddlewareC, MiddlewareA>()
+            .After<MiddlewareB, MiddlewareA>();
+
+        var order = builder.Describe().Select(static d => d.Middleware).ToList();
+
+        Assert.Equal([typeof(MiddlewareC), typeof(MiddlewareA), typeof(MiddlewareB)], order);
+    }
+
+    [Fact]
+    public void CyclicConstraints_ThrowPipelineCycle()
+    {
+        var builder = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Handle)
+            .UseAt<MiddlewareB>(PipelineStage.Handle)
+            .Before<MiddlewareA, MiddlewareB>()
+            .Before<MiddlewareB, MiddlewareA>();
+
+        var exception = Assert.Throws<FrameworkException>(() => builder.Describe());
+
+        Assert.Equal(KernelErrors.PipelineCycle, exception.Code);
+    }
+
+    [Fact]
+    public void CrossStageConstraint_ThrowsRegistrationError()
+    {
+        var builder = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Handle)
+            .UseAt<MiddlewareB>(PipelineStage.Ingress)
+            .Before<MiddlewareA, MiddlewareB>();
+
+        var exception = Assert.Throws<FrameworkException>(() => builder.Describe());
+
+        Assert.Equal(KernelErrors.PipelineRegistration, exception.Code);
+    }
+
+    [Fact]
+    public void DuplicateMiddleware_ThrowsRegistrationError()
+    {
+        var builder = new PipelineBuilder().UseAt<MiddlewareA>(PipelineStage.Handle);
+
+        var exception = Assert.Throws<FrameworkException>(() => builder.UseAt<MiddlewareA>(PipelineStage.Ingress));
+
+        Assert.Equal(KernelErrors.PipelineRegistration, exception.Code);
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => new PipelineBuilder().Before<MiddlewareA, MiddlewareB>()).Code);
+    }
+
+    [Fact]
+    public async Task Build_InvokesMiddlewareInOrderAroundTerminal()
+    {
+        var log = new List<string>();
+        var services = new ServiceCollection()
+            .AddSingleton(log)
+            .AddSingleton<MiddlewareA>()
+            .AddSingleton<MiddlewareB>()
+            .BuildServiceProvider();
+        var pipeline = new PipelineBuilder()
+            .UseAt<MiddlewareB>(PipelineStage.Handle)
+            .UseAt<MiddlewareA>(PipelineStage.Ingress)
+            .Build(context =>
+            {
+                log.Add("terminal");
+                context.SetOutcome(Result.Success());
+                return ValueTask.CompletedTask;
+            });
+
+        var context = App.CreateContext(services, CancellationToken.None);
+        await pipeline(context);
+
+        Assert.Equal(["enter:A", "enter:B", "terminal", "exit:B", "exit:A"], log);
+        Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
+    }
+
+    [Fact]
+    public void Dump_PrintsStageAndTypePerLine()
+    {
+        var dump = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Egress)
+            .UseAt<MiddlewareB>(PipelineStage.Ingress)
+            .Dump();
+
+        Assert.Equal(
+            $"ingress      {typeof(MiddlewareB).FullName}\negress       {typeof(MiddlewareA).FullName}\n",
+            dump);
+    }
+
+    [Fact]
+    public void Use_DefaultsToTransactionStage()
+    {
+        var descriptor = Assert.Single(new PipelineBuilder().Use<MiddlewareD>().Describe());
+
+        Assert.Equal(PipelineStage.Transaction, descriptor.Stage);
+        Assert.Equal(PipelineBuilder.AppOwner, descriptor.Owner);
+    }
+}

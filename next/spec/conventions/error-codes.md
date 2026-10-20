@@ -25,13 +25,19 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `KERNEL_CAPABILITY_002` | 能力解析失败：循环依赖 |
 | `KERNEL_CAPABILITY_003` | 能力解析失败：版本约束冲突 |
 | `KERNEL_CAPABILITY_004` | 同一能力有多个候选且未指定 |
+| `KERNEL_CAPABILITY_005` | 清单 ID 重复 |
 | `KERNEL_PIPELINE_001` | 中间件顺序约束成环 |
 | `KERNEL_PIPELINE_002` | 阶段名未知 |
-| `KERNEL_HOSTING_001` | 必需绑定缺失 |
-| `KERNEL_HOSTING_002` | 特性启动失败 |
+| `KERNEL_PIPELINE_003` | 中间件重复注册，或顺序约束引用了未注册或跨阶段的中间件 |
+| `KERNEL_HOSTING_001` | 必需绑定缺失或类型不匹配 |
+| `KERNEL_HOSTING_002` | 特性启动或停止失败 |
 | `KERNEL_HOSTING_003` | 特性停止超时 |
+| `KERNEL_HOSTING_004` | 应用状态不允许该操作（重复构建、未就绪时调用） |
 | `KERNEL_TIMEOUT_001` | 调用超过截止时间 |
 | `KERNEL_CANCELLED_001` | 调用被取消 |
+| `KERNEL_UNEXPECTED_001` | 调用期间发生未处理异常 |
+| `KERNEL_SECURITY_001` | 权限码重复 |
+| `KERNEL_SECURITY_002` | 权限注册表已满 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |

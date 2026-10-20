@@ -17,7 +17,7 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 | --- | --- | --- |
 | 警告即错误、`latest-recommended` 分析器、Nullable | `next/Directory.Build.props` | 修代码，不加 `NoWarn`（测试项目仅允许 CA1515、CA1707、xUnit1051） |
 | NU1903/NU1904 漏洞 | 同上 | 升级依赖 |
-| PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 把新增公开成员写进 `PublicAPI.Unshipped.txt`；已发布行不改 |
+| PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 运行 `pwsh -File next/scripts/Sync-PublicApi.ps1 -Project <csproj>` 同步 `PublicAPI.Unshipped.txt`；已发布行不改 |
 | 包验证 `EnablePackageValidation` | 同上 | 小版本不得破坏；大版本列出破坏清单 |
 | AOT 分析器 `IsAotCompatible` | 同上 | 去掉反射与动态代码 |
 | 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |

@@ -4,12 +4,12 @@
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、生命周期状态机、探针聚合、资源绑定 |
-| `Capabilities` | `[Capability]`、清单读取、能力图谱、版本约束求解、已解析图 |
-| `Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineDelegate`、`Stage`、`Placement`、内置中间件 |
+| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`AddXiHan()` |
+| `Capabilities` | `[Capability]`、`CapabilityResolver`、`ResolvedGraph`、`ResolvedNode` |
+| `Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`PipelineStage`（原语层）、`Placement`、内置中间件 `ObserveMiddleware`、`DeadlineMiddleware` |
 | `Diagnostics` | `ActivitySource` / `Meter` 桥、`IAuditSink` |
-| `Security` | `IPrincipal`、租户上下文、资源名、`IPolicy`、`AuthorizationResult`、权限注册表 |
-| `Plugins` | `IPlugin`、`IPluginHost`、`IPluginContext` 抽象；具体隔离机制在 `Plugins.*` 包 |
+| `Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`、`AuthorizationResult`、`PermissionRegistry` |
+| `Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PermissionGrant` 抽象；具体隔离机制在 `Plugins.*` 包 |
 
 ## 责任边界
 
@@ -26,4 +26,4 @@
 
 ## 状态
 
-P0：空包，P1 填充。
+P1：内核已实现，公开面记录在 `PublicAPI.Unshipped.txt`。

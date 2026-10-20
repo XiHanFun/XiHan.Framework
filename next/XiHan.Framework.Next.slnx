@@ -13,6 +13,7 @@
   <Folder Name="/7.Tests/">
     <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Primitives.Tests/XiHan.Framework.Primitives.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Tests/XiHan.Framework.Kernel.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Solution Items/">
     <File Path=".editorconfig" />

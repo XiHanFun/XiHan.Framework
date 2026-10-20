@@ -1,6 +1,6 @@
 # RFC-0004 管道阶段与排序
 
-> 状态：草案 | 日期：2026-10-21 | 对应 ADR：0002
+> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：0002 | 参考实现：`XiHan.Framework.Kernel.Pipeline.PipelineBuilder`
 
 ## 摘要
 
@@ -33,7 +33,8 @@ ingress → observe → resilience → authenticate → tenant → authorize →
 1. 先按阶段。
 2. 阶段内按 `before` / `after` 约束做拓扑排序；约束成环报 `KERNEL_PIPELINE_001`。
 3. 仍未定序的按包 ID 字典序。
-4. 显式 `Use<T>()` 不带阶段时归入 `handle` 之前的位置，视为 `transaction` 阶段末尾。
+4. 显式 `Use<T>()` 不带阶段时归入 `transaction` 阶段末尾。
+6. 阶段内先按 `Placement`（Beginning 在前），再按归属（清单 ID 字典序），再按注册顺序，最后应用 `before` / `after` 约束做稳定拓扑排序。
 5. 未知阶段名报 `KERNEL_PIPELINE_002`。
 
 ## 打印格式
@@ -53,10 +54,10 @@ egress       XiHan.Framework.Protocols.Http.ProblemDetailsMiddleware
 ```csharp
 public interface IPipelineMiddleware
 {
-    ValueTask InvokeAsync(InvocationContext context, PipelineDelegate next);
+    ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep);
 }
 
-public delegate ValueTask PipelineDelegate(InvocationContext context);
+public delegate ValueTask PipelineStep(InvocationContext context);
 
 // PipelineStage 枚举定义在 XiHan.Framework.Primitives（RFC-0001），阶段名与顺序为规范性内容
 public enum Placement { Beginning, End }
@@ -64,11 +65,13 @@ public enum Placement { Beginning, End }
 public sealed class PipelineBuilder
 {
     public PipelineBuilder Use<TMiddleware>() where TMiddleware : IPipelineMiddleware;
-    public PipelineBuilder UseAt<TMiddleware>(PipelineStage stage, Placement placement = Placement.End) where TMiddleware : IPipelineMiddleware;
+    public PipelineBuilder UseAt<TMiddleware>(PipelineStage stage, Placement placement = Placement.End, string owner = "app") where TMiddleware : IPipelineMiddleware;
+    public PipelineBuilder UseInstance<TMiddleware>(TMiddleware instance, PipelineStage stage, Placement placement = Placement.End, string owner = "app") where TMiddleware : IPipelineMiddleware;
     public PipelineBuilder Before<TMiddleware, TOther>() where TMiddleware : IPipelineMiddleware where TOther : IPipelineMiddleware;
     public PipelineBuilder After<TMiddleware, TOther>() where TMiddleware : IPipelineMiddleware where TOther : IPipelineMiddleware;
-    public PipelineDelegate Build(IServiceProvider services);
-    public IReadOnlyList<(PipelineStage Stage, Type Middleware)> Describe();
+    public PipelineStep Build(PipelineStep terminal);          // 中间件在每次调用时从 InvocationContext.Services 解析
+    public IReadOnlyList<MiddlewareDescriptor> Describe();
+    public string Dump();
 }
 ```
 
