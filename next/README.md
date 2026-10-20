@@ -40,4 +40,4 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 
 ## 阶段
 
-当前处于 P0 定边界。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
+当前处于 P1 内核：原语层已完成，内核进行中。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
