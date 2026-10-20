@@ -23,10 +23,10 @@ public sealed partial class InvocationContext
     }
 
     [SetsRequiredMembers]
-    private InvocationContext(InvocationContext source, IReadOnlyDictionary<string, string> baggage)
+    private InvocationContext(InvocationContext source, IReadOnlyDictionary<string, string> baggage, CancellationToken cancellationToken)
     {
         _items = source._items;
-        CancellationToken = source.CancellationToken;
+        CancellationToken = cancellationToken;
         Deadline = source.Deadline;
         TraceId = source.TraceId;
         SpanId = source.SpanId;
@@ -117,8 +117,13 @@ public sealed partial class InvocationContext
         {
             [key] = value,
         };
-        return new InvocationContext(this, copy);
+        return new InvocationContext(this, copy, CancellationToken);
     }
+
+    /// <summary>
+    /// 派生一个使用另一个取消令牌的上下文（例如把截止时间落为取消）；其余字段与 <see cref="Items"/> 共享。
+    /// </summary>
+    public InvocationContext WithCancellation(CancellationToken cancellationToken) => new(this, Baggage, cancellationToken);
 
     /// <summary>
     /// 在 <paramref name="now"/> 时刻是否已超过截止时间。
