@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 
 namespace XiHan.Framework.Workflow.Builders;
@@ -56,6 +57,27 @@ public class WorkflowNodeBuilder
             _node.Properties[pair.Key] = pair.Value;
         }
 
+        return this;
+    }
+
+    /// <summary>
+    /// 追加一条受理人规则（写入人工任务的 AssigneeRules，按追加顺序解析）
+    /// </summary>
+    /// <param name="type">规则类型（内置见 <see cref="WorkflowAssigneeRuleTypes"/>）</param>
+    /// <param name="values">规则参数</param>
+    /// <returns>节点构建器</returns>
+    public WorkflowNodeBuilder WithAssigneeRule(string type, params string[] values)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(type);
+        ArgumentNullException.ThrowIfNull(values);
+
+        if (!_node.Properties.TryGetValue("AssigneeRules", out var existing) || existing is not List<WorkflowAssigneeRule> rules)
+        {
+            rules = [];
+            _node.Properties["AssigneeRules"] = rules;
+        }
+
+        rules.Add(new WorkflowAssigneeRule { Type = type, Values = [.. values] });
         return this;
     }
 

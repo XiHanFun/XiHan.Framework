@@ -79,7 +79,7 @@ public interface IWorkflowEngine
     /// <param name="instanceId">实例标识</param>
     /// <param name="reason">取消原因</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实例（已处于终态时幂等返回）</returns>
+    /// <returns>实例（已完成、已取消或已终止时幂等返回；故障实例放弃重试后转为本状态）</returns>
     Task<WorkflowInstance> CancelAsync(string instanceId, string? reason = null, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -88,7 +88,7 @@ public interface IWorkflowEngine
     /// <param name="instanceId">实例标识</param>
     /// <param name="reason">终止原因</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>实例（已处于终态时幂等返回）</returns>
+    /// <returns>实例（已完成、已取消或已终止时幂等返回；故障实例放弃重试后转为本状态）</returns>
     Task<WorkflowInstance> TerminateAsync(string instanceId, string? reason = null, CancellationToken cancellationToken = default);
 
     /// <summary>

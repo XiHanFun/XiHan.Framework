@@ -1,26 +1,21 @@
+import { copyFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { DefaultTheme, HeadConfig, defineConfig } from "vitepress";
-import { renderPageMarkdown, writeLlmsAssets } from "./gen-llms";
+import { fileURLToPath } from "node:url";
+import type { DefaultTheme } from "vitepress";
+import { defineXiHanConfig } from "@xihanfun/vitepress-theme/config";
 
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
+
+// XiHan.Framework 使用技能的真源在 CLI 工具里
+const skillPath = fileURLToPath(
+  new URL("../../framework/tool/XiHan.Framework.Cli/skills/xihan-framework/SKILL.md", import.meta.url),
+);
 
 const title: string = "曦寒开发框架文档";
 const description: string = "基于 DotNet 的模块化开发框架";
 const keywords: string =
   "曦寒,曦寒懿,开发框架,DotNet,模块化,官方文档,开源,XiHanFun,XiHan.Framework";
-const logo: string = "/images/logo.png";
-const head: HeadConfig[] = [
-  ["meta", { name: "author", content: "XiHanFun" }],
-  [
-    "meta",
-    {
-      name: "keywords",
-      content: keywords,
-    },
-  ],
-  ["link", { rel: "icon", href: "/favicon.ico" }],
-];
 
 // 生成单个模块包文档条目
 function pkg(text: string, name: string): DefaultTheme.SidebarItem {
@@ -87,6 +82,16 @@ const startSidebar: DefaultTheme.SidebarItem[] = [
       { text: "为什么选择曦寒", link: "/why" },
       { text: "框架概述", link: "/overview" },
       { text: "快速上手", link: "/quickstart" },
+    ],
+  },
+  {
+    text: "AI 辅助开发",
+    collapsed: false,
+    items: [
+      { text: "For Agents", link: "/ai/agents" },
+      { text: "MCP Server", link: "/ai/mcp" },
+      { text: "CLI", link: "/ai/cli" },
+      { text: "LLMs.txt", link: "/ai/llms" },
     ],
   },
   { text: "更新日志", link: "/changelog" },
@@ -243,114 +248,57 @@ const packagesSidebar: DefaultTheme.SidebarItem[] = [
 const sidebar: DefaultTheme.Sidebar = {
   "/guide/": guideSidebar,
   "/packages/": packagesSidebar,
+  "/ai/": startSidebar,
   "/": startSidebar,
 };
 
 const nav: DefaultTheme.NavItem[] = [
   {
-    text: "开始",
-    link: "/introduction",
-    activeMatch: "^/(introduction|why|overview|quickstart)$",
-  },
-  { text: "开发指南", link: "/guide/modularity", activeMatch: "/guide/" },
-  { text: "模块总览", link: "/packages/", activeMatch: "/packages/" },
-  {
-    text: "探索未知",
+    text: "指南",
+    activeMatch: "^/(introduction|why|overview|quickstart|(guide|ai)/.*)$",
     items: [
       {
-        text: "关于我们",
+        text: "快速开始",
         items: [
-          {
-            text: "官方网站",
-            link: "https://www.xihanfun.com",
-          },
-          {
-            text: "组织文档",
-            link: "https://docs.xihanfun.com",
-          },
+          { text: "介绍", link: "/introduction" },
+          { text: "快速上手", link: "/quickstart" },
+          { text: "常见问题", link: "/guide/faq" },
         ],
       },
       {
-        text: "生态文档",
-        items: [
-          {
-            text: "前端 | 视图组件",
-            link: "https://ui.docs.xihanfun.com",
-          },
-          {
-            text: "用例 | 基础应用",
-            link: "https://basicapp.docs.xihanfun.com",
-          },
-        ],
+        text: "深入",
+        items: [{ text: "开发指南", link: "/guide/modularity" }],
       },
       {
-        text: "引用下载",
+        text: "AI 辅助开发",
         items: [
-          {
-            text: "后端 | nuget",
-            link: "https://www.nuget.org/profiles/XiHanFun",
-          },
-          {
-            text: "前端 | npm",
-            link: "https://www.npmjs.com/org/xihan-ui",
-          },
+          { text: "For Agents", link: "/ai/agents" },
+          { text: "MCP Server", link: "/ai/mcp" },
+          { text: "CLI", link: "/ai/cli" },
         ],
       },
+    ],
+  },
+  { text: "模块", link: "/packages/", activeMatch: "/packages/" },
+  {
+    text: "生态",
+    items: [
       {
-        text: "在线体验",
+        text: "官方生态",
         items: [
-          {
-            text: "后端 | 开发框架",
-            link: "https://framework.xihanfun.com",
-          },
-          {
-            text: "前端 | 视图组件",
-            link: "https://ui.xihanfun.com",
-          },
-          {
-            text: "用例 | 基础应用",
-            link: "https://basicapp.xihanfun.com",
-          },
+          { text: "开发框架", link: "/" },
+          { text: "视图组件", link: "https://ui.docs.xihanfun.com" },
+          { text: "基础应用", link: "https://basicapp.docs.xihanfun.com" },
         ],
       },
     ],
   },
   {
-    text: "代码仓库",
+    text: "支持",
     items: [
-      {
-        text: "Github主库(国际)",
-        link: "https://github.com/XiHanFun/XiHan.Framework",
-      },
-      {
-        text: "Gitee同步备库(国内)",
-        link: "https://gitee.com/XiHanFun/XiHan.Framework",
-      },
-      {
-        text: "GitCode同步备库(国内)",
-        link: "https://gitcode.com/XiHanFun/XiHan.Framework",
-      },
-    ],
-  },
-  {
-    text: "参与贡献",
-    items: [
-      {
-        text: "公约",
-        link: "https://docs.xihanfun.com/cosmos/code-of-conduct",
-      },
-      {
-        text: "指南",
-        link: "https://docs.xihanfun.com/cosmos/contributing",
-      },
-      {
-        text: "贡献者",
-        link: "https://docs.xihanfun.com/cosmos/contributors",
-      },
-      {
-        text: "支持&赞助",
-        link: "https://docs.xihanfun.com/cosmos/sponsor",
-      },
+      { text: "公约", link: "https://docs.xihanfun.com/cosmos/code-of-conduct" },
+      { text: "参与", link: "https://docs.xihanfun.com/cosmos/contributing" },
+      { text: "赞助", link: "https://docs.xihanfun.com/cosmos/sponsor" },
     ],
   },
   {
@@ -359,150 +307,34 @@ const nav: DefaultTheme.NavItem[] = [
   },
 ];
 
-function searchOptions(): Partial<DefaultTheme.AlgoliaSearchOptions> {
-  return {
-    placeholder: "搜索文档",
-    translations: {
-      button: {
-        buttonText: "搜索文档",
-        buttonAriaLabel: "搜索文档",
-      },
-      modal: {
-        searchBox: {
-          resetButtonTitle: "清除查询条件",
-          resetButtonAriaLabel: "清除查询条件",
-          cancelButtonText: "取消",
-          cancelButtonAriaLabel: "取消",
-        },
-        startScreen: {
-          recentSearchesTitle: "搜索历史",
-          noRecentSearchesText: "没有搜索历史",
-          saveRecentSearchButtonTitle: "保存至搜索历史",
-          removeRecentSearchButtonTitle: "从搜索历史中移除",
-          favoriteSearchesTitle: "收藏",
-          removeFavoriteSearchButtonTitle: "从收藏中移除",
-        },
-        errorScreen: {
-          titleText: "无法获取结果",
-          helpText: "你可能需要检查你的网络连接",
-        },
-        footer: {
-          selectText: "选择",
-          navigateText: "切换",
-          closeText: "关闭",
-          searchByText: "搜索提供者",
-        },
-        noResultsScreen: {
-          noResultsText: "无法找到相关结果",
-          suggestedQueryText: "你可以尝试查询",
-          reportMissingResultsText: "你认为该查询应该有结果？",
-          reportMissingResultsLinkText: "点击反馈",
-        },
-      },
-    },
-  };
-}
-
-export default defineConfig({
-  lang: "zh-CN",
-  title: title,
-  description: description,
-  head: head,
-  lastUpdated: true,
-  cleanUrls: true,
-  // 机读资产（llms.txt、全站正文、分册与「取本页 Markdown」的单页 .md）在构建末尾落进产物目录
-  async buildEnd(siteConfig) {
-    await writeLlmsAssets(siteConfig.outDir, {
-      title: "曦寒开发框架",
-      summary:
-        "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
-      sections: [
-        { dir: ".", label: "开始" },
-        { dir: "guide", label: "开发指南", bundle: "guide" },
-        { dir: "packages", label: "模块总览", bundle: "packages" },
-      ],
-    });
-  },
-  vite: {
-    plugins: [
-      {
-        // 开发服务器没有构建产物，链接指向 /__markdown/，这里按需生成同一份
-        name: "xihan-doc-page-markdown",
-        configureServer(server) {
-          server.middlewares.use(async (request, response, next) => {
-            const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-            const prefix = "/__markdown/";
-            if (!pathname.startsWith(prefix)) {
-              next();
-              return;
-            }
-            try {
-              const markdown = await renderPageMarkdown(decodeURIComponent(pathname.slice(prefix.length)));
-              if (markdown === null) {
-                response.statusCode = 404;
-                response.end("Not Found");
-                return;
-              }
-              response.statusCode = 200;
-              response.setHeader("Content-Type", "text/markdown; charset=utf-8");
-              response.end(markdown);
-            }
-            catch (error) {
-              next(error);
-            }
-          });
-        },
-      },
+export default defineXiHanConfig({
+  title,
+  description,
+  keywords,
+  repo: "XiHan.Framework",
+  llms: {
+    title: "曦寒开发框架",
+    summary:
+      "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
+    sections: [
+      { dir: ".", label: "开始" },
+      { dir: "ai", label: "AI 辅助开发" },
+      { dir: "guide", label: "开发指南" },
+      { dir: "packages", label: "模块总览" },
     ],
+    bundles: [
+      { name: "guide", label: "开发指南", dirs: ["guide"] },
+      { name: "packages", label: "模块总览", dirs: ["packages"] },
+    ],
+    // 使用技能随 CLI 工具发布，文档站另发一份可下载的副本
+    async assets({ outDir }) {
+      await mkdir(`${outDir}/ai`, { recursive: true });
+      await copyFile(skillPath, `${outDir}/ai/SKILL.md`);
+      return [{ name: "ai/SKILL.md", description: "给 AI 编程工具的 XiHan.Framework 使用规范，可放进项目的技能目录" }];
+    },
   },
   themeConfig: {
-    logo: logo,
-    socialLinks: [
-      { icon: "github", link: "https://github.com/XiHanFun/XiHan.Framework" },
-      { icon: "gitee", link: "https://gitee.com/XiHanFun/XiHan.Framework" },
-      { icon: "gitcode", link: "https://gitcode.com/XiHanFun/XiHan.Framework" },
-    ],
-    search: {
-      provider: "local",
-      options: searchOptions(),
-    },
-    nav: nav,
-    sidebar: sidebar,
-    docFooter: {
-      prev: "上一页",
-      next: "下一页",
-    },
-    outline: {
-      label: "目录",
-      level: "deep",
-    },
-    langMenuLabel: "多语言",
-    returnToTopLabel: "回到顶部",
-    sidebarMenuLabel: "菜单",
-    darkModeSwitchLabel: "主题",
-    lightModeSwitchTitle: "切换到浅色模式",
-    darkModeSwitchTitle: "切换到深色模式",
-    skipToContentLabel: "跳转到内容",
-    notFound: {
-      title: "页面未找到",
-      quote:
-        "但如果你不改变方向，并且继续寻找，你可能最终会到达你所前往的地方。",
-      linkLabel: "前往首页",
-      linkText: "带我回首页",
-    },
-    editLink: {
-      text: "在 GitHub 上编辑此页",
-      pattern:
-        "https://github.com/XiHanFun/XiHan.Framework/tree/main/docs/:path",
-    },
-    lastUpdated: {
-      text: "最后更新于",
-    },
-    footer: {
-      message:
-        "Released under The <a href='https://opensource.org/license/MIT' target='_blank'>MIT</a> License",
-      copyright:
-        "Copyright ©2021-Present <a href='https://www.xihanfun.com' target='_blank'>XiHanFun</a> and contributors.",
-    },
+    nav,
+    sidebar,
   },
 });

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Script.Core;
 using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Expressions;
@@ -13,6 +14,8 @@ using XiHan.Framework.Workflow.Abstractions.Stores;
 using XiHan.Framework.Workflow.Abstractions.UserTasks;
 using XiHan.Framework.Workflow.Activities;
 using XiHan.Framework.Workflow.Activities.BuiltIn;
+using XiHan.Framework.Workflow.Assignees;
+using XiHan.Framework.Workflow.Assignees.BuiltIn;
 using XiHan.Framework.Workflow.Definitions;
 using XiHan.Framework.Workflow.Engine;
 using XiHan.Framework.Workflow.Events;
@@ -55,6 +58,7 @@ public static class XiHanWorkflowServiceCollectionExtensions
         services.TryAddTransient<IWorkflowDefinitionManager, WorkflowDefinitionManager>();
         services.TryAddTransient<IWorkflowUserTaskService, WorkflowUserTaskService>();
         services.TryAddTransient<WorkflowDefinitionValidator>();
+        services.TryAddTransient<IWorkflowAssigneeResolver, WorkflowAssigneeResolver>();
 
         // 脚本活动依赖的脚本引擎（脚本模块未注册 DI，这里补默认注册）
         services.TryAddSingleton<IScriptEngine>(_ => new ScriptEngine());
@@ -65,8 +69,9 @@ public static class XiHanWorkflowServiceCollectionExtensions
         // 定时器轮询 Worker
         services.AddHostedService<WorkflowTimerWorker>();
 
-        // 内置活动
+        // 内置活动与受理人解析器
         RegisterBuiltInActivities(services);
+        RegisterBuiltInAssigneeProviders(services);
 
         return services;
     }
@@ -83,6 +88,30 @@ public static class XiHanWorkflowServiceCollectionExtensions
         services.TryAddTransient<TActivity>();
         services.Configure<XiHanWorkflowOptions>(options => options.Activities.TryAdd<TActivity>());
         return services;
+    }
+
+    /// <summary>
+    /// 注册受理人解析器（为人工任务的 AssigneeRules 提供一种规则类型）
+    /// </summary>
+    /// <remarks>
+    /// 解析器按瞬时生命周期从当前执行作用域解析，可注入作用域服务（如仓储）；
+    /// 同一规则类型只允许一个解析器，重复注册会在解析门面构造时抛出。
+    /// </remarks>
+    /// <typeparam name="TProvider">解析器类型</typeparam>
+    /// <param name="services">服务集合</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddXiHanWorkflowAssigneeProvider<TProvider>(this IServiceCollection services)
+        where TProvider : class, IWorkflowAssigneeProvider
+    {
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IWorkflowAssigneeProvider, TProvider>());
+        return services;
+    }
+
+    private static void RegisterBuiltInAssigneeProviders(IServiceCollection services)
+    {
+        services.AddXiHanWorkflowAssigneeProvider<UserAssigneeProvider>();
+        services.AddXiHanWorkflowAssigneeProvider<StarterAssigneeProvider>();
+        services.AddXiHanWorkflowAssigneeProvider<ExpressionAssigneeProvider>();
     }
 
     private static void RegisterBuiltInActivities(IServiceCollection services)

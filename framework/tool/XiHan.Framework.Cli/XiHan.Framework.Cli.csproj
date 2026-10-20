@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\props\netcore.props" />
+    <Import Project="..\..\props\common.props" />
+    <Import Project="..\..\props\version.props" />
+    <Import Project="..\..\props\nuget.props" />
+
+    <PropertyGroup>
+        <Title>XiHan.Framework.Cli</Title>
+        <AssemblyName>XiHan.Framework.Cli</AssemblyName>
+        <PackageId>XiHan.Framework.Cli</PackageId>
+        <Description>曦寒框架命令行与 MCP 服务端：模块、配置节、文档与更新日志的离线知识库</Description>
+        <RootNamespace>XiHan.Framework.Cli</RootNamespace>
+        <OutputType>Exe</OutputType>
+        <!-- 以 .NET 工具发布：dotnet tool install 或 dnx 直接运行 -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>xihan-framework</ToolCommandName>
+        <PackageType>McpServer</PackageType>
+        <PackageTags>$(PackageTags) cli mcp ai llms</PackageTags>
+        <!-- dotnet tool 与 dnx 不支持许可接受提示 -->
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="XiHan.Framework.Cli.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    </ItemGroup>
+
+    <!-- 离线知识库：文档站正文、各包项目文件、模块类与选项类源码，随工具一起发布；文件名里的 .Sms 之类不当作区域性 -->
+    <ItemGroup>
+        <EmbeddedResource Include="..\..\..\docs\**\*.md" Exclude="..\..\..\docs\node_modules\**;..\..\..\docs\.vitepress\**;..\..\..\docs\public\**" LogicalName="docs/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+        <EmbeddedResource Include="..\..\src\*\*.csproj" LogicalName="src/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+        <EmbeddedResource Include="..\..\src\**\*Module.cs;..\..\src\**\*Options.cs" Exclude="..\..\src\**\bin\**;..\..\src\**\obj\**" LogicalName="src/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+        <EmbeddedResource Include="skills\xihan-framework\SKILL.md" LogicalName="skills/xihan-framework/SKILL.md" WithCulture="false" />
+    </ItemGroup>
+
+    <!-- NuGet 的 MCP 服务端描述，版本号取自 version.props -->
+    <Target Name="WriteMcpServerJson" BeforeTargets="_GetPackageFiles">
+        <PropertyGroup>
+            <McpServerJsonPath>$(IntermediateOutputPath)server.json</McpServerJsonPath>
+            <McpServerJson>{"$schema":"https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json","name":"io.github.XiHanFun/xihan-framework","description":"XiHan.Framework packages, modules, configuration sections and docs, offline","version":"$(Version)","packages":[{"registryType":"nuget","registryBaseUrl":"https://api.nuget.org","identifier":"$(PackageId)","version":"$(Version)","transport":{"type":"stdio"},"packageArguments":[{"type":"positional","value":"mcp"}],"environmentVariables":[]}],"repository":{"url":"https://github.com/XiHanFun/XiHan.Framework","source":"github"}}</McpServerJson>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(McpServerJsonPath)" Lines="$(McpServerJson)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+        <ItemGroup>
+            <None Include="$(McpServerJsonPath)" Pack="true" PackagePath=".mcp/server.json" />
+        </ItemGroup>
+    </Target>
+
+</Project>

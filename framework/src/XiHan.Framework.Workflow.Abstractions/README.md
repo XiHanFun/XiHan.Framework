@@ -9,7 +9,9 @@
 - 编写自定义活动（`IWorkflowActivity` / `IResumableWorkflowActivity` / `ICompensableWorkflowActivity`）；
 - 订阅流程生命周期事件（`Events/` 下的事件记录）；
 - 替换存储实现（`IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore`）；
-- 替换表达式求值器（`IWorkflowExpressionEvaluator`）。
+- 替换表达式求值器（`IWorkflowExpressionEvaluator`）；
+- 注册受理人解析器（`IWorkflowAssigneeProvider`），为人工任务提供角色、部门、主管等规则类型；
+- 注册结果处理器（`IWorkflowOutcomeHandler`），在结果结束节点把审批结论回写业务。
 
 ## 核心能力
 
@@ -17,11 +19,13 @@
 | --- | --- |
 | Definitions | 流程定义模型：`WorkflowDefinition`（编码 + 版本 + 状态）、`WorkflowNode`（活动类型 + 属性 + 重试/超时/失败续行）、`WorkflowTransition`（条件 + 优先级 + 默认边）、`IWorkflowDefinitionManager`（草稿/发布/版本管理） |
 | Runtime | 运行时模型：`WorkflowInstance`（变量 + 汇聚波次 + 父子链接）、`WorkflowNodeInstance`（执行历史 + 活动私有状态）、`WorkflowBookmark`（可恢复等待点）、`WorkflowVariables`（类型安全变量容器）、`WorkflowValueConverter`（JSON 持久化往返归一化） |
-| Activities | 活动契约：执行/恢复/补偿接口、`WorkflowActivityAttribute`（类型编码 + 出边流转行为）、`ActivityExecutionResult`（完成/挂起/故障） |
+| Activities | 活动契约：执行/恢复/补偿接口、`WorkflowActivityAttribute`（类型编码 + 出边流转行为）、`ActivityExecutionResult`（完成/挂起/故障/结束整个实例） |
 | Engine | `IWorkflowEngine`：启动、书签恢复、信号发布、挂起/恢复、取消、终止、重试 |
 | Stores | 三个存储契约，查询语义以 XML 注释形式随接口声明 |
 | Expressions | `IWorkflowExpressionEvaluator`：表达式求值、条件求值（fail-closed）、`{{ }}` 模板渲染 |
-| UserTasks | `IWorkflowUserTaskService`：待办查询、办理、转办、加签；`UserTaskCompletionPolicy`：或签/会签/依次审批 |
+| UserTasks | `IWorkflowUserTaskService`：待办查询、办理、转办、加签；`UserTaskCompletionPolicy`：或签/会签/依次审批；`UserTaskEmptyAssigneeStrategy`：受理人为空时故障/自动通过/自动驳回/兜底 |
+| Assignees | `WorkflowAssigneeRule`（`{ type, values }`）、内置类型 `WorkflowAssigneeRuleTypes`、解析器契约 `IWorkflowAssigneeProvider` 与解析门面 `IWorkflowAssigneeResolver` |
+| Outcomes | `IWorkflowOutcomeHandler`：结果结束节点执行时同步回调，失败即节点故障、重试再次回调 |
 | Events | 实例/节点/人工任务生命周期事件记录 |
 
 ## 依赖关系
@@ -57,7 +61,9 @@ public class YourModule : XiHanModule
 
 - 自定义活动：实现 `IWorkflowActivity` 并标注 `[WorkflowActivity("YourType")]`，在实现包选项中注册；
 - 自定义存储：实现三个存储接口后以 `Replace` 方式覆盖默认内存实现；
-- 自定义表达式语言：替换 `IWorkflowExpressionEvaluator` 注册。
+- 自定义表达式语言：替换 `IWorkflowExpressionEvaluator` 注册；
+- 受理人规则类型：实现 `IWorkflowAssigneeProvider`，用实现包的 `AddXiHanWorkflowAssigneeProvider<T>()` 注册；
+- 结果回写：实现 `IWorkflowOutcomeHandler` 并注册进 DI。
 
 ## 目录结构
 
@@ -67,6 +73,8 @@ public class YourModule : XiHanModule
 - `Engine/`：工作流引擎契约
 - `Stores/`：定义/实例/书签存储契约
 - `Expressions/`：表达式求值契约
-- `UserTasks/`：人工任务服务契约与待办视图
+- `UserTasks/`：人工任务服务契约、待办视图与完成/空受理人策略
+- `Assignees/`：受理人规则、解析器与解析门面契约
+- `Outcomes/`：流程结果处理器契约与上下文
 - `Events/`：实例/节点/人工任务生命周期事件
 - `Exceptions/`：工作流异常与定义校验异常
