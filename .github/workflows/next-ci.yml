@@ -57,9 +57,12 @@ jobs:
       - name: 依赖漏洞清单
         run: dotnet list next/XiHan.Framework.Next.slnx package --vulnerable --include-transitive
 
+      - name: 安装 Native AOT 工具链
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
       - name: AOT 发布冒烟
-        # 示例在 P1 出现后自动生效
-        if: hashFiles('next/samples/SimpleApp/SimpleApp.csproj') != ''
+        # 内核零反射、源生成序列化：示例必须能以 Native AOT 发布
         run: dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -p:PublishAot=true -o ${{ runner.temp }}/aot
 
       - name: 上传测试结果与包

@@ -82,7 +82,8 @@ public sealed class DependencyTests
     {
         var failures = new List<string>();
 
-        foreach (var assembly in NamingTests.LoadSourceAssemblies())
+        // 只约束 Ring 0–2：宿主、协议与 Provider 的公开面天然包含其所适配的技术类型
+        foreach (var assembly in NamingTests.LoadSourceAssemblies().Where(static a => PackageGrammar.Ring(a.GetName().Name ?? string.Empty) <= 2))
         {
             foreach (var type in assembly.GetExportedTypes())
             {
