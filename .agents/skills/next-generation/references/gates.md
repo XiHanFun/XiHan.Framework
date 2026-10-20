@@ -7,6 +7,8 @@ dotnet restore next/XiHan.Framework.Next.slnx
 dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore
 dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build
 dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
+dotnet publish next/samples/SimpleApp/SimpleApp.csproj -c Release -p:PublishAot=true   # 需要本机 C++ 工具链
+dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --filter '*'
 ```
 
 `global.json` 启用了 Microsoft.Testing.Platform：`dotnet test` 必须用 `--solution`，不要改回 VSTest。CI 同形流程在 `.github/workflows/next-ci.yml`。
@@ -20,6 +22,7 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 | PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 运行 `pwsh -File next/scripts/Sync-PublicApi.ps1 -Project <csproj>` 同步 `PublicAPI.Unshipped.txt`；已发布行不改 |
 | 包验证 `EnablePackageValidation` | 同上 | 小版本不得破坏；大版本列出破坏清单 |
 | AOT 分析器 `IsAotCompatible` | 同上 | 去掉反射与动态代码 |
+| 自研分析器 XH0001–XH0005 | `src/XiHan.Framework.Kernel.Analyzers`，经 `src/Directory.Build.props` 引用 | 补 `[ApiLevel]`、改名、去反射；不加 `NoWarn` |
 | 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |
 | 新正式包 | 同上 `EverySourceProject_IsReferencedByArchitectureTests` | 把新包加进架构测试项目引用 |
 
