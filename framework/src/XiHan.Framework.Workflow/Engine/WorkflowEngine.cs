@@ -718,6 +718,14 @@ public class WorkflowEngine : IWorkflowEngine
             return;
         }
 
+        // 结果结束节点：本批次不再执行任何节点，收尾阶段清理其余分支并完成实例
+        if (result.EndsInstance)
+        {
+            session.EndRequested = true;
+            session.Queue.Clear();
+            return;
+        }
+
         await FlowOutgoingAsync(session, node, nodeInstance, descriptor.OutgoingBehavior, result.Outcome);
     }
 
@@ -1024,6 +1032,20 @@ public class WorkflowEngine : IWorkflowEngine
     {
         var instance = session.Instance;
 
+        if (instance.Status == WorkflowInstanceStatus.Running && session.EndRequested)
+        {
+            // 结果结束节点要求立即完成：其余分支的书签、挂起节点与汇聚波次作废，运行中的子实例级联终止
+            await CleanupNonFinalWorkAsync(instance, CancellationToken.None);
+            instance.JoinStates.Clear();
+            instance.Status = WorkflowInstanceStatus.Completed;
+            instance.EndTime = _clock.Now;
+            await _instanceStore.UpdateAsync(instance, CancellationToken.None);
+            await _eventPublisher.PublishAsync(new WorkflowInstanceCompletedEventData(instance));
+            ScheduleParentNotification(session, instance);
+            ScheduleChildrenCascade(session.PostActions, instance, WorkflowInstanceStatus.Completed);
+            return;
+        }
+
         if (instance.Status == WorkflowInstanceStatus.Running)
         {
             var bookmarks = await _bookmarkStore.GetByInstanceAsync(instance.Id, CancellationToken.None);
@@ -1156,7 +1178,9 @@ public class WorkflowEngine : IWorkflowEngine
         await using (await AcquireInstanceLockAsync(instanceId, cancellationToken))
         {
             instance = await GetRequiredInstanceAsync(instanceId, cancellationToken);
-            if (instance.IsFinalStatus())
+
+            // 故障实例虽是终态，但仍可放弃重试、改为取消或终止（业务撤回单据时据此收尾）；其余终态幂等返回
+            if (instance.IsFinalStatus() && instance.Status != WorkflowInstanceStatus.Faulted)
             {
                 return instance;
             }
@@ -1207,7 +1231,12 @@ public class WorkflowEngine : IWorkflowEngine
     private void ScheduleChildrenCascade(List<Func<Task>> postActions, WorkflowInstance instance, WorkflowInstanceStatus finalStatus)
     {
         var instanceId = instance.Id;
-        var reason = $"父实例 {instanceId} 已{(finalStatus == WorkflowInstanceStatus.Canceled ? "取消" : "终止")}";
+        var reason = finalStatus switch
+        {
+            WorkflowInstanceStatus.Canceled => $"父实例 {instanceId} 已取消",
+            WorkflowInstanceStatus.Completed => $"父实例 {instanceId} 已由结果结束节点结束",
+            _ => $"父实例 {instanceId} 已终止"
+        };
 
         postActions.Add(async () =>
         {
@@ -1444,6 +1473,11 @@ public class WorkflowEngine : IWorkflowEngine
         public Queue<WorkItem> Queue { get; } = new();
 
         public List<Func<Task>> PostActions { get; }
+
+        /// <summary>
+        /// 结果结束节点已要求结束整个实例（批次收尾时清理其余分支并完成）
+        /// </summary>
+        public bool EndRequested { get; set; }
 
         /// <summary>
         /// 活动执行取消令牌（批次收尾不受其影响）

@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/1.src/2.Metadata/">
     <Project Path="src/XiHan.Framework.Metadata/XiHan.Framework.Metadata.csproj" />
+    <Project Path="tool/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
   </Folder>
   <Folder Name="/1.src/3.Core/">
     <Project Path="src/XiHan.Framework.Core/XiHan.Framework.Core.csproj" />
@@ -99,6 +100,7 @@
     <Project Path="test/XiHan.Framework.Bot.WeCom.Tests/XiHan.Framework.Bot.WeCom.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Tests/XiHan.Framework.Caching.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Castle.Tests/XiHan.Framework.Castle.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Cli.Tests/XiHan.Framework.Cli.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Core.Tests/XiHan.Framework.Core.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Data.Tests/XiHan.Framework.Data.Tests.csproj" />
     <Project Path="test/XiHan.Framework.DevTools.Tests/XiHan.Framework.DevTools.Tests.csproj" Id="8b65e93b-e710-44b2-9107-4234c0eb2643" />
