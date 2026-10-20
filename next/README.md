@@ -10,11 +10,22 @@ next/
 ├─ Directory.Build.props            # 版本线 5.x、Nullable、警告即错误、文档文件
 ├─ Directory.Packages.props         # 中央包版本，Ring 0/1 只允许 Microsoft.Extensions.* 抽象包
 ├─ spec/                            # XiHan Spec：RFC、术语表、清单 Schema、命名约定
+├─ scripts/                         # Sync-PublicApi.ps1 等维护脚本
 ├─ src/                             # 正式包，物理目录扁平，包名由术语表 + 文法推出
-├─ test/                            # 单元、架构、集成、基准、AOT 冒烟
-├─ samples/                         # 示例（P1 起）
+├─ test/                            # 单元、架构、集成测试
+├─ samples/                         # SimpleApp（Native AOT 冒烟）、SamplePlugin（进程内插件）
 └─ incubator/                       # 实验包，只能标 Experimental
 ```
+
+## 正式包
+
+| 包 | 环 | 内容 |
+| --- | --- | --- |
+| `XiHan.Framework.Primitives` | 0 | 原语与契约，只增不改 |
+| `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象 |
+| `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、探针端点、Problem Details |
+| `XiHan.Framework.Plugins.InProcess` | 5 | 可收集 AssemblyLoadContext 的插件宿主（非 AOT） |
+| `XiHan.Framework.Testing` | 工具链 | 测试宿主、特性桩、清单与上下文构造 |
 
 ## 命令
 
@@ -40,4 +51,4 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 
 ## 阶段
 
-当前处于 P1 内核：原语层已完成，内核进行中。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
+当前处于 P1 内核：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座与示例已完成；分析器、生成器与基准待补。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。

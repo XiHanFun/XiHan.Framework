@@ -26,6 +26,9 @@ public static class KernelErrors
     /// <summary>清单 ID 重复。</summary>
     public const string DuplicateManifest = "KERNEL_CAPABILITY_005";
 
+    /// <summary>清单文件不合法。</summary>
+    public const string InvalidManifest = "KERNEL_CAPABILITY_006";
+
     /// <summary>中间件顺序约束成环。</summary>
     public const string PipelineCycle = "KERNEL_PIPELINE_001";
 
@@ -46,6 +49,9 @@ public static class KernelErrors
 
     /// <summary>应用状态不允许该操作。</summary>
     public const string InvalidAppState = "KERNEL_HOSTING_004";
+
+    /// <summary>应用未就绪或正在停止，暂不接收调用；协议适配器据此返回 503。</summary>
+    public const string NotServing = "KERNEL_UNAVAILABLE_001";
 
     /// <summary>调用超过截止时间。</summary>
     public const string DeadlineExceeded = "KERNEL_TIMEOUT_001";

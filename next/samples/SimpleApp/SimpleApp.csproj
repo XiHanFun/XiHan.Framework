@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>SimpleApp</RootNamespace>
+    <!-- 最小 API 的端点委托在编译期生成，去掉反射绑定，保证 Native AOT 可发布 -->
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+#nullable enable
+const XiHan.Framework.Plugins.InProcess.PluginErrors.AlreadyLoaded = "PLUGINS_CONFLICT_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.InvalidEntry = "PLUGINS_VALIDATION_002" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.InvalidSource = "PLUGINS_VALIDATION_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.LoadFailed = "PLUGINS_UNEXPECTED_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.NotFound = "PLUGINS_NOTFOUND_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.PermissionDenied = "PLUGINS_DENIED_001" -> string!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.InProcessPluginHost(Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Plugins.InProcess.PluginErrors

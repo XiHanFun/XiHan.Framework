@@ -2,6 +2,7 @@
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.Equals(object obj) -> bool
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.ToString() -> string
 ~override XiHan.Framework.Kernel.Security.ResourceName.Equals(object obj) -> bool
+const XiHan.Framework.Kernel.Capabilities.ManifestReader.FileName = "xihan.manifest.json" -> string!
 const XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.SourceName = "XiHan.Framework" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ConfigurationSection = "XiHan:Bindings" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ServiceBindingRootVariable = "SERVICE_BINDING_ROOT" -> string!
@@ -23,8 +24,10 @@ const XiHan.Framework.Kernel.KernelErrors.DuplicatePermission = "KERNEL_SECURITY
 const XiHan.Framework.Kernel.KernelErrors.FeatureStartFailed = "KERNEL_HOSTING_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.FeatureStopTimeout = "KERNEL_HOSTING_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidAppState = "KERNEL_HOSTING_004" -> string!
+const XiHan.Framework.Kernel.KernelErrors.InvalidManifest = "KERNEL_CAPABILITY_006" -> string!
 const XiHan.Framework.Kernel.KernelErrors.MissingBinding = "KERNEL_HOSTING_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.MissingCapability = "KERNEL_CAPABILITY_001" -> string!
+const XiHan.Framework.Kernel.KernelErrors.NotServing = "KERNEL_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PermissionRegistryFull = "KERNEL_SECURITY_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineCycle = "KERNEL_PIPELINE_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineRegistration = "KERNEL_PIPELINE_003" -> string!
@@ -77,6 +80,9 @@ override XiHan.Framework.Kernel.Security.TenantContext.Equals(object? obj) -> bo
 override XiHan.Framework.Kernel.Security.TenantContext.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.TenantContext.ToString() -> string!
 static XiHan.Framework.Kernel.Capabilities.CapabilityResolver.Resolve(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Manifests.Manifest!>! manifests, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? providerSelections = null) -> XiHan.Framework.Kernel.Capabilities.ResolvedGraph!
+static XiHan.Framework.Kernel.Capabilities.ManifestReader.Read(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
+static XiHan.Framework.Kernel.Capabilities.ManifestReader.ReadFile(string! path) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
+static XiHan.Framework.Kernel.Capabilities.ManifestReader.Write(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> string!
 static XiHan.Framework.Kernel.Diagnostics.AuditEvent.operator !=(XiHan.Framework.Kernel.Diagnostics.AuditEvent? left, XiHan.Framework.Kernel.Diagnostics.AuditEvent? right) -> bool
 static XiHan.Framework.Kernel.Diagnostics.AuditEvent.operator ==(XiHan.Framework.Kernel.Diagnostics.AuditEvent? left, XiHan.Framework.Kernel.Diagnostics.AuditEvent? right) -> bool
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.ActivitySource.get -> System.Diagnostics.ActivitySource!
@@ -147,6 +153,7 @@ XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Role.init -> void
 XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Stability.get -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Stability.init -> void
 XiHan.Framework.Kernel.Capabilities.CapabilityResolver
+XiHan.Framework.Kernel.Capabilities.ManifestReader
 XiHan.Framework.Kernel.Capabilities.ResolvedGraph
 XiHan.Framework.Kernel.Capabilities.ResolvedGraph.Contains(string! manifestId) -> bool
 XiHan.Framework.Kernel.Capabilities.ResolvedGraph.Describe() -> string!

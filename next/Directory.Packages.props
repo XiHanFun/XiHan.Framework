@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup Label="测试">
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />

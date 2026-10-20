@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 示例保持 AOT 友好：CI 以 -p:PublishAot=true 发布做冒烟 -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <NoWarn>$(NoWarn);CA1515</NoWarn>
+  </PropertyGroup>
+</Project>
