@@ -312,7 +312,10 @@ const nav: DefaultTheme.NavItem[] = [
   },
   {
     text: `v${version}`,
-    items: [{ text: "更新日志", link: "/changelog" }],
+    items: [
+      { text: "更新日志", link: "/changelog" },
+      { text: "NuGet", link: "https://www.nuget.org/profiles/XiHanFun" },
+    ],
   },
 ];
 
