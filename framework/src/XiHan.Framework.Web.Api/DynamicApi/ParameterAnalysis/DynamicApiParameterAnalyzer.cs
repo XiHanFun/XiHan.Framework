@@ -22,8 +22,6 @@ public class DynamicApiParameterAnalyzer
         var methodName = methodInfo.Name;
         var parameters = methodInfo.GetParameters();
 
-        // 创建解析器
-        var sourceResolver = new ParameterSourceResolver(httpMethod);
         var validator = new ParameterRuleValidator(httpMethod, methodName);
 
         var descriptors = new List<ParameterDescriptor>();
@@ -34,6 +32,11 @@ public class DynamicApiParameterAnalyzer
             var descriptor = AnalyzeParameter(parameter, methodName);
             descriptors.Add(descriptor);
         }
+
+        // 是否以表单提交取决于全部参数，须在逐个解析来源前确定
+        var sourceResolver = new ParameterSourceResolver(
+            httpMethod,
+            ParameterSourceResolver.IsFormRequest(descriptors, httpMethod));
 
         // 第二遍：解析参数来源
         foreach (var descriptor in descriptors)

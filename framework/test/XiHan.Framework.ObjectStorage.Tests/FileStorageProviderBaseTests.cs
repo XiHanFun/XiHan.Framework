@@ -258,4 +258,139 @@ public class FileStorageProviderBaseTests
 
         Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", hash);
     }
+
+    /// <summary>
+    /// 批量上传按请求顺序逐个上传，结果与请求一一对应
+    /// </summary>
+    [Fact]
+    public async Task UploadManyAsync_ReturnsResultsInRequestOrder()
+    {
+        var provider = new RecordingFileStorageProvider
+        {
+            UploadCoreHandler = request => new FileUploadResult { Success = true, Path = $"files/{request.FileName}" }
+        };
+
+        var results = await provider.UploadManyAsync(
+            [new FileUploadRequest { FileName = "a.txt" }, new FileUploadRequest { FileName = "b.txt" }],
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(["a.txt", "b.txt"], provider.UploadedFileNames);
+        Assert.Equal(["files/a.txt", "files/b.txt"], results.Select(result => result.Path));
+        Assert.All(results, result => Assert.True(result.Success));
+    }
+
+    /// <summary>
+    /// 单个文件上传失败只记入对应结果，其余文件照常上传
+    /// </summary>
+    [Fact]
+    public async Task UploadManyAsync_WhenOneFails_KeepsUploadingOthers()
+    {
+        var provider = new RecordingFileStorageProvider
+        {
+            UploadCoreHandler = request => request.FileName == "bad.txt"
+                ? throw new IOException("磁盘已满")
+                : new FileUploadResult { Success = true, Path = request.FileName }
+        };
+
+        var results = await provider.UploadManyAsync(
+            [new FileUploadRequest { FileName = "a.txt" }, new FileUploadRequest { FileName = "bad.txt" }, new FileUploadRequest { FileName = "c.txt" }],
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(["a.txt", "bad.txt", "c.txt"], provider.UploadedFileNames);
+        Assert.True(results[0].Success);
+        Assert.False(results[1].Success);
+        Assert.Equal("磁盘已满", results[1].ErrorMessage);
+        Assert.True(results[2].Success);
+    }
+
+    /// <summary>
+    /// 请求列表含空项时在上传任何文件之前拒绝
+    /// </summary>
+    [Fact]
+    public async Task UploadManyAsync_WithNullItem_ThrowsBeforeUploading()
+    {
+        var provider = new RecordingFileStorageProvider();
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => provider.UploadManyAsync([new FileUploadRequest { FileName = "a.txt" }, null!], TestContext.Current.CancellationToken));
+
+        Assert.Empty(provider.UploadedFileNames);
+    }
+
+    /// <summary>
+    /// 已取消时不再上传并抛出取消异常，而不是把取消吞成失败结果
+    /// </summary>
+    [Fact]
+    public async Task UploadManyAsync_WhenCanceled_Throws()
+    {
+        var provider = new RecordingFileStorageProvider();
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => provider.UploadManyAsync([new FileUploadRequest { FileName = "a.txt" }], cancellation.Token));
+
+        Assert.Empty(provider.UploadedFileNames);
+    }
+
+    /// <summary>
+    /// 批量删除逐个删除去重后的路径
+    /// </summary>
+    [Fact]
+    public async Task DeleteManyAsync_DeletesEachDistinctPath()
+    {
+        var provider = new RecordingFileStorageProvider();
+
+        await provider.DeleteManyAsync(["a.txt", "b.txt", "a.txt"], cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(["a.txt", "b.txt"], provider.DeletedPaths);
+    }
+
+    /// <summary>
+    /// 部分路径删除失败时其余路径照常删除，结束后汇总抛出并指明失败路径
+    /// </summary>
+    [Fact]
+    public async Task DeleteManyAsync_WhenSomeFail_DeletesOthersAndThrowsAggregate()
+    {
+        var provider = new RecordingFileStorageProvider();
+        provider.FailingDeletePaths.Add("b.txt");
+
+        var exception = await Assert.ThrowsAsync<AggregateException>(
+            () => provider.DeleteManyAsync(["a.txt", "b.txt", "c.txt"], cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Equal(["a.txt", "c.txt"], provider.DeletedPaths);
+        var failure = Assert.Single(exception.InnerExceptions);
+        Assert.Contains("b.txt", failure.Message, StringComparison.Ordinal);
+        Assert.IsType<IOException>(failure.InnerException);
+    }
+
+    /// <summary>
+    /// 路径列表含空路径时在删除任何文件之前拒绝
+    /// </summary>
+    [Fact]
+    public async Task DeleteManyAsync_WithBlankPath_ThrowsBeforeDeleting()
+    {
+        var provider = new RecordingFileStorageProvider();
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => provider.DeleteManyAsync(["a.txt", " "], cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Empty(provider.DeletedPaths);
+    }
+
+    /// <summary>
+    /// 已取消时不再删除并抛出取消异常
+    /// </summary>
+    [Fact]
+    public async Task DeleteManyAsync_WhenCanceled_Throws()
+    {
+        var provider = new RecordingFileStorageProvider();
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => provider.DeleteManyAsync(["a.txt"], cancellationToken: cancellation.Token));
+
+        Assert.Empty(provider.DeletedPaths);
+    }
 }

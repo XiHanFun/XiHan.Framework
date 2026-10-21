@@ -52,6 +52,31 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     }
 
     /// <summary>
+    /// 批量上传文件
+    /// </summary>
+    /// <remarks>
+    /// 默认逐个调用 <see cref="UploadAsync"/>；支持原生批量接口的 Provider 可覆写以减少往返。
+    /// </remarks>
+    public virtual async Task<IReadOnlyList<FileUploadResult>> UploadManyAsync(IReadOnlyList<FileUploadRequest> requests, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        if (requests.Any(request => request is null))
+        {
+            throw new ArgumentException("上传请求列表不能包含空项。", nameof(requests));
+        }
+
+        var results = new List<FileUploadResult>(requests.Count);
+        foreach (var request in requests)
+        {
+            // UploadAsync 会把异常收成失败结果，取消必须在它之外判定，否则会被吞成一条失败记录
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await UploadAsync(request, cancellationToken));
+        }
+
+        return results;
+    }
+
+    /// <summary>
     /// 初始化分片上传
     /// </summary>
     public virtual Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, CancellationToken cancellationToken = default)
@@ -102,6 +127,40 @@ public abstract class FileStorageProviderBase : IFileStorageProvider
     public virtual Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default)
     {
         return DeleteAsync(path, cancellationToken);
+    }
+
+    /// <summary>
+    /// 批量删除文件
+    /// </summary>
+    /// <remarks>
+    /// 默认逐个调用 <see cref="DeleteAsync(string, string?, CancellationToken)"/>；支持原生批量删除的 Provider 可覆写以减少往返。
+    /// </remarks>
+    public virtual async Task DeleteManyAsync(IReadOnlyList<string> paths, string? bucketName = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        if (paths.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("文件路径列表不能包含空路径。", nameof(paths));
+        }
+
+        List<Exception>? failures = null;
+        foreach (var path in paths.Distinct(StringComparer.Ordinal))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                await DeleteAsync(path, bucketName, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                (failures ??= []).Add(new InvalidOperationException($"删除文件 '{path}' 失败：{ex.Message}", ex));
+            }
+        }
+
+        if (failures is not null)
+        {
+            throw new AggregateException($"{failures.Count} 个文件删除失败。", failures);
+        }
     }
 
     /// <summary>
