@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Security.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存安全（默认实现，仅开发与测试）：从配置装载的 API Key 主体与权限授予，附 Authenticate / Authorize 阶段中间件。</Description>
+    <PackageTags>xihan;framework;security;in-memory;api-key;rbac</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

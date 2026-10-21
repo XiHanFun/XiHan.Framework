@@ -60,6 +60,12 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
+| `SECURITY_DENIED_003` | 凭据无效、过期或签名不符 |
+| `SECURITY_DENIED_004` | 缺少权限 |
+| `SECURITY_VALIDATION_001` | 不支持的认证方案或凭据格式不合法 |
+| `SECURITY_NOTFOUND_001` | 策略不存在或权限码未登记 |
+| `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
+| `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
